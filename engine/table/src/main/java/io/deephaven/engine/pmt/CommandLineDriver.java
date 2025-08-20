@@ -35,7 +35,7 @@ import java.util.concurrent.TimeUnit;
  * After each update cycle, the table is validated and the update is printed.
  */
 public class CommandLineDriver {
-    boolean inBundle = false;
+    boolean inTransaction = false;
 
     public static void main(String[] args) throws ExecutionException, InterruptedException {
         new CommandLineDriver().start();
@@ -157,11 +157,11 @@ public class CommandLineDriver {
         stream.println("quit");
         stream.println("\texit the driver");
         stream.println("start");
-        stream.println("\tstart a bundle, done automatically for add, delete, and set\n");
+        stream.println("\tstart a transaction, done automatically for add, delete, and set\n");
         stream.println("end");
-        stream.println("\tend a bundle, wait for the UpdateGraph to process it, then print out the new table\n");
+        stream.println("\tend a transaction, wait for the UpdateGraph to process it, then print out the new table\n");
         stream.println("endasync");
-        stream.println("\tend a bundle, but don't wait");
+        stream.println("\tend a transaction, but don't wait");
         stream.println("add row count");
         stream.println("\tadd a blank segment of rows");
         stream.println("delete row count");
@@ -174,14 +174,14 @@ public class CommandLineDriver {
     }
 
     private void doStart(ArrayBackedPositionalMutableTable table) {
-        inBundle = true;
-        table.startBundle();
+        inTransaction = true;
+        table.startTransaction();
     }
 
     private Future<Void> doEnd(ArrayBackedPositionalMutableTable table) {
-        if (inBundle) {
-            inBundle = false;
-            return table.endBundle();
+        if (inTransaction) {
+            inTransaction = false;
+            return table.endTransaction();
         } else {
             return new ImmediateVoidFuture();
         }
@@ -192,13 +192,13 @@ public class CommandLineDriver {
             System.err.println("add start count");
             return;
         }
-        if (!table.inBundle) {
+        if (!table.inTransaction) {
             doStart(table);
         }
         final long position = Long.parseLong(splits[1]);
         final long count = Long.parseLong(splits[2]);
         // should we have a Future or something else as a return?
-        table.addRow(position, count);
+        table.addRows(position, count);
     }
 
     private void doDelete(String[] splits, ArrayBackedPositionalMutableTable table) {
@@ -206,17 +206,17 @@ public class CommandLineDriver {
             System.err.println("delete start count");
             return;
         }
-        if (!table.inBundle) {
+        if (!table.inTransaction) {
             doStart(table);
         }
         final long position = Long.parseLong(splits[1]);
         final long count = Long.parseLong(splits[2]);
         // should we have a Future or something else as a return?
-        table.deleteRow(position, count);
+        table.deleteRows(position, count);
     }
 
     private void doSet(String[] splits, String in, ArrayBackedPositionalMutableTable table) {
-        if (!table.inBundle) {
+        if (!table.inTransaction) {
             doStart(table);
         }
         if (splits.length < 4) {

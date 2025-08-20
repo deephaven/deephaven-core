@@ -3,6 +3,7 @@
 //
 package io.deephaven.engine.pmt;
 
+import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.*;
@@ -57,9 +58,9 @@ public class ArrayBackedPositionalMutableTable extends QueryTable implements Run
     private final ColumnSourceNuller[] objectNullers;
 
     /**
-     * If we currently are in the midst of a bundle.
+     * If we currently are in the midst of a transaction.
      */
-    boolean inBundle = false;
+    boolean inTransaction = false;
 
     /**
      * Create an ArrayBackedPositionalMutableTable based on the desired definition.
@@ -117,12 +118,12 @@ public class ArrayBackedPositionalMutableTable extends QueryTable implements Run
     }
 
     /**
-     * Apply the complete bundles to this table.
+     * Apply the complete transactions to this table.
      * <p>
      * The {@code run()} method is called for each source (UpdatableTable) at the beginning of the UpdateGraph cycle.
-     * Our table pulls updates off the updateQueue and processes them one complete bundle at a time. Each source table
-     * is only permitted to send one notification per cycle, therefore we coalesce the updates from multiple bundles
-     * into a single notification.
+     * Our table pulls updates off the updateQueue and processes them one complete transaction at a time. Each source
+     * table is only permitted to send one notification per cycle, therefore we coalesce the updates from multiple
+     * transactions into a single notification.
      */
     @Override
     public void run() {
@@ -130,28 +131,29 @@ public class ArrayBackedPositionalMutableTable extends QueryTable implements Run
 
         Update update;
         while ((update = updateQueue.poll()) != null) {
-            if (update instanceof StartBundle) {
-                if (inBundle) {
-                    throw new IllegalStateException("Attempt to start a bundle while a bundle is already in progress");
+            if (update instanceof StartTransaction) {
+                if (inTransaction) {
+                    throw new IllegalStateException(
+                            "Attempt to start a transaction while a transaction is already in progress");
                 }
-                inBundle = true;
+                inTransaction = true;
                 continue;
             }
 
-            if (!inBundle) {
-                throw new IllegalStateException("Can not process " + update + " outside of bundle.");
+            if (!inTransaction) {
+                throw new IllegalStateException("Can not process " + update + " outside of transaction.");
             }
 
-            if (update instanceof EndBundle) {
-                final EndBundle endBundle = (EndBundle) update;
+            if (update instanceof EndTransaction) {
+                final EndTransaction endTransaction = (EndTransaction) update;
                 try {
                     processUpdates(bundledUpdates, coalescer);
-                    endBundle.complete(null);
+                    endTransaction.complete(null);
                 } catch (Exception e) {
-                    endBundle.completeExceptionally(e);
+                    endTransaction.completeExceptionally(e);
                     throw e;
                 } finally {
-                    inBundle = false;
+                    inTransaction = false;
                 }
             } else {
                 bundledUpdates.add(update);
@@ -403,7 +405,7 @@ public class ArrayBackedPositionalMutableTable extends QueryTable implements Run
     }
 
     @Override
-    public void addRow(final long rowPosition, final long count) {
+    public void addRows(final long rowPosition, final long count) {
         if (count <= 0) {
             throw new IllegalArgumentException();
         }
@@ -411,7 +413,7 @@ public class ArrayBackedPositionalMutableTable extends QueryTable implements Run
     }
 
     @Override
-    public void deleteRow(final long rowPosition, final long count) {
+    public void deleteRows(final long rowPosition, final long count) {
         updateQueue.add(new DeleteUpdate(rowPosition, count));
     }
 
@@ -432,20 +434,20 @@ public class ArrayBackedPositionalMutableTable extends QueryTable implements Run
     }
 
     @Override
-    public void startBundle() {
-        updateQueue.add(new StartBundle());
+    public void startTransaction() {
+        updateQueue.add(new StartTransaction());
     }
 
     @Override
-    public Future<Void> endBundle() {
-        final EndBundle e = new EndBundle();
+    public Future<Void> endTransaction() {
+        final EndTransaction e = new EndTransaction();
         updateQueue.add(e);
         return e;
     }
 
     @SuppressWarnings("unused")
-    public boolean isInBundle() {
-        return inBundle;
+    public boolean isInTransaction() {
+        return inTransaction;
     }
 
     private static <T> void doShift(final WritableColumnSource<T> writableSource, final long start, final long end,
@@ -495,17 +497,17 @@ public class ArrayBackedPositionalMutableTable extends QueryTable implements Run
     private interface Update {
     }
 
-    private static class StartBundle implements Update {
+    private static class StartTransaction implements Update {
         @Override
         public String toString() {
-            return "StartBundle{}";
+            return "StartTransaction{}";
         }
     }
 
-    private static class EndBundle extends CompletableFuture<Void> implements Update {
+    private static class EndTransaction extends CompletableFuture<Void> implements Update {
         @Override
         public String toString() {
-            return "EndBundle{}";
+            return "EndTransaction{}";
         }
     }
 
@@ -572,6 +574,7 @@ public class ArrayBackedPositionalMutableTable extends QueryTable implements Run
         private final Table table;
 
         public Set2D(final long rowPosition, final @NotNull Table table) {
+            Assert.eqFalse(table.isRefreshing(), "table.isRefreshing()");
             this.rowPosition = rowPosition;
             this.table = table;
         }

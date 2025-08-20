@@ -5,7 +5,6 @@ package io.deephaven.engine.pmt;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.context.ExecutionContext;
-import io.deephaven.engine.context.QueryCompiler;
 import io.deephaven.engine.context.QueryCompilerImpl;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
@@ -102,7 +101,6 @@ public class TestArrayBackedPositionalTable {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-        // noinspection resource
         contextCloseable = executionContext.open();
     }
 
@@ -137,15 +135,15 @@ public class TestArrayBackedPositionalTable {
             printListener = new PrintListener("table", table);
         }
 
-        table.startBundle();
-        table.addRow(0, 2);
+        table.startTransaction();
+        table.addRows(0, 2);
         table.setCell(0, 0, 6);
         table.setCell(0, 1, "Gilbert");
         table.setCell(0, 2, Math.E);
         table.setCell(1, 0, 8);
         table.setCell(1, 1, "Sullivan");
         table.setCell(1, 2, Math.PI);
-        table.endBundle();
+        table.endTransaction();
 
         updateGraph.runWithinUnitTestCycle(table::run);
         TableTools.show(table);
@@ -156,11 +154,11 @@ public class TestArrayBackedPositionalTable {
 
         TestCase.assertEquals("", TableTools.diff(table, expected, 10));
 
-        table.startBundle();
-        table.addRow(1, 1);
+        table.startTransaction();
+        table.addRows(1, 1);
         table.setCell(1, 0, 7);
         table.setCell(1, 1, "Miranda");
-        table.endBundle();
+        table.endTransaction();
 
         updateGraph.runWithinUnitTestCycle(table::run);
 
@@ -173,9 +171,9 @@ public class TestArrayBackedPositionalTable {
         TestCase.assertEquals("",
                 TableTools.diff(table, TableTools.merge(expected.head(1), newRow, expected.tail(1)), 10));
 
-        table.startBundle();
-        table.deleteRow(0, 2);
-        table.endBundle();
+        table.startTransaction();
+        table.deleteRows(0, 2);
+        table.endTransaction();
 
         updateGraph.runWithinUnitTestCycle(table::run);
 
@@ -195,10 +193,10 @@ public class TestArrayBackedPositionalTable {
 
         updateGraph.runWithinUnitTestCycle(table::run);
 
-        table.startBundle();
-        table.deleteRow(0, 1);
-        table.deleteRow(2, 1);
-        table.endBundle();
+        table.startTransaction();
+        table.deleteRows(0, 1);
+        table.deleteRows(2, 1);
+        table.endTransaction();
 
         updateGraph.runWithinUnitTestCycle(table::run);
 
@@ -232,9 +230,9 @@ public class TestArrayBackedPositionalTable {
 
         updateGraph.runWithinUnitTestCycle(table::run);
 
-        table.startBundle();
-        table.deleteRow(start, end);
-        table.endBundle();
+        table.startTransaction();
+        table.deleteRows(start, end);
+        table.endTransaction();
 
         updateGraph.runWithinUnitTestCycle(table::run);
 
@@ -269,15 +267,15 @@ public class TestArrayBackedPositionalTable {
         // I can consistently replicate the error by deleting rows 2 and then 4, or 5 and then 2 (in both cases the same
         // two rows as row 5 becomes row 4 after deleting row 2).
 
-        table.startBundle();
+        table.startTransaction();
         if (case1) {
-            table.deleteRow(2, 1);
-            table.deleteRow(4, 1);
+            table.deleteRows(2, 1);
+            table.deleteRows(4, 1);
         } else {
-            table.deleteRow(5, 1);
-            table.deleteRow(2, 1);
+            table.deleteRows(5, 1);
+            table.deleteRows(2, 1);
         }
-        table.endBundle();
+        table.endTransaction();
 
         updateGraph.runWithinUnitTestCycle(table::run);
 
@@ -302,8 +300,8 @@ public class TestArrayBackedPositionalTable {
     }
 
     private void initTable(ArrayBackedPositionalMutableTable table, int tableSize) {
-        table.startBundle();
-        table.addRow(0, tableSize);
+        table.startTransaction();
+        table.addRows(0, tableSize);
 
         final Instant baseTime = Instant.parse(BASE_TIME_STRING);
 
@@ -312,7 +310,7 @@ public class TestArrayBackedPositionalTable {
             table.setCell(ii, 1, Integer.toString(10 * ii));
             table.setCell(ii, 2, baseTime.plusMillis(10L * ii));
         }
-        table.endBundle();
+        table.endTransaction();
 
         updateGraph.runWithinUnitTestCycle(table::run);
     }
@@ -335,11 +333,11 @@ public class TestArrayBackedPositionalTable {
 
         TstUtils.assertTableEquals(getExpectedBase(6), table);
 
-        table.startBundle();
-        table.addRow(3, 2);
+        table.startTransaction();
+        table.addRows(3, 2);
 
         if (!allInOne) {
-            table.endBundle();
+            table.endTransaction();
             updateGraph.runWithinUnitTestCycle(table::run);
             TstUtils.assertTableEquals(
                     TableTools.newTable(intCol("Value", 0, 10, 20, NULL_INT, NULL_INT, 30, 40, 50)).update(
@@ -347,7 +345,7 @@ public class TestArrayBackedPositionalTable {
                             "Time=isNull(Value) ? null : Instant.parse(`" + BASE_TIME_STRING + "`).plusMillis(Value)"),
                     table);
 
-            table.startBundle();
+            table.startTransaction();
         }
 
         table.setCell(3, 0, 100);
@@ -356,7 +354,7 @@ public class TestArrayBackedPositionalTable {
         table.setCell(4, 1, "200");
         table.setCell(3, 2, Instant.parse("2025-01-01T12:00:00.100Z"));
         table.setCell(4, 2, Instant.parse("2025-01-01T12:00:00.200Z"));
-        table.endBundle();
+        table.endTransaction();
 
         updateGraph.runWithinUnitTestCycle(table::run);
 
@@ -390,27 +388,27 @@ public class TestArrayBackedPositionalTable {
 
         TstUtils.assertTableEquals(getExpectedBase(6), table);
 
-        table.startBundle();
-        table.addRow(6, 1);
+        table.startTransaction();
+        table.addRows(6, 1);
         table.setCell(6, 0, 60);
         table.setCell(6, 1, "60");
         table.setCell(6, 2, Instant.parse("2025-01-01T12:00:00.060Z"));
 
         if (!allInOne) {
-            table.endBundle();
+            table.endTransaction();
             updateGraph.runWithinUnitTestCycle(table::run);
             TstUtils.assertTableEquals(getExpectedBase(7), table);
 
-            table.startBundle();
+            table.startTransaction();
         }
 
-        table.addRow(7, 1);
+        table.addRows(7, 1);
 
         table.setCell(7, 0, 70);
         table.setCell(7, 1, "70");
         table.setCell(7, 2, Instant.parse("2025-01-01T12:00:00.070Z"));
 
-        table.endBundle();
+        table.endTransaction();
 
         updateGraph.runWithinUnitTestCycle(table::run);
 
@@ -466,22 +464,22 @@ public class TestArrayBackedPositionalTable {
                 aggregated);
 
 
-        positions.startBundle();
-        positions.addRow(0, 1);
+        positions.startTransaction();
+        positions.addRows(0, 1);
         positions.setCell(0, 0, "Avengers");
         positions.setCell(0, 1, "SPY");
         positions.setCell(0, 2, 1000);
-        Future<Void> endBundleFuture = positions.endBundle();
+        Future<Void> endTransactionFuture = positions.endTransaction();
 
         updateGraph.runWithinUnitTestCycle(() -> {
             prices.run();
             positions.run();
         });
-        endBundleFuture.get(0, TimeUnit.MILLISECONDS);
+        endTransactionFuture.get(0, TimeUnit.MILLISECONDS);
 
         // there are a few reasons that this lock matters here
         // first, we are reading data and don't want it to be inconsistent
-        // second, we know that our bundles were processed, but those are root nodes
+        // second, we know that our transactions were processed, but those are root nodes
         updateGraph.sharedLock().doLocked(() -> {
             TableTools.show(decorated);
             TableTools.show(aggregated);
@@ -509,19 +507,19 @@ public class TestArrayBackedPositionalTable {
                 aggregated);
 
 
-        prices.startBundle();
-        prices.addRow(0, 1);
+        prices.startTransaction();
+        prices.addRows(0, 1);
         prices.setCell(0, 0, "SPY");
         prices.setCell(0, 1, 411.40);
         prices.setCell(0, 2, 411.42);
         prices.setCell(0, 3, baseTime);
-        endBundleFuture = prices.endBundle();
+        endTransactionFuture = prices.endTransaction();
 
         updateGraph.runWithinUnitTestCycle(() -> {
             prices.run();
             positions.run();
         });
-        endBundleFuture.get(0, TimeUnit.MILLISECONDS);
+        endTransactionFuture.get(0, TimeUnit.MILLISECONDS);
 
         updateGraph.sharedLock().doLocked(() -> {
             TableTools.show(decorated);
@@ -550,16 +548,16 @@ public class TestArrayBackedPositionalTable {
                         TableTools.doubleCol("Mid", spyMid)),
                 aggregated);
 
-        positions.startBundle();
-        positions.addRow(0, 4);
+        positions.startTransaction();
+        positions.addRows(0, 4);
         positions.set2D(0, TableTools.newTable(
                 stringCol("Group", "Avengers", "Justice League", "Avengers", "Valhalla"),
                 stringCol("Symbol", "SPY", "AAPL", "AAPL", "AAPL"),
                 intCol("Quantity", -1500, 100, 200, 1500)));
-        endBundleFuture = positions.endBundle();
+        endTransactionFuture = positions.endTransaction();
 
         updateGraph.runWithinUnitTestCycle(positions::run);
-        endBundleFuture.get(0, TimeUnit.MILLISECONDS);
+        endTransactionFuture.get(0, TimeUnit.MILLISECONDS);
 
         TstUtils.assertTableEquals(
                 TableTools.newTable(
@@ -584,17 +582,17 @@ public class TestArrayBackedPositionalTable {
                         TableTools.doubleCol("Mid", spyMid, NULL_DOUBLE, NULL_DOUBLE, NULL_DOUBLE)),
                 aggregated);
 
-        prices.startBundle();
-        prices.addRow(1, 1);
+        prices.startTransaction();
+        prices.addRows(1, 1);
         prices.set2D(1, TableTools.newTable(
                 stringCol("Symbol", "AAPL"),
                 doubleCol("Bid", 122.60),
                 doubleCol("Ask", 122.65),
                 instantCol("Time", baseTime.plusSeconds(1))));
-        endBundleFuture = prices.endBundle();
+        endTransactionFuture = prices.endTransaction();
 
         updateGraph.runWithinUnitTestCycle(prices::run);
-        endBundleFuture.get(0, TimeUnit.MILLISECONDS);
+        endTransactionFuture.get(0, TimeUnit.MILLISECONDS);
 
         updateGraph.sharedLock().doLocked(() -> {
             TableTools.show(decorated);
@@ -638,7 +636,7 @@ public class TestArrayBackedPositionalTable {
     }
 
     @Test
-    public void testIllegalStartBundle() throws InterruptedException, ExecutionException {
+    public void testIllegalStartTransaction() throws InterruptedException, ExecutionException {
 
         updateGraph.sharedLock().lock();
         final ArrayBackedPositionalMutableTable table;
@@ -659,15 +657,15 @@ public class TestArrayBackedPositionalTable {
             printListener = new PrintListener("table", table);
         }
 
-        table.startBundle();
-        table.startBundle();
+        table.startTransaction();
+        table.startTransaction();
 
         try {
             updateGraph.runWithinUnitTestCycle(table::run);
             Assert.statementNeverExecuted("Should have thrown an exception");
         } catch (IllegalStateException ise) {
             Assert.equals(ise.getMessage(), "ise.getMessage()",
-                    "Attempt to start a bundle while a bundle is already in progress");
+                    "Attempt to start a transaction while a transaction is already in progress");
         }
     }
 }
