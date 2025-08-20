@@ -51,6 +51,8 @@ abstract class VectorChunkFilter implements ChunkFilter, SafeCloseable {
 
     @Override
     public int filter(final Chunk<? extends Values> values, final WritableBooleanChunk<Values> results) {
+        results.setSize(values.size());
+        results.fillWithValue(0, results.size(), false);
         return filterToBooleanChunk(values, results, (x) -> true);
     }
 
@@ -61,8 +63,6 @@ abstract class VectorChunkFilter implements ChunkFilter, SafeCloseable {
 
     private int filterToBooleanChunk(Chunk<? extends Values> values, WritableBooleanChunk<Values> results,
             final IntPredicate predicate) {
-        results.setSize(values.size());
-        results.fillWithValue(0, results.size(), false);
         final MutableInt trueCount = new MutableInt(0);
         final IntConsumer setMatch = mp -> {
             results.set(mp, true);

@@ -14,6 +14,7 @@ import io.deephaven.engine.table.impl.select.ExposesChunkFilter;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.select.WhereFilterImpl;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.VisibleForTesting;
 
 import java.util.List;
 import java.util.Optional;
@@ -167,5 +168,15 @@ public class VectorComponentFilterWrapper extends WhereFilterImpl {
         final ColumnDefinition<?> replacementColumn = column.withDataType(componentType);
         return TableDefinition.of(tableDefinition.getColumns().stream()
                 .map(cd -> cd.getName().equals(colName) ? replacementColumn : cd).toArray(ColumnDefinition[]::new));
+    }
+
+    /**
+     * @return the VectorChunkFilter that we are using internally. This is not exposed, because we require it to be a
+     *         SafeCloseable for the temporary values; and do not want to change our ExposesChunkFilter interface to
+     *         impose any new requirements on it.
+     */
+    @VisibleForTesting
+    VectorChunkFilter chunkFilter() {
+        return vectorChunkFilterFactory.get();
     }
 }

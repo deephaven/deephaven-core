@@ -3265,4 +3265,31 @@ public abstract class QueryTableWhereTest {
         assertTableEquals(a2.where("Y in 1"), fa2);
 
     }
+
+    /**
+     * Use fairly large chunks so that we can validate cases that span more than one input chunk are handled as
+     * expected.
+     */
+    @Test
+    public void testVectorWrapperChunking() {
+        for (final int testRow : List.of(0, 300, 3000, 2047 * 3, 2048 * 3, 3332 * 3)) {
+            testVectorWrapperChunking(3, 10000, Integer.toString(testRow), 0);
+            testVectorWrapperChunking(3, 10000, Integer.toString(testRow + 1), 1);
+            testVectorWrapperChunking(3, 10000, Integer.toString(testRow + 2), 2);
+        }
+    }
+
+    private void testVectorWrapperChunking(int nGroups, int tableSize, String quickFilter, long expectedMatches) {
+        final Table v1 = emptyTable(tableSize).update("X=ii", "Y=ii % " + nGroups).groupBy("Y");
+        final WhereFilter[] vectorFilters =
+                WhereFilterFactory.expandQuickFilter(v1.getDefinition(), quickFilter, Set.of());
+        final Table f1 = v1.where(Filter.or(vectorFilters));
+        assertTableEquals(v1.where("Y in " + expectedMatches), f1);
+
+        final Table a1 = v1.update("X=X.toArray()");
+        final WhereFilter[] arrayFilters =
+                WhereFilterFactory.expandQuickFilter(a1.getDefinition(), quickFilter, Set.of());
+        final Table fa1 = a1.where(Filter.or(arrayFilters));
+        assertTableEquals(fa1.where("Y in " + expectedMatches), fa1);
+    }
 }
