@@ -7,12 +7,9 @@ import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
-import io.deephaven.engine.util.TableTools;
 import io.deephaven.iceberg.sqlite.DbResource;
 import io.deephaven.iceberg.util.IcebergCatalogAdapter;
 import io.deephaven.iceberg.util.IcebergTableAdapter;
-import io.deephaven.iceberg.util.IcebergTableWriter;
-import io.deephaven.iceberg.util.IcebergWriteInstructions;
 import io.deephaven.iceberg.util.TableParquetWriterOptions;
 import org.apache.iceberg.catalog.Namespace;
 import org.apache.iceberg.catalog.TableIdentifier;
@@ -20,6 +17,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
 
 import java.nio.file.Path;
@@ -28,7 +26,6 @@ import java.time.LocalDateTime;
 import static io.deephaven.engine.testutil.TstUtils.assertTableEquals;
 import static io.deephaven.iceberg.PyIcebergTestUtils.EXPECTED_DATA;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown;
 
 /**
  * This test verifies how DH interacts with Iceberg tables where we rename identity partition fields. See TESTING.md and
@@ -54,12 +51,15 @@ class PyIceberg5bTest {
 
     private final EngineCleanup engineCleanup = new EngineCleanup();
 
+    @RegisterExtension
+    public static final DbResource dbResource = new DbResource();
+
     private IcebergCatalogAdapter catalogAdapter;
 
     @BeforeEach
     void setUp(@TempDir Path rootDir) throws Exception {
         engineCleanup.setUp();
-        catalogAdapter = DbResource.openCatalog("pyiceberg-5", rootDir);
+        catalogAdapter = dbResource.openReadWriteCatalog("pyiceberg-5", rootDir);
     }
 
     @Test

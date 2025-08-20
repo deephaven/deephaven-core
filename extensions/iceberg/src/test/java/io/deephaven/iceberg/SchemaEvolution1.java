@@ -27,6 +27,7 @@ import org.apache.iceberg.types.Types.NestedField;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.net.URISyntaxException;
 import java.util.Arrays;
@@ -65,12 +66,15 @@ public class SchemaEvolution1 {
             ColumnDefinition.ofInt("Field2_D"),
             ColumnDefinition.ofInt("Field3_D"));
 
+    @RegisterExtension
+    public static final DbResource dbResource = new DbResource();
+
     private int fieldId1;
     private int fieldId2;
     private int fieldId3;
 
     private static IcebergTableAdapter loadTable(LoadTableOptions options) throws URISyntaxException {
-        return DbResource.openCatalog(CATALOG_NAME).loadTable(options);
+        return dbResource.openCatalog(CATALOG_NAME).loadTable(options);
     }
 
     private static IcebergTableAdapter loadWithSchema(SchemaProvider schema) throws URISyntaxException {
@@ -84,7 +88,7 @@ public class SchemaEvolution1 {
     @BeforeEach
     void setUp() throws URISyntaxException {
         {
-            final IcebergTableAdapter tableAdapter = DbResource.openCatalog(CATALOG_NAME).loadTable(TABLE_ID);
+            final IcebergTableAdapter tableAdapter = dbResource.openCatalog(CATALOG_NAME).loadTable(TABLE_ID);
             final Schema initialSchema = tableAdapter.currentSchema();
             fieldId1 = initialSchema.findField(IDEF_4.getColumnNames().get(0)).fieldId();
             fieldId2 = initialSchema.findField(IDEF_4.getColumnNames().get(1)).fieldId();
@@ -94,7 +98,7 @@ public class SchemaEvolution1 {
 
     @Test
     void schemas() throws URISyntaxException {
-        final IcebergTableAdapter tableAdapter = DbResource.openCatalog(CATALOG_NAME).loadTable(TABLE_ID);
+        final IcebergTableAdapter tableAdapter = dbResource.openCatalog(CATALOG_NAME).loadTable(TABLE_ID);
         // This is a meta test, making sure test setup is correct
         {
             final Map<Integer, Schema> schemas = tableAdapter.schemas();
@@ -110,7 +114,7 @@ public class SchemaEvolution1 {
 
     @Test
     void snapshots() throws URISyntaxException {
-        final IcebergTableAdapter tableAdapter = DbResource.openCatalog(CATALOG_NAME).loadTable(TABLE_ID);
+        final IcebergTableAdapter tableAdapter = dbResource.openCatalog(CATALOG_NAME).loadTable(TABLE_ID);
         // This is a meta test, making sure test setup is correct
         assertThat(tableAdapter.listSnapshots()).hasSize(6);
     }

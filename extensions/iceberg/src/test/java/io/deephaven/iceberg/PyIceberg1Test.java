@@ -21,6 +21,7 @@ import org.apache.iceberg.catalog.TableIdentifier;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.util.List;
 
@@ -51,9 +52,12 @@ class PyIceberg1Test {
 
     private IcebergCatalogAdapter catalogAdapter;
 
+    @RegisterExtension
+    public static final DbResource dbResource = new DbResource();
+
     @BeforeEach
     void setUp() {
-        catalogAdapter = DbResource.openCatalog("pyiceberg-1");
+        catalogAdapter = dbResource.openCatalog("pyiceberg-1");
     }
 
     @Test
