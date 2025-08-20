@@ -346,7 +346,7 @@ public class ReplicationUtils {
 
     @NotNull
     public static List<String> fixupChunkAttributes(List<String> lines, final String genericType) {
-        lines = lines.stream().map(x -> x.replaceAll("ObjectChunk<([^>]*)>", "ObjectChunk<" + genericType + ", $1>"))
+        lines = lines.stream().map(x -> x.replaceAll("ObjectChunk<([^,>]*)>", "ObjectChunk<" + genericType + ", $1>"))
                 .collect(Collectors.toList());
         return lines;
     }
