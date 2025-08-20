@@ -30,12 +30,12 @@ public class FloatVectorCompareTest {
         final FloatVectorDirect cvd2 = new FloatVectorDirect(large);
         final FloatVector cvw0 = makeTestVector(small);
         final FloatVector cvw1 = makeTestVector(medium);
-        final FloatVector cvw3 = makeTestVector(large);
+        final FloatVector cvw2 = makeTestVector(large);
 
         checkPairs(cvd0, cvd1, cvd2, cvd0, cvd1, cvd2);
-        checkPairs(cvd0, cvd1, cvd2, cvw0, cvw1, cvw3);
-        checkPairs(cvw0, cvw1, cvw3, cvw0, cvw1, cvw3);
-        checkPairs(cvw0, cvw1, cvw3, cvd0, cvd1, cvd2);
+        checkPairs(cvd0, cvd1, cvd2, cvw0, cvw1, cvw2);
+        checkPairs(cvw0, cvw1, cvw2, cvw0, cvw1, cvw2);
+        checkPairs(cvw0, cvw1, cvw2, cvd0, cvd1, cvd2);
     }
 
     @Test
@@ -45,15 +45,15 @@ public class FloatVectorCompareTest {
         final float[] large = new float[] {(float) 10, Float.POSITIVE_INFINITY};
         final FloatVectorDirect cvd0 = new FloatVectorDirect(small);
         final FloatVectorDirect cvd1 = new FloatVectorDirect(medium);
-        final FloatVectorDirect cvd3 = new FloatVectorDirect(large);
+        final FloatVectorDirect cvd2 = new FloatVectorDirect(large);
         final FloatVector cvw0 = makeTestVector(small);
         final FloatVector cvw1 = makeTestVector(medium);
-        final FloatVector cvw3 = makeTestVector(large);
+        final FloatVector cvw2 = makeTestVector(large);
 
-        checkPairs(cvd0, cvd1, cvd3, cvd0, cvd1, cvd3);
-        checkPairs(cvd0, cvd1, cvd3, cvw0, cvw1, cvw3);
-        checkPairs(cvw0, cvw1, cvw3, cvw0, cvw1, cvw3);
-        checkPairs(cvw0, cvw1, cvw3, cvd0, cvd1, cvd3);
+        checkPairs(cvd0, cvd1, cvd2, cvd0, cvd1, cvd2);
+        checkPairs(cvd0, cvd1, cvd2, cvw0, cvw1, cvw2);
+        checkPairs(cvw0, cvw1, cvw2, cvw0, cvw1, cvw2);
+        checkPairs(cvw0, cvw1, cvw2, cvd0, cvd1, cvd2);
     }
 
     @Test
@@ -63,15 +63,15 @@ public class FloatVectorCompareTest {
         final float[] large = new float[] {(float) 10, Float.NaN};
         final FloatVectorDirect cvd0 = new FloatVectorDirect(small);
         final FloatVectorDirect cvd1 = new FloatVectorDirect(medium);
-        final FloatVectorDirect cvd3 = new FloatVectorDirect(large);
+        final FloatVectorDirect cvd2 = new FloatVectorDirect(large);
         final FloatVector cvw0 = makeTestVector(small);
         final FloatVector cvw1 = makeTestVector(medium);
-        final FloatVector cvw3 = makeTestVector(large);
+        final FloatVector cvw2 = makeTestVector(large);
 
-        checkPairs(cvd0, cvd1, cvd3, cvd0, cvd1, cvd3);
-        checkPairs(cvd0, cvd1, cvd3, cvw0, cvw1, cvw3);
-        checkPairs(cvw0, cvw1, cvw3, cvw0, cvw1, cvw3);
-        checkPairs(cvw0, cvw1, cvw3, cvd0, cvd1, cvd3);
+        checkPairs(cvd0, cvd1, cvd2, cvd0, cvd1, cvd2);
+        checkPairs(cvd0, cvd1, cvd2, cvw0, cvw1, cvw2);
+        checkPairs(cvw0, cvw1, cvw2, cvw0, cvw1, cvw2);
+        checkPairs(cvw0, cvw1, cvw2, cvd0, cvd1, cvd2);
     }
 
     @Test
@@ -81,15 +81,15 @@ public class FloatVectorCompareTest {
         final float[] large = new float[] {(float) 10, Float.POSITIVE_INFINITY};
         final FloatVectorDirect cvd0 = new FloatVectorDirect(small);
         final FloatVectorDirect cvd1 = new FloatVectorDirect(medium);
-        final FloatVectorDirect cvd3 = new FloatVectorDirect(large);
+        final FloatVectorDirect cvd2 = new FloatVectorDirect(large);
         final FloatVector cvw0 = makeTestVector(small);
         final FloatVector cvw1 = makeTestVector(medium);
-        final FloatVector cvw3 = makeTestVector(large);
+        final FloatVector cvw2 = makeTestVector(large);
 
-        checkPairs(cvd0, cvd1, cvd3, cvd0, cvd1, cvd3);
-        checkPairs(cvd0, cvd1, cvd3, cvw0, cvw1, cvw3);
-        checkPairs(cvw0, cvw1, cvw3, cvw0, cvw1, cvw3);
-        checkPairs(cvw0, cvw1, cvw3, cvd0, cvd1, cvd3);
+        checkPairs(cvd0, cvd1, cvd2, cvd0, cvd1, cvd2);
+        checkPairs(cvd0, cvd1, cvd2, cvw0, cvw1, cvw2);
+        checkPairs(cvw0, cvw1, cvw2, cvw0, cvw1, cvw2);
+        checkPairs(cvw0, cvw1, cvw2, cvd0, cvd1, cvd2);
     }
 
     @Test
@@ -99,19 +99,19 @@ public class FloatVectorCompareTest {
         final float[] v3 = new float[] {(float) 10, 1};
         final FloatVectorDirect cvd0 = new FloatVectorDirect(v1);
         final FloatVectorDirect cvd1 = new FloatVectorDirect(v2);
-        final FloatVectorDirect cvd3 = new FloatVectorDirect(v3);
+        final FloatVectorDirect cvd2 = new FloatVectorDirect(v3);
         final FloatVector cvw0 = makeTestVector(v1);
         final FloatVector cvw1 = makeTestVector(v2);
-        final FloatVector cvw3 = makeTestVector(v3);
+        final FloatVector cvw2 = makeTestVector(v3);
 
-        checkPairs2(cvd0, cvd1, cvd3, cvd0, cvd1, cvd3);
-        checkPairs2(cvd0, cvd1, cvd3, cvw0, cvw1, cvw3);
-        checkPairs2(cvw0, cvw1, cvw3, cvw0, cvw1, cvw3);
-        checkPairs2(cvw0, cvw1, cvw3, cvd0, cvd1, cvd3);
+        checkPairs2(cvd0, cvd1, cvd2, cvd0, cvd1, cvd2);
+        checkPairs2(cvd0, cvd1, cvd2, cvw0, cvw1, cvw2);
+        checkPairs2(cvw0, cvw1, cvw2, cvw0, cvw1, cvw2);
+        checkPairs2(cvw0, cvw1, cvw2, cvd0, cvd1, cvd2);
     }
 
     /**
-     * 0 < 1 < 3
+     * 0 < 1 < 2
      */
     private static void checkPairs(final FloatVector a0, final FloatVector a1, final FloatVector a2,
             final FloatVector b0, final FloatVector b1, final FloatVector b2) {

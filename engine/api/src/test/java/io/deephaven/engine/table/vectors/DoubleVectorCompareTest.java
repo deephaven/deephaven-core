@@ -34,12 +34,12 @@ public class DoubleVectorCompareTest {
         final DoubleVectorDirect cvd2 = new DoubleVectorDirect(large);
         final DoubleVector cvw0 = makeTestVector(small);
         final DoubleVector cvw1 = makeTestVector(medium);
-        final DoubleVector cvw3 = makeTestVector(large);
+        final DoubleVector cvw2 = makeTestVector(large);
 
         checkPairs(cvd0, cvd1, cvd2, cvd0, cvd1, cvd2);
-        checkPairs(cvd0, cvd1, cvd2, cvw0, cvw1, cvw3);
-        checkPairs(cvw0, cvw1, cvw3, cvw0, cvw1, cvw3);
-        checkPairs(cvw0, cvw1, cvw3, cvd0, cvd1, cvd2);
+        checkPairs(cvd0, cvd1, cvd2, cvw0, cvw1, cvw2);
+        checkPairs(cvw0, cvw1, cvw2, cvw0, cvw1, cvw2);
+        checkPairs(cvw0, cvw1, cvw2, cvd0, cvd1, cvd2);
     }
 
     @Test
@@ -49,15 +49,15 @@ public class DoubleVectorCompareTest {
         final double[] large = new double[] {(double) 10, Double.POSITIVE_INFINITY};
         final DoubleVectorDirect cvd0 = new DoubleVectorDirect(small);
         final DoubleVectorDirect cvd1 = new DoubleVectorDirect(medium);
-        final DoubleVectorDirect cvd3 = new DoubleVectorDirect(large);
+        final DoubleVectorDirect cvd2 = new DoubleVectorDirect(large);
         final DoubleVector cvw0 = makeTestVector(small);
         final DoubleVector cvw1 = makeTestVector(medium);
-        final DoubleVector cvw3 = makeTestVector(large);
+        final DoubleVector cvw2 = makeTestVector(large);
 
-        checkPairs(cvd0, cvd1, cvd3, cvd0, cvd1, cvd3);
-        checkPairs(cvd0, cvd1, cvd3, cvw0, cvw1, cvw3);
-        checkPairs(cvw0, cvw1, cvw3, cvw0, cvw1, cvw3);
-        checkPairs(cvw0, cvw1, cvw3, cvd0, cvd1, cvd3);
+        checkPairs(cvd0, cvd1, cvd2, cvd0, cvd1, cvd2);
+        checkPairs(cvd0, cvd1, cvd2, cvw0, cvw1, cvw2);
+        checkPairs(cvw0, cvw1, cvw2, cvw0, cvw1, cvw2);
+        checkPairs(cvw0, cvw1, cvw2, cvd0, cvd1, cvd2);
     }
 
     @Test
@@ -67,15 +67,15 @@ public class DoubleVectorCompareTest {
         final double[] large = new double[] {(double) 10, Double.NaN};
         final DoubleVectorDirect cvd0 = new DoubleVectorDirect(small);
         final DoubleVectorDirect cvd1 = new DoubleVectorDirect(medium);
-        final DoubleVectorDirect cvd3 = new DoubleVectorDirect(large);
+        final DoubleVectorDirect cvd2 = new DoubleVectorDirect(large);
         final DoubleVector cvw0 = makeTestVector(small);
         final DoubleVector cvw1 = makeTestVector(medium);
-        final DoubleVector cvw3 = makeTestVector(large);
+        final DoubleVector cvw2 = makeTestVector(large);
 
-        checkPairs(cvd0, cvd1, cvd3, cvd0, cvd1, cvd3);
-        checkPairs(cvd0, cvd1, cvd3, cvw0, cvw1, cvw3);
-        checkPairs(cvw0, cvw1, cvw3, cvw0, cvw1, cvw3);
-        checkPairs(cvw0, cvw1, cvw3, cvd0, cvd1, cvd3);
+        checkPairs(cvd0, cvd1, cvd2, cvd0, cvd1, cvd2);
+        checkPairs(cvd0, cvd1, cvd2, cvw0, cvw1, cvw2);
+        checkPairs(cvw0, cvw1, cvw2, cvw0, cvw1, cvw2);
+        checkPairs(cvw0, cvw1, cvw2, cvd0, cvd1, cvd2);
     }
 
     @Test
@@ -85,15 +85,15 @@ public class DoubleVectorCompareTest {
         final double[] large = new double[] {(double) 10, Double.POSITIVE_INFINITY};
         final DoubleVectorDirect cvd0 = new DoubleVectorDirect(small);
         final DoubleVectorDirect cvd1 = new DoubleVectorDirect(medium);
-        final DoubleVectorDirect cvd3 = new DoubleVectorDirect(large);
+        final DoubleVectorDirect cvd2 = new DoubleVectorDirect(large);
         final DoubleVector cvw0 = makeTestVector(small);
         final DoubleVector cvw1 = makeTestVector(medium);
-        final DoubleVector cvw3 = makeTestVector(large);
+        final DoubleVector cvw2 = makeTestVector(large);
 
-        checkPairs(cvd0, cvd1, cvd3, cvd0, cvd1, cvd3);
-        checkPairs(cvd0, cvd1, cvd3, cvw0, cvw1, cvw3);
-        checkPairs(cvw0, cvw1, cvw3, cvw0, cvw1, cvw3);
-        checkPairs(cvw0, cvw1, cvw3, cvd0, cvd1, cvd3);
+        checkPairs(cvd0, cvd1, cvd2, cvd0, cvd1, cvd2);
+        checkPairs(cvd0, cvd1, cvd2, cvw0, cvw1, cvw2);
+        checkPairs(cvw0, cvw1, cvw2, cvw0, cvw1, cvw2);
+        checkPairs(cvw0, cvw1, cvw2, cvd0, cvd1, cvd2);
     }
 
     @Test
@@ -103,19 +103,19 @@ public class DoubleVectorCompareTest {
         final double[] v3 = new double[] {(double) 10, 1};
         final DoubleVectorDirect cvd0 = new DoubleVectorDirect(v1);
         final DoubleVectorDirect cvd1 = new DoubleVectorDirect(v2);
-        final DoubleVectorDirect cvd3 = new DoubleVectorDirect(v3);
+        final DoubleVectorDirect cvd2 = new DoubleVectorDirect(v3);
         final DoubleVector cvw0 = makeTestVector(v1);
         final DoubleVector cvw1 = makeTestVector(v2);
-        final DoubleVector cvw3 = makeTestVector(v3);
+        final DoubleVector cvw2 = makeTestVector(v3);
 
-        checkPairs2(cvd0, cvd1, cvd3, cvd0, cvd1, cvd3);
-        checkPairs2(cvd0, cvd1, cvd3, cvw0, cvw1, cvw3);
-        checkPairs2(cvw0, cvw1, cvw3, cvw0, cvw1, cvw3);
-        checkPairs2(cvw0, cvw1, cvw3, cvd0, cvd1, cvd3);
+        checkPairs2(cvd0, cvd1, cvd2, cvd0, cvd1, cvd2);
+        checkPairs2(cvd0, cvd1, cvd2, cvw0, cvw1, cvw2);
+        checkPairs2(cvw0, cvw1, cvw2, cvw0, cvw1, cvw2);
+        checkPairs2(cvw0, cvw1, cvw2, cvd0, cvd1, cvd2);
     }
 
     /**
-     * 0 < 1 < 3
+     * 0 < 1 < 2
      */
     private static void checkPairs(final DoubleVector a0, final DoubleVector a1, final DoubleVector a2,
             final DoubleVector b0, final DoubleVector b1, final DoubleVector b2) {
