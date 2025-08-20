@@ -390,15 +390,8 @@ public class WhereFilterFactory {
         if (componentFilter == null) {
             return null;
         }
-        if (componentFilter instanceof ExposesChunkFilter) {
-            componentFilter.init(VectorComponentFilterWrapper.replaceDefinition(colName, tableDefinition));
-            final Optional<ChunkFilter> chunkFilter = ((ExposesChunkFilter) componentFilter).chunkFilter();
-            return chunkFilter
-                    .map(cf -> new VectorComponentFilterWrapper(colName, isArray, componentType,
-                            componentFilter.copy()))
-                    .orElse(null);
-        }
-        return null;
+        return VectorComponentFilterWrapper.maybeCreateFilterWrapper(componentFilter, tableDefinition, colName, isArray,
+                componentType);
     }
 
     private static WhereFilter getSelectFilterForAnd(String colName, String quickFilter, Class<?> colClass) {

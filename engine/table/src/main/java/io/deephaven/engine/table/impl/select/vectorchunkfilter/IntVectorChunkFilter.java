@@ -10,13 +10,15 @@ package io.deephaven.engine.table.impl.select.vectorchunkfilter;
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.primitive.value.iterator.ValueIteratorOfInt;
-import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
-import io.deephaven.util.mutable.MutableInt;
 import io.deephaven.vector.IntVector;
 
 import java.util.function.IntConsumer;
 import java.util.function.IntPredicate;
 
+/**
+ * A wrapper that extracts elements from a IntVector, returning true for the IntVector if any elements are matched by
+ * the wrapped chunk filter.
+ */
 class IntVectorChunkFilter extends VectorChunkFilter {
     final WritableIntChunk<? extends Values> temporaryValues;
 
@@ -28,9 +30,9 @@ class IntVectorChunkFilter extends VectorChunkFilter {
 
     @Override
     void doFilter(final Chunk<? extends Values> values,
-                          final IntPredicate applyFilter,
-                          final IntConsumer matchConsumer) {
-            final ObjectChunk<IntVector, ? extends Values> objectChunk = values.asObjectChunk();
+            final IntPredicate applyFilter,
+            final IntConsumer matchConsumer) {
+        final ObjectChunk<IntVector, ? extends Values> objectChunk = values.asObjectChunk();
 
         temporaryValues.setSize(chunkSize);
         srcPos.setSize(chunkSize);
@@ -47,7 +49,7 @@ class IntVectorChunkFilter extends VectorChunkFilter {
                     srcPos.set(fillPos, indexOfVector);
                     temporaryValues.set(fillPos++, element);
                     if (fillPos == chunkSize) {
-                        final long lastMatch = flushMatches(matchConsumer, fillPos, temporaryValues);
+                        final int lastMatch = flushMatches(matchConsumer, fillPos, temporaryValues);
                         fillPos = 0;
                         if (lastMatch == indexOfVector) {
                             break;

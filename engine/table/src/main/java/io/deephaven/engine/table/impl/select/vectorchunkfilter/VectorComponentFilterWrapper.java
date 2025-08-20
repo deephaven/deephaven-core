@@ -16,8 +16,13 @@ import io.deephaven.engine.table.impl.select.WhereFilterImpl;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Supplier;
 
+/**
+ * A WhereFilter that passes each element of an array or Vector through another wrapped filter. If any element is
+ * matched, then the array or vector is considered a match.
+ */
 public class VectorComponentFilterWrapper extends WhereFilterImpl {
     private final String columnName;
     private final boolean isArray;
@@ -26,7 +31,7 @@ public class VectorComponentFilterWrapper extends WhereFilterImpl {
     ChunkFilter chunkFilter;
     Supplier<VectorChunkFilter> vectorChunkFilterFactory;
 
-    public VectorComponentFilterWrapper(final String columnName,
+    private VectorComponentFilterWrapper(final String columnName,
             final boolean isArray,
             final Class<?> componentType,
             final WhereFilter componentFilter) {
@@ -125,7 +130,34 @@ public class VectorComponentFilterWrapper extends WhereFilterImpl {
         return new VectorComponentFilterWrapper(columnName, isArray, componentType, componentFilter.copy());
     }
 
-    public static TableDefinition replaceDefinition(final String colName, final TableDefinition tableDefinition) {
+    /**
+     * If the component filter exposes a chunk filter, then wrap it in a VectorComponentFilterWrapper
+     *
+     * @param componentFilter the component filter to wrap
+     * @param tableDefinition the definition of the table
+     * @param columnName the name of the column in the table
+     * @param isArray true if the column is an array, if false, then the column must be a vector
+     * @param componentType the component type of the column
+     * @return a VectorComponentFilterWrapper if one can be made from the component filter, otherwise null
+     */
+    public static VectorComponentFilterWrapper maybeCreateFilterWrapper(final WhereFilter componentFilter,
+            final TableDefinition tableDefinition,
+            final String columnName,
+            final boolean isArray,
+            final Class<?> componentType) {
+        if (!(componentFilter instanceof ExposesChunkFilter)) {
+            return null;
+        }
+
+        componentFilter.init(replaceDefinition(columnName, tableDefinition));
+        final Optional<ChunkFilter> chunkFilter = ((ExposesChunkFilter) componentFilter).chunkFilter();
+        return chunkFilter
+                .map(cf -> new VectorComponentFilterWrapper(columnName, isArray, componentType,
+                        componentFilter.copy()))
+                .orElse(null);
+    }
+
+    static TableDefinition replaceDefinition(final String colName, final TableDefinition tableDefinition) {
         final ColumnDefinition<?> column = tableDefinition.getColumn(colName);
         final Class<?> componentType = column.getComponentType();
         if (componentType == null) {

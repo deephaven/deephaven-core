@@ -13,6 +13,10 @@ import io.deephaven.vector.CharVector;
 import java.util.function.IntConsumer;
 import java.util.function.IntPredicate;
 
+/**
+ * A wrapper that extracts elements from a char [], returning true for the array if any elements are matched by the
+ * wrapped chunk filter.
+ */
 class CharArrayChunkFilter extends VectorChunkFilter {
     final WritableCharChunk<? extends Values> temporaryValues;
 
@@ -38,7 +42,7 @@ class CharArrayChunkFilter extends VectorChunkFilter {
                 srcPos.set(fillPos, indexOfVector);
                 temporaryValues.set(fillPos++, element);
                 if (fillPos == chunkSize) {
-                    final long lastMatch = flushMatches(matchConsumer, fillPos, temporaryValues);
+                    final int lastMatch = flushMatches(matchConsumer, fillPos, temporaryValues);
                     fillPos = 0;
                     if (lastMatch == indexOfVector) {
                         break;

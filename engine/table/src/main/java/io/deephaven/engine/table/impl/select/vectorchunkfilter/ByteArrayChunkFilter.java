@@ -17,6 +17,10 @@ import io.deephaven.vector.ByteVector;
 import java.util.function.IntConsumer;
 import java.util.function.IntPredicate;
 
+/**
+ * A wrapper that extracts elements from a byte [], returning true for the array if any elements are matched by the
+ * wrapped chunk filter.
+ */
 class ByteArrayChunkFilter extends VectorChunkFilter {
     final WritableByteChunk<? extends Values> temporaryValues;
 
@@ -27,22 +31,22 @@ class ByteArrayChunkFilter extends VectorChunkFilter {
 
     @Override
     void doFilter(final Chunk<? extends Values> values,
-                  final IntPredicate applyFilter,
-                  final IntConsumer matchConsumer) {
-        final ObjectChunk<byte [], ? extends Values> objectChunk = values.asObjectChunk();
+            final IntPredicate applyFilter,
+            final IntConsumer matchConsumer) {
+        final ObjectChunk<byte[], ? extends Values> objectChunk = values.asObjectChunk();
 
         temporaryValues.setSize(chunkSize);
         srcPos.setSize(chunkSize);
         int fillPos = 0;
 
         for (int indexOfVector = 0; indexOfVector < objectChunk.size(); ++indexOfVector) {
-            final byte [] array = objectChunk.get(indexOfVector);
+            final byte[] array = objectChunk.get(indexOfVector);
             for (int ii = 0; ii < array.length; ++ii) {
                 final byte element = array[ii];
                 srcPos.set(fillPos, indexOfVector);
                 temporaryValues.set(fillPos++, element);
                 if (fillPos == chunkSize) {
-                    final long lastMatch = flushMatches(matchConsumer, fillPos, temporaryValues);
+                    final int lastMatch = flushMatches(matchConsumer, fillPos, temporaryValues);
                     fillPos = 0;
                     if (lastMatch == indexOfVector) {
                         break;
