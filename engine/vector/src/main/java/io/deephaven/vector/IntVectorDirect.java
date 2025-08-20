@@ -101,7 +101,7 @@ public final class IntVectorDirect implements IntVector {
             //
             // Float and double can not use direct vector comparisons. Although NaN works because Float.compare and
             // Double.compare sort NaNs last, as we do for Deephaven values; and the Arrays.compare is defined to work
-            // as Float.compare; and Float.compare(0f,-0) does not produce 0 but rather ranks -0 as less than 0.
+            // as Float.compare. However, Float.compare(0f,-0) does not produce 0 but rather ranks -0 as less than 0.
             return Arrays.compare(data, ((IntVectorDirect) o).data);
         }
         return IntVector.super.compareTo(o);
