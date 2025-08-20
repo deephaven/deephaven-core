@@ -93,10 +93,10 @@ public class TestVectorComponentFilterWrapper {
                         WritableObjectChunk.makeWritableChunk(32);
                 final WritableBooleanChunk<Values> matches = WritableBooleanChunk.makeWritableChunk(32)) {
             values.setSize(0);
-            values.add(new String[]{"Alice", "Bob"});
-            values.add(new String[]{"Carol", "David"});
-            values.add(new String[]{"Edward", "Frederick"});
-            values.add(new String[]{"Gaston"});
+            values.add(new String[] {"Alice", "Bob"});
+            values.add(new String[] {"Carol", "David"});
+            values.add(new String[] {"Edward", "Frederick"});
+            values.add(new String[] {"Gaston"});
             chunkFilter.filter(values, matches);
             assertEquals(4, matches.size());
 
@@ -106,10 +106,10 @@ public class TestVectorComponentFilterWrapper {
             assertFalse(matches.get(3));
 
             values.setSize(0);
-            values.add(new String[]{"Hilda", "Ignacio", "Juliet"});
-            values.add(new String[]{"Carol", "David"});
-            values.add(new String[]{"Karl"});
-            values.add(new String[]{"Keenan"});
+            values.add(new String[] {"Hilda", "Ignacio", "Juliet"});
+            values.add(new String[] {"Carol", "David"});
+            values.add(new String[] {"Karl"});
+            values.add(new String[] {"Keenan"});
 
             chunkFilter.filterAnd(values, matches);
             assertEquals(4, matches.size());
