@@ -7,8 +7,8 @@ import io.deephaven.annotations.SimpleStyle;
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.SortColumn;
 
-import org.immutables.value.Value;
 import org.immutables.value.Value.Immutable;
+import org.immutables.value.Value.Parameter;
 
 import java.util.Comparator;
 
@@ -30,7 +30,7 @@ abstract class ComparatorSortColumn implements SortColumn {
      *
      * @return the column name
      */
-    @Value.Parameter
+    @Parameter
     @Override
     public abstract ColumnName column();
 
@@ -39,7 +39,7 @@ abstract class ComparatorSortColumn implements SortColumn {
      *
      * @return the order
      */
-    @Value.Parameter
+    @Parameter
     @Override
     public abstract Order order();
 
@@ -56,13 +56,13 @@ abstract class ComparatorSortColumn implements SortColumn {
      *
      * @return true if this comparator respects equality
      */
-    @Value.Parameter
+    @Parameter
     abstract boolean respectsEquality();
 
     /**
      * @return the Comparator to use for sorting this column.
      */
-    @Value.Parameter
+    @Parameter
     abstract Comparator getComparator();
 
     /**
