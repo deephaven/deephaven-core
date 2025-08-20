@@ -5,6 +5,7 @@ package io.deephaven.api;
 
 import io.deephaven.annotations.SimpleStyle;
 import org.immutables.value.Value.Immutable;
+import org.immutables.value.Value.Parameter;
 
 /**
  * Represents a {@link #column() column} and {@link #order() order} pair.
@@ -42,7 +43,7 @@ public interface SortColumn {
      *
      * @return the column name
      */
-    @Value.Parameter
+    @Parameter
     ColumnName column();
 
     /**
@@ -50,7 +51,7 @@ public interface SortColumn {
      *
      * @return the order
      */
-    @Value.Parameter
+    @Parameter
     Order order();
 
     default boolean isAscending() {
