@@ -66,32 +66,6 @@ abstract class ComparatorSortColumn implements SortColumn {
     abstract Comparator getComparator();
 
     /**
-     * Create a ComparatorSortColumn for the provided column and Comparator. The comparator is assumed to not respect
-     * equality.
-     *
-     * @param sortColumn a sort column, which has a name and order
-     * @param comparator the comparator
-     * @return a new ComparatorSortColumn
-     */
-    public static ComparatorSortColumn of(final SortColumn sortColumn, final Comparator comparator) {
-        return ImmutableComparatorSortColumn.of(sortColumn.column(), sortColumn.order(), false, comparator);
-    }
-
-    /**
-     * Create a ComparatorSortColumn for the provided column and Comparator.
-     *
-     * @param sortColumn a sort column, which has a name and order
-     * @param comparator the comparator
-     * @param respectsEquality if two values compareTo zero, then they must be equal. If two distinct values compare to
-     *        zero and respectsEquality is true, then results are undefined.
-     * @return a new ComparatorSortColumn
-     */
-    public static ComparatorSortColumn of(final SortColumn sortColumn, final Comparator comparator,
-            final boolean respectsEquality) {
-        return ImmutableComparatorSortColumn.of(sortColumn.column(), sortColumn.order(), respectsEquality, comparator);
-    }
-
-    /**
      * Create an ascending ComparatorSortColumn for the provided column name and Comparator.
      *
      * <p>
@@ -156,7 +130,8 @@ abstract class ComparatorSortColumn implements SortColumn {
      * @return true if the sort column has a comparator defined
      */
     public static boolean hasComparator(final SortColumn sortColumn) {
-        return sortColumn instanceof ComparatorSortColumn
-                && ((ComparatorSortColumn) sortColumn).getComparator() != null;
+        return sortColumn instanceof ComparatorSortColumn;
     }
+
+    // TODO: @Check
 }
