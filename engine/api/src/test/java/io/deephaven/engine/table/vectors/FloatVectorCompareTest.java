@@ -129,6 +129,7 @@ public class FloatVectorCompareTest {
 
         TestCase.assertEquals(a0, a0);
         TestCase.assertEquals(a0, b0);
+        TestCase.assertEquals(a0.hashCode(), b0.hashCode());
         TestCase.assertFalse(a0.equals(a1));
         TestCase.assertFalse(a0.equals(a1));
         TestCase.assertFalse(a0.equals(a2));
@@ -138,6 +139,7 @@ public class FloatVectorCompareTest {
         TestCase.assertFalse(a1.equals(b0));
         TestCase.assertEquals(a1, a1);
         TestCase.assertEquals(a1, b1);
+        TestCase.assertEquals(a1.hashCode(), b1.hashCode());
         TestCase.assertFalse(a1.equals(a2));
         TestCase.assertFalse(a1.equals(b2));
 
@@ -147,6 +149,7 @@ public class FloatVectorCompareTest {
         TestCase.assertFalse(a2.equals(b1));
         TestCase.assertEquals(a2, a2);
         TestCase.assertEquals(a2, b2);
+        TestCase.assertEquals(a2.hashCode(), b2.hashCode());
     }
 
     /**
