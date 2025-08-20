@@ -10,6 +10,7 @@ package io.deephaven.engine.table.impl.select.vectorchunkfilter;
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.primitive.value.iterator.ValueIteratorOfByte;
+import io.deephaven.engine.table.impl.chunkfilter.ByteChunkFilter;
 import io.deephaven.vector.ByteVector;
 
 import java.util.function.IntConsumer;
@@ -34,6 +35,19 @@ class ByteVectorChunkFilter extends VectorChunkFilter {
             final IntConsumer matchConsumer) {
         final ObjectChunk<ByteVector, ? extends Values> objectChunk = values.asObjectChunk();
 
+        if (vectorComponentFilterWrapper.chunkFilter instanceof ByteChunkFilter) {
+            final ByteChunkFilter elementFilter = (ByteChunkFilter) vectorComponentFilterWrapper.chunkFilter;
+
+            applySingleElements(applyFilter, matchConsumer, objectChunk, elementFilter);
+            return;
+        }
+
+        applyChunks(applyFilter, matchConsumer, objectChunk);
+    }
+
+    private void applyChunks(final IntPredicate applyFilter,
+            final IntConsumer matchConsumer,
+            final ObjectChunk<ByteVector, ? extends Values> objectChunk) {
         temporaryValues.setSize(chunkSize);
         srcPos.setSize(chunkSize);
         int fillPos = 0;
@@ -61,6 +75,26 @@ class ByteVectorChunkFilter extends VectorChunkFilter {
         flushMatches(matchConsumer, fillPos, temporaryValues);
     }
 
+    private void applySingleElements(final IntPredicate applyFilter,
+            final IntConsumer matchConsumer,
+            final ObjectChunk<ByteVector, ? extends Values> objectChunk,
+            final ByteChunkFilter elementFilter) {
+        for (int indexOfVector = 0; indexOfVector < objectChunk.size(); ++indexOfVector) {
+            if (!applyFilter.test(indexOfVector)) {
+                continue;
+            }
+            final ByteVector vector = objectChunk.get(indexOfVector);
+            try (final ValueIteratorOfByte vi = vector.iterator()) {
+                while (vi.hasNext()) {
+                    final byte element = vi.next();
+                    if (elementFilter.matches(element)) {
+                        matchConsumer.accept(indexOfVector);
+                        break;
+                    }
+                }
+            }
+        }
+    }
 
     @Override
     public void close() {

@@ -12,6 +12,7 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.primitive.value.iterator.ValueIteratorOfLong;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
+import io.deephaven.engine.table.impl.chunkfilter.LongChunkFilter;
 import io.deephaven.vector.LongVector;
 
 import java.util.function.IntConsumer;
@@ -35,6 +36,18 @@ class LongArrayChunkFilter extends VectorChunkFilter {
             final IntConsumer matchConsumer) {
         final ObjectChunk<long[], ? extends Values> objectChunk = values.asObjectChunk();
 
+        if (vectorComponentFilterWrapper.chunkFilter instanceof LongChunkFilter) {
+            final LongChunkFilter elementFilter = (LongChunkFilter) vectorComponentFilterWrapper.chunkFilter;
+
+            applySingleElements(applyFilter, matchConsumer, objectChunk, elementFilter);
+            return;
+        }
+
+        applyChunks(applyFilter, matchConsumer, objectChunk);
+    }
+
+    private void applyChunks(IntPredicate applyFilter, IntConsumer matchConsumer,
+            ObjectChunk<long[], ? extends Values> objectChunk) {
         temporaryValues.setSize(chunkSize);
         srcPos.setSize(chunkSize);
         int fillPos = 0;
@@ -58,6 +71,23 @@ class LongArrayChunkFilter extends VectorChunkFilter {
             }
         }
         flushMatches(matchConsumer, fillPos, temporaryValues);
+    }
+
+    private static void applySingleElements(IntPredicate applyFilter, IntConsumer matchConsumer,
+            ObjectChunk<long[], ? extends Values> objectChunk, LongChunkFilter elementFilter) {
+        for (int indexOfVector = 0; indexOfVector < objectChunk.size(); ++indexOfVector) {
+            if (!applyFilter.test(indexOfVector)) {
+                continue;
+            }
+            final long[] array = objectChunk.get(indexOfVector);
+            for (int ii = 0; ii < array.length; ++ii) {
+                final long element = array[ii];
+                if (elementFilter.matches(element)) {
+                    matchConsumer.accept(indexOfVector);
+                    break;
+                }
+            }
+        }
     }
 
     @Override

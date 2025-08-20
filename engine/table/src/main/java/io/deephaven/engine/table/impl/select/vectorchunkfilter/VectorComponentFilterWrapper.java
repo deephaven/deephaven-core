@@ -3,8 +3,14 @@
 //
 package io.deephaven.engine.table.impl.select.vectorchunkfilter;
 
+import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.LongChunk;
+import io.deephaven.chunk.WritableBooleanChunk;
+import io.deephaven.chunk.WritableLongChunk;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.WritableRowSet;
+import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
@@ -13,6 +19,7 @@ import io.deephaven.engine.table.impl.chunkfilter.ChunkFilter;
 import io.deephaven.engine.table.impl.select.ExposesChunkFilter;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.select.WhereFilterImpl;
+import io.deephaven.util.annotations.TestUseOnly;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.VisibleForTesting;
 
@@ -178,5 +185,76 @@ public class VectorComponentFilterWrapper extends WhereFilterImpl {
     @VisibleForTesting
     VectorChunkFilter chunkFilter() {
         return vectorChunkFilterFactory.get();
+    }
+
+    @TestUseOnly
+    public VectorComponentFilterWrapper breakChunkType() {
+        return new VectorComponentFilterWrapper(columnName, isArray, componentType, new TypeDiscardedFilter(componentFilter));
+    }
+
+    private static class TypeDiscardedFilter extends WhereFilterImpl implements ExposesChunkFilter {
+        private final WhereFilter wrapped;
+
+        private TypeDiscardedFilter(final WhereFilter wrapped) {
+            this.wrapped = wrapped;
+        }
+
+
+        @Override
+        public Optional<ChunkFilter> chunkFilter() {
+            return ((ExposesChunkFilter) wrapped).chunkFilter().map(wrappedChunkFilter -> new ChunkFilter() {
+                @Override
+                public void filter(final Chunk<? extends Values> values, final LongChunk<OrderedRowKeys> keys,
+                        final WritableLongChunk<OrderedRowKeys> results) {
+                    wrappedChunkFilter.filter(values, keys, results);
+                }
+
+                @Override
+                public int filter(final Chunk<? extends Values> values, final WritableBooleanChunk<Values> results) {
+                    return wrappedChunkFilter.filter(values, results);
+                }
+
+                @Override
+                public int filterAnd(final Chunk<? extends Values> values, final WritableBooleanChunk<Values> results) {
+                    return wrappedChunkFilter.filterAnd(values, results);
+                }
+            });
+        }
+
+        @Override
+        public List<String> getColumns() {
+            return wrapped.getColumns();
+        }
+
+        @Override
+        public List<String> getColumnArrays() {
+            return wrapped.getColumnArrays();
+        }
+
+        @Override
+        public void init(@NotNull final TableDefinition tableDefinition) {
+            wrapped.init(tableDefinition);
+        }
+
+        @Override
+        public @NotNull WritableRowSet filter(@NotNull final RowSet selection, @NotNull final RowSet fullSet,
+                @NotNull final Table table, final boolean usePrev) {
+            return wrapped.filter(selection, fullSet, table, usePrev);
+        }
+
+        @Override
+        public boolean isSimpleFilter() {
+            return wrapped.isSimpleFilter();
+        }
+
+        @Override
+        public void setRecomputeListener(final RecomputeListener result) {
+            wrapped.setRecomputeListener(result);
+        }
+
+        @Override
+        public WhereFilter copy() {
+            return new TypeDiscardedFilter(wrapped.copy());
+        }
     }
 }

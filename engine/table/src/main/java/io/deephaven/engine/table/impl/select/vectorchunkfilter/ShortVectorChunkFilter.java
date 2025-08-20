@@ -10,6 +10,7 @@ package io.deephaven.engine.table.impl.select.vectorchunkfilter;
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.primitive.value.iterator.ValueIteratorOfShort;
+import io.deephaven.engine.table.impl.chunkfilter.ShortChunkFilter;
 import io.deephaven.vector.ShortVector;
 
 import java.util.function.IntConsumer;
@@ -34,6 +35,19 @@ class ShortVectorChunkFilter extends VectorChunkFilter {
             final IntConsumer matchConsumer) {
         final ObjectChunk<ShortVector, ? extends Values> objectChunk = values.asObjectChunk();
 
+        if (vectorComponentFilterWrapper.chunkFilter instanceof ShortChunkFilter) {
+            final ShortChunkFilter elementFilter = (ShortChunkFilter) vectorComponentFilterWrapper.chunkFilter;
+
+            applySingleElements(applyFilter, matchConsumer, objectChunk, elementFilter);
+            return;
+        }
+
+        applyChunks(applyFilter, matchConsumer, objectChunk);
+    }
+
+    private void applyChunks(final IntPredicate applyFilter,
+            final IntConsumer matchConsumer,
+            final ObjectChunk<ShortVector, ? extends Values> objectChunk) {
         temporaryValues.setSize(chunkSize);
         srcPos.setSize(chunkSize);
         int fillPos = 0;
@@ -61,6 +75,26 @@ class ShortVectorChunkFilter extends VectorChunkFilter {
         flushMatches(matchConsumer, fillPos, temporaryValues);
     }
 
+    private void applySingleElements(final IntPredicate applyFilter,
+            final IntConsumer matchConsumer,
+            final ObjectChunk<ShortVector, ? extends Values> objectChunk,
+            final ShortChunkFilter elementFilter) {
+        for (int indexOfVector = 0; indexOfVector < objectChunk.size(); ++indexOfVector) {
+            if (!applyFilter.test(indexOfVector)) {
+                continue;
+            }
+            final ShortVector vector = objectChunk.get(indexOfVector);
+            try (final ValueIteratorOfShort vi = vector.iterator()) {
+                while (vi.hasNext()) {
+                    final short element = vi.next();
+                    if (elementFilter.matches(element)) {
+                        matchConsumer.accept(indexOfVector);
+                        break;
+                    }
+                }
+            }
+        }
+    }
 
     @Override
     public void close() {

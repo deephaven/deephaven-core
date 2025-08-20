@@ -12,6 +12,7 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.primitive.value.iterator.ValueIteratorOfFloat;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
+import io.deephaven.engine.table.impl.chunkfilter.FloatChunkFilter;
 import io.deephaven.vector.FloatVector;
 
 import java.util.function.IntConsumer;
@@ -35,6 +36,18 @@ class FloatArrayChunkFilter extends VectorChunkFilter {
             final IntConsumer matchConsumer) {
         final ObjectChunk<float[], ? extends Values> objectChunk = values.asObjectChunk();
 
+        if (vectorComponentFilterWrapper.chunkFilter instanceof FloatChunkFilter) {
+            final FloatChunkFilter elementFilter = (FloatChunkFilter) vectorComponentFilterWrapper.chunkFilter;
+
+            applySingleElements(applyFilter, matchConsumer, objectChunk, elementFilter);
+            return;
+        }
+
+        applyChunks(applyFilter, matchConsumer, objectChunk);
+    }
+
+    private void applyChunks(IntPredicate applyFilter, IntConsumer matchConsumer,
+            ObjectChunk<float[], ? extends Values> objectChunk) {
         temporaryValues.setSize(chunkSize);
         srcPos.setSize(chunkSize);
         int fillPos = 0;
@@ -58,6 +71,23 @@ class FloatArrayChunkFilter extends VectorChunkFilter {
             }
         }
         flushMatches(matchConsumer, fillPos, temporaryValues);
+    }
+
+    private static void applySingleElements(IntPredicate applyFilter, IntConsumer matchConsumer,
+            ObjectChunk<float[], ? extends Values> objectChunk, FloatChunkFilter elementFilter) {
+        for (int indexOfVector = 0; indexOfVector < objectChunk.size(); ++indexOfVector) {
+            if (!applyFilter.test(indexOfVector)) {
+                continue;
+            }
+            final float[] array = objectChunk.get(indexOfVector);
+            for (int ii = 0; ii < array.length; ++ii) {
+                final float element = array[ii];
+                if (elementFilter.matches(element)) {
+                    matchConsumer.accept(indexOfVector);
+                    break;
+                }
+            }
+        }
     }
 
     @Override

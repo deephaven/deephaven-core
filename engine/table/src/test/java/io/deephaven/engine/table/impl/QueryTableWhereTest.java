@@ -6,9 +6,7 @@ package io.deephaven.engine.table.impl;
 import com.google.common.collect.Lists;
 import gnu.trove.list.TLongList;
 import gnu.trove.list.array.TLongArrayList;
-import io.deephaven.api.ColumnName;
 import io.deephaven.api.RawString;
-import io.deephaven.api.Selectable;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.*;
@@ -27,19 +25,17 @@ import io.deephaven.engine.table.impl.chunkfilter.ChunkFilter;
 import io.deephaven.engine.table.impl.chunkfilter.IntRangeComparator;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.select.*;
+import io.deephaven.engine.table.impl.select.vectorchunkfilter.VectorComponentFilterWrapper;
 import io.deephaven.engine.table.impl.sources.*;
 import io.deephaven.engine.table.impl.util.JobScheduler;
 import io.deephaven.engine.table.impl.verify.TableAssertions;
-import io.deephaven.engine.table.vectors.ColumnVectors;
 import io.deephaven.engine.testutil.*;
 import io.deephaven.engine.testutil.QueryTableTestBase.TableComparator;
 import io.deephaven.engine.testutil.filters.RowSetCapturingFilter;
 import io.deephaven.engine.testutil.generator.*;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.testutil.sources.IntTestSource;
-import io.deephaven.engine.util.PrintListener;
 import io.deephaven.engine.util.TableTools;
-import io.deephaven.gui.table.QuickFilterMode;
 import io.deephaven.gui.table.filters.Condition;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
@@ -69,7 +65,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.function.IntUnaryOperator;
 import java.util.function.LongConsumer;
-import java.util.stream.IntStream;
 
 import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.engine.testutil.testcase.RefreshingTableTestCase.printTableUpdates;
@@ -2698,23 +2693,34 @@ public abstract class QueryTableWhereTest {
     @Test
     public void testVectorWrapperChunking() {
         for (final int testRow : List.of(0, 300, 3000, 2047 * 3, 2048 * 3, 3332 * 3)) {
-            testVectorWrapperChunking(3, 10000, Integer.toString(testRow), 0);
-            testVectorWrapperChunking(3, 10000, Integer.toString(testRow + 1), 1);
-            testVectorWrapperChunking(3, 10000, Integer.toString(testRow + 2), 2);
+            for (final boolean breakTyping : new boolean[] {true, false}) {
+                testVectorWrapperChunking(3, 10000, Integer.toString(testRow), 0, breakTyping);
+                testVectorWrapperChunking(3, 10000, Integer.toString(testRow + 1), 1, breakTyping);
+                testVectorWrapperChunking(3, 10000, Integer.toString(testRow + 2), 2, breakTyping);
+            }
         }
     }
 
-    private void testVectorWrapperChunking(int nGroups, int tableSize, String quickFilter, long expectedMatches) {
+    private void testVectorWrapperChunking(int nGroups, int tableSize, String quickFilter, long expectedMatches,
+            boolean breakTyping) {
         final Table v1 = emptyTable(tableSize).update("X=ii", "Y=ii % " + nGroups).groupBy("Y");
         final WhereFilter[] vectorFilters =
-                WhereFilterFactory.expandQuickFilter(v1.getDefinition(), quickFilter, Set.of());
-        final Table f1 = v1.where(Filter.or(vectorFilters));
+                WhereFilterFactory.expandQuickFilter(v1.getDefinition(), quickFilter, Set.of("X"));
+        final Table f1 = v1.where(Filter.or(breakTyping ? breakChunkType(vectorFilters) : vectorFilters));
         assertTableEquals(v1.where("Y in " + expectedMatches), f1);
 
         final Table a1 = v1.update("X=X.toArray()");
         final WhereFilter[] arrayFilters =
-                WhereFilterFactory.expandQuickFilter(a1.getDefinition(), quickFilter, Set.of());
-        final Table fa1 = a1.where(Filter.or(arrayFilters));
+                WhereFilterFactory.expandQuickFilter(a1.getDefinition(), quickFilter, Set.of("X"));
+        final Table fa1 = a1.where(Filter.or(breakTyping ? breakChunkType(arrayFilters) : arrayFilters));
         assertTableEquals(fa1.where("Y in " + expectedMatches), fa1);
+    }
+
+    final WhereFilter[] breakChunkType(final WhereFilter[] filters) {
+        if (filters.length != 1) {
+            throw new IllegalArgumentException("Filters must contain exactly one filter");
+        }
+        final VectorComponentFilterWrapper vectorComponentFilterWrapper = (VectorComponentFilterWrapper) filters[0];
+        return new WhereFilter[]{vectorComponentFilterWrapper.breakChunkType()};
     }
 }

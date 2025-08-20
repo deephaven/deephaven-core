@@ -12,6 +12,7 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.primitive.value.iterator.ValueIterator;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
+import io.deephaven.engine.table.impl.chunkfilter.ObjectChunkFilter;
 import io.deephaven.vector.ObjectVector;
 
 import java.util.function.IntConsumer;
@@ -35,6 +36,18 @@ class ObjectArrayChunkFilter extends VectorChunkFilter {
             final IntConsumer matchConsumer) {
         final ObjectChunk<Object[], ? extends Values> objectChunk = values.asObjectChunk();
 
+        if (vectorComponentFilterWrapper.chunkFilter instanceof ObjectChunkFilter) {
+            final ObjectChunkFilter elementFilter = (ObjectChunkFilter) vectorComponentFilterWrapper.chunkFilter;
+
+            applySingleElements(applyFilter, matchConsumer, objectChunk, elementFilter);
+            return;
+        }
+
+        applyChunks(applyFilter, matchConsumer, objectChunk);
+    }
+
+    private void applyChunks(IntPredicate applyFilter, IntConsumer matchConsumer,
+            ObjectChunk<Object[], ? extends Values> objectChunk) {
         temporaryValues.setSize(chunkSize);
         srcPos.setSize(chunkSize);
         int fillPos = 0;
@@ -58,6 +71,23 @@ class ObjectArrayChunkFilter extends VectorChunkFilter {
             }
         }
         flushMatches(matchConsumer, fillPos, temporaryValues);
+    }
+
+    private static void applySingleElements(IntPredicate applyFilter, IntConsumer matchConsumer,
+            ObjectChunk<Object[], ? extends Values> objectChunk, ObjectChunkFilter elementFilter) {
+        for (int indexOfVector = 0; indexOfVector < objectChunk.size(); ++indexOfVector) {
+            if (!applyFilter.test(indexOfVector)) {
+                continue;
+            }
+            final Object[] array = objectChunk.get(indexOfVector);
+            for (int ii = 0; ii < array.length; ++ii) {
+                final Object element = array[ii];
+                if (elementFilter.matches(element)) {
+                    matchConsumer.accept(indexOfVector);
+                    break;
+                }
+            }
+        }
     }
 
     @Override

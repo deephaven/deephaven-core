@@ -10,6 +10,7 @@ package io.deephaven.engine.table.impl.select.vectorchunkfilter;
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.primitive.value.iterator.ValueIterator;
+import io.deephaven.engine.table.impl.chunkfilter.ObjectChunkFilter;
 import io.deephaven.vector.ObjectVector;
 
 import java.util.function.IntConsumer;
@@ -34,6 +35,19 @@ class ObjectVectorChunkFilter extends VectorChunkFilter {
             final IntConsumer matchConsumer) {
         final ObjectChunk<ObjectVector, ? extends Values> objectChunk = values.asObjectChunk();
 
+        if (vectorComponentFilterWrapper.chunkFilter instanceof ObjectChunkFilter) {
+            final ObjectChunkFilter elementFilter = (ObjectChunkFilter) vectorComponentFilterWrapper.chunkFilter;
+
+            applySingleElements(applyFilter, matchConsumer, objectChunk, elementFilter);
+            return;
+        }
+
+        applyChunks(applyFilter, matchConsumer, objectChunk);
+    }
+
+    private void applyChunks(final IntPredicate applyFilter,
+            final IntConsumer matchConsumer,
+            final ObjectChunk<ObjectVector, ? extends Values> objectChunk) {
         temporaryValues.setSize(chunkSize);
         srcPos.setSize(chunkSize);
         int fillPos = 0;
@@ -61,6 +75,26 @@ class ObjectVectorChunkFilter extends VectorChunkFilter {
         flushMatches(matchConsumer, fillPos, temporaryValues);
     }
 
+    private void applySingleElements(final IntPredicate applyFilter,
+            final IntConsumer matchConsumer,
+            final ObjectChunk<ObjectVector, ? extends Values> objectChunk,
+            final ObjectChunkFilter elementFilter) {
+        for (int indexOfVector = 0; indexOfVector < objectChunk.size(); ++indexOfVector) {
+            if (!applyFilter.test(indexOfVector)) {
+                continue;
+            }
+            final ObjectVector vector = objectChunk.get(indexOfVector);
+            try (final ValueIterator vi = vector.iterator()) {
+                while (vi.hasNext()) {
+                    final Object element = vi.next();
+                    if (elementFilter.matches(element)) {
+                        matchConsumer.accept(indexOfVector);
+                        break;
+                    }
+                }
+            }
+        }
+    }
 
     @Override
     public void close() {
