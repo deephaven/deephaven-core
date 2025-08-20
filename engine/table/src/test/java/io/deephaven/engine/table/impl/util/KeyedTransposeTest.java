@@ -1,7 +1,15 @@
 package io.deephaven.engine.table.impl.util;
 
 import java.util.*;
+
+import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.ErrorListener;
+import io.deephaven.engine.table.impl.QueryTable;
+import io.deephaven.engine.table.impl.TableUpdateValidator;
+import io.deephaven.engine.testutil.ControlledUpdateGraph;
+import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.util.TableTools;
 
@@ -162,6 +170,74 @@ public class KeyedTransposeTest extends RefreshingTableTestCase {
                 longCol("column_0_null", NULL_LONG, NULL_LONG, NULL_LONG, 1),
                 longCol("null_CD", NULL_LONG, NULL_LONG, NULL_LONG, 1));
         assertTableEquals(ex, t);
+    }
+
+    public void testNewRow() {
+        testNewRow(KeyedTranspose.NewColumnBehavior.IGNORE);
+        testNewRow(KeyedTranspose.NewColumnBehavior.FAIL);
+    }
+
+    private void testNewRow(final KeyedTranspose.NewColumnBehavior newColumnBehavior) {
+        final QueryTable source =
+                TstUtils.testRefreshingTable(RowSetFactory.flat(7).toTracking(), intCol("Row", 1, 2, 3, 2, 3, 2, 3),
+                        stringCol("Col", "Alpha", "Alpha", "Alpha", "Bravo", "Bravo", "Alpha", "Alpha"),
+                        doubleCol("Value", 10.1, 20.2, 30.3, 40.4, 50.5, 60.6, 70.7));
+        final Table result = KeyedTranspose.keyedTranspose(source, List.of(AggSum("Value")), new String[] {"Row"},
+                new String[] {"Col"}, null, newColumnBehavior);
+
+        final ErrorListener el = new ErrorListener(result);
+        result.addUpdateListener(el);
+
+        final TableUpdateValidator validator = TableUpdateValidator.make("keyedTranspose", (QueryTable)result);
+        final Table validated = validator.getResultTable();
+
+        final Table expected = TableTools.newTable(intCol("Row", 1, 2, 3),
+                doubleCol("Alpha", 10.1, 20.2 + 60.6, 30.3 + 70.7), doubleCol("Bravo", NULL_DOUBLE, 40.4, 50.5));
+        assertTableEquals(expected, validated);
+
+        // adding a fourth row is totally fine under any circumstance
+        final ControlledUpdateGraph cug = ExecutionContext.getContext().getUpdateGraph().cast();
+        cug.runWithinUnitTestCycle(() -> {
+            TstUtils.addToTable(source, i(10, 11), intCol("Row", 4, 4), stringCol("Col", "Alpha", "Bravo"),
+                    doubleCol("Value", 101.1, 102.2));
+            source.notifyListeners(i(10, 11), i(), i());
+        });
+        validator.validate();
+
+        final Table expected2 = TableTools.merge(expected,
+                TableTools.newTable(intCol("Row", 4), doubleCol("Alpha", 101.1), doubleCol("Bravo", 102.2)));
+        assertTableEquals(expected2, validated);
+
+        if (newColumnBehavior == KeyedTranspose.NewColumnBehavior.IGNORE) {
+            // The new column Charlie is ignored; Alpha and Bravo get updated
+            cug.runWithinUnitTestCycle(() -> {
+                TstUtils.addToTable(source, i(10, 11), intCol("Row", 4, 4), stringCol("Col", "Charlie", "Bravo"),
+                        doubleCol("Value", 201.1, 202.2));
+                source.notifyListeners(i(), i(), i(10, 11));
+            });
+            validator.validate();
+
+            TableTools.show(result);
+            final Table expected3 = TableTools.merge(expected,
+                    TableTools.newTable(intCol("Row", 4), doubleCol("Alpha", NULL_DOUBLE), doubleCol("Bravo", 202.2)));
+            assertTableEquals(expected3, validated);
+            assertNull(el.originalException());
+        } else {
+            // we are going to fail with this update
+            setExpectError(true);
+
+            // The new column Charlie is ignored; Alpha and Bravo get updated
+            cug.runWithinUnitTestCycle(() -> {
+                TstUtils.addToTable(source, i(10, 11), intCol("Row", 4, 4), stringCol("Col", "Charlie", "Bravo"),
+                        doubleCol("Value", 201.1, 202.2));
+                source.notifyListeners(i(), i(), i(10, 11));
+            });
+            assertTrue(result.isFailed());
+            assertNotNull(el.originalException());
+            final Throwable exception = el.originalException();
+            assertTrue(exception instanceof IllegalStateException);
+            assertEquals("New constituent table detected in keyedTranspose; consider setting newColumnBehavior to Ignore.", exception.getMessage());
+        }
     }
 
 
