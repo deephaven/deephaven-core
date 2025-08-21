@@ -83,7 +83,7 @@ public class ComparatorRegistry {
      * @param comparator the comparator to register for the given type
      */
     public <T> void registerComparator(final Class<T> type, final Comparator<T> comparator) {
-        if (Comparable.class.isAssignableFrom(type)) {
+        if (Comparable.class.isAssignableFrom(type) || type.isPrimitive()) {
             throw new IllegalArgumentException(
                     "Cannot register comparator for " + type + ", already provides a natural order.");
         }
