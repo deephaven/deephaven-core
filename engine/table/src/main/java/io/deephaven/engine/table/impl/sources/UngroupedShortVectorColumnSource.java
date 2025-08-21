@@ -27,8 +27,7 @@ public class UngroupedShortVectorColumnSource extends UngroupedColumnSource<Shor
     public UngroupedShortVectorColumnSource(ColumnSource<ShortVector> innerSource) {
         super(Short.class);
         this.innerSource = innerSource;
-        this.isUngroupable = innerSource instanceof UngroupableColumnSource
-                && ((UngroupableColumnSource) innerSource).isUngroupable();
+        this.isUngroupable = UngroupableColumnSource.isUngroupable(innerSource);
     }
 
     @Override

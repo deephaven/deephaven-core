@@ -35,20 +35,18 @@ public class WritableBooleanChunk<ATTR extends Any> extends BooleanChunk<ATTR> i
         return EMPTY_WRITABLE_BOOLEAN_CHUNK_ARRAY;
     }
 
+    /**
+     * Get a {@link WritableBooleanChunk} with {@link #size()} of {@code size} for use by the caller until it is
+     * {@link #close() closed}.
+     *
+     * @param size The {@link #size()} and minimum capacity of the returned chunk
+     * @return The chunk
+     */
     public static <ATTR extends Any> WritableBooleanChunk<ATTR> makeWritableChunk(int size) {
         if (POOL_WRITABLE_CHUNKS) {
             return MultiChunkPool.forThisThread().takeWritableBooleanChunk(size);
         }
         return new WritableBooleanChunk<>(makeArray(size), 0, size);
-    }
-
-    public static <ATTR extends Any> WritableBooleanChunk<ATTR> makeWritableChunkForPool(int size) {
-        return new WritableBooleanChunk<>(makeArray(size), 0, size) {
-            @Override
-            public void close() {
-                MultiChunkPool.forThisThread().giveWritableBooleanChunk(this);
-            }
-        };
     }
 
     public static <ATTR extends Any> WritableBooleanChunk<ATTR> writableChunkWrap(boolean[] data) {

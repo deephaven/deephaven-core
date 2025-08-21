@@ -25,6 +25,10 @@ public class IntFromUnsignedByteMaterializer extends IntMaterializerBase impleme
         }
     };
 
+    public static int convertValue(int value) {
+        return Byte.toUnsignedInt((byte) value);
+    }
+
     private final ValuesReader dataReader;
 
     private IntFromUnsignedByteMaterializer(ValuesReader dataReader, int numValues) {
@@ -39,7 +43,7 @@ public class IntFromUnsignedByteMaterializer extends IntMaterializerBase impleme
     @Override
     public void fillValues(int startIndex, int endIndex) {
         for (int ii = startIndex; ii < endIndex; ii++) {
-            data[ii] = Byte.toUnsignedInt((byte) dataReader.readInteger());
+            data[ii] = convertValue(dataReader.readInteger());
         }
     }
 }

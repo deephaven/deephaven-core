@@ -92,6 +92,23 @@ public final class ByteVectorDirect implements ByteVector {
         return ByteVector.equals(this, obj);
     }
 
+    // region compareTo
+    @Override
+    public int compareTo(final ByteVector o) {
+        if (o instanceof ByteVectorDirect) {
+            // The byte, short, integer, and long versions can use direct vector comparisons as our order matches the
+            // natural order of numbers.
+            //
+            // Float and double can not use direct vector comparisons. Although NaN works because Float.compare and
+            // Double.compare sort NaNs last, as we do for Deephaven values; and the Arrays.compare is defined to work
+            // as Float.compare. However, Float.compare(0f,-0) does not produce 0 but rather ranks -0 as less than 0.
+            return Arrays.compare(data, ((ByteVectorDirect) o).data);
+        }
+        return ByteVector.super.compareTo(o);
+    }
+
+    // endregion compareTo
+
     @Override
     public int hashCode() {
         return ByteVector.hashCode(this);

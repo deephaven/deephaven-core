@@ -8,27 +8,46 @@
 package io.deephaven.chunk.util.pools;
 
 import io.deephaven.chunk.ResettableShortChunk;
-import io.deephaven.chunk.ResettableReadOnlyChunk;
 import io.deephaven.chunk.ResettableWritableShortChunk;
-import io.deephaven.chunk.ResettableWritableChunk;
 import io.deephaven.chunk.WritableShortChunk;
-import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Any;
-import org.jetbrains.annotations.NotNull;
 
+/**
+ * Interface for pools of {@link WritableShortChunk}, {@link ResettableShortChunk}, and
+ * {@link ResettableWritableShortChunk}.
+ */
 public interface ShortChunkPool {
 
+    /**
+     * @return This ShortChunkPool as a {@link ChunkPool}. This is useful for passing this pool to methods that expect a
+     *         {@link ChunkPool} but do not need to know the specific type.
+     */
     ChunkPool asChunkPool();
 
+    /**
+     * Take a {@link WritableShortChunk} of at least the specified {@code capacity}. The result belongs to the caller
+     * until {@link WritableShortChunk#close() closed}.
+     *
+     * @param capacity The minimum capacity for the result
+     * @return A {@link WritableShortChunk} of at least the specified {@code capacity} that belongs to the caller until
+     *         {@link WritableShortChunk#close() closed}
+     */
     <ATTR extends Any> WritableShortChunk<ATTR> takeWritableShortChunk(int capacity);
 
-    void giveWritableShortChunk(@NotNull WritableShortChunk<?> writableShortChunk);
-
+    /**
+     * Take a {@link ResettableShortChunk}. The result belongs to the caller until {@link ResettableShortChunk#close()
+     * closed}.
+     *
+     * @return A {@link ResettableShortChunk} that belongs to the caller until {@link ResettableShortChunk#close() closed}
+     */
     <ATTR extends Any> ResettableShortChunk<ATTR> takeResettableShortChunk();
 
-    void giveResettableShortChunk(@NotNull ResettableShortChunk<?> resettableShortChunk);
-
+    /**
+     * Take a {@link ResettableWritableShortChunk}. The result belongs to the caller until
+     * {@link ResettableWritableShortChunk#close() closed}.
+     *
+     * @return A {@link ResettableWritableShortChunk} that belongs to the caller until
+     *         {@link ResettableWritableShortChunk#close() closed}
+     */
     <ATTR extends Any> ResettableWritableShortChunk<ATTR> takeResettableWritableShortChunk();
-
-    void giveResettableWritableShortChunk(@NotNull ResettableWritableShortChunk<?> resettableWritableShortChunk);
 }

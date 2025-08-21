@@ -482,6 +482,8 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
                             outputSlotsExposed,
                             outputStartPositionsInclusiveExposed,
                             outputEndPositionsExclusiveExposed),
+                    () -> {
+                    },
                     resultFuture::completeExceptionally);
         }
 

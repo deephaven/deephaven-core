@@ -86,8 +86,8 @@ import groovy.lang.Closure;
 import io.deephaven.base.Pair;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
-import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.ShiftedColumnsFactory;
+import io.deephaven.engine.table.impl.select.ShiftedColumnDefinition;
 import io.deephaven.engine.util.PyCallableWrapper;
 import io.deephaven.engine.util.PyCallableWrapper.ColumnChunkArgument;
 import io.deephaven.engine.util.PyCallableWrapper.ConstantChunkArgument;
@@ -315,8 +315,8 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
         try {
             final Expression expr = JavaExpressionParser.parseExpression(expression);
             final boolean isConstantValueExpression = JavaExpressionParser.isConstantValueExpression(expr);
-            final Pair<String, Map<Long, List<MatchPair>>> formulaShiftColPair =
-                    ShiftedColumnsFactory.getShiftToColPairsMap(expr);
+            final Pair<String, Set<ShiftedColumnDefinition>> shiftedColumnDefinitions =
+                    ShiftedColumnsFactory.getShiftedColumnDefinitions(expr);
 
             WrapperNode wrapperNode = new WrapperNode(expr);
             expr.setParentNode(wrapperNode);
@@ -371,7 +371,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
             }
 
             result = new Result(type, printer.builder.toString(), variablesUsed, this.queryScopeVariables,
-                    isConstantValueExpression, formulaShiftColPair, timeConversionResult,
+                    isConstantValueExpression, shiftedColumnDefinitions, timeConversionResult,
                     formulaMethodInvocations);
         } catch (Throwable e) {
             // need to catch it and make a new one because it contains unserializable variables...
@@ -674,7 +674,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
             }
         }
 
-        if (acceptableMethods.size() == 0) {
+        if (acceptableMethods.isEmpty()) {
             throw new ParserResolutionFailure("Cannot find method " + methodName + '(' + paramsTypesToString(paramTypes)
                     + ')' + (scope != null ? " in " + scope : ""));
         }
@@ -860,7 +860,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
             possiblyAddExecutable(acceptableConstructors, constructor, scope.getName(), paramTypes, parameterizedTypes);
         }
 
-        if (acceptableConstructors.size() == 0) {
+        if (acceptableConstructors.isEmpty()) {
             throw new ParserResolutionFailure("Cannot find constructor for " + scope.getName() + '('
                     + paramsTypesToString(paramTypes) + ')' + (scope != null ? " in " + scope : ""));
         }
@@ -3255,7 +3255,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
         private final HashSet<String> variablesUsed;
         private final Map<String, Object> possibleParams;
         private final boolean isConstantValueExpression;
-        private final Pair<String, Map<Long, List<MatchPair>>> formulaShiftColPair;
+        private final Pair<String, Set<ShiftedColumnDefinition>> shiftedColumnDefinitions;
         private final TimeLiteralReplacedExpression timeConversionResult;
         private final FormulaMethodInvocations formulaMethodInvocations;
 
@@ -3265,7 +3265,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
                 final HashSet<String> variablesUsed,
                 final Map<String, Object> possibleParams,
                 final boolean isConstantValueExpression,
-                final Pair<String, Map<Long, List<MatchPair>>> formulaShiftColPair,
+                final Pair<String, Set<ShiftedColumnDefinition>> shiftedColumnDefinitions,
                 final TimeLiteralReplacedExpression timeConversionResult,
                 final FormulaMethodInvocations formulaMethodInvocations) {
             this.type = Objects.requireNonNull(type, "type");
@@ -3273,7 +3273,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
             this.variablesUsed = variablesUsed;
             this.possibleParams = possibleParams;
             this.isConstantValueExpression = isConstantValueExpression;
-            this.formulaShiftColPair = formulaShiftColPair;
+            this.shiftedColumnDefinitions = shiftedColumnDefinitions;
             this.timeConversionResult = timeConversionResult;
             this.formulaMethodInvocations = formulaMethodInvocations;
         }
@@ -3298,8 +3298,8 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
             return possibleParams;
         }
 
-        public Pair<String, Map<Long, List<MatchPair>>> getFormulaShiftColPair() {
-            return formulaShiftColPair;
+        public Pair<String, Set<ShiftedColumnDefinition>> getShiftedColumnDefinitions() {
+            return shiftedColumnDefinitions;
         }
 
         public TimeLiteralReplacedExpression getTimeConversionResult() {
@@ -3434,7 +3434,6 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
         @NotNull
         private final String pythonMethodName;
 
-        @NotNull
         private boolean isCasted = false;
 
         public boolean isCasted() {

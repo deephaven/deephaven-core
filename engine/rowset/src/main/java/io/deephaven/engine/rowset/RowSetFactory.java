@@ -8,6 +8,10 @@ import io.deephaven.engine.rowset.impl.BasicRowSetBuilderSequential;
 import io.deephaven.engine.rowset.impl.WritableRowSetImpl;
 import io.deephaven.engine.rowset.impl.singlerange.SingleRange;
 
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.stream.Stream;
+
 /**
  * Repository of factory methods for constructing {@link WritableRowSet row sets}.
  */
@@ -89,5 +93,39 @@ public abstract class RowSetFactory {
      */
     public static RowSetBuilderSequential builderSequential() {
         return new BasicRowSetBuilderSequential();
+    }
+
+    /**
+     * Constructs a new combined {@link WritableRowSet} from the union of {@code rowSets}.
+     *
+     * <p>
+     * When considering the {@link RowSet#isNonempty()} elements, if none exist, {@link RowSetFactory#empty()} will be
+     * returned; if only one exist, {@link RowSet#copy()} will be returned; otherwise, a new row set will be returned
+     * based on the {@link WritableRowSet#insert(RowSet) insertion} of all the row sets.
+     *
+     * <p>
+     * This method may perform best when the {@code rowSets} are ordered and non-overlapping.
+     *
+     * @param rowSets the input row sets
+     * @return the new row set
+     */
+    public static WritableRowSet unionInsert(final Collection<RowSet> rowSets) {
+        try (final Stream<RowSet> stream = rowSets.stream().filter(RowSet::isNonempty)) {
+            final Iterator<RowSet> it = stream.iterator();
+            if (!it.hasNext()) {
+                return RowSetFactory.empty();
+            }
+            final WritableRowSet union = it.next().copy();
+            try {
+                while (it.hasNext()) {
+                    union.insert(it.next());
+                }
+            } catch (final RuntimeException e) {
+                try (union) {
+                    throw e;
+                }
+            }
+            return union;
+        }
     }
 }

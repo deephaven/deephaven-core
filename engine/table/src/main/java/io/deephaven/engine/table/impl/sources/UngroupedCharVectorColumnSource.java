@@ -23,8 +23,7 @@ public class UngroupedCharVectorColumnSource extends UngroupedColumnSource<Chara
     public UngroupedCharVectorColumnSource(ColumnSource<CharVector> innerSource) {
         super(Character.class);
         this.innerSource = innerSource;
-        this.isUngroupable = innerSource instanceof UngroupableColumnSource
-                && ((UngroupableColumnSource) innerSource).isUngroupable();
+        this.isUngroupable = UngroupableColumnSource.isUngroupable(innerSource);
     }
 
     @Override

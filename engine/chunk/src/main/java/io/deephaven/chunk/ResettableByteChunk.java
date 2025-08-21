@@ -27,20 +27,11 @@ public class ResettableByteChunk<ATTR_UPPER extends Any>
         return new ResettableByteChunk<>();
     }
 
-    public static <ATTR_BASE extends Any> ResettableByteChunk<ATTR_BASE> makeResettableChunkForPool() {
-        return new ResettableByteChunk<>() {
-            @Override
-            public void close() {
-                MultiChunkPool.forThisThread().giveResettableByteChunk(this);
-            }
-        };
-    }
-
     private ResettableByteChunk(byte[] data, int offset, int capacity) {
         super(data, offset, capacity);
     }
 
-    private ResettableByteChunk() {
+    protected ResettableByteChunk() {
         this(ArrayTypeUtils.EMPTY_BYTE_ARRAY, 0, 0);
     }
 

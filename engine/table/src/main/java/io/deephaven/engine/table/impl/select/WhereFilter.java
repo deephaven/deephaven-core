@@ -91,6 +91,21 @@ public interface WhereFilter extends Filter {
 
     WhereFilter[] ZERO_LENGTH_WHERE_FILTER_ARRAY = new WhereFilter[0];
 
+    @Override
+    default WhereFilter withBarriers(Object... barriers) {
+        return WhereFilterBarrierImpl.of(this, barriers);
+    }
+
+    @Override
+    default WhereFilter respectsBarriers(Object... barriers) {
+        return WhereFilterRespectsBarrierImpl.of(this, barriers);
+    }
+
+    @Override
+    default WhereFilter withSerial() {
+        return WhereFilterSerialImpl.of(this);
+    }
+
     /**
      * Get the columns required by this select filter.
      * <p>
@@ -346,5 +361,42 @@ public interface WhereFilter extends Filter {
         throw new UnsupportedOperationException("WhereFilters do not implement walk");
     }
 
+    @FinalDefault
+    default <T> T walkWhereFilter(Visitor<T> visitor) {
+        return visitor.visitWhereFilter(this);
+    }
+
     // endregion Filter impl
+
+    // rather than allowing for customization on every type of filter, we focus on structured and attribute filters
+    interface Visitor<T> {
+        default T visitWhereFilter(WhereFilter filter) {
+            if (filter instanceof WhereFilterInvertedImpl) {
+                return visitWhereFilter((WhereFilterInvertedImpl) filter);
+            } else if (filter instanceof WhereFilterSerialImpl) {
+                return visitWhereFilter((WhereFilterSerialImpl) filter);
+            } else if (filter instanceof WhereFilterBarrierImpl) {
+                return visitWhereFilter((WhereFilterBarrierImpl) filter);
+            } else if (filter instanceof WhereFilterRespectsBarrierImpl) {
+                return visitWhereFilter((WhereFilterRespectsBarrierImpl) filter);
+            } else if (filter instanceof DisjunctiveFilter) {
+                return visitWhereFilter((DisjunctiveFilter) filter);
+            } else if (filter instanceof ConjunctiveFilter) {
+                return visitWhereFilter((ConjunctiveFilter) filter);
+            }
+            return null;
+        }
+
+        T visitWhereFilter(WhereFilterInvertedImpl filter);
+
+        T visitWhereFilter(WhereFilterSerialImpl filter);
+
+        T visitWhereFilter(WhereFilterBarrierImpl filter);
+
+        T visitWhereFilter(WhereFilterRespectsBarrierImpl filter);
+
+        T visitWhereFilter(DisjunctiveFilter filter);
+
+        T visitWhereFilter(ConjunctiveFilter filter);
+    }
 }

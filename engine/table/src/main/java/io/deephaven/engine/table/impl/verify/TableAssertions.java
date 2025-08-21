@@ -26,53 +26,6 @@ public class TableAssertions {
     private TableAssertions() {}
 
     /**
-     * Asserts that the {@code table} is append-only. If its rows are ever modified or removed, the query will crash.
-     * <p>
-     * This can be used to ensure the safety and stability of stateful operations.
-     *
-     * @param table The table to apply the assertion to
-     * @return {@code table}, or a copy with the appropriate assertion applied
-     */
-    public static Table assertAppendOnly(@NotNull Table table) {
-        return assertAppendOnly(null, table);
-    }
-
-    /**
-     * Asserts that the {@code table} is append-only. If its rows are ever modified or removed, the query will crash.
-     * <p>
-     * This can be used to ensure the safety and stability of stateful operations.
-     *
-     * @param description An optional description which will be included in the exception message if the assertion is
-     *        violated.
-     * @param table The table to apply the assertion to
-     * @return {@code table}, or a copy with the appropriate assertion applied
-     */
-    public static Table assertAppendOnly(String description, @NotNull Table table) {
-        // noinspection ConstantConditions
-        if (table == null) {
-            throw new IllegalArgumentException("The table cannot be null!");
-        }
-
-        if (!table.isRefreshing()) {
-            return table;
-        }
-
-        final QueryTable coalesced = (QueryTable) table.coalesce();
-        return QueryPerformanceRecorder.withNuggetThrowing(
-                "assertAppendOnly(" + (description == null ? "" : description) + ')',
-                () -> {
-
-                    final QueryTable result = new QueryTable(coalesced.getDefinition(), coalesced.getRowSet(),
-                            coalesced.getColumnSourceMap());
-                    final TableUpdateListener listener =
-                            new AppendOnlyAssertionInstrumentedListenerAdapter(description, coalesced, result);
-                    coalesced.addUpdateListener(listener);
-
-                    return result;
-                });
-    }
-
-    /**
      * Asserts that the {@code table} is sorted by the given column.
      * <p>
      * This allows range filters to utilize binary search instead of a linear scan of the table for the given column.

@@ -11,7 +11,6 @@ import org.junit.Test;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 import java.nio.file.StandardOpenOption;
 
 /**
@@ -27,11 +26,9 @@ public class TestFileHandle {
     @Before
     public void setup() throws IOException {
         file = File.createTempFile("TestFileHandle-", ".dat");
-        FHUT = new FileHandle(FileChannel.open(file.toPath(),
-                StandardOpenOption.READ, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING,
-                StandardOpenOption.CREATE),
-                () -> {
-                });
+        FHUT = FileHandle.open(file.toPath(), () -> () -> {
+        }, StandardOpenOption.READ, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING,
+                StandardOpenOption.CREATE);
     }
 
     @After

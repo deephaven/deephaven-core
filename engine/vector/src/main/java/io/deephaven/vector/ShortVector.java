@@ -15,6 +15,7 @@ import io.deephaven.qst.type.ShortType;
 import io.deephaven.qst.type.PrimitiveVectorType;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.annotations.FinalDefault;
+import io.deephaven.util.compare.ShortComparisons;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -106,6 +107,22 @@ public interface ShortVector extends Vector<ShortVector>, Iterable<Short> {
         return toString(this, prefixLength);
     }
 
+    /**
+     * <p>
+     * Compare this vector with another vector.
+     * </p>
+     *
+     * <p>
+     * The vectors are ordered lexicographically using Deephaven sorting rules.
+     * </p>
+     *
+     * {@see Comparable#compareTo}
+     */
+    @Override
+    default int compareTo(final ShortVector o) {
+        return compareTo(this, o);
+    }
+
     static String shortValToString(final Object val) {
         return val == null ? NULL_ELEMENT_STRING : primitiveShortValToString((Short) val);
     }
@@ -176,6 +193,37 @@ public interface ShortVector extends Vector<ShortVector>, Iterable<Short> {
     }
 
     /**
+     * Helper method for {@link Comparable#compareTo(Object)} for a generic ShortVector.
+     * 
+     * @param aVector the first vector (this in compareTo)
+     * @param bVector the second vector ("o" or other in compareTo)
+     * @return -1, 0, or 1 if aVector is less than, equal to, or greater than bVector (respectively)
+     */
+    static int compareTo(final ShortVector aVector, final ShortVector bVector) {
+        if (aVector == bVector) {
+            return 0;
+        }
+        try (final CloseablePrimitiveIteratorOfShort aIterator = aVector.iterator();
+                final CloseablePrimitiveIteratorOfShort bIterator = bVector.iterator()) {
+            while (aIterator.hasNext()) {
+                if (!bIterator.hasNext()) {
+                    return 1;
+                }
+                final short aValue = aIterator.nextShort();
+                final short bValue = bIterator.nextShort();
+                final int compare = ShortComparisons.compare(aValue, bValue);
+                if (compare != 0) {
+                    return compare;
+                }
+            }
+            if (bIterator.hasNext()) {
+                return -1;
+            }
+        }
+        return 0;
+    }
+
+    /**
      * Helper method for implementing {@link Object#hashCode()}. Follows the pattern in {@link Arrays#hashCode(short[])}.
      *
      * @param vector The ShortVector to hash
@@ -188,7 +236,9 @@ public interface ShortVector extends Vector<ShortVector>, Iterable<Short> {
         }
         try (final CloseablePrimitiveIteratorOfShort iterator = vector.iterator()) {
             while (iterator.hasNext()) {
+                // region ElementHash
                 result = 31 * result + Short.hashCode(iterator.nextShort());
+                // endregion ElementHash
             }
         }
         return result;

@@ -111,6 +111,8 @@ BaseTable.validateUpdateIndices=true
 
 PerformanceEntry.requireAuthContext=true
 
+PushdownResult.forceValidation=true
+
 # Permit any instance methods on boxed types
 ColumnExpressionValidator.staticTargets.primitives=java.lang.Character,java.lang.Byte,java.lang.Short,java.lang.Integer,java.lang.Long,java.lang.Float,java.lang.Double,java.lang.Boolean
 ColumnExpressionValidator.instanceTargets.primitives=java.lang.Character,java.lang.Byte,java.lang.Short,java.lang.Integer,java.lang.Long,java.lang.Float,java.lang.Double,java.lang.Boolean

@@ -5,7 +5,6 @@ package io.deephaven.engine.table.impl.locations.impl;
 
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.liveness.*;
-import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.BasicDataIndex;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.PushdownFilterContext;
@@ -27,9 +26,9 @@ import java.lang.ref.SoftReference;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Consumer;
+import java.util.function.LongConsumer;
 
 /**
  * Partial TableLocation implementation for use by TableDataService implementations.
@@ -297,23 +296,22 @@ public abstract class AbstractTableLocation
     public abstract BasicDataIndex loadDataIndex(@NotNull String... columns);
 
     @Override
-    public long estimatePushdownFilterCost(
+    public void estimatePushdownFilterCost(
             final WhereFilter filter,
-            final Map<String, String> renameMap,
             final RowSet selection,
-            final RowSet fullSet,
             final boolean usePrev,
-            final PushdownFilterContext context) {
+            final PushdownFilterContext context,
+            final JobScheduler jobScheduler,
+            final LongConsumer onComplete,
+            final Consumer<Exception> onError) {
         // Default to having no benefit by pushing down.
-        return Long.MAX_VALUE;
+        onComplete.accept(Long.MAX_VALUE);
     }
 
     @Override
     public void pushdownFilter(
             final WhereFilter filter,
-            final Map<String, String> renameMap,
             final RowSet selection,
-            final RowSet fullSet,
             final boolean usePrev,
             final PushdownFilterContext context,
             final long costCeiling,
@@ -321,17 +319,13 @@ public abstract class AbstractTableLocation
             final Consumer<PushdownResult> onComplete,
             final Consumer<Exception> onError) {
         // Default to returning all results as "maybe"
-        onComplete.accept(PushdownResult.of(RowSetFactory.empty(), selection.copy()));
+        onComplete.accept(PushdownResult.allMaybeMatch(selection));
     }
 
     @Override
-    public Map<String, String> renameMap(final WhereFilter filter, final ColumnSource<?>[] filterSources) {
-        // Default to returning an empty map
-        return Map.of();
-    }
-
-    @Override
-    public PushdownFilterContext makePushdownFilterContext() {
+    public PushdownFilterContext makePushdownFilterContext(
+            final WhereFilter filter,
+            final List<ColumnSource<?>> filterSources) {
         throw new UnsupportedOperationException(
                 "makePushdownFilterContext() not supported for AbstractTableLocation");
     }
