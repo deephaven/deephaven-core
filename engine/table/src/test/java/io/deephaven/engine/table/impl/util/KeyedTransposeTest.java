@@ -44,6 +44,7 @@ public class KeyedTransposeTest extends RefreshingTableTestCase {
                 longCol("INFO", 2, NULL_LONG, NULL_LONG),
                 longCol("WARN", NULL_LONG, 1, NULL_LONG),
                 longCol("ERROR", NULL_LONG, NULL_LONG, 1));
+        assertFalse(t.isRefreshing());
         assertTableEquals(ex, t);
     }
 
@@ -58,6 +59,7 @@ public class KeyedTransposeTest extends RefreshingTableTestCase {
                 longCol("ERROR", 0, 0, 1, 0, 0),
                 longCol("WARN", 0, 1, 0, 0, 2),
                 longCol("INFO", 2, 0, 0, 1, 0));
+        assertFalse(t.isRefreshing());
         assertTableEquals(ex, t);
     }
 
@@ -71,6 +73,7 @@ public class KeyedTransposeTest extends RefreshingTableTestCase {
                 longCol("INFO", 2, 1, NULL_LONG, NULL_LONG, NULL_LONG),
                 longCol("WARN", NULL_LONG, NULL_LONG, 1, 2, NULL_LONG),
                 longCol("ERROR", NULL_LONG, NULL_LONG, NULL_LONG, NULL_LONG, 1));
+        assertFalse(t.isRefreshing());
         assertTableEquals(ex, t);
     }
 
@@ -86,6 +89,7 @@ public class KeyedTransposeTest extends RefreshingTableTestCase {
                 longCol("Sum_WARN", NULL_LONG, NULL_LONG, 2, 3, NULL_LONG),
                 longCol("Count_ERROR", NULL_LONG, NULL_LONG, NULL_LONG, NULL_LONG, 1),
                 longCol("Sum_ERROR", NULL_LONG, NULL_LONG, NULL_LONG, NULL_LONG, 3));
+        assertFalse(t.isRefreshing());
         assertTableEquals(ex, t);
     }
 
@@ -100,6 +104,7 @@ public class KeyedTransposeTest extends RefreshingTableTestCase {
                 longCol("ERROR_3", NULL_LONG, NULL_LONG, NULL_LONG, 1, NULL_LONG),
                 longCol("INFO_3", NULL_LONG, NULL_LONG, NULL_LONG, NULL_LONG, 1),
                 longCol("WARN_1", NULL_LONG, NULL_LONG, 1, NULL_LONG, NULL_LONG));
+        assertFalse(t.isRefreshing());
         assertTableEquals(ex, t);
     }
 
@@ -123,6 +128,7 @@ public class KeyedTransposeTest extends RefreshingTableTestCase {
                 longCol("Sum_ERROR_3", NULL_LONG, NULL_LONG, 3, NULL_LONG, NULL_LONG),
                 longCol("Count_WARN_1", NULL_LONG, NULL_LONG, NULL_LONG, NULL_LONG, 1),
                 longCol("Sum_WARN_1", NULL_LONG, NULL_LONG, NULL_LONG, NULL_LONG, 1));
+        assertFalse(t.isRefreshing());
         assertTableEquals(ex, t);
     }
 
@@ -142,6 +148,7 @@ public class KeyedTransposeTest extends RefreshingTableTestCase {
                 longCol("Sum_INFO_3", NULL_LONG, NULL_LONG, NULL_LONG, NULL_LONG, 3),
                 longCol("Count_WARN_1", NULL_LONG, NULL_LONG, 1, NULL_LONG, NULL_LONG),
                 longCol("Sum_WARN_1", NULL_LONG, NULL_LONG, 1, NULL_LONG, NULL_LONG));
+        assertFalse(t.isRefreshing());
         assertTableEquals(ex, t);
     }
 
@@ -160,6 +167,7 @@ public class KeyedTransposeTest extends RefreshingTableTestCase {
                 longCol("Sum_WARN_2", NULL_LONG, NULL_LONG, NULL_LONG, NULL_LONG, NULL_LONG),
                 longCol("Count_ERROR_1", 0, 0, 0, 0, 0),
                 longCol("Sum_ERROR_1", NULL_LONG, NULL_LONG, NULL_LONG, NULL_LONG, NULL_LONG));
+        assertFalse(t.isRefreshing());
         assertTableEquals(ex, t);
     }
 
@@ -177,6 +185,7 @@ public class KeyedTransposeTest extends RefreshingTableTestCase {
                 longCol("column_300_AB", NULL_LONG, NULL_LONG, 1, NULL_LONG),
                 longCol("column_01_null", NULL_LONG, NULL_LONG, NULL_LONG, 1),
                 longCol("null_CD", NULL_LONG, NULL_LONG, NULL_LONG, 1));
+        assertFalse(t.isRefreshing());
         assertTableEquals(ex, t);
     }
 
@@ -192,6 +201,7 @@ public class KeyedTransposeTest extends RefreshingTableTestCase {
                         doubleCol("Value", 10.1, 20.2, 30.3, 40.4, 50.5, 60.6, 70.7));
         final Table result = KeyedTranspose.keyedTranspose(source, List.of(AggSum("Value")), colsOf("Row"),
                 colsOf("Col"), null, newColumnBehavior);
+        assertTrue(result.isRefreshing());
 
         final ErrorListener el = new ErrorListener(result);
         result.addUpdateListener(el);

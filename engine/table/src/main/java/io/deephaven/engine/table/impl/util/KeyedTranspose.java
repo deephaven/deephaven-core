@@ -74,7 +74,7 @@ import java.util.stream.Stream;
  * <li>If Illegal Characters: Purge characters that are invalid for Deephaven column names. (ex. "1-2.3/4" becomes
  * "1234")</li>
  * <li>If Starts with Number: Add the prefix "column_" to the column name. (ex. column_123)</li>
- * <li>If Duplicate Column Name: Adds a suffix to differential the columns. (ex. INFO, INFO2)</li>
+ * <li>If Duplicate Column Name: Add a suffix to differentiate the columns. (ex. INFO, INFO2)</li>
  * </ul>
  *
  * Given the above contract, and to give you more control over the result, it may be necessary to sanitize data values
@@ -89,7 +89,7 @@ public class KeyedTranspose {
     public enum NewColumnBehavior {
         /**
          * The result table reports an error when a new column is detected. This is the default behavior, which ensures
-         * consistency between the result and a newly crated keyedTranspose.
+         * consistency between the result and a newly created keyedTranspose.
          */
         FAIL,
         /**
@@ -146,15 +146,18 @@ public class KeyedTranspose {
      * @param rowByColumns The columns to use as row keys in the transposed table.
      * @param columnByColumns The columns whose values become the new aggregated columns.
      * @param initialGroups An optional initial set of groups to ensure all columns are present in the output.
-     * @param newColumnBehavior the behavior when a new column would be added
+     * @param newColumnBehavior The behavior when a new column would be added
      */
     public static Table keyedTranspose(final Table source, final Collection<? extends Aggregation> aggregations,
             final Collection<? extends ColumnName> rowByColumns, final Collection<? extends ColumnName> columnByColumns,
-            final Table initialGroups,
-            final NewColumnBehavior newColumnBehavior) {
+            final Table initialGroups, final NewColumnBehavior newColumnBehavior) {
         final QueryTable querySource = (QueryTable) source.coalesce();
         if (querySource.isRefreshing()) {
             querySource.getUpdateGraph().checkInitiateSerialTableOperation();
+        }
+
+        if (aggregations.isEmpty()) {
+            throw new IllegalArgumentException("No aggregations defined");
         }
 
         if (rowByColumns.isEmpty()) {
@@ -162,9 +165,6 @@ public class KeyedTranspose {
         }
         if (columnByColumns.isEmpty()) {
             throw new IllegalArgumentException("No columnByColumns defined");
-        }
-        if (aggregations.isEmpty()) {
-            throw new IllegalArgumentException("No aggregations defined");
         }
 
         final Set<ColumnName> allByColumns = getAllByColumns(rowByColumns, columnByColumns);
@@ -198,7 +198,7 @@ public class KeyedTranspose {
                 .map(j -> MultiJoinInput.of(j.constituentTable, rowByColumnNames, j.getColumnMappings()))
                 .toArray(MultiJoinInput[]::new);
         final Table multiJoinResult = MultiJoinFactory.of(mji).table();
-        if (newColumnBehavior == NewColumnBehavior.IGNORE) {
+        if (newColumnBehavior == NewColumnBehavior.IGNORE || !source.isRefreshing()) {
             return multiJoinResult;
         }
 
