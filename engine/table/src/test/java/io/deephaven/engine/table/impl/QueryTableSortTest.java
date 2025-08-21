@@ -5,6 +5,7 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.SortColumn;
+import io.deephaven.api.agg.Aggregation;
 import io.deephaven.base.FileUtils;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.csv.util.MutableObject;
@@ -44,6 +45,7 @@ import java.util.function.Consumer;
 import java.util.function.LongUnaryOperator;
 
 import org.junit.experimental.categories.Category;
+import org.junit.rules.TemporaryFolder;
 
 import static io.deephaven.engine.util.TableTools.*;
 import static io.deephaven.engine.testutil.TstUtils.*;
@@ -1075,5 +1077,61 @@ public class QueryTableSortTest extends QueryTableTestBase {
         final Table s = x.sort("Value");
         assertTrue(s instanceof QueryTable.CopiedTable);
         assertTrue(((QueryTable.CopiedTable) s).checkParent(x));
+    }
+
+    public void testSymbolTable() throws IOException {
+        final TemporaryFolder tempFolder = new TemporaryFolder();
+        tempFolder.create();
+        try {
+
+            final Random r = new Random(0);
+            QueryScope.addParam("random", r);
+            QueryScope.addParam("syms", List.of("Apple", "Banana", "Cantaloupe", "apple"));
+            final Table t =
+                    emptyTable(100_000).update("Row=i", "R=random.nextInt(syms.size())", "Sym=(String)syms.get(R)");
+
+            final String fileName = tempFolder.getRoot().toPath().resolve("dictionary.parquet").toString();
+            ParquetTools.writeTable(t, fileName, ParquetInstructions.EMPTY);
+            final Table readback = ParquetTools.readTable(fileName);
+            assertTableEquals(t, readback);
+
+            final Table dictionarySorted = readback.sort("Sym");
+            assertTableEquals(t.sort("Sym"), dictionarySorted);
+
+            final Table resultRows = dictionarySorted.update("NewRow=i").aggBy(
+                    List.of(Aggregation.AggMin("MinRow=NewRow"), Aggregation.AggMax("MaxRow=NewRow")),
+                    List.of(ColumnName.of("Sym")));
+            TableTools.show(resultRows);
+            checkMixed(resultRows, false);
+
+            final List<SortColumn> insensitiveSort =
+                    List.of(ComparatorSortColumn.asc("Sym", String.CASE_INSENSITIVE_ORDER));
+            final Table dictionaryComparatorSorted = readback.sort(insensitiveSort);
+
+            final Table expectedComparator = t.sort(insensitiveSort);
+            assertTableEquals(expectedComparator, dictionaryComparatorSorted);
+
+            final Table resultRowsComparator = dictionaryComparatorSorted.update("NewRow=i").aggBy(
+                    List.of(Aggregation.AggMin("MinRow=NewRow"), Aggregation.AggMax("MaxRow=NewRow")),
+                    List.of(ColumnName.of("Sym")));
+            TableTools.show(resultRowsComparator);
+            checkMixed(resultRowsComparator, true);
+        } finally {
+            tempFolder.delete();
+        }
+    }
+
+    private static void checkMixed(final Table resultRows, final boolean mixed) {
+        final Table upperCase = resultRows.where("Sym=`Apple`");
+        final Table lowerCase = resultRows.where("Sym=`apple`");
+        final int maxUpper = upperCase.integerColumnIterator("MaxRow").intStream().toArray()[0];
+        System.out.println("Max Apple: " + maxUpper);
+        final int minLower = lowerCase.integerColumnIterator("MinRow").intStream().toArray()[0];
+        System.out.println("Min apple: " + minLower);
+        if (!mixed) {
+            assertTrue(maxUpper < minLower);
+        } else {
+            assertFalse(maxUpper < minLower);
+        }
     }
 }
