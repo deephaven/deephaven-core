@@ -3,7 +3,7 @@
 //
 package io.deephaven.engine.table.impl;
 
-import io.deephaven.api.SortColumn;
+import io.deephaven.api.EngineSortSpec;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.context.QueryScope;
@@ -17,7 +17,6 @@ import org.junit.Test;
 
 import java.util.Arrays;
 import java.util.Comparator;
-import java.util.List;
 
 import org.junit.experimental.categories.Category;
 
@@ -149,10 +148,9 @@ public class QueryTableHugeSortTest {
             final Table smallTable =
                     TableTools.emptyTable(smallSize).updateView("SortCol=Byte.toString((byte)(ii%100))", "Sentinel=k");
 
-            final List<SortColumn> sortBy =
-                    List.of(ComparatorSortColumn.asc("SortCol", new NumericStringComparator(), true));
+            final EngineSortSpec sortBy = ComparatorSortColumn.asc("SortCol", new NumericStringComparator(), true);
 
-            final Table sorted = smallTable.sort(sortBy);
+            final Table sorted = ((QueryTable) smallTable).sort(sortBy);
 
             final long runSize1 = (smallSize + 99) / 100;
             final long runSize2 = runSize1 - 1;
@@ -174,7 +172,8 @@ public class QueryTableHugeSortTest {
                     TableTools.emptyTable(bigSize).updateView("SortCol=Byte.toString((byte)(ii%100))", "Sentinel=k");
 
             final UnsupportedOperationException iae2 =
-                    org.junit.Assert.assertThrows(UnsupportedOperationException.class, () -> bigTable.sort(sortBy));
+                    org.junit.Assert.assertThrows(UnsupportedOperationException.class,
+                            () -> ((QueryTable) bigTable).sort(sortBy));
             assertEquals("Cannot sort more than " + SortHelpers.megaSortSize + " rows with a comparator",
                     iae2.getMessage());
 

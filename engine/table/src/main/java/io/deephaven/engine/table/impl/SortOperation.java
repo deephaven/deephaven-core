@@ -3,7 +3,7 @@
 //
 package io.deephaven.engine.table.impl;
 
-import io.deephaven.api.SortColumn;
+import io.deephaven.api.EngineSortSpec;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.WritableLongChunk;
@@ -49,7 +49,7 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
     private RowRedirection sortMapping;
 
     private final String[] sortColumnNames;
-    private final SortColumn[] sortColumns;
+    private final EngineSortSpec[] sortColumns;
     private final SortingOrder[] sortOrder;
     private final Comparator[] comparators;
     private final boolean[] comparatorsRespectEquality;
@@ -60,7 +60,7 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
 
     private final DataIndex dataIndex;
 
-    public SortOperation(final QueryTable parent, final SortColumn[] sortColumnsIn) {
+    public SortOperation(final QueryTable parent, final EngineSortSpec[] sortColumnsIn) {
         this.parent = parent;
         this.sortColumns = sortColumnsIn;
         this.sortOrder = Arrays.stream(sortColumnsIn).map(SortingOrder::from).toArray(SortingOrder[]::new);

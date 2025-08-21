@@ -79,7 +79,6 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.lang.ref.WeakReference;
-import java.lang.reflect.Array;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -2785,22 +2784,31 @@ public class QueryTable extends BaseTable<QueryTable> {
 
     @Override
     public Table sort(Collection<SortColumn> columnsToSortBy) {
+        return sort(columnsToSortBy.toArray(EngineSortSpec[]::new));
+    }
+
+    /**
+     * Sort this Table using the provided specifications.
+     *
+     * @param columnsToSortBy the sort specifications
+     * @return this table sorted according to the provided specifications
+     */
+    public Table sort(final EngineSortSpec... columnsToSortBy) {
         final UpdateGraph updateGraph = getUpdateGraph();
         try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(updateGraph).open()) {
-            if (columnsToSortBy.isEmpty()) {
+            if (columnsToSortBy.length == 0) {
                 return prepareReturnThis();
             }
-            final SortColumn[] sortColumns = columnsToSortBy.toArray(new SortColumn[columnsToSortBy.size()]);
 
-            if (sortColumns.length == 1 && !ComparatorSortColumn.hasComparator(sortColumns[0])) {
-                final String columnName = sortColumns[0].column().name();
-                final SortingOrder order = SortingOrder.from(sortColumns[0]);
+            if (columnsToSortBy.length == 1 && !ComparatorSortColumn.hasComparator(columnsToSortBy[0])) {
+                final String columnName = columnsToSortBy[0].column().name();
+                final SortingOrder order = SortingOrder.from(columnsToSortBy[0]);
                 if (SortedColumnsAttribute.isSortedBy(this, columnName, order)) {
                     return prepareReturnThis();
                 }
             }
 
-            return getResult(new SortOperation(this, sortColumns));
+            return getResult(new SortOperation(this, columnsToSortBy));
         }
     }
 

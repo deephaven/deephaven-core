@@ -5,6 +5,7 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.SortColumn;
+import io.deephaven.api.EngineSortSpec;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.base.FileUtils;
 import io.deephaven.base.verify.Assert;
@@ -29,7 +30,6 @@ import io.deephaven.engine.table.impl.select.IncrementalReleaseFilter;
 import io.deephaven.engine.table.impl.util.*;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.QueryConstants;
-import io.deephaven.util.compare.ObjectComparisons;
 import io.deephaven.util.mutable.MutableInt;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TIntArrayList;
@@ -508,31 +508,34 @@ public class QueryTableSortTest extends QueryTableTestBase {
         final QueryTable grouped = (QueryTable) (queryTable.groupBy("Sym"));
         final EvalNuggetInterface[] en = new EvalNuggetInterface[] {
                 new TableComparator(queryTable.sort(List.of(SortColumn.asc(ColumnName.of("bigD")))), "Default Sort",
-                        queryTable.sort(List.of(ComparatorSortColumn.asc("bigD", naturalOrder, true))),
+                        queryTable.sort(ComparatorSortColumn.asc("bigD", naturalOrder, true)),
                         "Comparator Sort"),
                 new TableComparator(queryTable.sort(List.of(SortColumn.desc(ColumnName.of("bigD")))), "Default Sort",
-                        queryTable.sort(List.of(ComparatorSortColumn.desc("bigD", naturalOrder, true))),
+                        queryTable.sort(ComparatorSortColumn.desc("bigD", naturalOrder, true)),
                         "Comparator Sort"),
                 new TableComparator(
                         queryTable.sort(
                                 List.of(SortColumn.asc(ColumnName.of("Sym")), SortColumn.desc(ColumnName.of("bigD")))),
                         "Default Sort",
                         queryTable.sort(
-                                List.of(ComparatorSortColumn.asc("Sym", naturalOrder),
-                                        ComparatorSortColumn.asc("bigD", reverseOrder))),
+                                ComparatorSortColumn.asc("Sym", naturalOrder),
+                                ComparatorSortColumn.asc("bigD", reverseOrder)),
                         "Comparator Sort"),
-                EvalNugget.from(() -> grouped.sort(List.of(ComparatorSortColumn.asc("bigI", vecLength)))),
-                new TableComparator(grouped.sort(List.of(ComparatorSortColumn.asc("bigI", vecLength))),
+                EvalNugget.from(() -> grouped.sort(ComparatorSortColumn.asc("bigI", vecLength))),
+                new TableComparator(grouped.sort(ComparatorSortColumn.asc("bigI", vecLength)),
                         "comparator", grouped.update("L=bigI.size()").sort("L").dropColumns("L"), "len"),
-                EvalNugget.from(() -> queryTable.sort(List.of(ComparatorSortColumn.asc("ArrCol", arrayLength)))),
-                new TableComparator(queryTable.sort(List.of(ComparatorSortColumn.asc("ArrCol", arrayLength))),
+                EvalNugget
+                        .from(() -> queryTable.sort(ComparatorSortColumn.asc("ArrCol", arrayLength))),
+                new TableComparator(queryTable.sort(ComparatorSortColumn.asc("ArrCol", arrayLength)),
                         "comparator",
                         queryTable.update("L=java.lang.reflect.Array.getLength(ArrCol)").sort("L").dropColumns("L"),
                         "len"),
-                EvalNugget.from(() -> queryTable.sort(List.of(ComparatorSortColumn.asc("ArrCol", arrayLength)))),
-                EvalNugget.from(() -> queryTable.sort(List.of(ComparatorSortColumn.asc("ArrCol", arrayLex)))),
+                EvalNugget
+                        .from(() -> queryTable.sort(ComparatorSortColumn.asc("ArrCol", arrayLength))),
+                EvalNugget.from(() -> queryTable.sort(ComparatorSortColumn.asc("ArrCol", arrayLex))),
                 new EvalNuggetInterface() {
-                    final Table lexSort = queryTable.sort(List.of(ComparatorSortColumn.asc("ArrCol", arrayLex)));
+                    final Table lexSort =
+                            queryTable.sort(ComparatorSortColumn.asc("ArrCol", arrayLex));
 
                     @Override
                     public void validate(String msg) {
@@ -1035,8 +1038,8 @@ public class QueryTableSortTest extends QueryTableTestBase {
         assertTableEquals(x.sort("Sentinel"), s);
 
         // Make sure the comaprator still overrides the registry
-        final Table s2 =
-                x.sort(List.of(ComparatorSortColumn.asc("StrArray", new CaseInsensitiveStringArrayComparator())));
+        final Table s2 = ((QueryTable) x).sort(
+                ComparatorSortColumn.asc("StrArray", new CaseInsensitiveStringArrayComparator()));
         assertTableEquals(x.update("Sentinel=Sentinel==15 ? 25 : Sentinel==21 ? 26 : Sentinel").sort("Sentinel")
                 .update("Sentinel=Sentinel==25 ? 15 : Sentinel==26 ? 21 : Sentinel"), s2);
     }
@@ -1064,7 +1067,7 @@ public class QueryTableSortTest extends QueryTableTestBase {
                         new Object[] {10, 20}, new Object[] {NULL_DOUBLE}, new Object[] {Double.NaN},
                         new Object[] {Double.POSITIVE_INFINITY}));
         final IllegalArgumentException iae = org.junit.Assert.assertThrows(IllegalArgumentException.class,
-                () -> x.sort(List.of(ComparatorSortColumn.asc("Sentinel", (o1, o2) -> 0))));
+                () -> ((QueryTable) x).sort(ComparatorSortColumn.asc("Sentinel", (o1, o2) -> 0)));
         assertEquals("Sentinel is a primitive column (int), therefore cannot accept a Comparator", iae.getMessage());
 
         final IllegalArgumentException iae2 =
@@ -1104,11 +1107,10 @@ public class QueryTableSortTest extends QueryTableTestBase {
             TableTools.show(resultRows);
             checkMixed(resultRows, false);
 
-            final List<SortColumn> insensitiveSort =
-                    List.of(ComparatorSortColumn.asc("Sym", String.CASE_INSENSITIVE_ORDER));
-            final Table dictionaryComparatorSorted = readback.sort(insensitiveSort);
+            final EngineSortSpec insensitiveSort = ComparatorSortColumn.asc("Sym", String.CASE_INSENSITIVE_ORDER);
+            final Table dictionaryComparatorSorted = ((QueryTable) readback.coalesce()).sort(insensitiveSort);
 
-            final Table expectedComparator = t.sort(insensitiveSort);
+            final Table expectedComparator = ((QueryTable) t).sort(insensitiveSort);
             assertTableEquals(expectedComparator, dictionaryComparatorSorted);
 
             final Table resultRowsComparator = dictionaryComparatorSorted.update("NewRow=i").aggBy(

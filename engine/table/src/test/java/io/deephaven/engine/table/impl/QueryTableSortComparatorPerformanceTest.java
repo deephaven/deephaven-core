@@ -48,9 +48,9 @@ public class QueryTableSortComparatorPerformanceTest extends QueryTableTestBase 
             final long t1 = System.nanoTime();
             results.add(queryTable.sortDescending("Value1"));
             final long t2 = System.nanoTime();
-            results.add(queryTable.sort(List.of(ComparatorSortColumn.asc("Value1", naturalOrder, true))));
+            results.add(queryTable.sort(ComparatorSortColumn.asc("Value1", naturalOrder, true)));
             final long t3 = System.nanoTime();
-            results.add(queryTable.sort(List.of(ComparatorSortColumn.asc("Value1", reverseOrder, true))));
+            results.add(queryTable.sort(ComparatorSortColumn.asc("Value1", reverseOrder, true)));
             final long t4 = System.nanoTime();
             csvBuilder.append(t1 - t0).append(",").append(t2 - t1).append(",").append(t3 - t2).append(",")
                     .append(t4 - t3).append("\n");

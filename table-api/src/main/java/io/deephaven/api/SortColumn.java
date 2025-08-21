@@ -4,13 +4,16 @@
 package io.deephaven.api;
 
 import io.deephaven.annotations.SimpleStyle;
+import org.immutables.value.Value.Immutable;
+import org.immutables.value.Value.Parameter;
 
 /**
  * Represents a {@link #column() column} and {@link #order() order} pair.
  */
-public interface SortColumn {
-
-    enum Order {
+@Immutable
+@SimpleStyle
+public abstract class SortColumn implements EngineSortSpec {
+    public enum Order {
         ASCENDING, DESCENDING
     }
 
@@ -20,8 +23,8 @@ public interface SortColumn {
      * @param columnName the column name
      * @return the ascending sort column
      */
-    static SortColumn asc(ColumnName columnName) {
-        return ImmutableSortColumnImpl.of(columnName, Order.ASCENDING);
+    public static SortColumn asc(ColumnName columnName) {
+        return ImmutableSortColumn.of(columnName, Order.ASCENDING);
     }
 
     /**
@@ -30,8 +33,8 @@ public interface SortColumn {
      * @param columnName the column name
      * @return the descending sort column
      */
-    static SortColumn desc(ColumnName columnName) {
-        return ImmutableSortColumnImpl.of(columnName, Order.DESCENDING);
+    public static SortColumn desc(ColumnName columnName) {
+        return ImmutableSortColumn.of(columnName, Order.DESCENDING);
     }
 
     /**
@@ -39,16 +42,14 @@ public interface SortColumn {
      *
      * @return the column name
      */
-    ColumnName column();
+    @Parameter
+    public abstract ColumnName column();
 
     /**
      * The order.
      *
      * @return the order
      */
-    Order order();
-
-    default boolean isAscending() {
-        return order() == Order.ASCENDING;
-    }
+    @Parameter
+    public abstract Order order();
 }

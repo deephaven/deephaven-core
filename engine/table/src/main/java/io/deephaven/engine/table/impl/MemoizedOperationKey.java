@@ -3,10 +3,7 @@
 //
 package io.deephaven.engine.table.impl;
 
-import io.deephaven.api.ColumnName;
-import io.deephaven.api.JoinMatch;
-import io.deephaven.api.RangeJoinMatch;
-import io.deephaven.api.SortColumn;
+import io.deephaven.api.*;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.select.*;
@@ -87,7 +84,7 @@ public abstract class MemoizedOperationKey {
         return Flatten.FLATTEN_INSTANCE;
     }
 
-    static MemoizedOperationKey sort(SortColumn[] sortColumns) {
+    static MemoizedOperationKey sort(EngineSortSpec[] sortColumns) {
         return new Sort(sortColumns);
     }
 
@@ -245,9 +242,9 @@ public abstract class MemoizedOperationKey {
     }
 
     private static class Sort extends MemoizedOperationKey {
-        private final SortColumn[] sortColumns;
+        private final EngineSortSpec[] sortColumns;
 
-        private Sort(SortColumn[] sortColumns) {
+        private Sort(EngineSortSpec[] sortColumns) {
             this.sortColumns = sortColumns;
         }
 

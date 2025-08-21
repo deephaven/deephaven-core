@@ -408,8 +408,8 @@ public class SortHelpers {
             return getSortMappingOne(order, columnSource, comparator, rowSet, usePrev);
         }
 
-        final QueryTable groupedSymbols = (QueryTable) symbolTable
-                .sort(List.of(ComparatorSortColumn.asc(SymbolTableSource.SYMBOL_COLUMN_NAME, comparator, true)))
+        final QueryTable groupedSymbols = (QueryTable) ((QueryTable) symbolTable)
+                .sort(ComparatorSortColumn.asc(SymbolTableSource.SYMBOL_COLUMN_NAME, comparator, true))
                 .groupBy(SymbolTableSource.SYMBOL_COLUMN_NAME).coalesce();
         final Map<String, ColumnSource<?>> extraColumn;
         if (groupedSymbols.isFlat()) {
