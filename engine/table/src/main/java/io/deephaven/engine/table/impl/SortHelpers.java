@@ -660,7 +660,7 @@ public class SortHelpers {
             final ColumnSource<Comparable<?>>[] originalColumnSources,
             final ColumnSource<Comparable<?>>[] columnSources,
             @NotNull final Comparator[] comparators,
-            final boolean[] comparatorsRespectEquality,
+            @NotNull final boolean[] comparatorsRespectEquality,
             final DataIndex dataIndex,
             final RowSet rowSet,
             boolean usePrev) {

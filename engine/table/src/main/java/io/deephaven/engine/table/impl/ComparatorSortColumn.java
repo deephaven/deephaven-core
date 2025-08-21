@@ -139,11 +139,4 @@ abstract class ComparatorSortColumn implements SortColumn {
     public static boolean hasComparator(final SortColumn sortColumn) {
         return sortColumn instanceof ComparatorSortColumn;
     }
-
-    @Check
-    void checkNonNullComparator() {
-        if (getComparator() == null) {
-            throw new IllegalArgumentException("Comparator cannot be null");
-        }
-    }
 }
