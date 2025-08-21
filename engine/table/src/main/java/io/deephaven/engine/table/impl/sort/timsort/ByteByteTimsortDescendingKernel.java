@@ -23,8 +23,7 @@ import io.deephaven.util.annotations.VisibleForTesting;
  */
 public final class ByteByteTimsortDescendingKernel {
     // region constructor
-    private ByteByteTimsortDescendingKernel() {
-    }
+    private ByteByteTimsortDescendingKernel() {}
     // endregion constructor
 
     // region Context
@@ -59,7 +58,8 @@ public final class ByteByteTimsortDescendingKernel {
                 WritableChunk<SORT_VALUES_ATTR> valuesToSort,
                 IntChunk<? extends ChunkPositions> offsetsIn,
                 IntChunk<? extends ChunkLengths> lengthsIn) {
-            ByteByteTimsortDescendingKernel.this.sort(this, valuesToPermute, valuesToSort.asWritableByteChunk(), offsetsIn, lengthsIn);
+            ByteByteTimsortDescendingKernel.this.sort(this, valuesToPermute, valuesToSort.asWritableByteChunk(), offsetsIn,
+                    lengthsIn);
         }
 
         @Override
@@ -75,14 +75,16 @@ public final class ByteByteTimsortDescendingKernel {
     // endregion Context
 
     // region createContextInstance
-    public <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> ByteByteSortKernelContext<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> createContextInstance(int size) {
+    public <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> ByteByteSortKernelContext<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> createContextInstance(
+            int size) {
         return new ByteByteSortKernelContext<>(size);
     }
     // endregion createContextInstance
 
     // region createContextStatic
 
-    public static <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> ByteByteSortKernelContext<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> createContext(final int size) {
+    public static <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> ByteByteSortKernelContext<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> createContext(
+            final int size) {
         return new ByteByteTimsortDescendingKernel().createContextInstance(size);
     }
 

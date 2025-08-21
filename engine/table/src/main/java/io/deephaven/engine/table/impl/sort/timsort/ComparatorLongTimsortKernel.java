@@ -64,7 +64,8 @@ public final class ComparatorLongTimsortKernel {
                 WritableChunk<SORT_VALUES_ATTR> valuesToSort,
                 IntChunk<? extends ChunkPositions> offsetsIn,
                 IntChunk<? extends ChunkLengths> lengthsIn) {
-            ComparatorLongTimsortKernel.this.sort(this, valuesToPermute, valuesToSort.asWritableObjectChunk(), offsetsIn, lengthsIn);
+            ComparatorLongTimsortKernel.this.sort(this, valuesToPermute, valuesToSort.asWritableObjectChunk(), offsetsIn,
+                    lengthsIn);
         }
 
         @Override
@@ -80,14 +81,16 @@ public final class ComparatorLongTimsortKernel {
     // endregion Context
 
     // region createContextInstance
-    public <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> ObjectLongSortKernelContext<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> createContextInstance(int size) {
+    public <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> ObjectLongSortKernelContext<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> createContextInstance(
+            int size) {
         return new ObjectLongSortKernelContext<>(size);
     }
     // endregion createContextInstance
 
     // region createContextStatic
 
-    public static <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> ObjectLongSortKernelContext<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> createContext(final int size, Comparator comparator) {
+    public static <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> ObjectLongSortKernelContext<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> createContext(
+            final int size, Comparator comparator) {
         return new ComparatorLongTimsortKernel(comparator).createContextInstance(size);
     }
 

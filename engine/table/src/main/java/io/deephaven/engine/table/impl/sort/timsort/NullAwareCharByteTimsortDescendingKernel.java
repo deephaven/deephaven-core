@@ -34,8 +34,7 @@ import io.deephaven.util.annotations.VisibleForTesting;
  */
 public final class NullAwareCharByteTimsortDescendingKernel {
     // region constructor
-    private NullAwareCharByteTimsortDescendingKernel() {
-    }
+    private NullAwareCharByteTimsortDescendingKernel() {}
     // endregion constructor
 
     // region Context
@@ -70,7 +69,8 @@ public final class NullAwareCharByteTimsortDescendingKernel {
                 WritableChunk<SORT_VALUES_ATTR> valuesToSort,
                 IntChunk<? extends ChunkPositions> offsetsIn,
                 IntChunk<? extends ChunkLengths> lengthsIn) {
-            NullAwareCharByteTimsortDescendingKernel.this.sort(this, valuesToPermute, valuesToSort.asWritableCharChunk(), offsetsIn, lengthsIn);
+            NullAwareCharByteTimsortDescendingKernel.this.sort(this, valuesToPermute, valuesToSort.asWritableCharChunk(), offsetsIn,
+                    lengthsIn);
         }
 
         @Override
@@ -86,14 +86,16 @@ public final class NullAwareCharByteTimsortDescendingKernel {
     // endregion Context
 
     // region createContextInstance
-    public <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> CharByteSortKernelContext<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> createContextInstance(int size) {
+    public <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> CharByteSortKernelContext<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> createContextInstance(
+            int size) {
         return new CharByteSortKernelContext<>(size);
     }
     // endregion createContextInstance
 
     // region createContextStatic
 
-    public static <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> CharByteSortKernelContext<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> createContext(final int size) {
+    public static <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> CharByteSortKernelContext<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> createContext(
+            final int size) {
         return new NullAwareCharByteTimsortDescendingKernel().createContextInstance(size);
     }
 

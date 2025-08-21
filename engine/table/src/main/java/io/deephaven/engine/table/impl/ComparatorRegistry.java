@@ -53,10 +53,10 @@ public class ComparatorRegistry {
             registerComparator(short[].class, Arrays::compare);
             registerComparator(int[].class, Arrays::compare);
             registerComparator(long[].class, Arrays::compare);
-            registerComparator(String[].class, (Comparator) new ObjectArrayComparator());
-            registerComparator(BigInteger[].class, (Comparator) new ObjectArrayComparator());
-            registerComparator(BigDecimal[].class, (Comparator) new ObjectArrayComparator());
-            registerComparator(Comparable[].class, (Comparator) new ObjectArrayComparator());
+            registerComparator(String[].class, new ObjectArrayComparator<>());
+            registerComparator(BigInteger[].class, new ObjectArrayComparator<>());
+            registerComparator(BigDecimal[].class, new ObjectArrayComparator<>());
+            registerComparator(Comparable[].class, new ObjectArrayComparator<>());
         }
     }
 

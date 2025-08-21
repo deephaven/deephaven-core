@@ -33,8 +33,7 @@ import io.deephaven.util.annotations.VisibleForTesting;
  */
 public final class NullAwareCharByteTimsortKernel {
     // region constructor
-    private NullAwareCharByteTimsortKernel() {
-    }
+    private NullAwareCharByteTimsortKernel() {}
     // endregion constructor
 
     // region Context
@@ -69,7 +68,8 @@ public final class NullAwareCharByteTimsortKernel {
                 WritableChunk<SORT_VALUES_ATTR> valuesToSort,
                 IntChunk<? extends ChunkPositions> offsetsIn,
                 IntChunk<? extends ChunkLengths> lengthsIn) {
-            NullAwareCharByteTimsortKernel.this.sort(this, valuesToPermute, valuesToSort.asWritableCharChunk(), offsetsIn, lengthsIn);
+            NullAwareCharByteTimsortKernel.this.sort(this, valuesToPermute, valuesToSort.asWritableCharChunk(), offsetsIn,
+                    lengthsIn);
         }
 
         @Override
@@ -85,14 +85,16 @@ public final class NullAwareCharByteTimsortKernel {
     // endregion Context
 
     // region createContextInstance
-    public <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> CharByteSortKernelContext<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> createContextInstance(int size) {
+    public <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> CharByteSortKernelContext<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> createContextInstance(
+            int size) {
         return new CharByteSortKernelContext<>(size);
     }
     // endregion createContextInstance
 
     // region createContextStatic
 
-    public static <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> CharByteSortKernelContext<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> createContext(final int size) {
+    public static <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> CharByteSortKernelContext<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> createContext(
+            final int size) {
         return new NullAwareCharByteTimsortKernel().createContextInstance(size);
     }
 

@@ -31,6 +31,5 @@ public class ReplicateArrayComparators {
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/comparators/CharArrayComparator.java";
         charToFloat(TASK, charFile, null);
         charToDouble(TASK, charFile, null);
-        charToObject(TASK, charFile);
     }
 }

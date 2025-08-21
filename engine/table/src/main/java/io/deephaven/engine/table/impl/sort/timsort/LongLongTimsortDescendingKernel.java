@@ -23,8 +23,7 @@ import io.deephaven.util.annotations.VisibleForTesting;
  */
 public final class LongLongTimsortDescendingKernel {
     // region constructor
-    private LongLongTimsortDescendingKernel() {
-    }
+    private LongLongTimsortDescendingKernel() {}
     // endregion constructor
 
     // region Context
@@ -59,7 +58,8 @@ public final class LongLongTimsortDescendingKernel {
                 WritableChunk<SORT_VALUES_ATTR> valuesToSort,
                 IntChunk<? extends ChunkPositions> offsetsIn,
                 IntChunk<? extends ChunkLengths> lengthsIn) {
-            LongLongTimsortDescendingKernel.this.sort(this, valuesToPermute, valuesToSort.asWritableLongChunk(), offsetsIn, lengthsIn);
+            LongLongTimsortDescendingKernel.this.sort(this, valuesToPermute, valuesToSort.asWritableLongChunk(), offsetsIn,
+                    lengthsIn);
         }
 
         @Override
@@ -75,14 +75,16 @@ public final class LongLongTimsortDescendingKernel {
     // endregion Context
 
     // region createContextInstance
-    public <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> LongLongSortKernelContext<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> createContextInstance(int size) {
+    public <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> LongLongSortKernelContext<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> createContextInstance(
+            int size) {
         return new LongLongSortKernelContext<>(size);
     }
     // endregion createContextInstance
 
     // region createContextStatic
 
-    public static <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> LongLongSortKernelContext<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> createContext(final int size) {
+    public static <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> LongLongSortKernelContext<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> createContext(
+            final int size) {
         return new LongLongTimsortDescendingKernel().createContextInstance(size);
     }
 

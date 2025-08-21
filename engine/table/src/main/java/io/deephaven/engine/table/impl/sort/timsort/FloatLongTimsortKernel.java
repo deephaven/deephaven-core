@@ -24,8 +24,7 @@ import io.deephaven.util.annotations.VisibleForTesting;
  */
 public final class FloatLongTimsortKernel {
     // region constructor
-    private FloatLongTimsortKernel() {
-    }
+    private FloatLongTimsortKernel() {}
     // endregion constructor
 
     // region Context
@@ -60,7 +59,8 @@ public final class FloatLongTimsortKernel {
                 WritableChunk<SORT_VALUES_ATTR> valuesToSort,
                 IntChunk<? extends ChunkPositions> offsetsIn,
                 IntChunk<? extends ChunkLengths> lengthsIn) {
-            FloatLongTimsortKernel.this.sort(this, valuesToPermute, valuesToSort.asWritableFloatChunk(), offsetsIn, lengthsIn);
+            FloatLongTimsortKernel.this.sort(this, valuesToPermute, valuesToSort.asWritableFloatChunk(), offsetsIn,
+                    lengthsIn);
         }
 
         @Override
@@ -76,14 +76,16 @@ public final class FloatLongTimsortKernel {
     // endregion Context
 
     // region createContextInstance
-    public <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> FloatLongSortKernelContext<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> createContextInstance(int size) {
+    public <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> FloatLongSortKernelContext<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> createContextInstance(
+            int size) {
         return new FloatLongSortKernelContext<>(size);
     }
     // endregion createContextInstance
 
     // region createContextStatic
 
-    public static <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> FloatLongSortKernelContext<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> createContext(final int size) {
+    public static <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> FloatLongSortKernelContext<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> createContext(
+            final int size) {
         return new FloatLongTimsortKernel().createContextInstance(size);
     }
 

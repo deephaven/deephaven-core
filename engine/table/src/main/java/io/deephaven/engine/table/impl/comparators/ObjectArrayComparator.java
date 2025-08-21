@@ -1,10 +1,6 @@
 //
 // Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
-// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
-// ****** Edit CharArrayComparator and run "./gradlew replicateArrayComparators" to regenerate
-//
-// @formatter:off
 package io.deephaven.engine.table.impl.comparators;
 
 import io.deephaven.util.compare.ObjectComparisons;
@@ -13,10 +9,14 @@ import java.util.Comparator;
 
 /**
  * Lexicographicaly compares two arrays using Deephaven ordering for the elements.
+ *
+ * <p>
+ * Note, although this is equivalent to {@link CharArrayComparator}, it is not replicated to allow for generics.
+ * </p>
  */
-public class ObjectArrayComparator implements Comparator<Object[]> {
+public class ObjectArrayComparator<T> implements Comparator<T[]> {
     @Override
-    public int compare(final Object[] o1, final Object[] o2) {
+    public int compare(final T[] o1, final T[] o2) {
         if (o1 == o2) {
             return 0;
 
