@@ -130,7 +130,7 @@ public class SortHelpers {
         }
 
         @Override
-        final public long size() {
+        public long size() {
             return size;
         }
 
@@ -284,14 +284,12 @@ public class SortHelpers {
         }
 
         if (columnsToSortBy.length == 1) {
-            final Comparator comparator = comparators[0];
             if (allowSymbolTable.allowed() && columnsToSortBy[0] instanceof SymbolTableSource
                     && ((SymbolTableSource<Comparable<?>>) columnsToSortBy[0]).hasSymbolTable(rowSetToSort)) {
-                return doSymbolTableMapping(order[0], columnsToSortBy[0], comparator, comparatorsRespectEquality[0],
+                return doSymbolTableMapping(order[0], columnsToSortBy[0], comparators[0], comparatorsRespectEquality[0],
                         rowSetToSort, usePrev);
             } else {
-                return getSortMappingOne(order[0], columnsToSortBy[0], comparator,
-                        rowSetToSort, usePrev);
+                return getSortMappingOne(order[0], columnsToSortBy[0], comparators[0], rowSetToSort, usePrev);
             }
         }
 
