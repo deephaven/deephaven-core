@@ -41,7 +41,6 @@ import io.deephaven.util.type.ArrayTypeUtils;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Comparator;
-import java.util.List;
 import java.util.Map;
 import java.util.function.LongPredicate;
 
@@ -70,11 +69,11 @@ public class SortHelpers {
         }
 
         boolean allowed() {
-            return sortBySymbolTable && allowed;
+            return SORT_BY_SYMBOL_TABLE && allowed;
         }
     }
 
-    public static boolean sortBySymbolTable =
+    public static boolean SORT_BY_SYMBOL_TABLE =
             Configuration.getInstance().getBooleanWithDefault("QueryTable.sortBySymbolTable", true);
 
     /**
@@ -613,8 +612,7 @@ public class SortHelpers {
                 (ColumnSource<Comparable<?>>[]) ReinterpretUtils.maybeConvertToPrimitive(originalIndexKeyColumns);
         final SortMapping indexMapping =
                 getSortedKeys(order, originalIndexKeyColumns, indexKeyColumns, comparators, comparatorsRespectEquality,
-                        null,
-                        indexRowSet, usePrev, ALLOW_SYMBOL_TABLE);
+                        null, indexRowSet, usePrev, ALLOW_SYMBOL_TABLE);
 
         final String rowSetColumnName = dataIndex.rowSetColumnName();
         final ColumnSource<RowSet> rawRowSetColumn = dataIndex.table().getColumnSource(rowSetColumnName, RowSet.class);

@@ -40,7 +40,7 @@ public class IntRegionBinarySearchKernel {
             final long lastKey,
             @NotNull final SortColumn sortColumn,
             @NotNull final Object[] searchValues) {
-        final SortColumn.Order order = sortColumn.order();
+        final SortSpec.Order order = SortSpec.Order();
         final int[] unboxed = ArrayTypeUtils.getUnboxedIntArray(searchValues);
         if (sortColumn.isAscending()) {
             try (final IntTimsortKernel.IntSortKernelContext<Any> context =
@@ -81,7 +81,7 @@ public class IntRegionBinarySearchKernel {
             @NotNull final RowSetBuilderSequential builder,
             final long firstKey,
             final long lastKey,
-            SortColumn.Order sortDirection,
+            SortSpec.Order sortDirection,
             final int toFind) {
         // Find the beginning of the range
         long matchStart = binarySearchRange(region, toFind, firstKey, lastKey, sortDirection, -1);
@@ -118,9 +118,9 @@ public class IntRegionBinarySearchKernel {
             final int toFind,
             long start,
             long end,
-            final SortColumn.Order sortDirection,
+            final SortSpec.Order sortDirection,
             final int rangeDirection) {
-        final int sortDirectionInt = sortDirection == SortSpec.Order.ASCENDING ? 1 : -1;
+        final int sortDirectionInt = sortDirection.isAscending() ? 1 : -1;
         long matchStart = -1;
         while (start <= end) {
             long pivot = (start + end) >>> 1;

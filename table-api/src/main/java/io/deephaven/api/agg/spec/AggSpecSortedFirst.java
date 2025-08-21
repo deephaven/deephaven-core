@@ -16,7 +16,7 @@ import java.util.stream.Collectors;
  * Specifies an aggregation that outputs the first value in the input column for each group, after sorting the group on
  * the {@link #columns() sort columns}.
  * 
- * @implNote The sorted-first aggregation only supports {@link SortColumn.Order#ASCENDING} columns at the moment.
+ * @implNote The sorted-first aggregation only supports {@link SortSpec.Order#ASCENDING} columns at the moment.
  * @see <a href="https://github.com/deephaven/deephaven-core/issues/821">SortedFirst / SortedLast aggregations with sort
  *      direction</a>
  */

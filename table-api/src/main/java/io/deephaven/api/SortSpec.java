@@ -26,13 +26,17 @@ public interface SortSpec {
      *
      * @return the order
      */
-    SortColumn.Order order();
+    SortSpec.Order order();
 
     default boolean isAscending() {
         return order() == Order.ASCENDING;
     }
 
     enum Order {
-        ASCENDING, DESCENDING
+        ASCENDING, DESCENDING;
+
+        public boolean isAscending() {
+            return this == ASCENDING;
+        }
     }
 }
