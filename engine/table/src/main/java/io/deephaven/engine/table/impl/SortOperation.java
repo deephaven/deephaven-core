@@ -31,6 +31,8 @@ import java.util.function.LongUnaryOperator;
 
 import static io.deephaven.engine.table.Table.SORT_REVERSE_LOOKUP_ATTRIBUTE;
 import static io.deephaven.engine.table.Table.SORT_ROW_REDIRECTION_ATTRIBUTE;
+import static io.deephaven.engine.table.impl.SortHelpers.AllowSymbolTable.ALLOW_SYMBOL_TABLE;
+import static io.deephaven.engine.table.impl.SortHelpers.AllowSymbolTable.DISALLOW_SYMBOL_TABLE;
 
 public class SortOperation implements QueryTable.MemoizableOperation<QueryTable> {
     static final Map<String, Object> IDENTITY_REDIRECTION_ATTRIBUTES;
@@ -230,7 +232,7 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
                                 SortHelpers.getSortedKeys(sortOrder, originalSortColumns, sortColumnSources,
                                         comparators,
                                         comparatorsRespectEquality, null,
-                                        upstream.added(), false, false);
+                                        upstream.added(), false, DISALLOW_SYMBOL_TABLE);
                         final LongChunkColumnSource recycled = recycledInnerRedirectionSource.getValue();
                         recycledInnerRedirectionSource.setValue(null);
                         final LongChunkColumnSource updateInnerRedirectSource =
@@ -272,7 +274,7 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
             final SortHelpers.SortMapping sortedKeys =
                     SortHelpers.getSortedKeys(sortOrder, originalSortColumns, sortColumnSources, comparators,
                             comparatorsRespectEquality, dataIndex,
-                            parent.getRowSet(), false, false);
+                            parent.getRowSet(), false, ALLOW_SYMBOL_TABLE);
             return new Result<>(historicalSort(sortedKeys));
         }
         if (parent.isBlink()) {
@@ -280,7 +282,7 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
             final SortHelpers.SortMapping sortedKeys = SortHelpers.getSortedKeys(
                     sortOrder, originalSortColumns, sortColumnSources, comparators, comparatorsRespectEquality,
                     dataIndex,
-                    rowSetToUse, usePrev, false);
+                    rowSetToUse, usePrev, ALLOW_SYMBOL_TABLE);
             return blinkTableSort(sortedKeys);
         }
 
@@ -298,7 +300,7 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
             final long[] sortedKeys = SortHelpers.getSortedKeys(
                     sortOrder, originalSortColumns, sortColumnSources, comparators, comparatorsRespectEquality,
                     dataIndex,
-                    rowSetToSort, usePrev, false)
+                    rowSetToSort, usePrev, ALLOW_SYMBOL_TABLE)
                     .getArrayMapping();
 
             final HashMapK4V4 reverseLookup = new HashMapLockFreeK4V4(sortedKeys.length, .75f, -3);

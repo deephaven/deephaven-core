@@ -45,7 +45,34 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.LongPredicate;
 
+import static io.deephaven.engine.table.impl.SortHelpers.AllowSymbolTable.ALLOW_SYMBOL_TABLE;
+
 public class SortHelpers {
+
+    /**
+     * Whether symbol tables should be permitted.
+     */
+    enum AllowSymbolTable {
+        /**
+         * Allow the symbol table to be used.
+         */
+        ALLOW_SYMBOL_TABLE(true),
+        /**
+         * Do not allow the symbol table to be used.
+         */
+        DISALLOW_SYMBOL_TABLE(false),
+        ;
+
+        private final boolean allowed;
+
+        AllowSymbolTable(final boolean allowed) {
+            this.allowed = allowed;
+        }
+
+        boolean allowed() {
+            return sortBySymbolTable && allowed;
+        }
+    }
 
     public static boolean sortBySymbolTable =
             Configuration.getInstance().getBooleanWithDefault("QueryTable.sortBySymbolTable", true);
@@ -242,7 +269,7 @@ public class SortHelpers {
             final DataIndex dataIndex,
             final RowSet rowSetToSort,
             final boolean usePrev,
-            final boolean allowSymbolTable) {
+            final AllowSymbolTable allowSymbolTable) {
         if (rowSetToSort.isEmpty()) {
             return EMPTY_SORT_MAPPING;
         }
@@ -258,7 +285,7 @@ public class SortHelpers {
 
         if (columnsToSortBy.length == 1) {
             final Comparator comparator = comparators[0];
-            if (allowSymbolTable && columnsToSortBy[0] instanceof SymbolTableSource
+            if (allowSymbolTable.allowed() && columnsToSortBy[0] instanceof SymbolTableSource
                     && ((SymbolTableSource<Comparable<?>>) columnsToSortBy[0]).hasSymbolTable(rowSetToSort)) {
                 return doSymbolTableMapping(order[0], columnsToSortBy[0], comparator, comparatorsRespectEquality[0],
                         rowSetToSort, usePrev);
@@ -589,7 +616,7 @@ public class SortHelpers {
         final SortMapping indexMapping =
                 getSortedKeys(order, originalIndexKeyColumns, indexKeyColumns, comparators, comparatorsRespectEquality,
                         null,
-                        indexRowSet, usePrev, false);
+                        indexRowSet, usePrev, ALLOW_SYMBOL_TABLE);
 
         final String rowSetColumnName = dataIndex.rowSetColumnName();
         final ColumnSource<RowSet> rawRowSetColumn = dataIndex.table().getColumnSource(rowSetColumnName, RowSet.class);

@@ -28,6 +28,8 @@ import io.deephaven.util.type.ArrayTypeUtils;
 import java.util.*;
 import java.util.function.LongUnaryOperator;
 
+import static io.deephaven.engine.table.impl.SortHelpers.AllowSymbolTable.DISALLOW_SYMBOL_TABLE;
+
 public class SortListener extends BaseTable.ListenerImpl {
     // Do I get my own logger?
     private static final Logger log = LoggerFactory.getLogger(SortListener.class);
@@ -240,7 +242,8 @@ public class SortListener extends BaseTable.ListenerImpl {
             final RowSet addedAndModified =
                     modifiedNeedsSorting ? closer.add(upstream.added().union(upstream.modified())) : upstream.added();
             final long[] addedInputKeys = SortHelpers.getSortedKeys(order, originalColumnsToSortBy, columnsToSortBy,
-                    comparators, comparatorsRespectEquality, null, addedAndModified, false, false).getArrayMapping();
+                    comparators, comparatorsRespectEquality, null, addedAndModified, false, DISALLOW_SYMBOL_TABLE)
+                    .getArrayMapping();
             final long[] addedOutputKeys = new long[addedInputKeys.length];
             final long[] propagatedModOutputKeys = modifiedNeedsSorting ? new long[upstream.modified().intSize()]
                     : ArrayTypeUtils.EMPTY_LONG_ARRAY;
@@ -585,7 +588,7 @@ public class SortListener extends BaseTable.ListenerImpl {
             for (int ii = 0; ii < columnsToSortBy.length; ii++) {
                 comparators[ii] = ColumnComparatorFactory.createComparatorLeftCurrRightPrev(columnsToSortBy[ii],
                         sortedColumnsToSortBy[ii],
-                        SortListener.this.comparators == null ? null : SortListener.this.comparators[ii]);
+                        SortListener.this.comparators[ii]);
             }
             setTarget(-1);
         }
