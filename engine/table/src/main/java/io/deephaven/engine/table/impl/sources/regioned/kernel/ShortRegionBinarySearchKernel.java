@@ -7,7 +7,7 @@
 // @formatter:off
 package io.deephaven.engine.table.impl.sources.regioned.kernel;
 
-import io.deephaven.api.SortColumn;
+import io.deephaven.api.SortSpec;import io.deephaven.api.SortColumn;
 import io.deephaven.chunk.WritableShortChunk;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.engine.rowset.RowSet;
@@ -41,7 +41,7 @@ public class ShortRegionBinarySearchKernel {
             @NotNull final Object[] searchValues) {
         final SortColumn.Order order = sortColumn.order();
         final short[] unboxed = ArrayTypeUtils.getUnboxedShortArray(searchValues);
-        if (order == SortColumn.Order.DESCENDING) {
+        if (order == SortSpec.Order.DESCENDING) {
             try (final ShortTimsortDescendingKernel.ShortSortKernelContext<Any> context =
                     ShortTimsortDescendingKernel.createContext(unboxed.length)) {
                 context.sort(WritableShortChunk.writableChunkWrap(unboxed));
@@ -119,7 +119,7 @@ public class ShortRegionBinarySearchKernel {
             long end,
             final SortColumn.Order sortDirection,
             final int rangeDirection) {
-        final int sortDirectionInt = sortDirection == SortColumn.Order.ASCENDING ? 1 : -1;
+        final int sortDirectionInt = sortDirection == SortSpec.Order.ASCENDING ? 1 : -1;
         long matchStart = -1;
         while (start <= end) {
             long pivot = (start + end) >>> 1;

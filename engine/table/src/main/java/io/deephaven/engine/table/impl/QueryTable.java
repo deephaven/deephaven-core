@@ -2784,7 +2784,7 @@ public class QueryTable extends BaseTable<QueryTable> {
 
     @Override
     public Table sort(Collection<SortColumn> columnsToSortBy) {
-        return sort(columnsToSortBy.toArray(EngineSortSpec[]::new));
+        return sort(columnsToSortBy.toArray(SortSpec[]::new));
     }
 
     /**
@@ -2793,7 +2793,7 @@ public class QueryTable extends BaseTable<QueryTable> {
      * @param columnsToSortBy the sort specifications
      * @return this table sorted according to the provided specifications
      */
-    public Table sort(final EngineSortSpec... columnsToSortBy) {
+    public Table sort(final SortSpec... columnsToSortBy) {
         final UpdateGraph updateGraph = getUpdateGraph();
         try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(updateGraph).open()) {
             if (columnsToSortBy.length == 0) {

@@ -3,10 +3,7 @@
 //
 package io.deephaven.engine.table.impl.hierarchical;
 
-import io.deephaven.api.ColumnName;
-import io.deephaven.api.Selectable;
-import io.deephaven.api.SortColumn;
-import io.deephaven.api.Strings;
+import io.deephaven.api.*;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.api.agg.AggregationDescriptions;
 import io.deephaven.api.agg.AggregationPairs;
@@ -495,7 +492,7 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
                             constituentColumnName = baseColumnNameToAbsoluteName(constituentColumnName);
                         }
                     }
-                    return aggregatedSortColumn.order() == SortColumn.Order.ASCENDING
+                    return aggregatedSortColumn.order() == SortSpec.Order.ASCENDING
                             ? SortColumn.asc(ColumnName.of(constituentColumnName))
                             : SortColumn.desc(ColumnName.of(constituentColumnName));
 

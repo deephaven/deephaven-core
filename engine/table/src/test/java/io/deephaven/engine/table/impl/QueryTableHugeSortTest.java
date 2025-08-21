@@ -3,7 +3,7 @@
 //
 package io.deephaven.engine.table.impl;
 
-import io.deephaven.api.EngineSortSpec;
+import io.deephaven.api.SortSpec;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.context.QueryScope;
@@ -148,7 +148,7 @@ public class QueryTableHugeSortTest {
             final Table smallTable =
                     TableTools.emptyTable(smallSize).updateView("SortCol=Byte.toString((byte)(ii%100))", "Sentinel=k");
 
-            final EngineSortSpec sortBy = ComparatorSortColumn.asc("SortCol", new NumericStringComparator(), true);
+            final SortSpec sortBy = ComparatorSortColumn.asc("SortCol", new NumericStringComparator(), true);
 
             final Table sorted = ((QueryTable) smallTable).sort(sortBy);
 

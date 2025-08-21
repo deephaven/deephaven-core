@@ -4,14 +4,7 @@
 package io.deephaven.client.impl;
 
 import com.google.protobuf.ByteStringAccess;
-import io.deephaven.api.ColumnName;
-import io.deephaven.api.JoinAddition;
-import io.deephaven.api.JoinMatch;
-import io.deephaven.api.RawString;
-import io.deephaven.api.Selectable;
-import io.deephaven.api.SortColumn;
-import io.deephaven.api.SortColumn.Order;
-import io.deephaven.api.Strings;
+import io.deephaven.api.*;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.api.expression.Expression;
 import io.deephaven.api.expression.Function;
@@ -249,7 +242,7 @@ class BatchTableRequestBuilder {
             for (SortColumn column : sortTable.columns()) {
                 SortDescriptor descriptor =
                         SortDescriptor.newBuilder().setColumnName(column.column().name())
-                                .setDirection(column.order() == Order.ASCENDING ? SortDirection.ASCENDING
+                                .setDirection(column.order() == SortSpec.Order.ASCENDING ? SortDirection.ASCENDING
                                         : SortDirection.DESCENDING)
                                 .build();
                 builder.addSorts(descriptor);

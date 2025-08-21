@@ -5,7 +5,7 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.SortColumn;
-import io.deephaven.api.EngineSortSpec;
+import io.deephaven.api.SortSpec;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.base.FileUtils;
 import io.deephaven.base.verify.Assert;
@@ -1107,7 +1107,7 @@ public class QueryTableSortTest extends QueryTableTestBase {
             TableTools.show(resultRows);
             checkMixed(resultRows, false);
 
-            final EngineSortSpec insensitiveSort = ComparatorSortColumn.asc("Sym", String.CASE_INSENSITIVE_ORDER);
+            final SortSpec insensitiveSort = ComparatorSortColumn.asc("Sym", String.CASE_INSENSITIVE_ORDER);
             final Table dictionaryComparatorSorted = ((QueryTable) readback.coalesce()).sort(insensitiveSort);
 
             final Table expectedComparator = ((QueryTable) t).sort(insensitiveSort);

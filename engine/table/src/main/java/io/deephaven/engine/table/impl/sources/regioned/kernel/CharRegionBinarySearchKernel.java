@@ -3,6 +3,7 @@
 //
 package io.deephaven.engine.table.impl.sources.regioned.kernel;
 
+import io.deephaven.api.SortSpec;
 import io.deephaven.api.SortColumn;
 import io.deephaven.chunk.WritableCharChunk;
 import io.deephaven.chunk.attributes.Any;
@@ -37,7 +38,7 @@ public class CharRegionBinarySearchKernel {
             @NotNull final Object[] searchValues) {
         final SortColumn.Order order = sortColumn.order();
         final char[] unboxed = ArrayTypeUtils.getUnboxedCharArray(searchValues);
-        if (order == SortColumn.Order.DESCENDING) {
+        if (order == SortSpec.Order.DESCENDING) {
             try (final CharTimsortDescendingKernel.CharSortKernelContext<Any> context =
                     CharTimsortDescendingKernel.createContext(unboxed.length)) {
                 context.sort(WritableCharChunk.writableChunkWrap(unboxed));
@@ -115,7 +116,7 @@ public class CharRegionBinarySearchKernel {
             long end,
             final SortColumn.Order sortDirection,
             final int rangeDirection) {
-        final int sortDirectionInt = sortDirection == SortColumn.Order.ASCENDING ? 1 : -1;
+        final int sortDirectionInt = sortDirection == SortSpec.Order.ASCENDING ? 1 : -1;
         long matchStart = -1;
         while (start <= end) {
             long pivot = (start + end) >>> 1;

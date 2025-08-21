@@ -3,7 +3,7 @@
 //
 package io.deephaven.engine.table.impl;
 
-import io.deephaven.api.EngineSortSpec;
+import io.deephaven.api.SortSpec;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Comparator;
@@ -38,7 +38,7 @@ public enum SortingOrder {
         return direction == -1;
     }
 
-    public static SortingOrder from(EngineSortSpec sc) {
+    public static SortingOrder from(SortSpec sc) {
         return sc.isAscending() ? Ascending : Descending;
     }
 

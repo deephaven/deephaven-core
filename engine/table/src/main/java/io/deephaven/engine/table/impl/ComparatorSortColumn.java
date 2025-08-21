@@ -7,7 +7,7 @@ import io.deephaven.annotations.SimpleStyle;
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.SortColumn;
 
-import io.deephaven.api.EngineSortSpec;
+import io.deephaven.api.SortSpec;
 import org.immutables.value.Value.Immutable;
 import org.immutables.value.Value.Parameter;
 
@@ -25,7 +25,7 @@ import java.util.Comparator;
  */
 @Immutable
 @SimpleStyle
-public abstract class ComparatorSortColumn implements EngineSortSpec {
+public abstract class ComparatorSortColumn implements SortSpec {
     /**
      * The column name.
      *
@@ -77,7 +77,7 @@ public abstract class ComparatorSortColumn implements EngineSortSpec {
      * @param comparator the comparator
      * @return a new ComparatorSortColumn
      */
-    public static EngineSortSpec asc(final String name, final Comparator comparator) {
+    public static SortSpec asc(final String name, final Comparator comparator) {
         return asc(name, comparator, false);
     }
 
@@ -92,7 +92,7 @@ public abstract class ComparatorSortColumn implements EngineSortSpec {
      * @param comparator the comparator
      * @return a new ComparatorSortColumn
      */
-    public static EngineSortSpec desc(final String name, final Comparator comparator) {
+    public static SortSpec desc(final String name, final Comparator comparator) {
         return desc(name, comparator, false);
     }
 
@@ -105,12 +105,12 @@ public abstract class ComparatorSortColumn implements EngineSortSpec {
      *        {@link #respectsEquality()}).
      * @return a new ComparatorSortColumn
      */
-    public static EngineSortSpec asc(final String name, final Comparator comparator,
+    public static SortSpec asc(final String name, final Comparator comparator,
             final boolean respectsEquality) {
         if (comparator == null) {
             return SortColumn.asc(ColumnName.of(name));
         }
-        return ImmutableComparatorSortColumn.of(ColumnName.of(name), SortColumn.Order.ASCENDING, respectsEquality,
+        return ImmutableComparatorSortColumn.of(ColumnName.of(name), SortSpec.Order.ASCENDING, respectsEquality,
                 comparator);
     }
 
@@ -123,12 +123,12 @@ public abstract class ComparatorSortColumn implements EngineSortSpec {
      *        {@link #respectsEquality()}).
      * @return a new ComparatorSortColumn
      */
-    public static EngineSortSpec desc(final String name, final Comparator comparator,
+    public static SortSpec desc(final String name, final Comparator comparator,
             final boolean respectsEquality) {
         if (comparator == null) {
             return SortColumn.desc(ColumnName.of(name));
         }
-        return ImmutableComparatorSortColumn.of(ColumnName.of(name), SortColumn.Order.DESCENDING, respectsEquality,
+        return ImmutableComparatorSortColumn.of(ColumnName.of(name), SortSpec.Order.DESCENDING, respectsEquality,
                 comparator);
     }
 
@@ -138,7 +138,7 @@ public abstract class ComparatorSortColumn implements EngineSortSpec {
      * @param sortColumn the sort column to interrogate
      * @return true if the sort column has a comparator defined
      */
-    public static boolean hasComparator(final EngineSortSpec sortColumn) {
+    public static boolean hasComparator(final SortSpec sortColumn) {
         return sortColumn instanceof ComparatorSortColumn;
     }
 }

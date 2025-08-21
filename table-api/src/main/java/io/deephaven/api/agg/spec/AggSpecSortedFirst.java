@@ -4,6 +4,7 @@
 package io.deephaven.api.agg.spec;
 
 import io.deephaven.annotations.BuildableStyle;
+import io.deephaven.api.SortSpec;
 import io.deephaven.api.SortColumn;
 import org.immutables.value.Value.Check;
 import org.immutables.value.Value.Immutable;
@@ -62,7 +63,7 @@ public abstract class AggSpecSortedFirst extends AggSpecBase {
     }
 
     private static boolean isAscending(SortColumn.Order o) {
-        return o == SortColumn.Order.ASCENDING;
+        return o == SortSpec.Order.ASCENDING;
     }
 
     public interface Builder {

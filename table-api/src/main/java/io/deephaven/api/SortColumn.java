@@ -12,10 +12,7 @@ import org.immutables.value.Value.Parameter;
  */
 @Immutable
 @SimpleStyle
-public abstract class SortColumn implements EngineSortSpec {
-    public enum Order {
-        ASCENDING, DESCENDING
-    }
+public abstract class SortColumn implements SortSpec {
 
     /**
      * Create an {@link Order#ASCENDING} sort column.
@@ -42,6 +39,7 @@ public abstract class SortColumn implements EngineSortSpec {
      *
      * @return the column name
      */
+    @Override
     @Parameter
     public abstract ColumnName column();
 
@@ -50,6 +48,7 @@ public abstract class SortColumn implements EngineSortSpec {
      *
      * @return the order
      */
+    @Override
     @Parameter
     public abstract Order order();
 }

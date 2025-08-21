@@ -84,7 +84,7 @@ public abstract class MemoizedOperationKey {
         return Flatten.FLATTEN_INSTANCE;
     }
 
-    static MemoizedOperationKey sort(EngineSortSpec[] sortColumns) {
+    static MemoizedOperationKey sort(SortSpec[] sortColumns) {
         return new Sort(sortColumns);
     }
 
@@ -242,9 +242,9 @@ public abstract class MemoizedOperationKey {
     }
 
     private static class Sort extends MemoizedOperationKey {
-        private final EngineSortSpec[] sortColumns;
+        private final SortSpec[] sortColumns;
 
-        private Sort(EngineSortSpec[] sortColumns) {
+        private Sort(SortSpec[] sortColumns) {
             this.sortColumns = sortColumns;
         }
 
