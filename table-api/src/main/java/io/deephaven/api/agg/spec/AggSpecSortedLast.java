@@ -56,14 +56,10 @@ public abstract class AggSpecSortedLast extends AggSpecBase {
     @Check
     final void checkSortOrder() {
         // TODO(deephaven-core#821): SortedFirst / SortedLast aggregations with sort direction
-        if (!columns().stream().map(SortColumn::order).allMatch(AggSpecSortedLast::isAscending)) {
+        if (!columns().stream().allMatch(SortSpec::isAscending)) {
             throw new IllegalArgumentException(
                     "Can only construct AggSpecSortedLast with ascending, see https://github.com/deephaven/deephaven-core/issues/821");
         }
-    }
-
-    private static boolean isAscending(SortColumn.Order o) {
-        return o == SortSpec.Order.ASCENDING;
     }
 
     public interface Builder {

@@ -51,7 +51,7 @@ public abstract class SortColumnInfo {
     }
 
     public static SortColumnInfo of(@NotNull final SortColumn sortColumn) {
-        return of(sortColumn.column().name(), sortColumn.order() == SortSpec.Order.ASCENDING
+        return of(sortColumn.column().name(), sortColumn.isAscending()
                 ? SortDirection.Ascending
                 : SortDirection.Descending);
     }
