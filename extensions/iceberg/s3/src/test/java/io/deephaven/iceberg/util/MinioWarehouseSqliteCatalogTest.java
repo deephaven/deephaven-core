@@ -14,6 +14,7 @@ import software.amazon.awssdk.services.s3.S3AsyncClient;
 import java.time.Duration;
 import java.util.Map;
 
+import static io.deephaven.extensions.s3.testlib.S3Helper.TIMEOUT_SECONDS;
 import static org.apache.iceberg.aws.AwsClientProperties.CLIENT_REGION;
 import static org.apache.iceberg.aws.s3.S3FileIOProperties.ACCESS_KEY_ID;
 import static org.apache.iceberg.aws.s3.S3FileIOProperties.ENDPOINT;
@@ -32,7 +33,7 @@ final class MinioWarehouseSqliteCatalogTest extends S3WarehouseSqliteCatalogBase
     @Override
     public S3Instructions s3Instructions() {
         return MinIO.s3Instructions(S3Instructions.builder()
-                .readTimeout(Duration.ofSeconds(10))).build();
+                .readTimeout(Duration.ofSeconds(TIMEOUT_SECONDS))).build();
     }
 
     @Override
@@ -47,6 +48,6 @@ final class MinioWarehouseSqliteCatalogTest extends S3WarehouseSqliteCatalogBase
                 CLIENT_REGION, MinIO.region(),
                 ACCESS_KEY_ID, MinIO.accessKey(),
                 SECRET_ACCESS_KEY, MinIO.secretAccessKey(),
-                AsyncHttpClientProperties.READ_TIMEOUT_MS, "10000");
+                AsyncHttpClientProperties.READ_TIMEOUT_MS, String.valueOf(TIMEOUT_SECONDS * 1_000L));
     }
 }

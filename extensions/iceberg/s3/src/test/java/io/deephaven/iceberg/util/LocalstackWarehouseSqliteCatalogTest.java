@@ -12,6 +12,7 @@ import software.amazon.awssdk.services.s3.S3AsyncClient;
 import java.time.Duration;
 import java.util.Map;
 
+import static io.deephaven.extensions.s3.testlib.S3Helper.TIMEOUT_SECONDS;
 import static org.apache.iceberg.aws.AwsClientProperties.CLIENT_REGION;
 import static org.apache.iceberg.aws.s3.S3FileIOProperties.ACCESS_KEY_ID;
 import static org.apache.iceberg.aws.s3.S3FileIOProperties.ENDPOINT;
@@ -28,7 +29,7 @@ final class LocalstackWarehouseSqliteCatalogTest extends S3WarehouseSqliteCatalo
     @Override
     public S3Instructions s3Instructions() {
         return LocalStack.s3Instructions(S3Instructions.builder()
-                .readTimeout(Duration.ofSeconds(10))).build();
+                .readTimeout(Duration.ofSeconds(TIMEOUT_SECONDS))).build();
     }
 
     @Override
@@ -38,7 +39,7 @@ final class LocalstackWarehouseSqliteCatalogTest extends S3WarehouseSqliteCatalo
                 CLIENT_REGION, LocalStack.region(),
                 ACCESS_KEY_ID, LocalStack.accessKey(),
                 SECRET_ACCESS_KEY, LocalStack.secretAccessKey(),
-                AsyncHttpClientProperties.READ_TIMEOUT_MS, "10000");
+                AsyncHttpClientProperties.READ_TIMEOUT_MS, String.valueOf(TIMEOUT_SECONDS * 1_000L));
     }
 
     @Override
