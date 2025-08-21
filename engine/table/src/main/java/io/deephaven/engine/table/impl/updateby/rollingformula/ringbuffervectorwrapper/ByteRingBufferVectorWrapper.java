@@ -53,4 +53,9 @@ public class ByteRingBufferVectorWrapper implements ByteVector, RingBufferVector
     public ByteVector getDirect() {
         return new ByteVectorDirect(ringBuffer.getAll());
     }
+
+    @Override
+    public boolean equals(Object obj) {
+        return ByteVector.equals(this, obj);
+    }
 }

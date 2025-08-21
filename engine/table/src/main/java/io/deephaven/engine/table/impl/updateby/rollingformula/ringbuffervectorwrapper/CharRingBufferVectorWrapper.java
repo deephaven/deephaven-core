@@ -49,4 +49,9 @@ public class CharRingBufferVectorWrapper implements CharVector, RingBufferVector
     public CharVector getDirect() {
         return new CharVectorDirect(ringBuffer.getAll());
     }
+
+    @Override
+    public boolean equals(Object obj) {
+        return CharVector.equals(this, obj);
+    }
 }
