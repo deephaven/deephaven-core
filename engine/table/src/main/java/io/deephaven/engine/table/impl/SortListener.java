@@ -51,7 +51,7 @@ public class SortListener extends BaseTable.ListenerImpl {
     private final SortingOrder[] order;
     // optioanl comparators for Objects
     private final Comparator[] comparators;
-    private final boolean comparatorsRespectEquality;
+    private final boolean[] comparatorsRespectEquality;
     private final WritableRowRedirection sortMapping;
     private final ColumnSource<Comparable<?>>[] sortedColumnsToSortBy;
     private final EffortTracker effortTracker;
@@ -69,7 +69,7 @@ public class SortListener extends BaseTable.ListenerImpl {
             final ColumnSource<Comparable<?>>[] columnsToSortBy,
             final SortingOrder[] order,
             final Comparator[] comparators,
-            final boolean comparatorsRespectEquality,
+            final boolean[] comparatorsRespectEquality,
             final WritableRowRedirection sortMapping,
             final ColumnSource<Comparable<?>>[] sortedColumnsToSortBy,
             final ModifiedColumnSet.Transformer mcsTransformer,

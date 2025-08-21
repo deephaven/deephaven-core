@@ -46,80 +46,60 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
     private QueryTable resultTable;
     private RowRedirection sortMapping;
 
-    private final SortColumn[] sortColumnsDefs;
-    private final SortingOrder[] sortOrder;
     private final String[] sortColumnNames;
+    private final SortColumn[] sortColumns;
+    private final SortingOrder[] sortOrder;
     private final Comparator[] comparators;
-    private final boolean comparatorsRespectEquality;
+    private final boolean[] comparatorsRespectEquality;
     /** Stores original column sources. */
     private final ColumnSource<Comparable<?>>[] originalSortColumns;
     /** Stores reinterpreted column sources. */
-    private final ColumnSource<Comparable<?>>[] sortColumns;
+    private final ColumnSource<Comparable<?>>[] sortColumnSources;
 
     private final DataIndex dataIndex;
 
-    public SortOperation(final QueryTable parent, final SortColumn[] sortColumns) {
+    public SortOperation(final QueryTable parent, final SortColumn[] sortColumnsIn) {
         this.parent = parent;
-        this.sortColumnsDefs = sortColumns;
-        this.sortOrder = Arrays.stream(sortColumns).map(SortingOrder::from).toArray(SortingOrder[]::new);
-        this.sortColumnNames = Arrays.stream(sortColumns).map(sc -> sc.column().name()).toArray(String[]::new);
-
-        final boolean hasComparators = Arrays.stream(sortColumns).anyMatch(sc -> {
-            if (ComparatorSortColumn.hasComparator(sc)) {
-                return true;
-            }
-            // if we do not have a natural order, then we must have a comparator defined (or we'll fail later on)
-            final Class<Object> type = parent.getColumnSource(sc.column().name()).getType();
-            return !type.isPrimitive() && !Comparable.class.isAssignableFrom(type);
-        });
-
-        if (hasComparators) {
-            this.comparators = new Comparator[sortColumns.length];
-            boolean respectsEquality = true;
-            for (int ii = 0; ii < comparators.length; ii++) {
-                if (ComparatorSortColumn.hasComparator(sortColumns[ii])) {
-                    comparators[ii] = ((ComparatorSortColumn) sortColumns[ii]).getComparator();
-                    respectsEquality &= ((ComparatorSortColumn) sortColumns[ii]).respectsEquality();
-                } else {
-                    comparators[ii] = null;
-                }
-            }
-            this.comparatorsRespectEquality = respectsEquality;
-        } else {
-            this.comparators = null;
-            this.comparatorsRespectEquality = true;
-        }
-
+        this.sortColumns = sortColumnsIn;
+        this.sortOrder = Arrays.stream(sortColumnsIn).map(SortingOrder::from).toArray(SortingOrder[]::new);
+        this.sortColumnNames = new String[sortColumnsIn.length];
+        this.comparators = new Comparator[sortColumns.length];
+        this.comparatorsRespectEquality = new boolean[sortColumns.length];
         // noinspection unchecked
-        originalSortColumns = new ColumnSource[sortColumnNames.length];
+        originalSortColumns = new ColumnSource[sortColumnsIn.length];
         // noinspection unchecked
-        this.sortColumns = new ColumnSource[sortColumnNames.length];
+        sortColumnSources = new ColumnSource[sortColumnsIn.length];
 
-        for (int ii = 0; ii < sortColumnNames.length; ++ii) {
-            originalSortColumns[ii] = parent.getColumnSource(sortColumnNames[ii]);
+        for (int ii = 0; ii < sortColumnsIn.length; ++ii) {
+            final String sortColumnName = sortColumnNames[ii] = sortColumnsIn[ii].column().name();
+
+            originalSortColumns[ii] = parent.getColumnSource(sortColumnName);
             // noinspection unchecked
-            this.sortColumns[ii] =
+            sortColumnSources[ii] =
                     (ColumnSource<Comparable<?>>) ReinterpretUtils.maybeConvertToPrimitive(originalSortColumns[ii]);
 
-            final Class<?> columnType = this.sortColumns[ii].getType();
+            final Class<?> columnType = sortColumnSources[ii].getType();
 
-            if (this.comparators != null && this.comparators[ii] != null) {
+            if (ComparatorSortColumn.hasComparator(sortColumnsIn[ii])) {
                 if (columnType.isPrimitive()) {
-                    throw new NotSortableColumnException(sortColumnNames[ii]
-                            + " is a primitive column (" + columnType + "), therefore cannot accept a Comparator");
+                    throw new NotSortableColumnException(sortColumnName + " is a primitive column (" + columnType
+                            + "), therefore cannot accept a Comparator");
                 }
+
+                comparators[ii] = ((ComparatorSortColumn) sortColumnsIn[ii]).getComparator();
+                comparatorsRespectEquality[ii] = ((ComparatorSortColumn) sortColumnsIn[ii]).respectsEquality();
             } else {
+                comparatorsRespectEquality[ii] = true;
+
                 final Comparator<?> defaultComparator = ComparatorRegistry.INSTANCE.getComparator(columnType);
                 if (defaultComparator == null) {
                     final boolean isSortable =
                             Comparable.class.isAssignableFrom(columnType) || columnType.isPrimitive();
                     if (!isSortable) {
-                        throw new NotSortableColumnException(
-                                sortColumnNames[ii] + " is not a sortable type: " + columnType);
+                        throw new NotSortableColumnException(sortColumnName + " is not a sortable type: " + columnType);
                     }
                 } else {
-                    // noinspection DataFlowIssue
-                    this.comparators[ii] = defaultComparator;
+                    comparators[ii] = defaultComparator;
                 }
             }
         }
@@ -132,7 +112,7 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
 
     @Override
     public String getDescription() {
-        return "sort(" + Arrays.toString(sortColumnsDefs) + ")";
+        return "sort(" + Arrays.toString(sortColumns) + ")";
     }
 
     @Override
@@ -145,7 +125,7 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
         if (comparators != null && Arrays.stream(comparators).anyMatch(Objects::nonNull)) {
             return null;
         }
-        return MemoizedOperationKey.sort(sortColumnsDefs);
+        return MemoizedOperationKey.sort(sortColumns);
     }
 
     @Override
@@ -167,7 +147,7 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
             return full;
         }
         // Return an index for the first column (if one exists) or null.
-        return DataIndexer.getDataIndex(inputTable, sortColumnNames[0]);
+        return DataIndexer.getDataIndex(inputTable, sortColumns[0].column().name());
     }
 
     private static boolean alreadySorted(final QueryTable parent, @NotNull final SortHelpers.SortMapping sortedKeys) {
@@ -247,7 +227,8 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
                         }
 
                         final SortHelpers.SortMapping updateSortedKeys =
-                                SortHelpers.getSortedKeys(sortOrder, originalSortColumns, sortColumns, comparators,
+                                SortHelpers.getSortedKeys(sortOrder, originalSortColumns, sortColumnSources,
+                                        comparators,
                                         comparatorsRespectEquality, null,
                                         upstream.added(), false, false);
                         final LongChunkColumnSource recycled = recycledInnerRedirectionSource.getValue();
@@ -289,7 +270,7 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
     public Result<QueryTable> initialize(boolean usePrev, long beforeClock) {
         if (!parent.isRefreshing()) {
             final SortHelpers.SortMapping sortedKeys =
-                    SortHelpers.getSortedKeys(sortOrder, originalSortColumns, sortColumns, comparators,
+                    SortHelpers.getSortedKeys(sortOrder, originalSortColumns, sortColumnSources, comparators,
                             comparatorsRespectEquality, dataIndex,
                             parent.getRowSet(), false, false);
             return new Result<>(historicalSort(sortedKeys));
@@ -297,7 +278,8 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
         if (parent.isBlink()) {
             final RowSet rowSetToUse = usePrev ? parent.getRowSet().prev() : parent.getRowSet();
             final SortHelpers.SortMapping sortedKeys = SortHelpers.getSortedKeys(
-                    sortOrder, originalSortColumns, sortColumns, comparators, comparatorsRespectEquality, dataIndex,
+                    sortOrder, originalSortColumns, sortColumnSources, comparators, comparatorsRespectEquality,
+                    dataIndex,
                     rowSetToUse, usePrev, false);
             return blinkTableSort(sortedKeys);
         }
@@ -314,7 +296,8 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
             }
 
             final long[] sortedKeys = SortHelpers.getSortedKeys(
-                    sortOrder, originalSortColumns, sortColumns, comparators, comparatorsRespectEquality, dataIndex,
+                    sortOrder, originalSortColumns, sortColumnSources, comparators, comparatorsRespectEquality,
+                    dataIndex,
                     rowSetToSort, usePrev, false)
                     .getArrayMapping();
 
@@ -360,7 +343,7 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
             });
 
             final SortListener listener = new SortListener(parent, resultTable, reverseLookup,
-                    originalSortColumns, sortColumns, sortOrder, comparators,
+                    originalSortColumns, sortColumnSources, sortOrder, comparators,
                     comparatorsRespectEquality,
                     sortMapping.writableCast(), sortedColumnsToSortBy,
                     parent.newModifiedColumnSetIdentityTransformer(resultTable),

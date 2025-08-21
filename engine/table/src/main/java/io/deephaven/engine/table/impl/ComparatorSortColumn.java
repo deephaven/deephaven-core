@@ -7,6 +7,7 @@ import io.deephaven.annotations.SimpleStyle;
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.SortColumn;
 
+import org.immutables.value.Value.Check;
 import org.immutables.value.Value.Immutable;
 import org.immutables.value.Value.Parameter;
 
@@ -76,7 +77,7 @@ abstract class ComparatorSortColumn implements SortColumn {
      * @param comparator the comparator
      * @return a new ComparatorSortColumn
      */
-    public static ComparatorSortColumn asc(final String name, final Comparator comparator) {
+    public static SortColumn asc(final String name, final Comparator comparator) {
         return asc(name, comparator, false);
     }
 
@@ -91,7 +92,7 @@ abstract class ComparatorSortColumn implements SortColumn {
      * @param comparator the comparator
      * @return a new ComparatorSortColumn
      */
-    public static ComparatorSortColumn desc(final String name, final Comparator comparator) {
+    public static SortColumn desc(final String name, final Comparator comparator) {
         return desc(name, comparator, false);
     }
 
@@ -104,8 +105,11 @@ abstract class ComparatorSortColumn implements SortColumn {
      *        {@link #respectsEquality()}).
      * @return a new ComparatorSortColumn
      */
-    public static ComparatorSortColumn asc(final String name, final Comparator comparator,
+    public static SortColumn asc(final String name, final Comparator comparator,
             final boolean respectsEquality) {
+        if (comparator == null) {
+            return SortColumn.asc(ColumnName.of(name));
+        }
         return ImmutableComparatorSortColumn.of(ColumnName.of(name), Order.ASCENDING, respectsEquality, comparator);
     }
 
@@ -118,8 +122,11 @@ abstract class ComparatorSortColumn implements SortColumn {
      *        {@link #respectsEquality()}).
      * @return a new ComparatorSortColumn
      */
-    public static ComparatorSortColumn desc(final String name, final Comparator comparator,
+    public static SortColumn desc(final String name, final Comparator comparator,
             final boolean respectsEquality) {
+        if (comparator == null) {
+            return SortColumn.desc(ColumnName.of(name));
+        }
         return ImmutableComparatorSortColumn.of(ColumnName.of(name), Order.DESCENDING, respectsEquality, comparator);
     }
 
@@ -133,5 +140,10 @@ abstract class ComparatorSortColumn implements SortColumn {
         return sortColumn instanceof ComparatorSortColumn;
     }
 
-    // TODO: @Check
+    @Check
+    void checkNonNullComparator() {
+        if (getComparator() == null) {
+            throw new IllegalArgumentException("Comparator cannot be null");
+        }
+    }
 }

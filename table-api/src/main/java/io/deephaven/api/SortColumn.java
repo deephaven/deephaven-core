@@ -4,14 +4,10 @@
 package io.deephaven.api;
 
 import io.deephaven.annotations.SimpleStyle;
-import org.immutables.value.Value.Immutable;
-import org.immutables.value.Value.Parameter;
 
 /**
  * Represents a {@link #column() column} and {@link #order() order} pair.
  */
-@Immutable
-@SimpleStyle
 public interface SortColumn {
 
     enum Order {
@@ -25,7 +21,7 @@ public interface SortColumn {
      * @return the ascending sort column
      */
     static SortColumn asc(ColumnName columnName) {
-        return ImmutableSortColumn.of(columnName, Order.ASCENDING);
+        return ImmutableSortColumnImpl.of(columnName, Order.ASCENDING);
     }
 
     /**
@@ -35,7 +31,7 @@ public interface SortColumn {
      * @return the descending sort column
      */
     static SortColumn desc(ColumnName columnName) {
-        return ImmutableSortColumn.of(columnName, Order.DESCENDING);
+        return ImmutableSortColumnImpl.of(columnName, Order.DESCENDING);
     }
 
     /**
@@ -43,7 +39,6 @@ public interface SortColumn {
      *
      * @return the column name
      */
-    @Parameter
     ColumnName column();
 
     /**
@@ -51,7 +46,6 @@ public interface SortColumn {
      *
      * @return the order
      */
-    @Parameter
     Order order();
 
     default boolean isAscending() {
