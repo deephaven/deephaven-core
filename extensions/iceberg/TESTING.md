@@ -143,3 +143,8 @@ After generating the data, create the jar with:
 ```bash
 zip -r -0 iceberg-test-data.jar io
 ```
+
+You can remove the Python scripts from the jar with:
+```bash
+zip -d iceberg-test-data.jar '*.py'
+```
