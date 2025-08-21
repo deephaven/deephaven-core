@@ -22,6 +22,7 @@ import org.apache.iceberg.types.Types;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -52,9 +53,12 @@ class PyIceberg2Test {
 
     private IcebergCatalogAdapter catalogAdapter;
 
+    @RegisterExtension
+    public static final DbResource dbResource = new DbResource();
+
     @BeforeEach
     void setUp() {
-        catalogAdapter = DbResource.openCatalog("pyiceberg-2");
+        catalogAdapter = dbResource.openCatalog("pyiceberg-2");
     }
 
     @Test
