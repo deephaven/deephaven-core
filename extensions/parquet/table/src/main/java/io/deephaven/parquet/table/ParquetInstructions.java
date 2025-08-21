@@ -328,7 +328,7 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
 
         @Override
         public RowGroupInfo getRowGroupInfo() {
-            return RowGroupInfo.defaultRowGroupInfo();
+            return RowGroupInfo.singleRowGroup();
         }
 
         @Override
@@ -658,7 +658,7 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
 
         @Override
         public RowGroupInfo getRowGroupInfo() {
-            return rowGroupInfo != null ? rowGroupInfo : RowGroupInfo.defaultRowGroupInfo();
+            return rowGroupInfo != null ? rowGroupInfo : RowGroupInfo.singleRowGroup();
         }
 
         @Override
@@ -1031,6 +1031,10 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
             return this;
         }
 
+        /**
+         * Defines a {@link RowGroupInfo} for each written parquet file written. By default, all rows will be in a
+         * single RowGroup.
+         */
         public Builder withRowGroupInfo(final RowGroupInfo rowGroupInfo) {
             this.rowGroupInfo = rowGroupInfo;
             return this;

@@ -12,7 +12,7 @@ import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.ScriptApi;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.function.Function;
+import static io.deephaven.base.ArrayUtil.MAX_ARRAY_SIZE;
 
 public abstract class RowGroupInfo {
     private static final RowGroupInfo DEFAULT = new SingleRowGroup();
@@ -23,12 +23,31 @@ public abstract class RowGroupInfo {
      * @return a {@link RowGroupInfo} which uses only a single RowGroup
      */
     @ScriptApi
-    public static RowGroupInfo defaultRowGroupInfo() {
+    public static RowGroupInfo singleRowGroup() {
         return DEFAULT;
     }
 
     /**
-     * Splits into a number of RowGroups, each of which has no more than {@code maxRows} rows
+     * Split evenly into a pre-defined number of RowGroups, each of which contains the same number of rows as each
+     * other. If the input table size is not evenly divisible by the number of RowGroups requested, then a number of
+     * RowGroups will contain 1 fewer row
+     *
+     * @param numRowGroups the number of RowGroups to write
+     * @return A {@link RowGroupInfo} which splits the input into a pre-defined number of RowGroups
+     */
+    @ScriptApi
+    public static RowGroupInfo splitEvenly(final int numRowGroups) {
+        if (numRowGroups == 1) {
+            return singleRowGroup();
+        } else if (numRowGroups <1) {
+            throw new IllegalArgumentException("Cannot define less than 1 RowGroup");
+        } else {
+            return new SplitEvenly(numRowGroups);
+        }
+    }
+
+    /**
+     * Splits into a number of RowGroups, each of which has no more than {@code maxRows} rows.
      *
      * @param maxRows the maximum number of rows in each RowGroup
      * @return a {@link RowGroupInfo} which splits the input into a number of RowGroups, each containing no more than
@@ -37,17 +56,6 @@ public abstract class RowGroupInfo {
     @ScriptApi
     public static RowGroupInfo withMaxRows(final long maxRows) {
         return new SplitByMaxRows(maxRows);
-    }
-
-    /**
-     * Split evenly into a pre-defined number of RowGroups
-     *
-     * @param numRowGroups the number of RowGroups to write
-     * @return A {@link RowGroupInfo} which splits the input into a pre-defined number of RowGroups
-     */
-    @ScriptApi
-    public static RowGroupInfo splitEvenly(final int numRowGroups) {
-        return numRowGroups <= 1 ? defaultRowGroupInfo() : new SplitEvenly(numRowGroups);
     }
 
     /**
@@ -64,7 +72,8 @@ public abstract class RowGroupInfo {
 
     /**
      * Splits each unique group into a number of RowGroups. If the input table does not have all values for the group(s)
-     * contiguously, then an exception will be thrown during the `writeTable(...)` call
+     * contiguously, then an exception will be thrown during the `writeTable(...)` call. If a given RowGroup yields a
+     * row count greater than {@code maxRows}, then it will be split further using {@link RowGroupInfo#withMaxRows(long)}
      *
      * @param maxRows the maximum number of rows in each RowGroup
      * @param groups Grouping column name(s)
@@ -73,18 +82,6 @@ public abstract class RowGroupInfo {
     @ScriptApi
     public static RowGroupInfo byGroup(final long maxRows, final String... groups) {
         return new SplitByGroups(maxRows, groups);
-    }
-
-    /**
-     * Allows for custom breakdown of RowGroups. If the ordering of the `.merge(...)` of the Tables does not match the
-     * input-table, then an exception will be thrown during the `writeTable(...)` call
-     *
-     * @param func a function that splits the input `Table` into a `Table[]` without changing row-ordering
-     * @return a {@link RowGroupInfo} which will perform a custom split of groups
-     */
-    @ScriptApi
-    public static RowGroupInfo customFunction(final Function<Table, Table[]> func) {
-        return new CustomSplit(func);
     }
 
     /**
@@ -103,9 +100,11 @@ public abstract class RowGroupInfo {
      * @param numSubTables the desired number of sub-Tables
      * @return an Array of {@code numSubTables} length of {@link Table} instances
      */
-    public static Table[] splitEvenly(@NotNull final Table input, final int numSubTables) {
-        if (numSubTables <= 1) {
+    static Table[] splitEvenly(@NotNull final Table input, final int numSubTables) {
+        if (numSubTables == 1) {
             return new Table[] {input};
+        } else if (numSubTables < 1) {
+            throw new IllegalArgumentException("Cannot define less than 1 RowGroup");
         }
 
         final long impliedRowGroupSz = input.size() / numSubTables;
@@ -133,46 +132,6 @@ public abstract class RowGroupInfo {
         return ret;
     }
 
-    // @formatter:off
-    /*
-    public static Table[] splitEvenly(@NotNull final Table input, final int numSubTables) {
-        if (numSubTables <= 1) {
-            return new Table[] {input};
-        }
-
-        final long suggestedRowGroupSize = input.size() / numSubTables;
-        // number of groups which will have 1 additional row because rows are not evenly divisible by numSubTables
-        final long fractionalGroups = input.size() % numSubTables;
-
-        final Table[] ret = new Table[numSubTables];
-
-        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
-            final RowSequence.Iterator it = input.getRowSet().getRowSequenceIterator();
-            for (int ii = 0; ii < numSubTables; ii++) {
-                if (!it.hasMore()) {
-                    throw new IllegalStateException("No more rows!");
-                }
-
-                final long nextSz = suggestedRowGroupSize + (ii < fractionalGroups ? 1 : 0);
-                final RowSequence next = it.getNextRowSequenceWithLength(nextSz);
-                try (final RowSet nextRowSet = next.asRowSet()) {
-                    ret[ii] = input.getSubTable(nextRowSet.copy().toTracking());
-                }
-            }
-
-            if (it.hasMore()) {
-                try (final RowSet leftoverRows = it.getNextRowSequenceWithLength(Long.MAX_VALUE).asRowSet()) {
-                    throw new IllegalStateException(String.format("Subtable dropped rows; Iterator has more: %s",
-                            leftoverRows));
-                }
-            }
-        }
-
-        return ret;
-    }
-     */
-    // @formatter:on
-
     /**
      * Keeps all rows within a single RowGroup
      */
@@ -198,8 +157,8 @@ public abstract class RowGroupInfo {
 
         @Override
         public Table[] splitForRowGroups(@NotNull final Table input) {
-            final long numRowGroups = (input.size() / (maxRows - 1)) + 1;
-            if (numRowGroups > Integer.MAX_VALUE) {
+            final long numRowGroups = (input.size() / maxRows) + (input.size() % maxRows > 0 ? 1 : 0);
+            if (numRowGroups > MAX_ARRAY_SIZE) {
                 throw new IllegalStateException("Number of RowGroups is greater than Integer.MAX_VALUE");
             }
             return splitEvenly(input, (int) numRowGroups);
@@ -227,23 +186,27 @@ public abstract class RowGroupInfo {
      * {@code groups} ensuring that no group is larger than {@code maxRows}. If {@code maxRows} is not desired, this
      * parameter may be set to {@code Long.MAX_VALUE}
      */
-    private static class SplitByGroups extends CustomSplit {
+    private static class SplitByGroups extends RowGroupInfo {
+        final String[] groups;
+        final long maxRows;
+        final RowGroupInfo maxRowsInfo;
+
         private SplitByGroups(final long maxRows, final String[] groups) {
-            super(table -> splitByGroups(table, maxRows, groups));
             if (groups == null || groups.length == 0) {
                 throw new IllegalArgumentException("Requires at least one group");
             }
+            this.groups = groups;
+            this.maxRows = maxRows;
+            this.maxRowsInfo = new SplitByMaxRows(maxRows);
         }
 
-        private static Table[] splitByGroups(@NotNull final Table input, final long maxRows, final String[] groups) {
+        private Table[] splitByGroups(@NotNull final Table input) {
             final Table[] partitionedTables = input.partitionBy(groups).constituents();
 
             // no need to split further if `maxRows` is greater than our original Table (which includes Long.MAX_VALUE)
             if (maxRows >= input.size()) {
                 return partitionedTables;
             }
-
-            final RowGroupInfo maxRowsInfo = new SplitByMaxRows(maxRows);
 
             int rowGroupCnt = 0;
             final Table[][] maxSplit = new Table[partitionedTables.length][];
@@ -259,35 +222,20 @@ public abstract class RowGroupInfo {
 
             // else we need to reconstitute the `Table[][]` into a straight `Table[]` of proper length
             final Table[] retTables = new Table[rowGroupCnt];
-            int nextTarget = 0;
+            int nextTargetIdx = 0;
             for (final Table[] tables : maxSplit) {
-                System.arraycopy(tables, 0, retTables, nextTarget, tables.length);
-                nextTarget += tables.length;
+                System.arraycopy(tables, 0, retTables, nextTargetIdx, tables.length);
+                nextTargetIdx += tables.length;
             }
 
             return retTables;
         }
-    }
-
-    /**
-     * Splits into RowGroups based on a passed in {@code Function<Table, Table[]>}. Ordering of the {@link RowSet}s of
-     * the sub-tables must not be changed from the ordering of the input Table or an Exception will be thrown
-     */
-    private static class CustomSplit extends RowGroupInfo {
-        final Function<Table, Table[]> customFunction;
-
-        private CustomSplit(final Function<Table, Table[]> customFunction) {
-            if (customFunction == null) {
-                throw new IllegalArgumentException("null Function not permitted");
-            }
-            this.customFunction = customFunction;
-        }
 
         @Override
-        public Table[] splitForRowGroups(@NotNull final Table input) {
+        public Table[] splitForRowGroups(@NotNull Table input) {
             final Table[] splitTables;
             try (final SafeCloseable ignored = LivenessScopeStack.open()) {
-                splitTables = customFunction.apply(input);
+                splitTables = splitByGroups(input);
                 ensureConsistentOrdering(input, splitTables);
             }
             return splitTables;

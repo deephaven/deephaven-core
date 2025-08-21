@@ -152,8 +152,9 @@ public class ParquetTableWriter {
                             destDir.relativize(info.dest).getPath(),
                             info.parquetColumnNames));
                     // we should always use a single RowGroup for the index-table
-                    final ParquetInstructions.Builder indexWIBuilder = new ParquetInstructions.Builder()
-                            .withRowGroupInfo(RowGroupInfo.defaultRowGroupInfo());
+                    final ParquetInstructions.Builder indexWIBuilder =
+                            new ParquetInstructions.Builder(writeInstructions)
+                                    .withRowGroupInfo(RowGroupInfo.singleRowGroup());
                     final ParquetInstructions writeInstructionsForIndex;
                     if (INDEX_ROW_SET_COLUMN_NAME.equals(dataIndex.rowSetColumnName())) {
                         writeInstructionsForIndex = indexWIBuilder.build();
