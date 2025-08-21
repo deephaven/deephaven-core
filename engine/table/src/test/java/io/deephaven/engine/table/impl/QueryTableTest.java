@@ -4,7 +4,9 @@
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.UncheckedDeephavenException;
+import io.deephaven.api.ColumnName;
 import io.deephaven.api.Selectable;
+import io.deephaven.api.SortColumn;
 import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.api.snapshot.SnapshotWhenOptions.Flag;
@@ -2753,6 +2755,14 @@ public class QueryTableTest extends QueryTableTestBase {
 
             testMemoize(source, t -> t.sort("intCol", "doubleCol"));
             testMemoize(source, t -> t.sort("intCol"));
+            testMemoize(source, t -> t.sort("Sym"));
+            testMemoize(source, t -> t.sort(List.of(ComparatorSortColumn.asc("Sym", String.CASE_INSENSITIVE_ORDER))));
+            testNoMemoize(source, t -> t.sort(List.of(SortColumn.asc(ColumnName.of("Sym")))),
+                    t -> t.sort(List.of(ComparatorSortColumn.asc("Sym", String.CASE_INSENSITIVE_ORDER))));
+            testNoMemoize(source, t -> t.sort(List.of(ComparatorSortColumn.asc("Sym", Comparator.naturalOrder()))),
+                    t -> t.sort(List.of(ComparatorSortColumn.asc("Sym", String.CASE_INSENSITIVE_ORDER))));
+            testNoMemoize(source, t -> t.sort(List.of(ComparatorSortColumn.asc("Sym", String.CASE_INSENSITIVE_ORDER))),
+                    t -> t.sort(List.of(ComparatorSortColumn.desc("Sym", String.CASE_INSENSITIVE_ORDER))));
             testMemoize(source, t -> t.sortDescending("intCol"));
             testNoMemoize(source, t -> t.sort("intCol"), t -> t.sort("doubleCol"));
             testNoMemoize(source, t -> t.sort("intCol"), t -> t.sortDescending("intCol"));
