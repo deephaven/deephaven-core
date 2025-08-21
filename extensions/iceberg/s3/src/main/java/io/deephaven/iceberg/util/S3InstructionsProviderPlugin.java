@@ -11,8 +11,10 @@ import io.deephaven.extensions.s3.S3Instructions;
 import io.deephaven.iceberg.internal.DataInstructionsProviderPlugin;
 import org.apache.iceberg.aws.AwsClientProperties;
 import org.apache.iceberg.aws.s3.S3FileIOProperties;
+import org.apache.iceberg.util.PropertyUtil;
 import org.jetbrains.annotations.NotNull;
 
+import java.time.Duration;
 import java.util.Map;
 
 /**
@@ -55,6 +57,36 @@ public final class S3InstructionsProviderPlugin implements DataInstructionsProvi
                 builder.credentials(
                         Credentials.basic(properties.get(S3FileIOProperties.ACCESS_KEY_ID),
                                 properties.get(S3FileIOProperties.SECRET_ACCESS_KEY)));
+            }
+            if (properties.containsKey(AsyncHttpClientProperties.READ_TIMEOUT_MS)) {
+                builder.readTimeout(Duration.ofMillis(PropertyUtil.propertyAsNullableLong(
+                        properties, AsyncHttpClientProperties.READ_TIMEOUT_MS)));
+            }
+            if (properties.containsKey(AsyncHttpClientProperties.WRITE_TIMEOUT_MS)) {
+                builder.writeTimeout(Duration.ofMillis(PropertyUtil.propertyAsNullableLong(
+                        properties, AsyncHttpClientProperties.WRITE_TIMEOUT_MS)));
+            }
+            if (properties.containsKey(AsyncHttpClientProperties.CONNECTION_TIMEOUT_MS)) {
+                builder.connectionTimeout(Duration.ofMillis(PropertyUtil.propertyAsNullableLong(
+                        properties, AsyncHttpClientProperties.CONNECTION_TIMEOUT_MS)));
+            }
+            if (properties.containsKey(AsyncHttpClientProperties.MAX_CONCURRENCY)) {
+                final int maxConcurrency = PropertyUtil.propertyAsNullableInt(
+                        properties, AsyncHttpClientProperties.MAX_CONCURRENCY);
+                builder.maxConcurrentRequests(maxConcurrency);
+                builder.numConcurrentWriteParts(maxConcurrency);
+            }
+            if (properties.containsKey(AsyncHttpClientProperties.READ_FRAGMENT_SIZE)) {
+                builder.fragmentSize(PropertyUtil.propertyAsNullableInt(
+                        properties, AsyncHttpClientProperties.READ_FRAGMENT_SIZE));
+            }
+            if (properties.containsKey(AsyncHttpClientProperties.WRITE_PART_SIZE)) {
+                builder.writePartSize(PropertyUtil.propertyAsNullableInt(
+                        properties, AsyncHttpClientProperties.WRITE_PART_SIZE));
+            }
+            if (properties.containsKey(AsyncHttpClientProperties.READ_AHEAD_COUNT)) {
+                builder.readAheadCount(PropertyUtil.propertyAsNullableInt(
+                        properties, AsyncHttpClientProperties.READ_AHEAD_COUNT));
             }
             return builder.build();
         }

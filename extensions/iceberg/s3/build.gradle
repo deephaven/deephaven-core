@@ -27,6 +27,7 @@ dependencies {
     implementation libs.awssdk.crt.client
     runtimeOnly libs.awssdk.sts
     implementation libs.awssdk.glue
+    implementation libs.awssdk.netty.nio
 
     // For some reason, this property flag does not seem to be working. But keeping block here, as it is useful to
     // uncomment when you are working with S3 Tables Catalog.
