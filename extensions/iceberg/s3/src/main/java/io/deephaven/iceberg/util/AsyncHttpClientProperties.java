@@ -58,7 +58,6 @@ class AsyncHttpClientProperties {
         } else if (httpClientType.equals(CLIENT_TYPE_CRT)) {
             final AwsCrtAsyncHttpClient.Builder httpClientBuilder = AwsCrtAsyncHttpClient.builder();
             this.applyAsyncCRTClientConfiguration(httpClientBuilder);
-
             awsClientBuilder.httpClientBuilder(httpClientBuilder);
         } else {
             throw new IllegalStateException("Unknown HTTP client type: " + httpClientType);

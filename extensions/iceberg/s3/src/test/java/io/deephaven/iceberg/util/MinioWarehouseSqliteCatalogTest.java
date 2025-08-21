@@ -12,6 +12,12 @@ import org.junit.jupiter.api.Tag;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 
 import java.time.Duration;
+import java.util.Map;
+
+import static org.apache.iceberg.aws.AwsClientProperties.CLIENT_REGION;
+import static org.apache.iceberg.aws.s3.S3FileIOProperties.ACCESS_KEY_ID;
+import static org.apache.iceberg.aws.s3.S3FileIOProperties.ENDPOINT;
+import static org.apache.iceberg.aws.s3.S3FileIOProperties.SECRET_ACCESS_KEY;
 
 @Tag("testcontainers")
 final class MinioWarehouseSqliteCatalogTest extends S3WarehouseSqliteCatalogBase {
@@ -32,5 +38,15 @@ final class MinioWarehouseSqliteCatalogTest extends S3WarehouseSqliteCatalogBase
     @Override
     public S3AsyncClient s3AsyncClient() {
         return MinIO.s3AsyncClient();
+    }
+
+    @Override
+    public Map<String, String> s3ConnectionProperties() {
+        return Map.of(
+                ENDPOINT, MinIO.s3Endpoint(),
+                CLIENT_REGION, MinIO.region(),
+                ACCESS_KEY_ID, MinIO.accessKey(),
+                SECRET_ACCESS_KEY, MinIO.secretAccessKey(),
+                AsyncHttpClientProperties.READ_TIMEOUT_MS, "10000");
     }
 }
