@@ -40,7 +40,7 @@ public class LongRegionBinarySearchKernel {
             final long lastKey,
             @NotNull final SortColumn sortColumn,
             @NotNull final Object[] searchValues) {
-        final SortSpec.Order order = SortSpec.Order();
+        final SortSpec.Order order = sortColumn.order();
         final long[] unboxed = ArrayTypeUtils.getUnboxedLongArray(searchValues);
         if (sortColumn.isAscending()) {
             try (final LongTimsortKernel.LongSortKernelContext<Any> context =

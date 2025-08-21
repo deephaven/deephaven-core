@@ -40,7 +40,7 @@ public class DoubleRegionBinarySearchKernel {
             final long lastKey,
             @NotNull final SortColumn sortColumn,
             @NotNull final Object[] searchValues) {
-        final SortSpec.Order order = SortSpec.Order();
+        final SortSpec.Order order = sortColumn.order();
         final double[] unboxed = ArrayTypeUtils.getUnboxedDoubleArray(searchValues);
         if (sortColumn.isAscending()) {
             try (final DoubleTimsortKernel.DoubleSortKernelContext<Any> context =

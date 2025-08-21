@@ -39,7 +39,7 @@ public class ObjectRegionBinarySearchKernel {
             final long lastKey,
             @NotNull final SortColumn sortColumn,
             @NotNull final Object[] searchValues) {
-        final SortSpec.Order order = SortSpec.Order();
+        final SortSpec.Order order = sortColumn.order();
         
         if (sortColumn.isAscending()) {
             try (final ObjectTimsortKernel.ObjectSortKernelContext<Any> context =

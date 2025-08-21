@@ -40,7 +40,7 @@ public class IntRegionBinarySearchKernel {
             final long lastKey,
             @NotNull final SortColumn sortColumn,
             @NotNull final Object[] searchValues) {
-        final SortSpec.Order order = SortSpec.Order();
+        final SortSpec.Order order = sortColumn.order();
         final int[] unboxed = ArrayTypeUtils.getUnboxedIntArray(searchValues);
         if (sortColumn.isAscending()) {
             try (final IntTimsortKernel.IntSortKernelContext<Any> context =

@@ -40,7 +40,7 @@ public class FloatRegionBinarySearchKernel {
             final long lastKey,
             @NotNull final SortColumn sortColumn,
             @NotNull final Object[] searchValues) {
-        final SortSpec.Order order = SortSpec.Order();
+        final SortSpec.Order order = sortColumn.order();
         final float[] unboxed = ArrayTypeUtils.getUnboxedFloatArray(searchValues);
         if (sortColumn.isAscending()) {
             try (final FloatTimsortKernel.FloatSortKernelContext<Any> context =

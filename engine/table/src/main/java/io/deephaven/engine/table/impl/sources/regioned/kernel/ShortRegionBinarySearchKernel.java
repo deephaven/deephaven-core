@@ -40,7 +40,7 @@ public class ShortRegionBinarySearchKernel {
             final long lastKey,
             @NotNull final SortColumn sortColumn,
             @NotNull final Object[] searchValues) {
-        final SortSpec.Order order = SortSpec.Order();
+        final SortSpec.Order order = sortColumn.order();
         final short[] unboxed = ArrayTypeUtils.getUnboxedShortArray(searchValues);
         if (sortColumn.isAscending()) {
             try (final ShortTimsortKernel.ShortSortKernelContext<Any> context =
