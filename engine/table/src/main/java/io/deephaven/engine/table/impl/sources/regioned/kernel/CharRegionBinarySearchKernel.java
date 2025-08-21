@@ -38,14 +38,14 @@ public class CharRegionBinarySearchKernel {
             @NotNull final Object[] searchValues) {
         final SortColumn.Order order = sortColumn.order();
         final char[] unboxed = ArrayTypeUtils.getUnboxedCharArray(searchValues);
-        if (order == SortSpec.Order.DESCENDING) {
-            try (final CharTimsortDescendingKernel.CharSortKernelContext<Any> context =
-                    CharTimsortDescendingKernel.createContext(unboxed.length)) {
+        if (sortColumn.isAscending()) {
+            try (final CharTimsortKernel.CharSortKernelContext<Any> context =
+                    CharTimsortKernel.createContext(unboxed.length)) {
                 context.sort(WritableCharChunk.writableChunkWrap(unboxed));
             }
         } else {
-            try (final CharTimsortKernel.CharSortKernelContext<Any> context =
-                    CharTimsortKernel.createContext(unboxed.length)) {
+            try (final CharTimsortDescendingKernel.CharSortKernelContext<Any> context =
+                    CharTimsortDescendingKernel.createContext(unboxed.length)) {
                 context.sort(WritableCharChunk.writableChunkWrap(unboxed));
             }
         }

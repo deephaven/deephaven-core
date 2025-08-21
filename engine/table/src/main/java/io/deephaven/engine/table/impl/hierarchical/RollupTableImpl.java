@@ -492,7 +492,7 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
                             constituentColumnName = baseColumnNameToAbsoluteName(constituentColumnName);
                         }
                     }
-                    return aggregatedSortColumn.order() == SortSpec.Order.ASCENDING
+                    return aggregatedSortColumn.isAscending()
                             ? SortColumn.asc(ColumnName.of(constituentColumnName))
                             : SortColumn.desc(ColumnName.of(constituentColumnName));
 

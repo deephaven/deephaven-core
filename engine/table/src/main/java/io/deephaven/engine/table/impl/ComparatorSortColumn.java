@@ -15,7 +15,7 @@ import java.util.Comparator;
 
 /**
  * <p>
- * An implementation of SortColumn that additionally includes a Comparator.
+ * An implementation of SortSpec that additionally includes a Comparator.
  * </p>
  *
  * <p>
@@ -42,7 +42,7 @@ public abstract class ComparatorSortColumn implements SortSpec {
      */
     @Parameter
     @Override
-    public abstract SortColumn.Order order();
+    public abstract SortSpec.Order order();
 
     /**
      * Does the comparator for this column respect equality?
@@ -64,7 +64,7 @@ public abstract class ComparatorSortColumn implements SortSpec {
      * @return the Comparator to use for sorting this column.
      */
     @Parameter
-    abstract Comparator getComparator();
+    abstract Comparator comparator();
 
     /**
      * Create an ascending ComparatorSortColumn for the provided column name and Comparator.

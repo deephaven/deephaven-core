@@ -7,7 +7,8 @@
 // @formatter:off
 package io.deephaven.engine.table.impl.sources.regioned.kernel;
 
-import io.deephaven.api.SortSpec;import io.deephaven.api.SortColumn;
+import io.deephaven.api.SortSpec;
+import io.deephaven.api.SortColumn;
 import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.engine.rowset.RowSet;
@@ -40,14 +41,14 @@ public class ObjectRegionBinarySearchKernel {
             @NotNull final Object[] searchValues) {
         final SortColumn.Order order = sortColumn.order();
         
-        if (order == SortSpec.Order.DESCENDING) {
-            try (final ObjectTimsortDescendingKernel.ObjectSortKernelContext<Any> context =
-                    ObjectTimsortDescendingKernel.createContext(searchValues.length)) {
+        if (sortColumn.isAscending()) {
+            try (final ObjectTimsortKernel.ObjectSortKernelContext<Any> context =
+                    ObjectTimsortKernel.createContext(searchValues.length)) {
                 context.sort(WritableObjectChunk.writableChunkWrap(searchValues));
             }
         } else {
-            try (final ObjectTimsortKernel.ObjectSortKernelContext<Any> context =
-                    ObjectTimsortKernel.createContext(searchValues.length)) {
+            try (final ObjectTimsortDescendingKernel.ObjectSortKernelContext<Any> context =
+                    ObjectTimsortDescendingKernel.createContext(searchValues.length)) {
                 context.sort(WritableObjectChunk.writableChunkWrap(searchValues));
             }
         }

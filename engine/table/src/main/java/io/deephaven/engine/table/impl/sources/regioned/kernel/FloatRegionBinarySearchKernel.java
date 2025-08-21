@@ -7,7 +7,8 @@
 // @formatter:off
 package io.deephaven.engine.table.impl.sources.regioned.kernel;
 
-import io.deephaven.api.SortSpec;import io.deephaven.api.SortColumn;
+import io.deephaven.api.SortSpec;
+import io.deephaven.api.SortColumn;
 import io.deephaven.chunk.WritableFloatChunk;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.engine.rowset.RowSet;
@@ -41,14 +42,14 @@ public class FloatRegionBinarySearchKernel {
             @NotNull final Object[] searchValues) {
         final SortColumn.Order order = sortColumn.order();
         final float[] unboxed = ArrayTypeUtils.getUnboxedFloatArray(searchValues);
-        if (order == SortSpec.Order.DESCENDING) {
-            try (final FloatTimsortDescendingKernel.FloatSortKernelContext<Any> context =
-                    FloatTimsortDescendingKernel.createContext(unboxed.length)) {
+        if (sortColumn.isAscending()) {
+            try (final FloatTimsortKernel.FloatSortKernelContext<Any> context =
+                    FloatTimsortKernel.createContext(unboxed.length)) {
                 context.sort(WritableFloatChunk.writableChunkWrap(unboxed));
             }
         } else {
-            try (final FloatTimsortKernel.FloatSortKernelContext<Any> context =
-                    FloatTimsortKernel.createContext(unboxed.length)) {
+            try (final FloatTimsortDescendingKernel.FloatSortKernelContext<Any> context =
+                    FloatTimsortDescendingKernel.createContext(unboxed.length)) {
                 context.sort(WritableFloatChunk.writableChunkWrap(unboxed));
             }
         }

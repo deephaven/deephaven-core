@@ -88,7 +88,7 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
                             + "), therefore cannot accept a Comparator");
                 }
 
-                comparators[ii] = ((ComparatorSortColumn) sortColumnsIn[ii]).getComparator();
+                comparators[ii] = ((ComparatorSortColumn) sortColumnsIn[ii]).comparator();
                 comparatorsRespectEquality[ii] = ((ComparatorSortColumn) sortColumnsIn[ii]).respectsEquality();
             } else {
                 comparatorsRespectEquality[ii] = true;

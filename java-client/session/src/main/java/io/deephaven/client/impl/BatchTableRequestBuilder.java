@@ -242,8 +242,7 @@ class BatchTableRequestBuilder {
             for (SortColumn column : sortTable.columns()) {
                 SortDescriptor descriptor =
                         SortDescriptor.newBuilder().setColumnName(column.column().name())
-                                .setDirection(column.order() == SortSpec.Order.ASCENDING ? SortDirection.ASCENDING
-                                        : SortDirection.DESCENDING)
+                                .setDirection(column.isAscending() ? SortDirection.ASCENDING : SortDirection.DESCENDING)
                                 .build();
                 builder.addSorts(descriptor);
             }

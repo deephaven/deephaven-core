@@ -599,7 +599,7 @@ public class AggregationProcessor implements AggregationContextFactory {
         }
 
         final void descendingSortedFirstOrLastUnsupported(@NotNull final SortColumn sortColumn, final boolean isFirst) {
-            if (sortColumn.order() == SortSpec.Order.ASCENDING) {
+            if (sortColumn.isAscending()) {
                 return;
             }
             throw new UnsupportedOperationException(String.format("%s does not support sort order in %s",
