@@ -23,13 +23,13 @@ import io.deephaven.util.annotations.VisibleForTesting;
  * <a href="https://bugs.python.org/file4451/timsort.txt">bugs.python.org</a> and
  * <a href="https://en.wikipedia.org/wiki/Timsort">Wikipedia</a> do a decent job of describing the algorithm.
  */
-public class DoubleByteTimsortDescendingKernel {
-    private DoubleByteTimsortDescendingKernel() {
-        throw new UnsupportedOperationException();
-    }
+public final class DoubleByteTimsortDescendingKernel {
+    // region constructor
+    private DoubleByteTimsortDescendingKernel() {}
+    // endregion constructor
 
     // region Context
-    public static class DoubleByteSortKernelContext<SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any>
+    public class DoubleByteSortKernelContext<SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any>
             implements ByteSortKernel<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> {
 
         int minGallop;
@@ -51,7 +51,7 @@ public class DoubleByteTimsortDescendingKernel {
         public void sort(
                 WritableByteChunk<PERMUTE_VALUES_ATTR> valuesToPermute,
                 WritableChunk<SORT_VALUES_ATTR> valuesToSort) {
-            DoubleByteTimsortDescendingKernel.sort(this, valuesToPermute, valuesToSort.asWritableDoubleChunk());
+            DoubleByteTimsortDescendingKernel.this.sort(this, valuesToPermute, valuesToSort.asWritableDoubleChunk());
         }
 
         @Override
@@ -60,7 +60,8 @@ public class DoubleByteTimsortDescendingKernel {
                 WritableChunk<SORT_VALUES_ATTR> valuesToSort,
                 IntChunk<? extends ChunkPositions> offsetsIn,
                 IntChunk<? extends ChunkLengths> lengthsIn) {
-            DoubleByteTimsortDescendingKernel.sort(this, valuesToPermute, valuesToSort.asWritableDoubleChunk(), offsetsIn, lengthsIn);
+            DoubleByteTimsortDescendingKernel.this.sort(this, valuesToPermute, valuesToSort.asWritableDoubleChunk(), offsetsIn,
+                    lengthsIn);
         }
 
         @Override
@@ -68,13 +69,28 @@ public class DoubleByteTimsortDescendingKernel {
             temporaryKeys.close();
             temporaryValues.close();
         }
+
+        private DoubleByteTimsortDescendingKernel kernel() {
+            return DoubleByteTimsortDescendingKernel.this;
+        }
     }
     // endregion Context
 
-    public static <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> DoubleByteSortKernelContext<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> createContext(
+    // region createContextInstance
+    public <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> DoubleByteSortKernelContext<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> createContextInstance(
             int size) {
         return new DoubleByteSortKernelContext<>(size);
     }
+    // endregion createContextInstance
+
+    // region createContextStatic
+
+    public static <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> DoubleByteSortKernelContext<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> createContext(
+            final int size) {
+        return new DoubleByteTimsortDescendingKernel().createContextInstance(size);
+    }
+
+    // endregion createContextStatic
 
     /**
      * Sort the values in valuesToSort permuting the valuesToPermute chunk in the same way.
@@ -94,7 +110,7 @@ public class DoubleByteTimsortDescendingKernel {
             final int offset = offsetsIn.get(run);
             final int length = lengthsIn.get(run);
 
-            timSort(context, valuesToPermute, valuesToSort, offset, length);
+            context.kernel().timSort(context, valuesToPermute, valuesToSort, offset, length);
         }
     }
 
@@ -109,10 +125,10 @@ public class DoubleByteTimsortDescendingKernel {
             DoubleByteSortKernelContext<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> context,
             WritableByteChunk<PERMUTE_VALUES_ATTR> valuesToPermute,
             WritableDoubleChunk<SORT_VALUES_ATTR> valuesToSort) {
-        timSort(context, valuesToPermute, valuesToSort, 0, valuesToPermute.size());
+        context.kernel().timSort(context, valuesToPermute, valuesToSort, 0, valuesToPermute.size());
     }
 
-    static private <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> void timSort(
+    private <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> void timSort(
             DoubleByteSortKernelContext<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> context,
             WritableByteChunk<PERMUTE_VALUES_ATTR> valuesToPermute,
             WritableDoubleChunk<SORT_VALUES_ATTR> valuesToSort,
@@ -208,6 +224,7 @@ public class DoubleByteTimsortDescendingKernel {
     }
     // endregion comparison functions
 
+    // region compare ops
     @VisibleForTesting
     static boolean gt(double lhs, double rhs) {
         return doComparison(lhs, rhs) > 0;
@@ -227,6 +244,7 @@ public class DoubleByteTimsortDescendingKernel {
     static boolean leq(double lhs, double rhs) {
         return doComparison(lhs, rhs) <= 0;
     }
+    // endregion compare ops
 
     /**
      * <p>
@@ -251,7 +269,7 @@ public class DoubleByteTimsortDescendingKernel {
      * as being approximately balanced while maintaining a compromise between delaying merging for balance, exploiting
      * fresh occurrence of runs in cache memory and making merge decisions relatively simple.
      */
-    private static <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> void ensureMergeInvariants(
+    private <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> void ensureMergeInvariants(
             DoubleByteSortKernelContext<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> context,
             WritableByteChunk<PERMUTE_VALUES_ATTR> valuesToPermute,
             WritableDoubleChunk<SORT_VALUES_ATTR> valuesToSort) {
@@ -299,7 +317,7 @@ public class DoubleByteTimsortDescendingKernel {
         }
     }
 
-    private static <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> void merge(
+    private <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> void merge(
             DoubleByteSortKernelContext<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> context,
             WritableByteChunk<PERMUTE_VALUES_ATTR> valuesToPermute,
             WritableDoubleChunk<SORT_VALUES_ATTR> valuesToSort,
@@ -349,7 +367,7 @@ public class DoubleByteTimsortDescendingKernel {
      * <p>
      * We eventually need to do galloping here, but are skipping that for now
      */
-    private static <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> void frontMerge(
+    private <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> void frontMerge(
             DoubleByteSortKernelContext<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> context,
             WritableByteChunk<PERMUTE_VALUES_ATTR> valuesToPermute,
             WritableDoubleChunk<SORT_VALUES_ATTR> valuesToSort,
@@ -459,7 +477,7 @@ public class DoubleByteTimsortDescendingKernel {
      * <p>
      * We eventually need to do galloping here, but are skipping that for now
      */
-    private static <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> void backMerge(
+    private <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> void backMerge(
             DoubleByteSortKernelContext<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> context,
             WritableByteChunk<PERMUTE_VALUES_ATTR> valuesToPermute,
             WritableDoubleChunk<SORT_VALUES_ATTR> valuesToSort,
@@ -598,17 +616,17 @@ public class DoubleByteTimsortDescendingKernel {
     // lo is inclusive, hi is exclusive
     //
     // returns the position of the first element that is > searchValue or hi if there is no such element
-    private static int upperBound(DoubleChunk<?> valuesToSort, int lo, int hi, double searchValue) {
+    private int upperBound(DoubleChunk<?> valuesToSort, int lo, int hi, double searchValue) {
         return bound(valuesToSort, lo, hi, searchValue, false);
     }
 
     // when we binary search in 2, we must identify a position for search value that is *before* our test values;
     // because the values from run 1 may never be inserted after an equal value from run 2
-    private static int lowerBound(DoubleChunk<?> valuesToSort, int lo, int hi, double searchValue) {
+    private int lowerBound(DoubleChunk<?> valuesToSort, int lo, int hi, double searchValue) {
         return bound(valuesToSort, lo, hi, searchValue, true);
     }
 
-    private static int bound(DoubleChunk<?> valuesToSort, int lo, int hi, double searchValue, final boolean lower) {
+    private int bound(DoubleChunk<?> valuesToSort, int lo, int hi, double searchValue, final boolean lower) {
         final int compareLimit = lower ? -1 : 0; // lt or leq
 
         while (lo < hi) {
@@ -626,7 +644,7 @@ public class DoubleByteTimsortDescendingKernel {
         return lo;
     }
 
-    private static void insertionSort(
+    private void insertionSort(
             WritableByteChunk<?> valuesToPermute,
             WritableDoubleChunk<?> valuesToSort,
             int offset,

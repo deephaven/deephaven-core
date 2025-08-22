@@ -32,6 +32,7 @@ task replicateAllSafe {
     dependsOn Tasks.registerMainExecTask(project, 'replicateSortKernel', 'io.deephaven.replicators.ReplicateSortKernel')
     dependsOn Tasks.registerMainExecTask(project, 'replicateSortKernelTests', 'io.deephaven.replicators.ReplicateSortKernelTests')
     dependsOn Tasks.registerMainExecTask(project, 'replicateSortCheck', 'io.deephaven.replicators.ReplicateSortCheck')
+    dependsOn Tasks.registerMainExecTask(project, 'replicateArrayComparators', 'io.deephaven.replicators.ReplicateArrayComparators')
 
     dependsOn Tasks.registerMainExecTask(project, 'replicateChunkFilters', 'io.deephaven.replicators.ReplicateChunkFilters')
 
