@@ -1,5 +1,0 @@
-# Test
-
-```py
-print('test')
-```
