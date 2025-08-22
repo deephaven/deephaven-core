@@ -52,6 +52,7 @@ fi
 
 export RUN_ALL
 export DEEPHAVEN_SERVER_IMAGE
+./format # Format before updating snapshots because the snapshots will be invalid if the content changes from formatting
 SNAPSHOT_LANGUAGE=python docker compose -f snapshotter/docker-compose.yml run --user 1000:999 --rm snapshotter && \
 SNAPSHOT_LANGUAGE=groovy docker compose -f snapshotter/docker-compose.yml run --user 1000:999 --rm snapshotter
 

@@ -41,6 +41,11 @@ git lfs track "*.mp4"
 
 ## Local Preview
 
+```py
+print('test')
+print("test")
+```
+
 To run the docs with a local preview on [http://localhost:3001](http://localhost:3001), use the following script.
 
 ```
@@ -56,12 +61,16 @@ Once a file is created, to have it appear in the sidebar, it must be added to th
 
 Image assets are stored in `<language>/assets` and can be linked using the relative path from your document.
 
-All changes should be approved by an editor on the docs team before being merged and must be formatted using `./docs/format` which uses `dprint`. The config is stored in `dprint.json`.
+All changes should be approved by an editor on the docs team before being merged.
 
-- If using [Visual Studio Code](https://code.visualstudio.com/), and the [dprint extension](https://marketplace.visualstudio.com/items?itemName=dprint.dprint) is installed, this is done automatically on save as configured in the `.vscode/settings.json` file.
-- If using a [Jetbrains IDE](https://www.jetbrains.com/), you can install the [dprint plugin](https://plugins.jetbrains.com/plugin/18192-dprint) and enable it to format on save.
-- If you prefer not to format on save, you can run the `./docs/format` command instead. This may take a minute to run initially, but it should be fairly quick once the cache is built.
-- In some cases, such as YAML code blocks, you may want to preserve indentation and tell dprint not to format the code. First, consider if this is really necessary and not that you prefer different formatting. If it is necessary, use a `<!-- dprint-ignore -->` comment to skip the following line. This works if put directly above a code block. You can also use `<!-- dprint-ignore-start -->` and `<!-- dprint-ignore-end -->` to ignore a block of code.
+Docs must be formatted using `./docs/format` which uses `dprint` inside a Docker container. The config is stored in `dprint.json`. If you prefer to run `dprint` locally, you can follow the [dprint install instructions](https://dprint.dev/install/).
+
+The following extensions can be used to format on save in your IDE:
+
+- VSCode [dprint extension](https://marketplace.visualstudio.com/items?itemName=dprint.dprint). Follow instructions to init `dprint` and set as your default formatter.
+- Jetbrains [dprint plugin](https://plugins.jetbrains.com/plugin/18192-dprint). Follow instructions to init `dprint` and set up format on save.
+
+In some cases, such as YAML code blocks, you may want to preserve indentation and tell dprint not to format the code. First, consider if this is really necessary and not that you prefer different formatting. If it is necessary, use a `<!-- dprint-ignore -->` comment to skip the following line. This works if put directly above a code block. You can also use `<!-- dprint-ignore-start -->` and `<!-- dprint-ignore-end -->` to ignore a block of code.
 
 ## Code Block Snapshots
 
