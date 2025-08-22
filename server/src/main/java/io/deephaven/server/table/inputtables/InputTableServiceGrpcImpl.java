@@ -12,14 +12,11 @@ import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.util.input.InputTableStatusListener;
 import io.deephaven.engine.util.input.InputTableUpdater;
+import io.deephaven.engine.util.input.InputTableValidationException;
 import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
-import io.deephaven.proto.backplane.grpc.AddTableRequest;
-import io.deephaven.proto.backplane.grpc.AddTableResponse;
-import io.deephaven.proto.backplane.grpc.DeleteTableRequest;
-import io.deephaven.proto.backplane.grpc.DeleteTableResponse;
-import io.deephaven.proto.backplane.grpc.InputTableServiceGrpc;
+import io.deephaven.proto.backplane.grpc.*;
 import io.deephaven.proto.util.Exceptions;
 import io.deephaven.server.session.SessionService;
 import io.deephaven.server.session.SessionState;
@@ -29,6 +26,8 @@ import io.grpc.stub.StreamObserver;
 import org.jetbrains.annotations.NotNull;
 
 import javax.inject.Inject;
+import java.lang.Object;
+import java.util.Collection;
 import java.util.List;
 
 public class InputTableServiceGrpcImpl extends InputTableServiceGrpc.InputTableServiceImplBase {
@@ -92,6 +91,16 @@ public class InputTableServiceGrpcImpl extends InputTableServiceGrpc.InputTableS
                         } catch (TableDefinition.IncompatibleTableDefinitionException exception) {
                             throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
                                     "Provided tables's columns are not compatible: " + exception.getMessage());
+                        } catch (InputTableValidationException exception) {
+                            final Collection<InputTableValidationException.StructuredError> errors =
+                                    exception.getErrors();
+                            if (errors.isEmpty() || !request.getStructuredValidationErrors()) {
+                                throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
+                                        "Invalid update request: " + exception.getMessage());
+                            } else {
+                                GrpcUtil.safelyOnNextAndComplete(responseObserver, convertErrors(errors));
+                                return;
+                            }
                         }
 
                         // actually add the tables contents
@@ -104,12 +113,39 @@ public class InputTableServiceGrpcImpl extends InputTableServiceGrpc.InputTableS
 
                             @Override
                             public void onError(Throwable t) {
-                                GrpcUtil.safelyError(responseObserver, Exceptions.statusRuntimeException(Code.DATA_LOSS,
-                                        "Error adding table to input table"));
+                                if (t instanceof InputTableValidationException) {
+                                    final Collection<InputTableValidationException.StructuredError> errors =
+                                            ((InputTableValidationException) t).getErrors();
+                                    if (errors.isEmpty() || !request.getStructuredValidationErrors()) {
+                                        GrpcUtil.safelyError(responseObserver,
+                                                Exceptions.statusRuntimeException(Code.DATA_LOSS,
+                                                        "Error adding table to input table: " + t.getMessage()));
+                                    } else {
+                                        GrpcUtil.safelyOnNextAndComplete(responseObserver, convertErrors(errors));
+                                    }
+                                } else {
+                                    GrpcUtil.safelyError(responseObserver,
+                                            Exceptions.statusRuntimeException(Code.DATA_LOSS,
+                                                    "Error adding table to input table"));
+                                }
                             }
                         });
                     });
         }
+    }
+
+    private AddTableResponse convertErrors(final Collection<InputTableValidationException.StructuredError> errors) {
+        final AddTableResponse.Builder responseBuilder = AddTableResponse.newBuilder();
+        errors.forEach(e -> responseBuilder.addValidationErrors(convertOneError(e)));
+        return responseBuilder.build();
+    }
+
+    private InputTableValidationError convertOneError(final InputTableValidationException.StructuredError e) {
+        final InputTableValidationError.Builder errorBuilder = InputTableValidationError.newBuilder();
+        errorBuilder.setMessage(e.getMessage());
+        e.getRow().ifPresent(errorBuilder::setRow);
+        e.getColumn().ifPresent(errorBuilder::setColumn);
+        return errorBuilder.build();
     }
 
     @Override
@@ -158,6 +194,9 @@ public class InputTableServiceGrpcImpl extends InputTableServiceGrpc.InputTableS
                         } catch (UnsupportedOperationException exception) {
                             throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
                                     "Provided input table does not support delete.");
+                        } catch (InputTableValidationException exception) {
+                            throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
+                                    "Invalid update request: " + exception.getMessage());
                         }
 
                         // actually delete the table's contents
@@ -170,8 +209,15 @@ public class InputTableServiceGrpcImpl extends InputTableServiceGrpc.InputTableS
 
                             @Override
                             public void onError(Throwable t) {
-                                GrpcUtil.safelyError(responseObserver, Exceptions.statusRuntimeException(Code.DATA_LOSS,
-                                        "Error deleting table from inputtable"));
+                                if (t instanceof InputTableValidationException) {
+                                    GrpcUtil.safelyError(responseObserver,
+                                            Exceptions.statusRuntimeException(Code.DATA_LOSS,
+                                                    "Error deleting table from input table: " + t.getMessage()));
+                                } else {
+                                    GrpcUtil.safelyError(responseObserver,
+                                            Exceptions.statusRuntimeException(Code.DATA_LOSS,
+                                                    "Error deleting table from inputtable"));
+                                }
                             }
                         });
                     });
