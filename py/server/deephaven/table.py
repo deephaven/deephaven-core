@@ -82,6 +82,10 @@ _JMultiJoinInput = jpy.get_type("io.deephaven.engine.table.MultiJoinInput")
 _JMultiJoinTable = jpy.get_type("io.deephaven.engine.table.MultiJoinTable")
 _JMultiJoinFactory = jpy.get_type("io.deephaven.engine.table.MultiJoinFactory")
 
+# Keyed Transpose Table
+_JKeyedTranspose = jpy.get_type("io.deephaven.engine.table.impl.util.KeyedTranspose")
+_JNewColumnBehaviorType = jpy.get_type("io.deephaven.engine.table.impl.util.KeyedTranspose$NewColumnBehavior")
+
 
 class NodeType(Enum):
     """An enum of node types for RollupTable"""
@@ -118,6 +122,15 @@ class NaturalJoinType(Enum):
 
     EXACTLY_ONE_MATCH = _JNaturalJoinType.EXACTLY_ONE_MATCH
     """Match exactly one right hand table row; throw an error if there are zero or more than one matches"""
+
+class NewColumnBehaviorType(Enum):
+    """An enum of behavior types for new columns introduced while ticking"""
+    FAIL = _JNewColumnBehaviorType.FAIL
+    """The result table reports an error when a new column is detected. This is the default behavior, which ensures
+    consistency between the result and a newly created keyed_transpose."""
+    IGNORE = _JNewColumnBehaviorType.IGNORE
+    """The result table ignores the new column. If a new column would have been created, then the result table
+    becomes inconsistent with a newly created keyed_transpose."""
 
 class _FormatOperationsRecorder(Protocol):
     """A mixin for creating format operations to be applied to individual nodes of either RollupTable or TreeTable."""
@@ -3996,3 +4009,88 @@ def table_diff(t1: Table, t2: Table, max_diffs: int = 1, floating_comparison: Li
         raise DHError(e, "table diff failed") from e
 
 # endregion
+
+def keyed_transpose(table: Table, aggs: Union[Aggregation, Sequence[Aggregation]],
+                    row_by_cols: Union[str, Sequence[str]], col_by_cols: Union[str, Sequence[str]],
+                    initial_groups: Table = None,
+                    new_column_behavior: NewColumnBehaviorType = NewColumnBehaviorType.FAIL) -> Table:
+    """The keyed_transpose operation takes a source table with a set of aggregations and produces a new table where
+    the columns specified in ``row_by_cols`` are the keys used for the aggregation, and the values for the columns
+    specified in ``col_by_cols`` are used for the column names. An optional set of ``initial_groups`` can be
+    provided to ensure that the output table contains the full set of aggregated columns, even if no data is present yet
+    in the source table.
+
+    For example, given the following source table...
+
+    ============ =========
+    Date         Level
+    ============ =========
+    2025-08-05   INFO
+    2025-08-05   INFO
+    2025-08-06   WARN
+    2025-08-07   ERROR
+    ============ =========
+
+    ... and the usage ...
+
+    ``t = keyed_transpose(source, [agg.count_('Count')], ['Date'], ['Level'])``
+
+    The expected output for table "t" is ...
+
+    ============ ========= ========= =========
+    Date         INFO      WARN      ERROR
+    ============ ========= ========= =========
+    2025-08-05           2    (null)    (null)
+    2025-08-06      (null)         1    (null)
+    2025-08-07      (null)    (null)         1
+    ============ ========= ========= =========
+
+    In the example, you can see that the column names (e.g. INFO, WARN, ERROR) are taken from the values occurring for
+    ``Level``. But what if there are multiple aggregations or multiple ``col_by_cols`` specified? The
+    resulting column names may yield duplicates.
+
+    To avoid conflicts, the column naming works according to the following contract:
+
+    - If ``aggs = 1`` and ``col_by_cols = 1``: Column names are the value of the ``col_by_cols`` column. (ex. INFO, WARN)
+    - If ``aggs > 1``: Column names are prefixed with the aggregation column name. (ex. Count_INFO, MySum_INFO)
+    - If ``col_by_cols > 1``: Values for the original columns are separated by an underscore (ex. INFO_OTHER1, WARN_OTHER2)
+    - If Illegal Characters: Purge characters that are invalid for Deephaven column names. (ex. "1-2.3/4" becomes "1234")
+    - If Starts with Number: Add the prefix "column_" to the column name. (ex. column_123)
+    - If Duplicate Column Name: Add a suffix to differentiate the columns. (ex. INFO, INFO2)
+
+    Given the above contract, and to give you more control over the result, it may be necessary to sanitize data values
+    that may be used as column names before using ``keyed_transpose``. Otherwise, "12.34" could be translated to
+    "column_1234" instead of a more meaningful column name.
+
+    Args:
+        table (Table): The source table to transpose.
+        aggs (Union[Aggregation, Sequence[Aggregation]]): The aggregation(s) to apply to the source table.
+        row_by_cols (Union[str, Sequence[str]]): The column(s) to use as row keys in the transposed table.
+        col_by_cols (Union[str, Sequence[str]]): The columns whose values become the new aggregated columns.
+        initial_groups (Table, optional): An optional initial set of groups to ensure all columns are present in the
+            output, defaults to None.
+        new_column_behavior (NewColumnBehaviorType, optional): The behavior when a new column would be added to the
+            table, default is NewColumnBehaviorType.FAIL.
+
+    Returns:
+        a new table
+
+    Raises:
+        DHError
+    """
+    try:
+        j_source_table = unwrap(table)
+        aggs = to_sequence(aggs)
+        row_by_cols = to_sequence(row_by_cols)
+        col_by_cols = to_sequence(col_by_cols)
+        j_agg_list = j_array_list([agg.j_aggregation for agg in aggs])
+
+        with auto_locking_ctx(table):
+            j_row_by_cols_list = j_array_list([_JColumnName.of(col) for col in row_by_cols])
+            j_col_by_cols_list = j_array_list([_JColumnName.of(col) for col in col_by_cols])
+            j_initial_groups_table = unwrap(initial_groups)
+            return Table(
+                j_table=_JKeyedTranspose.keyedTranspose(j_source_table, j_agg_list, j_row_by_cols_list,
+                    j_col_by_cols_list, j_initial_groups_table, new_column_behavior.value))
+    except Exception as e:
+        raise DHError(e, "keyed_transpose operation failed.") from e
