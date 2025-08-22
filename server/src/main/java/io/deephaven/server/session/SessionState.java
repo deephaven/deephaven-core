@@ -1035,13 +1035,16 @@ public class SessionState {
                     if (errorDetails != null) {
                         log.error().append("Internal Error '").append(errorId).append("' ").append(errorDetails).endl();
                     } else {
-                        log.error().append("Internal Error '").append(errorId).append("' ").append(caughtException).endl();
+                        log.error().append("Internal Error '").append(errorId).append("' ").append(caughtException)
+                                .endl();
                     }
                 } else {
                     if (errorDetails != null) {
-                        log.info().append("Export failed with Status Runtime Exception '").append(errorId).append("' ").append(errorDetails).endl();
+                        log.info().append("Export failed with Status Runtime Exception '").append(errorId).append("' ")
+                                .append(errorDetails).endl();
                     } else {
-                        log.info().append("Export failed with Status Runtime Exception '").append(errorId).append("' ").append(caughtException).endl();
+                        log.info().append("Export failed with Status Runtime Exception '").append(errorId).append("' ")
+                                .append(caughtException).endl();
                     }
                 }
             }
