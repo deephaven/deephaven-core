@@ -90,7 +90,6 @@ class InjectAWSProperties {
             }
         }
 
-        // TODO (DH-20202): Remove this once the custom client factory is moved to Iceberg
         if (!updatedProperties.containsKey(CLIENT_FACTORY)) {
             updatedProperties.put(CLIENT_FACTORY, DEFAULT_CLIENT_FACTORY);
         }
