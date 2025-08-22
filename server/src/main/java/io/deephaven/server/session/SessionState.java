@@ -1039,9 +1039,9 @@ public class SessionState {
                     }
                 } else {
                     if (errorDetails != null) {
-                        log.info().append("Export failed with Status Runtime Exception '").append(errorId).append("' ").append(errorDetails).endl();
+                        log.debug().append("Export failed with Status Runtime Exception '").append(errorId).append("' ").append(errorDetails).endl();
                     } else {
-                        log.info().append("Export failed with Status Runtime Exception '").append(errorId).append("' ").append(caughtException).endl();
+                        log.debug().append("Export failed with Status Runtime Exception '").append(errorId).append("' ").append(caughtException).endl();
                     }
                 }
             }
