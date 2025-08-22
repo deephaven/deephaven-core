@@ -4,6 +4,7 @@
 
 package io.deephaven.function;
 
+import io.deephaven.util.annotations.UserInvocationPermitted;
 import io.deephaven.vector.*;
 import io.deephaven.engine.primitive.iterator.*;
 
@@ -13,6 +14,7 @@ import static io.deephaven.util.QueryConstants.*;
  * Functions for casting between types.
  */
 @SuppressWarnings("unused")
+@UserInvocationPermitted(sets = {"function_library"})
 public class Cast {
 
     /**

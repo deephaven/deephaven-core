@@ -5,6 +5,7 @@ package io.deephaven.engine.table.impl.lang;
 
 import io.deephaven.configuration.Configuration;
 import io.deephaven.util.QueryConstants;
+import io.deephaven.util.annotations.UserInvocationPermitted;
 import org.jpy.PyObject;
 
 import java.math.BigDecimal;
@@ -14,6 +15,7 @@ import java.math.RoundingMode;
 import static java.lang.Math.*;
 
 @SuppressWarnings({"unused", "WeakerAccess", "SimplifiableIfStatement"})
+@UserInvocationPermitted(sets = "function_library")
 public final class QueryLanguageFunctionUtils {
 
     private static final String DEFAULT_SCALE_PROPERTY = "defaultScale";

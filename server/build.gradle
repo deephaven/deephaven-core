@@ -9,6 +9,7 @@ dependencies {
     implementation project(':authentication')
     implementation project(':authorization')
     implementation project(':engine-table')
+    implementation project(':engine-function')
     implementation project(':extensions-csv')
     implementation project(':extensions-arrow')
     implementation project(':extensions-parquet-table')
