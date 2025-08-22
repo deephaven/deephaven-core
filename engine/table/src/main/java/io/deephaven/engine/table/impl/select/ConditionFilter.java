@@ -49,6 +49,7 @@ import static io.deephaven.engine.table.impl.select.DhFormulaColumn.COLUMN_SUFFI
  * A condition filter evaluates a formula against a table.
  */
 public class ConditionFilter extends AbstractConditionFilter {
+
     public static final int CHUNK_SIZE = 4096;
     private Future<Class<?>> filterKernelClassFuture = null;
     private List<Pair<String, Class<?>>> usedInputs; // that is columns and special variables
