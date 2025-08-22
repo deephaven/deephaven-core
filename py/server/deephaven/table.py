@@ -4015,8 +4015,8 @@ def keyed_transpose(table: Table, aggs: Union[Aggregation, Sequence[Aggregation]
                     initial_groups: Table = None,
                     new_column_behavior: NewColumnBehaviorType = NewColumnBehaviorType.FAIL) -> Table:
     """The keyed_transpose operation takes a source table with a set of aggregations and produces a new table where
-    the columns specified in row_by_columns are the keys used for the aggregation, and the values for the columns
-    specified in column_by_columns are used for the column names. An optional set of initial_groups can be
+    the columns specified in row_by_cols are the keys used for the aggregation, and the values for the columns
+    specified in col_by_cols are used for the column names. An optional set of initial_groups can be
     provided to ensure that the output table contains the full set of aggregated columns, even if no data is present yet
     in the source table.
 
@@ -4025,8 +4025,11 @@ def keyed_transpose(table: Table, aggs: Union[Aggregation, Sequence[Aggregation]
         aggs (Union[Aggregation, Sequence[Aggregation]]): The aggregation(s) to apply to the source table.
         row_by_cols (Union[str, Sequence[str]]): The column(s) to use as row keys in the transposed table.
         col_by_cols (Union[str, Sequence[str]]): The columns whose values become the new aggregated columns.
-        initial_groups (Table, optional): An optional initial set of groups to ensure all columns are present in the output.
-        new_column_behavior (NewColumnBehaviorType, optional): The behavior when a new column would be added to the table.
+        initial_groups (Table, optional): An optional initial set of groups to ensure all columns are present in the
+            output, defaults to None.
+        new_column_behavior (NewColumnBehaviorType, optional): The behavior when a new column would be added to the
+            table, default is NewColumnBehaviorType.FAIL.
+            
     Returns:
         a new table
 
@@ -4038,8 +4041,6 @@ def keyed_transpose(table: Table, aggs: Union[Aggregation, Sequence[Aggregation]
         aggs = to_sequence(aggs)
         row_by_cols = to_sequence(row_by_cols)
         col_by_cols = to_sequence(col_by_cols)
-        if not row_by_cols and initial_groups:
-            raise ValueError("missing row_by_cols column names when initial_groups is provided.")
         j_agg_list = j_array_list([agg.j_aggregation for agg in aggs])
 
         with auto_locking_ctx(table):
