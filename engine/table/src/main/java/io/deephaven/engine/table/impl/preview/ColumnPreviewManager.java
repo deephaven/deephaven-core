@@ -131,6 +131,9 @@ public class ColumnPreviewManager {
             }
 
             result.setAttribute(Table.COLUMN_DESCRIPTIONS_ATTRIBUTE, columnDescriptions);
+            if (table.hasAttribute(Table.BARRAGE_SCHEMA_ATTRIBUTE)) {
+                result = (BaseTable<?>) result.withoutAttributes(List.of(Table.BARRAGE_SCHEMA_ATTRIBUTE));
+            }
         }
 
         return result;
