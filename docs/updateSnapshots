@@ -1,0 +1,62 @@
+#!/bin/bash
+
+usage() {
+  echo "Usage: $0 [-t tag] [-a]"
+  echo "Updates the docs snapshots for Python and Groovy."
+  echo
+  echo "Options:"
+  echo "  -t tag    The docker tag to use for the community server (default: latest)."
+  echo "            Use 'local' to use a local build of the docs server. This will run `./gradlew prepareCompose`"
+  echo "  -a        Update all snapshots even if they are already up to date."
+  echo "  -h        Show this help message"
+  echo
+  echo "Example:"
+  echo "  $0 -t edge"
+}
+
+DH_TAG=latest
+RUN_ALL=false
+
+while getopts "t:ah" opt; do
+  case $opt in
+    t)
+      DH_TAG=$OPTARG
+      ;;
+    a)
+      RUN_ALL=true
+      ;;
+    h)
+      usage
+      exit 0
+      ;;
+    *)
+      usage
+      exit 1
+      ;;
+  esac
+done
+
+DEEPHAVEN_SERVER_IMAGE="ghcr.io/deephaven/server:$DH_TAG"
+
+pushd "$(dirname "$0")" > /dev/null # Set pwd to this directory
+
+if [ "$DH_TAG" = "local" ]; then
+  echo "Using local build of the docs server."
+  pushd "../" > /dev/null # Move to the root of the project
+  ./gradlew prepareCompose
+  source .env # Sources from the root of the project for DEEPHAVEN_SERVER_IMAGE variable
+  popd > /dev/null
+else
+  echo "Using Docker tag: $DH_TAG"
+fi
+
+export RUN_ALL
+export DEEPHAVEN_SERVER_IMAGE
+SNAPSHOT_LANGUAGE=python docker compose -f snapshotter/docker-compose.yml run --user 1000:999 --rm snapshotter && \
+SNAPSHOT_LANGUAGE=groovy docker compose -f snapshotter/docker-compose.yml run --user 1000:999 --rm snapshotter
+
+EXIT_CODE=$?
+
+popd > /dev/null # Reset pwd
+
+exit $EXIT_CODE

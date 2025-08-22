@@ -1,0 +1,37 @@
+name: deephaven-docs-snapshots
+
+services:
+  extractor:
+    image: ghcr.io/deephaven/salmon-extractor:latest
+    pull_policy: always
+    container_name: extractor
+    volumes:
+      - ../${SNAPSHOT_LANGUAGE:?error}:/extract
+      - test-sets:/results # Output to a temporary build directory
+
+  # Read the test sets from the results directory and run them against the test server, taking a snapshot of the results.
+  snapshotter:
+    image: ghcr.io/deephaven/salmon-snapshotter:pre
+    pull_policy: always
+    depends_on:
+      extractor:
+        condition: service_completed_successfully
+    environment:
+      DEEPHAVEN_SERVER_IMAGE: ${DEEPHAVEN_SERVER_IMAGE:?error}
+      HOST_URL: 'http://server:10000'
+      RUN_ALL: ${RUN_ALL}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock # Allows the snapshotter to start its own docker containers for the test server
+      - test-sets:/test-sets
+      - ./docker:/docker
+      - ../${SNAPSHOT_LANGUAGE:?error}/snapshots:/results
+      - ./errors:/snapshotter/errors
+
+volumes:
+  test-sets:
+
+# This network is set as external in the other compose files so the snapshotter and servers are run on the same network.
+networks:
+  default:
+    name: deephaven-docs-snapshot-network
+    driver: bridge

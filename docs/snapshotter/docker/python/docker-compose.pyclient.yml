@@ -1,0 +1,19 @@
+services:
+  # This is the server the snapshot tool uses
+  # It is really used to run the pydeephaven client from the server Python environment
+  server:
+    build: 
+      context: .
+      dockerfile: ./pyclient.Dockerfile # Installs pydeephaven to the server
+      args:
+        - VERSION=${VERSION:-latest}
+
+  deephaven.local: # This is the server our client will talk to
+    image: ghcr.io/deephaven/server:${VERSION:-latest}
+    expose:
+      - 10000
+    volumes:
+      - ../data:/data
+    environment:
+      - START_OPTS=-Xmx4g -Dauthentication.psk=YOUR_PASSWORD_HERE -Ddeephaven.console.type=python
+

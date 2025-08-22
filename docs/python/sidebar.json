@@ -1,0 +1,13 @@
+{
+  "config": {
+    "name": "Deephaven Core"
+  },
+  "sidebars": {
+    "main": [
+      {
+        "label": "Introduction",
+        "path": "intro.md"
+      }
+    ]
+  }
+}

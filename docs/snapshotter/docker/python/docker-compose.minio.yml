@@ -1,0 +1,39 @@
+services:
+  minio:
+    image: quay.io/minio/minio:latest
+    command: server /data --console-address ":9001"
+    hostname:
+      minio.example.com
+    environment:
+      # Enable Virtual Host-style paths
+      # https://min.io/docs/minio/linux/reference/minio-server/settings/core.html#envvar.MINIO_DOMAIN
+      MINIO_DOMAIN: minio.example.com
+      MINIO_REGION: us-east-1
+      MINIO_ROOT_USER: example_username
+      MINIO_ROOT_PASSWORD: example_password
+    networks:
+      default:
+        aliases:
+          # Add an alias for each bucket
+          - example-bucket.minio.example.com
+    expose:
+      - "9000"
+      - "9001"
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  init:
+    image: minio/mc
+    depends_on:
+      - minio
+    volumes:
+      - ../data/examples/ParquetExamples:/data:ro
+    entrypoint: >
+      /bin/sh -c "
+      until (/usr/bin/mc alias set myminio http://minio:9000 example_username example_password) do sleep 1; done;
+      /usr/bin/mc mb myminio/example-bucket;
+      /usr/bin/mc cp --recursive /data/* myminio/example-bucket;
+      "

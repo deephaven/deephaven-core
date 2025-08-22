@@ -13,18 +13,6 @@ on:
     branches: [ 'main', 'rc/v*' ]
 
 jobs:
-  doc-labels:
-    runs-on: ubuntu-24.04
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Check Documentation Labels
-        env:
-          HAS_DocumentationNeeded: ${{ contains(github.event.pull_request.labels.*.name, 'DocumentationNeeded') }}
-          HAS_NoDocumentationNeeded: ${{ contains(github.event.pull_request.labels.*.name, 'NoDocumentationNeeded') }}
-        run: .github/scripts/check-doc-labels.sh
-
   releasenotes-labels:
     runs-on: ubuntu-24.04
     steps:
