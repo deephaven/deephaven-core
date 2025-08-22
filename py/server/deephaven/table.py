@@ -4015,10 +4015,52 @@ def keyed_transpose(table: Table, aggs: Union[Aggregation, Sequence[Aggregation]
                     initial_groups: Table = None,
                     new_column_behavior: NewColumnBehaviorType = NewColumnBehaviorType.FAIL) -> Table:
     """The keyed_transpose operation takes a source table with a set of aggregations and produces a new table where
-    the columns specified in row_by_cols are the keys used for the aggregation, and the values for the columns
-    specified in col_by_cols are used for the column names. An optional set of initial_groups can be
+    the columns specified in ``row_by_cols`` are the keys used for the aggregation, and the values for the columns
+    specified in ``col_by_cols`` are used for the column names. An optional set of ``initial_groups`` can be
     provided to ensure that the output table contains the full set of aggregated columns, even if no data is present yet
     in the source table.
+
+    For example, given the following source table...
+
+    ============ =========
+    Date         Level
+    ============ =========
+    2025-08-05   INFO
+    2025-08-05   INFO
+    2025-08-06   WARN
+    2025-08-07   ERROR
+    ============ =========
+
+    ... and the usage ...
+
+    ``t = keyed_transpose(source, [agg.count_('Count')], ['Date'], ['Level'])``
+
+    The expected output for table "t" is ...
+
+    ============ ========= ========= =========
+    Date         INFO      WARN      ERROR
+    ============ ========= ========= =========
+    2025-08-05           2    (null)    (null)
+    2025-08-06      (null)         1    (null)
+    2025-08-07      (null)    (null)         1
+    ============ ========= ========= =========
+
+    In the example, you can see that the column names (e.g. INFO, WARN, ERROR) are taken from the values occurring for
+    ``Level``. But what if there are multiple aggregations or multiple ``col_by_cols`` specified? The
+    resulting column names may yield duplicates.
+
+    To avoid conflicts, the column naming works according to the following contract:
+
+    - If ``aggs = 1`` and ``col_by_cols = 1``: Column names are the value of the ``col_by_cols`` column. (ex. INFO, WARN)
+    - If ``aggs > 1``: Column names are prefixed with the aggregation column name. (ex. Count_INFO, MySum_INFO)
+    - If ``col_by_cols > 1``: Values for the original columns are separated by an underscore (ex. INFO_OTHER1, WARN_OTHER2)
+    - If Illegal Characters: Purge characters that are invalid for Deephaven column names. (ex. "1-2.3/4" becomes "1234")
+    - If Starts with Number: Add the prefix "column_" to the column name. (ex. column_123)
+    - If Duplicate Column Name: Add a suffix to differentiate the columns. (ex. INFO, INFO2)
+
+    Given the above contract, and to give you more control over the result, it may be necessary to sanitize data values
+    that may be used as column names before using ``keyed_transpose``. Otherwise, "12.34" could be translated to
+    "column_1234" instead of a more meaningful column name.
 
     Args:
         table (Table): The source table to transpose.
@@ -4029,7 +4071,7 @@ def keyed_transpose(table: Table, aggs: Union[Aggregation, Sequence[Aggregation]
             output, defaults to None.
         new_column_behavior (NewColumnBehaviorType, optional): The behavior when a new column would be added to the
             table, default is NewColumnBehaviorType.FAIL.
-            
+
     Returns:
         a new table
 

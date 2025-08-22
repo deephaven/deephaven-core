@@ -189,6 +189,19 @@ public class KeyedTransposeTest extends RefreshingTableTestCase {
         assertTableEquals(ex, t);
     }
 
+    public void testEmptyTableForSource() {
+        Table emptySource = TableTools.newTable(stringCol("Date"), stringCol("Level"));
+        try {
+            Table t = KeyedTranspose.keyedTranspose(emptySource, List.of(AggCount("Count")), colsOf("Date"),
+                    colsOf("Level"));
+            fail("Should have thrown an exception");
+        } catch (Exception ex) {
+            ;
+            assertTrue("Wrong message: " + ex.getMessage(),
+                    ex.getMessage().contains("table has no values for column by columns"));
+        }
+    }
+
     public void testNewRow() {
         testNewRow(KeyedTranspose.NewColumnBehavior.IGNORE);
         testNewRow(KeyedTranspose.NewColumnBehavior.FAIL);

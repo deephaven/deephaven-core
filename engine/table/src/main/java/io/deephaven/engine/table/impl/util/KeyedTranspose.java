@@ -181,6 +181,9 @@ public class KeyedTranspose {
         }
         final PartitionedTable partitionedTable = aggregatedComplete.partitionBy(columnByColumnNames);
         final Table tableOfTables = partitionedTable.table();
+        if (tableOfTables.isEmpty()) {
+            throw new IllegalArgumentException("The source table has no values for column by columns");
+        }
 
         final List<ColumnSource<Object>> nameSources = partitionedTable.keyColumnNames().stream()
                 .map(tableOfTables::getColumnSource).collect(Collectors.toList());
