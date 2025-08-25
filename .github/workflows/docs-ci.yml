@@ -64,14 +64,14 @@ jobs:
 
       - name: Setup JDK 11
         id: setup-java-11
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
           java-version: '11'
 
       - name: Setup JDK 17
         id: setup-java-17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
           java-version: '17'
@@ -126,14 +126,14 @@ jobs:
 
       - name: Setup JDK 11
         id: setup-java-11
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
           java-version: '11'
 
       - name: Setup JDK 17
         id: setup-java-17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
           java-version: '17'
@@ -188,14 +188,14 @@ jobs:
 
       - name: Setup JDK 11
         id: setup-java-11
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
           java-version: '11'
 
       - name: Setup JDK 17
         id: setup-java-17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
           java-version: '17'
@@ -277,7 +277,7 @@ jobs:
 
       - name: Setup JDK 11
         id: setup-java-11
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
           java-version: '11'
@@ -351,7 +351,7 @@ jobs:
 
       - name: Setup JDK 11
         id: setup-java-11
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
           java-version: '11'
@@ -409,7 +409,7 @@ jobs:
 
       - name: Setup JDK 11
         id: setup-java-11
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
           java-version: '11'
