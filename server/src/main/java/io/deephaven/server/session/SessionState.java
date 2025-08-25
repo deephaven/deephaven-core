@@ -1030,6 +1030,12 @@ public class SessionState {
         private void maybeAssignErrorId(final Exception caughtException, final String errorDetails) {
             if (errorId == null) {
                 errorId = UuidCreator.toString(UuidCreator.getRandomBased());
+
+                if (caughtException == null && errorDetails == null) {
+                    log.error().append("Internal Error '").append(errorId).append("' for ").append(logIdentity).append(" and no error details are available.").endl();
+                    return;
+                }
+
                 this.caughtException = caughtException;
                 if (!(caughtException instanceof StatusRuntimeException)) {
                     if (errorDetails != null) {
