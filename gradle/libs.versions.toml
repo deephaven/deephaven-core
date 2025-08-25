@@ -33,7 +33,7 @@ freemarker = "2.3.33"
 google-findbugs = "3.0.2"
 google-java-allocation-instrumenter = "3.3.4"
 graalvm = "24.2.1"
-groovy = "3.0.24"
+groovy = "3.0.25"
 # Only bump this in concert with boringssl
 grpc = "1.65.1"
 guava = "33.4.0-jre"
