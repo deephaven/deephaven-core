@@ -2,7 +2,7 @@ name: deephaven-docs-snapshots
 
 services:
   extractor:
-    image: ghcr.io/deephaven/salmon-extractor:latest
+    image: ghcr.io/deephaven/salmon-extractor:pre
     pull_policy: always
     container_name: extractor
     volumes:
@@ -17,15 +17,20 @@ services:
       extractor:
         condition: service_completed_successfully
     environment:
-      DEEPHAVEN_SERVER_IMAGE: ${DEEPHAVEN_SERVER_IMAGE:?error}
+      DEEPHAVEN_SERVER_IMAGE: ${DEEPHAVEN_SERVER_IMAGE}
       HOST_URL: 'http://server:10000'
       RUN_ALL: ${RUN_ALL}
+      DOCKER_CONFIG_DIR: ${DOCKER_CONFIG_DIR:?error}
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock # Allows the snapshotter to start its own docker containers for the test server
       - test-sets:/test-sets
-      - ./docker:/docker
+      # Pass through absolute path to docker config dir so docker-configs with relative volume mounts work
+      # It seems Docker is resolving to an absolute path inside the container before it mounts the volume
+      # The path is then relative to root and used as the host path which puts data not where we want it
+      # This could also be addressed by using no binds in the docker-compose files
+      - ${DOCKER_CONFIG_DIR}:${DOCKER_CONFIG_DIR}
       - ../${SNAPSHOT_LANGUAGE:?error}/snapshots:/results
-      - ./errors:/snapshotter/errors
+      - ./errors/${SNAPSHOT_LANGUAGE}:/errors
 
 volumes:
   test-sets:

@@ -2,8 +2,6 @@ services:
   spark-iceberg:
     container_name: spark-iceberg
     build: ./Iceberg
-    networks:
-      iceberg_net:
     depends_on:
       - rest
       - minio
@@ -22,8 +20,6 @@ services:
   rest:
     image: tabulario/iceberg-rest
     container_name: iceberg-rest
-    networks:
-      iceberg_net:
     expose:
       - 8181
     environment:
@@ -41,7 +37,7 @@ services:
       - MINIO_ROOT_PASSWORD=password
       - MINIO_DOMAIN=minio
     networks:
-      iceberg_net:
+      default:
         aliases:
           - warehouse.minio
     expose:
@@ -53,8 +49,6 @@ services:
       - minio
     image: minio/mc
     container_name: mc
-    networks:
-      iceberg_net:
     environment:
       - AWS_ACCESS_KEY_ID=admin
       - AWS_SECRET_ACCESS_KEY=password
@@ -70,8 +64,3 @@ services:
     depends_on:
       spark-iceberg:
         condition: service_completed_successfully
-    networks:
-      iceberg_net:
-networks:
-  iceberg_net:
-

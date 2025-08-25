@@ -1,19 +1,29 @@
 services:
+  # This just gets the pyclient version without caching it
+  # Allows the install of the Python client to be cached while still checking the version
+  pyclient-version:
+    build:
+      context: .
+      dockerfile: ./pyclient.Dockerfile
+      no_cache: true
+      target: pypi-version
   # This is the server the snapshot tool uses
   # It is really used to run the pydeephaven client from the server Python environment
   server:
     build: 
       context: .
       dockerfile: ./pyclient.Dockerfile # Installs pydeephaven to the server
+      target: server
       args:
-        - VERSION=${VERSION:-latest}
+        - DEEPHAVEN_SERVER_IMAGE=${DEEPHAVEN_SERVER_IMAGE}
+    depends_on:
+      - pyclient-version
 
   deephaven.local: # This is the server our client will talk to
-    image: ghcr.io/deephaven/server:${VERSION:-latest}
+    image: ${DEEPHAVEN_SERVER_IMAGE}
     expose:
       - 10000
     volumes:
       - ../data:/data
     environment:
       - START_OPTS=-Xmx4g -Dauthentication.psk=YOUR_PASSWORD_HERE -Ddeephaven.console.type=python
-

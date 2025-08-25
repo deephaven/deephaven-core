@@ -6,7 +6,7 @@ usage() {
   echo
   echo "Options:"
   echo "  -t tag    The docker tag to use for the community server (default: latest)."
-  echo "            Use 'local' to use a local build of the docs server. This will run `./gradlew prepareCompose`"
+  echo "            Use 'local' to use a local build of the docs server. This will run ./gradlew prepareCompose"
   echo "  -a        Update all snapshots even if they are already up to date."
   echo "  -h        Show this help message"
   echo
@@ -50,14 +50,38 @@ else
   echo "Using Docker tag: $DH_TAG"
 fi
 
+DOCKER_CONFIG_DIR=$(realpath "snapshotter/docker")
+export DOCKER_CONFIG_DIR
 export RUN_ALL
 export DEEPHAVEN_SERVER_IMAGE
 ./format # Format before updating snapshots because the snapshots will be invalid if the content changes from formatting
-SNAPSHOT_LANGUAGE=python docker compose -f snapshotter/docker-compose.yml run --user 1000:999 --rm snapshotter && \
-SNAPSHOT_LANGUAGE=groovy docker compose -f snapshotter/docker-compose.yml run --user 1000:999 --rm snapshotter
 
-EXIT_CODE=$?
+SNAPSHOT_LANGUAGE=python docker compose -f snapshotter/docker-compose.yml run --rm snapshotter
+PY_EXIT_CODE=$?
+SNAPSHOT_LANGUAGE=python docker compose -f snapshotter/docker-compose.yml down --volumes
+
+if [ $PY_EXIT_CODE -gt 128 ]; then # Interrupted, don't continue
+  popd > /dev/null
+  exit $PY_EXIT_CODE
+fi
+
+SNAPSHOT_LANGUAGE=groovy docker compose -f snapshotter/docker-compose.yml run --rm snapshotter
+GROOVY_EXIT_CODE=$?
+SNAPSHOT_LANGUAGE=groovy docker compose -f snapshotter/docker-compose.yml down --volumes
 
 popd > /dev/null # Reset pwd
 
-exit $EXIT_CODE
+if [ $PY_EXIT_CODE -ne 0 ]; then
+  echo "Python snapshot update failed with exit code $PY_EXIT_CODE. Errors in docs/snapshotter/errors/python/errors.txt"
+fi
+
+if [ $GROOVY_EXIT_CODE -ne 0 ]; then
+  echo "Groovy snapshot update failed with exit code $GROOVY_EXIT_CODE. Errors in docs/snapshotter/errors/groovy/errors.txt"
+fi
+
+if [ $PY_EXIT_CODE -ne 0 ] || [ $GROOVY_EXIT_CODE -ne 0 ]; then
+  echo "See errors in docs/snapshotter-errors"
+  exit 1
+fi
+
+exit 0
