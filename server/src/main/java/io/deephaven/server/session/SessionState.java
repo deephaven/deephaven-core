@@ -105,7 +105,7 @@ public class SessionState {
      * @return a sessionless export object
      */
     public static <T> ExportObject<T> wrapAsExport(final T export) {
-        return new ExportObject<>(export);
+        return new ExportObject<>(export, null);
     }
 
     /**
@@ -117,8 +117,7 @@ public class SessionState {
      * @return a sessionless export object
      */
     public static <T> ExportObject<T> wrapAsFailedExport(final Exception caughtException) {
-        ExportObject<T> exportObject = new ExportObject<>(null);
-        exportObject.caughtException = caughtException;
+        ExportObject<T> exportObject = new ExportObject<>(null, caughtException);
         return exportObject;
     }
 
@@ -603,7 +602,7 @@ public class SessionState {
          *
          * @param result the object to wrap in an export
          */
-        private ExportObject(final T result) {
+        private ExportObject(final T result, final Exception caughtException) {
             super(true);
             this.errorTransformer = null;
             this.session = null;
@@ -614,7 +613,7 @@ public class SessionState {
             this.logIdentity = Integer.toHexString(System.identityHashCode(this)) + "-sessionless";
 
             if (result == null) {
-                maybeAssignErrorId();
+                maybeAssignErrorId(caughtException, null);
                 state = ExportNotification.State.FAILED;
             } else {
                 state = ExportNotification.State.EXPORTED;
@@ -711,7 +710,7 @@ public class SessionState {
 
                 // since this is the first we know of the errorHandler, it could not have been invoked yet
                 if (errorHandler != null) {
-                    maybeAssignErrorId();
+                    maybeAssignErrorId(caughtException, null);
                     errorHandler.onError(state, errorId, caughtException, failedDependencyLogIdentity);
                 }
                 return;
@@ -860,7 +859,7 @@ public class SessionState {
             }
 
             if (isExportStateFailure(state) && errorHandler != null) {
-                maybeAssignErrorId();
+                maybeAssignErrorId(caughtException, null);
                 try {
                     final Exception toReport;
                     if (caughtException != null && errorTransformer != null) {
@@ -1013,11 +1012,7 @@ public class SessionState {
                 if (caughtException != null) {
                     synchronized (this) {
                         if (!isExportStateTerminal(state)) {
-                            maybeAssignErrorId();
-                            if (!(caughtException instanceof StatusRuntimeException)) {
-                                log.error().append("Internal Error '").append(errorId).append("' ")
-                                        .append(caughtException).endl();
-                            }
+                            maybeAssignErrorId(caughtException, null);
                             setState(ExportNotification.State.FAILED);
                         }
                     }
@@ -1032,9 +1027,35 @@ public class SessionState {
             }
         }
 
-        private void maybeAssignErrorId() {
+        private void maybeAssignErrorId(final Exception caughtException, final String errorDetails) {
             if (errorId == null) {
                 errorId = UuidCreator.toString(UuidCreator.getRandomBased());
+
+                if (caughtException == null && errorDetails == null) {
+                    // We log the assigned error ID, even though we have no details. If we do not assign the error ID,
+                    // then we may not correctly propagate than an error occurred.
+                    log.error().append("Internal Error '").append(errorId).append("' for ").append(logIdentity)
+                            .append(" and no error details are available.").endl();
+                    return;
+                }
+
+                this.caughtException = caughtException;
+                if (!(caughtException instanceof StatusRuntimeException)) {
+                    if (errorDetails != null) {
+                        log.error().append("Internal Error '").append(errorId).append("' ").append(errorDetails).endl();
+                    } else {
+                        log.error().append("Internal Error '").append(errorId).append("' ").append(caughtException)
+                                .endl();
+                    }
+                } else {
+                    if (errorDetails != null) {
+                        log.info().append("Export failed with Status Runtime Exception '").append(errorId).append("' ")
+                                .append(errorDetails).endl();
+                    } else {
+                        log.info().append("Export failed with Status Runtime Exception '").append(errorId).append("' ")
+                                .append(caughtException).endl();
+                    }
+                }
             }
         }
 
@@ -1063,12 +1084,8 @@ public class SessionState {
                         break;
                 }
 
-                maybeAssignErrorId();
+                maybeAssignErrorId(caughtException, errorDetails);
                 failedDependencyLogIdentity = parent.logIdentity;
-                if (!(caughtException instanceof StatusRuntimeException)) {
-                    log.error().append("Internal Error '").append(errorId).append("' ").append(errorDetails)
-                            .endl();
-                }
             }
 
             setState(terminalState);
