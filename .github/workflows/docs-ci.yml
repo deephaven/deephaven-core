@@ -80,18 +80,26 @@ jobs:
       group: core-docs-sync-${{ github.workflow }}-${{ github.ref }}
       cancel-in-progress: true
     steps:
-      - uses: actions/checkout@v5
+      - name: Checkout
+        uses: actions/checkout@v5
         with:
           sparse-checkout: /docs/
           sparse-checkout-cone-mode: false
           lfs: true
+
+      - name: DHC Version
+        id: dhc-version
+        env:
+          REF_NAME: ${{ github.ref_name }}
+        # Remove the 'release/v' prefix if it exists
+        run: echo "version=${REF_NAME#release/v}" >> $GITHUB_OUTPUT
 
       - name: Sync core Python to the salmon bucket
         id: sync-python
         uses: deephaven/salmon-sync@v1
         with:
           source: docs/python
-          destination: deephaven/deephaven-core/docs/${{ github.ref_name }}
+          destination: deephaven/deephaven-core/docs/${{ steps.dhc-version.outputs.version }}
           production: true
           temporary: false
           aws-role: ${{ vars.DOCS_AWS_ROLE }}
@@ -101,7 +109,7 @@ jobs:
         uses: deephaven/salmon-sync@v1
         with:
           source: docs/groovy
-          destination: deephaven/deephaven-core/groovy/docs/${{ github.ref_name }}
+          destination: deephaven/deephaven-core/groovy/docs/${{ steps.dhc-version.outputs.version }}
           production: true
           temporary: false
           aws-role: ${{ vars.DOCS_AWS_ROLE }}
