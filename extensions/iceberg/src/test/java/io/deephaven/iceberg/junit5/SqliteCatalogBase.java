@@ -70,6 +70,8 @@ import org.apache.iceberg.SortOrder;
 import org.apache.iceberg.TableProperties;
 import org.apache.iceberg.catalog.Namespace;
 import org.apache.iceberg.catalog.TableIdentifier;
+import org.apache.iceberg.expressions.Expression;
+import org.apache.iceberg.expressions.Expressions;
 import org.apache.iceberg.io.OutputFileFactory;
 import org.apache.iceberg.mapping.MappedFields;
 import org.apache.iceberg.mapping.MappingUtil;
@@ -1897,6 +1899,71 @@ public abstract class SqliteCatalogBase {
                 part2.update("PC = 1"),
                 part3.update("PC = 2"));
         assertTableEquals(expected2, fromIceberg2.select());
+    }
+
+    @Test
+    void testPartitionedAppendWithDeleting() {
+        final Table part1 = TableTools.emptyTable(6)
+                .update("intCol = (int) 2 * i + 10",
+                        "doubleCol = (double) 2.5 * i + 10");
+        final Table part2 = TableTools.emptyTable(5)
+                .update("intCol = (int) 3 * i + 20",
+                        "doubleCol = (double) 3.5 * i + 20");
+        final Table part3 = TableTools.emptyTable(4)
+                .update("intCol = (int) 4 * i + 30",
+                        "doubleCol = (double) 4.5 * i + 30");
+        final TableIdentifier tableIdentifier = TableIdentifier.parse("MyNamespace.MyTable");
+
+        final TableDefinition tableDefinition = TableDefinition.of(
+                ColumnDefinition.ofInt("intCol"),
+                ColumnDefinition.ofDouble("doubleCol"),
+                ColumnDefinition.ofString("InternalPartition").withPartitioning(),
+                ColumnDefinition.ofString("Date").withPartitioning());
+        final IcebergTableAdapter tableAdapter = catalogAdapter.createTable(tableIdentifier, tableDefinition);
+        final IcebergTableWriter tableWriter = tableAdapter.tableWriter(writerOptionsBuilder()
+                .tableDefinition(tableDefinition)
+                .build());
+
+        tableWriter.append(IcebergWriteInstructions.builder()
+                .addTables(part1, part2, part3)
+                .addAllPartitionPaths(List.of(
+                        "InternalPartition=0/Date=2024-08-01",
+                        "InternalPartition=1/Date=2024-08-02",
+                        "InternalPartition=2/Date=2024-08-02"))
+                .build());
+        final Table fromIceberg = tableAdapter.table();
+        final Table expected = TableTools.merge(
+                part1.update("InternalPartition = `0`", "Date = `2024-08-01`"),
+                part2.update("InternalPartition = `1`", "Date = `2024-08-02`"),
+                part3.update("InternalPartition = `2`", "Date = `2024-08-02`"));
+        assertTableEquals(expected, fromIceberg.select());
+
+        // Add another partition for same date
+        final Table part4 = TableTools.emptyTable(3)
+                .update("intCol = (int) 5 * i + 30",
+                        "doubleCol = (double) 5.5 * i + 30");
+        tableWriter.append(IcebergWriteInstructions.builder()
+                .addTables(part4)
+                .addPartitionPaths("InternalPartition=1/Date=2024-08-02")
+                .build());
+        final Table fromIceberg2 = tableAdapter.table();
+        final Table expected2 = TableTools.merge(
+                part1.update("InternalPartition = `0`", "Date = `2024-08-01`"),
+                part2.update("InternalPartition = `1`", "Date = `2024-08-02`"),
+                part3.update("InternalPartition = `2`", "Date = `2024-08-02`"),
+                part4.update("InternalPartition = `1`", "Date = `2024-08-02`"));
+        assertTableEquals(expected2, fromIceberg2.select());
+
+        // Now delete the partition for date 2024-08-02
+        final Expression delExpr = Expressions.equal("Date", "2024-08-02");
+        final org.apache.iceberg.Table icebergTable = tableAdapter.icebergTable();
+        icebergTable.newDelete().deleteFromRowFilter(delExpr).commit();
+
+        // Now read back the table
+        final IcebergTableAdapter latestTableAdapter = catalogAdapter.loadTable(tableIdentifier);
+        final Table fromIceberg3 = latestTableAdapter.table();
+        final Table expected3 = part1.update("InternalPartition = `0`", "Date = `2024-08-01`");
+        assertTableEquals(expected3, fromIceberg3.select());
     }
 
     @Test

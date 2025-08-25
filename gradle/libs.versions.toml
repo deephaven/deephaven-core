@@ -124,6 +124,7 @@ awssdk-kms = { module = "software.amazon.awssdk:kms" }
 awssdk-s3tables = { module = "software.amazon.awssdk:s3tables" }
 awssdk-sso = { module = "software.amazon.awssdk:sso" }
 awssdk-ssooidc = { module = "software.amazon.awssdk:ssooidc" }
+awssdk-netty-nio = { module = "software.amazon.awssdk:netty-nio-client" }
 
 # TODO (DH-19508) : Remove this dependency when https://github.com/apache/iceberg/issues/13133 fix is released
 analyticsaccelerator-s3 = { module = "software.amazon.s3.analyticsaccelerator:analyticsaccelerator-s3", version.ref = "analyticsaccelerator" }
