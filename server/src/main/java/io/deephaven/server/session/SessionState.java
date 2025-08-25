@@ -1032,7 +1032,10 @@ public class SessionState {
                 errorId = UuidCreator.toString(UuidCreator.getRandomBased());
 
                 if (caughtException == null && errorDetails == null) {
-                    log.error().append("Internal Error '").append(errorId).append("' for ").append(logIdentity).append(" and no error details are available.").endl();
+                    // We log the assigned error ID, even though we have no details. If we do not assign the error ID,
+                    // then we may not correctly propagate than an error occurred.
+                    log.error().append("Internal Error '").append(errorId).append("' for ").append(logIdentity)
+                            .append(" and no error details are available.").endl();
                     return;
                 }
 
