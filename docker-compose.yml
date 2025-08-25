@@ -14,3 +14,5 @@ services:
     extends:
       file: docker-compose-common.yml
       service: server
+    environment:
+      - START_OPTS=-Xmx4g -DAuthHandlers=io.deephaven.auth.AnonymousAuthenticationHandler -Ddeephaven.console.type=python
