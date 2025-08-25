@@ -65,10 +65,10 @@ jobs:
           sparse-checkout-cone-mode: false
 
       - name: Check formatting
-        run: ./docs/format.sh -c
+        run: ./docs/format -c
 
       - name: Validate docs
-        run: ./docs/validate.sh
+        run: ./docs/validate
 
   core-docs-sync:
     if: ${{ github.event_name == 'push' }}

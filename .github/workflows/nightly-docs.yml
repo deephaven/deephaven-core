@@ -19,7 +19,7 @@ jobs:
 
       # Run all snapshots against the edge container
       - name: Run all snapshots
-        run: ./docs/updateSnapshots.sh -t edge -a
+        run: ./docs/updateSnapshots -t edge -a
 
       - name: Slack Notification
         uses: slackapi/slack-github-action@v1.23.0
@@ -46,11 +46,11 @@ jobs:
         # We can validate without lfs as the assets will exist as just a file pointer which is enough for validation
 
     - name: Check formatting
-      run: ./docs/format.sh -c
+      run: ./docs/format -c
 
     - name: Validate docs
       if: always()
-      run: ./docs/validateDocs.sh -e # Validate with external links
+      run: ./docs/validate -e # Validate with external links
 
     - name: Slack Notification
       uses: slackapi/slack-github-action@v1.23.0
