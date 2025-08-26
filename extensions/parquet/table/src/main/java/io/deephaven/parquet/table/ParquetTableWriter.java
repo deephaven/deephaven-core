@@ -225,9 +225,17 @@ public class ParquetTableWriter {
                         tableRowSet, columnSourceMap, dest, destOutputStream, writeInstructions, tableMeta,
                         tableInfoBuilder, metadataFileWriter);
                 // Given the transformation, do not use the original table's "definition" for writing
+                // @formatter:off
+                /*
                 for (final Table tbl : writeInstructions.getRowGroupInfo().splitForRowGroups(t)) {
                     write(tbl, writeInstructions, parquetFileWriter, computedCache);
                 }
+                 */
+                // @formatter:on
+
+                writeInstructions.getRowGroupInfo().applyForRowGroups(t,
+                        (rowGroup) -> write(rowGroup, writeInstructions, parquetFileWriter, computedCache));
+
                 parquetFileWriter.close();
                 numBytesWritten = parquetFileWriter.bytesWritten();
             }
