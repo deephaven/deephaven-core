@@ -25,7 +25,7 @@ jobs:
       groovy: ${{ steps.filter.outputs.groovy }}
 
     steps:
-      - name: Checkout
+      - name: Detect docs changes
         uses: dorny/paths-filter@v3
         id: filter
         with:
