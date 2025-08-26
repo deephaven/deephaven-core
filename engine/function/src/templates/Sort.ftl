@@ -19,7 +19,7 @@ import static io.deephaven.function.Numeric.compare;
 /**
  * Functions for sorting primitive types.
  */
-@UserInvocationPermitted(sets = {"function_library"})
+@UserInvocationPermitted({"function_library"})
 public class Sort {
 
     //////////////////////////// Object ////////////////////////////

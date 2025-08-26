@@ -22,7 +22,7 @@ import static io.deephaven.util.QueryConstants.*;
 /**
  * Basic functions that can be applied to primitive types.
  */
-@UserInvocationPermitted(sets = {"function_library"})
+@UserInvocationPermitted({"function_library"})
 public class Basic {
 
     //////////////////////////// Object ////////////////////////////

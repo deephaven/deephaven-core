@@ -3,11 +3,7 @@
 //
 package io.deephaven.util.annotations;
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Inherited;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+import java.lang.annotation.*;
 
 /**
  * This annotation is used to permit users to invoke methods from formulas (e.g., select, view or where calls).
@@ -27,25 +23,29 @@ import java.lang.annotation.Target;
 @Target({ElementType.METHOD, ElementType.TYPE, ElementType.CONSTRUCTOR})
 @Inherited
 @Retention(RetentionPolicy.RUNTIME)
+@Documented
 public @interface UserInvocationPermitted {
-    String STATIC_CLASS_SCOPE = "static";
-    String INSTANCE_CLASS_SCOPE = "instance";
+    enum ScopeType {
+        Static_And_Instance, Static, Instance,
+    }
+    // String STATIC_CLASS_SCOPE = "static";
+    // String INSTANCE_CLASS_SCOPE = "instance";
 
     /**
-     * When applied to a class, the type of methods this annotation applies to. If empty, null, or not specified, then
-     * both static and instance methods are permitted. If {@link #STATIC_CLASS_SCOPE} is specified, then only static
-     * methods are permitted (unless the instance method is otherwise annotated or configured). If
-     * {@link #INSTANCE_CLASS_SCOPE} is specified, then only instance methods are permitted (unless the static method is
-     * otherwise annotated or configured).
+     * When applied to a class, the type of methods this annotation applies to. If
+     * {@link ScopeType#Static_And_Instance}, null, or not specified, then both static and instance methods are
+     * permitted. If {@link ScopeType#Static} is specified, then only static methods are permitted (unless the instance
+     * method is otherwise annotated or configured). If {@link ScopeType#Instance} is specified, then only instance
+     * methods are permitted (unless the static method is otherwise annotated or configured).
      * 
      * @return the scope for this class annotation
      */
-    String classScope() default "";
+    ScopeType classScope() default ScopeType.Static_And_Instance;
 
     /**
      * An array of sets for configuring permitted methods.
      *
      * @return the sets of configured methods this belongs to.
      */
-    String[] sets();
+    String[] value();
 }

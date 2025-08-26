@@ -39,7 +39,7 @@ public interface ByteVector extends Vector<ByteVector>, Iterable<Byte> {
      * @param index An offset into this ByteVector
      * @return The element at the specified offset, or the {@link QueryConstants#NULL_BYTE null byte}
      */
-    @UserInvocationPermitted(sets = {"vector"})
+    @UserInvocationPermitted({"vector"})
     byte get(long index);
 
     @Override
@@ -57,7 +57,7 @@ public interface ByteVector extends Vector<ByteVector>, Iterable<Byte> {
     @Override
     ByteVector getDirect();
 
-    @UserInvocationPermitted(sets = {"vector"})
+    @UserInvocationPermitted({"vector"})
     @Override
     @FinalDefault
     default ValueIteratorOfByte iterator() {
@@ -249,7 +249,7 @@ public interface ByteVector extends Vector<ByteVector>, Iterable<Byte> {
      */
     abstract class Indirect implements ByteVector {
 
-        @UserInvocationPermitted(sets = {"vector"})
+        @UserInvocationPermitted(value = {"vector"})
         @Override
         public byte[] toArray() {
             final int size = intSize("ByteVector.toArray");

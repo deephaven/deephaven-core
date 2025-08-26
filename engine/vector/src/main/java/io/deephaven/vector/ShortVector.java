@@ -39,7 +39,7 @@ public interface ShortVector extends Vector<ShortVector>, Iterable<Short> {
      * @param index An offset into this ShortVector
      * @return The element at the specified offset, or the {@link QueryConstants#NULL_SHORT null short}
      */
-    @UserInvocationPermitted(sets = {"vector"})
+    @UserInvocationPermitted(value = {"vector"})
     short get(long index);
 
     @Override
@@ -57,7 +57,7 @@ public interface ShortVector extends Vector<ShortVector>, Iterable<Short> {
     @Override
     ShortVector getDirect();
 
-    @UserInvocationPermitted(sets = {"vector"})
+    @UserInvocationPermitted(value = {"vector"})
     @Override
     @FinalDefault
     default ValueIteratorOfShort iterator() {
@@ -249,7 +249,7 @@ public interface ShortVector extends Vector<ShortVector>, Iterable<Short> {
      */
     abstract class Indirect implements ShortVector {
 
-        @UserInvocationPermitted(sets = {"vector"})
+        @UserInvocationPermitted(value = {"vector"})
         @Override
         public short[] toArray() {
             final int size = intSize("ShortVector.toArray");

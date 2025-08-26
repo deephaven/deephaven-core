@@ -14,7 +14,7 @@ import static io.deephaven.util.QueryConstants.*;
  * Functions for casting between types.
  */
 @SuppressWarnings("unused")
-@UserInvocationPermitted(sets = {"function_library"})
+@UserInvocationPermitted({"function_library"})
 public class Cast {
 
     /**

@@ -10,7 +10,7 @@ import io.deephaven.engine.primitive.iterator.*;
 /**
  * Logic functions.
  */
-@UserInvocationPermitted(sets = "function_library")
+@UserInvocationPermitted(value = "function_library")
 public class Logic {
 
     /**

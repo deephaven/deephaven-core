@@ -39,7 +39,7 @@ public interface IntVector extends Vector<IntVector>, Iterable<Integer> {
      * @param index An offset into this IntVector
      * @return The element at the specified offset, or the {@link QueryConstants#NULL_INT null int}
      */
-    @UserInvocationPermitted(sets = {"vector"})
+    @UserInvocationPermitted(value = {"vector"})
     int get(long index);
 
     @Override
@@ -57,7 +57,7 @@ public interface IntVector extends Vector<IntVector>, Iterable<Integer> {
     @Override
     IntVector getDirect();
 
-    @UserInvocationPermitted(sets = {"vector"})
+    @UserInvocationPermitted(value = {"vector"})
     @Override
     @FinalDefault
     default ValueIteratorOfInt iterator() {
@@ -249,7 +249,7 @@ public interface IntVector extends Vector<IntVector>, Iterable<Integer> {
      */
     abstract class Indirect implements IntVector {
 
-        @UserInvocationPermitted(sets = {"vector"})
+        @UserInvocationPermitted(value = {"vector"})
         @Override
         public int[] toArray() {
             final int size = intSize("IntVector.toArray");

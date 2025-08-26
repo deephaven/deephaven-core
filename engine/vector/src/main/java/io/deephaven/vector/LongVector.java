@@ -39,7 +39,7 @@ public interface LongVector extends Vector<LongVector>, Iterable<Long> {
      * @param index An offset into this LongVector
      * @return The element at the specified offset, or the {@link QueryConstants#NULL_LONG null long}
      */
-    @UserInvocationPermitted(sets = {"vector"})
+    @UserInvocationPermitted(value = {"vector"})
     long get(long index);
 
     @Override
@@ -57,7 +57,7 @@ public interface LongVector extends Vector<LongVector>, Iterable<Long> {
     @Override
     LongVector getDirect();
 
-    @UserInvocationPermitted(sets = {"vector"})
+    @UserInvocationPermitted(value = {"vector"})
     @Override
     @FinalDefault
     default ValueIteratorOfLong iterator() {
@@ -249,7 +249,7 @@ public interface LongVector extends Vector<LongVector>, Iterable<Long> {
      */
     abstract class Indirect implements LongVector {
 
-        @UserInvocationPermitted(sets = {"vector"})
+        @UserInvocationPermitted(value = {"vector"})
         @Override
         public long[] toArray() {
             final int size = intSize("LongVector.toArray");

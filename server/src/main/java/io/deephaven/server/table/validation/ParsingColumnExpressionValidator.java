@@ -18,8 +18,8 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 /**
- * Validates a column expression coming from the web api, to ensure that the included code will use the customer defined
- * list of allowed methods.
+ * Validates a column expression coming from gRPC, to ensure that the included code will use the customer defined list
+ * of allowed methods.
  *
  * <p>
  * The formula is compiled as part of this validation, and the

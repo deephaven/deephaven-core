@@ -70,7 +70,7 @@ public class ExpressionValidatorModule {
      * </tr>
      * <tr>
      * <td>ColumnExpressionValidator.annotationSets.</td>
-     * <td>Names of permitted annotation {@link UserInvocationPermitted#sets()}</td>
+     * <td>Names of permitted annotation {@link UserInvocationPermitted#value()}</td>
      * <td>A comma separated list of strings. Spaces are ignored.</td>
      * </tr>
      * </table>

@@ -22,7 +22,7 @@ import java.util.TreeMap;
 /**
  * A collection of business calendars.
  */
-@UserInvocationPermitted(sets = "function_library")
+@UserInvocationPermitted(value = "function_library")
 public class Calendars {
 
     private static final Logger logger = LoggerFactory.getLogger(Calendars.class);

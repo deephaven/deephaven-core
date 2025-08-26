@@ -23,7 +23,7 @@ import static io.deephaven.function.Cast.castDouble;
  * A set of commonly used numeric functions that can be applied to numeric types.
  */
 @SuppressWarnings({"RedundantCast", "unused", "ManualMinMaxCalculation"})
-@UserInvocationPermitted(sets = {"function_library"})
+@UserInvocationPermitted({"function_library"})
 public class Numeric {
 
     //////////////////////////// Constants ////////////////////////////

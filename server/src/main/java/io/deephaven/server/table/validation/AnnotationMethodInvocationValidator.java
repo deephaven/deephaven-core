@@ -4,6 +4,7 @@
 package io.deephaven.server.table.validation;
 
 import io.deephaven.util.annotations.UserInvocationPermitted;
+import io.deephaven.util.annotations.UserInvocationPermitted.ScopeType;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -80,7 +81,7 @@ public class AnnotationMethodInvocationValidator implements MethodInvocationVali
         if (annotation == null) {
             return false;
         }
-        final String[] sets = annotation.sets();
+        final String[] sets = annotation.value();
         return sets != null && Arrays.stream(sets).anyMatch(permittedAnnotationSets::contains);
     }
 
@@ -88,16 +89,16 @@ public class AnnotationMethodInvocationValidator implements MethodInvocationVali
         if (annotation == null) {
             return false;
         }
-        final String scope = annotation.classScope();
-        return scope == null || scope.isEmpty() || scope.equals(UserInvocationPermitted.STATIC_CLASS_SCOPE);
+        final ScopeType scope = annotation.classScope();
+        return scope == null || scope.equals(ScopeType.Static_And_Instance) || scope.equals(ScopeType.Static);
     }
 
     private boolean isInstancePermitted(final UserInvocationPermitted annotation) {
         if (annotation == null) {
             return false;
         }
-        final String scope = annotation.classScope();
-        return scope == null || scope.isEmpty() || scope.equals(UserInvocationPermitted.INSTANCE_CLASS_SCOPE);
+        final ScopeType scope = annotation.classScope();
+        return scope == null || scope.equals(ScopeType.Static_And_Instance) || scope.equals(ScopeType.Instance);
     }
 
     private boolean checkInstanceAnnotations(final Method methodToCheck) {

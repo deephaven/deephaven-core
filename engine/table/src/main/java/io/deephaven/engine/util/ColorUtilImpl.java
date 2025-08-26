@@ -16,7 +16,7 @@ import static io.deephaven.util.QueryConstants.NULL_LONG;
  * This class won't be necessary once we can import ColorUtil as static again. TODO
  * (deephaven/deephaven-core/issues/175): Move this to a new module and package
  */
-@UserInvocationPermitted(sets = "function_library")
+@UserInvocationPermitted(value = "function_library")
 public class ColorUtilImpl {
     public static final long COLOR_SET_BIT = 0x01;
     public static final long SELECTION_OVERRIDE_BIT = 0x02;

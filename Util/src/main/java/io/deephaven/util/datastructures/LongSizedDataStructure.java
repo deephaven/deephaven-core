@@ -9,7 +9,7 @@ import org.jetbrains.annotations.NotNull;
 /**
  * Common interface for Deephaven data structures with a long (64-bit signed integer) size.
  */
-@UserInvocationPermitted(sets = "base")
+@UserInvocationPermitted("base")
 public interface LongSizedDataStructure {
 
     /**

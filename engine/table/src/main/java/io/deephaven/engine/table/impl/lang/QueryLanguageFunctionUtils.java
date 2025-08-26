@@ -15,7 +15,7 @@ import java.math.RoundingMode;
 import static java.lang.Math.*;
 
 @SuppressWarnings({"unused", "WeakerAccess", "SimplifiableIfStatement"})
-@UserInvocationPermitted(sets = "function_library")
+@UserInvocationPermitted(value = "function_library")
 public final class QueryLanguageFunctionUtils {
 
     private static final String DEFAULT_SCALE_PROPERTY = "defaultScale";

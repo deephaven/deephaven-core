@@ -26,6 +26,7 @@ import io.deephaven.server.table.ops.FilterTableGrpcImpl;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.UserInvocationPermitted;
 import org.apache.commons.lang3.mutable.MutableObject;
+import org.jetbrains.annotations.NotNull;
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
@@ -37,6 +38,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 public class TestColumnExpressionValidator {
     @Rule
@@ -147,12 +149,12 @@ public class TestColumnExpressionValidator {
             a = 1;
         }
 
-        @UserInvocationPermitted(sets = "test_annotation1")
+        @UserInvocationPermitted(value = "test_annotation1")
         public AnnotatedConstructor(final int a) {
             this.a = a;
         }
 
-        @UserInvocationPermitted(sets = "test_annotation2")
+        @UserInvocationPermitted(value = "test_annotation2")
         public AnnotatedConstructor(final String a) {
             this.a = Integer.parseInt(a);
         }
@@ -170,7 +172,7 @@ public class TestColumnExpressionValidator {
     }
 
     @SuppressWarnings("unused")
-    @UserInvocationPermitted(sets = "test_annotation3", classScope = "static")
+    @UserInvocationPermitted(value = "test_annotation3", classScope = UserInvocationPermitted.ScopeType.Static)
     public static class AnnotatedStaticClass {
         public String instance() {
             return "im";
@@ -182,7 +184,7 @@ public class TestColumnExpressionValidator {
     }
 
     @SuppressWarnings("unused")
-    @UserInvocationPermitted(sets = "test_annotation4", classScope = "instance")
+    @UserInvocationPermitted(value = "test_annotation4", classScope = UserInvocationPermitted.ScopeType.Instance)
     public static class AnnotatedInstanceClass {
         public String im() {
             return "im";
@@ -194,45 +196,45 @@ public class TestColumnExpressionValidator {
     }
 
     @SuppressWarnings("unused")
-    @UserInvocationPermitted(sets = "test_annotation5")
+    @UserInvocationPermitted(value = "test_annotation5")
     public static class AnnotatedMethods {
-        @UserInvocationPermitted(sets = "test_annotation6")
+        @UserInvocationPermitted(value = "test_annotation6")
         public String im() {
             return "im";
         }
 
-        @UserInvocationPermitted(sets = "test_annotation7")
+        @UserInvocationPermitted(value = "test_annotation7")
         public static String stm() {
             return "sm";
         }
 
-        @UserInvocationPermitted(sets = "test_annotation8")
+        @UserInvocationPermitted(value = "test_annotation8")
         public String im8() {
             return "im";
         }
 
-        @UserInvocationPermitted(sets = "test_annotation9")
+        @UserInvocationPermitted(value = "test_annotation9")
         public static String stm9() {
             return "sm";
         }
     }
 
-    @UserInvocationPermitted(sets = "test_annotation11")
+    @UserInvocationPermitted(value = "test_annotation11")
     public interface InterfaceAnnotated {
-        @UserInvocationPermitted(sets = "test_annotation10")
+        @UserInvocationPermitted(value = "test_annotation10")
         Number m1(Integer a);
 
-        @UserInvocationPermitted(sets = "test_annotation10")
+        @UserInvocationPermitted(value = "test_annotation10")
         boolean m2(int a);
     }
 
-    @UserInvocationPermitted(sets = "test_annotation11")
+    @UserInvocationPermitted(value = "test_annotation11")
     public interface InterfaceAnnotatedGeneric<T extends Number> {
         // TODO: add a test for this inheritance
-        @UserInvocationPermitted(sets = "test_annotation10")
+        @UserInvocationPermitted(value = "test_annotation10")
         boolean m1(T a);
 
-        @UserInvocationPermitted(sets = "test_annotation10")
+        @UserInvocationPermitted(value = "test_annotation10")
         boolean m2(int a);
     }
 
@@ -257,7 +259,7 @@ public class TestColumnExpressionValidator {
     }
 
     public interface ExtendedGeneric extends InterfaceAnnotatedGeneric<Long> {
-        @UserInvocationPermitted(sets = "test_annotation11")
+        @UserInvocationPermitted(value = "test_annotation11")
         int m3();
     }
 
@@ -301,7 +303,7 @@ public class TestColumnExpressionValidator {
         }
     }
 
-    @UserInvocationPermitted(sets = "test_annotation11")
+    @UserInvocationPermitted(value = "test_annotation11")
     public interface AnotherInterface {
         long m4();
     }
@@ -376,8 +378,8 @@ public class TestColumnExpressionValidator {
 
     @Test
     public void testMethodMatching() {
-        final Set<Method> instanceMethods = MethodListInvocationValidator
-                .buildInstanceMethodList(List.of(getClass().getCanonicalName() + "$NotAString1#frog()",
+        final Set<Method> instanceMethods =
+                buildInstanceMethodList(List.of(getClass().getCanonicalName() + "$NotAString1#frog()",
                         getClass().getCanonicalName() + "$NotAString1#frog(java.lang.Integer)"));
 
         final MethodList methodList = MethodList.builder()
@@ -927,5 +929,11 @@ public class TestColumnExpressionValidator {
 
         final String[] matchFilters = new String[] {"A in `def`, `qdz`", "D=8"};
         validator.validateSelectFilters(matchFilters, input);
+    }
+
+    @NotNull
+    private static Set<Method> buildInstanceMethodList(final List<String> targetStrings) {
+        return targetStrings.stream().map(s -> MethodListInvocationValidator.toMethod(s, false))
+                .collect(Collectors.toUnmodifiableSet());
     }
 }

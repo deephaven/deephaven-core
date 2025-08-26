@@ -32,8 +32,8 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * Validates a column expression coming from the web api, to ensure that the included code will use the limited
- * supported API, and no use of `new`.
+ * Validates a column expression coming from gRPC, to ensure that the included code will use the limited supported API,
+ * and no use of `new`.
  *
  * <p>
  * This must be an early pass at the AST on the server, as the server's stricter validation will not function without

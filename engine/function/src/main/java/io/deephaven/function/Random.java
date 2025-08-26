@@ -10,7 +10,7 @@ import java.util.concurrent.ThreadLocalRandom;
 /**
  * Functions for the generation random numbers.
  */
-@UserInvocationPermitted(sets = "function_library")
+@UserInvocationPermitted(value = "function_library")
 public class Random {
 
     /**

@@ -32,7 +32,7 @@ import static java.time.format.DateTimeFormatter.*;
  * Functions for working with time.
  */
 @SuppressWarnings({"RegExpRedundantEscape"})
-@UserInvocationPermitted(sets = "function_library")
+@UserInvocationPermitted(value = "function_library")
 public class DateTimeUtils {
 
     // region Format Patterns

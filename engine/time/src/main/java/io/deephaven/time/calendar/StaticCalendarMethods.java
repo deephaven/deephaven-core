@@ -7,19 +7,6 @@
 // @formatter:off
 package io.deephaven.time.calendar;
 
-import io.deephaven.time.calendar.BusinessCalendar;
-import io.deephaven.time.calendar.Calendar;
-import io.deephaven.time.calendar.CalendarDay;
-import java.lang.String;
-import java.time.DayOfWeek;
-import java.time.Duration;
-import java.time.Instant;
-import java.time.LocalDate;
-import java.time.LocalTime;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
-import java.util.Map;
-import java.util.Set;
 import io.deephaven.util.annotations.UserInvocationPermitted;
 
 /**
@@ -30,7 +17,7 @@ import io.deephaven.util.annotations.UserInvocationPermitted;
  * @see io.deephaven.time.calendar.BusinessCalendar
  * @see io.deephaven.time.calendar.Calendars
  */
-@UserInvocationPermitted(sets = "function_library")
+@UserInvocationPermitted(value = "function_library")
 public class StaticCalendarMethods {
     /** @see io.deephaven.time.calendar.BusinessCalendar#businessDates(java.lang.String,java.lang.String) */
     public static  java.lang.String[] businessDates( java.lang.String start, java.lang.String end ) {return Calendars.calendar().businessDates( start, end );}

@@ -4,7 +4,6 @@
 package io.deephaven.server.table.validation;
 
 import io.deephaven.UncheckedDeephavenException;
-import org.jetbrains.annotations.NotNull;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
@@ -117,11 +116,6 @@ public class MethodListInvocationValidator implements MethodInvocationValidator 
             }
         }
         return true;
-    }
-
-    @NotNull
-    public static Set<Method> buildInstanceMethodList(final List<String> targetStrings) {
-        return targetStrings.stream().map(s -> toMethod(s, false)).collect(Collectors.toUnmodifiableSet());
     }
 
     @Override
