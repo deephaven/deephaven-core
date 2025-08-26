@@ -666,8 +666,13 @@ public class QueryCompilerImpl implements QueryCompiler, LogOutputAppendable {
     }
 
     private static String makeFinalCode(String className, String classBody, String packageName) {
+        if (classBody.contains("$CLASSNAME$")) {
+            throw new IllegalArgumentException("QueryCompiler's support of the $CLASSNAME$ variable has been removed as"
+                    + " the final class name affects the compiled byte code and therefore cannot be dynamically "
+                    + "replaced.");
+        }
+
         final String joinedEscapedBody = createEscapedJoinedString(classBody);
-        classBody = classBody.replaceAll("\\$CLASSNAME\\$", className);
         classBody = classBody.substring(0, classBody.lastIndexOf("}"));
         classBody += "    public static String " + IDENTIFYING_FIELD_NAME + " = " + joinedEscapedBody + ";\n}";
         return "package " + packageName + ";\n" + classBody;

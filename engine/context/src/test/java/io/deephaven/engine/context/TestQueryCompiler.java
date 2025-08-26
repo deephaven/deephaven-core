@@ -30,13 +30,12 @@ public class TestQueryCompiler {
     private final static long WAIT_BETWEEN_THREAD_START_MILLIS = 5;
     private final static long MINIMUM_DELAY_MILLIS = 100;
     private final static int NUM_COMPILE_TESTS = 10;
-    private static final String CLASS_CODE;
 
     private final static List<Throwable> raisedThrowables = new ArrayList<>();
 
     // Two nearly-identical classes, so we can get an idea of how long it takes to compile one of them
-    static {
-        final StringBuilder testClassCode1 = new StringBuilder("        public class $CLASSNAME$ {");
+    private static String generateClassBody(final String className) {
+        final StringBuilder testClassCode1 = new StringBuilder("        public class " + className + " {");
         testClassCode1.append("            final static String testString = \"Hello World\\n\";");
 
         // Simple static inner classes to generate two class files
@@ -55,7 +54,7 @@ public class TestQueryCompiler {
         }
 
         testClassCode1.append("        }");
-        CLASS_CODE = testClassCode1.toString();
+        return testClassCode1.toString();
     }
 
     @Rule
@@ -181,7 +180,7 @@ public class TestQueryCompiler {
                 QueryCompilerRequest.builder()
                         .description("Test Compile")
                         .className(className)
-                        .classBody(CLASS_CODE)
+                        .classBody(generateClassBody(className))
                         .packageNameRoot("io.deephaven.temp")
                         .build());
         if (printDetails) {
@@ -201,7 +200,7 @@ public class TestQueryCompiler {
     public void testSimpleCompile() throws Exception {
         final String program1Text = String.join(
                 "\n",
-                "public class $CLASSNAME$ {",
+                "public class Test {",
                 "   public static void main (String [] args) {",
                 "      System.out.println (\"Hello, World?\");",
                 "      System.out.println (args.length);",
@@ -382,5 +381,35 @@ public class TestQueryCompiler {
         org.junit.Assert.assertEquals("Error Invoking Compiler, no source present in diagnostic:\n" +
                 "Class names, 'InvalidClassArgument', are only accepted if annotation processing is explicitly requested",
                 e.getMessage());
+    }
+
+    @Test
+    public void testVariableClassNameThrows() {
+        final String goodProgram = String.join("\n",
+                "public class $CLASSNAME$ {",
+                "   public static void main (String [] args) {",
+                "   }",
+                "}");
+
+        QueryCompilerRequest[] requests = new QueryCompilerRequest[] {
+                QueryCompilerRequest.builder()
+                        .description("Test Good Compile")
+                        .className("FineFormula")
+                        .classBody(goodProgram)
+                        .packageNameRoot("com.deephaven.test")
+                        .build(),
+        };
+
+        // noinspection unchecked
+        CompletionStageFuture.Resolver<Class<?>>[] resolvers =
+                (CompletionStageFuture.Resolver<Class<?>>[]) new CompletionStageFuture.Resolver[] {
+                        CompletionStageFuture.make(),
+                };
+
+        IllegalArgumentException e = org.junit.Assert.assertThrows(IllegalArgumentException.class,
+                () -> ExecutionContext.getContext().getQueryCompiler().compile(requests, resolvers));
+        org.junit.Assert.assertEquals("QueryCompiler's support of the $CLASSNAME$ variable has been removed " +
+                "as the final class name affects the compiled byte code and therefore cannot be dynamically " +
+                "replaced.", e.getMessage());
     }
 }
