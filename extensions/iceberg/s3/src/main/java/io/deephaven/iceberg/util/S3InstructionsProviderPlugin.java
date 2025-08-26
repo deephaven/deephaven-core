@@ -59,24 +59,41 @@ public final class S3InstructionsProviderPlugin implements DataInstructionsProvi
                         Credentials.basic(properties.get(S3FileIOProperties.ACCESS_KEY_ID),
                                 properties.get(S3FileIOProperties.SECRET_ACCESS_KEY)));
             }
-            if (properties.containsKey(AsyncHttpClientProperties.NETTY_READ_TIMEOUT_MS)) {
-                builder.readTimeout(Duration.ofMillis(PropertyUtil.propertyAsNullableLong(
-                        properties, AsyncHttpClientProperties.NETTY_READ_TIMEOUT_MS)));
+
+            final String httpClientType = PropertyUtil.propertyAsString(properties,
+                    AsyncHttpClientProperties.ASYNC_CLIENT_TYPE, AsyncHttpClientProperties.DEFAULT_ASYNC_CLIENT_TYPE);
+            if (AsyncHttpClientProperties.ASYNC_CLIENT_TYPE_NETTY.equals(httpClientType)) {
+                if (properties.containsKey(AsyncHttpClientProperties.NETTY_READ_TIMEOUT_MS)) {
+                    builder.readTimeout(Duration.ofMillis(PropertyUtil.propertyAsNullableLong(
+                            properties, AsyncHttpClientProperties.NETTY_READ_TIMEOUT_MS)));
+                }
+                if (properties.containsKey(AsyncHttpClientProperties.NETTY_WRITE_TIMEOUT_MS)) {
+                    builder.writeTimeout(Duration.ofMillis(PropertyUtil.propertyAsNullableLong(
+                            properties, AsyncHttpClientProperties.NETTY_WRITE_TIMEOUT_MS)));
+                }
+                if (properties.containsKey(AsyncHttpClientProperties.NETTY_CONNECTION_TIMEOUT_MS)) {
+                    builder.connectionTimeout(Duration.ofMillis(PropertyUtil.propertyAsNullableLong(
+                            properties, AsyncHttpClientProperties.NETTY_CONNECTION_TIMEOUT_MS)));
+                }
+                if (properties.containsKey(AsyncHttpClientProperties.NETTY_MAX_CONCURRENCY)) {
+                    final int maxConcurrency = PropertyUtil.propertyAsNullableInt(
+                            properties, AsyncHttpClientProperties.NETTY_MAX_CONCURRENCY);
+                    builder.maxConcurrentRequests(maxConcurrency);
+                    builder.numConcurrentWriteParts(maxConcurrency);
+                }
+            } else if (AsyncHttpClientProperties.ASYNC_CLIENT_TYPE_CRT.equals(httpClientType)) {
+                if (properties.containsKey(AsyncHttpClientProperties.CRT_CONNECTION_TIMEOUT_MS)) {
+                    builder.connectionTimeout(Duration.ofMillis(PropertyUtil.propertyAsNullableLong(
+                            properties, AsyncHttpClientProperties.CRT_CONNECTION_TIMEOUT_MS)));
+                }
+                if (properties.containsKey(AsyncHttpClientProperties.CRT_MAX_CONCURRENCY)) {
+                    final int maxConcurrency = PropertyUtil.propertyAsNullableInt(
+                            properties, AsyncHttpClientProperties.CRT_MAX_CONCURRENCY);
+                    builder.maxConcurrentRequests(maxConcurrency);
+                    builder.numConcurrentWriteParts(maxConcurrency);
+                }
             }
-            if (properties.containsKey(AsyncHttpClientProperties.NETTY_WRITE_TIMEOUT_MS)) {
-                builder.writeTimeout(Duration.ofMillis(PropertyUtil.propertyAsNullableLong(
-                        properties, AsyncHttpClientProperties.NETTY_WRITE_TIMEOUT_MS)));
-            }
-            if (properties.containsKey(AsyncHttpClientProperties.NETTY_CONNECTION_TIMEOUT_MS)) {
-                builder.connectionTimeout(Duration.ofMillis(PropertyUtil.propertyAsNullableLong(
-                        properties, AsyncHttpClientProperties.NETTY_CONNECTION_TIMEOUT_MS)));
-            }
-            if (properties.containsKey(AsyncHttpClientProperties.NETTY_MAX_CONCURRENCY)) {
-                final int maxConcurrency = PropertyUtil.propertyAsNullableInt(
-                        properties, AsyncHttpClientProperties.NETTY_MAX_CONCURRENCY);
-                builder.maxConcurrentRequests(maxConcurrency);
-                builder.numConcurrentWriteParts(maxConcurrency);
-            }
+
             if (properties.containsKey(AsyncHttpClientProperties.READ_FRAGMENT_SIZE)) {
                 builder.fragmentSize(PropertyUtil.propertyAsNullableInt(
                         properties, AsyncHttpClientProperties.READ_FRAGMENT_SIZE));

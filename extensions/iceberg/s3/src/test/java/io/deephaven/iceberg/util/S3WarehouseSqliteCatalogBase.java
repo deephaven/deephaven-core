@@ -40,6 +40,7 @@ import static io.deephaven.extensions.s3.testlib.S3Helper.TIMEOUT_SECONDS;
 import static io.deephaven.iceberg.base.IcebergUtils.dataFileUri;
 import static io.deephaven.iceberg.base.IcebergUtils.locationUri;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown;
 
 abstract class S3WarehouseSqliteCatalogBase extends SqliteCatalogBase {
 
@@ -90,7 +91,13 @@ abstract class S3WarehouseSqliteCatalogBase extends SqliteCatalogBase {
                             .build(),
                     s3Instructions());
         }
-        properties.putAll(s3ConnectionProperties());
+        final Map<String, String> s3ConnectionProperties = s3ConnectionProperties();
+        for (final Map.Entry<String, String> entry : s3ConnectionProperties.entrySet()) {
+            final String key = entry.getKey();
+            if (!properties.containsKey(key)) {
+                properties.put(key, entry.getValue());
+            }
+        }
         return IcebergTools.createAdapter(
                 BuildCatalogOptions.builder()
                         .name(catalogName)
@@ -205,7 +212,8 @@ abstract class S3WarehouseSqliteCatalogBase extends SqliteCatalogBase {
             throws ExecutionException, InterruptedException, TimeoutException {
         final Map<String, String> properties = new HashMap<>();
         SqliteHelper.setJdbcCatalogProperties(properties, rootDir);
-        testReadWriteImpl(catalogAdapterForScheme(testInfo, properties, "s3", true));
+        testReadWriteImpl(catalogAdapterForScheme(testInfo, properties, "s3", true),
+                "MyNamespace.TestTableWithClientManagedByDeephaven");
     }
 
     @Test
@@ -217,14 +225,17 @@ abstract class S3WarehouseSqliteCatalogBase extends SqliteCatalogBase {
         properties.put("http-client-async.client-type", "aws-crt");
         SqliteHelper.setJdbcCatalogProperties(properties, rootDir);
         try {
-            testReadWriteImpl(catalogAdapterForScheme(testInfo, properties, "s3", false));
+            testReadWriteImpl(catalogAdapterForScheme(testInfo, properties, "s3", false),
+                    "MyNamespace.TestTableWithCRTClientManagedByIceberg1");
+            failBecauseExceptionWasNotThrown(IllegalArgumentException.class);
         } catch (IllegalArgumentException e) {
             assertThat(e.getMessage()).contains("Unknown HTTP client type: aws-crt. Expected one of: netty, crt");
         }
 
         // Use the correct client type to verify that the test passes
         properties.put("http-client-async.client-type", "crt");
-        testReadWriteImpl(catalogAdapterForScheme(testInfo, properties, "s3", false));
+        testReadWriteImpl(catalogAdapterForScheme(testInfo, properties, "s3", false),
+                "MyNamespace.TestTableWithCRTClientManagedByIceberg2");
     }
 
     @Test
@@ -236,19 +247,22 @@ abstract class S3WarehouseSqliteCatalogBase extends SqliteCatalogBase {
         properties.put("http-client-async.client-type", "netty-nio");
         SqliteHelper.setJdbcCatalogProperties(properties, rootDir);
         try {
-            testReadWriteImpl(catalogAdapterForScheme(testInfo, properties, "s3", false));
+            testReadWriteImpl(catalogAdapterForScheme(testInfo, properties, "s3", false),
+                    "MyNamespace.TestTableWithNettyClientManagedByIceberg");
+            failBecauseExceptionWasNotThrown(IllegalArgumentException.class);
         } catch (IllegalArgumentException e) {
             assertThat(e.getMessage()).contains("Unknown HTTP client type: netty-nio. Expected one of: netty, crt");
         }
 
         // Use the correct client type to verify that the test passes
         properties.put("http-client-async.client-type", "netty");
-        testReadWriteImpl(catalogAdapterForScheme(testInfo, properties, "s3", false));
+        testReadWriteImpl(catalogAdapterForScheme(testInfo, properties, "s3", false),
+                "MyNamespace.TestTableWithNettyClientManagedByIceberg");
     }
 
 
-    private void testReadWriteImpl(final IcebergCatalogAdapter catalogAdapter) {
-        final TableIdentifier tableIdentifier = TableIdentifier.parse("MyNamespace.MyTable");
+    private void testReadWriteImpl(final IcebergCatalogAdapter catalogAdapter, final String tableIdentifierStr) {
+        final TableIdentifier tableIdentifier = TableIdentifier.parse(tableIdentifierStr);
         final Table data = TableTools.newTable(
                 intCol("intCol", 2, 4, 6, 8, 10),
                 doubleCol("doubleCol", 2.5, 5.0, 7.5, 10.0, 12.5));

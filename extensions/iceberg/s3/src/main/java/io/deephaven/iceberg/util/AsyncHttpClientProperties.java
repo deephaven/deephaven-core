@@ -36,6 +36,9 @@ class AsyncHttpClientProperties {
     public static final String WRITE_PART_SIZE = "http-client-async.write-part-size";
     public static final String READ_AHEAD_COUNT = "http-client-async.read-ahead-count";
 
+    // When adding new http-client-async properties here, remember to update S3InstructionsProviderPlugin
+    // so they are parsed and applied when constructing S3Instructions.
+
     private final String httpClientType;
     private final Map<String, String> httpClientProperties;
 
