@@ -20,6 +20,9 @@ jobs:
     runs-on: ubuntu-24.04
     permissions:
       pull-requests: write
+    outputs:
+      python: ${{ steps.filter.outputs.python }}
+      groovy: ${{ steps.filter.outputs.groovy }}
 
     steps:
       - name: Checkout
