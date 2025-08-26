@@ -22,7 +22,7 @@ import software.amazon.awssdk.services.s3.S3Client;
  * factory using {@link AwsClientFactories#from} and serves as the central place for DH-specific injection-fixes. For
  * example, we use this to configure additional {@link AsyncHttpClientProperties} for the async s3 client,
  */
-public class CustomAwsClientFactory implements AwsClientFactory {
+public class DeephavenAwsClientFactory implements AwsClientFactory {
 
     private AwsClientFactory delegate;
 
@@ -38,11 +38,8 @@ public class CustomAwsClientFactory implements AwsClientFactory {
 
         // Build a delegate using Iceberg's factory selection logic.
         final Map<String, String> baseProps = new HashMap<>(properties);
-        if (CustomAwsClientFactory.class.getName().equals(baseProps.get(AwsProperties.CLIENT_FACTORY))) {
-            baseProps.remove(AwsProperties.CLIENT_FACTORY);
-        }
+        baseProps.remove(AwsProperties.CLIENT_FACTORY);
         this.delegate = AwsClientFactories.from(baseProps);
-        this.delegate.initialize(properties);
     }
 
     /* --- Delegate everything we don't customize --- */

@@ -5,7 +5,7 @@ package io.deephaven.iceberg.util;
 
 import com.google.auto.service.AutoService;
 import io.deephaven.extensions.s3.Credentials;
-import io.deephaven.extensions.s3.DeephavenAwsClientFactory;
+import io.deephaven.extensions.s3.S3InstructionsBasedAwsClientFactory;
 import io.deephaven.extensions.s3.S3Constants;
 import io.deephaven.extensions.s3.S3Instructions;
 import io.deephaven.iceberg.internal.DataInstructionsProviderPlugin;
@@ -19,9 +19,9 @@ import java.util.Map;
 
 /**
  * {@link DataInstructionsProviderPlugin} implementation for producing a {@link S3Instructions}. The produced
- * instructions will be from {@link DeephavenAwsClientFactory#getInstructions(Map)} if present, and otherwise will make
- * a best-effort attempt to create an equivalent instructions based on properties from {@link AwsClientProperties} and
- * {@link S3FileIOProperties}.
+ * instructions will be from {@link S3InstructionsBasedAwsClientFactory#getInstructions(Map)} if present, and otherwise
+ * will make a best-effort attempt to create an equivalent instructions based on properties from
+ * {@link AwsClientProperties} and {@link S3FileIOProperties}.
  */
 @AutoService(DataInstructionsProviderPlugin.class)
 @SuppressWarnings("unused")
@@ -30,7 +30,8 @@ public final class S3InstructionsProviderPlugin implements DataInstructionsProvi
     public S3Instructions createInstructions(
             @NotNull final String uriScheme,
             @NotNull final Map<String, String> properties) {
-        final S3Instructions s3Instructions = DeephavenAwsClientFactory.getInstructions(properties).orElse(null);
+        final S3Instructions s3Instructions =
+                S3InstructionsBasedAwsClientFactory.getInstructions(properties).orElse(null);
         if (s3Instructions != null) {
             return s3Instructions;
         }
@@ -58,21 +59,21 @@ public final class S3InstructionsProviderPlugin implements DataInstructionsProvi
                         Credentials.basic(properties.get(S3FileIOProperties.ACCESS_KEY_ID),
                                 properties.get(S3FileIOProperties.SECRET_ACCESS_KEY)));
             }
-            if (properties.containsKey(AsyncHttpClientProperties.READ_TIMEOUT_MS)) {
+            if (properties.containsKey(AsyncHttpClientProperties.NETTY_READ_TIMEOUT_MS)) {
                 builder.readTimeout(Duration.ofMillis(PropertyUtil.propertyAsNullableLong(
-                        properties, AsyncHttpClientProperties.READ_TIMEOUT_MS)));
+                        properties, AsyncHttpClientProperties.NETTY_READ_TIMEOUT_MS)));
             }
-            if (properties.containsKey(AsyncHttpClientProperties.WRITE_TIMEOUT_MS)) {
+            if (properties.containsKey(AsyncHttpClientProperties.NETTY_WRITE_TIMEOUT_MS)) {
                 builder.writeTimeout(Duration.ofMillis(PropertyUtil.propertyAsNullableLong(
-                        properties, AsyncHttpClientProperties.WRITE_TIMEOUT_MS)));
+                        properties, AsyncHttpClientProperties.NETTY_WRITE_TIMEOUT_MS)));
             }
-            if (properties.containsKey(AsyncHttpClientProperties.CONNECTION_TIMEOUT_MS)) {
+            if (properties.containsKey(AsyncHttpClientProperties.NETTY_CONNECTION_TIMEOUT_MS)) {
                 builder.connectionTimeout(Duration.ofMillis(PropertyUtil.propertyAsNullableLong(
-                        properties, AsyncHttpClientProperties.CONNECTION_TIMEOUT_MS)));
+                        properties, AsyncHttpClientProperties.NETTY_CONNECTION_TIMEOUT_MS)));
             }
-            if (properties.containsKey(AsyncHttpClientProperties.MAX_CONCURRENCY)) {
+            if (properties.containsKey(AsyncHttpClientProperties.NETTY_MAX_CONCURRENCY)) {
                 final int maxConcurrency = PropertyUtil.propertyAsNullableInt(
-                        properties, AsyncHttpClientProperties.MAX_CONCURRENCY);
+                        properties, AsyncHttpClientProperties.NETTY_MAX_CONCURRENCY);
                 builder.maxConcurrentRequests(maxConcurrency);
                 builder.numConcurrentWriteParts(maxConcurrency);
             }

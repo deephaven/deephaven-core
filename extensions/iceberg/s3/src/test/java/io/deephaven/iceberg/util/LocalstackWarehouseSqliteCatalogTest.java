@@ -39,7 +39,8 @@ final class LocalstackWarehouseSqliteCatalogTest extends S3WarehouseSqliteCatalo
                 CLIENT_REGION, LocalStack.region(),
                 ACCESS_KEY_ID, LocalStack.accessKey(),
                 SECRET_ACCESS_KEY, LocalStack.secretAccessKey(),
-                AsyncHttpClientProperties.READ_TIMEOUT_MS, String.valueOf(TIMEOUT_SECONDS * 1_000L));
+                AsyncHttpClientProperties.ASYNC_CLIENT_TYPE, AsyncHttpClientProperties.ASYNC_CLIENT_TYPE_NETTY,
+                AsyncHttpClientProperties.NETTY_READ_TIMEOUT_MS, String.valueOf(TIMEOUT_SECONDS * 1_000L));
     }
 
     @Override

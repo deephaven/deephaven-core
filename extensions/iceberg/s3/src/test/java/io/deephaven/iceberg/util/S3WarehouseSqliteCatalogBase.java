@@ -214,16 +214,16 @@ abstract class S3WarehouseSqliteCatalogBase extends SqliteCatalogBase {
         final Map<String, String> properties = new HashMap<>();
 
         // Use the incorrect client type to verify that the test fails with the expected error message
-        properties.put("http-client.async.client-type", "crt");
+        properties.put("http-client-async.client-type", "aws-crt");
         SqliteHelper.setJdbcCatalogProperties(properties, rootDir);
         try {
             testReadWriteImpl(catalogAdapterForScheme(testInfo, properties, "s3", false));
         } catch (IllegalArgumentException e) {
-            assertThat(e.getMessage()).contains("Unknown HTTP client type: crt. Expected one of: netty-nio, aws-crt");
+            assertThat(e.getMessage()).contains("Unknown HTTP client type: aws-crt. Expected one of: netty, crt");
         }
 
         // Use the correct client type to verify that the test passes
-        properties.put("http-client.async.client-type", "aws-crt");
+        properties.put("http-client-async.client-type", "crt");
         testReadWriteImpl(catalogAdapterForScheme(testInfo, properties, "s3", false));
     }
 
@@ -233,16 +233,16 @@ abstract class S3WarehouseSqliteCatalogBase extends SqliteCatalogBase {
         final Map<String, String> properties = new HashMap<>();
 
         // Use the incorrect client type to verify that the test fails with the expected error message
-        properties.put("http-client.async.client-type", "netty");
+        properties.put("http-client-async.client-type", "netty-nio");
         SqliteHelper.setJdbcCatalogProperties(properties, rootDir);
         try {
             testReadWriteImpl(catalogAdapterForScheme(testInfo, properties, "s3", false));
         } catch (IllegalArgumentException e) {
-            assertThat(e.getMessage()).contains("Unknown HTTP client type: netty. Expected one of: netty-nio, aws-crt");
+            assertThat(e.getMessage()).contains("Unknown HTTP client type: netty-nio. Expected one of: netty, crt");
         }
 
         // Use the correct client type to verify that the test passes
-        properties.put("http-client.async.client-type", "netty-nio");
+        properties.put("http-client-async.client-type", "netty");
         testReadWriteImpl(catalogAdapterForScheme(testInfo, properties, "s3", false));
     }
 

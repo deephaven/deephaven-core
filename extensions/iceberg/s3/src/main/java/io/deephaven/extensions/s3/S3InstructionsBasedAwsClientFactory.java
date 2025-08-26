@@ -23,12 +23,12 @@ import java.util.concurrent.ConcurrentHashMap;
  * An {@link AwsClientFactory} and {@link S3FileIOAwsClientFactory} implementation that assumes ownership of AWS client
  * creation as configured via {@link S3Instructions}.
  */
-public final class DeephavenAwsClientFactory implements AwsClientFactory, S3FileIOAwsClientFactory {
+public final class S3InstructionsBasedAwsClientFactory implements AwsClientFactory, S3FileIOAwsClientFactory {
 
-    private static final String UUID_KEY = DeephavenAwsClientFactory.class.getName() + ".__uuid";
+    private static final String UUID_KEY = S3InstructionsBasedAwsClientFactory.class.getName() + ".__uuid";
 
     /**
-     * Adds {@link DeephavenAwsClientFactory} to {@code propertiesOut} with the keys
+     * Adds {@link S3InstructionsBasedAwsClientFactory} to {@code propertiesOut} with the keys
      * {@value AwsProperties#CLIENT_FACTORY} and {@value S3FileIOProperties#CLIENT_FACTORY}; it is an error if either of
      * these properties is already set. After the corresponding {@link org.apache.iceberg.catalog.Catalog} is no longer
      * in use, the caller should invoke the returned {@link Runnable} to clean up.
@@ -39,8 +39,9 @@ public final class DeephavenAwsClientFactory implements AwsClientFactory, S3File
      */
     public static Runnable addToProperties(S3Instructions instructions, Map<String, String> propertiesOut) {
         Objects.requireNonNull(instructions);
-        putOrThrow(propertiesOut, AwsProperties.CLIENT_FACTORY, DeephavenAwsClientFactory.class.getName());
-        putOrThrow(propertiesOut, S3FileIOProperties.CLIENT_FACTORY, DeephavenAwsClientFactory.class.getName());
+        putOrThrow(propertiesOut, AwsProperties.CLIENT_FACTORY, S3InstructionsBasedAwsClientFactory.class.getName());
+        putOrThrow(propertiesOut, S3FileIOProperties.CLIENT_FACTORY,
+                S3InstructionsBasedAwsClientFactory.class.getName());
         final String uuid = UUID.randomUUID().toString();
         putOrThrow(propertiesOut, UUID_KEY, uuid);
         S3_INSTRUCTIONS_MAP.put(uuid, instructions);
@@ -78,7 +79,7 @@ public final class DeephavenAwsClientFactory implements AwsClientFactory, S3File
 
     private S3Instructions instructions;
 
-    public DeephavenAwsClientFactory() {
+    public S3InstructionsBasedAwsClientFactory() {
         // This follows the pattern established by other Iceberg classes that have an initialize method; they have a
         // default value that is set in construction, with the expectation that they are properly constructed in the
         // initialize call. While those implementations likely could be stricter and implemented defensively (throwing
@@ -92,7 +93,7 @@ public final class DeephavenAwsClientFactory implements AwsClientFactory, S3File
     @Override
     public void initialize(Map<String, String> properties) {
         this.instructions = getInstructions(properties).orElseThrow(() -> new IllegalArgumentException(
-                "DeephavenAwsClientFactory was setup improperly; it must be configured with DeephavenAwsClientFactory.addToProperties"));
+                "S3InstructionsBasedAwsClientFactory was setup improperly; it must be configured with S3InstructionsBasedAwsClientFactory.addToProperties"));
     }
 
     @Override

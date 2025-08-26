@@ -56,8 +56,8 @@ class InjectAWSProperties {
     private static final String CLIENT_CREDENTIALS_PROVIDER_DEFAULT =
             "io.deephaven.iceberg.util.DeephavenS3ClientCredentialsProvider";
 
-    // Same as CustomAwsClientFactory.class.getName()
-    private static final String DEFAULT_CLIENT_FACTORY = "io.deephaven.iceberg.util.CustomAwsClientFactory";
+    // Same as DeephavenAwsClientFactory.class.getName()
+    private static final String DEFAULT_CLIENT_FACTORY = "io.deephaven.iceberg.util.DeephavenAwsClientFactory";
 
     // TODO (DH-19253): Add support for S3CrtAsyncClient
     private static final String S3_CRT_ENABLED_DEFAULT = "false";

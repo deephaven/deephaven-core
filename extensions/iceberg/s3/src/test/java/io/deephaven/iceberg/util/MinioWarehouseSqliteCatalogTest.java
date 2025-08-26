@@ -48,6 +48,7 @@ final class MinioWarehouseSqliteCatalogTest extends S3WarehouseSqliteCatalogBase
                 CLIENT_REGION, MinIO.region(),
                 ACCESS_KEY_ID, MinIO.accessKey(),
                 SECRET_ACCESS_KEY, MinIO.secretAccessKey(),
-                AsyncHttpClientProperties.READ_TIMEOUT_MS, String.valueOf(TIMEOUT_SECONDS * 1_000L));
+                AsyncHttpClientProperties.ASYNC_CLIENT_TYPE, AsyncHttpClientProperties.ASYNC_CLIENT_TYPE_NETTY,
+                AsyncHttpClientProperties.NETTY_READ_TIMEOUT_MS, String.valueOf(TIMEOUT_SECONDS * 1_000L));
     }
 }
