@@ -151,9 +151,9 @@ public abstract class RowGroupInfo {
 
         @Override
         public void applyForRowGroups(final @NotNull Table input,
-                final @NotNull ThrowingConsumer<Table, IOException> writer) throws IOException {
+                final @NotNull ThrowingConsumer<Table, IOException> consumer) throws IOException {
             // no need to use the iterating version because we know we are writing only a single RowGroup
-            writer.accept(input);
+            consumer.accept(input);
         }
     }
 
