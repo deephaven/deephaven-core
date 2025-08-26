@@ -16,5 +16,5 @@ pyarrow==21.0.0
 python-dateutil==2.9.0.post0
 pytz==2025.2
 six==1.17.0
-typing_extensions==4.14.1
+typing_extensions==4.15.0
 tzdata==2025.2
