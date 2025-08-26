@@ -20,7 +20,7 @@ brew install git-lfs
 git lfs install
 ```
 
-Note that if you have installed lfs _after_ you cloned the repo, you will need to manually fetch the lfs files using
+Note that if you have installed lfs _after_ you cloned the repo, you will need to manually fetch the lfs files using:
 
 ```
 git lfs fetch
@@ -32,7 +32,7 @@ On some systems, you may also need to run:
 git lfs pull
 ```
 
-The current files that are stored in LFS can be seen in [.gitattributes](.gitattributes). To add a new file type to LFS, use the `lfs track` command.  
+The current files stored in LFS can be seen in [.gitattributes](.gitattributes). To add a new file type to LFS, use the `lfs track` command.  
 Here is an example for `*.mp4` files.
 
 ```
@@ -46,7 +46,7 @@ print('test')
 print("test")
 ```
 
-To run the docs with a local preview on [http://localhost:3001](http://localhost:3001), use the following script.
+Use the following script to run the docs with a local preview on [http://localhost:3001](http://localhost:3001):
 
 ```
 ./docs/start
@@ -57,26 +57,26 @@ To run the docs with a local preview on [http://localhost:3001](http://localhost
 
 Documents are created and stored in the folder for each language as `.md` markdown files. You can use whatever folder hierarchy is appropriate for your content. All file and folder names should be in _kebab-case_.
 
-Once a file is created, to have it appear in the sidebar, it must be added to the appropriate `./sidebar.json`.
+Once a file is created, it must be added to the appropriate `./sidebar.json` to have it appear in the sidebar.
 
 Image assets are stored in `<language>/assets` and can be linked using the relative path from your document.
 
-All changes should be approved by an editor on the docs team before being merged.
+An editor on the docs team should approve all changes before being merged.
 
-Docs must be formatted using `./docs/format` which uses `dprint` inside a Docker container. The config is stored in `dprint.json`. If you prefer to run `dprint` locally, you can follow the [dprint install instructions](https://dprint.dev/install/).
+Docs must be formatted using `./docs/format`, which uses `dprint` inside a Docker container. The config is stored in `dprint.json`. If you prefer to run `dprint` locally, you can follow the [dprint install instructions](https://dprint.dev/install/).
 
 The following extensions can be used to format on save in your IDE:
 
 - VSCode [dprint extension](https://marketplace.visualstudio.com/items?itemName=dprint.dprint). Follow instructions to init `dprint` and set as your default formatter.
 - Jetbrains [dprint plugin](https://plugins.jetbrains.com/plugin/18192-dprint). Follow instructions to init `dprint` and set up format on save.
 
-In some cases, such as YAML code blocks, you may want to preserve indentation and tell dprint not to format the code. First, consider if this is really necessary and not that you prefer different formatting. If it is necessary, use a `<!-- dprint-ignore -->` comment to skip the following line. This works if put directly above a code block. You can also use `<!-- dprint-ignore-start -->` and `<!-- dprint-ignore-end -->` to ignore a block of code.
+In some cases, such as YAML code blocks, you may want to preserve indentation and tell dprint not to format the code. First, consider if this is really necessary and not that you prefer different formatting. If necessary, use a `<!-- dprint-ignore -->` comment to skip the following line. This works if put directly above a code block. You can also use `<!-- dprint-ignore-start -->` and `<!-- dprint-ignore-end -->` to ignore a code block.
 
 ## Code Block Snapshots
 
-All `python` and `groovy` code blocks in the documentation are run and the output is saved as a snapshot. This allows us to ensure that the code examples are up-to-date and working correctly. See the [snapshotter README](./snapshotter/README.md) for more info. The documentation is also available [here](https://github.com/deephaven/salmon/tree/main/tools/snapshotter#snapshotter-tool).
+All `python` and `groovy` code blocks in the documentation are run, and the output is saved as a snapshot. This allows us to ensure the code examples are up-to-date and working correctly. See the [snapshotter README](./snapshotter/README.md) for more info. The documentation is also available [here](https://github.com/deephaven/salmon/tree/main/tools/snapshotter#snapshotter-tool).
 
-You can run the snapshotter tool against the latest published Deephaven Core release, a Docker tag, or a local build of Deephaven Core. If you are documenting a new feature, you will need to run against the local build.
+You can run the snapshotter tool against the latest published Deephaven Core release, a Docker tag, or a local build of Deephaven Core. If you are documenting a new feature, you must run against the local build.
 
 To run the snapshotter tool, use the following command:
 
@@ -88,7 +88,7 @@ To run the snapshotter tool, use the following command:
 > [!NOTE]
 > Snapshots of tables will be limited to the first 100 rows and plots to an equally spaced 1000 points (based on index) to ensure the files are not too large.
 
-There are some meta tags that can be used to control the behavior of the snapshotter tool. These tags are added to the code block after the language. Details about the tags are in the [snapshotter tool documentation](./snapshotter/README.md).
+Some meta tags can be used to control the behavior of the snapshotter tool. These tags are added to the code block after the language. Details about the tags are in the [snapshotter tool documentation](./snapshotter/README.md).
 
 ### AI Tools
 
@@ -105,22 +105,7 @@ The above workflow allows you to work directly with .md files without having to 
 
 ## Indexing
 
-The site search re-indexes nightly. If you have published a new page or changed files significantly mid-day, this may affect search results. Ask in the docs channel for someone to trigger this job in Inkeep manually.
-
-## Organization
-
-We've adopted [Diátaxis Framework](https://diataxis.fr/) for documentation. All new content should fit into one of these four quadrants: Tutorial, How-to, Reference, or Conceptual Guide. We encourage you to refresh yourself on the structure at the above link before starting on a new piece of documentation.
-
-Quick Reference:
-
-| &nbsp;      | Tutorials                       | How-to guides                        | Reference                 | Conceptual                         |
-| ----------- | ------------------------------- | ------------------------------------ | ------------------------- | ---------------------------------- |
-| **Purpose** | learning                        | a goal                               | information               | understanding                      |
-| **Intent**  | allow a new user to get started | show how to solve a specific problem | exhaustively describe     | explain how or why                 |
-| **Format**  | a lesson                        | a series of steps                    | dry description           | contextual explanations            |
-| **Analogy** | teaching a child to bake bread  | a recipe for sour dough              | a wikipedia page on yeast | an article on the history of bread |
-
-Upon completing a **tutorial**, all users should end up with the same outcome. When following along with a **how-to guide**, all users will learn the same information, but - continuing with the baking analogy - they can use their own ingredients, so outcomes may differ.
+The site search re-indexes nightly. If you publish a new page or change files significantly mid-day, this may affect search results. Ask in the docs channel for someone to trigger this job in Inkeep manually.
 
 ## Deployment
 
