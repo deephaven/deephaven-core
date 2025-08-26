@@ -72,7 +72,7 @@ jobs:
 
       - name: Sync core Python to the salmon bucket
         id: sync-python
-        if: ${{ needs.detect-changes.outputs.python == 'true' }}
+        if: ${{ needs.doc-changes.outputs.python == 'true' }}
         uses: deephaven/salmon-sync@v1
         with:
           source: docs/python
@@ -90,7 +90,7 @@ jobs:
 
       - name: Sync core Groovy to the salmon bucket
         id: sync-groovy
-        if: ${{ needs.detect-changes.outputs.groovy == 'true' }}
+        if: ${{ needs.doc-changes.outputs.groovy == 'true' }}
         uses: deephaven/salmon-sync@v1
         with:
           source: docs/groovy
