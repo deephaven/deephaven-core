@@ -4,16 +4,17 @@
 package io.deephaven.parquet.table.metadata;
 
 import io.deephaven.engine.liveness.LivenessScopeStack;
-import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.util.TableTools;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.ScriptApi;
 import io.deephaven.util.function.ThrowingConsumer;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Iterator;
 
 public abstract class RowGroupInfo {
@@ -152,7 +153,7 @@ public abstract class RowGroupInfo {
         @Override
         public void applyForRowGroups(final @NotNull Table input,
                 final @NotNull ThrowingConsumer<Table, IOException> consumer) throws IOException {
-            // no need to use the iterating version because we know we are writing only a single RowGroup
+            // no need to use the iterating version because we know we have only a single RowGroup
             consumer.accept(input);
         }
     }
@@ -161,7 +162,7 @@ public abstract class RowGroupInfo {
      * Splits evenly across {@code numRowGroups} RowGroups
      */
     private static class SplitEvenly extends IterativeRowGroupInfo {
-        private final long numRowGroups;
+        private long numRowGroups;
 
         private long impliedRowGroupSz;
         private long fractionalGroups;
@@ -173,6 +174,16 @@ public abstract class RowGroupInfo {
 
         private SplitEvenly(long numRowGroups) {
             this.numRowGroups = numRowGroups;
+        }
+
+        /**
+         * Reset the {@code numRowGroups} to be used going forward
+         *
+         * @param numRowGroups the new desired number of RowGroups
+         */
+        protected void setNumRowGroups(long numRowGroups) {
+            this.numRowGroups = numRowGroups;
+            this.input = null;
         }
 
         @Override
@@ -217,10 +228,11 @@ public abstract class RowGroupInfo {
     /**
      * Splits evenly across a number of RowGroups, ensuring that no group is larger than {@code maxRows}
      */
-    private static class SplitByMaxRows extends IterativeRowGroupInfo {
+    private static class SplitByMaxRows extends SplitEvenly {
         private final long maxRows;
 
         private SplitByMaxRows(long maxRows) {
+            super(0); // we will set this appropriately in `getIterator(...)`
             if (maxRows <= 0) {
                 throw new IllegalArgumentException("MaxRows must be positive");
             }
@@ -229,22 +241,9 @@ public abstract class RowGroupInfo {
 
         @Override
         public Iterator<Table> getIterator(final @NotNull Table input) {
-            final long numRowGroups = (input.size() / maxRows) + (input.size() % maxRows > 0 ? 1 : 0);
-            if (numRowGroups == 1) {
-                return DEFAULT.getIterator(input);
-            } else {
-                return new SplitEvenly(numRowGroups).getIterator(input);
-            }
-        }
-
-        @Override
-        public boolean hasNext() {
-            throw new UnsupportedOperationException("SplitByMaxRows.hasNext() not implemented");
-        }
-
-        @Override
-        public Table next() {
-            throw new UnsupportedOperationException("SplitByMaxRows.next() not implemented");
+            // set appropriate group-count for our `SplitEvenly` self
+            setNumRowGroups((input.size() / maxRows) + (input.size() % maxRows > 0 ? 1 : 0));
+            return super.getIterator(input);
         }
     }
 
@@ -271,8 +270,8 @@ public abstract class RowGroupInfo {
 
         @Override
         public Iterator<Table> getIterator(final @NotNull Table input) {
+            ensureOrderedForGrouping(input, groups);
             final Table[] newPartitions = input.partitionBy(groups).constituents();
-            ensureConsistentOrdering(input, newPartitions);
 
             reset();
             this.partitionedTables = newPartitions;
@@ -323,30 +322,33 @@ public abstract class RowGroupInfo {
     }
 
     /**
-     * FIXME: we know this can be potentially incorrect in some cases ... ? Ensure that table-ordering has not changed
+     * Ensure that grouping will not change row-ordering
      *
-     * @param origTbl the original (pre-split) table
-     * @param ordered the array-split table
+     * @param origTbl the table to be checked
+     * @param groups grouping-columns
      */
-    private static void ensureConsistentOrdering(final @NotNull Table origTbl, final @NotNull Table[] ordered) {
-        final RowSequence.Iterator it = origTbl.getRowSet().getRowSequenceIterator();
-        for (final Table subTable : ordered) {
-            final RowSet newRows = subTable.getRowSet();
-            final long subSize = newRows.size();
+    private static void ensureOrderedForGrouping(final @NotNull Table origTbl, final @NotNull String[] groups) {
+        final String rowNumCol = "__OrigRowNum__";
+        final String shiftedNumCol = "__ShiftedRowNum__";
+        final String diffCol = "__Diff__";
 
-            try (final RowSet origRows = it.getNextRowSequenceWithLength(subSize).asRowSet()) {
-                if (!newRows.equals(origRows)) {
-                    throw new IllegalStateException(String
-                            .format("Subtable ordering mismatch;\n  Expected: %s\n  Received: %s", origRows, newRows));
-                }
-            }
-        }
+        final Table emptyTable = origTbl
+                .view(groups)
+                .update(String.format("%s = ii", rowNumCol))
+                .groupBy(groups)
+                .ungroup()
+                .updateView(String.format("%s = %s_[ii + 1]", shiftedNumCol, rowNumCol),
+                        String.format("%s = %s - %s", diffCol, shiftedNumCol, rowNumCol))
+                .where(String.format("%s != 1 && %s != NULL_LONG", diffCol, diffCol));
 
-        if (it.hasMore()) {
-            try (final RowSet leftoverRows = it.getNextRowSequenceWithLength(Long.MAX_VALUE).asRowSet()) {
-                throw new IllegalStateException(String.format("Ordered Tables dropped rows; Iterator has more: %s",
-                        leftoverRows));
-            }
+
+        if (!emptyTable.isEmpty()) {
+            String[] viewCols = new String[groups.length + 1];
+            System.arraycopy(groups, 0, viewCols, 0, groups.length);
+            viewCols[groups.length] = rowNumCol;
+
+            throw new IllegalStateException(String.format("Misordered for Grouping column(s) %s:\n%s",
+                    Arrays.toString(groups), TableTools.string(emptyTable, 10, viewCols)));
         }
     }
 }
