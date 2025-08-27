@@ -152,7 +152,7 @@ public abstract class AbstractBasicJavaGenerator {
     }
 
     protected String generateInvocationAnnotation() {
-        return "@" + UserInvocationPermitted.class.getSimpleName() + "(sets = \"function_library\")\n";
+        return "@" + UserInvocationPermitted.class.getSimpleName() + "(\"function_library\")\n";
     }
 
     /**
