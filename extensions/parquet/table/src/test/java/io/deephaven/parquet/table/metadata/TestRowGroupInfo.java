@@ -137,10 +137,10 @@ public class TestRowGroupInfo {
 
         // should shortcut away
         assertMaxRows(testTable, testTable.size(), 1);
-        assertMaxRows(testTable, testTable.size()+1, 1);
+        assertMaxRows(testTable, testTable.size() + 1, 1);
 
         // should break into 2 groups, both with 50,000 rows
-        assertMaxRows(testTable, testTable.size()-1, 2);
+        assertMaxRows(testTable, testTable.size() - 1, 2);
 
         // this should break down to 9 groups; one with 11,112 rows, and the rest with 11,111
         assertMaxRows(testTable, 11_112, 9);
