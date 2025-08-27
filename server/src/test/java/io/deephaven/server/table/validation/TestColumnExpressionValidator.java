@@ -32,6 +32,8 @@ import org.jetbrains.annotations.NotNull;
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
+import org.openrewrite.java.MethodMatcher;
+import org.openrewrite.java.tree.JavaType;
 
 import java.io.IOException;
 import java.lang.reflect.Constructor;
@@ -41,6 +43,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class TestColumnExpressionValidator {
     @Rule
@@ -389,20 +392,19 @@ public class TestColumnExpressionValidator {
         testStringMethodsParsing(ExpressionValidatorModule
                 .getParsingColumnExpressionValidatorFromConfiguration(Configuration.getInstance()));
         testStringMethodsParsing(
-                new ParsingColumnExpressionValidator(List.of(new OpenRewriteMethodListInvocationValidator(
+                new ParsingColumnExpressionValidator(List.of(new MethodListInvocationValidator(
                         List.of("java.lang.Object toString()", "java.lang.String length()",
                                 "io.deephaven.engine.table.impl.lang.QueryLanguageFunctionUtils *(..)")))));
     }
 
     @Test
     public void testMethodMatching() {
-        final Set<Method> instanceMethods =
-                buildInstanceMethodList(List.of(getClass().getCanonicalName() + ".NotAString1#frog()",
-                        getClass().getCanonicalName() + ".NotAString1#frog(java.lang.Integer)"));
+        final List<String> methodList = new ArrayList<>();
 
-        final MethodList methodList = MethodList.builder()
-                .from(ExpressionValidatorModule.getMethodListFromConfiguration(Configuration.getInstance()))
-                .instanceMethods(instanceMethods).build();
+        methodList.add(getClass().getCanonicalName() + ".NotAString1 frog()");
+        methodList.add(getClass().getCanonicalName() + ".NotAString1 frog(java.lang.Integer)");
+
+        methodList.addAll(ExpressionValidatorModule.getMethodListFromConfiguration(Configuration.getInstance()));
 
         final ColumnExpressionValidator validator = new ParsingColumnExpressionValidator(
                 List.of(new AnnotationMethodInvocationValidator(Set.of("function_library")),
@@ -428,8 +430,8 @@ public class TestColumnExpressionValidator {
 
     @Test
     public void testOpenRewrite() {
-        final OpenRewriteMethodListInvocationValidator iv =
-                new OpenRewriteMethodListInvocationValidator(List.of(NotAString1.class.getCanonicalName() + " frog()",
+        final MethodListInvocationValidator iv =
+                new MethodListInvocationValidator(List.of(NotAString1.class.getCanonicalName() + " frog()",
                         NotAString1.class.getCanonicalName() + " frog(java.lang.Integer)"));
 
         final Table input =
@@ -463,25 +465,6 @@ public class TestColumnExpressionValidator {
         Assert.assertEquals(errorMessage, ise.getMessage());
     }
 
-
-    @Test
-    public void testInnerClassFinding() throws NoSuchMethodException {
-        final Method toad = MethodListInvocationValidator
-                .toMethod(getClass().getCanonicalName() + ".NotAString1.DoubleInner#toad()", false);
-        Assert.assertEquals(NotAString1.DoubleInner.class.getMethod("toad"), toad);
-
-        final Method amphibian = MethodListInvocationValidator
-                .toMethod(getClass().getCanonicalName() + ".NotAString1.DoubleInner.TripleInner#amphibian(int)", false);
-        Assert.assertEquals(NotAString1.DoubleInner.TripleInner.class.getMethod("amphibian", int.class), amphibian);
-
-        final UncheckedDeephavenException e1 =
-                Assert.assertThrows(UncheckedDeephavenException.class, () -> MethodListInvocationValidator.toMethod(
-                        getClass().getCanonicalName() + ".NotAString1.DoubleInner.NotExistent#toad()", false));
-        Assert.assertTrue(e1.getCause() instanceof ClassNotFoundException);
-        Assert.assertEquals(
-                "io.deephaven.server.table.validation.TestColumnExpressionValidator$NotAString1$DoubleInner$NotExistent",
-                e1.getCause().getMessage());
-    }
 
     @Test
     public void testVectorAnnotations() {
@@ -998,19 +981,22 @@ public class TestColumnExpressionValidator {
 
     @Test
     public void testMethodCachingBehavior() throws NoSuchMethodException {
-        final Set<Method> disallowedMethods = buildInstanceMethodList(List.of("java.lang.StringBuilder#toString()"));
-        final Set<Method> allowedMethods = buildInstanceMethodList(List.of("java.lang.Object#toString()"));
-
-        final MethodList allowedMethodList = MethodList.builder().instanceMethods(allowedMethods).build();
+        final List<String> disallowedMethods = List.of("java.lang.StringBuilder toString()");
+        final List<String> allowedMethods = List.of("java.lang.Object toString()");
 
         final MutableInt allowedMethodCount = new MutableInt(0);
         final MutableInt disallowedMethodCount = new MutableInt(0);
         final MutableInt nullMethodCount = new MutableInt(0);
 
-        final MethodListInvocationValidator validator = new MethodListInvocationValidator(allowedMethodList) {
+        final MethodListInvocationValidator validator = new MethodListInvocationValidator(allowedMethods) {
+            final List<MethodMatcher> disallowedMatchers =
+                    disallowedMethods.stream().map(MethodMatcher::new).collect(Collectors.toUnmodifiableList());
+
             @Override
             public Boolean permitMethod(Method method) {
-                if (disallowedMethods.contains(method)) {
+                final JavaType.Method jtm = toJavaType(method);
+
+                if (disallowedMatchers.stream().anyMatch(mm -> mm.matches(jtm))) {
                     disallowedMethodCount.increment();
                     return false;
                 }
@@ -1105,11 +1091,5 @@ public class TestColumnExpressionValidator {
         Assert.assertEquals(1, allowedMethodCount.get());
         Assert.assertEquals(1, disallowedMethodCount.get());
         Assert.assertEquals(1, nullMethodCount.get());
-    }
-
-    @NotNull
-    private static Set<Method> buildInstanceMethodList(final List<String> targetStrings) {
-        return targetStrings.stream().map(s -> MethodListInvocationValidator.toMethod(s, false))
-                .collect(Collectors.toUnmodifiableSet());
     }
 }
