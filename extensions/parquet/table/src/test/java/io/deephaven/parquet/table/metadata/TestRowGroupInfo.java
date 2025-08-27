@@ -243,7 +243,7 @@ public class TestRowGroupInfo {
 
         final IllegalStateException iae0 = assertThrowsExactly(IllegalStateException.class,
                 () -> getRowGroups(testTable, RowGroupInfo.byGroup(groupCol)));
-        assertTrue("byGroup(...) fail mesage is informative",
+        assertTrue("byGroup(...) fail message is informative",
                 iae0.getMessage()
                         .startsWith(String.format("Misordered for Grouping column(s) %s:", Arrays.toString(groupCol))));
 
