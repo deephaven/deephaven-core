@@ -3,6 +3,7 @@
 //
 package io.deephaven.server.table.validation;
 
+import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.api.filter.FilterComparison;
@@ -123,6 +124,18 @@ public class TestColumnExpressionValidator {
 
         public String frog(final Integer arg1) {
             return "bud light";
+        }
+
+        public class DoubleInner {
+            public String toad() {
+                return "budweiser";
+            };
+
+            public class TripleInner {
+                public String amphibian(int a) {
+                    return "kermit";
+                }
+            }
         }
     }
 
@@ -382,8 +395,8 @@ public class TestColumnExpressionValidator {
     @Test
     public void testMethodMatching() {
         final Set<Method> instanceMethods =
-                buildInstanceMethodList(List.of(getClass().getCanonicalName() + "$NotAString1#frog()",
-                        getClass().getCanonicalName() + "$NotAString1#frog(java.lang.Integer)"));
+                buildInstanceMethodList(List.of(getClass().getCanonicalName() + ".NotAString1#frog()",
+                        getClass().getCanonicalName() + ".NotAString1#frog(java.lang.Integer)"));
 
         final MethodList methodList = MethodList.builder()
                 .from(ExpressionValidatorModule.getMethodListFromConfiguration(Configuration.getInstance()))
@@ -419,6 +432,26 @@ public class TestColumnExpressionValidator {
         final IllegalStateException ise = Assert.assertThrows(IllegalStateException.class,
                 () -> validator.validateSelectFilters(new String[] {expression}, input));
         Assert.assertEquals(errorMessage, ise.getMessage());
+    }
+
+
+    @Test
+    public void testInnerClassFinding() throws NoSuchMethodException {
+        final Method toad = MethodListInvocationValidator
+                .toMethod(getClass().getCanonicalName() + ".NotAString1.DoubleInner#toad()", false);
+        Assert.assertEquals(NotAString1.DoubleInner.class.getMethod("toad"), toad);
+
+        final Method amphibian = MethodListInvocationValidator
+                .toMethod(getClass().getCanonicalName() + ".NotAString1.DoubleInner.TripleInner#amphibian(int)", false);
+        Assert.assertEquals(NotAString1.DoubleInner.TripleInner.class.getMethod("amphibian", int.class), amphibian);
+
+        final UncheckedDeephavenException e1 =
+                Assert.assertThrows(UncheckedDeephavenException.class, () -> MethodListInvocationValidator.toMethod(
+                        getClass().getCanonicalName() + ".NotAString1.DoubleInner.NotExistent#toad()", false));
+        Assert.assertTrue(e1.getCause() instanceof ClassNotFoundException);
+        Assert.assertEquals(
+                "io.deephaven.server.table.validation.TestColumnExpressionValidator$NotAString1$DoubleInner$NotExistent",
+                e1.getCause().getMessage());
     }
 
     @Test

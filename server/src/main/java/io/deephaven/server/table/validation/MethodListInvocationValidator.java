@@ -72,7 +72,7 @@ public class MethodListInvocationValidator implements MethodInvocationValidator 
             }
         }
         try {
-            final Class<?> clazz = Class.forName(className);
+            final Class<?> clazz = findMaybeInnerClass(className);
             final List<Method> foundMethods = Arrays.stream(clazz.getDeclaredMethods())
                     .filter(m -> m.getName().equals(methodName) && paramsMatch(params, m.getParameterTypes()))
                     .collect(Collectors.toList());
@@ -99,6 +99,80 @@ public class MethodListInvocationValidator implements MethodInvocationValidator 
         }
     }
 
+    /**
+     * If the className is a String representing a Java primitive, then use the primitive class. Otherwise, search using
+     * our inner class rules
+     *
+     * @param className the classname to find
+     * @return the Class represented by className
+     * @throws ClassNotFoundException if the class was not found
+     */
+    private static Class<?> findPrimitiveOrMaybeInnerClass(final String className) throws ClassNotFoundException {
+        switch (className.trim()) {
+            case "boolean":
+                return boolean.class;
+            case "byte":
+                return byte.class;
+            case "char":
+                return char.class;
+            case "short":
+                return short.class;
+            case "int":
+                return int.class;
+            case "long":
+                return long.class;
+            case "float":
+                return float.class;
+            case "double":
+                return double.class;
+            default:
+                return findMaybeInnerClass(className);
+        }
+    }
+
+    private static Class<?> findMaybeInnerClass(final String className) throws ClassNotFoundException {
+        if (className.isEmpty()) {
+            throw new IllegalArgumentException("Class name may not be empty.");
+        }
+
+        ClassNotFoundException originalException = null;
+        int innerLevels = 0;
+        boolean replaced = false;
+
+        String toFind = className;
+
+        while (true) {
+            try {
+                final Class<?> clazz =
+                        Class.forName(toFind, false, MethodListInvocationValidator.class.getClassLoader());
+                if (innerLevels == 0) {
+                    return clazz;
+                } else {
+                    // we need to put back our inner class markers as dollar signs
+                    toFind = toFind + className.substring(toFind.length()).replace('.', '$');
+                    replaced = true;
+                    break;
+                }
+            } catch (ClassNotFoundException e) {
+                if (originalException == null) {
+                    originalException = e;
+                }
+                innerLevels++;
+                final int lastSeparator = toFind.lastIndexOf('.');
+                if (lastSeparator == -1) {
+                    break;
+                }
+                toFind = toFind.substring(0, lastSeparator);
+            }
+        }
+
+        if (replaced) {
+            return Class.forName(toFind, false, MethodListInvocationValidator.class.getClassLoader());
+        }
+
+        throw originalException;
+    }
+
     private static boolean paramsMatch(final String[] configuredParameters,
             final Class<?>[] candidateMethodParameters) {
         if (candidateMethodParameters.length != configuredParameters.length) {
@@ -107,7 +181,7 @@ public class MethodListInvocationValidator implements MethodInvocationValidator 
         for (int pp = 0; pp < candidateMethodParameters.length; pp++) {
             final Class<?> configuredClass;
             try {
-                configuredClass = Class.forName(configuredParameters[pp]);
+                configuredClass = findPrimitiveOrMaybeInnerClass(configuredParameters[pp]);
             } catch (ClassNotFoundException e) {
                 throw new UncheckedDeephavenException(e);
             }

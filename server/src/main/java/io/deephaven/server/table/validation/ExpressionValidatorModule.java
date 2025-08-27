@@ -176,7 +176,8 @@ public class ExpressionValidatorModule {
             final String[] classes = Arrays.stream(((String) v).split(",")).map(String::trim).toArray(String[]::new);
             for (final String className : classes) {
                 try {
-                    allowedTargets.add(Class.forName(className));
+                    allowedTargets
+                            .add(Class.forName(className, false, ExpressionValidatorModule.class.getClassLoader()));
                 } catch (ClassNotFoundException e) {
                     throw new UncheckedDeephavenException(
                             "Class not found while processing allow list from property '" + prefix + k.toString() + "'",
