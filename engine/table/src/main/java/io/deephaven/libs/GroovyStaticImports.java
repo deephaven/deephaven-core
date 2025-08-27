@@ -9,12 +9,33 @@ package io.deephaven.libs;
 
 import io.deephaven.function.Basic;
 import io.deephaven.function.BinSearch;
+import io.deephaven.function.BinSearchAlgo;
 import io.deephaven.function.Cast;
 import io.deephaven.function.Logic;
 import io.deephaven.function.Numeric;
 import io.deephaven.function.Parse;
 import io.deephaven.function.Random;
 import io.deephaven.function.Sort;
+import io.deephaven.util.datastructures.LongSizedDataStructure;
+import io.deephaven.vector.ByteVector;
+import io.deephaven.vector.CharVector;
+import io.deephaven.vector.DoubleVector;
+import io.deephaven.vector.FloatVector;
+import io.deephaven.vector.IntVector;
+import io.deephaven.vector.LongVector;
+import io.deephaven.vector.ObjectVector;
+import io.deephaven.vector.ShortVector;
+import java.lang.Boolean;
+import java.lang.Byte;
+import java.lang.Character;
+import java.lang.Class;
+import java.lang.Double;
+import java.lang.Float;
+import java.lang.Integer;
+import java.lang.Long;
+import java.lang.Short;
+import java.lang.String;
+import java.util.Comparator;
 import io.deephaven.util.annotations.UserInvocationPermitted;
 
 /**
@@ -22,7 +43,7 @@ import io.deephaven.util.annotations.UserInvocationPermitted;
  *
  * @see io.deephaven.function
  */
-@UserInvocationPermitted(value = "function_library")
+@UserInvocationPermitted("function_library")
 public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#IEEEremainder(double,double) */
     public static  double IEEEremainder( double x, double y ) {return Numeric.IEEEremainder( x, y );}
