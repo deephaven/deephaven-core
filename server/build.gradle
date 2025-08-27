@@ -19,6 +19,7 @@ dependencies {
     implementation project(':Integrations')
     implementation libs.commons.lang3
     implementation libs.commons.text
+    implementation libs.rewrite.java
 
     implementation libs.javaparser.core
     implementation project(':open-api-lang-parser')

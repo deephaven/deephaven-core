@@ -42,8 +42,6 @@ import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import static org.junit.Assert.assertTrue;
-
 public class TestColumnExpressionValidator {
     @Rule
     public final EngineCleanup base = new EngineCleanup();
@@ -390,6 +388,10 @@ public class TestColumnExpressionValidator {
         testStringMethodsNaming(new MethodNameColumnExpressionValidator());
         testStringMethodsParsing(ExpressionValidatorModule
                 .getParsingColumnExpressionValidatorFromConfiguration(Configuration.getInstance()));
+        testStringMethodsParsing(
+                new ParsingColumnExpressionValidator(List.of(new OpenRewriteMethodListInvocationValidator(
+                        List.of("java.lang.Object toString()", "java.lang.String length()",
+                                "io.deephaven.engine.table.impl.lang.QueryLanguageFunctionUtils *(..)")))));
     }
 
     @Test
@@ -409,6 +411,33 @@ public class TestColumnExpressionValidator {
         final Table input =
                 TableTools.emptyTable(1).update("A=`A`", "D=new " + NotAString1.class.getCanonicalName() + "()",
                         "E=new " + NotAString2.class.getCanonicalName() + "()");
+
+        validator.validateSelectFilters(new String[] {"D.frog() = ``"}, input);
+        validator.validateSelectFilters(new String[] {"D.frog(7) = ``"}, input);
+
+        // The method "frog" is not in our method allow-list
+        disallowedFilterMethod(validator, input,
+                "User expressions are not permitted to use method frog(java.lang.String) on class io.deephaven.server.table.validation.TestColumnExpressionValidator$NotAString1",
+                "D.frog(`Asdf`) = ``");
+
+        // The E is not the same class
+        disallowedFilterMethod(validator, input,
+                "User expressions are not permitted to use method frog(java.lang.Integer) on class io.deephaven.server.table.validation.TestColumnExpressionValidator$NotAString2",
+                "E.frog(8) = ``");
+    }
+
+    @Test
+    public void testOpenRewrite() {
+        final OpenRewriteMethodListInvocationValidator iv =
+                new OpenRewriteMethodListInvocationValidator(List.of(NotAString1.class.getCanonicalName() + " frog()",
+                        NotAString1.class.getCanonicalName() + " frog(java.lang.Integer)"));
+
+        final Table input =
+                TableTools.emptyTable(1).update("A=`A`", "D=new " + NotAString1.class.getCanonicalName() + "()",
+                        "E=new " + NotAString2.class.getCanonicalName() + "()");
+
+        final ColumnExpressionValidator validator = new ParsingColumnExpressionValidator(
+                List.of(new AnnotationMethodInvocationValidator(Set.of("function_library")), iv));
 
         validator.validateSelectFilters(new String[] {"D.frog() = ``"}, input);
         validator.validateSelectFilters(new String[] {"D.frog(7) = ``"}, input);
