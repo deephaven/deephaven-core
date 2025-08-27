@@ -20,13 +20,12 @@ public class AnnotationMethodInvocationValidator implements MethodInvocationVali
     @NotNull
     private final Set<String> permittedAnnotationSets;
 
-    // instead of reading annotations on each check, we can remember the answer
+    /**
+     * Instead of reading annotations on each check, we can remember the answer when a class is fully permitted; for
+     * method-level caching see the {@link CachingMethodInvocationValidator}.
+     */
     private final Set<Class<?>> cachedPermittedStaticTargets = Collections.newSetFromMap(new ConcurrentHashMap<>());
     private final Set<Class<?>> cachedPermittedInstanceTargets = Collections.newSetFromMap(new ConcurrentHashMap<>());
-    private final Set<Method> cachedPermittedInstanceMethods = Collections.newSetFromMap(new ConcurrentHashMap<>());
-    private final Set<Method> cachedPermittedStaticMethods = Collections.newSetFromMap(new ConcurrentHashMap<>());
-    private final Set<Constructor<?>> cachedPermittedConstructors =
-            Collections.newSetFromMap(new ConcurrentHashMap<>());
 
     public AnnotationMethodInvocationValidator(@NotNull final Set<String> permittedAnnotationSets) {
         this.permittedAnnotationSets = permittedAnnotationSets;
@@ -34,11 +33,7 @@ public class AnnotationMethodInvocationValidator implements MethodInvocationVali
 
     @Override
     public Boolean permitConstructor(final Constructor<?> constructor) {
-        if (cachedPermittedConstructors.contains(constructor)) {
-            return true;
-        }
         if (isPermittedSet(constructor.getAnnotation(UserInvocationPermitted.class))) {
-            cachedPermittedConstructors.add(constructor);
             return true;
         }
         return null;
@@ -54,9 +49,6 @@ public class AnnotationMethodInvocationValidator implements MethodInvocationVali
     }
 
     private boolean checkStaticAnnotations(final Method methodToCheck) {
-        if (cachedPermittedStaticMethods.contains(methodToCheck)) {
-            return true;
-        }
         final Class<?> declaringClass = methodToCheck.getDeclaringClass();
         if (cachedPermittedStaticTargets.contains(declaringClass)) {
             return true;
@@ -64,7 +56,6 @@ public class AnnotationMethodInvocationValidator implements MethodInvocationVali
 
         final UserInvocationPermitted methodAnnotation = methodToCheck.getAnnotation(UserInvocationPermitted.class);
         if (isPermittedSet(methodAnnotation)) {
-            cachedPermittedStaticMethods.add(methodToCheck);
             return true;
         }
 
@@ -102,9 +93,6 @@ public class AnnotationMethodInvocationValidator implements MethodInvocationVali
     }
 
     private boolean checkInstanceAnnotations(final Method methodToCheck) {
-        if (cachedPermittedInstanceMethods.contains(methodToCheck)) {
-            return true;
-        }
         final Class<?> declaringClass = methodToCheck.getDeclaringClass();
         if (cachedPermittedInstanceTargets.contains(declaringClass)) {
             return true;
@@ -112,7 +100,6 @@ public class AnnotationMethodInvocationValidator implements MethodInvocationVali
 
         final UserInvocationPermitted methodAnnotation = methodToCheck.getAnnotation(UserInvocationPermitted.class);
         if (isPermittedSet(methodAnnotation)) {
-            cachedPermittedInstanceMethods.add(methodToCheck);
             return true;
         }
 
@@ -162,13 +149,11 @@ public class AnnotationMethodInvocationValidator implements MethodInvocationVali
                 final UserInvocationPermitted interfaceMethodAnnotation =
                         interfaceMethod.getAnnotation(UserInvocationPermitted.class);
                 if (isPermittedSet(interfaceMethodAnnotation)) {
-                    cachedPermittedInstanceMethods.add(methodToCheck);
                     return true;
                 }
                 final UserInvocationPermitted interfaceClassAnnotation =
                         interfaceClass.getAnnotation(UserInvocationPermitted.class);
                 if (isInstancePermitted(interfaceClassAnnotation) && isPermittedSet(interfaceClassAnnotation)) {
-                    cachedPermittedInstanceMethods.add(methodToCheck);
                     return true;
                 }
             }

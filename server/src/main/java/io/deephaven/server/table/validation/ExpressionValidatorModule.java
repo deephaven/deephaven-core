@@ -101,7 +101,8 @@ public class ExpressionValidatorModule {
         final MethodInvocationValidator annotationValidator = new AnnotationMethodInvocationValidator(
                 getAnnotationSets(configuration, "ColumnExpressionValidator.annotationSets."));
 
-        return new ParsingColumnExpressionValidator(List.of(annotationValidator, listValidator));
+        return new ParsingColumnExpressionValidator(List.of(new CachingMethodInvocationValidator(annotationValidator),
+                new CachingMethodInvocationValidator(listValidator)));
     }
 
     /**

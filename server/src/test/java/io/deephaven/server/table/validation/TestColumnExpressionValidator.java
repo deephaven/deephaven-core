@@ -25,6 +25,7 @@ import io.deephaven.server.session.SessionState;
 import io.deephaven.server.table.ops.FilterTableGrpcImpl;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.UserInvocationPermitted;
+import io.deephaven.util.mutable.MutableInt;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Assert;
@@ -39,6 +40,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+
+import static org.junit.Assert.assertTrue;
 
 public class TestColumnExpressionValidator {
     @Rule
@@ -929,6 +932,117 @@ public class TestColumnExpressionValidator {
 
         final String[] matchFilters = new String[] {"A in `def`, `qdz`", "D=8"};
         validator.validateSelectFilters(matchFilters, input);
+    }
+
+    @Test
+    public void testMethodCachingBehavior() throws NoSuchMethodException {
+        final Set<Method> disallowedMethods = buildInstanceMethodList(List.of("java.lang.StringBuilder#toString()"));
+        final Set<Method> allowedMethods = buildInstanceMethodList(List.of("java.lang.Object#toString()"));
+
+        final MethodList allowedMethodList = MethodList.builder().instanceMethods(allowedMethods).build();
+
+        final MutableInt allowedMethodCount = new MutableInt(0);
+        final MutableInt disallowedMethodCount = new MutableInt(0);
+        final MutableInt nullMethodCount = new MutableInt(0);
+
+        final MethodListInvocationValidator validator = new MethodListInvocationValidator(allowedMethodList) {
+            @Override
+            public Boolean permitMethod(Method method) {
+                if (disallowedMethods.contains(method)) {
+                    disallowedMethodCount.increment();
+                    return false;
+                }
+                Boolean result = super.permitMethod(method);
+                if (result == null) {
+                    nullMethodCount.increment();
+                } else if (!result) {
+                    throw new IllegalStateException();
+                } else {
+                    allowedMethodCount.increment();
+                }
+                return result;
+            }
+        };
+        final CachingMethodInvocationValidator cachingValidator = new CachingMethodInvocationValidator(validator);
+
+        final Method integerToString = Integer.class.getMethod("toString");
+        final Method toUnsignedLong = Integer.class.getMethod("toUnsignedLong", int.class);
+        final Method stringBuilderToString = StringBuilder.class.getMethod("toString");
+
+        Assert.assertTrue(cachingValidator.permitMethod(integerToString));
+        Assert.assertEquals(1, allowedMethodCount.get());
+        Assert.assertEquals(0, disallowedMethodCount.get());
+        Assert.assertEquals(0, nullMethodCount.get());
+        Assert.assertFalse(cachingValidator.permitMethod(stringBuilderToString));
+        Assert.assertEquals(1, allowedMethodCount.get());
+        Assert.assertEquals(1, disallowedMethodCount.get());
+        Assert.assertEquals(0, nullMethodCount.get());
+        Assert.assertNull(cachingValidator.permitMethod(toUnsignedLong));
+        Assert.assertEquals(1, allowedMethodCount.get());
+        Assert.assertEquals(1, disallowedMethodCount.get());
+        Assert.assertEquals(1, nullMethodCount.get());
+
+        // verify we did not need to ask the validator a second time
+        Assert.assertTrue(cachingValidator.permitMethod(integerToString));
+        Assert.assertFalse(cachingValidator.permitMethod(stringBuilderToString));
+        Assert.assertNull(cachingValidator.permitMethod(toUnsignedLong));
+        Assert.assertEquals(1, allowedMethodCount.get());
+        Assert.assertEquals(1, disallowedMethodCount.get());
+        Assert.assertEquals(1, nullMethodCount.get());
+    }
+
+    @Test
+    public void testCachingConstructorBehavior() throws NoSuchMethodException {
+        final MutableInt allowedMethodCount = new MutableInt(0);
+        final MutableInt disallowedMethodCount = new MutableInt(0);
+        final MutableInt nullMethodCount = new MutableInt(0);
+
+        final Constructor<Integer> intConstructor = Integer.class.getConstructor(int.class);
+        final Constructor<Double> doubleConstructor = Double.class.getConstructor(double.class);
+        final Constructor<Long> longConstructor = Long.class.getConstructor(long.class);
+
+        final MethodInvocationValidator validator = new MethodInvocationValidator() {
+            @Override
+            public Boolean permitConstructor(Constructor<?> constructor) {
+                if (constructor.equals(intConstructor)) {
+                    allowedMethodCount.increment();
+                    return true;
+                }
+                if (constructor.equals(doubleConstructor)) {
+                    disallowedMethodCount.increment();
+                    return false;
+                }
+                nullMethodCount.increment();
+                return null;
+            }
+
+            @Override
+            public Boolean permitMethod(Method method) {
+                return null;
+            }
+        };
+        final CachingMethodInvocationValidator cachingValidator = new CachingMethodInvocationValidator(validator);
+
+        Assert.assertTrue(cachingValidator.permitConstructor(intConstructor));
+        Assert.assertEquals(1, allowedMethodCount.get());
+        Assert.assertEquals(0, disallowedMethodCount.get());
+        Assert.assertEquals(0, nullMethodCount.get());
+        Assert.assertFalse(cachingValidator.permitConstructor(doubleConstructor));
+        Assert.assertEquals(1, allowedMethodCount.get());
+        Assert.assertEquals(1, disallowedMethodCount.get());
+        Assert.assertEquals(0, nullMethodCount.get());
+        Assert.assertNull(cachingValidator.permitConstructor(longConstructor));
+        Assert.assertEquals(1, allowedMethodCount.get());
+        Assert.assertEquals(1, disallowedMethodCount.get());
+        Assert.assertEquals(1, nullMethodCount.get());
+
+        // verify we did not need to ask the validator a second time
+        Assert.assertTrue(cachingValidator.permitConstructor(intConstructor));
+        Assert.assertFalse(cachingValidator.permitConstructor(doubleConstructor));
+        Assert.assertNull(cachingValidator.permitConstructor(longConstructor));
+        Assert.assertEquals(1, allowedMethodCount.get());
+        Assert.assertEquals(1, disallowedMethodCount.get());
+        Assert.assertEquals(1, nullMethodCount.get());
     }
 
     @NotNull
