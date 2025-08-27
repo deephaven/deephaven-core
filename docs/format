@@ -13,7 +13,7 @@ DPRINT_CMD=fmt
 while getopts ":ch" opt; do
   case $opt in
     c)
-      DPRINT_CMD=check
+      DPRINT_CMD="check --allow-no-files"
       ;;
     h)
       usage
@@ -28,7 +28,7 @@ while getopts ":ch" opt; do
 done
 
 pushd "$(dirname "$0")" > /dev/null # Set pwd to this directory
-docker run --rm --name deephaven-docs-formatter --pull=always -e DPRINT_CMD=$DPRINT_CMD --volume ./python:/format/python --volume ./groovy:/format/groovy ghcr.io/deephaven/salmon-formatter:latest
+docker run --rm --name deephaven-docs-formatter --pull=always -e DPRINT_CMD="$DPRINT_CMD" --volume ./python:/format/python --volume ./groovy:/format/groovy ghcr.io/deephaven/salmon-formatter:latest
 EXIT_CODE=$?
 echo Formatting complete. You may need to run 'docs/updateSnapshots' if this reported files were changed.
 popd > /dev/null # Reset pwd
