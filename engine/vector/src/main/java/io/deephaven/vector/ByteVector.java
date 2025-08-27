@@ -249,7 +249,7 @@ public interface ByteVector extends Vector<ByteVector>, Iterable<Byte> {
      */
     abstract class Indirect implements ByteVector {
 
-        @UserInvocationPermitted(value = {"vector"})
+        @UserInvocationPermitted({"vector"})
         @Override
         public byte[] toArray() {
             final int size = intSize("ByteVector.toArray");
