@@ -39,7 +39,7 @@ public abstract class RowGroupInfo {
      * @return A {@link RowGroupInfo} which splits the input into a pre-defined number of RowGroups
      */
     @ScriptApi
-    public static RowGroupInfo splitEvenly(final int numRowGroups) {
+    public static RowGroupInfo splitEvenly(final long numRowGroups) {
         if (numRowGroups == 1) {
             return singleRowGroup();
         } else if (numRowGroups < 1) {
@@ -328,16 +328,16 @@ public abstract class RowGroupInfo {
      * @param groups grouping-columns
      */
     private static void ensureOrderedForGrouping(final @NotNull Table origTbl, final @NotNull String[] groups) {
-        final String rowNumCol = "__OrigRowNum__";
-        final String newNumCol = "__PostGroupRowNum__";
+        final String origRowNum = "__OriginalRowNum__";
+        final String newRowNum = "__PostGroupRowNum__";
 
         final Table misOrderedTbl = origTbl
                 .view(groups)
-                .updateView(String.format("%s = ii", rowNumCol))
+                .updateView(String.format("%s = ii", origRowNum))
                 .groupBy(groups)
                 .ungroup()
-                .updateView(String.format("%s = ii", newNumCol))
-                .where(String.format("%s != %s", rowNumCol, newNumCol));
+                .updateView(String.format("%s = ii", newRowNum))
+                .where(String.format("%s != %s", origRowNum, newRowNum));
 
         if (!misOrderedTbl.isEmpty()) {
             throw new IllegalStateException(String.format("Misordered for Grouping column(s) %s:\n%s",
