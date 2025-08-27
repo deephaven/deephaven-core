@@ -26,6 +26,11 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 
+/**
+ * Test each of the {@link RowGroupInfo} implementations. These tests do not write parquet; they check that the expected
+ * RowGroups (iterated Tables) are returned
+ */
+@SuppressWarnings("SameParameterValue")
 public class TestRowGroupInfo {
     private static final String ROOT_FILENAME = TestRowGroupInfo.class.getName() + "_root";
     private static final String[] groupCol = {"random_int"};
@@ -57,12 +62,20 @@ public class TestRowGroupInfo {
     }
 
 
+    /**
+     * Gets a collection of {@link Table}s for a given {@link RowGroupInfo}
+     *
+     * @param input the input table to use for the test
+     * @param rgi a {@link RowGroupInfo} to test
+     * @return a collection of {@link Table}s where each member is a RowGroup
+     */
     private static List<Table> getRowGroups(final @NotNull Table input, final @NotNull RowGroupInfo rgi) {
         final List<Table> rowGroups = new ArrayList<>();
 
         try {
             rgi.applyForRowGroups(input, rowGroups::add);
         } catch (final IOException ioe) {
+            // we're adding to a collection, which should not IOE. but we syntactically need to handle the exception
             throw new RuntimeException(ioe);
         }
 
@@ -109,7 +122,7 @@ public class TestRowGroupInfo {
         assertSplitEvenly(testTable, 1000);
     }
 
-    private static void assertRowGroupSized(final @NotNull List<Table> results, final long maxRows) {
+    private static void assertRowGroupSizes(final @NotNull List<Table> results, final long maxRows) {
         for (int ii = 0; ii < results.size(); ii++) {
             final String msg =
                     String.format("withMaxRows(%d) has %d or fewer rows for RowGroup[%d]", maxRows, maxRows, ii);
@@ -124,7 +137,7 @@ public class TestRowGroupInfo {
         final String msg = String.format("withMaxRows(%d) returns %d RowGroups", maxRows, expectedRowGroups);
         assertEquals(msg, expectedRowGroups, results.size());
 
-        assertRowGroupSized(results, maxRows);
+        assertRowGroupSizes(results, maxRows);
     }
 
     /**
@@ -203,7 +216,7 @@ public class TestRowGroupInfo {
         assertTrue(msgNoMax, minimumRowGroups <= results.size());
 
         assertDistinctValues(results, groupCol);
-        assertRowGroupSized(results, maxRows);
+        assertRowGroupSizes(results, maxRows);
     }
 
     /**
