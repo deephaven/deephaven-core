@@ -329,26 +329,19 @@ public abstract class RowGroupInfo {
      */
     private static void ensureOrderedForGrouping(final @NotNull Table origTbl, final @NotNull String[] groups) {
         final String rowNumCol = "__OrigRowNum__";
-        final String shiftedNumCol = "__ShiftedRowNum__";
-        final String diffCol = "__Diff__";
+        final String newNumCol = "__PostGroupRowNum__";
 
-        final Table emptyTable = origTbl
+        final Table misOrderedTbl = origTbl
                 .view(groups)
-                .update(String.format("%s = ii", rowNumCol))
+                .updateView(String.format("%s = ii", rowNumCol))
                 .groupBy(groups)
                 .ungroup()
-                .updateView(String.format("%s = %s_[ii + 1]", shiftedNumCol, rowNumCol),
-                        String.format("%s = %s - %s", diffCol, shiftedNumCol, rowNumCol))
-                .where(String.format("%s != 1 && %s != NULL_LONG", diffCol, diffCol));
+                .updateView(String.format("%s = ii", newNumCol))
+                .where(String.format("%s != %s", rowNumCol, newNumCol));
 
-
-        if (!emptyTable.isEmpty()) {
-            String[] viewCols = new String[groups.length + 1];
-            System.arraycopy(groups, 0, viewCols, 0, groups.length);
-            viewCols[groups.length] = rowNumCol;
-
+        if (!misOrderedTbl.isEmpty()) {
             throw new IllegalStateException(String.format("Misordered for Grouping column(s) %s:\n%s",
-                    Arrays.toString(groups), TableTools.string(emptyTable, 10, viewCols)));
+                    Arrays.toString(groups), TableTools.string(misOrderedTbl)));
         }
     }
 }
