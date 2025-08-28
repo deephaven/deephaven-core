@@ -1,8 +1,4 @@
-//
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
-//
 package io.deephaven.engine.table.impl.select.sample2;
-
 // QueryLibrary internal version number: DEFAULT
 import io.deephaven.chunk.attributes.*;
 import io.deephaven.engine.rowset.chunkattributes.*;
@@ -76,8 +72,7 @@ import static io.deephaven.time.calendar.Calendars.*;
 import static io.deephaven.time.calendar.StaticCalendarMethods.*;
 import static io.deephaven.util.QueryConstants.*;
 
-public class GeneratedFilterKernel
-        implements io.deephaven.engine.table.impl.select.ConditionFilter.FilterKernel<FilterKernel.Context> {
+public class GeneratedFilterKernel implements io.deephaven.engine.table.impl.select.ConditionFilter.FilterKernel<FilterKernel.Context>{
 
 
     // Array Column Variables
@@ -91,15 +86,13 @@ public class GeneratedFilterKernel
         v2_ = new io.deephaven.engine.table.vectors.DoubleVectorColumnWrapper(__table.getColumnSource("v2"), __fullSet);
         v1_ = new io.deephaven.engine.table.vectors.ShortVectorColumnWrapper(__table.getColumnSource("v1"), __fullSet);
     }
-
     @Override
     public Context getContext(int __maxChunkSize) {
         return new Context(__maxChunkSize);
     }
-
+    
     @Override
-    public LongChunk<OrderedRowKeys> filter(Context __context, LongChunk<OrderedRowKeys> __indices,
-            Chunk... __inputChunks) {
+    public LongChunk<OrderedRowKeys> filter(Context __context, LongChunk<OrderedRowKeys> __indices, Chunk... __inputChunks) {
         final int __size = __indices.size();
         __context.resultChunk.setSize(0);
         for (int __my_i__ = 0; __my_i__ < __size; __my_i__++) {
@@ -109,10 +102,9 @@ public class GeneratedFilterKernel
         }
         return __context.resultChunk;
     }
-
+    
     @Override
-    public int filter(final Context __context, final Chunk[] __inputChunks, final int __chunkSize,
-            final WritableBooleanChunk<Values> __results) {
+    public int filter(final Context __context, final Chunk[] __inputChunks, final int __chunkSize, final WritableBooleanChunk<Values> __results) {
         __results.setSize(__chunkSize);
         int __count = 0;
         for (int __my_i__ = 0; __my_i__ < __chunkSize; __my_i__++) {
@@ -123,10 +115,9 @@ public class GeneratedFilterKernel
         }
         return __count;
     }
-
+    
     @Override
-    public int filterAnd(final Context __context, final Chunk[] __inputChunks, final int __chunkSize,
-            final WritableBooleanChunk<Values> __results) {
+    public int filterAnd(final Context __context, final Chunk[] __inputChunks, final int __chunkSize, final WritableBooleanChunk<Values> __results) {
         __results.setSize(__chunkSize);
         int __count = 0;
         for (int __my_i__ = 0; __my_i__ < __chunkSize; __my_i__++) {

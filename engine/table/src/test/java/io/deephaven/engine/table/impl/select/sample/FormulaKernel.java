@@ -1,8 +1,4 @@
-//
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
-//
 package io.deephaven.engine.table.impl.select.sample;
-
 // QueryLibrary internal version number: DEFAULT
 import io.deephaven.chunk.attributes.*;
 import io.deephaven.engine.rowset.chunkattributes.*;
@@ -77,16 +73,15 @@ import static io.deephaven.time.calendar.StaticCalendarMethods.*;
 import static io.deephaven.util.QueryConstants.*;
 
 public class FormulaKernel implements io.deephaven.engine.table.impl.select.formula.FormulaKernel {
-    public static final io.deephaven.engine.table.impl.select.formula.FormulaKernelFactory __FORMULA_KERNEL_FACTORY =
-            FormulaKernel::new;
+    public static final io.deephaven.engine.table.impl.select.formula.FormulaKernelFactory __FORMULA_KERNEL_FACTORY = FormulaKernel::new;
 
     private final io.deephaven.vector.LongVector II_;
     private final java.lang.Integer q;
 
     public FormulaKernel(io.deephaven.vector.Vector[] __vectors,
             io.deephaven.engine.context.QueryScopeParam[] __params) {
-        II_ = (io.deephaven.vector.LongVector) __vectors[0];
-        q = (java.lang.Integer) __params[0].getValue();
+        II_ = (io.deephaven.vector.LongVector)__vectors[0];
+        q = (java.lang.Integer)__params[0].getValue();
     }
 
     @Override
@@ -105,9 +100,7 @@ public class FormulaKernel implements io.deephaven.engine.table.impl.select.form
         final IntChunk<? extends Values> __chunk__col__i = __sources[3].asIntChunk();
         final int __size = __typedDestination.size();
         for (int __chunkPos = 0; __chunkPos < __size; ++__chunkPos) {
-            __typedDestination.set(__chunkPos,
-                    applyFormulaPerItem(__chunk__col__II.get(__chunkPos), __chunk__col__ii.get(__chunkPos),
-                            __chunk__col__I.get(__chunkPos), __chunk__col__i.get(__chunkPos)));
+            __typedDestination.set(__chunkPos, applyFormulaPerItem(__chunk__col__II.get(__chunkPos), __chunk__col__ii.get(__chunkPos), __chunk__col__I.get(__chunkPos), __chunk__col__i.get(__chunkPos)));
         }
     }
 
@@ -115,13 +108,13 @@ public class FormulaKernel implements io.deephaven.engine.table.impl.select.form
         try {
             return plus(plus(multiply(I, II), multiply(q.intValue(), ii)), II_.get(longCast(minus(i, 1))));
         } catch (java.lang.Exception __e) {
-            throw new io.deephaven.engine.table.impl.select.FormulaEvaluationException(
-                    "In formula: " + "I * II + q * ii + II_[i - 1]", __e);
+            throw new io.deephaven.engine.table.impl.select.FormulaEvaluationException("In formula: " + "I * II + q * ii + II_[i - 1]", __e);
         }
     }
 
     private class FormulaFillContext implements io.deephaven.engine.table.impl.select.Formula.FillContext {
-        FormulaFillContext(int __chunkCapacity) {}
+        FormulaFillContext(int __chunkCapacity) {
+        }
     }
 
 }

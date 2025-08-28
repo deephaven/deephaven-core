@@ -1,8 +1,4 @@
-//
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
-//
 package io.deephaven.engine.table.impl.select.sample;
-
 // QueryLibrary internal version number: DEFAULT
 import io.deephaven.chunk.attributes.*;
 import io.deephaven.engine.rowset.chunkattributes.*;
@@ -109,10 +105,8 @@ public class Formula extends io.deephaven.engine.table.impl.select.Formula {
         final long __temp0 = II.getLong(k);
         final int __temp1 = I.getInt(k);
         if (__lazyResultCache != null) {
-            final Object __lazyKey =
-                    io.deephaven.engine.util.caching.C14nUtil.maybeMakeCompoundKey(i, ii, __temp0, __temp1);
-            return (long) __lazyResultCache.computeIfAbsent(__lazyKey,
-                    __unusedKey -> applyFormulaPerItem(i, ii, __temp0, __temp1));
+            final Object __lazyKey = io.deephaven.engine.util.caching.C14nUtil.maybeMakeCompoundKey(i, ii, __temp0, __temp1);
+            return (long)__lazyResultCache.computeIfAbsent(__lazyKey, __unusedKey -> applyFormulaPerItem(i, ii, __temp0, __temp1));
         }
         return applyFormulaPerItem(i, ii, __temp0, __temp1);
     }
@@ -128,10 +122,8 @@ public class Formula extends io.deephaven.engine.table.impl.select.Formula {
         final long __temp0 = II.getPrevLong(k);
         final int __temp1 = I.getPrevInt(k);
         if (__lazyResultCache != null) {
-            final Object __lazyKey =
-                    io.deephaven.engine.util.caching.C14nUtil.maybeMakeCompoundKey(i, ii, __temp0, __temp1);
-            return (long) __lazyResultCache.computeIfAbsent(__lazyKey,
-                    __unusedKey -> applyFormulaPerItem(i, ii, __temp0, __temp1));
+            final Object __lazyKey = io.deephaven.engine.util.caching.C14nUtil.maybeMakeCompoundKey(i, ii, __temp0, __temp1);
+            return (long)__lazyResultCache.computeIfAbsent(__lazyKey, __unusedKey -> applyFormulaPerItem(i, ii, __temp0, __temp1));
         }
         return applyFormulaPerItem(i, ii, __temp0, __temp1);
     }
@@ -152,31 +144,24 @@ public class Formula extends io.deephaven.engine.table.impl.select.Formula {
     }
 
     @Override
-    public void fillChunk(final FillContext __context, final WritableChunk<? super Values> __destination,
-            final RowSequence __rowSequence) {
-        final FormulaFillContext __typedContext = (FormulaFillContext) __context;
-        final LongChunk<? extends Values> __chunk__col__II =
-                this.II.getChunk(__typedContext.__subContextII, __rowSequence).asLongChunk();
-        final IntChunk<? extends Values> __chunk__col__I =
-                this.I.getChunk(__typedContext.__subContextI, __rowSequence).asIntChunk();
+    public void fillChunk(final FillContext __context, final WritableChunk<? super Values> __destination, final RowSequence __rowSequence) {
+        final FormulaFillContext __typedContext = (FormulaFillContext)__context;
+        final LongChunk<? extends Values> __chunk__col__II = this.II.getChunk(__typedContext.__subContextII, __rowSequence).asLongChunk();
+        final IntChunk<? extends Values> __chunk__col__I = this.I.getChunk(__typedContext.__subContextI, __rowSequence).asIntChunk();
         fillChunkHelper(false, __typedContext, __destination, __rowSequence, __chunk__col__II, __chunk__col__I);
     }
 
     @Override
-    public void fillPrevChunk(final FillContext __context, final WritableChunk<? super Values> __destination,
-            final RowSequence __rowSequence) {
-        final FormulaFillContext __typedContext = (FormulaFillContext) __context;
-        final LongChunk<? extends Values> __chunk__col__II =
-                this.II.getPrevChunk(__typedContext.__subContextII, __rowSequence).asLongChunk();
-        final IntChunk<? extends Values> __chunk__col__I =
-                this.I.getPrevChunk(__typedContext.__subContextI, __rowSequence).asIntChunk();
+    public void fillPrevChunk(final FillContext __context, final WritableChunk<? super Values> __destination, final RowSequence __rowSequence) {
+        final FormulaFillContext __typedContext = (FormulaFillContext)__context;
+        final LongChunk<? extends Values> __chunk__col__II = this.II.getPrevChunk(__typedContext.__subContextII, __rowSequence).asLongChunk();
+        final IntChunk<? extends Values> __chunk__col__I = this.I.getPrevChunk(__typedContext.__subContextI, __rowSequence).asIntChunk();
         fillChunkHelper(true, __typedContext, __destination, __rowSequence, __chunk__col__II, __chunk__col__I);
     }
 
     private void fillChunkHelper(final boolean __usePrev, final FormulaFillContext __context,
             final WritableChunk<? super Values> __destination,
-            final RowSequence __rowSequence, LongChunk<? extends Values> __chunk__col__II,
-            IntChunk<? extends Values> __chunk__col__I) {
+            final RowSequence __rowSequence, LongChunk<? extends Values> __chunk__col__II, IntChunk<? extends Values> __chunk__col__I) {
         final WritableLongChunk<? super Values> __typedDestination = __destination.asWritableLongChunk();
         try (final RowSet prev = __usePrev ? __rowSet.copyPrev() : null;
                 final RowSet inverted = ((prev != null) ? prev : __rowSet).invert(__rowSequence.asRowSet())) {
@@ -190,20 +175,18 @@ public class Formula extends io.deephaven.engine.table.impl.select.Formula {
                 final int __chunkPos = __chunkPosHolder[0]++;
                 final int i = __context.__iChunk.get(__chunkPos);
                 final long ii = __context.__iiChunk.get(__chunkPos);
-                final Object __lazyKey = io.deephaven.engine.util.caching.C14nUtil.maybeMakeCompoundKey(i, ii,
-                        __chunk__col__II.get(__chunkPos), __chunk__col__I.get(__chunkPos));
-                __typedDestination.set(__chunkPos,
-                        (long) __lazyResultCache.computeIfAbsent(__lazyKey, __unusedKey -> applyFormulaPerItem(i, ii,
-                                __chunk__col__II.get(__chunkPos), __chunk__col__I.get(__chunkPos))));
-            });
+                final Object __lazyKey = io.deephaven.engine.util.caching.C14nUtil.maybeMakeCompoundKey(i, ii, __chunk__col__II.get(__chunkPos), __chunk__col__I.get(__chunkPos));
+                __typedDestination.set(__chunkPos, (long)__lazyResultCache.computeIfAbsent(__lazyKey, __unusedKey -> applyFormulaPerItem(i, ii, __chunk__col__II.get(__chunkPos), __chunk__col__I.get(__chunkPos))));
+            }
+            );
         } else {
             __rowSequence.forAllRowKeys(k -> {
                 final int __chunkPos = __chunkPosHolder[0]++;
                 final int i = __context.__iChunk.get(__chunkPos);
                 final long ii = __context.__iiChunk.get(__chunkPos);
-                __typedDestination.set(__chunkPos,
-                        applyFormulaPerItem(i, ii, __chunk__col__II.get(__chunkPos), __chunk__col__I.get(__chunkPos)));
-            });
+                __typedDestination.set(__chunkPos, applyFormulaPerItem(i, ii, __chunk__col__II.get(__chunkPos), __chunk__col__I.get(__chunkPos)));
+            }
+            );
         }
         __typedDestination.setSize(__chunkPosHolder[0]);
     }
@@ -212,8 +195,7 @@ public class Formula extends io.deephaven.engine.table.impl.select.Formula {
         try {
             return plus(plus(multiply(I, II), multiply(q.intValue(), ii)), II_.get(longCast(minus(i, 1))));
         } catch (java.lang.Exception __e) {
-            throw new io.deephaven.engine.table.impl.select.FormulaEvaluationException(
-                    "In formula: " + __columnName + " = " + "I * II + q * ii + II_[i - 1]", __e);
+            throw new io.deephaven.engine.table.impl.select.FormulaEvaluationException("In formula: " + __columnName + " = " + "I * II + q * ii + II_[i - 1]", __e);
         }
     }
 
@@ -227,7 +209,6 @@ public class Formula extends io.deephaven.engine.table.impl.select.Formula {
         private final WritableLongChunk<OrderedRowKeys> __iiChunk;
         private final ColumnSource.GetContext __subContextII;
         private final ColumnSource.GetContext __subContextI;
-
         FormulaFillContext(int __chunkCapacity) {
             __iChunk = WritableIntChunk.makeWritableChunk(__chunkCapacity);
             __iiChunk = WritableLongChunk.makeWritableChunk(__chunkCapacity);

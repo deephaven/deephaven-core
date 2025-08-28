@@ -33,7 +33,7 @@ public class TestFormulaColumnGeneration {
     // 3. Comment this "test" back out
     // 4. Confirm that the modified files pass the "validateFiles" case.
     // 4. Check in the modified "golden master" files.
-    @Test
+    // @Test
     public void generateFiles() throws FileNotFoundException {
         final DhFormulaColumn fc = (DhFormulaColumn) getFormulaColumn();
         new ModelFileGenerator(Formula.class).generateFile(fc.generateClassBody());
