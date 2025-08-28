@@ -10,6 +10,7 @@ import io.deephaven.hash.KeyedObjectHashMap;
 import io.deephaven.hash.KeyedObjectKey;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.annotations.ScriptApi;
+import io.deephaven.util.annotations.UserInvocationPermitted;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -31,6 +32,7 @@ import static java.time.format.DateTimeFormatter.*;
  * Functions for working with time.
  */
 @SuppressWarnings({"RegExpRedundantEscape"})
+@UserInvocationPermitted(value = "function_library")
 public class DateTimeUtils {
 
     // region Format Patterns

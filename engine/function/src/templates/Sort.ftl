@@ -11,6 +11,7 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.stream.IntStream;
 
+import io.deephaven.util.annotations.UserInvocationPermitted;
 import static io.deephaven.util.QueryConstants.*;
 import static io.deephaven.function.Basic.isNull;
 import static io.deephaven.function.Numeric.compare;
@@ -18,6 +19,7 @@ import static io.deephaven.function.Numeric.compare;
 /**
  * Functions for sorting primitive types.
  */
+@UserInvocationPermitted({"function_library"})
 public class Sort {
 
     //////////////////////////// Object ////////////////////////////

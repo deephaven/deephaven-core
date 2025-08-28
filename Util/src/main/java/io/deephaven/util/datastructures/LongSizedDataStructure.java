@@ -3,11 +3,13 @@
 //
 package io.deephaven.util.datastructures;
 
+import io.deephaven.util.annotations.UserInvocationPermitted;
 import org.jetbrains.annotations.NotNull;
 
 /**
  * Common interface for Deephaven data structures with a long (64-bit signed integer) size.
  */
+@UserInvocationPermitted("base")
 public interface LongSizedDataStructure {
 
     /**
