@@ -41,8 +41,7 @@ public class ModelFileGenerator {
     }
 
     private String processClassDef(final String rawClassDef) {
-        return "package io.deephaven.engine.table.impl.select;\n" +
-                rawClassDef.replace("import static io.deephaven.numerics.suanshu.SuanShuIntegration.*;", "");
-
+        return classType.getPackage() + ";\n" + rawClassDef
+                .replace("import static io.deephaven.numerics.suanshu.SuanShuIntegration.*;", "");
     }
 }

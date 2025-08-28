@@ -1,4 +1,8 @@
-package io.deephaven.engine.table.impl.select;
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
+package io.deephaven.engine.table.impl.select.sample2;
+
 // QueryLibrary internal version number: DEFAULT
 import io.deephaven.chunk.attributes.*;
 import io.deephaven.engine.rowset.chunkattributes.*;
@@ -72,49 +76,71 @@ import static io.deephaven.time.calendar.Calendars.*;
 import static io.deephaven.time.calendar.StaticCalendarMethods.*;
 import static io.deephaven.util.QueryConstants.*;
 
-public class FormulaKernelSample implements io.deephaven.engine.table.impl.select.formula.FormulaKernel {
-    public static final io.deephaven.engine.table.impl.select.formula.FormulaKernelFactory __FORMULA_KERNEL_FACTORY = FormulaKernelSample::new;
+public class GeneratedFilterKernel
+        implements io.deephaven.engine.table.impl.select.ConditionFilter.FilterKernel<FilterKernel.Context> {
 
-    private final io.deephaven.vector.LongVector II_;
-    private final java.lang.Integer q;
 
-    public FormulaKernelSample(io.deephaven.vector.Vector[] __vectors,
-            io.deephaven.engine.context.QueryScopeParam[] __params) {
-        II_ = (io.deephaven.vector.LongVector)__vectors[0];
-        q = (java.lang.Integer)__params[0].getValue();
+    // Array Column Variables
+    private final io.deephaven.vector.DoubleVector v2_;
+    private final io.deephaven.vector.ShortVector v1_;
+
+
+    public GeneratedFilterKernel(Table __table, RowSet __fullSet, QueryScopeParam... __params) {
+
+        // Array Column Variables
+        v2_ = new io.deephaven.engine.table.vectors.DoubleVectorColumnWrapper(__table.getColumnSource("v2"), __fullSet);
+        v1_ = new io.deephaven.engine.table.vectors.ShortVectorColumnWrapper(__table.getColumnSource("v1"), __fullSet);
     }
 
     @Override
-    public FormulaFillContext makeFillContext(final int __chunkCapacity) {
-        return new FormulaFillContext(__chunkCapacity);
+    public Context getContext(int __maxChunkSize) {
+        return new Context(__maxChunkSize);
     }
 
     @Override
-    public void applyFormulaChunk(io.deephaven.engine.table.impl.select.Formula.FillContext __context,
-            final WritableChunk<? super Values> __destination,
-            Chunk<? extends Values>[] __sources) {
-        final WritableLongChunk<? super Values> __typedDestination = __destination.asWritableLongChunk();
-        final LongChunk<? extends Values> __chunk__col__II = __sources[0].asLongChunk();
-        final LongChunk<? extends Values> __chunk__col__ii = __sources[1].asLongChunk();
-        final IntChunk<? extends Values> __chunk__col__I = __sources[2].asIntChunk();
-        final IntChunk<? extends Values> __chunk__col__i = __sources[3].asIntChunk();
-        final int __size = __typedDestination.size();
-        for (int __chunkPos = 0; __chunkPos < __size; ++__chunkPos) {
-            __typedDestination.set(__chunkPos, applyFormulaPerItem(__chunk__col__II.get(__chunkPos), __chunk__col__ii.get(__chunkPos), __chunk__col__I.get(__chunkPos), __chunk__col__i.get(__chunkPos)));
+    public LongChunk<OrderedRowKeys> filter(Context __context, LongChunk<OrderedRowKeys> __indices,
+            Chunk... __inputChunks) {
+        final int __size = __indices.size();
+        __context.resultChunk.setSize(0);
+        for (int __my_i__ = 0; __my_i__ < __size; __my_i__++) {
+            if (eq(v1_.size(), v2_.size())) {
+                __context.resultChunk.add(__indices.get(__my_i__));
+            }
         }
+        return __context.resultChunk;
     }
 
-    private long applyFormulaPerItem(long II, long ii, int I, int i) {
-        try {
-            return plus(plus(multiply(I, II), multiply(q.intValue(), ii)), II_.get(longCast(minus(i, 1))));
-        } catch (java.lang.Exception __e) {
-            throw new io.deephaven.engine.table.impl.select.FormulaEvaluationException("In formula: " + "I * II + q * ii + II_[i - 1]", __e);
+    @Override
+    public int filter(final Context __context, final Chunk[] __inputChunks, final int __chunkSize,
+            final WritableBooleanChunk<Values> __results) {
+        __results.setSize(__chunkSize);
+        int __count = 0;
+        for (int __my_i__ = 0; __my_i__ < __chunkSize; __my_i__++) {
+            final boolean __newResult = eq(v1_.size(), v2_.size());
+            __results.set(__my_i__, __newResult);
+            // count every true value
+            __count += __newResult ? 1 : 0;
         }
+        return __count;
     }
 
-    private class FormulaFillContext implements io.deephaven.engine.table.impl.select.Formula.FillContext {
-        FormulaFillContext(int __chunkCapacity) {
+    @Override
+    public int filterAnd(final Context __context, final Chunk[] __inputChunks, final int __chunkSize,
+            final WritableBooleanChunk<Values> __results) {
+        __results.setSize(__chunkSize);
+        int __count = 0;
+        for (int __my_i__ = 0; __my_i__ < __chunkSize; __my_i__++) {
+            final boolean __result = __results.get(__my_i__);
+            if (!__result) {
+                // already false, no need to compute or increment the count
+                continue;
+            }
+            final boolean __newResult = eq(v1_.size(), v2_.size());
+            __results.set(__my_i__, __newResult);
+            __results.set(__my_i__, __newResult);
+            // increment the count if the new result is TRUE
+            __count += __newResult ? 1 : 0;
         }
+        return __count;
     }
-
 }

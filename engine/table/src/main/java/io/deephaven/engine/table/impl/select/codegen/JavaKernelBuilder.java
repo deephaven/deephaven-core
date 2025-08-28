@@ -30,7 +30,7 @@ import static io.deephaven.engine.util.IterableUtils.makeCommaSeparatedList;
 
 public class JavaKernelBuilder {
     private static final String FORMULA_KERNEL_FACTORY_NAME = "__FORMULA_KERNEL_FACTORY";
-    private static final String CLASS_NAME = "Formula";
+    private static final String CLASS_NAME = "FormulaKernel";
 
     public static CompletionStageFuture<Result> create(
             @NotNull final String originalFormulaString,
