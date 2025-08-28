@@ -36,6 +36,7 @@ public class DynamicCompileUtils {
     public static <T> Supplier<T> compileSimpleFunction(final Class<? extends T> resultType, final String code,
             final Collection<Class<?>> imports, final Collection<Class<?>> staticImports) {
         final StringBuilder classBody = new StringBuilder();
+        final String className = "Function";
 
         classBody.append("import ").append(resultType.getName()).append(";\n");
         for (final Class<?> im : imports) {
@@ -45,7 +46,8 @@ public class DynamicCompileUtils {
             classBody.append("import static ").append(sim.getName()).append(".*;\n");
         }
 
-        classBody.append("public class $CLASSNAME$ implements ").append(Supplier.class.getCanonicalName()).append("<")
+        classBody.append("public class " + className + " implements ").append(Supplier.class.getCanonicalName())
+                .append("<")
                 .append(resultType.getCanonicalName()).append(">").append(" ").append("{\n");
         classBody.append("  @Override\n");
         classBody.append("  public ").append(resultType.getCanonicalName()).append(" get() {\n");
@@ -56,7 +58,7 @@ public class DynamicCompileUtils {
         final Class<?> partitionClass = ExecutionContext.getContext().getQueryCompiler().compile(
                 QueryCompilerRequest.builder()
                         .description("Simple Function: " + code)
-                        .className("Function")
+                        .className(className)
                         .classBody(classBody.toString())
                         .packageNameRoot(QueryCompilerImpl.FORMULA_CLASS_PREFIX)
                         .build());
@@ -71,7 +73,9 @@ public class DynamicCompileUtils {
 
     public static Class<?> getClassThroughCompilation(final String object) {
         final StringBuilder classBody = new StringBuilder();
-        classBody.append("public class $CLASSNAME$ implements ").append(Supplier.class.getCanonicalName())
+        final String className = "Function";
+
+        classBody.append("public class " + className + " implements ").append(Supplier.class.getCanonicalName())
                 .append("<Class>{ \n");
         classBody.append("  @Override\n");
         classBody.append("  public Class get() { return ").append(object).append(".class; }\n");
@@ -80,7 +84,7 @@ public class DynamicCompileUtils {
         final Class<?> partitionClass = ExecutionContext.getContext().getQueryCompiler().compile(
                 QueryCompilerRequest.builder()
                         .description("Formula: return " + object + ".class")
-                        .className("Function")
+                        .className(className)
                         .classBody(classBody.toString())
                         .packageNameRoot(QueryCompilerImpl.FORMULA_CLASS_PREFIX)
                         .build());

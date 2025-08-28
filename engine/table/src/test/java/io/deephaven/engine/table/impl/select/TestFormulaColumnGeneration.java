@@ -6,6 +6,8 @@ package io.deephaven.engine.table.impl.select;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.context.QueryScope;
+import io.deephaven.engine.table.impl.select.sample.Formula;
+import io.deephaven.engine.table.impl.select.sample.FormulaKernel;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.table.impl.util.ModelFileGenerator;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
@@ -34,8 +36,8 @@ public class TestFormulaColumnGeneration {
     // @Test
     public void generateFiles() throws FileNotFoundException {
         final DhFormulaColumn fc = (DhFormulaColumn) getFormulaColumn();
-        new ModelFileGenerator(FormulaSample.class).generateFile(fc.generateClassBody());
-        new ModelFileGenerator(FormulaKernelSample.class).generateFile(fc.generateKernelClassBody());
+        new ModelFileGenerator(Formula.class).generateFile(fc.generateClassBody());
+        new ModelFileGenerator(FormulaKernel.class).generateFile(fc.generateKernelClassBody());
     }
 
     @Rule
@@ -60,8 +62,8 @@ public class TestFormulaColumnGeneration {
     @Test
     public void validateFiles() throws IOException {
         final DhFormulaColumn fc = (DhFormulaColumn) getFormulaColumn();
-        new ModelFileGenerator(FormulaSample.class).validateFile(fc.generateClassBody());
-        new ModelFileGenerator(FormulaKernelSample.class).validateFile(fc.generateKernelClassBody());
+        new ModelFileGenerator(Formula.class).validateFile(fc.generateClassBody());
+        new ModelFileGenerator(FormulaKernel.class).validateFile(fc.generateKernelClassBody());
     }
 
     @NotNull

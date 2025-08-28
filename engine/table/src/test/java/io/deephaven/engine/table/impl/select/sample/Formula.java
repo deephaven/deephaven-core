@@ -1,4 +1,4 @@
-package io.deephaven.engine.table.impl.select;
+package io.deephaven.engine.table.impl.select.sample;
 // QueryLibrary internal version number: DEFAULT
 import io.deephaven.chunk.attributes.*;
 import io.deephaven.engine.rowset.chunkattributes.*;
@@ -72,8 +72,8 @@ import static io.deephaven.time.calendar.Calendars.*;
 import static io.deephaven.time.calendar.StaticCalendarMethods.*;
 import static io.deephaven.util.QueryConstants.*;
 
-public class FormulaSample extends io.deephaven.engine.table.impl.select.Formula {
-    public static final io.deephaven.engine.table.impl.select.formula.FormulaFactory __FORMULA_FACTORY = FormulaSample::new;
+public class Formula extends io.deephaven.engine.table.impl.select.Formula {
+    public static final io.deephaven.engine.table.impl.select.formula.FormulaFactory __FORMULA_FACTORY = Formula::new;
 
     private final String __columnName;
     private final io.deephaven.engine.table.ColumnSource<java.lang.Long> II;
@@ -83,7 +83,7 @@ public class FormulaSample extends io.deephaven.engine.table.impl.select.Formula
     private final Map<Object, Object> __lazyResultCache;
 
 
-    public FormulaSample(final String __columnName,
+    public Formula(final String __columnName,
             final TrackingRowSet __rowSet,
             final boolean __lazy,
             final java.util.Map<String, ? extends io.deephaven.engine.table.ColumnSource> __columnsToData,

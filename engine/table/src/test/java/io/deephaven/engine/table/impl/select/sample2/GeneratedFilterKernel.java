@@ -1,4 +1,4 @@
-package io.deephaven.engine.table.impl.select;
+package io.deephaven.engine.table.impl.select.sample2;
 // QueryLibrary internal version number: DEFAULT
 import io.deephaven.chunk.attributes.*;
 import io.deephaven.engine.rowset.chunkattributes.*;
@@ -72,7 +72,7 @@ import static io.deephaven.time.calendar.Calendars.*;
 import static io.deephaven.time.calendar.StaticCalendarMethods.*;
 import static io.deephaven.util.QueryConstants.*;
 
-public class FilterKernelArraySample implements io.deephaven.engine.table.impl.select.ConditionFilter.FilterKernel<FilterKernel.Context>{
+public class GeneratedFilterKernel implements io.deephaven.engine.table.impl.select.ConditionFilter.FilterKernel<FilterKernel.Context>{
 
 
     // Array Column Variables
@@ -80,7 +80,7 @@ public class FilterKernelArraySample implements io.deephaven.engine.table.impl.s
     private final io.deephaven.vector.ShortVector v1_;
 
 
-    public FilterKernelArraySample(Table __table, RowSet __fullSet, QueryScopeParam... __params) {
+    public GeneratedFilterKernel(Table __table, RowSet __fullSet, QueryScopeParam... __params) {
 
         // Array Column Variables
         v2_ = new io.deephaven.engine.table.vectors.DoubleVectorColumnWrapper(__table.getColumnSource("v2"), __fullSet);

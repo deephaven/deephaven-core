@@ -1,4 +1,4 @@
-package io.deephaven.engine.table.impl.select;
+package io.deephaven.engine.table.impl.select.sample;
 // QueryLibrary internal version number: DEFAULT
 import io.deephaven.chunk.attributes.*;
 import io.deephaven.engine.rowset.chunkattributes.*;
@@ -72,13 +72,13 @@ import static io.deephaven.time.calendar.Calendars.*;
 import static io.deephaven.time.calendar.StaticCalendarMethods.*;
 import static io.deephaven.util.QueryConstants.*;
 
-public class FormulaKernelSample implements io.deephaven.engine.table.impl.select.formula.FormulaKernel {
-    public static final io.deephaven.engine.table.impl.select.formula.FormulaKernelFactory __FORMULA_KERNEL_FACTORY = FormulaKernelSample::new;
+public class FormulaKernel implements io.deephaven.engine.table.impl.select.formula.FormulaKernel {
+    public static final io.deephaven.engine.table.impl.select.formula.FormulaKernelFactory __FORMULA_KERNEL_FACTORY = FormulaKernel::new;
 
     private final io.deephaven.vector.LongVector II_;
     private final java.lang.Integer q;
 
-    public FormulaKernelSample(io.deephaven.vector.Vector[] __vectors,
+    public FormulaKernel(io.deephaven.vector.Vector[] __vectors,
             io.deephaven.engine.context.QueryScopeParam[] __params) {
         II_ = (io.deephaven.vector.LongVector)__vectors[0];
         q = (java.lang.Integer)__params[0].getValue();

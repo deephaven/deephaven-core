@@ -1,4 +1,4 @@
-package io.deephaven.engine.table.impl.select;
+package io.deephaven.engine.table.impl.select.sample;
 // QueryLibrary internal version number: DEFAULT
 import io.deephaven.chunk.attributes.*;
 import io.deephaven.engine.rowset.chunkattributes.*;
@@ -72,14 +72,14 @@ import static io.deephaven.time.calendar.Calendars.*;
 import static io.deephaven.time.calendar.StaticCalendarMethods.*;
 import static io.deephaven.util.QueryConstants.*;
 
-public class FilterKernelSample implements io.deephaven.engine.table.impl.select.ConditionFilter.FilterKernel<FilterKernel.Context>{
+public class GeneratedFilterKernel implements io.deephaven.engine.table.impl.select.ConditionFilter.FilterKernel<FilterKernel.Context>{
 
 
     private final int p1;
     private final float p2;
     private final java.lang.String p3;
 
-    public FilterKernelSample(Table __table, RowSet __fullSet, QueryScopeParam... __params) {
+    public GeneratedFilterKernel(Table __table, RowSet __fullSet, QueryScopeParam... __params) {
         this.p1 = (java.lang.Integer) __params[0].getValue();
         this.p2 = (java.lang.Float) __params[1].getValue();
         this.p3 = (java.lang.String) __params[2].getValue();
