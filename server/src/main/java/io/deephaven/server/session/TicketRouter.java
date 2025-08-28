@@ -74,6 +74,9 @@ public class TicketRouter {
                             + resolver.ticketRoute());
                 }
             }
+            if (resolver instanceof WantsTicketRouter) {
+                ((WantsTicketRouter) resolver).setTicketRouter(this);
+            }
             if (!(resolver instanceof PathResolverPrefixedBase)) {
                 continue;
             }
@@ -359,7 +362,7 @@ public class TicketRouter {
     public void visitFlightInfo(@Nullable final SessionState session, final Consumer<Flight.FlightInfo> visitor) {
         final QueryPerformanceRecorder qpr = QueryPerformanceRecorder.getInstance();
         try (final QueryPerformanceNugget ignored = qpr.getNugget("visitFlightInfo")) {
-            enabledResolvers.iterator().forEachRemaining(resolver -> resolver.forAllFlightInfo(session, visitor));
+            enabledResolvers.forEach(resolver -> resolver.forAllFlightInfo(session, visitor));
         }
     }
 
