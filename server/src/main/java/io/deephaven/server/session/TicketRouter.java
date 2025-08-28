@@ -74,9 +74,6 @@ public class TicketRouter {
                             + resolver.ticketRoute());
                 }
             }
-            if (resolver instanceof WantsTicketRouter) {
-                ((WantsTicketRouter) resolver).setTicketRouter(this);
-            }
             if (!(resolver instanceof PathResolverPrefixedBase)) {
                 continue;
             }
@@ -84,6 +81,12 @@ public class TicketRouter {
             if (!prefixedPathResolverMap.add(prefixedPathResolver)) {
                 throw new IllegalArgumentException("Duplicate ticket resolver for descriptor route "
                         + prefixedPathResolver.flightDescriptorRoute());
+            }
+        }
+
+        for (final TicketResolver resolver : enabledResolvers) {
+            if (resolver instanceof WantsTicketRouter) {
+                ((WantsTicketRouter) resolver).setTicketRouter(this);
             }
         }
     }
@@ -129,6 +132,7 @@ public class TicketRouter {
             final String logId) {
         return resolve(session, ticket.getTicket().asReadOnlyByteBuffer(), logId);
     }
+
 
     /**
      * Resolve a flight ticket to an export object future.
