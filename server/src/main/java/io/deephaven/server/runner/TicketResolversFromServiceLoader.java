@@ -6,9 +6,11 @@ package io.deephaven.server.runner;
 import dagger.Module;
 import dagger.Provides;
 import dagger.multibindings.ElementsIntoSet;
+import io.deephaven.annotations.BuildableStyle;
+import io.deephaven.server.auth.AuthorizationProvider;
 import io.deephaven.server.session.TicketResolver;
+import org.immutables.value.Value;
 
-import java.util.Collections;
 import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -20,11 +22,13 @@ import java.util.stream.Collectors;
 public class TicketResolversFromServiceLoader {
     @Provides
     @ElementsIntoSet
-    static Set<TicketResolver> provideTicketResolver() {
+    static Set<TicketResolver> provideTicketResolver(AuthorizationProvider authorizationProvider) {
+        final TicketResolverOptions options =
+                TicketResolverOptions.builder().authorizationProvider(authorizationProvider).build();
         return ServiceLoader.load(TicketResolversFromServiceLoader.Factory.class)
                 .stream()
-                .map(factory -> factory.get().create())
-                .collect(Collectors.collectingAndThen(Collectors.toSet(), Collections::unmodifiableSet));
+                .map(factory -> factory.get().create(options))
+                .collect(Collectors.toUnmodifiableSet());
     }
 
     /**
@@ -34,6 +38,22 @@ public class TicketResolversFromServiceLoader {
         /**
          * @return a TicketResolver to bind into this process.
          */
-        TicketResolver create();
+        TicketResolver create(final TicketResolverOptions options);
+    }
+
+    /**
+     * A set of injected values for use by the service loaded ticket resolvers.
+     */
+    @Value.Immutable
+    @BuildableStyle
+    public abstract static class TicketResolverOptions {
+        static ImmutableTicketResolverOptions.Builder builder() {
+            return ImmutableTicketResolverOptions.builder();
+        }
+
+        /**
+         * @return the AuthorizationProvider for these ticket resolvers.
+         */
+        public abstract AuthorizationProvider authorizationProvider();
     }
 }
