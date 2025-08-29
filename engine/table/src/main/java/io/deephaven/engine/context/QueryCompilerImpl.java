@@ -41,7 +41,6 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
 import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -606,7 +605,9 @@ public class QueryCompilerImpl implements QueryCompiler, LogOutputAppendable {
 
                 // However, regardless of A-C, there will be *some* class being found
                 if (clazz == null) {
-                    throw new IllegalStateException("Should have been able to load *some* class here");
+                    throw new IllegalStateException("Unable to load class after delay of " + CODEGEN_TIMEOUT_MS
+                            + ".  state index=" + ii + ", fqClassName=" + state.fqClassName + ", parameterClasses"
+                            + request.parameterClasses() + ", destination=" + getClassDestination().getAbsolutePath());
                 }
 
                 if (completeIfResultMatchesQueryCompilerRequest(state.packageName, request, resolver, clazz)) {
