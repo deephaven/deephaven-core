@@ -30,6 +30,8 @@ import org.apache.iceberg.transforms.Transforms;
 import org.apache.iceberg.types.Types;
 import org.jetbrains.annotations.NotNull;
 
+import java.io.Closeable;
+import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -37,7 +39,7 @@ import java.util.Map;
 import static io.deephaven.iceberg.base.IcebergUtils.createNamespaceIfNotExists;
 import static io.deephaven.iceberg.base.IcebergUtils.dropNamespaceIfExists;
 
-public class IcebergCatalogAdapter implements AutoCloseable {
+public class IcebergCatalogAdapter implements Closeable {
 
     @VisibleForTesting
     static final TableDefinition NAMESPACE_DEFINITION = TableDefinition.of(
@@ -53,8 +55,6 @@ public class IcebergCatalogAdapter implements AutoCloseable {
     private final Catalog catalog;
 
     private final DataInstructionsProviderLoader dataInstructionsProvider;
-
-    private boolean closed = false;
 
     /**
      * Construct an IcebergCatalogAdapter from a Catalog. The properties supplied are provided to support
@@ -112,14 +112,7 @@ public class IcebergCatalogAdapter implements AutoCloseable {
      * @return A list of all namespaces.
      */
     public List<Namespace> listNamespaces() {
-        ensureOpen();
         return listNamespaces(Namespace.empty());
-    }
-
-    private void ensureOpen() {
-        if (closed) {
-            throw new IllegalStateException("Catalog adapter is closed");
-        }
     }
 
     /**
@@ -131,7 +124,6 @@ public class IcebergCatalogAdapter implements AutoCloseable {
      * @return A list of all namespaces in the given namespace.
      */
     public List<Namespace> listNamespaces(@NotNull final Namespace namespace) {
-        ensureOpen();
         if (catalog instanceof SupportsNamespaces) {
             final SupportsNamespaces nsCatalog = (SupportsNamespaces) catalog;
             return nsCatalog.listNamespaces(namespace);
@@ -147,7 +139,6 @@ public class IcebergCatalogAdapter implements AutoCloseable {
      * @return A {@link Table table} of all namespaces.
      */
     public Table namespaces() {
-        ensureOpen();
         return namespaces(Namespace.empty());
     }
 
@@ -158,7 +149,6 @@ public class IcebergCatalogAdapter implements AutoCloseable {
      * @return A {@link Table table} of all namespaces.
      */
     public Table namespaces(@NotNull final Namespace namespace) {
-        ensureOpen();
         final List<Namespace> namespaces = listNamespaces(namespace);
         final long size = namespaces.size();
 
@@ -193,7 +183,6 @@ public class IcebergCatalogAdapter implements AutoCloseable {
      */
     @SuppressWarnings("unused")
     public Table namespaces(@NotNull final String... namespace) {
-        ensureOpen();
         return namespaces(Namespace.of(namespace));
     }
 
@@ -204,7 +193,6 @@ public class IcebergCatalogAdapter implements AutoCloseable {
      * @return A list of all tables in the given namespace.
      */
     public List<TableIdentifier> listTables(@NotNull final Namespace namespace) {
-        ensureOpen();
         return catalog.listTables(namespace);
     }
 
@@ -216,7 +204,6 @@ public class IcebergCatalogAdapter implements AutoCloseable {
      * @return A list of all tables in the given namespace.
      */
     public Table tables(@NotNull final Namespace namespace) {
-        ensureOpen();
         final List<TableIdentifier> tableIdentifiers = listTables(namespace);
         final long size = tableIdentifiers.size();
 
@@ -249,7 +236,6 @@ public class IcebergCatalogAdapter implements AutoCloseable {
     }
 
     public Table tables(@NotNull final String... namespace) {
-        ensureOpen();
         return tables(Namespace.of(namespace));
     }
 
@@ -264,7 +250,6 @@ public class IcebergCatalogAdapter implements AutoCloseable {
      * @see #loadTable(LoadTableOptions)
      */
     public IcebergTableAdapter loadTable(final String tableIdentifier) {
-        ensureOpen();
         return loadTable(LoadTableOptions.builder().id(tableIdentifier).build());
     }
 
@@ -279,7 +264,6 @@ public class IcebergCatalogAdapter implements AutoCloseable {
      * @see #loadTable(LoadTableOptions)
      */
     public IcebergTableAdapter loadTable(@NotNull final TableIdentifier tableIdentifier) {
-        ensureOpen();
         return loadTable(LoadTableOptions.builder().id(tableIdentifier).build());
     }
 
@@ -290,7 +274,6 @@ public class IcebergCatalogAdapter implements AutoCloseable {
      * @return The {@link IcebergTableAdapter table adapter} for the Iceberg table.
      */
     public IcebergTableAdapter loadTable(@NotNull final LoadTableOptions options) {
-        ensureOpen();
         final org.apache.iceberg.Table table = catalog.loadTable(options.id());
         if (table == null) {
             throw new IllegalArgumentException("Table not found: " + options.id());
@@ -314,7 +297,6 @@ public class IcebergCatalogAdapter implements AutoCloseable {
      * Returns the underlying Iceberg {@link Catalog catalog} used by this adapter.
      */
     public Catalog catalog() {
-        ensureOpen();
         return catalog;
     }
 
@@ -336,7 +318,6 @@ public class IcebergCatalogAdapter implements AutoCloseable {
     public IcebergTableAdapter createTable(
             @NotNull final String tableIdentifier,
             @NotNull final TableDefinition definition) {
-        ensureOpen();
         return createTable(TableIdentifier.parse(tableIdentifier), definition);
     }
 
@@ -357,7 +338,6 @@ public class IcebergCatalogAdapter implements AutoCloseable {
     public IcebergTableAdapter createTable(
             @NotNull final TableIdentifier tableIdentifier,
             @NotNull final TableDefinition definition) {
-        ensureOpen();
         final Resolver internalResolver = Resolver.from(definition);
         final org.apache.iceberg.Table table =
                 createTable(tableIdentifier, internalResolver.schema(), internalResolver.specOrUnpartitioned());
@@ -370,7 +350,6 @@ public class IcebergCatalogAdapter implements AutoCloseable {
             @NotNull final TableIdentifier tableIdentifier,
             @NotNull final Schema schema,
             @NotNull final PartitionSpec partitionSpec) {
-        ensureOpen();
         final boolean newNamespaceCreated = createNamespaceIfNotExists(catalog, tableIdentifier.namespace());
         final org.apache.iceberg.Table table;
         try {
@@ -391,13 +370,9 @@ public class IcebergCatalogAdapter implements AutoCloseable {
     }
 
     @Override
-    public void close() throws Exception {
-        if (closed) {
-            return;
+    public void close() throws IOException {
+        if (catalog instanceof Closeable) {
+            ((Closeable) catalog).close();
         }
-        if (catalog instanceof AutoCloseable) {
-            ((AutoCloseable) catalog).close();
-        }
-        closed = true;
     }
 }

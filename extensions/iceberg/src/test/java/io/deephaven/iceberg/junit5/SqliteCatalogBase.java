@@ -3198,12 +3198,12 @@ public abstract class SqliteCatalogBase {
 
     @Test
     void testCloseCatalog() throws Exception {
+        catalogAdapter.namespaces();
         catalogAdapter.close();
         try {
             catalogAdapter.namespaces();
             failBecauseExceptionWasNotThrown(IllegalStateException.class);
-        } catch (IllegalStateException e) {
-            assertThat(e).hasMessageContaining("Catalog adapter is closed");
+        } catch (IllegalStateException expected) {
         }
     }
 
