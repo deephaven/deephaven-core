@@ -10,6 +10,7 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.parquet.table.ParquetTableFilterTest;
 import io.deephaven.parquet.table.ParquetTools;
 import io.deephaven.util.SafeCloseable;
+import io.deephaven.util.function.ThrowingConsumer;
 import org.jetbrains.annotations.NotNull;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -41,6 +42,7 @@ public class TestRowGroupInfo {
 
     private static File rootFile;
     private static Table testTable;
+    private static Table sortedTable;
 
     @BeforeClass
     public static void setUp() {
@@ -54,6 +56,7 @@ public class TestRowGroupInfo {
         final String dirPath = ParquetTableFilterTest.class.getResource("/parquet_no_stat").getFile();
 
         testTable = ParquetTools.readTable(dirPath);
+        sortedTable = testTable.sort(groupCol);
     }
 
     @AfterClass
@@ -212,8 +215,6 @@ public class TestRowGroupInfo {
         // if this fails, then the underlying table has changed, and we need to update this test
         assertTrue("InputTable contains grouping column(s)", testTable.hasColumns(groupCol));
 
-        final Table sortedTable = testTable.sort(groupCol);
-
         final List<Table> rowGroups = getRowGroups(sortedTable, RowGroupInfo.byGroup(groupCol));
         final long expectedRowGroups = sortedTable.partitionBy(groupCol).constituents().length;
 
@@ -232,7 +233,6 @@ public class TestRowGroupInfo {
         // if this fails, then the underlying table has changed, and we need to update this test
         assertTrue("InputTable contains grouping column(s)", testTable.hasColumns(groupCol));
 
-        final Table sortedTable = testTable.sort(groupCol);
         final long maxRows = 10;
 
         final List<Table> rowGroups = getRowGroups(sortedTable, RowGroupInfo.byGroup(maxRows, groupCol));
@@ -243,6 +243,60 @@ public class TestRowGroupInfo {
 
         assertDistinctValues(rowGroups, groupCol);
         assertRowGroupSizes(rowGroups, maxRows);
+    }
+
+    /**
+     * a "custom" {@link RowGroupInfo}, which should cause an {@link UnsupportedOperationException} when we try to copy
+     */
+    private static class UnsupportedImpl extends RowGroupInfo {
+
+        @Override
+        public void applyForRowGroups(final @NotNull Table input,
+                final @NotNull ThrowingConsumer<Table, IOException> consumer) throws IOException {
+
+        }
+
+        @Override
+        public <T> T walk(final @NotNull Visitor<T> visitor) {
+            return visitor.visit(this);
+        }
+    }
+
+    /**
+     * A helper method to verify that ... we get the expected number of RowGroups from copied (via walk and direct
+     * visit) instances of a given {@link RowGroupInfo}
+     *
+     * @param input the input table to split
+     * @param rowGroupInfo a pre-constructed {@link RowGroupInfo} instance
+     * @param rgiv a pre-constructed {@link RowGroupInfoVisitor} instance
+     */
+    private void testVisitor(final @NotNull Table input, final @NotNull RowGroupInfo rowGroupInfo,
+            final @NotNull RowGroupInfoVisitor rgiv) {
+        final List<Table> fromWalk = getRowGroups(input, rowGroupInfo.walk(rgiv));
+        final List<Table> fromVisit = getRowGroups(input, rgiv.visit(rowGroupInfo));
+        final List<Table> origRowGroups = getRowGroups(input, rowGroupInfo);
+
+        assertEquals("walked copy RowGroupInfo produces same RowGroup count", origRowGroups.size(), fromWalk.size());
+        assertEquals("visited copy RowGroupInfo produces same RowGroup count", origRowGroups.size(), fromVisit.size());
+    }
+
+    /**
+     * Verify that ... each defined {@link RowGroupInfo} implementation is able to self-copy itself to a new instance,
+     * which has the same behavior as the original instance. Additionally, we ensure that we are not able to copy a
+     * "custom" {@link RowGroupInfo} implementation
+     */
+    @Test
+    public void testVisitors() {
+        final RowGroupInfoVisitor rgiv = new RowGroupInfoVisitor();
+
+        testVisitor(testTable, RowGroupInfo.singleRowGroup(), rgiv);
+        testVisitor(testTable, RowGroupInfo.splitEvenly(24), rgiv);
+        testVisitor(testTable, RowGroupInfo.withMaxRows(1500), rgiv);
+        testVisitor(sortedTable, RowGroupInfo.byGroup(200, groupCol), rgiv);
+
+        final UnsupportedOperationException uoe = assertThrowsExactly(UnsupportedOperationException.class,
+                () -> testVisitor(testTable, new UnsupportedImpl(), rgiv));
+        assertEquals(String.format("Unknown %s type", RowGroupInfo.class.getCanonicalName()), uoe.getMessage());
     }
 
     /**
