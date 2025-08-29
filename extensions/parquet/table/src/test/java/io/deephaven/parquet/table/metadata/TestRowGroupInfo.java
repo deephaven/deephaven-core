@@ -63,11 +63,12 @@ public class TestRowGroupInfo {
 
 
     /**
-     * Gets a collection of {@link Table}s for a given {@link RowGroupInfo}
+     * A helper method which gets a collection of {@link Table}s for a given {@link RowGroupInfo}. Each {@link Table}
+     * within the collection represents a single RowGroup
      *
      * @param input the input table to use for the test
      * @param rgi a {@link RowGroupInfo} to test
-     * @return a collection of {@link Table}s where each member is a RowGroup
+     * @return a collection of {@link Table}s where each member represents a RowGroup
      */
     private static List<Table> getRowGroups(final @NotNull Table input, final @NotNull RowGroupInfo rgi) {
         final List<Table> rowGroups = new ArrayList<>();
@@ -89,21 +90,27 @@ public class TestRowGroupInfo {
      */
     @Test
     public void testSingleRowGroup() {
-        final List<Table> results = getRowGroups(testTable, RowGroupInfo.singleRowGroup());
-        assertEquals("singleRowGroup returns single RowGroup", 1, results.size());
+        final List<Table> rowGroups = getRowGroups(testTable, RowGroupInfo.singleRowGroup());
+        assertEquals("singleRowGroup returns single RowGroup", 1, rowGroups.size());
     }
 
+    /**
+     * Verify that "SplitEvenly" results in ... a proper number of ~evenly split RowGroups
+     *
+     * @param input the input table to split
+     * @param numRowGroups the desired number of RowGroups
+     */
     private static void assertSplitEvenly(final @NotNull Table input, long numRowGroups) {
-        List<Table> results = getRowGroups(input, RowGroupInfo.splitEvenly(numRowGroups));
+        final List<Table> rowGroups = getRowGroups(input, RowGroupInfo.splitEvenly(numRowGroups));
         final String totalMsg = String.format("splitEvenly(%d) returns %d RowGroups", numRowGroups, numRowGroups);
-        assertEquals(totalMsg, numRowGroups, results.size()); // we have the expected number of RowGroups
+        assertEquals(totalMsg, numRowGroups, rowGroups.size()); // we have the expected number of RowGroups
 
         final long impliedSize = testTable.size() / numRowGroups;
         final long frontLoaded = testTable.size() % numRowGroups;
 
-        // each RowGroup should be either `impliedSize` (or `impliedSize+1` for the first `frontLoaded` RowGroups)
-        for (int ii = 0; ii < results.size(); ii++) {
-            final long subSize = results.get(ii).size();
+        // each RowGroup must be `impliedSize` (or `impliedSize+1` for the first `frontLoaded` RowGroups)
+        for (int ii = 0; ii < rowGroups.size(); ii++) {
+            final long subSize = rowGroups.get(ii).size();
             final long expectedSize = impliedSize + (ii < frontLoaded ? 1 : 0);
             final String subMsg =
                     String.format("splitEvenly(%d) size %d rows for RowGroup[%d]", numRowGroups, expectedSize, ii);
@@ -122,26 +129,39 @@ public class TestRowGroupInfo {
         assertSplitEvenly(testTable, 1000);
     }
 
-    private static void assertRowGroupSizes(final @NotNull List<Table> results, final long maxRows) {
-        for (int ii = 0; ii < results.size(); ii++) {
+    /**
+     * A helper method to verify that ... each RowGroup contains {@code maxRows} (or fewer) rows
+     *
+     * @param rowGroups the {@link Table} representation of each RowGroup
+     * @param maxRows the maximum number of rows permitted for each of the {@code rowGroups}
+     */
+    private static void assertRowGroupSizes(final @NotNull List<Table> rowGroups, final long maxRows) {
+        for (int ii = 0; ii < rowGroups.size(); ii++) {
             final String msg =
                     String.format("withMaxRows(%d) has %d or fewer rows for RowGroup[%d]", maxRows, maxRows, ii);
-            assertTrue(msg, results.get(ii).size() <= maxRows);
+            assertTrue(msg, rowGroups.get(ii).size() <= maxRows);
         }
     }
 
+    /**
+     * Verify that "MaxRows" results in ... a number of RowGroups, each of which contain `maxRows` (or fewer) rows
+     *
+     * @param input the input table to split
+     * @param maxRows the maximum number of rows permitted for each RowGroup
+     * @param expectedRowGroups the expected number of RowGroups that should be defined
+     */
     private static void assertMaxRows(final @NotNull Table input, long maxRows, long expectedRowGroups) {
-        List<Table> results = getRowGroups(input, RowGroupInfo.withMaxRows(maxRows));
+        final List<Table> rowGroups = getRowGroups(input, RowGroupInfo.withMaxRows(maxRows));
         final long calcdRowGroups = (input.size() / maxRows) + (input.size() % maxRows > 0 ? 1 : 0);
         assertEquals("Expected RowGroups matches Calculated RowGroups", expectedRowGroups, calcdRowGroups);
         final String msg = String.format("withMaxRows(%d) returns %d RowGroups", maxRows, expectedRowGroups);
-        assertEquals(msg, expectedRowGroups, results.size());
+        assertEquals(msg, expectedRowGroups, rowGroups.size());
 
-        assertRowGroupSizes(results, maxRows);
+        assertRowGroupSizes(rowGroups, maxRows);
     }
 
     /**
-     * Verify that "MaxRows" results in ... a number of RowGroups, each of which contain `maxRows` or fewer rows
+     * Verify that "MaxRows" results in ... a number of RowGroups, each of which contain `maxRows` (or fewer) rows
      */
     @Test
     public void testMaxRows() {
@@ -171,10 +191,16 @@ public class TestRowGroupInfo {
         assertMaxRows(testTable, 666, 151);
     }
 
-    private static void assertDistinctValues(final @NotNull List<Table> results, final String[] groupCol) {
-        for (int ii = 0; ii < results.size(); ii++) {
+    /**
+     * A helper method to verify that ... each RowGroup contains only a single value for each of the {@code groupCol}s
+     *
+     * @param rowGroups the {@link Table} representation of each RowGroup
+     * @param groupCol the grouping column(s)
+     */
+    private static void assertDistinctValues(final @NotNull List<Table> rowGroups, final String[] groupCol) {
+        for (int ii = 0; ii < rowGroups.size(); ii++) {
             final String msg = String.format("RowGroup[%d] has unique values for %s", ii, Arrays.toString(groupCol));
-            assertEquals(msg, 1, results.get(ii).selectDistinct(groupCol).size());
+            assertEquals(msg, 1, rowGroups.get(ii).selectDistinct(groupCol).size());
         }
     }
 
@@ -188,13 +214,13 @@ public class TestRowGroupInfo {
 
         final Table sortedTable = testTable.sort(groupCol);
 
-        final List<Table> results = getRowGroups(sortedTable, RowGroupInfo.byGroup(groupCol));
+        final List<Table> rowGroups = getRowGroups(sortedTable, RowGroupInfo.byGroup(groupCol));
         final long expectedRowGroups = sortedTable.partitionBy(groupCol).constituents().length;
 
         final String msgNoMax = String.format("byGroup(%s) groups", Arrays.toString(groupCol));
-        assertEquals(msgNoMax, expectedRowGroups, results.size());
+        assertEquals(msgNoMax, expectedRowGroups, rowGroups.size());
 
-        assertDistinctValues(results, groupCol);
+        assertDistinctValues(rowGroups, groupCol);
     }
 
     /**
@@ -209,14 +235,14 @@ public class TestRowGroupInfo {
         final Table sortedTable = testTable.sort(groupCol);
         final long maxRows = 10;
 
-        final List<Table> results = getRowGroups(sortedTable, RowGroupInfo.byGroup(maxRows, groupCol));
+        final List<Table> rowGroups = getRowGroups(sortedTable, RowGroupInfo.byGroup(maxRows, groupCol));
         final long minimumRowGroups = sortedTable.partitionBy(groupCol).constituents().length;
 
         final String msgNoMax = String.format("byGroup(%d, %s) groups", maxRows, Arrays.toString(groupCol));
-        assertTrue(msgNoMax, minimumRowGroups <= results.size());
+        assertTrue(msgNoMax, minimumRowGroups <= rowGroups.size());
 
-        assertDistinctValues(results, groupCol);
-        assertRowGroupSizes(results, maxRows);
+        assertDistinctValues(rowGroups, groupCol);
+        assertRowGroupSizes(rowGroups, maxRows);
     }
 
     /**
@@ -241,10 +267,10 @@ public class TestRowGroupInfo {
         // if this fails, then the underlying table has changed, and we need to update this test
         assertTrue("InputTable contains grouping column(s)", testTable.hasColumns(groupCol));
 
-        final IllegalStateException iae0 = assertThrowsExactly(IllegalStateException.class,
+        final IllegalStateException iae = assertThrowsExactly(IllegalStateException.class,
                 () -> getRowGroups(testTable, RowGroupInfo.byGroup(groupCol)));
         assertTrue("byGroup(...) fail message is informative",
-                iae0.getMessage()
+                iae.getMessage()
                         .startsWith(String.format("Misordered for Grouping column(s) %s:", Arrays.toString(groupCol))));
 
     }
