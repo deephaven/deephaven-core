@@ -1,0 +1,4 @@
+services:
+  server:
+    # AI images don't have edge versions, only latest
+    image: ghcr.io/deephaven/server-pytorch:latest

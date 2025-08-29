@@ -1,0 +1,35 @@
+#!/bin/bash
+
+usage() {
+  echo "Usage: $0 [-p PORT]"
+  echo "Starts the docs preview server in a Docker container. Use Ctrl+C to stop the server."
+  echo
+  echo "Options:"
+  echo "  -p PORT   Set the port for the preview server (default: 3001)"
+  echo "  -h        Show this help message"
+  echo
+  echo "Example:"
+  echo "  $0 -p 8080"
+}
+
+PORT=3001
+while getopts "p:h" opt; do
+  case $opt in
+    p)
+      PORT=$OPTARG
+      ;;
+    h)
+      usage
+      exit 0
+      ;;
+    *)
+      usage
+      exit 1
+      ;;
+  esac
+
+done
+
+pushd "$(dirname "$0")" > /dev/null # Set pwd to this directory
+docker run --rm --name deephaven-docs-preview --pull=always -p $PORT:$PORT -e PORT=$PORT --volume ./python:/salmon/core/docs --volume ./groovy:/salmon/core/groovy/docs ghcr.io/deephaven/salmon:latest
+popd > /dev/null # Reset pwd
