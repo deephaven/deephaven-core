@@ -18,7 +18,20 @@ import java.util.Arrays;
 import java.util.Iterator;
 
 public abstract class RowGroupInfo {
-    private static final IterativeRowGroupInfo DEFAULT = new SingleRowGroup();
+    private static IterativeRowGroupInfo DEFAULT;
+
+    /**
+     * Returns the DEFAULT instance
+     *
+     * @return the DEFAULT instance
+     */
+    private synchronized static IterativeRowGroupInfo getDefault() {
+        if (DEFAULT == null) {
+            DEFAULT = new SingleRowGroup();
+        }
+
+        return DEFAULT;
+    }
 
     /**
      * The default RowGroupInfo implementation. All data is within a single RowGroup
@@ -27,7 +40,7 @@ public abstract class RowGroupInfo {
      */
     @ScriptApi
     public static RowGroupInfo singleRowGroup() {
-        return DEFAULT;
+        return getDefault();
     }
 
     /**
@@ -97,6 +110,27 @@ public abstract class RowGroupInfo {
             final @NotNull ThrowingConsumer<Table, IOException> consumer)
             throws IOException;
 
+    public abstract <T> T walk(final @NotNull Visitor<T> visitor);
+
+    public interface Visitor<T> {
+        // Note: each `RowGroupInfo` type overrides its own `visit(...)`, and leaves the rest to throw UOE
+        default T visit(final @NotNull SingleRowGroup single) {
+            throw new UnsupportedOperationException();
+        }
+
+        default T visit(final @NotNull SplitEvenly splitEvenly) {
+            throw new UnsupportedOperationException();
+        }
+
+        default T visit(final @NotNull SplitByMaxRows withMaxRows) {
+            throw new UnsupportedOperationException();
+        }
+
+        default T visit(final @NotNull SplitByGroups byGroups) {
+            throw new UnsupportedOperationException();
+        }
+    }
+
 
     /**
      * Provides an interface for iteratively applying a provided consumer to each RowGroup
@@ -126,12 +160,26 @@ public abstract class RowGroupInfo {
     /**
      * Keeps all rows within a single RowGroup
      */
-    private static class SingleRowGroup extends IterativeRowGroupInfo {
+    public static class SingleRowGroup extends IterativeRowGroupInfo implements Visitor<RowGroupInfo> {
+        private SingleRowGroup() {
+            // should not be directly instantiated by users
+        }
+
         @Override
         public void applyForRowGroups(final @NotNull Table input,
                 final @NotNull ThrowingConsumer<Table, IOException> consumer) throws IOException {
             // no need to use the iterating version because we know we have only a single RowGroup
             consumer.accept(input);
+        }
+
+        @Override
+        public <T> T walk(@NotNull Visitor<T> visitor) {
+            return visitor.visit(this);
+        }
+
+        @Override
+        public RowGroupInfo visit(final @NotNull SingleRowGroup ignore) {
+            return singleRowGroup();
         }
 
         @Override
@@ -169,7 +217,7 @@ public abstract class RowGroupInfo {
     /**
      * Splits evenly across {@code numRowGroups} RowGroups
      */
-    public static class SplitEvenly extends IterativeRowGroupInfo {
+    public static class SplitEvenly extends IterativeRowGroupInfo implements Visitor<RowGroupInfo> {
         private final long numRowGroups;
 
         private SplitEvenly(long numRowGroups) {
@@ -180,8 +228,22 @@ public abstract class RowGroupInfo {
         }
 
         @Override
+        public <T> T walk(final @NotNull Visitor<T> visitor) {
+            return visitor.visit(this);
+        }
+
+        @Override
+        public RowGroupInfo visit(final @NotNull SplitEvenly splitEvenly) {
+            return splitEvenly(splitEvenly.getNumRowGroups());
+        }
+
+        private long getNumRowGroups() {
+            return numRowGroups;
+        }
+
+        @Override
         protected Iterator<Table> getIterator(final @NotNull Table input) {
-            return numRowGroups == 1 ? DEFAULT.getIterator(input) : new SplitEvenlyIterator(input);
+            return numRowGroups == 1 ? getDefault().getIterator(input) : new SplitEvenlyIterator(input);
         }
 
         private class SplitEvenlyIterator implements Iterator<Table> {
@@ -225,7 +287,7 @@ public abstract class RowGroupInfo {
     /**
      * Splits evenly across a number of RowGroups, ensuring that no group is larger than {@code maxRows}
      */
-    private static class SplitByMaxRows extends RowGroupInfo {
+    public static class SplitByMaxRows extends RowGroupInfo implements Visitor<RowGroupInfo> {
         private final long maxRows;
 
         private SplitByMaxRows(long maxRows) {
@@ -241,6 +303,20 @@ public abstract class RowGroupInfo {
             getIterativeRowGroupImpl(maxRows, input).applyForRowGroups(input, consumer);
         }
 
+        @Override
+        public <T> T walk(@NotNull Visitor<T> visitor) {
+            return visitor.visit(this);
+        }
+
+        @Override
+        public RowGroupInfo visit(final @NotNull SplitByMaxRows withMaxRows) {
+            return withMaxRows(withMaxRows.getMaxRows());
+        }
+
+        private long getMaxRows() {
+            return maxRows;
+        }
+
         private static IterativeRowGroupInfo getIterativeRowGroupImpl(long maxRows, final @NotNull Table input) {
             final long numRowGroups = (input.size() / maxRows) + (input.size() % maxRows > 0 ? 1 : 0);
             return new SplitEvenly(numRowGroups);
@@ -252,13 +328,31 @@ public abstract class RowGroupInfo {
      * {@code groups} ensuring that no group is larger than {@code maxRows}. If {@code maxRows} is not desired, this
      * parameter may be set to {@code Long.MAX_VALUE}
      */
-    private static class SplitByGroups extends IterativeRowGroupInfo {
+    public static class SplitByGroups extends IterativeRowGroupInfo implements Visitor<RowGroupInfo> {
         private final long maxRows;
         private final String[] groups;
 
         private SplitByGroups(long maxRows, final @NotNull String[] groups) {
             this.maxRows = maxRows;
             this.groups = groups;
+        }
+
+        @Override
+        public <T> T walk(@NotNull Visitor<T> visitor) {
+            return visitor.visit(this);
+        }
+
+        @Override
+        public RowGroupInfo visit(final @NotNull SplitByGroups byGroups) {
+            return byGroup(byGroups.getMaxRows(), byGroups.getGroups());
+        }
+
+        private long getMaxRows() {
+            return maxRows;
+        }
+
+        private String[] getGroups() {
+            return groups;
         }
 
         @Override
@@ -326,14 +420,4 @@ public abstract class RowGroupInfo {
             }
         }
     }
-
-
-    // @formatter:off
-    /*
-    interface Visitor<T> {
-        T visit(SplitEvenly splitEvenly);
-        T visit(SplitByMaxRows maxRows);
-    }
-     */
-    // @formatter:on
 }
