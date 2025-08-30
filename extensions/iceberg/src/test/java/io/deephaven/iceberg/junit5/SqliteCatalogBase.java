@@ -165,6 +165,7 @@ public abstract class SqliteCatalogBase {
     @AfterEach
     void tearDown() throws Exception {
         engineCleanup.tearDown();
+        catalogAdapter.close();
     }
 
     protected TableParquetWriterOptions.Builder writerOptionsBuilder() {
@@ -3192,6 +3193,17 @@ public abstract class SqliteCatalogBase {
             } catch (IllegalArgumentException e) {
                 assertThat(e).hasMessageContaining("Metadata tables are not currently supported");
             }
+        }
+    }
+
+    @Test
+    void testCloseCatalog() throws Exception {
+        catalogAdapter.namespaces();
+        catalogAdapter.close();
+        try {
+            catalogAdapter.namespaces();
+            failBecauseExceptionWasNotThrown(IllegalStateException.class);
+        } catch (IllegalStateException expected) {
         }
     }
 

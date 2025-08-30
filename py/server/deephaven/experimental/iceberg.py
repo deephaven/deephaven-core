@@ -813,6 +813,9 @@ class IcebergCatalogAdapter(JObjectWrapper):
         return IcebergTableAdapter(self.j_object.createTable(table_identifier,
                                                              TableDefinition(table_definition).j_table_definition))
 
+    def close(self):
+        return self.j_object.close()
+
     @property
     def j_object(self) -> jpy.JType:
         return self.j_catalog_adapter
