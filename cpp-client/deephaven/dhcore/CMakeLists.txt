@@ -138,7 +138,7 @@ foreach (whichlib dhcore dhcore_static)
   if (WIN32)
     # /Wall is a bit too chatty so we stick with /W3
     # /bigobj needed because ticking/immer_table_state.cc compiles to something too large apparently
-    target_compile_options(${whichlib} PRIVATE /W3 /bigobj)
+    target_compile_options(${whichlib} PRIVATE /W3 /bigobj /MP)
 
     target_compile_definitions(${whichlib} PRIVATE _SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING)
     target_link_libraries(${whichlib} PRIVATE ws2_32)
