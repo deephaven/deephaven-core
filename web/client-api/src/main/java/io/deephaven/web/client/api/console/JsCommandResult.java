@@ -6,7 +6,6 @@ package io.deephaven.web.client.api.console;
 import com.vertispan.tsdefs.annotations.TsInterface;
 import com.vertispan.tsdefs.annotations.TsName;
 import io.deephaven.web.client.api.LongWrapper;
-import io.deephaven.web.client.fu.JsLog;
 import jsinterop.annotations.JsProperty;
 
 /**
@@ -21,8 +20,6 @@ public class JsCommandResult {
     private final String endTimestamp;
 
     public JsCommandResult(JsVariableChanges changes, String error, String startTimestamp, String endTimestamp) {
-        JsLog.info("Creating JsCommandResult with changes: ", changes, " error: ", error,
-                " startTimestamp: ", startTimestamp, " endTimestamp: ", endTimestamp);
         this.changes = changes;
         this.error = error;
         this.startTimestamp = startTimestamp;
