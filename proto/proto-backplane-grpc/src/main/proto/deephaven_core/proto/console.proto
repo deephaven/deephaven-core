@@ -121,6 +121,8 @@ message ExecuteCommandRequest {
 message ExecuteCommandResponse {
     string error_message = 1;
     io.deephaven.proto.backplane.grpc.FieldsChangeUpdate changes = 2;
+    string start_timestamp = 3;
+    string end_timestamp = 4;
 }
 message BindTableToVariableRequest {
     io.deephaven.proto.backplane.grpc.Ticket console_id = 1;

@@ -5,6 +5,8 @@ package io.deephaven.web.client.api.console;
 
 import com.vertispan.tsdefs.annotations.TsInterface;
 import com.vertispan.tsdefs.annotations.TsName;
+import io.deephaven.web.client.api.LongWrapper;
+import io.deephaven.web.client.fu.JsLog;
 import jsinterop.annotations.JsProperty;
 
 /**
@@ -15,10 +17,16 @@ import jsinterop.annotations.JsProperty;
 public class JsCommandResult {
     private final JsVariableChanges changes;
     private final String error;
+    private final String startTimestamp;
+    private final String endTimestamp;
 
-    public JsCommandResult(JsVariableChanges changes, String error) {
+    public JsCommandResult(JsVariableChanges changes, String error, String startTimestamp, String endTimestamp) {
+        JsLog.info("Creating JsCommandResult with changes: ", changes, " error: ", error,
+                " startTimestamp: ", startTimestamp, " endTimestamp: ", endTimestamp);
         this.changes = changes;
         this.error = error;
+        this.startTimestamp = startTimestamp;
+        this.endTimestamp = endTimestamp;
     }
 
     /**
@@ -39,6 +47,26 @@ public class JsCommandResult {
     @JsProperty
     public String getError() {
         return error;
+    }
+
+    /**
+     * The timestamp when the command started running.
+     *
+     * @return long
+     */
+    @JsProperty
+    public LongWrapper getStartTimestamp() {
+        return LongWrapper.of(Long.parseLong(startTimestamp));
+    }
+
+    /**
+     * The timestamp when the command finished running.
+     *
+     * @return long
+     */
+    @JsProperty
+    public LongWrapper getEndTimestamp() {
+        return LongWrapper.of(Long.parseLong(endTimestamp));
     }
 
     @Override
