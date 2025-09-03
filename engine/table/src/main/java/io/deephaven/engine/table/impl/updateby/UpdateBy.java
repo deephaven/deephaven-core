@@ -43,7 +43,6 @@ import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.lang.ref.SoftReference;
-import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
@@ -1389,8 +1388,8 @@ public abstract class UpdateBy {
         // Verify the timestamp column is a supported data type (currently long and Instant)
         if (operatorCollection.timestampColumnName != null) {
             final ColumnSource<?> timestampSource = source.getColumnSource(operatorCollection.timestampColumnName);
-            final Class<?> type = timestampSource.getType();
-            if (!(type == long.class || type == Long.class || type == Instant.class)) {
+            if (!timestampSource.allowsReinterpret(long.class)) {
+                final Class<?> type = timestampSource.getType();
                 throw new IllegalArgumentException("Unsupported timestamp column type " + type +
                         " for column '" + operatorCollection.timestampColumnName + "'");
             }

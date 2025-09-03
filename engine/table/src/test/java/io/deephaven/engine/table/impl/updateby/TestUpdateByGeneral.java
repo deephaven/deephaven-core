@@ -8,13 +8,10 @@ import io.deephaven.api.updateby.BadDataBehavior;
 import io.deephaven.api.updateby.OperationControl;
 import io.deephaven.api.updateby.UpdateByOperation;
 import io.deephaven.engine.context.ExecutionContext;
-import io.deephaven.engine.rowset.RowSetFactory;
-import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.NoSuchColumnException;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.UpdateErrorReporter;
-import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
 import io.deephaven.engine.table.impl.util.AsyncClientErrorNotifier;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
@@ -402,116 +399,102 @@ public class TestUpdateByGeneral extends BaseUpdateByTest implements UpdateError
 
     @Test
     public void testTimestampColumnDataType() {
-        final ColumnSource<?> dataColumnSource = InMemoryColumnSource.getImmutableMemoryColumnSource(
-                new int[] {1, 2, 3, 4, 5, 6, 7, 8, 9, 10});
-
-        final ColumnSource<?> intColumnSource = InMemoryColumnSource.getImmutableMemoryColumnSource(
-                new int[] {1, 2, 3, 4, 5, 6, 7, 8, 9, 10});
-
-        final ColumnSource<?> shortColumnSource = InMemoryColumnSource.getImmutableMemoryColumnSource(
-                new short[] {1, 2, 3, 4, 5, 6, 7, 8, 9, 10});
-
-        final ColumnSource<?> floatColumnSource = InMemoryColumnSource.getImmutableMemoryColumnSource(
-                new float[] {1, 2, 3, 4, 5, 6, 7, 8, 9, 10});
-
-        final ColumnSource<?> doubleColumnSource = InMemoryColumnSource.getImmutableMemoryColumnSource(
-                new double[] {1, 2, 3, 4, 5, 6, 7, 8, 9, 10});
-
-        final ColumnSource<?> objectColumnSource = InMemoryColumnSource.getImmutableMemoryColumnSource(
-                new Instant[] {
-                        DateTimeUtils.parseInstant("2022-03-09T09:00:00.000 NY"),
-                        DateTimeUtils.parseInstant("2022-03-09T09:01:00.000 NY"),
-                        DateTimeUtils.parseInstant("2022-03-09T09:02:00.000 NY"),
-                        DateTimeUtils.parseInstant("2022-03-09T09:03:00.000 NY"),
-                        DateTimeUtils.parseInstant("2022-03-09T09:04:00.000 NY"),
-                        DateTimeUtils.parseInstant("2022-03-09T09:05:00.000 NY"),
-                        DateTimeUtils.parseInstant("2022-03-09T09:06:00.000 NY"),
-                        DateTimeUtils.parseInstant("2022-03-09T09:07:00.000 NY"),
-                        DateTimeUtils.parseInstant("2022-03-09T09:08:00.000 NY"),
-                        DateTimeUtils.parseInstant("2022-03-09T09:09:00.000 NY")
-                }, Object.class, null);
-
-        // These two are valid timestamp columns
-        final ColumnSource<?> longColumnSource = InMemoryColumnSource.getImmutableMemoryColumnSource(
-                new long[] {1, 2, 3, 4, 5, 6, 7, 8, 9, 10});
-
-        final ColumnSource<?> instantColumnSource = InMemoryColumnSource.getImmutableMemoryColumnSource(
-                new Instant[] {
-                        DateTimeUtils.parseInstant("2022-03-09T09:00:00.000 NY"),
-                        DateTimeUtils.parseInstant("2022-03-09T09:01:00.000 NY"),
-                        DateTimeUtils.parseInstant("2022-03-09T09:02:00.000 NY"),
-                        DateTimeUtils.parseInstant("2022-03-09T09:03:00.000 NY"),
-                        DateTimeUtils.parseInstant("2022-03-09T09:04:00.000 NY"),
-                        DateTimeUtils.parseInstant("2022-03-09T09:05:00.000 NY"),
-                        DateTimeUtils.parseInstant("2022-03-09T09:06:00.000 NY"),
-                        DateTimeUtils.parseInstant("2022-03-09T09:07:00.000 NY"),
-                        DateTimeUtils.parseInstant("2022-03-09T09:08:00.000 NY"),
-                        DateTimeUtils.parseInstant("2022-03-09T09:09:00.000 NY")
-                }, Instant.class, null);
+        final ColumnHolder<?> dataHolder = intCol("data", 1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
 
         final Duration prevTime = Duration.ofMinutes(2);
         final Duration postTime = Duration.ZERO;
 
+        final Instant[] instantArr = new Instant[] {
+                DateTimeUtils.parseInstant("2022-03-09T09:00:00.000 NY"),
+                DateTimeUtils.parseInstant("2022-03-09T09:01:00.000 NY"),
+                DateTimeUtils.parseInstant("2022-03-09T09:02:00.000 NY"),
+                DateTimeUtils.parseInstant("2022-03-09T09:03:00.000 NY"),
+                DateTimeUtils.parseInstant("2022-03-09T09:04:00.000 NY"),
+                DateTimeUtils.parseInstant("2022-03-09T09:05:00.000 NY"),
+                DateTimeUtils.parseInstant("2022-03-09T09:06:00.000 NY"),
+                DateTimeUtils.parseInstant("2022-03-09T09:07:00.000 NY"),
+                DateTimeUtils.parseInstant("2022-03-09T09:08:00.000 NY"),
+                DateTimeUtils.parseInstant("2022-03-09T09:09:00.000 NY")
+        };
+
         // incorrect timestamp column name
         Assert.assertThrows(NoSuchColumnException.class, () -> {
-            final QueryTable t = new QueryTable(RowSetFactory.flat(10).toTracking(),
-                    Map.of("ts", instantColumnSource, "data", dataColumnSource));
+            final ColumnHolder<?> instantHolder = instantCol("ts", instantArr);
+            final Table t = TableTools.newTable(instantHolder, dataHolder);
             final Table summed =
                     t.updateBy(UpdateByOperation.RollingSum("tsCol", prevTime, postTime, "data"));
         });
 
         // int as timestamp
         Assert.assertThrows(IllegalArgumentException.class, () -> {
-            final QueryTable t = new QueryTable(RowSetFactory.flat(10).toTracking(),
-                    Map.of("ts", intColumnSource, "data", dataColumnSource));
+            final ColumnHolder<?> tsHolder = intCol("ts", new int[] {1, 2, 3, 4, 5, 6, 7, 8, 9, 10});
+            final Table t = TableTools.newTable(tsHolder, dataHolder);
             final Table summed =
                     t.updateBy(UpdateByOperation.RollingSum("ts", prevTime, postTime, "data"));
         });
 
         // short as timestamp
         Assert.assertThrows(IllegalArgumentException.class, () -> {
-            final QueryTable t = new QueryTable(RowSetFactory.flat(10).toTracking(),
-                    Map.of("ts", shortColumnSource, "data", dataColumnSource));
+            final ColumnHolder<?> tsHolder = shortCol("ts", new short[] {1, 2, 3, 4, 5, 6, 7, 8, 9, 10});
+            final Table t = TableTools.newTable(tsHolder, dataHolder);
+            final Table summed =
+                    t.updateBy(UpdateByOperation.RollingSum("ts", prevTime, postTime, "data"));
+        });
+
+        // byte as timestamp
+        Assert.assertThrows(IllegalArgumentException.class, () -> {
+            final ColumnHolder<?> tsHolder = byteCol("ts", new byte[] {1, 2, 3, 4, 5, 6, 7, 8, 9, 10});
+            final Table t = TableTools.newTable(tsHolder, dataHolder);
             final Table summed =
                     t.updateBy(UpdateByOperation.RollingSum("ts", prevTime, postTime, "data"));
         });
 
         // float as timestamp
         Assert.assertThrows(IllegalArgumentException.class, () -> {
-            final QueryTable t = new QueryTable(RowSetFactory.flat(10).toTracking(),
-                    Map.of("ts", floatColumnSource, "data", dataColumnSource));
+            final ColumnHolder<?> tsHolder = floatCol("ts", new float[] {1, 2, 3, 4, 5, 6, 7, 8, 9, 10});
+            final Table t = TableTools.newTable(tsHolder, dataHolder);
             final Table summed =
                     t.updateBy(UpdateByOperation.RollingSum("ts", prevTime, postTime, "data"));
         });
 
         // double as timestamp
         Assert.assertThrows(IllegalArgumentException.class, () -> {
-            final QueryTable t = new QueryTable(RowSetFactory.flat(10).toTracking(),
-                    Map.of("ts", doubleColumnSource, "data", dataColumnSource));
+            final ColumnHolder<?> tsHolder = doubleCol("ts", new double[] {1, 2, 3, 4, 5, 6, 7, 8, 9, 10});
+            final Table t = TableTools.newTable(tsHolder, dataHolder);
             final Table summed =
                     t.updateBy(UpdateByOperation.RollingSum("ts", prevTime, postTime, "data"));
         });
 
         // Object as timestamp
         Assert.assertThrows(IllegalArgumentException.class, () -> {
-            final QueryTable t = new QueryTable(RowSetFactory.flat(10).toTracking(),
-                    Map.of("ts", objectColumnSource, "data", dataColumnSource));
+            final ColumnHolder<?> tsHolder = ColumnHolder.<Object>createColumnHolder("ts", false,
+                    DateTimeUtils.parseInstant("2022-03-09T09:00:00.000 NY"),
+                    DateTimeUtils.parseInstant("2022-03-09T09:01:00.000 NY"),
+                    DateTimeUtils.parseInstant("2022-03-09T09:02:00.000 NY"),
+                    DateTimeUtils.parseInstant("2022-03-09T09:03:00.000 NY"),
+                    DateTimeUtils.parseInstant("2022-03-09T09:04:00.000 NY"),
+                    DateTimeUtils.parseInstant("2022-03-09T09:05:00.000 NY"),
+                    DateTimeUtils.parseInstant("2022-03-09T09:06:00.000 NY"),
+                    DateTimeUtils.parseInstant("2022-03-09T09:07:00.000 NY"),
+                    DateTimeUtils.parseInstant("2022-03-09T09:08:00.000 NY"),
+                    DateTimeUtils.parseInstant("2022-03-09T09:09:00.000 NY"));
+            final Table t = TableTools.newTable(tsHolder, dataHolder);
             final Table summed =
                     t.updateBy(UpdateByOperation.RollingSum("ts", prevTime, postTime, "data"));
         });
 
         // long as timestamp, expect no error
         {
-            final QueryTable t = new QueryTable(RowSetFactory.flat(10).toTracking(),
-                    Map.of("ts", longColumnSource, "data", dataColumnSource));
+            final ColumnHolder<?> tsHolder = longCol("ts", new long[] {1, 2, 3, 4, 5, 6, 7, 8, 9, 10});
+            final Table t = TableTools.newTable(tsHolder, dataHolder);
             final Table summed =
                     t.updateBy(UpdateByOperation.RollingSum("ts", prevTime, postTime, "data"));
         }
 
         // Instant as timestamp, expect no error
         {
-            final QueryTable t = new QueryTable(RowSetFactory.flat(10).toTracking(),
-                    Map.of("ts", instantColumnSource, "data", dataColumnSource));
+            final ColumnHolder<?> tsHolder = instantCol("ts", instantArr);
+            final Table t = TableTools.newTable(tsHolder, dataHolder);
             final Table summed =
                     t.updateBy(UpdateByOperation.RollingSum("ts", prevTime, postTime, "data"));
         }
