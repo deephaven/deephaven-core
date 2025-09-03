@@ -3,13 +3,16 @@
 #
 import jpy
 
+from unittest.mock import Mock
+
 from deephaven import dtypes
 from deephaven.column import col_def, ColumnType
+from deephaven.experimental.iceberg import IcebergCatalogAdapter
 
 from tests.testbase import BaseTestCase
 from deephaven.experimental import s3, iceberg
 
-from deephaven.jcompat import j_map_to_dict, j_list_to_list
+from deephaven.jcompat import j_list_to_list
 
 _JTableDefinition = jpy.get_type("io.deephaven.engine.table.TableDefinition")
 
@@ -182,3 +185,10 @@ class IcebergTestCase(BaseTestCase):
             column_instructions={"Partition": 42, "x": 1, "y": "y"},
             schema_provider=iceberg.SchemaProvider.from_schema_id(99),
         )
+
+    def test_catalog_close(self):
+        mock_j = Mock()
+        adapter = IcebergCatalogAdapter(mock_j)
+        with adapter:
+            pass
+        mock_j.close.assert_called_once()
