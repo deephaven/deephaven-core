@@ -10,7 +10,6 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.parquet.table.ParquetTableFilterTest;
 import io.deephaven.parquet.table.ParquetTools;
 import io.deephaven.util.SafeCloseable;
-import io.deephaven.util.function.ThrowingConsumer;
 import org.jetbrains.annotations.NotNull;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -24,6 +23,7 @@ import java.util.List;
 
 import static io.deephaven.engine.util.TableTools.merge;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 
@@ -246,60 +246,6 @@ public class TestRowGroupInfo {
     }
 
     /**
-     * a "custom" {@link RowGroupInfo}, which should cause an {@link UnsupportedOperationException} when we try to copy
-     */
-    private static class UnsupportedImpl extends RowGroupInfo {
-
-        @Override
-        public void applyForRowGroups(final @NotNull Table input,
-                final @NotNull ThrowingConsumer<Table, IOException> consumer) throws IOException {
-
-        }
-
-        @Override
-        public <T> T walk(final @NotNull Visitor<T> visitor) {
-            return visitor.visit(this);
-        }
-    }
-
-    /**
-     * A helper method to verify that ... we get the expected number of RowGroups from copied (via walk and direct
-     * visit) instances of a given {@link RowGroupInfo}
-     *
-     * @param input the input table to split
-     * @param rowGroupInfo a pre-constructed {@link RowGroupInfo} instance
-     * @param rgiv a pre-constructed {@link RowGroupInfoVisitor} instance
-     */
-    private void testVisitor(final @NotNull Table input, final @NotNull RowGroupInfo rowGroupInfo,
-            final @NotNull RowGroupInfoVisitor rgiv) {
-        final List<Table> fromWalk = getRowGroups(input, rowGroupInfo.walk(rgiv));
-        final List<Table> fromVisit = getRowGroups(input, rgiv.visit(rowGroupInfo));
-        final List<Table> origRowGroups = getRowGroups(input, rowGroupInfo);
-
-        assertEquals("walked copy RowGroupInfo produces same RowGroup count", origRowGroups.size(), fromWalk.size());
-        assertEquals("visited copy RowGroupInfo produces same RowGroup count", origRowGroups.size(), fromVisit.size());
-    }
-
-    /**
-     * Verify that ... each defined {@link RowGroupInfo} implementation is able to self-copy itself to a new instance,
-     * which has the same behavior as the original instance. Additionally, we ensure that we are not able to copy a
-     * "custom" {@link RowGroupInfo} implementation
-     */
-    @Test
-    public void testVisitors() {
-        final RowGroupInfoVisitor rgiv = new RowGroupInfoVisitor();
-
-        testVisitor(testTable, RowGroupInfo.singleRowGroup(), rgiv);
-        testVisitor(testTable, RowGroupInfo.splitEvenly(24), rgiv);
-        testVisitor(testTable, RowGroupInfo.withMaxRows(1500), rgiv);
-        testVisitor(sortedTable, RowGroupInfo.byGroup(200, groupCol), rgiv);
-
-        final UnsupportedOperationException uoe = assertThrowsExactly(UnsupportedOperationException.class,
-                () -> testVisitor(testTable, new UnsupportedImpl(), rgiv));
-        assertEquals(String.format("Unknown %s type", RowGroupInfo.class.getCanonicalName()), uoe.getMessage());
-    }
-
-    /**
      * Verify that garbage inputs result in garbage outputs (exceptions)
      */
     @Test
@@ -327,5 +273,49 @@ public class TestRowGroupInfo {
                 iae.getMessage()
                         .startsWith(String.format("Misordered for Grouping column(s) %s:", Arrays.toString(groupCol))));
 
+    }
+
+    /**
+     * A helper method to verify that ... we are able to detect inequality between {@link RowGroupInfo} instances
+     *
+     * @param l a {@link RowGroupInfo} instance, which is not equal to {@code r}
+     * @param r a {@link RowGroupInfo} instance, which is not equal to {@code l}
+     */
+    private void assertInequality(final @NotNull RowGroupInfo l, final @NotNull RowGroupInfo r) {
+        assertNotEquals(String.format("%s != %s", l, r), l, r);
+        assertNotEquals(String.format("%s != %s", r, l), r, l);
+    }
+
+    /**
+     * Verify that ... we are able to detect inequality between {@link RowGroupInfo} instances
+     */
+    @Test
+    public void testInequality() {
+        final RowGroupInfo a = RowGroupInfo.singleRowGroup();
+        final RowGroupInfo b = RowGroupInfo.withMaxRows(42);
+        final RowGroupInfo c = RowGroupInfo.withMaxRows(41);
+        final RowGroupInfo d = RowGroupInfo.splitEvenly(13);
+        final RowGroupInfo e = RowGroupInfo.byGroup("a", "b");
+        final RowGroupInfo f = RowGroupInfo.byGroup(99, "a", "b");
+
+        assertInequality(a, b);
+        assertInequality(a, c);
+        assertInequality(a, d);
+        assertInequality(a, e);
+        assertInequality(a, f);
+
+        assertInequality(b, c);
+        assertInequality(b, d);
+        assertInequality(b, e);
+        assertInequality(b, f);
+
+        assertInequality(c, d);
+        assertInequality(c, e);
+        assertInequality(c, f);
+
+        assertInequality(d, e);
+        assertInequality(d, f);
+
+        assertInequality(e, f);
     }
 }
