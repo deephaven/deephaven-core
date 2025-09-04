@@ -5,6 +5,7 @@ ARG DEEPHAVEN_SERVER_IMAGE=ghcr.io/deephaven/server:latest
 FROM alpine/curl AS pypi-version
 WORKDIR /src
 RUN curl https://pypi.org/pypi/pydeephaven/json > ./plugin-version.json
+CMD echo "Downloaded version info"
 
 FROM ${DEEPHAVEN_SERVER_IMAGE} AS server
 # This COPY will cache if the plugin version hasn't changed and skip the pip install

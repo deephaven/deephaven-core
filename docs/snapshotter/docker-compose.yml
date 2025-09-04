@@ -2,7 +2,7 @@ name: deephaven-docs-snapshots
 
 services:
   extractor:
-    image: ghcr.io/deephaven/salmon-extractor:pre
+    image: ghcr.io/deephaven/salmon-extractor:1
     pull_policy: always
     container_name: extractor
     volumes:
@@ -11,7 +11,7 @@ services:
 
   # Read the test sets from the results directory and run them against the test server, taking a snapshot of the results.
   snapshotter:
-    image: ghcr.io/deephaven/salmon-snapshotter:pre
+    image: ghcr.io/deephaven/salmon-snapshotter:1
     pull_policy: always
     depends_on:
       extractor:

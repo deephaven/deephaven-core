@@ -1,6 +1,5 @@
 services:
   spark-iceberg:
-    container_name: spark-iceberg
     build: ./Iceberg
     depends_on:
       - rest
@@ -19,7 +18,6 @@ services:
       - 10001
   rest:
     image: tabulario/iceberg-rest
-    container_name: iceberg-rest
     expose:
       - 8181
     environment:
@@ -31,7 +29,6 @@ services:
       - CATALOG_S3_ENDPOINT=http://minio:9000
   minio:
     image: minio/minio
-    container_name: minio-iceberg
     environment:
       - MINIO_ROOT_USER=admin
       - MINIO_ROOT_PASSWORD=password
@@ -48,7 +45,6 @@ services:
     depends_on:
       - minio
     image: minio/mc
-    container_name: mc
     environment:
       - AWS_ACCESS_KEY_ID=admin
       - AWS_SECRET_ACCESS_KEY=password
@@ -64,3 +60,13 @@ services:
     depends_on:
       spark-iceberg:
         condition: service_completed_successfully
+    volumes:
+      - ./Iceberg/data:/data
+    environment:
+      - START_OPTS=-Xmx4g -DAuthHandlers=io.deephaven.auth.AnonymousAuthenticationHandler -Ddeephaven.console.type=python -Ddeephaven.application.dir=/data/app.d
+      - AWS_REGION=us-east-1
+      - AWS_ACCESS_KEY_ID=admin
+      - AWS_SECRET_ACCESS_KEY=password
+      - S3_ENDPOINT=http://minio:9000
+      - CATALOG_URI=http://rest:8181
+      - WAREHOUSE_LOCATION=s3://warehouse/

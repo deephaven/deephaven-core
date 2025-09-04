@@ -17,7 +17,8 @@ services:
       args:
         - DEEPHAVEN_SERVER_IMAGE=${DEEPHAVEN_SERVER_IMAGE}
     depends_on:
-      - pyclient-version
+      pyclient-version:
+        condition: service_completed_successfully
 
   deephaven.local: # This is the server our client will talk to
     image: ${DEEPHAVEN_SERVER_IMAGE}

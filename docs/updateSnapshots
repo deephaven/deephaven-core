@@ -80,7 +80,6 @@ if [ $GROOVY_EXIT_CODE -ne 0 ]; then
 fi
 
 if [ $PY_EXIT_CODE -ne 0 ] || [ $GROOVY_EXIT_CODE -ne 0 ]; then
-  echo "See errors in docs/snapshotter-errors"
   exit 1
 fi
 

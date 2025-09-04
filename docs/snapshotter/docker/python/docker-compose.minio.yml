@@ -17,8 +17,8 @@ services:
           # Add an alias for each bucket
           - example-bucket.minio.example.com
     expose:
-      - "9000"
-      - "9001"
+      - 9000
+      - 9001
     healthcheck:
       test: ["CMD", "mc", "ready", "local"]
       interval: 5s
