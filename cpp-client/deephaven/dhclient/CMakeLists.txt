@@ -125,6 +125,8 @@ add_library(deephaven::client ALIAS ${PROJECT_NAME})
 set_property(TARGET ${PROJECT_NAME} PROPERTY POSITION_INDEPENDENT_CODE ON)
 
 if (LINUX)
+    set(THREADS_PREFER_PTHREAD_FLAG ON)
+    set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
     target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Werror -Wno-deprecated-declarations)
 endif()
 
@@ -147,4 +149,8 @@ target_link_libraries(${PROJECT_NAME} PUBLIC ArrowFlight::arrow_flight_shared)
 target_link_libraries(${PROJECT_NAME} PUBLIC Arrow::arrow_shared)
 target_link_libraries(${PROJECT_NAME} PRIVATE protobuf::libprotobuf)
 target_link_libraries(${PROJECT_NAME} PRIVATE gRPC::grpc++)
-target_link_libraries(${PROJECT_NAME} PRIVATE Threads::Threads)
+target_link_libraries(${PROJECT_NAME} PUBLIC Threads::Threads)
+# Required for GCC before 9.1 on some Linux platforms, harmless on the rest.
+if (LINUX)
+    target_link_libraries(${PROJECT_NAME} PRIVATE stdc++fs)
+endif()

@@ -40,8 +40,11 @@ import static io.deephaven.extensions.s3.testlib.S3Helper.TIMEOUT_SECONDS;
 import static io.deephaven.iceberg.base.IcebergUtils.dataFileUri;
 import static io.deephaven.iceberg.base.IcebergUtils.locationUri;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown;
 
 abstract class S3WarehouseSqliteCatalogBase extends SqliteCatalogBase {
+
+    public abstract Map<String, String> s3ConnectionProperties();
 
     public abstract S3Instructions s3Instructions();
 
@@ -58,13 +61,15 @@ abstract class S3WarehouseSqliteCatalogBase extends SqliteCatalogBase {
             final Path rootDir,
             final Map<String, String> properties)
             throws ExecutionException, InterruptedException, TimeoutException {
-        return catalogAdapterForScheme(testInfo, properties, "s3");
+        // By default, the http clients are managed by Iceberg
+        return catalogAdapterForScheme(testInfo, properties, "s3", false);
     }
 
     private IcebergCatalogAdapter catalogAdapterForScheme(
             final TestInfo testInfo,
             final Map<String, String> properties,
-            final String scheme)
+            final String scheme,
+            final boolean useDeephavenManagedS3Clients)
             throws ExecutionException, InterruptedException, TimeoutException {
         final String methodName = testInfo.getTestMethod().orElseThrow().getName();
         final String catalogName = methodName + "-catalog";
@@ -77,13 +82,28 @@ abstract class S3WarehouseSqliteCatalogBase extends SqliteCatalogBase {
         }
         properties.put(CatalogProperties.WAREHOUSE_LOCATION, scheme + "://" + bucket + "/warehouse");
         properties.put(CatalogProperties.FILE_IO_IMPL, S3FileIO.class.getName());
-        return IcebergToolsS3.createAdapter(
+        if (useDeephavenManagedS3Clients) {
+            return IcebergToolsS3.createAdapter(
+                    BuildCatalogOptions.builder()
+                            .name(catalogName)
+                            .putAllProperties(properties)
+                            .putAllHadoopConfig(Map.of())
+                            .build(),
+                    s3Instructions());
+        }
+        final Map<String, String> s3ConnectionProperties = s3ConnectionProperties();
+        for (final Map.Entry<String, String> entry : s3ConnectionProperties.entrySet()) {
+            final String key = entry.getKey();
+            if (!properties.containsKey(key)) {
+                properties.put(key, entry.getValue());
+            }
+        }
+        return IcebergTools.createAdapter(
                 BuildCatalogOptions.builder()
                         .name(catalogName)
                         .putAllProperties(properties)
                         .putAllHadoopConfig(Map.of())
-                        .build(),
-                s3Instructions());
+                        .build());
     }
 
     private boolean doesBucketExist(final S3AsyncClient client, final String bucketName)
@@ -116,7 +136,7 @@ abstract class S3WarehouseSqliteCatalogBase extends SqliteCatalogBase {
             throws ExecutionException, InterruptedException, TimeoutException {
         final Map<String, String> properties = new HashMap<>();
         SqliteHelper.setJdbcCatalogProperties(properties, rootDir);
-        final IcebergCatalogAdapter catalogAdapter = catalogAdapterForScheme(testInfo, properties, scheme);
+        final IcebergCatalogAdapter catalogAdapter = catalogAdapterForScheme(testInfo, properties, scheme, false);
 
         final TableIdentifier tableIdentifier = TableIdentifier.parse("MyNamespace.MyTable");
 
@@ -186,4 +206,80 @@ abstract class S3WarehouseSqliteCatalogBase extends SqliteCatalogBase {
         expected = TableTools.merge(expected, data);
         assertTableEquals(expected, fromIceberg);
     }
+
+    @Test
+    void testReadWriteUsingAsyncHttpClientsManagedByDeephaven(TestInfo testInfo, @TempDir Path rootDir)
+            throws ExecutionException, InterruptedException, TimeoutException {
+        final Map<String, String> properties = new HashMap<>();
+        SqliteHelper.setJdbcCatalogProperties(properties, rootDir);
+        testReadWriteImpl(catalogAdapterForScheme(testInfo, properties, "s3", true),
+                "MyNamespace.TestTableWithClientManagedByDeephaven");
+    }
+
+    @Test
+    void testReadWriteWithCrtAsyncHttpClientsManagedByIceberg(TestInfo testInfo, @TempDir Path rootDir)
+            throws ExecutionException, InterruptedException, TimeoutException {
+        final Map<String, String> properties = new HashMap<>();
+
+        // Use the incorrect client type to verify that the test fails with the expected error message
+        properties.put("http-client-async.client-type", "aws-crt");
+        SqliteHelper.setJdbcCatalogProperties(properties, rootDir);
+        try {
+            testReadWriteImpl(catalogAdapterForScheme(testInfo, properties, "s3", false),
+                    "MyNamespace.TestTableWithCRTClientManagedByIceberg1");
+            failBecauseExceptionWasNotThrown(IllegalArgumentException.class);
+        } catch (IllegalArgumentException e) {
+            assertThat(e.getMessage()).contains("Unknown HTTP client type: aws-crt. Expected one of: netty, crt");
+        }
+
+        // Use the correct client type to verify that the test passes
+        properties.put("http-client-async.client-type", "crt");
+        testReadWriteImpl(catalogAdapterForScheme(testInfo, properties, "s3", false),
+                "MyNamespace.TestTableWithCRTClientManagedByIceberg2");
+    }
+
+    @Test
+    void testReadWriteWithNettyAsyncHttpClientsManagedByIceberg(TestInfo testInfo, @TempDir Path rootDir)
+            throws ExecutionException, InterruptedException, TimeoutException {
+        final Map<String, String> properties = new HashMap<>();
+
+        // Use the incorrect client type to verify that the test fails with the expected error message
+        properties.put("http-client-async.client-type", "netty-nio");
+        SqliteHelper.setJdbcCatalogProperties(properties, rootDir);
+        try {
+            testReadWriteImpl(catalogAdapterForScheme(testInfo, properties, "s3", false),
+                    "MyNamespace.TestTableWithNettyClientManagedByIceberg");
+            failBecauseExceptionWasNotThrown(IllegalArgumentException.class);
+        } catch (IllegalArgumentException e) {
+            assertThat(e.getMessage()).contains("Unknown HTTP client type: netty-nio. Expected one of: netty, crt");
+        }
+
+        // Use the correct client type to verify that the test passes
+        properties.put("http-client-async.client-type", "netty");
+        testReadWriteImpl(catalogAdapterForScheme(testInfo, properties, "s3", false),
+                "MyNamespace.TestTableWithNettyClientManagedByIceberg");
+    }
+
+
+    private void testReadWriteImpl(final IcebergCatalogAdapter catalogAdapter, final String tableIdentifierStr) {
+        final TableIdentifier tableIdentifier = TableIdentifier.parse(tableIdentifierStr);
+        final Table data = TableTools.newTable(
+                intCol("intCol", 2, 4, 6, 8, 10),
+                doubleCol("doubleCol", 2.5, 5.0, 7.5, 10.0, 12.5));
+
+        // Create a new iceberg table
+        final IcebergTableAdapter tableAdapter = catalogAdapter.createTable(tableIdentifier, data.getDefinition());
+        final IcebergTableWriter tableWriter = tableAdapter.tableWriter(writerOptionsBuilder()
+                .tableDefinition(data.getDefinition())
+                .build());
+        tableWriter.append(IcebergWriteInstructions.builder()
+                .addTables(data, data)
+                .build());
+
+        // Verify the data is correct
+        final Table fromIceberg = tableAdapter.table();
+        final Table expected = TableTools.merge(data, data);
+        assertTableEquals(expected, fromIceberg);
+    }
+
 }

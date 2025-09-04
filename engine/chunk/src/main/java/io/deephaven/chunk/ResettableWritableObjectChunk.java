@@ -27,20 +27,11 @@ public class ResettableWritableObjectChunk<T, ATTR_BASE extends Any>
         return new ResettableWritableObjectChunk<>();
     }
 
-    public static <T, ATTR_BASE extends Any> ResettableWritableObjectChunk<T, ATTR_BASE> makeResettableChunkForPool() {
-        return new ResettableWritableObjectChunk<>() {
-            @Override
-            public void close() {
-                MultiChunkPool.forThisThread().giveResettableWritableObjectChunk(this);
-            }
-        };
-    }
-
     private ResettableWritableObjectChunk(T[] data, int offset, int capacity) {
         super(data, offset, capacity);
     }
 
-    private ResettableWritableObjectChunk() {
+    protected ResettableWritableObjectChunk() {
         //noinspection unchecked
         this((T[])ArrayTypeUtils.EMPTY_OBJECT_ARRAY, 0, 0);
     }

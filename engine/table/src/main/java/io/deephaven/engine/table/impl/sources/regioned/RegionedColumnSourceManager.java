@@ -835,7 +835,7 @@ public class RegionedColumnSourceManager
             final WhereFilter filter,
             final RowSet selection,
             final boolean usePrev,
-            final PushdownFilterContext context,
+            final io.deephaven.engine.table.impl.PushdownFilterContext context,
             final JobScheduler jobScheduler,
             final LongConsumer onComplete,
             final Consumer<Exception> onError) {
@@ -849,7 +849,7 @@ public class RegionedColumnSourceManager
             final WhereFilter filter,
             final RowSet selection,
             final boolean usePrev,
-            final PushdownFilterContext context,
+            final io.deephaven.engine.table.impl.PushdownFilterContext context,
             final long costCeiling,
             final JobScheduler jobScheduler,
             final Consumer<PushdownResult> onComplete,
@@ -1001,13 +1001,13 @@ public class RegionedColumnSourceManager
         abstract class JobRunner implements JobScheduler.IterateResumeAction<JobScheduler.JobThreadContext> {
             protected final WhereFilter filter;
             protected final boolean usePrev;
-            protected final PushdownFilterContext context;
+            protected final io.deephaven.engine.table.impl.PushdownFilterContext context;
             protected final JobScheduler jobScheduler;
 
             JobRunner(
                     final WhereFilter filter,
                     final boolean usePrev,
-                    final PushdownFilterContext context,
+                    final io.deephaven.engine.table.impl.PushdownFilterContext context,
                     final JobScheduler jobScheduler) {
                 this.filter = Objects.requireNonNull(filter);
                 this.usePrev = usePrev;
@@ -1068,7 +1068,7 @@ public class RegionedColumnSourceManager
                 final JobScheduler jobScheduler,
                 final WhereFilter filter,
                 final boolean usePrev,
-                final PushdownFilterContext context) {
+                final io.deephaven.engine.table.impl.PushdownFilterContext context) {
             iterateParallel(jobScheduler, new EstimateJobRunner(filter, usePrev, context, jobScheduler));
         }
 
@@ -1094,7 +1094,8 @@ public class RegionedColumnSourceManager
         }
 
         final class EstimateJobRunner extends JobRunner {
-            EstimateJobRunner(WhereFilter filter, boolean usePrev, PushdownFilterContext context,
+            EstimateJobRunner(WhereFilter filter, boolean usePrev,
+                    io.deephaven.engine.table.impl.PushdownFilterContext context,
                     JobScheduler jobScheduler) {
                 super(filter, usePrev, context, jobScheduler);
             }
@@ -1141,7 +1142,7 @@ public class RegionedColumnSourceManager
                 final JobScheduler jobScheduler,
                 final WhereFilter filter,
                 final boolean usePrev,
-                final PushdownFilterContext context,
+                final io.deephaven.engine.table.impl.PushdownFilterContext context,
                 final long costCeiling) {
             iterateParallel(jobScheduler, new PushdownJobRunner(filter, usePrev, context, jobScheduler, costCeiling));
         }
@@ -1224,7 +1225,8 @@ public class RegionedColumnSourceManager
 
             private final long costCeiling;
 
-            public PushdownJobRunner(WhereFilter filter, boolean usePrev, PushdownFilterContext context,
+            public PushdownJobRunner(WhereFilter filter, boolean usePrev,
+                    io.deephaven.engine.table.impl.PushdownFilterContext context,
                     JobScheduler jobScheduler, long costCeiling) {
                 super(filter, usePrev, context, jobScheduler);
                 this.costCeiling = costCeiling;

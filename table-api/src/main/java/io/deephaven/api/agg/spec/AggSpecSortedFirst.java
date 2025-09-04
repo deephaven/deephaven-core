@@ -5,6 +5,7 @@ package io.deephaven.api.agg.spec;
 
 import io.deephaven.annotations.BuildableStyle;
 import io.deephaven.api.SortColumn;
+import io.deephaven.api.SortSpec;
 import org.immutables.value.Value.Check;
 import org.immutables.value.Value.Immutable;
 
@@ -15,7 +16,7 @@ import java.util.stream.Collectors;
  * Specifies an aggregation that outputs the first value in the input column for each group, after sorting the group on
  * the {@link #columns() sort columns}.
  * 
- * @implNote The sorted-first aggregation only supports {@link SortColumn.Order#ASCENDING} columns at the moment.
+ * @implNote The sorted-first aggregation only supports {@link SortSpec.Order#ASCENDING} columns at the moment.
  * @see <a href="https://github.com/deephaven/deephaven-core/issues/821">SortedFirst / SortedLast aggregations with sort
  *      direction</a>
  */
@@ -55,14 +56,10 @@ public abstract class AggSpecSortedFirst extends AggSpecBase {
     @Check
     final void checkSortOrder() {
         // TODO(deephaven-core#821): SortedFirst / SortedLast aggregations with sort direction
-        if (!columns().stream().map(SortColumn::order).allMatch(AggSpecSortedFirst::isAscending)) {
+        if (!columns().stream().allMatch(SortSpec::isAscending)) {
             throw new IllegalArgumentException(
                     "Can only construct AggSpecSortedFirst with ascending, see https://github.com/deephaven/deephaven-core/issues/821");
         }
-    }
-
-    private static boolean isAscending(SortColumn.Order o) {
-        return o == SortColumn.Order.ASCENDING;
     }
 
     public interface Builder {

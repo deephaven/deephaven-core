@@ -53,4 +53,9 @@ public class LongRingBufferVectorWrapper implements LongVector, RingBufferVector
     public LongVector getDirect() {
         return new LongVectorDirect(ringBuffer.getAll());
     }
+
+    @Override
+    public boolean equals(Object obj) {
+        return LongVector.equals(this, obj);
+    }
 }

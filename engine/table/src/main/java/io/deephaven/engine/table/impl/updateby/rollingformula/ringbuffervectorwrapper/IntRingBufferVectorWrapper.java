@@ -53,4 +53,9 @@ public class IntRingBufferVectorWrapper implements IntVector, RingBufferVectorWr
     public IntVector getDirect() {
         return new IntVectorDirect(ringBuffer.getAll());
     }
+
+    @Override
+    public boolean equals(Object obj) {
+        return IntVector.equals(this, obj);
+    }
 }

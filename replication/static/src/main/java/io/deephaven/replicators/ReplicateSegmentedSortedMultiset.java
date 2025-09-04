@@ -31,6 +31,7 @@ public class ReplicateSegmentedSortedMultiset {
         String objectSsm = charToObject(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/ssms/CharSegmentedSortedMultiset.java");
         fixupObjectSsm(objectSsm, ReplicateSegmentedSortedMultiset::fixupNulls,
+                ReplicateSegmentedSortedMultiset::fixupObjectGeneric,
                 ReplicateSegmentedSortedMultiset::fixupTHashes,
                 ReplicateSegmentedSortedMultiset::fixupSsmConstructor,
                 ReplicateSegmentedSortedMultiset::fixupObjectCompare,
@@ -217,6 +218,10 @@ public class ReplicateSegmentedSortedMultiset {
                         "    public Class getComponentType() {\n" +
                         "        return componentType;\n" +
                         "    }"));
+    }
+
+    private static List<String> fixupObjectGeneric(List<String> lines) {
+        return globalReplacements(lines, "ObjectVector \\{", "ObjectVector<Object> \\{");
     }
 
     private static List<String> fixupSourceConstructor(List<String> lines) {

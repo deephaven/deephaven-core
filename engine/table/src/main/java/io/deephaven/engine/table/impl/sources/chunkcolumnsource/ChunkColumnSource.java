@@ -4,10 +4,12 @@
 package io.deephaven.engine.table.impl.sources.chunkcolumnsource;
 
 import gnu.trove.list.array.TLongArrayList;
+import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.WritableChunk;
+import io.deephaven.util.annotations.FinalDefault;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -115,15 +117,31 @@ public interface ChunkColumnSource<T> extends ColumnSource<T> {
      *
      * @param chunk the chunk of data to add
      */
-    void addChunk(@NotNull WritableChunk<? extends Values> chunk);
+    void addChunk(@NotNull Chunk<? extends Values> chunk);
 
     /**
      * Reset the column source to be ready for reuse.
      * <p>
      * Clear will discard the currently held chunks. This should not be called if a table will continue to reference the
-     * column source; as it violates the immutability contract.
+     * column source, as it violates the immutability contract.
+     * <p>
+     * This method is equivalent to calling {@link #clear(boolean)} with {@code true} for the {@code closeChunks}
+     * parameter.
      */
-    void clear();
+    @FinalDefault
+    default void clear() {
+        clear(true);
+    }
+
+    /**
+     * Reset the column source to be ready for reuse.
+     * <p>
+     * Clear will discard the currently held chunks. This should not be called if a table will continue to reference the
+     * column source, as it violates the immutability contract.
+     *
+     * @param closeChunks If true, close the chunks that are currently held by this column source
+     */
+    void clear(boolean closeChunks);
 
     /**
      * Get the size of this column source (one more than the last valid row key).

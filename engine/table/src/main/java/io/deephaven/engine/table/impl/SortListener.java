@@ -28,6 +28,8 @@ import io.deephaven.util.type.ArrayTypeUtils;
 import java.util.*;
 import java.util.function.LongUnaryOperator;
 
+import static io.deephaven.engine.table.impl.SortHelpers.AllowSymbolTable.DISALLOW_SYMBOL_TABLE;
+
 public class SortListener extends BaseTable.ListenerImpl {
     // Do I get my own logger?
     private static final Logger log = LoggerFactory.getLogger(SortListener.class);
@@ -49,6 +51,9 @@ public class SortListener extends BaseTable.ListenerImpl {
     private final ColumnSource<Comparable<?>>[] columnsToSortBy;
     private final WritableRowSet resultRowSet;
     private final SortingOrder[] order;
+    // optioanl comparators for Objects
+    private final Comparator[] comparators;
+    private final boolean[] comparatorsRespectEquality;
     private final WritableRowRedirection sortMapping;
     private final ColumnSource<Comparable<?>>[] sortedColumnsToSortBy;
     private final EffortTracker effortTracker;
@@ -65,6 +70,8 @@ public class SortListener extends BaseTable.ListenerImpl {
             final ColumnSource<Comparable<?>>[] originalColumnsToSortBy,
             final ColumnSource<Comparable<?>>[] columnsToSortBy,
             final SortingOrder[] order,
+            final Comparator[] comparators,
+            final boolean[] comparatorsRespectEquality,
             final WritableRowRedirection sortMapping,
             final ColumnSource<Comparable<?>>[] sortedColumnsToSortBy,
             final ModifiedColumnSet.Transformer mcsTransformer,
@@ -77,11 +84,13 @@ public class SortListener extends BaseTable.ListenerImpl {
         this.columnsToSortBy = columnsToSortBy;
         this.resultRowSet = result.getRowSet().writableCast();
         this.order = order;
+        this.comparators = comparators;
+        this.comparatorsRespectEquality = comparatorsRespectEquality;
         this.sortMapping = sortMapping;
         this.sortedColumnsToSortBy = sortedColumnsToSortBy;
         this.effortTracker = REBALANCE_EFFORT_TRACKER_ENABLED ? new EffortTracker(100) : null;
 
-        // We create these comparators here so as to avoid building new ones on every call to doUpdate().
+        // We create these comparators here to avoid building new ones on every call to doUpdate().
         this.targetComparator = new TargetComparator();
 
         this.mcsTransformer = mcsTransformer;
@@ -233,7 +242,8 @@ public class SortListener extends BaseTable.ListenerImpl {
             final RowSet addedAndModified =
                     modifiedNeedsSorting ? closer.add(upstream.added().union(upstream.modified())) : upstream.added();
             final long[] addedInputKeys = SortHelpers.getSortedKeys(order, originalColumnsToSortBy, columnsToSortBy,
-                    null, addedAndModified, false, false).getArrayMapping();
+                    comparators, comparatorsRespectEquality, null, addedAndModified, false, DISALLOW_SYMBOL_TABLE)
+                    .getArrayMapping();
             final long[] addedOutputKeys = new long[addedInputKeys.length];
             final long[] propagatedModOutputKeys = modifiedNeedsSorting ? new long[upstream.modified().intSize()]
                     : ArrayTypeUtils.EMPTY_LONG_ARRAY;
@@ -577,7 +587,8 @@ public class SortListener extends BaseTable.ListenerImpl {
             this.comparators = new ColumnComparatorFactory.IComparator[columnsToSortBy.length];
             for (int ii = 0; ii < columnsToSortBy.length; ii++) {
                 comparators[ii] = ColumnComparatorFactory.createComparatorLeftCurrRightPrev(columnsToSortBy[ii],
-                        sortedColumnsToSortBy[ii]);
+                        sortedColumnsToSortBy[ii],
+                        SortListener.this.comparators[ii]);
             }
             setTarget(-1);
         }

@@ -4,10 +4,7 @@
 package io.deephaven.engine.table.impl.updateby.rollingformula.ringbuffervectorwrapper;
 
 import io.deephaven.base.ringbuffer.ObjectRingBuffer;
-import io.deephaven.vector.ObjectSubVector;
-import io.deephaven.vector.ObjectVector;
-import io.deephaven.vector.ObjectVectorDirect;
-import io.deephaven.vector.ObjectVectorSlice;
+import io.deephaven.vector.*;
 
 public class ObjectRingBufferVectorWrapper<T> implements ObjectVector<T>, RingBufferVectorWrapper<ObjectVector<T>> {
     private final ObjectRingBuffer<T> ringBuffer;
@@ -56,5 +53,10 @@ public class ObjectRingBufferVectorWrapper<T> implements ObjectVector<T>, RingBu
     @Override
     public Class<T> getComponentType() {
         return componentType;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        return ObjectVector.equals(this, obj);
     }
 }

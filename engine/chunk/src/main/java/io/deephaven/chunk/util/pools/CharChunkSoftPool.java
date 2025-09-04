@@ -3,56 +3,78 @@
 //
 package io.deephaven.chunk.util.pools;
 
+import io.deephaven.chunk.CharChunk;
+import io.deephaven.chunk.ResettableCharChunk;
+import io.deephaven.chunk.ResettableReadOnlyChunk;
+import io.deephaven.chunk.ResettableWritableCharChunk;
+import io.deephaven.chunk.ResettableWritableChunk;
+import io.deephaven.chunk.WritableCharChunk;
+import io.deephaven.chunk.WritableChunk;
 import io.deephaven.util.type.ArrayTypeUtils;
 import io.deephaven.chunk.attributes.Any;
-import io.deephaven.chunk.*;
 import io.deephaven.util.datastructures.SegmentedSoftPool;
-import org.jetbrains.annotations.NotNull;
 
 import static io.deephaven.chunk.util.pools.ChunkPoolConstants.*;
 
 /**
- * {@link ChunkPool} implementation for chunks of chars.
+ * {@link CharChunkPool} implementation that pools chunks of chars in a data structure that only enforces soft
+ * reachability.
  */
-@SuppressWarnings("rawtypes")
 public final class CharChunkSoftPool implements CharChunkPool {
 
-    private final WritableCharChunk<Any> EMPTY = WritableCharChunk.writableChunkWrap(ArrayTypeUtils.EMPTY_CHAR_ARRAY);
+    private static final WritableCharChunk<Any> EMPTY =
+            WritableCharChunk.writableChunkWrap(ArrayTypeUtils.EMPTY_CHAR_ARRAY);
 
     /**
-     * Sub-pools by power-of-two sizes for {@link WritableCharChunk}s.
+     * Subpools by power-of-two sizes for {@link WritableCharChunk WritableCharChunks}.
      */
-    private final SegmentedSoftPool<WritableCharChunk>[] writableCharChunks;
+    private final SegmentedSoftPool<WritableCharChunk<Any>>[] writableCharChunks;
 
     /**
-     * Sub-pool of {@link ResettableCharChunk}s.
+     * Subpool of {@link ResettableCharChunk ResettableCharChunks}.
      */
-    private final SegmentedSoftPool<ResettableCharChunk> resettableCharChunks;
+    private final SegmentedSoftPool<ResettableCharChunk<Any>> resettableCharChunks;
 
     /**
-     * Sub-pool of {@link ResettableWritableCharChunk}s.
+     * Subpool of {@link ResettableWritableCharChunk ResettableWritableCharChunks}.
      */
-    private final SegmentedSoftPool<ResettableWritableCharChunk> resettableWritableCharChunks;
+    private final SegmentedSoftPool<ResettableWritableCharChunk<Any>> resettableWritableCharChunks;
 
     CharChunkSoftPool() {
         // noinspection unchecked
         writableCharChunks = new SegmentedSoftPool[NUM_POOLED_CHUNK_CAPACITIES];
         for (int pcci = 0; pcci < NUM_POOLED_CHUNK_CAPACITIES; ++pcci) {
-            final int chunkLog2Capacity = pcci + SMALLEST_POOLED_CHUNK_LOG2_CAPACITY;
+            final int poolIndex = pcci;
+            final int chunkLog2Capacity = poolIndex + SMALLEST_POOLED_CHUNK_LOG2_CAPACITY;
             final int chunkCapacity = 1 << chunkLog2Capacity;
-            writableCharChunks[pcci] = new SegmentedSoftPool<>(
+            writableCharChunks[poolIndex] = new SegmentedSoftPool<>(
                     SUB_POOL_SEGMENT_CAPACITY,
-                    () -> ChunkPoolInstrumentation
-                            .getAndRecord(() -> WritableCharChunk.makeWritableChunkForPool(chunkCapacity)),
-                    (final WritableCharChunk chunk) -> chunk.setSize(chunkCapacity));
+                    () -> ChunkPoolInstrumentation.getAndRecord(
+                            () -> new WritableCharChunk<Any>(CharChunk.makeArray(chunkCapacity), 0, chunkCapacity) {
+                                @Override
+                                public void close() {
+                                    writableCharChunks[poolIndex].give(ChunkPoolReleaseTracking.onGive(this));
+                                }
+                            }),
+                    (final WritableCharChunk<Any> chunk) -> chunk.setSize(chunkCapacity));
         }
         resettableCharChunks = new SegmentedSoftPool<>(
                 SUB_POOL_SEGMENT_CAPACITY,
-                () -> ChunkPoolInstrumentation.getAndRecord(ResettableCharChunk::makeResettableChunkForPool),
+                () -> ChunkPoolInstrumentation.getAndRecord(() -> new ResettableCharChunk<Any>() {
+                    @Override
+                    public void close() {
+                        resettableCharChunks.give(ChunkPoolReleaseTracking.onGive(this));
+                    }
+                }),
                 ResettableCharChunk::clear);
         resettableWritableCharChunks = new SegmentedSoftPool<>(
                 SUB_POOL_SEGMENT_CAPACITY,
-                () -> ChunkPoolInstrumentation.getAndRecord(ResettableWritableCharChunk::makeResettableChunkForPool),
+                () -> ChunkPoolInstrumentation.getAndRecord(() -> new ResettableWritableCharChunk<Any>() {
+                    @Override
+                    public void close() {
+                        resettableWritableCharChunks.give(ChunkPoolReleaseTracking.onGive(this));
+                    }
+                }),
                 ResettableWritableCharChunk::clear);
     }
 
@@ -65,30 +87,13 @@ public final class CharChunkSoftPool implements CharChunkPool {
             }
 
             @Override
-            public <ATTR extends Any> void giveWritableChunk(@NotNull final WritableChunk<ATTR> writableChunk) {
-                giveWritableCharChunk(writableChunk.asWritableCharChunk());
-            }
-
-            @Override
             public <ATTR extends Any> ResettableReadOnlyChunk<ATTR> takeResettableChunk() {
                 return takeResettableCharChunk();
             }
 
             @Override
-            public <ATTR extends Any> void giveResettableChunk(
-                    @NotNull final ResettableReadOnlyChunk<ATTR> resettableChunk) {
-                giveResettableCharChunk(resettableChunk.asResettableCharChunk());
-            }
-
-            @Override
             public <ATTR extends Any> ResettableWritableChunk<ATTR> takeResettableWritableChunk() {
                 return takeResettableWritableCharChunk();
-            }
-
-            @Override
-            public <ATTR extends Any> void giveResettableWritableChunk(
-                    @NotNull final ResettableWritableChunk<ATTR> resettableWritableChunk) {
-                giveResettableWritableCharChunk(resettableWritableChunk.asResettableWritableCharChunk());
             }
         };
     }
@@ -101,49 +106,30 @@ public final class CharChunkSoftPool implements CharChunkPool {
         }
         final int poolIndexForTake = getPoolIndexForTake(checkCapacityBounds(capacity));
         if (poolIndexForTake >= 0) {
-            // noinspection resource
-            final WritableCharChunk result = writableCharChunks[poolIndexForTake].take();
+            // noinspection resource,unchecked
+            final WritableCharChunk<ATTR> result =
+                    (WritableCharChunk<ATTR>) writableCharChunks[poolIndexForTake].take();
             result.setSize(capacity);
-            // noinspection unchecked
             return ChunkPoolReleaseTracking.onTake(result);
         }
-        // noinspection unchecked
-        return ChunkPoolReleaseTracking.onTake(WritableCharChunk.makeWritableChunkForPool(capacity));
-    }
-
-    @Override
-    public void giveWritableCharChunk(@NotNull final WritableCharChunk<?> writableCharChunk) {
-        if (writableCharChunk == EMPTY || writableCharChunk.isAlias(EMPTY)) {
-            return;
-        }
-        ChunkPoolReleaseTracking.onGive(writableCharChunk);
-        final int capacity = writableCharChunk.capacity();
-        final int poolIndexForGive = getPoolIndexForGive(checkCapacityBounds(capacity));
-        if (poolIndexForGive >= 0) {
-            writableCharChunks[poolIndexForGive].give(writableCharChunk);
-        }
+        return ChunkPoolReleaseTracking.onTake(
+                new WritableCharChunk<>(CharChunk.makeArray(capacity), 0, capacity) {
+                    @Override
+                    public void close() {
+                        ChunkPoolReleaseTracking.onGive(this);
+                    }
+                });
     }
 
     @Override
     public <ATTR extends Any> ResettableCharChunk<ATTR> takeResettableCharChunk() {
         // noinspection unchecked
-        return ChunkPoolReleaseTracking.onTake(resettableCharChunks.take());
-    }
-
-    @Override
-    public void giveResettableCharChunk(@NotNull final ResettableCharChunk resettableCharChunk) {
-        resettableCharChunks.give(ChunkPoolReleaseTracking.onGive(resettableCharChunk));
+        return (ResettableCharChunk<ATTR>) ChunkPoolReleaseTracking.onTake(resettableCharChunks.take());
     }
 
     @Override
     public <ATTR extends Any> ResettableWritableCharChunk<ATTR> takeResettableWritableCharChunk() {
         // noinspection unchecked
-        return ChunkPoolReleaseTracking.onTake(resettableWritableCharChunks.take());
-    }
-
-    @Override
-    public void giveResettableWritableCharChunk(
-            @NotNull final ResettableWritableCharChunk resettableWritableCharChunk) {
-        resettableWritableCharChunks.give(ChunkPoolReleaseTracking.onGive(resettableWritableCharChunk));
+        return (ResettableWritableCharChunk<ATTR>) ChunkPoolReleaseTracking.onTake(resettableWritableCharChunks.take());
     }
 }

@@ -23,20 +23,11 @@ public class ResettableWritableCharChunk<ATTR_BASE extends Any>
         return new ResettableWritableCharChunk<>();
     }
 
-    public static <ATTR_BASE extends Any> ResettableWritableCharChunk<ATTR_BASE> makeResettableChunkForPool() {
-        return new ResettableWritableCharChunk<>() {
-            @Override
-            public void close() {
-                MultiChunkPool.forThisThread().giveResettableWritableCharChunk(this);
-            }
-        };
-    }
-
     private ResettableWritableCharChunk(char[] data, int offset, int capacity) {
         super(data, offset, capacity);
     }
 
-    private ResettableWritableCharChunk() {
+    protected ResettableWritableCharChunk() {
         this(ArrayTypeUtils.EMPTY_CHAR_ARRAY, 0, 0);
     }
 

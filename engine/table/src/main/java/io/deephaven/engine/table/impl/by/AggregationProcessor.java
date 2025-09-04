@@ -97,7 +97,6 @@ import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.impl.ssms.SegmentedSortedMultiSet;
 import io.deephaven.engine.table.impl.util.freezeby.FreezeByCountOperator;
 import io.deephaven.engine.table.impl.util.freezeby.FreezeByOperator;
-import io.deephaven.qst.type.Type;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.annotations.FinalDefault;
 import io.deephaven.util.type.ArrayTypeUtils;
@@ -600,7 +599,7 @@ public class AggregationProcessor implements AggregationContextFactory {
         }
 
         final void descendingSortedFirstOrLastUnsupported(@NotNull final SortColumn sortColumn, final boolean isFirst) {
-            if (sortColumn.order() == SortColumn.Order.ASCENDING) {
+            if (sortColumn.isAscending()) {
                 return;
             }
             throw new UnsupportedOperationException(String.format("%s does not support sort order in %s",
