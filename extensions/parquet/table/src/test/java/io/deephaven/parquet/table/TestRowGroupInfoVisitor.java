@@ -169,13 +169,13 @@ public class TestRowGroupInfoVisitor {
     private void verifyJsonVisitor(final @NotNull RowGroup2JsonVisitor jsonVisitor, final @NotNull RowGroupInfo orig)
             throws IOException {
         final RowGroupInfo deserialized = jsonVisitor.deserialize(jsonVisitor.visit(orig));
-        assertEquals(String.format("%s serializes/deserializes", orig.getName()), orig, deserialized);
+        assertEquals(String.format("%s serializes/deserializes", orig), orig, deserialized);
     }
 
     /**
      * Verify that ... each defined {@link RowGroupInfo} implementation is able to self-copy itself to a new instance,
      * which is equal to the original instance using JSON serialization/deserialization. Additionally, we ensure that we
-     * are not able to copy a "custom" * {@link RowGroupInfo} implementation
+     * are not able to copy a "custom" {@link RowGroupInfo} implementation
      */
     @Test
     public void testJsonVisitor() throws IOException {

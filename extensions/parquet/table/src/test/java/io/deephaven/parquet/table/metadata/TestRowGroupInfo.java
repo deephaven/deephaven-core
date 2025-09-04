@@ -226,7 +226,7 @@ public class TestRowGroupInfo {
 
     /**
      * Verify that "ByGroup (with max)" results in ... a number of RowGroups, each of which contains a single
-     * `random_int` value and contain `maxRows` or fewer * rows
+     * `random_int` value and contain `maxRows` or fewer rows
      */
     @Test
     public void testByGroupWithMax() {
