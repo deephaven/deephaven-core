@@ -1,0 +1,1 @@
+{"file":"core/docs/how-to-guides/data-import-export/parquet-export.md","objects":{"grades_partitioned_keys":{"type":"Table","data":{"columns":[{"name":"Class","type":"java.lang.String"}],"rows":[[{"value":"Math"}],[{"value":"Science"}],[{"value":"History"}]]}}}}

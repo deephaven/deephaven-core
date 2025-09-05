@@ -1,0 +1,1 @@
+{"file":"core/docs/reference/query-language/types/NaNs.md","objects":{"result":{"type":"Table","data":{"columns":[{"name":"NaNFloat","type":"double"},{"name":"NaNDouble","type":"double"},{"name":"NaNFloatNaN","type":"java.lang.Boolean"},{"name":"NaNDoubleNaN","type":"java.lang.Boolean"}],"rows":[[{"value":"NaN"},{"value":"NaN"},{"value":"true"},{"value":"true"}]]}}}}

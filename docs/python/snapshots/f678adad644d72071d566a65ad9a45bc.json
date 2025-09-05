@@ -1,0 +1,1 @@
+{"file":"core/docs/getting-started/crash-course/export-data.md","objects":{"source_table":{"type":"Table","data":{"columns":[{"name":"Name","type":"java.lang.String"},{"name":"Value","type":"java.lang.String"}],"rows":[[{"value":"Alice"},{"value":"X"}],[{"value":"Bob"},{"value":"Y"}],[{"value":"Charlie"},{"value":"Z"}]]}}}}

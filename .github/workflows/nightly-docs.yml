@@ -1,0 +1,66 @@
+name: Docs nightly tests
+
+# Controls when the action will run.
+on:
+  schedule:
+    #2AM EST == 6AM UTC
+    - cron: '0 6 * * *'
+
+jobs:
+  snapshots:
+    runs-on: ubuntu-24.04
+    if: github.ref == 'refs/heads/main' && github.repository_owner == 'deephaven' # Don't run on forks that haven't disabled actions
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          sparse-checkout: /docs/
+          sparse-checkout-cone-mode: false
+
+      # Run all snapshots against the edge container
+      - name: Run all snapshots
+        run: ./docs/updateSnapshots -t edge -a
+
+      - name: Slack Notification
+        uses: slackapi/slack-github-action@v1.23.0
+        if: failure()
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL_DEVREL}}
+        with:
+          payload: |
+            {
+              "repository": "${{ github.repository }}",
+              "message": "${{ github.workflow }}/${{ github.job }} snapshot failure",
+              "link": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            }
+
+  validation:
+    runs-on: ubuntu-24.04
+    if: github.ref == 'refs/heads/main' && github.repository_owner == 'deephaven' # Don't run on forks that haven't disabled actions
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v5
+      with:
+        sparse-checkout: /docs/
+        sparse-checkout-cone-mode: false
+        # We can validate without lfs as the assets will exist as just a file pointer which is enough for validation
+
+    - name: Check formatting
+      run: ./docs/format -c
+
+    - name: Validate docs
+      if: always()
+      run: ./docs/validate -e # Validate with external links
+
+    - name: Slack Notification
+      uses: slackapi/slack-github-action@v1.23.0
+      if: failure()
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL_DEVREL}}
+      with:
+        payload: |
+          {
+            "repository": "${{ github.repository }}",
+            "message": "${{ github.workflow }}/${{ github.job }} validation failure",
+            "link": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          }
