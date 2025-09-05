@@ -225,8 +225,7 @@ public class ParquetTableWriter {
                         tableRowSet, columnSourceMap, dest, destOutputStream, writeInstructions, tableMeta,
                         tableInfoBuilder, metadataFileWriter);
                 // Given the transformation, do not use the original table's "definition" for writing
-                final Iterator<Table> it =
-                        writeInstructions.getRowGroupInfo().walk(new RowGroupTableIteratorVisitor(t));
+                final Iterator<Table> it = RowGroupTableIteratorVisitor.of(writeInstructions.getRowGroupInfo(), t);
                 while (it.hasNext()) {
                     write(it.next(), writeInstructions, parquetFileWriter, computedCache);
                 }

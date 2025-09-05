@@ -18,6 +18,10 @@ import java.util.Objects;
 
 final class RowGroupTableIteratorVisitor implements RowGroupInfo.Visitor<Iterator<Table>> {
 
+    public static Iterator<Table> of(final RowGroupInfo rowGroupInfo, final Table table) {
+        return rowGroupInfo.walk(new RowGroupTableIteratorVisitor(table));
+    }
+
     private static Iterator<Table> splitByMaxRows(final Table input, final long maxRows) {
         final long numRowGroups = (input.size() / maxRows) + ((input.size() % maxRows) > 0 ? 1 : 0);
         return splitByNumGroups(input, numRowGroups);
@@ -35,7 +39,7 @@ final class RowGroupTableIteratorVisitor implements RowGroupInfo.Visitor<Iterato
 
     private final Table input;
 
-    RowGroupTableIteratorVisitor(Table input) {
+    private RowGroupTableIteratorVisitor(Table input) {
         this.input = Objects.requireNonNull(input);
     }
 

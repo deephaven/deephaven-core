@@ -72,7 +72,7 @@ public class TestRowGroupTableIteratorVisitor {
      */
     private static List<Table> getRowGroups(final @NotNull Table input, final @NotNull RowGroupInfo rgi) {
         final List<Table> rowGroups = new ArrayList<>();
-        rgi.walk(new RowGroupTableIteratorVisitor(input)).forEachRemaining(rowGroups::add);
+        RowGroupTableIteratorVisitor.of(rgi, input).forEachRemaining(rowGroups::add);
         assertEquals("Sum of RowGroups equals Table.size()", input.size(), merge(rowGroups).size());
         return rowGroups;
     }
