@@ -41,12 +41,13 @@ public class TestRowGroupInfo {
                 RowGroupInfo.splitEvenly(1),
                 RowGroupInfo.byGroup("a", "b"),
                 RowGroupInfo.byGroup(99, "a", "b"));
+
+        distinctConfigs.forEach((config) -> assertEquals(String.format("%s == %s", config, config), config, config));
+
         final int L = distinctConfigs.size();
         for (int i = 0; i < L - 1; ++i) {
-            final RowGroupInfo config = distinctConfigs.get(i);
-            assertEquals(String.format("%s == %s", config, config), config, config);
             for (int j = i + 1; j < L; ++j) {
-                assertInequality(config, distinctConfigs.get(j));
+                assertInequality(distinctConfigs.get(i), distinctConfigs.get(j));
             }
         }
     }
