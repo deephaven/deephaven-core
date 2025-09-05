@@ -22,7 +22,7 @@ jobs:
         run: ./docs/updateSnapshots -t edge -a
 
       - name: Slack Notification
-        uses: slackapi/slack-github-action@v1.23.0
+        uses: slackapi/slack-github-action@v2.1.1
         if: failure()
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL_DEVREL}}
@@ -53,7 +53,7 @@ jobs:
       run: ./docs/validate -e # Validate with external links
 
     - name: Slack Notification
-      uses: slackapi/slack-github-action@v1.23.0
+      uses: slackapi/slack-github-action@v2.1.1
       if: failure()
       env:
         SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL_DEVREL}}
