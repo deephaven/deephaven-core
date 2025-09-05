@@ -9,6 +9,7 @@ dependencies {
     implementation project(':authentication')
     implementation project(':authorization')
     implementation project(':engine-table')
+    implementation project(':engine-function')
     implementation project(':extensions-csv')
     implementation project(':extensions-arrow')
     implementation project(':extensions-parquet-table')
@@ -18,6 +19,7 @@ dependencies {
     implementation project(':Integrations')
     implementation libs.commons.lang3
     implementation libs.commons.text
+    implementation libs.rewrite.java
 
     implementation libs.javaparser.core
     implementation project(':open-api-lang-parser')

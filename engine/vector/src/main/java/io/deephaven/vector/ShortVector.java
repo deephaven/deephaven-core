@@ -8,6 +8,7 @@
 package io.deephaven.vector;
 
 import io.deephaven.base.verify.Require;
+import io.deephaven.util.annotations.UserInvocationPermitted;
 import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfShort;
 import io.deephaven.engine.primitive.value.iterator.ValueIteratorOfShort;
 import io.deephaven.qst.type.ShortType;
@@ -38,6 +39,7 @@ public interface ShortVector extends Vector<ShortVector>, Iterable<Short> {
      * @param index An offset into this ShortVector
      * @return The element at the specified offset, or the {@link QueryConstants#NULL_SHORT null short}
      */
+    @UserInvocationPermitted({"vector"})
     short get(long index);
 
     @Override
@@ -55,6 +57,7 @@ public interface ShortVector extends Vector<ShortVector>, Iterable<Short> {
     @Override
     ShortVector getDirect();
 
+    @UserInvocationPermitted({"vector"})
     @Override
     @FinalDefault
     default ValueIteratorOfShort iterator() {
@@ -246,6 +249,7 @@ public interface ShortVector extends Vector<ShortVector>, Iterable<Short> {
      */
     abstract class Indirect implements ShortVector {
 
+        @UserInvocationPermitted({"vector"})
         @Override
         public short[] toArray() {
             final int size = intSize("ShortVector.toArray");

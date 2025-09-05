@@ -10,6 +10,7 @@ package io.deephaven.vector;
 import io.deephaven.util.compare.FloatComparisons;
 
 import io.deephaven.base.verify.Require;
+import io.deephaven.util.annotations.UserInvocationPermitted;
 import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfFloat;
 import io.deephaven.engine.primitive.value.iterator.ValueIteratorOfFloat;
 import io.deephaven.qst.type.FloatType;
@@ -40,6 +41,7 @@ public interface FloatVector extends Vector<FloatVector>, Iterable<Float> {
      * @param index An offset into this FloatVector
      * @return The element at the specified offset, or the {@link QueryConstants#NULL_FLOAT null float}
      */
+    @UserInvocationPermitted({"vector"})
     float get(long index);
 
     @Override
@@ -57,6 +59,7 @@ public interface FloatVector extends Vector<FloatVector>, Iterable<Float> {
     @Override
     FloatVector getDirect();
 
+    @UserInvocationPermitted({"vector"})
     @Override
     @FinalDefault
     default ValueIteratorOfFloat iterator() {
@@ -248,6 +251,7 @@ public interface FloatVector extends Vector<FloatVector>, Iterable<Float> {
      */
     abstract class Indirect implements FloatVector {
 
+        @UserInvocationPermitted({"vector"})
         @Override
         public float[] toArray() {
             final int size = intSize("FloatVector.toArray");
