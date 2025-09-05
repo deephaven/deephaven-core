@@ -40,10 +40,11 @@ public class TestRowGroupInfoVisitor {
          * {@link ObjectNode}, which has been previously serialized from a different {@link RowGroupInfo} instance
          */
         private static final Map<String, Function<ObjectNode, RowGroupInfo>> DESER_MAP = Map.ofEntries(
-                entry(RowGroupInfo.SingleRowGroup.NAME, (node) -> RowGroupInfo.singleRowGroup()),
-                entry(RowGroupInfo.SplitByMaxRows.NAME, RowGroup2JsonVisitor::constructMaxRows),
-                entry(RowGroupInfo.SplitEvenly.NAME, RowGroup2JsonVisitor::constructSplitEvenly),
-                entry(RowGroupInfo.SplitByGroups.NAME, RowGroup2JsonVisitor::constructByGroup));
+                entry(RowGroupInfo.SingleRowGroup.class.getSimpleName(), (node) -> RowGroupInfo.singleRowGroup()),
+                entry(RowGroupInfo.SplitByMaxRows.class.getSimpleName(), RowGroup2JsonVisitor::constructMaxRows),
+                entry(RowGroupInfo.SplitEvenly.class.getSimpleName(), RowGroup2JsonVisitor::constructSplitEvenly),
+                entry(RowGroupInfo.SplitByGroups.class.getSimpleName(), RowGroup2JsonVisitor::constructByGroup));
+        private static final String NAME_ATTR = "name";
 
         private final ObjectMapper mapper;
 
@@ -52,10 +53,13 @@ public class TestRowGroupInfoVisitor {
         }
 
         @Override
-        public String visit(final RowGroupInfo.@NotNull SingleRowGroup single) {
+        public String visit(final @NotNull RowGroupInfo.SingleRowGroup single) {
             final String jsonStr;
             try {
-                jsonStr = mapper.writeValueAsString(single);
+                // no properties to read; start with an empty node and add the type-specific name
+                final ObjectNode jsonNode = mapper.createObjectNode();
+                jsonNode.put(NAME_ATTR, single.getClass().getSimpleName());
+                jsonStr = mapper.writeValueAsString(jsonNode);
             } catch (JsonProcessingException e) {
                 throw new RuntimeException(e);
             }
@@ -64,10 +68,13 @@ public class TestRowGroupInfoVisitor {
         }
 
         @Override
-        public String visit(final RowGroupInfo.@NotNull SplitEvenly splitEvenly) {
+        public String visit(final @NotNull RowGroupInfo.SplitEvenly splitEvenly) {
             final String jsonStr;
             try {
-                jsonStr = mapper.writeValueAsString(splitEvenly);
+                // read type-specific properties and add the type-specific name
+                final ObjectNode jsonNode = mapper.valueToTree(splitEvenly);
+                jsonNode.put(NAME_ATTR, splitEvenly.getClass().getSimpleName());
+                jsonStr = mapper.writeValueAsString(jsonNode);
             } catch (JsonProcessingException e) {
                 throw new RuntimeException(e);
             }
@@ -75,10 +82,13 @@ public class TestRowGroupInfoVisitor {
         }
 
         @Override
-        public String visit(final RowGroupInfo.@NotNull SplitByMaxRows withMaxRows) {
+        public String visit(final @NotNull RowGroupInfo.SplitByMaxRows withMaxRows) {
             final String jsonStr;
             try {
-                jsonStr = mapper.writeValueAsString(withMaxRows);
+                // read type-specific properties and add the type-specific name
+                final ObjectNode jsonNode = mapper.valueToTree(withMaxRows);
+                jsonNode.put(NAME_ATTR, withMaxRows.getClass().getSimpleName());
+                jsonStr = mapper.writeValueAsString(jsonNode);
             } catch (JsonProcessingException e) {
                 throw new RuntimeException(e);
             }
@@ -86,10 +96,13 @@ public class TestRowGroupInfoVisitor {
         }
 
         @Override
-        public String visit(final RowGroupInfo.@NotNull SplitByGroups byGroups) {
+        public String visit(final @NotNull RowGroupInfo.SplitByGroups byGroups) {
             final String jsonStr;
             try {
-                jsonStr = mapper.writeValueAsString(byGroups);
+                // read type-specific properties and add the type-specific name
+                final ObjectNode jsonNode = mapper.valueToTree(byGroups);
+                jsonNode.put(NAME_ATTR, byGroups.getClass().getSimpleName());
+                jsonStr = mapper.writeValueAsString(jsonNode);
             } catch (JsonProcessingException e) {
                 throw new RuntimeException(e);
             }
@@ -106,13 +119,12 @@ public class TestRowGroupInfoVisitor {
          * @throws IOException should not happen in this test
          */
         private RowGroupInfo deserialize(final @NotNull String ser) throws IOException {
-            final JsonNode serNode = mapper.readTree(ser);
-            final ObjectNode node = (ObjectNode) serNode;
-            final String name = node.get("name").asText();
+            final ObjectNode serNode = (ObjectNode) mapper.readTree(ser);
+            final String name = serNode.get(NAME_ATTR).asText();
             final Function<ObjectNode, RowGroupInfo> constructor = DESER_MAP.get(name);
             assertNotNull(String.format("Know type <%s>", name), constructor);
 
-            return constructor.apply(node);
+            return constructor.apply(serNode);
         }
 
         /**
@@ -267,11 +279,6 @@ public class TestRowGroupInfoVisitor {
         public <T> T walk(final @NotNull Visitor<T> visitor) {
             throw new UnsupportedOperationException(
                     String.format("Unknown %s type", RowGroupInfo.class.getCanonicalName()));
-        }
-
-        @Override
-        public String getName() {
-            return this.getClass().getName();
         }
     }
 }

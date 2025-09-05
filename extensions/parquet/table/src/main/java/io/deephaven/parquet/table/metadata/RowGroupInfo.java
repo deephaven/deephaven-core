@@ -143,13 +143,6 @@ public abstract class RowGroupInfo {
     public abstract <T> T walk(final @NotNull Visitor<T> visitor);
 
     /**
-     * Gets the name of the {@link RowGroupInfo} implementation
-     *
-     * @return the name of the {@link RowGroupInfo} implementation
-     */
-    public abstract String getName();
-
-    /**
      * Provides an interface for iteratively applying a provided consumer to each RowGroup
      */
     private static abstract class IterativeRowGroupInfo extends RowGroupInfo {
@@ -178,8 +171,6 @@ public abstract class RowGroupInfo {
      * Keeps all rows within a single RowGroup
      */
     public static class SingleRowGroup extends IterativeRowGroupInfo {
-        public static final String NAME = SingleRowGroup.class.getSimpleName();
-
         private SingleRowGroup() {}
 
         @Override
@@ -195,18 +186,13 @@ public abstract class RowGroupInfo {
         }
 
         @Override
-        public String getName() {
-            return NAME;
-        }
-
-        @Override
         public boolean equals(final Object obj) {
             return obj instanceof SingleRowGroup;
         }
 
         @Override
         public String toString() {
-            return String.format("%s{}", getName());
+            return String.format("%s{}", SingleRowGroup.class.getSimpleName());
         }
 
         @Override
@@ -249,7 +235,6 @@ public abstract class RowGroupInfo {
      * Splits evenly across {@code numRowGroups} RowGroups
      */
     public static class SplitEvenly extends IterativeRowGroupInfo {
-        public static final String NAME = SplitEvenly.class.getSimpleName();
         private final long numRowGroups;
 
         private SplitEvenly(long numRowGroups) {
@@ -265,11 +250,6 @@ public abstract class RowGroupInfo {
         }
 
         @Override
-        public String getName() {
-            return NAME;
-        }
-
-        @Override
         public boolean equals(final Object obj) {
             if (obj instanceof SplitEvenly) {
                 return ((SplitEvenly) obj).getNumRowGroups() == getNumRowGroups();
@@ -279,7 +259,7 @@ public abstract class RowGroupInfo {
 
         @Override
         public String toString() {
-            return String.format("%s{numRowGroups=%d}", getName(), getNumRowGroups());
+            return String.format("%s{numRowGroups=%d}", SplitEvenly.class.getSimpleName(), getNumRowGroups());
         }
 
         public long getNumRowGroups() {
@@ -337,7 +317,6 @@ public abstract class RowGroupInfo {
      * Splits evenly across a number of RowGroups, ensuring that no group is larger than {@code maxRows}
      */
     public static class SplitByMaxRows extends RowGroupInfo {
-        public static final String NAME = SplitByMaxRows.class.getSimpleName();
         private final long maxRows;
 
         private SplitByMaxRows(long maxRows) {
@@ -359,11 +338,6 @@ public abstract class RowGroupInfo {
         }
 
         @Override
-        public String getName() {
-            return NAME;
-        }
-
-        @Override
         public boolean equals(final Object obj) {
             if (obj instanceof SplitByMaxRows) {
                 return ((SplitByMaxRows) obj).getMaxRows() == getMaxRows();
@@ -373,7 +347,7 @@ public abstract class RowGroupInfo {
 
         @Override
         public String toString() {
-            return String.format("%s{maxRows=%d}", getName(), getMaxRows());
+            return String.format("%s{maxRows=%d}", SplitByMaxRows.class.getSimpleName(), getMaxRows());
         }
 
         public long getMaxRows() {
@@ -392,7 +366,6 @@ public abstract class RowGroupInfo {
      * parameter may be set to {@code Long.MAX_VALUE}
      */
     public static class SplitByGroups extends IterativeRowGroupInfo {
-        public static final String NAME = SplitByGroups.class.getSimpleName();
         private final long maxRows;
         private final String[] groups;
 
@@ -407,11 +380,6 @@ public abstract class RowGroupInfo {
         }
 
         @Override
-        public String getName() {
-            return NAME;
-        }
-
-        @Override
         public boolean equals(final Object obj) {
             if (obj instanceof SplitByGroups) {
                 final SplitByGroups other = (SplitByGroups) obj;
@@ -423,9 +391,9 @@ public abstract class RowGroupInfo {
         @Override
         public String toString() {
             if (getMaxRows() == Long.MAX_VALUE) {
-                return String.format("%s{groups=%s}", getName(), Arrays.toString(getGroups().toArray()));
+                return String.format("%s{groups=%s}", SplitByGroups.class.getSimpleName(), Arrays.toString(getGroups().toArray()));
             } else {
-                return String.format("%s{maxRows=%d, groups=%s}", getName(), getMaxRows(),
+                return String.format("%s{maxRows=%d, groups=%s}", SplitByGroups.class.getSimpleName(), getMaxRows(),
                         Arrays.toString(getGroups().toArray()));
             }
         }
