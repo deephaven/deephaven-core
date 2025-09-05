@@ -14,8 +14,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
         with:
-          sparse-checkout: docs/
-          sparse-checkout-cone-mode: true
+          sparse-checkout: /docs/
+          sparse-checkout-cone-mode: false
 
       # Run all snapshots against the edge container
       - name: Run all snapshots
@@ -41,8 +41,8 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v5
       with:
-        sparse-checkout: docs/
-        sparse-checkout-cone-mode: true
+        sparse-checkout: /docs/
+        sparse-checkout-cone-mode: false
         # We can validate without lfs as the assets will exist as just a file pointer which is enough for validation
 
     - name: Check formatting
