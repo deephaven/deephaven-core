@@ -1,0 +1,1 @@
+{"file":"core/docs/how-to-guides/new-and-empty-table.md","objects":{"source":{"type":"Table","data":{"columns":[{"name":"IntArrayCol","type":"java.lang.String"}],"rows":[[{"value":"[1,2,3]"}]]}}}}

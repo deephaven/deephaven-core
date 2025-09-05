@@ -1,0 +1,1 @@
+{"file":"core_versioned_docs/version-groovy/docs/how-to-guides/dedicated-aggregations.md","objects":{"count":{"type":"Table","data":{"columns":[{"name":"Name","type":"java.lang.String"},{"name":"NumTests","type":"long"}],"rows":[[{"value":"James"},{"value":"3"}],[{"value":"Lauren"},{"value":"3"}],[{"value":"Zoey"},{"value":"3"}]]}}}}

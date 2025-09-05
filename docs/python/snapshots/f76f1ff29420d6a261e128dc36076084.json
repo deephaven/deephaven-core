@@ -1,0 +1,1 @@
+{"file":"core/docs/reference/query-language/variables/query-scope.md","objects":{"result":{"type":"Table","data":{"columns":[{"name":"X","type":"int"},{"name":"Y","type":"int"}],"rows":[[{"value":"0"},{"value":"0"}],[{"value":"7"},{"value":"2"}],[{"value":"14"},{"value":"4"}],[{"value":"21"},{"value":"6"}],[{"value":"28"},{"value":"8"}]]}}}}

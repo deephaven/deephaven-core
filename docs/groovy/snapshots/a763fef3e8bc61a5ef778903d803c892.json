@@ -1,0 +1,1 @@
+{"file":"core_versioned_docs/version-groovy/docs/tutorials/crash-course/3-create-tables.md","objects":{"replayedCrypto":{"type":"Table","data":{"columns":[{"name":"Timestamp","type":"java.time.Instant"},{"name":"Instrument","type":"java.lang.String"},{"name":"Exchange","type":"java.lang.String"},{"name":"Price","type":"double"},{"name":"Size","type":"double"}],"rows":[]}}}}
