@@ -66,8 +66,8 @@ jobs:
       - uses: actions/checkout@v5
         with:
           ref: ${{ github.event.pull_request.merge_commit_sha }}
-          sparse-checkout: /docs/
-          sparse-checkout-cone-mode: false
+          sparse-checkout: docs/
+          sparse-checkout-cone-mode: true
           lfs: true
 
       - name: Sync core Python to the salmon bucket

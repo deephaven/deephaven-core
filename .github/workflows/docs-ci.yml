@@ -61,8 +61,8 @@ jobs:
     steps:
       - uses: actions/checkout@v5
         with: # Does not need lfs to validate since the header file existing is enough for the check
-          sparse-checkout: /docs/
-          sparse-checkout-cone-mode: false
+          sparse-checkout: docs/
+          sparse-checkout-cone-mode: true
 
       - name: Check formatting
         run: ./docs/format -c
@@ -83,8 +83,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
         with:
-          sparse-checkout: /docs/
-          sparse-checkout-cone-mode: false
+          sparse-checkout: docs/
+          sparse-checkout-cone-mode: true
           lfs: true
 
       - name: DHC Version
