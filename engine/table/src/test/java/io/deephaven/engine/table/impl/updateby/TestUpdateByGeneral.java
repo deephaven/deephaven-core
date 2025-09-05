@@ -465,7 +465,7 @@ public class TestUpdateByGeneral extends BaseUpdateByTest implements UpdateError
                     t.updateBy(UpdateByOperation.RollingSum("ts", prevTime, postTime, "data"));
         });
 
-        // Object as timestamp
+        // Object as timestamp, this fails because could be any type of object
         Assert.assertThrows(IllegalArgumentException.class, () -> {
             final ColumnHolder<?> tsHolder = ColumnHolder.<Object>createColumnHolder("ts", false,
                     DateTimeUtils.parseInstant("2022-03-09T09:00:00.000 NY"),
@@ -482,6 +482,14 @@ public class TestUpdateByGeneral extends BaseUpdateByTest implements UpdateError
             final Table summed =
                     t.updateBy(UpdateByOperation.RollingSum("ts", prevTime, postTime, "data"));
         });
+
+        // Instant as timestamp, expect no error
+        {
+            final ColumnHolder<?> tsHolder = ColumnHolder.createColumnHolder("ts", false, instantArr);
+            final Table t = TableTools.newTable(tsHolder, dataHolder);
+            final Table summed =
+                    t.updateBy(UpdateByOperation.RollingSum("ts", prevTime, postTime, "data"));
+        }
 
         // long as timestamp, expect no error
         {
