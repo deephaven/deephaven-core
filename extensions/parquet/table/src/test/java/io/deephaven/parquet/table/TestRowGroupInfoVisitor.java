@@ -40,10 +40,10 @@ public class TestRowGroupInfoVisitor {
          * {@link ObjectNode}, which has been previously serialized from a different {@link RowGroupInfo} instance
          */
         private static final Map<String, Function<ObjectNode, RowGroupInfo>> DESER_MAP = Map.ofEntries(
-                entry(RowGroupInfo.SingleRowGroup.name, (node) -> RowGroupInfo.singleRowGroup()),
-                entry(RowGroupInfo.SplitByMaxRows.name, RowGroup2JsonVisitor::constructMaxRows),
-                entry(RowGroupInfo.SplitEvenly.name, RowGroup2JsonVisitor::constructSplitEvenly),
-                entry(RowGroupInfo.SplitByGroups.name, RowGroup2JsonVisitor::constructByGroup));
+                entry(RowGroupInfo.SingleRowGroup.NAME, (node) -> RowGroupInfo.singleRowGroup()),
+                entry(RowGroupInfo.SplitByMaxRows.NAME, RowGroup2JsonVisitor::constructMaxRows),
+                entry(RowGroupInfo.SplitEvenly.NAME, RowGroup2JsonVisitor::constructSplitEvenly),
+                entry(RowGroupInfo.SplitByGroups.NAME, RowGroup2JsonVisitor::constructByGroup));
 
         private final ObjectMapper mapper;
 
@@ -168,7 +168,9 @@ public class TestRowGroupInfoVisitor {
      */
     private void verifyJsonVisitor(final @NotNull RowGroup2JsonVisitor jsonVisitor, final @NotNull RowGroupInfo orig)
             throws IOException {
-        final RowGroupInfo deserialized = jsonVisitor.deserialize(jsonVisitor.visit(orig));
+        // `orig.walk(...)` will serialize (to JSON, in this case). `jsonVisitor.deserialize(...)` will deserialize
+        // that JSON, and construct a new `RowGroupInfo` instance, which should be equal to `orig`
+        final RowGroupInfo deserialized = jsonVisitor.deserialize(orig.walk(jsonVisitor));
         assertEquals(String.format("%s serializes/deserializes", orig), orig, deserialized);
     }
 
@@ -227,10 +229,8 @@ public class TestRowGroupInfoVisitor {
      */
     private void testVisitor(final @NotNull RowGroup2SelfVisitor selfVisitor, final @NotNull RowGroupInfo orig) {
         final RowGroupInfo fromWalk = orig.walk(selfVisitor);
-        final RowGroupInfo fromVisit = selfVisitor.visit(orig);
 
         assertEquals("walked copy RowGroupInfo produces same RowGroupInfo", orig, fromWalk);
-        assertEquals("visited copy RowGroupInfo produces same RowGroupInfo", orig, fromVisit);
     }
 
     /**
@@ -265,7 +265,8 @@ public class TestRowGroupInfoVisitor {
 
         @Override
         public <T> T walk(final @NotNull Visitor<T> visitor) {
-            return visitor.visit(this);
+            throw new UnsupportedOperationException(
+                    String.format("Unknown %s type", RowGroupInfo.class.getCanonicalName()));
         }
 
         @Override
@@ -273,5 +274,4 @@ public class TestRowGroupInfoVisitor {
             return this.getClass().getName();
         }
     }
-
 }

@@ -16,6 +16,9 @@ import org.jetbrains.annotations.NotNull;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Iterator;
+import java.util.List;
+import java.util.NoSuchElementException;
+import java.util.stream.Collectors;
 
 public abstract class RowGroupInfo {
     private static IterativeRowGroupInfo DEFAULT;
@@ -85,6 +88,18 @@ public abstract class RowGroupInfo {
     }
 
     /**
+     * Splits each unique group into a RowGroup. If the input table does not have all values for the group(s)
+     * contiguously, then an exception will be thrown during the `writeTable(...)` call
+     *
+     * @param groups Grouping column name(s)
+     * @return a {@link RowGroupInfo} which includes a single RowGroup per unique grouping-value
+     */
+    @ScriptApi
+    public static RowGroupInfo byGroup(final List<String> groups) {
+        return byGroup(Long.MAX_VALUE, groups);
+    }
+
+    /**
      * Splits each unique group into a number of RowGroups. If the input table does not have all values for the group(s)
      * contiguously, then an exception will be thrown during the `writeTable(...)` call. If a given RowGroup yields a
      * row count greater than {@code maxRows}, then it will be split further using
@@ -97,6 +112,21 @@ public abstract class RowGroupInfo {
     @ScriptApi
     public static RowGroupInfo byGroup(final long maxRows, final String... groups) {
         return new SplitByGroups(maxRows, groups);
+    }
+
+    /**
+     * Splits each unique group into a number of RowGroups. If the input table does not have all values for the group(s)
+     * contiguously, then an exception will be thrown during the `writeTable(...)` call. If a given RowGroup yields a
+     * row count greater than {@code maxRows}, then it will be split further using
+     * {@link RowGroupInfo#withMaxRows(long)}
+     *
+     * @param maxRows the maximum number of rows in each RowGroup
+     * @param groups Grouping column name(s)
+     * @return a {@link RowGroupInfo} which includes a number of RowGroups per unique grouping-value
+     */
+    @ScriptApi
+    public static RowGroupInfo byGroup(final long maxRows, final List<String> groups) {
+        return byGroup(maxRows, groups.toArray(new String[0]));
     }
 
     /**
@@ -148,7 +178,7 @@ public abstract class RowGroupInfo {
      * Keeps all rows within a single RowGroup
      */
     public static class SingleRowGroup extends IterativeRowGroupInfo {
-        public static final String name = SingleRowGroup.class.getSimpleName();
+        public static final String NAME = SingleRowGroup.class.getSimpleName();
 
         private SingleRowGroup() {}
 
@@ -166,7 +196,7 @@ public abstract class RowGroupInfo {
 
         @Override
         public String getName() {
-            return name;
+            return NAME;
         }
 
         @Override
@@ -202,6 +232,10 @@ public abstract class RowGroupInfo {
 
             @Override
             public Table next() {
+                if (!hasNext()) {
+                    throw new NoSuchElementException();
+                }
+
                 try {
                     return input;
                 } finally {
@@ -215,7 +249,7 @@ public abstract class RowGroupInfo {
      * Splits evenly across {@code numRowGroups} RowGroups
      */
     public static class SplitEvenly extends IterativeRowGroupInfo {
-        public static final String name = SplitEvenly.class.getSimpleName();
+        public static final String NAME = SplitEvenly.class.getSimpleName();
         private final long numRowGroups;
 
         private SplitEvenly(long numRowGroups) {
@@ -232,7 +266,7 @@ public abstract class RowGroupInfo {
 
         @Override
         public String getName() {
-            return name;
+            return NAME;
         }
 
         @Override
@@ -282,6 +316,10 @@ public abstract class RowGroupInfo {
 
             @Override
             public Table next() {
+                if (!hasNext()) {
+                    throw new NoSuchElementException();
+                }
+
                 try {
                     final RowSet rawRowSet = input.getRowSet();
 
@@ -299,7 +337,7 @@ public abstract class RowGroupInfo {
      * Splits evenly across a number of RowGroups, ensuring that no group is larger than {@code maxRows}
      */
     public static class SplitByMaxRows extends RowGroupInfo {
-        public static final String name = SplitByMaxRows.class.getSimpleName();
+        public static final String NAME = SplitByMaxRows.class.getSimpleName();
         private final long maxRows;
 
         private SplitByMaxRows(long maxRows) {
@@ -322,7 +360,7 @@ public abstract class RowGroupInfo {
 
         @Override
         public String getName() {
-            return name;
+            return NAME;
         }
 
         @Override
@@ -354,7 +392,7 @@ public abstract class RowGroupInfo {
      * parameter may be set to {@code Long.MAX_VALUE}
      */
     public static class SplitByGroups extends IterativeRowGroupInfo {
-        public static final String name = SplitByGroups.class.getSimpleName();
+        public static final String NAME = SplitByGroups.class.getSimpleName();
         private final long maxRows;
         private final String[] groups;
 
@@ -370,14 +408,14 @@ public abstract class RowGroupInfo {
 
         @Override
         public String getName() {
-            return name;
+            return NAME;
         }
 
         @Override
         public boolean equals(final Object obj) {
             if (obj instanceof SplitByGroups) {
                 final SplitByGroups other = (SplitByGroups) obj;
-                return other.getMaxRows() == getMaxRows() && Arrays.equals(other.getGroups(), getGroups());
+                return other.getMaxRows() == getMaxRows() && other.getGroups().equals(getGroups());
             }
             return false;
         }
@@ -385,10 +423,10 @@ public abstract class RowGroupInfo {
         @Override
         public String toString() {
             if (getMaxRows() == Long.MAX_VALUE) {
-                return String.format("%s{groups=%s}", getName(), Arrays.toString(getGroups()));
+                return String.format("%s{groups=%s}", getName(), Arrays.toString(getGroups().toArray()));
             } else {
                 return String.format("%s{maxRows=%d, groups=%s}", getName(), getMaxRows(),
-                        Arrays.toString(getGroups()));
+                        Arrays.toString(getGroups().toArray()));
             }
         }
 
@@ -396,8 +434,8 @@ public abstract class RowGroupInfo {
             return maxRows;
         }
 
-        public String[] getGroups() {
-            return groups;
+        public List<String> getGroups() {
+            return Arrays.stream(groups).collect(Collectors.toUnmodifiableList());
         }
 
         @Override
@@ -424,6 +462,10 @@ public abstract class RowGroupInfo {
 
             @Override
             public Table next() {
+                if (!hasNext()) {
+                    throw new NoSuchElementException();
+                }
+
                 // if we're already working on a split sub-table, let the sub-table splitter handle this request
                 if (subIter != null && subIter.hasNext()) {
                     return subIter.next();
