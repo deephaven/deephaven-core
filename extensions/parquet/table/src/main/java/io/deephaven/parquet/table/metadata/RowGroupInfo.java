@@ -3,47 +3,22 @@
 //
 package io.deephaven.parquet.table.metadata;
 
-import io.deephaven.engine.liveness.LivenessScopeStack;
-import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.WritableRowSet;
-import io.deephaven.engine.table.Table;
-import io.deephaven.engine.util.TableTools;
-import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.ScriptApi;
-import io.deephaven.util.function.ThrowingConsumer;
 import org.jetbrains.annotations.NotNull;
 
-import java.io.IOException;
 import java.util.Arrays;
-import java.util.Iterator;
 import java.util.List;
-import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
 
-public abstract class RowGroupInfo {
-    private static IterativeRowGroupInfo DEFAULT;
-
-    /**
-     * Returns the DEFAULT instance
-     *
-     * @return the DEFAULT instance
-     */
-    private synchronized static IterativeRowGroupInfo getDefault() {
-        if (DEFAULT == null) {
-            DEFAULT = new SingleRowGroup();
-        }
-
-        return DEFAULT;
-    }
-
+public interface RowGroupInfo {
     /**
      * The default RowGroupInfo implementation. All data is within a single RowGroup
      *
      * @return a {@link RowGroupInfo} which uses only a single RowGroup
      */
     @ScriptApi
-    public static RowGroupInfo singleRowGroup() {
-        return getDefault();
+    static RowGroupInfo singleRowGroup() {
+        return SingleRowGroup.SINGLE_ROW_GROUP;
     }
 
     /**
@@ -55,12 +30,8 @@ public abstract class RowGroupInfo {
      * @return A {@link RowGroupInfo} which splits the input into a pre-defined number of RowGroups
      */
     @ScriptApi
-    public static RowGroupInfo splitEvenly(final long numRowGroups) {
-        if (numRowGroups == 1) {
-            return singleRowGroup();
-        } else {
-            return new SplitEvenly(numRowGroups);
-        }
+    static RowGroupInfo splitEvenly(final long numRowGroups) {
+        return new SplitEvenly(numRowGroups);
     }
 
     /**
@@ -71,7 +42,7 @@ public abstract class RowGroupInfo {
      *         {@code maxRows} rows
      */
     @ScriptApi
-    public static RowGroupInfo withMaxRows(final long maxRows) {
+    static RowGroupInfo withMaxRows(final long maxRows) {
         return new SplitByMaxRows(maxRows);
     }
 
@@ -83,7 +54,7 @@ public abstract class RowGroupInfo {
      * @return a {@link RowGroupInfo} which includes a single RowGroup per unique grouping-value
      */
     @ScriptApi
-    public static RowGroupInfo byGroup(final String... groups) {
+    static RowGroupInfo byGroup(final String... groups) {
         return byGroup(Long.MAX_VALUE, groups);
     }
 
@@ -95,7 +66,7 @@ public abstract class RowGroupInfo {
      * @return a {@link RowGroupInfo} which includes a single RowGroup per unique grouping-value
      */
     @ScriptApi
-    public static RowGroupInfo byGroup(final List<String> groups) {
+    static RowGroupInfo byGroup(final List<String> groups) {
         return byGroup(Long.MAX_VALUE, groups);
     }
 
@@ -110,7 +81,7 @@ public abstract class RowGroupInfo {
      * @return a {@link RowGroupInfo} which includes a number of RowGroups per unique grouping-value
      */
     @ScriptApi
-    public static RowGroupInfo byGroup(final long maxRows, final String... groups) {
+    static RowGroupInfo byGroup(final long maxRows, final String... groups) {
         return new SplitByGroups(maxRows, groups);
     }
 
@@ -125,116 +96,28 @@ public abstract class RowGroupInfo {
      * @return a {@link RowGroupInfo} which includes a number of RowGroups per unique grouping-value
      */
     @ScriptApi
-    public static RowGroupInfo byGroup(final long maxRows, final List<String> groups) {
+    static RowGroupInfo byGroup(final long maxRows, final List<String> groups) {
         return byGroup(maxRows, groups.toArray(new String[0]));
     }
 
-    /**
-     * Splits the {@code input} into a number of RowGroups and applies a provided consumer to each
-     *
-     * @param input the pre-split table to write
-     * @param consumer the consumer which is used to write each individual RowGroup
-     * @throws IOException if the underlying {@code consumer} throws an {@link IOException}
-     */
-    public abstract void applyForRowGroups(final @NotNull Table input,
-            final @NotNull ThrowingConsumer<Table, IOException> consumer)
-            throws IOException;
-
-    public abstract <T> T walk(final @NotNull Visitor<T> visitor);
-
-    /**
-     * Provides an interface for iteratively applying a provided consumer to each RowGroup
-     */
-    private static abstract class IterativeRowGroupInfo extends RowGroupInfo {
-        /**
-         * Gets an iterator where each iteration identifies a RowGroup
-         *
-         * @param input the pre-split table
-         * @return an {@link Iterator}, where each iteration identifies a RowGroup
-         */
-        protected abstract Iterator<Table> getIterator(final @NotNull Table input);
-
-        @Override
-        public void applyForRowGroups(final @NotNull Table input,
-                final @NotNull ThrowingConsumer<Table, IOException> consumer)
-                throws IOException {
-            try (final SafeCloseable ignored = LivenessScopeStack.open()) {
-                final Iterator<Table> iter = getIterator(input);
-                while (iter.hasNext()) {
-                    consumer.accept(iter.next());
-                }
-            }
-        }
-    }
+    <T> T walk(final @NotNull Visitor<T> visitor);
 
     /**
      * Keeps all rows within a single RowGroup
      */
-    public static class SingleRowGroup extends IterativeRowGroupInfo {
-        private SingleRowGroup() {}
-
-        @Override
-        public void applyForRowGroups(final @NotNull Table input,
-                final @NotNull ThrowingConsumer<Table, IOException> consumer) throws IOException {
-            // no need to use the iterating version because we know we have only a single RowGroup
-            consumer.accept(input);
-        }
+    enum SingleRowGroup implements RowGroupInfo {
+        SINGLE_ROW_GROUP;
 
         @Override
         public <T> T walk(@NotNull Visitor<T> visitor) {
             return visitor.visit(this);
-        }
-
-        @Override
-        public boolean equals(final Object obj) {
-            return obj instanceof SingleRowGroup;
-        }
-
-        @Override
-        public String toString() {
-            return String.format("%s{}", SingleRowGroup.class.getSimpleName());
-        }
-
-        @Override
-        protected Iterator<Table> getIterator(final @NotNull Table input) {
-            return new SingleRowGroupIterator(input);
-        }
-
-        /**
-         * yes, it seems silly that we have an Iterator for a (known) single element. BUT, this allows other Iterative
-         * implementations to defer to the "single" implementation when they know there will be only one RowGroup
-         */
-        private static class SingleRowGroupIterator implements Iterator<Table> {
-            private Table input;
-
-            private SingleRowGroupIterator(Table input) {
-                this.input = input;
-            }
-
-            @Override
-            public boolean hasNext() {
-                return input != null;
-            }
-
-            @Override
-            public Table next() {
-                if (!hasNext()) {
-                    throw new NoSuchElementException();
-                }
-
-                try {
-                    return input;
-                } finally {
-                    input = null;
-                }
-            }
         }
     }
 
     /**
      * Splits evenly across {@code numRowGroups} RowGroups
      */
-    public static class SplitEvenly extends IterativeRowGroupInfo {
+    final class SplitEvenly implements RowGroupInfo {
         private final long numRowGroups;
 
         private SplitEvenly(long numRowGroups) {
@@ -265,58 +148,12 @@ public abstract class RowGroupInfo {
         public long getNumRowGroups() {
             return numRowGroups;
         }
-
-        @Override
-        protected Iterator<Table> getIterator(final @NotNull Table input) {
-            return numRowGroups == 1 ? getDefault().getIterator(input) : new SplitEvenlyIterator(input);
-        }
-
-        private class SplitEvenlyIterator implements Iterator<Table> {
-            private final Table input;
-
-            private long impliedRowGroupSz;
-            private long fractionalGroups;
-
-            private long startOffset = 0;
-            private long nextIter = 0;
-
-            private SplitEvenlyIterator(final @NotNull Table input) {
-                this.input = input;
-
-                this.impliedRowGroupSz = input.size() / numRowGroups;
-                // number of groups which will have 1 additional row because rows are not evenly divisible by
-                // numRowGroups
-                this.fractionalGroups = input.size() % numRowGroups;
-            }
-
-            @Override
-            public boolean hasNext() {
-                return nextIter < numRowGroups;
-            }
-
-            @Override
-            public Table next() {
-                if (!hasNext()) {
-                    throw new NoSuchElementException();
-                }
-
-                try {
-                    final RowSet rawRowSet = input.getRowSet();
-
-                    final long nextSz = impliedRowGroupSz + (nextIter < fractionalGroups ? 1 : 0);
-                    final WritableRowSet nextRows = rawRowSet.subSetByPositionRange(startOffset, startOffset += nextSz);
-                    return input.getSubTable(nextRows.toTracking());
-                } finally {
-                    nextIter++;
-                }
-            }
-        }
     }
 
     /**
      * Splits evenly across a number of RowGroups, ensuring that no group is larger than {@code maxRows}
      */
-    public static class SplitByMaxRows extends RowGroupInfo {
+    final class SplitByMaxRows implements RowGroupInfo {
         private final long maxRows;
 
         private SplitByMaxRows(long maxRows) {
@@ -324,12 +161,6 @@ public abstract class RowGroupInfo {
                 throw new IllegalArgumentException("MaxRows must be positive");
             }
             this.maxRows = maxRows;
-        }
-
-        @Override
-        public void applyForRowGroups(final @NotNull Table input,
-                final @NotNull ThrowingConsumer<Table, IOException> consumer) throws IOException {
-            getIterativeRowGroupImpl(maxRows, input).applyForRowGroups(input, consumer);
         }
 
         @Override
@@ -353,11 +184,6 @@ public abstract class RowGroupInfo {
         public long getMaxRows() {
             return maxRows;
         }
-
-        private static IterativeRowGroupInfo getIterativeRowGroupImpl(long maxRows, final @NotNull Table input) {
-            final long numRowGroups = (input.size() / maxRows) + (input.size() % maxRows > 0 ? 1 : 0);
-            return new SplitEvenly(numRowGroups);
-        }
     }
 
     /**
@@ -365,7 +191,7 @@ public abstract class RowGroupInfo {
      * {@code groups} ensuring that no group is larger than {@code maxRows}. If {@code maxRows} is not desired, this
      * parameter may be set to {@code Long.MAX_VALUE}
      */
-    public static class SplitByGroups extends IterativeRowGroupInfo {
+    final class SplitByGroups implements RowGroupInfo {
         private final long maxRows;
         private final String[] groups;
 
@@ -391,7 +217,8 @@ public abstract class RowGroupInfo {
         @Override
         public String toString() {
             if (getMaxRows() == Long.MAX_VALUE) {
-                return String.format("%s{groups=%s}", SplitByGroups.class.getSimpleName(), Arrays.toString(getGroups().toArray()));
+                return String.format("%s{groups=%s}", SplitByGroups.class.getSimpleName(),
+                        Arrays.toString(getGroups().toArray()));
             } else {
                 return String.format("%s{maxRows=%d, groups=%s}", SplitByGroups.class.getSimpleName(), getMaxRows(),
                         Arrays.toString(getGroups().toArray()));
@@ -405,78 +232,9 @@ public abstract class RowGroupInfo {
         public List<String> getGroups() {
             return Arrays.stream(groups).collect(Collectors.toUnmodifiableList());
         }
-
-        @Override
-        protected Iterator<Table> getIterator(final @NotNull Table input) {
-            return new SplitByGroupsIterator(input);
-        }
-
-        private class SplitByGroupsIterator implements Iterator<Table> {
-            private final Table[] partitionedTables;
-
-            private int nextTable;
-            private Iterator<Table> subIter;
-
-            private SplitByGroupsIterator(final @NotNull Table input) {
-                ensureOrderedForGrouping(input);
-                this.partitionedTables = input.partitionBy(groups).constituents();
-                this.nextTable = 0;
-            }
-
-            @Override
-            public boolean hasNext() {
-                return (nextTable < partitionedTables.length) || (subIter != null && subIter.hasNext());
-            }
-
-            @Override
-            public Table next() {
-                if (!hasNext()) {
-                    throw new NoSuchElementException();
-                }
-
-                // if we're already working on a split sub-table, let the sub-table splitter handle this request
-                if (subIter != null && subIter.hasNext()) {
-                    return subIter.next();
-                }
-
-                // else we've moved on to the next partitioned table
-                final Table subTable = partitionedTables[nextTable++];
-                if (subTable.size() <= maxRows) {
-                    // no need to split this one
-                    return subTable;
-                }
-
-                // get a new sub-table iterator for this partitioned table, and return the first sub-table
-                subIter = SplitByMaxRows.getIterativeRowGroupImpl(maxRows, subTable).getIterator(subTable);
-                return subIter.next();
-            }
-        }
-
-        /**
-         * Ensure that grouping will not change row-ordering
-         *
-         * @param input the table to be checked
-         */
-        private void ensureOrderedForGrouping(final @NotNull Table input) {
-            final String origRowNum = "__OriginalRowNum__";
-            final String newRowNum = "__PostGroupRowNum__";
-
-            final Table misOrderedTbl = input
-                    .view(groups)
-                    .updateView(String.format("%s = ii", origRowNum))
-                    .groupBy(groups)
-                    .ungroup()
-                    .updateView(String.format("%s = ii", newRowNum))
-                    .where(String.format("%s != %s", origRowNum, newRowNum));
-
-            if (!misOrderedTbl.isEmpty()) {
-                throw new IllegalStateException(String.format("Misordered for Grouping column(s) %s:\n%s",
-                        Arrays.toString(groups), TableTools.string(misOrderedTbl)));
-            }
-        }
     }
 
-    public interface Visitor<T> {
+    interface Visitor<T> {
         T visit(final @NotNull RowGroupInfo.SingleRowGroup single);
 
         T visit(final @NotNull RowGroupInfo.SplitEvenly splitEvenly);

@@ -1,11 +1,8 @@
 //
 // Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
-package io.deephaven.parquet.table;
+package io.deephaven.parquet.table.metadata;
 
-import io.deephaven.engine.table.Table;
-import io.deephaven.parquet.table.metadata.RowGroupInfo;
-import io.deephaven.util.function.ThrowingConsumer;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 import org.testcontainers.shaded.com.fasterxml.jackson.core.JsonProcessingException;
@@ -268,12 +265,7 @@ public class TestRowGroupInfoVisitor {
     /**
      * a "custom" {@link RowGroupInfo}, which should cause an {@link UnsupportedOperationException} when we try to copy
      */
-    private static class UnsupportedImpl extends RowGroupInfo {
-        @Override
-        public void applyForRowGroups(final @NotNull Table input,
-                final @NotNull ThrowingConsumer<Table, IOException> consumer) throws IOException {
-
-        }
+    private static class UnsupportedImpl implements RowGroupInfo {
 
         @Override
         public <T> T walk(final @NotNull Visitor<T> visitor) {
