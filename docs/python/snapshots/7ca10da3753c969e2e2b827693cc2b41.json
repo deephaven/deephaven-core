@@ -1,0 +1,1 @@
+{"file":"core/docs/reference/table-operations/group-and-aggregate/AggCountWhere.md","objects":{"result":{"type":"Table","data":{"columns":[{"name":"X","type":"java.lang.String"},{"name":"count_num","type":"long"}],"rows":[[{"value":"A"},{"value":"6"}],[{"value":"B"},{"value":"4"}],[{"value":"C"},{"value":"0"}]]}}}}

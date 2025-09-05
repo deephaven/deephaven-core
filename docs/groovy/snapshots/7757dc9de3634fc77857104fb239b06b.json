@@ -1,0 +1,1 @@
+{"file":"core_versioned_docs/version-groovy/docs/how-to-guides/work-with-strings.md","objects":{"result":{"type":"Table","data":{"columns":[{"name":"X","type":"java.lang.String"}],"rows":[[{"value":"Quote \" in quotes"}],[{"value":"Single quote ' in single quotes"}],[{"value":"Escaped slash \\"}],[{"value":"New\nline"}],[{"value":"Added\ttab"}]]}}}}

@@ -1,0 +1,1 @@
+{"file":"core_versioned_docs/version-groovy/docs/reference/table-operations/create/intCol.md","objects":{"result":{"type":"Table","data":{"columns":[{"name":"Integers","type":"int"}],"rows":[[{"value":"1"}],[{"value":"2"}],[{"value":"3"}],[{"value":"4"}],[{"value":"5"}]]}}}}

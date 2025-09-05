@@ -1,0 +1,1 @@
+{"file":"core_versioned_docs/version-groovy/docs/how-to-guides/table-listeners-groovy.md","objects":{"t1":{"type":"Table","data":{"columns":[{"name":"Timestamp","type":"java.time.Instant"},{"name":"X","type":"int"}],"rows":[[{"value":"2024-10-25 14:28:15.600"},{"value":"0"}]]}},":log":{"type":"Log","data":"No previous values\n"}}}

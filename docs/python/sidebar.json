@@ -1,0 +1,2843 @@
+{
+  "config": {
+    "name": "Deephaven Core"
+  },
+  "sidebars": {
+    "main": [
+      {
+        "label": "Introduction",
+        "path": "intro.md"
+      },
+      {
+        "label": "Deephaven Overview",
+        "path": "conceptual/deephaven-overview.md"
+      },
+      {
+        "label": "Getting Started",
+        "items": [
+          {
+            "label": "Quickstarts",
+            "items": [
+              {
+                "label": "Quickstart",
+                "path": "getting-started/quickstart.md"
+              },
+              {
+                "label": "Jupyter Quickstart",
+                "path": "getting-started/jupyter-quickstart.md"
+              },
+              {
+                "label": "Python Client Quickstart",
+                "path": "getting-started/pyclient-quickstart.md"
+              }
+            ]
+          },
+          {
+            "label": "A Crash Course in Deephaven",
+            "items": [
+              {
+                "label": "Crash Course Overview",
+                "path": "getting-started/crash-course/overview.md"
+              },
+              {
+                "label": "Get Started",
+                "path": "getting-started/crash-course/get-started.md"
+              },
+              {
+                "label": "Architecture Overview",
+                "path": "getting-started/crash-course/architecture-overview.md"
+              },
+              {
+                "label": "Create Tables",
+                "path": "getting-started/crash-course/create-tables.md"
+              },
+              {
+                "label": "Table Operations",
+                "path": "getting-started/crash-course/table-ops.md"
+              },
+              {
+                "label": "Time and Calendars",
+                "path": "getting-started/crash-course/time-calendars.md"
+              },
+              {
+                "label": "Query Strings",
+                "path": "getting-started/crash-course/query-strings.md"
+              },
+              {
+                "label": "Python Integrations",
+                "path": "getting-started/crash-course/py-integrations.md"
+              },
+              {
+                "label": "Real-time Plots",
+                "path": "getting-started/crash-course/plots.md"
+              },
+              {
+                "label": "deephaven.ui",
+                "path": "getting-started/crash-course/deephaven-ui.md"
+              },
+              {
+                "label": "Data I/O",
+                "path": "getting-started/crash-course/export-data.md"
+              },
+              {
+                "label": "Configure your Instance",
+                "path": "getting-started/crash-course/configure.md"
+              },
+              {
+                "label": "Wrapping Up",
+                "path": "getting-started/crash-course/crash-course-wrap-up.md"
+              }
+            ]
+          },
+          {
+            "label": "Install Deephaven",
+            "items": [
+              {
+                "label": "Docker",
+                "path": "getting-started/docker-install.md"
+              },
+              {
+                "label": "pip",
+                "path": "getting-started/pip-install.md"
+              },
+              {
+                "label": "Source code",
+                "path": "getting-started/launch-build.md"
+              },
+              {
+                "label": "Production application",
+                "path": "getting-started/production-application.md"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "label": "User Guide",
+        "items": [
+          {
+            "label": "Architectural details",
+            "items": [
+              {
+                "label": "Deephaven's design",
+                "path": "conceptual/deephaven-design.md"
+              },
+              {
+                "label": "Incremental update model",
+                "path": "conceptual/table-update-model.md"
+              },
+              {
+                "label": "Live DAG",
+                "path": "conceptual/dag.md"
+              },
+              {
+                "label": "Table types",
+                "path": "conceptual/table-types.md"
+              },
+              {
+                "label": "Core API design",
+                "path": "conceptual/deephaven-core-api.md"
+              }
+            ]
+          },
+          {
+            "label": "Create, import, and export tables",
+            "items": [
+              {
+                "label": "Simple table constructors",
+                "items": [
+                  {
+                    "label": "Static tables",
+                    "path": "how-to-guides/new-and-empty-table.md"
+                  },
+                  {
+                    "label": "Ring tables",
+                    "path": "how-to-guides/ring-table.md"
+                  },
+                  {
+                    "label": "Time tables",
+                    "path": "how-to-guides/time-table.md"
+                  },
+                  {
+                    "label": "Input tables",
+                    "path": "how-to-guides/input-tables.md"
+                  }
+                ]
+              },
+              {
+                "label": "Advanced table constructors",
+                "items": [
+                  {
+                    "label": "Write data to a real-time table",
+                    "path": "how-to-guides/table-publisher.md"
+                  },
+                  {
+                    "label": "Generate tables with Python functions",
+                    "path": "how-to-guides/function-generated-tables.md"
+                  }
+                ]
+              },
+              {
+                "label": "CSV",
+                "items": [
+                  {
+                    "label": "Import CSV files",
+                    "path": "how-to-guides/data-import-export/csv-import.md"
+                  },
+                  {
+                    "label": "Export CSV files",
+                    "path": "how-to-guides/data-import-export/csv-export.md"
+                  }
+                ]
+              },
+              {
+                "label": "HTML",
+                "items": [
+                  {
+                    "label": "Import HTML files",
+                    "path": "how-to-guides/data-import-export/html-import.md"
+                  },
+                  {
+                    "label": "Export HTML files",
+                    "path": "how-to-guides/data-import-export/html-export.md"
+                  }
+                ]
+              },
+              {
+                "label": "Arrow Flight",
+                "path": "how-to-guides/data-import-export/arrow-flight.md"
+              },
+              {
+                "label": "Iceberg",
+                "path": "how-to-guides/data-import-export/iceberg.md"
+              },
+              {
+                "label": "Kafka",
+                "items": [
+                  {
+                    "label": "Kafka Overview",
+                    "path": "how-to-guides/overview-kafka.md"
+                  },
+                  {
+                    "label": "Basic terms",
+                    "path": "conceptual/kafka-in-deephaven.md"
+                  },
+                  {
+                    "label": "Connect to a Kafka stream",
+                    "path": "how-to-guides/data-import-export/kafka-stream.md"
+                  }
+                ]
+              },
+              {
+                "label": "Parquet",
+                "items": [
+                  {
+                    "label": "Supported Parquet formats",
+                    "path": "how-to-guides/data-import-export/parquet-formats.md"
+                  },
+                  {
+                    "label": "Import Parquet files",
+                    "path": "how-to-guides/data-import-export/parquet-import.md"
+                  },
+                  {
+                    "label": "Export to Parquet",
+                    "path": "how-to-guides/data-import-export/parquet-export.md"
+                  }
+                ]
+              },
+              {
+                "label": "PyArrow",
+                "path": "how-to-guides/pyarrow.md"
+              },
+              {
+                "label": "SQL",
+                "items": [
+                  {
+                    "label": "SQL queries in Deephaven",
+                    "path": "how-to-guides/data-import-export/execute-sql-queries.md"
+                  }
+                ]
+              },
+              {
+                "label": "URI",
+                "path": "how-to-guides/use-uris.md"
+              },
+              {
+                "label": "Table data service",
+                "path": "how-to-guides/data-import-export/table-data-service.md"
+              },
+              {
+                "label": "Table listeners",
+                "path": "how-to-guides/table-listeners-python.md"
+              },
+              {
+                "label": "Table iterators",
+                "path": "how-to-guides/iterate-table-data.md"
+              },
+              {
+                "label": "Replay",
+                "path": "how-to-guides/replay-data.md"
+              }
+            ]
+          },
+          {
+            "label": "Work with tables",
+            "items": [
+              {
+                "label": "Metadata",
+                "path": "how-to-guides/metadata.md"
+              },
+              {
+                "label": "Select and create columns",
+                "path": "how-to-guides/use-select-view-update.md"
+              },
+              {
+                "label": "Drop, move, and rename columns",
+                "path": "how-to-guides/drop-move-rename-columns.md"
+              },
+              {
+                "label": "Format columns",
+                "path": "how-to-guides/format-columns.md"
+              },
+              {
+                "label": "Filter",
+                "path": "how-to-guides/use-filters.md"
+              },
+              {
+                "label": "Sort",
+                "path": "how-to-guides/sort.md"
+              },
+              {
+                "label": "Merge",
+                "path": "how-to-guides/merge-tables.md"
+              },
+              {
+                "label": "Group and aggregate",
+                "items": [
+                  {
+                    "label": "Group and ungroup data",
+                    "path": "how-to-guides/grouping-data.md"
+                  },
+                  {
+                    "label": "Single aggregation",
+                    "path": "how-to-guides/dedicated-aggregations.md"
+                  },
+                  {
+                    "label": "Multi-aggregation",
+                    "path": "how-to-guides/combined-aggregations.md"
+                  },
+                  {
+                    "label": "Rolling aggregations",
+                    "path": "how-to-guides/rolling-aggregations.md"
+                  }
+                ]
+              },
+              {
+                "label": "Hierarchical tables",
+                "items": [
+                  {
+                    "label": "Rollup tables",
+                    "path": "how-to-guides/rollup-table.md"
+                  },
+                  {
+                    "label": "Tree tables",
+                    "path": "how-to-guides/tree-table.md"
+                  }
+                ]
+              },
+              {
+                "label": "Join",
+                "items": [
+                  {
+                    "label": "Exact and Relational Joins",
+                    "path": "how-to-guides/joins-exact-relational.md"
+                  },
+                  {
+                    "label": "Inexact, time-series, and range joins",
+                    "path": "how-to-guides/joins-timeseries-range.md"
+                  }
+                ]
+              },
+              {
+                "label": "Partition",
+                "path": "how-to-guides/partitioned-tables.md"
+              },
+              {
+                "label": "Snapshot",
+                "path": "how-to-guides/capture-table-history.md"
+              },
+              {
+                "label": "Time",
+                "items": [
+                  {
+                    "label": "Work with calendars",
+                    "path": "how-to-guides/business-calendar.md"
+                  },
+                  {
+                    "label": "Work with time",
+                    "path": "conceptual/time-in-deephaven.md"
+                  },
+                  {
+                    "label": "Downsample data",
+                    "path": "how-to-guides/downsampling.md"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "label": "Query strings",
+            "items": [
+              {
+                "label": "Overview",
+                "path": "how-to-guides/query-string-overview.md"
+              },
+              {
+                "label": "Literals",
+                "items": [
+                  {
+                    "label": "Boolean & numeric",
+                    "path": "how-to-guides/boolean-numeric-literals.md"
+                  },
+                  {
+                    "label": "String & char",
+                    "path": "how-to-guides/string-char-literals.md"
+                  },
+                  {
+                    "label": "Date-time",
+                    "path": "how-to-guides/date-time-literals.md"
+                  }
+                ]
+              },
+              {
+                "label": "Formulas, filters, and operators",
+                "items": [
+                  {
+                    "label": "Formulas",
+                    "path": "how-to-guides/formulas.md"
+                  },
+                  {
+                    "label": "Filters",
+                    "path": "how-to-guides/filters.md"
+                  },
+                  {
+                    "label": "Operators",
+                    "path": "how-to-guides/operators.md"
+                  },
+                  {
+                    "label": "Casting",
+                    "path": "how-to-guides/casting.md"
+                  },
+                  {
+                    "label": "Ternary-if",
+                    "path": "how-to-guides/ternary-if-how-to.md"
+                  }
+                ]
+              },
+              {
+                "label": "Built-ins",
+                "items": [
+                  {
+                    "label": "Built-in constants",
+                    "path": "how-to-guides/built-in-constants.md"
+                  },
+                  {
+                    "label": "Built-in Variables",
+                    "path": "how-to-guides/built-in-variables.md"
+                  },
+                  {
+                    "label": "Built-in functions",
+                    "path": "how-to-guides/built-in-functions.md"
+                  }
+                ]
+              },
+              {
+                "label": "Python",
+                "items": [
+                  {
+                    "label": "Query Scope",
+                    "path": "how-to-guides/query-scope.md"
+                  },
+                  {
+                    "label": "Variables",
+                    "path": "how-to-guides/python-variables.md"
+                  },
+                  {
+                    "label": "Functions",
+                    "path": "how-to-guides/python-functions.md"
+                  },
+                  {
+                    "label": "Classes & Objects",
+                    "path": "how-to-guides/python-classes.md"
+                  },
+                  {
+                    "label": "PyObjects",
+                    "path": "how-to-guides/pyobjects.md"
+                  }
+                ]
+              },
+              {
+                "label": "Data types",
+                "path": "how-to-guides/data-types.md"
+              },
+              {
+                "label": "Nulls, infs, and NaNs",
+                "path": "how-to-guides/null-inf-nan.md"
+              },
+              {
+                "label": "Arrays",
+                "path": "how-to-guides/work-with-arrays.md"
+              },
+              {
+                "label": "Strings",
+                "path": "how-to-guides/work-with-strings.md"
+              },
+              {
+                "label": "Java classes & objects",
+                "path": "how-to-guides/java-classes.md"
+              }
+            ]
+          },
+          {
+            "label": "Python",
+            "items": [
+              {
+                "label": "Deephaven's Python package",
+                "path": "how-to-guides/deephaven-python-package.md"
+              },
+              {
+                "label": "Generate query strings with Python",
+                "path": "how-to-guides/generate-query-strings.md"
+              },
+              {
+                "label": "Read Javadocs",
+                "path": "how-to-guides/read-javadocs.md"
+              },
+              {
+                "label": "Python library integrations",
+                "items": [
+                  {
+                    "label": "jpy",
+                    "path": "how-to-guides/use-jpy.md"
+                  },
+                  {
+                    "label": "Numba",
+                    "path": "how-to-guides/use-numba.md"
+                  },
+                  {
+                    "label": "NumPy",
+                    "path": "how-to-guides/use-numpy.md"
+                  },
+                  {
+                    "label": "pandas",
+                    "path": "how-to-guides/use-pandas.md"
+                  }
+                ]
+              },
+              {
+                "label": "AI / ML",
+                "items": [
+                  {
+                    "label": "Workflows",
+                    "path": "how-to-guides/ml-ai-no-learn.md"
+                  },
+                  {
+                    "label": "deephaven.learn",
+                    "path": "how-to-guides/use-deephaven-learn.md"
+                  },
+                  {
+                    "label": "PyTorch",
+                    "path": "how-to-guides/use-pytorch.md"
+                  },
+                  {
+                    "label": "SciKit-Learn",
+                    "path": "how-to-guides/use-scikit-learn.md"
+                  },
+                  {
+                    "label": "TensorBoard",
+                    "path": "how-to-guides/use-tensorboard.md"
+                  },
+                  {
+                    "label": "TensorFlow",
+                    "path": "how-to-guides/use-tensorflow.md"
+                  }
+                ]
+              },
+              {
+                "label": "Advanced Python topics",
+                "items": [
+                  {
+                    "label": "Execution Context",
+                    "path": "conceptual/execution-context.md"
+                  },
+                  {
+                    "label": "Liveness scope",
+                    "path": "conceptual/liveness-scope-concept.md"
+                  },
+                  {
+                    "label": "Systemic Object Marking",
+                    "path": "conceptual/systemic-object-marking.md"
+                  }
+                ]
+              },
+              {
+                "label": "Jupyter",
+                "path": "how-to-guides/jupyter.md"
+              }
+            ]
+          },
+          {
+            "label": "Plot",
+            "items": [
+              {
+                "label": "How to plot real-time data",
+                "path": "how-to-guides/plotting/overview.md"
+              },
+              {
+                "label": "Deephaven Express",
+                "href": "https://deephaven.io/core/plotly/docs/"
+              },
+              {
+                "label": "Matplotlib and Seaborn",
+                "path": "how-to-guides/plotting/matplot-seaborn.md"
+              },
+              {
+                "label": "Plot without writing queries",
+                "path": "how-to-guides/user-interface/chart-builder.md"
+              },
+              {
+                "label": "Built-in API",
+                "path": "how-to-guides/plotting/api-plotting.md"
+              }
+            ]
+          },
+          {
+            "label": "GUI",
+            "items": [
+              {
+                "label": "Use the GUI",
+                "items": [
+                  {
+                    "label": "Navigate the GUI",
+                    "path": "how-to-guides/user-interface/navigating-the-ui.md"
+                  },
+                  {
+                    "label": "Set date-time format",
+                    "path": "how-to-guides/set-date-time-format.md"
+                  },
+                  {
+                    "label": "Set table density",
+                    "path": "how-to-guides/user-interface/set-table-density.md"
+                  },
+                  {
+                    "label": "Create and organize notebooks",
+                    "path": "how-to-guides/user-interface/file-explorer.md"
+                  },
+                  {
+                    "label": "Markdown widgets",
+                    "path": "how-to-guides/user-interface/markdown-widget.md"
+                  },
+                  {
+                    "label": "Real-time dashboards",
+                    "items": [
+                      {
+                        "label": "deephaven.ui",
+                        "path": "how-to-guides/deephaven-ui.md"
+                      },
+                      {
+                        "label": "Format tables in the UI",
+                        "path": "how-to-guides/user-interface/formatting-tables.md"
+                      },
+                      {
+                        "label": "Filter without writing queries",
+                        "path": "how-to-guides/user-interface/filters.md"
+                      },
+                      {
+                        "label": "Clickable links",
+                        "path": "how-to-guides/user-interface/add-clickable-links.md"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "label": "Customize the GUI",
+                "items": [
+                  {
+                    "label": "Custom themes",
+                    "path": "how-to-guides/custom-themes.md"
+                  },
+                  {
+                    "label": "IFrames",
+                    "path": "how-to-guides/use-iframes.md"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "label": "Client APIs",
+            "items": [
+              {
+                "label": "Java",
+                "items": [
+                  {
+                    "label": "Extract data with a Java client",
+                    "path": "how-to-guides/java-client.md"
+                  }
+                ]
+              },
+              {
+                "label": "JS API",
+                "path": "how-to-guides/use-jsapi.md"
+              },
+              {
+                "label": "Python",
+                "items": [
+                  {
+                    "label": "Overview",
+                    "href": "https://deephaven.io/core/client-api/python/index.html"
+                  },
+                  {
+                    "label": "Initialize",
+                    "href": "https://deephaven.io/core/client-api/python/examples.html#initialize"
+                  },
+                  {
+                    "label": "Binding to a table",
+                    "href": "https://deephaven.io/core/client-api/python/examples.html#binding-to-a-table"
+                  },
+                  {
+                    "label": "Execute a query on a table",
+                    "href": "https://deephaven.io/core/client-api/python/examples.html#execute-a-query-on-a-table"
+                  },
+                  {
+                    "label": "Sort a table",
+                    "href": "https://deephaven.io/core/client-api/python/examples.html#sort-a-table"
+                  },
+                  {
+                    "label": "Filter a table",
+                    "href": "https://deephaven.io/core/client-api/python/examples.html#filter-a-table"
+                  },
+                  {
+                    "label": "Query objects",
+                    "href": "https://deephaven.io/core/client-api/python/examples.html#query-objects"
+                  },
+                  {
+                    "label": "Join two tables",
+                    "href": "https://deephaven.io/core/client-api/python/examples.html#join-2-tables"
+                  },
+                  {
+                    "label": "Perform aggregations on table",
+                    "href": "https://deephaven.io/core/client-api/python/examples.html#perform-aggregations-on-a-table"
+                  },
+                  {
+                    "label": "Convert a PyArrow table to a Deephaven table",
+                    "href": "https://deephaven.io/core/client-api/python/examples.html#convert-a-pyarrow-table-to-a-deephaven-table"
+                  },
+                  {
+                    "label": "Execute a script server side",
+                    "href": "https://deephaven.io/core/client-api/python/examples.html#execute-a-script-server-side"
+                  },
+                  {
+                    "label": "Subscribe to a ticking table",
+                    "href": "https://deephaven.io/core/client-api/python/examples.html#subscribe-to-a-ticking-table"
+                  },
+                  {
+                    "label": "Error handling",
+                    "href": "https://deephaven.io/core/client-api/python/examples.html#error-handling"
+                  },
+                  {
+                    "label": "Capture Python client tables",
+                    "path": "how-to-guides/capture-tables.md"
+                  }
+                ]
+              },
+              {
+                "label": "C++",
+                "items": [
+                  {
+                    "label": "Overview",
+                    "href": "https://deephaven.io/core/client-api/cpp-examples/index.html"
+                  },
+                  {
+                    "label": "Getting started",
+                    "href": "https://deephaven.io/core/client-api/cpp-examples/getting_started.html"
+                  },
+                  {
+                    "label": "Resource management",
+                    "href": "https://deephaven.io/core/client-api/cpp-examples/resource_mgmt.html"
+                  },
+                  {
+                    "label": "Data I/O",
+                    "href": "https://deephaven.io/core/client-api/cpp-examples/input_output.html"
+                  },
+                  {
+                    "label": "Fluent interface",
+                    "href": "https://deephaven.io/core/client-api/cpp-examples/fluent.html"
+                  }
+                ]
+              },
+              {
+                "label": "Go",
+                "items": [
+                  {
+                    "label": "Overview",
+                    "href": "https://pkg.go.dev/github.com/deephaven/deephaven-core/go#section-readme"
+                  },
+                  {
+                    "label": "Fetch tables",
+                    "href": "https://pkg.go.dev/github.com/deephaven/deephaven-core/go@v0.35.0/pkg/client#example-package-FetchTable"
+                  },
+                  {
+                    "label": "Import tables",
+                    "href": "https://pkg.go.dev/github.com/deephaven/deephaven-core/go@v0.35.0/pkg/client#example-package-ImportTable"
+                  },
+                  {
+                    "label": "Create input tables",
+                    "href": "https://pkg.go.dev/github.com/deephaven/deephaven-core/go@v0.35.0/pkg/client#example-package-InputTable"
+                  },
+                  {
+                    "label": "Run scripts",
+                    "href": "https://pkg.go.dev/github.com/deephaven/deephaven-core/go@v0.35.0/pkg/client#example-package-RunScript"
+                  },
+                  {
+                    "label": "Table operations",
+                    "href": "https://pkg.go.dev/github.com/deephaven/deephaven-core/go@v0.35.0/pkg/client#example-package-TableOps"
+                  }
+                ]
+              },
+              {
+                "label": "R",
+                "items": [
+                  {
+                    "label": "Overview",
+                    "href": "https://deephaven.io/core/client-api/r/index.html"
+                  },
+                  {
+                    "label": "Building blocks of the Deephaven R client",
+                    "href": "https://deephaven.io/core/client-api/r/articles/rdeephaven.html#building-blocks-of-the-deephaven-r-client"
+                  },
+                  {
+                    "label": "Real-time data analysis",
+                    "href": "https://deephaven.io/core/client-api/r/articles/rdeephaven.html#real-time-data-analysis"
+                  },
+                  {
+                    "label": "Powerful table operations",
+                    "href": "https://deephaven.io/core/client-api/r/articles/rdeephaven.html#powerful-table-operations"
+                  },
+                  {
+                    "label": "Aggregations",
+                    "href": "https://deephaven.io/core/client-api/r/articles/agg_by.html"
+                  },
+                  {
+                    "label": "Moving operations",
+                    "href": "https://deephaven.io/core/client-api/r/articles/update_by.html"
+                  }
+                ]
+              },
+              {
+                "label": "Flight SQL",
+                "path": "how-to-guides/flight-sql.md"
+              },
+              {
+                "label": "Excel",
+                "items": [
+                  {
+                    "label": "Excel Client",
+                    "path": "how-to-guides/excel/excel-client.md"
+                  }
+                ]
+              },
+              {
+                "label": "Protobuf",
+                "items": [
+                  {
+                    "label": "Protobuf and RPC",
+                    "path": "how-to-guides/protobuf.md"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "label": "Plugins",
+            "items": [
+              {
+                "label": "Install and use plugins",
+                "path": "how-to-guides/install-use-plugins.md"
+              },
+              {
+                "label": "Create your own plugin",
+                "path": "how-to-guides/create-plugins.md"
+              }
+            ]
+          },
+          {
+            "label": "Development tools",
+            "items": [
+              {
+                "label": "Copilot extension",
+                "path": "how-to-guides/copilot-extension.md"
+              }
+            ]
+          },
+          {
+            "label": "Best practices and troubleshooting",
+            "items": [
+              {
+                "label": "Think like a Deephaven ninja",
+                "path": "conceptual/ninja.md"
+              },
+              {
+                "label": "Performance",
+                "items": [
+                  {
+                    "label": "Use performance tables",
+                    "path": "how-to-guides/performance/performance-tables.md"
+                  },
+                  {
+                    "label": "Dial down the update frequency of ticking tables",
+                    "path": "how-to-guides/performance/reduce-update-frequency.md"
+                  },
+                  {
+                    "label": "Data Indexes",
+                    "path": "how-to-guides/data-indexes.md"
+                  },
+                  {
+                    "label": "Predicate Pushdown Filtering",
+                    "path": "how-to-guides/predicate-pushdown.md"
+                  },
+                  {
+                    "label": "Parallelization",
+                    "path": "conceptual/query-engine/parallelization.md"
+                  },
+                  {
+                    "label": "Synchronization and locking",
+                    "path": "conceptual/query-engine/engine-locking.md"
+                  },
+                  {
+                    "label": "Python-Java boundary",
+                    "path": "conceptual/python-java-boundary.md"
+                  },
+                  {
+                    "label": "Run Garbage Collection",
+                    "path": "how-to-guides/performance/garbage-collection.md"
+                  },
+                  {
+                    "label": "Barrage metrics",
+                    "path": "how-to-guides/performance/barrage-performance.md"
+                  },
+                  {
+                    "label": "Interpret Barrage metrics",
+                    "path": "conceptual/barrage-metrics.md"
+                  },
+                  {
+                    "label": "Troubleshoot query performance",
+                    "path": "conceptual/troubleshooting-steps.md"
+                  }
+                ]
+              },
+              {
+                "label": "Errors and troubleshooting",
+                "items": [
+                  {
+                    "label": "Triage errors in queries",
+                    "path": "how-to-guides/triage-errors.md"
+                  },
+                  {
+                    "label": "Decipher Python errors",
+                    "path": "how-to-guides/python-errors.md"
+                  },
+                  {
+                    "label": "Debugging with PyCharm",
+                    "path": "how-to-guides/debugging/pycharm-debugging.md"
+                  },
+                  {
+                    "label": "Retrieve logs",
+                    "path": "how-to-guides/logs.md"
+                  },
+                  {
+                    "label": "Get version information",
+                    "path": "how-to-guides/get-version.md"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "label": "System setup and admin",
+            "items": [
+              {
+                "label": "Update Deephaven",
+                "path": "how-to-guides/configuration/updating-deephaven.md"
+              },
+              {
+                "label": "Authentication",
+                "items": [
+                  {
+                    "label": "Anonymous",
+                    "path": "how-to-guides/authentication/auth-anon.md"
+                  },
+                  {
+                    "label": "Keycloak",
+                    "path": "how-to-guides/authentication/auth-keycloak.md"
+                  },
+                  {
+                    "label": "mTLS",
+                    "path": "how-to-guides/authentication/auth-mtls.md"
+                  },
+                  {
+                    "label": "Pre-shared key",
+                    "path": "how-to-guides/authentication/auth-psk.md"
+                  },
+                  {
+                    "label": "Username/password",
+                    "path": "how-to-guides/authentication/auth-uname-pw.md"
+                  }
+                ]
+              },
+              {
+                "label": "Configuration",
+                "items": [
+                  {
+                    "label": "Docker data volumes",
+                    "path": "conceptual/docker-data-volumes.md"
+                  },
+                  {
+                    "label": "Adjust heap size",
+                    "path": "how-to-guides/heap-size.md"
+                  },
+                  {
+                    "label": "Deephaven console service",
+                    "path": "how-to-guides/configuration/console-service.md"
+                  },
+                  {
+                    "label": "Deephaven Docker application",
+                    "path": "how-to-guides/configuration/docker-application.md"
+                  },
+                  {
+                    "label": "Application Mode",
+                    "items": [
+                      {
+                        "label": "Application Mode",
+                        "path": "how-to-guides/application-mode.md"
+                      },
+                      {
+                        "label": "Application Mode libraries",
+                        "path": "how-to-guides/application-mode-libraries.md"
+                      },
+                      {
+                        "label": "Application Mode scripts",
+                        "path": "how-to-guides/application-mode-script.md"
+                      }
+                    ]
+                  },
+                  {
+                    "label": "Install packages",
+                    "path": "how-to-guides/install-packages.md"
+                  },
+                  {
+                    "label": "Python packages",
+                    "path": "how-to-guides/install-and-use-python-packages.md"
+                  },
+                  {
+                    "label": "Install and use Java packages",
+                    "path": "how-to-guides/install-and-use-java-packages.md"
+                  },
+                  {
+                    "label": "Production application",
+                    "path": "how-to-guides/configuration/configure-production-application.md"
+                  },
+                  {
+                    "label": "Deephaven configuration files",
+                    "path": "how-to-guides/configuration/config-file.md"
+                  },
+                  {
+                    "label": "Web Defaults",
+                    "path": "how-to-guides/configuration/configure-web.md"
+                  },
+                  {
+                    "label": "Custom environmental variables",
+                    "path": "how-to-guides/custom-environmental-variables.md"
+                  },
+                  {
+                    "label": "Periodic Update Graph configuration",
+                    "path": "conceptual/periodic-update-graph-configuration.md"
+                  },
+                  {
+                    "label": "Query table configuration",
+                    "path": "conceptual/query-table-configuration.md"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "label": "Cloud deployment",
+            "items": [
+              {
+                "label": "AWS EC2",
+                "path": "how-to-guides/aws-ec2.md"
+              },
+              {
+                "label": "GCP",
+                "path": "how-to-guides/gcp-linux.md"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "label": "Cheat sheets",
+        "items": [
+          {
+            "label": "Ultimate cheat sheet",
+            "path": "reference/cheat-sheets/cheat-sheet.md"
+          },
+          {
+            "label": "Choose Python packages",
+            "path": "reference/cheat-sheets/choose-python-packages.md"
+          },
+          {
+            "label": "Data import / export",
+            "items": [
+              {
+                "label": "Simple table constructors",
+                "path": "reference/cheat-sheets/simple-table-constructors.md"
+              },
+              {
+                "label": "CSV",
+                "path": "reference/cheat-sheets/csv.md"
+              },
+              {
+                "label": "Kafka",
+                "path": "reference/cheat-sheets/kafka.md"
+              },
+              {
+                "label": "Parquet",
+                "path": "reference/cheat-sheets/parquet.md"
+              },
+              {
+                "label": "URI",
+                "path": "reference/cheat-sheets/uri-cheat-sheet.md"
+              }
+            ]
+          },
+          {
+            "label": "Performance tables",
+            "path": "reference/cheat-sheets/performance-tables-cheat-sheet.md"
+          },
+          {
+            "label": "Time operations",
+            "path": "reference/cheat-sheets/time-cheat-sheet.md"
+          }
+        ]
+      },
+      {
+        "label": "API documentation",
+        "items": [
+          {
+            "label": "Python (client)",
+            "href": "https://deephaven.io/core/client-api/python"
+          },
+          {
+            "label": "Python (server)",
+            "href": "https://deephaven.io/core/pydoc"
+          },
+          {
+            "label": "Java (client/server)",
+            "href": "https://deephaven.io/core/javadoc"
+          },
+          {
+            "label": "JavaScript (client)",
+            "items": [
+              {
+                "label": "Javascript API Concepts",
+                "path": "reference/js-api/concepts.md"
+              },
+              {
+                "label": "JavaScript",
+                "href": "https://deephaven.io/core/client-api/javascript/modules/dh.html"
+              }
+            ]
+          },
+          {
+            "label": "Go (client)",
+            "href": "https://pkg.go.dev/github.com/deephaven/deephaven-core/go"
+          },
+          {
+            "label": "C++ (client)",
+            "href": "https://deephaven.io/core/client-api/cpp"
+          },
+          {
+            "label": "C++ (examples)",
+            "href": "https://deephaven.io/core/client-api/cpp-examples"
+          },
+          {
+            "label": "R (client)",
+            "href": "https://deephaven.io/core/client-api/r"
+          },
+          {
+            "label": "Barrage (communication)",
+            "href": "https://deephaven.io/barrage/docs/"
+          },
+          {
+            "label": "gRPC (communication)",
+            "href": "https://deephaven.io/core/javadoc/io/deephaven/proto/backplane/grpc/SessionServiceGrpc.html"
+          },
+          {
+            "label": "Protobuf (communication)",
+            "href": "https://deephaven.io/core/client-api/protobuf/"
+          }
+        ]
+      },
+      {
+        "label": "Reference",
+        "items": [
+          {
+            "label": "Engine",
+            "items": [
+              {
+                "label": "await_update",
+                "path": "reference/table-operations/table-listeners/await-update.md"
+              },
+              {
+                "label": "data_index",
+                "path": "reference/engine/data-index.md"
+              },
+              {
+                "label": "has_data_index",
+                "path": "reference/engine/has-data-index.md"
+              },
+              {
+                "label": "LivenessScope",
+                "path": "reference/engine/LivenessScope.md"
+              },
+              {
+                "label": "liveness_scope",
+                "path": "reference/engine/liveness-scope.md"
+              }
+            ]
+          },
+          {
+            "label": "Create, import, and export tables",
+            "items": [
+              {
+                "label": "Simple table constructors",
+                "items": [
+                  {
+                    "label": "Tables",
+                    "items": [
+                      {
+                        "label": "empty_table",
+                        "path": "reference/table-operations/create/emptyTable.md"
+                      },
+                      {
+                        "label": "new_table",
+                        "path": "reference/table-operations/create/newTable.md"
+                      },
+                      {
+                        "label": "time_table",
+                        "path": "reference/table-operations/create/timeTable.md"
+                      },
+                      {
+                        "label": "input_table",
+                        "path": "reference/table-operations/create/input-table.md"
+                      },
+                      {
+                        "label": "ring_table",
+                        "path": "reference/table-operations/create/ringTable.md"
+                      },
+                      {
+                        "label": "tree",
+                        "path": "reference/table-operations/create/tree.md"
+                      },
+                      {
+                        "label": "rollup",
+                        "path": "reference/table-operations/create/rollup.md"
+                      },
+                      {
+                        "label": "with_attributes",
+                        "path": "reference/table-operations/create/withAttributes.md"
+                      },
+                      {
+                        "label": "without_attributes",
+                        "path": "reference/table-operations/create/withoutAttributes.md"
+                      }
+                    ]
+                  },
+                  {
+                    "label": "Columns",
+                    "items": [
+                      {
+                        "label": "bool_col",
+                        "path": "reference/table-operations/create/boolCol.md"
+                      },
+                      {
+                        "label": "byte_col",
+                        "path": "reference/table-operations/create/byteCol.md"
+                      },
+                      {
+                        "label": "char_col",
+                        "path": "reference/table-operations/create/charCol.md"
+                      },
+                      {
+                        "label": "datetime_col",
+                        "path": "reference/table-operations/create/dateTimeCol.md"
+                      },
+                      {
+                        "label": "double_col",
+                        "path": "reference/table-operations/create/doubleCol.md"
+                      },
+                      {
+                        "label": "float_col",
+                        "path": "reference/table-operations/create/floatCol.md"
+                      },
+                      {
+                        "label": "InputColumn",
+                        "path": "reference/table-operations/create/inputColumn.md"
+                      },
+                      {
+                        "label": "int_col",
+                        "path": "reference/table-operations/create/intCol.md"
+                      },
+                      {
+                        "label": "jobj_col",
+                        "path": "reference/table-operations/create/jobj_col.md"
+                      },
+                      {
+                        "label": "long_col",
+                        "path": "reference/table-operations/create/longCol.md"
+                      },
+                      {
+                        "label": "pyobj_col",
+                        "path": "reference/table-operations/create/pyobj_col.md"
+                      },
+                      {
+                        "label": "short_col",
+                        "path": "reference/table-operations/create/shortCol.md"
+                      },
+                      {
+                        "label": "string_col",
+                        "path": "reference/table-operations/create/stringCol.md"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "label": "Advanced table constructors",
+                "items": [
+                  {
+                    "label": "add_only_to_blink",
+                    "path": "reference/table-operations/create/add-only-to-blink.md"
+                  },
+                  {
+                    "label": "blink_to_append_only",
+                    "path": "reference/table-operations/create/blink-to-append-only.md"
+                  },
+                  {
+                    "label": "function_generated_table",
+                    "path": "reference/table-operations/create/function_generated_table.md"
+                  },
+                  {
+                    "label": "DynamicTableWriter",
+                    "path": "reference/table-operations/create/DynamicTableWriter.md"
+                  },
+                  {
+                    "label": "TablePublisher",
+                    "path": "reference/table-operations/create/TablePublisher.md"
+                  },
+                  {
+                    "label": "remove_blink",
+                    "path": "reference/table-operations/create/remove-blink.md"
+                  },
+                  {
+                    "label": "TableReplayer",
+                    "path": "reference/table-operations/create/Replayer.md"
+                  },
+                  {
+                    "label": "TableDefinitionLike",
+                    "path": "reference/table-operations/create/TableDefinitionLike.md"
+                  }
+                ]
+              },
+              {
+                "label": "Arrow",
+                "items": [
+                  {
+                    "label": "read_feather",
+                    "path": "reference/arrow/read-feather.md"
+                  },
+                  {
+                    "label": "to_arrow",
+                    "path": "reference/arrow/to-arrow.md"
+                  },
+                  {
+                    "label": "to_table",
+                    "path": "reference/arrow/to-table.md"
+                  }
+                ]
+              },
+              {
+                "label": "Barrage",
+                "items": [
+                  {
+                    "label": "barrage_session",
+                    "path": "reference/data-import-export/barrage/barrage-session.md"
+                  },
+                  {
+                    "label": "close",
+                    "path": "reference/data-import-export/barrage/close.md"
+                  },
+                  {
+                    "label": "subscribe",
+                    "path": "reference/data-import-export/barrage/subscribe.md"
+                  },
+                  {
+                    "label": "snapshot",
+                    "path": "reference/data-import-export/barrage/snapshot-barrage.md"
+                  }
+                ]
+              },
+              {
+                "label": "CSV",
+                "items": [
+                  {
+                    "label": "read_csv",
+                    "path": "reference/data-import-export/CSV/readCsv.md"
+                  },
+                  {
+                    "label": "write_csv",
+                    "path": "reference/data-import-export/CSV/writeCsv.md"
+                  }
+                ]
+              },
+              {
+                "label": "HTML",
+                "items": [
+                  {
+                    "label": "to_html",
+                    "path": "reference/data-import-export/HTML/to-html.md"
+                  }
+                ]
+              },
+              {
+                "label": "Kafka",
+                "items": [
+                  {
+                    "label": "consume_to_partitioned_table",
+                    "path": "reference/data-import-export/Kafka/consume-to-partitioned-table.md"
+                  },
+                  {
+                    "label": "consume",
+                    "path": "reference/data-import-export/Kafka/consume.md"
+                  },
+                  {
+                    "label": "produce",
+                    "path": "reference/data-import-export/Kafka/produce.md"
+                  }
+                ]
+              },
+              {
+                "label": "Parquet",
+                "items": [
+                  {
+                    "label": "ColumnInstruction",
+                    "path": "reference/data-import-export/Parquet/ColumnInstruction.md"
+                  },
+                  {
+                    "label": "read",
+                    "path": "reference/data-import-export/Parquet/readTable.md"
+                  },
+                  {
+                    "label": "write",
+                    "path": "reference/data-import-export/Parquet/writeTable.md"
+                  }
+                ]
+              },
+              {
+                "label": "SQL",
+                "items": [
+                  {
+                    "label": "read_sql",
+                    "path": "reference/data-import-export/SQL/read_sql.md"
+                  },
+                  {
+                    "label": "adbc.read_cursor",
+                    "path": "reference/data-import-export/SQL/adbc.md"
+                  },
+                  {
+                    "label": "odbc.read_cursor",
+                    "path": "reference/data-import-export/SQL/odbc.md"
+                  }
+                ]
+              },
+              {
+                "label": "Iceberg",
+                "items": [
+                  {
+                    "label": "adapter",
+                    "path": "reference/iceberg/adapter.md"
+                  },
+                  {
+                    "label": "adapater_aws_glue",
+                    "path": "reference/iceberg/adapter-aws-glue.md"
+                  },
+                  {
+                    "label": "adapter_s3_rest",
+                    "path": "reference/iceberg/adapter-s3-rest.md"
+                  },
+                  {
+                    "label": "IcebergCatalogAdapter",
+                    "path": "reference/iceberg/iceberg-catalog-adapter.md"
+                  },
+                  {
+                    "label": "IcebergReadInstructions",
+                    "path": "reference/iceberg/iceberg-read-instructions.md"
+                  },
+                  {
+                    "label": "IcebergTable",
+                    "path": "reference/iceberg/iceberg-table.md"
+                  },
+                  {
+                    "label": "IcebergTableAdapter",
+                    "path": "reference/iceberg/iceberg-table-adapter.md"
+                  },
+                  {
+                    "label": "IcebergTableWriter",
+                    "path": "reference/iceberg/iceberg-table-writer.md"
+                  },
+                  {
+                    "label": "IcebergUpdateMode",
+                    "path": "reference/iceberg/iceberg-update-mode.md"
+                  },
+                  {
+                    "label": "IcebergWriteInstructions",
+                    "path": "reference/iceberg/iceberg-write-instructions.md"
+                  },
+                  {
+                    "label": "InferenceResolver",
+                    "path": "reference/iceberg/inference-resolver.md"
+                  },
+                  {
+                    "label": "SchemaProvider",
+                    "path": "reference/iceberg/schema-provider.md"
+                  },
+                  {
+                    "label": "SortOrderProvider",
+                    "path": "reference/iceberg/sort-order-provider.md"
+                  },
+                  {
+                    "label": "TableParquetWriterOptions",
+                    "path": "reference/iceberg/table-parquet-writer-options.md"
+                  },
+                  {
+                    "label": "UnboundResolver",
+                    "path": "reference/iceberg/unbound-resolver.md"
+                  }
+                ]
+              },
+              {
+                "label": "Iterate",
+                "items": [
+                  {
+                    "label": "iter_dict",
+                    "path": "reference/data-import-export/iterate/iter-dict.md"
+                  },
+                  {
+                    "label": "iter_tuple",
+                    "path": "reference/data-import-export/iterate/iter-tuple.md"
+                  },
+                  {
+                    "label": "iter_chunk_dict",
+                    "path": "reference/data-import-export/iterate/iter-chunk-dict.md"
+                  },
+                  {
+                    "label": "iter_chunk_tuple",
+                    "path": "reference/data-import-export/iterate/iter-chunk-tuple.md"
+                  }
+                ]
+              },
+              {
+                "label": "URI",
+                "path": "reference/data-import-export/uri.md"
+              }
+            ]
+          },
+          {
+            "label": "Work with tables",
+            "items": [
+              {
+                "label": "Metadata",
+                "items": [
+                  {
+                    "label": "attributes",
+                    "path": "reference/table-operations/metadata/attributes.md"
+                  },
+                  {
+                    "label": "columns",
+                    "path": "reference/table-operations/metadata/columns.md"
+                  },
+                  {
+                    "label": "has_columns",
+                    "path": "reference/table-operations/metadata/has_columns.md"
+                  },
+                  {
+                    "label": "is_blink",
+                    "path": "reference/table-operations/metadata/is_blink.md"
+                  },
+                  {
+                    "label": "is_flat",
+                    "path": "reference/table-operations/metadata/is_flat.md"
+                  },
+                  {
+                    "label": "is_refreshing",
+                    "path": "reference/table-operations/metadata/is_refreshing.md"
+                  },
+                  {
+                    "label": "meta_table",
+                    "path": "reference/table-operations/metadata/meta_table.md"
+                  },
+                  {
+                    "label": "size",
+                    "path": "reference/table-operations/metadata/size.md"
+                  },
+                  {
+                    "label": "table_diff",
+                    "path": "reference/table-operations/metadata/table_diff.md"
+                  },
+                  {
+                    "label": "to_string",
+                    "path": "reference/table-operations/metadata/to_string.md"
+                  },
+                  {
+                    "label": "update_graph",
+                    "path": "reference/table-operations/metadata/update_graph.md"
+                  }
+                ]
+              },
+              {
+                "label": "Select",
+                "items": [
+                  {
+                    "label": "drop_columns",
+                    "path": "reference/table-operations/select/drop-columns.md"
+                  },
+                  {
+                    "label": "flatten",
+                    "path": "reference/table-operations/select/flatten.md"
+                  },
+                  {
+                    "label": "lazy_update",
+                    "path": "reference/table-operations/select/lazy-update.md"
+                  },
+                  {
+                    "label": "move_columns",
+                    "path": "reference/table-operations/select/move-columns.md"
+                  },
+                  {
+                    "label": "move_columns_down",
+                    "path": "reference/table-operations/select/move-columns-down.md"
+                  },
+                  {
+                    "label": "move_columns_up",
+                    "path": "reference/table-operations/select/move-columns-up.md"
+                  },
+                  {
+                    "label": "rename_columns",
+                    "path": "reference/table-operations/select/rename-columns.md"
+                  },
+                  {
+                    "label": "select",
+                    "path": "reference/table-operations/select/select.md"
+                  },
+                  {
+                    "label": "select_distinct",
+                    "path": "reference/table-operations/select/select-distinct.md"
+                  },
+                  {
+                    "label": "update",
+                    "path": "reference/table-operations/select/update.md"
+                  },
+                  {
+                    "label": "update_view",
+                    "path": "reference/table-operations/select/update-view.md"
+                  },
+                  {
+                    "label": "view",
+                    "path": "reference/table-operations/select/view.md"
+                  }
+                ]
+              },
+              {
+                "label": "Filter",
+                "items": [
+                  {
+                    "label": "head",
+                    "path": "reference/table-operations/filter/head.md"
+                  },
+                  {
+                    "label": "head_pct",
+                    "path": "reference/table-operations/filter/head-pct.md"
+                  },
+                  {
+                    "label": "slice",
+                    "path": "reference/table-operations/filter/slice.md"
+                  },
+                  {
+                    "label": "slice_pct",
+                    "path": "reference/table-operations/filter/slice-pct.md"
+                  },
+                  {
+                    "label": "tail",
+                    "path": "reference/table-operations/filter/tail.md"
+                  },
+                  {
+                    "label": "tail_pct",
+                    "path": "reference/table-operations/filter/tail-pct.md"
+                  },
+                  {
+                    "label": "where",
+                    "path": "reference/table-operations/filter/where.md"
+                  },
+                  {
+                    "label": "where_in",
+                    "path": "reference/table-operations/filter/where-in.md"
+                  },
+                  {
+                    "label": "where_one_of",
+                    "path": "reference/table-operations/filter/where-one-of.md"
+                  },
+                  {
+                    "label": "where_not_in",
+                    "path": "reference/table-operations/filter/where-not-in.md"
+                  }
+                ]
+              },
+              {
+                "label": "Sort",
+                "items": [
+                  {
+                    "label": "restrict_sort_to",
+                    "path": "reference/table-operations/sort/restrict-sort.md"
+                  },
+                  {
+                    "label": "reverse",
+                    "path": "reference/table-operations/sort/reverse.md"
+                  },
+                  {
+                    "label": "sort",
+                    "path": "reference/table-operations/sort/sort.md"
+                  },
+                  {
+                    "label": "sort_descending",
+                    "path": "reference/table-operations/sort/sort-descending.md"
+                  }
+                ]
+              },
+              {
+                "label": "Format",
+                "items": [
+                  {
+                    "label": "format_columns",
+                    "path": "reference/table-operations/format/format-columns.md"
+                  },
+                  {
+                    "label": "format_column_where",
+                    "path": "reference/table-operations/format/format-column-where.md"
+                  },
+                  {
+                    "label": "format_row_where",
+                    "path": "reference/table-operations/format/format-row-where.md"
+                  },
+                  {
+                    "label": "keyed_transpose",
+                    "path": "reference/table-operations/format/keyed-transpose.md"
+                  }
+                ]
+              },
+              {
+                "label": "Merge",
+                "items": [
+                  {
+                    "label": "merge",
+                    "path": "reference/table-operations/merge/merge.md"
+                  },
+                  {
+                    "label": "merge_sorted",
+                    "path": "reference/table-operations/merge/merge-sorted.md"
+                  }
+                ]
+              },
+              {
+                "label": "Group and aggregate",
+                "items": [
+                  {
+                    "label": "Group",
+                    "items": [
+                      {
+                        "label": "group_by",
+                        "path": "reference/table-operations/group-and-aggregate/groupBy.md"
+                      },
+                      {
+                        "label": "ungroup",
+                        "path": "reference/table-operations/group-and-aggregate/ungroup.md"
+                      }
+                    ]
+                  },
+                  {
+                    "label": "Single aggregation",
+                    "items": [
+                      {
+                        "label": "avg_by",
+                        "path": "reference/table-operations/group-and-aggregate/avgBy.md"
+                      },
+                      {
+                        "label": "count_by",
+                        "path": "reference/table-operations/group-and-aggregate/countBy.md"
+                      },
+                      {
+                        "label": "first_by",
+                        "path": "reference/table-operations/group-and-aggregate/firstBy.md"
+                      },
+                      {
+                        "label": "head_by",
+                        "path": "reference/table-operations/group-and-aggregate/headBy.md"
+                      },
+                      {
+                        "label": "last_by",
+                        "path": "reference/table-operations/group-and-aggregate/lastBy.md"
+                      },
+                      {
+                        "label": "max_by",
+                        "path": "reference/table-operations/group-and-aggregate/maxBy.md"
+                      },
+                      {
+                        "label": "median_by",
+                        "path": "reference/table-operations/group-and-aggregate/medianBy.md"
+                      },
+                      {
+                        "label": "min_by",
+                        "path": "reference/table-operations/group-and-aggregate/minBy.md"
+                      },
+                      {
+                        "label": "std_by",
+                        "path": "reference/table-operations/group-and-aggregate/stdBy.md"
+                      },
+                      {
+                        "label": "sum_by",
+                        "path": "reference/table-operations/group-and-aggregate/sumBy.md"
+                      },
+                      {
+                        "label": "tail_by",
+                        "path": "reference/table-operations/group-and-aggregate/tailBy.md"
+                      },
+                      {
+                        "label": "var_by",
+                        "path": "reference/table-operations/group-and-aggregate/varBy.md"
+                      },
+                      {
+                        "label": "weighted_avg_by",
+                        "path": "reference/table-operations/group-and-aggregate/weighted-avg-by.md"
+                      },
+                      {
+                        "label": "weighted_sum_by",
+                        "path": "reference/table-operations/group-and-aggregate/weighted-sum-by.md"
+                      }
+                    ]
+                  },
+                  {
+                    "label": "Multi-aggregation",
+                    "items": [
+                      {
+                        "label": "agg_by",
+                        "path": "reference/table-operations/group-and-aggregate/aggBy.md"
+                      },
+                      {
+                        "label": "partitioned_agg_by",
+                        "path": "reference/table-operations/group-and-aggregate/partitionedAggBy.md"
+                      },
+                      {
+                        "label": "abs_sum_by",
+                        "path": "reference/table-operations/group-and-aggregate/AbsSumBy.md"
+                      },
+                      {
+                        "label": "abs_sum",
+                        "path": "reference/table-operations/group-and-aggregate/AggAbsSum.md"
+                      },
+                      {
+                        "label": "agg_all_by",
+                        "path": "reference/table-operations/group-and-aggregate/AggAllBy.md"
+                      },
+                      {
+                        "label": "avg",
+                        "path": "reference/table-operations/group-and-aggregate/AggAvg.md"
+                      },
+                      {
+                        "label": "count_",
+                        "path": "reference/table-operations/group-and-aggregate/AggCount.md"
+                      },
+                      {
+                        "label": "count_distinct",
+                        "path": "reference/table-operations/group-and-aggregate/AggCountDistinct.md"
+                      },
+                      {
+                        "label": "count_where",
+                        "path": "reference/table-operations/group-and-aggregate/AggCountWhere.md"
+                      },
+                      {
+                        "label": "distinct",
+                        "path": "reference/table-operations/group-and-aggregate/AggDistinct.md"
+                      },
+                      {
+                        "label": "first",
+                        "path": "reference/table-operations/group-and-aggregate/AggFirst.md"
+                      },
+                      {
+                        "label": "formula",
+                        "path": "reference/table-operations/group-and-aggregate/AggFormula.md"
+                      },
+                      {
+                        "label": "group",
+                        "path": "reference/table-operations/group-and-aggregate/AggGroup.md"
+                      },
+                      {
+                        "label": "last",
+                        "path": "reference/table-operations/group-and-aggregate/AggLast.md"
+                      },
+                      {
+                        "label": "max_",
+                        "path": "reference/table-operations/group-and-aggregate/AggMax.md"
+                      },
+                      {
+                        "label": "median",
+                        "path": "reference/table-operations/group-and-aggregate/AggMed.md"
+                      },
+                      {
+                        "label": "min_",
+                        "path": "reference/table-operations/group-and-aggregate/AggMin.md"
+                      },
+                      {
+                        "label": "partition",
+                        "path": "reference/table-operations/group-and-aggregate/AggPartition.md"
+                      },
+                      {
+                        "label": "pct",
+                        "path": "reference/table-operations/group-and-aggregate/AggPct.md"
+                      },
+                      {
+                        "label": "sorted_first",
+                        "path": "reference/table-operations/group-and-aggregate/AggSortedFirst.md"
+                      },
+                      {
+                        "label": "sorted_last",
+                        "path": "reference/table-operations/group-and-aggregate/AggSortedLast.md"
+                      },
+                      {
+                        "label": "std",
+                        "path": "reference/table-operations/group-and-aggregate/AggStd.md"
+                      },
+                      {
+                        "label": "sum_",
+                        "path": "reference/table-operations/group-and-aggregate/AggSum.md"
+                      },
+                      {
+                        "label": "unique",
+                        "path": "reference/table-operations/group-and-aggregate/AggUnique.md"
+                      },
+                      {
+                        "label": "var",
+                        "path": "reference/table-operations/group-and-aggregate/AggVar.md"
+                      },
+                      {
+                        "label": "weighted_avg",
+                        "path": "reference/table-operations/group-and-aggregate/AggWAvg.md"
+                      },
+                      {
+                        "label": "weighted_sum",
+                        "path": "reference/table-operations/group-and-aggregate/AggWSum.md"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "label": "Update By",
+                "items": [
+                  {
+                    "label": "update_by",
+                    "path": "reference/table-operations/update-by-operations/updateBy.md"
+                  },
+                  {
+                    "label": "cum_max",
+                    "path": "reference/table-operations/update-by-operations/cum-max.md"
+                  },
+                  {
+                    "label": "cum_min",
+                    "path": "reference/table-operations/update-by-operations/cum-min.md"
+                  },
+                  {
+                    "label": "cum_prod",
+                    "path": "reference/table-operations/update-by-operations/cum-prod.md"
+                  },
+                  {
+                    "label": "cum_sum",
+                    "path": "reference/table-operations/update-by-operations/cum-sum.md"
+                  },
+                  {
+                    "label": "cum_count_where",
+                    "path": "reference/table-operations/update-by-operations/cum-count-where.md"
+                  },
+                  {
+                    "label": "delta",
+                    "path": "reference/table-operations/update-by-operations/delta.md"
+                  },
+                  {
+                    "label": "DeltaControl",
+                    "path": "reference/table-operations/update-by-operations/DeltaControl.md"
+                  },
+                  {
+                    "label": "ema_tick",
+                    "path": "reference/table-operations/update-by-operations/ema-tick.md"
+                  },
+                  {
+                    "label": "ema_time",
+                    "path": "reference/table-operations/update-by-operations/ema-time.md"
+                  },
+                  {
+                    "label": "emmax_tick",
+                    "path": "reference/table-operations/update-by-operations/emmax-tick.md"
+                  },
+                  {
+                    "label": "emmax_time",
+                    "path": "reference/table-operations/update-by-operations/emmax-time.md"
+                  },
+                  {
+                    "label": "emmin_tick",
+                    "path": "reference/table-operations/update-by-operations/emmin-tick.md"
+                  },
+                  {
+                    "label": "emmin_time",
+                    "path": "reference/table-operations/update-by-operations/emmin-time.md"
+                  },
+                  {
+                    "label": "ems_tick",
+                    "path": "reference/table-operations/update-by-operations/ems-tick.md"
+                  },
+                  {
+                    "label": "ems_time",
+                    "path": "reference/table-operations/update-by-operations/ems-time.md"
+                  },
+                  {
+                    "label": "emstd_tick",
+                    "path": "reference/table-operations/update-by-operations/emstd-tick.md"
+                  },
+                  {
+                    "label": "emstd_time",
+                    "path": "reference/table-operations/update-by-operations/emstd-time.md"
+                  },
+                  {
+                    "label": "forward_fill",
+                    "path": "reference/table-operations/update-by-operations/forward-fill.md"
+                  },
+                  {
+                    "label": "OperationControl",
+                    "path": "reference/table-operations/update-by-operations/OperationControl.md"
+                  },
+                  {
+                    "label": "rolling_avg_tick",
+                    "path": "reference/table-operations/update-by-operations/rolling-avg-tick.md"
+                  },
+                  {
+                    "label": "rolling_avg_time",
+                    "path": "reference/table-operations/update-by-operations/rolling-avg-time.md"
+                  },
+                  {
+                    "label": "rolling_count_tick",
+                    "path": "reference/table-operations/update-by-operations/rolling-count-tick.md"
+                  },
+                  {
+                    "label": "rolling_count_time",
+                    "path": "reference/table-operations/update-by-operations/rolling-count-time.md"
+                  },
+                  {
+                    "label": "rolling_count__where_tick",
+                    "path": "reference/table-operations/update-by-operations/rolling-count-where-tick.md"
+                  },
+                  {
+                    "label": "rolling_count_where_time",
+                    "path": "reference/table-operations/update-by-operations/rolling-count-where-time.md"
+                  },
+                  {
+                    "label": "rolling_formula_tick",
+                    "path": "reference/table-operations/update-by-operations/rolling-formula-tick.md"
+                  },
+                  {
+                    "label": "rolling_formula_time",
+                    "path": "reference/table-operations/update-by-operations/rolling-formula-time.md"
+                  },
+                  {
+                    "label": "rolling_group_tick",
+                    "path": "reference/table-operations/update-by-operations/rolling-group-tick.md"
+                  },
+                  {
+                    "label": "rolling_group_time",
+                    "path": "reference/table-operations/update-by-operations/rolling-group-time.md"
+                  },
+                  {
+                    "label": "rolling_max_tick",
+                    "path": "reference/table-operations/update-by-operations/rolling-max-tick.md"
+                  },
+                  {
+                    "label": "rolling_max_time",
+                    "path": "reference/table-operations/update-by-operations/rolling-max-time.md"
+                  },
+                  {
+                    "label": "rolling_min_tick",
+                    "path": "reference/table-operations/update-by-operations/rolling-min-tick.md"
+                  },
+                  {
+                    "label": "rolling_min_time",
+                    "path": "reference/table-operations/update-by-operations/rolling-min-time.md"
+                  },
+                  {
+                    "label": "rolling_prod_tick",
+                    "path": "reference/table-operations/update-by-operations/rolling-prod-tick.md"
+                  },
+                  {
+                    "label": "rolling_prod_time",
+                    "path": "reference/table-operations/update-by-operations/rolling-prod-time.md"
+                  },
+                  {
+                    "label": "rolling_std_tick",
+                    "path": "reference/table-operations/update-by-operations/rolling-std-tick.md"
+                  },
+                  {
+                    "label": "rolling_std_time",
+                    "path": "reference/table-operations/update-by-operations/rolling-std-time.md"
+                  },
+                  {
+                    "label": "rolling_sum_tick",
+                    "path": "reference/table-operations/update-by-operations/rolling-sum-tick.md"
+                  },
+                  {
+                    "label": "rolling_sum_time",
+                    "path": "reference/table-operations/update-by-operations/rolling-sum-time.md"
+                  },
+                  {
+                    "label": "rolling_wavg_tick",
+                    "path": "reference/table-operations/update-by-operations/rolling-wavg-tick.md"
+                  },
+                  {
+                    "label": "rolling_wavg_time",
+                    "path": "reference/table-operations/update-by-operations/rolling-wavg-time.md"
+                  }
+                ]
+              },
+              {
+                "label": "Join",
+                "items": [
+                  {
+                    "label": "aj",
+                    "path": "reference/table-operations/join/aj.md"
+                  },
+                  {
+                    "label": "exact_join",
+                    "path": "reference/table-operations/join/exact-join.md"
+                  },
+                  {
+                    "label": "full_outer_join",
+                    "path": "reference/table-operations/join/full-outer-join.md"
+                  },
+                  {
+                    "label": "join",
+                    "path": "reference/table-operations/join/join.md"
+                  },
+                  {
+                    "label": "left_outer_join",
+                    "path": "reference/table-operations/join/left-outer-join.md"
+                  },
+                  {
+                    "label": "multi_join",
+                    "path": "reference/table-operations/join/multi-join.md"
+                  },
+                  {
+                    "label": "natural_join",
+                    "path": "reference/table-operations/join/natural-join.md"
+                  },
+                  {
+                    "label": "raj",
+                    "path": "reference/table-operations/join/raj.md"
+                  },
+                  {
+                    "label": "range_join",
+                    "path": "reference/table-operations/join/range-join.md"
+                  }
+                ]
+              },
+              {
+                "label": "Partition",
+                "items": [
+                  {
+                    "label": "partition_by",
+                    "path": "reference/table-operations/group-and-aggregate/partitionBy.md"
+                  },
+                  {
+                    "label": "filter",
+                    "path": "reference/table-operations/partitioned-tables/partitioned-table-filter.md"
+                  },
+                  {
+                    "label": "from_constituent_tables",
+                    "path": "reference/table-operations/partitioned-tables/from-constituent-tables.md"
+                  },
+                  {
+                    "label": "from_partitioned_table",
+                    "path": "reference/table-operations/partitioned-tables/from-partitioned-table.md"
+                  },
+                  {
+                    "label": "get_constituent",
+                    "path": "reference/table-operations/partitioned-tables/get-constituent.md"
+                  },
+                  {
+                    "label": "keys",
+                    "path": "reference/table-operations/partitioned-tables/keys.md"
+                  },
+                  {
+                    "label": "Metadata methods",
+                    "path": "reference/table-operations/partitioned-tables/metadata-methods.md"
+                  },
+                  {
+                    "label": "partitioned_transform",
+                    "path": "reference/table-operations/partitioned-tables/partitioned-transform.md"
+                  },
+                  {
+                    "label": "merge",
+                    "path": "reference/table-operations/partitioned-tables/partitioned-table-merge.md"
+                  },
+                  {
+                    "label": "sort",
+                    "path": "reference/table-operations/partitioned-tables/partitioned-table-sort.md"
+                  },
+                  {
+                    "label": "proxy",
+                    "path": "reference/table-operations/partitioned-tables/proxy.md"
+                  },
+                  {
+                    "label": "transform",
+                    "path": "reference/table-operations/partitioned-tables/transform.md"
+                  }
+                ]
+              },
+              {
+                "label": "Snapshot",
+                "items": [
+                  {
+                    "label": "snapshot",
+                    "path": "reference/table-operations/snapshot/snapshot.md"
+                  },
+                  {
+                    "label": "snapshot_when",
+                    "path": "reference/table-operations/snapshot/snapshot-when.md"
+                  }
+                ]
+              },
+              {
+                "label": "Time",
+                "items": [
+                  {
+                    "label": "time_window",
+                    "path": "reference/time/time-window.md"
+                  },
+                  {
+                    "label": "Date-time",
+                    "items": [
+                      {
+                        "label": "dh_now",
+                        "path": "reference/time/datetime/dh_now.md"
+                      },
+                      {
+                        "label": "dh_time_zone",
+                        "path": "reference/time/datetime/dh_time_zone.md"
+                      },
+                      {
+                        "label": "dh_today",
+                        "path": "reference/time/datetime/dh_today.md"
+                      },
+                      {
+                        "label": "simple_date_format",
+                        "path": "reference/time/datetime/simple_date_format.md"
+                      },
+                      {
+                        "label": "time_zone_alias_add",
+                        "path": "reference/time/datetime/time_zone_alias_add.md"
+                      },
+                      {
+                        "label": "time_zone_alias_rm",
+                        "path": "reference/time/datetime/time_zone_alias_rm.md"
+                      },
+                      {
+                        "label": "to_date",
+                        "path": "reference/time/datetime/to_date.md"
+                      },
+                      {
+                        "label": "to_datetime",
+                        "path": "reference/time/datetime/to_datetime.md"
+                      },
+                      {
+                        "label": "to_j_duration",
+                        "path": "reference/time/datetime/to_j_duration.md"
+                      },
+                      {
+                        "label": "to_j_instant",
+                        "path": "reference/time/datetime/to_j_instant.md"
+                      },
+                      {
+                        "label": "to_j_local_date",
+                        "path": "reference/time/datetime/to_j_local_date.md"
+                      },
+                      {
+                        "label": "to_j_local_time",
+                        "path": "reference/time/datetime/to_j_local_time.md"
+                      },
+                      {
+                        "label": "to_j_period",
+                        "path": "reference/time/datetime/to_j_period.md"
+                      },
+                      {
+                        "label": "to_j_time_zone",
+                        "path": "reference/time/datetime/to_j_time_zone.md"
+                      },
+                      {
+                        "label": "to_j_zdt",
+                        "path": "reference/time/datetime/to_j_zdt.md"
+                      },
+                      {
+                        "label": "to_np_datetime64",
+                        "path": "reference/time/datetime/to_np_datetime64.md"
+                      },
+                      {
+                        "label": "to_np_timedelta64",
+                        "path": "reference/time/datetime/to_np_timedelta64.md"
+                      },
+                      {
+                        "label": "to_pd_timestamp",
+                        "path": "reference/time/datetime/to_pd_timestamp.md"
+                      },
+                      {
+                        "label": "to_pd_timedelta",
+                        "path": "reference/time/datetime/to_pd_timedelta.md"
+                      },
+                      {
+                        "label": "to_time",
+                        "path": "reference/time/datetime/to_time.md"
+                      },
+                      {
+                        "label": "to_timedelta",
+                        "path": "reference/time/datetime/to_timedelta.md"
+                      }
+                    ]
+                  },
+                  {
+                    "label": "Calendar",
+                    "items": [
+                      {
+                        "label": "add_calendar",
+                        "path": "reference/time/calendar/add-calendar.md"
+                      },
+                      {
+                        "label": "calendar",
+                        "path": "reference/time/calendar/calendar.md"
+                      },
+                      {
+                        "label": "calendar_name",
+                        "path": "reference/time/calendar/calendar-name.md"
+                      },
+                      {
+                        "label": "calendar_names",
+                        "path": "reference/time/calendar/calendar-names.md"
+                      },
+                      {
+                        "label": "remove_calendar",
+                        "path": "reference/time/calendar/remove-calendar.md"
+                      },
+                      {
+                        "label": "set_calendar",
+                        "path": "reference/time/calendar/set-calendar.md"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "label": "Query strings",
+            "items": [
+              {
+                "label": "Filters",
+                "items": [
+                  {
+                    "label": "Match filters",
+                    "items": [
+                      {
+                        "label": "equals",
+                        "path": "reference/query-language/match-filters/equals.md"
+                      },
+                      {
+                        "label": "not equals",
+                        "path": "reference/query-language/match-filters/not-equals.md"
+                      },
+                      {
+                        "label": "icase in",
+                        "path": "reference/query-language/match-filters/icase-in.md"
+                      },
+                      {
+                        "label": "icase not in",
+                        "path": "reference/query-language/match-filters/icase-not-in.md"
+                      },
+                      {
+                        "label": "in",
+                        "path": "reference/query-language/match-filters/in.md"
+                      },
+                      {
+                        "label": "not in",
+                        "path": "reference/query-language/match-filters/not-in.md"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "label": "Special variables and constants",
+                "path": "reference/query-language/variables/special-variables.md"
+              },
+              {
+                "label": "Types",
+                "items": [
+                  {
+                    "label": "Arrays",
+                    "path": "reference/query-language/types/arrays.md"
+                  },
+                  {
+                    "label": "date-time",
+                    "path": "reference/query-language/types/date-time.md"
+                  },
+                  {
+                    "label": "Durations",
+                    "path": "reference/query-language/types/durations.md"
+                  },
+                  {
+                    "label": "Casting",
+                    "path": "reference/query-language/control-flow/casting.md"
+                  },
+                  {
+                    "label": "NaNs",
+                    "path": "reference/query-language/types/NaNs.md"
+                  },
+                  {
+                    "label": "Nulls",
+                    "path": "reference/query-language/types/nulls.md"
+                  },
+                  {
+                    "label": "Objects",
+                    "path": "reference/query-language/types/objects.md"
+                  },
+                  {
+                    "label": "Periods",
+                    "path": "reference/query-language/types/periods.md"
+                  },
+                  {
+                    "label": "Strings",
+                    "path": "reference/query-language/types/strings.md"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "label": "Data types",
+            "path": "reference/python/deephaven-python-types.md"
+          },
+          {
+            "label": "numpy",
+            "items": [
+              {
+                "label": "dh_null_to_nan",
+                "path": "reference/numpy/dh-null-to-nan.md"
+              },
+              {
+                "label": "to_numpy",
+                "path": "reference/numpy/to-numpy.md"
+              },
+              {
+                "label": "to_table",
+                "path": "reference/numpy/to-table.md"
+              },
+              {
+                "label": "to_np_busdaycalendar",
+                "path": "reference/numpy/to-np-busdaycalendar.md"
+              }
+            ]
+          },
+          {
+            "label": "pandas",
+            "items": [
+              {
+                "label": "to_pandas",
+                "path": "reference/pandas/to-pandas.md"
+              },
+              {
+                "label": "to_table",
+                "path": "reference/pandas/to-table.md"
+              }
+            ]
+          },
+          {
+            "label": "Plot",
+            "items": [
+              {
+                "label": "one_click",
+                "path": "reference/plot/one-click.md"
+              },
+              {
+                "label": "one_click_partitioned_table",
+                "path": "reference/plot/one-click-partitioned-table.md"
+              },
+              {
+                "label": "plot_cat",
+                "path": "reference/plot/catPlot.md"
+              },
+              {
+                "label": "plot_cat_hist",
+                "path": "reference/plot/catHistPlot.md"
+              },
+              {
+                "label": "plot_ohlc",
+                "path": "reference/plot/ohlcPlot.md"
+              },
+              {
+                "label": "plot_pie",
+                "path": "reference/plot/piePlot.md"
+              },
+              {
+                "label": "plot_style",
+                "path": "reference/plot/plotStyle.md"
+              },
+              {
+                "label": "plot_treemap",
+                "path": "reference/plot/treemapPlot.md"
+              },
+              {
+                "label": "plot_xy",
+                "path": "reference/plot/plot.md"
+              },
+              {
+                "label": "plot_xy_hist",
+                "path": "reference/plot/histPlot.md"
+              },
+              {
+                "label": "SelectableDataSet",
+                "path": "reference/query-language/types/SelectableDataSet.md"
+              }
+            ]
+          },
+          {
+            "label": "Performance",
+            "items": [
+              {
+                "label": "garbage_collect",
+                "path": "reference/garbage-collect.md"
+              }
+            ]
+          },
+          {
+            "label": "Configuration",
+            "items": [
+              {
+                "label": "Application Mode configuration",
+                "path": "reference/app-mode/application-mode-config.md"
+              }
+            ]
+          },
+          {
+            "label": "Imports",
+            "items": [
+              {
+                "label": "Auto-imported functions",
+                "path": "reference/query-language/query-library/auto-imported-functions.md"
+              },
+              {
+                "label": "Backend Imports",
+                "path": "reference/python/backend-imports.md"
+              }
+            ]
+          },
+          {
+            "label": "Version support matrix",
+            "path": "reference/version-matrix.md"
+          }
+        ]
+      },
+      {
+        "label": "Help and more",
+        "items": [
+          {
+            "label": "Deephaven example apps on GitHub",
+            "href": "https://github.com/deephaven-examples"
+          },
+          {
+            "label": "FAQs",
+            "items": [
+              {
+                "label": "FAQ Overview",
+                "path": "reference/community-questions/cq-index.md"
+              },
+              {
+                "label": "General",
+                "items": [
+                  {
+                    "label": "How can I find which Core version to which a feature or fix was added?",
+                    "path": "reference/community-questions/how-do-i-find-a-specific-build.md"
+                  },
+                  {
+                    "label": "Is it possible to read a Parquet file from a remote location?",
+                    "path": "reference/community-questions/is-it-possible-read-parquet-from-remote.md"
+                  },
+                  {
+                    "label": "When does Deephaven load data into memory for Parquet reads?",
+                    "path": "reference/community-questions/when-does-dh-load-data-into-memory-parquet-reads.md"
+                  }
+                ]
+              },
+              {
+                "label": "Installation",
+                "items": [
+                  {
+                    "label": "Is docker compose required?",
+                    "path": "reference/community-questions/is-docker-compose-required.md"
+                  }
+                ]
+              },
+              {
+                "label": "Configuration",
+                "items": [
+                  {
+                    "label": "How do I configure Deephaven to use another port?",
+                    "path": "reference/community-questions/configure-dh-to-use-another-port.md"
+                  },
+                  {
+                    "label": "What's the minimum amount of memory I should allocate to a Deephaven server?",
+                    "path": "reference/community-questions/whats-minimum-amount-memory-to-allocate.md"
+                  },
+                  {
+                    "label": "Is it possible disable the Deephaven console?",
+                    "path": "reference/community-questions/possible-to-disable-console.md"
+                  },
+                  {
+                    "label": "How do I set the default timezone?",
+                    "path": "reference/community-questions/set-timezone.md"
+                  },
+                  {
+                    "label": "How can I manage the number of cores Deephaven can use?",
+                    "path": "reference/community-questions/manage-thread-pool-size.md"
+                  }
+                ]
+              },
+              {
+                "label": "Table operations",
+                "items": [
+                  {
+                    "label": "Does Deephaven have a built-in ATR?",
+                    "path": "reference/community-questions/average-true-range.md"
+                  },
+                  {
+                    "label": "How can I perform rolling operations without a fixed window size?",
+                    "path": "reference/community-questions/can-i-perform-rolling-ops-without-fixed-window-size.md"
+                  },
+                  {
+                    "label": "How do I extract data from a table?",
+                    "path": "reference/community-questions/extract-values-from-tables.md"
+                  },
+                  {
+                    "label": "How do I get the ISO week number from a datetime?",
+                    "path": "reference/community-questions/iso-week-number.md"
+                  },
+                  {
+                    "label": "Why do queries run faster the second time they are run?",
+                    "path": "reference/community-questions/query-memoization.md"
+                  },
+                  {
+                    "label": "How do I create a partitioned blink table?",
+                    "path": "reference/community-questions/partitioned-blink-tables-drop-attribute.md"
+                  },
+                  {
+                    "label": "How do I automatically execute Python code based on a Deephaven table column value?",
+                    "path": "reference/community-questions/automatically-execute-python-code.md"
+                  },
+                  {
+                    "label": "When should I use `where_in` or `natural_join`?",
+                    "path": "reference/community-questions/wherein-vs-naturaljoin.md"
+                  }
+                ]
+              },
+              {
+                "label": "Troubleshooting",
+                "items": [
+                  {
+                    "label": "Can I reset the Python kernel without restarting the Deephaven Docker container?",
+                    "path": "reference/community-questions/can-i-reset-py-kernel-without-restarting-dh.md"
+                  },
+                  {
+                    "label": "How do I solve a `hash table exceeds maximum size` error?",
+                    "path": "reference/community-questions/hash-table-exceeds-maximum-size.md"
+                  },
+                  {
+                    "label": "How does memory work in the JVM?",
+                    "path": "reference/community-questions/memory-jvm.md"
+                  },
+                  {
+                    "label": "What's the best approach to monitor Deephaven server health?",
+                    "path": "reference/community-questions/monitor-dh-server-health.md"
+                  },
+                  {
+                    "label": "How do I import one Python script into another in the Deephaven IDE?",
+                    "path": "reference/community-questions/import-python-script.md"
+                  },
+                  {
+                    "label": "Why am I getting an UpdateGraphConflictException?",
+                    "path": "reference/community-questions/update-graph-conflict-exception.md"
+                  }
+                ]
+              },
+              {
+                "label": "Server-side APIs",
+                "items": [
+                  {
+                    "label": "Is there a way to find out how much memory a table is using?",
+                    "path": "reference/community-questions/find-how-much-memory-a-table-is-using.md"
+                  },
+                  {
+                    "label": "Does it make any difference if I separate table operations or chain them together?",
+                    "path": "reference/community-questions/chained-operations.md"
+                  },
+                  {
+                    "label": "Why isn't `last_by` ticking?",
+                    "path": "reference/community-questions/last-by-not-ticking.md"
+                  },
+                  {
+                    "label": "How can I periodically write a ticking table to disk?",
+                    "path": "reference/community-questions/write-ticking-table-periodically.md"
+                  },
+                  {
+                    "label": "Does `deephaven.stream.kafka` use the Confluent consumer under the hood?",
+                    "path": "reference/community-questions/does-deephaven-stream-kafka-use-confluent.md"
+                  },
+                  {
+                    "label": "How do I dynamically update a DataFrame from a table?",
+                    "path": "reference/community-questions/dynamically-update-dataframe.md"
+                  },
+                  {
+                    "label": "How do I get data out of a table?",
+                    "path": "reference/community-questions/how-do-i-get-data-out-of-a-deephaven-table.md"
+                  },
+                  {
+                    "label": "How do I create unrollable columns in the Python IDE?",
+                    "path": "reference/community-questions/python-unrollable-column.md"
+                  },
+                  {
+                    "label": "Is it possible to convert one or more columns of a Deephaven table to JSON?",
+                    "path": "reference/community-questions/possible-to-convert-columns-to-json.md"
+                  },
+                  {
+                    "label": "How do I convert vector columns to primitive array columns?",
+                    "path": "reference/community-questions/convert-array-types.md"
+                  },
+                  {
+                    "label": "How do I troubleshoot type hints?",
+                    "path": "reference/community-questions/how-do-i-troubleshoot-type-hints.md"
+                  },
+                  {
+                    "label": "How can I bin times to a specific time?",
+                    "path": "reference/community-questions/bin-times-specific-time.md"
+                  },
+                  {
+                    "label": "How can I convert year, day, and minute to an Instant?",
+                    "path": "reference/community-questions/convert-year-day-minute-instant.md"
+                  },
+                  {
+                    "label": "Why are my table operations producing incorrect results?",
+                    "path": "reference/community-questions/why-do-my-python-type-hints-error.md"
+                  },
+                  {
+                    "label": "Why aren't my date-time table operations working as expected?",
+                    "path": "reference/community-questions/python-vs-query-language-time-ops.md"
+                  },
+                  {
+                    "label": "How do I control what objects are displayed in the console?",
+                    "path": "reference/community-questions/display-objects-python.md"
+                  }
+                ]
+              },
+              {
+                "label": "Server-side APIs: Query language",
+                "items": [
+                  {
+                    "label": "Why are my table operations producing incorrect results?",
+                    "path": "reference/community-questions/why-table-ops-producing-incorrect-results.md"
+                  },
+                  {
+                    "label": "How can I convert an integer date to a formatted string?",
+                    "path": "reference/community-questions/convert-integer-date-to-formatted-string.md"
+                  },
+                  {
+                    "label": "How do I shift values in columns?",
+                    "path": "reference/community-questions/how-do-i-shift-values-in-columns.md"
+                  }
+                ]
+              },
+              {
+                "label": "Client APIs",
+                "items": [
+                  {
+                    "label": "Where can I find the password for the Deephaven IDE?",
+                    "path": "reference/community-questions/find-password-for-ide.md"
+                  },
+                  {
+                    "label": "How do I increase the maximum message size?",
+                    "path": "reference/community-questions/message-larger-than-max.md"
+                  }
+                ]
+              },
+              {
+                "label": "Integrations: AWS",
+                "items": [
+                  {
+                    "label": "Why can't I read from S3?",
+                    "path": "reference/community-questions/aws-timeout.md"
+                  },
+                  {
+                    "label": "How can I assume a specific role for S3?",
+                    "path": "reference/community-questions/assume-role-s3-credentials.md"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "label": "Engage in GitHub discussions",
+            "href": "https://github.com/deephaven/deephaven-core/discussions"
+          },
+          {
+            "label": "File GitHub issues",
+            "href": "https://github.com/deephaven/deephaven-core/issues"
+          },
+          {
+            "label": "Slack",
+            "href": "https://deephaven.io/slack"
+          }
+        ]
+      }
+    ]
+  }
+}

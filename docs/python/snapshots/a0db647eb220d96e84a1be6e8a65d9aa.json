@@ -1,0 +1,1 @@
+{"file":"core/docs/reference/table-operations/filter/slice.md","objects":{"source":{"type":"Table","data":{"columns":[{"name":"X","type":"int"}],"rows":[[{"value":"0"}],[{"value":"1"}],[{"value":"2"}],[{"value":"3"}],[{"value":"4"}]]}},"result":{"type":"Table","data":{"columns":[{"name":"X","type":"int"}],"rows":[[{"value":"2"}],[{"value":"3"}],[{"value":"4"}]]}}}}
