@@ -484,20 +484,5 @@ public abstract class RowGroupInfo {
         T visit(final @NotNull RowGroupInfo.SplitByMaxRows withMaxRows);
 
         T visit(final @NotNull RowGroupInfo.SplitByGroups byGroups);
-
-        default T visit(final @NotNull RowGroupInfo generic) {
-            if (generic instanceof RowGroupInfo.SingleRowGroup) {
-                return visit((RowGroupInfo.SingleRowGroup) generic);
-            } else if (generic instanceof RowGroupInfo.SplitEvenly) {
-                return visit((RowGroupInfo.SplitEvenly) generic);
-            } else if (generic instanceof RowGroupInfo.SplitByMaxRows) {
-                return visit((RowGroupInfo.SplitByMaxRows) generic);
-            } else if (generic instanceof RowGroupInfo.SplitByGroups) {
-                return visit((RowGroupInfo.SplitByGroups) generic);
-            } else {
-                throw new UnsupportedOperationException(
-                        String.format("Unknown %s type", RowGroupInfo.class.getCanonicalName()));
-            }
-        }
     }
 }
