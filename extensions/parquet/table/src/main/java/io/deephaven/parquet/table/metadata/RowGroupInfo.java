@@ -109,7 +109,7 @@ public interface RowGroupInfo {
         SINGLE_ROW_GROUP;
 
         @Override
-        public <T> T walk(@NotNull Visitor<T> visitor) {
+        public <T> T walk(final @NotNull Visitor<T> visitor) {
             return visitor.visit(this);
         }
     }
@@ -164,7 +164,7 @@ public interface RowGroupInfo {
         }
 
         @Override
-        public <T> T walk(@NotNull Visitor<T> visitor) {
+        public <T> T walk(final @NotNull Visitor<T> visitor) {
             return visitor.visit(this);
         }
 
@@ -201,7 +201,7 @@ public interface RowGroupInfo {
         }
 
         @Override
-        public <T> T walk(@NotNull Visitor<T> visitor) {
+        public <T> T walk(final @NotNull Visitor<T> visitor) {
             return visitor.visit(this);
         }
 

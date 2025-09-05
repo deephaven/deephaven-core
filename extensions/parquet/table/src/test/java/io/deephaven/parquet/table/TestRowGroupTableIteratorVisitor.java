@@ -7,6 +7,7 @@ import io.deephaven.base.FileUtils;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.TestExecutionContext;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.util.TableTools;
 import io.deephaven.parquet.table.metadata.RowGroupInfo;
 import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
@@ -87,18 +88,21 @@ public class TestRowGroupTableIteratorVisitor {
     }
 
     /**
-     * Verify that "SplitEvenly" results in ... a proper number of ~evenly split RowGroups
+     * A helper method which ensures that we're "evenly" splitting correctly, including the case that we request more
+     * RowGroups than we expect to have returned (that is, requesting more RowGroups than there are total rows)
      *
      * @param input the input table to split
      * @param numRowGroups the desired number of RowGroups
+     * @param expectedNumRowGroups the expected number of RowGroups
      */
-    private static void assertSplitEvenly(final @NotNull Table input, long numRowGroups) {
+    private static void assertSplitEvenly(final @NotNull Table input, long numRowGroups, long expectedNumRowGroups) {
         final List<Table> rowGroups = getRowGroups(input, RowGroupInfo.splitEvenly(numRowGroups));
-        final String totalMsg = String.format("splitEvenly(%d) returns %d RowGroups", numRowGroups, numRowGroups);
-        assertEquals(totalMsg, numRowGroups, rowGroups.size()); // we have the expected number of RowGroups
+        final String totalMsg =
+                String.format("splitEvenly(%d) returns %d RowGroups", numRowGroups, expectedNumRowGroups);
+        assertEquals(totalMsg, expectedNumRowGroups, rowGroups.size()); // we have the expected number of RowGroups
 
-        final long impliedSize = testTable.size() / numRowGroups;
-        final long frontLoaded = testTable.size() % numRowGroups;
+        final long impliedSize = input.size() / expectedNumRowGroups;
+        final long frontLoaded = input.size() % expectedNumRowGroups;
 
         // each RowGroup must be `impliedSize` (or `impliedSize+1` for the first `frontLoaded` RowGroups)
         for (int ii = 0; ii < rowGroups.size(); ii++) {
@@ -110,15 +114,24 @@ public class TestRowGroupTableIteratorVisitor {
         }
     }
 
+    private static void assertSplitEvenly(final @NotNull Table input, long numRowGroups) {
+        assertSplitEvenly(input, numRowGroups, numRowGroups);
+    }
+
     /**
      * Verify that "SplitEvenly" results in ... a proper number of ~evenly split RowGroups
      */
     @Test
     public void testSplitEvenly() {
-        assertSplitEvenly(testTable, 1); // should shortcut away and use "SingleRowGroup" (iterator)
+        assertSplitEvenly(testTable, 1);
         assertSplitEvenly(testTable, 10);
         assertSplitEvenly(testTable, 11);
         assertSplitEvenly(testTable, 1000);
+
+        // make sure that we don't have empty tables in the case that we ask for more RowGroups than there are rows ...
+        final Table tinyTable = TableTools.emptyTable(5)
+                .update("A=(int)i", "B=(long)i", "C=(double)i");
+        assertSplitEvenly(tinyTable, tinyTable.size() * 2, tinyTable.size());
     }
 
     /**
@@ -202,7 +215,7 @@ public class TestRowGroupTableIteratorVisitor {
     @Test
     public void testByGroup() {
         // if this fails, then the underlying table has changed, and we need to update this test
-        assertTrue("InputTable contains grouping column(s)", testTable.hasColumns(groupCol));
+        assertTrue("InputTable contains grouping column(s)", sortedTable.hasColumns(groupCol));
 
         final List<Table> rowGroups = getRowGroups(sortedTable, RowGroupInfo.byGroup(groupCol));
         final long expectedRowGroups = sortedTable.partitionBy(groupCol).constituents().length;
@@ -220,7 +233,7 @@ public class TestRowGroupTableIteratorVisitor {
     @Test
     public void testByGroupWithMax() {
         // if this fails, then the underlying table has changed, and we need to update this test
-        assertTrue("InputTable contains grouping column(s)", testTable.hasColumns(groupCol));
+        assertTrue("InputTable contains grouping column(s)", sortedTable.hasColumns(groupCol));
 
         final long maxRows = 10;
 

@@ -3309,6 +3309,17 @@ public final class ParquetTableReadWriteTest {
                 .build();
         ParquetTools.writeTable(testTable, destFile0.getAbsolutePath(), writeInstructions0);
 
+        final Table readTable0 = ParquetTools.readTable(destFile0.getAbsolutePath());
+        assertTableEquals(testTable, readTable0);
+
+        // verify that there are 10 RowGroups, each with a size of 1
+        final ParquetMetadata metadata0 =
+                new ParquetTableLocationKey(convertToURI(destFile0, false), 0, null, ParquetInstructions.EMPTY)
+                        .getMetadata();
+        assertEquals(testTable.size(), metadata0.getBlocks().size());
+        metadata0.getBlocks().forEach((b) -> assertEquals(1, b.getRowCount()));
+
+
         // write a table with 3 RowGroups (of sizes {4, 3, 3})
         final String filename1 = "multipleRowGroups1.parquet";
         final File destFile1 = new File(parentDir, filename1);
@@ -3319,13 +3330,17 @@ public final class ParquetTableReadWriteTest {
 
         ParquetTools.writeTable(testTable, destFile1.getAbsolutePath(), writeInstructions1);
 
-        final Table readTable0 = ParquetTools.readTable(destFile0.getAbsolutePath());
-        assertTableEquals(testTable, readTable0);
         final Table readTable1 = ParquetTools.readTable(destFile1.getAbsolutePath());
         assertTableEquals(testTable, readTable1);
 
-        // TODO: are the RowGroups somehow exposed? if so, readTable0 should have {1, 1, 1, 1, 1, 1, 1, 1, 1, 1} and
-        // TODO: readTable1 should have {4, 3, 3}
+        // verify that there are 3 RowGroups, with sizes of {4, 3, 3}
+        final ParquetMetadata metadata1 =
+                new ParquetTableLocationKey(convertToURI(destFile1, false), 0, null, ParquetInstructions.EMPTY)
+                        .getMetadata();
+        assertEquals(3, metadata1.getBlocks().size());
+        assertEquals(4, metadata1.getBlocks().get(0).getRowCount());
+        assertEquals(3, metadata1.getBlocks().get(1).getRowCount());
+        assertEquals(3, metadata1.getBlocks().get(2).getRowCount());
 
         FileUtils.deleteRecursively(parentDir);
     }

@@ -44,22 +44,22 @@ final class RowGroupTableIteratorVisitor implements RowGroupInfo.Visitor<Iterato
     }
 
     @Override
-    public Iterator<Table> visit(RowGroupInfo.@NotNull SingleRowGroup single) {
+    public Iterator<Table> visit(final @NotNull RowGroupInfo.SingleRowGroup single) {
         return List.of(input).iterator();
     }
 
     @Override
-    public Iterator<Table> visit(RowGroupInfo.@NotNull SplitEvenly splitEvenly) {
+    public Iterator<Table> visit(final @NotNull RowGroupInfo.SplitEvenly splitEvenly) {
         return splitByNumGroups(input, splitEvenly.getNumRowGroups());
     }
 
     @Override
-    public Iterator<Table> visit(RowGroupInfo.@NotNull SplitByMaxRows withMaxRows) {
+    public Iterator<Table> visit(final @NotNull RowGroupInfo.SplitByMaxRows withMaxRows) {
         return splitByMaxRows(input, withMaxRows.getMaxRows());
     }
 
     @Override
-    public Iterator<Table> visit(RowGroupInfo.@NotNull SplitByGroups byGroups) {
+    public Iterator<Table> visit(final @NotNull RowGroupInfo.SplitByGroups byGroups) {
         return new SplitByGroupsIterator(input, byGroups);
     }
 
@@ -75,7 +75,7 @@ final class RowGroupTableIteratorVisitor implements RowGroupInfo.Visitor<Iterato
 
         SplitEvenlyIterator(final @NotNull Table input, final long numRowGroups) {
             this.input = input;
-            this.numRowGroups = numRowGroups;
+            this.numRowGroups = Math.min(numRowGroups, input.size());
 
             this.impliedRowGroupSz = input.size() / numRowGroups;
             // number of groups which will have 1 additional row because rows are not evenly divisible by
