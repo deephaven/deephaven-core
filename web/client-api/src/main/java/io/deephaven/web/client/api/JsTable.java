@@ -3,6 +3,7 @@
 //
 package io.deephaven.web.client.api;
 
+import com.google.flatbuffers.FlatBufferBuilder;
 import com.vertispan.tsdefs.annotations.TsName;
 import com.vertispan.tsdefs.annotations.TsTypeRef;
 import com.vertispan.tsdefs.annotations.TsUnion;
@@ -10,6 +11,10 @@ import com.vertispan.tsdefs.annotations.TsUnionMember;
 import elemental2.core.JsArray;
 import elemental2.promise.IThenable.ThenOnFulfilledCallbackFn;
 import elemental2.promise.Promise;
+import io.deephaven.barrage.flatbuf.BarrageMessageType;
+import io.deephaven.barrage.flatbuf.BarrageSnapshotRequest;
+import io.deephaven.extensions.barrage.BarrageSnapshotOptions;
+import io.deephaven.javascript.proto.dhinternal.arrow.flight.protocol.flight_pb.FlightData;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.hierarchicaltable_pb.RollupRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.hierarchicaltable_pb.TreeRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.partitionedtable_pb.PartitionByRequest;
@@ -36,7 +41,13 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb
 import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.runchartdownsamplerequest.ZoomRange;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.ticket_pb.Ticket;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.ticket_pb.TypedTicket;
+import io.deephaven.util.mutable.MutableLong;
+import io.deephaven.web.client.api.barrage.WebBarrageMessage;
+import io.deephaven.web.client.api.barrage.WebBarrageMessageReader;
+import io.deephaven.web.client.api.barrage.WebBarrageUtils;
+import io.deephaven.web.client.api.barrage.data.WebBarrageSubscription;
 import io.deephaven.web.client.api.barrage.def.TableAttributesDefinition;
+import io.deephaven.web.client.api.barrage.stream.BiDiStream;
 import io.deephaven.web.client.api.barrage.stream.ResponseStreamWrapper;
 import io.deephaven.web.client.api.batch.RequestBatcher;
 import io.deephaven.web.client.api.console.JsVariableType;
@@ -45,6 +56,8 @@ import io.deephaven.web.client.api.input.JsInputTable;
 import io.deephaven.web.client.api.lifecycle.HasLifecycle;
 import io.deephaven.web.client.api.state.StateCache;
 import io.deephaven.web.client.api.subscription.AbstractTableSubscription;
+import io.deephaven.web.client.api.subscription.DataOptions;
+import io.deephaven.web.client.api.subscription.SubscriptionType;
 import io.deephaven.web.client.api.subscription.TableSubscription;
 import io.deephaven.web.client.api.subscription.TableViewportSubscription;
 import io.deephaven.web.client.api.subscription.ViewportData;
@@ -75,9 +88,11 @@ import jsinterop.base.Any;
 import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
+import java.io.IOException;
 import java.util.*;
 import java.util.stream.Stream;
 
+import static io.deephaven.web.client.api.barrage.WebBarrageUtils.serializeRanges;
 import static io.deephaven.web.client.fu.LazyPromise.logError;
 
 /**
@@ -697,6 +712,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
      * @return {@link TableViewportSubscription}
      */
     @JsMethod
+    @Deprecated
     public TableViewportSubscription setViewport(double firstRow, double lastRow,
             @JsOptional @JsNullable JsArray<Column> columns,
             @JsOptional @JsNullable Double updateIntervalMs,
@@ -706,7 +722,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
         TableViewportSubscription activeSubscription = subscriptions.get(getHandle());
         if (activeSubscription != null && !activeSubscription.isClosed()) {
             // hasn't finished, lets reuse it
-            activeSubscription.setInternalViewport(firstRow, lastRow, columnsCopy, updateIntervalMs, isReverseViewport);
+            activeSubscription.setInternalViewport(RangeSet.ofRange((long) firstRow, (long) lastRow), columnsCopy, updateIntervalMs, isReverseViewport);
             return activeSubscription;
         } else {
             // In the past, we left the old sub going until the new one was ready, then started the new one. But now,
@@ -717,8 +733,14 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
             // is running.
 
             // rewrap current state in a new one, when ready the viewport will be applied
-            TableViewportSubscription replacement =
-                    TableViewportSubscription.make(firstRow, lastRow, columnsCopy, updateIntervalMs, this);
+            DataOptions.ViewportSubscriptionOptions options = new DataOptions.ViewportSubscriptionOptions();
+            options.previewOptions = new DataOptions.PreviewOptions();
+            options.previewOptions.convertToString = true;
+            options.rows = Js.uncheckedCast(new JsRangeSet(RangeSet.ofRange((long) firstRow, (long) lastRow)));
+            options.columns = Js.uncheckedCast(columnsCopy);
+            options.updateIntervalMs = updateIntervalMs;
+            options.isReverseViewport = isReverseViewport;
+            TableViewportSubscription replacement = createViewportSubscription(options);
 
             subscriptions.put(currentState.getHandle(), replacement);
             return replacement;
@@ -764,6 +786,116 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
     @JsMethod
     public TableSubscription subscribe(JsArray<Column> columns, @JsOptional Double updateIntervalMs) {
         return new TableSubscription(columns, this, updateIntervalMs);
+    }
+
+    @JsMethod
+    public TableSubscription createSubscription(DataOptions.SubscriptionOptions options) {
+        return new TableSubscription(options.columns, this, options.updateIntervalMs);
+    }
+
+    @JsMethod
+    public TableViewportSubscription createViewportSubscription(DataOptions.ViewportSubscriptionOptions options) {
+        return TableViewportSubscription.make(options.rows.asRangeSet().getRange(), Js.uncheckedCast(options.columns), options.updateIntervalMs, this);
+    }
+
+    @JsMethod
+    public Promise<TableData> createSnapshot(DataOptions.SnapshotOptions options) {
+        JsArray<Column> columns = options.columns;
+        RangeSet rows = options.rows.asRangeSet().getRange();
+
+        // TODO #1039 slice rows and drop columns
+        BarrageSnapshotOptions barrageSnapshotOptions = BarrageSnapshotOptions.builder()
+                .batchSize(WebBarrageSubscription.BATCH_SIZE)
+                .maxMessageSize(WebBarrageSubscription.MAX_MESSAGE_SIZE)
+                .useDeephavenNulls(true)
+                .build();
+
+        LazyPromise<TableData> promise = new LazyPromise<>();
+        state().onRunning(cts -> {
+            int rowStyleColumn = cts.getRowFormatColumn() == null ? TableData.NO_ROW_FORMAT_COLUMN
+                    : cts.getRowFormatColumn().getIndex();
+
+            WebBarrageSubscription snapshot = WebBarrageSubscription.subscribe(
+                    SubscriptionType.SNAPSHOT, cts,
+                    (serverViewport1, serverColumns, serverReverseViewport) -> {
+                    },
+                    (rowsAdded, rowsRemoved, totalMods, shifted, modifiedColumnSet) -> {
+                    });
+
+            WebBarrageMessageReader reader = new WebBarrageMessageReader();
+
+            BiDiStream<FlightData, FlightData> doExchange = workerConnection.<FlightData, FlightData>streamFactory().create(
+                    headers -> workerConnection.flightServiceClient().doExchange(headers),
+                    (first, headers) -> workerConnection.browserFlightServiceClient().openDoExchange(first, headers),
+                    (next, headers, c) -> workerConnection.browserFlightServiceClient().nextDoExchange(next, headers,
+                            c::apply),
+                    new FlightData());
+            MutableLong rowsReceived = new MutableLong(0);
+            doExchange.onData(data -> {
+                WebBarrageMessage message;
+                try {
+                    message = reader.parseFrom(barrageSnapshotOptions, cts.columnTypes(),
+                            cts.componentTypes(), data);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+                if (message != null) {
+                    // Replace rowsets with flat versions
+                    long resultSize = message.rowsIncluded.size();
+                    if (resultSize != 0) {
+                        message.rowsAdded = RangeSet.ofRange(rowsReceived.get(), rowsReceived.get() + resultSize - 1);
+                        message.rowsIncluded = message.rowsAdded;
+                        message.snapshotRowSet = null;
+                        rowsReceived.add(resultSize);
+                    }
+
+                    // Update our table data with the complete message
+                    snapshot.applyUpdates(message);
+                }
+            });
+            FlightData payload = new FlightData();
+            final FlatBufferBuilder metadata = new FlatBufferBuilder();
+
+            int colOffset = BarrageSnapshotRequest.createColumnsVector(metadata, cts.makeBitset(Js.uncheckedCast(columns)).toByteArray());
+            int vpOffset = BarrageSnapshotRequest.createViewportVector(metadata, serializeRanges(Collections.singleton(rows)));
+            int optOffset = barrageSnapshotOptions.appendTo(metadata);
+
+            final int ticOffset = BarrageSnapshotRequest.createTicketVector(metadata,
+                    Js.<byte[]>uncheckedCast(cts.getHandle().getTicket()));
+            BarrageSnapshotRequest.startBarrageSnapshotRequest(metadata);
+            BarrageSnapshotRequest.addColumns(metadata, colOffset);
+            BarrageSnapshotRequest.addViewport(metadata, vpOffset);
+            BarrageSnapshotRequest.addSnapshotOptions(metadata, optOffset);
+            BarrageSnapshotRequest.addTicket(metadata, ticOffset);
+            BarrageSnapshotRequest.addReverseViewport(metadata, false);
+            metadata.finish(BarrageSnapshotRequest.endBarrageSnapshotRequest(metadata));
+
+            payload.setAppMetadata(WebBarrageUtils.wrapMessage(metadata, BarrageMessageType.BarrageSnapshotRequest));
+            doExchange.onEnd(status -> {
+                if (status.isOk()) {
+                    // notify the caller that the snapshot is finished
+                    RangeSet result;
+                    if (rowsReceived.get() != 0) {
+                        result = RangeSet.ofRange(0, rowsReceived.get() - 1);
+                    } else {
+                        result = RangeSet.empty();
+                    }
+
+                    promise.succeed(new AbstractTableSubscription.SubscriptionEventData(snapshot, rowStyleColumn, Js.uncheckedCast(columns),
+                            result,
+                            RangeSet.empty(),
+                            RangeSet.empty(),
+                            null));
+                } else {
+                    promise.fail(status);
+                }
+            });
+
+            doExchange.send(payload);
+            doExchange.end();
+
+        }, promise::fail, () -> promise.fail("Table was closed"));
+        return promise.asPromise();
     }
 
     /**

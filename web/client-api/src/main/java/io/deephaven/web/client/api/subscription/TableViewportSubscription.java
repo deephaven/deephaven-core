@@ -3,28 +3,17 @@
 //
 package io.deephaven.web.client.api.subscription;
 
-import com.google.flatbuffers.FlatBufferBuilder;
 import com.vertispan.tsdefs.annotations.TsName;
 import com.vertispan.tsdefs.annotations.TsTypeRef;
 import elemental2.core.JsArray;
 import elemental2.promise.Promise;
-import io.deephaven.barrage.flatbuf.BarrageMessageType;
-import io.deephaven.barrage.flatbuf.BarrageSnapshotRequest;
-import io.deephaven.extensions.barrage.BarrageSnapshotOptions;
-import io.deephaven.javascript.proto.dhinternal.arrow.flight.protocol.flight_pb.FlightData;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.config_pb.ConfigValue;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.FlattenRequest;
-import io.deephaven.util.mutable.MutableLong;
 import io.deephaven.web.client.api.Column;
 import io.deephaven.web.client.api.JsRangeSet;
 import io.deephaven.web.client.api.JsTable;
 import io.deephaven.web.client.api.TableData;
 import io.deephaven.web.client.api.WorkerConnection;
-import io.deephaven.web.client.api.barrage.WebBarrageMessage;
-import io.deephaven.web.client.api.barrage.WebBarrageMessageReader;
-import io.deephaven.web.client.api.barrage.WebBarrageUtils;
-import io.deephaven.web.client.api.barrage.data.WebBarrageSubscription;
-import io.deephaven.web.client.api.barrage.stream.BiDiStream;
 import io.deephaven.web.client.api.event.Event;
 import io.deephaven.web.client.fu.JsLog;
 import io.deephaven.web.client.fu.LazyPromise;
@@ -39,16 +28,13 @@ import jsinterop.annotations.JsOptional;
 import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
-import java.io.IOException;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.PrimitiveIterator;
 
 import static io.deephaven.web.client.api.JsTable.EVENT_ROWADDED;
 import static io.deephaven.web.client.api.JsTable.EVENT_ROWREMOVED;
 import static io.deephaven.web.client.api.JsTable.EVENT_ROWUPDATED;
-import static io.deephaven.web.client.api.barrage.WebBarrageUtils.serializeRanges;
 
 /**
  * This object serves as a "handle" to a subscription, allowing it to be acted on directly or canceled outright. If you
@@ -60,8 +46,7 @@ import static io.deephaven.web.client.api.barrage.WebBarrageUtils.serializeRange
 @TsName(namespace = "dh")
 public class TableViewportSubscription extends AbstractTableSubscription {
 
-    private double firstRow;
-    private double lastRow;
+    private RangeSet rows;
     private Column[] columns;
     private double refresh;
 
@@ -83,7 +68,7 @@ public class TableViewportSubscription extends AbstractTableSubscription {
 
     private UpdateEventData viewportData;
 
-    public static TableViewportSubscription make(double firstRow, double lastRow, Column[] columns,
+    public static TableViewportSubscription make(RangeSet rows, Column[] columns,
             Double updateIntervalMs, JsTable existingTable) {
         ClientTableState tableState = existingTable.state();
         WorkerConnection connection = existingTable.getConnection();
@@ -104,7 +89,7 @@ public class TableViewportSubscription extends AbstractTableSubscription {
         }
 
         TableViewportSubscription sub = new TableViewportSubscription(stateToSubscribe, connection, existingTable);
-        sub.setInternalViewport(firstRow, lastRow, columns, updateIntervalMs, false);
+        sub.setInternalViewport(rows, columns, updateIntervalMs, false);
         return sub;
     }
 
@@ -128,7 +113,7 @@ public class TableViewportSubscription extends AbstractTableSubscription {
 
     @Override
     protected void sendFirstSubscriptionRequest() {
-        setInternalViewport(firstRow, lastRow, columns, refresh, null);
+        setInternalViewport(rows, columns, refresh, null);
     }
 
     @Override
@@ -237,24 +222,28 @@ public class TableViewportSubscription extends AbstractTableSubscription {
      * @param lastRow
      * @param columns
      * @param updateIntervalMs
+     * @deprecated use {@link #update(DataOptions.ViewportSubscriptionOptions)} instead
      */
     @JsMethod
     public void setViewport(double firstRow, double lastRow, @JsOptional @JsNullable Column[] columns,
             @JsOptional @JsNullable Double updateIntervalMs,
             @JsOptional @JsNullable Boolean isReverseViewport) {
         retainForExternalUse();
-        setInternalViewport(firstRow, lastRow, columns, updateIntervalMs, isReverseViewport);
+        setInternalViewport(RangeSet.ofRange((long) firstRow, (long) lastRow), columns, updateIntervalMs, isReverseViewport);
     }
 
-    public void setInternalViewport(double firstRow, double lastRow, Column[] columns, Double updateIntervalMs,
+    @JsMethod
+    public void update(DataOptions.ViewportSubscriptionOptions options) {
+        retainForExternalUse();
+        // TODO validate that preview and updateinterval are not set, or make a specific type without them
+        setInternalViewport(options.rows.asRangeSet().getRange(), Js.uncheckedCast(options.columns), options.updateIntervalMs, false);
+    }
+
+    public void setInternalViewport(RangeSet rows, Column[] columns, Double updateIntervalMs,
             Boolean isReverseViewport) {
         // Until we've created the stream, we just cache the requested viewport
         if (status == Status.STARTING) {
-            if (firstRow < 0 || firstRow > lastRow) {
-                throw new IllegalArgumentException("Invalid viewport row range: " + firstRow + " to " + lastRow);
-            }
-            this.firstRow = firstRow;
-            this.lastRow = lastRow;
+            this.rows = rows;
             this.columns = columns;
             this.refresh = updateIntervalMs == null ? 1000.0 : updateIntervalMs;
             return;
@@ -275,10 +264,8 @@ public class TableViewportSubscription extends AbstractTableSubscription {
         if (isReverseViewport == null) {
             isReverseViewport = false;
         }
-        RangeSet viewport = RangeSet.ofRange((long) firstRow, (long) lastRow);
         try {
-            this.sendBarrageSubscriptionRequest(viewport, Js.uncheckedCast(columns), updateIntervalMs,
-                    isReverseViewport);
+            this.sendBarrageSubscriptionRequest(rows, Js.uncheckedCast(columns), updateIntervalMs, isReverseViewport);
         } catch (Exception e) {
             fireEvent(JsTable.EVENT_REQUEST_FAILED, e.getMessage());
         }
@@ -338,104 +325,19 @@ public class TableViewportSubscription extends AbstractTableSubscription {
     }
 
     @JsMethod
+    @Deprecated
     public Promise<TableData> snapshot(JsRangeSet rows, Column[] columns) {
         retainForExternalUse();
-        // TODO #1039 slice rows and drop columns
-        BarrageSnapshotOptions options = BarrageSnapshotOptions.builder()
-                .batchSize(WebBarrageSubscription.BATCH_SIZE)
-                .maxMessageSize(WebBarrageSubscription.MAX_MESSAGE_SIZE)
-                .useDeephavenNulls(true)
-                .build();
-
-        LazyPromise<TableData> promise = new LazyPromise<>();
-        state().onRunning(cts -> {
-            WebBarrageSubscription snapshot = WebBarrageSubscription.subscribe(
-                    SubscriptionType.SNAPSHOT, cts,
-                    (serverViewport1, serverColumns, serverReverseViewport) -> {
-                    },
-                    (rowsAdded, rowsRemoved, totalMods, shifted, modifiedColumnSet) -> {
-                    });
-
-            WebBarrageMessageReader reader = new WebBarrageMessageReader();
-
-            BiDiStream<FlightData, FlightData> doExchange = connection().<FlightData, FlightData>streamFactory().create(
-                    headers -> connection().flightServiceClient().doExchange(headers),
-                    (first, headers) -> connection().browserFlightServiceClient().openDoExchange(first, headers),
-                    (next, headers, c) -> connection().browserFlightServiceClient().nextDoExchange(next, headers,
-                            c::apply),
-                    new FlightData());
-            MutableLong rowsReceived = new MutableLong(0);
-            doExchange.onData(data -> {
-                WebBarrageMessage message;
-                try {
-                    message = reader.parseFrom(options, state().columnTypes(),
-                            state().componentTypes(), data);
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
-                if (message != null) {
-                    // Replace rowsets with flat versions
-                    long resultSize = message.rowsIncluded.size();
-                    if (resultSize != 0) {
-                        message.rowsAdded = RangeSet.ofRange(rowsReceived.get(), rowsReceived.get() + resultSize - 1);
-                        message.rowsIncluded = message.rowsAdded;
-                        message.snapshotRowSet = null;
-                        rowsReceived.add(resultSize);
-                    }
-
-                    // Update our table data with the complete message
-                    snapshot.applyUpdates(message);
-                }
-            });
-            FlightData payload = new FlightData();
-            final FlatBufferBuilder metadata = new FlatBufferBuilder();
-
-            int colOffset = 0;
-            if (columns != null) {
-                colOffset =
-                        BarrageSnapshotRequest.createColumnsVector(metadata, state().makeBitset(columns).toByteArray());
-            }
-            int vpOffset = BarrageSnapshotRequest.createViewportVector(metadata,
-                    serializeRanges(Collections.singleton(rows.getRange())));
-            int optOffset = 0;
-            if (options != null) {
-                optOffset = options.appendTo(metadata);
-            }
-
-            final int ticOffset = BarrageSnapshotRequest.createTicketVector(metadata,
-                    Js.<byte[]>uncheckedCast(state().getHandle().getTicket()));
-            BarrageSnapshotRequest.startBarrageSnapshotRequest(metadata);
-            BarrageSnapshotRequest.addColumns(metadata, colOffset);
-            BarrageSnapshotRequest.addViewport(metadata, vpOffset);
-            BarrageSnapshotRequest.addSnapshotOptions(metadata, optOffset);
-            BarrageSnapshotRequest.addTicket(metadata, ticOffset);
-            BarrageSnapshotRequest.addReverseViewport(metadata, false);
-            metadata.finish(BarrageSnapshotRequest.endBarrageSnapshotRequest(metadata));
-
-            payload.setAppMetadata(WebBarrageUtils.wrapMessage(metadata, BarrageMessageType.BarrageSnapshotRequest));
-            doExchange.onEnd(status -> {
-                if (status.isOk()) {
-                    // notify the caller that the snapshot is finished
-                    RangeSet result;
-                    if (rowsReceived.get() != 0) {
-                        result = RangeSet.ofRange(0, rowsReceived.get() - 1);
-                    } else {
-                        result = RangeSet.empty();
-                    }
-                    promise.succeed(new SubscriptionEventData(snapshot, rowStyleColumn, Js.uncheckedCast(columns),
-                            result,
-                            RangeSet.empty(),
-                            RangeSet.empty(),
-                            null));
-                } else {
-                    promise.fail(status);
-                }
-            });
-
-            doExchange.send(payload);
-            doExchange.end();
-
-        }, promise::fail, () -> promise.fail("Table was closed"));
-        return promise.asPromise();
+        DataOptions.SnapshotOptions options = new DataOptions.SnapshotOptions();
+        options.previewOptions = new DataOptions.PreviewOptions();
+        options.previewOptions.convertToString = true;
+        options.previewOptions.array = 0.0;
+        options.rows = Js.uncheckedCast(rows);
+        if (columns == null) {
+            columns = state().getColumns();
+        }
+        options.columns = Js.uncheckedCast(columns);
+        options.isReverseViewport = false;
+        return original.createSnapshot(options);
     }
 }
