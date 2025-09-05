@@ -1,0 +1,28 @@
+services:
+  server:
+    image: ${DEEPHAVEN_SERVER_IMAGE}
+    expose:
+      - 10000
+    volumes:
+      - ../data:/data
+      - api-cache:/cache
+    environment:
+      - START_OPTS=-Xmx4g -DAuthHandlers=io.deephaven.auth.AnonymousAuthenticationHandler -Ddeephaven.console.type=groovy
+    depends_on:
+      examples:
+        condition: service_completed_successfully
+
+  examples:
+    image: ghcr.io/deephaven/examples:latest
+    volumes:
+      - ../data:/data
+    command: download
+
+volumes:
+  web-tmp:
+  api-cache:
+
+networks:
+  default:
+    name: deephaven-docs-snapshot-network
+    external: true
