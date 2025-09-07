@@ -36,10 +36,10 @@ public abstract class HeadOrTailByGrpcImpl extends GrpcTableOperation<HeadOrTail
     private final ColumnExpressionValidator columnExpressionValidator;
 
     protected HeadOrTailByGrpcImpl(
-            final @NotNull PermissionFunction<HeadOrTailByRequest> permission,
-            final @NotNull Function<BatchTableRequest.Operation, HeadOrTailByRequest> getRequest,
-            final @NotNull RealTableOperation realTableOperation,
-            final @NotNull ColumnExpressionValidator columnExpressionValidator) {
+            @NotNull final PermissionFunction<HeadOrTailByRequest> permission,
+            @NotNull final Function<BatchTableRequest.Operation, HeadOrTailByRequest> getRequest,
+            @NotNull final RealTableOperation realTableOperation,
+            @NotNull final ColumnExpressionValidator columnExpressionValidator) {
         super(permission, getRequest, HeadOrTailByRequest::getResultId, HeadOrTailByRequest::getSourceId);
         this.realTableOperation = realTableOperation;
         this.columnExpressionValidator = columnExpressionValidator;
