@@ -7,9 +7,7 @@ import io.deephaven.api.filter.Filter;
 import io.deephaven.auth.codegen.impl.TableServiceContextualAuthWiring;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.impl.select.ComposedFilter;
-import io.deephaven.engine.table.impl.select.ConditionFilter;
-import io.deephaven.engine.table.impl.select.WhereFilter;
+import io.deephaven.engine.table.impl.select.*;
 import io.deephaven.proto.backplane.grpc.AndCondition;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest;
 import io.deephaven.proto.backplane.grpc.Condition;
@@ -74,16 +72,54 @@ public class FilterTableGrpcImpl extends GrpcTableOperation<FilterTableRequest> 
     private static List<ConditionFilter> extractConditionFilters(List<WhereFilter> whereFilters) {
         final List<ConditionFilter> conditionFilters = new ArrayList<>();
 
-        final ArrayDeque<WhereFilter> filterQueue = new ArrayDeque<>(whereFilters);
-
-        while (!filterQueue.isEmpty()) {
-            final WhereFilter whereFilter = filterQueue.removeFirst();
-            if (whereFilter instanceof ConditionFilter) {
-                conditionFilters.add((ConditionFilter) whereFilter);
-            } else if (whereFilter instanceof ComposedFilter) {
-                filterQueue.addAll(((ComposedFilter) whereFilter).getFilters());
+        final WhereFilter.Visitor<Void> visitor = new WhereFilter.Visitor<>() {
+            @Override
+            public Void visitWhereFilter(WhereFilter filter) {
+                if (filter instanceof ConditionFilter) {
+                    conditionFilters.add((ConditionFilter) filter);
+                    return null;
+                }
+                return WhereFilter.Visitor.super.visitWhereFilter(filter);
             }
-        }
+
+            @Override
+            public Void visitWhereFilter(WhereFilterInvertedImpl filter) {
+                visitWhereFilter(filter.getWrappedFilter());
+                return null;
+            }
+
+            @Override
+            public Void visitWhereFilter(WhereFilterSerialImpl filter) {
+                visitWhereFilter(filter.getWrappedFilter());
+                return null;
+            }
+
+            @Override
+            public Void visitWhereFilter(WhereFilterBarrierImpl filter) {
+                visitWhereFilter(filter.getWrappedFilter());
+                return null;
+            }
+
+            @Override
+            public Void visitWhereFilter(WhereFilterRespectsBarrierImpl filter) {
+                visitWhereFilter(filter.getWrappedFilter());
+                return null;
+            }
+
+            @Override
+            public Void visitWhereFilter(DisjunctiveFilter filter) {
+                filter.getFilters().forEach(this::visitWhereFilter);
+                return null;
+            }
+
+            @Override
+            public Void visitWhereFilter(ConjunctiveFilter filter) {
+                filter.getFilters().forEach(this::visitWhereFilter);
+                return null;
+            }
+        };
+
+        whereFilters.forEach(visitor::visitWhereFilter);
 
         return conditionFilters;
     }
