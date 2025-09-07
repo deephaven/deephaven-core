@@ -37,7 +37,7 @@ public class FilterTableGrpcImpl extends GrpcTableOperation<FilterTableRequest> 
     private final ColumnExpressionValidator validator;
 
     @Inject
-    public FilterTableGrpcImpl(final TableServiceContextualAuthWiring authWiring,
+    public FilterTableGrpcImpl(@NotNull final TableServiceContextualAuthWiring authWiring,
             @NotNull final ColumnExpressionValidator validator) {
         super(authWiring::checkPermissionFilter, BatchTableRequest.Operation::getFilter,
                 FilterTableRequest::getResultId, FilterTableRequest::getSourceId);
