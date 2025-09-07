@@ -1,0 +1,1 @@
+{"file":"core/docs/reference/table-operations/create/DynamicTableWriter.md","objects":{"result":{"type":"Table","data":{"columns":[{"name":"Numbers","type":"int"},{"name":"Words","type":"java.lang.String"}],"rows":[]}}}}

@@ -1,0 +1,1 @@
+{"file":"core_versioned_docs/version-groovy/docs/reference/engine/hasDataIndex.md","objects":{":log":{"type":"Log","data":"Index exists on Key1: true\nIndex exists on Key2: false\nIndex exists on Key1, Key2: false\n"}}}

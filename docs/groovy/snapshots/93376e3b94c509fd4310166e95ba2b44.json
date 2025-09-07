@@ -1,0 +1,1 @@
+{"file":"core_versioned_docs/version-groovy/docs/reference/cheat-sheets/cheat-sheet.md","objects":{"result":{"type":"Table","data":{"columns":[{"name":"IntegerColumn","type":"int"},{"name":"Strings","type":"java.lang.String"}],"rows":[[{"value":"1"},{"value":"These"}],[{"value":"2"},{"value":"are"}],[{"value":"3"},{"value":"Strings"}]]}}}}

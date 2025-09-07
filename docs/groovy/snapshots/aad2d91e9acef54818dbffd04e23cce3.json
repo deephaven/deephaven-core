@@ -1,0 +1,1 @@
+{"file":"core_versioned_docs/version-groovy/docs/reference/table-operations/create/byteCol.md","objects":{"result":{"type":"Table","data":{"columns":[{"name":"Bytes","type":"byte"}],"rows":[[{"value":"1"}],[{"value":"2"}],[{"value":"3"}],[{"value":"4"}]]}}}}

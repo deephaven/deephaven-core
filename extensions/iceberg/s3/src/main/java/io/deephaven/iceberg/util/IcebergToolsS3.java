@@ -4,7 +4,7 @@
 package io.deephaven.iceberg.util;
 
 import com.google.common.base.Strings;
-import io.deephaven.extensions.s3.DeephavenAwsClientFactory;
+import io.deephaven.extensions.s3.S3InstructionsBasedAwsClientFactory;
 import io.deephaven.extensions.s3.S3Instructions;
 import io.deephaven.util.reference.CleanupReferenceProcessor;
 import org.apache.hadoop.conf.Configuration;
@@ -209,11 +209,11 @@ public final class IcebergToolsS3 {
                     " enable or use IcebergTools#createAdapter");
         }
         final Map<String, String> newProperties = new HashMap<>(options.properties());
-        final Runnable cleanup = DeephavenAwsClientFactory.addToProperties(instructions, newProperties);
+        final Runnable cleanup = S3InstructionsBasedAwsClientFactory.addToProperties(instructions, newProperties);
         final IcebergCatalogAdapter adapter = IcebergTools.createAdapter(options.withProperties(newProperties));
-        // When the Catalog becomes phantom reachable, we can invoke the DeephavenAwsClientFactory cleanup.
+        // When the Catalog becomes phantom reachable, we can invoke the S3InstructionsBasedAwsClientFactory cleanup.
         // Note: it would be incorrect to register the cleanup against the adapter since the Catalog can outlive the
-        // adapter (and the DeephavenAwsClientFactory properties are needed by the Catalog).
+        // adapter (and the S3InstructionsBasedAwsClientFactory properties are needed by the Catalog).
         CleanupReferenceProcessor.getDefault().registerPhantom(adapter.catalog(), cleanup);
         return adapter;
     }

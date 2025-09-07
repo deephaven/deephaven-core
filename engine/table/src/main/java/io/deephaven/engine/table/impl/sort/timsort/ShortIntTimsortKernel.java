@@ -20,13 +20,13 @@ import io.deephaven.util.annotations.VisibleForTesting;
  * <a href="https://bugs.python.org/file4451/timsort.txt">bugs.python.org</a> and
  * <a href="https://en.wikipedia.org/wiki/Timsort">Wikipedia</a> do a decent job of describing the algorithm.
  */
-public class ShortIntTimsortKernel {
-    private ShortIntTimsortKernel() {
-        throw new UnsupportedOperationException();
-    }
+public final class ShortIntTimsortKernel {
+    // region constructor
+    private ShortIntTimsortKernel() {}
+    // endregion constructor
 
     // region Context
-    public static class ShortIntSortKernelContext<SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any>
+    public class ShortIntSortKernelContext<SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any>
             implements IntSortKernel<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> {
 
         int minGallop;
@@ -48,7 +48,7 @@ public class ShortIntTimsortKernel {
         public void sort(
                 WritableIntChunk<PERMUTE_VALUES_ATTR> valuesToPermute,
                 WritableChunk<SORT_VALUES_ATTR> valuesToSort) {
-            ShortIntTimsortKernel.sort(this, valuesToPermute, valuesToSort.asWritableShortChunk());
+            ShortIntTimsortKernel.this.sort(this, valuesToPermute, valuesToSort.asWritableShortChunk());
         }
 
         @Override
@@ -57,7 +57,8 @@ public class ShortIntTimsortKernel {
                 WritableChunk<SORT_VALUES_ATTR> valuesToSort,
                 IntChunk<? extends ChunkPositions> offsetsIn,
                 IntChunk<? extends ChunkLengths> lengthsIn) {
-            ShortIntTimsortKernel.sort(this, valuesToPermute, valuesToSort.asWritableShortChunk(), offsetsIn, lengthsIn);
+            ShortIntTimsortKernel.this.sort(this, valuesToPermute, valuesToSort.asWritableShortChunk(), offsetsIn,
+                    lengthsIn);
         }
 
         @Override
@@ -65,13 +66,28 @@ public class ShortIntTimsortKernel {
             temporaryKeys.close();
             temporaryValues.close();
         }
+
+        private ShortIntTimsortKernel kernel() {
+            return ShortIntTimsortKernel.this;
+        }
     }
     // endregion Context
 
-    public static <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> ShortIntSortKernelContext<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> createContext(
+    // region createContextInstance
+    public <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> ShortIntSortKernelContext<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> createContextInstance(
             int size) {
         return new ShortIntSortKernelContext<>(size);
     }
+    // endregion createContextInstance
+
+    // region createContextStatic
+
+    public static <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> ShortIntSortKernelContext<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> createContext(
+            final int size) {
+        return new ShortIntTimsortKernel().createContextInstance(size);
+    }
+
+    // endregion createContextStatic
 
     /**
      * Sort the values in valuesToSort permuting the valuesToPermute chunk in the same way.
@@ -91,7 +107,7 @@ public class ShortIntTimsortKernel {
             final int offset = offsetsIn.get(run);
             final int length = lengthsIn.get(run);
 
-            timSort(context, valuesToPermute, valuesToSort, offset, length);
+            context.kernel().timSort(context, valuesToPermute, valuesToSort, offset, length);
         }
     }
 
@@ -106,10 +122,10 @@ public class ShortIntTimsortKernel {
             ShortIntSortKernelContext<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> context,
             WritableIntChunk<PERMUTE_VALUES_ATTR> valuesToPermute,
             WritableShortChunk<SORT_VALUES_ATTR> valuesToSort) {
-        timSort(context, valuesToPermute, valuesToSort, 0, valuesToPermute.size());
+        context.kernel().timSort(context, valuesToPermute, valuesToSort, 0, valuesToPermute.size());
     }
 
-    static private <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> void timSort(
+    private <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> void timSort(
             ShortIntSortKernelContext<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> context,
             WritableIntChunk<PERMUTE_VALUES_ATTR> valuesToPermute,
             WritableShortChunk<SORT_VALUES_ATTR> valuesToSort,
@@ -204,6 +220,7 @@ public class ShortIntTimsortKernel {
     }
     // endregion comparison functions
 
+    // region compare ops
     @VisibleForTesting
     static boolean gt(short lhs, short rhs) {
         return doComparison(lhs, rhs) > 0;
@@ -223,6 +240,7 @@ public class ShortIntTimsortKernel {
     static boolean leq(short lhs, short rhs) {
         return doComparison(lhs, rhs) <= 0;
     }
+    // endregion compare ops
 
     /**
      * <p>
@@ -247,7 +265,7 @@ public class ShortIntTimsortKernel {
      * as being approximately balanced while maintaining a compromise between delaying merging for balance, exploiting
      * fresh occurrence of runs in cache memory and making merge decisions relatively simple.
      */
-    private static <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> void ensureMergeInvariants(
+    private <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> void ensureMergeInvariants(
             ShortIntSortKernelContext<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> context,
             WritableIntChunk<PERMUTE_VALUES_ATTR> valuesToPermute,
             WritableShortChunk<SORT_VALUES_ATTR> valuesToSort) {
@@ -295,7 +313,7 @@ public class ShortIntTimsortKernel {
         }
     }
 
-    private static <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> void merge(
+    private <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> void merge(
             ShortIntSortKernelContext<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> context,
             WritableIntChunk<PERMUTE_VALUES_ATTR> valuesToPermute,
             WritableShortChunk<SORT_VALUES_ATTR> valuesToSort,
@@ -345,7 +363,7 @@ public class ShortIntTimsortKernel {
      * <p>
      * We eventually need to do galloping here, but are skipping that for now
      */
-    private static <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> void frontMerge(
+    private <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> void frontMerge(
             ShortIntSortKernelContext<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> context,
             WritableIntChunk<PERMUTE_VALUES_ATTR> valuesToPermute,
             WritableShortChunk<SORT_VALUES_ATTR> valuesToSort,
@@ -455,7 +473,7 @@ public class ShortIntTimsortKernel {
      * <p>
      * We eventually need to do galloping here, but are skipping that for now
      */
-    private static <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> void backMerge(
+    private <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> void backMerge(
             ShortIntSortKernelContext<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> context,
             WritableIntChunk<PERMUTE_VALUES_ATTR> valuesToPermute,
             WritableShortChunk<SORT_VALUES_ATTR> valuesToSort,
@@ -594,17 +612,17 @@ public class ShortIntTimsortKernel {
     // lo is inclusive, hi is exclusive
     //
     // returns the position of the first element that is > searchValue or hi if there is no such element
-    private static int upperBound(ShortChunk<?> valuesToSort, int lo, int hi, short searchValue) {
+    private int upperBound(ShortChunk<?> valuesToSort, int lo, int hi, short searchValue) {
         return bound(valuesToSort, lo, hi, searchValue, false);
     }
 
     // when we binary search in 2, we must identify a position for search value that is *before* our test values;
     // because the values from run 1 may never be inserted after an equal value from run 2
-    private static int lowerBound(ShortChunk<?> valuesToSort, int lo, int hi, short searchValue) {
+    private int lowerBound(ShortChunk<?> valuesToSort, int lo, int hi, short searchValue) {
         return bound(valuesToSort, lo, hi, searchValue, true);
     }
 
-    private static int bound(ShortChunk<?> valuesToSort, int lo, int hi, short searchValue, final boolean lower) {
+    private int bound(ShortChunk<?> valuesToSort, int lo, int hi, short searchValue, final boolean lower) {
         final int compareLimit = lower ? -1 : 0; // lt or leq
 
         while (lo < hi) {
@@ -622,7 +640,7 @@ public class ShortIntTimsortKernel {
         return lo;
     }
 
-    private static void insertionSort(
+    private void insertionSort(
             WritableIntChunk<?> valuesToPermute,
             WritableShortChunk<?> valuesToSort,
             int offset,

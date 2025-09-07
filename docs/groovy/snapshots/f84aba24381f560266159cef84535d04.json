@@ -1,0 +1,1 @@
+{"file":"core_versioned_docs/version-groovy/docs/reference/table-operations/create/newTable.md","objects":{"result":{"type":"Table","data":{"columns":[{"name":"IntegerColumn","type":"int"}],"rows":[[{"value":"1"}],[{"value":"2"}],[{"value":"3"}]]}}}}

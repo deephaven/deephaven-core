@@ -25,6 +25,7 @@ import org.jetbrains.annotations.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.nio.ByteBuffer;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -41,6 +42,7 @@ public class TicketRouter {
         return Configuration.getInstance().getBooleanWithDefault(property, true);
     }
 
+    private final List<TicketResolver> enabledResolvers;
     private final KeyedIntObjectHashMap<TicketResolver> byteResolverMap =
             new KeyedIntObjectHashMap<>(RESOLVER_OBJECT_TICKET_ID);
     private final KeyedObjectHashMap<String, PathResolverPrefixedBase> prefixedPathResolverMap =
@@ -53,22 +55,24 @@ public class TicketRouter {
     @Inject
     public TicketRouter(
             final AuthorizationProvider authorizationProvider,
-            Set<TicketResolver> resolvers) {
-        resolvers = resolvers.stream().filter(TicketRouter::enabled).collect(Collectors.toSet());
+            final Set<TicketResolver> resolvers) {
+        this.enabledResolvers = resolvers.stream().filter(TicketRouter::enabled).collect(Collectors.toList());
         this.authorization = authorizationProvider.getTicketResolverAuthorization();
-        this.commandResolvers = resolvers.stream()
+        this.commandResolvers = enabledResolvers.stream()
                 .filter(CommandResolver.class::isInstance)
                 .map(CommandResolver.class::cast)
                 .collect(Collectors.toSet());
-        this.genericPathResolvers = resolvers.stream()
+        this.genericPathResolvers = enabledResolvers.stream()
                 .filter(PathResolver.class::isInstance)
                 .filter(Predicate.not(PathResolverPrefixedBase.class::isInstance))
                 .map(PathResolver.class::cast)
                 .collect(Collectors.toSet());
-        for (TicketResolver resolver : resolvers) {
-            if (!byteResolverMap.add(resolver)) {
-                throw new IllegalArgumentException("Duplicate ticket resolver for ticket route "
-                        + resolver.ticketRoute());
+        for (final TicketResolver resolver : enabledResolvers) {
+            if (resolver.ticketRoute() != 0) {
+                if (!byteResolverMap.add(resolver)) {
+                    throw new IllegalArgumentException("Duplicate ticket resolver for ticket route "
+                            + resolver.ticketRoute());
+                }
             }
             if (!(resolver instanceof PathResolverPrefixedBase)) {
                 continue;
@@ -77,6 +81,12 @@ public class TicketRouter {
             if (!prefixedPathResolverMap.add(prefixedPathResolver)) {
                 throw new IllegalArgumentException("Duplicate ticket resolver for descriptor route "
                         + prefixedPathResolver.flightDescriptorRoute());
+            }
+        }
+
+        for (final TicketResolver resolver : enabledResolvers) {
+            if (resolver instanceof WantsTicketRouter) {
+                ((WantsTicketRouter) resolver).setTicketRouter(this);
             }
         }
     }
@@ -122,6 +132,7 @@ public class TicketRouter {
             final String logId) {
         return resolve(session, ticket.getTicket().asReadOnlyByteBuffer(), logId);
     }
+
 
     /**
      * Resolve a flight ticket to an export object future.
@@ -355,7 +366,7 @@ public class TicketRouter {
     public void visitFlightInfo(@Nullable final SessionState session, final Consumer<Flight.FlightInfo> visitor) {
         final QueryPerformanceRecorder qpr = QueryPerformanceRecorder.getInstance();
         try (final QueryPerformanceNugget ignored = qpr.getNugget("visitFlightInfo")) {
-            byteResolverMap.iterator().forEachRemaining(resolver -> resolver.forAllFlightInfo(session, visitor));
+            enabledResolvers.forEach(resolver -> resolver.forAllFlightInfo(session, visitor));
         }
     }
 

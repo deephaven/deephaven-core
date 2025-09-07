@@ -10,6 +10,7 @@ import io.deephaven.server.auth.CommunityAuthorizationModule;
 import io.deephaven.server.flightsql.FlightSqlModule;
 import io.deephaven.server.runner.CommunityDefaultsModule;
 import io.deephaven.server.runner.ComponentFactoryBase;
+import io.deephaven.server.runner.TicketResolversFromServiceLoader;
 
 import javax.inject.Singleton;
 import java.io.PrintStream;
@@ -73,6 +74,7 @@ public final class CommunityComponentFactory
     @Module(includes = {
             JettyServerModule.class,
             FlightSqlModule.class,
+            TicketResolversFromServiceLoader.class,
             JettyClientChannelFactoryModule.class,
             CommunityAuthorizationModule.class,
             CommunityDefaultsModule.class,

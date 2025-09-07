@@ -6,6 +6,7 @@ package io.deephaven.replicators;
 import io.deephaven.replication.ReplicationUtils;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.compare.CharComparisons;
+import io.deephaven.util.compare.ObjectComparisons;
 import org.apache.commons.io.FileUtils;
 import org.jetbrains.annotations.NotNull;
 
@@ -36,6 +37,9 @@ public class ReplicateSortKernel {
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/sort/timsort/CharIntTimsortKernel.java");
         doCharReplication(
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/sort/timsort/CharByteTimsortKernel.java");
+
+        objectToComparator(
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/sort/timsort/CharLongTimsortKernel.java");
 
         doCharMegaMergeReplication(
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/sort/megamerge/CharLongMegaMergeKernel.java");
@@ -105,6 +109,13 @@ public class ReplicateSortKernel {
                 invertSense(path, descendingPath);
             }
         }
+    }
+
+    private static void objectToComparator(@NotNull final String charSourceJavaPath) throws IOException {
+        final String objectPath = charSourceJavaPath.replace("Char", "Object");
+        final String comparatorPath = objectPath.replace("Object", "Comparator");
+        FileUtils.copyFile(new File(objectPath), new File(comparatorPath));
+        fixupComparatorTimSort(comparatorPath);
     }
 
     private static void doCharMegaMergeReplication(String sourceClassJavaPath) throws IOException {
@@ -205,6 +216,34 @@ public class ReplicateSortKernel {
         lines = fixupChunkAttributes(lines);
 
         FileUtils.writeLines(objectFile, fixupObjectComparisons(lines, ascending));
+    }
+
+    private static void fixupComparatorTimSort(String comparatorPath) throws IOException {
+        final File objectFile = new File(comparatorPath);
+        List<String> lines = FileUtils.readLines(objectFile, Charset.defaultCharset());
+
+        lines = globalReplacements(lines, "ObjectLongTimsortKernel", "ComparatorLongTimsortKernel");
+
+        lines = addImport(lines, java.util.Comparator.class);
+        lines = removeImport(lines, java.util.Objects.class, ObjectComparisons.class);
+
+        lines = replaceRegion(lines, "compare ops",
+                l -> l.stream().map(line -> line.replace("static boolean", "boolean")).collect(Collectors.toList()));
+        lines = replaceRegion(lines, "createContextStatic",
+                l -> l.stream().map(line -> line.replace("final int size", "final int size, Comparator comparator")
+                        .replace("()", "(comparator)")).collect(Collectors.toList()));
+
+        lines = replaceRegion(lines, "comparison functions",
+                List.of("    private int doComparison(Object lhs, Object rhs) {\n" +
+                        "        return comparator.compare(lhs, rhs);\n" +
+                        "    }"));
+        lines = replaceRegion(lines, "constructor", List.of("    private final Comparator comparator;\n" +
+                "\n" +
+                "    public ComparatorLongTimsortKernel(final Comparator comparator) {\n" +
+                "        this.comparator = comparator;\n" +
+                "    }"));
+
+        FileUtils.writeLines(objectFile, lines);
     }
 
     private static void fixupObjectMegaMerge(String objectPath, boolean ascending) throws IOException {

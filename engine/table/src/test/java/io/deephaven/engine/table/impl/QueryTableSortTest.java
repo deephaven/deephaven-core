@@ -5,8 +5,11 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.SortColumn;
+import io.deephaven.api.SortSpec;
+import io.deephaven.api.agg.Aggregation;
 import io.deephaven.base.FileUtils;
 import io.deephaven.base.verify.Assert;
+import io.deephaven.csv.util.MutableObject;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
@@ -26,12 +29,14 @@ import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.table.impl.select.IncrementalReleaseFilter;
 import io.deephaven.engine.table.impl.util.*;
 import io.deephaven.test.types.OutOfBandTest;
+import io.deephaven.util.QueryConstants;
 import io.deephaven.util.mutable.MutableInt;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TIntArrayList;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Array;
 import java.math.BigInteger;
 import java.nio.file.Files;
 import java.time.Instant;
@@ -40,6 +45,7 @@ import java.util.function.Consumer;
 import java.util.function.LongUnaryOperator;
 
 import org.junit.experimental.categories.Category;
+import org.junit.rules.TemporaryFolder;
 
 import static io.deephaven.engine.util.TableTools.*;
 import static io.deephaven.engine.testutil.TstUtils.*;
@@ -454,6 +460,105 @@ public class QueryTableSortTest extends QueryTableTestBase {
                 EvalNugget.from(() -> queryTable.sort(List.of(SortColumn.desc(ColumnName.of("charCol"))))),
                 EvalNugget.from(() -> queryTable.sort(List.of(SortColumn.desc(ColumnName.of("bigI"))))),
                 EvalNugget.from(() -> queryTable.sort(List.of(SortColumn.desc(ColumnName.of("bigD"))))),
+        };
+
+        for (numSteps.set(0); numSteps.get() < maxSteps; numSteps.increment()) {
+            simulateShiftAwareStep(ctxt + " step == " + numSteps.get(), size, random, queryTable, columnInfo, en);
+        }
+    }
+
+    public void testComparators() {
+        final int[] sizes = {10, 100, 1000};
+        for (int size : sizes) {
+            testComparators("size == " + size, size, 0, new MutableInt(50));
+        }
+    }
+
+    private ColumnInfo<?, ?>[] getComparatorColumnInfo() {
+        return initColumnInfos(
+                new String[] {"Sym", "ArrCol", "bigI", "bigD"},
+                new SetGenerator<>("a", "b", "c", "d"),
+                new SetGenerator<>(new int[0], new int[] {1, 3, 5}, new int[] {4, 8}, new int[] {9, 10, 11, 12, 13},
+                        new int[] {12, 13}),
+                new BigIntegerGenerator(BigInteger.valueOf(100000), BigInteger.valueOf(100100)),
+                new BigDecimalGenerator(BigInteger.valueOf(100000), BigInteger.valueOf(100100)));
+    }
+
+    private void testComparators(final String ctxt, final int size, int seed, MutableInt numSteps) {
+        final int maxSteps = numSteps.get();
+        final Random random = new Random(seed);
+        final ColumnInfo<?, ?>[] columnInfo = getComparatorColumnInfo();
+        final QueryTable queryTable = getTable(size, random, columnInfo);
+
+        final Comparator<?> naturalOrder = Comparator.nullsFirst(Comparator.naturalOrder());
+        final Comparator<?> reverseOrder = Comparator.nullsLast(Comparator.reverseOrder());
+        final Comparator<Object> arrayLength = (l, r) -> {
+            final int ll = Array.getLength(l);
+            final int rl = Array.getLength(r);
+            return ll - rl;
+        };
+        final Comparator<Object> vecLength = ((l, r) -> {
+            final long ll = ((io.deephaven.vector.Vector<?>) l).size();
+            final long rl = ((io.deephaven.vector.Vector<?>) r).size();
+            return Long.compare(ll, rl);
+        });
+
+        final Comparator<Object> arrayLex = (l, r) -> Arrays.compare((int[]) l, (int[]) r);
+
+        final QueryTable grouped = (QueryTable) (queryTable.groupBy("Sym"));
+        final EvalNuggetInterface[] en = new EvalNuggetInterface[] {
+                new TableComparator(queryTable.sort(List.of(SortColumn.asc(ColumnName.of("bigD")))), "Default Sort",
+                        queryTable.sort(ComparatorSortColumn.asc("bigD", naturalOrder, true)),
+                        "Comparator Sort"),
+                new TableComparator(queryTable.sort(List.of(SortColumn.desc(ColumnName.of("bigD")))), "Default Sort",
+                        queryTable.sort(ComparatorSortColumn.desc("bigD", naturalOrder, true)),
+                        "Comparator Sort"),
+                new TableComparator(
+                        queryTable.sort(
+                                List.of(SortColumn.asc(ColumnName.of("Sym")), SortColumn.desc(ColumnName.of("bigD")))),
+                        "Default Sort",
+                        queryTable.sort(
+                                ComparatorSortColumn.asc("Sym", naturalOrder),
+                                ComparatorSortColumn.asc("bigD", reverseOrder)),
+                        "Comparator Sort"),
+                EvalNugget.from(() -> grouped.sort(ComparatorSortColumn.asc("bigI", vecLength))),
+                new TableComparator(grouped.sort(ComparatorSortColumn.asc("bigI", vecLength)),
+                        "comparator", grouped.update("L=bigI.size()").sort("L").dropColumns("L"), "len"),
+                EvalNugget
+                        .from(() -> queryTable.sort(ComparatorSortColumn.asc("ArrCol", arrayLength))),
+                new TableComparator(queryTable.sort(ComparatorSortColumn.asc("ArrCol", arrayLength)),
+                        "comparator",
+                        queryTable.update("L=java.lang.reflect.Array.getLength(ArrCol)").sort("L").dropColumns("L"),
+                        "len"),
+                EvalNugget
+                        .from(() -> queryTable.sort(ComparatorSortColumn.asc("ArrCol", arrayLength))),
+                EvalNugget.from(() -> queryTable.sort(ComparatorSortColumn.asc("ArrCol", arrayLex))),
+                new EvalNuggetInterface() {
+                    final Table lexSort =
+                            queryTable.sort(ComparatorSortColumn.asc("ArrCol", arrayLex));
+
+                    @Override
+                    public void validate(String msg) {
+                        final MutableObject<int[]> last = new MutableObject<>();
+                        lexSort.columnIterator("ArrCol").forEachRemaining(ia -> {
+                            final int[] cv = (int[]) ia;
+                            final int[] lv = last.getValue();
+                            if (lv == null) {
+                                last.setValue(cv);
+                            } else {
+                                if (Arrays.compare(lv, cv) > 0) {
+                                    throw new IllegalStateException(
+                                            msg + ": array is not sorted by ArrCol lexicographically.");
+                                }
+                            }
+                        });
+                    }
+
+                    @Override
+                    public void show() throws IOException {
+                        TableTools.showWithRowSet(lexSort);
+                    }
+                }
         };
 
         for (numSteps.set(0); numSteps.get() < maxSteps; numSteps.increment()) {
@@ -893,5 +998,142 @@ public class QueryTableSortTest extends QueryTableTestBase {
         assertSame(t.getRowSet(), s.getRowSet());
         final Table sd = t.sortDescending("Key");
         assertNotSame(t.getRowSet(), sd.getRowSet());
+    }
+
+    /**
+     * Lexicographicaly compares two arrays using Deephaven ordering for the elements.
+     */
+    public class CaseInsensitiveStringArrayComparator implements Comparator<String[]> {
+        @Override
+        public int compare(final String[] o1, final String[] o2) {
+            if (o1 == o2) {
+                return 0;
+
+            }
+            if (o1 == null) {
+                return -1;
+            }
+            if (o2 == null) {
+                return 1;
+            }
+
+            final int len = Math.min(o1.length, o2.length);
+            for (int ii = 0; ii < len; ++ii) {
+                final int cmp = String.CASE_INSENSITIVE_ORDER.compare(o1[ii], o2[ii]);
+                if (cmp != 0) {
+                    return cmp;
+                }
+            }
+
+            return o1.length - o2.length;
+        }
+    }
+
+    public void testStringArrays() {
+        // Use the registry for somethign that is not a comparable
+        final Table x = TableTools.newTable(intCol("Sentinel", 20, 10, 50, 40, 30, 15, 21),
+                col("StrArray", new String[] {"a"}, new String[] {}, new String[] {"b"}, new String[] {"a", "b", "c"},
+                        new String[] {"a", "b"}, new String[] {"A"}, new String[] {"a"}));
+        final Table s = x.sort("StrArray");
+        assertTableEquals(x.sort("Sentinel"), s);
+
+        // Make sure the comaprator still overrides the registry
+        final Table s2 = ((QueryTable) x).sort(
+                ComparatorSortColumn.asc("StrArray", new CaseInsensitiveStringArrayComparator()));
+        assertTableEquals(x.update("Sentinel=Sentinel==15 ? 25 : Sentinel==21 ? 26 : Sentinel").sort("Sentinel")
+                .update("Sentinel=Sentinel==25 ? 15 : Sentinel==26 ? 21 : Sentinel"), s2);
+    }
+
+    public void testIntArray() {
+        final Table x = TableTools.newTable(intCol("Sentinel", 20, 10, 50, 40, 30, 15),
+                col("IntArray", new int[] {10}, new int[] {}, new int[] {20}, new int[] {10, 20, 30},
+                        new int[] {10, 20}, new int[] {QueryConstants.NULL_INT}));
+        final Table s = x.sort("IntArray");
+        assertTableEquals(x.sort("Sentinel"), s);
+    }
+
+    public void testDoubleArray() {
+        final Table x = TableTools.newTable(intCol("Sentinel", 20, 10, 50, 40, 30, 15, 100, 75),
+                col("DoubleArray", new double[] {10}, new double[] {}, new double[] {20}, new double[] {10, 20, 30},
+                        new double[] {10, 20}, new double[] {NULL_DOUBLE}, new double[] {Double.NaN},
+                        new double[] {Double.POSITIVE_INFINITY}));
+        final Table s = x.sort("DoubleArray");
+        assertTableEquals(x.sort("Sentinel"), s);
+    }
+
+    public void testBadComparator() {
+        final Table x = TableTools.newTable(intCol("Sentinel", 20, 10, 50, 40, 30, 15, 100, 75),
+                col("ObjArray", new Object[] {10}, new Object[] {}, new Object[] {20}, new Object[] {10, 20, 30},
+                        new Object[] {10, 20}, new Object[] {NULL_DOUBLE}, new Object[] {Double.NaN},
+                        new Object[] {Double.POSITIVE_INFINITY}));
+        final IllegalArgumentException iae = org.junit.Assert.assertThrows(IllegalArgumentException.class,
+                () -> ((QueryTable) x).sort(ComparatorSortColumn.asc("Sentinel", (o1, o2) -> 0)));
+        assertEquals("Sentinel is a primitive column (int), therefore cannot accept a Comparator", iae.getMessage());
+
+        final IllegalArgumentException iae2 =
+                org.junit.Assert.assertThrows(IllegalArgumentException.class, () -> x.sort("ObjArray"));
+        assertEquals("ObjArray is not a sortable type: class [Ljava.lang.Object;", iae2.getMessage());
+    }
+
+    public void testAlreadySortedEmpty() {
+        final Table x = TableTools.newTable(intCol("Sentinel"), intCol("Value"));
+        final Table s = x.sort("Value");
+        assertTrue(s instanceof QueryTable.CopiedTable);
+        assertTrue(((QueryTable.CopiedTable) s).checkParent(x));
+    }
+
+    public void testSymbolTable() throws IOException {
+        final TemporaryFolder tempFolder = new TemporaryFolder();
+        tempFolder.create();
+        try {
+
+            final Random r = new Random(0);
+            QueryScope.addParam("random", r);
+            QueryScope.addParam("syms", List.of("Apple", "Banana", "Cantaloupe", "apple"));
+            final Table t =
+                    emptyTable(100_000).update("Row=i", "R=random.nextInt(syms.size())", "Sym=(String)syms.get(R)");
+
+            final String fileName = tempFolder.getRoot().toPath().resolve("dictionary.parquet").toString();
+            ParquetTools.writeTable(t, fileName, ParquetInstructions.EMPTY);
+            final Table readback = ParquetTools.readTable(fileName);
+            assertTableEquals(t, readback);
+
+            final Table dictionarySorted = readback.sort("Sym");
+            assertTableEquals(t.sort("Sym"), dictionarySorted);
+
+            final Table resultRows = dictionarySorted.update("NewRow=i").aggBy(
+                    List.of(Aggregation.AggMin("MinRow=NewRow"), Aggregation.AggMax("MaxRow=NewRow")),
+                    List.of(ColumnName.of("Sym")));
+            TableTools.show(resultRows);
+            checkMixed(resultRows, false);
+
+            final SortSpec insensitiveSort = ComparatorSortColumn.asc("Sym", String.CASE_INSENSITIVE_ORDER);
+            final Table dictionaryComparatorSorted = ((QueryTable) readback.coalesce()).sort(insensitiveSort);
+
+            final Table expectedComparator = ((QueryTable) t).sort(insensitiveSort);
+            assertTableEquals(expectedComparator, dictionaryComparatorSorted);
+
+            final Table resultRowsComparator = dictionaryComparatorSorted.update("NewRow=i").aggBy(
+                    List.of(Aggregation.AggMin("MinRow=NewRow"), Aggregation.AggMax("MaxRow=NewRow")),
+                    List.of(ColumnName.of("Sym")));
+            TableTools.show(resultRowsComparator);
+            checkMixed(resultRowsComparator, true);
+        } finally {
+            tempFolder.delete();
+        }
+    }
+
+    private static void checkMixed(final Table resultRows, final boolean mixed) {
+        final Table upperCase = resultRows.where("Sym=`Apple`");
+        final Table lowerCase = resultRows.where("Sym=`apple`");
+        final int maxUpper = upperCase.integerColumnIterator("MaxRow").intStream().toArray()[0];
+        System.out.println("Max Apple: " + maxUpper);
+        final int minLower = lowerCase.integerColumnIterator("MinRow").intStream().toArray()[0];
+        System.out.println("Min apple: " + minLower);
+        if (!mixed) {
+            assertTrue(maxUpper < minLower);
+        } else {
+            assertFalse(maxUpper < minLower);
+        }
     }
 }

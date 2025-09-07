@@ -1,0 +1,1 @@
+{"file":"core_versioned_docs/version-groovy/docs/how-to-guides/dynamic-table-writer.md","objects":{"publishedTable":{"type":"Table","data":{"columns":[{"name":"X","type":"int"},{"name":"Y","type":"double"},{"name":"Z","type":"double"}],"rows":[]}}}}

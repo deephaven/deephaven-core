@@ -134,7 +134,7 @@ if (WIN32)
     set_property(TARGET ${PROJECT_NAME} PROPERTY WINDOWS_EXPORT_ALL_SYMBOLS ON)
     # /Wall is a bit too chatty so we stick with /W3
     # /bigobj needed because ticking/immer_table_state.cc compiles to something too large apparently
-    target_compile_options(${PROJECT_NAME} PRIVATE /W3 /bigobj)
+    target_compile_options(${PROJECT_NAME} PRIVATE /W3 /bigobj /MP)
 endif()
 
 target_include_directories(${PROJECT_NAME} PRIVATE include/private)

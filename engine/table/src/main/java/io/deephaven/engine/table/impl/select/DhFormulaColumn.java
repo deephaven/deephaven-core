@@ -57,6 +57,7 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
     private static final String FORMULA_FACTORY_NAME = "__FORMULA_FACTORY";
     private static final String PARAM_CLASSNAME = QueryScopeParam.class.getCanonicalName();
     private static final String EVALUATION_EXCEPTION_CLASSNAME = FormulaEvaluationException.class.getCanonicalName();
+    private static final String FORMULA_CLASS_NAME = "Formula";
     public static boolean useKernelFormulasProperty =
             Configuration.getInstance().getBooleanWithDefault("FormulaColumn.useKernelFormulasProperty", false);
 
@@ -249,7 +250,7 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
 
         final CodeGenerator g = CodeGenerator.create(
                 CodeGenerator.create(ExecutionContext.getContext().getQueryLibrary().getImportStrings().toArray()), "",
-                "public class $CLASSNAME$ extends [[FORMULA_CLASS_NAME]]", CodeGenerator.block(
+                "public class " + FORMULA_CLASS_NAME + " extends [[FORMULA_CLASS_NAME]]", CodeGenerator.block(
                         generateFormulaFactoryLambda(), "",
                         "private final String __columnName;",
                         CodeGenerator.repeated("instanceVar", "private final [[TYPE]] [[NAME]];"),
@@ -295,7 +296,7 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
 
     private CodeGenerator generateFormulaFactoryLambda() {
         final CodeGenerator g = CodeGenerator.create(
-                "public static final [[FORMULA_FACTORY]] [[FORMULA_FACTORY_NAME]] = $CLASSNAME$::new;");
+                "public static final [[FORMULA_FACTORY]] [[FORMULA_FACTORY_NAME]] = " + FORMULA_CLASS_NAME + "::new;");
         g.replace("FORMULA_FACTORY", FormulaFactory.class.getCanonicalName());
         g.replace("FORMULA_FACTORY_NAME", FORMULA_FACTORY_NAME);
         return g.freeze();
@@ -303,7 +304,7 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
 
     private CodeGenerator generateConstructor() {
         final CodeGenerator g = CodeGenerator.create(
-                "public $CLASSNAME$(final String __columnName,", CodeGenerator.indent(
+                "public " + FORMULA_CLASS_NAME + "(final String __columnName,", CodeGenerator.indent(
                         "final TrackingRowSet __rowSet,",
                         "final boolean __lazy,",
                         "final java.util.Map<String, ? extends [[COLUMN_SOURCE_CLASSNAME]]> __columnsToData,",
@@ -786,7 +787,6 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
 
     private void compileFormula(@NotNull final QueryCompilerRequestProcessor compilationRequestProcessor) {
         final String what = "Compile regular formula: " + formulaString;
-        final String className = "Formula";
         final String classBody = generateClassBody();
 
         final List<Class<?>> paramClasses = new ArrayList<>();
@@ -813,7 +813,7 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
 
         formulaFactoryFuture = compilationRequestProcessor.submit(QueryCompilerRequest.builder()
                 .description("Formula Expression: " + formulaString)
-                .className(className)
+                .className(FORMULA_CLASS_NAME)
                 .classBody(classBody)
                 .packageNameRoot(QueryCompilerImpl.FORMULA_CLASS_PREFIX)
                 .putAllParameterClasses(QueryScopeParamTypeUtil.expandParameterClasses(paramClasses))

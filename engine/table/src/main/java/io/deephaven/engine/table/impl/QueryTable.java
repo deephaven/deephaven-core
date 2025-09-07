@@ -79,7 +79,6 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.lang.ref.WeakReference;
-import java.lang.reflect.Array;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -2785,20 +2784,31 @@ public class QueryTable extends BaseTable<QueryTable> {
 
     @Override
     public Table sort(Collection<SortColumn> columnsToSortBy) {
+        return sort(columnsToSortBy.toArray(SortSpec[]::new));
+    }
+
+    /**
+     * Sort this Table using the provided specifications.
+     *
+     * @param columnsToSortBy the sort specifications
+     * @return this table sorted according to the provided specifications
+     */
+    public Table sort(final SortSpec... columnsToSortBy) {
         final UpdateGraph updateGraph = getUpdateGraph();
         try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(updateGraph).open()) {
-            final SortPair[] sortPairs = SortPair.from(columnsToSortBy);
-            if (sortPairs.length == 0) {
+            if (columnsToSortBy.length == 0) {
                 return prepareReturnThis();
-            } else if (sortPairs.length == 1) {
-                final String columnName = sortPairs[0].getColumn();
-                final SortingOrder order = sortPairs[0].getOrder();
+            }
+
+            if (columnsToSortBy.length == 1 && !ComparatorSortColumn.hasComparator(columnsToSortBy[0])) {
+                final String columnName = columnsToSortBy[0].column().name();
+                final SortingOrder order = SortingOrder.from(columnsToSortBy[0]);
                 if (SortedColumnsAttribute.isSortedBy(this, columnName, order)) {
                     return prepareReturnThis();
                 }
             }
 
-            return getResult(new SortOperation(this, sortPairs));
+            return getResult(new SortOperation(this, columnsToSortBy));
         }
     }
 

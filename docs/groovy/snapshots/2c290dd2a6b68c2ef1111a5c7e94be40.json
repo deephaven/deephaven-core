@@ -1,0 +1,1 @@
+{"file":"core_versioned_docs/version-groovy/docs/tutorials/crash-course/3-create-tables.md","objects":{"tickingTable":{"type":"Table","data":{"columns":[{"name":"Timestamp","type":"java.time.Instant"}],"rows":[]}}}}
