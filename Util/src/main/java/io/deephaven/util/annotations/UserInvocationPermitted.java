@@ -26,21 +26,21 @@ import java.lang.annotation.*;
 @Documented
 public @interface UserInvocationPermitted {
     enum ScopeType {
-        Static_And_Instance, Static, Instance,
+        StaticAndInstance, Static, Instance,
     }
     // String STATIC_CLASS_SCOPE = "static";
     // String INSTANCE_CLASS_SCOPE = "instance";
 
     /**
-     * When applied to a class, the type of methods this annotation applies to. If
-     * {@link ScopeType#Static_And_Instance}, null, or not specified, then both static and instance methods are
-     * permitted. If {@link ScopeType#Static} is specified, then only static methods are permitted (unless the instance
-     * method is otherwise annotated or configured). If {@link ScopeType#Instance} is specified, then only instance
-     * methods are permitted (unless the static method is otherwise annotated or configured).
+     * When applied to a class, the type of methods this annotation applies to. If {@link ScopeType#StaticAndInstance},
+     * null, or not specified, then both static and instance methods are permitted. If {@link ScopeType#Static} is
+     * specified, then only static methods are permitted (unless the instance method is otherwise annotated or
+     * configured). If {@link ScopeType#Instance} is specified, then only instance methods are permitted (unless the
+     * static method is otherwise annotated or configured).
      * 
      * @return the scope for this class annotation
      */
-    ScopeType classScope() default ScopeType.Static_And_Instance;
+    ScopeType classScope() default ScopeType.StaticAndInstance;
 
     /**
      * An array of sets for configuring permitted methods.

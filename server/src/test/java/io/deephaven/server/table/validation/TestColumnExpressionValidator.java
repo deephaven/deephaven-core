@@ -3,7 +3,6 @@
 //
 package io.deephaven.server.table.validation;
 
-import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.api.filter.FilterComparison;
@@ -28,7 +27,6 @@ import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.UserInvocationPermitted;
 import io.deephaven.util.mutable.MutableInt;
 import org.apache.commons.lang3.mutable.MutableObject;
-import org.jetbrains.annotations.NotNull;
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
@@ -38,12 +36,13 @@ import org.openrewrite.java.tree.JavaType;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 public class TestColumnExpressionValidator {
     @Rule
@@ -594,13 +593,8 @@ public class TestColumnExpressionValidator {
     }
 
     @Test
-    public void testObjectCreation() {
-        testObjectCreation(new MethodNameColumnExpressionValidator());
-        testObjectCreation(ExpressionValidatorModule
-                .getParsingColumnExpressionValidatorFromConfiguration(Configuration.getInstance()));
-    }
-
-    private void testObjectCreation(final ColumnExpressionValidator validator) {
+    public void testObjectCreationBackwardsCompatibility() {
+        final ColumnExpressionValidator validator = new MethodNameColumnExpressionValidator();
         final Table input = TableTools.emptyTable(1).update("A=`Abc`");
 
         final String expr = "X=A.substring(1)";
@@ -613,7 +607,30 @@ public class TestColumnExpressionValidator {
         Assert.assertTrue("Actual: " + ise.getMessage(),
                 ise.getMessage().startsWith("User expressions are not permitted to instantiate "));
         Assert.assertTrue("Actual: " + ise.getMessage(),
-                ise.getMessage().endsWith("String") || ise.getMessage().endsWith("String()"));
+                ise.getMessage().endsWith("String"));
+    }
+
+    @Test
+    public void testObjectCreationParsed() {
+        final ColumnExpressionValidator validator = ExpressionValidatorModule
+                .getParsingColumnExpressionValidatorFromConfiguration(Configuration.getInstance());
+        final Table input = TableTools.emptyTable(1).update("A=`Abc`");
+
+        final String expr = "X=A.substring(1)";
+        allowedSelectMethod(expr, validator, input);
+
+        // Object is not allowed, because we do not use a wildcard on object
+        final String newObject = "X=new Object()";
+        final SelectColumn[] sc2 = SelectColumnFactory.getExpressions(newObject);
+        final IllegalStateException ise = Assert.assertThrows(IllegalStateException.class,
+                () -> validator.validateColumnExpressions(sc2, new String[] {newObject}, input));
+        Assert.assertTrue("Actual: " + ise.getMessage(),
+                ise.getMessage().startsWith("User expressions are not permitted to instantiate "));
+        Assert.assertTrue("Actual: " + ise.getMessage(),
+                ise.getMessage().endsWith("Object()"));
+
+        // But string is permitted, because we have a rule for all string methods (which includes the constructors)
+        allowedSelectMethod("X = new String()", validator, input);
     }
 
     @Test
@@ -977,6 +994,20 @@ public class TestColumnExpressionValidator {
 
         final String[] matchFilters = new String[] {"A in `def`, `qdz`", "D=8"};
         validator.validateSelectFilters(matchFilters, input);
+    }
+
+    @Test
+    public void testConstructorMatching() throws NoSuchMethodException {
+        final List<String> allowedConstructor = List.of("java.lang.String <constructor>(char[], int, int)");
+        final MethodListInvocationValidator validator = new MethodListInvocationValidator(allowedConstructor);
+        Assert.assertTrue(validator.permitConstructor(String.class.getConstructor(char[].class, int.class, int.class)));
+        Assert.assertNull(validator.permitConstructor(String.class.getConstructor(char[].class)));
+
+        final List<String> allowedConstructor2 = List.of("java.math.BigInteger <constructor>(String)");
+        final MethodListInvocationValidator validator2 = new MethodListInvocationValidator(allowedConstructor2);
+        Assert.assertTrue(validator2.permitConstructor(BigInteger.class.getConstructor(String.class)));
+        Assert.assertNull(validator2.permitConstructor(BigInteger.class.getConstructor(byte[].class)));
+        Assert.assertNull(validator2.permitConstructor(BigDecimal.class.getConstructor(String.class)));
     }
 
     @Test

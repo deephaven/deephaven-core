@@ -81,7 +81,7 @@ public class AnnotationMethodInvocationValidator implements MethodInvocationVali
             return false;
         }
         final ScopeType scope = annotation.classScope();
-        return scope == null || scope.equals(ScopeType.Static_And_Instance) || scope.equals(ScopeType.Static);
+        return scope == null || scope.equals(ScopeType.StaticAndInstance) || scope.equals(ScopeType.Static);
     }
 
     private boolean isInstancePermitted(final UserInvocationPermitted annotation) {
@@ -89,7 +89,7 @@ public class AnnotationMethodInvocationValidator implements MethodInvocationVali
             return false;
         }
         final ScopeType scope = annotation.classScope();
-        return scope == null || scope.equals(ScopeType.Static_And_Instance) || scope.equals(ScopeType.Instance);
+        return scope == null || scope.equals(ScopeType.StaticAndInstance) || scope.equals(ScopeType.Instance);
     }
 
     private boolean checkInstanceAnnotations(final Method methodToCheck) {

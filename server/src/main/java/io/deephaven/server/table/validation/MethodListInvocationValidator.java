@@ -11,7 +11,6 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * An invocation validator that has a hardcoded list of classes and methods to permit.
@@ -29,6 +28,7 @@ import java.util.stream.Collectors;
  * <li>A wildcard character, "*", may be used in either the declaring class or method name.</li>
  * <li>The argument list is expressed as a comma-separated list of the argument types</li>
  * <li>".." can be used in the argument list to match zero or more arguments of any type.</li>
+ * <li>"&lt;constructor&gt;" can be used as the method name to match a constructor.</li>
  * </ul>
  * 
  * <table>
@@ -90,6 +90,10 @@ public class MethodListInvocationValidator implements MethodInvocationValidator 
 
     @Override
     public Boolean permitConstructor(final Constructor<?> constructor) {
+        final JavaType.Method jtm = toJavaType(constructor);
+        if (methodMatchers.stream().anyMatch(mm -> mm.matches(jtm))) {
+            return true;
+        }
         return null;
     }
 
@@ -114,13 +118,37 @@ public class MethodListInvocationValidator implements MethodInvocationValidator 
     static JavaType.Method toJavaType(final Method method) {
         final JavaType declaringClass = classType(method.getDeclaringClass());
 
-        String[] parameterNames = Arrays.stream(method.getParameters()).map(Parameter::getName).toArray(String[]::new);
-        JavaType[] parameterTypes = Arrays.stream(method.getParameters()).map(Parameter::getType)
+        final String[] parameterNames =
+                Arrays.stream(method.getParameters()).map(Parameter::getName).toArray(String[]::new);
+        final JavaType[] parameterTypes = Arrays.stream(method.getParameters()).map(Parameter::getType)
                 .map(MethodListInvocationValidator::classType)
                 .toArray(JavaType[]::new);
         // exceptions, annotations, defaultValue, declaredFormalTypes ignored
         return new JavaType.Method(null, method.getModifiers(), (JavaType.FullyQualified) declaringClass,
                 method.getName(), classType(method.getReturnType()), parameterNames, parameterTypes, null, null, null,
+                null);
+    }
+
+    /**
+     * We need to convert the constructor we have from reflection to an open rewrite JavaType. There is no direct
+     * conversion available in the API, but internally the <a href=
+     * "https://github.com/openrewrite/rewrite/blob/main/rewrite-java/src/main/java/org/openrewrite/java/internal/JavaReflectionTypeMapping.java">org.openrewrite.java.internal.JavaReflectionTypeMapping</a>
+     * class gives us clues on how to make this work. (Note the openrewrite project is Apache licensed.)
+     *
+     * @param method the method to convert
+     * @return the converted method
+     */
+    static JavaType.Method toJavaType(final Constructor<?> method) {
+        final JavaType declaringClass = classType(method.getDeclaringClass());
+
+        final String[] parameterNames =
+                Arrays.stream(method.getParameters()).map(Parameter::getName).toArray(String[]::new);
+        final JavaType[] parameterTypes = Arrays.stream(method.getParameters()).map(Parameter::getType)
+                .map(MethodListInvocationValidator::classType)
+                .toArray(JavaType[]::new);
+        // exceptions, annotations, defaultValue, declaredFormalTypes ignored
+        return new JavaType.Method(null, method.getModifiers(), (JavaType.FullyQualified) declaringClass,
+                "<constructor>", null, parameterNames, parameterTypes, null, null, null,
                 null);
     }
 

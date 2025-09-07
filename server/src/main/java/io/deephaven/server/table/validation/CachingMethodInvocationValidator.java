@@ -19,14 +19,24 @@ import java.util.concurrent.ConcurrentHashMap;
  * </p>
  */
 public class CachingMethodInvocationValidator implements MethodInvocationValidator {
-    private final static MutableObject<Boolean> CACHED_FALSE = new MutableObject<>(false);
-    private final static MutableObject<Boolean> CACHED_TRUE = new MutableObject<>(true);
-    private final static MutableObject<Boolean> CACHED_NULL = new MutableObject<>(null);
+    private enum CachedResult {
+        FALSE(false), TRUE(true), NULL(null);
+
+        final Boolean value;
+
+        CachedResult(Boolean value) {
+            this.value = value;
+        }
+
+        public Boolean getValue() {
+            return value;
+        }
+    }
 
     final MethodInvocationValidator delegate;
 
-    private final Map<Constructor<?>, MutableObject<Boolean>> cachedConstructors = new ConcurrentHashMap<>();
-    private final Map<Method, MutableObject<Boolean>> cachedMethods = new ConcurrentHashMap<>();
+    private final Map<Constructor<?>, CachedResult> cachedConstructors = new ConcurrentHashMap<>();
+    private final Map<Method, CachedResult> cachedMethods = new ConcurrentHashMap<>();
 
     public CachingMethodInvocationValidator(MethodInvocationValidator delegate) {
         this.delegate = delegate;
@@ -34,7 +44,7 @@ public class CachingMethodInvocationValidator implements MethodInvocationValidat
 
     @Override
     public Boolean permitConstructor(Constructor<?> constructor) {
-        final MutableObject<Boolean> cachedResult = cachedConstructors.get(constructor);
+        final CachedResult cachedResult = cachedConstructors.get(constructor);
         if (cachedResult != null) {
             return cachedResult.getValue();
         }
@@ -45,7 +55,7 @@ public class CachingMethodInvocationValidator implements MethodInvocationValidat
 
     @Override
     public Boolean permitMethod(Method method) {
-        final MutableObject<Boolean> cachedResult = cachedMethods.get(method);
+        final CachedResult cachedResult = cachedMethods.get(method);
         if (cachedResult != null) {
             return cachedResult.getValue();
         }
@@ -54,13 +64,13 @@ public class CachingMethodInvocationValidator implements MethodInvocationValidat
         return result;
     }
 
-    private MutableObject<Boolean> convertToCached(Boolean result) {
+    private CachedResult convertToCached(Boolean result) {
         if (result == null) {
-            return CACHED_NULL;
+            return CachedResult.NULL;
         } else if (result) {
-            return CACHED_TRUE;
+            return CachedResult.TRUE;
         } else {
-            return CACHED_FALSE;
+            return CachedResult.FALSE;
         }
     }
 }
