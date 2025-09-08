@@ -795,7 +795,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
 
     @JsMethod
     public TableViewportSubscription createViewportSubscription(DataOptions.ViewportSubscriptionOptions options) {
-        return TableViewportSubscription.make(options.rows.asRangeSet().getRange(), Js.uncheckedCast(options.columns), options.updateIntervalMs, this);
+        return TableViewportSubscription.make(options, this);
     }
 
     @JsMethod

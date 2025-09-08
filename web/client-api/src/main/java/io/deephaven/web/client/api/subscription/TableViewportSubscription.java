@@ -68,10 +68,10 @@ public class TableViewportSubscription extends AbstractTableSubscription {
 
     private UpdateEventData viewportData;
 
-    public static TableViewportSubscription make(RangeSet rows, Column[] columns,
-            Double updateIntervalMs, JsTable existingTable) {
-        ClientTableState tableState = existingTable.state();
-        WorkerConnection connection = existingTable.getConnection();
+    public static TableViewportSubscription make(DataOptions.ViewportSubscriptionOptions options, JsTable jsTable) {
+        RangeSet rows = options.rows.asRangeSet().getRange();
+        ClientTableState tableState = jsTable.state();
+        WorkerConnection connection = jsTable.getConnection();
 
         final ClientTableState stateToSubscribe;
         ConfigValue flattenViewport = connection.getServerConfigValue("web.flattenViewports");
@@ -88,8 +88,12 @@ public class TableViewportSubscription extends AbstractTableSubscription {
             stateToSubscribe = tableState;
         }
 
-        TableViewportSubscription sub = new TableViewportSubscription(stateToSubscribe, connection, existingTable);
-        sub.setInternalViewport(rows, columns, updateIntervalMs, false);
+        if (options.previewOptions != null && options.previewOptions.convertToString != null && options.previewOptions.convertToString) {
+
+        }
+
+        TableViewportSubscription sub = new TableViewportSubscription(stateToSubscribe, connection, jsTable);
+        sub.setInternalViewport(rows, Js.uncheckedCast(options.columns), options.updateIntervalMs, false);
         return sub;
     }
 
