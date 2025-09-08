@@ -16,7 +16,7 @@ from deephaven import DHError, empty_table, dtypes, new_table
 from deephaven import arrow as dharrow
 from deephaven.column import InputColumn, ColumnType, col_def, string_col, int_col, char_col, long_col, short_col
 from deephaven.pandas import to_pandas, to_table
-from deephaven.parquet import (write, batch_write, read, delete, ColumnInstruction, ParquetFileLayout,
+from deephaven.parquet import (write, batch_write, read, delete, ColumnInstruction, ParquetFileLayout, RowGroupInfo,
                                write_partitioned)
 from tests.testbase import BaseTestCase
 from deephaven.experimental import s3
@@ -118,7 +118,17 @@ class ParquetTestCase(BaseTestCase):
             self.assertTrue(os.path.exists(file_location2))
             shutil.rmtree(base_dir)
 
-        with self.subTest(msg="write_table(Table, destination, col_instructions"):
+        with self.subTest(msg="write_table(Table, str, row_group_info)"):
+            write(table, file_location, row_group_info=RowGroupInfo.with_max_rows(1))
+            self.assertTrue(os.path.exists(file_location))
+            # 3 rows in `table`, so there should be 3 RowGroups, each with 1 row
+            md = pyarrow.parquet.read_metadata(file_location)
+            self.assertEqual(3, md.num_row_groups)
+            for ii in range(md.num_row_groups):
+                self.assertEqual(1, md.row_group(ii).num_rows)
+            shutil.rmtree(base_dir)
+
+        with self.subTest(msg="write_table(table, destination, col_instructions"):
             write(table, file_location, col_instructions=[col_inst, col_inst1])
             # self.assertTrue(os.path.exists(file_location))
 
