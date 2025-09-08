@@ -84,7 +84,7 @@ class RowGroupInfo:
         return _JRowGroupInfo.withMaxRows(max_rows)
 
     @staticmethod
-    def by_group(groups: List[str], max_rows: int = jpy.get_type("java.lang.Long").MAX_VALUE ) -> _JRowGroupInfo:
+    def by_group(groups: List[str], max_rows: int = None) -> _JRowGroupInfo:
         """
         Splits each unique group into a RowGroup. If the table does not have all values for the group(s)
         contiguously, then an error will be raised. If a given RowGroup yields a row count greater than the
@@ -93,7 +93,10 @@ class RowGroupInfo:
         :param groups: Grouping column name(s)
         :param max_rows: (Optional) The maximum number of rows in each RowGroup
         """
-        return _JRowGroupInfo.byGroup(max_rows, _j_string_array(groups))
+        if max_rows:
+            return _JRowGroupInfo.byGroup(max_rows, _j_string_array(groups))
+        else:
+            return _JRowGroupInfo.byGroup(_j_string_array(groups))
 
 
 def _build_parquet_instructions(
