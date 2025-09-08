@@ -1,16 +1,18 @@
-/*
- * Copyright (c) 2020 Deephaven Data Labs and Patent Pending
- */
-
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.util;
 
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
+import junit.framework.TestCase;
+import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -30,9 +32,12 @@ public class TestLeaderTableFilter {
 
     @Test
     public void testSimple() {
-        final QueryTable leader = TstUtils.testRefreshingTable(col("Key", "a", "a"), longCol("A", 2, 3), longCol("B", 0, 4));
-        final QueryTable a = TstUtils.testRefreshingTable(longCol("ID", 1, 1, 2, 2, 3, 3), intCol("Sentinel", 101, 102, 103, 104, 105, 106), col("Key", "a", "a", "a", "a", "a", "a"));
-        final QueryTable b = TstUtils.testRefreshingTable(longCol("ID", 0, 0, 2, 2, 4, 4), intCol("Sentinel", 201, 202, 203, 204, 205, 206), col("Key", "a", "a", "a", "a", "a", "a"));
+        final QueryTable leader =
+                TstUtils.testRefreshingTable(col("Key", "a", "a"), longCol("A", 2, 3), longCol("B", 0, 4));
+        final QueryTable a = TstUtils.testRefreshingTable(longCol("ID", 1, 1, 2, 2, 3, 3),
+                intCol("Sentinel", 101, 102, 103, 104, 105, 106), col("Key", "a", "a", "a", "a", "a", "a"));
+        final QueryTable b = TstUtils.testRefreshingTable(longCol("ID", 0, 0, 2, 2, 4, 4),
+                intCol("Sentinel", 201, 202, 203, 204, 205, 206), col("Key", "a", "a", "a", "a", "a", "a"));
 
         final LeaderTableFilter.TableBuilder builder = new LeaderTableFilter.TableBuilder(leader.assertAddOnly());
         builder.addTable("a", a.assertAddOnly(), "A=ID");
@@ -110,7 +115,8 @@ public class TestLeaderTableFilter {
             TstUtils.addToTable(a, i(20, 21), longCol("ID", 6, 6), intCol("Sentinel", 110, 111), col("Key", "b", "b"));
             a.notifyListeners(i(20, 21), i(), i());
 
-            TstUtils.addToTable(b, i(10, 11, 12), longCol("ID", 5, 5, 5), intCol("Sentinel", 210, 211, 212), col("Key", "b", "b", "b"));
+            TstUtils.addToTable(b, i(10, 11, 12), longCol("ID", 5, 5, 5), intCol("Sentinel", 210, 211, 212),
+                    col("Key", "b", "b", "b"));
             b.notifyListeners(i(10, 11, 12), i(), i());
         });
 
@@ -120,7 +126,8 @@ public class TestLeaderTableFilter {
 
         final Table ex4l = newTable(col("Key", "b"), longCol("A", 6), longCol("B", 5));
         final Table ex4a = newTable(longCol("ID", 6, 6), intCol("Sentinel", 110, 111), col("Key", "b", "b"));
-        final Table ex4b = newTable(longCol("ID", 5, 5, 5), intCol("Sentinel", 210, 211, 212), col("Key", "b", "b", "b"));
+        final Table ex4b =
+                newTable(longCol("ID", 5, 5, 5), intCol("Sentinel", 210, 211, 212), col("Key", "b", "b", "b"));
 
         assertTableEquals(ex4l, fl);
         assertTableEquals(ex4a, fa);
@@ -129,14 +136,18 @@ public class TestLeaderTableFilter {
 
     @Test
     public void testSimpleKeyed() {
-        final QueryTable leader = TstUtils.testRefreshingTable(col("Key", "a", "b"), longCol("A", 1, 2), longCol("B", 101, 102));
+        final QueryTable leader =
+                TstUtils.testRefreshingTable(col("Key", "a", "b"), longCol("A", 1, 2), longCol("B", 101, 102));
 
-        final QueryTable a = TstUtils.testRefreshingTable(longCol("ID", 1, 2, 3), intCol("Sentinel", 101, 102, 103), col("Key", "a", "b", "c"));
-        final QueryTable b = TstUtils.testRefreshingTable(longCol("ID", 100, 100, 100), intCol("Sentinel", 201, 202, 203), col("Key", "a", "b", "c"));
+        final QueryTable a = TstUtils.testRefreshingTable(longCol("ID", 1, 2, 3), intCol("Sentinel", 101, 102, 103),
+                col("Key", "a", "b", "c"));
+        final QueryTable b = TstUtils.testRefreshingTable(longCol("ID", 100, 100, 100),
+                intCol("Sentinel", 201, 202, 203), col("Key", "a", "b", "c"));
 
         final String leaderName = "POTUS";
 
-        final LeaderTableFilter.TableBuilder builder = new LeaderTableFilter.TableBuilder(leader.assertAddOnly(), "Key").setLeaderName(leaderName);
+        final LeaderTableFilter.TableBuilder builder =
+                new LeaderTableFilter.TableBuilder(leader.assertAddOnly(), "Key").setLeaderName(leaderName);
         builder.addTable("a", a.assertAddOnly(), "A=ID", "Key");
         builder.addTable("b", b.assertAddOnly(), "B=ID", "Key");
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
@@ -155,11 +166,13 @@ public class TestLeaderTableFilter {
         assertTableEquals(b.head(0), fb);
 
         updateGraph.runWithinUnitTestCycle(() -> {
-            TstUtils.addToTable(a, i(10, 11, 12), longCol("ID", 5, 4, 4), intCol("Sentinel", 104, 105, 106), col("Key", "a", "a", "a"));
+            TstUtils.addToTable(a, i(10, 11, 12), longCol("ID", 5, 4, 4), intCol("Sentinel", 104, 105, 106),
+                    col("Key", "a", "a", "a"));
             a.notifyListeners(i(10, 11, 12), i(), i());
         });
 
-        // we still haven't done anything but release more data; we will need to sort and compact the IDs in this case as well
+        // we still haven't done anything but release more data; we will need to sort and compact the IDs in this case
+        // as well
         assertTableEquals(leader.head(0), fl);
         assertTableEquals(a.head(0), fa);
         assertTableEquals(b.head(0), fb);
@@ -167,7 +180,8 @@ public class TestLeaderTableFilter {
 
         // add to b so that we can see some rows
         updateGraph.runWithinUnitTestCycle(() -> {
-            TstUtils.addToTable(b, i(10, 11), longCol("ID", 101, 102), intCol("Sentinel", 210, 211), col("Key", "a", "b"));
+            TstUtils.addToTable(b, i(10, 11), longCol("ID", 101, 102), intCol("Sentinel", 210, 211),
+                    col("Key", "a", "b"));
             b.notifyListeners(i(10, 11), i(), i());
         });
 
@@ -183,7 +197,8 @@ public class TestLeaderTableFilter {
             leader.notifyListeners(i(12), i(), i());
         });
 
-        final Table mostRecentLeader = updateGraph.sharedLock().computeLocked(() -> leader.update("K=k").lastBy("Key").sort("K").dropColumns("K"));
+        final Table mostRecentLeader = updateGraph.sharedLock()
+                .computeLocked(() -> leader.update("K=k").lastBy("Key").sort("K").dropColumns("K"));
 
         dumpTables(leader, a, b, fl, fa, fb);
         assertTableEquals(mostRecentLeader, fl);
@@ -230,7 +245,8 @@ public class TestLeaderTableFilter {
 
         // and we can instantiate d at this point
         updateGraph.runWithinUnitTestCycle(() -> {
-            TstUtils.addToTable(b, i(20, 21), longCol("ID", -7, -7), intCol("Sentinel", 220, 221), col("Key", "d", "d"));
+            TstUtils.addToTable(b, i(20, 21), longCol("ID", -7, -7), intCol("Sentinel", 220, 221),
+                    col("Key", "d", "d"));
             b.notifyListeners(i(20, 21), i(), i());
 
             TstUtils.addToTable(leader, i(16), longCol("A", 3), longCol("B", -7), col("Key", "d"));
@@ -242,10 +258,12 @@ public class TestLeaderTableFilter {
 
         // we want to even better test compaction
         updateGraph.runWithinUnitTestCycle(() -> {
-            TstUtils.addToTable(b, i(30, 31, 32, 33), longCol("ID", 3, 2, 1, 2), intCol("Sentinel", 230, 231, 232, 233), col("Key", "e", "e", "e", "e"));
+            TstUtils.addToTable(b, i(30, 31, 32, 33), longCol("ID", 3, 2, 1, 2), intCol("Sentinel", 230, 231, 232, 233),
+                    col("Key", "e", "e", "e", "e"));
             b.notifyListeners(i(30, 31, 32, 33), i(), i());
 
-            TstUtils.addToTable(a, i(30, 31, 32, 33), longCol("ID", 7, 9, 7, 7), intCol("Sentinel", 130, 131, 132, 133), col("Key", "e", "e", "e", "e"));
+            TstUtils.addToTable(a, i(30, 31, 32, 33), longCol("ID", 7, 9, 7, 7), intCol("Sentinel", 130, 131, 132, 133),
+                    col("Key", "e", "e", "e", "e"));
             a.notifyListeners(i(30, 31, 32, 33), i(), i());
         });
         assertTableEquals(mostRecentLeader, fl);
@@ -254,13 +272,16 @@ public class TestLeaderTableFilter {
 
         // now get IDs 2 and 8 which are in the middle to be activated
         updateGraph.runWithinUnitTestCycle(() -> {
-            TstUtils.addToTable(leader, i(17, 18, 19), longCol("A", 7, 8, 8), longCol("B", 2, 2, 3), col("Key", "e", "e", "e"));
+            TstUtils.addToTable(leader, i(17, 18, 19), longCol("A", 7, 8, 8), longCol("B", 2, 2, 3),
+                    col("Key", "e", "e", "e"));
             leader.notifyListeners(i(17, 18, 19), i(), i());
         });
 
         dumpTables(leader, a, b, fl, fa, fb);
 
-        final Table notQuiteMostRecentLeader = updateGraph.sharedLock().computeLocked(() -> leader.slice(0, -2).withAttributes(Map.of(BaseTable.TEST_SOURCE_TABLE_ATTRIBUTE, true)).update("K=k").lastBy("Key").sort("K").dropColumns("K"));
+        final Table notQuiteMostRecentLeader = updateGraph.sharedLock().computeLocked(
+                () -> leader.slice(0, -2).withAttributes(Map.of(BaseTable.TEST_SOURCE_TABLE_ATTRIBUTE, true))
+                        .update("K=k").lastBy("Key").sort("K").dropColumns("K"));
 
         assertTableEquals(notQuiteMostRecentLeader, fl);
         assertTableEquals(a.where("Sentinel in 104, 102, 103, 120, 130, 132, 133"), fa);
@@ -278,7 +299,8 @@ public class TestLeaderTableFilter {
 
         // add some data to the null ID, and an old ID
         updateGraph.runWithinUnitTestCycle(() -> {
-            TstUtils.addToTable(a, i(35, 36), longCol("ID", NULL_LONG, -1), intCol("Sentinel", 135, 136), col("Key", "e", "e"));
+            TstUtils.addToTable(a, i(35, 36), longCol("ID", NULL_LONG, -1), intCol("Sentinel", 135, 136),
+                    col("Key", "e", "e"));
             a.notifyListeners(i(35, 36), i(), i());
         });
 
@@ -289,9 +311,12 @@ public class TestLeaderTableFilter {
 
     @Test
     public void testRepeatedMatch() {
-        final QueryTable leader = TstUtils.testRefreshingTable(col("Key", "a", "a"), longCol("A", 2, 3), longCol("B", 4, 4));
-        final QueryTable a = TstUtils.testRefreshingTable(longCol("ID", 2, 2), intCol("Sentinel", 101, 102), col("Key", "a", "a"));
-        final QueryTable b = TstUtils.testRefreshingTable(longCol("ID", 4, 4), intCol("Sentinel", 201, 202), col("Key", "a", "a"));
+        final QueryTable leader =
+                TstUtils.testRefreshingTable(col("Key", "a", "a"), longCol("A", 2, 3), longCol("B", 4, 4));
+        final QueryTable a =
+                TstUtils.testRefreshingTable(longCol("ID", 2, 2), intCol("Sentinel", 101, 102), col("Key", "a", "a"));
+        final QueryTable b =
+                TstUtils.testRefreshingTable(longCol("ID", 4, 4), intCol("Sentinel", 201, 202), col("Key", "a", "a"));
 
         final LeaderTableFilter.TableBuilder builder = new LeaderTableFilter.TableBuilder(leader.assertAddOnly());
         builder.addTable("a", a.assertAddOnly(), "A=ID");
@@ -306,12 +331,12 @@ public class TestLeaderTableFilter {
         final Table fb = result.get("b");
 
         // TODO
-//        final FailureListener leaderListener = new FailureListener("fl");
-//        ((DynamicTable)fl).listenForUpdates(leaderListener);
-//        final FailureListener aListener = new FailureListener("a");
-//        ((DynamicTable)fa).listenForUpdates(aListener);
-//        final FailureListener bListener = new FailureListener("b");
-//        ((DynamicTable)fb).listenForUpdates(bListener);
+        // final FailureListener leaderListener = new FailureListener("fl");
+        // ((DynamicTable)fl).listenForUpdates(leaderListener);
+        // final FailureListener aListener = new FailureListener("a");
+        // ((DynamicTable)fa).listenForUpdates(aListener);
+        // final FailureListener bListener = new FailureListener("b");
+        // ((DynamicTable)fb).listenForUpdates(bListener);
 
         TableTools.show(fl);
         TableTools.show(fa);
@@ -338,7 +363,8 @@ public class TestLeaderTableFilter {
 
         final Table ex2l = newTable(col("Key", "a"), longCol("A", 3), longCol("B", 4));
         final Table ex2a = newTable(longCol("ID", 3, 3), intCol("Sentinel", 103, 104), col("Key", "a", "a"));
-        final Table ex2b = newTable(longCol("ID", 4, 4, 4, 4), intCol("Sentinel", 201, 202, 203, 204), col("Key", "a", "a", "a", "a"));
+        final Table ex2b = newTable(longCol("ID", 4, 4, 4, 4), intCol("Sentinel", 201, 202, 203, 204),
+                col("Key", "a", "a", "a", "a"));
 
         assertTableEquals(ex2l, fl);
         assertTableEquals(ex2a, fa);
@@ -359,7 +385,8 @@ public class TestLeaderTableFilter {
 
         final Table ex3l = newTable(col("Key", "a"), longCol("A", 5), longCol("B", 4));
         final Table ex3a = newTable(longCol("ID", 5), intCol("Sentinel", 105), col("Key", "a"));
-        final Table ex3b = newTable(longCol("ID", 4, 4, 4, 4, 4), intCol("Sentinel", 201, 202, 203, 204, 205), col("Key", "a", "a", "a", "a", "a"));
+        final Table ex3b = newTable(longCol("ID", 4, 4, 4, 4, 4), intCol("Sentinel", 201, 202, 203, 204, 205),
+                col("Key", "a", "a", "a", "a", "a"));
 
         assertTableEquals(ex3l, fl);
         assertTableEquals(ex3a, fa);
@@ -368,14 +395,17 @@ public class TestLeaderTableFilter {
 
     @Test
     public void testNullFollower() {
-        final QueryTable leader = TstUtils.testRefreshingTable(col("Key", "a", "b", "b"), longCol("A", 1, 2, 3), longCol("B", 101, NULL_LONG, 110), intCol("Sentinel", 300, 301, 302));
+        final QueryTable leader = TstUtils.testRefreshingTable(col("Key", "a", "b", "b"), longCol("A", 1, 2, 3),
+                longCol("B", 101, NULL_LONG, 110), intCol("Sentinel", 300, 301, 302));
 
-        final QueryTable a = TstUtils.testRefreshingTable(longCol("ID", 1, 2, 3), intCol("Sentinel", 101, 102, 103), col("Key", "a", "b", "c"));
+        final QueryTable a = TstUtils.testRefreshingTable(longCol("ID", 1, 2, 3), intCol("Sentinel", 101, 102, 103),
+                col("Key", "a", "b", "c"));
         final QueryTable b = TstUtils.testRefreshingTable(longCol("ID", 100), intCol("Sentinel", 201), col("Key", "a"));
 
         final String leaderName = "POTUS";
 
-        final LeaderTableFilter.TableBuilder builder = new LeaderTableFilter.TableBuilder(leader.assertAddOnly(), "Key").setLeaderName(leaderName);
+        final LeaderTableFilter.TableBuilder builder =
+                new LeaderTableFilter.TableBuilder(leader.assertAddOnly(), "Key").setLeaderName(leaderName);
         builder.addTable("a", a.assertAddOnly(), "A=ID", "Key");
         builder.addTable("b", b.assertAddOnly(), "B=ID", "Key");
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
@@ -411,7 +441,8 @@ public class TestLeaderTableFilter {
             TstUtils.addToTable(b, i(11), longCol("ID", 110), intCol("Sentinel", 202), col("Key", "b"));
             b.notifyListeners(i(11), i(), i());
 
-            TstUtils.addToTable(leader, i(13), longCol("A", 4), longCol("B", 110), col("Key", "b"), intCol("Sentinel", 304));
+            TstUtils.addToTable(leader, i(13), longCol("A", 4), longCol("B", 110), col("Key", "b"),
+                    intCol("Sentinel", 304));
             leader.notifyListeners(i(13), i(), i());
         });
 
@@ -424,14 +455,17 @@ public class TestLeaderTableFilter {
 
     @Test
     public void testAllNullFollowers() {
-        final QueryTable leader = TstUtils.testRefreshingTable(col("Key", "a", "b"), longCol("A", 1, NULL_LONG), longCol("B", 101, NULL_LONG), intCol("Sentinel", 300, 301));
+        final QueryTable leader = TstUtils.testRefreshingTable(col("Key", "a", "b"), longCol("A", 1, NULL_LONG),
+                longCol("B", 101, NULL_LONG), intCol("Sentinel", 300, 301));
 
-        final QueryTable a = TstUtils.testRefreshingTable(longCol("ID", 1, 2, 3), intCol("Sentinel", 101, 102, 103), col("Key", "a", "a", "a"));
+        final QueryTable a = TstUtils.testRefreshingTable(longCol("ID", 1, 2, 3), intCol("Sentinel", 101, 102, 103),
+                col("Key", "a", "a", "a"));
         final QueryTable b = TstUtils.testRefreshingTable(longCol("ID", 100), intCol("Sentinel", 201), col("Key", "a"));
 
         final String leaderName = "POTUS";
 
-        final LeaderTableFilter.TableBuilder builder = new LeaderTableFilter.TableBuilder(leader.assertAddOnly(), "Key").setLeaderName(leaderName);
+        final LeaderTableFilter.TableBuilder builder =
+                new LeaderTableFilter.TableBuilder(leader.assertAddOnly(), "Key").setLeaderName(leaderName);
         builder.addTable("a", a.assertAddOnly(), "A=ID", "Key");
         builder.addTable("b", b.assertAddOnly(), "B=ID", "Key");
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
@@ -450,7 +484,8 @@ public class TestLeaderTableFilter {
         assertTableEquals(b.head(0), fb);
 
         updateGraph.runWithinUnitTestCycle(() -> {
-            TstUtils.addToTable(leader, i(10), longCol("A", NULL_LONG), longCol("B", NULL_LONG), intCol("Sentinel", 302), col("Key", "b"));
+            TstUtils.addToTable(leader, i(10), longCol("A", NULL_LONG), longCol("B", NULL_LONG),
+                    intCol("Sentinel", 302), col("Key", "b"));
             leader.notifyListeners(i(10), i(), i());
         });
 
@@ -489,7 +524,8 @@ public class TestLeaderTableFilter {
         // now add that to the leader
 
         updateGraph.runWithinUnitTestCycle(() -> {
-            TstUtils.addToTable(leader, i(11), longCol("A", 500), longCol("B", 1000), intCol("Sentinel", 303), col("Key", "b"));
+            TstUtils.addToTable(leader, i(11), longCol("A", 500), longCol("B", 1000), intCol("Sentinel", 303),
+                    col("Key", "b"));
             leader.notifyListeners(i(11), i(), i());
         });
 
@@ -499,7 +535,8 @@ public class TestLeaderTableFilter {
 
         // let's make it null again
         updateGraph.runWithinUnitTestCycle(() -> {
-            TstUtils.addToTable(leader, i(12), longCol("A", NULL_LONG), longCol("B", NULL_LONG), intCol("Sentinel", 304), col("Key", "b"));
+            TstUtils.addToTable(leader, i(12), longCol("A", NULL_LONG), longCol("B", NULL_LONG),
+                    intCol("Sentinel", 304), col("Key", "b"));
             leader.notifyListeners(i(12), i(), i());
         });
 
@@ -510,12 +547,15 @@ public class TestLeaderTableFilter {
 
     @Test
     public void testMissingFollowerRows() {
-        final QueryTable leader = TstUtils.testRefreshingTable(col("Key", "b", "b", "b"), longCol("A", 1, 2, 3), longCol("B", 101, 102, 103), intCol("Sentinel", 300, 301, 302));
+        final QueryTable leader = TstUtils.testRefreshingTable(col("Key", "b", "b", "b"), longCol("A", 1, 2, 3),
+                longCol("B", 101, 102, 103), intCol("Sentinel", 300, 301, 302));
 
-        final QueryTable a = TstUtils.testRefreshingTable(longCol("ID", 1, 2, 3), intCol("Sentinel", 101, 102, 103), col("Key", "b", "b", "b"));
+        final QueryTable a = TstUtils.testRefreshingTable(longCol("ID", 1, 2, 3), intCol("Sentinel", 101, 102, 103),
+                col("Key", "b", "b", "b"));
         final QueryTable b = TstUtils.testRefreshingTable(longCol("ID", 101), intCol("Sentinel", 201), col("Key", "b"));
 
-        final LeaderTableFilter.TableBuilder builder = new LeaderTableFilter.TableBuilder(leader.assertAddOnly(), "Key");
+        final LeaderTableFilter.TableBuilder builder =
+                new LeaderTableFilter.TableBuilder(leader.assertAddOnly(), "Key");
         builder.addTable("a", a.assertAddOnly(), "A=ID", "Key");
         builder.addTable("b", b.assertAddOnly(), "B=ID", "Key");
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
@@ -547,12 +587,14 @@ public class TestLeaderTableFilter {
 
     @Test
     public void testFollowerFirst() {
-        final QueryTable leader = TstUtils.testRefreshingTable(col("Key", "a"), longCol("A", 1), longCol("B", 101), intCol("Sentinel", 300));
+        final QueryTable leader = TstUtils.testRefreshingTable(col("Key", "a"), longCol("A", 1), longCol("B", 101),
+                intCol("Sentinel", 300));
 
         final QueryTable a = TstUtils.testRefreshingTable(longCol("ID", 101), intCol("Sentinel", 101), col("Key", "b"));
         final QueryTable b = TstUtils.testRefreshingTable(longCol("ID", 102), intCol("Sentinel", 201), col("Key", "b"));
 
-        final LeaderTableFilter.TableBuilder builder = new LeaderTableFilter.TableBuilder(leader.assertAddOnly(), "Key");
+        final LeaderTableFilter.TableBuilder builder =
+                new LeaderTableFilter.TableBuilder(leader.assertAddOnly(), "Key");
         builder.addTable("a", a.assertAddOnly(), "A=ID", "Key");
         builder.addTable("b", b.assertAddOnly(), "B=ID", "Key");
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
@@ -583,7 +625,8 @@ public class TestLeaderTableFilter {
         assertTableEquals(b.head(0), fb);
 
         updateGraph.runWithinUnitTestCycle(() -> {
-            TstUtils.addToTable(leader, i(1), longCol("B", 104), longCol("A", 101), intCol("Sentinel", 301), col("Key", "b"));
+            TstUtils.addToTable(leader, i(1), longCol("B", 104), longCol("A", 101), intCol("Sentinel", 301),
+                    col("Key", "b"));
             leader.notifyListeners(i(1), i(), i());
         });
 
@@ -624,7 +667,7 @@ public class TestLeaderTableFilter {
         // Test follower table without key columns
         try {
             new LeaderTableFilter.TableBuilder(emptyTable(1).update("A=1", "B=2", "C=(long)3"), "A", "B")
-            .addTable("c", emptyTable(0).updateView("A=1", "B=2", "C=3"), "C", "A", "B", "D");
+                    .addTable("c", emptyTable(0).updateView("A=1", "B=2", "C=3"), "C", "A", "B", "D");
             fail("expected exception");
         } catch (IllegalArgumentException iae) {
             assertEquals("Table \"c\" has missing key columns [D]", iae.getMessage());
@@ -673,7 +716,8 @@ public class TestLeaderTableFilter {
             new LeaderTableFilter.TableBuilder(emptyTable(1).update("A=1", "B=2", "C=(long)3"), "A", "B").build();
             fail("expected exception");
         } catch (IllegalArgumentException iae) {
-            assertEquals("You must specify follower tables as parameters to the LeaderTableFilter.Builder", iae.getMessage());
+            assertEquals("You must specify follower tables as parameters to the LeaderTableFilter.Builder",
+                    iae.getMessage());
         }
 
         // key compatibility
@@ -682,7 +726,8 @@ public class TestLeaderTableFilter {
                     .addTable("simon", emptyTable(0).updateView("A=1", "B=`2`", "E=3"), "C=E", "A", "B").build();
             fail("expected exception");
         } catch (IllegalArgumentException iae) {
-            assertEquals("Key sources are not compatible for simon (int, String) and leader (byte, int)", iae.getMessage());
+            assertEquals("Key sources are not compatible for simon (int, String) and leader (byte, int)",
+                    iae.getMessage());
         }
 
         try {
@@ -696,7 +741,7 @@ public class TestLeaderTableFilter {
         // not add only leader
         try {
             new LeaderTableFilter.TableBuilder(TstUtils.testRefreshingTable(longCol("ID", 1)))
-            .addTable("c", emptyTable(0).updateView("ID=1"), "ID").build();
+                    .addTable("c", emptyTable(0).updateView("ID=1"), "ID").build();
             fail("expected exception");
         } catch (IllegalArgumentException iae) {
             assertEquals("Leader table must be add only!", iae.getMessage());
@@ -704,15 +749,17 @@ public class TestLeaderTableFilter {
 
         // not add only follower
         try {
-            updateGraph.sharedLock().computeLocked(() -> new LeaderTableFilter.TableBuilder(emptyTable(0).updateView("ID=1"))
-                    .addTable("c", TstUtils.testRefreshingTable(longCol("ID", 1)), "ID").build());
+            updateGraph.sharedLock()
+                    .computeLocked(() -> new LeaderTableFilter.TableBuilder(emptyTable(0).updateView("ID=1"))
+                            .addTable("c", TstUtils.testRefreshingTable(longCol("ID", 1)), "ID").build());
             fail("expected exception");
         } catch (IllegalArgumentException iae) {
             assertEquals("All follower tables must be add only! Table c is not add only.", iae.getMessage());
         }
 
         // too many followers
-        final LeaderTableFilter.TableBuilder builder = new LeaderTableFilter.TableBuilder(emptyTable(0).updateView("ID=(long)1"));
+        final LeaderTableFilter.TableBuilder builder =
+                new LeaderTableFilter.TableBuilder(emptyTable(0).updateView("ID=(long)1"));
         for (int ii = 0; ii < 33; ++ii) {
             builder.addTable("x" + ii, emptyTable(0).updateView("ID=(long)1"), "ID");
         }
@@ -724,8 +771,9 @@ public class TestLeaderTableFilter {
         }
 
         // wrong leader id type
-        final LeaderTableFilter.TableBuilder builder2 = new LeaderTableFilter.TableBuilder(emptyTable(0).updateView("ID=1"))
-                .addTable("x", emptyTable(0).updateView("ID=(long)1"), "ID");
+        final LeaderTableFilter.TableBuilder builder2 =
+                new LeaderTableFilter.TableBuilder(emptyTable(0).updateView("ID=1"))
+                        .addTable("x", emptyTable(0).updateView("ID=(long)1"), "ID");
         try {
             updateGraph.sharedLock().computeLocked(builder2::build);
             fail("expected exception");
@@ -733,8 +781,9 @@ public class TestLeaderTableFilter {
             assertEquals("Cannot convert ColumnSource[ID] of type int to type long", cce.getMessage());
         }
         // wrong follower id type
-        final LeaderTableFilter.TableBuilder builder3 = new LeaderTableFilter.TableBuilder(emptyTable(0).updateView("ID=(long)1"))
-                .addTable("x", emptyTable(0).updateView("ID=1"), "ID");
+        final LeaderTableFilter.TableBuilder builder3 =
+                new LeaderTableFilter.TableBuilder(emptyTable(0).updateView("ID=(long)1"))
+                        .addTable("x", emptyTable(0).updateView("ID=1"), "ID");
         try {
             updateGraph.sharedLock().computeLocked(builder3::build);
             fail("expected exception");
@@ -744,70 +793,64 @@ public class TestLeaderTableFilter {
 
     }
 
-//    private static class ErrorListener extends InstrumentedListenerAdapter {
-//        Throwable originalException;
-//
-//        ErrorListener(String description, DynamicTable table) {
-//            super("Error Checker: " + description, table);
-//            table.listenForUpdates(this, false);
-//        }
-//
-//        @Override
-//        public void onUpdate(Index added, Index removed, Index modified) {
-//            fail("Should not have gotten an update!");
-//        }
-//
-//        @Override
-//        public void onFailureInternal(Throwable originalException, UpdatePerformanceTracker.Entry sourceEntry) {
-//            this.originalException = originalException;
-//        }
-//    }
-//
-//    @Test
-//    public void testLeaderErrorPropagation() {
-//        testErrorPropagation(true);
-//    }
-//
-//    @Test
-//    public void testFollowerErrorPropagation() {
-//        testErrorPropagation(false);
-//    }
-//
-//    private void testErrorPropagation(boolean leaderErrror) {
-//        final QueryTable leader = TstUtils.testRefreshingTable(longCol("ID"), intCol("Sentinel"));
-//        final QueryTable a = TstUtils.testRefreshingTable(longCol("ID"), intCol("Sentinel"));
-//
-//        setAddOnly(leader, a);
-//
-//        final LeaderTableFilter.TableBuilder builder = new LeaderTableFilter.TableBuilder(leader);
-//        builder.addTable("a", a, "ID");
-//        final Map<String, Table> result = updateGraph.sharedLock().computeLocked(builder::build);
-//
-//        final Table fl = result.get(LeaderTableFilter.DEFAULT_LEADER_NAME);
-//        final Table fa = result.get("a");
-//
-//        final ErrorListener la = new ErrorListener("fa", (DynamicTable)fa);
-//        final ErrorListener ll = new ErrorListener("fl", (DynamicTable)fl);
-//
-//        updateGraph.startCycleForUnitTests();
-//        tableTestRule.allowingError(() -> {
-//            if (leaderErrror) {
-//                a.notifyListenersOnError(new RuntimeException("Yo!"), null);
-//            } else {
-//                leader.notifyListenersOnError(new RuntimeException("Yo!"), null);
-//            }
-//            updateGraph.completeCycleForUnitTests();
-//        }, throwables -> {
-//            assertEquals(1, tableTestRule.getUpdateErrors().size());
-//            final Throwable throwable = throwables.get(0);
-//            assertEquals(RuntimeException.class, throwable.getClass());
-//            assertEquals("Yo!", throwable.getMessage());
-//            return true;
-//        });
-//
-//        assertNotNull(la.originalException);
-//        assertNotNull(ll.originalException);
-//        assertEquals("Yo!", la.originalException.getMessage());
-//        assertEquals("Yo!", ll.originalException.getMessage());
-//    }
+    private static class ErrorListener extends io.deephaven.engine.table.impl.ErrorListener {
+        public ErrorListener(Table table) {
+            super(table);
+        }
+
+        @Override
+        public void onUpdate(TableUpdate upstream) {
+            TestCase.fail("Expected exception.");
+        }
+    }
+
+    @Test
+    public void testLeaderErrorPropagation() {
+        testErrorPropagation(true);
+    }
+
+    @Test
+    public void testFollowerErrorPropagation() {
+        testErrorPropagation(false);
+    }
+
+    private void testErrorPropagation(boolean leaderError) {
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+
+        final Table leader = TstUtils.testRefreshingTable(longCol("ID"), intCol("Sentinel")).assertAddOnly();
+        final Table a = TstUtils.testRefreshingTable(longCol("ID"), intCol("Sentinel")).assertAddOnly();
+
+        final LeaderTableFilter.TableBuilder builder = new LeaderTableFilter.TableBuilder(leader);
+        builder.addTable("a", a, "ID");
+        final Map<String, Table> result = updateGraph.sharedLock().computeLocked(builder::build);
+
+        final Table fl = result.get(LeaderTableFilter.DEFAULT_LEADER_NAME);
+        final Table fa = result.get("a");
+
+        final ErrorListener la = new ErrorListener(fa);
+        fa.addUpdateListener(la);
+        final ErrorListener ll = new ErrorListener(fl);
+        fl.addUpdateListener(ll);
+
+        framework.allowingError(() -> {
+            updateGraph.startCycleForUnitTests();
+            if (leaderError) {
+                ((BaseTable) leader).notifyListenersOnError(new RuntimeException("Yo!"), null);
+            } else {
+                ((BaseTable) a).notifyListenersOnError(new RuntimeException("Yo!"), null);
+            }
+            updateGraph.completeCycleForUnitTests();
+        }, errs -> {
+            assertEquals(1, errs.size());
+            final Throwable throwable = errs.get(0);
+            assertEquals(RuntimeException.class, throwable.getClass());
+            assertEquals("Yo!", throwable.getMessage());
+            return true;
+        });
+
+        Assert.assertNotNull(la.originalException());
+        Assert.assertNotNull(ll.originalException());
+        assertEquals("Yo!", la.originalException().getMessage());
+        assertEquals("Yo!", ll.originalException().getMessage());
+    }
 }
