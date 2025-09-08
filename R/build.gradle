@@ -133,6 +133,7 @@ def rClientDoc = Docker.registerDockerTask(project, 'rClientDoc') {
                         libpng-dev \
                         libtiff5-dev \
                         libjpeg-dev \
+                        libwebp-dev \
                         ; \
                       rm -rf /var/lib/apt/lists/*
                    ''')
