@@ -1035,7 +1035,7 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
          * Defines a {@link RowGroupInfo} for each written parquet file written. By default, all rows will be in a
          * single RowGroup.
          */
-        public Builder withRowGroupInfo(final RowGroupInfo rowGroupInfo) {
+        public Builder setRowGroupInfo(final RowGroupInfo rowGroupInfo) {
             this.rowGroupInfo = rowGroupInfo;
             return this;
         }

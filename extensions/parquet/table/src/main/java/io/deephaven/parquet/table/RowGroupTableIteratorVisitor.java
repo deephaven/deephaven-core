@@ -29,9 +29,8 @@ final class RowGroupTableIteratorVisitor implements RowGroupInfo.Visitor<Iterato
 
     private static Iterator<Table> splitByNumGroups(final Table table, final long numGroups) {
         if (numGroups < 1) {
-            throw new IllegalArgumentException();
-        }
-        if (numGroups == 1) {
+            throw new IllegalArgumentException("Number of groups must be at least 1, got: " + numGroups);
+        } else if (numGroups == 1) {
             return List.of(table).iterator();
         }
         return new SplitEvenlyIterator(table, numGroups);
@@ -93,14 +92,11 @@ final class RowGroupTableIteratorVisitor implements RowGroupInfo.Visitor<Iterato
             if (!hasNext()) {
                 throw new NoSuchElementException();
             }
-            try {
-                final RowSet rawRowSet = input.getRowSet();
-                final long nextSz = impliedRowGroupSz + (nextIter < fractionalGroups ? 1 : 0);
-                final WritableRowSet nextRows = rawRowSet.subSetByPositionRange(startOffset, startOffset += nextSz);
-                return input.getSubTable(nextRows.toTracking());
-            } finally {
-                nextIter++;
-            }
+
+            final RowSet rawRowSet = input.getRowSet();
+            final long nextSz = impliedRowGroupSz + (nextIter++ < fractionalGroups ? 1 : 0);
+            final WritableRowSet nextRows = rawRowSet.subSetByPositionRange(startOffset, startOffset += nextSz);
+            return input.getSubTable(nextRows.toTracking());
         }
     }
 

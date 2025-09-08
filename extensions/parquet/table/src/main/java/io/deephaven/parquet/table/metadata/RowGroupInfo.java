@@ -48,7 +48,7 @@ public interface RowGroupInfo {
 
     /**
      * Splits each unique group into a RowGroup. If the input table does not have all values for the group(s)
-     * contiguously, then an exception will be thrown during the `writeTable(...)` call
+     * contiguously, then an exception will be thrown during the {@code writeTable(...)} call
      *
      * @param groups Grouping column name(s)
      * @return a {@link RowGroupInfo} which includes a single RowGroup per unique grouping-value
@@ -60,7 +60,7 @@ public interface RowGroupInfo {
 
     /**
      * Splits each unique group into a RowGroup. If the input table does not have all values for the group(s)
-     * contiguously, then an exception will be thrown during the `writeTable(...)` call
+     * contiguously, then an exception will be thrown during the {@code writeTable(...)} call
      *
      * @param groups Grouping column name(s)
      * @return a {@link RowGroupInfo} which includes a single RowGroup per unique grouping-value
@@ -72,8 +72,8 @@ public interface RowGroupInfo {
 
     /**
      * Splits each unique group into a number of RowGroups. If the input table does not have all values for the group(s)
-     * contiguously, then an exception will be thrown during the `writeTable(...)` call. If a given RowGroup yields a
-     * row count greater than {@code maxRows}, then it will be split further using
+     * contiguously, then an exception will be thrown during the {@code writeTable(...)} call. If a given RowGroup
+     * yields a row count greater than {@code maxRows}, then it will be split further using
      * {@link RowGroupInfo#withMaxRows(long)}
      *
      * @param maxRows the maximum number of rows in each RowGroup
@@ -87,8 +87,8 @@ public interface RowGroupInfo {
 
     /**
      * Splits each unique group into a number of RowGroups. If the input table does not have all values for the group(s)
-     * contiguously, then an exception will be thrown during the `writeTable(...)` call. If a given RowGroup yields a
-     * row count greater than {@code maxRows}, then it will be split further using
+     * contiguously, then an exception will be thrown during the {@code writeTable(...)} call. If a given RowGroup
+     * yields a row count greater than {@code maxRows}, then it will be split further using
      * {@link RowGroupInfo#withMaxRows(long)}
      *
      * @param maxRows the maximum number of rows in each RowGroup
@@ -196,6 +196,11 @@ public interface RowGroupInfo {
         private final String[] groups;
 
         private SplitByGroups(long maxRows, final @NotNull String[] groups) {
+            if (maxRows <= 0) {
+                throw new IllegalArgumentException("MaxRows must be positive");
+            } else if (groups.length == 0) {
+                throw new IllegalArgumentException("Must contain at least one group");
+            }
             this.maxRows = maxRows;
             this.groups = groups;
         }
