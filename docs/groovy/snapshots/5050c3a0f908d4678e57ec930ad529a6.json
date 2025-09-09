@@ -1,0 +1,1 @@
+{"file":"core_versioned_docs/version-groovy/docs/how-to-guides/use-uris.md","objects":{"myTable":{"type":"Table","data":{"columns":[{"name":"Timestamp","type":"java.time.Instant"},{"name":"X","type":"double"},{"name":"Y","type":"double"}],"rows":[[{"value":"1688133832000000000"},{"value":"0.0000"},{"value":"0.0000"}]]}}}}

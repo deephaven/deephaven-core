@@ -1,0 +1,1 @@
+{"file":"core_versioned_docs/version-groovy/docs/reference/engine/getDataIndex.md","objects":{":log":{"type":"Log","data":"Index on Key1 (no create): null\nHas index on Key1 after attempt: false\nIndex on Key1 (exists): TableBackedDataIndex-151956291[1]\nIs indexKey1_exists the same as actualIndexKey1? true\n"}}}

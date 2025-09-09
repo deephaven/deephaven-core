@@ -1,0 +1,1 @@
+{"file":"core/docs/reference/table-operations/create/pyobj_col.md","objects":{"result":{"type":"Table","data":{"columns":[{"name":"Values","type":"java.lang.String"}],"rows":[[{"value":"a"}],[{"value":"1"}],[{"value":"-5.5"}]]}}}}

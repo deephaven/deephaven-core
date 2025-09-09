@@ -1,0 +1,1 @@
+{"file":"core/docs/reference/cheat-sheets/time-cheat-sheet.md","objects":{"t":{"type":"Table","data":{"columns":[{"name":"CurrentTime","type":"java.time.Instant"},{"name":"CurrentDate","type":"java.lang.String"},{"name":"CurrentTimeZone","type":"java.lang.String"}],"rows":[[{"value":"2024-04-29 15:35:42.279"},{"value":"2024-04-29"},{"value":"Etc/UTC"}]]}}}}

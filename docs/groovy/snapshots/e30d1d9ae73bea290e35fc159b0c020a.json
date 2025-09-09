@@ -1,0 +1,1 @@
+{"file":"core_versioned_docs/version-groovy/docs/reference/data-import-export/CSV/writeCsv.md","objects":{"source":{"type":"Table","data":{"columns":[{"name":"DateTimes","type":"java.time.Instant"}],"rows":[[{"value":"1625400000000000000"}],[{"value":"1625407200000000000"}],[{"value":"1625385600000000000"}]]}}}}

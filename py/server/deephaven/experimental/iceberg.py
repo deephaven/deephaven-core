@@ -740,11 +740,23 @@ class IcebergCatalogAdapter(JObjectWrapper):
     """
     `IcebergCatalogAdapter` provides an interface for interacting with Iceberg catalogs. It allows listing
     namespaces, tables and snapshots, as well as reading Iceberg tables into Deephaven tables.
+
+    Can be used as a context manager:
+    ```
+    with iceberg.adapter(name="MyCatalog", properties={...}) as catalog:
+        t = catalog.load_table("db.tbl").table(update_mode=IcebergUpdateMode.static())
+    ```
     """
     j_object_type = _JIcebergCatalogAdapter or type(None)
 
     def __init__(self, j_object: _JIcebergCatalogAdapter):
         self.j_catalog_adapter = j_object
+
+    def __enter__(self) -> IcebergCatalogAdapter:
+        return self
+
+    def __exit__(self, exc_type, exc, tb):
+        self.close()
 
     def namespaces(self, namespace: Optional[str] = None) -> Table:
         """
@@ -812,6 +824,9 @@ class IcebergCatalogAdapter(JObjectWrapper):
 
         return IcebergTableAdapter(self.j_object.createTable(table_identifier,
                                                              TableDefinition(table_definition).j_table_definition))
+
+    def close(self):
+        return self.j_object.close()
 
     @property
     def j_object(self) -> jpy.JType:
