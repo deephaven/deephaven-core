@@ -3,14 +3,25 @@
 //
 package io.deephaven.engine.util;
 
+import io.deephaven.chunk.util.pools.ChunkPoolReleaseTracking;
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.liveness.LivenessScopeStack;
+import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.table.impl.QueryTable;
+import io.deephaven.engine.testutil.ColumnInfo;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
+import io.deephaven.engine.testutil.GenerateTableUpdates;
 import io.deephaven.engine.testutil.TstUtils;
+import io.deephaven.engine.testutil.generator.BooleanGenerator;
+import io.deephaven.engine.testutil.generator.IncreasingSortedLongGenerator;
+import io.deephaven.engine.testutil.generator.IntGenerator;
+import io.deephaven.engine.testutil.generator.SetGenerator;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
+import io.deephaven.util.SafeCloseable;
 import junit.framework.TestCase;
 import org.junit.Assert;
 import org.junit.Rule;
@@ -19,6 +30,7 @@ import org.junit.Test;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Random;
 
 import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.engine.util.TableTools.*;
@@ -852,5 +864,217 @@ public class TestLeaderTableFilter {
         Assert.assertNotNull(ll.originalException());
         assertEquals("Yo!", la.originalException().getMessage());
         assertEquals("Yo!", ll.originalException().getMessage());
+    }
+
+    @Test
+    public void testPartitioned() {
+        final QueryTable leader = TstUtils.testRefreshingTable(RowSetFactory.flat(10).toTracking(),
+                col("Partition", "A", "A", "B", "B", "C", "C", "C", "D", "D", "D"),
+                longCol("ID", 1, 2, /* B */ 1, 2, /* C */ 1, 2, 2, /* D */ 1, 2, 2),
+                intCol("Sentinel", 101, 102, 103, 104, 105, 106, 107, 108, 109, 110));
+
+        final QueryTable follower = TstUtils.testRefreshingTable(RowSetFactory.flat(5).toTracking(),
+                col("Division", "A", "A", "B", "C", "C"),
+                longCol("ID", 2, 3, 1, 2, 2),
+                intCol("Sentinel", 201, 202, 203, 204, 205));
+
+        final PartitionedTable leaderMap = leader.assertAddOnly().updateView("SK1=k").partitionBy("Partition");
+        final PartitionedTable followerMap = follower.assertAddOnly().updateView("SK2=k").partitionBy("Division");
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+
+        final Map<String, Table> bykey = updateGraph.sharedLock()
+                .computeLocked(() -> new LeaderTableFilter.TableBuilder(leader.assertAddOnly(), "Partition")
+                        .addTable("source1", follower.assertAddOnly(), "ID", "Division").build());
+        final Table lf = bykey.get(LeaderTableFilter.DEFAULT_LEADER_NAME);
+        final Table s1f = bykey.get("source1");
+        TableTools.showWithRowSet(lf);
+        TableTools.showWithRowSet(s1f);
+
+        final Map<String, PartitionedTable> filteredByPartition =
+                updateGraph.sharedLock().computeLocked(() -> new LeaderTableFilter.PartitionedTableBuilder(leaderMap)
+                        .addPartitionedTable("source1", followerMap, "ID").build());
+        assertEquals(new HashSet<>(Arrays.asList(LeaderTableFilter.DEFAULT_LEADER_NAME, "source1")),
+                filteredByPartition.keySet());
+
+        final Table leaderMerged = filteredByPartition.get(LeaderTableFilter.DEFAULT_LEADER_NAME).merge();
+        final Table s1merged = filteredByPartition.get("source1").merge();
+        final Table leaderMergedSorted = leaderMerged.sort("SK1").dropColumns("SK1");
+        final Table s1mergedSorted = s1merged.sort("SK2").dropColumns("SK2");
+
+        assertTableEquals(lf, leaderMergedSorted);
+        assertTableEquals(s1f, s1mergedSorted);
+
+        updateGraph.runWithinUnitTestCycle(() -> {
+            addToTable(follower, i(10, 11), col("Division", "D", "B"), longCol("ID", 2, 2),
+                    intCol("Sentinel", 206, 207));
+            follower.notifyListeners(i(10, 11), i(), i());
+        });
+
+        assertTableEquals(lf, leaderMergedSorted);
+        assertTableEquals(s1f, s1mergedSorted);
+
+        updateGraph.runWithinUnitTestCycle(() -> {
+            addToTable(follower, i(12, 13), col("Division", "D", "E"), longCol("ID", 3, 3),
+                    intCol("Sentinel", 208, 209));
+            follower.notifyListeners(i(12, 13), i(), i());
+            addToTable(leader, i(10, 11, 12), col("Partition", "D", "D", "E"), longCol("ID", 3, 4, 3),
+                    intCol("Sentinel", 111, 112, 113));
+            leader.notifyListeners(i(10, 11, 12), i(), i());
+        });
+
+        assertTableEquals(lf, leaderMergedSorted);
+        assertTableEquals(s1f, s1mergedSorted);
+    }
+
+    @Test
+    public void testPartitionedRandomized() {
+        for (int seed = 0; seed < 100; ++seed) {
+            System.out.println("Seed = " + seed);
+            try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+                ChunkPoolReleaseTracking.enableStrict();
+                testPartitionedRandomized(seed, 10, 10, 100);
+                ChunkPoolReleaseTracking.checkAndDisable();
+            }
+        }
+    }
+
+    @Test
+    public void testPartitionedRandomizedLarge() {
+        for (int seed = 0; seed < 10; ++seed) {
+            System.out.println("Seed = " + seed);
+            try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+                ChunkPoolReleaseTracking.enableStrict();
+                testPartitionedRandomized(seed, 1000, 100, 10);
+                ChunkPoolReleaseTracking.checkAndDisable();
+            }
+        }
+    }
+
+    private void testPartitionedRandomized(int seed, int size, int stepSize, int maxSteps) {
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+
+        final Random random = new Random(seed);
+        final ColumnInfo[] columnInfo1;
+        final ColumnInfo[] columnInfo2;
+        final ColumnInfo[] columnInfoSet1;
+        final ColumnInfo[] columnInfoSet2;
+        final QueryTable source1Unfiltered = getTable(size, random,
+                columnInfo1 = initColumnInfos(new String[] {"Partition", "ID", "Sentinel", "Truthy"},
+                        new SetGenerator<>("a", "b", "c", "d", "e"),
+                        new IncreasingSortedLongGenerator(2, 1000),
+                        new IntGenerator(0, 1000000),
+                        new BooleanGenerator()));
+
+        final QueryTable source2Unfiltered = getTable(size, random,
+                columnInfo2 = initColumnInfos(new String[] {"Partition", "ID", "Sentinel", "Truthy"},
+                        new SetGenerator<>("a", "b", "c", "d", "e"),
+                        new IncreasingSortedLongGenerator(2, 1000),
+                        new IntGenerator(0, 1000000),
+                        new BooleanGenerator()));
+
+        final QueryTable filterSet1 = getTable(1, random, columnInfoSet1 =
+                initColumnInfos(new String[] {"Partition"}, new SetGenerator<>("a", "b", "c", "d", "e")));
+        final QueryTable filterSet2 = getTable(1, random, columnInfoSet2 =
+                initColumnInfos(new String[] {"Partition"}, new SetGenerator<>("a", "b", "c", "d", "e")));
+
+        final Table dummy = TableTools.newTable(col("Partition", "A"), longCol("ID", 0), intCol("Sentinel", 12345678),
+                col("Truthy", true));
+
+        final Table source1 =
+                updateGraph.sharedLock()
+                        .computeLocked(() -> TableTools.merge(dummy,
+                                source1Unfiltered.whereIn(filterSet1, "Partition").update("Truthy=!!Truthy")))
+                        .assertAddOnly();
+        final Table source2 =
+                updateGraph.sharedLock()
+                        .computeLocked(() -> TableTools.merge(dummy,
+                                source2Unfiltered.whereIn(filterSet2, "Partition").update("Truthy=!!Truthy")))
+                        .assertAddOnly();
+
+        final PartitionedTable sm1 = source1.updateView("SK1=k").partitionBy("Partition");
+        final PartitionedTable sm2 = source2.updateView("SK2=k").partitionBy("Partition");
+
+        final Map<String, Table> bykey =
+                updateGraph.sharedLock().computeLocked(() -> new LeaderTableFilter.TableBuilder(source1, "Partition")
+                        .setLeaderName("source1").addTable("source2", source2, "ID").build());
+        final Table s1f = bykey.get("source1");
+        final Table s2f = bykey.get("source2");
+
+        final Map<String, Table> bykey2 = updateGraph.sharedLock()
+                .computeLocked(() -> new LeaderTableFilter.TableBuilder(source1, "Partition", "Truthy")
+                        .setLeaderName("source1").addTable("source2", source2, "ID").build());
+        final Table s1fKeyed = bykey2.get("source1");
+        final Table s2fKeyed = bykey2.get("source2");
+
+        final Map<String, PartitionedTable> filteredByPartition = updateGraph.sharedLock()
+                .computeLocked(() -> new LeaderTableFilter.PartitionedTableBuilder(sm1).setBinarySearchThreshold(16)
+                        .setLeaderName("source1").addPartitionedTable("source2", sm2, "ID").build());
+        final Map<String, PartitionedTable> filteredByPartitionKeyed = updateGraph.sharedLock().computeLocked(
+                () -> new LeaderTableFilter.PartitionedTableBuilder(sm1, "Truthy").setBinarySearchThreshold(16)
+                        .setLeaderName("source1").addPartitionedTable("source2", sm2, "ID").build());
+
+        final PartitionedTable s1tm = filteredByPartition.get("source1");
+        final PartitionedTable s2tm = filteredByPartition.get("source2");
+
+        final PartitionedTable s1tmKeyed = filteredByPartitionKeyed.get("source1");
+        final PartitionedTable s2tmKeyed = filteredByPartitionKeyed.get("source2");
+
+        final Table s1merged = s1tm.merge();
+        final Table s2merged = s2tm.merge();
+        final Table s1mergedSorted = s1merged.sort("SK1").dropColumns("SK1");
+        final Table s2mergedSorted = s2merged.sort("SK2").dropColumns("SK2");
+
+        final Table s1KeyedMerged = s1tmKeyed.merge();
+        final Table s2KeyedMerged = s2tmKeyed.merge();
+        final Table s1KeyedMergedSorted = s1KeyedMerged.sort("SK1").dropColumns("SK1");
+        final Table s2KeyedMergedSorted = s2KeyedMerged.sort("SK2").dropColumns("SK2");
+
+        assertTableEquals(s1f, s1mergedSorted);
+        assertTableEquals(s2f, s2mergedSorted);
+
+        assertTableEquals(s1fKeyed, s1KeyedMergedSorted);
+        assertTableEquals(s2fKeyed, s2KeyedMergedSorted);
+
+        for (int step = 0; step < maxSteps; ++step) {
+            // if (printTableUpdates()) {
+            // System.out.println("Seed = " + seed + ", step=" + step);
+            // }
+            updateGraph.runWithinUnitTestCycle(() -> {
+                if (random.nextInt(10) == 0) {
+                    GenerateTableUpdates.generateAppends(stepSize, random, filterSet1, columnInfoSet1);
+                }
+                if (random.nextInt(10) == 0) {
+                    GenerateTableUpdates.generateAppends(stepSize, random, filterSet2, columnInfoSet2);
+                }
+                // append to table 1
+                GenerateTableUpdates.generateAppends(stepSize, random, source1Unfiltered, columnInfo1);
+                // append to table 2
+                GenerateTableUpdates.generateAppends(stepSize / 2, random, source2Unfiltered, columnInfo2);
+            });
+
+            // if (printTableUpdates()) {
+            // System.out.println("Source 1 (filtered, no table map)");
+            // TableTools.showWithIndex(s1f);
+            // System.out.println("Source 2 (filtered, no table map)");
+            // TableTools.showWithIndex(s2f);
+            //
+            // System.out.println("Source 1 (tm)");
+            // TableTools.showWithIndex(s1merged);
+            // System.out.println("Source 2 (tm)");
+            // TableTools.showWithIndex(s2merged);
+            //
+            // System.out.println("Source 1 Keyed (tm)");
+            // TableTools.showWithIndex(s1KeyedMerged);
+            // System.out.println("Source 2 (tm)");
+            // TableTools.showWithIndex(s2KeyedMerged);
+            // }
+
+            assertTableEquals(s1f, s1mergedSorted);
+            assertTableEquals(s2f, s2mergedSorted);
+
+            assertTableEquals(s1fKeyed, s1KeyedMergedSorted);
+            assertTableEquals(s2fKeyed, s2KeyedMergedSorted);
+        }
     }
 }

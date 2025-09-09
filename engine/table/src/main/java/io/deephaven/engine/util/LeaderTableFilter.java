@@ -5,17 +5,24 @@ package io.deephaven.engine.util;
 
 import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.list.array.TLongArrayList;
+import io.deephaven.api.ColumnName;
+import io.deephaven.api.JoinAddition;
+import io.deephaven.api.JoinMatch;
+import io.deephaven.api.filter.Filter;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.configuration.Configuration;
+import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.*;
 import io.deephaven.engine.table.impl.chunkboxer.ChunkBoxer;
+import io.deephaven.engine.table.impl.partitioned.PartitionedTableImpl;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.impl.select.MatchPairFactory;
+import io.deephaven.engine.table.impl.select.MultiSourceFunctionalColumn;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
 import io.deephaven.util.QueryConstants;
@@ -255,11 +262,6 @@ public class LeaderTableFilter {
                 final String leaderIdColumn, final String followerIdColumn, final String[] keyColumns) {
             super(name, followerIdColumn, leaderIdColumn, keyColumns);
             this.partitionedTable = partitionedTable;
-        }
-
-        public FollowerTableDescription forPartition(final Object partitionKey) {
-            return new FollowerTableDescription(name, partitionedTable.constituentFor(partitionKey), leaderIdColumn,
-                    followerIdColumn, keyColumns);
         }
     }
 
@@ -1168,10 +1170,11 @@ public class LeaderTableFilter {
          *
          * @return a Map with one entry for each input table
          */
-        public Map<String, PartitionedTableBuilder> build() {
+        public Map<String, PartitionedTable> build() {
             return QueryPerformanceRecorder.withNugget("LeaderTableFilter", () -> {
                 if (!followerPartitionedTables.isEmpty()) {
-                    return createPartitionedTableAdapter(leaderPartitionedTable, leaderKeys, leaderName, binarySearchThreshold,
+                    return createPartitionedTableAdapter(leaderPartitionedTable, leaderKeys, leaderName,
+                            binarySearchThreshold,
                             followerPartitionedTables);
                 } else {
                     throw new IllegalArgumentException(
@@ -1180,14 +1183,122 @@ public class LeaderTableFilter {
             });
         }
 
-        private Map<String, PartitionedTableBuilder> createPartitionedTableAdapter(PartitionedTable leaderPartitionedTable,
-                                                                                   String[] leaderKeys,
-                                                                                   String leaderName,
-                                                                                   int binarySearchThreshold,
-                                                                                   List<FollowerPartitionedTableDescription> followerPartitionedTables) {
+        private Map<String, PartitionedTable> createPartitionedTableAdapter(
+                PartitionedTable leaderPartitionedTable,
+                String[] leaderKeys,
+                String leaderName,
+                int binarySearchThreshold,
+                List<FollowerPartitionedTableDescription> followerPartitionedTables) {
+
+            if (!leaderPartitionedTable.uniqueKeys()) {
+                throw new IllegalArgumentException("Leader must have unique partitioned table keys.");
+            }
+
+            Table joinedConstituents = leaderPartitionedTable.table();
+
+            final List<String> sourceNames = new ArrayList<>();
+            sourceNames.add(leaderPartitionedTable.constituentColumnName());
+
             // we've got the partitioned tables, we need to join them all together
-            // TODO: FIGURE OUT HOW TO RECAST THIS INTO PARTITIONED TABLE OPERATIONS
-            return null;
+            for (int fi = 0; fi < followerPartitionedTables.size(); ++fi) {
+                final FollowerPartitionedTableDescription fptd = followerPartitionedTables.get(fi);
+
+                if (!fptd.partitionedTable.uniqueKeys()) {
+                    throw new IllegalArgumentException(
+                            "Follower " + fptd.name + " must have unique partitioned table keys.");
+                }
+
+                final Set<String> followerKeyColumns = fptd.partitionedTable.keyColumnNames();
+                final Set<String> leaderKeyColumns = leaderPartitionedTable.keyColumnNames();
+
+                if (followerKeyColumns.size() != leaderKeyColumns.size()) {
+                    throw new IllegalArgumentException(
+                            "Follower PartitionedTable " + fptd.name + " has different keys (" + followerKeyColumns
+                                    + ") than leader PartitionedTable (" + leaderKeyColumns + ")");
+                }
+
+                final List<JoinMatch> joinMatches = new ArrayList<>();
+                final Iterator<String> lkc = leaderKeyColumns.iterator();
+                for (final Iterator<String> fkc = followerKeyColumns.iterator(); fkc.hasNext();) {
+                    final String followerKey = fkc.next();
+                    final String leaderKey = lkc.next();
+                    joinMatches.add(JoinMatch.of(ColumnName.of(leaderKey), ColumnName.of(followerKey)));
+                }
+
+                final String followerName = "__FOLLOWER_" + fi;
+                sourceNames.add(followerName);
+                joinedConstituents = joinedConstituents.naturalJoin(fptd.partitionedTable.table(), joinMatches,
+                        List.of(JoinAddition.of(ColumnName.of(followerName),
+                                ColumnName.of(fptd.partitionedTable.constituentColumnName()))));
+            }
+
+            // now that they are joined together, we want to listen to the result and when everything in a row-becomes
+            // non-null; then we should create a new LeaderTableFilter instance for those tables, and stick it into the
+            // results
+            final Table withLtf = joinedConstituents.update(List.of(
+                    new MultiSourceFunctionalColumn<>(sourceNames, "__RESULT_HOLDER", ResultHolder.class, (k, s) -> {
+                        final Table leader = (Table) s[0].get(k);
+                        if (leader == null) {
+                            return null;
+                        }
+                        // we need to actually make the thing here; presuming we exist
+                        final List<FollowerTableDescription> followers = new ArrayList<>();
+                        for (int ii = 1; ii < s.length; ++ii) {
+                            Object follower = s[ii].get(k);
+                            if (follower == null) {
+                                return null;
+                            }
+                            FollowerPartitionedTableDescription fptd = followerPartitionedTables.get(ii - 1);
+                            followers.add(new FollowerTableDescription(fptd.name, (Table) follower, fptd.leaderIdColumn,
+                                    fptd.followerIdColumn, fptd.keyColumns));
+                        }
+
+                        final Map<String, Table> tmpMap =
+                                new LeaderTableFilter(leader, leaderKeys, leaderName, followers, binarySearchThreshold)
+                                        .getResultMap();
+
+                        final Table[] results = new Table[tmpMap.size()];
+                        results[0] = tmpMap.get(leaderName);
+                        for (int ii = 1; ii < s.length; ++ii) {
+                            FollowerPartitionedTableDescription fptd = followerPartitionedTables.get(ii - 1);
+                            results[ii] = tmpMap.get(fptd.name);
+                        }
+                        return new ResultHolder(results);
+                    })));
+
+            final Table withResults = withLtf.where(Filter.isNotNull(ColumnName.of("__RESULT_HOLDER")));
+
+            final Map<String, PartitionedTable> results = new LinkedHashMap<>();
+            final PartitionedTable leaderResult =
+                    new PartitionedTableImpl(withResults.update("__LEADER_RESULT=__RESULT_HOLDER.tables[0]"),
+                            leaderPartitionedTable.keyColumnNames(), true, "__LEADER_RESULT",
+                            leaderPartitionedTable.constituentDefinition(), true, true);
+            results.put(leaderName, leaderResult);
+
+            for (int fi = 0; fi < followerPartitionedTables.size(); ++fi) {
+                final PartitionedTable fpt = followerPartitionedTables.get(fi).partitionedTable;
+                final String followerResultColumn =
+                        "__FOLLOWER_" + fi + "_RESULT";
+                final String followerResultFormula = "__RESULT_HOLDER.tables[1 + " + fi + "]";
+                final PartitionedTable followerResult =
+                        new PartitionedTableImpl(withResults.update(followerResultColumn + "=" + followerResultFormula),
+                                fpt.keyColumnNames(), true,
+                                followerResultColumn, fpt.constituentDefinition(), true, true);
+                results.put(followerPartitionedTables.get(fi).name, followerResult);
+            }
+
+            return results;
+        }
+    }
+
+    public static class ResultHolder extends LivenessArtifact {
+        public final Table[] tables;
+
+        public ResultHolder(Table[] tables) {
+            this.tables = tables;
+            for (final Table tab : tables) {
+                manage(tab);
+            }
         }
     }
 }
