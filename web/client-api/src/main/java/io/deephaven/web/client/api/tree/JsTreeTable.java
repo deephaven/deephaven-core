@@ -280,15 +280,13 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
         for (ColumnDefinition c : columnDefsByName.get(false).values()) {
             if (c.getRollupAggregationInputColumn() != null && !c.getRollupAggregationInputColumn().isEmpty()) {
                 // Use the specified input column
-                Column remove = constituentColumns.get(c.getRollupAggregationInputColumn());
-                if (remove != null) {
-                    sourceColumns.put(c.getName(), remove);
+                if (constituentColumns.containsKey(c.getRollupAggregationInputColumn())) {
+                    sourceColumns.put(c.getName(), constituentColumns.get(c.getRollupAggregationInputColumn()));
                 }
             } else if (c.isRollupGroupByColumn()) {
                 // use the groupby column's own name
-                Column remove = constituentColumns.get(c.getName());
-                if (remove != null) {
-                    sourceColumns.put(c.getName(), remove);
+                if (constituentColumns.containsKey(c.getName())) {
+                    sourceColumns.put(c.getName(), constituentColumns.get(c.getName()));
                 }
             }
         }
