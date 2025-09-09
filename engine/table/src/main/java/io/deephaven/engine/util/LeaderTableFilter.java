@@ -20,7 +20,6 @@ import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseableArray;
-import io.deephaven.util.annotations.ReferentialIntegrity;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -103,10 +102,10 @@ import java.util.stream.Stream;
  * </pre>
  *
  * <p>
- * TODO: As an alternative to the TableBuilder you may use the PartitionedTableBuilder. The TableMapBuilder is very
- * similar to the TableBuilder, but takes TableMaps as input and produces a Map&lt;String, TableMap&gt; as output
- * instead of a Map of Tables. Entries are added to the result TableMaps after all of the input maps have a matching
- * key. Each table within the TableMaps must be add-only.
+ * TODO: As an alternative to the TableBuilder you may use the PartitionedTableBuilder. The PartitionedTableBuilder is
+ * very similar to the TableBuilder, but takes PartitionedTables as input and produces a Map&lt;String,
+ * PartitionedTable&gt; as output instead of a Map of Tables. Entries are added to the result PartitionedTableBuilder
+ * after all of the input maps have a matching key. Each table within the PartitionedTable must be add-only.
  * </p>
  */
 public class LeaderTableFilter {
@@ -249,10 +248,10 @@ public class LeaderTableFilter {
         }
     }
 
-    private static class FollowerTableMapDescription extends FollowerDescription {
+    private static class FollowerPartitionedTableDescription extends FollowerDescription {
         final PartitionedTable partitionedTable;
 
-        FollowerTableMapDescription(final String name, final PartitionedTable partitionedTable,
+        FollowerPartitionedTableDescription(final String name, final PartitionedTable partitionedTable,
                 final String leaderIdColumn, final String followerIdColumn, final String[] keyColumns) {
             super(name, followerIdColumn, leaderIdColumn, keyColumns);
             this.partitionedTable = partitionedTable;
@@ -905,7 +904,7 @@ public class LeaderTableFilter {
     /**
      * Produce a map of result follower tables.
      * <p>
-     * We do not use a TableMap, because each follower table may have a distinct definition.
+     * We do not use a PartitionedTable, because each follower table may have a distinct definition.
      *
      * @return a map of result follower tables
      */
@@ -985,7 +984,7 @@ public class LeaderTableFilter {
         /**
          * Add a table to the set of tables to be synchronized, using this builder's default key column names.
          *
-         * @param name the key of the Table in our output TableMap.
+         * @param name the key of the Table in our output map of Tables.
          * @param table the Table to add
          * @param idColumn the name of the ID column in the table, must be a long expressed as
          *        "LeaderName=FollowerName"; when the column names are the same can just be "ColumnName"
@@ -998,7 +997,7 @@ public class LeaderTableFilter {
         /**
          * Add a table to the set of tables to be synchronized.
          *
-         * @param name the key of the Table in our output TableMap.
+         * @param name the key of the Table in our output map of Tables.
          * @param table the Table to add
          * @param idColumn the name of the ID column in the table, must be a long expressed as
          *        "LeaderName=FollowerName"; when the column names are the same can just be "ColumnName"
@@ -1013,7 +1012,7 @@ public class LeaderTableFilter {
         /**
          * Add a table to the set of tables to be synchronized.
          *
-         * @param name the key of the Table in our output TableMap.
+         * @param name the key of the Table in our output map of Tables.
          * @param table the Table to add
          * @param idColumn a MatchPair with the leader ID column on the left and the follower on the right
          * @param keyColumns the key columns, each key is coordinated independently of the other keys
@@ -1054,6 +1053,141 @@ public class LeaderTableFilter {
                             "You must specify follower tables as parameters to the LeaderTableFilter.Builder");
                 }
             });
+        }
+    }
+
+
+    /**
+     * Produce a Map of synchronized PartitionedTables.
+     */
+    public static class PartitionedTableBuilder {
+        private String leaderName = DEFAULT_LEADER_NAME;
+        private int binarySearchThreshold = DEFAULT_BINARY_SEARCH_THRESHOLD;
+        private final String[] leaderKeys;
+
+        private final PartitionedTable leaderPartitionedTable;
+
+        private final List<FollowerPartitionedTableDescription> followerPartitionedTables = new ArrayList<>();
+
+        /**
+         * Create a builder with a default ID and key columns.
+         *
+         * @param leaderPartitionedTable the partitioned table of leader tables
+         * @param leaderKeys the name of the key columns in the leader table, also used as the default keys for follower
+         *        tables
+         */
+        public PartitionedTableBuilder(final PartitionedTable leaderPartitionedTable, final String... leaderKeys) {
+            this.leaderPartitionedTable = leaderPartitionedTable;
+            this.leaderKeys = leaderKeys;
+        }
+
+        /**
+         * Set the name of the leader table in the returned map.
+         *
+         * @param leaderName the name of the leader table in the returned map
+         */
+        public PartitionedTableBuilder setLeaderName(final String leaderName) {
+            if (followerPartitionedTables.stream().anyMatch(ftd -> leaderName.equals(ftd.name))) {
+                throw new IllegalArgumentException("Follower PartitionedTable already has name " + leaderName);
+            }
+            this.leaderName = leaderName;
+            return this;
+        }
+
+        /**
+         * Set the minimum size of a pending key state that will result in a binary search instead of a linear scan for
+         * rows that are earlier than the currently matched id.
+         *
+         * @param binarySearchThreshold the minimum number of pending rows (per key) that result in binary search)
+         */
+        public PartitionedTableBuilder setBinarySearchThreshold(final int binarySearchThreshold) {
+            this.binarySearchThreshold = binarySearchThreshold;
+            return this;
+        }
+
+        /**
+         * Add a PartitionedTable to the set of PartitionedTables to be synchronized, using this builder's default key
+         * column names.
+         *
+         * @param name the key of the PartitionedTable in our output Map.
+         * @param partitionedTable the PartitionedTable to add
+         * @param idColumn the name of the ID column in the PartitionedTable, must be a long expressed as
+         *        "LeaderName=FollowerName"; when the column names are the same can just be "ColumnName"
+         * @return this builder
+         */
+        public PartitionedTableBuilder addPartitionedTable(final String name, final PartitionedTable partitionedTable,
+                final String idColumn) {
+            return addPartitionedTable(name, partitionedTable, idColumn, leaderKeys);
+        }
+
+        /**
+         * Add a PartitionedTable to the set of PartitionedTables to be synchronized.
+         *
+         * @param name the key of the PartitionedTable in our output PartitionedTable.
+         * @param partitionedTable the PartitionedTable to add
+         * @param idColumn the name of the ID column in the PartitionedTable, must be a long expressed as
+         *        "LeaderName=FollowerName"; when the column names are the same can just be "ColumnName"
+         * @param keyColumns the key columns, each key is coordinated independently of the other keys
+         * @return this builder
+         */
+        public PartitionedTableBuilder addPartitionedTable(final String name, final PartitionedTable partitionedTable,
+                final String idColumn, final String... keyColumns) {
+            return addPartitionedTable(name, partitionedTable, MatchPairFactory.getExpression(idColumn), keyColumns);
+        }
+
+        /**
+         * Add a PartitionedTable to the set of PartitionedTables to be synchronized.
+         *
+         * @param name the key of the PartitionedTable in our output PartitionedTable.
+         * @param partitionedTable the PartitionedTable to add
+         * @param idColumn a MatchPair with the leader ID column on the left and the follower on the right
+         * @param keyColumns the key columns, each key is coordinated independently of the other keys
+         * @return this builder
+         */
+        public PartitionedTableBuilder addPartitionedTable(final String name, final PartitionedTable partitionedTable,
+                final MatchPair idColumn, final String... keyColumns) {
+            final String leaderIdColumn = idColumn.leftColumn;
+            final String followerIdColumn = idColumn.rightColumn;
+
+            if (leaderName.equals(name)) {
+                throw new IllegalArgumentException("Conflict with leader name \"" + name + "\"");
+            }
+            if (followerPartitionedTables.stream().anyMatch(ftd -> ftd.name.equals(name))) {
+                throw new IllegalArgumentException("Duplicate follower PartitionedTable name \"" + name + "\"");
+            }
+            // TODO: when in powell we will have definitions and can perform better checks here
+            followerPartitionedTables.add(new FollowerPartitionedTableDescription(name, partitionedTable,
+                    leaderIdColumn, followerIdColumn, keyColumns));
+            return this;
+        }
+
+        /**
+         * Instantiate the Map of synchronized tables.
+         * <p>
+         * This must be called under the LiveTableMonitor lock.
+         *
+         * @return a Map with one entry for each input table
+         */
+        public Map<String, PartitionedTableBuilder> build() {
+            return QueryPerformanceRecorder.withNugget("LeaderTableFilter", () -> {
+                if (!followerPartitionedTables.isEmpty()) {
+                    return createPartitionedTableAdapter(leaderPartitionedTable, leaderKeys, leaderName, binarySearchThreshold,
+                            followerPartitionedTables);
+                } else {
+                    throw new IllegalArgumentException(
+                            "You must specify follower tables as parameters to the LeaderTableFilter.Builder");
+                }
+            });
+        }
+
+        private Map<String, PartitionedTableBuilder> createPartitionedTableAdapter(PartitionedTable leaderPartitionedTable,
+                                                                                   String[] leaderKeys,
+                                                                                   String leaderName,
+                                                                                   int binarySearchThreshold,
+                                                                                   List<FollowerPartitionedTableDescription> followerPartitionedTables) {
+            // we've got the partitioned tables, we need to join them all together
+            // TODO: FIGURE OUT HOW TO RECAST THIS INTO PARTITIONED TABLE OPERATIONS
+            return null;
         }
     }
 }
