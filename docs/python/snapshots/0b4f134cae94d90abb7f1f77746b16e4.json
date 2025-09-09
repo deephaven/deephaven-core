@@ -1,0 +1,1 @@
+{"file":"core/docs/reference/query-language/types/NaNs.md","objects":{"source":{"type":"Table","data":{"columns":[{"name":"NaNFloat","type":"double"},{"name":"NaNDouble","type":"double"}],"rows":[[{"value":"NaN"},{"value":"NaN"}]]}}}}

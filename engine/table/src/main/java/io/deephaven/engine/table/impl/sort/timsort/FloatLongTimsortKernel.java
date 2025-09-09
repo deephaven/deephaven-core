@@ -22,13 +22,13 @@ import io.deephaven.util.annotations.VisibleForTesting;
  * <a href="https://bugs.python.org/file4451/timsort.txt">bugs.python.org</a> and
  * <a href="https://en.wikipedia.org/wiki/Timsort">Wikipedia</a> do a decent job of describing the algorithm.
  */
-public class FloatLongTimsortKernel {
-    private FloatLongTimsortKernel() {
-        throw new UnsupportedOperationException();
-    }
+public final class FloatLongTimsortKernel {
+    // region constructor
+    private FloatLongTimsortKernel() {}
+    // endregion constructor
 
     // region Context
-    public static class FloatLongSortKernelContext<SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any>
+    public class FloatLongSortKernelContext<SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any>
             implements LongSortKernel<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> {
 
         int minGallop;
@@ -50,7 +50,7 @@ public class FloatLongTimsortKernel {
         public void sort(
                 WritableLongChunk<PERMUTE_VALUES_ATTR> valuesToPermute,
                 WritableChunk<SORT_VALUES_ATTR> valuesToSort) {
-            FloatLongTimsortKernel.sort(this, valuesToPermute, valuesToSort.asWritableFloatChunk());
+            FloatLongTimsortKernel.this.sort(this, valuesToPermute, valuesToSort.asWritableFloatChunk());
         }
 
         @Override
@@ -59,7 +59,8 @@ public class FloatLongTimsortKernel {
                 WritableChunk<SORT_VALUES_ATTR> valuesToSort,
                 IntChunk<? extends ChunkPositions> offsetsIn,
                 IntChunk<? extends ChunkLengths> lengthsIn) {
-            FloatLongTimsortKernel.sort(this, valuesToPermute, valuesToSort.asWritableFloatChunk(), offsetsIn, lengthsIn);
+            FloatLongTimsortKernel.this.sort(this, valuesToPermute, valuesToSort.asWritableFloatChunk(), offsetsIn,
+                    lengthsIn);
         }
 
         @Override
@@ -67,13 +68,28 @@ public class FloatLongTimsortKernel {
             temporaryKeys.close();
             temporaryValues.close();
         }
+
+        private FloatLongTimsortKernel kernel() {
+            return FloatLongTimsortKernel.this;
+        }
     }
     // endregion Context
 
-    public static <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> FloatLongSortKernelContext<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> createContext(
+    // region createContextInstance
+    public <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> FloatLongSortKernelContext<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> createContextInstance(
             int size) {
         return new FloatLongSortKernelContext<>(size);
     }
+    // endregion createContextInstance
+
+    // region createContextStatic
+
+    public static <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> FloatLongSortKernelContext<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> createContext(
+            final int size) {
+        return new FloatLongTimsortKernel().createContextInstance(size);
+    }
+
+    // endregion createContextStatic
 
     /**
      * Sort the values in valuesToSort permuting the valuesToPermute chunk in the same way.
@@ -93,7 +109,7 @@ public class FloatLongTimsortKernel {
             final int offset = offsetsIn.get(run);
             final int length = lengthsIn.get(run);
 
-            timSort(context, valuesToPermute, valuesToSort, offset, length);
+            context.kernel().timSort(context, valuesToPermute, valuesToSort, offset, length);
         }
     }
 
@@ -108,10 +124,10 @@ public class FloatLongTimsortKernel {
             FloatLongSortKernelContext<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> context,
             WritableLongChunk<PERMUTE_VALUES_ATTR> valuesToPermute,
             WritableFloatChunk<SORT_VALUES_ATTR> valuesToSort) {
-        timSort(context, valuesToPermute, valuesToSort, 0, valuesToPermute.size());
+        context.kernel().timSort(context, valuesToPermute, valuesToSort, 0, valuesToPermute.size());
     }
 
-    static private <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> void timSort(
+    private <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> void timSort(
             FloatLongSortKernelContext<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> context,
             WritableLongChunk<PERMUTE_VALUES_ATTR> valuesToPermute,
             WritableFloatChunk<SORT_VALUES_ATTR> valuesToSort,
@@ -206,6 +222,7 @@ public class FloatLongTimsortKernel {
     }
     // endregion comparison functions
 
+    // region compare ops
     @VisibleForTesting
     static boolean gt(float lhs, float rhs) {
         return doComparison(lhs, rhs) > 0;
@@ -225,6 +242,7 @@ public class FloatLongTimsortKernel {
     static boolean leq(float lhs, float rhs) {
         return doComparison(lhs, rhs) <= 0;
     }
+    // endregion compare ops
 
     /**
      * <p>
@@ -249,7 +267,7 @@ public class FloatLongTimsortKernel {
      * as being approximately balanced while maintaining a compromise between delaying merging for balance, exploiting
      * fresh occurrence of runs in cache memory and making merge decisions relatively simple.
      */
-    private static <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> void ensureMergeInvariants(
+    private <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> void ensureMergeInvariants(
             FloatLongSortKernelContext<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> context,
             WritableLongChunk<PERMUTE_VALUES_ATTR> valuesToPermute,
             WritableFloatChunk<SORT_VALUES_ATTR> valuesToSort) {
@@ -297,7 +315,7 @@ public class FloatLongTimsortKernel {
         }
     }
 
-    private static <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> void merge(
+    private <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> void merge(
             FloatLongSortKernelContext<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> context,
             WritableLongChunk<PERMUTE_VALUES_ATTR> valuesToPermute,
             WritableFloatChunk<SORT_VALUES_ATTR> valuesToSort,
@@ -347,7 +365,7 @@ public class FloatLongTimsortKernel {
      * <p>
      * We eventually need to do galloping here, but are skipping that for now
      */
-    private static <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> void frontMerge(
+    private <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> void frontMerge(
             FloatLongSortKernelContext<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> context,
             WritableLongChunk<PERMUTE_VALUES_ATTR> valuesToPermute,
             WritableFloatChunk<SORT_VALUES_ATTR> valuesToSort,
@@ -457,7 +475,7 @@ public class FloatLongTimsortKernel {
      * <p>
      * We eventually need to do galloping here, but are skipping that for now
      */
-    private static <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> void backMerge(
+    private <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> void backMerge(
             FloatLongSortKernelContext<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> context,
             WritableLongChunk<PERMUTE_VALUES_ATTR> valuesToPermute,
             WritableFloatChunk<SORT_VALUES_ATTR> valuesToSort,
@@ -596,17 +614,17 @@ public class FloatLongTimsortKernel {
     // lo is inclusive, hi is exclusive
     //
     // returns the position of the first element that is > searchValue or hi if there is no such element
-    private static int upperBound(FloatChunk<?> valuesToSort, int lo, int hi, float searchValue) {
+    private int upperBound(FloatChunk<?> valuesToSort, int lo, int hi, float searchValue) {
         return bound(valuesToSort, lo, hi, searchValue, false);
     }
 
     // when we binary search in 2, we must identify a position for search value that is *before* our test values;
     // because the values from run 1 may never be inserted after an equal value from run 2
-    private static int lowerBound(FloatChunk<?> valuesToSort, int lo, int hi, float searchValue) {
+    private int lowerBound(FloatChunk<?> valuesToSort, int lo, int hi, float searchValue) {
         return bound(valuesToSort, lo, hi, searchValue, true);
     }
 
-    private static int bound(FloatChunk<?> valuesToSort, int lo, int hi, float searchValue, final boolean lower) {
+    private int bound(FloatChunk<?> valuesToSort, int lo, int hi, float searchValue, final boolean lower) {
         final int compareLimit = lower ? -1 : 0; // lt or leq
 
         while (lo < hi) {
@@ -624,7 +642,7 @@ public class FloatLongTimsortKernel {
         return lo;
     }
 
-    private static void insertionSort(
+    private void insertionSort(
             WritableLongChunk<?> valuesToPermute,
             WritableFloatChunk<?> valuesToSort,
             int offset,

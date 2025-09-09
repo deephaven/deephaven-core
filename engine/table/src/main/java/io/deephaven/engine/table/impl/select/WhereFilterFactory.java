@@ -10,8 +10,10 @@ import io.deephaven.base.Pair;
 import io.deephaven.api.expression.AbstractExpressionFactory;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.impl.chunkfilter.ChunkFilter;
 import io.deephaven.engine.table.impl.select.MatchFilter.CaseSensitivity;
 import io.deephaven.engine.table.impl.select.MatchFilter.MatchType;
+import io.deephaven.engine.table.impl.select.vectorchunkfilter.VectorComponentFilterWrapper;
 import io.deephaven.engine.util.ColumnFormatting;
 import io.deephaven.api.expression.ExpressionParser;
 import io.deephaven.engine.util.string.StringUtils;
@@ -270,7 +272,7 @@ public class WhereFilterFactory {
                         } else if (filterMode == QuickFilterMode.OR) {
                             final String[] parts = quickFilter.split("\\s+");
                             final List<WhereFilter> filters = Arrays.stream(parts)
-                                    .map(part -> createQuickFilter(cd, part, filterMode))
+                                    .map(part -> createQuickFilter(tableDefinition, cd, part, filterMode))
                                     .filter(Objects::nonNull)
                                     .collect(Collectors.toList());
                             if (filters.isEmpty()) {
@@ -279,7 +281,7 @@ public class WhereFilterFactory {
                             return DisjunctiveFilter.makeDisjunctiveFilter(
                                     filters.toArray(WhereFilter.ZERO_LENGTH_WHERE_FILTER_ARRAY));
                         } else {
-                            return createQuickFilter(cd, quickFilter, filterMode);
+                            return createQuickFilter(tableDefinition, cd, quickFilter, filterMode);
                         }
 
                     }).filter(Objects::nonNull).toArray(WhereFilter[]::new);
@@ -295,7 +297,7 @@ public class WhereFilterFactory {
         for (String part : parts) {
             final WhereFilter[] filterArray = tableDefinition.getColumnStream()
                     .filter(cd -> !ColumnFormatting.isFormattingColumn(cd.getName()))
-                    .map(cd -> createQuickFilter(cd, part, QuickFilterMode.MULTI))
+                    .map(cd -> createQuickFilter(tableDefinition, cd, part, QuickFilterMode.MULTI))
                     .filter(Objects::nonNull)
                     .toArray(WhereFilter[]::new);
             if (filterArray.length > 0) {
@@ -306,11 +308,34 @@ public class WhereFilterFactory {
         return filters.toArray(WhereFilter.ZERO_LENGTH_WHERE_FILTER_ARRAY);
     }
 
-    private static WhereFilter createQuickFilter(ColumnDefinition<?> colDef, String quickFilter,
-            QuickFilterMode filterMode) {
+    private static WhereFilter createQuickFilter(final TableDefinition tableDefinition,
+            final ColumnDefinition<?> colDef,
+            final String quickFilter,
+            final QuickFilterMode filterMode) {
         final String colName = colDef.getName();
         final Class<?> colClass = colDef.getDataType();
         final InferenceResult typeData = new InferenceResult(quickFilter);
+
+
+        if (io.deephaven.vector.Vector.class.isAssignableFrom(colClass)) {
+            return createVectorQuickFilter(tableDefinition, false, colName, colDef.getComponentType(), filterMode,
+                    quickFilter,
+                    typeData);
+        } else if (colClass.isArray()) {
+            return createVectorQuickFilter(tableDefinition, true, colName, colDef.getComponentType(), filterMode,
+                    quickFilter,
+                    typeData);
+        }
+
+        return createQuickFilterInternal(colName, colClass, quickFilter, filterMode, typeData);
+    }
+
+    private static WhereFilter createQuickFilterInternal(final String colName,
+            final Class<?> colClass,
+            final String quickFilter,
+            final QuickFilterMode filterMode,
+            final InferenceResult typeData) {
+
         if ((colClass == Double.class || colClass == double.class) && (!Double.isNaN(typeData.doubleVal))) {
             try {
                 return DoubleRangeFilter.makeRange(colName, quickFilter);
@@ -351,6 +376,22 @@ public class WhereFilterFactory {
             }
         }
         return null;
+    }
+
+    private static WhereFilter createVectorQuickFilter(final TableDefinition tableDefinition,
+            final boolean isArray,
+            final String colName,
+            final Class<?> componentType,
+            final QuickFilterMode filterMode,
+            final String quickFilter,
+            final InferenceResult typeData) {
+        final WhereFilter componentFilter =
+                createQuickFilterInternal(colName, componentType, quickFilter, filterMode, typeData);
+        if (componentFilter == null) {
+            return null;
+        }
+        return VectorComponentFilterWrapper.maybeCreateFilterWrapper(componentFilter, tableDefinition, colName, isArray,
+                componentType);
     }
 
     private static WhereFilter getSelectFilterForAnd(String colName, String quickFilter, Class<?> colClass) {

@@ -1,0 +1,1 @@
+{"file":"core_versioned_docs/version-groovy/docs/reference/table-operations/create/timeTable.md","objects":{"t":{"type":"Table","data":{"columns":[{"name":"Timestamp","type":"java.time.Instant"},{"name":"InitialExecutionTime","type":"java.time.Instant"}],"rows":[[{"value":"2024-09-20 10:59:24.000"},{"value":"2024-09-20 10:59:19.275"}]]}}}}

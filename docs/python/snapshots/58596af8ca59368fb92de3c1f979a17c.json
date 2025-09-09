@@ -1,0 +1,1 @@
+{"file":"core/docs/how-to-guides/grouping-data.md","objects":{"t":{"type":"Table","data":{"columns":[{"name":"X","type":"java.lang.String"},{"name":"Z","type":"java.lang.String"}],"rows":[[{"value":"[1,2,3]"},{"value":"[4,5]"}]]}}}}

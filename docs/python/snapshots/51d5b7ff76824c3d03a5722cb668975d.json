@@ -1,0 +1,1 @@
+{"file":"core/docs/reference/pandas/to-table.md","objects":{"df":{"type":"pandas.DataFrame","data":{"columns":[{"name":"col1","type":"long"},{"name":"col2","type":"long"}],"rows":[[{"value":"1"},{"value":"3"}],[{"value":"2"},{"value":"4"}]]}},"result":{"type":"Table","data":{"columns":[{"name":"col1","type":"long"}],"rows":[[{"value":"1"}],[{"value":"2"}]]}}}}

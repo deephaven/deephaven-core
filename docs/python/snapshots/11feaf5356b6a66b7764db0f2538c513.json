@@ -1,0 +1,1 @@
+{"file":"core/docs/how-to-guides/table-listeners-python.md","objects":{"table":{"type":"Table","data":{"columns":[{"name":"Timestamp","type":"java.time.Instant"},{"name":"X","type":"int"}],"rows":[]}}}}

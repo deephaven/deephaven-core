@@ -19,7 +19,7 @@ setup <- function() {
   df3 <- data.frame(matrix(rnorm(10 * 1000), nrow = 10))
 
   df4 <- data.frame(
-    time_col = seq.POSIXt(as.POSIXct(Sys.Date()), as.POSIXct(Sys.Date() + 30), by = "1 sec")[250000],
+    time_col = as.POSIXct(Sys.Date(), tz="UTC") + 249999,
     bool_col = sample(c(TRUE, FALSE), 250000, TRUE),
     int_col = sample(0:10000, 250000, TRUE)
   )

@@ -110,10 +110,10 @@ public class SortBenchmark {
 
         switch (symTab) {
             case "symtab":
-                SortHelpers.sortBySymbolTable = true;
+                SortHelpers.SORT_BY_SYMBOL_TABLE = true;
                 break;
             case "nosymtab":
-                SortHelpers.sortBySymbolTable = false;
+                SortHelpers.SORT_BY_SYMBOL_TABLE = false;
                 break;
             default:
                 throw new IllegalStateException("bad sort type: " + symTab);

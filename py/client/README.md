@@ -1,7 +1,11 @@
-
 # Deephaven Python Client 
 
 Deephaven Python Client is a Python package created by Deephaven Data Labs. It is a client API that allows Python applications to remotely access Deephaven data servers.
+
+## Building on Windows 10/11.
+
+To build on Windows, please see the file cpp-client/README-windows.md in
+this repository.
 
 ## `venv`
 

@@ -4,17 +4,15 @@
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.UncheckedDeephavenException;
+import io.deephaven.api.ColumnName;
 import io.deephaven.api.Selectable;
+import io.deephaven.api.SortColumn;
 import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.api.snapshot.SnapshotWhenOptions.Flag;
 import io.deephaven.auth.AuthContext;
 import io.deephaven.base.FileUtils;
-import io.deephaven.base.Pair;
 import io.deephaven.base.log.LogOutput;
-import io.deephaven.base.verify.AssertionFailure;
-import io.deephaven.chunk.Chunk;
-import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.exceptions.UpdateGraphConflictException;
@@ -34,7 +32,6 @@ import io.deephaven.engine.table.impl.util.ColumnHolder;
 import io.deephaven.engine.table.vectors.ColumnVectors;
 import io.deephaven.engine.testutil.*;
 import io.deephaven.engine.testutil.generator.*;
-import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.updategraph.UpdateGraphLock;
@@ -60,7 +57,6 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.*;
@@ -70,7 +66,6 @@ import java.util.function.*;
 import java.util.stream.LongStream;
 
 import static io.deephaven.api.agg.Aggregation.*;
-import static io.deephaven.engine.table.impl.SnapshotTestUtils.verifySnapshotBarrageMessage;
 import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.engine.util.TableTools.*;
 import static org.junit.Assert.assertArrayEquals;
@@ -2753,6 +2748,22 @@ public class QueryTableTest extends QueryTableTestBase {
 
             testMemoize(source, t -> t.sort("intCol", "doubleCol"));
             testMemoize(source, t -> t.sort("intCol"));
+            testMemoize(source, t -> t.sort("Sym"));
+            testMemoize(source, t -> ((QueryTable) t)
+                    .sort(ComparatorSortColumn.asc("Sym", String.CASE_INSENSITIVE_ORDER)));
+            testNoMemoize(source, t -> t.sort(List.of(SortColumn.asc(ColumnName.of("Sym")))),
+                    t -> ((QueryTable) t)
+                            .sort(ComparatorSortColumn.asc("Sym", String.CASE_INSENSITIVE_ORDER)));
+            testNoMemoize(source,
+                    t -> ((QueryTable) t)
+                            .sort(ComparatorSortColumn.asc("Sym", Comparator.naturalOrder())),
+                    t -> ((QueryTable) t)
+                            .sort(ComparatorSortColumn.asc("Sym", String.CASE_INSENSITIVE_ORDER)));
+            testNoMemoize(source,
+                    t -> ((QueryTable) t)
+                            .sort(ComparatorSortColumn.asc("Sym", String.CASE_INSENSITIVE_ORDER)),
+                    t -> ((QueryTable) t)
+                            .sort(ComparatorSortColumn.desc("Sym", String.CASE_INSENSITIVE_ORDER)));
             testMemoize(source, t -> t.sortDescending("intCol"));
             testNoMemoize(source, t -> t.sort("intCol"), t -> t.sort("doubleCol"));
             testNoMemoize(source, t -> t.sort("intCol"), t -> t.sortDescending("intCol"));

@@ -1,0 +1,37 @@
+#!/bin/bash
+
+usage() {
+  echo "Usage: $0 [-e]"
+  echo "Validates the docs build, sidebar.json files are correct, and internal links are correct."
+  echo "Does not check external links. That is done nightly."
+  echo
+  echo "Options:"
+  echo "  -e        Validate external links (default: false)."
+  echo "            This will take significantly longer and may fail if external sites are down."
+  echo "  -h        Show this help message"
+}
+
+EXTERNAL=false
+while getopts ":eh" opt; do
+  case $opt in
+    e)
+      EXTERNAL=true
+      ;;
+    h)
+      usage
+      exit 0
+      ;;
+    *)
+      usage
+      exit 1
+      ;;
+  esac
+
+done
+
+pushd "$(dirname "$0")" > /dev/null # Set pwd to this directory
+docker run --pull always --tty -e EXTERNAL=${EXTERNAL} -e ABSOLUTE=true -e HEADINGS=true -v ./python:/validate/python -v ./groovy:/validate/groovy -v ./validator-results:/results ghcr.io/deephaven/salmon-validator:1
+EXIT_CODE=$?
+popd > /dev/null # Reset pwd
+
+exit $EXIT_CODE

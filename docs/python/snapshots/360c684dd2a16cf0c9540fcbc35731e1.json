@@ -1,0 +1,1 @@
+{"file":"core/docs/how-to-guides/replay-data.md","objects":{"replayed_source_1":{"type":"Table","data":{"columns":[{"name":"Timestamp","type":"java.time.Instant"}],"rows":[[{"value":"2024-01-01 08:00:00.000"}]]}},"replayed_source_2":{"type":"Table","data":{"columns":[{"name":"Timestamp","type":"java.time.Instant"}],"rows":[[{"value":"2024-01-01 08:00:00.000"}]]}}}}

@@ -53,4 +53,9 @@ public class DoubleRingBufferVectorWrapper implements DoubleVector, RingBufferVe
     public DoubleVector getDirect() {
         return new DoubleVectorDirect(ringBuffer.getAll());
     }
+
+    @Override
+    public boolean equals(Object obj) {
+        return DoubleVector.equals(this, obj);
+    }
 }

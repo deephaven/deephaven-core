@@ -1,0 +1,1 @@
+{"file":"core/docs/reference/numpy/dh-null-to-nan.md","objects":{"source":{"type":"Table","data":{"columns":[{"name":"Number1","type":"int"},{"name":"Number2","type":"int"}],"rows":[[{"value":"1"},{"value":"1"}],[{"value":""},{"value":"2"}],[{"value":"3"},{"value":""}]]}},":log":{"type":"Log","data":"[[ 1.  1.]\n [nan  2.]\n [ 3. nan]]\n"}}}

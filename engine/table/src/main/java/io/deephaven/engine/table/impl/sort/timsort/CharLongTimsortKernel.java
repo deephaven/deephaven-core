@@ -16,13 +16,13 @@ import io.deephaven.util.annotations.VisibleForTesting;
  * <a href="https://bugs.python.org/file4451/timsort.txt">bugs.python.org</a> and
  * <a href="https://en.wikipedia.org/wiki/Timsort">Wikipedia</a> do a decent job of describing the algorithm.
  */
-public class CharLongTimsortKernel {
-    private CharLongTimsortKernel() {
-        throw new UnsupportedOperationException();
-    }
+public final class CharLongTimsortKernel {
+    // region constructor
+    private CharLongTimsortKernel() {}
+    // endregion constructor
 
     // region Context
-    public static class CharLongSortKernelContext<SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any>
+    public class CharLongSortKernelContext<SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any>
             implements LongSortKernel<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> {
 
         int minGallop;
@@ -44,7 +44,7 @@ public class CharLongTimsortKernel {
         public void sort(
                 WritableLongChunk<PERMUTE_VALUES_ATTR> valuesToPermute,
                 WritableChunk<SORT_VALUES_ATTR> valuesToSort) {
-            CharLongTimsortKernel.sort(this, valuesToPermute, valuesToSort.asWritableCharChunk());
+            CharLongTimsortKernel.this.sort(this, valuesToPermute, valuesToSort.asWritableCharChunk());
         }
 
         @Override
@@ -53,7 +53,8 @@ public class CharLongTimsortKernel {
                 WritableChunk<SORT_VALUES_ATTR> valuesToSort,
                 IntChunk<? extends ChunkPositions> offsetsIn,
                 IntChunk<? extends ChunkLengths> lengthsIn) {
-            CharLongTimsortKernel.sort(this, valuesToPermute, valuesToSort.asWritableCharChunk(), offsetsIn, lengthsIn);
+            CharLongTimsortKernel.this.sort(this, valuesToPermute, valuesToSort.asWritableCharChunk(), offsetsIn,
+                    lengthsIn);
         }
 
         @Override
@@ -61,13 +62,28 @@ public class CharLongTimsortKernel {
             temporaryKeys.close();
             temporaryValues.close();
         }
+
+        private CharLongTimsortKernel kernel() {
+            return CharLongTimsortKernel.this;
+        }
     }
     // endregion Context
 
-    public static <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> CharLongSortKernelContext<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> createContext(
+    // region createContextInstance
+    public <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> CharLongSortKernelContext<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> createContextInstance(
             int size) {
         return new CharLongSortKernelContext<>(size);
     }
+    // endregion createContextInstance
+
+    // region createContextStatic
+
+    public static <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> CharLongSortKernelContext<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> createContext(
+            final int size) {
+        return new CharLongTimsortKernel().createContextInstance(size);
+    }
+
+    // endregion createContextStatic
 
     /**
      * Sort the values in valuesToSort permuting the valuesToPermute chunk in the same way.
@@ -87,7 +103,7 @@ public class CharLongTimsortKernel {
             final int offset = offsetsIn.get(run);
             final int length = lengthsIn.get(run);
 
-            timSort(context, valuesToPermute, valuesToSort, offset, length);
+            context.kernel().timSort(context, valuesToPermute, valuesToSort, offset, length);
         }
     }
 
@@ -102,10 +118,10 @@ public class CharLongTimsortKernel {
             CharLongSortKernelContext<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> context,
             WritableLongChunk<PERMUTE_VALUES_ATTR> valuesToPermute,
             WritableCharChunk<SORT_VALUES_ATTR> valuesToSort) {
-        timSort(context, valuesToPermute, valuesToSort, 0, valuesToPermute.size());
+        context.kernel().timSort(context, valuesToPermute, valuesToSort, 0, valuesToPermute.size());
     }
 
-    static private <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> void timSort(
+    private <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> void timSort(
             CharLongSortKernelContext<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> context,
             WritableLongChunk<PERMUTE_VALUES_ATTR> valuesToPermute,
             WritableCharChunk<SORT_VALUES_ATTR> valuesToSort,
@@ -200,6 +216,7 @@ public class CharLongTimsortKernel {
     }
     // endregion comparison functions
 
+    // region compare ops
     @VisibleForTesting
     static boolean gt(char lhs, char rhs) {
         return doComparison(lhs, rhs) > 0;
@@ -219,6 +236,7 @@ public class CharLongTimsortKernel {
     static boolean leq(char lhs, char rhs) {
         return doComparison(lhs, rhs) <= 0;
     }
+    // endregion compare ops
 
     /**
      * <p>
@@ -243,7 +261,7 @@ public class CharLongTimsortKernel {
      * as being approximately balanced while maintaining a compromise between delaying merging for balance, exploiting
      * fresh occurrence of runs in cache memory and making merge decisions relatively simple.
      */
-    private static <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> void ensureMergeInvariants(
+    private <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> void ensureMergeInvariants(
             CharLongSortKernelContext<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> context,
             WritableLongChunk<PERMUTE_VALUES_ATTR> valuesToPermute,
             WritableCharChunk<SORT_VALUES_ATTR> valuesToSort) {
@@ -291,7 +309,7 @@ public class CharLongTimsortKernel {
         }
     }
 
-    private static <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> void merge(
+    private <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> void merge(
             CharLongSortKernelContext<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> context,
             WritableLongChunk<PERMUTE_VALUES_ATTR> valuesToPermute,
             WritableCharChunk<SORT_VALUES_ATTR> valuesToSort,
@@ -341,7 +359,7 @@ public class CharLongTimsortKernel {
      * <p>
      * We eventually need to do galloping here, but are skipping that for now
      */
-    private static <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> void frontMerge(
+    private <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> void frontMerge(
             CharLongSortKernelContext<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> context,
             WritableLongChunk<PERMUTE_VALUES_ATTR> valuesToPermute,
             WritableCharChunk<SORT_VALUES_ATTR> valuesToSort,
@@ -451,7 +469,7 @@ public class CharLongTimsortKernel {
      * <p>
      * We eventually need to do galloping here, but are skipping that for now
      */
-    private static <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> void backMerge(
+    private <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> void backMerge(
             CharLongSortKernelContext<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> context,
             WritableLongChunk<PERMUTE_VALUES_ATTR> valuesToPermute,
             WritableCharChunk<SORT_VALUES_ATTR> valuesToSort,
@@ -590,17 +608,17 @@ public class CharLongTimsortKernel {
     // lo is inclusive, hi is exclusive
     //
     // returns the position of the first element that is > searchValue or hi if there is no such element
-    private static int upperBound(CharChunk<?> valuesToSort, int lo, int hi, char searchValue) {
+    private int upperBound(CharChunk<?> valuesToSort, int lo, int hi, char searchValue) {
         return bound(valuesToSort, lo, hi, searchValue, false);
     }
 
     // when we binary search in 2, we must identify a position for search value that is *before* our test values;
     // because the values from run 1 may never be inserted after an equal value from run 2
-    private static int lowerBound(CharChunk<?> valuesToSort, int lo, int hi, char searchValue) {
+    private int lowerBound(CharChunk<?> valuesToSort, int lo, int hi, char searchValue) {
         return bound(valuesToSort, lo, hi, searchValue, true);
     }
 
-    private static int bound(CharChunk<?> valuesToSort, int lo, int hi, char searchValue, final boolean lower) {
+    private int bound(CharChunk<?> valuesToSort, int lo, int hi, char searchValue, final boolean lower) {
         final int compareLimit = lower ? -1 : 0; // lt or leq
 
         while (lo < hi) {
@@ -618,7 +636,7 @@ public class CharLongTimsortKernel {
         return lo;
     }
 
-    private static void insertionSort(
+    private void insertionSort(
             WritableLongChunk<?> valuesToPermute,
             WritableCharChunk<?> valuesToSort,
             int offset,

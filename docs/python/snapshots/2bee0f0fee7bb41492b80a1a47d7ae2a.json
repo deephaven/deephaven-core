@@ -1,0 +1,1 @@
+{"file":"core/docs/how-to-guides/date-time-literals.md","objects":{"source":{"type":"Table","data":{"columns":[{"name":"LocalTimeLiteral","type":"java.time.LocalTime"}],"rows":[[{"value":"14:30:00.123450000"}]]}}}}
