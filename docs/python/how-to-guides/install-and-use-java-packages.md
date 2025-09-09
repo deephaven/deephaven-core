@@ -63,7 +63,7 @@ services:
 
 Adding JARs to a Docker container does not require you build a custom image. Instead, you can simply mount a folder into the container that contains whatever JARs you wish to use.
 
-The following YAML assumes you've placed the `plexus-utils-4.0.2.jar` into a folder called `./apps/libs`:
+The following YAML assumes you've placed the `plexus-utils-4.0.2.jar` file into a folder called `./apps/libs`:
 
 ```yaml
 services:
@@ -121,7 +121,29 @@ The [Production application](../getting-started/production-application.md) uses 
 
 ## Build from source
 
-<!-- TODO: The instructions in the existing guide don't work, and EXTRA_CLASSPATH doesn't work either. Figure out how to do this. -->
+Adding Java packages to [Deephaven built from source code](../getting-started/launch-build.md) is similar to the [production application](#production-application). It does, however, change how you launch Deephaven built from source.
+
+You still follow all the steps up to and including [Build and install the wheel](../getting-started/launch-build.md#build-and-install-the-wheel). However, the next step changes. Rather than run `./gradlew server-jetty-app:run`, run this instead:
+
+```bash
+./gradlew server-jetty-app:installDist
+```
+
+This creates the directory `./server/jetty-app/build/install/server-jetty/bin`, which contains a `start` script that you can pass additional parameters to, such as an `EXTRA_CLASSPATH` environment variable. You can pass it directly to the command:
+
+```bash
+EXTRA_CLASSPATH=/path/to/libs/*:/apps/libs/* ./server/jetty-app/build/install/server-jetty/bin/start
+```
+
+Or you can export the environment variable before running the script:
+
+```bash
+export EXTRA_CLASSPATH=/path/to/libs/*:/apps/libs/*
+./server/jetty-app/build/install/server-jetty/bin/start
+```
+
+> [!CAUTION]
+> Some shells expand asterisks. Check the value of your environment variable to ensure it is correct.
 
 ## Use Java packages in query strings
 

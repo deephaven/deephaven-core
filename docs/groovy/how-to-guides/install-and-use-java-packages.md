@@ -84,7 +84,29 @@ The [Production application](../tutorials/production-application.md) uses the en
 
 ## Build from source
 
-<!-- TODO: The instructions in the existing guide don't work, and EXTRA_CLASSPATH doesn't work either. Figure out how to do this. -->
+Adding Java packages to [Deephaven built from source code](./launch-build.md) is similar to the [production application](#production-application). It does, however, change how you launch Deephaven built from source.
+
+Rather than running [`./gradlew server-jetty-app:run -Pgroovy`](./launch-build.md#build-and-run), run this instead:
+
+```bash
+./gradlew server-jetty-app:installDist -Pgroovy
+```
+
+This creates the directory `./server/jetty-app/build/install/server-jetty/bin`, which contains a `start` script that you can pass additional parameters to, such as an `EXTRA_CLASSPATH` environment variable. You can pass it directly to the command:
+
+```bash
+EXTRA_CLASSPATH=/path/to/libs/*:/apps/libs/* ./server/jetty-app/build/install/server-jetty/bin/start
+```
+
+Or you can export the environment variable before running the script:
+
+```bash
+export EXTRA_CLASSPATH=/path/to/libs/*:/apps/libs/*
+./server/jetty-app/build/install/server-jetty/bin/start
+```
+
+> [!CAUTION]
+> Some shells expand asterisks. Check the value of your environment variable to ensure it is correct.
 
 ## Use Java packages in query strings
 
