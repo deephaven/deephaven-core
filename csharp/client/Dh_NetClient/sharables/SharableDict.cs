@@ -7,13 +7,14 @@ using System.Diagnostics.CodeAnalysis;
 namespace Deephaven.Dh_NetClient;
 
 /// <summary>
-/// This class implements an immutable dictionary data structure with Int64 keys and values of user-specified type.
-/// The dictionary is implemented as a fixed-depth tree (the internal nodes have arity 64, and the tree has depth 11).
-/// Looking up an entry by key is constant time, because it traverses a fixed 11 nodes from root to leaf.
+/// This class implements an immutable dictionary data structure with Int64 keys and values of
+/// user-specified type. The dictionary is implemented as a fixed-depth tree (the internal nodes
+/// have arity 64, and the tree has depth 11). Looking up an entry by key is constant time,
+/// because it traverses a fixed 11 nodes from root to leaf.
 /// Looking up an entry by rank (not implemented yet) is also constant time, but the constant is larger,
 /// because it needs to traverse 11 nodes but also scan children counts at every node.
 /// On the other hand, simple scans like this are fast on modern CPUs.
-/// Modifications the tree are performed by making a new tree that shares most of its substructure with the old tree,
+/// Modifications tp the tree are performed by making a new tree that shares most of its substructure with the old tree,
 /// differing only on the path from root to new value. Callers are welcome to keep multiple versions of the dictionary
 /// if their application needs to. There are no locks and no caller synchronization is required.
 ///
