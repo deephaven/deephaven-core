@@ -13,7 +13,7 @@ The examples in this guide add the [Plexus Common Utilities](https://codehaus-pl
 
 ## Docker
 
-If you [run Deephaven with Docker](../getting-started/docker-install.md), you can either build a custom Docker image or mount a volume containing the JAR into the container.
+If you [Run Deephaven with Docker](../getting-started/docker-install.md), you can either build a custom Docker image or mount a volume containing the JAR into the container.
 
 ### Build a custom Docker image
 
