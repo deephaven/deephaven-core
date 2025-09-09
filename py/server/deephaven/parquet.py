@@ -99,8 +99,8 @@ class RowGroupInfo(JObjectWrapper):
     def by_group(groups: List[str], max_rows: int = None) -> RowGroupInfo:
         """
         Splits each unique group into a RowGroup. If the table does not have all values for the group(s)
-        contiguously, then an error will be raised. If a given RowGroup yields a row count greater than the
-        requested number of rows, then it will be split further using `with_max_rows(...)`
+        contiguously, then an error will be raised. If max_rows is set and a given RowGroup yields a row count greater
+        than the requested number of rows, then it will be split further using `with_max_rows(...)`
 
         :param groups: Grouping column name(s)
         :param max_rows: (Optional) The maximum number of rows in each RowGroup
