@@ -14,7 +14,7 @@ namespace Deephaven.Dh_NetClient;
 /// Looking up an entry by rank (not implemented yet) is also constant time, but the constant is larger,
 /// because it needs to traverse 11 nodes but also scan children counts at every node.
 /// On the other hand, simple scans like this are fast on modern CPUs.
-/// Modifications tp the tree are performed by making a new tree that shares most of its substructure with the old tree,
+/// Modifications to the tree are performed by making a new tree that shares most of its substructure with the old tree,
 /// differing only on the path from root to new value. Callers are welcome to keep multiple versions of the dictionary
 /// if their application needs to. There are no locks and no caller synchronization is required.
 ///
