@@ -763,13 +763,19 @@ public class HierarchicalTableTestGwt extends AbstractAsyncGwtTestCase {
                 .then(table -> {
                     JsRollupConfig cfg = new JsRollupConfig();
                     cfg.groupingColumns = Js.uncheckedCast(JsArray.of("X"));
-                    cfg.aggregations = JsPropertyMap.of(JsAggregationOperation.MIN, JsArray.of("Y"), JsAggregationOperation.MAX, JsArray.of("Y"));
+                    cfg.aggregations = JsPropertyMap.of(JsAggregationOperation.MIN, JsArray.of("Y"),
+                            JsAggregationOperation.MAX, JsArray.of("Y"));
                     cfg.includeConstituents = true;
                     return table.rollup(cfg);
                 })
                 .then(rollup -> {
-                    // CHeck that all expected columns are present, check constituent types
+                    // Get the columns we expect to find
+                    Column xCol = rollup.findColumn("X");
+                    Column minCol = rollup.findColumn("Y_Min");
+                    Column maxCol = rollup.findColumn("Y_Max");
+                    Column zCol = rollup.findColumn("Z");
 
+                    // Check that all expected columns are present, check constituent types
                     rollup.expandAll();
                     rollup.setViewport(0, 99, rollup.getColumns(), null);
                     return waitForEventWhere(rollup, JsTreeTable.EVENT_UPDATED,
@@ -777,17 +783,17 @@ public class HierarchicalTableTestGwt extends AbstractAsyncGwtTestCase {
                             12123)
                             .then(JsTreeTable::getViewportData)
                             .then(data -> {
-                                // ensure that the constituent data is available at the expected level rather than missing
+                                // ensure that the constituent data is available at the expected level rather than
+                                // missing
                                 TreeViewportData treeData = (TreeViewportData) data;
                                 TreeViewportData.TreeRow row2 = (TreeViewportData.TreeRow) treeData.getRows().getAt(2);
-                                Column minCol = rollup.findColumn("Y_Min");
-                                Column maxCol = rollup.findColumn("Y_Max");
                                 assertFalse(row2.hasChildren());
+                                assertNotNull(row2.get(xCol));
                                 assertNotNull(row2.get(minCol));
                                 assertNotNull(row2.get(maxCol));
+                                assertNotNull(row2.get(zCol));
                                 return null;
-                            })
-                            .then(data -> Promise.resolve((TreeViewportData) data));
+                            });
                 })
                 .then(this::finish)
                 .catch_(this::report);
