@@ -36,7 +36,9 @@ internal readonly struct Destructured<TValue> {
     LeafIndex = i10;
   }
 
-  public SharableDict<TValue> RebuildWithNewLeafHere(TValue value) {
+  public ImmutableNode<ImmutableNode<ImmutableNode<ImmutableNode<
+      ImmutableNode<ImmutableNode<ImmutableNode<ImmutableNode<
+      ImmutableNode<ImmutableNode<ImmutableLeaf<TValue>>>>>>>>>>> RebuildWithNewLeafHere(TValue value) {
     var (i0, i1, i2, i3, i4, i5, i6, i7, i8, i9, i10) = Splitter.Split(Key);
     var newDepth10 = Depth10.With(i10, value);
     var newDepth9 = Depth9.Replace(i9, newDepth10);
@@ -49,11 +51,17 @@ internal readonly struct Destructured<TValue> {
     var newDepth2 = Depth2.Replace(i2, newDepth3);
     var newDepth1 = Depth1.Replace(i1, newDepth2);
     var newDepth0 = Depth0.Replace(i0, newDepth1);
-    return new SharableDict<TValue>(newDepth0);
+    return newDepth0;
   }
 
-  public SharableDict<TValue> RebuildWithoutLeafHere(in Destructured<TValue> empties) {
+  public ImmutableNode<ImmutableNode<ImmutableNode<ImmutableNode<
+      ImmutableNode<ImmutableNode<ImmutableNode<ImmutableNode<
+      ImmutableNode<ImmutableNode<ImmutableLeaf<TValue>>>>>>>>>>> RebuildWithoutLeafHere() {
     var (i0, i1, i2, i3, i4, i5, i6, i7, i8, i9, i10) = Splitter.Split(Key);
+    if (!Depth10.TryGetChild(i10, out _)) {
+      // Leaf doesn't have a child at that index, so there is no change.
+      return Depth0;
+    }
     var newDepth10 = Depth10.Without(i10);
     var newDepth9 = Depth9.Replace(i9, newDepth10);
     var newDepth8 = Depth8.Replace(i8, newDepth9);
@@ -65,7 +73,7 @@ internal readonly struct Destructured<TValue> {
     var newDepth2 = Depth2.Replace(i2, newDepth3);
     var newDepth1 = Depth1.Replace(i1, newDepth2);
     var newDepth0 = Depth0.Replace(i0, newDepth1);
-    return new SharableDict<TValue>(newDepth0);
+    return newDepth0;
   }
 }
 

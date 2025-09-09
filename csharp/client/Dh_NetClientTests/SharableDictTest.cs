@@ -75,6 +75,18 @@ public class SharableDictTest {
   }
 
   [Fact]
+  public void NonexistentRemoveIsNoop() {
+    var dict = SharableDict<string>.Empty
+      .With(10, "hello")
+      .With(11, "world")
+      .With(1000, "Deephaven");
+
+    var d2 = dict.Without(999); // nonexistent key
+
+    Assert.True(ReferenceEquals(dict, d2));
+  }
+
+  [Fact]
   public void Iterates() {
     var dict = SharableDict<string>.Empty;
     for (var i = 0; i != 10000; ++i) {
