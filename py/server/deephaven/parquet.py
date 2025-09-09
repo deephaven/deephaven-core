@@ -4,6 +4,8 @@
 
 """ This module supports reading an external Parquet files into Deephaven tables and writing Deephaven tables out as
 Parquet files. """
+from __future__ import annotations
+
 from dataclasses import dataclass
 from enum import Enum
 from typing import List, Optional, Union, Dict, Sequence
@@ -11,6 +13,7 @@ from typing import List, Optional, Union, Dict, Sequence
 import jpy
 
 from deephaven import DHError
+from deephaven._wrapper import JObjectWrapper
 from deephaven.jcompat import j_array_list
 from deephaven.table import Table, TableDefinition, TableDefinitionLike, PartitionedTable
 from deephaven.experimental import s3
@@ -55,16 +58,25 @@ class ParquetFileLayout(Enum):
     """
 
 
-class RowGroupInfo:
+class RowGroupInfo(JObjectWrapper):
     """ This class specifies desired RowGroup behavior """
 
-    @staticmethod
-    def single_row_group() -> _JRowGroupInfo:
-        """ All data is within a single RowGroup. This is the default RowGroupInfo implementation. """
-        return _JRowGroupInfo.singleRowGroup()
+    j_object_type = _JRowGroupInfo
+
+    @property
+    def j_object(self) -> jpy.JType:
+        return self.j_row_group_info
+
+    def __init__(self, j_row_group_info: jpy.JType):
+        self.j_row_group_info = j_row_group_info
 
     @staticmethod
-    def split_evenly(num_row_groups: int) -> _JRowGroupInfo:
+    def single_row_group() -> RowGroupInfo:
+        """ All data is within a single RowGroup. This is the default RowGroupInfo implementation. """
+        return RowGroupInfo(_JRowGroupInfo.singleRowGroup())
+
+    @staticmethod
+    def split_evenly(num_row_groups: int) -> RowGroupInfo:
         """
         Split evenly into a pre-defined number of RowGroups, each of which contains the same number of rows as
         each other. If the input table size is not evenly divisible by the number of RowGroups requested, then a
@@ -72,19 +84,19 @@ class RowGroupInfo:
 
         :param num_row_groups: The number of RowGroups to write
          """
-        return _JRowGroupInfo.splitEvenly(num_row_groups)
+        return RowGroupInfo(_JRowGroupInfo.splitEvenly(num_row_groups))
 
     @staticmethod
-    def with_max_rows(max_rows: int) -> _JRowGroupInfo:
+    def with_max_rows(max_rows: int) -> RowGroupInfo:
         """
         Splits into a number of RowGroups, each of which has no more than the requested number of rows.
 
         :param max_rows: The maximum number of rows in each RowGroup
         """
-        return _JRowGroupInfo.withMaxRows(max_rows)
+        return RowGroupInfo(_JRowGroupInfo.withMaxRows(max_rows))
 
     @staticmethod
-    def by_group(groups: List[str], max_rows: int = None) -> _JRowGroupInfo:
+    def by_group(groups: List[str], max_rows: int = None) -> RowGroupInfo:
         """
         Splits each unique group into a RowGroup. If the table does not have all values for the group(s)
         contiguously, then an error will be raised. If a given RowGroup yields a row count greater than the
@@ -94,9 +106,9 @@ class RowGroupInfo:
         :param max_rows: (Optional) The maximum number of rows in each RowGroup
         """
         if max_rows:
-            return _JRowGroupInfo.byGroup(max_rows, _j_string_array(groups))
+            return RowGroupInfo(_JRowGroupInfo.byGroup(max_rows, _j_string_array(groups)))
         else:
-            return _JRowGroupInfo.byGroup(_j_string_array(groups))
+            return RowGroupInfo(_JRowGroupInfo.byGroup(_j_string_array(groups)))
 
 
 def _build_parquet_instructions(
@@ -114,7 +126,7 @@ def _build_parquet_instructions(
     file_layout: Optional[ParquetFileLayout] = None,
     table_definition: Optional[TableDefinitionLike] = None,
     index_columns: Optional[Sequence[Sequence[str]]] = None,
-    row_group_info: Optional[_JRowGroupInfo] = None,
+    row_group_info: Optional[RowGroupInfo] = None,
     special_instructions: Optional[s3.S3Instructions] = None,
 ):
     if not any(
@@ -186,7 +198,7 @@ def _build_parquet_instructions(
         builder.addAllIndexColumns(_j_list_of_list_of_string(index_columns))
 
     if row_group_info:
-        builder.setRowGroupInfo(row_group_info)
+        builder.setRowGroupInfo(row_group_info.j_object)
 
     if special_instructions is not None:
         builder.setSpecialInstructions(special_instructions.j_object)
@@ -291,7 +303,7 @@ def write(
     target_page_size: Optional[int] = None,
     generate_metadata_files: Optional[bool] = None,
     index_columns: Optional[Sequence[Sequence[str]]] = None,
-    row_group_info: Optional[_JRowGroupInfo] = None,
+    row_group_info: Optional[RowGroupInfo] = None,
     special_instructions: Optional[s3.S3Instructions] = None
 ) -> None:
     """ Write a table to a Parquet file.
@@ -325,7 +337,7 @@ def write(
             source table. This argument can be used to narrow the set of indexes to write, or to be explicit about the
             expected set of indexes present on all sources. Indexes that are specified but missing will be computed on
             demand.
-        row_group_info (Optional[_JRowGroupInfo]): requested RowGroup instructions, as returned by a call against RowGroupInfo
+        row_group_info (Optional[RowGroupInfo]): requested RowGroup instructions, as returned by a call against RowGroupInfo
         special_instructions (Optional[s3.S3Instructions]): Special instructions for writing parquet files, useful when
             writing files to a non-local file system, like S3. By default, None.
     Raises:
@@ -362,7 +374,7 @@ def write_partitioned(
         base_name: Optional[str] = None,
         generate_metadata_files: Optional[bool] = None,
         index_columns: Optional[Sequence[Sequence[str]]] = None,
-        row_group_info: Optional[_JRowGroupInfo] = None,
+        row_group_info: Optional[RowGroupInfo] = None,
         special_instructions: Optional[s3.S3Instructions] = None
 ) -> None:
     """ Write table to disk in parquet format with the partitioning columns written as "key=value" format in a nested
@@ -412,7 +424,7 @@ def write_partitioned(
             source table. This argument can be used to narrow the set of indexes to write, or to be explicit about the
             expected set of indexes present on all sources. Indexes that are specified but missing will be computed on
             demand.
-        row_group_info (Optional[_JRowGroupInfo]): requested RowGroup instructions, as returned by a call against RowGroupInfo
+        row_group_info (Optional[RowGroupInfo]): requested RowGroup instructions, as returned by a call against RowGroupInfo
         special_instructions (Optional[s3.S3Instructions]): Special instructions for writing parquet files, useful when
             writing files to a non-local file system, like S3. By default, None.
 
@@ -450,7 +462,7 @@ def batch_write(
     target_page_size: Optional[int] = None,
     generate_metadata_files: Optional[bool] = None,
     index_columns: Optional[Sequence[Sequence[str]]] = None,
-    row_group_info: Optional[_JRowGroupInfo] = None,
+    row_group_info: Optional[RowGroupInfo] = None,
     special_instructions: Optional[s3.S3Instructions] = None
 ):
     """ Writes tables to disk in parquet format to a supplied set of paths.
@@ -485,7 +497,7 @@ def batch_write(
             source table. This argument can be used to narrow the set of indexes to write, or to be explicit about the
             expected set of indexes present on all sources. Indexes that are specified but missing will be computed on
             demand.
-        row_group_info (Optional[_JRowGroupInfo]): requested RowGroup instructions, as returned by a call against RowGroupInfo
+        row_group_info (Optional[RowGroupInfo]): requested RowGroup instructions, as returned by a call against RowGroupInfo
         special_instructions (Optional[s3.S3Instructions]): Special instructions for writing parquet files, useful when
             writing files to a non-local file system, like S3. By default, None.
 
