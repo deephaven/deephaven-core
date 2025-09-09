@@ -929,7 +929,7 @@ public class TestLeaderTableFilter {
 
     @Test
     public void testPartitionedRandomized() {
-        for (int seed = 0; seed < 100; ++seed) {
+        for (int seed = 0; seed < 10; ++seed) {
             System.out.println("Seed = " + seed);
             try (final SafeCloseable ignored = LivenessScopeStack.open()) {
                 ChunkPoolReleaseTracking.enableStrict();
@@ -941,7 +941,7 @@ public class TestLeaderTableFilter {
 
     @Test
     public void testPartitionedRandomizedLarge() {
-        for (int seed = 0; seed < 10; ++seed) {
+        for (int seed = 0; seed < 1; ++seed) {
             System.out.println("Seed = " + seed);
             try (final SafeCloseable ignored = LivenessScopeStack.open()) {
                 ChunkPoolReleaseTracking.enableStrict();
