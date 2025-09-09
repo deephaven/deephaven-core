@@ -82,7 +82,7 @@ services:
 
 Unlike Docker, [pip-installed Deephaven](../getting-started/pip-install.md) has visibility to the entire host file system. Thus, you should change the `EXTRA_CLASSPATH` environment variable to point at the directory containing the JARs you wish to use. The following Python code assumes you've placed the JARS in `/home/user/java/libs/`:
 
-```python
+```python skip-test
 from deephaven_server import Server
 
 s = Server(
@@ -98,7 +98,7 @@ s.start()
 
 You can also point `extra_classpath` at one or more specific JARs instead of a folder:
 
-```python
+```python skip-test
 from deephaven_server import Server
 
 s = Server(
