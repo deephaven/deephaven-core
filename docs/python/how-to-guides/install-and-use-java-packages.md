@@ -114,7 +114,7 @@ s = Server(
     extra_classpath=[
         "/home/user/java/libs/plexus-utils-4.0.2.jar",
         "/home/user/java/libs/some-other-library-1.0.0.jar",
-    ]
+    ],
 )
 s.start()
 ```
