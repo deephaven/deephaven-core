@@ -109,10 +109,13 @@ import java.util.stream.Stream;
  * </pre>
  *
  * <p>
- * TODO: As an alternative to the TableBuilder you may use the PartitionedTableBuilder. The PartitionedTableBuilder is
- * very similar to the TableBuilder, but takes PartitionedTables as input and produces a Map&lt;String,
- * PartitionedTable&gt; as output instead of a Map of Tables. Entries are added to the result PartitionedTableBuilder
- * after all of the input maps have a matching key. Each table within the PartitionedTable must be add-only.
+ * As an alternative to the TableBuilder you may use the {@link PartitionedTableBuilder} The PartitionedTableBuilder is
+ * very similar to the TableBuilder, but takes {@link PartitionedTable PartitionedTables} as input and produces a
+ * Map&lt;String, PartitionedTable&gt; as output instead of a Map of Tables. Entries are added to the result
+ * PartitionedTableBuilder after all of the input PartitionedTables have a matching key. The number of keys for each
+ * PartitionedTable must be identical, and of compatible types, the underlying tables of constituents are joined
+ * together on the {@link PartitionedTable#keyColumnNames() key columns}, in order. Each table within the
+ * PartitionedTable must be add-only.
  * </p>
  */
 public class LeaderTableFilter {
@@ -845,8 +848,9 @@ public class LeaderTableFilter {
 
                 idSource.fillChunk(idFillContext, idChunk, chunkRs);
 
-                // TODO: We are potentially looking each value up in the hash table multiple times, if we were to sort
-                // the data we could avoid that.
+                // We are potentially looking each value up in the hash table multiple times, if we were to sort
+                // the data we could avoid that. Of course, if we chose that strategy, we would pay the cost of a
+                // sort instead.
                 Object lastKey = null;
                 FollowerKeyState lastState = null;
                 for (int ii = 0; ii < idChunk.size(); ++ii) {
