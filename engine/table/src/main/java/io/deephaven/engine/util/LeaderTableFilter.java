@@ -1157,7 +1157,6 @@ public class LeaderTableFilter {
             if (followerPartitionedTables.stream().anyMatch(ftd -> ftd.name.equals(name))) {
                 throw new IllegalArgumentException("Duplicate follower PartitionedTable name \"" + name + "\"");
             }
-            // TODO: when in powell we will have definitions and can perform better checks here
             followerPartitionedTables.add(new FollowerPartitionedTableDescription(name, partitionedTable,
                     leaderIdColumn, followerIdColumn, keyColumns));
             return this;
