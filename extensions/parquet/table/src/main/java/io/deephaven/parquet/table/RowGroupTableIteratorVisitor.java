@@ -15,7 +15,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Objects;
-import java.util.OptionalLong;
 
 final class RowGroupTableIteratorVisitor implements RowGroupInfo.Visitor<Iterator<Table>> {
 
@@ -53,12 +52,12 @@ final class RowGroupTableIteratorVisitor implements RowGroupInfo.Visitor<Iterato
 
     @Override
     public Iterator<Table> visit(final @NotNull RowGroupInfo.MaxGroups maxGroups) {
-        return splitByMaxGroups(input, maxGroups.getNumRowGroups());
+        return splitByMaxGroups(input, maxGroups.numRowGroups());
     }
 
     @Override
     public Iterator<Table> visit(final @NotNull RowGroupInfo.MaxRows maxRows) {
-        return splitByMaxRows(input, maxRows.getMaxRows());
+        return splitByMaxRows(input, maxRows.maxRows());
     }
 
     @Override
@@ -112,7 +111,7 @@ final class RowGroupTableIteratorVisitor implements RowGroupInfo.Visitor<Iterato
         private Iterator<Table> subIter;
 
         private SplitByGroupsIterator(final @NotNull Table input, final RowGroupInfo.ByGroups config) {
-            final String[] groups = config.getGroups().toArray(String[]::new);
+            final String[] groups = config.groups().toArray(String[]::new);
             ensureOrderedForGrouping(input, groups);
             this.partitionedTables = input.partitionBy(groups).constituents();
             this.config = config;
@@ -137,7 +136,7 @@ final class RowGroupTableIteratorVisitor implements RowGroupInfo.Visitor<Iterato
 
             // else we've moved on to the next partitioned table
             final Table subTable = partitionedTables[nextTable++];
-            subIter = splitByMaxRows(subTable, config.getMaxRows().orElse(Long.MAX_VALUE));
+            subIter = splitByMaxRows(subTable, config.maxRows().orElse(Long.MAX_VALUE));
             return subIter.next();
         }
     }

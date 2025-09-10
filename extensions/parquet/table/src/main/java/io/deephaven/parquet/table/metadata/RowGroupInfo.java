@@ -136,17 +136,17 @@ public interface RowGroupInfo {
         @Override
         public boolean equals(final Object obj) {
             if (obj instanceof MaxGroups) {
-                return ((MaxGroups) obj).getNumRowGroups() == getNumRowGroups();
+                return ((MaxGroups) obj).numRowGroups() == numRowGroups();
             }
             return false;
         }
 
         @Override
         public String toString() {
-            return String.format("%s{numRowGroups=%d}", MaxGroups.class.getSimpleName(), getNumRowGroups());
+            return String.format("%s{numRowGroups=%d}", MaxGroups.class.getSimpleName(), numRowGroups());
         }
 
-        public long getNumRowGroups() {
+        public long numRowGroups() {
             return numRowGroups;
         }
     }
@@ -172,17 +172,17 @@ public interface RowGroupInfo {
         @Override
         public boolean equals(final Object obj) {
             if (obj instanceof MaxRows) {
-                return ((MaxRows) obj).getMaxRows() == getMaxRows();
+                return ((MaxRows) obj).maxRows() == maxRows();
             }
             return false;
         }
 
         @Override
         public String toString() {
-            return String.format("%s{maxRows=%d}", MaxRows.class.getSimpleName(), getMaxRows());
+            return String.format("%s{maxRows=%d}", MaxRows.class.getSimpleName(), maxRows());
         }
 
-        public long getMaxRows() {
+        public long maxRows() {
             return maxRows;
         }
     }
@@ -215,7 +215,7 @@ public interface RowGroupInfo {
         public boolean equals(final Object obj) {
             if (obj instanceof ByGroups) {
                 final ByGroups other = (ByGroups) obj;
-                return other.getMaxRows().equals(getMaxRows()) && other.getGroups().equals(getGroups());
+                return other.maxRows().equals(maxRows()) && other.groups().equals(groups());
             }
             return false;
         }
@@ -224,18 +224,18 @@ public interface RowGroupInfo {
         public String toString() {
             if (maxRows == Long.MAX_VALUE) {
                 return String.format("%s{groups=%s}", ByGroups.class.getSimpleName(),
-                        Arrays.toString(getGroups().toArray()));
+                        Arrays.toString(groups().toArray()));
             } else {
                 return String.format("%s{maxRows=%d, groups=%s}", ByGroups.class.getSimpleName(), maxRows,
-                        Arrays.toString(getGroups().toArray()));
+                        Arrays.toString(groups().toArray()));
             }
         }
 
-        public OptionalLong getMaxRows() {
+        public OptionalLong maxRows() {
             return (maxRows == Long.MAX_VALUE) ? OptionalLong.empty() : OptionalLong.of(maxRows);
         }
 
-        public List<String> getGroups() {
+        public List<String> groups() {
             return Arrays.stream(groups).collect(Collectors.toUnmodifiableList());
         }
     }

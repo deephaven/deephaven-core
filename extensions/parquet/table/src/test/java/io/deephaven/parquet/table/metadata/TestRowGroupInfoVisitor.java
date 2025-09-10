@@ -43,7 +43,11 @@ public class TestRowGroupInfoVisitor {
                 entry(RowGroupInfo.MaxRows.class.getSimpleName(), RowGroup2JsonVisitor::constructMaxRows),
                 entry(RowGroupInfo.MaxGroups.class.getSimpleName(), RowGroup2JsonVisitor::constructMaxGroups),
                 entry(RowGroupInfo.ByGroups.class.getSimpleName(), RowGroup2JsonVisitor::constructByGroups));
+
         private static final String NAME_ATTR = "name";
+        private static final String MAX_ROWS_ATTR = "maxRows";
+        private static final String NUM_ROW_GROUPS_ATTR = "numRowGroups";
+        private static final String GROUPS_ATTR = "groups";
 
         private final ObjectMapper mapper;
 
@@ -71,7 +75,8 @@ public class TestRowGroupInfoVisitor {
             final String jsonStr;
             try {
                 // read type-specific properties and add the type-specific name
-                final ObjectNode jsonNode = mapper.valueToTree(maxGroups);
+                final ObjectNode jsonNode = mapper.createObjectNode();
+                jsonNode.put(NUM_ROW_GROUPS_ATTR, maxGroups.numRowGroups());
                 jsonNode.put(NAME_ATTR, maxGroups.getClass().getSimpleName());
                 jsonStr = mapper.writeValueAsString(jsonNode);
             } catch (JsonProcessingException e) {
@@ -85,7 +90,8 @@ public class TestRowGroupInfoVisitor {
             final String jsonStr;
             try {
                 // read type-specific properties and add the type-specific name
-                final ObjectNode jsonNode = mapper.valueToTree(maxRows);
+                final ObjectNode jsonNode = mapper.createObjectNode();
+                jsonNode.put(MAX_ROWS_ATTR, maxRows.maxRows());
                 jsonNode.put(NAME_ATTR, maxRows.getClass().getSimpleName());
                 jsonStr = mapper.writeValueAsString(jsonNode);
             } catch (JsonProcessingException e) {
@@ -101,11 +107,11 @@ public class TestRowGroupInfoVisitor {
                 // read type-specific properties and add the type-specific name
                 final ObjectNode jsonNode = mapper.createObjectNode();
                 final ArrayNode groups = mapper.createArrayNode();
-                byGroups.getGroups().forEach(groups::add);
-                jsonNode.set("groups", groups);
-                final OptionalLong maxRows = byGroups.getMaxRows();
+                byGroups.groups().forEach(groups::add);
+                jsonNode.set(GROUPS_ATTR, groups);
+                final OptionalLong maxRows = byGroups.maxRows();
                 if (maxRows.isPresent()) {
-                    jsonNode.put("maxRows", maxRows.getAsLong());
+                    jsonNode.put(MAX_ROWS_ATTR, maxRows.getAsLong());
                 }
                 jsonNode.put(NAME_ATTR, byGroups.getClass().getSimpleName());
                 jsonStr = mapper.writeValueAsString(jsonNode);
@@ -140,7 +146,7 @@ public class TestRowGroupInfoVisitor {
          * @return a new deserialized {@link RowGroupInfo} instance
          */
         private static RowGroupInfo constructMaxRows(final @NotNull ObjectNode node) {
-            return RowGroupInfo.maxRows(node.get("maxRows").asLong());
+            return RowGroupInfo.maxRows(node.get(MAX_ROWS_ATTR).asLong());
         }
 
         /**
@@ -150,7 +156,7 @@ public class TestRowGroupInfoVisitor {
          * @return a new deserialized {@link RowGroupInfo} instance
          */
         private static RowGroupInfo constructMaxGroups(final @NotNull ObjectNode node) {
-            return RowGroupInfo.maxGroups(node.get("numRowGroups").asLong());
+            return RowGroupInfo.maxGroups(node.get(NUM_ROW_GROUPS_ATTR).asLong());
         }
 
         /**
@@ -161,13 +167,13 @@ public class TestRowGroupInfoVisitor {
          */
         private static RowGroupInfo constructByGroups(final @NotNull ObjectNode node) {
             final List<String> groups = new ArrayList<>();
-            final Iterator<JsonNode> groupsNode = node.get("groups").elements();
+            final Iterator<JsonNode> groupsNode = node.get(GROUPS_ATTR).elements();
             while (groupsNode.hasNext()) {
                 groups.add(groupsNode.next().asText());
             }
 
-            if (node.has("maxRows")) {
-                return RowGroupInfo.byGroups(node.get("maxRows").asLong(), groups.toArray(new String[0]));
+            if (node.has(MAX_ROWS_ATTR)) {
+                return RowGroupInfo.byGroups(node.get(MAX_ROWS_ATTR).asLong(), groups.toArray(new String[0]));
             } else {
                 // could use the 2-param constructor, but it's nice to use both in the test ...
                 return RowGroupInfo.byGroups(groups.toArray(new String[0]));
@@ -223,19 +229,19 @@ public class TestRowGroupInfoVisitor {
 
         @Override
         public RowGroupInfo visit(final @NotNull RowGroupInfo.MaxGroups maxGroups) {
-            return RowGroupInfo.maxGroups(maxGroups.getNumRowGroups());
+            return RowGroupInfo.maxGroups(maxGroups.numRowGroups());
         }
 
         @Override
         public RowGroupInfo visit(final @NotNull RowGroupInfo.MaxRows maxRows) {
-            return RowGroupInfo.maxRows(maxRows.getMaxRows());
+            return RowGroupInfo.maxRows(maxRows.maxRows());
         }
 
         @Override
         public RowGroupInfo visit(final @NotNull RowGroupInfo.ByGroups byGroups) {
-            final OptionalLong maxRows = byGroups.getMaxRows();
-            return maxRows.isPresent() ? RowGroupInfo.byGroups(maxRows.getAsLong(), byGroups.getGroups())
-                    : RowGroupInfo.byGroups(byGroups.getGroups());
+            final OptionalLong maxRows = byGroups.maxRows();
+            return maxRows.isPresent() ? RowGroupInfo.byGroups(maxRows.getAsLong(), byGroups.groups())
+                    : RowGroupInfo.byGroups(byGroups.groups());
         }
     }
 
