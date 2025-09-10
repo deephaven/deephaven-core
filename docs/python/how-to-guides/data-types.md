@@ -38,12 +38,12 @@ Some object types are commonly used despite the overhead. For instance, [`java.l
 
 The following table shows a mapping between some of the most commonly used Java object types and their Python and [NumPy](https://numpy.org/) equivalents:
 
-| Java object type                                                                                           | Python type                                                                              | NumPy type                                                                                      |
-| ---------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
-| [`java.lang.String`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html)   | [`str`](https://docs.python.org/3/library/stdtypes.html#text-sequence-type-str)          | [`np.str_`](https://numpy.org/devdocs/reference/arrays.scalars.html#numpy.str_)                 |
+| Java object type                                                                                           | Python type                                                                              | NumPy type                                                                                     |
+| ---------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| [`java.lang.String`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html)   | [`str`](https://docs.python.org/3/library/stdtypes.html#text-sequence-type-str)          | [`np.str_`](https://numpy.org/devdocs/reference/arrays.scalars.html#numpy.str_)                |
 | [`java.time.Instant`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Instant.html) | [`datetime.datetime`](https://docs.python.org/3/library/datetime.html#datetime.datetime) | [`np.datetime64`](https://numpy.org/doc/stable/reference/arrays.scalars.html#numpy.datetime64) |
-| [Array](https://docs.oracle.com/javase/specs/jls/se7/html/jls-10.html)                                     | [`Sequence`](https://docs.python.org/3/glossary.html#term-sequence)                      | [`np.ndarray`](https://numpy.org/devdocs/reference/arrays.html)                                 |
-| [`java.lang.Object`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html)   | [`Object`](https://docs.python.org/3/glossary.html#term-object)                          | [`np.object_`](https://numpy.org/doc/stable/reference/arrays.dtypes.html)                       |
+| [Array](https://docs.oracle.com/javase/specs/jls/se7/html/jls-10.html)                                     | [`Sequence`](https://docs.python.org/3/glossary.html#term-sequence)                      | [`np.ndarray`](https://numpy.org/devdocs/reference/arrays.html)                                |
+| [`java.lang.Object`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html)   | [`Object`](https://docs.python.org/3/glossary.html#term-object)                          | [`np.object_`](https://numpy.org/doc/stable/reference/arrays.dtypes.html)                      |
 
 ### Array types
 
