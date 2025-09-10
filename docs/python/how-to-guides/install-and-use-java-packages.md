@@ -82,6 +82,8 @@ services:
 
 Unlike Docker, [pip-installed Deephaven](../getting-started/pip-install.md) has visibility to the entire host file system. Thus, you should change the `EXTRA_CLASSPATH` environment variable to point at the directory containing the JARs you wish to use. The following Python code assumes you've placed the JARS in `/home/user/java/libs/`:
 
+<!-- This test is skipped because we don't support testing pip-installed Deephaven -->
+
 ```python skip-test
 from deephaven_server import Server
 
@@ -97,6 +99,8 @@ s.start()
 ```
 
 You can also point `extra_classpath` at one or more specific JARs instead of a folder:
+
+<!-- This test is skipped because we don't support testing pip-installed Deephaven -->
 
 ```python skip-test
 from deephaven_server import Server
@@ -148,6 +152,8 @@ export EXTRA_CLASSPATH=/path/to/libs/*:/apps/libs/*
 ## Use Java packages in query strings
 
 To use the installed Java packages in query strings, you must provide the full package name. The following code calls [`org.codehaus.plexus.util.StringUtils.abbreviate`](https://codehaus-plexus.github.io/plexus-utils/apidocs/org/codehaus/plexus/util/StringUtils.html#abbreviate(java.lang.String,int)) from the [Plexus Common Utilities](https://codehaus-plexus.github.io/plexus-utils/) library to abbreviate a string.
+
+<!-- This test is skipped because it requires the Plexus Common Utilities JAR to be installed. -->
 
 ```python skip-test
 from deephaven import empty_table

@@ -112,6 +112,8 @@ export EXTRA_CLASSPATH=/path/to/libs/*:/apps/libs/*
 
 Not only can you import and use the extra Java packages in normal Groovy code, but you can also call them in query strings. You must provide the full package name unless you construct an instance of the class beforehand. The following code calls [`org.codehaus.plexus.util.StringUtils.abbreviate`](https://codehaus-plexus.github.io/plexus-utils/apidocs/org/codehaus/plexus/util/StringUtils.html#abbreviate(java.lang.String,int)) from the [Plexus Common Utilities](https://codehaus-plexus.github.io/plexus-utils/) library to abbreviate a string.
 
+<!-- This test is skipped because it requires the Plexus Common Utilities JAR to be installed. -->
+
 ```groovy skip-test
 source = emptyTable(1).update(
     "StringColumn = `Hello world`",
