@@ -34,6 +34,7 @@ public class ColumnDefinition {
     // Indicates that this is a style column for the whole row
     private final boolean forRow;
     private final boolean isInputTableKeyColumn;
+    private final boolean isInputTableValueColumn;
     private final String description;
 
     public ColumnDefinition(int index, Field field) {
@@ -57,6 +58,7 @@ public class ColumnDefinition {
         styleColumn = fieldMetadata.get("styleColumn");
 
         isInputTableKeyColumn = "true".equals(fieldMetadata.get("inputtable.isKey"));
+        isInputTableValueColumn = "true".equals(fieldMetadata.get("inputtable.isValue"));
 
         this.description = fieldMetadata.get("description");
 
@@ -120,13 +122,17 @@ public class ColumnDefinition {
         return isInputTableKeyColumn;
     }
 
+    public boolean isInputTableValueColumn() {
+        return isInputTableValueColumn;
+    }
+
     public String getDescription() {
         return description;
     }
 
     public Column makeJsColumn(int index, Map<Boolean, Map<String, ColumnDefinition>> map) {
         if (isForRow()) {
-            return makeColumn(-1, this, null, null, false, null, null, false);
+            return makeColumn(-1, this, null, null, false, null, null, false, false);
         }
         Map<String, ColumnDefinition> byNameMap = map.get(isRollupConstituentNodeColumn());
         ColumnDefinition format = byNameMap.get(getFormatColumnName());
@@ -139,14 +145,16 @@ public class ColumnDefinition {
                 isPartitionColumn(),
                 format == null ? null : format.getColumnIndex(),
                 getDescription(),
-                isInputTableKeyColumn());
+                isInputTableKeyColumn(),
+                isInputTableValueColumn());
     }
 
     private static Column makeColumn(int jsIndex, ColumnDefinition definition, Integer numberFormatIndex,
             Integer styleIndex, boolean isPartitionColumn, Integer formatStringIndex, String description,
-            boolean inputTableKeyColumn) {
+            boolean inputTableKeyColumn, boolean inputTableValueColumn) {
         return new Column(jsIndex, definition.getColumnIndex(), numberFormatIndex, styleIndex, definition.getType(),
                 definition.getName(), isPartitionColumn, formatStringIndex, description, inputTableKeyColumn,
+                inputTableValueColumn,
                 definition.isSortable());
     }
 

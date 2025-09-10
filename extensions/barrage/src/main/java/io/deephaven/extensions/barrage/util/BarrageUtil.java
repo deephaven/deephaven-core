@@ -636,6 +636,8 @@ public class BarrageUtil {
             }
             if (inputTableUpdater != null) {
                 putMetadata(metadata, "inputtable.isKey", inputTableUpdater.getKeyNames().contains(name) + "");
+                putMetadata(metadata, "inputtable.isValue",
+                        Boolean.toString(inputTableUpdater.getValueNames().contains(name)));
             }
 
             if (field != null) {
