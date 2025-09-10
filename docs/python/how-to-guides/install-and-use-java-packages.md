@@ -2,12 +2,12 @@
 title: Install and use Java packages
 ---
 
-You can add JARs to the classpath in Deephaven Community workers to make Java packages available to your queries. All of Deephaven's deployment options support doing this; they are all covered in this guide.
+You can add JARs to the classpath in Deephaven Community workers to make Java packages available to your queries. All of Deephaven's deployment options support this, and this guide covers them all.
 
-Once a package is installed, it can be imported and used like any other Java package.
+Once installed, a package can be imported and used like any other Java package.
 
 > [!CAUTION]
-> Care should be taken when adding JARs to Deephaven workers. Java packages may be missing dependencies, or have dependencies that conflict with Deephaven's.
+> Care should be taken when adding JARs to Deephaven workers. Java packages may be missing dependencies or have dependencies that conflict with Deephaven's.
 
 The examples in this guide add the [Plexus Common Utilities](https://codehaus-plexus.github.io/plexus-utils/) library to a Deephaven Community instance.
 
@@ -61,7 +61,7 @@ services:
 
 ### Mount the JAR into the container manually
 
-Adding JARs to a Docker container does not require you build a custom image. Instead, you can simply mount a folder into the container that contains whatever JARs you wish to use.
+Adding JARs to a Docker container does not require building a custom image. Instead, you can simply mount a folder into the container that contains whatever JARs you wish to use.
 
 The following YAML assumes you've placed the `plexus-utils-4.0.2.jar` file into a folder called `./apps/libs`:
 
@@ -121,7 +121,7 @@ s.start()
 
 ## Production application
 
-The [Production application](../getting-started/production-application.md) uses the environment variable `EXTRA_CLASSPATH` to include additional JARs in the classpath. See [Configure the production application](./configuration/configure-production-application.md#environment-variables) for more details including other configuration options.
+The [Production application](../getting-started/production-application.md) uses the environment variable `EXTRA_CLASSPATH` to include additional JARs in the classpath. See [Configure the production application](./configuration/configure-production-application.md#environment-variables) for more details, including other configuration options.
 
 ## Build from source
 
@@ -153,7 +153,7 @@ export EXTRA_CLASSPATH=/path/to/libs/*:/apps/libs/*
 
 To use the installed Java packages in query strings, you must provide the full package name. The following code calls [`org.codehaus.plexus.util.StringUtils.abbreviate`](https://codehaus-plexus.github.io/plexus-utils/apidocs/org/codehaus/plexus/util/StringUtils.html#abbreviate(java.lang.String,int)) from the [Plexus Common Utilities](https://codehaus-plexus.github.io/plexus-utils/) library to abbreviate a string.
 
-<!-- This test is skipped because it requires the Plexus Common Utilities JAR to be installed. -->
+<!-- This test is skipped because it requires installing the Plexus Common Utilities JAR. -->
 
 ```python skip-test
 from deephaven import empty_table
