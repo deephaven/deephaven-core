@@ -129,11 +129,11 @@ public class LeaderTableFilter {
     private final List<FollowerTableDescription> followerTables;
 
     private final QueryTable leaderResult;
-    private final TrackingWritableRowSet leaderResultIndex;
+    private final TrackingWritableRowSet leaderResultRowSet;
     private final ChunkType keyChunkType;
 
-    private final QueryTable[] results;
-    private final TrackingWritableRowSet[] resultIndex;
+    private final QueryTable[] followerResults;
+    private final TrackingWritableRowSet[] followerResultRowSets;
 
     private final TupleSource<?> leaderKeySource;
     private final ColumnSource<Long>[] followerIdsInLeaderSources;
@@ -164,8 +164,8 @@ public class LeaderTableFilter {
             satisfiedIdsByFollower = new TIntArrayList();
         }
 
-        // our currently matched index in the leader table
-        long matchedIndex = RowSet.NULL_ROW_KEY;
+        // our currently matched row key in the leader table
+        long matchedRowKey = RowSet.NULL_ROW_KEY;
 
         // an array list of pending rows in the leader that map to this state
         TLongArrayList leaderRows;
@@ -180,12 +180,12 @@ public class LeaderTableFilter {
             return leaderRows.size();
         }
 
-        public void deleteHead(int matchedIndex) {
-            leaderRows.remove(0, matchedIndex + 1);
+        public void deleteHead(int matchedRowKey) {
+            leaderRows.remove(0, matchedRowKey + 1);
             for (int tt = 0; tt < pendingIdsByFollower.length; ++tt) {
-                pendingIdsByFollower[tt].remove(0, matchedIndex + 1);
+                pendingIdsByFollower[tt].remove(0, matchedRowKey + 1);
             }
-            satisfiedIdsByFollower.remove(0, matchedIndex + 1);
+            satisfiedIdsByFollower.remove(0, matchedRowKey + 1);
         }
     }
 
@@ -274,11 +274,11 @@ public class LeaderTableFilter {
             final String leaderName,
             final List<FollowerTableDescription> followerTables,
             final int binarySearchThreshold) {
-        final UpdateGraph leaderUpdateGraph = rawLeaderTable.getUpdateGraph();
-
         if (followerTables.isEmpty()) {
             throw new IllegalArgumentException("No tables specified!");
         }
+        final UpdateGraph leaderUpdateGraph = rawLeaderTable.getUpdateGraph(followerTables.toArray(Table[]::new));
+        leaderUpdateGraph.checkInitiateSerialTableOperation();
 
         followerTables.forEach(table -> {
             if (table.table.isRefreshing()) {
@@ -310,14 +310,14 @@ public class LeaderTableFilter {
         // noinspection unchecked
         this.followerIdsInLeaderSources = new ColumnSource[tableCount];
 
-        this.results = new QueryTable[tableCount];
-        this.resultIndex = new TrackingWritableRowSet[tableCount];
+        this.followerResults = new QueryTable[tableCount];
+        this.followerResultRowSets = new TrackingWritableRowSet[tableCount];
         this.recorders = new ArrayList<>(tableCount + 1);
 
         final MergedLeaderListener mergedListener = new MergedLeaderListener();
 
-        leaderResultIndex = RowSetFactory.empty().toTracking();
-        leaderResult = leaderTable.getSubTable(leaderResultIndex, null, null, mergedListener);
+        leaderResultRowSet = RowSetFactory.empty().toTracking();
+        leaderResult = leaderTable.getSubTable(leaderResultRowSet, null, null, mergedListener);
         createLeaderRecorder(leaderTable);
 
         final ColumnSource<?>[] leaderSources =
@@ -342,8 +342,8 @@ public class LeaderTableFilter {
             followerKeySources[ii] = TupleSourceFactory.makeTupleSource(sources);
             followerIdSources[ii] = ftd.table.getColumnSource(ftd.followerIdColumn, long.class);
             followerIdsInLeaderSources[ii] = leaderTable.getColumnSource(ftd.leaderIdColumn, long.class);
-            resultIndex[ii] = RowSetFactory.empty().toTracking();
-            results[ii] = followerTable.getSubTable(resultIndex[ii], null, null, mergedListener);
+            followerResultRowSets[ii] = RowSetFactory.empty().toTracking();
+            followerResults[ii] = followerTable.getSubTable(followerResultRowSets[ii], null, null, mergedListener);
             /*
              * getSubTable sets the notification step to the parent's last notification step. We know that this table
              * has just been created, so we can set it's notification step to this one. This will ensure that any
@@ -351,7 +351,7 @@ public class LeaderTableFilter {
              * use previous values on the LTM. In the event that this table isn't ticking, then there is no harm done
              * because we won't care about previous values anyway.
              */
-            results[ii].setLastNotificationStep(leaderUpdateGraph.clock().currentStep());
+            followerResults[ii].setLastNotificationStep(leaderUpdateGraph.clock().currentStep());
             createFollowerRecorder(ftd);
         }
         recorders.forEach(lr -> {
@@ -376,10 +376,10 @@ public class LeaderTableFilter {
                     addedBuilder.addRowSet(state.matchedRows);
                 }
             }
-            resultIndex[tt].insert(addedBuilder.build());
+            followerResultRowSets[tt].insert(addedBuilder.build());
         }
-        leaderResultIndex.insert(processPendingResult.leaderMatches);
-        leaderResultIndex.initializePreviousValue();
+        leaderResultRowSet.insert(processPendingResult.leaderMatches);
+        leaderResultRowSet.initializePreviousValue();
     }
 
     private static void checkCompatibility(ColumnSource<?>[] leaderSources, FollowerTableDescription ftd,
@@ -417,10 +417,6 @@ public class LeaderTableFilter {
 
         @Override
         protected void process() {
-            if (isFailed()) {
-                return;
-            }
-
             final long currentStep = getUpdateGraph().clock().currentStep();
 
             if (recorders.get(0).getNotificationStep() == currentStep) {
@@ -478,7 +474,7 @@ public class LeaderTableFilter {
                         // otherwise we ignore them because they have already been superseded
                         final WritableRowSet newlyMatchedRows = state.currentIdBuilder.build();
                         state.matchedRows.insert(newlyMatchedRows);
-                        newlyMatchedRows.remove(resultIndex[tt]);
+                        newlyMatchedRows.remove(followerResultRowSets[tt]);
                         addedBuilder.addRowSet(newlyMatchedRows);
                     }
                     state.currentIdBuilder = null;
@@ -486,8 +482,8 @@ public class LeaderTableFilter {
 
                 final RowSet removed = removedBuilder.build();
                 final RowSet added = addedBuilder.build();
-                resultIndex[tt].remove(removed);
-                resultIndex[tt].insert(added);
+                followerResultRowSets[tt].remove(removed);
+                followerResultRowSets[tt].insert(added);
 
                 Assert.assertion(!added.overlaps(removed), "!added.overlaps(removed)", added, "added", removed,
                         "removed");
@@ -499,12 +495,12 @@ public class LeaderTableFilter {
                     update.modified = RowSetFactory.empty();
                     update.modifiedColumnSet = ModifiedColumnSet.EMPTY;
                     update.shifted = RowSetShiftData.EMPTY;
-                    results[tt].notifyListeners(update);
+                    followerResults[tt].notifyListeners(update);
                 }
             }
 
             if (processPendingResult.leaderMatches.isNonempty() || processPendingResult.leaderRemoved.isNonempty()) {
-                leaderResultIndex.update(processPendingResult.leaderMatches, processPendingResult.leaderRemoved);
+                leaderResultRowSet.update(processPendingResult.leaderMatches, processPendingResult.leaderRemoved);
                 leaderResult.notifyListeners(processPendingResult.leaderMatches, processPendingResult.leaderRemoved,
                         RowSetFactory.empty());
             }
@@ -527,7 +523,7 @@ public class LeaderTableFilter {
                 TableListener.@Nullable Entry entry) {
             final List<BaseTable> deferred = new ArrayList<>();
 
-            Stream.concat(Stream.of(leaderResult), Stream.of(results)).forEach(result -> {
+            Stream.concat(Stream.of(leaderResult), Stream.of(followerResults)).forEach(result -> {
                 if (fromProcess && result.satisfied(getUpdateGraph().clock().currentStep())) {
                     // If the result is already satisfied (because it managed to send its notification, or was otherwise
                     // satisfied) we should not send our error notification on this cycle.
@@ -548,7 +544,7 @@ public class LeaderTableFilter {
         @Override
         public boolean systemicResult() {
             return SystemicObjectTracker.isSystemic(leaderResult)
-                    || Arrays.stream(results).anyMatch(SystemicObjectTracker::isSystemic);
+                    || Arrays.stream(followerResults).anyMatch(SystemicObjectTracker::isSystemic);
         }
     }
 
@@ -752,10 +748,10 @@ public class LeaderTableFilter {
             if (matchedIndex >= 0) {
                 final long newMatch = leaderKeyState.leaderRows.get(matchedIndex);
                 leaderMatchBuilder.addKey(newMatch);
-                if (leaderKeyState.matchedIndex != RowSet.NULL_ROW_KEY) {
-                    leaderRemovedBuilder.addKey(leaderKeyState.matchedIndex);
+                if (leaderKeyState.matchedRowKey != RowSet.NULL_ROW_KEY) {
+                    leaderRemovedBuilder.addKey(leaderKeyState.matchedRowKey);
                 }
-                leaderKeyState.matchedIndex = newMatch;
+                leaderKeyState.matchedRowKey = newMatch;
                 leaderKeyState.deleteHead(matchedIndex);
                 for (int tt = 0; tt < tableCount; ++tt) {
                     if (followerKeyStates[tt] != null) {
@@ -827,10 +823,10 @@ public class LeaderTableFilter {
         }
     }
 
-    private void consumeFollowerRows(final int tableIndex, final RowSet index) {
+    private void consumeFollowerRows(final int tableIndex, final RowSet rowSet) {
         final ColumnSource<Long> idSource = followerIdSources[tableIndex];
         try (final WritableChunk<Values> primitiveFollowerKeyValuesChunk = keyChunkType.makeWritableChunk(CHUNK_SIZE);
-                final RowSequence.Iterator rsit = index.getRowSequenceIterator();
+                final RowSequence.Iterator rsit = rowSet.getRowSequenceIterator();
                 final ChunkSource.FillContext idFillContext = idSource.makeFillContext(CHUNK_SIZE);
                 final ChunkSource.FillContext keyFillContext =
                         followerKeySources[tableIndex].makeFillContext(CHUNK_SIZE);
@@ -915,9 +911,9 @@ public class LeaderTableFilter {
      * @return a map of result follower tables
      */
     private Map<String, Table> getResultMap() {
-        final Map<String, Table> resultMap = new LinkedHashMap<>(results.length);
-        for (int ii = 0; ii < results.length; ++ii) {
-            resultMap.put(followerTables.get(ii).name, results[ii]);
+        final Map<String, Table> resultMap = new LinkedHashMap<>(followerResults.length);
+        for (int ii = 0; ii < followerResults.length; ++ii) {
+            resultMap.put(followerTables.get(ii).name, followerResults[ii]);
         }
         resultMap.put(leaderName, leaderResult);
         return resultMap;
