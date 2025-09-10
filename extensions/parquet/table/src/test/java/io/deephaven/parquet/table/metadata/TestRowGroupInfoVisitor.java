@@ -104,7 +104,7 @@ public class TestRowGroupInfoVisitor {
                 byGroups.getGroups().forEach(groups::add);
                 jsonNode.set("groups", groups);
                 final OptionalLong maxRows = byGroups.getMaxRows();
-                if (maxRows.isPresent())  {
+                if (maxRows.isPresent()) {
                     jsonNode.put("maxRows", maxRows.getAsLong());
                 }
                 jsonNode.put(NAME_ATTR, byGroups.getClass().getSimpleName());
@@ -234,8 +234,8 @@ public class TestRowGroupInfoVisitor {
         @Override
         public RowGroupInfo visit(final @NotNull RowGroupInfo.ByGroups byGroups) {
             final OptionalLong maxRows = byGroups.getMaxRows();
-            return maxRows.isPresent() ? RowGroupInfo.byGroups(maxRows.getAsLong(), byGroups.getGroups()) :
-                    RowGroupInfo.byGroups(byGroups.getGroups());
+            return maxRows.isPresent() ? RowGroupInfo.byGroups(maxRows.getAsLong(), byGroups.getGroups())
+                    : RowGroupInfo.byGroups(byGroups.getGroups());
         }
     }
 
