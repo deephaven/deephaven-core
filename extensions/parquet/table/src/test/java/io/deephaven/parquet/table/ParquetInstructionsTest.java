@@ -33,7 +33,7 @@ public class ParquetInstructionsTest {
         assertThat(ParquetInstructions.EMPTY.getFileLayout()).isEmpty();
         assertThat(ParquetInstructions.EMPTY.getTableDefinition()).isEmpty();
         assertThat(ParquetInstructions.EMPTY.getIndexColumns()).isEmpty();
-        assertThat(ParquetInstructions.EMPTY.getRowGroupInfo().equals(RowGroupInfo.singleRowGroup())).isTrue();
+        assertThat(ParquetInstructions.EMPTY.getRowGroupInfo().equals(RowGroupInfo.singleGroup())).isTrue();
         assertThat(ParquetInstructions.EMPTY.getColumnResolverFactory()).isEmpty();
         assertThat(ParquetInstructions.EMPTY.baseNameForPartitionedParquetData()).isEqualTo("{uuid}");
     }

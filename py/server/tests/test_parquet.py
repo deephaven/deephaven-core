@@ -119,7 +119,7 @@ class ParquetTestCase(BaseTestCase):
             shutil.rmtree(base_dir)
 
         with self.subTest(msg="write_table(Table, str, row_group_info)"):
-            write(table, file_location, row_group_info=RowGroupInfo.with_max_rows(1))
+            write(table, file_location, row_group_info=RowGroupInfo.max_rows(1))
             self.assertTrue(os.path.exists(file_location))
             # 3 rows in `table`, so there should be 3 RowGroups, each with 1 row
             md = pyarrow.parquet.read_metadata(file_location)

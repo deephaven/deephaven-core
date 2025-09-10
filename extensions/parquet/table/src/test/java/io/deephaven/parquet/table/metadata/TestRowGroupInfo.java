@@ -34,13 +34,13 @@ public class TestRowGroupInfo {
     @Test
     public void testEqualities() {
         final List<RowGroupInfo> distinctConfigs = List.of(
-                RowGroupInfo.singleRowGroup(),
-                RowGroupInfo.withMaxRows(42),
-                RowGroupInfo.withMaxRows(41),
-                RowGroupInfo.splitEvenly(13),
-                RowGroupInfo.splitEvenly(1),
-                RowGroupInfo.byGroup("a", "b"),
-                RowGroupInfo.byGroup(99, "a", "b"));
+                RowGroupInfo.singleGroup(),
+                RowGroupInfo.maxRows(42),
+                RowGroupInfo.maxRows(41),
+                RowGroupInfo.maxGroups(13),
+                RowGroupInfo.maxGroups(1),
+                RowGroupInfo.byGroups("a", "b"),
+                RowGroupInfo.byGroups(99, "a", "b"));
 
         distinctConfigs.forEach((config) -> assertEquals(String.format("%s == %s", config, config), config, config));
 

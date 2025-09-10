@@ -83,7 +83,7 @@ public class TestRowGroupTableIteratorVisitor {
      */
     @Test
     public void testSingleRowGroup() {
-        final List<Table> rowGroups = getRowGroups(testTable, RowGroupInfo.singleRowGroup());
+        final List<Table> rowGroups = getRowGroups(testTable, RowGroupInfo.singleGroup());
         assertEquals("singleRowGroup returns single RowGroup", 1, rowGroups.size());
     }
 
@@ -96,7 +96,7 @@ public class TestRowGroupTableIteratorVisitor {
      * @param expectedNumRowGroups the expected number of RowGroups
      */
     private static void assertSplitEvenly(final @NotNull Table input, long numRowGroups, long expectedNumRowGroups) {
-        final List<Table> rowGroups = getRowGroups(input, RowGroupInfo.splitEvenly(numRowGroups));
+        final List<Table> rowGroups = getRowGroups(input, RowGroupInfo.maxGroups(numRowGroups));
         final String totalMsg =
                 String.format("splitEvenly(%d) returns %d RowGroups", numRowGroups, expectedNumRowGroups);
         assertEquals(totalMsg, expectedNumRowGroups, rowGroups.size()); // we have the expected number of RowGroups
@@ -156,7 +156,7 @@ public class TestRowGroupTableIteratorVisitor {
      * @param expectedRowGroups the expected number of RowGroups that should be defined
      */
     private static void assertMaxRows(final @NotNull Table input, long maxRows, long expectedRowGroups) {
-        final List<Table> rowGroups = getRowGroups(input, RowGroupInfo.withMaxRows(maxRows));
+        final List<Table> rowGroups = getRowGroups(input, RowGroupInfo.maxRows(maxRows));
         final long calcdRowGroups = (input.size() / maxRows) + (input.size() % maxRows > 0 ? 1 : 0);
         assertEquals("Expected RowGroups matches Calculated RowGroups", expectedRowGroups, calcdRowGroups);
         final String msg = String.format("withMaxRows(%d) returns %d RowGroups", maxRows, expectedRowGroups);
@@ -217,7 +217,7 @@ public class TestRowGroupTableIteratorVisitor {
         // if this fails, then the underlying table has changed, and we need to update this test
         assertTrue("InputTable contains grouping column(s)", sortedTable.hasColumns(groupCol));
 
-        final List<Table> rowGroups = getRowGroups(sortedTable, RowGroupInfo.byGroup(groupCol));
+        final List<Table> rowGroups = getRowGroups(sortedTable, RowGroupInfo.byGroups(groupCol));
         final long expectedRowGroups = sortedTable.partitionBy(groupCol).constituents().length;
 
         final String msgNoMax = String.format("byGroup(%s) groups", Arrays.toString(groupCol));
@@ -237,7 +237,7 @@ public class TestRowGroupTableIteratorVisitor {
 
         final long maxRows = 10;
 
-        final List<Table> rowGroups = getRowGroups(sortedTable, RowGroupInfo.byGroup(maxRows, groupCol));
+        final List<Table> rowGroups = getRowGroups(sortedTable, RowGroupInfo.byGroups(maxRows, groupCol));
         final long minimumRowGroups = sortedTable.partitionBy(groupCol).constituents().length;
 
         final String msgNoMax = String.format("byGroup(%d, %s) groups", maxRows, Arrays.toString(groupCol));
@@ -253,11 +253,11 @@ public class TestRowGroupTableIteratorVisitor {
     @Test
     public void testBadParams() {
         final IllegalArgumentException iae0 = assertThrowsExactly(IllegalArgumentException.class,
-                () -> getRowGroups(testTable, RowGroupInfo.splitEvenly(0)));
+                () -> getRowGroups(testTable, RowGroupInfo.maxGroups(0)));
         assertEquals("Cannot define less than 1 RowGroup", iae0.getMessage());
 
         final IllegalArgumentException iae1 =
-                assertThrowsExactly(IllegalArgumentException.class, () -> RowGroupInfo.withMaxRows(0));
+                assertThrowsExactly(IllegalArgumentException.class, () -> RowGroupInfo.maxRows(0));
         assertEquals("MaxRows must be positive", iae1.getMessage());
     }
 
@@ -270,7 +270,7 @@ public class TestRowGroupTableIteratorVisitor {
         assertTrue("InputTable contains grouping column(s)", testTable.hasColumns(groupCol));
 
         final IllegalStateException iae = assertThrowsExactly(IllegalStateException.class,
-                () -> getRowGroups(testTable, RowGroupInfo.byGroup(groupCol)));
+                () -> getRowGroups(testTable, RowGroupInfo.byGroups(groupCol)));
         assertTrue("byGroup(...) fail message is informative",
                 iae.getMessage()
                         .startsWith(String.format("Misordered for Grouping column(s) %s:", Arrays.toString(groupCol))));

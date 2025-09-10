@@ -3363,19 +3363,19 @@ public final class ParquetTableReadWriteTest {
         parentDir.mkdir();
 
         // write a single RowGroup
-        writeAndVerifyTable(testTable, new File(parentDir, "multipleRowGroups0.parquet"), RowGroupInfo.singleRowGroup(),
+        writeAndVerifyTable(testTable, new File(parentDir, "multipleRowGroups0.parquet"), RowGroupInfo.singleGroup(),
                 new Long[] {10L});
 
         // write a (very inefficient) table with a RowGroup dedicated to each row
-        writeAndVerifyTable(testTable, new File(parentDir, "multipleRowGroups1.parquet"), RowGroupInfo.withMaxRows(1),
+        writeAndVerifyTable(testTable, new File(parentDir, "multipleRowGroups1.parquet"), RowGroupInfo.maxRows(1),
                 new Long[] {1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L});
 
         // write a table with 3 RowGroups (of sizes {4, 3, 3})
-        writeAndVerifyTable(testTable, new File(parentDir, "multipleRowGroups2.parquet"), RowGroupInfo.splitEvenly(3),
+        writeAndVerifyTable(testTable, new File(parentDir, "multipleRowGroups2.parquet"), RowGroupInfo.maxGroups(3),
                 new Long[] {4L, 3L, 3L});
 
         // write a table split by column `D`, with a maximum of 3 rows per RowGroup
-        writeAndVerifyTable(testTable, new File(parentDir, "multipleRowGroups3.parquet"), RowGroupInfo.byGroup(3, "D"),
+        writeAndVerifyTable(testTable, new File(parentDir, "multipleRowGroups3.parquet"), RowGroupInfo.byGroups(3, "D"),
                 new Long[] {1L, 2L, 3L, 2L, 2L});
 
         FileUtils.deleteRecursively(parentDir);

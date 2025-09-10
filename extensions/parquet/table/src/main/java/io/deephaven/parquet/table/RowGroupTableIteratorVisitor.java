@@ -15,6 +15,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Objects;
+import java.util.OptionalLong;
 
 final class RowGroupTableIteratorVisitor implements RowGroupInfo.Visitor<Iterator<Table>> {
 
@@ -23,11 +24,14 @@ final class RowGroupTableIteratorVisitor implements RowGroupInfo.Visitor<Iterato
     }
 
     private static Iterator<Table> splitByMaxRows(final Table input, final long maxRows) {
+        if (maxRows == Long.MAX_VALUE) {
+            return List.of(input).iterator();
+        }
         final long numRowGroups = (input.size() / maxRows) + ((input.size() % maxRows) > 0 ? 1 : 0);
-        return splitByNumGroups(input, numRowGroups);
+        return splitByMaxGroups(input, numRowGroups);
     }
 
-    private static Iterator<Table> splitByNumGroups(final Table table, final long numGroups) {
+    private static Iterator<Table> splitByMaxGroups(final Table table, final long numGroups) {
         if (numGroups < 1) {
             throw new IllegalArgumentException("Number of groups must be at least 1, got: " + numGroups);
         } else if (numGroups == 1) {
@@ -38,27 +42,27 @@ final class RowGroupTableIteratorVisitor implements RowGroupInfo.Visitor<Iterato
 
     private final Table input;
 
-    private RowGroupTableIteratorVisitor(Table input) {
+    private RowGroupTableIteratorVisitor(final @NotNull Table input) {
         this.input = Objects.requireNonNull(input);
     }
 
     @Override
-    public Iterator<Table> visit(final @NotNull RowGroupInfo.SingleRowGroup single) {
+    public Iterator<Table> visit(final @NotNull RowGroupInfo.SingleGroup single) {
         return List.of(input).iterator();
     }
 
     @Override
-    public Iterator<Table> visit(final @NotNull RowGroupInfo.SplitEvenly splitEvenly) {
-        return splitByNumGroups(input, splitEvenly.getNumRowGroups());
+    public Iterator<Table> visit(final @NotNull RowGroupInfo.MaxGroups maxGroups) {
+        return splitByMaxGroups(input, maxGroups.getNumRowGroups());
     }
 
     @Override
-    public Iterator<Table> visit(final @NotNull RowGroupInfo.SplitByMaxRows withMaxRows) {
-        return splitByMaxRows(input, withMaxRows.getMaxRows());
+    public Iterator<Table> visit(final @NotNull RowGroupInfo.MaxRows maxRows) {
+        return splitByMaxRows(input, maxRows.getMaxRows());
     }
 
     @Override
-    public Iterator<Table> visit(final @NotNull RowGroupInfo.SplitByGroups byGroups) {
+    public Iterator<Table> visit(final @NotNull RowGroupInfo.ByGroups byGroups) {
         return new SplitByGroupsIterator(input, byGroups);
     }
 
@@ -102,12 +106,12 @@ final class RowGroupTableIteratorVisitor implements RowGroupInfo.Visitor<Iterato
 
     private static class SplitByGroupsIterator implements Iterator<Table> {
         private final Table[] partitionedTables;
-        private final RowGroupInfo.SplitByGroups config;
+        private final RowGroupInfo.ByGroups config;
 
         private int nextTable;
         private Iterator<Table> subIter;
 
-        private SplitByGroupsIterator(final @NotNull Table input, final RowGroupInfo.SplitByGroups config) {
+        private SplitByGroupsIterator(final @NotNull Table input, final RowGroupInfo.ByGroups config) {
             final String[] groups = config.getGroups().toArray(String[]::new);
             ensureOrderedForGrouping(input, groups);
             this.partitionedTables = input.partitionBy(groups).constituents();
@@ -133,7 +137,7 @@ final class RowGroupTableIteratorVisitor implements RowGroupInfo.Visitor<Iterato
 
             // else we've moved on to the next partitioned table
             final Table subTable = partitionedTables[nextTable++];
-            subIter = splitByMaxRows(subTable, config.getMaxRows());
+            subIter = splitByMaxRows(subTable, config.getMaxRows().orElse(Long.MAX_VALUE));
             return subIter.next();
         }
     }

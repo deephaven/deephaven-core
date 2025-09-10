@@ -6,6 +6,7 @@ package io.deephaven.parquet.table.metadata;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
@@ -15,6 +16,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.OptionalLong;
 import java.util.function.Function;
 
 import static java.util.Map.entry;
@@ -37,10 +39,10 @@ public class TestRowGroupInfoVisitor {
          * {@link ObjectNode}, which has been previously serialized from a different {@link RowGroupInfo} instance
          */
         private static final Map<String, Function<ObjectNode, RowGroupInfo>> DESER_MAP = Map.ofEntries(
-                entry(RowGroupInfo.SingleRowGroup.class.getSimpleName(), (node) -> RowGroupInfo.singleRowGroup()),
-                entry(RowGroupInfo.SplitByMaxRows.class.getSimpleName(), RowGroup2JsonVisitor::constructMaxRows),
-                entry(RowGroupInfo.SplitEvenly.class.getSimpleName(), RowGroup2JsonVisitor::constructSplitEvenly),
-                entry(RowGroupInfo.SplitByGroups.class.getSimpleName(), RowGroup2JsonVisitor::constructByGroup));
+                entry(RowGroupInfo.SingleGroup.class.getSimpleName(), (node) -> RowGroupInfo.singleGroup()),
+                entry(RowGroupInfo.MaxRows.class.getSimpleName(), RowGroup2JsonVisitor::constructMaxRows),
+                entry(RowGroupInfo.MaxGroups.class.getSimpleName(), RowGroup2JsonVisitor::constructMaxGroups),
+                entry(RowGroupInfo.ByGroups.class.getSimpleName(), RowGroup2JsonVisitor::constructByGroups));
         private static final String NAME_ATTR = "name";
 
         private final ObjectMapper mapper;
@@ -50,7 +52,7 @@ public class TestRowGroupInfoVisitor {
         }
 
         @Override
-        public String visit(final @NotNull RowGroupInfo.SingleRowGroup single) {
+        public String visit(final @NotNull RowGroupInfo.SingleGroup single) {
             final String jsonStr;
             try {
                 // no properties to read; start with an empty node and add the type-specific name
@@ -65,12 +67,12 @@ public class TestRowGroupInfoVisitor {
         }
 
         @Override
-        public String visit(final @NotNull RowGroupInfo.SplitEvenly splitEvenly) {
+        public String visit(final @NotNull RowGroupInfo.MaxGroups maxGroups) {
             final String jsonStr;
             try {
                 // read type-specific properties and add the type-specific name
-                final ObjectNode jsonNode = mapper.valueToTree(splitEvenly);
-                jsonNode.put(NAME_ATTR, splitEvenly.getClass().getSimpleName());
+                final ObjectNode jsonNode = mapper.valueToTree(maxGroups);
+                jsonNode.put(NAME_ATTR, maxGroups.getClass().getSimpleName());
                 jsonStr = mapper.writeValueAsString(jsonNode);
             } catch (JsonProcessingException e) {
                 throw new RuntimeException(e);
@@ -79,12 +81,12 @@ public class TestRowGroupInfoVisitor {
         }
 
         @Override
-        public String visit(final @NotNull RowGroupInfo.SplitByMaxRows withMaxRows) {
+        public String visit(final @NotNull RowGroupInfo.MaxRows maxRows) {
             final String jsonStr;
             try {
                 // read type-specific properties and add the type-specific name
-                final ObjectNode jsonNode = mapper.valueToTree(withMaxRows);
-                jsonNode.put(NAME_ATTR, withMaxRows.getClass().getSimpleName());
+                final ObjectNode jsonNode = mapper.valueToTree(maxRows);
+                jsonNode.put(NAME_ATTR, maxRows.getClass().getSimpleName());
                 jsonStr = mapper.writeValueAsString(jsonNode);
             } catch (JsonProcessingException e) {
                 throw new RuntimeException(e);
@@ -93,11 +95,18 @@ public class TestRowGroupInfoVisitor {
         }
 
         @Override
-        public String visit(final @NotNull RowGroupInfo.SplitByGroups byGroups) {
+        public String visit(final @NotNull RowGroupInfo.ByGroups byGroups) {
             final String jsonStr;
             try {
                 // read type-specific properties and add the type-specific name
-                final ObjectNode jsonNode = mapper.valueToTree(byGroups);
+                final ObjectNode jsonNode = mapper.createObjectNode();
+                final ArrayNode groups = mapper.createArrayNode();
+                byGroups.getGroups().forEach(groups::add);
+                jsonNode.set("groups", groups);
+                final OptionalLong maxRows = byGroups.getMaxRows();
+                if (maxRows.isPresent())  {
+                    jsonNode.put("maxRows", maxRows.getAsLong());
+                }
                 jsonNode.put(NAME_ATTR, byGroups.getClass().getSimpleName());
                 jsonStr = mapper.writeValueAsString(jsonNode);
             } catch (JsonProcessingException e) {
@@ -125,44 +134,43 @@ public class TestRowGroupInfoVisitor {
         }
 
         /**
-         * Deserialize a new {@link RowGroupInfo.SplitByMaxRows} instance, based on the serialized {@link ObjectNode}
+         * Deserialize a new {@link RowGroupInfo.MaxRows} instance, based on the serialized {@link ObjectNode}
          *
          * @param node a serialized {@link RowGroupInfo}, represented as an {@link ObjectNode}
          * @return a new deserialized {@link RowGroupInfo} instance
          */
         private static RowGroupInfo constructMaxRows(final @NotNull ObjectNode node) {
-            return RowGroupInfo.withMaxRows(node.get("maxRows").asLong());
+            return RowGroupInfo.maxRows(node.get("maxRows").asLong());
         }
 
         /**
-         * Deserialize a new {@link RowGroupInfo.SplitEvenly} instance, based on the serialized {@link ObjectNode}
+         * Deserialize a new {@link RowGroupInfo.MaxGroups} instance, based on the serialized {@link ObjectNode}
          *
          * @param node a serialized {@link RowGroupInfo}, represented as an {@link ObjectNode}
          * @return a new deserialized {@link RowGroupInfo} instance
          */
-        private static RowGroupInfo constructSplitEvenly(final @NotNull ObjectNode node) {
-            return RowGroupInfo.splitEvenly(node.get("numRowGroups").asLong());
+        private static RowGroupInfo constructMaxGroups(final @NotNull ObjectNode node) {
+            return RowGroupInfo.maxGroups(node.get("numRowGroups").asLong());
         }
 
         /**
-         * Deserialize a new {@link RowGroupInfo.SplitByGroups} instance, based on the serialized {@link ObjectNode}
+         * Deserialize a new {@link RowGroupInfo.ByGroups} instance, based on the serialized {@link ObjectNode}
          *
          * @param node a serialized {@link RowGroupInfo}, represented as an {@link ObjectNode}
          * @return a new deserialized {@link RowGroupInfo} instance
          */
-        private static RowGroupInfo constructByGroup(final @NotNull ObjectNode node) {
-            final long maxRows = node.get("maxRows").asLong();
+        private static RowGroupInfo constructByGroups(final @NotNull ObjectNode node) {
             final List<String> groups = new ArrayList<>();
             final Iterator<JsonNode> groupsNode = node.get("groups").elements();
             while (groupsNode.hasNext()) {
                 groups.add(groupsNode.next().asText());
             }
 
-            if (maxRows == Long.MAX_VALUE) {
-                // could use the 2-param constructor, but it's nice to use both in the test ...
-                return RowGroupInfo.byGroup(groups.toArray(new String[0]));
+            if (node.has("maxRows")) {
+                return RowGroupInfo.byGroups(node.get("maxRows").asLong(), groups.toArray(new String[0]));
             } else {
-                return RowGroupInfo.byGroup(maxRows, groups.toArray(new String[0]));
+                // could use the 2-param constructor, but it's nice to use both in the test ...
+                return RowGroupInfo.byGroups(groups.toArray(new String[0]));
             }
 
         }
@@ -192,11 +200,11 @@ public class TestRowGroupInfoVisitor {
     public void testJsonVisitor() throws IOException {
         final RowGroup2JsonVisitor jsonVisitor = new RowGroup2JsonVisitor();
 
-        verifyJsonVisitor(jsonVisitor, RowGroupInfo.singleRowGroup());
-        verifyJsonVisitor(jsonVisitor, RowGroupInfo.withMaxRows(42));
-        verifyJsonVisitor(jsonVisitor, RowGroupInfo.splitEvenly(13));
-        verifyJsonVisitor(jsonVisitor, RowGroupInfo.byGroup("a", "b"));
-        verifyJsonVisitor(jsonVisitor, RowGroupInfo.byGroup(99, "c", "d"));
+        verifyJsonVisitor(jsonVisitor, RowGroupInfo.singleGroup());
+        verifyJsonVisitor(jsonVisitor, RowGroupInfo.maxRows(42));
+        verifyJsonVisitor(jsonVisitor, RowGroupInfo.maxGroups(13));
+        verifyJsonVisitor(jsonVisitor, RowGroupInfo.byGroups("a", "b"));
+        verifyJsonVisitor(jsonVisitor, RowGroupInfo.byGroups(99, "c", "d"));
 
         final UnsupportedOperationException uoe = assertThrowsExactly(UnsupportedOperationException.class,
                 () -> verifyJsonVisitor(jsonVisitor, new UnsupportedImpl()));
@@ -209,23 +217,25 @@ public class TestRowGroupInfoVisitor {
      */
     private static class RowGroup2SelfVisitor implements RowGroupInfo.Visitor<RowGroupInfo> {
         @Override
-        public RowGroupInfo visit(final @NotNull RowGroupInfo.SingleRowGroup single) {
-            return RowGroupInfo.singleRowGroup();
+        public RowGroupInfo visit(final @NotNull RowGroupInfo.SingleGroup single) {
+            return RowGroupInfo.singleGroup();
         }
 
         @Override
-        public RowGroupInfo visit(final @NotNull RowGroupInfo.SplitEvenly splitEvenly) {
-            return RowGroupInfo.splitEvenly(splitEvenly.getNumRowGroups());
+        public RowGroupInfo visit(final @NotNull RowGroupInfo.MaxGroups maxGroups) {
+            return RowGroupInfo.maxGroups(maxGroups.getNumRowGroups());
         }
 
         @Override
-        public RowGroupInfo visit(final @NotNull RowGroupInfo.SplitByMaxRows withMaxRows) {
-            return RowGroupInfo.withMaxRows(withMaxRows.getMaxRows());
+        public RowGroupInfo visit(final @NotNull RowGroupInfo.MaxRows maxRows) {
+            return RowGroupInfo.maxRows(maxRows.getMaxRows());
         }
 
         @Override
-        public RowGroupInfo visit(final @NotNull RowGroupInfo.SplitByGroups byGroups) {
-            return RowGroupInfo.byGroup(byGroups.getMaxRows(), byGroups.getGroups());
+        public RowGroupInfo visit(final @NotNull RowGroupInfo.ByGroups byGroups) {
+            final OptionalLong maxRows = byGroups.getMaxRows();
+            return maxRows.isPresent() ? RowGroupInfo.byGroups(maxRows.getAsLong(), byGroups.getGroups()) :
+                    RowGroupInfo.byGroups(byGroups.getGroups());
         }
     }
 
@@ -251,11 +261,11 @@ public class TestRowGroupInfoVisitor {
     public void testSelfVisitor() {
         final RowGroup2SelfVisitor selfVisitor = new RowGroup2SelfVisitor();
 
-        testVisitor(selfVisitor, RowGroupInfo.singleRowGroup());
-        testVisitor(selfVisitor, RowGroupInfo.splitEvenly(24));
-        testVisitor(selfVisitor, RowGroupInfo.withMaxRows(1500));
-        testVisitor(selfVisitor, RowGroupInfo.byGroup("a", "b"));
-        testVisitor(selfVisitor, RowGroupInfo.byGroup(200, "b", "c"));
+        testVisitor(selfVisitor, RowGroupInfo.singleGroup());
+        testVisitor(selfVisitor, RowGroupInfo.maxGroups(24));
+        testVisitor(selfVisitor, RowGroupInfo.maxRows(1500));
+        testVisitor(selfVisitor, RowGroupInfo.byGroups("a", "b"));
+        testVisitor(selfVisitor, RowGroupInfo.byGroups(200, "b", "c"));
 
         final UnsupportedOperationException uoe = assertThrowsExactly(UnsupportedOperationException.class,
                 () -> testVisitor(selfVisitor, new UnsupportedImpl()));

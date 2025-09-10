@@ -328,7 +328,7 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
 
         @Override
         public RowGroupInfo getRowGroupInfo() {
-            return RowGroupInfo.singleRowGroup();
+            return RowGroupInfo.singleGroup();
         }
 
         @Override
@@ -658,7 +658,7 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
 
         @Override
         public RowGroupInfo getRowGroupInfo() {
-            return rowGroupInfo != null ? rowGroupInfo : RowGroupInfo.singleRowGroup();
+            return rowGroupInfo != null ? rowGroupInfo : RowGroupInfo.singleGroup();
         }
 
         @Override
