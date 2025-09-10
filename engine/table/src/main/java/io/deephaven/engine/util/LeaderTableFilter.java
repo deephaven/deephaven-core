@@ -153,7 +153,6 @@ public class LeaderTableFilter {
     private final String leaderName;
     private final int binarySearchThreshold;
 
-
     private class LeaderKeyState {
         LeaderKeyState() {
             leaderRows = new TLongArrayList();
@@ -344,13 +343,6 @@ public class LeaderTableFilter {
             followerIdsInLeaderSources[ii] = leaderTable.getColumnSource(ftd.leaderIdColumn, long.class);
             followerResultRowSets[ii] = RowSetFactory.empty().toTracking();
             followerResults[ii] = followerTable.getSubTable(followerResultRowSets[ii], null, null, mergedListener);
-            /*
-             * getSubTable sets the notification step to the parent's last notification step. We know that this table
-             * has just been created, so we can set it's notification step to this one. This will ensure that any
-             * downstream operations like an updateView tied to the parent tables on a ComputedTableMap doesn't try to
-             * use previous values on the LTM. In the event that this table isn't ticking, then there is no harm done
-             * because we won't care about previous values anyway.
-             */
             followerResults[ii].setLastNotificationStep(leaderUpdateGraph.clock().currentStep());
             createFollowerRecorder(ftd);
         }
@@ -417,19 +409,15 @@ public class LeaderTableFilter {
 
         @Override
         protected void process() {
-            final long currentStep = getUpdateGraph().clock().currentStep();
-
-            if (recorders.get(0).getNotificationStep() == currentStep) {
+            if (recorders.get(0).recordedVariablesAreValid()) {
                 final ListenerRecorder recorder = recorders.get(0);
-                assertNoModifications(recorder);
                 consumeLeaderRows(recorder.getAdded());
             }
 
             for (int rr = 1; rr < recorders.size(); ++rr) {
                 final ListenerRecorder recorder = recorders.get(rr);
-                if (recorder.getNotificationStep() == currentStep) {
+                if (recorder.recordedVariablesAreValid()) {
                     // we are valid
-                    assertNoModifications(recorder);
                     consumeFollowerRows(rr - 1, recorder.getAdded());
                 }
             }
@@ -506,18 +494,6 @@ public class LeaderTableFilter {
             }
         }
 
-        private void assertNoModifications(final ListenerRecorder recorder) {
-            if (recorder.getRemoved().isNonempty()) {
-                throw new IllegalStateException("Can not process removed rows in LeaderTableFilter!");
-            }
-            if (recorder.getModified().isNonempty()) {
-                throw new IllegalStateException("Can not process modified rows in LeaderTableFilter!");
-            }
-            if (recorder.getShifted().nonempty()) {
-                throw new IllegalStateException("Can not process shifted rows in LeaderTableFilter!");
-            }
-        }
-
         @Override
         protected void propagateErrorDownstream(boolean fromProcess, @NotNull Throwable error,
                 TableListener.@Nullable Entry entry) {
@@ -568,8 +544,8 @@ public class LeaderTableFilter {
             // We could also binary search at the end of the segment to determine the exact set of matchValues, but
             // the initialization case is more likely to have a lot of rows at the "front" which are old, and no
             // longer relevant. A third possibility would be to have the state contain a map from ID to matching
-            // indices (instead of just the pending rows), and we could then directly match the rows without the
-            // need to reread them at all at the cost of maintaining more indices.
+            // row keys (instead of just the pending rows), and we could then directly match the rows without the
+            // need to reread them at all at the cost of maintaining more row keys.
             long firstPositionInclusive = 0;
             long lastPositionExclusive = state.pendingRows.size();
             while (firstPositionInclusive < lastPositionExclusive - 1) {
@@ -590,22 +566,22 @@ public class LeaderTableFilter {
 
         final int pendingChunkSize = (int) Math.min(state.pendingRows.size(), CHUNK_SIZE);
 
-        try (final WritableLongChunk<OrderedRowKeys> rowIndicesChunk =
+        try (final WritableLongChunk<OrderedRowKeys> rowKeysChunk =
                 WritableLongChunk.makeWritableChunk(pendingChunkSize);
-                final RowSequence.Iterator okit = state.pendingRows.getRowSequenceIterator();
+                final RowSequence.Iterator rsit = state.pendingRows.getRowSequenceIterator();
                 final ColumnSource.GetContext getContext =
                         followerIdSources[tableIndex].makeGetContext(pendingChunkSize)) {
-            while (okit.hasMore()) {
-                final RowSequence chunkRs = okit.getNextRowSequenceWithLength(pendingChunkSize);
-                chunkRs.fillRowKeyChunk(rowIndicesChunk);
+            while (rsit.hasMore()) {
+                final RowSequence chunkRs = rsit.getNextRowSequenceWithLength(pendingChunkSize);
+                chunkRs.fillRowKeyChunk(rowKeysChunk);
                 final LongChunk<? extends Values> idChunk =
                         followerIdSources[tableIndex].getChunk(getContext, chunkRs).asLongChunk();
                 for (int ii = 0; ii < idChunk.size(); ++ii) {
                     final long id = idChunk.get(ii);
                     if (id > matchValue) {
-                        pendingBuilder.appendKey(rowIndicesChunk.get(ii));
+                        pendingBuilder.appendKey(rowKeysChunk.get(ii));
                     } else if (id == matchValue) {
-                        matchedBuilder.appendKey(rowIndicesChunk.get(ii));
+                        matchedBuilder.appendKey(rowKeysChunk.get(ii));
                     }
                 }
             }
@@ -779,12 +755,14 @@ public class LeaderTableFilter {
         final LongChunk<? extends Values>[] followerIdsInLeaderChunks =
                 new LongChunk[followerIdsInLeaderSources.length];
 
+        // TODO: use a more Math.min chunksize
+
         try (SharedContext sharedContext = SharedContext.makeSharedContext();
                 final WritableChunk<Values> primitiveLeaderKeyChunk = keyChunkType.makeWritableChunk(CHUNK_SIZE);
                 final RowSequence.Iterator rsit = rowset.getRowSequenceIterator();
                 final ChunkSource.FillContext keyFillContext =
                         leaderKeySource.makeFillContext(CHUNK_SIZE, sharedContext);
-                final WritableLongChunk<OrderedRowKeys> rowIndicesChunk =
+                final WritableLongChunk<OrderedRowKeys> rowKeysChunk =
                         WritableLongChunk.makeWritableChunk(CHUNK_SIZE);
                 final ChunkBoxer.BoxerKernel boxerKernel = ChunkBoxer.getBoxer(keyChunkType, CHUNK_SIZE);
                 final SafeCloseableArray<ChunkSource.GetContext> ignored = new SafeCloseableArray<>(idGetContexts)) {
@@ -794,7 +772,7 @@ public class LeaderTableFilter {
 
             while (rsit.hasMore()) {
                 final RowSequence chunkRs = rsit.getNextRowSequenceWithLength(CHUNK_SIZE);
-                chunkRs.fillRowKeyChunk(rowIndicesChunk);
+                chunkRs.fillRowKeyChunk(rowKeysChunk);
 
                 leaderKeySource.fillChunk(keyFillContext, primitiveLeaderKeyChunk, chunkRs);
                 final ObjectChunk<?, ? extends Values> leaderKeyChunk = boxerKernel.box(primitiveLeaderKeyChunk);
@@ -809,7 +787,7 @@ public class LeaderTableFilter {
                     final Object rowKey = leaderKeyChunk.get(ii);
                     final LeaderKeyState lks = leaderKeyStateMap.computeIfAbsent(rowKey, k -> new LeaderKeyState());
 
-                    lks.leaderRows.add(rowIndicesChunk.get(ii));
+                    lks.leaderRows.add(rowKeysChunk.get(ii));
                     for (int cc = 0; cc < followerIdsInLeaderChunks.length; ++cc) {
                         lks.pendingIdsByFollower[cc].add(followerIdsInLeaderChunks[cc].get(ii));
                     }
@@ -832,11 +810,11 @@ public class LeaderTableFilter {
                         followerKeySources[tableIndex].makeFillContext(CHUNK_SIZE);
                 final ChunkBoxer.BoxerKernel boxerKernel = ChunkBoxer.getBoxer(keyChunkType, CHUNK_SIZE);
                 final WritableLongChunk<Values> idChunk = WritableLongChunk.makeWritableChunk(CHUNK_SIZE);
-                final WritableLongChunk<OrderedRowKeys> rowIndicesChunk =
+                final WritableLongChunk<OrderedRowKeys> rowKeysChunk =
                         WritableLongChunk.makeWritableChunk(CHUNK_SIZE)) {
             while (rsit.hasMore()) {
                 final RowSequence chunkRs = rsit.getNextRowSequenceWithLength(CHUNK_SIZE);
-                chunkRs.fillRowKeyChunk(rowIndicesChunk);
+                chunkRs.fillRowKeyChunk(rowKeysChunk);
 
                 followerKeySources[tableIndex].fillChunk(keyFillContext, primitiveFollowerKeyValuesChunk, chunkRs);
                 final ObjectChunk<?, ? extends Values> followerKeyValuesChunk =
@@ -873,7 +851,7 @@ public class LeaderTableFilter {
                         if (currentState.currentIdBuilder == null) {
                             currentState.currentIdBuilder = RowSetFactory.builderSequential();
                         }
-                        currentState.currentIdBuilder.appendKey(rowIndicesChunk.get(ii));
+                        currentState.currentIdBuilder.appendKey(rowKeysChunk.get(ii));
                         continue;
                     }
 
@@ -881,7 +859,7 @@ public class LeaderTableFilter {
                         currentState.unprocessedBuilder = RowSetFactory.builderSequential();
                     }
 
-                    currentState.unprocessedBuilder.appendKey(rowIndicesChunk.get(ii));
+                    currentState.unprocessedBuilder.appendKey(rowKeysChunk.get(ii));
                     final int unprocessedCount = currentState.unprocessedIds.size();
                     if (unprocessedCount == 0) {
                         currentState.unprocessedIds.add(id);
