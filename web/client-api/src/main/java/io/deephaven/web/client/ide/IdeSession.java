@@ -258,10 +258,12 @@ public class IdeSession extends HasEventHandling {
         });
         runCodePromise.then(response -> {
             JsVariableChanges changes = JsVariableChanges.from(response.getChanges());
+            final String startTimestamp = response.getStartTimestamp();
+            final String endTimestamp = response.getEndTimestamp();
             if (response.getErrorMessage() == null || response.getErrorMessage().isEmpty()) {
-                promise.succeed(new JsCommandResult(changes, null));
+                promise.succeed(new JsCommandResult(changes, null, startTimestamp, endTimestamp));
             } else {
-                promise.succeed(new JsCommandResult(changes, response.getErrorMessage()));
+                promise.succeed(new JsCommandResult(changes, response.getErrorMessage(), startTimestamp, endTimestamp));
             }
             return null;
         }, err -> {
