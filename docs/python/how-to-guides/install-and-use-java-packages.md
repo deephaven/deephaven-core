@@ -91,7 +91,7 @@ s = Server(
         "-Xmx4g",
         "-DAuthHandlers=io.deephaven.auth.AnonymousAuthenticationHandler",
     ],
-    extra_classpath="/home/user/java/libs/"
+    extra_classpath="/home/user/java/libs/",
 )
 s.start()
 ```
@@ -147,7 +147,7 @@ export EXTRA_CLASSPATH=/path/to/libs/*:/apps/libs/*
 
 ## Use Java packages in query strings
 
-To use the installed Java packages in query strings, you must provide the full package name. The following code calls [`org.codehaus.plexus.util.StringUtils.abbreviate`](<https://codehaus-plexus.github.io/plexus-utils/apidocs/org/codehaus/plexus/util/StringUtils.html#abbreviate(java.lang.String,int)>) from the [Plexus Common Utilities](https://codehaus-plexus.github.io/plexus-utils/) library to abbreviate a string.
+To use the installed Java packages in query strings, you must provide the full package name. The following code calls [`org.codehaus.plexus.util.StringUtils.abbreviate`](https://codehaus-plexus.github.io/plexus-utils/apidocs/org/codehaus/plexus/util/StringUtils.html#abbreviate(java.lang.String,int)) from the [Plexus Common Utilities](https://codehaus-plexus.github.io/plexus-utils/) library to abbreviate a string.
 
 ```python skip-test
 from deephaven import empty_table
@@ -155,7 +155,7 @@ from deephaven import empty_table
 source = empty_table(1).update(
     [
         "StringColumn = `Hello world`",
-        "Abbreviated = org.codehaus.plexus.util.StringUtils.abbreviate(StringColumn, 9)"
+        "Abbreviated = org.codehaus.plexus.util.StringUtils.abbreviate(StringColumn, 9)",
     ]
 )
 ```
