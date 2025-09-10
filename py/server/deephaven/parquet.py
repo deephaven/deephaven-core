@@ -70,13 +70,13 @@ class RowGroupInfo(JObjectWrapper):
     def __init__(self, j_row_group_info: jpy.JType):
         self.j_row_group_info = j_row_group_info
 
-    @staticmethod
-    def single_row_group() -> RowGroupInfo:
+    @classmethod
+    def single_row_group(cls) -> RowGroupInfo:
         """ All data is within a single RowGroup. This is the default RowGroupInfo implementation. """
-        return RowGroupInfo(_JRowGroupInfo.singleRowGroup())
+        return cls(_JRowGroupInfo.singleRowGroup())
 
-    @staticmethod
-    def split_evenly(num_row_groups: int) -> RowGroupInfo:
+    @classmethod
+    def split_evenly(cls, num_row_groups: int) -> RowGroupInfo:
         """
         Split evenly into a pre-defined number of RowGroups, each of which contains the same number of rows as
         each other. If the input table size is not evenly divisible by the number of RowGroups requested, then a
@@ -84,19 +84,19 @@ class RowGroupInfo(JObjectWrapper):
 
         :param num_row_groups: The number of RowGroups to write
          """
-        return RowGroupInfo(_JRowGroupInfo.splitEvenly(num_row_groups))
+        return cls(_JRowGroupInfo.splitEvenly(num_row_groups))
 
-    @staticmethod
-    def with_max_rows(max_rows: int) -> RowGroupInfo:
+    @classmethod
+    def with_max_rows(cls, max_rows: int) -> RowGroupInfo:
         """
         Splits into a number of RowGroups, each of which has no more than the requested number of rows.
 
         :param max_rows: The maximum number of rows in each RowGroup
         """
-        return RowGroupInfo(_JRowGroupInfo.withMaxRows(max_rows))
+        return cls(_JRowGroupInfo.withMaxRows(max_rows))
 
-    @staticmethod
-    def by_group(groups: List[str], max_rows: int = None) -> RowGroupInfo:
+    @classmethod
+    def by_group(cls, groups: List[str], max_rows: int = None) -> RowGroupInfo:
         """
         Splits each unique group into a RowGroup. If the table does not have all values for the group(s)
         contiguously, then an error will be raised. If max_rows is set and a given RowGroup yields a row count greater
@@ -106,9 +106,9 @@ class RowGroupInfo(JObjectWrapper):
         :param max_rows: (Optional) The maximum number of rows in each RowGroup
         """
         if max_rows:
-            return RowGroupInfo(_JRowGroupInfo.byGroup(max_rows, _j_string_array(groups)))
+            return cls(_JRowGroupInfo.byGroup(max_rows, _j_string_array(groups)))
         else:
-            return RowGroupInfo(_JRowGroupInfo.byGroup(_j_string_array(groups)))
+            return cls(_JRowGroupInfo.byGroup(_j_string_array(groups)))
 
 
 def _build_parquet_instructions(
