@@ -8,6 +8,7 @@ import gnu.trove.list.array.TLongArrayList;
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.JoinAddition;
 import io.deephaven.api.JoinMatch;
+import io.deephaven.api.Pair;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.*;
@@ -279,16 +280,13 @@ public class LeaderTableFilter {
         if (followerTables.isEmpty()) {
             throw new IllegalArgumentException("No tables specified!");
         }
+
         final UpdateGraph leaderUpdateGraph =
                 rawLeaderTable.getUpdateGraph(followerTables.stream().map(ftd -> ftd.table).toArray(Table[]::new));
-        leaderUpdateGraph.checkInitiateSerialTableOperation();
-
-
-        followerTables.forEach(table -> {
-            if (table.table.isRefreshing()) {
-                leaderUpdateGraph.checkInitiateSerialTableOperation();
-            }
-        });
+        final boolean refreshing = rawLeaderTable.isRefreshing() || followerTables.stream().anyMatch(ftd -> ftd.table.isRefreshing());
+        if (refreshing) {
+            leaderUpdateGraph.checkInitiateSerialTableOperation();
+        }
 
         final QueryTable leaderTable = (QueryTable) (rawLeaderTable.coalesce());
         if (!leaderTable.isAddOnly()) {
@@ -1009,11 +1007,10 @@ public class LeaderTableFilter {
          * @param keyColumns the key columns, each key is coordinated independently of the other keys
          * @return this builder
          */
-        // TODO: change MatchPair to Pair in the IMPL
-        public TableBuilder addTable(final String name, final Table table, final MatchPair idColumn,
+        public TableBuilder addTable(final String name, final Table table, final Pair idColumn,
                 final String... keyColumns) {
-            final String leaderIdColumn = idColumn.leftColumn;
-            final String followerIdColumn = idColumn.rightColumn;
+            final String leaderIdColumn = idColumn.output().name();
+            final String followerIdColumn = idColumn.input().name();
 
             if (leaderName.equals(name)) {
                 throw new IllegalArgumentException("Conflict with leader name \"" + name + "\"");
@@ -1135,9 +1132,9 @@ public class LeaderTableFilter {
          * @return this builder
          */
         public PartitionedTableBuilder addPartitionedTable(final String name, final PartitionedTable partitionedTable,
-                final MatchPair idColumn, final String... keyColumns) {
-            final String leaderIdColumn = idColumn.leftColumn;
-            final String followerIdColumn = idColumn.rightColumn;
+                final Pair idColumn, final String... keyColumns) {
+            final String leaderIdColumn = idColumn.output().name();
+            final String followerIdColumn = idColumn.input().name();
 
             if (leaderName.equals(name)) {
                 throw new IllegalArgumentException("Conflict with leader name \"" + name + "\"");
