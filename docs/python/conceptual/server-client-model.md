@@ -18,38 +18,38 @@ A client is a decentralized process that runs on a machine and sends requests to
 
 Restaurants are a good real-world analogy for servers and clients. Consider the following basic components of a restaurant:
 
-| Restaurant component | Software equivalent | Description |
-| --- | --- | --- |
-| Kitchen | Server | The centralized processing center where requests are fulfilled. |
-| Customers | Clients | The decentralized processes that send requests to the kitchen. |
-| Wait staff | Communications protocol | Transport requests between clients and the kitchen. |
+| Restaurant component | Software equivalent     | Description                                                     |
+| -------------------- | ----------------------- | --------------------------------------------------------------- |
+| Kitchen              | Server                  | The centralized processing center where requests are fulfilled. |
+| Customers            | Clients                 | The decentralized processes that send requests to the kitchen.  |
+| Wait staff           | Communications protocol | Transport requests between clients and the kitchen.             |
 
 Even the process by which a restaurant serves its customers is similar to how servers and clients interact:
 
 1. Initiation
 
-  - Restaurant: A customer enters the restaurant, is sat at a table, and orders food.
-  - Software: A client connects to a server, creates a session, and sends a request.
+- Restaurant: A customer enters the restaurant, is sat at a table, and orders food.
+- Software: A client connects to a server, creates a session, and sends a request.
 
 2. Request transmission
 
-  - Restaurant: A waiter takes the customer's order and ensures the kitchen receives it.
-  - Software: The request is serialized and transmitted over a network.
+- Restaurant: A waiter takes the customer's order and ensures the kitchen receives it.
+- Software: The request is serialized and transmitted over a network.
 
 3. Request processing
 
-  - Restaurant: The kitchen prepares the food requested by the customer.
-  - Software: The server fulfills the client request.
+- Restaurant: The kitchen prepares the food requested by the customer.
+- Software: The server fulfills the client request.
 
 4. Response transmission
 
-  - Restaurant: The kitchen notifies the wait staff that the food is ready, and a waiter/waitress transports the food to the customer.
-  - Software: The server finishes fulfilling the client request and a response is transmitted over a network back to the client.
+- Restaurant: The kitchen notifies the wait staff that the food is ready, and a waiter/waitress transports the food to the customer.
+- Software: The server finishes fulfilling the client request and a response is transmitted over a network back to the client.
 
 5. Consumption
 
-  - Restaurant: The customer eats their food.
-  - Software: The client receives and uses the server's response to complete its task.
+- Restaurant: The customer eats their food.
+- Software: The client receives and uses the server's response to complete its task.
 
 ### Additional analogues
 
