@@ -45,9 +45,8 @@ dependencies {
     // but we need to be able to compile against it to implement AwsClientFactory
     compileOnly libs.awssdk.dynamodb
 
-    // We don't want to explicitly pull in dependencies for KMS (there doesn't seem to be anything in Iceberg that
-    // actually calls it?), but we need to be able to compile against it to implement AwsClientFactory
-    compileOnly libs.awssdk.kms
+    // Needed for AwsClientFactory
+    implementation libs.awssdk.kms
 
     implementation libs.guava
 
