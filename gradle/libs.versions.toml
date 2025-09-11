@@ -6,7 +6,6 @@ autoservice = "1.1.1"
 avro = "1.12.0"
 awssdk = "2.29.52"
 aws-s3-tables-catalog-for-iceberg = "0.1.6"
-analyticsaccelerator = "1.1.0"
 # See dependency matrix for particular gRPC versions at https://github.com/grpc/grpc-java/blob/master/SECURITY.md#netty
 boringssl = "2.0.61.Final"
 calcite = "1.39.0"
@@ -42,7 +41,7 @@ gwt = "2.12.2"
 gwtJetty = "9.4.44.v20210927"
 hadoop = "3.4.1"
 hdrhistogram = "2.2.2"
-iceberg = "1.9.2"
+iceberg = "1.10.0"
 immutables = "2.10.1"
 jackson = "2.19.2"
 jakarta-servlet = "6.0.0"
@@ -125,9 +124,6 @@ awssdk-s3tables = { module = "software.amazon.awssdk:s3tables" }
 awssdk-sso = { module = "software.amazon.awssdk:sso" }
 awssdk-ssooidc = { module = "software.amazon.awssdk:ssooidc" }
 awssdk-netty-nio = { module = "software.amazon.awssdk:netty-nio-client" }
-
-# TODO (DH-19508) : Remove this dependency when https://github.com/apache/iceberg/issues/13133 fix is released
-analyticsaccelerator-s3 = { module = "software.amazon.s3.analyticsaccelerator:analyticsaccelerator-s3", version.ref = "analyticsaccelerator" }
 
 s3-tables-catalog-for-iceberg = { module = "software.amazon.s3tables:s3-tables-catalog-for-iceberg", version.ref = "aws-s3-tables-catalog-for-iceberg" }
 
