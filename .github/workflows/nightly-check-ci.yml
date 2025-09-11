@@ -96,6 +96,7 @@ jobs:
           name: coverage-${{ matrix.gradle-task }}-results
           path: |
             **/build/jacoco/*.exec
+            **/build/test-results/**/coverage/*.tsv
 
       - name: Upload Test Results
         uses: actions/upload-artifact@v4
