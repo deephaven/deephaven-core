@@ -1181,12 +1181,14 @@ public class LeaderTableFilter {
                 throw new IllegalArgumentException("Leader must have unique partitioned table keys");
             }
 
-            Table joinedConstituents = leaderPartitionedTable.table();
-
             final List<String> sourceNames = new ArrayList<>();
             sourceNames.add(leaderPartitionedTable.constituentColumnName());
 
-            // TODO: use a multiJoin
+            final MultiJoinInput[] multiJoinInputs = new MultiJoinInput[followerPartitionedTables.size() + 1];
+
+            multiJoinInputs[0] = MultiJoinInput.of(leaderPartitionedTable.table(),
+                    leaderPartitionedTable.keyColumnNames().toArray(String[]::new));
+
             // we've got the partitioned tables, we need to join them all together
             for (int fi = 0; fi < followerPartitionedTables.size(); ++fi) {
                 final FollowerPartitionedTableDescription fptd = followerPartitionedTables.get(fi);
@@ -1215,10 +1217,14 @@ public class LeaderTableFilter {
 
                 final String followerName = "__FOLLOWER_" + fi;
                 sourceNames.add(followerName);
-                joinedConstituents = joinedConstituents.naturalJoin(fptd.partitionedTable.table(), joinMatches,
-                        List.of(JoinAddition.of(ColumnName.of(followerName),
-                                ColumnName.of(fptd.partitionedTable.constituentColumnName()))));
+
+                final List<JoinAddition> columnsToAdd = List.of(JoinAddition.of(ColumnName.of(followerName),
+                        ColumnName.of(fptd.partitionedTable.constituentColumnName())));
+
+                multiJoinInputs[fi + 1] = MultiJoinInput.of(fptd.partitionedTable.table(), joinMatches, columnsToAdd);
             }
+
+            final Table joinedConstituents = MultiJoinFactory.of(multiJoinInputs).table();
 
             // now that they are joined together, we want to listen to the result and when everything in a row becomes
             // non-null; then we should create a new LeaderTableFilter instance for those tables, and stick it into the
@@ -1301,10 +1307,20 @@ public class LeaderTableFilter {
     public interface Result extends BaseResult {
         /**
          * Call get to retrieve one result (either the leader or a follower), with the name specified in the builder.
+         *
+         * <p>
+         * The result of the get call is not additionally managed, so the liveness of this result must be maintained for
+         * the returned table to be valid.
+         * </p>
          */
         Table get(final String name);
 
         /**
+         * <p>
+         * The result of the get call is not additionally managed, so the liveness of this result must be maintained for
+         * the returned table to be valid.
+         * </p>
+         *
          * @return the leader result
          */
         Table getLeader();
@@ -1316,10 +1332,20 @@ public class LeaderTableFilter {
     public interface PartitionedResult extends BaseResult {
         /**
          * Call get to retrieve one result (either the leader or a follower), with the name specified in the builder.
+         *
+         * <p>
+         * The result of the get call is not additionally managed, so the liveness of this result must be maintained for
+         * the returned PartitionedTable to be valid.
+         * </p>
          */
         PartitionedTable get(final String name);
 
         /**
+         * <p>
+         * The result of the get call is not additionally managed, so the liveness of this result must be maintained for
+         * the returned PartitionedTable to be valid.
+         * </p>
+         * 
          * @return the leader result
          */
         PartitionedTable getLeader();
