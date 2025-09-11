@@ -55,7 +55,7 @@ public class TestLeaderTableFilter {
         builder.addTable("a", a.assertAddOnly(), "A=ID");
         builder.addTable("b", b.assertAddOnly(), "B=ID");
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
-        final Map<String, Table> result = updateGraph.sharedLock().computeLocked(builder::build);
+        final LeaderTableFilter.Result result = updateGraph.sharedLock().computeLocked(builder::build);
 
         assertEquals(new HashSet<>(Arrays.asList("a", "b", LeaderTableFilter.DEFAULT_LEADER_NAME)), result.keySet());
 
@@ -147,6 +147,33 @@ public class TestLeaderTableFilter {
     }
 
     @Test
+    public void testLiveness() {
+        final QueryTable leader =
+                TstUtils.testRefreshingTable(col("Key", "a", "a"), longCol("A", 2, 3), longCol("B", 0, 4));
+        final QueryTable a = TstUtils.testRefreshingTable(longCol("ID", 1, 1, 2, 2, 3, 3),
+                intCol("Sentinel", 101, 102, 103, 104, 105, 106), col("Key", "a", "a", "a", "a", "a", "a"));
+        final QueryTable b = TstUtils.testRefreshingTable(longCol("ID", 0, 0, 2, 2, 4, 4),
+                intCol("Sentinel", 201, 202, 203, 204, 205, 206), col("Key", "a", "a", "a", "a", "a", "a"));
+
+        final LeaderTableFilter.TableBuilder builder = new LeaderTableFilter.TableBuilder(leader.assertAddOnly());
+        builder.addTable("a", a.assertAddOnly(), "A=ID");
+        builder.addTable("b", b.assertAddOnly(), "B=ID");
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        final LeaderTableFilter.Result result;
+        final Table leaderResult;
+        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+            result = updateGraph.sharedLock().computeLocked(builder::build);
+            leaderResult = result.getLeader();
+            Assert.assertTrue(result.tryRetainReference());
+            result.dropReference();
+            Assert.assertTrue(leaderResult.tryRetainReference());
+            leaderResult.dropReference();
+        }
+        Assert.assertFalse(result.tryRetainReference());
+        Assert.assertFalse(leaderResult.tryRetainReference());
+    }
+
+    @Test
     public void testSimpleKeyed() {
         final QueryTable leader =
                 TstUtils.testRefreshingTable(col("Key", "a", "b"), longCol("A", 1, 2), longCol("B", 101, 102));
@@ -163,7 +190,7 @@ public class TestLeaderTableFilter {
         builder.addTable("a", a.assertAddOnly(), "A=ID", "Key");
         builder.addTable("b", b.assertAddOnly(), "B=ID", "Key");
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
-        final Map<String, Table> result = updateGraph.sharedLock().computeLocked(builder::build);
+        final LeaderTableFilter.Result result = updateGraph.sharedLock().computeLocked(builder::build);
 
         assertEquals(new HashSet<>(Arrays.asList("a", "b", leaderName)), result.keySet());
 
@@ -334,7 +361,7 @@ public class TestLeaderTableFilter {
         builder.addTable("a", a.assertAddOnly(), "A=ID");
         builder.addTable("b", b.assertAddOnly(), "B=ID");
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
-        final Map<String, Table> result = updateGraph.sharedLock().computeLocked(builder::build);
+        final LeaderTableFilter.Result result = updateGraph.sharedLock().computeLocked(builder::build);
 
         assertEquals(new HashSet<>(Arrays.asList("a", "b", LeaderTableFilter.DEFAULT_LEADER_NAME)), result.keySet());
 
@@ -421,7 +448,7 @@ public class TestLeaderTableFilter {
         builder.addTable("a", a.assertAddOnly(), "A=ID", "Key");
         builder.addTable("b", b.assertAddOnly(), "B=ID", "Key");
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
-        final Map<String, Table> result = updateGraph.sharedLock().computeLocked(builder::build);
+        final LeaderTableFilter.Result result = updateGraph.sharedLock().computeLocked(builder::build);
 
         assertEquals(new HashSet<>(Arrays.asList("a", "b", leaderName)), result.keySet());
 
@@ -481,7 +508,7 @@ public class TestLeaderTableFilter {
         builder.addTable("a", a.assertAddOnly(), "A=ID", "Key");
         builder.addTable("b", b.assertAddOnly(), "B=ID", "Key");
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
-        final Map<String, Table> result = updateGraph.sharedLock().computeLocked(builder::build);
+        final LeaderTableFilter.Result result = updateGraph.sharedLock().computeLocked(builder::build);
 
         assertEquals(new HashSet<>(Arrays.asList("a", "b", leaderName)), result.keySet());
 
@@ -571,7 +598,7 @@ public class TestLeaderTableFilter {
         builder.addTable("a", a.assertAddOnly(), "A=ID", "Key");
         builder.addTable("b", b.assertAddOnly(), "B=ID", "Key");
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
-        final Map<String, Table> result = updateGraph.sharedLock().computeLocked(builder::build);
+        final LeaderTableFilter.Result result = updateGraph.sharedLock().computeLocked(builder::build);
 
         assertEquals(new HashSet<>(Arrays.asList("a", "b", LeaderTableFilter.DEFAULT_LEADER_NAME)), result.keySet());
 
@@ -610,7 +637,7 @@ public class TestLeaderTableFilter {
         builder.addTable("a", a.assertAddOnly(), "A=ID", "Key");
         builder.addTable("b", b.assertAddOnly(), "B=ID", "Key");
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
-        final Map<String, Table> result = updateGraph.sharedLock().computeLocked(builder::build);
+        final LeaderTableFilter.Result result = updateGraph.sharedLock().computeLocked(builder::build);
 
         assertEquals(new HashSet<>(Arrays.asList("a", "b", LeaderTableFilter.DEFAULT_LEADER_NAME)), result.keySet());
 
@@ -834,7 +861,7 @@ public class TestLeaderTableFilter {
 
         final LeaderTableFilter.TableBuilder builder = new LeaderTableFilter.TableBuilder(leader);
         builder.addTable("a", a, "ID");
-        final Map<String, Table> result = updateGraph.sharedLock().computeLocked(builder::build);
+        final LeaderTableFilter.Result result = updateGraph.sharedLock().computeLocked(builder::build);
 
         final Table fl = result.get(LeaderTableFilter.DEFAULT_LEADER_NAME);
         final Table fa = result.get("a");
@@ -883,7 +910,7 @@ public class TestLeaderTableFilter {
 
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
 
-        final Map<String, Table> bykey = updateGraph.sharedLock()
+        final LeaderTableFilter.Result bykey = updateGraph.sharedLock()
                 .computeLocked(() -> new LeaderTableFilter.TableBuilder(leader.assertAddOnly(), "Partition")
                         .addTable("source1", follower.assertAddOnly(), "ID", "Division").build());
         final Table lf = bykey.get(LeaderTableFilter.DEFAULT_LEADER_NAME);
@@ -891,7 +918,7 @@ public class TestLeaderTableFilter {
         TableTools.showWithRowSet(lf);
         TableTools.showWithRowSet(s1f);
 
-        final Map<String, PartitionedTable> filteredByPartition =
+        final LeaderTableFilter.PartitionedResult filteredByPartition =
                 updateGraph.sharedLock().computeLocked(() -> new LeaderTableFilter.PartitionedTableBuilder(leaderMap)
                         .addPartitionedTable("source1", followerMap, "ID").build());
         assertEquals(new HashSet<>(Arrays.asList(LeaderTableFilter.DEFAULT_LEADER_NAME, "source1")),
@@ -995,24 +1022,25 @@ public class TestLeaderTableFilter {
         final PartitionedTable sm1 = source1.updateView("SK1=k").partitionBy("Partition");
         final PartitionedTable sm2 = source2.updateView("SK2=k").partitionBy("Partition");
 
-        final Map<String, Table> bykey =
+        final LeaderTableFilter.Result bykey =
                 updateGraph.sharedLock().computeLocked(() -> new LeaderTableFilter.TableBuilder(source1, "Partition")
                         .setLeaderName("source1").addTable("source2", source2, "ID").build());
         final Table s1f = bykey.get("source1");
         final Table s2f = bykey.get("source2");
 
-        final Map<String, Table> bykey2 = updateGraph.sharedLock()
+        final LeaderTableFilter.Result bykey2 = updateGraph.sharedLock()
                 .computeLocked(() -> new LeaderTableFilter.TableBuilder(source1, "Partition", "Truthy")
                         .setLeaderName("source1").addTable("source2", source2, "ID").build());
         final Table s1fKeyed = bykey2.get("source1");
         final Table s2fKeyed = bykey2.get("source2");
 
-        final Map<String, PartitionedTable> filteredByPartition = updateGraph.sharedLock()
+        final LeaderTableFilter.PartitionedResult filteredByPartition = updateGraph.sharedLock()
                 .computeLocked(() -> new LeaderTableFilter.PartitionedTableBuilder(sm1).setBinarySearchThreshold(16)
                         .setLeaderName("source1").addPartitionedTable("source2", sm2, "ID").build());
-        final Map<String, PartitionedTable> filteredByPartitionKeyed = updateGraph.sharedLock().computeLocked(
-                () -> new LeaderTableFilter.PartitionedTableBuilder(sm1, "Truthy").setBinarySearchThreshold(16)
-                        .setLeaderName("source1").addPartitionedTable("source2", sm2, "ID").build());
+        final LeaderTableFilter.PartitionedResult filteredByPartitionKeyed =
+                updateGraph.sharedLock().computeLocked(
+                        () -> new LeaderTableFilter.PartitionedTableBuilder(sm1, "Truthy").setBinarySearchThreshold(16)
+                                .setLeaderName("source1").addPartitionedTable("source2", sm2, "ID").build());
 
         final PartitionedTable s1tm = filteredByPartition.get("source1");
         final PartitionedTable s2tm = filteredByPartition.get("source2");
