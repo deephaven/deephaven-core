@@ -15,9 +15,9 @@ fi
 DO_COVERAGE=$1
 
 if [[ "${DO_COVERAGE}" == "true" ]]; then
-  coverage run -m xmlrunner discover tests -v -o /out/report
+  coverage run -m xmlrunner discover -s tests -t . -v -o /out/report
   mkdir -p /out/coverage/
   coverage report > /out/coverage/python-coverage.tsv
 else
-  python -m xmlrunner discover tests -v -o /out/report
+  python3 -m xmlrunner discover -s tests -t . -v -o /out/report
 fi
