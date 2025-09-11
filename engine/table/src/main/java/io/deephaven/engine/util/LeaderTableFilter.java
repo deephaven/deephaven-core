@@ -283,6 +283,7 @@ public class LeaderTableFilter {
                 rawLeaderTable.getUpdateGraph(followerTables.stream().map(ftd -> ftd.table).toArray(Table[]::new));
         leaderUpdateGraph.checkInitiateSerialTableOperation();
 
+
         followerTables.forEach(table -> {
             if (table.table.isRefreshing()) {
                 leaderUpdateGraph.checkInitiateSerialTableOperation();
@@ -314,18 +315,15 @@ public class LeaderTableFilter {
         this.followerResultRowSets = new TrackingWritableRowSet[tableCount];
         this.recorders = new ArrayList<>(tableCount + 1);
 
-        final MergedLeaderListener mergedListener = new MergedLeaderListener();
-
         leaderResultRowSet = RowSetFactory.empty().toTracking();
-        leaderResult = leaderTable.getSubTable(leaderResultRowSet, null, null, mergedListener);
-        createLeaderRecorder(leaderTable);
-
         final ColumnSource<?>[] leaderSources =
                 Arrays.stream(leaderKeys).map(leaderTable::getColumnSource).toArray(ColumnSource[]::new);
         leaderKeySource = TupleSourceFactory.makeTupleSource(leaderSources);
         keyChunkType = leaderKeySource.getChunkType();
         leaderKeyStateMap = new HashMap<>();
+        createLeaderRecorder(leaderTable);
 
+        final QueryTable[] coalescedFollowerTables = new QueryTable[tableCount];
         for (int ii = 0; ii < tableCount; ++ii) {
             final FollowerTableDescription ftd = followerTables.get(ii);
             final QueryTable followerTable = (QueryTable) ftd.table.coalesce();
@@ -334,24 +332,28 @@ public class LeaderTableFilter {
                 throw new IllegalArgumentException(
                         "All follower tables must be add only! Table " + ftd.name + " is not add only.");
             }
+            coalescedFollowerTables[ii] = followerTable;
+            createFollowerRecorder(ftd);
+        }
 
+        final MergedLeaderListener mergedListener = new MergedLeaderListener();
+        recorders.forEach(lr -> lr.setMergedListener(mergedListener));
+        leaderResult = leaderTable.getSubTable(leaderResultRowSet, null, null, mergedListener);
+
+        for (int ii = 0; ii < tableCount; ++ii) {
+            final FollowerTableDescription ftd = followerTables.get(ii);
+            final QueryTable followerTable = coalescedFollowerTables[ii];
             final ColumnSource<?>[] sources =
-                    Arrays.stream(ftd.keyColumns).map(ftd.table::getColumnSource).toArray(ColumnSource[]::new);
+                    Arrays.stream(ftd.keyColumns).map(followerTable::getColumnSource).toArray(ColumnSource[]::new);
             checkCompatibility(leaderSources, ftd, sources);
             followerKeyStateMap.add(new HashMap<>());
             followerKeySources[ii] = TupleSourceFactory.makeTupleSource(sources);
-            followerIdSources[ii] = ftd.table.getColumnSource(ftd.followerIdColumn, long.class);
+            followerIdSources[ii] = followerTable.getColumnSource(ftd.followerIdColumn, long.class);
             followerIdsInLeaderSources[ii] = leaderTable.getColumnSource(ftd.leaderIdColumn, long.class);
             followerResultRowSets[ii] = RowSetFactory.empty().toTracking();
             followerResults[ii] = followerTable.getSubTable(followerResultRowSets[ii], null, null, mergedListener);
             followerResults[ii].setLastNotificationStep(leaderUpdateGraph.clock().currentStep());
-            createFollowerRecorder(ftd);
         }
-        recorders.forEach(lr -> {
-            lr.setMergedListener(mergedListener);
-            // TODO: make all the recorders first
-            mergedListener.manage(lr);
-        });
 
         consumeLeaderRows(leaderTable.getRowSet());
         for (int ii = 0; ii < tableCount; ++ii) {
@@ -757,23 +759,23 @@ public class LeaderTableFilter {
         final LongChunk<? extends Values>[] followerIdsInLeaderChunks =
                 new LongChunk[followerIdsInLeaderSources.length];
 
-        // TODO: use a more Math.min chunksize
+        final int chunkSize = (int) Math.min(CHUNK_SIZE, rowset.size());
 
         try (SharedContext sharedContext = SharedContext.makeSharedContext();
-                final WritableChunk<Values> primitiveLeaderKeyChunk = keyChunkType.makeWritableChunk(CHUNK_SIZE);
+                final WritableChunk<Values> primitiveLeaderKeyChunk = keyChunkType.makeWritableChunk(chunkSize);
                 final RowSequence.Iterator rsit = rowset.getRowSequenceIterator();
                 final ChunkSource.FillContext keyFillContext =
-                        leaderKeySource.makeFillContext(CHUNK_SIZE, sharedContext);
+                        leaderKeySource.makeFillContext(chunkSize, sharedContext);
                 final WritableLongChunk<OrderedRowKeys> rowKeysChunk =
-                        WritableLongChunk.makeWritableChunk(CHUNK_SIZE);
-                final ChunkBoxer.BoxerKernel boxerKernel = ChunkBoxer.getBoxer(keyChunkType, CHUNK_SIZE);
+                        WritableLongChunk.makeWritableChunk(chunkSize);
+                final ChunkBoxer.BoxerKernel boxerKernel = ChunkBoxer.getBoxer(keyChunkType, chunkSize);
                 final SafeCloseableArray<ChunkSource.GetContext> ignored = new SafeCloseableArray<>(idGetContexts)) {
             for (int cc = 0; cc < followerIdsInLeaderSources.length; ++cc) {
-                idGetContexts[cc] = followerIdsInLeaderSources[cc].makeGetContext(CHUNK_SIZE, sharedContext);
+                idGetContexts[cc] = followerIdsInLeaderSources[cc].makeGetContext(chunkSize, sharedContext);
             }
 
             while (rsit.hasMore()) {
-                final RowSequence chunkRs = rsit.getNextRowSequenceWithLength(CHUNK_SIZE);
+                final RowSequence chunkRs = rsit.getNextRowSequenceWithLength(chunkSize);
                 chunkRs.fillRowKeyChunk(rowKeysChunk);
 
                 leaderKeySource.fillChunk(keyFillContext, primitiveLeaderKeyChunk, chunkRs);
@@ -805,17 +807,18 @@ public class LeaderTableFilter {
 
     private void consumeFollowerRows(final int tableIndex, final RowSet rowSet) {
         final ColumnSource<Long> idSource = followerIdSources[tableIndex];
-        try (final WritableChunk<Values> primitiveFollowerKeyValuesChunk = keyChunkType.makeWritableChunk(CHUNK_SIZE);
+        final int chunkSize = (int) Math.min(CHUNK_SIZE, rowSet.size());
+        try (final WritableChunk<Values> primitiveFollowerKeyValuesChunk = keyChunkType.makeWritableChunk(chunkSize);
                 final RowSequence.Iterator rsit = rowSet.getRowSequenceIterator();
-                final ChunkSource.FillContext idFillContext = idSource.makeFillContext(CHUNK_SIZE);
+                final ChunkSource.FillContext idFillContext = idSource.makeFillContext(chunkSize);
                 final ChunkSource.FillContext keyFillContext =
-                        followerKeySources[tableIndex].makeFillContext(CHUNK_SIZE);
-                final ChunkBoxer.BoxerKernel boxerKernel = ChunkBoxer.getBoxer(keyChunkType, CHUNK_SIZE);
-                final WritableLongChunk<Values> idChunk = WritableLongChunk.makeWritableChunk(CHUNK_SIZE);
+                        followerKeySources[tableIndex].makeFillContext(chunkSize);
+                final ChunkBoxer.BoxerKernel boxerKernel = ChunkBoxer.getBoxer(keyChunkType, chunkSize);
+                final WritableLongChunk<Values> idChunk = WritableLongChunk.makeWritableChunk(chunkSize);
                 final WritableLongChunk<OrderedRowKeys> rowKeysChunk =
-                        WritableLongChunk.makeWritableChunk(CHUNK_SIZE)) {
+                        WritableLongChunk.makeWritableChunk(chunkSize)) {
             while (rsit.hasMore()) {
-                final RowSequence chunkRs = rsit.getNextRowSequenceWithLength(CHUNK_SIZE);
+                final RowSequence chunkRs = rsit.getNextRowSequenceWithLength(chunkSize);
                 chunkRs.fillRowKeyChunk(rowKeysChunk);
 
                 followerKeySources[tableIndex].fillChunk(keyFillContext, primitiveFollowerKeyValuesChunk, chunkRs);
