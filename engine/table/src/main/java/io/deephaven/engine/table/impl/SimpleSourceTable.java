@@ -7,9 +7,9 @@ import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.DeferredViewTable.TableReference;
-import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
 import io.deephaven.engine.table.impl.locations.TableLocationProvider;
 import io.deephaven.engine.table.impl.select.SelectColumn;
+import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
 
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -19,15 +19,11 @@ import java.util.stream.Collectors;
  */
 public class SimpleSourceTable extends SourceTable<SimpleSourceTable> {
 
-    private static String named(final ColumnDefinition<?> cd) {
-        return cd.getName() + "(" + cd.getColumnType() + ")";
-    }
-
     private static TableDefinition checkSimple(final TableDefinition tableDefinition) {
         final String nonSimpleColumns = tableDefinition.getColumns()
                 .stream()
                 .filter(Predicate.not(ColumnDefinition::isDirect))
-                .map(SimpleSourceTable::named)
+                .map(ColumnDefinition::toString)
                 .collect(Collectors.joining(", "));
         if (!nonSimpleColumns.isEmpty()) {
             throw new IllegalArgumentException(String
