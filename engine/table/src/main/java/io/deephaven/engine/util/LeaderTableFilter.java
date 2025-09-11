@@ -283,7 +283,8 @@ public class LeaderTableFilter {
 
         final UpdateGraph leaderUpdateGraph =
                 rawLeaderTable.getUpdateGraph(followerTables.stream().map(ftd -> ftd.table).toArray(Table[]::new));
-        final boolean refreshing = rawLeaderTable.isRefreshing() || followerTables.stream().anyMatch(ftd -> ftd.table.isRefreshing());
+        final boolean refreshing =
+                rawLeaderTable.isRefreshing() || followerTables.stream().anyMatch(ftd -> ftd.table.isRefreshing());
         if (refreshing) {
             leaderUpdateGraph.checkInitiateSerialTableOperation();
         }
@@ -334,9 +335,13 @@ public class LeaderTableFilter {
             createFollowerRecorder(ftd);
         }
 
-        final MergedLeaderListener mergedListener = new MergedLeaderListener();
-        recorders.forEach(lr -> lr.setMergedListener(mergedListener));
-        leaderResult = leaderTable.getSubTable(leaderResultRowSet, null, null, mergedListener);
+        final MergedLeaderListener mergedListener = refreshing ? new MergedLeaderListener() : null;
+        if (refreshing) {
+            recorders.forEach(lr -> lr.setMergedListener(mergedListener));
+            leaderResult = leaderTable.getSubTable(leaderResultRowSet, null, null, mergedListener);
+        } else {
+            leaderResult = leaderTable.getSubTable(leaderResultRowSet, null, null);
+        }
 
         for (int ii = 0; ii < tableCount; ++ii) {
             final FollowerTableDescription ftd = followerTables.get(ii);
@@ -349,7 +354,11 @@ public class LeaderTableFilter {
             followerIdSources[ii] = followerTable.getColumnSource(ftd.followerIdColumn, long.class);
             followerIdsInLeaderSources[ii] = leaderTable.getColumnSource(ftd.leaderIdColumn, long.class);
             followerResultRowSets[ii] = RowSetFactory.empty().toTracking();
-            followerResults[ii] = followerTable.getSubTable(followerResultRowSets[ii], null, null, mergedListener);
+            if (refreshing) {
+                followerResults[ii] = followerTable.getSubTable(followerResultRowSets[ii], null, null, mergedListener);
+            } else {
+                followerResults[ii] = followerTable.getSubTable(followerResultRowSets[ii], null, null);
+            }
             followerResults[ii].setLastNotificationStep(leaderUpdateGraph.clock().currentStep());
         }
 

@@ -35,8 +35,7 @@ import java.util.Random;
 import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.engine.util.TableTools.*;
 import static io.deephaven.util.QueryConstants.NULL_LONG;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
 
 public class TestLeaderTableFilter {
     @Rule
@@ -171,6 +170,48 @@ public class TestLeaderTableFilter {
         }
         Assert.assertFalse(result.tryRetainReference());
         Assert.assertFalse(leaderResult.tryRetainReference());
+    }
+
+    @Test
+    public void testStatic() {
+        final QueryTable leader =
+                TstUtils.testTable(col("Key", "a", "a"), longCol("A", 2, 3), longCol("B", 0, 4));
+        final QueryTable a = TstUtils.testTable(longCol("ID", 1, 1, 2, 2, 3, 3),
+                intCol("Sentinel", 101, 102, 103, 104, 105, 106), col("Key", "a", "a", "a", "a", "a", "a"));
+        final QueryTable b = TstUtils.testTable(longCol("ID", 0, 0, 2, 2, 4, 4),
+                intCol("Sentinel", 201, 202, 203, 204, 205, 206), col("Key", "a", "a", "a", "a", "a", "a"));
+
+        assertFalse(leader.isRefreshing());
+        assertFalse(a.isRefreshing());
+        assertFalse(b.isRefreshing());
+
+        final LeaderTableFilter.TableBuilder builder = new LeaderTableFilter.TableBuilder(leader.assertAddOnly());
+        builder.addTable("a", a.assertAddOnly(), "A=ID");
+        builder.addTable("b", b.assertAddOnly(), "B=ID");
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        final LeaderTableFilter.Result result = updateGraph.sharedLock().computeLocked(builder::build);
+
+        assertEquals(new HashSet<>(Arrays.asList("a", "b", LeaderTableFilter.DEFAULT_LEADER_NAME)), result.keySet());
+
+        final Table fl = result.get(LeaderTableFilter.DEFAULT_LEADER_NAME);
+        final Table fa = result.get("a");
+        final Table fb = result.get("b");
+
+        TableTools.show(fl);
+        TableTools.show(fa);
+        TableTools.show(fb);
+
+        final Table ex1l = newTable(col("Key", "a"), longCol("A", 3), longCol("B", 4));
+        final Table ex1a = newTable(longCol("ID", 3, 3), intCol("Sentinel", 105, 106), col("Key", "a", "a"));
+        final Table ex1b = newTable(longCol("ID", 4, 4), intCol("Sentinel", 205, 206), col("Key", "a", "a"));
+
+        assertTableEquals(ex1l, fl);
+        assertTableEquals(ex1a, fa);
+        assertTableEquals(ex1b, fb);
+
+        assertFalse(fl.isRefreshing());
+        assertFalse(fa.isRefreshing());
+        assertFalse(fb.isRefreshing());
     }
 
     @Test
@@ -368,14 +409,6 @@ public class TestLeaderTableFilter {
         final Table fl = result.get(LeaderTableFilter.DEFAULT_LEADER_NAME);
         final Table fa = result.get("a");
         final Table fb = result.get("b");
-
-        // TODO
-        // final FailureListener leaderListener = new FailureListener("fl");
-        // ((DynamicTable)fl).listenForUpdates(leaderListener);
-        // final FailureListener aListener = new FailureListener("a");
-        // ((DynamicTable)fa).listenForUpdates(aListener);
-        // final FailureListener bListener = new FailureListener("b");
-        // ((DynamicTable)fb).listenForUpdates(bListener);
 
         TableTools.show(fl);
         TableTools.show(fa);
