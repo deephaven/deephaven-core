@@ -702,7 +702,7 @@ public class HierarchicalTableTestGwt extends AbstractAsyncGwtTestCase {
                         cfg.groupingColumns = Js.uncheckedCast(JsArray.of("X"));
                         cfg.aggregations = JsPropertyMap.of(JsAggregationOperation.SUM, JsArray.of("Y"));
                         cfg.includeConstituents = includeConstituents;
-                        tests.add(() -> table.rollup(new JsRollupConfig((JsPropertyMap<Object>) cfg)).then(r -> {
+                        tests.add(() -> table.rollup(cfg).then(r -> {
                             // Rollup with or without constituents should populate aggregated columns
                             assertEquals(1, r.getAggregatedColumns().length);
                             assertEquals("Y", r.getAggregatedColumns().getAt(0).getName());
@@ -725,7 +725,7 @@ public class HierarchicalTableTestGwt extends AbstractAsyncGwtTestCase {
                         cfg.groupingColumns = Js.uncheckedCast(JsArray.of("X"));
                         cfg.aggregations = JsPropertyMap.of(JsAggregationOperation.SKIP, JsArray.of("Y"));
                         cfg.includeConstituents = includeConstituents;
-                        tests.add(() -> table.rollup((JsPropertyMap<Object>) cfg).then(r -> {
+                        tests.add(() -> table.rollup(cfg).then(r -> {
                             // Rollup should not include Skip aggregation in aggregated columns
                             assertEquals(0, r.getAggregatedColumns().length);
                             assertEquals("X", r.getColumns().getAt(0).getName());
@@ -752,6 +752,48 @@ public class HierarchicalTableTestGwt extends AbstractAsyncGwtTestCase {
                     JsArray<Column> aggColumns = treeTable.getAggregatedColumns();
                     assertEquals(0, aggColumns.length);
                     return null;
+                })
+                .then(this::finish)
+                .catch_(this::report);
+    }
+
+    public void testRollupMultipleAggsOneColumnConstituents() {
+        connect(tables)
+                .then(table("table_to_rollup"))
+                .then(table -> {
+                    JsRollupConfig cfg = new JsRollupConfig();
+                    cfg.groupingColumns = Js.uncheckedCast(JsArray.of("X"));
+                    cfg.aggregations = JsPropertyMap.of(JsAggregationOperation.MIN, JsArray.of("Y"),
+                            JsAggregationOperation.MAX, JsArray.of("Y"));
+                    cfg.includeConstituents = true;
+                    return table.rollup(cfg);
+                })
+                .then(rollup -> {
+                    // Get the columns we expect to find
+                    Column xCol = rollup.findColumn("X");
+                    Column minCol = rollup.findColumn("Y_Min");
+                    Column maxCol = rollup.findColumn("Y_Max");
+                    Column zCol = rollup.findColumn("Z");
+
+                    // Check that all expected columns are present, check constituent types
+                    rollup.expandAll();
+                    rollup.setViewport(0, 99, rollup.getColumns(), null);
+                    return waitForEventWhere(rollup, JsTreeTable.EVENT_UPDATED,
+                            (Event<TreeViewportData> d) -> rollup.getSize() > 3,
+                            12123)
+                            .then(JsTreeTable::getViewportData)
+                            .then(data -> {
+                                // ensure that the constituent data is available at the expected level rather than
+                                // missing
+                                TreeViewportData treeData = (TreeViewportData) data;
+                                TreeViewportData.TreeRow row2 = (TreeViewportData.TreeRow) treeData.getRows().getAt(2);
+                                assertFalse(row2.hasChildren());
+                                assertNotNull(row2.get(xCol));
+                                assertNotNull(row2.get(minCol));
+                                assertNotNull(row2.get(maxCol));
+                                assertNotNull(row2.get(zCol));
+                                return null;
+                            });
                 })
                 .then(this::finish)
                 .catch_(this::report);
