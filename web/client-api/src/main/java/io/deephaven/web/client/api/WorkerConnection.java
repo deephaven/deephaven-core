@@ -909,8 +909,9 @@ public class WorkerConnection {
 
     public Promise<Object> whenServerReady(String operationName) {
         switch (state) {
-            case Failed:
             case Disconnected:
+                throw new IllegalStateException("Can't " + operationName + " while connection is closed");
+            case Failed:
                 state = State.Reconnecting;
                 newSessionReconnect.initialConnection();
                 // deliberate fall-through
@@ -1389,8 +1390,9 @@ public class WorkerConnection {
             case Connected:
                 LazyPromise.runLater(() -> callback.accept(null, null));
                 break;
-            case Failed:
             case Disconnected:
+                throw new IllegalStateException("Can't add onOpen callback when connection is closed");
+            case Failed:
                 state = State.Reconnecting;
                 newSessionReconnect.initialConnection();
                 // intentional fall-through
