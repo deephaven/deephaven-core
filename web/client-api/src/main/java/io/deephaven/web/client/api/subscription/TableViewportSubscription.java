@@ -8,6 +8,7 @@ import com.vertispan.tsdefs.annotations.TsTypeRef;
 import elemental2.core.JsArray;
 import elemental2.promise.Promise;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.config_pb.ConfigValue;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.ApplyPreviewColumnsRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.FlattenRequest;
 import io.deephaven.web.client.api.Column;
 import io.deephaven.web.client.api.JsRangeSet;
@@ -73,23 +74,31 @@ public class TableViewportSubscription extends AbstractTableSubscription {
         ClientTableState tableState = jsTable.state();
         WorkerConnection connection = jsTable.getConnection();
 
-        final ClientTableState stateToSubscribe;
+        ClientTableState previewedState = connection.newState((callback, newState, metadata) -> {
+            ApplyPreviewColumnsRequest applyPreviewRequest = new ApplyPreviewColumnsRequest();
+            applyPreviewRequest.setSourceId(tableState.getHandle().makeTableReference());
+            applyPreviewRequest.setResultId(newState.getHandle().makeTicket());
+
+            if (options.previewOptions != null && options.previewOptions.convertToString != null && options.previewOptions.convertToString) {
+
+            }
+            connection.tableServiceClient().applyPreviewColumns(applyPreviewRequest, metadata, callback::apply);
+        }, "preview");
+        previewedState.refetch(null, connection.metadata()).then(result -> null, err -> null);
+
+        ClientTableState stateToSubscribe;
         ConfigValue flattenViewport = connection.getServerConfigValue("web.flattenViewports");
         if (flattenViewport != null && flattenViewport.hasStringValue()
                 && "true".equalsIgnoreCase(flattenViewport.getStringValue())) {
             stateToSubscribe = connection.newState((callback, newState, metadata) -> {
                 FlattenRequest flatten = new FlattenRequest();
-                flatten.setSourceId(tableState.getHandle().makeTableReference());
+                flatten.setSourceId(previewedState.getHandle().makeTableReference());
                 flatten.setResultId(newState.getHandle().makeTicket());
                 connection.tableServiceClient().flatten(flatten, metadata, callback::apply);
             }, "flatten");
             stateToSubscribe.refetch(null, connection.metadata()).then(result -> null, err -> null);
         } else {
-            stateToSubscribe = tableState;
-        }
-
-        if (options.previewOptions != null && options.previewOptions.convertToString != null && options.previewOptions.convertToString) {
-
+            stateToSubscribe = previewedState;
         }
 
         TableViewportSubscription sub = new TableViewportSubscription(stateToSubscribe, connection, jsTable);

@@ -29,14 +29,13 @@ public class ApplyPreviewColumnsGrpcImpl extends GrpcTableOperation<ApplyPreview
             final List<SessionState.ExportObject<Table>> sourceTables) {
         Assert.eq(sourceTables.size(), "sourceTables.size()", 1);
         final Table source = sourceTables.get(0).get();
-        if (request.equals(ApplyPreviewColumnsRequest.getDefaultInstance())) {
+
+        List<String> unpreviewedTypes = request.getUnpreviewedTypesList();
+        if (unpreviewedTypes.isEmpty()) {
             return ColumnPreviewManager.applyPreview(source);
         }
-        int maxStringLength = request.getMaxStringLength();
-        boolean convertArrays = request.getConvertArrays();
-        List<String> unpreviewedTypes = request.getUnpreviewedTypesList();
 
-//        return ColumnPreviewManager.applyPreview(source, maxStringLength, convertArrays, unpreviewedTypes);
-        return ColumnPreviewManager.applyPreview(source);
+        boolean convertArrays = request.getConvertArrays();
+        return ColumnPreviewManager.applyPreview(source, convertArrays, unpreviewedTypes);
     }
 }

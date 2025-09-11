@@ -330,9 +330,9 @@ message ApplyPreviewColumnsRequest {
   // legacy behavior will be used.
   repeated string unpreviewed_types = 4;
 
-  // Maximum length for string columns. Longer strings will be truncated. If non-positive, strings will not
-  // be truncated. Ignored if no unpreviewed_types are defined.
-  sint32 max_string_length = 5;
+//  // Maximum length for previewed values that are converted to strings - longer strings will be truncated. If non-positive, strings will not
+//  // be truncated. Ignored if no unpreviewed_types are defined.
+//  sint32 max_string_length = 5;
 }
 
 message ExportedTableUpdatesRequest {
