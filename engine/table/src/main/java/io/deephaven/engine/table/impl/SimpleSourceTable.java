@@ -3,6 +3,7 @@
 //
 package io.deephaven.engine.table.impl;
 
+import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.DeferredViewTable.TableReference;
@@ -10,10 +11,30 @@ import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
 import io.deephaven.engine.table.impl.locations.TableLocationProvider;
 import io.deephaven.engine.table.impl.select.SelectColumn;
 
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
+
 /**
  * Simple source table with no partitioning support.
  */
 public class SimpleSourceTable extends SourceTable<SimpleSourceTable> {
+
+    private static String named(final ColumnDefinition<?> cd) {
+        return cd.getName() + "(" + cd.getColumnType() + ")";
+    }
+
+    private static TableDefinition checkSimple(final TableDefinition tableDefinition) {
+        final String nonSimpleColumns = tableDefinition.getColumns()
+                .stream()
+                .filter(Predicate.not(ColumnDefinition::isDirect))
+                .map(SimpleSourceTable::named)
+                .collect(Collectors.joining(", "));
+        if (!nonSimpleColumns.isEmpty()) {
+            throw new IllegalArgumentException(String
+                    .format("Can't construct SimpleSourceTable with non-direct column type(s) [%s]", nonSimpleColumns));
+        }
+        return tableDefinition;
+    }
 
     /**
      * @param tableDefinition A TableDefinition
@@ -27,7 +48,7 @@ public class SimpleSourceTable extends SourceTable<SimpleSourceTable> {
             SourceTableComponentFactory componentFactory,
             TableLocationProvider locationProvider,
             UpdateSourceRegistrar updateSourceRegistrar) {
-        super(tableDefinition, description, componentFactory, locationProvider, updateSourceRegistrar);
+        super(checkSimple(tableDefinition), description, componentFactory, locationProvider, updateSourceRegistrar);
     }
 
     protected SimpleSourceTable newInstance(TableDefinition tableDefinition,
