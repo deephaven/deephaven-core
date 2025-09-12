@@ -7,10 +7,14 @@ import com.google.gwt.junit.DoNotRunWith;
 import com.google.gwt.junit.Platform;
 import elemental2.core.JsArray;
 import elemental2.promise.Promise;
+import io.deephaven.web.client.api.subscription.DataOptions;
+import io.deephaven.web.client.api.subscription.TableSubscription;
+import io.deephaven.web.client.api.subscription.TableViewportSubscription;
 import jsinterop.base.Js;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.util.Arrays;
 
 @DoNotRunWith(Platform.HtmlUnitBug)
 public class NullValueTestGwt extends AbstractAsyncGwtTestCase {
@@ -77,11 +81,84 @@ public class NullValueTestGwt extends AbstractAsyncGwtTestCase {
                     assertEquals("java.time.Instant", table.findColumn("MyDate").getType());
                     assertEquals("java.math.BigInteger", table.findColumn("MyBigInteger").getType());
                     assertEquals("java.math.BigDecimal", table.findColumn("MyBigDecimal").getType());
-                    // TODO restore after #188
-                    // assertEquals("java.lang.String[]", table.findColumn("MyStringArray1").getType());
+                    assertEquals("java.lang.String[]", table.findColumn("MyStringArray1").getType());
 
                     return Promise.resolve(table);
                 })
+                // test previews with new subscription
+                .then(table -> {
+                    DataOptions.SubscriptionOptions options = new DataOptions.SubscriptionOptions();
+                    options.columns = table.getColumns();
+                    TableSubscription sub = table.createSubscription(options);
+                    return assertUpdateReceived(sub, data -> {
+                        JsArray<? extends TableData.Row> rows = data.getRows();
+                        TableData.Row nullRow = rows.getAt(0);
+
+                        JsArray<Column> columns = table.getColumns();
+                        for (int i = 0; i < columns.length; i++) {
+                            assertFalse(Js.isTripleEqual(Js.undefined(), nullRow.get(columns.getAt(i))));
+                            assertNull(nullRow.get(columns.getAt(i)));
+                        }
+
+                        TableData.Row valueRow = rows.getAt(1);
+                        assertEquals(1, valueRow.get(table.findColumn("MyInt")).asInt());
+                        assertEquals((long) 1,
+                                valueRow.get(table.findColumn("MyLong")).<LongWrapper>cast().getWrapped());
+                        assertEquals((double) 1, valueRow.get(table.findColumn("MyDouble")).asDouble());
+                        assertEquals((short) 1, valueRow.get(table.findColumn("MyShort")).asShort());
+                        assertEquals((float) 1., valueRow.get(table.findColumn("MyFloat")).asFloat());
+                        assertEquals((char) 1, valueRow.get(table.findColumn("MyChar")).asChar());
+                        assertEquals((byte) 1, valueRow.get(table.findColumn("MyByte")).asByte());
+                        assertEquals(true, valueRow.get(table.findColumn("MyBoolean")).asBoolean());
+                        assertEquals("1", valueRow.get(table.findColumn("MyString")).asString());
+                        assertEquals(1, valueRow.get(table.findColumn("MyDate")).<DateWrapper>cast().getWrapped());
+                        assertEquals(BigInteger.ONE,
+                                valueRow.get(table.findColumn("MyBigInteger")).<BigIntegerWrapper>cast().getWrapped());
+                        assertEquals(BigDecimal.valueOf(1, 4),
+                                valueRow.get(table.findColumn("MyBigDecimal")).<BigDecimalWrapper>cast().getWrapped());
+                        assertArrayEquals(new String[] {"A", "B", "C"},
+                                valueRow.get(table.findColumn("MyStringArray1")).<String[]>cast());
+                    }, 1000).then(ignore -> Promise.resolve(table));
+                })
+
+                // Test previews with new snapshot
+                .then(table -> {
+                    DataOptions.SnapshotOptions snapshotOptions = new DataOptions.SnapshotOptions();
+                    snapshotOptions.columns = table.getColumns();
+                    snapshotOptions.rows = Js.uncheckedCast(JsRangeSet.ofRange(0, 1));
+                    return table.createSnapshot(snapshotOptions).then(data -> {
+                        JsArray<? extends TableData.Row> rows = data.getRows();
+                        TableData.Row nullRow = rows.getAt(0);
+
+                        JsArray<Column> columns = table.getColumns();
+                        for (int i = 0; i < columns.length; i++) {
+                            assertFalse(Js.isTripleEqual(Js.undefined(), nullRow.get(columns.getAt(i))));
+                            assertNull(nullRow.get(columns.getAt(i)));
+                        }
+
+                        TableData.Row valueRow = rows.getAt(1);
+                        assertEquals(1, valueRow.get(table.findColumn("MyInt")).asInt());
+                        assertEquals((long) 1,
+                                valueRow.get(table.findColumn("MyLong")).<LongWrapper>cast().getWrapped());
+                        assertEquals((double) 1, valueRow.get(table.findColumn("MyDouble")).asDouble());
+                        assertEquals((short) 1, valueRow.get(table.findColumn("MyShort")).asShort());
+                        assertEquals((float) 1., valueRow.get(table.findColumn("MyFloat")).asFloat());
+                        assertEquals((char) 1, valueRow.get(table.findColumn("MyChar")).asChar());
+                        assertEquals((byte) 1, valueRow.get(table.findColumn("MyByte")).asByte());
+                        assertEquals(true, valueRow.get(table.findColumn("MyBoolean")).asBoolean());
+                        assertEquals("1", valueRow.get(table.findColumn("MyString")).asString());
+                        assertEquals(1, valueRow.get(table.findColumn("MyDate")).<DateWrapper>cast().getWrapped());
+                        assertEquals(BigInteger.ONE,
+                                valueRow.get(table.findColumn("MyBigInteger")).<BigIntegerWrapper>cast().getWrapped());
+                        assertEquals(BigDecimal.valueOf(1, 4),
+                                valueRow.get(table.findColumn("MyBigDecimal")).<BigDecimalWrapper>cast().getWrapped());
+                        assertArrayEquals(new String[] {"A", "B", "C"},
+                                valueRow.get(table.findColumn("MyStringArray1")).<String[]>cast());
+
+                        return Promise.resolve(table);
+                    });
+                })
+                // Test previews with old setViewport
                 .then(table -> {
                     table.setViewport(0, 1, null);
                     return assertUpdateReceived(table, viewport -> {
@@ -110,12 +187,61 @@ public class NullValueTestGwt extends AbstractAsyncGwtTestCase {
                                 valueRow.get(table.findColumn("MyBigInteger")).<BigIntegerWrapper>cast().getWrapped());
                         assertEquals(BigDecimal.valueOf(1, 4),
                                 valueRow.get(table.findColumn("MyBigDecimal")).<BigDecimalWrapper>cast().getWrapped());
-                        // TODO restore after #188
-                        // assertEquals(JsArray.of("A", "B", "C"),
-                        // valueRow.get(table.findColumn("MyStringArray1")).<JsArray<String>>cast());
+                        assertEquals("[A,B,C]", valueRow.get(table.findColumn("MyStringArray1")).<String[]>cast());
+                    }, 1000).then(ignore -> Promise.resolve(table));
+                })
+                // Test previews with new viewport subscription
+                .then(table -> {
+                    DataOptions.ViewportSubscriptionOptions options = new DataOptions.ViewportSubscriptionOptions();
+                    options.rows = Js.uncheckedCast(JsRangeSet.ofRange(0, 1));
+                    options.columns = table.getColumns();
+                    TableViewportSubscription sub = table.createViewportSubscription(options);
+                    return assertUpdateReceived(sub, viewport -> {
+                        JsArray<? extends TableData.Row> rows = viewport.getRows();
+                        TableData.Row nullRow = rows.getAt(0);
+
+                        JsArray<Column> columns = table.getColumns();
+                        for (int i = 0; i < columns.length; i++) {
+                            assertFalse(Js.isTripleEqual(Js.undefined(), nullRow.get(columns.getAt(i))));
+                            assertNull(nullRow.get(columns.getAt(i)));
+                        }
+
+                        TableData.Row valueRow = rows.getAt(1);
+                        assertEquals(1, valueRow.get(table.findColumn("MyInt")).asInt());
+                        assertEquals((long) 1,
+                                valueRow.get(table.findColumn("MyLong")).<LongWrapper>cast().getWrapped());
+                        assertEquals((double) 1, valueRow.get(table.findColumn("MyDouble")).asDouble());
+                        assertEquals((short) 1, valueRow.get(table.findColumn("MyShort")).asShort());
+                        assertEquals((float) 1., valueRow.get(table.findColumn("MyFloat")).asFloat());
+                        assertEquals((char) 1, valueRow.get(table.findColumn("MyChar")).asChar());
+                        assertEquals((byte) 1, valueRow.get(table.findColumn("MyByte")).asByte());
+                        assertEquals(true, valueRow.get(table.findColumn("MyBoolean")).asBoolean());
+                        assertEquals("1", valueRow.get(table.findColumn("MyString")).asString());
+                        assertEquals(1, valueRow.get(table.findColumn("MyDate")).<DateWrapper>cast().getWrapped());
+                        assertEquals(BigInteger.ONE,
+                                valueRow.get(table.findColumn("MyBigInteger")).<BigIntegerWrapper>cast().getWrapped());
+                        assertEquals(BigDecimal.valueOf(1, 4),
+                                valueRow.get(table.findColumn("MyBigDecimal")).<BigDecimalWrapper>cast().getWrapped());
+                        assertArrayEquals(new String[] {"A", "B", "C"},
+                                valueRow.get(table.findColumn("MyStringArray1")).<String[]>cast());
                     }, 1000);
                 })
                 .then(this::finish).catch_(this::report);
+    }
+
+    private static void assertArrayEquals(Object[] expected, Object[] actual) {
+        if (expected == actual) {
+            return;
+        }
+        if (expected == null || actual == null) {
+            fail("One of the arrays is null");
+        }
+        assertEquals("Array lengths differ", expected.length, actual.length);
+        String expectedString = Arrays.toString(expected);
+        String actualString = Arrays.toString(actual);
+        for (int i = 0; i < expected.length; i++) {
+            assertEquals("Expected " + expectedString + " but got " + actualString, expected[i], actual[i]);
+        }
     }
 
     public void testTableWithAllNulls() {
@@ -148,8 +274,7 @@ public class NullValueTestGwt extends AbstractAsyncGwtTestCase {
                     assertEquals("java.time.Instant", table.findColumn("MyDate").getType());
                     assertEquals("java.math.BigInteger", table.findColumn("MyBigInteger").getType());
                     assertEquals("java.math.BigDecimal", table.findColumn("MyBigDecimal").getType());
-                    // TODO restore after #188
-                    // assertEquals("java.lang.String[]", table.findColumn("MyStringArray1").getType());
+                    assertEquals("java.lang.String[]", table.findColumn("MyStringArray1").getType());
 
                     return Promise.resolve(table);
                 })

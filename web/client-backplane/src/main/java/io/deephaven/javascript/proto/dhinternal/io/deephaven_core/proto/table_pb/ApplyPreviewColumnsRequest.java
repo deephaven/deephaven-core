@@ -3,6 +3,7 @@
 //
 package io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb;
 
+import elemental2.core.JsArray;
 import elemental2.core.Uint8Array;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.ticket_pb.Ticket;
 import jsinterop.annotations.JsOverlay;
@@ -110,10 +111,27 @@ public class ApplyPreviewColumnsRequest {
         ApplyPreviewColumnsRequest.ToObjectReturnType.SourceIdFieldType getSourceId();
 
         @JsProperty
+        JsArray<String> getUnpreviewedTypesList();
+
+        @JsProperty
+        boolean isConvertArrays();
+
+        @JsProperty
+        void setConvertArrays(boolean convertArrays);
+
+        @JsProperty
         void setResultId(Object resultId);
 
         @JsProperty
         void setSourceId(ApplyPreviewColumnsRequest.ToObjectReturnType.SourceIdFieldType sourceId);
+
+        @JsProperty
+        void setUnpreviewedTypesList(JsArray<String> unpreviewedTypesList);
+
+        @JsOverlay
+        default void setUnpreviewedTypesList(String[] unpreviewedTypesList) {
+            setUnpreviewedTypesList(Js.<JsArray<String>>uncheckedCast(unpreviewedTypesList));
+        }
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -209,10 +227,27 @@ public class ApplyPreviewColumnsRequest {
         ApplyPreviewColumnsRequest.ToObjectReturnType0.SourceIdFieldType getSourceId();
 
         @JsProperty
+        JsArray<String> getUnpreviewedTypesList();
+
+        @JsProperty
+        boolean isConvertArrays();
+
+        @JsProperty
+        void setConvertArrays(boolean convertArrays);
+
+        @JsProperty
         void setResultId(Object resultId);
 
         @JsProperty
         void setSourceId(ApplyPreviewColumnsRequest.ToObjectReturnType0.SourceIdFieldType sourceId);
+
+        @JsProperty
+        void setUnpreviewedTypesList(JsArray<String> unpreviewedTypesList);
+
+        @JsOverlay
+        default void setUnpreviewedTypesList(String[] unpreviewedTypesList) {
+            setUnpreviewedTypesList(Js.<JsArray<String>>uncheckedCast(unpreviewedTypesList));
+        }
     }
 
     public static native ApplyPreviewColumnsRequest deserializeBinary(Uint8Array bytes);
@@ -226,19 +261,31 @@ public class ApplyPreviewColumnsRequest {
     public static native ApplyPreviewColumnsRequest.ToObjectReturnType toObject(
             boolean includeInstance, ApplyPreviewColumnsRequest msg);
 
+    public native String addUnpreviewedTypes(String value, double index);
+
+    public native String addUnpreviewedTypes(String value);
+
     public native void clearResultId();
 
     public native void clearSourceId();
 
+    public native void clearUnpreviewedTypesList();
+
+    public native boolean getConvertArrays();
+
     public native Ticket getResultId();
 
     public native TableReference getSourceId();
+
+    public native JsArray<String> getUnpreviewedTypesList();
 
     public native boolean hasResultId();
 
     public native boolean hasSourceId();
 
     public native Uint8Array serializeBinary();
+
+    public native void setConvertArrays(boolean value);
 
     public native void setResultId();
 
@@ -247,6 +294,13 @@ public class ApplyPreviewColumnsRequest {
     public native void setSourceId();
 
     public native void setSourceId(TableReference value);
+
+    public native void setUnpreviewedTypesList(JsArray<String> value);
+
+    @JsOverlay
+    public final void setUnpreviewedTypesList(String[] value) {
+        setUnpreviewedTypesList(Js.<JsArray<String>>uncheckedCast(value));
+    }
 
     public native ApplyPreviewColumnsRequest.ToObjectReturnType0 toObject();
 

@@ -31,6 +31,8 @@ import io.deephaven.engine.table.GridAttributes;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.BaseTable;
+import io.deephaven.engine.table.impl.preview.DisplayWrapper;
+import io.deephaven.engine.table.impl.preview.PreviewType;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
@@ -620,8 +622,8 @@ public class BarrageUtil {
                     }
                 }
             } else {
-                // Otherwise, data type will be converted to a String
-                putMetadata(metadata, ATTR_TYPE_TAG, String.class.getCanonicalName());
+                // Otherwise, send the data type as is, but we will serialize to a string
+                putMetadata(metadata, ATTR_TYPE_TAG, dataType.getCanonicalName());
             }
 
             // Only one of these will be true, if any are true the column will not be visible

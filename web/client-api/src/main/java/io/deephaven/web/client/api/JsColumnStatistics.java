@@ -135,7 +135,6 @@ public class JsColumnStatistics {
         if (uniqueCounts == null || uniqueKeys == null) {
             return;
         }
-        // TODO (deephaven-core#188) support for long[] values in flight data
         JsArray<String> keys = (JsArray<String>) r.get(uniqueKeys);
         JsArray<LongWrapper> counts = (JsArray<LongWrapper>) r.get(uniqueCounts);
         for (int i = 0; i < keys.length; i++) {
