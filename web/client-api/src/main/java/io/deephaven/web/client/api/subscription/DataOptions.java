@@ -17,6 +17,8 @@ import jsinterop.annotations.JsProperty;
 import jsinterop.annotations.JsType;
 import jsinterop.base.Js;
 
+@TsInterface
+@TsName(namespace = "dh")
 public class DataOptions {
     /**
      * Options for requesting a preview of columns when requesting table data. The two properties
@@ -29,11 +31,14 @@ public class DataOptions {
         @JsProperty
         public Boolean convertToString;
         @JsNullable
+        @JsProperty
         public Double array;
     }
 
+    @JsProperty
     @JsNullable
     public PreviewOptions previewOptions;
+    @JsProperty
     public JsArray<Column> columns;
 
     /**
