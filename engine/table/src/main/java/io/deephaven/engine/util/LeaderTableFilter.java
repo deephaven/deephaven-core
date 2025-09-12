@@ -100,10 +100,10 @@ import java.util.stream.Stream;
  * {@link Result#get(String)} method to retrieve result tables by name:
  * 
  * <pre>
- * LeaderTableFilterResult resultMap = builder.build();
+ * Result result = builder.build();
  * 
- * Table filteredMessageLog = resultMap.get("messageLog");
- * Table filteredTrades = resultMap.get("trades");
+ * Table filteredMessageLog = result.get("messageLog");
+ * Table filteredTrades = result.get("trades");
  * </pre>
  *
  * The leader table is also filtered to indicate which IDs are active, and can be retrieved from the map as well.
