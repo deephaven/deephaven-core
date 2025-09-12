@@ -235,9 +235,9 @@ public class TestLeaderTableFilter {
         final Table fa = results.get("a");
         final Table fb = results.get("b");
 
-        TableTools.show(fl);
-        TableTools.show(fa);
-        TableTools.show(fb);
+        assertTrue(fl.isRefreshing());
+        assertTrue(fa.isRefreshing());
+        assertTrue(fb.isRefreshing());
 
         final Table ex1l = newTable(col("Key", "a"), longCol("A", 3), longCol("B", 4));
         final Table ex1a = newTable(longCol("ID", 3, 3), intCol("Sentinel", 105, 106), col("Key", "a", "a"));
@@ -279,9 +279,13 @@ public class TestLeaderTableFilter {
 
         assertEquals(new HashSet<>(Arrays.asList("a", "b", LeaderTableFilter.DEFAULT_LEADER_NAME)), results.keySet());
 
-        final Table fl = results.get(LeaderTableFilter.DEFAULT_LEADER_NAME);
+        final Table fl = results.getLeader();
         final Table fa = results.get("a");
         final Table fb = results.get("b");
+
+        assertTrue(fl.isRefreshing());
+        assertTrue(fa.isRefreshing());
+        assertTrue(fb.isRefreshing());
 
         TableTools.show(fl);
         TableTools.show(fa);
