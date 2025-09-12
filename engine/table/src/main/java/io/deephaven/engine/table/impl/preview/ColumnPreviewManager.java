@@ -70,9 +70,10 @@ public class ColumnPreviewManager {
     }
 
     /**
-     * Iterates over a tables columns and applies formulas to allow data to be read in a client UI. Any types not specified
-     * in the unpreviewedTypes list will be wrapped in a DisplayWrapper, and if convertArrays is true, arrays/Vectors/PyListWrapper
-     * will be converted to ArrayPreview.
+     * Iterates over a tables columns and applies formulas to allow data to be read in a client UI. Any types not
+     * specified in the unpreviewedTypes list will be wrapped in a DisplayWrapper, and if convertArrays is true,
+     * arrays/Vectors/PyListWrapper will be converted to ArrayPreview.
+     *
      * @param table the table to apply the preview
      * @param convertArrays if true, arrays/Vectors/PyListWrapper will be converted to a string for serialization
      * @param unpreviewedTypes a list of types (by Java canonical name) that should not be previewed or wrapped
@@ -153,6 +154,7 @@ public class ColumnPreviewManager {
     /**
      * Helper to apply the preview columns to a table, and copy relevant attributes, and update the column descriptions
      * to describe changes made.
+     *
      * @param table the table to apply the preview columns
      * @param selectColumns the map of column names to SelectColumns
      * @return the new previewed table

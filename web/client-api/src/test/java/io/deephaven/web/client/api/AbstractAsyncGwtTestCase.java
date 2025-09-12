@@ -240,7 +240,8 @@ public abstract class AbstractAsyncGwtTestCase extends GWTTestCase {
                 timeoutInMillis);
     }
 
-    protected <T extends HasEventHandling> Promise<T> assertUpdateReceived(T table, Consumer<ViewportData> check, int timeoutInMillis) {
+    protected <T extends HasEventHandling> Promise<T> assertUpdateReceived(T table, Consumer<ViewportData> check,
+            int timeoutInMillis) {
         return Promise.race(this.<T, ViewportData>waitForEvent(table, JsTable.EVENT_UPDATED, e -> {
             ViewportData viewportData = e.getDetail();
             check.accept(viewportData);

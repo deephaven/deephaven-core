@@ -1,6 +1,10 @@
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.web.client.api.subscription;
 
 import com.vertispan.tsdefs.annotations.TsInterface;
+import com.vertispan.tsdefs.annotations.TsName;
 import com.vertispan.tsdefs.annotations.TsUnion;
 import com.vertispan.tsdefs.annotations.TsUnionMember;
 import elemental2.core.JsArray;
@@ -9,33 +13,64 @@ import io.deephaven.web.client.api.JsRangeSet;
 import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsOverlay;
 import jsinterop.annotations.JsPackage;
+import jsinterop.annotations.JsProperty;
 import jsinterop.annotations.JsType;
 import jsinterop.base.Js;
 
 public class DataOptions {
+    /**
+     * Options for requesting a preview of columns when requesting table data. The two properties
+     * {@link #convertToString} and {@link #array} are mutually exclusive.
+     */
+    @TsInterface
+    @TsName(namespace = "dh")
     public static class PreviewOptions {
         @JsNullable
-        public Boolean convertToString = false;
+        @JsProperty
+        public Boolean convertToString;
         @JsNullable
         public Double array;
     }
+
     @JsNullable
     public PreviewOptions previewOptions;
     public JsArray<Column> columns;
 
+    /**
+     * Options for requesting a full-table subscription to a table.
+     */
+    @TsInterface
+    @TsName(namespace = "dh")
     public static class SubscriptionOptions extends DataOptions {
+        @JsProperty
         public Double updateIntervalMs;
     }
+
+    /**
+     * Options for requesting a viewport subscription to a table.
+     */
+    @TsInterface
+    @TsName(namespace = "dh")
     public static class ViewportSubscriptionOptions extends SubscriptionOptions {
         @JsNullable
+        @JsProperty
         public Boolean isReverseViewport;
 
+        @JsProperty
         public RangeSetUnion rows;
     }
+
+    /**
+     * Options for requesting a snapshot of a table.
+     */
+    @TsInterface
+    @TsName(namespace = "dh")
     public static class SnapshotOptions extends DataOptions {
         @JsNullable
+        @JsProperty
         public Boolean isReverseViewport;
 
+        @JsProperty
         public RangeSetUnion rows;
     }
     /**

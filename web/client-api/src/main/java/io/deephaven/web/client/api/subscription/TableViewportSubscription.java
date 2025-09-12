@@ -79,7 +79,8 @@ public class TableViewportSubscription extends AbstractTableSubscription {
             applyPreviewRequest.setSourceId(tableState.getHandle().makeTableReference());
             applyPreviewRequest.setResultId(newState.getHandle().makeTicket());
 
-            if (options.previewOptions != null && options.previewOptions.convertToString != null && options.previewOptions.convertToString) {
+            if (options.previewOptions != null && options.previewOptions.convertToString != null
+                    && options.previewOptions.convertToString) {
                 applyPreviewRequest.setConvertArrays(true);
             }
             applyPreviewRequest.setUnpreviewedTypesList(JsArray.of(
@@ -104,8 +105,7 @@ public class TableViewportSubscription extends AbstractTableSubscription {
                     "java.math.BigInteger",
                     "java.time.Instant",
                     "java.time.LocalDate",
-                    "java.time.ZonedDateTime"
-            ));
+                    "java.time.ZonedDateTime"));
 
             connection.tableServiceClient().applyPreviewColumns(applyPreviewRequest, metadata, callback::apply);
         }, "preview");
@@ -267,14 +267,16 @@ public class TableViewportSubscription extends AbstractTableSubscription {
             @JsOptional @JsNullable Double updateIntervalMs,
             @JsOptional @JsNullable Boolean isReverseViewport) {
         retainForExternalUse();
-        setInternalViewport(RangeSet.ofRange((long) firstRow, (long) lastRow), columns, updateIntervalMs, isReverseViewport);
+        setInternalViewport(RangeSet.ofRange((long) firstRow, (long) lastRow), columns, updateIntervalMs,
+                isReverseViewport);
     }
 
     @JsMethod
     public void update(DataOptions.ViewportSubscriptionOptions options) {
         retainForExternalUse();
         // TODO validate that preview and updateinterval are not set, or make a specific type without them
-        setInternalViewport(options.rows.asRangeSet().getRange(), Js.uncheckedCast(options.columns), options.updateIntervalMs, false);
+        setInternalViewport(options.rows.asRangeSet().getRange(), Js.uncheckedCast(options.columns),
+                options.updateIntervalMs, false);
     }
 
     public void setInternalViewport(RangeSet rows, Column[] columns, Double updateIntervalMs,

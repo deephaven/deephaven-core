@@ -116,7 +116,8 @@ public class NullValueTestGwt extends AbstractAsyncGwtTestCase {
                                 valueRow.get(table.findColumn("MyBigInteger")).<BigIntegerWrapper>cast().getWrapped());
                         assertEquals(BigDecimal.valueOf(1, 4),
                                 valueRow.get(table.findColumn("MyBigDecimal")).<BigDecimalWrapper>cast().getWrapped());
-                        assertArrayEquals(new String[] {"A", "B", "C"}, valueRow.get(table.findColumn("MyStringArray1")).<String[]>cast());
+                        assertArrayEquals(new String[] {"A", "B", "C"},
+                                valueRow.get(table.findColumn("MyStringArray1")).<String[]>cast());
                     }, 1000).then(ignore -> Promise.resolve(table));
                 })
 
@@ -151,7 +152,8 @@ public class NullValueTestGwt extends AbstractAsyncGwtTestCase {
                                 valueRow.get(table.findColumn("MyBigInteger")).<BigIntegerWrapper>cast().getWrapped());
                         assertEquals(BigDecimal.valueOf(1, 4),
                                 valueRow.get(table.findColumn("MyBigDecimal")).<BigDecimalWrapper>cast().getWrapped());
-                        assertArrayEquals(new String[] {"A", "B", "C"}, valueRow.get(table.findColumn("MyStringArray1")).<String[]>cast());
+                        assertArrayEquals(new String[] {"A", "B", "C"},
+                                valueRow.get(table.findColumn("MyStringArray1")).<String[]>cast());
 
                         return Promise.resolve(table);
                     });
@@ -220,7 +222,8 @@ public class NullValueTestGwt extends AbstractAsyncGwtTestCase {
                                 valueRow.get(table.findColumn("MyBigInteger")).<BigIntegerWrapper>cast().getWrapped());
                         assertEquals(BigDecimal.valueOf(1, 4),
                                 valueRow.get(table.findColumn("MyBigDecimal")).<BigDecimalWrapper>cast().getWrapped());
-                        assertArrayEquals(new String[] {"A", "B", "C"}, valueRow.get(table.findColumn("MyStringArray1")).<String[]>cast());
+                        assertArrayEquals(new String[] {"A", "B", "C"},
+                                valueRow.get(table.findColumn("MyStringArray1")).<String[]>cast());
                     }, 1000);
                 })
                 .then(this::finish).catch_(this::report);

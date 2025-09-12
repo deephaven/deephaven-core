@@ -722,7 +722,8 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
         TableViewportSubscription activeSubscription = subscriptions.get(getHandle());
         if (activeSubscription != null && !activeSubscription.isClosed()) {
             // hasn't finished, lets reuse it
-            activeSubscription.setInternalViewport(RangeSet.ofRange((long) firstRow, (long) lastRow), columnsCopy, updateIntervalMs, isReverseViewport);
+            activeSubscription.setInternalViewport(RangeSet.ofRange((long) firstRow, (long) lastRow), columnsCopy,
+                    updateIntervalMs, isReverseViewport);
             return activeSubscription;
         } else {
             // In the past, we left the old sub going until the new one was ready, then started the new one. But now,
@@ -824,12 +825,15 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
 
             WebBarrageMessageReader reader = new WebBarrageMessageReader();
 
-            BiDiStream<FlightData, FlightData> doExchange = workerConnection.<FlightData, FlightData>streamFactory().create(
-                    headers -> workerConnection.flightServiceClient().doExchange(headers),
-                    (first, headers) -> workerConnection.browserFlightServiceClient().openDoExchange(first, headers),
-                    (next, headers, c) -> workerConnection.browserFlightServiceClient().nextDoExchange(next, headers,
-                            c::apply),
-                    new FlightData());
+            BiDiStream<FlightData, FlightData> doExchange =
+                    workerConnection.<FlightData, FlightData>streamFactory().create(
+                            headers -> workerConnection.flightServiceClient().doExchange(headers),
+                            (first, headers) -> workerConnection.browserFlightServiceClient().openDoExchange(first,
+                                    headers),
+                            (next, headers, c) -> workerConnection.browserFlightServiceClient().nextDoExchange(next,
+                                    headers,
+                                    c::apply),
+                            new FlightData());
             MutableLong rowsReceived = new MutableLong(0);
             doExchange.onData(data -> {
                 WebBarrageMessage message;
@@ -856,8 +860,10 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
             FlightData payload = new FlightData();
             final FlatBufferBuilder metadata = new FlatBufferBuilder();
 
-            int colOffset = BarrageSnapshotRequest.createColumnsVector(metadata, cts.makeBitset(Js.uncheckedCast(columns)).toByteArray());
-            int vpOffset = BarrageSnapshotRequest.createViewportVector(metadata, serializeRanges(Collections.singleton(rows)));
+            int colOffset = BarrageSnapshotRequest.createColumnsVector(metadata,
+                    cts.makeBitset(Js.uncheckedCast(columns)).toByteArray());
+            int vpOffset =
+                    BarrageSnapshotRequest.createViewportVector(metadata, serializeRanges(Collections.singleton(rows)));
             int optOffset = barrageSnapshotOptions.appendTo(metadata);
 
             final int ticOffset = BarrageSnapshotRequest.createTicketVector(metadata,
@@ -881,7 +887,8 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
                         result = RangeSet.empty();
                     }
 
-                    promise.succeed(new AbstractTableSubscription.SubscriptionEventData(snapshot, rowStyleColumn, Js.uncheckedCast(columns),
+                    promise.succeed(new AbstractTableSubscription.SubscriptionEventData(snapshot, rowStyleColumn,
+                            Js.uncheckedCast(columns),
                             result,
                             RangeSet.empty(),
                             RangeSet.empty(),
