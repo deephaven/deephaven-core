@@ -621,9 +621,6 @@ public class BarrageUtil {
                         putMetadata(metadata, ATTR_COMPONENT_TYPE_TAG, String.class.getCanonicalName());
                     }
                 }
-            } else if (dataType == PreviewType.class || dataType == DisplayWrapper.class) {
-                // Explicitly signal that this will be a string
-                putMetadata(metadata, ATTR_TYPE_TAG, String.class.getCanonicalName());
             } else {
                 // Otherwise, send the data type as is, but we will serialize to a string
                 putMetadata(metadata, ATTR_TYPE_TAG, dataType.getCanonicalName());
