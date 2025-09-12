@@ -31,7 +31,7 @@ This guide is your springboard into deeper exploration and utilization of Deepha
 - [Create and use partitioned tables](../../how-to-guides/partitioned-tables.md)
 - [Capture table history with snapshots](../../how-to-guides/capture-table-history.md)
 - [Work with time](../../conceptual/time-in-deephaven.md)
-- [User-defined functions](../../how-to-guides/user-defined-functions.md)
+- [User-defined functions](../../how-to-guides/groovy-closures.md)
 
 <!--TODO: when they exist in Groovy, add Table Listeners, Execute SQL queries, and Generate Query Strings, plotting Index-->
 

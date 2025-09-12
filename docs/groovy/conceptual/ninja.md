@@ -194,4 +194,4 @@ With some practice, you will get a feeling for how to format chained query opera
 - [Work with time](../conceptual/time-in-deephaven.md)
 - [Use filters](../how-to-guides/filters.md)
 - [Use ternary-if](../how-to-guides/ternary-if-how-to.md)
-- [Use variables in query strings](../conceptual/queryscope.md)
+- [Use variables in query strings](../how-to-guides/queryscope.md)

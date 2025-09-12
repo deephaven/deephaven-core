@@ -190,7 +190,7 @@ result = source.update(
 resultMeta = result.meta()
 ```
 
-For full coverage on arrays in tables, see [Arrays in Deephaven](./arrays.md).
+For full coverage on arrays in tables, see [Arrays in Deephaven](./work-with-arrays.md).
 
 ## Related documentation
 
@@ -204,7 +204,7 @@ For full coverage on arrays in tables, see [Arrays in Deephaven](./arrays.md).
 - [Groovy variables in query strings](./groovy-variables.md)
 - [Groovy closures in query strings](./groovy-closures.md)
 - [Java objects in query strings](./java-classes.md)
-- [Work with arrays](./arrays.md)
+- [Work with arrays](./work-with-arrays.md)
 - [Work with strings](./strings.md)
 - [Select and update columns](./use-select-view-update.md)
 - [Filter table data](./filters.md)

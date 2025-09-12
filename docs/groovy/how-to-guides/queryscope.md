@@ -8,7 +8,7 @@ The Deephaven Query Language resolves variables using the [`QueryScope`](/core/j
 
 This example case will walk you through the process for adding variables and using functions in your preferred programming language.
 
-If you'd like to learn more about query strings and the basic rationale of the query scope, see our [conceptual guide](../conceptual/queryscope.md).
+If you'd like to learn more about query strings and the basic rationale of the query scope, see our [conceptual guide](../how-to-guides/queryscope.md).
 
 > [!NOTE]
 > Variable names and function names are case-sensitive.
@@ -123,6 +123,6 @@ result2 = computeTax(source, 300)
 
 ## Related documentation
 
-- [Understanding the query scope](../conceptual/queryscope.md)
+- [Understanding the query scope](../how-to-guides/queryscope.md)
 - [Create a new table](./new-and-empty-table.md#newtable)
 - [Javadoc](/core/javadoc/io/deephaven/engine/context/QueryScope.html)
