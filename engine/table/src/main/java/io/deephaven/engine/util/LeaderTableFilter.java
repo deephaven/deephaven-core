@@ -279,7 +279,7 @@ public class LeaderTableFilter {
             final List<FollowerTableDescription> followerTables,
             final int binarySearchThreshold) {
         if (followerTables.isEmpty()) {
-            throw new IllegalArgumentException("No tables specified!");
+            throw new IllegalArgumentException("No follower tables specified!");
         }
 
         final UpdateGraph leaderUpdateGraph =
