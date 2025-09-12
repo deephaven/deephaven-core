@@ -1332,7 +1332,7 @@ public class LeaderTableFilter {
     }
 
     /**
-     * The result for a LeaderTableFilter on a PartitionedTable.
+     * The result for a LeaderTableFilter on PartitionedTables.
      */
     public interface PartitionedResult extends BaseResult {
         /**
