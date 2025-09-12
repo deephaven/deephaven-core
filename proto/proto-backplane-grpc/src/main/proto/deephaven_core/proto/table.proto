@@ -329,10 +329,6 @@ message ApplyPreviewColumnsRequest {
   // Java types to leave unconverted - all other types will be converted to strings. If empty, the server's
   // legacy behavior will be used.
   repeated string unpreviewed_types = 4;
-
-//  // Maximum length for previewed values that are converted to strings - longer strings will be truncated. If non-positive, strings will not
-//  // be truncated. Ignored if no unpreviewed_types are defined.
-//  sint32 max_string_length = 5;
 }
 
 message ExportedTableUpdatesRequest {
