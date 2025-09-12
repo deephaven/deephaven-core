@@ -3,11 +3,14 @@
 //
 package io.deephaven.function;
 
+import io.deephaven.util.annotations.UserInvocationPermitted;
+
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * Functions for the generation random numbers.
  */
+@UserInvocationPermitted(value = "function_library")
 public class Random {
 
     /**
