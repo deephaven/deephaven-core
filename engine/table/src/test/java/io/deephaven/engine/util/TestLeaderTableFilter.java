@@ -1138,4 +1138,32 @@ public class TestLeaderTableFilter {
             assertTableEquals(s2fKeyed, s2KeyedMergedSorted);
         }
     }
+
+    @Test
+    public void testJavaDocSyntax() {
+        // these are meant to model the source from the Javadoc
+        final Table syncLog = TableTools.emptyTable(1).update("session=`A`", "client=`B`", "msgId=7L", "execId=8L");
+        final Table messageLog = TableTools.newTable(stringCol("SessionId", "A", "A", "C"),
+                stringCol("client", "B", "B", "B"), longCol("id", 7, 7, 9), intCol("MSentinel", 1, 2, 3));
+        final Table trades =
+                TableTools.newTable(stringCol("SessionId", "A", "A"), stringCol("client", "B", "B"),
+                        longCol("execId", 6, 8), intCol("TSentinel", 101, 102));
+
+        // the next block is copied and pasted snippets from the Javadoc example
+        final LeaderTableFilter.TableBuilder builder = new LeaderTableFilter.TableBuilder(syncLog, "client", "session");
+        builder.addTable("messageLog", messageLog, "msgId=id", "client", "SessionId");
+        builder.addTable("trades", trades, "execId", "client", "SessionId");
+
+        LeaderTableFilter.Results<Table> result = builder.build();
+
+        Table filteredMessageLog = result.get("messageLog");
+        Table filteredTrades = result.get("trades");
+
+        Table filteredLeader = result.get(io.deephaven.engine.util.LeaderTableFilter.DEFAULT_LEADER_NAME);
+
+        // and since we bothered writing the test, we should validate it has what we want
+        assertTableEquals(messageLog.where("id=7"), filteredMessageLog);
+        assertTableEquals(trades.where("execId=8"), filteredTrades);
+        assertTableEquals(syncLog, filteredLeader);
+    }
 }

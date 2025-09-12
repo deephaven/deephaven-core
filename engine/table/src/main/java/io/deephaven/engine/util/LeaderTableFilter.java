@@ -57,8 +57,8 @@ import java.util.stream.Stream;
  *
  * <p>
  * The leader and follower tables must be <i>add only</i>, they are not permitted to modify, shift or remove rows. If
- * you are driving your LeaderTableFilter from a source table (as returned by <code>db.i</code>), this restriction will
- * be met. If you use a simple filter on those tables, then they should remain add only.
+ * you are driving your LeaderTableFilter from a source table (as returned by <code>db.liveTable</code> in Core+), this
+ * restriction will be met. If you use a simple filter on those tables, then they should remain add only.
  * </p>
  *
  * <p>
@@ -67,23 +67,23 @@ import java.util.stream.Stream;
  * the same name. We start by retrieving the raw tables from the database:
  * 
  * <pre>
- * Table syncLog = db.i("MatchingEngine", "SyncLog").where("Date=currentDateNy()");
- * Table messageLog = db.i("MatchingEngine", "MessageLog").where("Date=currentDateNy()");
- * Table trades = db.i("MatchingEngine", "Trades").where("Date=currentDateNy()");
+ * Table syncLog = db.liveTable("MatchingEngine", "SyncLog").where("Date=today()");
+ * Table messageLog = db.liveTable("MatchingEngine", "MessageLog").where("Date=today()");
+ * Table trades = db.liveTable("MatchingEngine", "Trades").where("Date=today()");
  * </pre>
  *
  * These tables are add-only and thus suitable for use with the LeaderTableFilter, to create the Builder we pass in the
  * leader table with the key columns specified, in this case "client" and "session".
  * 
  * <pre>
- * LeaderTableFilter.Builder builder = new LeaderTableFilter.TableBuilder(syncLog, "client", "session");
+ * LeaderTableFilter.TableBuilder builder = new LeaderTableFilter.TableBuilder(syncLog, "client", "session");
  * </pre>
  *
- * Next, we add each of our follower tables. The third argument is a {@link io.deephaven.api.Pair} in which the leader
- * table's column name is on the left side and the follower's column name is on the right side. In this case the syncLog
- * table has a "msgId" column and the messageLog simply has an "id" column. In our result, the table will be named
- * "messageLog". The key columns are "client" and "SessionId", which must match the "client" and "session" columns in
- * the leader table.
+ * Next, we add each of our follower tables. The third argument is a {@link io.deephaven.api.JoinMatch} in which the
+ * leader table's column name is on the left side and the follower's column name is on the right side. In this case the
+ * syncLog table has a "msgId" column and the messageLog simply has an "id" column. In our result, the table will be
+ * named "messageLog". The key columns are "client" and "SessionId", which must match the "client" and "session" columns
+ * in the leader table.
  * 
  * <pre>
  * builder.addTable("messageLog", messageLog, "msgId=id", "client", "SessionId");
@@ -96,29 +96,28 @@ import java.util.stream.Stream;
  * builder.addTable("trades", trades, "execId", "client", "SessionId");
  * </pre>
  *
- * After adding all the tables, then the build() method is called to create a {@link Results
- * <Table>
- * }, which implements a {@link Results#get(String)} method to retrieve result tables by name:
+ * After adding all the tables, then the build() method is called to create a {@link Results Results&lt;Table&gt;},
+ * which implements a {@link Results#get(String)} method to retrieve result tables by name:
  * 
  * <pre>
- * Result result = builder.build();
+ * Results&lt;Table&gt; result = builder.build();
  * 
  * Table filteredMessageLog = result.get("messageLog");
  * Table filteredTrades = result.get("trades");
  * </pre>
  *
  * The leader table is also filtered to indicate which IDs are active, and can be retrieved from the Result as well,
- * either by name or with the.
+ * either by name or with the {@link Results#getLeader()}.
  * 
  * <pre>
- * Table filteredLeader = result.get(com.illumon.iris.db.v2.utils.LeaderTableFilter.DEFAULT_LEADER_NAME);
+ * Table filteredLeader = result.get(io.deephaven.engine.util.LeaderTableFilter.DEFAULT_LEADER_NAME);
  * </pre>
  *
  * <p>
  * As an alternative to the TableBuilder you may use the {@link PartitionedTableBuilder} The PartitionedTableBuilder is
  * very similar to the TableBuilder, but takes {@link PartitionedTable PartitionedTables} as input and produces a
- * {@link Results <PartitionedTable>} as output instead of a {@link Results}. Entries are added to the result
- * PartitionedTableBuilder after all the input PartitionedTables have a matching key. The number of keys for each
+ * {@link Results} containing PartitionedTables as output instead of a {@link Results} containing Tables. Entries are
+ * added to the result after all the input PartitionedTables have a matching key. The number of keys columns for each
  * PartitionedTable must be identical, and of compatible types, the underlying tables of constituents are joined
  * together on the {@link PartitionedTable#keyColumnNames() key columns}, in order. Each table within the
  * PartitionedTable must be add-only.
@@ -896,11 +895,9 @@ public class LeaderTableFilter {
     }
 
     /**
-     * Produce a map of result follower tables.
-     * <p>
-     * We do not use a PartitionedTable, because each follower table may have a distinct definition.
+     * Produce a Result containing the leader and follower Tables.
      *
-     * @return a map of result follower tables
+     * @return a result containing the filtered Tables
      */
     private Results<Table> getResult() {
         final Table[] results = new Table[followerResults.length + 1];
@@ -923,9 +920,7 @@ public class LeaderTableFilter {
     }
 
     /**
-     * Produce a Map of synchronized tables.
-     *
-     *
+     * Produce a Result with of synchronized tables.
      */
     public static class TableBuilder {
         private String leaderName = DEFAULT_LEADER_NAME;
@@ -958,9 +953,9 @@ public class LeaderTableFilter {
         }
 
         /**
-         * Set the name of the leader table in the returned map.
+         * Set the name of the leader table in the returned Result.
          *
-         * @param leaderName the name of the leader table in the returned map
+         * @param leaderName the name of the leader table in the returned Result
          */
         public TableBuilder setLeaderName(final String leaderName) {
             if (followerTables.stream().anyMatch(ftd -> leaderName.equals(ftd.name))) {
@@ -984,7 +979,7 @@ public class LeaderTableFilter {
         /**
          * Add a table to the set of tables to be synchronized, using this builder's default key column names.
          *
-         * @param name the key of the Table in our output map of Tables.
+         * @param name the key of the Table in our output Result of Tables.
          * @param table the Table to add
          * @param idColumn The name of the ID column in the PartitionedTable, must be a long. Expressed as
          *        "LeaderName=FollowerName", or "ColumnName" when the names are the same.
@@ -997,7 +992,7 @@ public class LeaderTableFilter {
         /**
          * Add a table to the set of tables to be synchronized.
          *
-         * @param name the key of the Table in our output map of Tables.
+         * @param name the key of the Table in our output Result of Tables.
          * @param table the Table to add
          * @param idColumn The name of the ID column in the PartitionedTable, must be a long. Expressed as
          *        "LeaderName=FollowerName", or "ColumnName" when the names are the same.
@@ -1012,7 +1007,7 @@ public class LeaderTableFilter {
         /**
          * Add a table to the set of tables to be synchronized.
          *
-         * @param name the key of the Table in our output map of Tables.
+         * @param name the key of the Table in our output Result of Tables.
          * @param table the Table to add
          * @param idColumn a Pair with the leader ID column in the output and the follower as the input. The type of the
          *        columns must be long.
@@ -1038,11 +1033,11 @@ public class LeaderTableFilter {
         }
 
         /**
-         * Instantiate the Map of synchronized tables.
+         * Instantiate the Result with synchronized tables.
          * <p>
          * This must be called under the UpdateGraph lock.
          *
-         * @return a Map with one entry for each input table
+         * @return a Result with one entry for each input Table (leader and all followers)
          */
         public Results<Table> build() {
             return QueryPerformanceRecorder.withNugget("LeaderTableFilter", () -> {
@@ -1057,7 +1052,7 @@ public class LeaderTableFilter {
     }
 
     /**
-     * Produce a Map of synchronized PartitionedTables.
+     * Produce a Result of synchronized PartitionedTables.
      */
     public static class PartitionedTableBuilder {
         private String leaderName = DEFAULT_LEADER_NAME;
@@ -1081,9 +1076,9 @@ public class LeaderTableFilter {
         }
 
         /**
-         * Set the name of the leader PartitionedTable in the returned map.
+         * Set the name of the leader PartitionedTable in the returned Result.
          *
-         * @param leaderName the name of the leader PartitionedTable in the returned map
+         * @param leaderName the name of the leader PartitionedTable in the returned Result
          */
         public PartitionedTableBuilder setLeaderName(final String leaderName) {
             if (followerPartitionedTables.stream().anyMatch(ftd -> leaderName.equals(ftd.name))) {
@@ -1108,7 +1103,7 @@ public class LeaderTableFilter {
          * Add a PartitionedTable to the set of PartitionedTables to be synchronized, using this builder's default key
          * column names.
          *
-         * @param name the key of the PartitionedTable in our output Map
+         * @param name the key of the PartitionedTable in our Result
          * @param partitionedTable the PartitionedTable to add
          * @param idColumn The name of the ID column in the PartitionedTable, must be a long. Expressed as
          *        "LeaderName=FollowerName", or "ColumnName" when the names are the same.
@@ -1161,11 +1156,11 @@ public class LeaderTableFilter {
         }
 
         /**
-         * Instantiate the Map of synchronized tables.
+         * Instantiate the Result with synchronized PartitionedTables.
          * <p>
          * This must be called under the UpdateGraph lock.
          *
-         * @return a Map with one entry for each input table
+         * @return a Result with one entry for each input PartitionedTable
          */
         public Results<PartitionedTable> build() {
             return QueryPerformanceRecorder.withNugget("LeaderTableFilter", () -> {
