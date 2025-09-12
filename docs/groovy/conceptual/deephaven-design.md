@@ -47,7 +47,7 @@ A ColumnSource represents a column of (possibly dynamically updating) data that 
 
 A RowSet selects elements of that ColumnSource and might represent all the data in the ColumnSource or just some subset of it. A _redirecting_ RowSet is a RowSet that is derived from another RowSet and which remaps its keys. It can be used, for example, to reorder the rows in a table effectively.
 
-_Filtering_ ([`where`](../how-to-guides/use-filters.md) operations) creates a new RowSet that is a subset of an existing RowSet; _sorting_ creates a redirecting RowSet.
+_Filtering_ ([`where`](../how-to-guides/filters.md) operations) creates a new RowSet that is a subset of an existing RowSet; _sorting_ creates a redirecting RowSet.
 
 A table may share its RowSet with any other table in its update graph that contains the same row keys. A single parent table is responsible for maintaining the RowSet on behalf of itself and any descendants that inherited its RowSet. Table operations that inherit RowSets include column projection and derivation operations like [`select`](../reference/table-operations/select/select.md) and [`view`](../reference/table-operations/select/view.md), as well as some join operations with respect to the left input table; e.g., [`natural join`](../reference/table-operations/join/natural-join.md), [`exact join`](../reference/table-operations/join/exact-join.md), and [`as-of join`](../reference/table-operations/join/aj.md).
 
@@ -144,7 +144,7 @@ Deephaven table operations often support complex, user-defined expressions for c
 
 ### Expression parsing
 
-Deephaven uses [JavaParser](https://javaparser.org/) to turn user-specified [expressions](../how-to-guides/formulas-how-to.md) into three implementation categories:
+Deephaven uses [JavaParser](https://javaparser.org/) to turn user-specified [expressions](../how-to-guides/formulas.md) into three implementation categories:
 
 1. Simple pre-compiled Java class instances.
 2. New Java classes that are subsequently compiled, loaded, and instantiated.

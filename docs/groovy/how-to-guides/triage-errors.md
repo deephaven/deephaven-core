@@ -200,7 +200,7 @@ Like the previous examples, the root cause can be found near the end of the stac
 Caused by: java.lang.StringIndexOutOfBoundsException: Index 1 out of bounds for length 1
 ```
 
-This line contains the actual [query string](./work-with-strings.md) that caused the error, making it clear which line is the culprit.
+This line contains the actual [query string](./strings.md) that caused the error, making it clear which line is the culprit.
 
 We can inspect the table by adding a new column `ItemsLength = Items.length()`:
 
@@ -357,10 +357,10 @@ You can also get help by asking questions in our [GitHub Discussions](https://gi
 # Related documentation
 
 - [Create a new table](./new-and-empty-table.md#newtable)
-- [How to handle null, infinity, and not-a-number values](./handle-null-inf-nan.md)
+- [How to handle null, infinity, and not-a-number values](./null-inf-nan.md)
 - [Joins: Exact and Relational](./joins-exact-relational.md)
 - [Joins: Time-Series and Range](./joins-timeseries-range.md)
 - [How to select, view, and update data in tables](./use-select-view-update.md)
-- [How to work with strings](./work-with-strings.md)
-- [Formulas](../how-to-guides/formulas-how-to.md)
+- [How to work with strings](./strings.md)
+- [Formulas](../how-to-guides/formulas.md)
 - [Special variables](../reference/query-language/variables/special-variables.md)

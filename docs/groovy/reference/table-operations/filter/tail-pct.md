@@ -46,5 +46,5 @@ result1 = source.tailPct(0.3333333333)
 ## Related documentation
 
 - [Create a new table](../../../how-to-guides/new-and-empty-table.md#newtable)
-- [How to use filters](../../../how-to-guides/use-filters.md)
+- [How to use filters](../../../how-to-guides/filters.md)
 - [Javadoc](https://deephaven.io/core/javadoc/io/deephaven/engine/table/Table.html#tailPct(double))

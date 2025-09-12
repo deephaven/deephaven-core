@@ -26,9 +26,9 @@ result = source.where("Value = `C`")
 
 ## Related documentation
 
-- [How to use formulas](../../../how-to-guides/formulas-how-to.md)
+- [How to use formulas](../../../how-to-guides/formulas.md)
 - [How to use strings and variables inside your query strings](../../../how-to-guides/queryscope.md)
-- [How to use Deephaven's built-in query language functions](../../../how-to-guides/query-language-functions.md)
+- [How to use Deephaven's built-in query language functions](../../../how-to-guides/built-in-functions.md)
 - [Query language functions](../query-library/query-language-function-reference.md)
 - [where](../../table-operations/filter/where.md)
 - [update](../../table-operations/select/update.md)

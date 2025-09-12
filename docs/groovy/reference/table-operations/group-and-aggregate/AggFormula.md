@@ -19,7 +19,7 @@ The user-defined formula to apply to each group. This formula can contain:
 
 - Built-in functions such as `min`, `max`, etc.
 - Mathematical operations such as `*`, `+`, `/`, etc.
-- [User-defined functions](../../../how-to-guides/user-defined-functions.md)
+- [User-defined closures](../../../how-to-guides/user-defined-closures.md)
 
 If `paramToken` is not `null`, the formula can only be applied to one column at a time, and it is applied to the specified `paramToken`. If `paramToken` is `null`, the formula is applied to any column or literal value present in the formula. The use of `paramToken` is deprecated.
 

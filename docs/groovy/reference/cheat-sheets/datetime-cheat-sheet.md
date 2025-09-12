@@ -104,7 +104,7 @@ result = newTable(
 filtered = result.where("DateTimes >= '2021-09-06T12:30:00 UTC'")
 ```
 
-See our [How to use filters](../../how-to-guides/use-filters.md) guide for more information.
+See our [How to use filters](../../how-to-guides/filters.md) guide for more information.
 
 ## Time zones
 

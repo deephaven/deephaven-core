@@ -63,5 +63,5 @@ result = WindowCheck.addTimeWindow(source, "Timestamp", SECOND * 10, "WithinLast
 ## Related documentation
 
 - [Create a time table](../table-operations/create/timeTable.md)
-- [How to use filters](../../how-to-guides/use-filters.md)
+- [How to use filters](../../how-to-guides/filters.md)
 - [Javadoc](/core/javadoc/io/deephaven/engine/util/WindowCheck.html)

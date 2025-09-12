@@ -48,6 +48,6 @@ println plus(dateTime, periodNegative)
 
 ## Related Documentation
 
-- [How to use Deephaven's built-in query language functions](../../../how-to-guides/query-language-functions.md)
+- [How to use Deephaven's built-in query language functions](../../../how-to-guides/built-in-functions.md)
 - [Query language functions](../query-library/query-language-function-reference.md)
 - [Javadoc](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Period.html)

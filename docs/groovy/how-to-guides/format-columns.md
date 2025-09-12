@@ -249,7 +249,7 @@ students_rgba = students.formatColumns("Name = colorRGB(135, 206, 250, 50)")
 
 - [Create a new table](./new-and-empty-table.md#newtable)
 - [How to select, view, and update data in tables](./use-select-view-update.md)
-- [How to use filters](./use-filters.md)
+- [How to use filters](./filters.md)
 - [How to use variables and functions in query strings](./queryscope.md)
 - [`formatColumns()`](../reference/table-operations/format/format-columns.md)
 - [`formatColumnWhere()`](../reference/table-operations/format/format-column-where.md)

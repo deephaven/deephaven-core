@@ -344,7 +344,7 @@ Data indexes improve performance when used in the right context. If used in the 
 ## Related documentation
 
 - [Combined aggregations](./dedicated-aggregations.md)
-- [Filter table data](./use-filters.md)
+- [Filter table data](./filters.md)
 - [Export to Parquet](./data-import-export/parquet-export.md)
 - [Import to Parquet](./data-import-export/parquet-import.md)
 - [Joins: exact and relational](./joins-exact-relational.md)

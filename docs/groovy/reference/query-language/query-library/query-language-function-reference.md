@@ -19,4 +19,4 @@ The full list of classes, packages, and methods that are imported is defined in 
 
 ## Related documentation
 
-- [How to use automatically imported query language functions](../../../how-to-guides/query-language-functions.md)
+- [How to use automatically imported query language functions](../../../how-to-guides/built-in-functions.md)
