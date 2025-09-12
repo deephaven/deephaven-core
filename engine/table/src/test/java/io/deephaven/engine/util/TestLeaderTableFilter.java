@@ -215,6 +215,101 @@ public class TestLeaderTableFilter {
     }
 
     @Test
+    public void testStaticLeader() {
+        final QueryTable leader =
+                TstUtils.testTable(col("Key", "a", "a", "a"), longCol("A", 2, 3, 5), longCol("B", 0, 4, 4));
+        final QueryTable a = TstUtils.testRefreshingTable(longCol("ID", 1, 1, 2, 2, 3, 3),
+                intCol("Sentinel", 101, 102, 103, 104, 105, 106), col("Key", "a", "a", "a", "a", "a", "a"));
+        final QueryTable b = TstUtils.testRefreshingTable(longCol("ID", 0, 0, 2, 2, 4, 4),
+                intCol("Sentinel", 201, 202, 203, 204, 205, 206), col("Key", "a", "a", "a", "a", "a", "a"));
+
+        final LeaderTableFilter.TableBuilder builder = new LeaderTableFilter.TableBuilder(leader);
+        builder.addTable("a", a.assertAddOnly(), "A=ID");
+        builder.addTable("b", b.assertAddOnly(), "B=ID");
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        final LeaderTableFilter.Results<Table> results = updateGraph.sharedLock().computeLocked(builder::build);
+
+        assertEquals(new HashSet<>(Arrays.asList("a", "b", LeaderTableFilter.DEFAULT_LEADER_NAME)), results.keySet());
+
+        final Table fl = results.get(LeaderTableFilter.DEFAULT_LEADER_NAME);
+        final Table fa = results.get("a");
+        final Table fb = results.get("b");
+
+        TableTools.show(fl);
+        TableTools.show(fa);
+        TableTools.show(fb);
+
+        final Table ex1l = newTable(col("Key", "a"), longCol("A", 3), longCol("B", 4));
+        final Table ex1a = newTable(longCol("ID", 3, 3), intCol("Sentinel", 105, 106), col("Key", "a", "a"));
+        final Table ex1b = newTable(longCol("ID", 4, 4), intCol("Sentinel", 205, 206), col("Key", "a", "a"));
+
+        assertTableEquals(ex1l, fl);
+        assertTableEquals(ex1a, fa);
+        assertTableEquals(ex1b, fb);
+
+        updateGraph.runWithinUnitTestCycle(() -> {
+            TstUtils.addToTable(a, i(10, 11), longCol("ID", 5, 5), intCol("Sentinel", 107, 108), col("Key", "b", "b"));
+            a.notifyListeners(i(10, 11), i(), i());
+        });
+
+        final Table ex2l = newTable(col("Key", "a"), longCol("A", 5), longCol("B", 4));
+        final Table ex2a = newTable(longCol("ID", 5, 5), intCol("Sentinel", 107, 108), col("Key", "b", "b"));
+        final Table ex2b = newTable(longCol("ID", 4, 4), intCol("Sentinel", 205, 206), col("Key", "a", "a"));
+
+        assertTableEquals(ex2l, fl);
+        assertTableEquals(ex2a, fa);
+        assertTableEquals(ex2b, fb);
+    }
+
+    @Test
+    public void testStaticFollower() {
+        final QueryTable leader =
+                TstUtils.testRefreshingTable(col("Key", "a", "a"), longCol("A", 2, 3), longCol("B", 0, 4));
+        final QueryTable a = TstUtils.testTable(longCol("ID", 1, 1, 2, 2, 3, 3, 5, 5),
+                intCol("Sentinel", 101, 102, 103, 104, 105, 106, 107, 108),
+                col("Key", "a", "a", "a", "a", "a", "a", "a", "a"));
+        final QueryTable b = TstUtils.testRefreshingTable(longCol("ID", 0, 0, 2, 2, 4, 4),
+                intCol("Sentinel", 201, 202, 203, 204, 205, 206), col("Key", "a", "a", "a", "a", "a", "a"));
+
+        final LeaderTableFilter.TableBuilder builder = new LeaderTableFilter.TableBuilder(leader.assertAddOnly());
+        builder.addTable("a", a.assertAddOnly(), "A=ID");
+        builder.addTable("b", b.assertAddOnly(), "B=ID");
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        final LeaderTableFilter.Results<Table> results = updateGraph.sharedLock().computeLocked(builder::build);
+
+        assertEquals(new HashSet<>(Arrays.asList("a", "b", LeaderTableFilter.DEFAULT_LEADER_NAME)), results.keySet());
+
+        final Table fl = results.get(LeaderTableFilter.DEFAULT_LEADER_NAME);
+        final Table fa = results.get("a");
+        final Table fb = results.get("b");
+
+        TableTools.show(fl);
+        TableTools.show(fa);
+        TableTools.show(fb);
+
+        final Table ex1l = newTable(col("Key", "a"), longCol("A", 3), longCol("B", 4));
+        final Table ex1a = newTable(longCol("ID", 3, 3), intCol("Sentinel", 105, 106), col("Key", "a", "a"));
+        final Table ex1b = newTable(longCol("ID", 4, 4), intCol("Sentinel", 205, 206), col("Key", "a", "a"));
+
+        assertTableEquals(ex1l, fl);
+        assertTableEquals(ex1a, fa);
+        assertTableEquals(ex1b, fb);
+
+        updateGraph.runWithinUnitTestCycle(() -> {
+            TstUtils.addToTable(leader, i(10), longCol("A", 5), longCol("B", 4), col("Key", "b"));
+            leader.notifyListeners(i(10), i(), i());
+        });
+
+        final Table ex2l = newTable(col("Key", "b"), longCol("A", 5), longCol("B", 4));
+        final Table ex2a = newTable(longCol("ID", 5, 5), intCol("Sentinel", 107, 108), col("Key", "a", "a"));
+        final Table ex2b = newTable(longCol("ID", 4, 4), intCol("Sentinel", 205, 206), col("Key", "a", "a"));
+
+        assertTableEquals(ex2l, fl);
+        assertTableEquals(ex2a, fa);
+        assertTableEquals(ex2b, fb);
+    }
+
+    @Test
     public void testSimpleKeyed() {
         final QueryTable leader =
                 TstUtils.testRefreshingTable(col("Key", "a", "b"), longCol("A", 1, 2), longCol("B", 101, 102));

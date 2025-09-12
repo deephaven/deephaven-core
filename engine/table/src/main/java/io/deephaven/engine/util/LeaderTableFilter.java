@@ -338,7 +338,11 @@ public class LeaderTableFilter {
 
         final MergedLeaderListener mergedListener = refreshing ? new MergedLeaderListener() : null;
         if (refreshing) {
-            recorders.forEach(lr -> lr.setMergedListener(mergedListener));
+            recorders.forEach(lr -> {
+                if (lr != null) {
+                    lr.setMergedListener(mergedListener);
+                }
+            });
             leaderResult = leaderTable.getSubTable(leaderResultRowSet, null, null, mergedListener);
         } else {
             leaderResult = leaderTable.getSubTable(leaderResultRowSet, null, null);
@@ -401,6 +405,10 @@ public class LeaderTableFilter {
     }
 
     private void createFollowerRecorder(FollowerTableDescription ftd) {
+        if (!ftd.table.isRefreshing()) {
+            recorders.add(null);
+            return;
+        }
         final ListenerRecorder listenerRecorder =
                 new ListenerRecorder("LeaderTableFilter(" + ftd.name + ")", ftd.table, null);
         ftd.table.addUpdateListener(listenerRecorder);
@@ -408,6 +416,10 @@ public class LeaderTableFilter {
     }
 
     private void createLeaderRecorder(QueryTable leader) {
+        if (!leader.isRefreshing()) {
+            recorders.add(null);
+            return;
+        }
         final ListenerRecorder listenerRecorder =
                 new ListenerRecorder("LeaderTableFilter(" + leaderName + ")", leader, null);
         leader.addUpdateListener(listenerRecorder);
@@ -416,19 +428,20 @@ public class LeaderTableFilter {
 
     class MergedLeaderListener extends MergedListener {
         MergedLeaderListener() {
-            super(recorders, Collections.emptyList(), "MergedLeaderListener", null);
+            super(recorders.stream().filter(Objects::nonNull).collect(Collectors.toList()), Collections.emptyList(),
+                    "MergedLeaderListener", null);
         }
 
         @Override
         protected void process() {
-            if (recorders.get(0).recordedVariablesAreValid()) {
+            if (recorders.get(0) != null && recorders.get(0).recordedVariablesAreValid()) {
                 final ListenerRecorder recorder = recorders.get(0);
                 consumeLeaderRows(recorder.getAdded());
             }
 
             for (int rr = 1; rr < recorders.size(); ++rr) {
                 final ListenerRecorder recorder = recorders.get(rr);
-                if (recorder.recordedVariablesAreValid()) {
+                if (recorder != null && recorder.recordedVariablesAreValid()) {
                     // we are valid
                     consumeFollowerRows(rr - 1, recorder.getAdded());
                 }
