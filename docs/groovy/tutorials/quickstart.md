@@ -164,7 +164,7 @@ cryptoStreamingRev = cryptoStreamingRev.dropColumns("TransactionTotal")
 
 ![Animated GIF showing removal of TransactionTotal column using drop_columns](../assets/tutorials/quickstart/quickstart-5.gif)
 
-Next, Deephaven offers many operations for filtering tables. These include [`where`](../reference/table-operations/filter/where.md), [`whereIn`](../reference/table-operations/filter/where-in.md), [`whereNotIn`](../reference/table-operations/filter/where-not-in.md), and [more](../how-to-guides/use-filters.md).
+Next, Deephaven offers many operations for filtering tables. These include [`where`](../reference/table-operations/filter/where.md), [`whereIn`](../reference/table-operations/filter/where-in.md), [`whereNotIn`](../reference/table-operations/filter/where-not-in.md), and [more](../how-to-guides/filters.md).
 
 The following code uses [`where`](../reference/table-operations/filter/where.md) to filter for only Bitcoin transactions, and then for Bitcoin and Ethereum transactions:
 

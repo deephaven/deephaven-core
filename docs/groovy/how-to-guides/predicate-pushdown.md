@@ -82,7 +82,7 @@ For more information, see the [Query table configuration](../conceptual/query-ta
 
 ## Related documentation
 
-- [Filter table data](./use-filters.md)
+- [Filter table data](./filters.md)
 - [Export to Parquet](./data-import-export/parquet-export.md)
 - [Import to Parquet](./data-import-export/parquet-import.md)
 - [`getDataIndex`](../reference/engine/getDataIndex.md)

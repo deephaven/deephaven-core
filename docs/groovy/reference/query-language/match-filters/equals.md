@@ -61,8 +61,8 @@ result = source.where(FilterOr.of(Filter.from("Color = `blue`", "Code = 14")))
 ## Related documentation
 
 - [Create a new table](../../../how-to-guides/new-and-empty-table.md#newtable)
-- [How to use filters](../../../how-to-guides/use-filters.md)
-- [How to use Deephaven's built-in query language functions](../../../how-to-guides/query-language-functions.md)
+- [How to use filters](../../../how-to-guides/filters.md)
+- [How to use Deephaven's built-in query language functions](../../../how-to-guides/built-in-functions.md)
 - [Query language functions](../query-library/query-language-function-reference.md)
 - [where](../../table-operations/filter/where.md)
 - [where_in](../../table-operations/filter/where-in.md)

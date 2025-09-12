@@ -147,7 +147,7 @@ import com.example.MyClass
 - [Docker volumes](../conceptual/docker-data-volumes.md)
 - [How to use variables and functions in query strings](../how-to-guides/queryscope.md)
 - [How to install Java packages](../how-to-guides/install-and-use-java-packages.md)
-- [How to use Deephaven's built-in query language functions](../how-to-guides/query-language-functions.md)
+- [How to use Deephaven's built-in query language functions](../how-to-guides/built-in-functions.md)
 - [Query language functions](../reference/query-language/query-library/auto-imported-functions.md)
 - [update](../reference/table-operations/select/update.md)
 - [view](../reference/table-operations/select/view.md)

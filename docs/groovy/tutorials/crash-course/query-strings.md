@@ -159,7 +159,7 @@ typecasted = emptyTable(10).update(
 )
 ```
 
-There are many more such operators supported in Deephaven. See the [guide on operators](../../how-to-guides/formulas-how-to.md#operators) to learn more.
+There are many more such operators supported in Deephaven. See the [guide on operators](../../how-to-guides/operators.md) to learn more.
 
 ## Built-in functions
 

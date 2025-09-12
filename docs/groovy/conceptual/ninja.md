@@ -163,7 +163,7 @@ The query string `"Z = (X%2==0) ? Y : 42"` sets `Z` equal to `Y`, if `X` is even
 
 Most user interactions with Deephaven happen via a programming language such as Python or Groovy, yet, under the hood, the Deephaven Query Engine is written in Java. Occasionally, it is beneficial to use the “Java inside.”
 
-In this query, Java is used twice in the query strings. First, the `sin(...)` method from the `java.lang.Math` class is used to compute column `A`. If you find a Java library that implements functionality you need, just place it on the classpath, and it is available in the query language. (See [Query Language](../how-to-guides/query-language-functions.md) for more details.) Second, Deephaven Query Language strings are `java.lang.String` objects. Here the `split(...)` method plus an array access have been used to retrieve the second token in the string. This inline use of Java String methods eliminates the need to write a custom string processing function.
+In this query, Java is used twice in the query strings. First, the `sin(...)` method from the `java.lang.Math` class is used to compute column `A`. If you find a Java library that implements functionality you need, just place it on the classpath, and it is available in the query language. (See [Query Language](../how-to-guides/query-string-overview.md) for more details.) Second, Deephaven Query Language strings are `java.lang.String` objects. Here the `split(...)` method plus an array access have been used to retrieve the second token in the string. This inline use of Java String methods eliminates the need to write a custom string processing function.
 
 Because of the deep integration of Java within the Deephaven environment, it is possible to create Java objects within a Python query. This technique isn’t often used, but it is occasionally helpful when using a Java package.
 
@@ -188,10 +188,10 @@ With some practice, you will get a feeling for how to format chained query opera
 - [Create an empty table](../how-to-guides/new-and-empty-table.md#emptytable)
 - [Choose a join method](../how-to-guides/joins-exact-relational.md#which-method-should-you-use)
 - [Choose the right selection method](../how-to-guides/use-select-view-update.md#choose-the-right-column-selection-method)
-- [Handle nulls, infs, and NaNs](../how-to-guides/handle-null-inf-nan.md)
+- [Handle nulls, infs, and NaNs](../how-to-guides/null-inf-nan.md)
 - [Work with arrays](../how-to-guides/work-with-arrays.md)
-- [Work with strings](../how-to-guides/work-with-strings.md)
+- [Work with strings](../how-to-guides/strings.md)
 - [Work with time](../conceptual/time-in-deephaven.md)
-- [Use filters](../how-to-guides/use-filters.md)
+- [Use filters](../how-to-guides/filters.md)
 - [Use ternary-if](../how-to-guides/ternary-if-how-to.md)
 - [Use variables in query strings](../conceptual/queryscope.md)
