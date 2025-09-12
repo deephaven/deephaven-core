@@ -1460,11 +1460,6 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
      */
     @JsMethod
     public Promise<JsColumnStatistics> getColumnStatistics(Column column) {
-        if (column.getDescription() != null && column.getDescription().startsWith("Preview of type")) {
-            // TODO (deephaven-core#188) Remove this workaround when we don't preview columns until just before
-            // subscription
-            return Promise.reject("Can't produce column statistics for preview column");
-        }
         List<Runnable> toRelease = new ArrayList<>();
         return workerConnection.newState((c, state, metadata) -> {
             ColumnStatisticsRequest req = new ColumnStatisticsRequest();
@@ -1477,10 +1472,15 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
                 .then(state -> {
                     JsTable table = new JsTable(workerConnection, state);
                     toRelease.add(table::close);
-                    table.setViewport(0, 0);
-                    return table.getViewportData();
+                    DataOptions.SnapshotOptions options = new DataOptions.SnapshotOptions();
+                    options.rows = Js.uncheckedCast(JsRangeSet.ofRange(0, 0));
+                    options.columns = table.getColumns();
+                    return table.createSnapshot(options);
                 })
-                .then(tableData -> Promise.resolve(new JsColumnStatistics(tableData)));
+                .then(tableData -> Promise.resolve(new JsColumnStatistics(tableData)))
+                .finally_(() -> {
+                    toRelease.forEach(Runnable::run);
+                });
     }
 
     private Literal objectToLiteral(String valueType, Object value) {

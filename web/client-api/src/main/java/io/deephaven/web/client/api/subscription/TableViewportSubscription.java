@@ -80,8 +80,33 @@ public class TableViewportSubscription extends AbstractTableSubscription {
             applyPreviewRequest.setResultId(newState.getHandle().makeTicket());
 
             if (options.previewOptions != null && options.previewOptions.convertToString != null && options.previewOptions.convertToString) {
-
+                applyPreviewRequest.setConvertArrays(true);
             }
+            applyPreviewRequest.setUnpreviewedTypesList(JsArray.of(
+                    "byte",
+//                    "java.lang.Byte",
+                    "char",
+//                    "java.lang.Character",
+                    "short",
+//                    "java.lang.Short",
+                    "int",
+//                    "java.lang.Integer",
+                    "long",
+//                    "java.lang.Long",
+                    "float",
+//                    "java.lang.Float",
+                    "double",
+//                    "java.lang.Double",
+                    "boolean",
+                    "java.lang.Boolean",
+                    "java.lang.String",
+                    "java.math.BigDecimal",
+                    "java.math.BigInteger",
+                    "java.time.Instant",
+                    "java.time.LocalDate",
+                    "java.time.ZonedDateTime"
+            ));
+
             connection.tableServiceClient().applyPreviewColumns(applyPreviewRequest, metadata, callback::apply);
         }, "preview");
         previewedState.refetch(null, connection.metadata()).then(result -> null, err -> null);
