@@ -45,7 +45,7 @@ jobs:
           cat gradle.properties
 
       - name: Setup Node for deployment to npmjs
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version-file: 'web/client-api/types/.nvmrc'
           registry-url: 'https://registry.npmjs.org'
