@@ -38,10 +38,10 @@ Top-level Build Directory (Some languages TBD)
   - `io.deephaven.java-test-conventions.gradle` Applies the above conditionally base on the _coverage.enabled_ property
 - `coverage/build/reports/coverage/`
   - `java-coverage.csv` Normalized coverage from all Java projects
-  - `python-coverage.py` Normalized coverage from all Python projects
-  - `cplus-coverage.py` Normalized coverage from all C++ projects
-  - `r-coverage.py` Normalized coverage from all R projects
-  - `go-coverage.oy` Normalized coverage from all Go projects
+  - `python-coverage.csv` Normalized coverage from all Python projects
+  - `cplus-coverage.csv` Normalized coverage from all C++ projects
+  - `r-coverage.csv` Normalized coverage from all R projects
+  - `go-coverage.csv` Normalized coverage from all Go projects
   - `all-coverage.csv` Normalized and filtered coverage from all covered projects
 - `coverage/build/reports/jacoco/jacoco-merge/html/`
   - `index.html` Root file to view Java coverage down to the branch level (not filtered)

@@ -115,6 +115,7 @@ def testCPythonClientTicking = { String pythonVersion, String image -> Docker.re
                    source "/project/${PYTHON_VERSION}/bin/activate"; \
                    pip install --upgrade pip; \
                    pip install unittest-xml-reporting; \
+                   pip install coverage; \
                    rm -fr /out; \
                    mkdir -p \
                        /out/report \
@@ -141,7 +142,7 @@ def testCPythonClientTicking = { String pythonVersion, String image -> Docker.re
     copyOut {
         into layout.buildDirectory.dir("test-results/testCPythonClientTicking/${image}/${pythonVersion}")
     }
-    entrypoint = ['/entrypoint.sh']
+    entrypoint = ['/entrypoint.sh', project.hasProperty("coverage.enabled")?project.property("coverage.enabled"):'false']
 }}
 
 Map<String, TaskProvider<? extends Task>> fedoraCPythonTests = pythonVersions.collectEntries { pythonVersion ->

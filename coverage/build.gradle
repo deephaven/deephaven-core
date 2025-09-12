@@ -24,8 +24,19 @@ tasks.register("jacoco-merge", JacocoReport) {
     executionData fileTree(projRootDir).include("**/build/jacoco/*.exec")
 }
 
+tasks.register("python-merge") {
+    def projRootDir = rootProject.rootDir.absolutePath
+    def outputFile = file("$buildDir/reports/python/python-coverage.tsv")
+    outputFile.parentFile.mkdirs()
+    outputFile.text = ''
+    fileTree(projRootDir).include("**/build/test-results/**/coverage/*.tsv").each { f ->
+        outputFile << f.text + '\n'
+    }
+}
+
 tasks.register("coverage-merge", Exec) {
     dependsOn("jacoco-merge")
+    dependsOn("python-merge")
     def projDir = projectDir.absolutePath
     def script = projDir + '/gather-coverage.py'
     commandLine 'python', script, projDir
