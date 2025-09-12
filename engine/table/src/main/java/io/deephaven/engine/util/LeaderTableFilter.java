@@ -1251,8 +1251,7 @@ public class LeaderTableFilter {
                                     }
                                     FollowerPartitionedTableDescription fptd = followerPartitionedTables.get(ii - 1);
                                     followers.add(new FollowerTableDescription(fptd.name, (Table) follower,
-                                            fptd.leaderIdColumn,
-                                            fptd.followerIdColumn, fptd.keyColumns));
+                                            fptd.leaderIdColumn, fptd.followerIdColumn, fptd.keyColumns));
                                 }
 
                                 return new LeaderTableFilter(leader, leaderKeys, leaderName, followers,
