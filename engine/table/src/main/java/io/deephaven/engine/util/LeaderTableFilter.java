@@ -8,7 +8,6 @@ import gnu.trove.list.array.TLongArrayList;
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.JoinAddition;
 import io.deephaven.api.JoinMatch;
-import io.deephaven.api.Pair;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.*;
@@ -16,6 +15,7 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.liveness.LivenessNode;
+import io.deephaven.engine.liveness.LivenessReferent;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.table.*;
@@ -96,8 +96,9 @@ import java.util.stream.Stream;
  * builder.addTable("trades", trades, "execId", "client", "SessionId");
  * </pre>
  *
- * After adding all the tables, then the build() method is called to create a {@link Result}, which implements a
- * {@link Result#get(String)} method to retrieve result tables by name:
+ * After adding all the tables, then the build() method is called to create a {@link Results
+ * <Table>
+ * }, which implements a {@link Results#get(String)} method to retrieve result tables by name:
  * 
  * <pre>
  * Result result = builder.build();
@@ -106,16 +107,17 @@ import java.util.stream.Stream;
  * Table filteredTrades = result.get("trades");
  * </pre>
  *
- * The leader table is also filtered to indicate which IDs are active, and can be retrieved from the map as well.
+ * The leader table is also filtered to indicate which IDs are active, and can be retrieved from the Result as well,
+ * either by name or with the.
  * 
  * <pre>
- * Table filteredLeader = resultMap.get(com.illumon.iris.db.v2.utils.LeaderTableFilter.DEFAULT_LEADER_NAME);
+ * Table filteredLeader = result.get(com.illumon.iris.db.v2.utils.LeaderTableFilter.DEFAULT_LEADER_NAME);
  * </pre>
  *
  * <p>
  * As an alternative to the TableBuilder you may use the {@link PartitionedTableBuilder} The PartitionedTableBuilder is
  * very similar to the TableBuilder, but takes {@link PartitionedTable PartitionedTables} as input and produces a
- * {@link PartitionedResult} as output instead of a {@link Result}. Entries are added to the result
+ * {@link Results <PartitionedTable>} as output instead of a {@link Results}. Entries are added to the result
  * PartitionedTableBuilder after all the input PartitionedTables have a matching key. The number of keys for each
  * PartitionedTable must be identical, and of compatible types, the underlying tables of constituents are joined
  * together on the {@link PartitionedTable#keyColumnNames() key columns}, in order. Each table within the
@@ -900,7 +902,7 @@ public class LeaderTableFilter {
      *
      * @return a map of result follower tables
      */
-    private Result getResult() {
+    private Results<Table> getResult() {
         final Table[] results = new Table[followerResults.length + 1];
         final String[] names = new String[followerResults.length + 1];
 
@@ -912,7 +914,7 @@ public class LeaderTableFilter {
             names[ii + 1] = followerTables.get(ii).name;
         }
 
-        return new ResultImpl(results, names);
+        return new ResultsImpl<>(results, names);
     }
 
     private static List<String> missingColumns(Table table, String... expected) {
@@ -984,8 +986,8 @@ public class LeaderTableFilter {
          *
          * @param name the key of the Table in our output map of Tables.
          * @param table the Table to add
-         * @param idColumn the name of the ID column in the table, must be a long expressed as
-         *        "LeaderName=FollowerName"; when the column names are the same can just be "ColumnName"
+         * @param idColumn The name of the ID column in the PartitionedTable, must be a long. Expressed as
+         *        "LeaderName=FollowerName", or "ColumnName" when the names are the same.
          * @return this builder
          */
         public TableBuilder addTable(final String name, final Table table, final String idColumn) {
@@ -997,8 +999,8 @@ public class LeaderTableFilter {
          *
          * @param name the key of the Table in our output map of Tables.
          * @param table the Table to add
-         * @param idColumn the name of the ID column in the table, must be a long expressed as
-         *        "LeaderName=FollowerName"; when the column names are the same can just be "ColumnName"
+         * @param idColumn The name of the ID column in the PartitionedTable, must be a long. Expressed as
+         *        "LeaderName=FollowerName", or "ColumnName" when the names are the same.
          * @param keyColumns the key columns, each key is coordinated independently of the other keys
          * @return this builder
          */
@@ -1012,14 +1014,15 @@ public class LeaderTableFilter {
          *
          * @param name the key of the Table in our output map of Tables.
          * @param table the Table to add
-         * @param idColumn a MatchPair with the leader ID column on the left and the follower on the right
+         * @param idColumn a Pair with the leader ID column in the output and the follower as the input. The type of the
+         *        columns must be long.
          * @param keyColumns the key columns, each key is coordinated independently of the other keys
          * @return this builder
          */
-        public TableBuilder addTable(final String name, final Table table, final Pair idColumn,
+        public TableBuilder addTable(final String name, final Table table, final JoinMatch idColumn,
                 final String... keyColumns) {
-            final String leaderIdColumn = idColumn.output().name();
-            final String followerIdColumn = idColumn.input().name();
+            final String leaderIdColumn = idColumn.left().name();
+            final String followerIdColumn = idColumn.right().name();
 
             if (leaderName.equals(name)) {
                 throw new IllegalArgumentException("Conflict with leader name \"" + name + "\"");
@@ -1037,11 +1040,11 @@ public class LeaderTableFilter {
         /**
          * Instantiate the Map of synchronized tables.
          * <p>
-         * This must be called under the LiveTableMonitor lock.
+         * This must be called under the UpdateGraph lock.
          *
          * @return a Map with one entry for each input table
          */
-        public Result build() {
+        public Results<Table> build() {
             return QueryPerformanceRecorder.withNugget("LeaderTableFilter", () -> {
                 if (followerTables.isEmpty()) {
                     throw new IllegalArgumentException(
@@ -1136,14 +1139,15 @@ public class LeaderTableFilter {
          *
          * @param name the key of the PartitionedTable in our output PartitionedTable.
          * @param partitionedTable the PartitionedTable to add
-         * @param idColumn a MatchPair with the leader ID column on the left and the follower on the right
+         * @param idColumn a JoinMatch with the leader ID column as the left, and the follower column as the right. The
+         *        type of the columns must be long.
          * @param keyColumns the key columns, each key is coordinated independently of the other keys
          * @return this builder
          */
         public PartitionedTableBuilder addPartitionedTable(final String name, final PartitionedTable partitionedTable,
-                final Pair idColumn, final String... keyColumns) {
-            final String leaderIdColumn = idColumn.output().name();
-            final String followerIdColumn = idColumn.input().name();
+                final JoinMatch idColumn, final String... keyColumns) {
+            final String leaderIdColumn = idColumn.left().name();
+            final String followerIdColumn = idColumn.right().name();
 
             if (leaderName.equals(name)) {
                 throw new IllegalArgumentException("Conflict with leader name \"" + name + "\"");
@@ -1159,11 +1163,11 @@ public class LeaderTableFilter {
         /**
          * Instantiate the Map of synchronized tables.
          * <p>
-         * This must be called under the LiveTableMonitor lock.
+         * This must be called under the UpdateGraph lock.
          *
          * @return a Map with one entry for each input table
          */
-        public PartitionedResult build() {
+        public Results<PartitionedTable> build() {
             return QueryPerformanceRecorder.withNugget("LeaderTableFilter", () -> {
                 if (!followerPartitionedTables.isEmpty()) {
                     return createPartitionedTableAdapter(leaderPartitionedTable, leaderKeys, leaderName,
@@ -1176,7 +1180,7 @@ public class LeaderTableFilter {
             });
         }
 
-        private PartitionedResult createPartitionedTableAdapter(
+        private Results<PartitionedTable> createPartitionedTableAdapter(
                 PartitionedTable leaderPartitionedTable,
                 String[] leaderKeys,
                 String leaderName,
@@ -1237,7 +1241,7 @@ public class LeaderTableFilter {
             // partitionedTables
             String resultName = "__RESULT_HOLDER";
             final Table withLtf = joinedConstituents.update(List.of(
-                    new MultiSourceFunctionalColumn<>(sourceNames, resultName, Result.class,
+                    new MultiSourceFunctionalColumn<>(sourceNames, resultName, Results.class,
                             (k, s) -> {
                                 final Table leader = (Table) s[0].get(k);
                                 if (leader == null) {
@@ -1264,7 +1268,7 @@ public class LeaderTableFilter {
             final String[] names = new String[followerPartitionedTables.size() + 1];
 
             final Table withLeaderResult = withResults.update(List.of(new FunctionalColumn<>(resultName,
-                    Result.class, "__LEADER_RESULT", Table.class, r -> r.get(leaderName))));
+                    Results.class, "__LEADER_RESULT", Table.class, r -> (Table) r.get(leaderName))));
             final PartitionedTable leaderResult =
                     new PartitionedTableImpl(withLeaderResult,
                             leaderPartitionedTable.keyColumnNames(), true, "__LEADER_RESULT",
@@ -1279,23 +1283,24 @@ public class LeaderTableFilter {
                 final PartitionedTable followerResult =
                         new PartitionedTableImpl(
                                 withResults.update(
-                                        List.of(new FunctionalColumn<>(resultName, Result.class,
-                                                followerResultColumn, Table.class, r -> r.get(followerName)))),
+                                        List.of(new FunctionalColumn<>(resultName, Results.class,
+                                                followerResultColumn, Table.class, r -> (Table) r.get(followerName)))),
                                 fpt.keyColumnNames(), true,
                                 followerResultColumn, fpt.constituentDefinition(), true, false);
                 partitionedTables[fi + 1] = followerResult;
                 names[fi + 1] = followerName;
             }
 
-            return new PartitionedResultImpl(partitionedTables, names);
+            return new ResultsImpl<>(partitionedTables, names);
         }
     }
 
 
     /**
-     * The shared result base class for Table and PartitionedTable LeaderTableFilter results.
+     * The Result class for a LeaderTableFilter, either containing {@link Table tables} or {@link PartitionedTable
+     * partitioned tables}.
      */
-    public interface BaseResult extends LivenessNode {
+    public interface Results<T> extends LivenessNode {
         /**
          * How many results objects are available? Equal to one (for the leader) plus the number of followers.
          * 
@@ -1304,12 +1309,7 @@ public class LeaderTableFilter {
         int size();
 
         Set<String> keySet();
-    }
 
-    /**
-     * The result for a LeaderTableFilter.
-     */
-    public interface Result extends BaseResult {
         /**
          * Call get to retrieve one result (either the leader or a follower), with the name specified in the builder.
          *
@@ -1318,7 +1318,7 @@ public class LeaderTableFilter {
          * the returned table to be valid.
          * </p>
          */
-        Table get(String name);
+        T get(String name);
 
         /**
          * <p>
@@ -1328,40 +1328,35 @@ public class LeaderTableFilter {
          *
          * @return the leader result
          */
-        Table getLeader();
+        T getLeader();
     }
 
-    /**
-     * The result for a LeaderTableFilter on PartitionedTables.
-     */
-    public interface PartitionedResult extends BaseResult {
-        /**
-         * Call get to retrieve one result (either the leader or a follower), with the name specified in the builder.
-         *
-         * <p>
-         * The result of the get call is not additionally managed, so the liveness of this result must be maintained for
-         * the returned PartitionedTable to be valid.
-         * </p>
-         */
-        PartitionedTable get(final String name);
-
-        /**
-         * <p>
-         * The result of the get call is not additionally managed, so the liveness of this result must be maintained for
-         * the returned PartitionedTable to be valid.
-         * </p>
-         * 
-         * @return the leader result
-         */
-        PartitionedTable getLeader();
-    }
-
-    private static abstract class BaseResultImpl extends LivenessArtifact
-            implements BaseResult {
+    private static class ResultsImpl<T extends LivenessReferent> extends LivenessArtifact implements Results<T> {
         final String[] names;
+        private final T[] results;
 
-        public BaseResultImpl(final String[] names) {
+        public ResultsImpl(final T[] results, final String[] names) {
             this.names = names;
+            this.results = results;
+            for (final T tab : results) {
+                manage(tab);
+            }
+        }
+
+        @Override
+        public T get(String name) {
+            for (int ii = 0; ii < names.length; ++ii) {
+                if (name.equals(names[ii])) {
+                    return results[ii];
+                }
+            }
+            throw new IllegalArgumentException(
+                    "Table " + name + " not found, available results are " + Arrays.toString(names));
+        }
+
+        @Override
+        public T getLeader() {
+            return results[0];
         }
 
         @Override
@@ -1372,65 +1367,6 @@ public class LeaderTableFilter {
         @Override
         public Set<String> keySet() {
             return Set.of(names);
-        }
-    }
-
-    private static class ResultImpl extends BaseResultImpl
-            implements Result {
-        private final Table[] tables;
-
-        public ResultImpl(final Table[] tables, final String[] names) {
-            super(names);
-            this.tables = tables;
-            for (final Table tab : tables) {
-                manage(tab);
-            }
-        }
-
-        @Override
-        public Table get(String name) {
-            for (int ii = 0; ii < names.length; ++ii) {
-                if (name.equals(names[ii])) {
-                    return tables[ii];
-                }
-            }
-            throw new IllegalArgumentException(
-                    "Table " + name + " not found, available results are " + Arrays.toString(names));
-        }
-
-        @Override
-        public Table getLeader() {
-            return tables[0];
-        }
-    }
-
-    public static class PartitionedResultImpl extends BaseResultImpl
-            implements PartitionedResult {
-        public final PartitionedTable[] partitionedTables;
-
-        public PartitionedResultImpl(final PartitionedTable[] partitionedTables,
-                final String[] names) {
-            super(names);
-            this.partitionedTables = partitionedTables;
-            for (final PartitionedTable tab : partitionedTables) {
-                manage(tab);
-            }
-        }
-
-        @Override
-        public PartitionedTable get(String name) {
-            for (int ii = 0; ii < names.length; ++ii) {
-                if (name.equals(names[ii])) {
-                    return partitionedTables[ii];
-                }
-            }
-            throw new IllegalArgumentException(
-                    "Table " + name + " not found, available results are " + Arrays.toString(names));
-        }
-
-        @Override
-        public PartitionedTable getLeader() {
-            return partitionedTables[0];
         }
     }
 }
