@@ -1318,7 +1318,7 @@ public class LeaderTableFilter {
          * the returned table to be valid.
          * </p>
          */
-        Table get(final String name);
+        Table get(String name);
 
         /**
          * <p>
