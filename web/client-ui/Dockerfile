@@ -2,10 +2,10 @@ FROM deephaven/node:local-build
 WORKDIR /usr/src/app
 
 # Most of the time, these versions are the same, except in cases where a patch only affects one of the packages
-ARG WEB_VERSION=1.5.1
+ARG WEB_VERSION=1.5.3
 ARG GRID_VERSION=1.1.0
 ARG CHART_VERSION=1.1.0
-ARG WIDGET_VERSION=1.5.1
+ARG WIDGET_VERSION=1.5.3
 
 # Pull in the published code-studio package from npmjs and extract is
 RUN set -eux; \

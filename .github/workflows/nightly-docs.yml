@@ -1,4 +1,4 @@
-name: Docs nightly tests
+name: Docs nightly checks
 
 # Controls when the action will run.
 on:
@@ -20,6 +20,13 @@ jobs:
       # Run all snapshots against the edge container
       - name: Run all snapshots
         run: ./docs/updateSnapshots -t edge -a
+
+      - name: Upload error logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: snapshot-error-logs
+          path: docs/snapshotter/errors/
 
       - name: Slack Notification
         uses: slackapi/slack-github-action@v1.23.0
@@ -51,6 +58,13 @@ jobs:
     - name: Validate docs
       if: always()
       run: ./docs/validate -e # Validate with external links
+
+    - name: Upload error logs
+      if: failure()
+      uses: actions/upload-artifact@v4
+      with:
+        name: validator-error-logs
+        path: docs/validator-results/
 
     - name: Slack Notification
       uses: slackapi/slack-github-action@v1.23.0
