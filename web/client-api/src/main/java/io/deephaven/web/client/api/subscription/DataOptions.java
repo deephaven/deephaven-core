@@ -20,9 +20,9 @@ import jsinterop.base.Js;
 /**
  * Options for requesting table data, either as a snapshot or a subscription. See subtypes for more specific options:
  * <ul>
- *     <li>{@link SnapshotOptions} for snapshot-specific options</li>
- *     <li>{@link SubscriptionOptions} for full-table subscription-specific options</li>
- *     <li>{@link ViewportSubscriptionOptions} for viewport subscription-specific options</li>
+ * <li>{@link SnapshotOptions} for snapshot-specific options</li>
+ * <li>{@link SubscriptionOptions} for full-table subscription-specific options</li>
+ * <li>{@link ViewportSubscriptionOptions} for viewport subscription-specific options</li>
  * </ul>
  */
 @TsInterface
@@ -80,8 +80,8 @@ public class DataOptions {
     @TsName(namespace = "dh")
     public static class ViewportSubscriptionOptions extends SubscriptionOptions {
         /**
-         * If true, the viewport will be filled starting from the end of the table, where 0 is the last row of the table.
-         * Default is false.
+         * If true, the viewport will be filled starting from the end of the table, where 0 is the last row of the
+         * table. Default is false.
          */
         @JsNullable
         @JsProperty
@@ -102,8 +102,8 @@ public class DataOptions {
     @TsName(namespace = "dh")
     public static class SnapshotOptions extends DataOptions {
         /**
-         * If true, the snapshot will be filled starting from the end of the table, where 0 is the last row of the table.
-         * Default is false.
+         * If true, the snapshot will be filled starting from the end of the table, where 0 is the last row of the
+         * table. Default is false.
          */
         @JsNullable
         @JsProperty
