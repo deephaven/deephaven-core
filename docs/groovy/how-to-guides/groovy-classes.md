@@ -21,22 +21,28 @@ Classes are blueprints for objects. They define the properties and behaviors tha
 
 ### Variables
 
-Class variables can be either static or instance variables. In the example below, `a` is a static class variable and `b` is an instance variable. The variable `a` does _not_ require an instance of the class to be used, while `b` does. Notice how in the query string `a` is accessed using the actual class `MyClass`, while `b` must be used with the instance of `MyClass` called `myClass`: <!--TODO: XXX lost part of this in translation>
+Class variables can be either static or instance variables. In the example below, `a` is a static class variable and `b` is an instance variable. The variable `a` does _not_ require an instance of the class to be used, while `b` does. However, static variables from custom Groovy classes cannot be accessed directly in query strings (like `MyClass.a`), so we extract the static value to a regular variable first:
 
 ```groovy order=source,sourceMeta
 class MyClass {
-    public int a = 1
-    public int b = 1
+    static int a = 1
+    int b
 
-    MyClass(int b){
+    MyClass(int b) {
         this.b = b
     }
 
+    int getB() {
+        return b
+    }
 }
 
 myClass = new MyClass(2)
 
-source = emptyTable(1).update("X = MyClass.a", "Y = myClass.b")
+// Access static variable directly, not through class
+staticA = MyClass.a
+
+source = emptyTable(1).update("X = staticA", "Y = myClass.getB()")
 sourceMeta = source.meta()
 ```
 
@@ -88,8 +94,8 @@ class MyClass {
 myClass = new MyClass(15, 6)
 
 source = emptyTable(1).update(
-    "X = (int)MyClass.changeValue(5)",
-    "Y = (double)MyClass.multiplyModulo(11, 16, X)",
+    "X = (int)myClass.changeValue(5)",
+    "Y = (double)myClass.multiplyModulo(11, 16, X)",
     "Z = (int)myClass.plusModulo(X)"
 )
 sourceMeta = source.meta()

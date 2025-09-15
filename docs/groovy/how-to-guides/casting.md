@@ -105,10 +105,14 @@ getBinding().setVariable("MyClass", MyClass)
 
 myClass = new MyClass(15, 6)
 
+// Access static variable directly, not through class
+value1 = MyClass.changeValue(4)
+value2 = MyClass.changeValue(5)
+
 source = emptyTable(1).update(
-    "Q = MyClass.changeValue(4)",
-    "X = (int)MyClass.changeValue(5)",
-    "Y = (double)MyClass.multiplyModulo(11, 16, X)",
+    "Q = value1",
+    "X = value2",
+    "Y = (double)myClass.multiplyModulo(11, 16, X)",
     "Z = (int)myClass.plusModulo(X)",
 )
 sourceMeta = source.meta()

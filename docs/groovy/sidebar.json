@@ -457,7 +457,7 @@
               },
               {
                 "label": "Variables in query strings",
-                "path": "conceptual/queryscope.md"
+                "path": "how-to-guides/queryscope.md"
               }
             ]
           },

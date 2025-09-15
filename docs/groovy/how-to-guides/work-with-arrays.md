@@ -11,7 +11,7 @@ This guide shows you how to work with [arrays](../reference/query-language/types
 
 Array columns fall into one of three categories of data type.
 
-### Array columns FIXME: not done yet
+### Array columns
 
 Array columns are Java arrays of primitive types. For example, the following query creates a table with a single row containing an array of primitive integers.
 
@@ -20,34 +20,29 @@ source = emptyTable(1).update("X = new int[]{1, 2, 3}")
 sourceMeta = source.meta()
 ```
 
-You can also use [Python functions](./python-functions.md) to create Java primitive array columns:
+You can also use [Groovy closures](./groovy-closures.md) to create Java primitive array columns:
 
-```python order=source,source_meta
-from deephaven import empty_table
-from typing import Sequence
-from numpy import typing as npt
-import numpy as np
+```groovy order=source,source_meta
+listFunc = { -> [4, 5, 6] }
 
-
-def list_func() -> Sequence[int]:
-    return [4, 5, 6]
-
-
-def np_array_func() -> npt.NDArray[np.intc]:
-    return np.array([4, 5, 6])
-
-
-source = empty_table(1).update(
-    ["ArrayFromPython = list_func()", "ArrayFromNumpy = np_array_func()"]
-)
-source_meta = source.meta_table
+source = emptyTable(1).update("ArrayFromGroovy = listFunc()")
+sourceMeta = source.meta()
 ```
 
 The Deephaven engine can seamlessly work with these column types.
 
 ### Vector columns
 
-Vector columns arise from common table operations including [grouping](./grouping-data.md). These vector columns are used in [dedicated aggregations](./dedicated-aggregations.md), [combined aggregations](./combined-aggregations.md), [`update_by`](../reference/table-operations/update-by-operations/updateBy.md), and more. The following example creates a vector column by calling [`group_by`](../reference/table-operations/group-and-aggregate/groupBy.md):
+```groovy order=source,sourceMeta
+source = emptyTable(5).update("X = ii % 2", "Y = ii").groupBy("X")
+sourceMeta = source.meta()
+```
+
+The Deephaven engine can seamlessly work with these column types.
+
+### Vector columns
+
+Vector columns arise from common table operations including [grouping](./grouping-data.md). These vector columns are used in [dedicated aggregations](./dedicated-aggregations.md), [combined aggregations](./combined-aggregations.md), [`updateBy`](../reference/table-operations/update-by-operations/updateBy.md), and more. The following example creates a vector column by calling [`groupBy`](../reference/table-operations/group-and-aggregate/groupBy.md):
 
 ```groovy order=source,sourceMeta
 source = emptyTable(5).update("X = ii % 2", "Y = ii").groupBy("X")
@@ -203,7 +198,7 @@ sourceMeta = source.meta()
 - [Rolling aggregations](./rolling-calculations.md)
 - [Query string overview](./query-string-overview.md)
 - [Groovy variables in query strings](./groovy-variables.md)
-- [Groovy functions in query strings](./groovy-functions.md)
+- [Groovy functions in query strings](./groovy-closures.md)
 - [Java objects in query strings](./java-classes.md)
 - [Special variables](../reference/query-language/variables/special-variables.md)
 - [Arrays](../reference/query-language/types/arrays.md)

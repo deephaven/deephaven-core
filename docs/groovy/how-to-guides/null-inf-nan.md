@@ -103,9 +103,9 @@ source = emptyTable(1).update(
 sourceMeta = source.meta()
 ```
 
-### Built-in vs Python constants FIXME: XXX idk if this is true
+### Built-in constants in Groovy
 
-As shown in the code blocks [above](#available-constants), the same constants are made available in both the Python API as well as the query language. As with all other operations done in [query strings](./query-string-overview.md), the built-in constants are the recommended way to use these constants. The Python API constants are provided for convenience and times where the constants are needed in Python code.
+The built-in constants shown above are available directly in both Groovy code and [query strings](./query-string-overview.md).
 
 ## Use null, infinity, and NaN values
 
@@ -160,47 +160,37 @@ resultNoNans = source.where("!isNaN(HasNaNs)")
 resultNoNullsNans = source.where("!isNull(HasNulls)", "!isNaN(HasNaNs)")
 ```
 
-### User-defined functions FIXME: idk about this part yet
+### User-defined functions
 
-When passing null, NaN, or infinity values from tables into Python functions, the [`deephaven.constants`](https://docs.deephaven.io/core/pydoc/code/deephaven.constants.html) module is useful. You can check input values as follows:
+When passing null, NaN, or infinity values from tables into Groovy closures, you can use the built-in constants to check input values:
 
-```python order=source,result
-from deephaven import empty_table
-from deephaven.constants import (
-    NULL_DOUBLE,
-    NAN_DOUBLE,
-    POS_INFINITY_DOUBLE,
-    NEG_INFINITY_DOUBLE,
-)
+```groovy order=source,result
+myFunc = { double inputValue ->
+    if (inputValue == NULL_DOUBLE) {
+        return -1.0
+    } else if (Double.isNaN(inputValue)) {
+        return -2.0
+    } else if (inputValue == POS_INFINITY_DOUBLE) {
+        return -3.0
+    } else if (inputValue == NEG_INFINITY_DOUBLE) {
+        return -4.0
+    } else {
+        return inputValue * 2
+    }
+}
 
-
-def my_func(input_value) -> float:
-    if input_value == NULL_DOUBLE:
-        return -1
-    elif input_value == NAN_DOUBLE:
-        return -2
-    elif input_value == POS_INFINITY_DOUBLE:
-        return -3
-    else:
-        return input_value * 2
-
-
-source = empty_table(10).update(
-    [
-        "HasNulls = (ii % 3 == 0) ? NULL_DOUBLE : randomDouble(0, 1)",
-        "HasNaNs = (ii % 4 == 2) ? NAN_DOUBLE : randomDouble(5, 10)",
-        "HasPosInfs = (ii % 5 == 4) ? POS_INFINITY_DOUBLE : randomDouble(10, 15)",
-        "HasNegInfs = (ii % 6 == 5) ? NEG_INFINITY_DOUBLE : randomDouble(15, 20)",
-    ]
+source = emptyTable(10).update(
+    "HasNulls = (ii % 3 == 0) ? NULL_DOUBLE : randomDouble(0, 1)",
+    "HasNaNs = (ii % 4 == 2) ? NAN_DOUBLE : randomDouble(5, 10)",
+    "HasPosInfs = (ii % 5 == 4) ? POS_INFINITY_DOUBLE : randomDouble(10, 15)",
+    "HasNegInfs = (ii % 6 == 5) ? NEG_INFINITY_DOUBLE : randomDouble(15, 20)",
 )
 
 result = source.update(
-    [
-        "ResultNulls = my_func(HasNulls)",
-        "ResultNaNs = my_func(HasNaNs)",
-        "ResultPosInfs = my_func(HasPosInfs)",
-        "ResultNegInfs = my_func(HasNegInfs)",
-    ]
+    "ResultNulls = myFunc(HasNulls)",
+    "ResultNaNs = myFunc(HasNaNs)",
+    "ResultPosInfs = myFunc(HasPosInfs)",
+    "ResultNegInfs = myFunc(HasNegInfs)",
 )
 ```
 
@@ -215,4 +205,3 @@ result = source.update(
 - [Groovy variables in query strings](./groovy-variables.md)
 - [Groovy closures in query strings](./groovy-closures.md)
 - [Auto-imported functions](../reference/query-language/query-library/auto-imported-functions.md)
-- [Pydoc](https://docs.deephaven.io/core/pydoc/code/deephaven.constants.html) FIXME: XXX

@@ -5,9 +5,6 @@ sidebar_label: Built-in constants
 
 Deephaven's Query Language (DQL) has a large number of built-in constants. These can be used in queries with no additional imports or setup. The built-in constants cover null values, maximum and minimum allowed values, NaNs, infinities, date-time values, and more. All constants use the `CAPITAL_CASE` naming convention to distinguish them from user-defined variables.
 
-> [!NOTE]
-> Many built-in constants are available in Python as well. Query strings should always use the built-in constants over their Python equivalents. For a full list of Deephaven Python constants, which are intended for use in Python code only, see the [Pydoc](https://docs.deephaven.io/core/pydoc/code/deephaven.constants.html). FIXME: XXX check note for accuracy
-
 ## Null constants
 
 There are constant values representing the null value for each Java primitive data type. The query below shows null constant values for all primitive types:

@@ -8,7 +8,7 @@ The ability to use your own custom Groovy variables, [closures](./groovy-closure
 
 ## Groovy variables in query strings
 
-There are three types of Groovy variables supported in the Deephaven Query Language (DQL). The use of variables in queries follows [query scope](./queryscope.md) rules similar to Python's [LEGB](https://realpython.com/python-scope-legb-rule/) ordering. <!--TODO: XXX is that accurate for Groovy?-->
+There are three types of Groovy variables supported in the Deephaven Query Language (DQL). The use of variables in queries follows Groovy's scoping rules and Deephaven's [query scope](./queryscope.md) mechanism.
 
 ### Scalars
 
