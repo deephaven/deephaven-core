@@ -3,8 +3,12 @@ name: Quick CI
 on:
   pull_request:
     branches: [ 'main', 'rc/v*' ]
+    paths-ignore:
+      - 'docs/**'
   push:
     branches: [ 'main', 'check/**', 'release/v*' ]
+    paths-ignore:
+      - 'docs/**'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}

@@ -3,8 +3,12 @@ name: Publish CI
 on:
   push:
     branches: [ 'main', 'release/v*' ]
+    paths-ignore:
+      - 'docs/**'
   pull_request:
     branches: [ 'main', 'rc/v*' ]
+    paths-ignore:
+      - 'docs/**'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
