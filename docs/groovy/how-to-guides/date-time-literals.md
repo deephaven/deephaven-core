@@ -43,7 +43,7 @@ A [`java.time.Instant`](https://docs.oracle.com/en/java/javase/17/docs/api/java.
 
 In the UI, date-times are displayed in the local time zone. You can specify a desired time zone in the date-time literal itself. The following example creates two columns using instant literals with different time zone suffixes:
 
-```groovy order=source,source_meta
+```groovy order=source,sourceMeta
 source = emptyTable(1).update(
     "InstantLiteral_UTC = '2023-10-01T09:30:00Z'",  // UTC (GMT+0)
     "InstantLiteral_NYC = '2025-01-23T15:21:48 ET'",  // Eastern Time (GMT-5 or GMT-6 depending on DST)

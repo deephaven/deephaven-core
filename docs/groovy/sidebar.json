@@ -254,10 +254,6 @@
                 "path": "how-to-guides/format-columns.md"
               },
               {
-                "label": "Filter",
-                "path": "how-to-guides/filters.md"
-              },
-              {
                 "label": "Sort",
                 "path": "how-to-guides/sort.md"
               },
@@ -454,10 +450,6 @@
               {
                 "label": "Liveness Scopes",
                 "path": "conceptual/liveness-scope-concept.md"
-              },
-              {
-                "label": "Variables in query strings",
-                "path": "how-to-guides/queryscope.md"
               }
             ]
           },
