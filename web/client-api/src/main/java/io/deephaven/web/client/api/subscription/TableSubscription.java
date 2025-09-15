@@ -4,8 +4,11 @@
 package io.deephaven.web.client.api.subscription;
 
 import elemental2.core.JsArray;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.ApplyPreviewColumnsRequest;
 import io.deephaven.web.client.api.Column;
 import io.deephaven.web.client.api.JsTable;
+import io.deephaven.web.client.api.WorkerConnection;
+import io.deephaven.web.client.state.ClientTableState;
 import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsProperty;
@@ -30,10 +33,20 @@ public final class TableSubscription extends AbstractTableSubscription {
     private final Double updateIntervalMs;
 
     @JsIgnore
-    public TableSubscription(JsArray<Column> columns, JsTable existingTable, Double updateIntervalMs) {
-        super(SubscriptionType.FULL_SUBSCRIPTION, existingTable.state(), existingTable.getConnection());
-        this.columns = columns;
-        this.updateIntervalMs = updateIntervalMs;
+    private TableSubscription(ClientTableState state, WorkerConnection connection,
+            DataOptions.SubscriptionOptions options) {
+        super(SubscriptionType.FULL_SUBSCRIPTION, state, connection);
+        this.columns = options.columns;
+        this.updateIntervalMs = options.updateIntervalMs;
+    }
+
+    public static TableSubscription createTableSubscription(JsTable existingTable,
+            DataOptions.SubscriptionOptions options) {
+        WorkerConnection connection = existingTable.getConnection();
+        ClientTableState tableState = existingTable.state();
+        ClientTableState previewedState = createPreview(connection, tableState, options.previewOptions);
+
+        return new TableSubscription(previewedState, connection, options);
     }
 
     @Override

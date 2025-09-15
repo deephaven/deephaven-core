@@ -74,42 +74,8 @@ public class TableViewportSubscription extends AbstractTableSubscription {
         ClientTableState tableState = jsTable.state();
         WorkerConnection connection = jsTable.getConnection();
 
-        ClientTableState previewedState = connection.newState((callback, newState, metadata) -> {
-            ApplyPreviewColumnsRequest applyPreviewRequest = new ApplyPreviewColumnsRequest();
-            applyPreviewRequest.setSourceId(tableState.getHandle().makeTableReference());
-            applyPreviewRequest.setResultId(newState.getHandle().makeTicket());
-
-            if (options.previewOptions != null && options.previewOptions.convertArrayToString != null
-                    && options.previewOptions.convertArrayToString) {
-                applyPreviewRequest.setConvertArrays(true);
-            }
-            applyPreviewRequest.setUnpreviewedTypesList(JsArray.of(
-                    "byte",
-                    "java.lang.Byte",
-                    "char",
-                    "java.lang.Character",
-                    "short",
-                    "java.lang.Short",
-                    "int",
-                    "java.lang.Integer",
-                    "long",
-                    "java.lang.Long",
-                    "float",
-                    "java.lang.Float",
-                    "double",
-                    "java.lang.Double",
-                    "boolean",
-                    "java.lang.Boolean",
-                    "java.lang.String",
-                    "java.math.BigDecimal",
-                    "java.math.BigInteger",
-                    "java.time.Instant",
-                    "java.time.LocalDate",
-                    "java.time.ZonedDateTime"));
-
-            connection.tableServiceClient().applyPreviewColumns(applyPreviewRequest, metadata, callback::apply);
-        }, "preview");
-        previewedState.refetch(null, connection.metadata()).then(result -> null, err -> null);
+        ClientTableState previewedState =
+                TableSubscription.createPreview(connection, tableState, options.previewOptions);
 
         ClientTableState stateToSubscribe;
         ConfigValue flattenViewport = connection.getServerConfigValue("web.flattenViewports");

@@ -786,12 +786,17 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
      */
     @JsMethod
     public TableSubscription subscribe(JsArray<Column> columns, @JsOptional Double updateIntervalMs) {
-        return new TableSubscription(columns, this, updateIntervalMs);
+        DataOptions.SubscriptionOptions options = new DataOptions.SubscriptionOptions();
+        options.previewOptions = new DataOptions.PreviewOptions();
+        options.previewOptions.convertArrayToString = true;
+        options.columns = columns;
+        options.updateIntervalMs = updateIntervalMs;
+        return TableSubscription.createTableSubscription(this, options);
     }
 
     @JsMethod
     public TableSubscription createSubscription(DataOptions.SubscriptionOptions options) {
-        return new TableSubscription(options.columns, this, options.updateIntervalMs);
+        return TableSubscription.createTableSubscription(this, options);
     }
 
     @JsMethod
@@ -809,11 +814,16 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
                 .batchSize(WebBarrageSubscription.BATCH_SIZE)
                 .maxMessageSize(WebBarrageSubscription.MAX_MESSAGE_SIZE)
                 .useDeephavenNulls(true)
-                .previewListLengthLimit(options.previewOptions != null && options.previewOptions.array != null ? (int)(double)options.previewOptions.array : 0)
+                .previewListLengthLimit(options.previewOptions != null && options.previewOptions.array != null
+                        ? (int) (double) options.previewOptions.array
+                        : 0)
                 .build();
 
+        ClientTableState previewed =
+                AbstractTableSubscription.createPreview(workerConnection, state(), options.previewOptions);
+
         LazyPromise<TableData> promise = new LazyPromise<>();
-        state().onRunning(cts -> {
+        previewed.onRunning(cts -> {
             int rowStyleColumn = cts.getRowFormatColumn() == null ? TableData.NO_ROW_FORMAT_COLUMN
                     : cts.getRowFormatColumn().getIndex();
 
