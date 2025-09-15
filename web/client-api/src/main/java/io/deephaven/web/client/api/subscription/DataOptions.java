@@ -30,14 +30,24 @@ import jsinterop.base.Js;
 public class DataOptions {
     /**
      * Options for requesting a preview of columns when requesting table data. The two properties
-     * {@link #convertToString} and {@link #array} are mutually exclusive.
+     * {@link #convertArrayToString} and {@link #array} are mutually exclusive.
      */
     @TsInterface
     @TsName(namespace = "dh")
     public static class PreviewOptions {
+        /**
+         * If true, any array columns will be converted to strings for preview purposes. This is the legacy behavior.
+         */
         @JsNullable
         @JsProperty
-        public Boolean convertToString;
+        public Boolean convertArrayToString;
+
+        /**
+         * Specifies the length of the array to serialize. If the array is longer than this length, one extra element
+         * will be included - the client is expected to truncate the array and append "..." to indicate that there are
+         * additional elements. Negative values indicate that the values should be counted from the end of the array rather
+         * than the beginning. Zero or null indicate that the entire array should be serialized. The default is null.
+         */
         @JsNullable
         @JsProperty
         public Double array;

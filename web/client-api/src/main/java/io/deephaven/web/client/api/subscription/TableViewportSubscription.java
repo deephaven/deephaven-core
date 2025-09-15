@@ -79,8 +79,8 @@ public class TableViewportSubscription extends AbstractTableSubscription {
             applyPreviewRequest.setSourceId(tableState.getHandle().makeTableReference());
             applyPreviewRequest.setResultId(newState.getHandle().makeTicket());
 
-            if (options.previewOptions != null && options.previewOptions.convertToString != null
-                    && options.previewOptions.convertToString) {
+            if (options.previewOptions != null && options.previewOptions.convertArrayToString != null
+                    && options.previewOptions.convertArrayToString) {
                 applyPreviewRequest.setConvertArrays(true);
             }
             applyPreviewRequest.setUnpreviewedTypesList(JsArray.of(
@@ -370,7 +370,7 @@ public class TableViewportSubscription extends AbstractTableSubscription {
         retainForExternalUse();
         DataOptions.SnapshotOptions options = new DataOptions.SnapshotOptions();
         options.previewOptions = new DataOptions.PreviewOptions();
-        options.previewOptions.convertToString = true;
+        options.previewOptions.convertArrayToString = true;
         options.previewOptions.array = 0.0;
         options.rows = Js.uncheckedCast(rows);
         if (columns == null) {

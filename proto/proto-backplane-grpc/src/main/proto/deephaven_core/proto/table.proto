@@ -322,8 +322,8 @@ message ApplyPreviewColumnsRequest {
   TableReference source_id = 1;
   Ticket result_id = 2;
 
-  // True to convert all arrays to strings, limiting to a server-defined max length. Ignored if no unpreviewed_types
-  // are defined.
+  // True to convert all arrays to strings, limiting to a server-defined max length. Expected to be unset if
+  // unpreviewed_types is empty.
   bool convert_arrays = 3;
 
   // Java types to leave unconverted - all other types will be converted to strings. If empty, the server's

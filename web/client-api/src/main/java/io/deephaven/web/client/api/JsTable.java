@@ -736,7 +736,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
             // rewrap current state in a new one, when ready the viewport will be applied
             DataOptions.ViewportSubscriptionOptions options = new DataOptions.ViewportSubscriptionOptions();
             options.previewOptions = new DataOptions.PreviewOptions();
-            options.previewOptions.convertToString = true;
+            options.previewOptions.convertArrayToString = true;
             options.rows = Js.uncheckedCast(new JsRangeSet(RangeSet.ofRange((long) firstRow, (long) lastRow)));
             options.columns = Js.uncheckedCast(columnsCopy);
             options.updateIntervalMs = updateIntervalMs;
@@ -809,6 +809,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
                 .batchSize(WebBarrageSubscription.BATCH_SIZE)
                 .maxMessageSize(WebBarrageSubscription.MAX_MESSAGE_SIZE)
                 .useDeephavenNulls(true)
+                .previewListLengthLimit(options.previewOptions != null && options.previewOptions.array != null ? (int)(double)options.previewOptions.array : 0)
                 .build();
 
         LazyPromise<TableData> promise = new LazyPromise<>();

@@ -999,8 +999,8 @@ type ApplyPreviewColumnsRequest struct {
 
 	SourceId *TableReference `protobuf:"bytes,1,opt,name=source_id,json=sourceId,proto3" json:"source_id,omitempty"`
 	ResultId *ticket.Ticket  `protobuf:"bytes,2,opt,name=result_id,json=resultId,proto3" json:"result_id,omitempty"`
-	// True to convert all arrays to strings, limiting to a server-defined max length. Ignored if no unpreviewed_types
-	// are defined.
+	// True to convert all arrays to strings, limiting to a server-defined max length. Expected to be unset if
+	// unpreviewed_types is empty.
 	ConvertArrays bool `protobuf:"varint,3,opt,name=convert_arrays,json=convertArrays,proto3" json:"convert_arrays,omitempty"`
 	// Java types to leave unconverted - all other types will be converted to strings. If empty, the server's
 	// legacy behavior will be used.
