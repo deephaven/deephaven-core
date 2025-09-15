@@ -17,6 +17,14 @@ import jsinterop.annotations.JsProperty;
 import jsinterop.annotations.JsType;
 import jsinterop.base.Js;
 
+/**
+ * Options for requesting table data, either as a snapshot or a subscription. See subtypes for more specific options:
+ * <ul>
+ *     <li>{@link SnapshotOptions} for snapshot-specific options</li>
+ *     <li>{@link SubscriptionOptions} for full-table subscription-specific options</li>
+ *     <li>{@link ViewportSubscriptionOptions} for viewport subscription-specific options</li>
+ * </ul>
+ */
 @TsInterface
 @TsName(namespace = "dh")
 public class DataOptions {
@@ -35,9 +43,16 @@ public class DataOptions {
         public Double array;
     }
 
+    /**
+     * Optional preview instructions for columns in the table data.
+     */
     @JsProperty
     @JsNullable
     public PreviewOptions previewOptions;
+
+    /**
+     * Required property to indicate which columns should be included in the table data.
+     */
     @JsProperty
     public JsArray<Column> columns;
 
@@ -47,6 +62,13 @@ public class DataOptions {
     @TsInterface
     @TsName(namespace = "dh")
     public static class SubscriptionOptions extends DataOptions {
+        /**
+         * Minimum interval between updates, in milliseconds. If not specified, the server default will be used,
+         * typically 1000ms.
+         * <p>
+         * Note that setting this to smaller values will not necessarily result in more frequent updates - the server
+         * may not propagate updates that frequently, or there may be no updates to propagate.
+         */
         @JsProperty
         public Double updateIntervalMs;
     }
@@ -57,10 +79,18 @@ public class DataOptions {
     @TsInterface
     @TsName(namespace = "dh")
     public static class ViewportSubscriptionOptions extends SubscriptionOptions {
+        /**
+         * If true, the viewport will be filled starting from the end of the table, where 0 is the last row of the table.
+         * Default is false.
+         */
         @JsNullable
         @JsProperty
         public Boolean isReverseViewport;
 
+        /**
+         * The rows to include in the viewport. This can be either a {@link JsRangeSet} or a single range with
+         * {@code first} and {@code last} properties.
+         */
         @JsProperty
         public RangeSetUnion rows;
     }
@@ -71,10 +101,18 @@ public class DataOptions {
     @TsInterface
     @TsName(namespace = "dh")
     public static class SnapshotOptions extends DataOptions {
+        /**
+         * If true, the snapshot will be filled starting from the end of the table, where 0 is the last row of the table.
+         * Default is false.
+         */
         @JsNullable
         @JsProperty
         public Boolean isReverseViewport;
 
+        /**
+         * The rows to include in the snapshot. This can be either a {@link JsRangeSet} or a single range with
+         * {@code first} and {@code last} properties.
+         */
         @JsProperty
         public RangeSetUnion rows;
     }
