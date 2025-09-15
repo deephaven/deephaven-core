@@ -48,7 +48,7 @@ sourceListMeta = sourceList.meta()
 
 Extracting Groovy sequence elements in the query language is also supported. The Deephaven engine is not able to infer data types from extracted list elements, so be sure to use [type casts](./casting.md#type-casts) to ensure the correct resultant column types.
 
-```groovy order=sourceListElement,sourceListElementMeta
+```groovy order=source,sourceMeta
 myList = [1, 2, 3]
 
 source = emptyTable(1).update(

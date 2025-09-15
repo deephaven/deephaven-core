@@ -22,7 +22,7 @@ sourceMeta = source.meta()
 
 You can also use [Groovy closures](./groovy-closures.md) to create Java primitive array columns:
 
-```groovy order=source,source_meta
+```groovy order=source,sourceMeta
 listFunc = { -> [4, 5, 6] }
 
 source = emptyTable(1).update("ArrayFromGroovy = listFunc()")
