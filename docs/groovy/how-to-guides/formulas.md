@@ -36,7 +36,6 @@ The LHS of a formula contains only the name of the column that will be created o
 - Start with a letter (`A-Z` or `a-z`) or an underscore (`_`).
 - Cannot contain any spaces.
 - Cannot contain any special characters (e.g., `@`, `#`, `$`, `%`, etc.).
-  jjbrosnan marked this conversation as resolved.
 - Cannot contain any arithmetic characters (`+`, `-`, `=`, etc.).
 - Cannot equal any [reserved keywords](https://docs.oracle.com/javase/tutorial/java/nutsandbolts/_keywords.html).
 
@@ -72,7 +71,7 @@ Consider the following formula:
 Fahrenheit = (Celsius * 9 / 5) + 32
 ```
 
-You may recognize this formula—it calculates the temperature in Fahrenheit given a temperature in Celsius. Going from left to right, the formula can be broken down as follows:
+You may recognize this formula — it calculates the temperature in Fahrenheit given a temperature in Celsius. Going from left to right, the formula can be broken down as follows:
 
 - `Fahrenheit` is the name of the resultant column.
 - `(` and `)` are parentheses used to group operations.
