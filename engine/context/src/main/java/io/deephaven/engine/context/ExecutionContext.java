@@ -101,6 +101,7 @@ public class ExecutionContext {
     private final QueryCompiler queryCompiler;
     private final UpdateGraph updateGraph;
     private final OperationInitializer operationInitializer;
+    private final String sessionId;
 
     private ExecutionContext(
             final boolean isSystemic,
@@ -109,7 +110,8 @@ public class ExecutionContext {
             final QueryScope queryScope,
             final QueryCompiler queryCompiler,
             final UpdateGraph updateGraph,
-            OperationInitializer operationInitializer) {
+            final OperationInitializer operationInitializer,
+            final String sessionId) {
         this.isSystemic = isSystemic;
         this.authContext = authContext;
         this.queryLibrary = Objects.requireNonNull(queryLibrary);
@@ -117,6 +119,7 @@ public class ExecutionContext {
         this.queryCompiler = Objects.requireNonNull(queryCompiler);
         this.updateGraph = Objects.requireNonNull(updateGraph);
         this.operationInitializer = Objects.requireNonNull(operationInitializer);
+        this.sessionId = sessionId;
     }
 
     /**
@@ -131,7 +134,7 @@ public class ExecutionContext {
             return this;
         }
         return new ExecutionContext(isSystemic, authContext, queryLibrary, queryScope, queryCompiler, updateGraph,
-                operationInitializer);
+                operationInitializer, sessionId);
     }
 
     /**
@@ -146,7 +149,7 @@ public class ExecutionContext {
             return this;
         }
         return new ExecutionContext(isSystemic, authContext, queryLibrary, queryScope, queryCompiler, updateGraph,
-                operationInitializer);
+                operationInitializer, sessionId);
     }
 
     /**
@@ -161,7 +164,7 @@ public class ExecutionContext {
             return this;
         }
         return new ExecutionContext(isSystemic, authContext, queryLibrary, queryScope, queryCompiler, updateGraph,
-                operationInitializer);
+                operationInitializer, sessionId);
     }
 
     public ExecutionContext withOperationInitializer(final OperationInitializer operationInitializer) {
@@ -169,7 +172,7 @@ public class ExecutionContext {
             return this;
         }
         return new ExecutionContext(isSystemic, authContext, queryLibrary, queryScope, queryCompiler, updateGraph,
-                operationInitializer);
+                operationInitializer, sessionId);
     }
 
     /**
@@ -184,7 +187,26 @@ public class ExecutionContext {
             return this;
         }
         return new ExecutionContext(isSystemic, authContext, queryLibrary, queryScope, queryCompiler, updateGraph,
-                operationInitializer);
+                operationInitializer, sessionId);
+    }
+
+    /**
+     * Returns, or creates, an execution context with the given value for {@code sessionId} and existing values for the
+     * other members.
+     *
+     * @param sessionId the session id to use instead
+     * @return the execution context
+     */
+    public ExecutionContext withSessionId(final String sessionId) {
+        if (sessionId == null) {
+            if (this.sessionId == null) {
+                return this;
+            }
+        } else if (sessionId.equals(this.sessionId)) {
+            return this;
+        }
+        return new ExecutionContext(isSystemic, authContext, queryLibrary, queryScope, queryCompiler, updateGraph,
+                operationInitializer, sessionId);
     }
 
 
@@ -249,6 +271,10 @@ public class ExecutionContext {
         return operationInitializer;
     }
 
+    public String getSessionId() {
+        return sessionId;
+    }
+
     @SuppressWarnings("unused")
     public static class Builder {
         private boolean isSystemic = false;
@@ -260,6 +286,7 @@ public class ExecutionContext {
         private QueryCompiler queryCompiler = PoisonedQueryCompiler.INSTANCE;
         private UpdateGraph updateGraph = PoisonedUpdateGraph.INSTANCE;
         private OperationInitializer operationInitializer = PoisonedOperationInitializer.INSTANCE;
+        private String sessionId = null;
 
         private Builder() {
             // propagate the auth context from the current context
@@ -428,12 +455,21 @@ public class ExecutionContext {
         }
 
         /**
+         * Use the provided session id.
+         */
+        @ScriptApi
+        public Builder setSessionId(final String sessionId) {
+            this.sessionId = sessionId;
+            return this;
+        }
+
+        /**
          * @return the newly instantiated ExecutionContext
          */
         @ScriptApi
         public ExecutionContext build() {
             return new ExecutionContext(isSystemic, authContext, queryLibrary, queryScope, queryCompiler, updateGraph,
-                    operationInitializer);
+                    operationInitializer, sessionId);
         }
     }
 }
