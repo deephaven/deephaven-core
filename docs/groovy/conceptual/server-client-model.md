@@ -2,82 +2,190 @@
 title: Servers & Clients
 ---
 
-Deephaven offers both server-side and client-side APIs for multiple languages. But what should you use for your application? Is a server or client API the right choice for you? What about Python vs. Groovy? This guide provides some insight into servers and clients as a whole, as well as some Deephaven-specific recommendations.
+Deephaven offers both server-side and client-side APIs in multiple languages. These APIs allow you to build applications in a multitude of ways that distribute workloads across multiple machines, share data, and provide seamless user experiences.
 
-## A mental model of servers and clients
+When should you use server-side APIs? When should you use client-side APIs? When might you need multiple servers? This guide answers these questions by:
 
-### Servers
+- Explaining the differences between server-client and peer-to-peer architectures.
+- Helping you build a mental model of servers and clients.
+- Covering how Deephaven's server- and client-side APIs work.
+- Providing guidance on choosing the right architecture for your application.
 
-A server is a centralized process that runs on a machine and provides services to other processes. Servers typically run on machines dedicated to the server process; these machines typically have higher compute resources than client machines.
+## Software architecture
 
-### Clients
+Platforms that offer both server-side and client-side APIs generally support two software architectures. Deephaven is no different.
 
-A client is a decentralized process that runs on a machine and sends requests to one or more servers. Client machines typically have lower compute resources than server machines, and are often not dedicated to only the client process.
+### Server-client software architecture
 
-## A real-world analogy
+Server-client architecture in modern software development follows a model where:
 
-Restaurants are a good real-world analogy for servers and clients. Consider the following basic components of a restaurant:
+- A centralized process, called the server, provides services to users.
+- Decentralized processes, called clients, send requests to the server to access services.
 
-| Restaurant component | Software equivalent     | Description                                                     |
-| -------------------- | ----------------------- | --------------------------------------------------------------- |
-| Kitchen              | Server                  | The centralized processing center where requests are fulfilled. |
-| Customers            | Clients                 | The decentralized processes that send requests to the kitchen.  |
-| Wait staff           | Communications protocol | Transport requests between clients and the kitchen.             |
+### Peer-to-peer software architecture
 
-Even the process by which a restaurant serves its customers is similar to how servers and clients interact:
+Peer-to-peer architecture in software development follows a model where every process is both a client and a server. Multiple instances of Deephaven can act as peers, allowing for distributed processing across machines. In this model:
 
-1. Initiation
+- Each Deephaven instance can both provide and consume services
+- Data and processing can be distributed across multiple nodes
+- Communication happens directly between peers rather than through a central server
 
-- Restaurant: A customer enters the restaurant, is sat at a table, and orders food.
-- Software: A client connects to a server, creates a session, and sends a request.
+### A mental model of servers and clients
 
-2. Request transmission
+Consider a restaurant serving food to customers. In this analogy, the restaurant is the server, and the customers are clients.
 
-- Restaurant: A waiter takes the customer's order and ensures the kitchen receives it.
-- Software: The request is serialized and transmitted over a network.
+Customers enter the restaurant, get seated, and look at the menu. After some time, they place orders for food and/or drinks. Those orders are taken by the wait staff to the kitchen and/or bar, where food and drinks are prepared and brought back to the customers.
 
-3. Request processing
+The roles in this scenario are analogous:
 
-- Restaurant: The kitchen prepares the food requested by the customer.
-- Software: The server fulfills the client request.
+- Customer -> Client
+- Kitchen -> Server
+- Wait staff -> Communication channel
 
-4. Response transmission
+You could draw more analogies, but these three form the basis of the server-client model.
 
-- Restaurant: The kitchen notifies the wait staff that the food is ready, and a waiter/waitress transports the food to the customer.
-- Software: The server finishes fulfilling the client request and a response is transmitted over a network back to the client.
+This analogy helps build a mental model of how servers and clients work in software, and Deephaven is no different. When you connect a client to the server, you establish a communication channel to that server. From there, your requests get sent across that channel to the server, which processes your requests and sends responses back in the form of snapshots of tables or other data. The heavy lifting is done by the server itself; that's where the processing happens. The client merely sends and receives requests and consumes the responses.
 
-5. Consumption
+### Deephaven servers and clients
 
-- Restaurant: The customer eats their food.
-- Software: The client receives and uses the server's response to complete its task.
+Deephaven servers and clients follow the standard server-client software architecture:
 
-### Additional analogues
+- The vast majority of work happens on the server.
+- Clients do little to no real data processing. They merely send requests to a server and receive responses with the requested information.
 
-There are some other analogues that restaurants have to software. These can be useful in developing a mental model of servers and clients.
+A couple of extra details that are worth noting include:
 
-#### Scaling
+- Not all of Deephaven's client APIs support ticking data like the server does. When the client does not support ticking data, it receives snapshots of live tables at the time they are requested.
+- Clients are agnostic to the server-side API language being used.
 
-Restaurants often face a busy dinner rush on holidays and weekends. In software, a busy dinner rush is akin to a high traffic load. This can be alleviated by:
+## An example server-client application
 
-- Having more workers (kitchen staff, wait staff, etc): In software, this is like vertical scaling. By adding more resources to a single server, you can handle more requests.
-- Having more restaurants: In software, this is like horizontal scaling. By adding more servers, clients can send requests to different servers to avoid overloading a single server.
+Consider an at-home golf simulator with a launch monitor that captures data about each golf shot. Here's how a Deephaven server-client architecture could enhance this setup:
 
-#### Load balancing
+**Server side:**
+- A Deephaven server runs on the computer connected to the launch monitor
+- It ingests real-time shot data as it happens
+- Processes the data to calculate metrics (ball speed, spin rate, distance, etc.)
+- Creates and maintains tables with player statistics and performance trends
+- Handles data storage and retrieval
 
-Many restaurants have an employee dedicated to helping the kitchen operate at its most efficient, called the expediter. The expediter handles the order in which orders are cooked, ensuring the kitchen is working at high efficiency. This is akin to a load balancer, which distributes requests across server(s) as to not overload a single process with too many.
+**Client side:**
+- Multiple clients running on separate devices can connect to the server
+- Clients can request filtered shot information (e.g., only drives or only a specific player's shots)
+- Users can request new calculations or metrics through the client
+- Clients can visualize shot data through charts and graphs
+- Multiple players can access their statistics simultaneously from different devices
 
-#### Authentication and authorization
+This architecture centralizes the data processing while allowing flexible access from various devices.
 
-If a customer orders an alcoholic drink, the server typically checks that customer's ID to ensure that they are of legal drinking age. In software, this is akin to authentication and authorization, ensuring that a client is who they claim to be and has the proper permissions to access the server.
+## An example multi-server application
 
-## Deephaven's servers and clients
+Multi-server applications distribute workloads across multiple machines to handle high-volume data processing or specialized tasks. Let's examine a financial trading application that uses Deephaven's peer-to-peer architecture:
 
-Deephaven Community Core offers two server-side APIs:
+**Server A (Data Ingestion & Storage):**
+- Dedicated to high-speed market data ingestion from multiple sources:
+  - Real-time stock market feeds
+  - Cryptocurrency exchanges
+  - Futures markets
+  - Options data
+- Maintains connections to historical databases
+- Performs initial data cleaning and normalization
+- Exposes ticking tables via URIs for other servers to access
+
+**Server B (Analysis & Client Services):**
+- Connects to Server A using [URIs](../how-to-guides/use-uris.md) to access live market data
+- Performs complex calculations:
+  - Risk analytics
+  - Trading signals
+  - Portfolio optimization
+- Serves processed data to client applications
+- Executes automated trading strategies based on signals
+
+**Benefits of this architecture:**
+- Separation of concerns allows each server to be optimized for its specific task
+- Data ingestion continues uninterrupted even during intensive analysis operations
+- System can scale by adding specialized servers for specific markets or strategies
+- Fault tolerance improves as the failure of one component doesn't bring down the entire system
+
+This implementation demonstrates the [peer-to-peer](#peer-to-peer-software-architecture) software architecture, where each Deephaven instance functions as both a client and a server.
+
+## Server and client considerations
+
+The first steps to application development should always be planning. The following subsections cover the most important considerations for Deephaven application design.
+
+### Data intensity
+
+If your application deals with low to moderate volumes of data, a single server is likely sufficient. For example, if you process one million rows per day, a single server should have no problem handling it.
+
+However, consider an application that processes 100 million rows a day. A single server will likely have no issue for a while, but after some time, it may not be enough.
+
+Additionally, what type of data are you working with? If you work with lots of numeric data, it might not be much of an issue, but if there's lots of large string data, memory management becomes an important consideration.
+
+### Computational resources
+
+The number of servers you need is dependent on your available computational resources.
+
+If you can only dedicate 8GB of RAM to Deephaven, your application may need more than a single server to run effectively. Similarly, you may not need multiple servers if you can dedicate 32GB of RAM to a single server instance.
+
+### Latency requirements
+
+If your application requires very low latency, consider where processing should occur:
+
+- **Server-side processing**: Minimizes latency for data-intensive operations since no data transmission is required between components. This is ideal for time-sensitive calculations.
+
+- **Client-side processing**: Introduces some network latency as data must be transmitted from server to client. This may be acceptable for visualization or less time-sensitive operations.
+
+Packaging critical operations to run directly on a Deephaven server can significantly reduce latency. The trade-off is that servers typically require more resources than lightweight clients.
+
+### Specialized workloads
+
+Consider using multiple servers when your application has distinct processing requirements:
+
+- **Data segregation**: When different data sets need to be processed separately for security or compliance reasons
+- **Resource optimization**: When some workloads are CPU-intensive while others are memory-intensive
+- **Specialized processing**: When different parts of your application require different libraries or configurations
+
+For example, you might dedicate one server to real-time data ingestion and another to complex analytical queries, allowing each to be optimized for its specific task.
+
+### Scalability
+
+As your application grows, consider how it will scale:
+
+- **Vertical scaling**: Adding more resources (RAM, CPU) to a single server has limits and may become cost-prohibitive
+- **Horizontal scaling**: Adding more servers distributes the workload and provides more flexibility
+
+Deephaven's architecture supports horizontal scaling through its peer-to-peer capabilities. This approach typically requires less engineering effort than complex performance tuning of a single server and provides better fault tolerance.
+
+When designing your application, consider future growth patterns and build with scalability in mind from the beginning.
+
+### Data security
+
+Your architecture choices have significant implications for data security:
+
+- **Single server**: Simplifies security management with a single point of control but creates a single point of failure
+- **Multiple servers**: Allows for data segregation and compartmentalization but requires careful security configuration between servers
+- **Server-client model**: Enables fine-grained access control but requires secure communication channels between clients and servers
+
+Common security aspects that require careful thought when designing application architecture include:
+
+- **Authentication**: How users will identify themselves to the system
+- **Authorization**: What data and operations each user can access
+- **Data encryption**: Whether data needs to be encrypted at rest and/or in transit
+- **Network isolation**: Whether servers should be isolated on separate networks
+- **Audit logging**: How user actions will be tracked and monitored
+
+Deephaven provides different authentication mechanisms that can be configured according to your security requirements.
+
+## Deephaven's APIs
+
+Deephaven offers two server-side APIs and several client-side APIs.
+
+### Server-side
 
 - [Python](https://deephaven.io/core/pydoc/)
 - [Groovy](https://deephaven.io/core/javadoc/)
 
-There are also client-side APIs for multiple languages:
+### Client-side
 
 - [Python](https://docs.deephaven.io/core/client-api/python/)
 - [Java](https://deephaven.io/core/javadoc/)
@@ -86,179 +194,19 @@ There are also client-side APIs for multiple languages:
 - [JavaScript](https://docs.deephaven.io/core/client-api/javascript/modules/dh.html)
 - [Go](https://pkg.go.dev/github.com/deephaven/deephaven-core/go)
 
-## Technical Implementation
+## Choose the right architecture
 
-Deephaven's client-server architecture is built on modern, high-performance technologies designed for real-time data processing:
+When designing your Deephaven application, consider these key questions:
 
-```mermaid
-flowchart LR
-    subgraph "Client Side"
-        C1[Python Client]
-        C2[Java Client]
-        C3[C++ Client]
-        C4[JavaScript Client]
-    end
-    
-    subgraph "Network"
-        G[gRPC]
-        AF[Arrow Flight]
-    end
-    
-    subgraph "Server Side"
-        TS[Table Service]
-        SS[Session Service]
-        CS[Console Service]
-        FS[Flight Service]
-        DT[(Deephaven Tables)]
-    end
-    
-    C1 & C2 & C3 & C4 <--> G
-    G <--> AF
-    AF <--> FS
-    FS <--> DT
-    TS & SS & CS <--> DT
-```
+1. **Data volume and complexity**: How much data will you process? How complex are your calculations?
+2. **Performance requirements**: What are your latency requirements? Do you need real-time updates?
+3. **Resource constraints**: What hardware resources are available? What are your budget constraints?
+4. **User access patterns**: How many users need access? From what types of devices?
+5. **Scalability needs**: How will your application grow over time?
 
-### Communication Protocol
-
-Deephaven uses [gRPC](https://grpc.io/) as its communication framework, providing:
-
-- Cross-language compatibility (supporting Python, Java, C++, etc.)
-- Bidirectional streaming capabilities
-- Efficient binary serialization
-
-### Data Transport
-
-For efficient data transfer between clients and servers, Deephaven leverages:
-
-- **Apache Arrow Flight**: A protocol for high-performance data transport that maintains columnar data format during transfer
-- **Barrage**: Deephaven's extension to Arrow Flight that enables incremental table updates, allowing clients to receive only the changes to data rather than entire tables
-
-### Update Model
-
-One of Deephaven's key features is its incremental update model:
-
-- Tables on the server can change over time ("tick")
-- Only the changes (additions, removals, modifications) are sent to clients
-- Clients can subscribe to specific viewports (subsets of rows and columns) to minimize network traffic
-
-```mermaid
-sequenceDiagram
-    participant Client
-    participant Server
-    participant Table as Table Data
-    
-    Client->>Server: Subscribe to table
-    Server->>Table: Monitor changes
-    Server->>Client: Send initial snapshot
-    
-    Note over Table: Data changes
-    Table->>Server: Notify of changes
-    Server->>Client: Send only modified rows
-    
-    Note over Client: User scrolls table
-    Client->>Server: Request new viewport
-    Server->>Client: Send only visible data
-    
-    Note over Table: More data changes
-    Table->>Server: Notify of changes
-    Server->>Client: Send only changes in viewport
-```
-
-### Client-Server Interaction
-
-Clients interact with the Deephaven server through several services:
-
-- **Table Service**: Allows clients to create and manipulate tables on the server
-- **Session Service**: Manages client connections and resources
-- **Console Service**: Enables clients to execute code on the server
-- **Flight Service**: Handles the actual data transfer between client and server
-
-This architecture enables Deephaven to provide real-time data processing capabilities across distributed systems while minimizing network overhead.
-
-## Performance Considerations
-
-When choosing between server-side and client-side APIs, performance is a critical factor to consider:
-
-### Data Volume and Processing
-
-- **Server-side processing** excels when working with large datasets, as data remains on the server without network transfer overhead
-- **Client-side processing** introduces network latency and bandwidth constraints when transferring large volumes of data
-
-### Incremental Updates
-
-- Deephaven's incremental update model significantly reduces network traffic by sending only changes rather than entire tables
-- For frequently updating tables, this can improve performance by orders of magnitude compared to traditional request-response patterns
-
-### Resource Utilization
-
-- **Server resources** are typically more powerful but shared among multiple users/processes
-- **Client resources** may be more limited but dedicated to a single user's tasks
-- Complex operations (joins on large tables, complex aggregations) are generally more efficient when performed server-side
-
-### Viewport Optimization
-
-- Client applications can request specific "viewports" (subsets of data) to minimize unnecessary data transfer
-- This is particularly important for interactive applications where users only need to see a portion of a large dataset
-
-### Latency Considerations
-
-- Operations that require low latency should minimize network round-trips
-- Chained operations performed entirely server-side avoid multiple network hops
-- Client-side operations on already-transferred data eliminate network latency entirely
-
-## Security Considerations
-
-Security is a critical aspect when designing and implementing client-server systems:
-
-### Authentication and Authorization
-
-- Deephaven supports multiple authentication mechanisms including Pre-Shared Key (PSK) and OpenID Connect (OIDC)
-- Client connections are authenticated before access is granted to server resources
-- Authorization controls determine what operations clients can perform on specific data
-
-### Data Protection
-
-- Communication between clients and servers can be encrypted using TLS
-- Sensitive data can remain on the server, with only authorized views exposed to clients
-- Viewport mechanisms allow fine-grained control over what data is accessible to which clients
-
-### Network Security
-
-- Server deployments can be configured with appropriate network isolation
-- API access can be restricted to specific network segments or VPNs
-- Firewall rules should be configured to limit exposure of server ports
-
-### Code Execution
-
-- The Console Service allows clients to execute code on the server, requiring careful access control
-- Consider the security implications when granting code execution privileges to client applications
-- Server-side validation should be implemented for all client requests
-
-## Recommendations
-
-There are reasons to use either a server or client API. The recommendations for Deephaven's APIs are as follows.
-
-### When to use a server-side API
-
-The Deephaven Community Server is a lightweight application that can be run with as little as 4GB of RAM. It scales well with hardware, meaning it can handle both low- and high-throughput workloads similarly. Use a server-side API when:
-
-- You run Deephaven on a single machine.
-- You want to interact with the server directly.
-- There is no need to distribute the workload.
-- You want to use the Deephaven IDE for your development.
-
-### When to use a client-side API
-
-Deephaven's client APIs provide a versatile suite of tools for interacting with the server. Not only can you manipulate data from the client itself, but you can also run code server-side from the client. Use a client-side API when:
-
-- You need to use Deephaven when you're not where the machine is running the server.
-- You want to use a language other than Python or Groovy.
-- You don't need the web IDE experience.
-- You want to integrate Deephaven in with resources only available on other machines.
+Start with the simplest architecture that meets your needs, then scale as required. Many applications begin with a single server and add clients or additional servers as they mature.
 
 ## Related documentation
 
-<!-- TODO: Put more stuff here once this is fully fleshed out. -->
-
 - [Core API design](./deephaven-core-api.md)
+- [URIs in Deephaven](/core/docs/how-to-guides/use-uris/)
