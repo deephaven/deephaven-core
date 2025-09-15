@@ -63,6 +63,7 @@ A couple of extra details that are worth noting include:
 Consider an at-home golf simulator with a launch monitor that captures data about each golf shot. Here's how a Deephaven server-client architecture could enhance this setup:
 
 **Server side:**
+
 - A Deephaven server runs on the computer connected to the launch monitor
 - It ingests real-time shot data as it happens
 - Processes the data to calculate metrics (ball speed, spin rate, distance, etc.)
@@ -70,6 +71,7 @@ Consider an at-home golf simulator with a launch monitor that captures data abou
 - Handles data storage and retrieval
 
 **Client side:**
+
 - Multiple clients running on separate devices can connect to the server
 - Clients can request filtered shot information (e.g., only drives or only a specific player's shots)
 - Users can request new calculations or metrics through the client
@@ -83,6 +85,7 @@ This architecture centralizes the data processing while allowing flexible access
 Multi-server applications distribute workloads across multiple machines to handle high-volume data processing or specialized tasks. Let's examine a financial trading application that uses Deephaven's peer-to-peer architecture:
 
 **Server A (Data Ingestion & Storage):**
+
 - Dedicated to high-speed market data ingestion from multiple sources:
   - Real-time stock market feeds
   - Cryptocurrency exchanges
@@ -93,6 +96,7 @@ Multi-server applications distribute workloads across multiple machines to handl
 - Exposes ticking tables via URIs for other servers to access
 
 **Server B (Analysis & Client Services):**
+
 - Connects to Server A using [URIs](../how-to-guides/use-uris.md) to access live market data
 - Performs complex calculations:
   - Risk analytics
@@ -102,6 +106,7 @@ Multi-server applications distribute workloads across multiple machines to handl
 - Executes automated trading strategies based on signals
 
 **Benefits of this architecture:**
+
 - Separation of concerns allows each server to be optimized for its specific task
 - Data ingestion continues uninterrupted even during intensive analysis operations
 - System can scale by adding specialized servers for specific markets or strategies
