@@ -89,6 +89,15 @@ public class SessionStateTest {
     }
 
     @Test
+    public void testSessionIdInitialized() {
+        if (TestExecutionContext.SESSION_ID == null) {
+            Assert.neqNull(session.getSessionId(), "sessionId");
+        } else {
+            Assert.notEquals(TestExecutionContext.SESSION_ID, "sessionId", session.getSessionId());
+        }
+    }
+
+    @Test
     public void testDestroyOnExportRelease() {
         final MutableBoolean success = new MutableBoolean();
         final CountingLivenessReferent export = new CountingLivenessReferent();
