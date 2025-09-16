@@ -166,6 +166,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
 
     private final WorkerConnection workerConnection;
 
+    @Deprecated
     private final Map<TableTicket, TableViewportSubscription> subscriptions = new HashMap<>();
 
     private ClientTableState lastVisibleState;
@@ -755,8 +756,10 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
      * {@link TableViewportSubscription#getViewportData()} on the result from {@link #setViewport(double, double)}.
      *
      * @return Promise of {@link TableData}
+     * @deprecated use {@link TableViewportSubscription#getViewportData()} on the result from {@link #createViewportSubscription(Object)} instead.
      */
     @JsMethod
+    @Deprecated
     public Promise<AbstractTableSubscription.@TsTypeRef(ViewportData.class) UpdateEventData> getViewportData() {
         TableViewportSubscription subscription = subscriptions.get(getHandle());
         if (subscription == null) {
@@ -783,6 +786,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
      * @param columns
      * @param updateIntervalMs
      * @return {@link TableSubscription}
+     * @deprecated Use {@link #createSubscription(Object)} with a {@link DataOptions.SubscriptionOptions} instead.
      */
     @JsMethod
     public TableSubscription subscribe(JsArray<Column> columns, @JsOptional Double updateIntervalMs) {
@@ -794,11 +798,31 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
         return TableSubscription.createTableSubscription(options, this);
     }
 
+    /**
+     * Creates a subscription to the specified columns, across all rows in the table. Useful for charts or taking a
+     * snapshot of the table atomically. The initial snapshot will arrive in a single event, but later changes will be
+     * sent as updates. However, this may still be very expensive to run from a browser for very large tables. Each call
+     * to {@code createSubscription} creates a new subscription, which must have {@link TableSubscription#close()}
+     * called on it to stop it and release its resources, and all events are fired from the TableSubscription instance.
+     * 
+     * @param options options for the subscription; see {@link DataOptions.SubscriptionOptions} for details
+     * @return a new {@link TableSubscription}
+     */
     @JsMethod
     public TableSubscription createSubscription(@TsTypeRef(DataOptions.SubscriptionOptions.class) Object options) {
         return TableSubscription.createTableSubscription(DataOptions.SubscriptionOptions.of(options), this);
     }
 
+    /**
+     * Creates a viewport subscription to the specified columns, across the specified rows in the table. The returned
+     * TableViewportSubscription instance allows the viewport to be changed over time, and events are fired from it
+     * when the data changes or when a viewport change has been applied. Each call
+     * to {@code createSubscription} creates a new subscription, which must have {@link TableViewportSubscription#close()}
+     * called on it to stop it and release its resources
+     *
+     * @param options options for the viewport subscription; see {@link DataOptions.ViewportSubscriptionOptions} for details
+     * @return a new {@link TableViewportSubscription}
+     */
     @JsMethod
     public TableViewportSubscription createViewportSubscription(
             @TsTypeRef(DataOptions.ViewportSubscriptionOptions.class) Object options) {
@@ -809,6 +833,14 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
         return TableViewportSubscription.make(copy, this);
     }
 
+
+    /**
+     * Returns a promise that will resolve to a TableData containing a snapshot of the current state of the table, within
+     * the bounds of the specified rows and columns.
+     *
+     * @param options options for the snapshot; see {@link DataOptions.SnapshotOptions} for details
+     * @return Promise of {@link TableData}
+     */
     @JsMethod
     public Promise<TableData> createSnapshot(@TsTypeRef(DataOptions.SnapshotOptions.class) Object options) {
         DataOptions.SnapshotOptions snapshotOptions = DataOptions.SnapshotOptions.of(options);

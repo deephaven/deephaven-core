@@ -32,8 +32,6 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.table.impl.ComparatorRegistry;
-import io.deephaven.engine.table.impl.preview.DisplayWrapper;
-import io.deephaven.engine.table.impl.preview.PreviewType;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.impl.util.BarrageMessage;

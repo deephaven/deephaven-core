@@ -3,7 +3,6 @@
 //
 package io.deephaven.server.table.ops;
 
-import com.google.protobuf.ProtocolStringList;
 import com.google.rpc.Code;
 import io.deephaven.auth.codegen.impl.TableServiceContextualAuthWiring;
 import io.deephaven.base.verify.Assert;

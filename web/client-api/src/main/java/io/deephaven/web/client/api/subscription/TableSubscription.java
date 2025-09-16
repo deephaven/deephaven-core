@@ -18,11 +18,11 @@ import jsinterop.annotations.JsType;
 /**
  * Represents a non-viewport subscription to a table, and all data currently known to be present in the subscribed
  * columns. This class handles incoming snapshots and deltas, and fires events to consumers to notify of data changes.
- *
+ * <p>
  * Unlike {@link TableViewportSubscription}, the "original" table does not have a reference to this instance, only the
  * "private" table instance does, since the original cannot modify the subscription, and the private instance must
  * forward data to it.
- *
+ * <p>
  * Represents a subscription to the table on the server. Changes made to the table will not be reflected here - the
  * subscription must be closed and a new one optioned to see those changes. The event model is slightly different from
  * viewports to make it less expensive to compute for large tables.
