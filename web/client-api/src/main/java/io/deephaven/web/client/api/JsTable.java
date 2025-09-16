@@ -756,7 +756,8 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
      * {@link TableViewportSubscription#getViewportData()} on the result from {@link #setViewport(double, double)}.
      *
      * @return Promise of {@link TableData}
-     * @deprecated use {@link TableViewportSubscription#getViewportData()} on the result from {@link #createViewportSubscription(Object)} instead.
+     * @deprecated use {@link TableViewportSubscription#getViewportData()} on the result from
+     *             {@link #createViewportSubscription(Object)} instead.
      */
     @JsMethod
     @Deprecated
@@ -815,12 +816,13 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
 
     /**
      * Creates a viewport subscription to the specified columns, across the specified rows in the table. The returned
-     * TableViewportSubscription instance allows the viewport to be changed over time, and events are fired from it
-     * when the data changes or when a viewport change has been applied. Each call
-     * to {@code createSubscription} creates a new subscription, which must have {@link TableViewportSubscription#close()}
-     * called on it to stop it and release its resources
+     * TableViewportSubscription instance allows the viewport to be changed over time, and events are fired from it when
+     * the data changes or when a viewport change has been applied. Each call to {@code createSubscription} creates a
+     * new subscription, which must have {@link TableViewportSubscription#close()} called on it to stop it and release
+     * its resources
      *
-     * @param options options for the viewport subscription; see {@link DataOptions.ViewportSubscriptionOptions} for details
+     * @param options options for the viewport subscription; see {@link DataOptions.ViewportSubscriptionOptions} for
+     *        details
      * @return a new {@link TableViewportSubscription}
      */
     @JsMethod
@@ -835,8 +837,8 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
 
 
     /**
-     * Returns a promise that will resolve to a TableData containing a snapshot of the current state of the table, within
-     * the bounds of the specified rows and columns.
+     * Returns a promise that will resolve to a TableData containing a snapshot of the current state of the table,
+     * within the bounds of the specified rows and columns.
      *
      * @param options options for the snapshot; see {@link DataOptions.SnapshotOptions} for details
      * @return Promise of {@link TableData}

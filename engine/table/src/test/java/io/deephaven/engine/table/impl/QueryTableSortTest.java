@@ -1125,7 +1125,7 @@ public class QueryTableSortTest extends QueryTableTestBase {
         }
     }
 
-    public static ZonedDateTime[] toZdtLondon(Instant [] instants) {
+    public static ZonedDateTime[] toZdtLondon(Instant[] instants) {
         return Arrays.stream(instants).map(vv -> vv.atZone(ZoneId.of("Europe/London"))).toArray(ZonedDateTime[]::new);
     }
 
