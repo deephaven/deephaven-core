@@ -78,7 +78,7 @@ The Deephaven engine is the powerhouse that implements everything you've seen so
 
 Internally, the engine represents queries as [directed acyclic graphs (DAGs)](../../conceptual/dag.md). This representation is key to Deephaven's efficiency. When a parent (upstream) table changes, a change summary is sent to child (downstream) tables. This compute-on-deltas model ensures that only updated rows in child tables are re-evaluated for each update cycle and allows Deephaven to process millions of rows per second.
 
-For the sake of efficiency and scalability, the engine is implemented mostly in [Java](<https://en.wikipedia.org/wiki/Java_(programming_language)>). Although you primarily interface with tables and write queries from Python, _all_ of the underlying data in a table is stored in Java data structures, and all low-level operations are implemented in Java. Most Deephaven users will interact with Java at least a little bit, and there are [important things to consider](../../conceptual/python-java-boundary.md) when passing data between Python and Java.
+For the sake of efficiency and scalability, the engine is implemented mostly in [Java](https://en.wikipedia.org/wiki/Java_(programming_language)). Although you primarily interface with tables and write queries from Python, _all_ of the underlying data in a table is stored in Java data structures, and all low-level operations are implemented in Java. Most Deephaven users will interact with Java at least a little bit, and there are [important things to consider](../../conceptual/python-java-boundary.md) when passing data between Python and Java.
 
 ## User interface
 
