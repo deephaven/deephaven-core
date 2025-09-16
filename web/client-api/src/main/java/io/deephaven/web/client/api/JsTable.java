@@ -717,8 +717,8 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
             @JsOptional @JsNullable JsArray<Column> columns,
             @JsOptional @JsNullable Double updateIntervalMs,
             @JsOptional @JsNullable Boolean isReverseViewport) {
-        Column[] columnsCopy = columns != null ? Js.uncheckedCast(columns.slice()) : state().getColumns();
         ClientTableState currentState = state();
+        Column[] columnsCopy = columns != null ? Js.uncheckedCast(columns.slice()) : currentState.getColumns();
         TableViewportSubscription activeSubscription = subscriptions.get(getHandle());
         if (activeSubscription != null && !activeSubscription.isClosed()) {
             // hasn't finished, lets reuse it
@@ -741,7 +741,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
             options.columns = Js.uncheckedCast(columnsCopy);
             options.updateIntervalMs = updateIntervalMs;
             options.isReverseViewport = isReverseViewport;
-            TableViewportSubscription replacement = createViewportSubscription(options);
+            TableViewportSubscription replacement = TableViewportSubscription.make(options, this);
 
             subscriptions.put(currentState.getHandle(), replacement);
             return replacement;
@@ -791,36 +791,43 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
         options.previewOptions.convertArrayToString = true;
         options.columns = columns;
         options.updateIntervalMs = updateIntervalMs;
-        return TableSubscription.createTableSubscription(this, options);
+        return TableSubscription.createTableSubscription(options, this);
     }
 
     @JsMethod
-    public TableSubscription createSubscription(DataOptions.SubscriptionOptions options) {
-        return TableSubscription.createTableSubscription(this, options);
+    public TableSubscription createSubscription(@TsTypeRef(DataOptions.SubscriptionOptions.class) Object options) {
+        return TableSubscription.createTableSubscription(DataOptions.SubscriptionOptions.of(options), this);
     }
 
     @JsMethod
-    public TableViewportSubscription createViewportSubscription(DataOptions.ViewportSubscriptionOptions options) {
-        return TableViewportSubscription.make(options, this);
+    public TableViewportSubscription createViewportSubscription(
+            @TsTypeRef(DataOptions.ViewportSubscriptionOptions.class) Object options) {
+        DataOptions.ViewportSubscriptionOptions copy = DataOptions.ViewportSubscriptionOptions.of(options);
+        if (copy.columns == null) {
+            throw new IllegalArgumentException("Missing 'columns' property in viewport subscription options");
+        }
+        return TableViewportSubscription.make(copy, this);
     }
 
     @JsMethod
-    public Promise<TableData> createSnapshot(DataOptions.SnapshotOptions options) {
-        JsArray<Column> columns = options.columns;
-        RangeSet rows = options.rows.asRangeSet().getRange();
+    public Promise<TableData> createSnapshot(@TsTypeRef(DataOptions.SnapshotOptions.class) Object options) {
+        DataOptions.SnapshotOptions snapshotOptions = DataOptions.SnapshotOptions.of(options);
+        JsArray<Column> columns = snapshotOptions.columns;
+        RangeSet rows = snapshotOptions.rows.asRangeSet().getRange();
 
         // TODO #1039 slice rows and drop columns
         BarrageSnapshotOptions barrageSnapshotOptions = BarrageSnapshotOptions.builder()
                 .batchSize(WebBarrageSubscription.BATCH_SIZE)
                 .maxMessageSize(WebBarrageSubscription.MAX_MESSAGE_SIZE)
                 .useDeephavenNulls(true)
-                .previewListLengthLimit(options.previewOptions != null && options.previewOptions.array != null
-                        ? (int) (double) options.previewOptions.array
-                        : 0)
+                .previewListLengthLimit(
+                        snapshotOptions.previewOptions != null && snapshotOptions.previewOptions.array != null
+                                ? (int) (double) snapshotOptions.previewOptions.array
+                                : 0)
                 .build();
 
         ClientTableState previewed =
-                AbstractTableSubscription.createPreview(workerConnection, state(), options.previewOptions);
+                AbstractTableSubscription.createPreview(workerConnection, state(), snapshotOptions.previewOptions);
 
         LazyPromise<TableData> promise = new LazyPromise<>();
         previewed.onRunning(cts -> {

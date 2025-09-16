@@ -3,13 +3,14 @@
 //
 package io.deephaven.web.client.api.subscription;
 
+import com.vertispan.tsdefs.annotations.TsTypeRef;
 import elemental2.core.JsArray;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.ApplyPreviewColumnsRequest;
 import io.deephaven.web.client.api.Column;
 import io.deephaven.web.client.api.JsTable;
 import io.deephaven.web.client.api.WorkerConnection;
 import io.deephaven.web.client.state.ClientTableState;
 import jsinterop.annotations.JsIgnore;
+import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsProperty;
 import jsinterop.annotations.JsType;
@@ -31,6 +32,7 @@ public final class TableSubscription extends AbstractTableSubscription {
 
     private final JsArray<Column> columns;
     private final Double updateIntervalMs;
+    private final int previewListLengthLimit;
 
     @JsIgnore
     private TableSubscription(ClientTableState state, WorkerConnection connection,
@@ -38,10 +40,11 @@ public final class TableSubscription extends AbstractTableSubscription {
         super(SubscriptionType.FULL_SUBSCRIPTION, state, connection);
         this.columns = options.columns;
         this.updateIntervalMs = options.updateIntervalMs;
+        this.previewListLengthLimit = getPreviewListLengthLimit(options);
     }
 
-    public static TableSubscription createTableSubscription(JsTable existingTable,
-            DataOptions.SubscriptionOptions options) {
+    public static TableSubscription createTableSubscription(DataOptions.SubscriptionOptions options,
+            JsTable existingTable) {
         WorkerConnection connection = existingTable.getConnection();
         ClientTableState tableState = existingTable.state();
         ClientTableState previewedState = createPreview(connection, tableState, options.previewOptions);
@@ -65,7 +68,27 @@ public final class TableSubscription extends AbstractTableSubscription {
             throw new IllegalArgumentException(
                     "Can't change refreshIntervalMs on a later call to setViewport, it must be consistent or omitted");
         }
-        sendBarrageSubscriptionRequest(null, columns, updateIntervalMs, false);
+        sendBarrageSubscriptionRequest(null, columns, updateIntervalMs, false, 0);
+    }
+
+    /**
+     * Update the options for this viewport subscription. This cannot alter the update interval or preview options.
+     *
+     * @param options the subscription options
+     */
+    @JsMethod
+    public void update(@TsTypeRef(DataOptions.SubscriptionOptions.class) Object options) {
+        DataOptions.SubscriptionOptions subscriptionOptions = DataOptions.SubscriptionOptions.of(options);
+        if (subscriptionOptions.updateIntervalMs != null
+                && !subscriptionOptions.updateIntervalMs.equals(this.updateIntervalMs)) {
+            throw new IllegalArgumentException(
+                    "Can't change refreshIntervalMs on a later call to setViewport, it must be consistent or omitted");
+        }
+        if (subscriptionOptions.previewOptions != null) {
+            throw new IllegalArgumentException("Can't change preview options on an existing subscription");
+        }
+        sendBarrageSubscriptionRequest(null, subscriptionOptions.columns, updateIntervalMs, false,
+                previewListLengthLimit);
     }
 
     @JsProperty

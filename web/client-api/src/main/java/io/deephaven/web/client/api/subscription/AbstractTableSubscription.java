@@ -103,6 +103,13 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
         return previewedState;
     }
 
+    public static int getPreviewListLengthLimit(DataOptions.SubscriptionOptions subscriptionOptions) {
+        if (subscriptionOptions.previewOptions != null && subscriptionOptions.previewOptions.array != null) {
+            return (int) (double) subscriptionOptions.previewOptions.array;
+        }
+        return 0;
+    }
+
     protected enum Status {
         /** Waiting for some prerequisite before we can use it for the first time. */
         STARTING,
@@ -215,8 +222,7 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
     protected abstract void sendFirstSubscriptionRequest();
 
     protected void sendBarrageSubscriptionRequest(@Nullable RangeSet viewport, JsArray<Column> columns,
-            Double updateIntervalMs,
-            boolean isReverseViewport) {
+            Double updateIntervalMs, boolean isReverseViewport, int previewListLengthLimit) {
         if (isClosed()) {
             if (failMsg == null) {
                 throw new IllegalStateException("Can't change subscription, already closed");
@@ -237,7 +243,7 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
                 .minUpdateIntervalMs(updateIntervalMs == null ? 0 : (int) (double) updateIntervalMs)
                 .columnsAsList(false)// TODO(deephaven-core#5927) flip this to true
                 .useDeephavenNulls(true)
-                .previewListLengthLimit(0)
+                .previewListLengthLimit(previewListLengthLimit)
                 .build();
         FlatBufferBuilder request = subscriptionRequest(
                 Js.uncheckedCast(state.getHandle().getTicket()),

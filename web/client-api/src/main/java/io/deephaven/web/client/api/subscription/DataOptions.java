@@ -10,12 +10,15 @@ import com.vertispan.tsdefs.annotations.TsUnionMember;
 import elemental2.core.JsArray;
 import io.deephaven.web.client.api.Column;
 import io.deephaven.web.client.api.JsRangeSet;
+import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsOverlay;
 import jsinterop.annotations.JsPackage;
 import jsinterop.annotations.JsProperty;
 import jsinterop.annotations.JsType;
+import jsinterop.base.Any;
 import jsinterop.base.Js;
+import jsinterop.base.JsPropertyMap;
 
 /**
  * Options for requesting table data, either as a snapshot or a subscription. See subtypes for more specific options:
@@ -35,6 +38,21 @@ public class DataOptions {
     @TsInterface
     @TsName(namespace = "dh")
     public static class PreviewOptions {
+        /**
+         * Creates a deep copy of the object as the expected Java type.
+         */
+        @JsIgnore
+        public static PreviewOptions of(JsPropertyMap<Object> previewOptions) {
+            PreviewOptions options = new PreviewOptions();
+            if (previewOptions.has("convertArrayToString")) {
+                options.convertArrayToString = Js.asBoolean(previewOptions.get("convertArrayToString"));
+            }
+            if (previewOptions.has("array")) {
+                options.array = Js.cast(previewOptions.get("array"));
+            }
+            return options;
+        }
+
         /**
          * If true, any array columns will be converted to strings for preview purposes. This is the legacy behavior.
          */
@@ -74,6 +92,28 @@ public class DataOptions {
     @TsName(namespace = "dh")
     public static class SubscriptionOptions extends DataOptions {
         /**
+         * Creates a deep copy of the object as the expected Java type.
+         */
+        @JsIgnore
+        public static SubscriptionOptions of(Object obj) {
+            @SuppressWarnings({"unchecked", "rawtypes"})
+            JsPropertyMap<Any> config = (JsPropertyMap) Js.asPropertyMap(obj);
+            SubscriptionOptions options = new SubscriptionOptions();
+            if (config.has("previewOptions")) {
+                options.previewOptions = PreviewOptions.of(config.get("previewOptions").asPropertyMap());
+            }
+            if (config.has("columns")) {
+                options.columns = Js.<JsArray<Column>>uncheckedCast(config.get("columns")).slice();
+            } else {
+                throw new IllegalArgumentException("Missing 'columns' property in subscription options");
+            }
+            if (config.has("updateIntervalMs")) {
+                options.updateIntervalMs = Js.cast(config.get("updateIntervalMs"));
+            }
+            return options;
+        }
+
+        /**
          * Minimum interval between updates, in milliseconds. If not specified, the server default will be used,
          * typically 1000ms.
          * <p>
@@ -81,6 +121,7 @@ public class DataOptions {
          * may not propagate updates that frequently, or there may be no updates to propagate.
          */
         @JsProperty
+        @JsNullable
         public Double updateIntervalMs;
     }
 
@@ -90,6 +131,36 @@ public class DataOptions {
     @TsInterface
     @TsName(namespace = "dh")
     public static class ViewportSubscriptionOptions extends SubscriptionOptions {
+        /**
+         * Creates a deep copy of the object as the expected Java type.
+         */
+        @JsIgnore
+        public static ViewportSubscriptionOptions of(Object obj) {
+            @SuppressWarnings({"unchecked", "rawtypes"})
+            JsPropertyMap<Any> config = (JsPropertyMap) Js.asPropertyMap(obj);
+            ViewportSubscriptionOptions options = new ViewportSubscriptionOptions();
+            if (config.has("previewOptions")) {
+                options.previewOptions = PreviewOptions.of(config.get("previewOptions").asPropertyMap());
+            }
+            JsArray<Column> columns = Js.uncheckedCast(config.get("columns"));
+            if (columns != null) {
+                options.columns = columns.slice();
+            } // Skipping a null check for columns, we still allow legacy cases where no columns are specified
+
+            if (config.has("updateIntervalMs")) {
+                options.updateIntervalMs = Js.cast(config.get("updateIntervalMs"));
+            }
+            if (config.has("isReverseViewport")) {
+                options.isReverseViewport = Js.cast(config.get("isReverseViewport"));
+            }
+            if (config.has("rows")) {
+                options.rows = Js.uncheckedCast(Js.<RangeSetUnion>uncheckedCast(config.get("rows")).asRangeSet());
+            } else {
+                throw new IllegalArgumentException("Missing 'rows' property in viewport subscription options");
+            }
+            return options;
+        }
+
         /**
          * If true, the viewport will be filled starting from the end of the table, where 0 is the last row of the
          * table. Default is false.
@@ -112,6 +183,33 @@ public class DataOptions {
     @TsInterface
     @TsName(namespace = "dh")
     public static class SnapshotOptions extends DataOptions {
+        /**
+         * Creates a deep copy of the object as the expected Java type.
+         */
+        @JsIgnore
+        public static SnapshotOptions of(Object obj) {
+            @SuppressWarnings({"unchecked", "rawtypes"})
+            JsPropertyMap<Any> config = (JsPropertyMap) Js.asPropertyMap(obj);
+            SnapshotOptions options = new SnapshotOptions();
+            if (config.has("previewOptions")) {
+                options.previewOptions = PreviewOptions.of(config.get("previewOptions").asPropertyMap());
+            }
+            if (config.has("columns")) {
+                options.columns = Js.<JsArray<Column>>uncheckedCast(config.get("columns")).slice();
+            } else {
+                throw new IllegalArgumentException("Missing 'columns' property in snapshot options");
+            }
+            if (config.has("isReverseViewport")) {
+                options.isReverseViewport = Js.cast(config.get("isReverseViewport"));
+            }
+            if (config.has("rows")) {
+                options.rows = Js.uncheckedCast(Js.<RangeSetUnion>uncheckedCast(config.get("rows")).asRangeSet());
+            } else {
+                throw new IllegalArgumentException("Missing 'rows' property in snapshot options");
+            }
+            return options;
+        }
+
         /**
          * If true, the snapshot will be filled starting from the end of the table, where 0 is the last row of the
          * table. Default is false.
@@ -143,6 +241,9 @@ public class DataOptions {
                 return (JsRangeSet) this;
             }
             final SimpleRange r = asSimpleRange();
+            if (r.first == null || r.last == null) {
+                throw new IllegalArgumentException("SimpleRange must have both 'first' and 'last' properties");
+            }
             return JsRangeSet.ofRange(r.first, r.last);
         }
 
@@ -160,7 +261,7 @@ public class DataOptions {
     @TsInterface
     @JsType(namespace = "dh")
     public static class SimpleRange {
-        public double first;
-        public double last;
+        public Double first;
+        public Double last;
     }
 }

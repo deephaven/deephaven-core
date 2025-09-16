@@ -8,7 +8,6 @@ import com.vertispan.tsdefs.annotations.TsTypeRef;
 import elemental2.core.JsArray;
 import elemental2.promise.Promise;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.config_pb.ConfigValue;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.ApplyPreviewColumnsRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.FlattenRequest;
 import io.deephaven.web.client.api.Column;
 import io.deephaven.web.client.api.JsRangeSet;
@@ -29,7 +28,6 @@ import jsinterop.annotations.JsOptional;
 import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
-import java.util.Arrays;
 import java.util.Comparator;
 import java.util.PrimitiveIterator;
 
@@ -47,9 +45,9 @@ import static io.deephaven.web.client.api.JsTable.EVENT_ROWUPDATED;
 @TsName(namespace = "dh")
 public class TableViewportSubscription extends AbstractTableSubscription {
 
-    private RangeSet rows;
-    private Column[] columns;
+    private DataOptions.ViewportSubscriptionOptions options;
     private double refresh;
+    private int previewListLengthLimit;
 
     private final JsTable original;
     private final RemoverFn reconnectSubscription;
@@ -93,7 +91,8 @@ public class TableViewportSubscription extends AbstractTableSubscription {
         }
 
         TableViewportSubscription sub = new TableViewportSubscription(stateToSubscribe, connection, jsTable);
-        sub.setInternalViewport(rows, Js.uncheckedCast(options.columns), options.updateIntervalMs, false);
+        sub.setInternalViewport(rows, Js.uncheckedCast(options.columns), options.updateIntervalMs,
+                options.isReverseViewport);
         return sub;
     }
 
@@ -117,7 +116,7 @@ public class TableViewportSubscription extends AbstractTableSubscription {
 
     @Override
     protected void sendFirstSubscriptionRequest() {
-        setInternalViewport(rows, columns, refresh, null);
+        setInternalViewport(options);
     }
 
     @Override
@@ -226,7 +225,7 @@ public class TableViewportSubscription extends AbstractTableSubscription {
      * @param lastRow
      * @param columns
      * @param updateIntervalMs
-     * @deprecated use {@link #update(DataOptions.ViewportSubscriptionOptions)} instead
+     * @deprecated use {@link #update(Object)} instead
      */
     @JsMethod
     public void setViewport(double firstRow, double lastRow, @JsOptional @JsNullable Column[] columns,
@@ -237,41 +236,76 @@ public class TableViewportSubscription extends AbstractTableSubscription {
                 isReverseViewport);
     }
 
+    /**
+     * Update the options for this viewport subscription. This cannot alter the update interval or preview options.
+     * 
+     * @param options the subscription options
+     */
     @JsMethod
-    public void update(DataOptions.ViewportSubscriptionOptions options) {
+    public void update(@TsTypeRef(DataOptions.ViewportSubscriptionOptions.class) Object options) {
         retainForExternalUse();
-        // TODO validate that preview and updateinterval are not set, or make a specific type without them
-        setInternalViewport(options.rows.asRangeSet().getRange(), Js.uncheckedCast(options.columns),
-                options.updateIntervalMs, false);
+        DataOptions.ViewportSubscriptionOptions copy = DataOptions.ViewportSubscriptionOptions.of(options);
+        if (copy.updateIntervalMs != null && copy.updateIntervalMs != this.refresh) {
+            throw new IllegalArgumentException(
+                    "Can't change updateIntervalMs on a later call to setViewport, it must be consistent or omitted");
+        }
+        if (copy.previewOptions != null) {
+            throw new IllegalArgumentException("Can't change preview options on an existing viewport subscription");
+        }
+        if (copy.columns == null) {
+            throw new IllegalArgumentException("Missing 'columns' property in viewport subscription options");
+        }
+        setInternalViewport(copy);
     }
 
     public void setInternalViewport(RangeSet rows, Column[] columns, Double updateIntervalMs,
             Boolean isReverseViewport) {
+        DataOptions.ViewportSubscriptionOptions options = new DataOptions.ViewportSubscriptionOptions();
+
+        if (columns == null) {
+            columns = state().getColumns();
+        }
+
+        options.rows = Js.uncheckedCast(new JsRangeSet(rows));
+        options.columns = Js.uncheckedCast(columns);
+        options.updateIntervalMs = updateIntervalMs;
+        options.isReverseViewport = isReverseViewport;
+
+        setInternalViewport(options);
+    }
+
+    public void setInternalViewport(DataOptions.ViewportSubscriptionOptions options) {
         // Until we've created the stream, we just cache the requested viewport
         if (status == Status.STARTING) {
-            this.rows = rows;
-            this.columns = columns;
-            this.refresh = updateIntervalMs == null ? 1000.0 : updateIntervalMs;
+            // Assign the two properties that we cannot change later
+            this.refresh = options.updateIntervalMs == null ? 1000.0 : options.updateIntervalMs;
+            this.previewListLengthLimit = getPreviewListLengthLimit(options);
+
+            // Track the rest of the initial options for later use
+            this.options = options;
             return;
         }
-        if (columns == null) {
+        // Even though columns "must not be null", we allow it to be null here to mean "all columns" for the legacy
+        // setViewport calls.
+        if (options.columns == null) {
             // Null columns means the user wants all columns, only supported on viewports. This can't be done until the
-            // CTS has resolved
-            columns = state().getColumns();
+            // CTS has resolved. Only supported for legacy setViewport calls, not createViewportSubscription()/update().
+            options.columns = Js.uncheckedCast(state().getColumns());
         } else {
-            // If columns were provided, sort a copy so that we have them in the expected order
-            columns = Js.<JsArray<Column>>uncheckedCast(columns).slice().asArray(new Column[0]);
-            Arrays.sort(columns, Comparator.comparing(Column::getIndex));
+            // If columns were provided, copy and sort by index to ensure a consistent order
+            options.columns = options.columns.slice();
+            options.columns.sort(Comparator.comparing(Column::getIndex)::compare);
         }
-        if (updateIntervalMs != null && refresh != updateIntervalMs) {
+        if (options.updateIntervalMs != null && refresh != options.updateIntervalMs) {
             throw new IllegalArgumentException(
                     "Can't change refreshIntervalMs on a later call to setViewport, it must be consistent or omitted");
         }
-        if (isReverseViewport == null) {
-            isReverseViewport = false;
+        if (options.isReverseViewport == null) {
+            options.isReverseViewport = false;
         }
         try {
-            this.sendBarrageSubscriptionRequest(rows, Js.uncheckedCast(columns), updateIntervalMs, isReverseViewport);
+            this.sendBarrageSubscriptionRequest(options.rows.asRangeSet().getRange(), options.columns,
+                    options.updateIntervalMs, options.isReverseViewport, previewListLengthLimit);
         } catch (Exception e) {
             fireEvent(JsTable.EVENT_REQUEST_FAILED, e.getMessage());
         }
