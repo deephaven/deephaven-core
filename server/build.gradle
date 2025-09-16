@@ -22,6 +22,8 @@ dependencies {
     implementation libs.javaparser.core
     implementation project(':open-api-lang-parser')
 
+    implementation libs.google.rpc.protos
+
     api(project(':java-client-barrage'))
     api(project(':java-client-session-dagger')) {
         because 'downstream dagger compile, see deephaven-core#1722'

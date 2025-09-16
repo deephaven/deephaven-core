@@ -4,6 +4,8 @@
 package io.deephaven.server.table.inputtables;
 
 import com.google.rpc.Code;
+import com.google.protobuf.Any;
+import io.grpc.protobuf.StatusProto;
 import io.deephaven.auth.codegen.impl.InputTableServiceContextualAuthWiring;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.Table;
@@ -94,11 +96,17 @@ public class InputTableServiceGrpcImpl extends InputTableServiceGrpc.InputTableS
                         } catch (InputTableValidationException exception) {
                             final Collection<InputTableValidationException.StructuredError> errors =
                                     exception.getErrors();
-                            if (errors.isEmpty() || !request.getStructuredValidationErrors()) {
+                            if (errors.isEmpty()) {
                                 throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
                                         "Invalid update request: " + exception.getMessage());
                             } else {
-                                GrpcUtil.safelyOnNextAndComplete(responseObserver, convertErrors(errors));
+                                com.google.rpc.Status status = com.google.rpc.Status.newBuilder()
+                                        .setCode(Code.INVALID_ARGUMENT.getNumber())
+                                        .setMessage(exception.getMessage())
+                                        .addDetails(Any.pack(convertErrors(errors)))
+                                        .build();
+
+                                GrpcUtil.safelyError(responseObserver, StatusProto.toStatusException(status));
                                 return;
                             }
                         }
@@ -116,12 +124,18 @@ public class InputTableServiceGrpcImpl extends InputTableServiceGrpc.InputTableS
                                 if (t instanceof InputTableValidationException) {
                                     final Collection<InputTableValidationException.StructuredError> errors =
                                             ((InputTableValidationException) t).getErrors();
-                                    if (errors.isEmpty() || !request.getStructuredValidationErrors()) {
+                                    if (errors.isEmpty()) {
                                         GrpcUtil.safelyError(responseObserver,
                                                 Exceptions.statusRuntimeException(Code.DATA_LOSS,
                                                         "Error adding table to input table: " + t.getMessage()));
                                     } else {
-                                        GrpcUtil.safelyOnNextAndComplete(responseObserver, convertErrors(errors));
+                                        com.google.rpc.Status status = com.google.rpc.Status.newBuilder()
+                                                .setCode(Code.DATA_LOSS.getNumber())
+                                                .setMessage(t.getMessage())
+                                                .addDetails(Any.pack(convertErrors(errors)))
+                                                .build();
+
+                                        GrpcUtil.safelyError(responseObserver, StatusProto.toStatusException(status));
                                     }
                                 } else {
                                     GrpcUtil.safelyError(responseObserver,
@@ -134,8 +148,9 @@ public class InputTableServiceGrpcImpl extends InputTableServiceGrpc.InputTableS
         }
     }
 
-    private AddTableResponse convertErrors(final Collection<InputTableValidationException.StructuredError> errors) {
-        final AddTableResponse.Builder responseBuilder = AddTableResponse.newBuilder();
+    private InputTableValidationErrorList convertErrors(
+            final Collection<InputTableValidationException.StructuredError> errors) {
+        final InputTableValidationErrorList.Builder responseBuilder = InputTableValidationErrorList.newBuilder();
         errors.forEach(e -> responseBuilder.addValidationErrors(convertOneError(e)));
         return responseBuilder.build();
     }

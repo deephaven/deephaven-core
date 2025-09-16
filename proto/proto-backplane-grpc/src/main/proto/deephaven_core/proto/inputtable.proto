@@ -32,11 +32,6 @@ service InputTableService {
 message AddTableRequest {
     Ticket input_table = 1;
     Ticket table_to_add = 2;
-    // if this field is not present, or is false then errors are propagated to the caller as an exception.
-    // if this field is true, then validation errors are sent in the AddTableResponse.
-    // Not all errors are considered validation errors, and therefore you must still handle an gRPC error
-    // message in addition to structured errors.
-    bool structured_validation_errors = 3;
 }
 
 // An error indicating invalid values were passed to AddTableRequest, optionally annotated with the input row and column
@@ -50,11 +45,11 @@ message InputTableValidationError {
     optional string column = 3;
 }
 
-message AddTableResponse {
-    // If structured_validation_errors was unset or False on the AddTableRequest, then this field is unused.
-    // If structured_validation_errors was set or True on the AddTableRequest, then this field contains the list of validation errors.
-    // The field is empty if the request was successful.
+message InputTableValidationErrorList {
     repeated InputTableValidationError validation_errors = 1;
+}
+
+message AddTableResponse {
 }
 
 message DeleteTableRequest {
