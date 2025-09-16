@@ -16,7 +16,8 @@ import io.deephaven.io.logger.Logger;
 import io.deephaven.io.logger.LoggerImpl;
 import io.deephaven.io.logger.LoggerTimeSource;
 import io.deephaven.io.logger.NullLoggerImpl.NullLoggerTimeSource;
-import java.util.TimeZone;
+
+import java.time.ZoneId;
 
 @AutoService(LoggerFactory.class)
 public final class LoggerFactoryFile extends LoggerFactorySingleCache {
@@ -40,10 +41,10 @@ public final class LoggerFactoryFile extends LoggerFactorySingleCache {
                 .getProperty("io.deephaven.internal.log.LoggerFactoryFile.showThreadName", "true"));
     }
 
-    private static TimeZone timeZone() {
+    private static ZoneId zoneId() {
         final String timeZone =
                 System.getProperty("io.deephaven.internal.log.LoggerFactoryFile.timeZone");
-        return timeZone == null ? TimeZone.getDefault() : TimeZone.getTimeZone(timeZone);
+        return timeZone == null ? ZoneId.systemDefault() : ZoneId.of(timeZone, ZoneId.SHORT_IDS);
     }
 
     private static LogLevel level() {
@@ -64,7 +65,7 @@ public final class LoggerFactoryFile extends LoggerFactorySingleCache {
                 logEntryPool, append(), new LogOutputCsvImpl(bufferPool), header, null);
         final String prefix = null;
         final LoggerTimeSource timeSource = new NullLoggerTimeSource();
-        return new LoggerImpl(logEntryPool, logSink, prefix, level(), timeSource, timeZone(),
+        return new LoggerImpl(logEntryPool, logSink, prefix, level(), timeSource, zoneId(),
                 showLevel(), showThreadName());
     }
 }

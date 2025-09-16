@@ -17,6 +17,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.nio.ByteBuffer;
+import java.time.ZoneId;
 import java.util.TimeZone;
 
 /**
@@ -36,8 +37,8 @@ public class NullLoggerImpl extends LoggerImpl {
     private NullLoggerImpl(@NotNull final LogEntryPool logEntryPool,
             @NotNull final LogLevel loggingLevel,
             @NotNull final LoggerTimeSource timeSource,
-            final TimeZone tz) {
-        super(logEntryPool, new NullLoggerImpl.Sink(logEntryPool), null, loggingLevel, timeSource, tz, true, false);
+            final ZoneId zoneId) {
+        super(logEntryPool, new NullLoggerImpl.Sink(logEntryPool), null, loggingLevel, timeSource, zoneId, true, false);
     }
 
     public NullLoggerImpl(@NotNull final LogLevel loggingLevel) {

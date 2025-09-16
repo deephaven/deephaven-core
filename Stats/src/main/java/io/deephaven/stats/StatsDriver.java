@@ -15,6 +15,7 @@ import io.deephaven.io.log.impl.LogSinkImpl;
 import io.deephaven.util.annotations.ReferentialIntegrity;
 import io.deephaven.util.thread.NamingThreadFactory;
 
+import java.time.ZoneId;
 import java.util.Properties;
 import java.util.TimeZone;
 import java.util.concurrent.Executors;
@@ -124,9 +125,9 @@ public class StatsDriver {
             }
         }
 
-        final TimeZone serverTimeZone = Configuration.getInstance().getServerTimezone();
-        this.systemTimestamp = new TimestampBuffer(serverTimeZone);
-        this.appTimestamp = new TimestampBuffer(serverTimeZone);
+        final ZoneId zoneId = ZoneId.systemDefault();
+        this.systemTimestamp = new TimestampBuffer(zoneId);
+        this.appTimestamp = new TimestampBuffer(zoneId);
 
         if (path == null) {
             this.entryPool = null;
