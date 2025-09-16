@@ -9,7 +9,7 @@ The ability to use your own custom Groovy [variables](./groovy-variables.md), [c
 
 Groovy is an object-oriented programming language. Its design revolves around the concept of "objects", which can contain arbitrary data and code suited to any given task.
 
-In Groovy, everything is an object. Even scalar data types are objects:
+In Groovy, everything that is not a primitive value is an object. For example:
 
 ```groovy order=:log
 myInt = 1
