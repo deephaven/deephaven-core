@@ -31,6 +31,7 @@ import io.deephaven.engine.table.GridAttributes;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.BaseTable;
+import io.deephaven.engine.table.impl.ComparatorRegistry;
 import io.deephaven.engine.table.impl.preview.DisplayWrapper;
 import io.deephaven.engine.table.impl.preview.PreviewType;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
@@ -554,7 +555,7 @@ public class BarrageUtil {
     }
 
     private static boolean isDataTypeSortable(final Class<?> dataType) {
-        return dataType.isPrimitive() || Comparable.class.isAssignableFrom(dataType);
+        return dataType.isPrimitive() || Comparable.class.isAssignableFrom(dataType) || ComparatorRegistry.INSTANCE.getComparator(dataType) != null;
     }
 
     public static Stream<Field> columnDefinitionsToFields(

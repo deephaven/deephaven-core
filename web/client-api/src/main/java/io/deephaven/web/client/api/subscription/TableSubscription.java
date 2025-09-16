@@ -68,7 +68,7 @@ public final class TableSubscription extends AbstractTableSubscription {
             throw new IllegalArgumentException(
                     "Can't change refreshIntervalMs on a later call to setViewport, it must be consistent or omitted");
         }
-        sendBarrageSubscriptionRequest(null, columns, updateIntervalMs, false, 0);
+        sendBarrageSubscriptionRequest(null, columns, updateIntervalMs, false, previewListLengthLimit);
     }
 
     /**

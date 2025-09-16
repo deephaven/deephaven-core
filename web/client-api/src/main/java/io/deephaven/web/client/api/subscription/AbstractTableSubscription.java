@@ -103,9 +103,9 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
         return previewedState;
     }
 
-    public static int getPreviewListLengthLimit(DataOptions.SubscriptionOptions subscriptionOptions) {
-        if (subscriptionOptions.previewOptions != null && subscriptionOptions.previewOptions.array != null) {
-            return (int) (double) subscriptionOptions.previewOptions.array;
+    public static int getPreviewListLengthLimit(DataOptions options) {
+        if (options.previewOptions != null && options.previewOptions.array != null) {
+            return (int) (double) options.previewOptions.array + 1;
         }
         return 0;
     }

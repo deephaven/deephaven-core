@@ -20,7 +20,7 @@ import java.util.*;
  * </p>
  */
 public class ComparatorRegistry {
-    static final ComparatorRegistry INSTANCE = new ComparatorRegistry();
+    public static final ComparatorRegistry INSTANCE = new ComparatorRegistry();
 
     private final Map<Class<?>, Comparator<?>> comparators = Collections.synchronizedMap(new HashMap<>());
 

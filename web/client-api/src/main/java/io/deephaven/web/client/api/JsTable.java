@@ -816,14 +816,12 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
         RangeSet rows = snapshotOptions.rows.asRangeSet().getRange();
 
         // TODO #1039 slice rows and drop columns
+        int previewListLengthLimit = AbstractTableSubscription.getPreviewListLengthLimit(snapshotOptions);
         BarrageSnapshotOptions barrageSnapshotOptions = BarrageSnapshotOptions.builder()
                 .batchSize(WebBarrageSubscription.BATCH_SIZE)
                 .maxMessageSize(WebBarrageSubscription.MAX_MESSAGE_SIZE)
                 .useDeephavenNulls(true)
-                .previewListLengthLimit(
-                        snapshotOptions.previewOptions != null && snapshotOptions.previewOptions.array != null
-                                ? (int) (double) snapshotOptions.previewOptions.array
-                                : 0)
+                .previewListLengthLimit(previewListLengthLimit)
                 .build();
 
         ClientTableState previewed =

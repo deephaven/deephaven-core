@@ -91,8 +91,7 @@ public class TableViewportSubscription extends AbstractTableSubscription {
         }
 
         TableViewportSubscription sub = new TableViewportSubscription(stateToSubscribe, connection, jsTable);
-        sub.setInternalViewport(rows, Js.uncheckedCast(options.columns), options.updateIntervalMs,
-                options.isReverseViewport);
+        sub.setInternalViewport(options);
         return sub;
     }
 
