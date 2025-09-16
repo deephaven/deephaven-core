@@ -50,8 +50,7 @@ sourceMeta = source.meta()
 
 In Groovy, classes can have two types of methods:
 
-**Instance methods:**
-Defined without the static keyword and require an instance of the class to exist in order to be called. They operate on object state and can access both instance variables and static (class) variables.
+**Instance methods:** Defined without the static keyword and require an instance of the class to exist in order to be called. They operate on object state and can access both instance variables and static (class) variables.
 
 **Static methods:** Defined with the static keyword and belong to the class itself rather than any particular instance. They can only access static variables and other static methods, and do not require an instance to be called.
 

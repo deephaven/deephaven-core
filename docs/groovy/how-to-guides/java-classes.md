@@ -5,23 +5,6 @@ sidebar_label: Java classes & objects
 
 The ability to use Java objects and classes in Deephaven query strings is one of its most powerful features. This guide explains how to use Java objects effectively in your queries, leveraging Groovy's seamless Java interoperability.
 
-## Classes and objects in Java
-
-Java is an object-oriented programming language where classes serve as blueprints for creating objects. Like Groovy, Java distinguishes between primitive types and objects:
-
-1. **Primitive types**: Basic data types like `int`, `double`, and `boolean` that are not objects.
-2. **Objects**: Instances of classes that bundle data and methods together.
-
-For performance reasons, Deephaven tables primarily use [primitive types](https://docs.oracle.com/javase/tutorial/java/nutsandbolts/datatypes.html) for numeric columns, but many operations require object types.
-
-### The root Java object
-
-All objects in Java inherit from the [`java.lang.Object`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html) class. Common Java objects used in Deephaven queries include:
-
-- [`java.lang.String`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html) - For text data
-- [`java.time.Instant`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Instant.html) - For timestamp data
-- [`java.math.BigDecimal`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/math/BigDecimal.html) - For high-precision numeric data
-
 ## Variables
 
 Java classes can have two types of variables:

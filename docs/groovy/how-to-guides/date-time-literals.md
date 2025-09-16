@@ -30,7 +30,7 @@ Deephaven highly recommends the use of double quotes (`"`) for query strings bec
 // The query string below is enclosed in single quotes
 // As a result, the inner single quotes must be escaped
 // This approach is less readable
-source = emptyTable(1).update("InstantLiteral = '2025-05-01T00:00:00Z'")
+source = emptyTable(1).update('InstantLiteral = \'2025-05-01T00:00:00Z\'')
 ```
 
 ## Supported date-time literal formats

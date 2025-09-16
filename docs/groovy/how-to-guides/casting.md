@@ -9,14 +9,14 @@ In tables, casting is essential to ensure that columns are in the correct format
 
 ## Type casts
 
-A type cast is an expression that converts a value from one data type to another. In Groovy, type casts use the syntax:
+A type cast is an expression that converts a value from one data type to another:
 
 ```groovy order=null
 a = 3
 b = (double) a
 ```
 
-In Deephaven, type casts in [query strings](./query-string-overview.md) ensure that columns convert the data type of a column to another. They use [Java syntax](https://www.w3schools.com/java/java_type_casting.asp).
+In Deephaven, type casts in [query strings](./query-string-overview.md) ensure that columns convert the data type of a column to another.
 
 ### Groovy variables
 

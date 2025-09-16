@@ -28,11 +28,6 @@ resultWhereMultiple = source.where("X <= 5", "Y >= 0")
 String filtering provides significant flexibility. You can search for full string matches, substring matches, use regex, and more. The following example shows several string filters:
 
 ```groovy order=source,resultFullMatch,resultSubstringMatch,resultRegex
-import io.deephaven.api.filter.FilterPattern
-import io.deephaven.api.filter.FilterPattern.Mode
-import io.deephaven.api.ColumnName
-import java.util.regex.Pattern
-
 randName = {
   def names = ["Alex", "Bethany", "Yvette", "Samantha", "Ned"]
   return names[new Random().nextInt(names.size())]
@@ -41,10 +36,7 @@ randName = {
 source = emptyTable(10).update("Name = (String)randName()")
 resultFullMatch = source.where("Name == `Alex`")
 resultSubstringMatch = source.where("Name.contains(`an`)")
-
-// Using FilterPattern for regex matching
-filterStartsWithAY = FilterPattern.of(ColumnName.of('Name'), Pattern.compile("^[A,Y].*"), Mode.MATCHES, false)
-resultRegex = source.where(filterStartsWithAY)
+resultRegex = source.where("Name.matches(`^[AY].*`)")
 ```
 
 ## Types of filters

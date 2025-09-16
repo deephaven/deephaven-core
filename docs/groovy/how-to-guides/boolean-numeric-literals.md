@@ -7,9 +7,7 @@ A literal value is one that is explicitly defined in code rather than computed o
 
 ## Boolean literals
 
-In the Deephaven Query Language (DQL), there are only two boolean literal values: `true` and `false` (lowercase). In Python, the boolean literals are `True` and `False` (uppercase). This difference is important—if you use Python-style literals in a query string, the query engine will look for variables or columns named `True` or `False`, which may not exist.
-
-The following code uses both boolean literals:
+The Deephaven Query Language (DQL) uses the Java primitive `true` and `false` literal values:
 
 ```groovy order=source,sourceMeta
 source = emptyTable(1).update("TrueLiteral = true", "FalseLiteral = false")
@@ -18,10 +16,10 @@ sourceMeta = source.meta()
 
 ## Numeric literals
 
-Numeric literals in the query language can be integers or floating-point numbers. By default, an integer literal is treated as a 32-bit signed integer (Java primitive `int`), and a floating-point literal is treated as a 64-bit floating-point number (Java primitive `double`). You can specify the type of a numeric literal by appending a suffix to the number:
+Numeric literals in the query language can be integers or floating-point numbers. By default, an integer literal is treated as a 32-bit signed integer (`int`), and a floating-point literal is treated as a 64-bit floating-point number (`double`). You can specify the type of a numeric literal by appending a suffix to the number:
 
-- `L` or `l` for a 64-bit signed integer (Java primitive `long`)
-- `f` for a 32-bit floating-point number (Java primitive `float`)
+- `L` or `l` for a 64-bit signed integer (`long`)
+- `f` for a 32-bit floating-point number (`float`)
 
 The following example constructs four columns, each with a numeric literal. The table metadata is also shown:
 
