@@ -69,7 +69,7 @@ It's here that the VM can be configured to build and run containers from pre-bui
 - Python with all of the above: `ghcr.io/deephaven/server-all-ai:{VERSION}`
 - Basic Groovy: `ghcr.io/deephaven/server-slim:{VERSION}`
 
-Choose your preferred image. For this guide, we'll use the basic Groovy image `ghcr.io.deephaven/server-slim:latest`.
+Choose your preferred image. For this guide, we'll use the basic Groovy image `ghcr.io/deephaven/server-slim:latest`.
 
 We want two other options: `Restart policy` and `Environment variables`.
 
