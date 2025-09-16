@@ -555,7 +555,8 @@ public class BarrageUtil {
     }
 
     private static boolean isDataTypeSortable(final Class<?> dataType) {
-        return dataType.isPrimitive() || Comparable.class.isAssignableFrom(dataType) || ComparatorRegistry.INSTANCE.getComparator(dataType) != null;
+        return dataType.isPrimitive() || Comparable.class.isAssignableFrom(dataType)
+                || ComparatorRegistry.INSTANCE.getComparator(dataType) != null;
     }
 
     public static Stream<Field> columnDefinitionsToFields(

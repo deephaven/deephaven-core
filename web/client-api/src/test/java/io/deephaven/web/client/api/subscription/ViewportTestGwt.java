@@ -897,9 +897,12 @@ public class ViewportTestGwt extends AbstractAsyncGwtTestCase {
                         assertEquals(4, snapshot.get(0).get(strColumn).asArrayLike().getLength());
                         assertEquals(4, snapshot.get(0).get(jColumn).asArrayLike().getLength());
 
-                        assertEquals(Arrays.asList("0", "4", "8", "12"), snapshot.get(0).get(strColumn).asArrayLike().asList());
-                        assertEquals(Arrays.asList(0.0, 4.0, 8.0, 12.0), snapshot.get(0).get(iColumn).asArrayLike().asList());
-                        assertEquals(Arrays.asList(0.0, 4.0, 8.0, 12.0), snapshot.get(0).get(jColumn).asArrayLike().asList());
+                        assertEquals(Arrays.asList("0", "4", "8", "12"),
+                                snapshot.get(0).get(strColumn).asArrayLike().asList());
+                        assertEquals(Arrays.asList(0.0, 4.0, 8.0, 12.0),
+                                snapshot.get(0).get(iColumn).asArrayLike().asList());
+                        assertEquals(Arrays.asList(0.0, 4.0, 8.0, 12.0),
+                                snapshot.get(0).get(jColumn).asArrayLike().asList());
                         return null;
                     }).then(ignore -> {
                         snapshotOptions.previewOptions.array = 300.;
@@ -930,9 +933,12 @@ public class ViewportTestGwt extends AbstractAsyncGwtTestCase {
                         assertEquals(4, data.get(0).get(strColumn).asArrayLike().getLength());
                         assertEquals(4, data.get(0).get(jColumn).asArrayLike().getLength());
 
-                        assertEquals(Arrays.asList("0", "4", "8", "12"), data.get(0).get(strColumn).asArrayLike().asList());
-                        assertEquals(Arrays.asList(0.0, 4.0, 8.0, 12.0), data.get(0).get(iColumn).asArrayLike().asList());
-                        assertEquals(Arrays.asList(0.0, 4.0, 8.0, 12.0), data.get(0).get(jColumn).asArrayLike().asList());
+                        assertEquals(Arrays.asList("0", "4", "8", "12"),
+                                data.get(0).get(strColumn).asArrayLike().asList());
+                        assertEquals(Arrays.asList(0.0, 4.0, 8.0, 12.0),
+                                data.get(0).get(iColumn).asArrayLike().asList());
+                        assertEquals(Arrays.asList(0.0, 4.0, 8.0, 12.0),
+                                data.get(0).get(jColumn).asArrayLike().asList());
                     }, 1234).then(ignore -> {
                         subscriptionOptions.previewOptions.array = 300.;
                         TableSubscription subscription2 = t.createSubscription(subscriptionOptions);
@@ -948,7 +954,8 @@ public class ViewportTestGwt extends AbstractAsyncGwtTestCase {
                         }, 1235);
                     });
 
-                    DataOptions.ViewportSubscriptionOptions viewportSubOptions = new DataOptions.ViewportSubscriptionOptions();
+                    DataOptions.ViewportSubscriptionOptions viewportSubOptions =
+                            new DataOptions.ViewportSubscriptionOptions();
                     viewportSubOptions.columns = t.getColumns();
                     viewportSubOptions.rows = Js.uncheckedCast(JsRangeSet.ofRange(0, 1));
                     viewportSubOptions.previewOptions = new DataOptions.PreviewOptions();
@@ -964,9 +971,12 @@ public class ViewportTestGwt extends AbstractAsyncGwtTestCase {
                         assertEquals(4, data.get(0).get(strColumn).asArrayLike().getLength());
                         assertEquals(4, data.get(0).get(jColumn).asArrayLike().getLength());
 
-                        assertEquals(Arrays.asList("0", "4", "8", "12"), data.get(0).get(strColumn).asArrayLike().asList());
-                        assertEquals(Arrays.asList(0.0, 4.0, 8.0, 12.0), data.get(0).get(iColumn).asArrayLike().asList());
-                        assertEquals(Arrays.asList(0.0, 4.0, 8.0, 12.0), data.get(0).get(jColumn).asArrayLike().asList());
+                        assertEquals(Arrays.asList("0", "4", "8", "12"),
+                                data.get(0).get(strColumn).asArrayLike().asList());
+                        assertEquals(Arrays.asList(0.0, 4.0, 8.0, 12.0),
+                                data.get(0).get(iColumn).asArrayLike().asList());
+                        assertEquals(Arrays.asList(0.0, 4.0, 8.0, 12.0),
+                                data.get(0).get(jColumn).asArrayLike().asList());
                     }, 1234).then(ignore -> {
                         viewportSubOptions.previewOptions.array = 300.;
                         TableViewportSubscription subscription4 = t.createViewportSubscription(viewportSubOptions);
@@ -985,8 +995,7 @@ public class ViewportTestGwt extends AbstractAsyncGwtTestCase {
                     return Promise.all(
                             snapshotTest,
                             subPromise,
-                            viewportSubPromise
-                    );
+                            viewportSubPromise);
                 })
                 .then(this::finish).catch_(this::report);
     }
