@@ -30,7 +30,10 @@ jobs:
           remote_user: ${{ secrets.DOCS_USER }}
           remote_key: ${{ secrets.DEEPHAVEN_CORE_SSH_KEY }}
   symlink:
-    if: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/heads/release/v') }}
+    # Unversioned links (latest) should take to the default which is main on the docs site.
+    # May change in the future to the latest stable release. If so, that should add a check
+    # that the ref starts with release/v and then use that version instead of main.
+    if: ${{ github.event_name == 'push' }}
     needs: [javadoc, typedoc, pydoc, cppdoc, rdoc, protodoc]
     runs-on: ubuntu-24.04
     steps:
@@ -38,8 +41,7 @@ jobs:
         run: |
           mkdir -p tmp-deephaven-core-v2/symlinks
           cd tmp-deephaven-core-v2/symlinks
-          ln -s ../${{ github.ref_name }} latest
-          ln -s ../main next
+          ln -s ../main latest
           
       - name: Deploy Symlinks
         uses: burnett01/rsync-deployments@5.2
@@ -123,7 +125,7 @@ jobs:
       cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup JDK 11
         id: setup-java-11
@@ -185,7 +187,7 @@ jobs:
       cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup JDK 11
         id: setup-java-11
@@ -247,7 +249,7 @@ jobs:
       cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup JDK 11
         id: setup-java-11
@@ -336,7 +338,7 @@ jobs:
       cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup JDK 11
         id: setup-java-11
@@ -410,7 +412,7 @@ jobs:
       cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup JDK 11
         id: setup-java-11
@@ -468,7 +470,7 @@ jobs:
       cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup JDK 11
         id: setup-java-11

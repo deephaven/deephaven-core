@@ -3,8 +3,12 @@ name: Publish CI
 on:
   push:
     branches: [ 'main', 'release/v*' ]
+    paths-ignore:
+      - 'docs/**'
   pull_request:
     branches: [ 'main', 'rc/v*' ]
+    paths-ignore:
+      - 'docs/**'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -17,7 +21,7 @@ jobs:
       id-token: write
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup JDK 11
         id: setup-java-11
