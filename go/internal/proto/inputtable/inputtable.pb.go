@@ -31,11 +31,6 @@ type AddTableRequest struct {
 
 	InputTable *ticket.Ticket `protobuf:"bytes,1,opt,name=input_table,json=inputTable,proto3" json:"input_table,omitempty"`
 	TableToAdd *ticket.Ticket `protobuf:"bytes,2,opt,name=table_to_add,json=tableToAdd,proto3" json:"table_to_add,omitempty"`
-	// if this field is not present, or is false then errors are propagated to the caller as an exception.
-	// if this field is true, then validation errors are sent in the AddTableResponse.
-	// Not all errors are considered validation errors, and therefore you must still handle an gRPC error
-	// message in addition to structured errors.
-	StructuredValidationErrors bool `protobuf:"varint,3,opt,name=structured_validation_errors,json=structuredValidationErrors,proto3" json:"structured_validation_errors,omitempty"`
 }
 
 func (x *AddTableRequest) Reset() {
@@ -82,13 +77,6 @@ func (x *AddTableRequest) GetTableToAdd() *ticket.Ticket {
 		return x.TableToAdd
 	}
 	return nil
-}
-
-func (x *AddTableRequest) GetStructuredValidationErrors() bool {
-	if x != nil {
-		return x.StructuredValidationErrors
-	}
-	return false
 }
 
 // An error indicating invalid values were passed to AddTableRequest, optionally annotated with the input row and column
@@ -159,21 +147,63 @@ func (x *InputTableValidationError) GetColumn() string {
 	return ""
 }
 
-type AddTableResponse struct {
+type InputTableValidationErrorList struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// If structured_validation_errors was unset or False on the AddTableRequest, then this field is unused.
-	// If structured_validation_errors was set or True on the AddTableRequest, then this field contains the list of validation errors.
-	// The field is empty if the request was successful.
 	ValidationErrors []*InputTableValidationError `protobuf:"bytes,1,rep,name=validation_errors,json=validationErrors,proto3" json:"validation_errors,omitempty"`
+}
+
+func (x *InputTableValidationErrorList) Reset() {
+	*x = InputTableValidationErrorList{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_deephaven_core_proto_inputtable_proto_msgTypes[2]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *InputTableValidationErrorList) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*InputTableValidationErrorList) ProtoMessage() {}
+
+func (x *InputTableValidationErrorList) ProtoReflect() protoreflect.Message {
+	mi := &file_deephaven_core_proto_inputtable_proto_msgTypes[2]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use InputTableValidationErrorList.ProtoReflect.Descriptor instead.
+func (*InputTableValidationErrorList) Descriptor() ([]byte, []int) {
+	return file_deephaven_core_proto_inputtable_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *InputTableValidationErrorList) GetValidationErrors() []*InputTableValidationError {
+	if x != nil {
+		return x.ValidationErrors
+	}
+	return nil
+}
+
+type AddTableResponse struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
 }
 
 func (x *AddTableResponse) Reset() {
 	*x = AddTableResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_deephaven_core_proto_inputtable_proto_msgTypes[2]
+		mi := &file_deephaven_core_proto_inputtable_proto_msgTypes[3]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -186,7 +216,7 @@ func (x *AddTableResponse) String() string {
 func (*AddTableResponse) ProtoMessage() {}
 
 func (x *AddTableResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_deephaven_core_proto_inputtable_proto_msgTypes[2]
+	mi := &file_deephaven_core_proto_inputtable_proto_msgTypes[3]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -199,14 +229,7 @@ func (x *AddTableResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AddTableResponse.ProtoReflect.Descriptor instead.
 func (*AddTableResponse) Descriptor() ([]byte, []int) {
-	return file_deephaven_core_proto_inputtable_proto_rawDescGZIP(), []int{2}
-}
-
-func (x *AddTableResponse) GetValidationErrors() []*InputTableValidationError {
-	if x != nil {
-		return x.ValidationErrors
-	}
-	return nil
+	return file_deephaven_core_proto_inputtable_proto_rawDescGZIP(), []int{3}
 }
 
 type DeleteTableRequest struct {
@@ -221,7 +244,7 @@ type DeleteTableRequest struct {
 func (x *DeleteTableRequest) Reset() {
 	*x = DeleteTableRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_deephaven_core_proto_inputtable_proto_msgTypes[3]
+		mi := &file_deephaven_core_proto_inputtable_proto_msgTypes[4]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -234,7 +257,7 @@ func (x *DeleteTableRequest) String() string {
 func (*DeleteTableRequest) ProtoMessage() {}
 
 func (x *DeleteTableRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_deephaven_core_proto_inputtable_proto_msgTypes[3]
+	mi := &file_deephaven_core_proto_inputtable_proto_msgTypes[4]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -247,7 +270,7 @@ func (x *DeleteTableRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteTableRequest.ProtoReflect.Descriptor instead.
 func (*DeleteTableRequest) Descriptor() ([]byte, []int) {
-	return file_deephaven_core_proto_inputtable_proto_rawDescGZIP(), []int{3}
+	return file_deephaven_core_proto_inputtable_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *DeleteTableRequest) GetInputTable() *ticket.Ticket {
@@ -273,7 +296,7 @@ type DeleteTableResponse struct {
 func (x *DeleteTableResponse) Reset() {
 	*x = DeleteTableResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_deephaven_core_proto_inputtable_proto_msgTypes[4]
+		mi := &file_deephaven_core_proto_inputtable_proto_msgTypes[5]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -286,7 +309,7 @@ func (x *DeleteTableResponse) String() string {
 func (*DeleteTableResponse) ProtoMessage() {}
 
 func (x *DeleteTableResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_deephaven_core_proto_inputtable_proto_msgTypes[4]
+	mi := &file_deephaven_core_proto_inputtable_proto_msgTypes[5]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -299,7 +322,7 @@ func (x *DeleteTableResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteTableResponse.ProtoReflect.Descriptor instead.
 func (*DeleteTableResponse) Descriptor() ([]byte, []int) {
-	return file_deephaven_core_proto_inputtable_proto_rawDescGZIP(), []int{4}
+	return file_deephaven_core_proto_inputtable_proto_rawDescGZIP(), []int{5}
 }
 
 var File_deephaven_core_proto_inputtable_proto protoreflect.FileDescriptor
@@ -311,7 +334,7 @@ var file_deephaven_core_proto_inputtable_proto_rawDesc = []byte{
 	0x68, 0x61, 0x76, 0x65, 0x6e, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x2e, 0x62, 0x61, 0x63, 0x6b,
 	0x70, 0x6c, 0x61, 0x6e, 0x65, 0x2e, 0x67, 0x72, 0x70, 0x63, 0x1a, 0x21, 0x64, 0x65, 0x65, 0x70,
 	0x68, 0x61, 0x76, 0x65, 0x6e, 0x5f, 0x63, 0x6f, 0x72, 0x65, 0x2f, 0x70, 0x72, 0x6f, 0x74, 0x6f,
-	0x2f, 0x74, 0x69, 0x63, 0x6b, 0x65, 0x74, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x22, 0xec, 0x01,
+	0x2f, 0x74, 0x69, 0x63, 0x6b, 0x65, 0x74, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x22, 0xaa, 0x01,
 	0x0a, 0x0f, 0x41, 0x64, 0x64, 0x54, 0x61, 0x62, 0x6c, 0x65, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73,
 	0x74, 0x12, 0x4a, 0x0a, 0x0b, 0x69, 0x6e, 0x70, 0x75, 0x74, 0x5f, 0x74, 0x61, 0x62, 0x6c, 0x65,
 	0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x29, 0x2e, 0x69, 0x6f, 0x2e, 0x64, 0x65, 0x65, 0x70,
@@ -322,27 +345,25 @@ var file_deephaven_core_proto_inputtable_proto_rawDesc = []byte{
 	0x01, 0x28, 0x0b, 0x32, 0x29, 0x2e, 0x69, 0x6f, 0x2e, 0x64, 0x65, 0x65, 0x70, 0x68, 0x61, 0x76,
 	0x65, 0x6e, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x2e, 0x62, 0x61, 0x63, 0x6b, 0x70, 0x6c, 0x61,
 	0x6e, 0x65, 0x2e, 0x67, 0x72, 0x70, 0x63, 0x2e, 0x54, 0x69, 0x63, 0x6b, 0x65, 0x74, 0x52, 0x0a,
-	0x74, 0x61, 0x62, 0x6c, 0x65, 0x54, 0x6f, 0x41, 0x64, 0x64, 0x12, 0x40, 0x0a, 0x1c, 0x73, 0x74,
-	0x72, 0x75, 0x63, 0x74, 0x75, 0x72, 0x65, 0x64, 0x5f, 0x76, 0x61, 0x6c, 0x69, 0x64, 0x61, 0x74,
-	0x69, 0x6f, 0x6e, 0x5f, 0x65, 0x72, 0x72, 0x6f, 0x72, 0x73, 0x18, 0x03, 0x20, 0x01, 0x28, 0x08,
-	0x52, 0x1a, 0x73, 0x74, 0x72, 0x75, 0x63, 0x74, 0x75, 0x72, 0x65, 0x64, 0x56, 0x61, 0x6c, 0x69,
-	0x64, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x45, 0x72, 0x72, 0x6f, 0x72, 0x73, 0x22, 0x7c, 0x0a, 0x19,
-	0x49, 0x6e, 0x70, 0x75, 0x74, 0x54, 0x61, 0x62, 0x6c, 0x65, 0x56, 0x61, 0x6c, 0x69, 0x64, 0x61,
-	0x74, 0x69, 0x6f, 0x6e, 0x45, 0x72, 0x72, 0x6f, 0x72, 0x12, 0x18, 0x0a, 0x07, 0x6d, 0x65, 0x73,
-	0x73, 0x61, 0x67, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x07, 0x6d, 0x65, 0x73, 0x73,
-	0x61, 0x67, 0x65, 0x12, 0x15, 0x0a, 0x03, 0x72, 0x6f, 0x77, 0x18, 0x02, 0x20, 0x01, 0x28, 0x03,
-	0x48, 0x00, 0x52, 0x03, 0x72, 0x6f, 0x77, 0x88, 0x01, 0x01, 0x12, 0x1b, 0x0a, 0x06, 0x63, 0x6f,
-	0x6c, 0x75, 0x6d, 0x6e, 0x18, 0x03, 0x20, 0x01, 0x28, 0x09, 0x48, 0x01, 0x52, 0x06, 0x63, 0x6f,
-	0x6c, 0x75, 0x6d, 0x6e, 0x88, 0x01, 0x01, 0x42, 0x06, 0x0a, 0x04, 0x5f, 0x72, 0x6f, 0x77, 0x42,
-	0x09, 0x0a, 0x07, 0x5f, 0x63, 0x6f, 0x6c, 0x75, 0x6d, 0x6e, 0x22, 0x7d, 0x0a, 0x10, 0x41, 0x64,
-	0x64, 0x54, 0x61, 0x62, 0x6c, 0x65, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x69,
-	0x0a, 0x11, 0x76, 0x61, 0x6c, 0x69, 0x64, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x5f, 0x65, 0x72, 0x72,
-	0x6f, 0x72, 0x73, 0x18, 0x01, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x3c, 0x2e, 0x69, 0x6f, 0x2e, 0x64,
-	0x65, 0x65, 0x70, 0x68, 0x61, 0x76, 0x65, 0x6e, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x2e, 0x62,
-	0x61, 0x63, 0x6b, 0x70, 0x6c, 0x61, 0x6e, 0x65, 0x2e, 0x67, 0x72, 0x70, 0x63, 0x2e, 0x49, 0x6e,
+	0x74, 0x61, 0x62, 0x6c, 0x65, 0x54, 0x6f, 0x41, 0x64, 0x64, 0x22, 0x7c, 0x0a, 0x19, 0x49, 0x6e,
 	0x70, 0x75, 0x74, 0x54, 0x61, 0x62, 0x6c, 0x65, 0x56, 0x61, 0x6c, 0x69, 0x64, 0x61, 0x74, 0x69,
-	0x6f, 0x6e, 0x45, 0x72, 0x72, 0x6f, 0x72, 0x52, 0x10, 0x76, 0x61, 0x6c, 0x69, 0x64, 0x61, 0x74,
-	0x69, 0x6f, 0x6e, 0x45, 0x72, 0x72, 0x6f, 0x72, 0x73, 0x22, 0xb3, 0x01, 0x0a, 0x12, 0x44, 0x65,
+	0x6f, 0x6e, 0x45, 0x72, 0x72, 0x6f, 0x72, 0x12, 0x18, 0x0a, 0x07, 0x6d, 0x65, 0x73, 0x73, 0x61,
+	0x67, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x07, 0x6d, 0x65, 0x73, 0x73, 0x61, 0x67,
+	0x65, 0x12, 0x15, 0x0a, 0x03, 0x72, 0x6f, 0x77, 0x18, 0x02, 0x20, 0x01, 0x28, 0x03, 0x48, 0x00,
+	0x52, 0x03, 0x72, 0x6f, 0x77, 0x88, 0x01, 0x01, 0x12, 0x1b, 0x0a, 0x06, 0x63, 0x6f, 0x6c, 0x75,
+	0x6d, 0x6e, 0x18, 0x03, 0x20, 0x01, 0x28, 0x09, 0x48, 0x01, 0x52, 0x06, 0x63, 0x6f, 0x6c, 0x75,
+	0x6d, 0x6e, 0x88, 0x01, 0x01, 0x42, 0x06, 0x0a, 0x04, 0x5f, 0x72, 0x6f, 0x77, 0x42, 0x09, 0x0a,
+	0x07, 0x5f, 0x63, 0x6f, 0x6c, 0x75, 0x6d, 0x6e, 0x22, 0x8a, 0x01, 0x0a, 0x1d, 0x49, 0x6e, 0x70,
+	0x75, 0x74, 0x54, 0x61, 0x62, 0x6c, 0x65, 0x56, 0x61, 0x6c, 0x69, 0x64, 0x61, 0x74, 0x69, 0x6f,
+	0x6e, 0x45, 0x72, 0x72, 0x6f, 0x72, 0x4c, 0x69, 0x73, 0x74, 0x12, 0x69, 0x0a, 0x11, 0x76, 0x61,
+	0x6c, 0x69, 0x64, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x5f, 0x65, 0x72, 0x72, 0x6f, 0x72, 0x73, 0x18,
+	0x01, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x3c, 0x2e, 0x69, 0x6f, 0x2e, 0x64, 0x65, 0x65, 0x70, 0x68,
+	0x61, 0x76, 0x65, 0x6e, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x2e, 0x62, 0x61, 0x63, 0x6b, 0x70,
+	0x6c, 0x61, 0x6e, 0x65, 0x2e, 0x67, 0x72, 0x70, 0x63, 0x2e, 0x49, 0x6e, 0x70, 0x75, 0x74, 0x54,
+	0x61, 0x62, 0x6c, 0x65, 0x56, 0x61, 0x6c, 0x69, 0x64, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x45, 0x72,
+	0x72, 0x6f, 0x72, 0x52, 0x10, 0x76, 0x61, 0x6c, 0x69, 0x64, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x45,
+	0x72, 0x72, 0x6f, 0x72, 0x73, 0x22, 0x12, 0x0a, 0x10, 0x41, 0x64, 0x64, 0x54, 0x61, 0x62, 0x6c,
+	0x65, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0xb3, 0x01, 0x0a, 0x12, 0x44, 0x65,
 	0x6c, 0x65, 0x74, 0x65, 0x54, 0x61, 0x62, 0x6c, 0x65, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74,
 	0x12, 0x4a, 0x0a, 0x0b, 0x69, 0x6e, 0x70, 0x75, 0x74, 0x5f, 0x74, 0x61, 0x62, 0x6c, 0x65, 0x18,
 	0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x29, 0x2e, 0x69, 0x6f, 0x2e, 0x64, 0x65, 0x65, 0x70, 0x68,
@@ -393,25 +414,26 @@ func file_deephaven_core_proto_inputtable_proto_rawDescGZIP() []byte {
 	return file_deephaven_core_proto_inputtable_proto_rawDescData
 }
 
-var file_deephaven_core_proto_inputtable_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
+var file_deephaven_core_proto_inputtable_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
 var file_deephaven_core_proto_inputtable_proto_goTypes = []interface{}{
-	(*AddTableRequest)(nil),           // 0: io.deephaven.proto.backplane.grpc.AddTableRequest
-	(*InputTableValidationError)(nil), // 1: io.deephaven.proto.backplane.grpc.InputTableValidationError
-	(*AddTableResponse)(nil),          // 2: io.deephaven.proto.backplane.grpc.AddTableResponse
-	(*DeleteTableRequest)(nil),        // 3: io.deephaven.proto.backplane.grpc.DeleteTableRequest
-	(*DeleteTableResponse)(nil),       // 4: io.deephaven.proto.backplane.grpc.DeleteTableResponse
-	(*ticket.Ticket)(nil),             // 5: io.deephaven.proto.backplane.grpc.Ticket
+	(*AddTableRequest)(nil),               // 0: io.deephaven.proto.backplane.grpc.AddTableRequest
+	(*InputTableValidationError)(nil),     // 1: io.deephaven.proto.backplane.grpc.InputTableValidationError
+	(*InputTableValidationErrorList)(nil), // 2: io.deephaven.proto.backplane.grpc.InputTableValidationErrorList
+	(*AddTableResponse)(nil),              // 3: io.deephaven.proto.backplane.grpc.AddTableResponse
+	(*DeleteTableRequest)(nil),            // 4: io.deephaven.proto.backplane.grpc.DeleteTableRequest
+	(*DeleteTableResponse)(nil),           // 5: io.deephaven.proto.backplane.grpc.DeleteTableResponse
+	(*ticket.Ticket)(nil),                 // 6: io.deephaven.proto.backplane.grpc.Ticket
 }
 var file_deephaven_core_proto_inputtable_proto_depIdxs = []int32{
-	5, // 0: io.deephaven.proto.backplane.grpc.AddTableRequest.input_table:type_name -> io.deephaven.proto.backplane.grpc.Ticket
-	5, // 1: io.deephaven.proto.backplane.grpc.AddTableRequest.table_to_add:type_name -> io.deephaven.proto.backplane.grpc.Ticket
-	1, // 2: io.deephaven.proto.backplane.grpc.AddTableResponse.validation_errors:type_name -> io.deephaven.proto.backplane.grpc.InputTableValidationError
-	5, // 3: io.deephaven.proto.backplane.grpc.DeleteTableRequest.input_table:type_name -> io.deephaven.proto.backplane.grpc.Ticket
-	5, // 4: io.deephaven.proto.backplane.grpc.DeleteTableRequest.table_to_remove:type_name -> io.deephaven.proto.backplane.grpc.Ticket
+	6, // 0: io.deephaven.proto.backplane.grpc.AddTableRequest.input_table:type_name -> io.deephaven.proto.backplane.grpc.Ticket
+	6, // 1: io.deephaven.proto.backplane.grpc.AddTableRequest.table_to_add:type_name -> io.deephaven.proto.backplane.grpc.Ticket
+	1, // 2: io.deephaven.proto.backplane.grpc.InputTableValidationErrorList.validation_errors:type_name -> io.deephaven.proto.backplane.grpc.InputTableValidationError
+	6, // 3: io.deephaven.proto.backplane.grpc.DeleteTableRequest.input_table:type_name -> io.deephaven.proto.backplane.grpc.Ticket
+	6, // 4: io.deephaven.proto.backplane.grpc.DeleteTableRequest.table_to_remove:type_name -> io.deephaven.proto.backplane.grpc.Ticket
 	0, // 5: io.deephaven.proto.backplane.grpc.InputTableService.AddTableToInputTable:input_type -> io.deephaven.proto.backplane.grpc.AddTableRequest
-	3, // 6: io.deephaven.proto.backplane.grpc.InputTableService.DeleteTableFromInputTable:input_type -> io.deephaven.proto.backplane.grpc.DeleteTableRequest
-	2, // 7: io.deephaven.proto.backplane.grpc.InputTableService.AddTableToInputTable:output_type -> io.deephaven.proto.backplane.grpc.AddTableResponse
-	4, // 8: io.deephaven.proto.backplane.grpc.InputTableService.DeleteTableFromInputTable:output_type -> io.deephaven.proto.backplane.grpc.DeleteTableResponse
+	4, // 6: io.deephaven.proto.backplane.grpc.InputTableService.DeleteTableFromInputTable:input_type -> io.deephaven.proto.backplane.grpc.DeleteTableRequest
+	3, // 7: io.deephaven.proto.backplane.grpc.InputTableService.AddTableToInputTable:output_type -> io.deephaven.proto.backplane.grpc.AddTableResponse
+	5, // 8: io.deephaven.proto.backplane.grpc.InputTableService.DeleteTableFromInputTable:output_type -> io.deephaven.proto.backplane.grpc.DeleteTableResponse
 	7, // [7:9] is the sub-list for method output_type
 	5, // [5:7] is the sub-list for method input_type
 	5, // [5:5] is the sub-list for extension type_name
@@ -450,7 +472,7 @@ func file_deephaven_core_proto_inputtable_proto_init() {
 			}
 		}
 		file_deephaven_core_proto_inputtable_proto_msgTypes[2].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*AddTableResponse); i {
+			switch v := v.(*InputTableValidationErrorList); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -462,7 +484,7 @@ func file_deephaven_core_proto_inputtable_proto_init() {
 			}
 		}
 		file_deephaven_core_proto_inputtable_proto_msgTypes[3].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*DeleteTableRequest); i {
+			switch v := v.(*AddTableResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -474,6 +496,18 @@ func file_deephaven_core_proto_inputtable_proto_init() {
 			}
 		}
 		file_deephaven_core_proto_inputtable_proto_msgTypes[4].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*DeleteTableRequest); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_deephaven_core_proto_inputtable_proto_msgTypes[5].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*DeleteTableResponse); i {
 			case 0:
 				return &v.state
@@ -493,7 +527,7 @@ func file_deephaven_core_proto_inputtable_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_deephaven_core_proto_inputtable_proto_rawDesc,
 			NumEnums:      0,
-			NumMessages:   5,
+			NumMessages:   6,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
