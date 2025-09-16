@@ -26,9 +26,9 @@ Server-client architecture in modern software development follows a model where:
 
 Peer-to-peer architecture in software development follows a model where every process is both a client and a server. Multiple instances of Deephaven can act as peers, allowing for distributed processing across machines. In this model:
 
-- Each Deephaven instance can both provide and consume services
-- Data and processing can be distributed across multiple nodes
-- Communication happens directly between peers rather than through a central server
+- Each Deephaven instance can both provide and consume services.
+- Data and processing can be distributed across multiple nodes.
+- Communication happens directly between peers rather than through a central server.
 
 ### A mental model of servers and clients
 
@@ -64,19 +64,19 @@ Consider an at-home golf simulator with a launch monitor that captures data abou
 
 **Server side:**
 
-- A Deephaven server runs on the computer connected to the launch monitor
-- It ingests real-time shot data as it happens
-- Processes the data to calculate metrics (ball speed, spin rate, distance, etc.)
-- Creates and maintains tables with player statistics and performance trends
-- Handles data storage and retrieval
+- A Deephaven server runs on the computer connected to the launch monitor.
+- It ingests real-time shot data as it happens.
+- Processes the data to calculate metrics (ball speed, spin rate, distance, etc.).
+- Creates and maintains tables with player statistics and performance trends.
+- Handles data storage and retrieval.
 
 **Client side:**
 
-- Multiple clients running on separate devices can connect to the server
-- Clients can request filtered shot information (e.g., only drives or only a specific player's shots)
-- Users can request new calculations or metrics through the client
-- Clients can visualize shot data through charts and graphs
-- Multiple players can access their statistics simultaneously from different devices
+- Multiple clients running on separate devices can connect to the server.
+- Clients can request filtered shot information (e.g., only drives or only a specific player's shots).
+- Users can request new calculations or metrics through the client.
+- Clients can visualize shot data through charts and graphs.
+- Multiple players can access their statistics simultaneously from different devices.
 
 This architecture centralizes the data processing while allowing flexible access from various devices.
 
@@ -146,9 +146,9 @@ Packaging critical operations to run directly on a Deephaven server can signific
 
 Consider using multiple servers when your application has distinct processing requirements:
 
-- **Data segregation**: When different data sets need to be processed separately for security or compliance reasons
-- **Resource optimization**: When some workloads are CPU-intensive while others are memory-intensive
-- **Specialized processing**: When different parts of your application require different libraries or configurations
+- **Data segregation**: When different data sets need to be processed separately for security or compliance reasons.
+- **Resource optimization**: When some workloads are CPU-intensive while others are memory-intensive.
+- **Specialized processing**: When different parts of your application require different libraries or configurations.
 
 For example, you might dedicate one server to real-time data ingestion and another to complex analytical queries, allowing each to be optimized for its specific task.
 
@@ -156,8 +156,8 @@ For example, you might dedicate one server to real-time data ingestion and anoth
 
 As your application grows, consider how it will scale:
 
-- **Vertical scaling**: Adding more resources (RAM, CPU) to a single server has limits and may become cost-prohibitive
-- **Horizontal scaling**: Adding more servers distributes the workload and provides more flexibility
+- **Vertical scaling**: Adding more resources (RAM, CPU) to a single server has limits and may become cost-prohibitive.
+- **Horizontal scaling**: Adding more servers distributes the workload and provides more flexibility.
 
 Deephaven's architecture supports horizontal scaling through its peer-to-peer capabilities. This approach typically requires less engineering effort than complex performance tuning of a single server and provides better fault tolerance.
 
@@ -167,17 +167,17 @@ When designing your application, consider future growth patterns and build with 
 
 Your architecture choices have significant implications for data security:
 
-- **Single server**: Simplifies security management with a single point of control but creates a single point of failure
-- **Multiple servers**: Allows for data segregation and compartmentalization but requires careful security configuration between servers
-- **Server-client model**: Enables fine-grained access control but requires secure communication channels between clients and servers
+- **Single server**: Simplifies security management with a single point of control but creates a single point of failure.
+- **Multiple servers**: Allows for data segregation and compartmentalization but requires careful security configuration between servers.
+- **Server-client model**: Enables fine-grained access control but requires secure communication channels between clients and servers.
 
 Common security aspects that require careful thought when designing application architecture include:
 
-- **Authentication**: How users will identify themselves to the system
-- **Authorization**: What data and operations each user can access
-- **Data encryption**: Whether data needs to be encrypted at rest and/or in transit
-- **Network isolation**: Whether servers should be isolated on separate networks
-- **Audit logging**: How user actions will be tracked and monitored
+- **Authentication**: How users will identify themselves to the system.
+- **Authorization**: What data and operations each user can access.
+- **Data encryption**: Whether data needs to be encrypted at rest and/or in transit.
+- **Network isolation**: Whether servers should be isolated on separate networks.
+- **Audit logging**: How user actions will be tracked and monitored.
 
 Deephaven provides different authentication mechanisms that can be configured according to your security requirements.
 
