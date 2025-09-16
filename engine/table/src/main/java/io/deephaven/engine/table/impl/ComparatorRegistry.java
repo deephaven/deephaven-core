@@ -10,6 +10,12 @@ import io.deephaven.engine.table.impl.comparators.ObjectArrayComparator;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.ZonedDateTime;
 import java.util.*;
 
 /**
@@ -57,6 +63,13 @@ public class ComparatorRegistry {
             registerComparator(BigInteger[].class, new ObjectArrayComparator<>());
             registerComparator(BigDecimal[].class, new ObjectArrayComparator<>());
             registerComparator(Comparable[].class, new ObjectArrayComparator<>());
+            registerComparator(Instant[].class, new ObjectArrayComparator<>());
+            registerComparator(Date[].class, new ObjectArrayComparator<>());
+            registerComparator(ZonedDateTime[].class, new ObjectArrayComparator<>());
+            registerComparator(LocalDate[].class, new ObjectArrayComparator<>());
+            registerComparator(LocalDateTime[].class, new ObjectArrayComparator<>());
+            registerComparator(LocalTime[].class, new ObjectArrayComparator<>());
+            registerComparator(Duration[].class, new ObjectArrayComparator<>());
         }
     }
 
