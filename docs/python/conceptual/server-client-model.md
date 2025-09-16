@@ -2,7 +2,7 @@
 title: Servers & Clients
 ---
 
-Deephaven offers both server-side and client-side APIs in multiple languages. These APIs allow you to build applications in a multitude of ways that distribute workloads across multiple machines, share data, and provide seamless user experiences.
+Deephaven offers server-side and client-side APIs in multiple languages. These APIs allow you to build applications that distribute workloads across multiple machines, share data, and provide seamless user experiences.
 
 When should you use server-side APIs? When should you use client-side APIs? When might you need multiple servers? This guide answers these questions by:
 
@@ -34,7 +34,7 @@ Peer-to-peer architecture in software development follows a model where every pr
 
 Consider a restaurant serving food to customers. In this analogy, the restaurant is the server, and the customers are clients.
 
-Customers enter the restaurant, get seated, and look at the menu. After some time, they place orders for food and/or drinks. Those orders are taken by the wait staff to the kitchen and/or bar, where food and drinks are prepared and brought back to the customers.
+Customers enter the restaurant, get seated, and look at the menu. After some time, they place orders for food and/or drinks. The wait staff takes those orders to the kitchen and/or bar, where food and drinks are prepared and brought back to the customers.
 
 The roles in this scenario are analogous:
 
@@ -44,7 +44,7 @@ The roles in this scenario are analogous:
 
 You could draw more analogies, but these three form the basis of the server-client model.
 
-This analogy helps build a mental model of how servers and clients work in software, and Deephaven is no different. When you connect a client to the server, you establish a communication channel to that server. From there, your requests get sent across that channel to the server, which processes your requests and sends responses back in the form of snapshots of tables or other data. The heavy lifting is done by the server itself; that's where the processing happens. The client merely sends and receives requests and consumes the responses.
+This analogy helps build a mental model of how servers and clients work in software, and Deephaven is no different. When you connect a client to the server, you establish a communication channel to that server. From there, your requests get sent across that channel to the server, which processes your requests and sends responses back in the form of snapshots of tables or other data. The server itself does the heavy lifting; that's where the processing happens. The client merely sends and receives requests and consumes the responses.
 
 ### Deephaven servers and clients
 
@@ -53,10 +53,28 @@ Deephaven servers and clients follow the standard server-client software archite
 - The vast majority of work happens on the server.
 - Clients do little to no real data processing. They merely send requests to a server and receive responses with the requested information.
 
-A couple of extra details that are worth noting include:
+A couple of additional details worth noting:
 
-- Not all of Deephaven's client APIs support ticking data like the server does. When the client does not support ticking data, it receives snapshots of live tables at the time they are requested.
+Not all of Deephaven's client APIs support ticking data like the server does. When the client does not support ticking data, it receives snapshots of live tables when they are requested.
 - Clients are agnostic to the server-side API language being used.
+
+## Deephaven's APIs
+
+Deephaven offers two server-side APIs and several client-side APIs.
+
+### Server-side
+
+- [Python](https://deephaven.io/core/pydoc/)
+- [Groovy](https://deephaven.io/core/javadoc/)
+
+### Client-side
+
+- [Python](https://docs.deephaven.io/core/client-api/python/)
+- [Java](https://deephaven.io/core/javadoc/)
+- [C++](https://docs.deephaven.io/core/client-api/cpp/)
+- [R](https://docs.deephaven.io/core/client-api/r/)
+- [JavaScript](https://docs.deephaven.io/core/client-api/javascript/modules/dh.html)
+- [Go](https://pkg.go.dev/github.com/deephaven/deephaven-core/go)
 
 ## An example server-client application
 
@@ -116,19 +134,19 @@ This implementation demonstrates the [peer-to-peer](#peer-to-peer-software-archi
 
 ## Server and client considerations
 
-The first steps to application development should always be planning. The following subsections cover the most important considerations for Deephaven application design.
+Planning should always be the first step in application development. The following subsections cover the most important considerations for Deephaven application design.
 
 ### Data intensity
 
-If your application deals with low to moderate volumes of data, a single server is likely sufficient. For example, if you process one million rows per day, a single server should have no problem handling it.
+If your application deals with low to moderate data volumes, a single server is likely sufficient. For example, if you process one million rows per day, a single server should be able to handle it.
 
-However, consider an application that processes 100 million rows a day. A single server will likely have no issue for a while, but after some time, it may not be enough.
+However, consider an application that processes 100 million rows per day. A single server will likely handle this initially, but over time, it may become insufficient.
 
 Additionally, what type of data are you working with? If you work with lots of numeric data, it might not be much of an issue, but if there's lots of large string data, memory management becomes an important consideration.
 
 ### Computational resources
 
-The number of servers you need is dependent on your available computational resources.
+The number of servers you need depends on your available computational resources.
 
 If you can only dedicate 8GB of RAM to Deephaven, your application may need more than a single server to run effectively. Similarly, you may not need multiple servers if you can dedicate 32GB of RAM to a single server instance.
 
@@ -147,7 +165,7 @@ Packaging critical operations to run directly on a Deephaven server can signific
 Consider using multiple servers when your application has distinct processing requirements:
 
 - **Data segregation**: When different data sets need to be processed separately for security or compliance reasons.
-- **Resource optimization**: When some workloads are CPU-intensive while others are memory-intensive.
+- **Resource optimization**: When some workloads are CPU-intensive, while others are memory-intensive.
 - **Specialized processing**: When different parts of your application require different libraries or configurations.
 
 For example, you might dedicate one server to real-time data ingestion and another to complex analytical queries, allowing each to be optimized for its specific task.
@@ -181,24 +199,6 @@ Common security aspects that require careful thought when designing application 
 
 Deephaven provides different authentication mechanisms that can be configured according to your security requirements.
 
-## Deephaven's APIs
-
-Deephaven offers two server-side APIs and several client-side APIs.
-
-### Server-side
-
-- [Python](https://deephaven.io/core/pydoc/)
-- [Groovy](https://deephaven.io/core/javadoc/)
-
-### Client-side
-
-- [Python](https://docs.deephaven.io/core/client-api/python/)
-- [Java](https://deephaven.io/core/javadoc/)
-- [C++](https://docs.deephaven.io/core/client-api/cpp/)
-- [R](https://docs.deephaven.io/core/client-api/r/)
-- [JavaScript](https://docs.deephaven.io/core/client-api/javascript/modules/dh.html)
-- [Go](https://pkg.go.dev/github.com/deephaven/deephaven-core/go)
-
 ## Choose the right architecture
 
 When designing your Deephaven application, consider these key questions:
@@ -214,4 +214,4 @@ Start with the simplest architecture that meets your needs, then scale as requir
 ## Related documentation
 
 - [Core API design](./deephaven-core-api.md)
-- [URIs in Deephaven](/core/docs/how-to-guides/use-uris/)
+- [Use URIs to share tables](../how-to-guides/use-uris.md)
