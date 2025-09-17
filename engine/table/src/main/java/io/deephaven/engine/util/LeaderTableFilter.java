@@ -57,23 +57,20 @@ import java.util.stream.Stream;
  *
  * <p>
  * The leader and follower tables must be <i>add only</i>, they are not permitted to modify, shift or remove rows. If
- * you use a simple filter an add-only source table, then they should remain add only.
+ * you use a simple filter on an add-only source table, then they should remain add only.
  * </p>
  *
  * <p>
  * In this example, there is a SyncLog table that acts as the leader for the messageLog and trades table. The tables
  * must share keys in common to perform the synchronization. The columns must be the same type, though need not share
- * the same name. We start by retrieving the raw tables from the database:
+ * the same name.
+ * </p>
  *
- * <pre>
- * Table syncLog = db.liveTable("MatchingEngine", "SyncLog").where("Date=today()");
- * Table messageLog = db.liveTable("MatchingEngine", "MessageLog").where("Date=today()");
- * Table trades = db.liveTable("MatchingEngine", "Trades").where("Date=today()");
- * </pre>
- *
+ * <p>
  * If we assume you have three add-only tables, named "syncLog", "tradeLog", and "messageLog" suitable for use with the
  * LeaderTableFilter, to create the Builder we pass in the leader table with the key columns specified, in this case
  * "client" and "session".
+ * </p>
  *
  * <pre>
  * LeaderTableFilter.TableBuilder builder = new LeaderTableFilter.TableBuilder(syncLog, "client", "session");
