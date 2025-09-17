@@ -61,7 +61,6 @@ public class FilterTableGrpcImpl extends GrpcTableOperation<FilterTableRequest> 
                 .map(f -> FilterFactory.makeFilter(sourceTable.getDefinition(), f))
                 .collect(Collectors.toList());
 
-        // This would be a good case for the WhereFilter vistor that Nate is building.
         final List<ConditionFilter> conditionFilters = extractConditionFilters(whereFilters);
         validator.validateConditionFilters(conditionFilters, sourceTable);
 

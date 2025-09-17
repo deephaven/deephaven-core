@@ -2375,7 +2375,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
         n.setArguments(NodeList.nodeList(convertedArgExpressions));
 
         if (isPotentialImplicitCall(methodName, method.getDeclaringClass())) {
-            // TODO: figure out how to handle this better
+            // TODO: DH-20402: figure out how to handle this better
             formulaMethodInvocations.setUsedImplicitCall();
             if (scopeType == null) { // python func call or Groovy closure call
                 /*
