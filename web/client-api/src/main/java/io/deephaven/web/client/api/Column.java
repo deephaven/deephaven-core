@@ -47,6 +47,7 @@ public class Column {
 
     private String description;
     private final boolean isInputTableKeyColumn;
+    private final boolean isInputTableValueColumn;
 
     /**
      * Format entire rows colors using the expression specified. Returns a <b>CustomColumn</b> object to apply to a
@@ -80,7 +81,7 @@ public class Column {
 
     public Column(int jsIndex, int index, Integer formatColumnIndex, Integer styleColumnIndex, String type, String name,
             boolean isPartitionColumn, Integer formatStringColumnIndex, String description,
-            boolean inputTableKeyColumn, boolean isSortable) {
+            boolean inputTableKeyColumn, boolean inputTableValueColumn, boolean isSortable) {
         this.jsIndex = jsIndex;
         this.index = index;
         assert Objects.equals(formatColumnIndex, styleColumnIndex);
@@ -91,6 +92,7 @@ public class Column {
         this.formatStringColumnIndex = formatStringColumnIndex;
         this.description = description;
         this.isInputTableKeyColumn = inputTableKeyColumn;
+        this.isInputTableValueColumn = inputTableValueColumn;
         this.isSortable = isSortable;
     }
 
@@ -201,6 +203,10 @@ public class Column {
         return isInputTableKeyColumn;
     }
 
+    public boolean isInputTableValueColumn() {
+        return isInputTableValueColumn;
+    }
+
     /**
      * Creates a sort builder object, to be used when sorting by this column.
      *
@@ -294,6 +300,11 @@ public class Column {
             return false;
         if (!type.equals(column.type))
             return false;
+
+        if (isSortable != column.isSortable || isInputTableKeyColumn != column.isInputTableKeyColumn
+                || isInputTableValueColumn != column.isInputTableValueColumn) {
+            return false;
+        }
         return name.equals(column.name);
     }
 
@@ -309,11 +320,11 @@ public class Column {
 
     public Column withFormatStringColumnIndex(int formatStringColumnIndex) {
         return new Column(jsIndex, index, styleColumnIndex, styleColumnIndex, type, name, isPartitionColumn,
-                formatStringColumnIndex, description, isInputTableKeyColumn, isSortable);
+                formatStringColumnIndex, description, isInputTableKeyColumn, isInputTableValueColumn, isSortable);
     }
 
     public Column withStyleColumnIndex(int styleColumnIndex) {
         return new Column(jsIndex, index, styleColumnIndex, styleColumnIndex, type, name, isPartitionColumn,
-                formatStringColumnIndex, description, isInputTableKeyColumn, isSortable);
+                formatStringColumnIndex, description, isInputTableKeyColumn, isInputTableValueColumn, isSortable);
     }
 }

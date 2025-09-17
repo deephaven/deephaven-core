@@ -21,7 +21,7 @@ public class Sort {
             REVERSE = "REVERSE";
 
     private static final Column REVERSE_COLUMN =
-            new Column(-1, -1, null, null, "", "__REVERSE_COLUMN", false, null, null, false, false);
+            new Column(-1, -1, null, null, "", "__REVERSE_COLUMN", false, null, null, false, false, false);
 
     private final Column column;
     private String direction;
