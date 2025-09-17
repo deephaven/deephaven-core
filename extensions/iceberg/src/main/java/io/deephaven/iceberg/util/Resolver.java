@@ -263,26 +263,15 @@ public abstract class Resolver implements ResolverProvider {
             // https://iceberg.apache.org/spec/#partitioning
             // The source columns, selected by ids, must be a primitive type and cannot be contained in a map or list,
             // but may be nested in a struct.
-            for (NestedField nestedField : fieldPath) {
-                // https://github.com/apache/iceberg/issues/12870
-                if (nestedField.type().isListType()) {
-                    throw new MappingException("Partition fields may not be contained in a list");
-                }
-                if (nestedField.type().isMapType()) {
-                    throw new MappingException("Partition fields may not be contained in a map");
-                }
+            // org.apache.iceberg.PartitionSpec.checkCompatibility should typically catch this case, but in certain
+            // cases (for example, a Catalog / metadata error), we can check for this ourselves.
+            final NestedField field = fieldPath.get(fieldPath.size() - 1);
+            if (!field.type().isPrimitiveType()) {
+                throw new MappingException(
+                        String.format("Cannot partition by non-primitive source field: %s", field.type()));
             }
-            {
-                // org.apache.iceberg.PartitionSpec.checkCompatibility should typically catch this case, but in certain
-                // cases (for example, a Catalog / metadata error), we can check for this ourselves.
-                final NestedField field = fieldPath.get(fieldPath.size() - 1);
-                if (!field.type().isPrimitiveType()) {
-                    throw new MappingException(
-                            String.format("Cannot partition by non-primitive source field: %s", field.type()));
-                }
-                final org.apache.iceberg.types.Type.PrimitiveType inputType = field.type().asPrimitiveType();
-                IcebergPartitionedLayout.validateSupported(partitionField.transform(), inputType, type);
-            }
+            final org.apache.iceberg.types.Type.PrimitiveType inputType = field.type().asPrimitiveType();
+            IcebergPartitionedLayout.validateSupported(partitionField.transform(), inputType, type);
         }
         checkCompatible(fieldPath, type);
     }

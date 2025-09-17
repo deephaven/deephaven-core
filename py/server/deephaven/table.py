@@ -2194,7 +2194,8 @@ class Table(JObjectWrapper):
         """
         try:
             formulas = to_sequence(formulas)
-            return Table(j_table=self.j_table.formatColumns(formulas))
+            with _query_scope_ctx():
+                return Table(j_table=self.j_table.formatColumns(formulas))
         except Exception as e:
             raise DHError(e, "failed to color format columns.") from e
 
@@ -2214,7 +2215,8 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
-            return Table(j_table=self.j_table.formatColumnWhere(col, cond, formula))
+            with _query_scope_ctx():
+                return Table(j_table=self.j_table.formatColumnWhere(col, cond, formula))
         except Exception as e:
             raise DHError(e, "failed to color format column conditionally.") from e
 
@@ -2233,7 +2235,8 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
-            return Table(j_table=self.j_table.formatRowWhere(cond, formula))
+            with _query_scope_ctx():
+                return Table(j_table=self.j_table.formatRowWhere(cond, formula))
         except Exception as e:
             raise DHError(e, "failed to color format rows conditionally.") from e
 

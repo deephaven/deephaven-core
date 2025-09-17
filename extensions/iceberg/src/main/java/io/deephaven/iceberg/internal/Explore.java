@@ -272,7 +272,7 @@ public final class Explore {
                 .add("PositionDeleteFileCount", int.class, PartitionStats::positionDeleteFileCount)
                 .add("EqualityDeleteRecordCount", long.class, PartitionStats::equalityDeleteRecordCount)
                 .add("EqualityDeleteFileCount", int.class, PartitionStats::equalityDeleteFileCount)
-                .add("TotalRecordCount", long.class, PartitionStats::totalRecordCount)
+                .add("TotalRecordCount", long.class, PartitionStats::totalRecords)
                 .add("LastUpdatedAt", Instant.class, Explore::lastUpdatedAt)
                 .add("LastUpdatedSnapshotId", long.class, PartitionStats::lastUpdatedSnapshotId)
                 .view(partitionStats);
