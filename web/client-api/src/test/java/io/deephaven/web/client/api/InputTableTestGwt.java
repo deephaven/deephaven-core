@@ -106,7 +106,8 @@ public class InputTableTestGwt extends AbstractAsyncGwtTestCase {
                     assertEquals(4, valueColumns.filter((col, idx) -> col.getName() == "A" || col.getName() == "B"
                             || col.getName() == "C" || col.getName() == "D").length);
                     final JsArray<Column> allColumns = Js.uncheckedCast(inputTable.getTable().getColumns());
-                    assertEquals(2, allColumns.filter((col, idx) -> col.getName() == "Dummy" || col.getName() == "Dumber").length);
+                    assertEquals(2, allColumns
+                            .filter((col, idx) -> col.getName() == "Dummy" || col.getName() == "Dumber").length);
                     return null;
                 })
                 .then(this::finish).catch_(this::report);
