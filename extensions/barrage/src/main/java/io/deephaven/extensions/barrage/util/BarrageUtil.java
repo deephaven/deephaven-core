@@ -108,6 +108,11 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class BarrageUtil {
+    /**
+     * Re-usable constant for the "true" value.
+     */
+    private static final String TRUE_STRING = Boolean.toString(true);
+
     public static final BarrageSubscriptionOptions DEFAULT_SUBSCRIPTION_OPTIONS =
             BarrageSubscriptionOptions.builder().build();
     public static final BarrageSnapshotOptions DEFAULT_SNAPSHOT_OPTIONS =
@@ -517,7 +522,7 @@ public class BarrageUtil {
             final boolean isFlat) {
         final Map<String, String> metadata = new HashMap<>();
         if (isFlat) {
-            putMetadata(metadata, ATTR_ATTR_TAG + "." + TABLE_ATTRIBUTE_IS_FLAT, "true");
+            putMetadata(metadata, ATTR_ATTR_TAG + "." + TABLE_ATTRIBUTE_IS_FLAT, TRUE_STRING);
             putMetadata(metadata, ATTR_ATTR_TYPE_TAG + "." + TABLE_ATTRIBUTE_IS_FLAT,
                     Boolean.class.getCanonicalName());
         }
@@ -591,8 +596,12 @@ public class BarrageUtil {
             Class<?> componentType = column.getComponentType();
             final Map<String, String> metadata = fieldMetadataFactory.apply(name);
 
-            putMetadata(metadata, "isPartitioning", column.isPartitioning() + "");
-            putMetadata(metadata, "isSortable", String.valueOf(sortableColumns.contains(name)));
+            if (column.isPartitioning()) {
+                putMetadata(metadata, "isPartitioning", TRUE_STRING);
+            }
+            if (sortableColumns.contains(name)) {
+                putMetadata(metadata, "isSortable", TRUE_STRING);
+            }
 
             // Wire up style and format column references
             final String styleFormatName = ColumnFormatting.getStyleFormatColumn(name);
@@ -625,19 +634,30 @@ public class BarrageUtil {
             }
 
             // Only one of these will be true, if any are true the column will not be visible
-            putMetadata(metadata, "isRowStyle", ColumnFormatting.isRowStyleFormatColumn(name) + "");
-            putMetadata(metadata, "isStyle", ColumnFormatting.isStyleFormatColumn(name) + "");
-            putMetadata(metadata, "isNumberFormat", ColumnFormatting.isNumberFormatColumn(name) + "");
-            putMetadata(metadata, "isDateFormat", ColumnFormatting.isDateFormatColumn(name) + "");
+            if (ColumnFormatting.isRowStyleFormatColumn(name)) {
+                putMetadata(metadata, "isRowStyle", TRUE_STRING);
+            }
+            if (ColumnFormatting.isStyleFormatColumn(name)) {
+                putMetadata(metadata, "isStyle", TRUE_STRING);
+            }
+            if (ColumnFormatting.isNumberFormatColumn(name)) {
+                putMetadata(metadata, "isNumberFormat", TRUE_STRING);
+            }
+            if (ColumnFormatting.isDateFormatColumn(name)) {
+                putMetadata(metadata, "isDateFormat", TRUE_STRING);
+            }
 
             final String columnDescription = columnDescriptions.get(name);
             if (columnDescription != null) {
                 putMetadata(metadata, "description", columnDescription);
             }
             if (inputTableUpdater != null) {
-                putMetadata(metadata, "inputtable.isKey", inputTableUpdater.getKeyNames().contains(name) + "");
-                putMetadata(metadata, "inputtable.isValue",
-                        Boolean.toString(inputTableUpdater.getValueNames().contains(name)));
+                if (inputTableUpdater.getKeyNames().contains(name)) {
+                    putMetadata(metadata, "inputtable.isKey", TRUE_STRING);
+                }
+                if (inputTableUpdater.getValueNames().contains(name)) {
+                    putMetadata(metadata, "inputtable.isValue", TRUE_STRING);
+                }
             }
 
             if (field != null) {
