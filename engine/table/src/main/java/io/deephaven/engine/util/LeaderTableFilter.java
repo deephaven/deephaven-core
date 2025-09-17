@@ -57,24 +57,24 @@ import java.util.stream.Stream;
  *
  * <p>
  * The leader and follower tables must be <i>add only</i>, they are not permitted to modify, shift or remove rows. If
- * you are driving your LeaderTableFilter from a source table (as returned by <code>db.liveTable</code> in Core+), this
- * restriction will be met. If you use a simple filter on those tables, then they should remain add only.
+ * you use a simple filter an add-only source table, then they should remain add only.
  * </p>
  *
  * <p>
  * In this example, there is a SyncLog table that acts as the leader for the messageLog and trades table. The tables
  * must share keys in common to perform the synchronization. The columns must be the same type, though need not share
  * the same name. We start by retrieving the raw tables from the database:
- * 
+ *
  * <pre>
  * Table syncLog = db.liveTable("MatchingEngine", "SyncLog").where("Date=today()");
  * Table messageLog = db.liveTable("MatchingEngine", "MessageLog").where("Date=today()");
  * Table trades = db.liveTable("MatchingEngine", "Trades").where("Date=today()");
  * </pre>
  *
- * These tables are add-only and thus suitable for use with the LeaderTableFilter, to create the Builder we pass in the
- * leader table with the key columns specified, in this case "client" and "session".
- * 
+ * If we assume you have three add-only tables, named "syncLog", "tradeLog", and "messageLog" suitable for use with the
+ * LeaderTableFilter, to create the Builder we pass in the leader table with the key columns specified, in this case
+ * "client" and "session".
+ *
  * <pre>
  * LeaderTableFilter.TableBuilder builder = new LeaderTableFilter.TableBuilder(syncLog, "client", "session");
  * </pre>
@@ -84,31 +84,31 @@ import java.util.stream.Stream;
  * syncLog table has a "msgId" column and the messageLog simply has an "id" column. In our result, the table will be
  * named "messageLog". The key columns are "client" and "SessionId", which must match the "client" and "session" columns
  * in the leader table.
- * 
+ *
  * <pre>
  * builder.addTable("messageLog", messageLog, "msgId=id", "client", "SessionId");
  * </pre>
  *
  * If the leader and follower tables have the same column name, then that single column name can be used instead of
  * duplicating the column name.
- * 
+ *
  * <pre>
  * builder.addTable("trades", trades, "execId", "client", "SessionId");
  * </pre>
  *
  * After adding all the tables, then the build() method is called to create a {@link Results Results&lt;Table&gt;},
  * which implements a {@link Results#get(String)} method to retrieve result tables by name:
- * 
+ *
  * <pre>
  * Results&lt;Table&gt; result = builder.build();
- * 
+ *
  * Table filteredMessageLog = result.get("messageLog");
  * Table filteredTrades = result.get("trades");
  * </pre>
  *
  * The leader table is also filtered to indicate which IDs are active, and can be retrieved from the Result as well,
  * either by name or with the {@link Results#getLeader()}.
- * 
+ *
  * <pre>
  * Table filteredLeader = result.get(io.deephaven.engine.util.LeaderTableFilter.DEFAULT_LEADER_NAME);
  * </pre>
@@ -117,7 +117,7 @@ import java.util.stream.Stream;
  * As an alternative to the TableBuilder you may use the {@link PartitionedTableBuilder} The PartitionedTableBuilder is
  * very similar to the TableBuilder, but takes {@link PartitionedTable PartitionedTables} as input and produces a
  * {@link Results} containing PartitionedTables as output instead of a {@link Results} containing Tables. Entries are
- * added to the result after all the input PartitionedTables have a matching key. The number of keys columns for each
+ * added to the result after all the input PartitionedTables have a matching key. The number of key columns for each
  * PartitionedTable must be identical, and of compatible types, the underlying tables of constituents are joined
  * together on the {@link PartitionedTable#keyColumnNames() key columns}, in order. Each table within the
  * PartitionedTable must be add-only.
@@ -434,9 +434,9 @@ public class LeaderTableFilter {
 
         @Override
         protected void process() {
-            if (recorders.get(0) != null && recorders.get(0).recordedVariablesAreValid()) {
-                final ListenerRecorder recorder = recorders.get(0);
-                consumeLeaderRows(recorder.getAdded());
+            final ListenerRecorder leaderRecorder = recorders.get(0);
+            if (leaderRecorder != null && leaderRecorder.recordedVariablesAreValid()) {
+                consumeLeaderRows(leaderRecorder.getAdded());
             }
 
             for (int rr = 1; rr < recorders.size(); ++rr) {
@@ -933,7 +933,7 @@ public class LeaderTableFilter {
     }
 
     /**
-     * Produce a Result with of synchronized tables.
+     * Produce a Result of synchronized tables.
      */
     public static class TableBuilder {
         private String leaderName = DEFAULT_LEADER_NAME;
@@ -994,7 +994,7 @@ public class LeaderTableFilter {
          *
          * @param name the key of the Table in our output Result of Tables.
          * @param table the Table to add
-         * @param idColumn The name of the ID column in the PartitionedTable, must be a long. Expressed as
+         * @param idColumn The name of the ID column in the Table, must be a long. Expressed as
          *        "LeaderName=FollowerName", or "ColumnName" when the names are the same.
          * @return this builder
          */
@@ -1007,7 +1007,7 @@ public class LeaderTableFilter {
          *
          * @param name the key of the Table in our output Result of Tables.
          * @param table the Table to add
-         * @param idColumn The name of the ID column in the PartitionedTable, must be a long. Expressed as
+         * @param idColumn The name of the ID column in the Table, must be a long. Expressed as
          *        "LeaderName=FollowerName", or "ColumnName" when the names are the same.
          * @param keyColumns the key columns, each key is coordinated independently of the other keys
          * @return this builder
