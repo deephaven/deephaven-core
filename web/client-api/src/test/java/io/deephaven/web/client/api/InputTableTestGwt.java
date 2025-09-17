@@ -44,7 +44,8 @@ public class InputTableTestGwt extends AbstractAsyncGwtTestCase {
                             keyColumns.filter((col, idx) -> Set.of("A", "B").contains(col.getName())).length);
                     JsArray<Column> valueColumns = Js.uncheckedCast(inputTable.getValueColumns());
                     assertEquals(4,
-                            valueColumns.filter((col, idx) -> Set.of("C", "D", "E", "F").contains(col.getName())).length);
+                            valueColumns
+                                    .filter((col, idx) -> Set.of("C", "D", "E", "F").contains(col.getName())).length);
                     return null;
                 })
                 .then(this::finish).catch_(this::report);
@@ -58,7 +59,8 @@ public class InputTableTestGwt extends AbstractAsyncGwtTestCase {
                     JsArray<Column> keyColumns = Js.uncheckedCast(inputTable.getKeyColumns());
                     assertEquals(1, keyColumns.filter((col, idx) -> col.getName().equals("C")).length);
                     JsArray<Column> valueColumns = Js.uncheckedCast(inputTable.getValueColumns());
-                    assertEquals(5, valueColumns.filter((col, idx) -> Set.of("A", "B", "D", "E", "F").contains(col.getName())).length);
+                    assertEquals(5, valueColumns
+                            .filter((col, idx) -> Set.of("A", "B", "D", "E", "F").contains(col.getName())).length);
                     return null;
                 })
                 .then(this::finish).catch_(this::report);
@@ -73,7 +75,8 @@ public class InputTableTestGwt extends AbstractAsyncGwtTestCase {
                     assertEquals(2,
                             keyColumns.filter((col, idx) -> Set.of("E", "F").contains(col.getName())).length);
                     JsArray<Column> valueColumns = Js.uncheckedCast(inputTable.getValueColumns());
-                    assertEquals(4, valueColumns.filter((col, idx) -> Set.of("A", "B", "C", "D").contains(col.getName())).length);
+                    assertEquals(4, valueColumns
+                            .filter((col, idx) -> Set.of("A", "B", "C", "D").contains(col.getName())).length);
                     return null;
                 })
                 .then(this::finish).catch_(this::report);
@@ -103,7 +106,8 @@ public class InputTableTestGwt extends AbstractAsyncGwtTestCase {
                     assertEquals(2,
                             keyColumns.filter((col, idx) -> Set.of("E", "F").contains(col.getName())).length);
                     JsArray<Column> valueColumns = Js.uncheckedCast(inputTable.getValueColumns());
-                    assertEquals(4, valueColumns.filter((col, idx) -> Set.of("A", "B", "C", "D").contains(col.getName())).length);
+                    assertEquals(4, valueColumns
+                            .filter((col, idx) -> Set.of("A", "B", "C", "D").contains(col.getName())).length);
                     final JsArray<Column> allColumns = Js.uncheckedCast(inputTable.getTable().getColumns());
                     assertEquals(2, allColumns
                             .filter((col, idx) -> Set.of("Dummy", "Dumber").contains(col.getName())).length);
