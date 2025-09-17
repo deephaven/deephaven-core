@@ -192,6 +192,8 @@ grpc-testing = { module = "io.grpc:grpc-testing" }
 grpc-inprocess = { module = "io.grpc:grpc-inprocess" }
 grpc-util = { module = "io.grpc:grpc-util" }
 
+google-rpc-protos = { module="com.google.api.grpc:proto-google-common-protos", version="2.61.1" }
+
 guava = { module = "com.google.guava:guava", version.ref = "guava" }
 
 gwt-user = { module = "org.gwtproject:gwt-user", version.ref = "gwt" }
