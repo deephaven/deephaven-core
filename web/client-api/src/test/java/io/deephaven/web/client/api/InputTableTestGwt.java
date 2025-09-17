@@ -17,7 +17,8 @@ public class InputTableTestGwt extends AbstractAsyncGwtTestCase {
             .script("result3", "input_table(init_table=source, key_cols=[\"C\"])")
             .script("result4", "input_table(init_table=source, key_cols=[\"E\" , \"F\" ])")
             // and a bad input table, that previously crashed the server
-            .script("result5", "source.with_attributes({'InputTable': 'oops'})");
+            .script("result5", "source.with_attributes({'InputTable': 'oops'})")
+            .script("result6", "result4.natural_join(empty_table(1).update([\"Dummy=1\", \"Dumber=3\"]), \"\")");
 
     public void testNoKeyCols() {
         connect(tables)
@@ -91,6 +92,24 @@ public class InputTableTestGwt extends AbstractAsyncGwtTestCase {
                             // we are expecting an error message
                             return Promise.reject(x);
                         });
+    }
+
+    public void testExtraColumns() {
+        connect(tables)
+                .then(table("result6"))
+                .then(JsTable::inputTable)
+                .then(inputTable -> {
+                    JsArray<Column> keyColumns = Js.uncheckedCast(inputTable.getKeyColumns());
+                    assertEquals(2,
+                            keyColumns.filter((col, idx) -> col.getName() == "E" || col.getName() == "F").length);
+                    JsArray<Column> valueColumns = Js.uncheckedCast(inputTable.getValueColumns());
+                    assertEquals(4, valueColumns.filter((col, idx) -> col.getName() == "A" || col.getName() == "B"
+                            || col.getName() == "C" || col.getName() == "D").length);
+                    final JsArray<Column> allColumns = Js.uncheckedCast(inputTable.getTable().getColumns());
+                    assertEquals(2, allColumns.filter((col, idx) -> col.getName() == "Dummy" || col.getName() == "Dumber").length);
+                    return null;
+                })
+                .then(this::finish).catch_(this::report);
     }
 
     @Override
