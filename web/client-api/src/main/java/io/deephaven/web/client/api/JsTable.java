@@ -711,6 +711,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
      * @param columns
      * @param updateIntervalMs
      * @return {@link TableViewportSubscription}
+     * @deprecated Use {@link #createViewportSubscription(Object)} instead.
      */
     @JsMethod
     @Deprecated
@@ -790,6 +791,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
      * @deprecated Use {@link #createSubscription(Object)} with a {@link DataOptions.SubscriptionOptions} instead.
      */
     @JsMethod
+    @Deprecated
     public TableSubscription subscribe(JsArray<Column> columns, @JsOptional Double updateIntervalMs) {
         DataOptions.SubscriptionOptions options = new DataOptions.SubscriptionOptions();
         options.previewOptions = new DataOptions.PreviewOptions();
