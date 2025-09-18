@@ -45,7 +45,7 @@ import java.util.stream.Stream;
  * generates more than one table, which you would like to then use in a coordinated fashion. The Deephaven system
  * preserves order within one partition, but the relative order of tables can not be guaranteed. Deephaven
  * infrastructure typically processes each partition independently to provide maximum throughput; and thus a row that
- * logged later may appear in your query before another row that was logged earlier within a different partition.
+ * was created later may appear in your query before another row that was created earlier within a different partition.
  * </p>
  *
  * <p>
