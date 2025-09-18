@@ -1621,8 +1621,6 @@ public class QueryTableSelectUpdateTest {
         final SelectColumn x =
                 SelectColumnFactory.getExpression("X = a.getAndIncrement()").withRecomputeOnModifiedRow();
 
-        // TODO: we do not want "Z" to update here, but if we have serial columns then using dependencies causes things
-        // to recompute when we do not want them to.
         final Table withUpdates = base.update(Arrays.asList(x, SelectColumnFactory.getExpression("Y=1"),
                 SelectColumnFactory.getExpression("Z=B+b.getAndIncrement()")));
 
