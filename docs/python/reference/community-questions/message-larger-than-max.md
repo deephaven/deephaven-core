@@ -5,12 +5,12 @@ sidebar_label: How do I increase the maximum message size?
 
 _I have a client query that gives an error `Received message larger than max`. How can I fix this?_
 
-[gRPC](https://grpc.io) is a default maximum message size of 4MB. Attempting to send messages larger than this will result in an error. To fix this, you should either:
+[gRPC](https://grpc.io) has a default maximum message size of 4MB, but Deephaven clients have a default maximum size of 100MB. Attempting to send messages larger than 100MB will result in an error. To fix this, you should either:
 
 - Reduce message sizes by breaking them into smaller chunks.
 - Increase the maximum message size on both the client and server.
 
-For the latter, refer to [`Grpc_arg_keys`](https://grpc.github.io/grpc/cpp/group__grpc__arg__keys.html) for available options. The relevant keys are:
+For the latter, refer to [`Grpc_arg_keys`](https://grpc.github.io/grpc/core/group__grpc__arg__keys.html) for available options. The relevant keys are:
 
 - `GRPC_ARG_MAX_RECEIVE_MESSAGE_LENGTH`
 - `GRPC_ARG_MAX_SEND_MESSAGE_LENGTH`
