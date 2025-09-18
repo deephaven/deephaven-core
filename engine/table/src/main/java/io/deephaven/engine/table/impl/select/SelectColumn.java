@@ -340,11 +340,11 @@ public interface SelectColumn extends Selectable, ConcurrencyControl<SelectColum
         return new SelectColumnWithRespectsBarrier(this, respectsBarriers);
     }
 
-    default Object [] respectedBarriers() {
+    default Object[] respectedBarriers() {
         return null;
     }
 
-    default Object [] barriers() {
+    default Object[] barriers() {
         return null;
     }
 }

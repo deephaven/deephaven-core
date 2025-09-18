@@ -309,9 +309,9 @@ public class QueryTable extends BaseTable<QueryTable> {
             Configuration.getInstance().getBooleanWithDefault("QueryTable.statelessFiltersByDefault", false);
 
     /**
-     * If set to true, then the default behavior of Formulas is to be stateless.  Stateless formulas are allowed to be
-     * processed in parallel by the engine.  If set to false, then formulas may not be parallelized either within a
-     * column; or across columns.  To make a specific SelectColumn stateful, use {@link SelectColumn#withSerial()}.  To
+     * If set to true, then the default behavior of Formulas is to be stateless. Stateless formulas are allowed to be
+     * processed in parallel by the engine. If set to false, then formulas may not be parallelized either within a
+     * column; or across columns. To make a specific SelectColumn stateful, use {@link SelectColumn#withSerial()}. To
      * make a specific SelectColumn stateless, use {@link SelectColumn#ofStateless(Selectable)}.
      */
     public static boolean STATELESS_SELECT_BY_DEFAULT =
@@ -1875,14 +1875,14 @@ public class QueryTable extends BaseTable<QueryTable> {
         // Assuming that the description is human-readable, we make it once here and use it twice.
         final String updateDescription = humanReadablePrefix + '(' + selectColumnString(viewColumns) + ')';
 
-        // TODO: I believe this to be true.  An updateView can fetch things in any order; therefore we cannot allow it
-        // to be stateful.  That said, making this change is going to blow a bunch of stuff up - because we are stateful
-        // by default.  We might actually need to use a Boolean to denote the statefulness of a column; so that we can
-        // allow a tri-state null to updateView; but not a tri-state true.  Or we could not have this check.
+        // TODO: I believe this to be true. An updateView can fetch things in any order; therefore we cannot allow it
+        // to be stateful. That said, making this change is going to blow a bunch of stuff up - because we are stateful
+        // by default. We might actually need to use a Boolean to denote the statefulness of a column; so that we can
+        // allow a tri-state null to updateView; but not a tri-state true. Or we could not have this check.
 
-//        if (Arrays.stream(viewColumns).anyMatch(Predicate.not(SelectColumn::isStateless))) {
-//            throw new IllegalStateException("A stateful column cannot safely be used in a view or updateView.");
-//        }
+        // if (Arrays.stream(viewColumns).anyMatch(Predicate.not(SelectColumn::isStateless))) {
+        // throw new IllegalStateException("A stateful column cannot safely be used in a view or updateView.");
+        // }
         if (Arrays.stream(viewColumns).anyMatch(vc -> vc.respectedBarriers() != null)) {
             throw new IllegalStateException("updateView cannot respect barriers.");
         }

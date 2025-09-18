@@ -133,7 +133,8 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
 
             if (useShiftedColumns && sc.hasConstantArrayAccess()) {
                 context.remainingCols = new LinkedList<>();
-                context.shiftColumn = sc.maybeGetFormulaColumn().orElseThrow(() -> new IllegalStateException("Expected formula column when constant array access is present."));
+                context.shiftColumn = sc.maybeGetFormulaColumn().orElseThrow(() -> new IllegalStateException(
+                        "Expected formula column when constant array access is present."));
                 context.shiftColumnHasPositiveOffset = hasPositiveOffsetConstantArrayAccess(context.shiftColumn);
                 continue;
             }
@@ -149,12 +150,13 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
             // TODO (deephaven#5760): If layers may define more than one column, we'll need to add all of them here.
             resultColumnNames.add(sc.getName());
 
-            final Object [] declaredBarriers = sc.barriers();
+            final Object[] declaredBarriers = sc.barriers();
             if (declaredBarriers != null) {
                 for (final Object barrier : declaredBarriers) {
                     final Integer oldIndex = barrierToColumnIndex.put(barrier, idx);
                     if (oldIndex != null) {
-                        throw new IllegalArgumentException("Duplicate barrier, " + barrier + ", declared for " + selectColumns[oldIndex].getName() + " and" + sc.getName());
+                        throw new IllegalArgumentException("Duplicate barrier, " + barrier + ", declared for "
+                                + selectColumns[oldIndex].getName() + " and" + sc.getName());
                     }
                 }
             }
@@ -180,15 +182,16 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
             // new columns shadow known aliases
             resultAlias.remove(sc.getName());
 
-            final Object [] respectedBarriers = sc.respectedBarriers();
+            final Object[] respectedBarriers = sc.respectedBarriers();
             final Stream<String> barrierDependencies;
             if (respectedBarriers != null) {
-                final String [] columnsDeclaringBarrier = new String[respectedBarriers.length];
+                final String[] columnsDeclaringBarrier = new String[respectedBarriers.length];
                 for (int respectIndex = 0; respectIndex < respectedBarriers.length; ++respectIndex) {
                     final Object barrier = respectedBarriers[respectIndex];
                     final String declaringColumn = selectColumns[barrierToColumnIndex.get(barrier)].getName();
                     if (declaringColumn == null) {
-                        throw new IllegalArgumentException("Respected barrier, " + barrier + ", is not defined for " + sc.getName());
+                        throw new IllegalArgumentException(
+                                "Respected barrier, " + barrier + ", is not defined for " + sc.getName());
                     }
                     columnsDeclaringBarrier[respectIndex] = declaringColumn;
                 }
@@ -198,7 +201,8 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
             }
 
             final Stream<String> allDependencies =
-                    Stream.concat(barrierDependencies, Stream.concat(sc.getColumns().stream(), sc.getColumnArrays().stream()));
+                    Stream.concat(barrierDependencies,
+                            Stream.concat(sc.getColumns().stream(), sc.getColumnArrays().stream()));
             final String[] distinctDeps = allDependencies.distinct().toArray(String[]::new);
             final ModifiedColumnSet mcsBuilder = new ModifiedColumnSet(parentTable.getModifiedColumnSetForUpdates());
 

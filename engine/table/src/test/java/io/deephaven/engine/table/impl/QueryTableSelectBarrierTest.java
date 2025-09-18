@@ -82,7 +82,8 @@ public class QueryTableSelectBarrierTest {
             // now let's keep things stateless, but insert a barrier so that A and B do not intermix
             a.set(0);
 
-            final Table u = x.update(List.of(SelectColumn.ofStateless(sa).withBarriers(a), SelectColumn.ofStateless(sb).respectsBarriers(a)));
+            final Table u = x.update(List.of(SelectColumn.ofStateless(sa).withBarriers(a),
+                    SelectColumn.ofStateless(sb).respectsBarriers(a)));
             TableTools.show(u);
 
             // check for swizzling
@@ -94,7 +95,7 @@ public class QueryTableSelectBarrierTest {
             assertTrue(isOutOfOrder(u, "B"));
 
             // check the expected sums
-            final long expectedSumA = (((long)size - 1) * size) / 2;
+            final long expectedSumA = (((long) size - 1) * size) / 2;
             final Table us = u.sumBy();
             final long ua, ub;
             try (CloseablePrimitiveIteratorOfLong uai = us.longColumnIterator("A")) {
@@ -104,7 +105,7 @@ public class QueryTableSelectBarrierTest {
                 ub = ubi.nextLong();
             }
             assertEquals(expectedSumA, ua);
-            assertEquals(expectedSumA + ((long)size * size), ub);
+            assertEquals(expectedSumA + ((long) size * size), ub);
 
         }
     }

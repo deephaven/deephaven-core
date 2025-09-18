@@ -1,12 +1,15 @@
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.select;
 
 
 import java.util.Arrays;
 
 public class SelectColumnWithBarrier extends WrappedSelectColumn {
-    private final Object [] barriers;
+    private final Object[] barriers;
 
-    public SelectColumnWithBarrier(SelectColumn wrapped, Object ... barriers) {
+    public SelectColumnWithBarrier(SelectColumn wrapped, Object... barriers) {
         super(wrapped);
         if (wrapped.barriers() != null && wrapped.barriers().length > 0) {
             this.barriers = Arrays.copyOf(wrapped.barriers(), wrapped.barriers().length + barriers.length);
