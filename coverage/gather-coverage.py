@@ -22,7 +22,7 @@ coverage_header = ['Language','Package','Class','Missed','Covered']
 
 # Aggregate and normalize coverage for Java projects
 print("Aggregating Java Coverage")
-input_glob = proj_root_dir + '/build/reports/jacoco/jacoco-merge/jacoco-merge.csv'
+input_glob = proj_root_dir + '/build/reports/java/java-coverage.csv'
 with open(f'{coverage_dir}/java-coverage.csv', 'w', newline='') as outfile:
     csv_writer = csv.writer(outfile)
     csv_writer.writerow(coverage_header)
