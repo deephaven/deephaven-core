@@ -155,7 +155,10 @@ def barrage_session(host: str,
             target_uri = f"dh+plain://{target_uri}"
 
         j_client_config = _build_client_config(target_uri, tls_root_certs, extra_headers)
-        auth = f"{auth_type} {auth_token}"
+        if not auth_token:
+            auth = auth_type
+        else:
+            auth = f"{auth_type} {auth_token}"
 
         try:
             return _get_barrage_session_via_api_server(j_client_config, auth)
