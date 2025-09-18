@@ -1,4 +1,5 @@
 ---
+id: gcp-linux
 title: Use Deephaven in a GCP Linux instance
 sidebar_label: GCP
 ---
@@ -46,7 +47,7 @@ Another option is [confidential computing](https://cloud.google.com/confidential
 
 ### Docker Container
 
-A Google Cloud VM can be configured to run Docker containers on startup. Since Deephaven can be [launched from pre-built Docker images](../getting-started/quickstart.md), that will make running Deephaven in the cloud a breeze.
+A Google Cloud VM can be configured to run Docker containers on startup. Since Deephaven can be [launched from pre-built Docker images](../tutorials/quickstart.md), that will make running Deephaven in the cloud a breeze.
 
 Click on **DEPLOY CONTAINER** in the **Containers** option.
 
@@ -54,8 +55,11 @@ Click on **DEPLOY CONTAINER** in the **Containers** option.
 
 It's here that the VM can be configured to build and run containers from pre-built Docker images without having to manually do anything on the VM itself. Deephaven has several pre-built Docker images to choose from. Your choice should depend on your needs.
 
-> [!NOTE]
-> `{VERSION}` in the list below is the Deephaven Core version number. Version numbers can be found [here](https://github.com/deephaven/deephaven-core/releases). Additionally, `{VERSION}` can be `latest`, which will always pull the latest version number.
+:::note
+
+`{VERSION}` in the list below is the Deephaven Core version number. Version numbers can be found [here](https://github.com/deephaven/deephaven-core/releases). Additionally, `{VERSION}` can be `latest`, which will always pull the latest version number.
+
+:::
 
 - Basic Python: `ghcr.io/deephaven/server:{VERSION}`
 - Python with [NLTK](https://www.nltk.org): `ghcr.io/deephaven/server-nltk:{VERSION}`
@@ -65,7 +69,7 @@ It's here that the VM can be configured to build and run containers from pre-bui
 - Python with all of the above: `ghcr.io/deephaven/server-all-ai:{VERSION}`
 - Basic Groovy: `ghcr.io/deephaven/server-slim:{VERSION}`
 
-Choose your preferred image. For this guide, we'll use the basic Python image `ghcr.io.deephaven/server:latest`.
+Choose your preferred image. For this guide, we'll use the basic Groovy image `ghcr.io/deephaven/server-slim:latest`.
 
 We want two other options: `Restart policy` and `Environment variables`.
 
@@ -74,14 +78,17 @@ We want two other options: `Restart policy` and `Environment variables`.
 
 The image below shows the container configuration.
 
-![The **Configure container** window](../assets/how-to/gcloud-container-opts.jpg)
+![The **Configure container** window](../assets/how-to/gcloud-container-opts-groovy.png)
 
 ### Remaining options
 
 For the remaining options, we will use the defaults. These include `Allow default access`, `Firewall`, and `Advanced options`. Take some time to review each option and ensure the default options (or otherwise) are right for your needs.
 
-> [!NOTE]
-> This guide will not cover persistent storage in the cloud. There are several options, including [Docker data volumes](../conceptual/docker-data-volumes.md) and [gcloud storage](https://cloud.google.com/sdk/gcloud/reference/storage), for workflows that require storage of large datasets.
+:::note
+
+This guide will not cover persistent storage in the cloud. There are several options, including [Docker data volumes](../conceptual/docker-data-volumes.md) and [gcloud storage](https://cloud.google.com/sdk/gcloud/reference/storage), for workflows that require storage of large datasets.
+
+:::
 
 ### Create the VM
 
@@ -114,7 +121,7 @@ Copy that into your terminal, and you'll be there!
 
 It's always a good idea to ensure your container is up and running via `docker container ls`.
 
-![terminal displaying docker container ls output showing running Deephaven container](../assets/how-to/gcloud-docker-ls.jpg)
+![terminal displaying docker container ls output showing running Deephaven container](../assets/how-to/gcloud-docker-ls-gr.png)
 
 ## Connect to Deephaven
 
@@ -144,11 +151,11 @@ gcloud compute ssh --zone us-central1-a dhc-how-to --project deephaven-oss -- -N
 
 With that run, head to your web browser of choice and go to `localhost:10000/ide/`. The Deephaven running isn't running locally, but on a Google Cloud VM! Pretty cool.
 
-![Deephaven IDE loaded in browser via Google Cloud VM tunnel](../assets/how-to/dhc-on-gcloud.jpg)
+![Deephaven IDE loaded in browser via Google Cloud VM tunnel](../assets/how-to/dhc-on-gcloud-gr.png)
 
 ## Related documentation
 
-- [Docker install guide](../getting-started/docker-install.md)
-- [Learn Deephaven](../getting-started/quickstart.md)
+- [Docker install guide](../tutorials/docker-install.md)
+- [Learn Deephaven](../tutorials/quickstart.md)
 - [How to use Deephaven with AWS EC2](../how-to-guides/aws-ec2.md)
 - [Docker data volumes](../conceptual/docker-data-volumes.md)

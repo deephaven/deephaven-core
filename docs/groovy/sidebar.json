@@ -731,6 +731,10 @@
               {
                 "label": "AWS EC2",
                 "path": "how-to-guides/aws-ec2.md"
+              },
+              {
+                "label": "GCP",
+                "path": "how-to-guides/gcp-linux.md"
               }
             ]
           }
