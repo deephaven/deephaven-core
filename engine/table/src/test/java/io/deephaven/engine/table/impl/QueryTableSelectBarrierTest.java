@@ -146,12 +146,13 @@ public class QueryTableSelectBarrierTest {
             // now make B serial; but let A do what it wants
             a.set(0);
             final Table v = x.update(List.of(sa, sb.withSerial()));
+            TableTools.show(v);
 
             final Table expected_b = x.view("B=1_000_000 + i");
             assertTableEquals(expected_b, v.view("B"));
             checkIndividualSums(size, v);
-            // TODO: let a float, even though b is serial
-            // assertTrue(isOutOfOrder(v, "A"));
+            // let a float, even though b is serial
+            assertTrue(isOutOfOrder(v, "A"));
             assertFalse(isOutOfOrder(v, "B"));
 
             // now make A serial; but let B do what it wants
@@ -163,8 +164,7 @@ public class QueryTableSelectBarrierTest {
             checkIndividualSums(size, w);
             assertFalse(isOutOfOrder(w, "A"));
             // TODO: let b float, even though a is serial
-            // assertTrue(isOutOfOrder(w, "B"));
-
+            assertTrue(isOutOfOrder(w, "B"));
         }
     }
 

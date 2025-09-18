@@ -77,6 +77,45 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
         }
     }
 
+    private SelectColumn[] maybeAddBarriers(SelectColumn[] rawSelectColumns) {
+        SelectColumn[] selectColumns = null;
+        Object[] injectedBarriers = null;
+
+
+        for (int ii = 0; ii < rawSelectColumns.length; ++ii) {
+            if (!rawSelectColumns[ii].isStateless()) {
+                // this needs to be evaluated serially
+                if (selectColumns == null) {
+                    injectedBarriers = Arrays.stream(rawSelectColumns)
+                            .map(x -> new BarrierWithName("Injected barrier for " + x.getName()))
+                            .toArray(Object[]::new);
+                    selectColumns = new SelectColumn[rawSelectColumns.length];
+                    for (int jj = 0; jj < rawSelectColumns.length; ++jj) {
+                        selectColumns[jj] = rawSelectColumns[ii].withBarriers(injectedBarriers[jj]);
+                    }
+                }
+                if (ii > 0) {
+                    selectColumns[ii] = selectColumns[ii].respectsBarriers(Arrays.copyOf(injectedBarriers, ii));
+                }
+                for (int jj = ii + 1; jj < selectColumns.length; ++jj) {
+                    selectColumns[jj] = selectColumns[jj].respectsBarriers(injectedBarriers[ii]);
+                }
+            }
+        }
+        if (selectColumns == null) {
+            return rawSelectColumns;
+        }
+        return selectColumns;
+    }
+
+    private static class BarrierWithName {
+        final String name;
+
+        private BarrierWithName(String name) {
+            this.name = name;
+        }
+    }
+
     public static AnalyzerContext createContext(
             final QueryTable parentTable,
             final Mode mode,
@@ -127,6 +166,7 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
             }
 
             sc.initDef(columnDefinitions, compilationProcessor);
+
             final ColumnDefinition<?> cd = ColumnDefinition.fromGenericType(
                     sc.getName(), sc.getReturnedType(), sc.getReturnedComponentType());
             columnDefinitions.put(sc.getName(), cd);
@@ -166,6 +206,9 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
 
         compilationProcessor.compile();
 
+        final List<String> serialColumns = new ArrayList<>();
+        final List<String> previousColumns = new ArrayList<>();
+
         // Second pass builds the analyzer and destination columns
         final HashMap<String, ColumnSource<?>> resultAlias = new HashMap<>();
         for (final SelectColumn sc : context.processedCols) {
@@ -200,11 +243,25 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
                 barrierDependencies = Stream.empty();
             }
 
+            final Stream<String> serialDependencies;
+            if (!sc.isStateless()) {
+                serialDependencies = previousColumns.stream();
+                serialColumns.add(sc.getName());
+            } else {
+                serialDependencies = serialColumns.stream();
+            }
+
             final Stream<String> allDependencies =
-                    Stream.concat(barrierDependencies,
-                            Stream.concat(sc.getColumns().stream(), sc.getColumnArrays().stream()));
+                    Stream.concat(serialDependencies,
+                            Stream.concat(barrierDependencies,
+                                    Stream.concat(sc.getColumns().stream(), sc.getColumnArrays().stream())));
             final String[] distinctDeps = allDependencies.distinct().toArray(String[]::new);
+
+            // If we encounter a serial column later on, it must depend on us to avoid crossing parallelism boundaries
+            previousColumns.add(sc.getName());
+
             final ModifiedColumnSet mcsBuilder = new ModifiedColumnSet(parentTable.getModifiedColumnSetForUpdates());
+
 
             if (useShiftedColumns && sc.hasConstantArrayAccess()) {
                 // we use the first shifted column to split between processed columns and remaining columns
@@ -988,12 +1045,13 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
     }
 
     /**
-     * Can all of our columns permit parallel updates?
+     * Are any of our columns parallel? If so, then we should use the parallel job scheduler (but individual columns may
+     * be evaluated all at once).
      */
-    public boolean allowCrossColumnParallelization() {
+    public boolean anyParallelColumns() {
         return Arrays.stream(layers)
                 .filter(Objects::nonNull)
-                .allMatch(Layer::allowCrossColumnParallelization);
+                .anyMatch(Layer::allowCrossColumnParallelization);
     }
 
     @Override

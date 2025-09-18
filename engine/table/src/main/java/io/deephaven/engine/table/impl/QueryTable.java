@@ -1631,6 +1631,8 @@ public class QueryTable extends BaseTable<QueryTable> {
         return new SelectValidationResult(analyzerContext.createAnalyzer(), clones);
     }
 
+
+
     private Table selectOrUpdate(Flavor flavor, final SelectColumn... selectColumns) {
         final String humanReadablePrefix = flavor.toString();
         final String updateDescription = humanReadablePrefix + '(' + selectColumnString(selectColumns) + ')';
@@ -1669,7 +1671,7 @@ public class QueryTable extends BaseTable<QueryTable> {
                     final JobScheduler jobScheduler;
                     if ((QueryTable.FORCE_PARALLEL_SELECT_AND_UPDATE || QueryTable.ENABLE_PARALLEL_SELECT_AND_UPDATE)
                             && ExecutionContext.getContext().getOperationInitializer().canParallelize()
-                            && analyzer.allowCrossColumnParallelization()) {
+                            && analyzer.anyParallelColumns()) {
                         jobScheduler = new OperationInitializerJobScheduler();
                     } else {
                         jobScheduler = new ImmediateJobScheduler();
