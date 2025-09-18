@@ -3,7 +3,10 @@
 //
 package io.deephaven.engine.table.impl.select.analyzers;
 
+import gnu.trove.list.array.TIntArrayList;
+import gnu.trove.map.TIntIntMap;
 import gnu.trove.map.TObjectIntMap;
+import gnu.trove.map.hash.TIntIntHashMap;
 import gnu.trove.map.hash.TObjectIntHashMap;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.log.LogOutputAppendable;
@@ -155,7 +158,7 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
             columnDefinitions.put(name, cd);
         }
 
-        final Map<Object, Integer> barrierToColumnIndex = new IdentityHashMap<>();
+        final Map<Object, Integer> barrierToLayerIndex = new IdentityHashMap<>();
         int idx = 0;
 
         final Set<String> resultColumnNames = new HashSet<>();
@@ -190,28 +193,18 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
             // TODO (deephaven#5760): If layers may define more than one column, we'll need to add all of them here.
             resultColumnNames.add(sc.getName());
 
-            final Object[] declaredBarriers = sc.barriers();
-            if (declaredBarriers != null) {
-                for (final Object barrier : declaredBarriers) {
-                    final Integer oldIndex = barrierToColumnIndex.put(barrier, idx);
-                    if (oldIndex != null) {
-                        throw new IllegalArgumentException("Duplicate barrier, " + barrier + ", declared for "
-                                + selectColumns[oldIndex].getName() + " and" + sc.getName());
-                    }
-                }
-            }
-
             context.processedCols.add(sc);
         }
 
         compilationProcessor.compile();
 
-        final List<String> serialColumns = new ArrayList<>();
-        final List<String> previousColumns = new ArrayList<>();
+        final TIntArrayList serialLayerIndices = new TIntArrayList();
+        final TIntIntMap columnIndexToLayerIndex = new TIntIntHashMap(selectColumns.length, 0.5f, -1, -1);
 
         // Second pass builds the analyzer and destination columns
         final HashMap<String, ColumnSource<?>> resultAlias = new HashMap<>();
-        for (final SelectColumn sc : context.processedCols) {
+        for (int columnIndex = 0; columnIndex < context.processedCols.size(); ++columnIndex) {
+            final SelectColumn sc = context.processedCols.get(columnIndex);
 
             // if this select column depends on result column then its updates must happen in result-key-space
             // note: if flatResult is true then we are not preserving any parent columns
@@ -225,40 +218,31 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
             // new columns shadow known aliases
             resultAlias.remove(sc.getName());
 
+            // fill this in not using recompute dependencies
+            final TIntArrayList execDeps = new TIntArrayList();
+
             final Object[] respectedBarriers = sc.respectedBarriers();
-            final Stream<String> barrierDependencies;
             if (respectedBarriers != null) {
                 final String[] columnsDeclaringBarrier = new String[respectedBarriers.length];
                 for (int respectIndex = 0; respectIndex < respectedBarriers.length; ++respectIndex) {
                     final Object barrier = respectedBarriers[respectIndex];
-                    final String declaringColumn = selectColumns[barrierToColumnIndex.get(barrier)].getName();
-                    if (declaringColumn == null) {
+                    final Integer layerForBarrier = barrierToLayerIndex.get(barrier);
+                    if (layerForBarrier == null) {
                         throw new IllegalArgumentException(
                                 "Respected barrier, " + barrier + ", is not defined for " + sc.getName());
                     }
-                    columnsDeclaringBarrier[respectIndex] = declaringColumn;
+                    execDeps.add(layerForBarrier);
                 }
-                barrierDependencies = Stream.of(columnsDeclaringBarrier);
-            } else {
-                barrierDependencies = Stream.empty();
             }
 
-            final Stream<String> serialDependencies;
             if (!sc.isStateless()) {
-                serialDependencies = previousColumns.stream();
-                serialColumns.add(sc.getName());
+                execDeps.addAll(columnIndexToLayerIndex.valueCollection());
             } else {
-                serialDependencies = serialColumns.stream();
+                execDeps.addAll(serialLayerIndices);
             }
 
-            final Stream<String> allDependencies =
-                    Stream.concat(serialDependencies,
-                            Stream.concat(barrierDependencies,
-                                    Stream.concat(sc.getColumns().stream(), sc.getColumnArrays().stream())));
+            final Stream<String> allDependencies = Stream.concat(sc.getColumns().stream(), sc.getColumnArrays().stream());
             final String[] distinctDeps = allDependencies.distinct().toArray(String[]::new);
-
-            // If we encounter a serial column later on, it must depend on us to avoid crossing parallelism boundaries
-            previousColumns.add(sc.getName());
 
             final ModifiedColumnSet mcsBuilder = new ModifiedColumnSet(parentTable.getModifiedColumnSetForUpdates());
 
@@ -301,17 +285,18 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
 
             final long targetDestinationCapacity =
                     rowSet.isEmpty() ? 0 : (context.flatResult ? rowSet.size() : rowSet.lastRowKey() + 1);
+            final Layer layer;
             switch (mode) {
                 case VIEW_LAZY: {
                     final ColumnSource<?> viewCs = sc.getLazyView();
                     maybeCreateAlias.accept(viewCs);
-                    context.addLayer(new ViewColumnLayer(context, sc, viewCs, distinctDeps, mcsBuilder));
+                    layer = new ViewColumnLayer(context, sc, viewCs, distinctDeps, mcsBuilder);
                     break;
                 }
                 case VIEW_EAGER: {
                     final ColumnSource<?> viewCs = sc.getDataView();
                     maybeCreateAlias.accept(viewCs);
-                    context.addLayer(new ViewColumnLayer(context, sc, viewCs, distinctDeps, mcsBuilder));
+                    layer = new ViewColumnLayer(context, sc, viewCs, distinctDeps, mcsBuilder);
                     break;
                 }
                 case SELECT_STATIC: {
@@ -319,12 +304,13 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
                     // created array with the proper componentType (in the case of Vectors).
                     final WritableColumnSource<?> scs = parentIsFlat || context.flatResult
                             ? sc.newFlatDestInstance(targetDestinationCapacity)
+
                             : sc.newDestInstance(targetDestinationCapacity);
                     maybeSetStaticColumnSourceImmutable(scs);
                     maybeCreateAlias.accept(scs);
-                    context.addLayer(new SelectColumnLayer(
-                            updateGraph, rowSet, context, sc, scs, null, distinctDeps, mcsBuilder, false,
-                            useResultKeySpace));
+                    layer = new SelectColumnLayer(
+                            updateGraph, rowSet, context, sc, scs, null, distinctDeps, execDeps.toArray(), mcsBuilder,
+                            false, useResultKeySpace);
                     break;
                 }
                 case SELECT_REDIRECTED_STATIC: {
@@ -333,9 +319,9 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
                             rowRedirection, underlyingSource, rowSet.size());
                     maybeSetStaticColumnSourceImmutable(scs);
                     maybeCreateAlias.accept(scs);
-                    context.addLayer(new SelectColumnLayer(
-                            updateGraph, rowSet, context, sc, scs, underlyingSource, distinctDeps, mcsBuilder, true,
-                            useResultKeySpace));
+                    layer = new SelectColumnLayer(
+                            updateGraph, rowSet, context, sc, scs, underlyingSource, distinctDeps, execDeps.toArray(), mcsBuilder,
+                            true, useResultKeySpace);
                     break;
                 }
                 case SELECT_REDIRECTED_REFRESHING:
@@ -350,14 +336,34 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
                                 rowRedirection, underlyingSource, rowSet.intSize());
                     }
                     maybeCreateAlias.accept(scs);
-                    context.addLayer(new SelectColumnLayer(
-                            updateGraph, rowSet, context, sc, scs, underlyingSource, distinctDeps, mcsBuilder,
-                            rowRedirection != null, useResultKeySpace));
+                    layer = new SelectColumnLayer(
+                            updateGraph, rowSet, context, sc, scs, underlyingSource, distinctDeps, execDeps.toArray(),
+                            mcsBuilder, rowRedirection != null, useResultKeySpace);
                     break;
                 }
                 default:
                     throw new UnsupportedOperationException("Unsupported case " + mode);
             }
+
+            if (!sc.isStateless()) {
+                // all future columns must respect this layer
+                serialLayerIndices.add(layer.layerIndex);
+            }
+
+            final Object[] declaredBarriers = sc.barriers();
+            if (declaredBarriers != null) {
+                for (final Object barrier : declaredBarriers) {
+                    final Integer oldIndex = barrierToLayerIndex.put(barrier, layer.getLayerIndex());
+                    if (oldIndex != null) {
+                        throw new IllegalArgumentException("Duplicate barrier, " + barrier + ", declared for "
+                                + context.layers.get(oldIndex).getLayerColumnNames() + " and" + sc.getName());
+                    }
+                }
+            }
+
+
+            context.addLayer(layer);
+            columnIndexToLayerIndex.put(columnIndex, layer.getLayerIndex());
         }
 
         return context;
@@ -529,24 +535,6 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
                     mcsBuilder.setAll(dep);
                 } else {
                     mcsBuilder.setAll(layers.get(layerIndex).getModifiedColumnSet());
-                }
-            }
-        }
-
-        /**
-         * Populate the layer dependency set with the layer indices that the dependencies are in.
-         *
-         * @param layerDependencySet the result bitset to populate
-         * @param dependencies the dependencies
-         */
-        void populateLayerDependencySet(
-                final BitSet layerDependencySet,
-                final String[] dependencies) {
-            for (final String dep : dependencies) {
-                final int layerIndex = getLayerIndexFor(dep);
-                if (layerIndex != Layer.PARENT_TABLE_INDEX) {
-                    // note that implicitly preserved columns do not belong to a layer.
-                    layerDependencySet.or(layers.get(layerIndex).getLayerDependencySet());
                 }
             }
         }
