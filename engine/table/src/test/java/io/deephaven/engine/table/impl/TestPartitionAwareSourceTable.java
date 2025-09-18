@@ -11,6 +11,7 @@ import io.deephaven.engine.liveness.ReferenceCountedLivenessNode;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.perf.PerformanceEntry;
+import io.deephaven.engine.table.impl.select.SourceColumn;
 import io.deephaven.engine.table.vectors.ColumnVectors;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.TestErrorNotification;
@@ -137,6 +138,8 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
                     will(returnValue(cd.getComponentType()));
                     allowing(mocked).getChunkType();
                     will(returnValue(ChunkType.fromElementType(cd.getDataType())));
+                    allowing(mocked).isStateless();
+                    will(returnValue(true));
                 }
             });
             return mocked;
