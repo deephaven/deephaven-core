@@ -33,7 +33,7 @@ In Deephaven tables, there are two commonly used [array](./work-with-arrays.md) 
 
 ## Data type conversions
 
-You can ensure that columns in tables are of the appropriate type by using type casting:
+You can ensure that columns in tables are of the appropriate type by using [type casting](./casting.md):
 
 ```groovy order=source,sourceMeta
 func = { value ->

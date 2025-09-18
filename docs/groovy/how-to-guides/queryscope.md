@@ -4,9 +4,9 @@ title: Variables and functions in query strings
 
 This guide will show you techniques for using variables and functions in query strings. There are many reasons to use variables: more understandable code, better reusability, and in some cases, improved efficiency.
 
-The Deephaven Query Language resolves variables using the [`QueryScope`](/core/javadoc/io/deephaven/engine/context/QueryScope.html) singleton.
+In Groovy, the Deephaven Query Language resolves variables using the [`QueryScope`](/core/javadoc/io/deephaven/engine/context/QueryScope.html) singleton. Unlike some other languages, Groovy requires explicit management of the query scope for most use cases.
 
-This example case will walk you through the process for adding variables and using functions in your preferred programming language.
+This guide will walk you through the process for adding variables and using functions in Groovy query strings.
 
 If you'd like to learn more about query strings and the basic rationale of the query scope, see our [conceptual guide](../how-to-guides/queryscope.md).
 
@@ -15,7 +15,7 @@ If you'd like to learn more about query strings and the basic rationale of the q
 
 ## Use variables in a query string
 
-There are two ways to add variables to a query string: [manually](#manually) and [automatically](#automatically).
+In Groovy, variables can be made available to query strings in two ways: [manually](#manually) using `QueryScope.addParam()` and [automatically](#automatically) for top-level script variables.
 
 ### Manually
 
@@ -45,9 +45,9 @@ result = source.update("X = 2 + 3 * sqrt(A) + a")
 
 ### Automatically
 
-If you are at the top level of a program, variables are automatically added to the query scope.
+Variables defined at the top level of a Groovy script are automatically added to the query scope. This only applies to variables declared directly in the script, not within functions or closures.
 
-In the next example, a program contains `b = 3` at the top level, so the query scope will also contain the name `b` with a value of 3.
+In the next example, `b = 3` is defined at the top level, so it's automatically available in query strings.
 
 ```groovy
 b = 3
@@ -81,9 +81,9 @@ result = source.update("X = 2 + 3 * (int)myFunction(A)")
 
 ## Encapsulate query logic in functions
 
-It is very common to encapsulate query logic within functions to create cleaner, more readable code. Such functions may use variables in query strings. In these cases, the variables need to be manually added to the query scope.
+It is very common to encapsulate query logic within functions to create cleaner, more readable code. Such functions may use variables in query strings. In Groovy, function parameters and local variables are **not** automatically available to query strings - they must be manually added to the query scope using `QueryScope.addParam()`.
 
-In this example, the `compute` function performs a query using the `source` table and the input parameter `a`. Here, `a` must be added to the query scope to be used in the query string.
+In this example, the `compute` function performs a query using the `source` table and the input parameter `a`. Since `a` is a function parameter (not a top-level script variable), it must be explicitly added to the query scope to be used in the query string.
 
 ```groovy order=source,result1,result2
 f = { int a, int b -> a * b }
@@ -106,8 +106,11 @@ result2 = compute(source, 3)
 
 In this example, we want to know how much sales tax we will pay in various states given how much money is spent. The query scope is helpful because we can easily change the value of money spent as we call the function more than once.
 
+Note that `sales_price` must be explicitly added to the query scope since it's a function parameter, not a top-level variable.
+
 ```groovy order=source,result1,result2
 computeTax = { Table source, int a ->
+    // Function parameters must be explicitly added to query scope
     QueryScope.addParam("sales_price", a)
     return source.update("Taxed = SalesTaxRate * sales_price * 0.01")
 }

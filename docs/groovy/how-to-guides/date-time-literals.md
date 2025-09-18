@@ -65,7 +65,7 @@ Where:
 - `MM` is the two-digit month (01-12)
 - `DD` is the two-digit day of the month (01-31)
 
-The following code block creates a LocalDate column using a literal:
+The following code block creates a `LocalDate` column using a literal:
 
 ```groovy order=source
 source = emptyTable(1).update("LocalDateLiteral = '2025-04-01'")
@@ -84,7 +84,7 @@ Where:
 - `ss` is the two-digit second (00-59)
 - `ddddddddd` is the optional fraction of a second in nanoseconds (0-999999999)
 
-The following code block creates a LocalTime column using a literal:
+The following code block creates a `LocalTime` column using a literal:
 
 ```groovy order=source
 source = emptyTable(1).update("LocalTimeLiteral = '14:30:00.12345'")
