@@ -4,19 +4,18 @@ title: Use URIs to share tables
 sidebar_label: URI
 ---
 
-This guide will show you to use Deephaven's [URIs](https://deephaven.io/core/pydoc/code/deephaven.uri.html#module-deephaven.uri) to share tables across instances and networks.
+This guide will show you to use Deephaven's [URIs](https://deephaven.io/core/javadoc/io/deephaven/uri/package-summary.html) to share tables across server instances and networks.
 
-A URI, short for [Uniform Resource Identifier](https://en.wikipedia.org/wiki/Uniform_Resource_Identifier), is a sequence of characters that identifies a resource on the web. Think of a URI as a generalization of a URL. A Deephaven URI specifically identifies a table in a Deephaven instance. By using URIs, you can share your tables with others without them needing to replicate your setup or know the details of your queries.
+A URI, short for [Uniform Resource Identifier](https://en.wikipedia.org/wiki/Uniform_Resource_Identifier), is a sequence of characters that identifies a resource on the web. Think of a URI as a generalization of a URL. A Deephaven URI identifies a table on a server instance. By linking to a URI, you can access and work with tables from other Deephaven server instances without needing to replicate the data or queries that created them.
 
-:::note
-URIs can be used to share tables across Groovy and Python instances interchangeably. For how to use URIs in Groovy, see [the equivalent guide](/core/groovy/docs/how-to-guides/use-uris).
-:::
+> [!NOTE]
+> URIs can be used to share tables across Groovy and Python instances interchangably. For how to use URIs in Groovy, see [the equivalent guide](/core/groovy/docs/how-to-guides/use-uris).
 
 ## Why use URIs?
 
 Deephaven URIs provide several key benefits:
 
-- **Canonicalized resource identification**: Access resources through a standardized string format that works across client and server contexts.
+- **Canonicalized resource identification**: Access resources through a standardized string format that works across server instances.
 - **Simplified data sharing**: Share tables between different Deephaven instances without duplicating data or queries.
 - **Distributed computing**: Build systems where processing is distributed across multiple Deephaven nodes.
 - **Real-time access**: Access live, updating tables from remote sources that reflect the latest data.
@@ -26,9 +25,8 @@ Deephaven URIs provide several key benefits:
 
 By using URIs, you enable others to directly access your tables without needing to replicate your data pipeline, understand your query logic, or maintain duplicate datasets. This is particularly valuable in collaborative environments and distributed systems.
 
-:::note
-URI and Shared Tickets are two different ways to pull tables. Both work on static or dynamic tables. URI pulls tables already on the server via a URL-like string. Shared Tickets let you pull tables you create or access via the Python Client. Learn more about using Shared Tickets with Deephaven in the [Shared Tickets guide](../how-to-guides/capture-tables.md).
-:::
+> [!NOTE]
+> URI and Shared Tickets are two different ways to pull tables. Both work on static or dynamic tables. URI pulls tables already on the server via a URL-like string. Shared Tickets let you pull tables you create or access via the Python Client. Learn more about using Shared Tickets with Deephaven in the [Shared Tickets guide](../how-to-guides/capture-tables.md).
 
 ## Syntax
 
@@ -49,26 +47,30 @@ The above URL can be broken down as follows:
 
 Deephaven URIs use a similar syntax:
 
-`dh+plain://<authority>[:<port>]/<scope>/<table_name>`
+```
+dh://<authority>[:<port>]/<scope>/<resource_name>
+dh+plain://<authority>[:<port>]/<scope>/<resource_name>
+```
 
 The components are:
 
-- **`dh+plain`** is the scheme.
-  - This is **always** `dh+plain` for all Deephaven table URIs.
-  - The scheme identifies the protocol for accessing Deephaven tables.
-  - This has no relation to application types (script, static, dynamic, qst) which are configuration options in [Application Mode](./application-mode.md).
+- **`dh+plain`** or **`dh`** is the scheme.
+  - `dh://` indicates a secure connection (TLS/SSL).
+  - `dh+plain://` indicates an insecure connection (no encryption).
+  - The scheme identifies the protocol for accessing Deephaven resources.
+  - All Deephaven URIs use one of these schemes, regardless of the application type (script, static, dynamic, qst) configured in [Application Mode](./application-mode.md).
 - **`<authority>`** is the authority, which will be either:
   - A Docker container name (for local container-to-container communication).
   - A hostname/IP address (for network communication).
 - **`<port>`** is optional and only needed when:
   - The Deephaven instance is running on a non-default port (something other than 10000).
   - You're connecting across a network to a specific port.
-- **`<scope>`** identifies the namespace where the table exists (typically `scope` for tables in the default namespace).
+- **`<scope>`** identifies the namespace where the resource exists. This is typically `scope` for variables created in interactive console sessions, or `app/<app_name>/field` for resources exported from Application Mode applications.
 - **`<table_name>`** is the exact name of the table you want to access.
 
 ### Resolving URIs in your code
 
-To access a table via its URI, use the `resolve()` function from the `deephaven.uri` module:
+To access a table via its URI, use the [`resolve`](../reference/data-import-export/uri.md#parameters) function from the `deephaven.uri` module:
 
 ```python skip-test
 from deephaven.uri import resolve
@@ -80,7 +82,7 @@ table = resolve("dh+plain://hostname/scope/table_name")
 table = resolve("dh+plain://hostname:9876/scope/table_name")
 ```
 
-The `resolve()` function connects to the specified Deephaven instance, retrieves the table, and returns it as a local reference that you can use in your code.
+The `resolve` function connects to the specified Deephaven instance, retrieves the table, and returns it as a local reference that you can use in your code.
 
 ## Share tables locally
 
@@ -130,51 +132,64 @@ resolved_table = resolve("dh+plain://table-producer/scope/my_table")
 
 By resolving the URI, we acquire `my_table` from the `table-producer` container using the syntax given above.
 
-## Table scopes and paths
+## Resource scopes and paths
 
-In Deephaven, tables exist within specific scopes (namespaces) that determine how they're accessed:
+A **scope** in a Deephaven URI is a namespace that identifies where a resource exists within a Deephaven server instance. Think of scopes as organizational containers that prevent naming conflicts and provide context for how resources were created.
 
-- `scope` - The default scope for tables created in the main session.
-- `app/<app_name>` - For tables created within a specific [Application Mode](./application-mode.md) namespace.
-- `session/<session_id>` - For tables associated with a specific user session.
+Deephaven uses scopes to separate resources based on their origin and purpose:
+
+### Query scope (`scope`)
+
+The query scope contains variables created in interactive console sessions - when you create tables, variables, or other objects directly in the Deephaven IDE console or through client connections.
+
+```groovy
+// This creates a table in the query scope
+my_table = emptyTable(100).update("X = i", "Y = i * 2")
+// Accessible via: dh://hostname/scope/my_table
+```
+
+### Application scope (`app/<app_name>/field`)
+
+The application scope contains fields exported from [Application Mode](./application-mode.md) applications. These are pre-configured resources that are available when the server starts, defined by application scripts.
+
+```groovy
+// In an Application Mode script, this exports a field
+// Accessible via: dh://hostname/app/trading_app/field/market_data
+```
+
+Scopes ensure that:
+
+- **No naming conflicts**: A table named `trades` in the query scope is completely separate from a field named `trades` in an application scope
+- **Clear resource organization**: You know immediately whether a resource comes from interactive work or a pre-built application
+- **Proper access control**: Different scopes can have different permission models
 
 ### URI format by scope type
 
 ```
-# Default scope table (most common)
+# Query scope variable (most common)
 dh+plain://hostname/scope/table_name
+dh://hostname/scope/table_name
 
-# App scope table
-dh+plain://hostname/app/my_application/table_name
-
-# Session scope table
-dh+plain://hostname/session/12345/table_name
+# Application field
+dh+plain://hostname/app/my_application/field/my_field
+dh://hostname/app/my_application/field/my_field
 ```
 
-### Scope resolution rules
-
-1. When no explicit scope is provided, Deephaven first looks in the current scope.
-2. If the table isn't found there, it then checks the default scope.
-3. Tables in app or session scopes must always be accessed using their full path.
-
-:::note
-When using URIs across different scopes, you must have appropriate permissions to access the tables in those scopes.
-:::
+> [!NOTE]
+> When using URIs to access resources, you must have appropriate permissions to access the resources in those scopes.
 
 ## Share tables across a network
 
 Tables can also be shared across networks, public or private. Just like the previous example of sharing across a machine, this works in the same way. Rather than the container name, you only need the hostname/IP and port of the instance producing the table.
 
-:::note
-
-- When sharing tables across a network, you do **not** need to specify the port if Deephaven is running on the default port `10000`.
-- You **must** specify the port in the URI when:
-  - The remote Deephaven instance runs on a non-default port (not 10000).
-  - You're connecting to a custom port forwarding configuration.
-
-Example format with port: `dh+plain://hostname:9876/scope/table_name`
-Example format without port (default 10000): `dh+plain://hostname/scope/table_name`
-:::
+> [!NOTE]
+>
+> - When sharing tables across a network, you do **not** need to specify the port if Deephaven is running on the default port `10000`.
+> - You **must** specify the port in the URI when:
+>   - The remote Deephaven instance runs on a non-default port (not 10000).
+>   - You're connecting to a custom port forwarding configuration.
+>
+> Example format with port: `dh+plain://hostname:9876/scope/table_name`
 
 ### Create a table
 
@@ -209,32 +224,20 @@ When using URIs to share tables across instances, particularly over networks, th
 ### Network impact
 
 - **Latency**: Table access over a network introduces latency that varies based on network conditions. For operations requiring low latency, consider co-locating instances when possible.
-- **Bandwidth**: Large tables or tables with frequent updates require more bandwidth. Network throughput can become a bottleneck for data-intensive operations.
+- **Bandwidth**: The initial table snapshot and subsequent incremental updates consume bandwidth. Deephaven's Barrage protocol optimizes this by transmitting only changes rather than full table refreshes.
 - **Connection reliability**: Unstable network connections can affect the reliability of table access. Implement appropriate error handling for network disruptions.
 
 ### Table characteristics
 
-- **Table size**: Larger tables require more resources to transfer and update. The overhead increases with row count and column width.
-- **Update frequency**: Tables with high update frequencies consume more network resources. Each update must be synchronized across instances.
-- **Column types**: Tables with complex data types like large strings or nested structures may have higher overhead when shared across instances.
+- **Initial snapshot**: When first resolving a URI, Deephaven sends a snapshot of the current table state. Larger tables require more resources for this initial transfer.
+- **Update frequency**: Tables with high update frequencies generate more incremental updates over the network. Deephaven's Barrage protocol efficiently transmits only the changes (additions, removals, modifications).
+- **Column types**: Tables with complex data types like large strings or nested structures may have higher overhead during the initial snapshot and subsequent updates.
 
 ### Optimization strategies
 
-- **Filter at source**: Apply filters on the source table before resolving it in the consumer instance to reduce data transfer volume.
-- **Project necessary columns**: Only include columns that are actually needed by the consumer to minimize network payload size.
-- **Pre-aggregate when possible**: For large tables, use aggregations at the source to reduce data volume while preserving analytical value.
-- **Minimize resolution frequency**: For latency-sensitive applications, cache resolved table references rather than repeatedly resolving the same URI.
-- **Use table snapshots**: When point-in-time consistency is required, use table snapshots instead of live updating tables.
-- **Organize with appropriate scopes**: Structure your tables in logical scopes to improve discovery and resolution efficiency.
-- **Monitor performance**: Use Deephaven's performance tables to identify bottlenecks in URI operations.
-
-### Caching behavior
-
-When a table is accessed via URI, it is cached on the consumer instance. This means:
-
-- Subsequent accesses to the same URI will use the cached table reference.
-- Updates to the source table will propagate to all consumers automatically.
-- If the source table becomes unavailable, consumers will continue to see the last known state until reconnection is possible.
+- **Only share what's needed**: Filter, aggregate, and limit the amount of data you're sharing to only what a downstream consumer actually needs. This includes applying filters at the source, projecting only necessary columns, and pre-aggregating large datasets to reduce the volume of transferred data.
+- **Avoid repeated URI resolution**: Store resolved table references in variables rather than calling `resolve` multiple times for the same URI. Each call to `resolve` creates a new connection, so reuse the table reference when possible within your application.
+- **Use appropriate data consistency models**: For analysis requiring consistent data across multiple operations, use table snapshots instead of live updating tables. Point-in-time consistency ensures all your data represents the same moment in time, preventing issues where some data updates mid-analysis while other data remains static. Snapshots freeze the table state at a specific moment, guaranteeing consistent results and reducing network overhead from continuous updates.
 
 ## Related documentation
 
