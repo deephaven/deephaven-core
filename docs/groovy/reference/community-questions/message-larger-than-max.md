@@ -16,7 +16,7 @@ For the latter, refer to [`Grpc_arg_keys`](https://grpc.github.io/grpc/core/grou
 - `GRPC_ARG_MAX_RECEIVE_MESSAGE_LENGTH`
 - `GRPC_ARG_MAX_SEND_MESSAGE_LENGTH`
 
-For the Groovy client, you can set these options when constructing the session via the [`maxInboundMessageSize`](<https://docs.deephaven.io/core/javadoc/io/deephaven/client/impl/ClientConfig.html#maxInboundMessageSize()>) method:
+For the Groovy client, you can set these options when constructing the session via the [`maxInboundMessageSize`](https://docs.deephaven.io/core/javadoc/io/deephaven/client/impl/ClientConfig.html#maxInboundMessageSize()) method:
 
 ```groovy skip-test
 import io.deephaven.client.ClientConfig
