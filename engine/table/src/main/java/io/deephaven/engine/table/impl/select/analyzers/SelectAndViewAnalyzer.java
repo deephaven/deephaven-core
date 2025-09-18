@@ -241,7 +241,8 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
                 execDeps.addAll(serialLayerIndices);
             }
 
-            final Stream<String> allDependencies = Stream.concat(sc.getColumns().stream(), sc.getColumnArrays().stream());
+            final Stream<String> allDependencies =
+                    Stream.concat(sc.getColumns().stream(), sc.getColumnArrays().stream());
             final String[] distinctDeps = allDependencies.distinct().toArray(String[]::new);
 
             final ModifiedColumnSet mcsBuilder = new ModifiedColumnSet(parentTable.getModifiedColumnSetForUpdates());
@@ -320,8 +321,8 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
                     maybeSetStaticColumnSourceImmutable(scs);
                     maybeCreateAlias.accept(scs);
                     layer = new SelectColumnLayer(
-                            updateGraph, rowSet, context, sc, scs, underlyingSource, distinctDeps, execDeps.toArray(), mcsBuilder,
-                            true, useResultKeySpace);
+                            updateGraph, rowSet, context, sc, scs, underlyingSource, distinctDeps, execDeps.toArray(),
+                            mcsBuilder, true, useResultKeySpace);
                     break;
                 }
                 case SELECT_REDIRECTED_REFRESHING:
