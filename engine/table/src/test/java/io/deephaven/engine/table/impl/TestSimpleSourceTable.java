@@ -391,7 +391,7 @@ public class TestSimpleSourceTable extends RefreshingTableTestCase {
             failBecauseExceptionWasNotThrown(IllegalArgumentException.class);
         } catch (final IllegalArgumentException e) {
             assertThat(e).hasMessageContaining(
-                    "Can't construct SimpleSourceTable with non-direct column type(s) [ColumnDefinition {name=P1, dataType=class java.lang.String, componentType=null, columnType=Partitioning}, ColumnDefinition {name=P2, dataType=int, componentType=null, columnType=Partitioning}]");
+                    "Can't construct SimpleSourceTable with column type(s) [ColumnDefinition {name=P1, dataType=class java.lang.String, componentType=null, columnType=Partitioning}, ColumnDefinition {name=P2, dataType=int, componentType=null, columnType=Partitioning}]");
         }
     }
 }

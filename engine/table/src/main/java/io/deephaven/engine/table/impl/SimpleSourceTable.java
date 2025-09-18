@@ -20,14 +20,14 @@ import java.util.stream.Collectors;
 public class SimpleSourceTable extends SourceTable<SimpleSourceTable> {
 
     private static TableDefinition checkSimple(final TableDefinition tableDefinition) {
-        final String nonSimpleColumns = tableDefinition.getColumns()
+        final String partitioningColumns = tableDefinition.getColumns()
                 .stream()
-                .filter(Predicate.not(ColumnDefinition::isDirect))
+                .filter(ColumnDefinition::isPartitioning)
                 .map(ColumnDefinition::toString)
                 .collect(Collectors.joining(", "));
-        if (!nonSimpleColumns.isEmpty()) {
+        if (!partitioningColumns.isEmpty()) {
             throw new IllegalArgumentException(String
-                    .format("Can't construct SimpleSourceTable with non-direct column type(s) [%s]", nonSimpleColumns));
+                    .format("Can't construct SimpleSourceTable with column type(s) [%s]", partitioningColumns));
         }
         return tableDefinition;
     }
