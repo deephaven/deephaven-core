@@ -24,8 +24,8 @@ session = pydeephaven.Session(
     host="localhost",
     port=10000,
     client_opts=[
-        ("grpc.max_receive_message_length", 10 * 1024 * 1024),  # 10 MB
-        ("grpc.max_send_message_length", 10 * 1024 * 1024),  # 10 MB
+        ("grpc.max_receive_message_length", 200 * 1024 * 1024),  # 10 MB
+        ("grpc.max_send_message_length", 200 * 1024 * 1024),  # 10 MB
     ],
 )
 ```
