@@ -97,6 +97,7 @@ jobs:
           path: |
             **/build/jacoco/*.exec
             **/build/test-results/**/coverage/*.tsv
+            **/build/test-results/**/coverage/*.html
 
       - name: Upload Test Results
         uses: actions/upload-artifact@v4

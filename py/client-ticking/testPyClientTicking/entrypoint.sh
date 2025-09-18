@@ -36,7 +36,8 @@ DO_COVERAGE=$1
 if [[ "${DO_COVERAGE}" == "true" ]]; then
   coverage run -m xmlrunner discover tests -v -o /out/report
   mkdir -p /out/coverage/
-  coverage report > /out/coverage/python-coverage.tsv
+  coverage report > /out/coverage/python-coverage-client-ticking.tsv
+  coverage html -d /out/coverage/python-coverage-client-ticking.html
 else
   python -m xmlrunner discover tests -v -o /out/report
 fi

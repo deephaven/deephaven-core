@@ -26,11 +26,18 @@ tasks.register("jacoco-merge", JacocoReport) {
 
 tasks.register("python-merge") {
     def projRootDir = rootProject.rootDir.absolutePath
-    def outputFile = file("$buildDir/reports/python/python-coverage.tsv")
-    outputFile.parentFile.mkdirs()
+    def outputDir = file("$buildDir/reports/python/")
+    def outputFile = new File(outputDir, "python-coverage.tsv")
+    outputDir.mkdirs()
     outputFile.text = ''
-    fileTree(projRootDir).include("**/build/test-results/**/coverage/*.tsv").each { f ->
+    fileTree(projRootDir).include("**/build/test-results/**/coverage/python-coverage-*.tsv").each { f ->
         outputFile << f.text + '\n'
+    }
+    fileTree(projRootDir).include("**/build/test-results/**/coverage/python-coverage-*.html/index.html").each { f ->
+        copy {
+          from f.parentFile
+          into new File(outputDir, f.parentFile.name)
+        }
     }
 }
 
