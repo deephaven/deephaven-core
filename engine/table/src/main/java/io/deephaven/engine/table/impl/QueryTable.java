@@ -308,6 +308,15 @@ public class QueryTable extends BaseTable<QueryTable> {
     public static boolean STATELESS_FILTERS_BY_DEFAULT =
             Configuration.getInstance().getBooleanWithDefault("QueryTable.statelessFiltersByDefault", false);
 
+    /**
+     * If set to true, then the default behavior of Formulas is to be stateless. Stateless formulas are allowed to be
+     * processed in parallel by the engine. If set to false, then formulas may not be parallelized within a column. To
+     * make a specific SelectColumn stateful, use {@link SelectColumn#withSerial()}. To make a specific SelectColumn
+     * stateless, use {@link SelectColumn#ofStateless(Selectable)}.
+     */
+    public static boolean STATELESS_SELECT_BY_DEFAULT =
+            Configuration.getInstance().getBooleanWithDefault("QueryTable.statelessSelectByDefault", false);
+
     private static final AtomicReferenceFieldUpdater<QueryTable, ModifiedColumnSet> MODIFIED_COLUMN_SET_UPDATER =
             AtomicReferenceFieldUpdater.newUpdater(QueryTable.class, ModifiedColumnSet.class, "modifiedColumnSet");
     private static final AtomicReferenceFieldUpdater<QueryTable, Map> CACHED_OPERATIONS_UPDATER =
@@ -1660,7 +1669,7 @@ public class QueryTable extends BaseTable<QueryTable> {
                     final JobScheduler jobScheduler;
                     if ((QueryTable.FORCE_PARALLEL_SELECT_AND_UPDATE || QueryTable.ENABLE_PARALLEL_SELECT_AND_UPDATE)
                             && ExecutionContext.getContext().getOperationInitializer().canParallelize()
-                            && analyzer.allowCrossColumnParallelization()) {
+                            && analyzer.anyParallelColumns()) {
                         jobScheduler = new OperationInitializerJobScheduler();
                     } else {
                         jobScheduler = new ImmediateJobScheduler();
@@ -1865,6 +1874,19 @@ public class QueryTable extends BaseTable<QueryTable> {
 
         // Assuming that the description is human-readable, we make it once here and use it twice.
         final String updateDescription = humanReadablePrefix + '(' + selectColumnString(viewColumns) + ')';
+
+        // TODO: I believe this assertion to be correct.
+        //
+        // An updateView can fetch things in any order; therefore we cannot allow it
+        // to be stateful. That said, making this change is going to blow a bunch of stuff up - because we are stateful
+        // by default.
+
+        // if (Arrays.stream(viewColumns).anyMatch(Predicate.not(SelectColumn::isStateless))) {
+        // throw new IllegalArgumentException("A stateful column cannot safely be used in a view or updateView.");
+        // }
+        if (Arrays.stream(viewColumns).anyMatch(vc -> vc.respectedBarriers() != null)) {
+            throw new IllegalArgumentException("view and updateView cannot respect barriers");
+        }
 
         return memoizeResult(MemoizedOperationKey.selectUpdateViewOrUpdateView(viewColumns, flavor),
                 () -> QueryPerformanceRecorder.withNugget(

@@ -31,8 +31,17 @@ public interface ConcurrencyControl<T> {
      * <ul>
      * <li>Concurrency impact: The expression will never be invoked concurrently with itself.</li>
      * <li>Intra-expression ordering impact: Rows are evaluated sequentially in row set order.</li>
-     * <li>Inter-expression ordering impact: Acts as an absolute reordering barrier, ensuring that no parts of a
-     * where/selectable clause are executed out of order relative to this serial wrapper.</li>
+     * <li>
+     * <p>
+     * Inter-expression ordering impact: For a filter, serial acts as an absolute reordering barrier, ensuring that no
+     * parts of a filter are executed out of order relative to this serial wrapper.
+     * </p>
+     * <p>
+     * For selectables, no additional ordering between expressions is imposed. As with every select or update call, if
+     * column B references column A, then the necessary inputs from column A are evaluated before column B is evaluated.
+     * To impose further ordering constraints, use barriers.
+     * </p>
+     * </li>
      * </ul>
      *
      * @return a new instance of T with serial concurrency control applied.
