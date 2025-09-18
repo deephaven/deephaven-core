@@ -5,7 +5,6 @@ package io.deephaven.engine.table.impl.select.analyzers;
 
 import gnu.trove.map.TObjectIntMap;
 import gnu.trove.map.hash.TObjectIntHashMap;
-import io.deephaven.base.Pair;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.log.LogOutputAppendable;
 import io.deephaven.base.verify.Assert;
@@ -15,7 +14,6 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.table.*;
-import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.QueryCompilerRequestProcessor;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.ShiftedColumnsFactory;
@@ -24,7 +22,6 @@ import io.deephaven.engine.table.impl.select.FormulaColumn;
 import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.engine.table.impl.select.ShiftedColumnDefinition;
 import io.deephaven.engine.table.impl.select.SourceColumn;
-import io.deephaven.engine.table.impl.select.SwitchColumn;
 import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
 import io.deephaven.engine.table.impl.sources.PossiblyImmutableColumnSource;
 import io.deephaven.engine.table.impl.sources.RedirectedColumnSource;
@@ -119,6 +116,9 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
             columnDefinitions.put(name, cd);
         }
 
+        final Map<Object, Integer> barrierToColumnIndex = new IdentityHashMap<>();
+        int idx = 0;
+
         final Set<String> resultColumnNames = new HashSet<>();
         for (final SelectColumn sc : selectColumns) {
             if (context.remainingCols != null) {
@@ -131,17 +131,15 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
                     sc.getName(), sc.getReturnedType(), sc.getReturnedComponentType());
             columnDefinitions.put(sc.getName(), cd);
 
-            if (useShiftedColumns && hasConstantArrayAccess(sc)) {
+            if (useShiftedColumns && sc.hasConstantArrayAccess()) {
                 context.remainingCols = new LinkedList<>();
-                context.shiftColumn = sc instanceof FormulaColumn
-                        ? (FormulaColumn) sc
-                        : (FormulaColumn) ((SwitchColumn) sc).getRealColumn();
-                context.shiftColumnHasPositiveOffset = hasPositiveOffsetConstantArrayAccess(sc);
+                context.shiftColumn = sc.maybeGetFormulaColumn().orElseThrow(() -> new IllegalStateException("Expected formula column when constant array access is present."));
+                context.shiftColumnHasPositiveOffset = hasPositiveOffsetConstantArrayAccess(context.shiftColumn);
                 continue;
             }
 
             // In our first pass, determine whether any columns will be preserved so that we don't prematurely flatten.
-            final SourceColumn realColumn = tryToGetSourceColumn(sc);
+            final SourceColumn realColumn = sc.maybeGetSourceColumn().orElse(null);
 
             if (realColumn != null && !resultColumnNames.contains(realColumn.getSourceName())) {
                 // if we are preserving a column, then we cannot change key space
@@ -150,6 +148,16 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
 
             // TODO (deephaven#5760): If layers may define more than one column, we'll need to add all of them here.
             resultColumnNames.add(sc.getName());
+
+            final Object [] declaredBarriers = sc.barriers();
+            if (declaredBarriers != null) {
+                for (final Object barrier : declaredBarriers) {
+                    final Integer oldIndex = barrierToColumnIndex.put(barrier, idx);
+                    if (oldIndex != null) {
+                        throw new IllegalArgumentException("Duplicate barrier, " + barrier + ", declared for " + selectColumns[oldIndex].getName() + " and" + sc.getName());
+                    }
+                }
+            }
 
             context.processedCols.add(sc);
         }
@@ -172,12 +180,29 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
             // new columns shadow known aliases
             resultAlias.remove(sc.getName());
 
+            final Object [] respectedBarriers = sc.respectedBarriers();
+            final Stream<String> barrierDependencies;
+            if (respectedBarriers != null) {
+                final String [] columnsDeclaringBarrier = new String[respectedBarriers.length];
+                for (int respectIndex = 0; respectIndex < respectedBarriers.length; ++respectIndex) {
+                    final Object barrier = respectedBarriers[respectIndex];
+                    final String declaringColumn = selectColumns[barrierToColumnIndex.get(barrier)].getName();
+                    if (declaringColumn == null) {
+                        throw new IllegalArgumentException("Respected barrier, " + barrier + ", is not defined for " + sc.getName());
+                    }
+                    columnsDeclaringBarrier[respectIndex] = declaringColumn;
+                }
+                barrierDependencies = Stream.of(columnsDeclaringBarrier);
+            } else {
+                barrierDependencies = Stream.empty();
+            }
+
             final Stream<String> allDependencies =
-                    Stream.concat(sc.getColumns().stream(), sc.getColumnArrays().stream());
+                    Stream.concat(barrierDependencies, Stream.concat(sc.getColumns().stream(), sc.getColumnArrays().stream()));
             final String[] distinctDeps = allDependencies.distinct().toArray(String[]::new);
             final ModifiedColumnSet mcsBuilder = new ModifiedColumnSet(parentTable.getModifiedColumnSetForUpdates());
 
-            if (useShiftedColumns && hasConstantArrayAccess(sc)) {
+            if (useShiftedColumns && sc.hasConstantArrayAccess()) {
                 // we use the first shifted column to split between processed columns and remaining columns
                 throw new IllegalStateException("Found ShiftedColumn in processed column list");
             }
@@ -188,14 +213,14 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
                 sc.validateSafeForRefresh(parentTable);
             }
 
-            if (hasConstantValue(sc)) {
+            if (sc.hasConstantValue()) {
                 final WritableColumnSource<?> constViewSource =
                         SingleValueColumnSource.getSingleValueColumnSource(sc.getReturnedType());
                 context.addLayer(new ConstantColumnLayer(context, sc, constViewSource, distinctDeps, mcsBuilder));
                 continue;
             }
 
-            final SourceColumn realColumn = tryToGetSourceColumn(sc);
+            final SourceColumn realColumn = sc.maybeGetSourceColumn().orElse(null);
             if (realColumn != null) {
                 if (shouldPreserve(sc.getDataView())) {
                     context.addLayer(new PreserveColumnLayer(context, sc, sc.getDataView(), distinctDeps, mcsBuilder));
@@ -283,58 +308,14 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
         }
     }
 
-    private static @Nullable SourceColumn tryToGetSourceColumn(final SelectColumn sc) {
-        final SourceColumn realColumn;
-        if (sc instanceof SourceColumn) {
-            realColumn = (SourceColumn) sc;
-        } else if ((sc instanceof SwitchColumn) && ((SwitchColumn) sc).getRealColumn() instanceof SourceColumn) {
-            realColumn = (SourceColumn) ((SwitchColumn) sc).getRealColumn();
-        } else {
-            realColumn = null;
-        }
-        return realColumn;
-    }
-
-    private static boolean hasConstantArrayAccess(final SelectColumn sc) {
-        if (sc instanceof FormulaColumn) {
-            return ((FormulaColumn) sc).hasConstantArrayAccess();
-        } else if (sc instanceof SwitchColumn) {
-            final SelectColumn realColumn = ((SwitchColumn) sc).getRealColumn();
-            if (realColumn instanceof FormulaColumn) {
-                return ((FormulaColumn) realColumn).hasConstantArrayAccess();
-            }
-        }
-        return false;
-    }
-
-    private static boolean hasPositiveOffsetConstantArrayAccess(final SelectColumn sc) {
-        Set<ShiftedColumnDefinition> shifts = null;
-        if (sc instanceof FormulaColumn) {
-            shifts = ((FormulaColumn) sc).getFormulaShiftedColumnDefinitions();
-        } else if (sc instanceof SwitchColumn) {
-            final SelectColumn realColumn = ((SwitchColumn) sc).getRealColumn();
-            if (realColumn instanceof FormulaColumn) {
-                shifts = ((FormulaColumn) realColumn).getFormulaShiftedColumnDefinitions();
-            }
-        }
+    private static boolean hasPositiveOffsetConstantArrayAccess(final FormulaColumn fc) {
+        Set<ShiftedColumnDefinition> shifts = fc.getFormulaShiftedColumnDefinitions();
         if (shifts == null) {
-            throw new IllegalStateException("Column " + sc.getName() + " does not have constant array access");
+            throw new IllegalStateException("Column " + fc.getName() + " does not have constant array access");
         }
         return shifts.stream().anyMatch(col -> col.getShiftAmount() > 0);
     }
 
-
-    private static boolean hasConstantValue(final SelectColumn sc) {
-        if (sc instanceof FormulaColumn) {
-            return ((FormulaColumn) sc).hasConstantValue();
-        } else if (sc instanceof SwitchColumn) {
-            final SelectColumn realColumn = ((SwitchColumn) sc).getRealColumn();
-            if (realColumn instanceof FormulaColumn) {
-                return ((FormulaColumn) realColumn).hasConstantValue();
-            }
-        }
-        return false;
-    }
 
     private static boolean shouldPreserve(final ColumnSource<?> columnSource) {
         return columnSource instanceof InMemoryColumnSource && ((InMemoryColumnSource) columnSource).isInMemory()

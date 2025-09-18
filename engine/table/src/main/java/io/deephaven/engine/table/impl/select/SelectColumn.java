@@ -3,10 +3,7 @@
 //
 package io.deephaven.engine.table.impl.select;
 
-import io.deephaven.api.ColumnName;
-import io.deephaven.api.RawString;
-import io.deephaven.api.Selectable;
-import io.deephaven.api.Strings;
+import io.deephaven.api.*;
 import io.deephaven.api.expression.Expression;
 import io.deephaven.api.expression.Function;
 import io.deephaven.api.expression.Method;
@@ -23,17 +20,13 @@ import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.table.impl.QueryCompilerRequestProcessor;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
  * The interface for a query table to perform retrieve values from a column for select like operations.
  */
-public interface SelectColumn extends Selectable {
+public interface SelectColumn extends Selectable, ConcurrencyControl<SelectColumn> {
 
     static SelectColumn of(Selectable selectable) {
         return (selectable instanceof SelectColumn)
@@ -315,4 +308,43 @@ public interface SelectColumn extends Selectable {
     }
 
     // endregion Selectable impl
+
+    default boolean hasConstantArrayAccess() {
+        return false;
+    }
+
+    default boolean hasConstantValue() {
+        return false;
+    }
+
+    default Optional<SourceColumn> maybeGetSourceColumn() {
+        return Optional.empty();
+    }
+
+    default Optional<FormulaColumn> maybeGetFormulaColumn() {
+        return Optional.empty();
+    }
+
+    @Override
+    default SelectColumn withSerial() {
+        return new StatefulSelectColumn(this);
+    }
+
+    @Override
+    default SelectColumn withBarriers(Object... barriers) {
+        return new SelectColumnWithBarrier(this, barriers);
+    }
+
+    @Override
+    default SelectColumn respectsBarriers(Object... respectsBarriers) {
+        return new SelectColumnWithRespectsBarrier(this, respectsBarriers);
+    }
+
+    default Object [] respectedBarriers() {
+        return null;
+    }
+
+    default Object [] barriers() {
+        return null;
+    }
 }

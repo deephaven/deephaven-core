@@ -15,6 +15,7 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.NoSuchColumnException;
+import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.chunkfillers.ChunkFiller;
 import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
 import io.deephaven.engine.table.impl.sources.SparseArrayColumnSource;
@@ -218,7 +219,7 @@ public class FunctionalColumnLong<S> implements SelectColumn {
 
     @Override
     public boolean isStateless() {
-        return false;
+        return QueryTable.STATELESS_SELECT_BY_DEFAULT;
     }
 
     @Override
