@@ -276,24 +276,23 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
         this.aggregatedColumns = JsObject.freeze(aggregatedColumns);
         this.groupedColumns = JsObject.freeze(groupedColumns);
 
-        sourceColumns = columnDefsByName.get(false).values().stream()
-                .map(c -> {
-                    if (c.getRollupAggregationInputColumn() != null && !c.getRollupAggregationInputColumn().isEmpty()) {
-                        // Use the specified input column
-                        return constituentColumns.remove(c.getRollupAggregationInputColumn());
-                    }
-                    if (c.isRollupGroupByColumn()) {
-                        // use the groupby column's own name
-                        return constituentColumns.remove(c.getName());
-                    }
-                    // filter out the rest
-                    return null;
-                })
-                .filter(Objects::nonNull)
-                .collect(Collectors.toMap(
-                        Column::getName,
-                        Function.identity()));
+        sourceColumns = new HashMap<>();
+        for (ColumnDefinition c : columnDefsByName.get(false).values()) {
+            if (c.getRollupAggregationInputColumn() != null && !c.getRollupAggregationInputColumn().isEmpty()) {
+                // Use the specified input column
+                if (constituentColumns.containsKey(c.getRollupAggregationInputColumn())) {
+                    sourceColumns.put(c.getName(), constituentColumns.get(c.getRollupAggregationInputColumn()));
+                }
+            } else if (c.isRollupGroupByColumn()) {
+                // use the groupby column's own name
+                if (constituentColumns.containsKey(c.getName())) {
+                    sourceColumns.put(c.getName(), constituentColumns.get(c.getName()));
+                }
+            }
+        }
+
         // add the rest of the constituent columns as themselves, they will only show up in constituent rows
+        sourceColumns.values().stream().map(Column::getName).forEach(constituentColumns::remove);
         sourceColumns.putAll(constituentColumns);
 
         // restore remaining unmatched constituent columns to the column array
