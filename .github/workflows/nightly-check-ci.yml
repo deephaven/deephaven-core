@@ -194,4 +194,5 @@ jobs:
           name: combined-coverage-results
           path: |
             coverage/build/reports/jacoco/**
+            coverage/build/reports/python/**
             coverage/build/reports/coverage/**
