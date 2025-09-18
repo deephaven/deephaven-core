@@ -79,6 +79,7 @@ public class TestTableInfo {
         assertThat(original.columnTypes().size()).isEqualTo(0);
 
         // copy has a new column type
+        assertThat(copy.version()).isEqualTo("0.5.0");
         assertThat(copy.columnTypes()).isEqualTo(List.of(cti));
     }
 
