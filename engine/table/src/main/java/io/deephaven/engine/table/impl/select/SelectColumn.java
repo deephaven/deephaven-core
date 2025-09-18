@@ -26,12 +26,30 @@ import java.util.stream.Collectors;
 /**
  * The interface for a query table to perform retrieve values from a column for select like operations.
  */
-public interface SelectColumn extends Selectable, ConcurrencyControl<SelectColumn> {
+public interface SelectColumn extends Selectable, ConcurrencyControl<Selectable> {
 
     static SelectColumn of(Selectable selectable) {
-        return (selectable instanceof SelectColumn)
-                ? (SelectColumn) selectable
-                : selectable.expression().walk(new ExpressionAdapter(selectable.newColumn()));
+        if (selectable instanceof SelectColumn) {
+            return (SelectColumn) selectable;
+        }
+        SelectColumn result = selectable.expression().walk(new ExpressionAdapter(selectable.newColumn()));
+        Boolean serial = selectable.isSerial();
+        if (serial == null) {
+            // we don't care
+        } else if (serial) {
+            result = new StatefulSelectColumn(result);
+        } else {
+            result = new StatelessSelectColumn(result);
+        }
+        Object[] declaredBarriers = selectable.barriers();
+        if (declaredBarriers != null && declaredBarriers.length > 0) {
+            result = new SelectColumnWithBarrier(result, declaredBarriers);
+        }
+        Object[] respectedBarriers = selectable.respectedBarriers();
+        if (respectedBarriers != null && respectedBarriers.length > 0) {
+            result = new SelectColumnWithRespectsBarrier(result, respectedBarriers);
+        }
+        return result;
     }
 
     static SelectColumn[] from(Selectable... selectables) {

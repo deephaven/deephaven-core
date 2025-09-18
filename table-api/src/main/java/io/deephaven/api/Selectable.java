@@ -18,7 +18,7 @@ import java.util.stream.Collectors;
  * @see TableOperations#updateView(Collection)
  * @see TableOperations#select(Collection)
  */
-public interface Selectable {
+public interface Selectable extends ConcurrencyControl<Selectable> {
 
     static Selectable of(ColumnName newColumn, Expression expression) {
         if (newColumn.equals(expression)) {
@@ -65,4 +65,31 @@ public interface Selectable {
      * @return the expression
      */
     Expression expression();
+
+    default Object[] respectedBarriers() {
+        return null;
+    }
+
+    default Object[] barriers() {
+        return null;
+    }
+
+    default Boolean isSerial() {
+        return null;
+    }
+
+    @Override
+    default Selectable withSerial() {
+        return new SelectableWithSerial(this);
+    }
+
+    @Override
+    default Selectable withBarriers(Object... barriers) {
+        return new SelectableWithBarriers(this, barriers);
+    }
+
+    @Override
+    default Selectable respectsBarriers(Object... barriers) {
+        return new SelectableWithRespectsBarrier(this, barriers);
+    }
 }

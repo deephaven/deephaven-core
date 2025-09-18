@@ -1475,4 +1475,10 @@ public class ArrayUtil {
             array[i] = producer.get();
         }
     }
+
+    public static <T> T[] concat(final T[] a, final T[] b) {
+        final T[] result = Arrays.copyOf(a, a.length + b.length);
+        System.arraycopy(b, 0, result, a.length, b.length);
+        return result;
+    }
 }
