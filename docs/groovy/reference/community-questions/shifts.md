@@ -7,6 +7,9 @@ _When merging tables in Deephaven, I understand that "shifts" can happen when on
 
 When you merge tables in Deephaven, the engine pre-allocates row key slots for each constituent table. Understanding how row keys (`k`) and positional indices (`i`) behave during growth and shifts is crucial for working with formulas that reference these attributes.
 
+> [!DANGER]
+> **Formulas using positional indices (`i`, `ii`, `k`) or column array variables are unsafe on refreshing tables and will cause `IllegalArgumentException` errors.** The engine blocks these formulas by default to prevent incorrect results. While you can override this with the system property `io.deephaven.engine.table.impl.select.AbstractFormulaColumn.allowUnsafeRefreshingFormulas=true`, doing so **will produce incorrect results** when table shifts occur. **Note that shifts can happen with any table operation, not just merges** - including joins, updates, selects, and other operations on live/refreshing tables. Only use such formulas on static tables or append-only tables where shifts cannot happen.
+
 ## Row key allocation and shifts
 
 When you create a merged table, the engine reserves contiguous ranges of row keys for each constituent table:
@@ -72,11 +75,12 @@ The critical insight is that the zebra and bear rows **were not modified** - the
 This behavior has important implications for formulas that reference the positional index `i`. Consider what would happen if you tried to add a formula that depends on `i`:
 
 ```groovy should-fail
-// This would only work if you set AbstractFormulaColumn.allowUnsafeRefreshingFormulas=true
+// This will fail with IllegalArgumentException unless you enable unsafe formulas
+// DO NOT enable unsafe formulas unless you understand the risks (see DANGER banner above)
 def myMergedTableWithIdx = myMergedTable.update("MyRowIdx = someValue + i")
 ```
 
-This demonstrates the key insight: downstream operations don't know that the positional index `i` changed for the zebra/bear rows during the shift.
+This demonstrates the key insight: downstream operations don't know that the positional index `i` changed for the zebra/bear rows during the shift. **This is why the engine blocks such formulas by default** - they would produce incorrect results after shifts occur.
 
 **Before the shift:**
 
@@ -118,6 +122,8 @@ The zebra and bear rows maintain their original `MyRowIdx` values because the en
 ## Why shifts exist
 
 Shifts are a performance optimization that allows the engine to avoid re-evaluating formulas, joins, and aggregations when rows are simply moved to accommodate table growth. Only when row data is actually modified does the engine need to recalculate dependent operations.
+
+While this example focuses on merge operations, **shifts can occur with any table operation** that works with live/refreshing data, including joins, updates, selects, and other operations. The same safety concerns about positional indices apply regardless of which operation triggers the shift.
 
 > [!NOTE]
 > These FAQ pages contain answers to questions about Deephaven Community Core that our users have asked in our [Community Slack](/slack). If you have a question that is not answered in our documentation, [join our Community](/slack) and ask it there. We are happy to help!
