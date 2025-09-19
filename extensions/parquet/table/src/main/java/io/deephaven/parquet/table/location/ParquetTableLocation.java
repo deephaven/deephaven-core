@@ -698,7 +698,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
             columnIndices.add(resolvedColumn.columnIndex);
         }
 
-        // Should we look at the metadata?
+        // Pushdown via row group statistics
         if (shouldExecute(QueryTable.DISABLE_WHERE_PUSHDOWN_PARQUET_ROW_GROUP_METADATA,
                 PushdownResult.METADATA_STATS_COST, executedFilterCost, costCeiling)
                 && (ctx.isRangeFilter() || ctx.isMatchFilter())) {
@@ -713,13 +713,13 @@ public class ParquetTableLocation extends AbstractTableLocation {
             }
         }
 
-        // Should we look at dictionary operations?
+        // Pushdown via dictionary
         if (shouldExecute(QueryTable.DISABLE_WHERE_PUSHDOWN_PARQUET_DICTIONARY,
                 PushdownResult.DICTIONARY_DATA_COST, executedFilterCost, costCeiling)
                 && ctx.supportsChunkFilter()
                 && hasDictionaryPage(parquetColumnNames[0], ctx.columnDefinitions().get(0))) {
             try (final PushdownResult ignored = result) {
-                result = pushdownFilterDictionary(selection, ctx, filter, parquetColumnNames, result);
+                result = pushdownFilterDictionary(selection, ctx, parquetColumnNames, result);
             }
             if (result.maybeMatch().isEmpty()) {
                 // No maybe rows remaining, so no reason to continue filtering.
@@ -728,7 +728,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
             }
         }
 
-        // If not prohibited by the cost ceiling, continue to refine the pushdown results.
+        // Pushdown via in-memory data index
         if (shouldExecute(QueryTable.DISABLE_WHERE_PUSHDOWN_DATA_INDEX,
                 PushdownResult.IN_MEMORY_DATA_INDEX_COST, executedFilterCost, costCeiling)) {
             final BasicDataIndex dataIndex =
@@ -742,6 +742,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
             }
         }
 
+        // Pushdown via reading a data index from disk
         if (shouldExecute(QueryTable.DISABLE_WHERE_PUSHDOWN_DATA_INDEX,
                 PushdownResult.DEFERRED_DATA_INDEX_COST, executedFilterCost, costCeiling)) {
             // If we have a data index, apply the filter to the data index table and retain the incoming maybe rows.
@@ -792,6 +793,8 @@ public class ParquetTableLocation extends AbstractTableLocation {
                 if (rs.isEmpty()) {
                     continue;
                 }
+
+                // TODO This might fail if there is an empty row group
 
                 consumer.accept(rgIdx, rs);
             }
@@ -894,7 +897,6 @@ public class ParquetTableLocation extends AbstractTableLocation {
     private PushdownResult pushdownFilterDictionary(
             final RowSet selection,
             final RegionedColumnSourceManager.RegionedColumnSourcePushdownFilterContext ctx,
-            final WhereFilter filter,
             final String[] parquetColumnNames,
             final PushdownResult result) {
 
@@ -915,7 +917,9 @@ public class ParquetTableLocation extends AbstractTableLocation {
                         .map(Supplier::get)
                         .toArray(Chunk[]::new);
 
-        final int maxSize = Arrays.stream(dictionaryChunks).mapToInt(chunk -> chunk == null ? 0 : chunk.size()).max()
+        final int maxSize = Arrays.stream(dictionaryChunks)
+                .mapToInt(chunk -> chunk == null ? 0 : chunk.size())
+                .max()
                 .orElse(0);
         if (maxSize == 0) {
             // No dictionaries of non-zero size, nothing to do.
@@ -926,34 +930,41 @@ public class ParquetTableLocation extends AbstractTableLocation {
         final ColumnChunkPageStore<DictionaryKeys>[] valueStores =
                 columnLocation.getDictionaryKeysPageStores(columnDefinition);
 
+        // Allocate a writable chunk sized to the largest dictionary across row groups, and fill it with sequential
+        // indices (0..N-1). These values act as candidate dictionary entry IDs.
         try (final WritableLongChunk<OrderedRowKeys> keyCandidates = WritableLongChunk.makeWritableChunk(maxSize);
                 final BasePushdownFilterContext.UnifiedChunkFilter chunkFilter = ctx.createChunkFilter(maxSize)) {
             for (int ii = 0; ii < maxSize; ii++) {
-                keyCandidates.set(ii, ii); // Initialize keys chunk with row indices.
+                keyCandidates.set(ii, ii);
             }
 
+            // Iterate each row group intersecting the current "maybe" rows.
             iterateRowGroupsAndRowSet(result.maybeMatch(), (rgIdx, rs) -> {
+
+                // Get the dictionary chunk and value store for this row group.
                 final Chunk<Values> dictionaryChunk = dictionaryChunks[rgIdx];
                 final ColumnChunkPageStore<DictionaryKeys> valueStore = valueStores[rgIdx];
+
                 if (dictionaryChunk == null || !valueStore.usesDictionaryOnEveryPage()) {
-                    // This row group does not use the dictionary.
+                    // This row group does not use the dictionary, keep all the rows as "maybe" rows.
                     maybeBuilder.appendRowSequence(rs);
                     maybeCount.add(rs.size());
                     return;
                 }
 
-                // Run the chunk filter on the dictionary chunk.
+                // Run the filter on the dictionary to find which dictionary entries satisfy the filter.
                 final LongChunk<OrderedRowKeys> keyMatch = chunkFilter.filter(dictionaryChunk, keyCandidates);
                 if (keyMatch.size() == 0) {
-                    // We have no matches, we can't eliminate anything.
+                    // We have no matches, we can't eliminate anything, so keep all the rows as "maybe" rows.
                     maybeBuilder.appendRowSequence(rs);
                     maybeCount.add(rs.size());
                     return;
                 }
 
-                // Make a MatchFilter with the keys that matched the chunk filter rows;
+                // Build an array of matching dictionary key IDs.
                 final long[] keyMatchArray;
                 if (ctx.filterIncludesNulls()) {
+                    // Include one extra slot for NULL_LONG as a matching key if the filter includes nulls.
                     keyMatchArray = new long[keyMatch.size() + 1];
                     keyMatchArray[keyMatch.size()] = NULL_LONG;
                 } else {
@@ -961,12 +972,15 @@ public class ParquetTableLocation extends AbstractTableLocation {
                 }
                 keyMatch.copyToTypedArray(0, keyMatchArray, 0, keyMatch.size());
 
+                // Make a MatchFilter with the matching dictionary key IDs. This will accept any encoded value whose
+                // dictionary index is in keyMatchArray
                 final ChunkFilter matchChunkFilter = LongChunkMatchFilterFactory.makeFilter(false, keyMatchArray);
 
+                // Now we need to apply this filter to the encoded values in the row group. We can do this by
+                // iterating the "maybe" rows in chunks, getting the encoded values for those rows, and applying the
+                // filter to those encoded values.
                 final long subRegionFirstKey = (long) rgIdx << regionParameters.regionMaskNumBits;
-
                 final int CHUNK_SIZE = 4096;
-
                 try (final RowSet tmpRowSet = rs.asRowSet().shift(-subRegionFirstKey);
                         final RowSequence.Iterator tmpIt = tmpRowSet.getRowSequenceIterator();
                         final ChunkSource.GetContext getContext = valueStore.makeGetContext(CHUNK_SIZE);

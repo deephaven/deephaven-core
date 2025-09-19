@@ -69,7 +69,8 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
     // -----------------------------------------------------------------------
     /**
      * Factory object needed for deferred initialization of the remaining fields. We delay initializing this field
-     * itself till we need to read the column data.
+     * itself till we need to read the column data. The number of entries in this array will match the number of
+     * non-empty row groups.
      */
     private ColumnChunkReader[] columnChunkReaders;
 
@@ -83,6 +84,7 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
     private final Object pagesLock;
 
     // Access to following variables must be guarded by initializePages()
+    // The number of entries in these arrays will match the number of non-empty row groups.
     // -----------------------------------------------------------------------
     private ColumnChunkPageStore<ATTR>[] pageStores;
     private Supplier<Chunk<ATTR>>[] dictionaryChunkSuppliers;
@@ -281,7 +283,8 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
     }
 
     /**
-     * Get the {@link ColumnChunkPageStore page stores} backing this column location.
+     * Get the {@link ColumnChunkPageStore page stores} backing this column location. The number of entries in the
+     * returned array will match the number of non-empty row groups.
      *
      * @param columnDefinition The {@link ColumnDefinition} used to lookup type information
      * @return The page stores
@@ -294,7 +297,9 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
     }
 
     /**
-     * Get suppliers to access the {@link Chunk dictionary chunks} backing this column location.
+     * Get suppliers to access the {@link Chunk dictionary chunks} backing this column location. The number of entries
+     * in the returned array will match the number of non-empty row groups. The entries may be null if the corresponding
+     * row group does not have a dictionary.
      *
      * @param columnDefinition The {@link ColumnDefinition} used to lookup type information
      * @return The dictionary values chunk suppliers, or null if none exist
@@ -307,7 +312,8 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
 
     /**
      * Get the {@link ColumnChunkPageStore page stores} backing the indices for this column location. Only usable when
-     * there are dictionaries.
+     * there are dictionaries. The number of entries in the returned array will match the number of non-empty row
+     * groups. The entries may be null if the corresponding row group does not have a dictionary.
      *
      * @param columnDefinition The {@link ColumnDefinition} used to lookup type information
      * @return The page stores
