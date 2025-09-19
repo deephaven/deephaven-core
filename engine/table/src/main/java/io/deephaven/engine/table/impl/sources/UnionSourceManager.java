@@ -893,7 +893,6 @@ public class UnionSourceManager implements PushdownPredicateManager {
     }
 
     public static class UnionSourcePushdownFilterContext extends BasePushdownFilterContext {
-        final WhereFilter filter;
         final UnionSourceManager manager;
         final WritableRowSet maybeMatch;
 
@@ -907,7 +906,7 @@ public class UnionSourceManager implements PushdownPredicateManager {
                 @NotNull final WhereFilter filter,
                 @NotNull final List<ColumnSource<?>> columnSources,
                 @NotNull final UnionSourceManager manager) {
-            this.filter = Require.neqNull(filter, "filter");
+            super(filter, columnSources);
             this.manager = Require.neqNull(manager, "manager");
             maybeMatch = RowSetFactory.empty();
         }
@@ -971,11 +970,6 @@ public class UnionSourceManager implements PushdownPredicateManager {
                 }
                 return true;
             });
-        }
-
-        @Override
-        public Map<String, String> renameMap() {
-            return Map.of();
         }
 
         @Override
