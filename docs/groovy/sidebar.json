@@ -394,6 +394,10 @@
               {
                 "label": "Variables in query strings",
                 "path": "conceptual/queryscope.md"
+              },
+              {
+                "label": "Generate query strings with Groovy",
+                "path": "how-to-guides/generate-query-strings.md"
               }
             ]
           },
