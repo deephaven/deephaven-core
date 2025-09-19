@@ -43,5 +43,11 @@ Top-level Build Directory (Some languages TBD)
   - `r-coverage.csv` Normalized coverage from all R projects
   - `go-coverage.csv` Normalized coverage from all Go projects
   - `all-coverage.csv` Normalized and filtered coverage from all covered projects
-- `coverage/build/reports/jacoco/jacoco-merge/html/`
+- `coverage/build/reports/java/java-coverage.html`
   - `index.html` Root file to view Java coverage down to the branch level (not filtered)
+- `coverage/build/reports/python/python-coverage-client.html`
+  - `index.html` Root file to view Python client coverage down to the statement level (not filtered)
+- `coverage/build/reports/python/python-coverage-client-ticking.html`
+  - `index.html` Root file to view Python client ticking coverage down to the statement level (not filtered)
+- `coverage/build/reports/python/python-coverage-server.html`
+  - `index.html` Root file to view Python server coverage down to the statement level (not filtered)
