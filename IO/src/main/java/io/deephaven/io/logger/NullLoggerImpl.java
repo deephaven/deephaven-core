@@ -18,7 +18,6 @@ import org.jetbrains.annotations.Nullable;
 
 import java.nio.ByteBuffer;
 import java.time.ZoneId;
-import java.util.TimeZone;
 
 /**
  * Logger implementation that calls Interceptors on log entries, but doesn't write them to anything. Note that this

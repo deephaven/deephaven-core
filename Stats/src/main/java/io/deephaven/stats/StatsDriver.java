@@ -17,7 +17,6 @@ import io.deephaven.util.thread.NamingThreadFactory;
 
 import java.time.ZoneId;
 import java.util.Properties;
-import java.util.TimeZone;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;

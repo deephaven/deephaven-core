@@ -35,7 +35,6 @@ public class LoggerImpl implements Logger {
         }
     };
 
-
     public LoggerImpl(LogEntryPool logEntryPool, LogSink logSink, String prefix, LogLevel loggingLevel,
             LoggerTimeSource timeSource, ZoneId zoneId, boolean showLevel, boolean showThreadName) {
         this.logEntryPool = logEntryPool;
