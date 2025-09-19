@@ -75,7 +75,7 @@ result = source.update("A= X_.subVector(i-2,i+1)",\
 ## Related documentation
 
 - [How to work with arrays](../../../how-to-guides/work-with-arrays.md)
-- [How to use Deephaven's built-in query language functions](../../../how-to-guides/query-language-functions.md)
+- [How to use Deephaven's built-in query language functions](../../../how-to-guides/built-in-functions.md)
 - [Query language functions](../query-library/query-language-function-reference.md)
 - [`newTable`](../../table-operations/create/newTable.md)
 - [`update`](../../table-operations/select/update.md)

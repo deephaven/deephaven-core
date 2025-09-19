@@ -60,5 +60,5 @@ result = source.where(FilterOr.of(Filter.from("Color != `blue`", "Code != 14")))
 ## Related documentation
 
 - [Create a new table](../../../how-to-guides/new-and-empty-table.md#newtable)
-- [How to use filters](../../../how-to-guides/use-filters.md)
+- [How to use filters](../../../how-to-guides/filters.md)
 - [where](../../table-operations/filter/where.md)

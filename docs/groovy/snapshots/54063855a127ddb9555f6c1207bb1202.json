@@ -1,1 +1,0 @@
-{"file":"core_versioned_docs/version-groovy/docs/conceptual/groovy-data-types.md","objects":{":log":{"type":"Log","data":"3: class java.lang.Integer\n3.14: class java.math.BigDecimal\ntrue: class java.lang.Boolean\nHello world!: class java.lang.String\n[1, 2, 3]: class java.util.ArrayList\n[1, 2, 3]: class [I\n[a:1, b:2, c:3]: class java.util.LinkedHashMap\n"}}}

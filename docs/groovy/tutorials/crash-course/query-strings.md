@@ -159,7 +159,7 @@ typecasted = emptyTable(10).update(
 )
 ```
 
-There are many more such operators supported in Deephaven. See the [guide on operators](../../how-to-guides/formulas-how-to.md#operators) to learn more.
+There are many more such operators supported in Deephaven. See the [guide on operators](../../how-to-guides/operators.md) to learn more.
 
 ## Built-in functions
 
@@ -466,7 +466,7 @@ addVarsClass = emptyTable(1).update(
 > [!NOTE]
 > In the two queries above, we used `ExecutionContext.getContext().getQueryLibrary().importClass(MyMathClass.class)` to import our class into the query library. This is a quick and easy way to make a user-defined class available in query strings. However, it is not best practice. It is recommended to define classes in their own Groovy files, and import those files via the `docker-compose.yml` file at startup. For an in-depth guide on how to do this, see [here](../../how-to-guides/install-and-use-java-packages.md).
 
-To learn more about using Groovy in query strings, see the user guides on [functions](../../how-to-guides/user-defined-functions.md) and [classes](../../how-to-guides/user-defined-functions.md#import-packages-with-user-defined-functions).
+To learn more about using Groovy in query strings, see the user guides on [functions](../../how-to-guides/groovy-closures.md) and [classes](../../how-to-guides/groovy-classes.md#classes-and-objects-in-groovy).
 
 In Groovy, new variables are global by default, but Deephaven provides tools that allow users finer control over the scoping of variables and queries.
 

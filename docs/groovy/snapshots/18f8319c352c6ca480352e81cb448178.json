@@ -1,0 +1,1 @@
+{"file":"how-to-guides/null-inf-nan.md","objects":{":log":{"type":"Log","data":"Null value for boolean: null\nNull value for char: ?\nNull value for byte: -128\nNull value for short: -32768\nNull value for int: -2147483648\nNull value for long: -9223372036854775808\nNull value for float: -3.4028235E38\nNull value for double: -1.7976931348623157E308\n"}}}

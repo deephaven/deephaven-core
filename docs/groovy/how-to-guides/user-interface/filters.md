@@ -192,4 +192,4 @@ The **Clear All Filters** option in the **Controls** menu removes all filters of
 
 ## Related documentation
 
-- [How to use filter query methods](../use-filters.md)
+- [How to use filter query methods](../filters.md)

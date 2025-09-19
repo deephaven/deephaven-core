@@ -37,6 +37,6 @@ result = source.update("Match = Strings_[i] == obj.myString()")
 ## Related Documentation
 
 - [Create a new table](../../../how-to-guides/new-and-empty-table.md#newtable)
-- [How to use Deephaven's built-in query language functions](../../../how-to-guides/query-language-functions.md)
+- [How to use Deephaven's built-in query language functions](../../../how-to-guides/built-in-functions.md)
 - [Query language functions](../query-library/query-language-function-reference.md)
 - [`update`](../../table-operations/select/update.md)
