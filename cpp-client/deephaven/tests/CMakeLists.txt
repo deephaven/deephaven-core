@@ -45,7 +45,7 @@ if (LINUX)
 endif()
 
 if (WIN32)
-    target_compile_options(dhclient_tests PRIVATE /W3)
+    target_compile_options(dhclient_tests PRIVATE /W3 /MP)
 endif()
 
 target_include_directories(dhclient_tests PRIVATE include/private)

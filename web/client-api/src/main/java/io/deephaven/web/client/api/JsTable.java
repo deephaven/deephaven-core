@@ -335,10 +335,11 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
         String[] keyCols = new String[0];
         String[] valueCols = new String[0];
         for (int i = 0; i < getColumns().length; i++) {
-            if (getColumns().getAt(i).isInputTableKeyColumn()) {
-                keyCols[keyCols.length] = getColumns().getAt(i).getName();
-            } else {
-                valueCols[valueCols.length] = getColumns().getAt(i).getName();
+            final Column column = getColumns().getAt(i);
+            if (column.isInputTableKeyColumn()) {
+                keyCols[keyCols.length] = column.getName();
+            } else if (column.isInputTableValueColumn()) {
+                valueCols[valueCols.length] = column.getName();
             }
         }
         return Promise.resolve(new JsInputTable(this, keyCols, valueCols));

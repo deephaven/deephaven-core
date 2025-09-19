@@ -1,0 +1,1 @@
+{"file":"core/docs/reference/table-operations/format/format-row-where.md","objects":{"tt":{"type":"Table","data":{"columns":[{"name":"Timestamp","type":"java.time.Instant"},{"name":"X","type":"long"}],"rows":[]}},"result":{"type":"Table","data":{"columns":[{"name":"Timestamp","type":"java.time.Instant"},{"name":"X","type":"long"}],"rows":[]}}}}

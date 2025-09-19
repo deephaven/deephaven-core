@@ -30,7 +30,10 @@ jobs:
           remote_user: ${{ secrets.DOCS_USER }}
           remote_key: ${{ secrets.DEEPHAVEN_CORE_SSH_KEY }}
   symlink:
-    if: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/heads/release/v') }}
+    # Unversioned links (latest) should take to the default which is main on the docs site.
+    # May change in the future to the latest stable release. If so, that should add a check
+    # that the ref starts with release/v and then use that version instead of main.
+    if: ${{ github.event_name == 'push' }}
     needs: [javadoc, typedoc, pydoc, cppdoc, rdoc, protodoc]
     runs-on: ubuntu-24.04
     steps:
@@ -38,8 +41,7 @@ jobs:
         run: |
           mkdir -p tmp-deephaven-core-v2/symlinks
           cd tmp-deephaven-core-v2/symlinks
-          ln -s ../${{ github.ref_name }} latest
-          ln -s ../main next
+          ln -s ../main latest
           
       - name: Deploy Symlinks
         uses: burnett01/rsync-deployments@5.2
@@ -51,6 +53,69 @@ jobs:
           remote_port: ${{ secrets.DOCS_PORT }}
           remote_user: ${{ secrets.DOCS_USER }}
           remote_key: ${{ secrets.DEEPHAVEN_CORE_SSH_KEY }}
+
+  core-docs-check:
+    if: ${{ github.event_name == 'pull_request' }} # PR previews are handled separately
+    runs-on: ubuntu-24.04
+    concurrency:
+      group: core-docs-check-${{ github.workflow }}-${{ github.ref }}
+      cancel-in-progress: true
+    steps:
+      - uses: actions/checkout@v5
+        with: # Does not need lfs to validate since the header file existing is enough for the check
+          sparse-checkout: /docs/
+          sparse-checkout-cone-mode: false
+
+      - name: Check formatting
+        run: ./docs/format -c
+
+      - name: Validate docs
+        run: ./docs/validate
+
+  core-docs-sync:
+    if: ${{ github.event_name == 'push' }}
+    permissions:
+      id-token: write # Required to upload to AWS
+      contents: read
+    runs-on: ubuntu-24.04
+    concurrency:
+      group: core-docs-sync-${{ github.workflow }}-${{ github.ref }}
+      cancel-in-progress: true
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          sparse-checkout: /docs/
+          sparse-checkout-cone-mode: false
+          lfs: true
+
+      - name: DHC Version
+        id: dhc-version
+        env:
+          REF_NAME: ${{ github.ref_name }}
+        # Remove the 'release/v' prefix if it exists
+        run: echo "version=${REF_NAME#release/v}" >> $GITHUB_OUTPUT
+
+      - name: Sync core Python to the salmon bucket
+        id: sync-python
+        uses: deephaven/salmon-sync@v1
+        with:
+          source: docs/python
+          destination: deephaven/deephaven-core/docs/${{ steps.dhc-version.outputs.version }}
+          production: true
+          temporary: false
+          aws-role: ${{ vars.DOCS_AWS_ROLE }}
+
+      - name: Sync core Groovy to the salmon bucket
+        id: sync-groovy
+        uses: deephaven/salmon-sync@v1
+        with:
+          source: docs/groovy
+          destination: deephaven/deephaven-core/groovy/docs/${{ steps.dhc-version.outputs.version }}
+          production: true
+          temporary: false
+          aws-role: ${{ vars.DOCS_AWS_ROLE }}
+
   javadoc:
     needs: [makedirs]
     runs-on: ubuntu-24.04
@@ -60,7 +125,7 @@ jobs:
       cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup JDK 11
         id: setup-java-11
@@ -122,7 +187,7 @@ jobs:
       cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup JDK 11
         id: setup-java-11
@@ -184,7 +249,7 @@ jobs:
       cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup JDK 11
         id: setup-java-11
@@ -273,7 +338,7 @@ jobs:
       cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup JDK 11
         id: setup-java-11
@@ -347,7 +412,7 @@ jobs:
       cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup JDK 11
         id: setup-java-11
@@ -405,7 +470,7 @@ jobs:
       cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup JDK 11
         id: setup-java-11

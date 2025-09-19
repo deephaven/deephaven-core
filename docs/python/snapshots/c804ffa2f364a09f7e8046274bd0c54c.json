@@ -1,0 +1,1 @@
+{"file":"core/docs/reference/query-language/types/nulls.md","objects":{":log":{"type":"Log","data":"{'byte': -128, 'short': -32768, 'int': -2147483648, 'long': -9223372036854775808, 'float': -3.4028234663852886e+38, 'double': -1.7976931348623157e+308}\n"}}}

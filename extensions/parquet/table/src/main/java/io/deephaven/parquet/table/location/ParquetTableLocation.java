@@ -330,7 +330,13 @@ public class ParquetTableLocation extends AbstractTableLocation {
         if (table == null) {
             return null;
         }
-        return StandaloneDataIndex.from(table, columns, INDEX_ROW_SET_COLUMN_NAME);
+        final RowSet locationRowSet = getRowSet();
+        final Table adjustedTable = locationRowSet.isFlat() ? table
+                : table.updateView(List.of(new FunctionalColumn<>(
+                        INDEX_ROW_SET_COLUMN_NAME, RowSet.class,
+                        INDEX_ROW_SET_COLUMN_NAME, RowSet.class,
+                        (final RowSet indexRowSet) -> locationRowSet.subSetForPositions(indexRowSet))));
+        return StandaloneDataIndex.from(adjustedTable, columns, INDEX_ROW_SET_COLUMN_NAME);
     }
 
     private static class IndexFileMetadata {

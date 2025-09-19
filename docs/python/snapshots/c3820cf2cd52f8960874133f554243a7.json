@@ -1,0 +1,1 @@
+{"file":"core/docs/tutorials/crash-course/8-export-data.md","objects":{"source":{"type":"Table","data":{"columns":[{"name":"Timestamp","type":"java.time.Instant"},{"name":"X","type":"int"}],"rows":[[{"value":"2024-07-24 11:10:34.000"},{"value":"0"}]]}}}}

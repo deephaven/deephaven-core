@@ -1,0 +1,1 @@
+{"file":"core_versioned_docs/version-groovy/docs/reference/engine/getOrCreateDataIndex.md","objects":{":log":{"type":"Log","data":"Has index on Category BEFORE: false\nIndex on Category: TableBackedDataIndex-1116200437[1]\nHas index on Category AFTER: true\nIndex on Category, ID: TableBackedDataIndex-1116200437[1]\nHas index on Category, ID: true\n"}}}

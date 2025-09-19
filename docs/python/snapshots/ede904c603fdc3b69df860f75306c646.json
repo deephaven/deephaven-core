@@ -1,0 +1,1 @@
+{"file":"core/docs/how-to-guides/partitioned-tables.md","objects":{"keys":{"type":"Table","data":{"columns":[{"name":"Letter","type":"java.lang.String"}],"rows":[[{"value":"A"}],[{"value":"B"}],[{"value":"C"}]]}}}}
