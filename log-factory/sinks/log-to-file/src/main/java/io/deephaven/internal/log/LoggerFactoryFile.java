@@ -45,7 +45,6 @@ public final class LoggerFactoryFile extends LoggerFactorySingleCache {
     private static ZoneId zoneId() {
         final String timeZone =
                 System.getProperty("io.deephaven.internal.log.LoggerFactoryFile.timeZone");
-        TimeZone.getTimeZone(timeZone).toZoneId();
         return timeZone == null ? ZoneId.systemDefault() : ZoneId.of(timeZone, ZoneId.SHORT_IDS);
     }
 
