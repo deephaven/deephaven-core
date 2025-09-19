@@ -17,9 +17,9 @@ public abstract class SelectOrViewColumnLayer extends DependencyLayerBase {
             final SelectColumn sc,
             final ColumnSource<?> ws,
             final ColumnSource<?> optionalUnderlying,
-            final String[] deps,
+            final String[] recomputeDependencies,
             final ModifiedColumnSet mcsBuilder) {
-        super(context, sc, ws, deps, mcsBuilder);
+        super(context, sc, ws, recomputeDependencies, mcsBuilder);
         this.optionalUnderlying = optionalUnderlying;
     }
 

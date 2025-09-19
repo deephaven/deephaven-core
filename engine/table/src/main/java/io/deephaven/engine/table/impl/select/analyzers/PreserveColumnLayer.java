@@ -21,9 +21,9 @@ final public class PreserveColumnLayer extends DependencyLayerBase {
             final SelectAndViewAnalyzer.AnalyzerContext context,
             final SelectColumn sc,
             final ColumnSource<?> cs,
-            final String[] deps,
+            final String[] recomputeDependencies,
             final ModifiedColumnSet mcsBuilder) {
-        super(context, sc, cs, deps, mcsBuilder);
+        super(context, sc, cs, recomputeDependencies, mcsBuilder);
     }
 
     @Override

@@ -19,12 +19,16 @@ public class ConstantColumnLayer extends SelectOrViewColumnLayer {
             final SelectAndViewAnalyzer.AnalyzerContext context,
             final SelectColumn sc,
             final WritableColumnSource<?> ws,
-            final String[] deps,
+            final String[] recomputeDependencies,
             final ModifiedColumnSet mcsBuilder) {
-        super(context, sc, ws, null, deps, mcsBuilder);
+        super(context, sc, ws, null, recomputeDependencies, mcsBuilder);
         if (sc.recomputeOnModifiedRow()) {
             throw new IllegalArgumentException(
                     "SelectColumn may not have alwaysEvaluate set for a constant column: " + sc);
+        }
+        if (!sc.isStateless()) {
+            throw new IllegalArgumentException(
+                    "SelectColumn may not have state for a constant column: " + sc);
         }
         initialize(ws);
     }

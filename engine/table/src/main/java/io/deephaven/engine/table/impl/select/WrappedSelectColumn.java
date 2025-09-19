@@ -16,6 +16,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * {@link SelectColumn} implementation that wraps another {@link SelectColumn}.
@@ -135,5 +136,25 @@ abstract class WrappedSelectColumn implements SelectColumn {
     @Override
     public Expression expression() {
         return inner.expression();
+    }
+
+    @Override
+    public boolean hasConstantArrayAccess() {
+        return inner.hasConstantArrayAccess();
+    }
+
+    @Override
+    public boolean hasConstantValue() {
+        return inner.hasConstantValue();
+    }
+
+    @Override
+    public Optional<SourceColumn> maybeGetSourceColumn() {
+        return inner.maybeGetSourceColumn();
+    }
+
+    @Override
+    public Optional<FormulaColumn> maybeGetFormulaColumn() {
+        return inner.maybeGetFormulaColumn();
     }
 }
