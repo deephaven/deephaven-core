@@ -939,8 +939,6 @@ public class RegionedColumnSourceManager
 
         @Override
         public void close() {
-            columnDefinitions.clear();
-            renameMap.clear();
             super.close();
         }
     }

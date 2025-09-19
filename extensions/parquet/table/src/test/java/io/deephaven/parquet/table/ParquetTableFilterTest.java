@@ -371,8 +371,6 @@ public final class ParquetTableFilterTest {
 
         complexFilter = Filter.or(Filter.from("sequential_val <= 500", "sequential_val = 555"));
         verifyResults(diskTable.where(complexFilter), memTable.where(complexFilter));
-
-        verifyResults(diskTable.where(complexFilter), memTable.where(complexFilter));
     }
 
     @Test
@@ -805,7 +803,6 @@ public final class ParquetTableFilterTest {
 
         complexFilter = Filter.or(Filter.from("symbol < `1000`", "symbol > `0900`"));
         verifyResults(diskTable.where(complexFilter), memTable.where(complexFilter));
-
 
         // Rename columns and do some more tests.
         final Table renamedDiskTable = diskTable.renameColumns(

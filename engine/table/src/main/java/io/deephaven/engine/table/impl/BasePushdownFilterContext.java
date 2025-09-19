@@ -41,7 +41,7 @@ public class BasePushdownFilterContext implements PushdownFilterContext {
     /**
      * A dummy table to use for initializing {@link ConditionFilter}.
      */
-    private volatile QueryTable condFilterInitTable = null;
+    private volatile QueryTable conditionalFilterInitTable;
 
     /**
      * Interface for a unified chunk filter that can be used to apply a filter to a chunk of data, whether the
@@ -167,21 +167,22 @@ public class BasePushdownFilterContext implements PushdownFilterContext {
             // used to extract a chunk filter kernel from the conditional filter and bind it to the correct name and
             // type without capturing references to the actual table or its column sources.
             // That is why it can be reused across threads.
-            if (condFilterInitTable == null) {
+            if (conditionalFilterInitTable == null) {
                 synchronized (this) {
-                    if (condFilterInitTable == null) {
+                    if (conditionalFilterInitTable == null) {
                         final Map<String, ColumnSource<?>> columnSourceMap = Map.of(filter.getColumns().get(0),
                                 NullValueColumnSource.getInstance(
                                         columnSources.get(0).getType(),
                                         columnSources.get(0).getComponentType()));
-                        condFilterInitTable = new QueryTable(RowSetFactory.empty().toTracking(), columnSourceMap);
+                        conditionalFilterInitTable =
+                                new QueryTable(RowSetFactory.empty().toTracking(), columnSourceMap);
                     }
                 }
             }
             try {
                 final ConditionFilter conditionFilter = (ConditionFilter) filter;
                 final AbstractConditionFilter.Filter acfFilter =
-                        conditionFilter.getFilter(condFilterInitTable, condFilterInitTable.getRowSet());
+                        conditionFilter.getFilter(conditionalFilterInitTable, conditionalFilterInitTable.getRowSet());
 
                 unifiedChunkFilter = new UnifiedChunkFilter() {
                     // Create the context for the ConditionFilter, which will be used to filter chunks.
@@ -225,6 +226,6 @@ public class BasePushdownFilterContext implements PushdownFilterContext {
     @MustBeInvokedByOverriders
     @Override
     public void close() {
-        condFilterInitTable = null;
+        conditionalFilterInitTable = null;
     }
 }
