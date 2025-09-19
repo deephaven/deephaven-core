@@ -328,6 +328,10 @@
                     "path": "conceptual/time-in-deephaven.md"
                   },
                   {
+                    "label": "Work with calendars",
+                    "path": "how-to-guides/business-calendar.md"
+                  },
+                  {
                     "label": "Downsample data",
                     "path": "how-to-guides/downsampling.md"
                   }
