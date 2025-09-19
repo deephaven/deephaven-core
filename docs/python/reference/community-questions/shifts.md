@@ -1,0 +1,122 @@
+---
+title: How do row keys and positional indices behave during merge table operations?
+sidebar_label: How do row keys and positional indices behave during merge table operations?
+---
+
+_When merging tables in Deephaven, I understand that "shifts" can happen when one table grows beyond its allocated row key slots. How do the row key (k) and positional index (i) attributes change during these shifts, and what impact does this have on downstream operations?_
+
+When you merge tables in Deephaven, the engine pre-allocates row key slots for each constituent table. Understanding how row keys (`k`) and positional indices (`i`) behave during growth and shifts is crucial for working with formulas that reference these attributes.
+
+## Row key allocation and shifts
+
+When you create a merged table, the engine reserves contiguous ranges of row keys for each constituent table:
+
+```python test-set=1 order=table_a,table_b,my_merged_table
+from deephaven import merge, new_table
+from deephaven.column import string_col
+
+# Create two tables with sample data
+table_a = new_table([string_col("someValue", ["apple", "banana"])])
+table_b = new_table([string_col("someValue", ["zebra", "bear"])])
+
+# Merge them
+my_merged_table = merge(
+    [
+        table_a.view(formulas=["sourceTable=`table_a`", "someValue"]),
+        table_b.view(formulas=["sourceTable=`table_b`", "someValue"]),
+    ]
+)
+```
+
+Initially, the engine might allocate:
+
+- **table_a**: row key slots \[0, 4095\]
+- **table_b**: row key slots \[4096, 8191\]
+
+## Initial state with few rows
+
+When each table gets one row, the merged table looks like:
+
+| sourceTable | someValue | i | k    |
+| ----------- | --------- | - | ---- |
+| table_a     | apple     | 0 | 0    |
+| table_a     | banana    | 1 | 1    |
+| table_b     | zebra     | 2 | 4096 |
+| table_b     | bear      | 3 | 4097 |
+
+## What happens during a shift
+
+If table_a grows beyond its allocated 4096 slots, the engine must shift table_b to make room. After adding 4096 new rows to table_a, the allocation becomes:
+
+- **table_a**: row key slots \[0, 8191\]
+- **table_b**: row key slots \[8192, 12287\]
+
+The merged table now looks like:
+
+| sourceTable | someValue | i    | k    |
+| ----------- | --------- | ---- | ---- |
+| table_a     | apple     | 0    | 0    |
+| table_a     | banana    | 1    | 1    |
+| ...         | ...       | ...  | ...  |
+| table_a     | avocado   | 4095 | 4095 |
+| table_a     | peach     | 4096 | 4096 |
+| table_a     | blueberry | 4097 | 4097 |
+| table_b     | zebra     | 4098 | 8192 |
+| table_b     | bear      | 4099 | 8193 |
+
+## Key behavior: row keys change, but row data doesn't
+
+The critical insight is that the zebra and bear rows **were not modified** - they were simply shifted to new row key positions. Their row keys changed from 4096/4097 to 8192/8193, but the actual row data remains unchanged.
+
+## Impact on formulas using positional index (i)
+
+This behavior has important implications for formulas that reference the positional index `i`. Consider this example:
+
+```python should-fail
+# This would only work if you set AbstractFormulaColumn.allowUnsafeRefreshingFormulas=true
+my_merged_table_with_idx = my_merged_table.update("MyRowIdx = someValue + i")
+```
+
+**Before the shift:**
+
+| sourceTable | someValue | i | k    | MyRowIdx |
+| ----------- | --------- | - | ---- | -------- |
+| table_a     | apple     | 0 | 0    | apple0   |
+| table_a     | banana    | 1 | 1    | banana1  |
+| table_b     | zebra     | 2 | 4096 | zebra2   |
+| table_b     | bear      | 3 | 4097 | bear3    |
+
+**After adding one row to table_a:**
+
+| sourceTable | someValue | i | k    | MyRowIdx |
+| ----------- | --------- | - | ---- | -------- |
+| table_a     | apple     | 0 | 0    | apple0   |
+| table_a     | banana    | 1 | 1    | banana1  |
+| table_a     | orange    | 2 | 2    | orange2  |
+| table_b     | zebra     | 3 | 4096 | zebra2   |
+| table_b     | bear      | 4 | 4097 | bear3    |
+
+Notice that both the new "orange" row and the existing "zebra" row appear to have the same positional index behavior, but the zebra and bear rows retain their original `MyRowIdx` values ("zebra2", "bear3") because those rows were never actually modified.
+
+**After a major shift (4098 rows in table_a):**
+
+| sourceTable | someValue | i    | k    | MyRowIdx      |
+| ----------- | --------- | ---- | ---- | ------------- |
+| table_a     | apple     | 0    | 0    | apple0        |
+| table_a     | banana    | 1    | 1    | banana1       |
+| table_a     | orange    | 2    | 2    | orange2       |
+| ...         | ...       | ...  | ...  | ...           |
+| table_a     | avocado   | 4095 | 4095 | avocado4095   |
+| table_a     | peach     | 4096 | 4096 | peach4096     |
+| table_a     | blueberry | 4097 | 4097 | blueberry4097 |
+| table_b     | zebra     | 4098 | 8192 | zebra2        |
+| table_b     | bear      | 4099 | 8193 | bear3         |
+
+The zebra and bear rows maintain their original `MyRowIdx` values because the engine never re-evaluates formulas for rows that weren't actually modified - this is the key performance benefit of the shift mechanism.
+
+## Why shifts exist
+
+Shifts are a performance optimization that allows the engine to avoid re-evaluating formulas, joins, and aggregations when rows are simply moved to accommodate table growth. Only when row data is actually modified does the engine need to recalculate dependent operations.
+
+> [!NOTE]
+> These FAQ pages contain answers to questions about Deephaven Community Core that our users have asked in our [Community Slack](/slack). If you have a question that is not answered in our documentation, [join our Community](/slack) and ask it there. We are happy to help!
