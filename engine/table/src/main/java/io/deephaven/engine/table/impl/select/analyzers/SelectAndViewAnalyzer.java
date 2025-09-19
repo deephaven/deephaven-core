@@ -80,45 +80,6 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
         }
     }
 
-    private SelectColumn[] maybeAddBarriers(SelectColumn[] rawSelectColumns) {
-        SelectColumn[] selectColumns = null;
-        Object[] injectedBarriers = null;
-
-
-        for (int ii = 0; ii < rawSelectColumns.length; ++ii) {
-            if (!rawSelectColumns[ii].isStateless()) {
-                // this needs to be evaluated serially
-                if (selectColumns == null) {
-                    injectedBarriers = Arrays.stream(rawSelectColumns)
-                            .map(x -> new BarrierWithName("Injected barrier for " + x.getName()))
-                            .toArray(Object[]::new);
-                    selectColumns = new SelectColumn[rawSelectColumns.length];
-                    for (int jj = 0; jj < rawSelectColumns.length; ++jj) {
-                        selectColumns[jj] = rawSelectColumns[ii].withBarriers(injectedBarriers[jj]);
-                    }
-                }
-                if (ii > 0) {
-                    selectColumns[ii] = selectColumns[ii].respectsBarriers(Arrays.copyOf(injectedBarriers, ii));
-                }
-                for (int jj = ii + 1; jj < selectColumns.length; ++jj) {
-                    selectColumns[jj] = selectColumns[jj].respectsBarriers(injectedBarriers[ii]);
-                }
-            }
-        }
-        if (selectColumns == null) {
-            return rawSelectColumns;
-        }
-        return selectColumns;
-    }
-
-    private static class BarrierWithName {
-        final String name;
-
-        private BarrierWithName(String name) {
-            this.name = name;
-        }
-    }
-
     public static AnalyzerContext createContext(
             final QueryTable parentTable,
             final Mode mode,
@@ -159,7 +120,6 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
         }
 
         final Map<Object, Integer> barrierToLayerIndex = new IdentityHashMap<>();
-        int idx = 0;
 
         final Set<String> resultColumnNames = new HashSet<>();
         for (final SelectColumn sc : selectColumns) {
@@ -198,7 +158,6 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
 
         compilationProcessor.compile();
 
-        final TIntArrayList serialLayerIndices = new TIntArrayList();
         final TIntIntMap columnIndexToLayerIndex = new TIntIntHashMap(selectColumns.length, 0.5f, -1, -1);
 
         // Second pass builds the analyzer and destination columns
@@ -223,9 +182,7 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
 
             final Object[] respectedBarriers = sc.respectedBarriers();
             if (respectedBarriers != null) {
-                final String[] columnsDeclaringBarrier = new String[respectedBarriers.length];
-                for (int respectIndex = 0; respectIndex < respectedBarriers.length; ++respectIndex) {
-                    final Object barrier = respectedBarriers[respectIndex];
+                for (final Object barrier : respectedBarriers) {
                     final Integer layerForBarrier = barrierToLayerIndex.get(barrier);
                     if (layerForBarrier == null) {
                         throw new IllegalArgumentException(
@@ -233,12 +190,6 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
                     }
                     execDeps.add(layerForBarrier);
                 }
-            }
-
-            if (!sc.isStateless()) {
-                execDeps.addAll(columnIndexToLayerIndex.valueCollection());
-            } else {
-                execDeps.addAll(serialLayerIndices);
             }
 
             final Stream<String> allDependencies =
@@ -344,11 +295,6 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
                 }
                 default:
                     throw new UnsupportedOperationException("Unsupported case " + mode);
-            }
-
-            if (!sc.isStateless()) {
-                // all future columns must respect this layer
-                serialLayerIndices.add(layer.layerIndex);
             }
 
             final Object[] declaredBarriers = sc.barriers();
