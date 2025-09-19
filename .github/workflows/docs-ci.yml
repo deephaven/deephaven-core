@@ -8,6 +8,7 @@ on:
 
 jobs:
   makedirs:
+    if: ${{ github.repository_owner == 'deephaven' }}
     runs-on: ubuntu-24.04
     steps:
       - name: Make Directories
@@ -73,7 +74,7 @@ jobs:
         run: ./docs/validate
 
   core-docs-sync:
-    if: ${{ github.event_name == 'push' }}
+    if: ${{ github.event_name == 'push' && github.repository_owner == 'deephaven' }}
     permissions:
       id-token: write # Required to upload to AWS
       contents: read
