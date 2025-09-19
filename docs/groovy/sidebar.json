@@ -2591,6 +2591,10 @@
                   {
                     "label": "Where can I find the password for the Deephaven IDE?",
                     "path": "reference/community-questions/find-password-for-ide.md"
+                  },
+                  {
+                    "label": "How do I increase the maximum message size?",
+                    "path": "reference/community-questions/message-larger-than-max.md"
                   }
                 ]
               },
