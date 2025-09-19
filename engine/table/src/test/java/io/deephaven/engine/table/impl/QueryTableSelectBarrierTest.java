@@ -20,6 +20,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static io.deephaven.api.agg.Aggregation.*;
@@ -74,8 +75,6 @@ public class QueryTableSelectBarrierTest {
 
             final Table u = x.update(List.of(SelectColumn.ofStateless(sa).withBarriers(a),
                     SelectColumn.ofStateless(sb).respectsBarriers(a)));
-
-            TableTools.showWithRowSet(u);
 
             // check for swizzling
             checkMixedColumns(u, size, false);
@@ -194,8 +193,6 @@ public class QueryTableSelectBarrierTest {
             // we also need to make sure that C is actually B[i - 1]
             assertTrue(z.where("C != B_[i - 1]").isEmpty());
 
-            TableTools.show(z);
-
             // now check for swizzling with A and B; but not D because the shift split this into two distinct operations
             // internally
             checkMixedAandB(z);
@@ -233,7 +230,6 @@ public class QueryTableSelectBarrierTest {
                     SelectColumn.ofStateless(sd).respectsBarriers(a)));
 
             // check for swizzling
-            TableTools.show(v);
             checkMixedColumns(v, size, true);
 
             // we should have parallelized each column
@@ -248,36 +244,74 @@ public class QueryTableSelectBarrierTest {
         }
     }
 
+    public static class SlowedAtomicInteger {
+        private final AtomicInteger wrapped;
+        private AtomicBoolean quickCalled = new AtomicBoolean(false);
+
+        SlowedAtomicInteger(AtomicInteger wrapped) {
+            this.wrapped = wrapped;
+        }
+
+        public int getAndIncrementSlow() {
+            final int retVal = wrapped.getAndIncrement();
+
+            if (!quickCalled.get()) {
+                try {
+                    Thread.sleep(1);
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+
+            return retVal;
+        }
+
+        public int getAndIncrementQuick() {
+            quickCalled.set(true);
+            return wrapped.getAndIncrement();
+        }
+    }
+
     @Test
     public void testBarrierAliases() {
         QueryTable.FORCE_PARALLEL_SELECT_AND_UPDATE = true;
 
-        final int size = 1_000_000;
+        final int size = 500_000;
         final Table x = TableTools.emptyTable(size);
-        final AtomicInteger a = new AtomicInteger();
-        final AtomicInteger b = new AtomicInteger(10_000_000);
+        final AtomicInteger a = new AtomicInteger(0);
+        final int bStart = 10_000_000;
+        final AtomicInteger b = new AtomicInteger(bStart);
         QueryScope.addParam("a", a);
+        SlowedAtomicInteger slow_a = new SlowedAtomicInteger(a);
+        QueryScope.addParam("slow_a", slow_a);
         QueryScope.addParam("b", b);
+        QueryScope.addParam("bStart", bStart);
+        QueryScope.addParam("size", size);
 
         try (final SafeCloseable ignored = new SaveQueryTableOptions()) {
             QueryTable.FORCE_PARALLEL_SELECT_AND_UPDATE = true;
 
-            final SelectColumn sa = SelectColumnFactory.getExpression("A=a.getAndIncrement()");
+            final SelectColumn sa = SelectColumnFactory.getExpression("A=slow_a.getAndIncrementSlow()");
             final SelectColumn sb = SelectColumnFactory.getExpression("B=b.getAndIncrement()");
             final SelectColumn sc = SelectColumnFactory.getExpression("C=A");
             final SelectColumn sd = SelectColumnFactory.getExpression("D=B");
             final SelectColumn sa1 = SelectColumnFactory.getExpression("A=b.getAndIncrement()");
-            final SelectColumn sb1 = SelectColumnFactory.getExpression("B=a.getAndIncrement()");
-            final Table y = x.update(List.of(sa, sb, sc, sd, sa1, sb1));
+            final SelectColumn sb1 = SelectColumnFactory.getExpression("B=slow_a.getAndIncrementQuick()");
+
+            // let a be fast since we are serial
+            slow_a.quickCalled.set(true);
+            final Table y = x.update(List.of(sb, sa, sc, sd, sa1, sb1));
 
             final Table expected =
-                    y.updateView("C=i", "D=10_000_000 + i", "A=11_000_000 + i", "B=1_000_000 + i");
+                    y.updateView("C=i", "D=bStart + i", "A=bStart + size + i", "B=size + i");
             assertTableEquals(expected, y);
 
             a.set(0);
-            b.set(10_000_000);
+            b.set(bStart);
+            // a is slow until the second column starts doing work
+            slow_a.quickCalled.set(false);
 
-            final Table z = x.update(List.of(SelectColumn.ofStateless(sa), SelectColumn.ofStateless(sb),
+            final Table z = x.update(List.of(SelectColumn.ofStateless(sb), SelectColumn.ofStateless(sa),
                     SelectColumn.ofStateless(sc), SelectColumn.ofStateless(sd), SelectColumn.ofStateless(sa1),
                     SelectColumn.ofStateless(sb1)));
 
@@ -290,12 +324,14 @@ public class QueryTableSelectBarrierTest {
             final Table min_z = z.aggBy(AggMin("A", "B", "C", "D"));
             final Table max_z = z.aggBy(AggMax("A", "B", "C", "D"));
             assertTrue(getValInt(min_z, "B") < getValInt(max_z, "C"));
-            assertTrue(getValInt(min_z, "B") < getValInt(max_z, "D"));
+            assertTrue(getValInt(min_z, "A") < getValInt(max_z, "D"));
 
             // but now we add a barrier to A(1); and then respect it for B(2)
             a.set(0);
-            b.set(10_000_000);
-            final Table u = x.update(List.of(SelectColumn.ofStateless(sa).withBarriers(a), SelectColumn.ofStateless(sb),
+            // let A proceed fast, so that we don't get hung up on a thread sleep for each thing
+            slow_a.quickCalled.set(true);
+            b.set(bStart);
+            final Table u = x.update(List.of(SelectColumn.ofStateless(sb), SelectColumn.ofStateless(sa).withBarriers(a),
                     SelectColumn.ofStateless(sc), SelectColumn.ofStateless(sd), SelectColumn.ofStateless(sa1),
                     SelectColumn.ofStateless(sb1).respectsBarriers(a)));
 
@@ -312,6 +348,30 @@ public class QueryTableSelectBarrierTest {
         }
     }
 
+    @Test
+    public void testBarrierErrors() {
+        final Table t = TableTools.emptyTable(1);
+
+        final IllegalArgumentException iae1 = assertThrows(IllegalArgumentException.class,
+                () -> t.update(List.of(SelectColumnFactory.getExpression("A=1").withBarriers(t))));
+        assertEquals(
+                "Constant values are not evaluated during select() and update() processing, therefore may not declare barriers.",
+                iae1.getMessage());
+        final IllegalArgumentException iae2 = assertThrows(IllegalArgumentException.class,
+                () -> t.update(List.of(SelectColumnFactory.getExpression("A=i").withBarriers(t),
+                        SelectColumnFactory.getExpression("B=1").respectsBarriers(t))));
+        assertEquals(
+                "Constant values are not evaluated during select() and update() processing, therefore may not respect barriers.",
+                iae2.getMessage());
+        final IllegalArgumentException iae3 = assertThrows(IllegalArgumentException.class,
+                () -> t.update(List.of(SelectColumnFactory.getExpression("A=i").withBarriers(t),
+                        SelectColumnFactory.getExpression("B=2*i").withBarriers(t))));
+        assertEquals("Duplicate barrier, emptyTable(1), declared for A and B", iae3.getMessage());
+        final IllegalArgumentException iae4 = assertThrows(IllegalArgumentException.class,
+                () -> t.update(List.of(SelectColumnFactory.getExpression("A=i"),
+                        SelectColumnFactory.getExpression("B=2*i").respectsBarriers(t))));
+        assertEquals("Respected barrier, emptyTable(1), is not defined for B", iae4.getMessage());
+    }
 
     private static void checkIndividualSums(int size, Table u) {
         final long expectedSumA = (((long) size - 1) * size) / 2;

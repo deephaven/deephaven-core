@@ -43,6 +43,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.*;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class SelectAndViewAnalyzer implements LogOutputAppendable {
@@ -211,9 +212,19 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
             }
 
             if (sc.hasConstantValue()) {
+                if (sc.barriers() != null && sc.barriers().length > 0) {
+                    throw new IllegalArgumentException(
+                            "Constant values are not evaluated during select() and update() processing, therefore may not declare barriers.");
+                }
+                if (sc.respectsBarriers() != null && sc.respectedBarriers().length > 0) {
+                    throw new IllegalArgumentException(
+                            "Constant values are not evaluated during select() and update() processing, therefore may not respect barriers.");
+                }
                 final WritableColumnSource<?> constViewSource =
                         SingleValueColumnSource.getSingleValueColumnSource(sc.getReturnedType());
-                context.addLayer(new ConstantColumnLayer(context, sc, constViewSource, distinctDeps, mcsBuilder));
+                final ConstantColumnLayer layer =
+                        new ConstantColumnLayer(context, sc, constViewSource, distinctDeps, mcsBuilder);
+                context.addLayer(layer);
                 continue;
             }
 
@@ -297,21 +308,27 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
                     throw new UnsupportedOperationException("Unsupported case " + mode);
             }
 
-            final Object[] declaredBarriers = sc.barriers();
-            if (declaredBarriers != null) {
-                for (final Object barrier : declaredBarriers) {
-                    final Integer oldIndex = barrierToLayerIndex.put(barrier, layer.getLayerIndex());
-                    if (oldIndex != null) {
-                        throw new IllegalArgumentException("Duplicate barrier, " + barrier + ", declared for "
-                                + context.layers.get(oldIndex).getLayerColumnNames() + " and" + sc.getName());
-                    }
-                }
-            }
-
-            context.addLayer(layer);
+            addDeclaredBarriersToMap(sc, barrierToLayerIndex, layer, context);
         }
 
         return context;
+    }
+
+    private static void addDeclaredBarriersToMap(SelectColumn sc, Map<Object, Integer> barrierToLayerIndex, Layer layer,
+            AnalyzerContext context) {
+        final Object[] declaredBarriers = sc.barriers();
+        if (declaredBarriers != null) {
+            for (final Object barrier : declaredBarriers) {
+                final Integer oldIndex = barrierToLayerIndex.put(barrier, layer.getLayerIndex());
+                if (oldIndex != null) {
+                    throw new IllegalArgumentException("Duplicate barrier, " + barrier + ", declared for "
+                            + String.join(", ", context.layers.get(oldIndex).getLayerColumnNames()) + " and "
+                            + sc.getName());
+                }
+            }
+        }
+
+        context.addLayer(layer);
     }
 
     private static void maybeSetStaticColumnSourceImmutable(final ColumnSource<?> columnSource) {
