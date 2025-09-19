@@ -13,6 +13,8 @@ public class TestExecutionContext {
     public static final OperationInitializationThreadPool OPERATION_INITIALIZATION =
             new OperationInitializationThreadPool(ThreadInitializationFactory.NO_OP);
 
+    public static final String SESSION_ID = null;
+
     public static final ControlledUpdateGraph UPDATE_GRAPH = new ControlledUpdateGraph(OPERATION_INITIALIZATION);
 
     public static ExecutionContext createForUnitTests() {
@@ -23,6 +25,7 @@ public class TestExecutionContext {
                 .setQueryCompiler(QueryCompilerImpl.createForUnitTests())
                 .setUpdateGraph(UPDATE_GRAPH)
                 .setOperationInitializer(OPERATION_INITIALIZATION)
+                .setSessionId(SESSION_ID)
                 .build();
     }
 }

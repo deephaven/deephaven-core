@@ -164,7 +164,7 @@ public class SessionState {
         this.scheduler = scheduler;
         this.errorTransformer = errorTransformer;
         this.authContext = authContext;
-        this.executionContext = executionContextProvider.get().withAuthContext(authContext);
+        this.executionContext = executionContextProvider.get().withAuthContext(authContext).withSessionId(sessionId);
         log.debug().append(logPrefix).append("session initialized").endl();
     }
 
