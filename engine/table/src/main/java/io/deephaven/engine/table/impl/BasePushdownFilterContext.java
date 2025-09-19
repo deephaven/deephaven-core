@@ -34,9 +34,10 @@ public class BasePushdownFilterContext implements PushdownFilterContext {
     private final boolean isRangeFilter;
     private final boolean isMatchFilter;
     private final boolean supportsChunkFilter;
-    private final boolean filterIncludesNulls;
 
     private long executedFilterCost;
+
+    private volatile Boolean filterIncludesNulls;
 
     /**
      * A dummy table to use for initializing {@link ConditionFilter}.
@@ -69,21 +70,7 @@ public class BasePushdownFilterContext implements PushdownFilterContext {
             supportsChunkFilter =
                     (filter instanceof ExposesChunkFilter && ((ExposesChunkFilter) filter).chunkFilter().isPresent())
                             || filter instanceof ConditionFilter;
-
-            // Create a dummy table with a single row and column, and `null` entry, and apply the filter to see if
-            // the filter includes nulls.
-            final ColumnSource<?> columnSource = columnSources.get(0);
-            final NullValueColumnSource<?> nullValueColumnSource =
-                    NullValueColumnSource.getInstance(columnSource.getType(), columnSource.getComponentType());
-            final Map<String, ColumnSource<?>> columnSourceMap =
-                    Map.of(filter.getColumns().get(0), nullValueColumnSource);
-            try (final SafeCloseable ignored = LivenessScopeStack.open();
-                    final TrackingWritableRowSet rowSet = RowSetFactory.flat(1).toTracking()) {
-                final Table nullTestDummyTable = new QueryTable(rowSet, columnSourceMap);
-                try (final RowSet result = filter.filter(rowSet, rowSet, nullTestDummyTable, false)) {
-                    filterIncludesNulls = !result.isEmpty();
-                }
-            }
+            filterIncludesNulls = null; // lazily initialized
         } else {
             isRangeFilter = false;
             isMatchFilter = false;
@@ -126,6 +113,26 @@ public class BasePushdownFilterContext implements PushdownFilterContext {
      * Whether this filter includes nulls in its results.
      */
     public boolean filterIncludesNulls() {
+        if (filterIncludesNulls == null) {
+            synchronized (this) {
+                if (filterIncludesNulls == null) {
+                    // Create a dummy table with a single row and column, and `null` entry, and apply the filter to see
+                    // if the filter includes nulls.
+                    final ColumnSource<?> columnSource = columnSources.get(0);
+                    final NullValueColumnSource<?> nullValueColumnSource =
+                            NullValueColumnSource.getInstance(columnSource.getType(), columnSource.getComponentType());
+                    final Map<String, ColumnSource<?>> columnSourceMap =
+                            Map.of(filter.getColumns().get(0), nullValueColumnSource);
+                    try (final SafeCloseable ignored = LivenessScopeStack.open();
+                            final TrackingWritableRowSet rowSet = RowSetFactory.flat(1).toTracking()) {
+                        final Table nullTestDummyTable = new QueryTable(rowSet, columnSourceMap);
+                        try (final RowSet result = filter.filter(rowSet, rowSet, nullTestDummyTable, false)) {
+                            filterIncludesNulls = !result.isEmpty();
+                        }
+                    }
+                }
+            }
+        }
         return filterIncludesNulls;
     }
 
