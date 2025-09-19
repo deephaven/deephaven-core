@@ -248,6 +248,70 @@ public class QueryTableSelectBarrierTest {
         }
     }
 
+    @Test
+    public void testBarrierAliases() {
+        QueryTable.FORCE_PARALLEL_SELECT_AND_UPDATE = true;
+
+        final int size = 1_000_000;
+        final Table x = TableTools.emptyTable(size);
+        final AtomicInteger a = new AtomicInteger();
+        final AtomicInteger b = new AtomicInteger(10_000_000);
+        QueryScope.addParam("a", a);
+        QueryScope.addParam("b", b);
+
+        try (final SafeCloseable ignored = new SaveQueryTableOptions()) {
+            QueryTable.FORCE_PARALLEL_SELECT_AND_UPDATE = true;
+
+            final SelectColumn sa = SelectColumnFactory.getExpression("A=a.getAndIncrement()");
+            final SelectColumn sb = SelectColumnFactory.getExpression("B=b.getAndIncrement()");
+            final SelectColumn sc = SelectColumnFactory.getExpression("C=A");
+            final SelectColumn sd = SelectColumnFactory.getExpression("D=B");
+            final SelectColumn sa1 = SelectColumnFactory.getExpression("A=b.getAndIncrement()");
+            final SelectColumn sb1 = SelectColumnFactory.getExpression("B=a.getAndIncrement()");
+            final Table y = x.update(List.of(sa, sb, sc, sd, sa1, sb1));
+
+            final Table expected =
+                    y.updateView("C=i", "D=10_000_000 + i", "A=11_000_000 + i", "B=1_000_000 + i");
+            assertTableEquals(expected, y);
+
+            a.set(0);
+            b.set(10_000_000);
+
+            final Table z = x.update(List.of(SelectColumn.ofStateless(sa), SelectColumn.ofStateless(sb),
+                    SelectColumn.ofStateless(sc), SelectColumn.ofStateless(sd), SelectColumn.ofStateless(sa1),
+                    SelectColumn.ofStateless(sb1)));
+
+            assertTrue(isOutOfOrder(z, "A"));
+            assertTrue(isOutOfOrder(z, "B"));
+            assertTrue(isOutOfOrder(z, "C"));
+            assertTrue(isOutOfOrder(z, "D"));
+
+            // and it is a free-for-all in terms of the order of evaluation
+            final Table min_z = z.aggBy(AggMin("A", "B", "C", "D"));
+            final Table max_z = z.aggBy(AggMax("A", "B", "C", "D"));
+            assertTrue(getValInt(min_z, "B") < getValInt(max_z, "C"));
+            assertTrue(getValInt(min_z, "B") < getValInt(max_z, "D"));
+
+            // but now we add a barrier to A(1); and then respect it for B(2)
+            a.set(0);
+            b.set(10_000_000);
+            final Table u = x.update(List.of(SelectColumn.ofStateless(sa).withBarriers(a), SelectColumn.ofStateless(sb),
+                    SelectColumn.ofStateless(sc), SelectColumn.ofStateless(sd), SelectColumn.ofStateless(sa1),
+                    SelectColumn.ofStateless(sb1).respectsBarriers(a)));
+
+            assertTrue(isOutOfOrder(u, "A"));
+            assertTrue(isOutOfOrder(u, "B"));
+            assertTrue(isOutOfOrder(u, "C"));
+            assertTrue(isOutOfOrder(u, "D"));
+
+            final Table min_u = z.aggBy(AggMin("A", "B", "C", "D"));
+            final Table max_u = z.aggBy(AggMax("A", "B", "C", "D"));
+            assertTrue(getValInt(min_u, "A") > getValInt(max_u, "C"));
+            assertTrue(getValInt(min_u, "B") < getValInt(max_u, "D"));
+
+        }
+    }
+
 
     private static void checkIndividualSums(int size, Table u) {
         final long expectedSumA = (((long) size - 1) * size) / 2;
