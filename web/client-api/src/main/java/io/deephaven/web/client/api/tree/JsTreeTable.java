@@ -694,7 +694,7 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
             serverViewport = RangeSet.ofRange((long) firstRow, (long) lastRow);
 
             sendBarrageSubscriptionRequest(RangeSet.ofRange((long) firstRow, (long) lastRow), Js.uncheckedCast(columns),
-                    updateInterval, false);
+                    updateInterval, false, 0);
         }
 
         @Override
