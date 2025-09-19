@@ -21,7 +21,7 @@ class AuthenticationCallCredentials extends CallCredentials {
     @Override
     public void applyRequestMetadata(RequestInfo requestInfo, Executor appExecutor, MetadataApplier applier) {
         final Metadata headers = new Metadata();
-        headers.put(AUTHORIZATION_HEADER, authenticationTypeAndValue);
+        headers.put(AUTHORIZATION_HEADER, authenticationTypeAndValue.trim());
         applier.apply(headers);
     }
 
