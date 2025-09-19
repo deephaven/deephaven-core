@@ -47,7 +47,7 @@ public interface SelectColumn extends Selectable, ConcurrencyControl<Selectable>
         }
         Object[] respectedBarriers = selectable.respectedBarriers();
         if (respectedBarriers != null && respectedBarriers.length > 0) {
-            result = new SelectColumnWithRespectsBarrier(result, respectedBarriers);
+            result = SelectColumnWithRespectsBarrier.addRespectsBarriers(result, respectedBarriers);
         }
         return result;
     }
@@ -355,7 +355,7 @@ public interface SelectColumn extends Selectable, ConcurrencyControl<Selectable>
 
     @Override
     default SelectColumn respectsBarriers(Object... respectsBarriers) {
-        return new SelectColumnWithRespectsBarrier(this, respectsBarriers);
+        return SelectColumnWithRespectsBarrier.addRespectsBarriers(this, respectsBarriers);
     }
 
     default Object[] respectedBarriers() {

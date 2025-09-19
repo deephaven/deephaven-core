@@ -22,8 +22,7 @@ import org.junit.Test;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static io.deephaven.api.agg.Aggregation.AggDistinct;
-import static io.deephaven.api.agg.Aggregation.AggSum;
+import static io.deephaven.api.agg.Aggregation.*;
 import static io.deephaven.engine.testutil.TstUtils.*;
 import static org.junit.Assert.*;
 import static org.junit.Assert.assertEquals;
@@ -161,16 +160,100 @@ public class QueryTableSelectBarrierTest {
         }
     }
 
+    @Test
+    public void testBarrierAcrossShift() {
+        QueryTable.FORCE_PARALLEL_SELECT_AND_UPDATE = true;
+
+        final int size = 1_000_000;
+        final Table x = TableTools.emptyTable(size);
+        final AtomicInteger a = new AtomicInteger();
+        QueryScope.addParam("a", a);
+
+        try (final SafeCloseable ignored = new SaveQueryTableOptions()) {
+            QueryTable.FORCE_PARALLEL_SELECT_AND_UPDATE = true;
+
+            final SelectColumn sa = SelectColumnFactory.getExpression("A=a.getAndIncrement()");
+            final SelectColumn sb = SelectColumnFactory.getExpression("B=a.getAndIncrement()");
+            final SelectColumn sc = SelectColumnFactory.getExpression("C=B_[i-1]");
+            final SelectColumn sd = SelectColumnFactory.getExpression("D=a.getAndIncrement()");
+            final Table y = x.update(List.of(sa, sb, sc, sd));
+
+            final Table expected =
+                    y.updateView("A=i", "B=1_000_000 + i", "C=i == 0 ? null : 999_999 + i", "D=2_000_000 + i");
+            assertTableEquals(expected, y);
+
+            a.set(0);
+
+            final Table z = x.update(List.of(SelectColumn.ofStateless(sa), SelectColumn.ofStateless(sb),
+                    SelectColumn.ofStateless(sc), SelectColumn.ofStateless(sd)));
+
+            // these things should happen at the same time, so we should sum to the expected value;
+            // but everything should be mixed up
+            checkTotalSumThree(size, z);
+
+            // we also need to make sure that C is actually B[i - 1]
+            assertTrue(z.where("C != B_[i - 1]").isEmpty());
+
+            TableTools.show(z);
+
+            // now check for swizzling with A and B; but not D because the shift split this into two distinct operations
+            // internally
+            checkMixedAandB(z);
+
+            // and the column itself should not be ordered either
+            assertTrue(isOutOfOrder(z, "A"));
+            assertTrue(isOutOfOrder(z, "B"));
+            assertTrue(isOutOfOrder(z, "D"));
+
+            // now let's keep things stateless, but insert a barrier so that A and B do not intermix
+            a.set(0);
+
+            final Table u = x.update(List.of(SelectColumn.ofStateless(sa).withBarriers(a),
+                    SelectColumn.ofStateless(sb).respectsBarriers(a), SelectColumn.ofStateless(sc),
+                    SelectColumn.ofStateless(sd)));
+
+            // check for swizzling
+            checkMixedColumns(u, size, false);
+
+            // we should have parallelized each column
+            assertTrue(isOutOfOrder(u, "A"));
+            assertTrue(isOutOfOrder(u, "B"));
+            assertTrue(isOutOfOrder(u, "D"));
+
+            // we also need to make sure that C is actually B[i - 1]
+            assertTrue(u.where("C != B_[i - 1]").isEmpty());
+
+            checkTotalSumThree(size, u);
+
+            // now let's put the barrier on a and respect it on d, which is trivially going to be enforced; but also
+            // ensures we don't blow up with a missing barrier
+            a.set(0);
+            final Table v = x.update(List.of(SelectColumn.ofStateless(sa).withBarriers(a),
+                    SelectColumn.ofStateless(sb), SelectColumn.ofStateless(sc),
+                    SelectColumn.ofStateless(sd).respectsBarriers(a)));
+
+            // check for swizzling
+            TableTools.show(v);
+            checkMixedColumns(v, size, true);
+
+            // we should have parallelized each column
+            assertTrue(isOutOfOrder(v, "A"));
+            assertTrue(isOutOfOrder(v, "B"));
+            assertTrue(isOutOfOrder(v, "D"));
+
+            // we also need to make sure that C is actually B[i - 1]
+            assertTrue(v.where("C != B_[i - 1]").isEmpty());
+            checkTotalSumThree(size, u);
+
+        }
+    }
+
+
     private static void checkIndividualSums(int size, Table u) {
         final long expectedSumA = (((long) size - 1) * size) / 2;
         final Table us = u.aggBy(AggSum("A", "B"));
-        final long ua, ub;
-        try (CloseablePrimitiveIteratorOfLong uai = us.longColumnIterator("A")) {
-            ua = uai.nextLong();
-        }
-        try (CloseablePrimitiveIteratorOfLong ubi = us.longColumnIterator("B")) {
-            ub = ubi.nextLong();
-        }
+        final long ua = getValLong(us, "A");
+        final long ub = getValLong(us, "B");
         assertEquals(expectedSumA, ua);
         assertEquals(expectedSumA + ((long) size * size), ub);
     }
@@ -190,19 +273,53 @@ public class QueryTableSelectBarrierTest {
         }
     }
 
+    /**
+     * Check A mixes with B, but neither mix with D.
+     */
+    private static void checkMixedAandB(final Table result) {
+        final Table min = result.aggBy(AggMin("A", "B", "D"));
+        final Table max = result.aggBy(AggMax("A", "B", "D"));
+
+        final boolean aMixedWithB = getValInt(max, "A") > getValInt(min, "B");
+        final boolean aMixedWithD = getValInt(max, "A") > getValInt(min, "D");
+        final boolean bMixedWithD = getValInt(max, "B") > getValInt(min, "D");
+
+        assertTrue(aMixedWithB);
+        assertFalse(aMixedWithD);
+        assertFalse(bMixedWithD);
+    }
+
     private static void checkTotalSum(int size, Table z) {
         final long doubleSize = size * 2;
         final long expectedSum = ((doubleSize - 1) * doubleSize) / 2;
         final Table zs = z.aggBy(AggSum("A", "B"));
-        final long za, zb;
-        try (CloseablePrimitiveIteratorOfLong zai = zs.longColumnIterator("A")) {
-            za = zai.nextLong();
-        }
-        try (CloseablePrimitiveIteratorOfLong zbi = zs.longColumnIterator("B")) {
-            zb = zbi.nextLong();
-        }
+        final long za = getValLong(zs, "A");
+        final long zb = getValLong(zs, "B");
         assertEquals(expectedSum, za + zb);
     }
+
+    private static void checkTotalSumThree(int size, Table z) {
+        final long tripleSize = size * 3;
+        final long expectedSum = ((tripleSize - 1) * tripleSize) / 2;
+        final Table zs = z.aggBy(AggSum("A", "B", "D"));
+        final long za = getValLong(zs, "A");
+        final long zb = getValLong(zs, "B");
+        final long zd = getValLong(zs, "D");
+        assertEquals(expectedSum, za + zb + zd);
+    }
+
+    private static long getValLong(Table zs, final String a) {
+        try (CloseablePrimitiveIteratorOfLong zai = zs.longColumnIterator(a)) {
+            return zai.nextLong();
+        }
+    }
+
+    private static long getValInt(Table zs, final String a) {
+        try (CloseablePrimitiveIteratorOfInt zai = zs.integerColumnIterator(a)) {
+            return zai.nextInt();
+        }
+    }
+
 
     private static boolean isOutOfOrder(Table z, final String column) {
         boolean outOfOrder = false;

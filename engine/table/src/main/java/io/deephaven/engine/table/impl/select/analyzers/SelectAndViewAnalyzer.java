@@ -21,10 +21,7 @@ import io.deephaven.engine.table.impl.QueryCompilerRequestProcessor;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.ShiftedColumnsFactory;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
-import io.deephaven.engine.table.impl.select.FormulaColumn;
-import io.deephaven.engine.table.impl.select.SelectColumn;
-import io.deephaven.engine.table.impl.select.ShiftedColumnDefinition;
-import io.deephaven.engine.table.impl.select.SourceColumn;
+import io.deephaven.engine.table.impl.select.*;
 import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
 import io.deephaven.engine.table.impl.sources.PossiblyImmutableColumnSource;
 import io.deephaven.engine.table.impl.sources.RedirectedColumnSource;
@@ -119,12 +116,12 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
             columnDefinitions.put(name, cd);
         }
 
-        final Map<Object, Integer> barrierToLayerIndex = new IdentityHashMap<>();
+        final Set<Object> preShiftBarriers = Collections.newSetFromMap(new IdentityHashMap<>());
 
         final Set<String> resultColumnNames = new HashSet<>();
         for (final SelectColumn sc : selectColumns) {
             if (context.remainingCols != null) {
-                context.remainingCols.add(sc);
+                context.remainingCols.add(SelectColumnWithRespectsBarrier.removeBarriers(sc, preShiftBarriers));
                 continue;
             }
 
@@ -154,11 +151,14 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
             resultColumnNames.add(sc.getName());
 
             context.processedCols.add(sc);
+            if (sc.barriers() != null) {
+                preShiftBarriers.addAll(Arrays.asList(sc.barriers()));
+            }
         }
 
         compilationProcessor.compile();
 
-        final TIntIntMap columnIndexToLayerIndex = new TIntIntHashMap(selectColumns.length, 0.5f, -1, -1);
+        final Map<Object, Integer> barrierToLayerIndex = new IdentityHashMap<>();
 
         // Second pass builds the analyzer and destination columns
         final HashMap<String, ColumnSource<?>> resultAlias = new HashMap<>();
@@ -308,9 +308,7 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
                 }
             }
 
-
             context.addLayer(layer);
-            columnIndexToLayerIndex.put(columnIndex, layer.getLayerIndex());
         }
 
         return context;
