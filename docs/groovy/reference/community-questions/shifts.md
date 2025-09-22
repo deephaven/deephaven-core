@@ -7,8 +7,23 @@ _When merging tables in Deephaven, I understand that "shifts" can happen when on
 
 When you merge tables in Deephaven, the engine pre-allocates row key slots for each constituent table. Understanding how row keys (`k`) and positional indices (`i`) behave during growth and shifts is crucial for working with formulas that reference these attributes.
 
-> [!DANGER]
-> **Formulas using positional indices (`i`, `ii`, `k`) or column array variables are unsafe on refreshing tables and will cause `IllegalArgumentException` errors.** The engine blocks these formulas by default to prevent incorrect results. While you can override this with the system property `io.deephaven.engine.table.impl.select.AbstractFormulaColumn.allowUnsafeRefreshingFormulas=true`, doing so **will produce incorrect results** when table shifts occur. **Note that shifts can happen with any table operation, not just merges** - including joins, updates, selects, and other operations on live/refreshing tables. Only use such formulas on static tables or append-only tables where shifts cannot happen.
+## Key terms
+
+Before diving into the details, let's define the key concepts:
+
+- **Row key (`k`)**: A unique identifier assigned to each row in a table. Row keys are used internally by the engine to track rows and are typically sequential integers starting from 0.
+
+- **Positional index (`i`)**: The current position of a row within a table, starting from 0 for the first row. Unlike row keys, positional indices always reflect the current order of rows.
+
+- **Shifts**: When a table grows beyond its pre-allocated row key space, the engine may need to move (shift) other tables' rows to new row key positions to make room. The row data itself doesn't change, but the row keys do.
+
+- **Constituent tables**: The individual tables that are being merged together. Each constituent table gets its own allocated range of row keys in the merged result.
+
+- **Row key slots**: Pre-allocated ranges of row keys reserved for each constituent table. For example, table A might get slots 0-4095, while table B gets slots 4096-8191.
+
+- **Refreshing tables**: Tables that can change over time (live data), as opposed to static tables that never change after creation. Append-only tables are a special type of refreshing table where new rows are only added (never moved or deleted), making positional indices safe to use.
+
+> [!CAUTION] > **Formulas using positional indices (`i`, `ii`, `k`) or column array variables are unsafe on refreshing tables and will cause `IllegalArgumentException` errors.** The engine blocks these formulas by default to prevent incorrect results. While you can override this with the system property `io.deephaven.engine.table.impl.select.AbstractFormulaColumn.allowUnsafeRefreshingFormulas=true`, doing so **will produce incorrect results** when table shifts occur. **Note that shifts can happen with any table operation, not just merges** - including joins, updates, selects, and other operations on live/refreshing tables. These formulas are safe to use on static tables or append-only tables (like `timeTable("PT1s").update("X = ii")`) where shifts cannot happen because rows are only added, never moved.
 
 ## Row key allocation and shifts
 
@@ -32,43 +47,43 @@ myMergedTable = merge(
 
 Initially, the engine might allocate:
 
-- **tableA**: row key slots \[0, 4095\]
-- **tableB**: row key slots \[4096, 8191\]
+- **`tableA`**: row key slots \[0, 4095\]
+- **`tableB`**: row key slots \[4096, 8191\]
 
 ## Initial state with few rows
 
 When each table gets one row, the merged table looks like:
 
-| sourceTable | someValue | i | k    |
-| ----------- | --------- | - | ---- |
-| tableA      | apple     | 0 | 0    |
-| tableA      | banana    | 1 | 1    |
-| tableB      | zebra     | 2 | 4096 |
-| tableB      | bear      | 3 | 4097 |
+| sourceTable | someValue | i   | k    |
+| ----------- | --------- | --- | ---- |
+| `tableA`    | `apple`   | 0   | 0    |
+| `tableA`    | `banana`  | 1   | 1    |
+| `tableB`    | `zebra`   | 2   | 4096 |
+| `tableB`    | `bear`    | 3   | 4097 |
 
 ## What happens during a shift
 
-If tableA grows beyond its allocated 4096 slots, the engine must shift tableB to make room. After adding 4096 new rows to tableA, the allocation becomes:
+If `tableA` grows beyond its allocated 4096 slots, the engine must shift `tableB` to make room. After adding 4096 new rows to `tableA`, the allocation becomes:
 
-- **tableA**: row key slots \[0, 8191\]
-- **tableB**: row key slots \[8192, 12287\]
+- **`tableA`**: row key slots \[0, 8191\]
+- **`tableB`**: row key slots \[8192, 12287\]
 
 The merged table now looks like:
 
-| sourceTable | someValue | i    | k    |
-| ----------- | --------- | ---- | ---- |
-| tableA      | apple     | 0    | 0    |
-| tableA      | banana    | 1    | 1    |
-| ...         | ...       | ...  | ...  |
-| tableA      | avocado   | 4095 | 4095 |
-| tableA      | peach     | 4096 | 4096 |
-| tableA      | blueberry | 4097 | 4097 |
-| tableB      | zebra     | 4098 | 8192 |
-| tableB      | bear      | 4099 | 8193 |
+| sourceTable | someValue   | i    | k    |
+| ----------- | ----------- | ---- | ---- |
+| `tableA`    | `apple`     | 0    | 0    |
+| `tableA`    | `banana`    | 1    | 1    |
+| ...         | ...         | ...  | ...  |
+| `tableA`    | `avocado`   | 4095 | 4095 |
+| `tableA`    | `peach`     | 4096 | 4096 |
+| `tableA`    | `blueberry` | 4097 | 4097 |
+| `tableB`    | `zebra`     | 4098 | 8192 |
+| `tableB`    | `bear`      | 4099 | 8193 |
 
 ## Key behavior: row keys change, but row data doesn't
 
-The critical insight is that the zebra and bear rows **were not modified** - they were simply shifted to new row key positions. Their row keys changed from 4096/4097 to 8192/8193, but the actual row data remains unchanged.
+The critical insight is that the `zebra` and `bear` rows **were not modified** - they were simply shifted to new row key positions. Their row keys changed from 4096/4097 to 8192/8193, but the actual row data remains unchanged.
 
 ## Impact on formulas using positional index (i)
 
@@ -80,44 +95,44 @@ This behavior has important implications for formulas that reference the positio
 def myMergedTableWithIdx = myMergedTable.update("MyRowIdx = someValue + i")
 ```
 
-This demonstrates the key insight: downstream operations don't know that the positional index `i` changed for the zebra/bear rows during the shift. **This is why the engine blocks such formulas by default** - they would produce incorrect results after shifts occur.
+This demonstrates the key insight: downstream operations don't know that the positional index `i` changed for the `zebra`/`bear` rows during the shift. **This is why the engine blocks such formulas by default** - they would produce incorrect results after shifts occur.
 
 **Before the shift:**
 
-| sourceTable | someValue | i | k    | MyRowIdx |
-| ----------- | --------- | - | ---- | -------- |
-| tableA      | apple     | 0 | 0    | apple0   |
-| tableA      | banana    | 1 | 1    | banana1  |
-| tableB      | zebra     | 2 | 4096 | zebra2   |
-| tableB      | bear      | 3 | 4097 | bear3    |
+| sourceTable | someValue | i   | k    | MyRowIdx |
+| ----------- | --------- | --- | ---- | -------- |
+| `tableA`    | `apple`   | 0   | 0    | apple0   |
+| `tableA`    | `banana`  | 1   | 1    | banana1  |
+| `tableB`    | `zebra`   | 2   | 4096 | zebra2   |
+| `tableB`    | `bear`    | 3   | 4097 | bear3    |
 
-**After adding one row to tableA:**
+**After adding one row to `tableA`:**
 
-| sourceTable | someValue | i | k    | MyRowIdx |
-| ----------- | --------- | - | ---- | -------- |
-| tableA      | apple     | 0 | 0    | apple0   |
-| tableA      | banana    | 1 | 1    | banana1  |
-| tableA      | orange    | 2 | 2    | orange2  |
-| tableB      | zebra     | 3 | 4096 | zebra2   |
-| tableB      | bear      | 4 | 4097 | bear3    |
+| sourceTable | someValue | i   | k    | MyRowIdx |
+| ----------- | --------- | --- | ---- | -------- |
+| `tableA`    | `apple`   | 0   | 0    | apple0   |
+| `tableA`    | `banana`  | 1   | 1    | banana1  |
+| `tableA`    | `orange`  | 2   | 2    | orange2  |
+| `tableB`    | `zebra`   | 3   | 4096 | zebra2   |
+| `tableB`    | `bear`    | 4   | 4097 | bear3    |
 
-Notice that both the new "orange" row and the existing "zebra" row appear to have the same positional index behavior, but the zebra and bear rows retain their original `MyRowIdx` values ("zebra2", "bear3") because those rows were never actually modified.
+Notice that both the new `orange` row and the existing `zebra` row appear to have the same positional index behavior, but the `zebra` and `bear` rows retain their original `MyRowIdx` values ("zebra2", "bear3") because those rows were never actually modified.
 
-**After a major shift (4098 rows in tableA):**
+**After a major shift (4098 rows in `tableA`):**
 
-| sourceTable | someValue | i    | k    | MyRowIdx      |
-| ----------- | --------- | ---- | ---- | ------------- |
-| tableA      | apple     | 0    | 0    | apple0        |
-| tableA      | banana    | 1    | 1    | banana1       |
-| tableA      | orange    | 2    | 2    | orange2       |
-| ...         | ...       | ...  | ...  | ...           |
-| tableA      | avocado   | 4095 | 4095 | avocado4095   |
-| tableA      | peach     | 4096 | 4096 | peach4096     |
-| tableA      | blueberry | 4097 | 4097 | blueberry4097 |
-| tableB      | zebra     | 4098 | 8192 | zebra2        |
-| tableB      | bear      | 4099 | 8193 | bear3         |
+| sourceTable | someValue   | i    | k    | MyRowIdx      |
+| ----------- | ----------- | ---- | ---- | ------------- |
+| `tableA`    | `apple`     | 0    | 0    | apple0        |
+| `tableA`    | `banana`    | 1    | 1    | banana1       |
+| `tableA`    | `orange`    | 2    | 2    | orange2       |
+| ...         | ...         | ...  | ...  | ...           |
+| `tableA`    | `avocado`   | 4095 | 4095 | avocado4095   |
+| `tableA`    | `peach`     | 4096 | 4096 | peach4096     |
+| `tableA`    | `blueberry` | 4097 | 4097 | blueberry4097 |
+| `tableB`    | `zebra`     | 4098 | 8192 | zebra2        |
+| `tableB`    | `bear`      | 4099 | 8193 | bear3         |
 
-The zebra and bear rows maintain their original `MyRowIdx` values because the engine never re-evaluates formulas for rows that weren't actually modified - this is the key performance benefit of the shift mechanism.
+The `zebra` and `bear` rows maintain their original `MyRowIdx` values because the engine never re-evaluates formulas for rows that weren't actually modified - this is the key performance benefit of the shift mechanism.
 
 ## Why shifts exist
 
