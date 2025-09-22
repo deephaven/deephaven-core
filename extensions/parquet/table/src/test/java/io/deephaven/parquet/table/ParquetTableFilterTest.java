@@ -21,6 +21,7 @@ import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.parquet.table.location.ParquetColumnResolverMap;
 import io.deephaven.parquet.table.location.ParquetTableLocationKey;
+import io.deephaven.parquet.table.metadata.RowGroupInfo;
 import io.deephaven.stringset.ArrayStringSet;
 import io.deephaven.stringset.StringSet;
 import io.deephaven.test.types.OutOfBandTest;
@@ -48,6 +49,7 @@ import static io.deephaven.engine.testutil.TstUtils.assertTableEquals;
 import static io.deephaven.engine.util.TableTools.doubleCol;
 import static io.deephaven.engine.util.TableTools.floatCol;
 import static io.deephaven.engine.util.TableTools.intCol;
+import static io.deephaven.engine.util.TableTools.merge;
 import static io.deephaven.engine.util.TableTools.newTable;
 import static io.deephaven.engine.util.TableTools.stringCol;
 import static io.deephaven.parquet.table.ParquetTools.readTable;
@@ -988,6 +990,28 @@ public final class ParquetTableFilterTest {
         }
     }
 
+    /**
+     * Single parquet file with three row groups, first and third row group are non-empty, and second row groupis empty.
+     * To generate this file, the following branch was used:
+     * https://github.com/malhotrashivam/deephaven-core/tree/sm-empty-rowgroup-dict
+     */
+    @Test
+    public void parquetFilesWithDictionaryAndEmptyRowGroups() {
+        final String path =
+                ParquetTableFilterTest.class.getResource("/ReferenceParquetWithDictionaryAndEmptyRowGroups.parquet")
+                        .getFile();
+        final Table diskTable = readTable(path);
+        final Table memTable = diskTable.select();
+
+        filterAndVerifyResults(diskTable, memTable, "animal == `Dog`");
+        filterAndVerifyResults(diskTable, memTable, "animal == `Cat`");
+        filterAndVerifyResults(diskTable, memTable, "animal == `Horse`");
+        filterAndVerifyResultsAllowEmpty(diskTable, memTable, "animal == `Fish`");
+
+        final Table expected = TableTools.newTable(TableTools.col("animal", "Dog", "Cat", "Horse", "Horse"));
+        assertTableEquals(memTable, expected);
+    }
+
     @Test
     public void filterArrayColumnsTest() {
         final String destPath = Path.of(rootFile.getPath(), "ParquetTest_filterArrayColumnsTest.parquet").toString();
@@ -1528,5 +1552,44 @@ public final class ParquetTableFilterTest {
         filterAndVerifyResultsAllowEmpty(mergedTable, memTable, "sequential_val <= 500");
         filterAndVerifyResultsAllowEmpty(mergedTable, memTable, "sequential_val <= 5000", "sequential_val > 3000");
         filterAndVerifyResultsAllowEmpty(mergedTable, memTable, "sequential_val = 500");
+    }
+
+    @Test
+    public void dictionaryWithNoStatisticsPartitionedTest() {
+        final Table source1 = TableTools.newTable(
+                stringCol("animal", "Dog", "Horse", "Zebra"));
+        final Table source2 = TableTools.newTable(
+                stringCol("animal", "Centipede", "Lion", "Cat", "Elephant", "Whale"));
+        final Table source3 = TableTools.newTable(
+                stringCol("animal", "Ant", "Horse"));
+
+        final File destDir = new File(rootFile.getPath(), "dictionaryWithNoStatisticsPartitioned");
+        assertTrue(destDir.mkdirs());
+
+        // Disable writing row group statistics to verify filtering using dictionary
+        final ParquetInstructions writeInstructions = new ParquetInstructions.Builder()
+                .setRowGroupInfo(RowGroupInfo.maxRows(2))
+                .setWriteRowGroupStatistics(false)
+                .build();
+
+        // Write three tables to the same directory with multiple row groups
+        writeTable(source1, destDir.getAbsolutePath() + "/part1.parquet", writeInstructions);
+        writeTable(source2, destDir.getAbsolutePath() + "/part2.parquet", writeInstructions);
+        writeTable(source3, destDir.getAbsolutePath() + "/part3.parquet", writeInstructions);
+
+        // Read back as a flat partitioned table
+        final Table fromDisk = ParquetTools.readTable(destDir.getAbsolutePath(),
+                EMPTY.withLayout(ParquetInstructions.ParquetFileLayout.FLAT_PARTITIONED));
+
+        // Filter for values that are only in one of the source tables
+        final Table memTable = fromDisk.select();
+        filterAndVerifyResults(fromDisk, memTable, "animal == `Dog`");
+        filterAndVerifyResults(fromDisk, memTable, "animal == `Horse`");
+        filterAndVerifyResults(fromDisk, memTable, "animal == `Zebra`");
+        filterAndVerifyResults(fromDisk, memTable, "animal == `Cat`");
+        filterAndVerifyResults(fromDisk, memTable, "animal == `Whale`");
+        filterAndVerifyResults(fromDisk, memTable, "animal == `Ant`");
+        filterAndVerifyResults(fromDisk, memTable, "animal == `Elephant` || animal == `Dog`");
+        filterAndVerifyResultsAllowEmpty(fromDisk, memTable, "animal == `Parrot`");
     }
 }

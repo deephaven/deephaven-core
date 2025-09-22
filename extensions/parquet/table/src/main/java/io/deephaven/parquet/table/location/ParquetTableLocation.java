@@ -264,11 +264,15 @@ public class ParquetTableLocation extends AbstractTableLocation {
                 // Skip empty row groups
                 continue;
             }
-            final long subRegionFirstKey = (long) rgi << regionParameters.regionMaskNumBits;
+            final long subRegionFirstKey = getSubRegionFirstKey(rgi);
             final long subRegionLastKey = subRegionFirstKey + subRegionSize - 1;
             sequentialBuilder.appendRange(subRegionFirstKey, subRegionLastKey);
         }
         return sequentialBuilder.build();
+    }
+
+    private long getSubRegionFirstKey(final long rowGroupIdx) {
+        return rowGroupIdx << regionParameters.regionMaskNumBits;
     }
 
     @Override
@@ -786,7 +790,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
             final RowGroupReader[] rgReaders = getRowGroupReaders();
             for (int rgIdx = 0; rgIdx < rgReaders.length; rgIdx++) {
                 final long subRegionSize = rgReaders[rgIdx].getRowGroup().getNum_rows();
-                final long subRegionFirstKey = (long) rgIdx << regionParameters.regionMaskNumBits;
+                final long subRegionFirstKey = getSubRegionFirstKey(rgIdx);
                 final long subRegionLastKey = subRegionFirstKey + subRegionSize - 1;
 
                 final RowSequence rs = rsIt.getNextRowSequenceThrough(subRegionLastKey);
@@ -979,7 +983,9 @@ public class ParquetTableLocation extends AbstractTableLocation {
                 // Now we need to apply this filter to the encoded values in the row group. We can do this by
                 // iterating the "maybe" rows in chunks, getting the encoded values for those rows, and applying the
                 // filter to those encoded values.
-                final long subRegionFirstKey = (long) rgIdx << regionParameters.regionMaskNumBits;
+                // We must shift the row keys to be relative to the row group because the value store is relative to the
+                // row group.
+                final long subRegionFirstKey = getSubRegionFirstKey(rgIdx);
                 final int CHUNK_SIZE = 4096;
                 try (final RowSet tmpRowSet = rs.asRowSet().shift(-subRegionFirstKey);
                         final RowSequence.Iterator tmpIt = tmpRowSet.getRowSequenceIterator();

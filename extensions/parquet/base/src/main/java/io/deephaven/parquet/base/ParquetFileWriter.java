@@ -42,6 +42,7 @@ public final class ParquetFileWriter implements AutoCloseable {
     private final List<List<OffsetIndex>> offsetIndexes = new ArrayList<>();
     private final URI dest;
     private final ParquetMetadataFileWriter metadataFileWriter;
+    private final boolean writeStatistics;
 
     public ParquetFileWriter(
             final URI dest,
@@ -51,7 +52,8 @@ public final class ParquetFileWriter implements AutoCloseable {
             final MessageType type,
             final String codecName,
             final Map<String, String> extraMetaData,
-            @NotNull final ParquetMetadataFileWriter metadataFileWriter) throws IOException {
+            @NotNull final ParquetMetadataFileWriter metadataFileWriter,
+            final boolean writeStatistics) throws IOException {
         this.targetPageSize = targetPageSize;
         this.allocator = allocator;
         this.extraMetaData = new HashMap<>(extraMetaData);
@@ -61,11 +63,13 @@ public final class ParquetFileWriter implements AutoCloseable {
         this.compressorAdapter = DeephavenCompressorAdapterFactory.getInstance().getByName(codecName);
         this.dest = dest;
         this.metadataFileWriter = metadataFileWriter;
+        this.writeStatistics = writeStatistics;
     }
 
     public RowGroupWriter addRowGroup(final long size) {
         final RowGroupWriterImpl rowGroupWriter =
-                new RowGroupWriterImpl(countingOutput, type, targetPageSize, allocator, compressorAdapter);
+                new RowGroupWriterImpl(countingOutput, type, targetPageSize, allocator, compressorAdapter,
+                        writeStatistics);
         rowGroupWriter.getBlock().setRowCount(size);
         blocks.add(rowGroupWriter.getBlock());
         offsetIndexes.add(rowGroupWriter.offsetIndexes());
