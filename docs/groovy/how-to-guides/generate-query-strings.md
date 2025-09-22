@@ -111,7 +111,7 @@ This query is shorter, faster to write, and easier to read for a Groovy programm
 
 ## Be creative!
 
-Programatically generating query strings works for all Deephaven operations, not just [`update`](../reference/table-operations/select/update.md). For example, this case uses multiple programatically generated query strings while performing a join.
+Programmatically generating query strings works for all Deephaven operations, not just [`update`](../reference/table-operations/select/update.md). For example, this case uses multiple programmatically generated query strings while performing a join.
 
 ```groovy order=result,source
 source = emptyTable(100).update("X = ii", "Y = X", "Z = sqrt(X)")

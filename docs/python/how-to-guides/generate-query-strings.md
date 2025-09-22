@@ -134,7 +134,7 @@ This query is shorter, faster to write, and easier to read for a Python programm
 
 ## Be creative!
 
-Programatically generating query strings works for all Deephaven operations, not just [`update`](../reference/table-operations/select/update.md). For example, this case uses multiple programatically generated query strings while performing a join.
+Programmatically generating query strings works for all Deephaven operations, not just [`update`](../reference/table-operations/select/update.md). For example, this case uses multiple programmatically generated query strings while performing a join.
 
 ```python order=result,source
 from deephaven import empty_table
