@@ -396,7 +396,7 @@
                 "path": "conceptual/queryscope.md"
               },
               {
-                "label": "Generate query strings with Groovy",
+                "label": "Generate query strings",
                 "path": "how-to-guides/generate-query-strings.md"
               }
             ]
