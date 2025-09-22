@@ -55,12 +55,12 @@ Initially, the engine might allocate:
 
 When each table gets one row, the merged table looks like:
 
-| sourceTable | someValue | i   | k    |
-| ----------- | --------- | --- | ---- |
-| `table_a`   | `apple`   | 0   | 0    |
-| `table_a`   | `banana`  | 1   | 1    |
-| `table_b`   | `zebra`   | 2   | 4096 |
-| `table_b`   | `bear`    | 3   | 4097 |
+| sourceTable | someValue | i | k    |
+| ----------- | --------- | - | ---- |
+| `table_a`   | `apple`   | 0 | 0    |
+| `table_a`   | `banana`  | 1 | 1    |
+| `table_b`   | `zebra`   | 2 | 4096 |
+| `table_b`   | `bear`    | 3 | 4097 |
 
 ## What happens during a shift
 
@@ -100,22 +100,22 @@ This demonstrates the key insight: downstream operations don't know that the pos
 
 **Before the shift:**
 
-| sourceTable | someValue | i   | k    | MyRowIdx |
-| ----------- | --------- | --- | ---- | -------- |
-| `table_a`   | `apple`   | 0   | 0    | apple0   |
-| `table_a`   | `banana`  | 1   | 1    | banana1  |
-| `table_b`   | `zebra`   | 2   | 4096 | zebra2   |
-| `table_b`   | `bear`    | 3   | 4097 | bear3    |
+| sourceTable | someValue | i | k    | MyRowIdx |
+| ----------- | --------- | - | ---- | -------- |
+| `table_a`   | `apple`   | 0 | 0    | apple0   |
+| `table_a`   | `banana`  | 1 | 1    | banana1  |
+| `table_b`   | `zebra`   | 2 | 4096 | zebra2   |
+| `table_b`   | `bear`    | 3 | 4097 | bear3    |
 
 **After adding one row to `table_a`:**
 
-| sourceTable | someValue | i   | k    | MyRowIdx |
-| ----------- | --------- | --- | ---- | -------- |
-| `table_a`   | `apple`   | 0   | 0    | apple0   |
-| `table_a`   | `banana`  | 1   | 1    | banana1  |
-| `table_a`   | `orange`  | 2   | 2    | orange2  |
-| `table_b`   | `zebra`   | 3   | 4096 | zebra2   |
-| `table_b`   | `bear`    | 4   | 4097 | bear3    |
+| sourceTable | someValue | i | k    | MyRowIdx |
+| ----------- | --------- | - | ---- | -------- |
+| `table_a`   | `apple`   | 0 | 0    | apple0   |
+| `table_a`   | `banana`  | 1 | 1    | banana1  |
+| `table_a`   | `orange`  | 2 | 2    | orange2  |
+| `table_b`   | `zebra`   | 3 | 4096 | zebra2   |
+| `table_b`   | `bear`    | 4 | 4097 | bear3    |
 
 Notice that both the new `orange` row and the existing `zebra` row appear to have the same positional index behavior, but the `zebra` and `bear` rows retain their original `MyRowIdx` values ("zebra2", "bear3") because those rows were never actually modified.
 
