@@ -973,7 +973,12 @@ public class ConstructSnapshot {
             if (notYetSatisfied.length == sources.length) {
                 return true;
             }
-            if (notYetSatisfied.length > 0 && !WaitNotification.waitForSatisfaction(beforeStep, notYetSatisfied)) {
+            // TODO (raffi): what? why can't we just use prev? tf are we waiting for? isn't prev valid until the clock
+            // ticks (which we check in snapshotConsistent anyway)?
+            // if (notYetSatisfied.length > 0 && !WaitNotification.waitForSatisfaction(beforeStep, notYetSatisfied)) {
+            if (notYetSatisfied.length > 0) {
+                if (true)
+                    return true; // TODO (raffi): temp test of my claim above.
                 if (updateGraph.clock().currentStep() != beforeStep) {
                     // If we missed a step change, we've already failed, request a do-over.
                     return null;
