@@ -58,13 +58,15 @@ with open(exclude_path) as f:
 
 # Collect coverage CSVs into a single CSV without lines containing exclusions
 with open(coverage_output_path, 'w', newline='') as outfile:
+    do_header = True
     csv_writer = csv.writer(outfile)
     for csv_file in glob.glob(coverage_input_glob):
         if os.path.basename(csv_file) == "all-coverage.csv": continue
         print('Merging', os.path.basename(csv_file))
         with open(csv_file, 'r') as csv_in:
             for row in csv.reader(csv_in):
-                if row[0] == 'Language' and row[1] == 'Package': continue
                 if row[1] in excludes: continue
+                if not do_header and row[0] == 'Language' and row[1] == 'Package': continue
                 new_row = [row[0],row[1],row[2],row[3],row[4]]
                 csv_writer.writerow(new_row)
+        do_header = False
