@@ -2607,6 +2607,10 @@
                   {
                     "label": "When does Deephaven load data into memory for Parquet reads?",
                     "path": "reference/community-questions/when-does-dh-load-data-into-memory-parquet-reads.md"
+                  },
+                  {
+                    "label": "What namespace do system tables created by a PQ get put in?",
+                    "path": "reference/community-questions/pq-namespace-table-storage.md"
                   }
                 ]
               },
