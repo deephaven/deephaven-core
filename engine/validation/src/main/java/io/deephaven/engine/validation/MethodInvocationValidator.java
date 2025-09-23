@@ -1,7 +1,7 @@
 //
 // Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
-package io.deephaven.server.table.validation;
+package io.deephaven.engine.validation;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;

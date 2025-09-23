@@ -1,9 +1,10 @@
 //
 // Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
-package io.deephaven.server.table.validation;
+package io.deephaven.server.table.validation.methodlist;
 
 import io.deephaven.UncheckedDeephavenException;
+import io.deephaven.engine.validation.MethodInvocationValidator;
 import org.openrewrite.java.MethodMatcher;
 import org.openrewrite.java.tree.JavaType;
 

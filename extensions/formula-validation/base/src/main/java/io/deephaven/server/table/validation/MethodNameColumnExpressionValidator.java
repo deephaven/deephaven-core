@@ -18,6 +18,7 @@ import io.deephaven.engine.table.impl.lang.QueryLanguageParser;
 import io.deephaven.engine.table.impl.select.*;
 import io.deephaven.engine.util.ColorUtilImpl;
 import io.deephaven.engine.util.TableTools;
+import io.deephaven.engine.validation.ColumnExpressionValidator;
 import io.deephaven.libs.GroovyStaticImports;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.time.TimeLiteralReplacedExpression;
