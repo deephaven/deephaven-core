@@ -3,7 +3,6 @@
 //
 package io.deephaven.web.client.api.filter;
 
-import com.google.gwt.junit.client.GWTTestCase;
 import io.deephaven.web.client.api.AbstractAsyncGwtTestCase;
 import io.deephaven.web.client.api.Column;
 
@@ -19,7 +18,7 @@ public class FilterConditionTestGwt extends AbstractAsyncGwtTestCase {
     }
 
     private Column getColumn() {
-        return new Column(0, 0, -1, -1, "int", "ColumnName", false, -1, null, false, false);
+        return new Column(0, 0, -1, -1, "int", "ColumnName", false, -1, null, false, false, false);
     }
 
     private FilterValue[] arr(FilterValue filterValue) {

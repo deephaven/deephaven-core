@@ -26,6 +26,7 @@ import io.deephaven.web.client.api.grpc.GrpcTransport;
 import io.deephaven.web.client.api.grpc.GrpcTransportFactory;
 import io.deephaven.web.client.api.grpc.GrpcTransportOptions;
 import io.deephaven.web.client.api.grpc.MultiplexedWebsocketTransport;
+import io.deephaven.web.client.fu.JsLog;
 import io.deephaven.web.shared.data.ConnectToken;
 import io.deephaven.web.shared.fu.JsConsumer;
 import io.deephaven.web.shared.fu.JsRunnable;
@@ -148,6 +149,10 @@ public class IdeConnection extends QueryConnectable<IdeConnection> {
      */
     @Deprecated
     public Promise<JsTable> getTable(String name, @JsOptional Boolean applyPreviewColumns) {
+        if (applyPreviewColumns == Boolean.FALSE) {
+            JsLog.warn(
+                    "getTable is deprecated, please use getObject instead. The applyPreviewColumns parameter no longer applies, the new APIs to access data from the resulting Table should be used instead.");
+        }
         return connection.get().getVariableDefinition(name, JsVariableType.TABLE).then(varDef -> {
             final Promise<JsTable> table = connection.get().getTable(varDef, applyPreviewColumns);
             fireEvent(EVENT_TABLE_OPENED, table);

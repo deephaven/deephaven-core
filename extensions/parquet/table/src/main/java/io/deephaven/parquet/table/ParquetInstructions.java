@@ -13,6 +13,7 @@ import io.deephaven.hash.KeyedObjectKey;
 import io.deephaven.hash.KeyedObjectKey.Basic;
 import io.deephaven.parquet.base.ParquetUtils;
 import io.deephaven.parquet.table.location.ParquetColumnResolver;
+import io.deephaven.parquet.table.metadata.RowGroupInfo;
 import io.deephaven.util.annotations.InternalUseOnly;
 import io.deephaven.util.annotations.VisibleForTesting;
 import io.deephaven.util.channel.SeekableChannelsProvider;
@@ -170,6 +171,8 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
 
     public abstract Optional<Collection<List<String>>> getIndexColumns();
 
+    public abstract RowGroupInfo getRowGroupInfo();
+
     public abstract Optional<ParquetColumnResolver.Factory> getColumnResolverFactory();
 
     /**
@@ -324,6 +327,11 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         }
 
         @Override
+        public RowGroupInfo getRowGroupInfo() {
+            return RowGroupInfo.singleGroup();
+        }
+
+        @Override
         public Optional<ParquetColumnResolver.Factory> getColumnResolverFactory() {
             return Optional.empty();
         }
@@ -350,7 +358,7 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
             return new ReadOnly(null, null, getCompressionCodecName(), getMaximumDictionaryKeys(),
                     getMaximumDictionarySize(), isLegacyParquet(), getTargetPageSize(), isRefreshing(),
                     getSpecialInstructions(), generateMetadataFiles(), baseNameForPartitionedParquetData(),
-                    useLayout, useDefinition, null, null, null, null);
+                    useLayout, useDefinition, null, getRowGroupInfo(), null, null, null);
         }
 
         @Override
@@ -358,7 +366,7 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
             return new ReadOnly(null, null, getCompressionCodecName(), getMaximumDictionaryKeys(),
                     getMaximumDictionarySize(), isLegacyParquet(), getTargetPageSize(), isRefreshing(),
                     getSpecialInstructions(), generateMetadataFiles(), baseNameForPartitionedParquetData(),
-                    null, null, indexColumns, null, null, null);
+                    null, null, indexColumns, getRowGroupInfo(), null, null, null);
         }
 
         @Override
@@ -474,6 +482,7 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         private final ParquetFileLayout fileLayout;
         private final TableDefinition tableDefinition;
         private final Collection<List<String>> indexColumns;
+        private final RowGroupInfo rowGroupInfo;
         private final OnWriteCompleted onWriteCompleted;
         private final ParquetColumnResolver.Factory columnResolver;
         private final SeekableChannelsProvider seekableChannelsProviderForWriting;
@@ -493,6 +502,7 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
                 final ParquetFileLayout fileLayout,
                 final TableDefinition tableDefinition,
                 final Collection<List<String>> indexColumns,
+                final RowGroupInfo rowGroupInfo,
                 final OnWriteCompleted onWriteCompleted,
                 final ParquetColumnResolver.Factory columnResolver,
                 final SeekableChannelsProvider seekableChannelsProviderForWriting) {
@@ -513,6 +523,7 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
                     : indexColumns.stream()
                             .map(List::copyOf)
                             .collect(Collectors.toUnmodifiableList());
+            this.rowGroupInfo = rowGroupInfo;
             this.onWriteCompleted = onWriteCompleted;
             this.columnResolver = columnResolver;
             if (columnResolver != null) {
@@ -646,6 +657,11 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         }
 
         @Override
+        public RowGroupInfo getRowGroupInfo() {
+            return rowGroupInfo != null ? rowGroupInfo : RowGroupInfo.singleGroup();
+        }
+
+        @Override
         public Optional<ParquetColumnResolver.Factory> getColumnResolverFactory() {
             return Optional.ofNullable(columnResolver);
         }
@@ -673,7 +689,7 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
                     getCompressionCodecName(), getMaximumDictionaryKeys(), getMaximumDictionarySize(),
                     isLegacyParquet(), getTargetPageSize(), isRefreshing(), getSpecialInstructions(),
                     generateMetadataFiles(), baseNameForPartitionedParquetData(), useLayout, useDefinition,
-                    indexColumns, onWriteCompleted, columnResolver, seekableChannelsProviderForWriting);
+                    indexColumns, rowGroupInfo, onWriteCompleted, columnResolver, seekableChannelsProviderForWriting);
         }
 
         @Override
@@ -682,7 +698,7 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
                     getCompressionCodecName(), getMaximumDictionaryKeys(), getMaximumDictionarySize(),
                     isLegacyParquet(), getTargetPageSize(), isRefreshing(), getSpecialInstructions(),
                     generateMetadataFiles(), baseNameForPartitionedParquetData(), fileLayout,
-                    tableDefinition, useIndexColumns, onWriteCompleted, columnResolver,
+                    tableDefinition, useIndexColumns, rowGroupInfo, onWriteCompleted, columnResolver,
                     seekableChannelsProviderForWriting);
         }
 
@@ -747,6 +763,7 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         private ParquetFileLayout fileLayout;
         private TableDefinition tableDefinition;
         private Collection<List<String>> indexColumns;
+        private RowGroupInfo rowGroupInfo;
         private OnWriteCompleted onWriteCompleted;
         private ParquetColumnResolver.Factory columnResolverFactory;
         private SeekableChannelsProvider seekableChannelsProviderForWriting;
@@ -777,6 +794,7 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
             fileLayout = readOnlyParquetInstructions.getFileLayout().orElse(null);
             tableDefinition = readOnlyParquetInstructions.getTableDefinition().orElse(null);
             indexColumns = readOnlyParquetInstructions.getIndexColumns().orElse(null);
+            rowGroupInfo = readOnlyParquetInstructions.getRowGroupInfo();
             onWriteCompleted = readOnlyParquetInstructions.onWriteCompleted().orElse(null);
             columnResolverFactory = readOnlyParquetInstructions.getColumnResolverFactory().orElse(null);
             seekableChannelsProviderForWriting =
@@ -1014,6 +1032,15 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         }
 
         /**
+         * Defines a {@link RowGroupInfo} for each written parquet file written. By default, all rows will be in a
+         * single RowGroup.
+         */
+        public Builder setRowGroupInfo(final RowGroupInfo rowGroupInfo) {
+            this.rowGroupInfo = rowGroupInfo;
+            return this;
+        }
+
+        /**
          * Adds a callback to be executed when on completing each parquet data file write (excluding the index and
          * metadata files).
          */
@@ -1060,7 +1087,7 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
             return new ReadOnly(columnNameToInstructionsOut, parquetColumnNameToColumnNameOut, compressionCodecName,
                     maximumDictionaryKeys, maximumDictionarySize, isLegacyParquet, targetPageSize, isRefreshing,
                     specialInstructions, generateMetadataFiles, baseNameForPartitionedParquetData, fileLayout,
-                    tableDefinition, indexColumns, onWriteCompleted, columnResolverFactory,
+                    tableDefinition, indexColumns, rowGroupInfo, onWriteCompleted, columnResolverFactory,
                     seekableChannelsProviderForWriting);
         }
     }

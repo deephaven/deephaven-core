@@ -300,7 +300,9 @@ public abstract class Configuration extends PropertyFile {
 
     /**
      * @return the TimeZone the server is running in
+     * @deprecated prefer {@link ZoneId#systemDefault()}
      */
+    @Deprecated
     public TimeZone getServerTimezone() {
         return TimeZone.getTimeZone(ZoneId.systemDefault());
     }

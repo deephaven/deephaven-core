@@ -23,8 +23,6 @@ public class AggregatesTest {
         Aggregate.Count("Count")
       ));
 
-    var tickerData = new[]{ "AAPL", "AAPL", "AAPL"};
-
     var expected = new TableMaker();
     expected.AddColumn("AvgClose", [541.55]);
     expected.AddColumn("SumClose", [1083.1]);

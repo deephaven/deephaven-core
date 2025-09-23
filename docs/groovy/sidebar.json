@@ -450,6 +450,14 @@
               {
                 "label": "Liveness Scopes",
                 "path": "conceptual/liveness-scope-concept.md"
+              },
+              {
+                "label": "Variables in query strings",
+                "path": "conceptual/queryscope.md"
+              },
+              {
+                "label": "Generate query strings",
+                "path": "how-to-guides/generate-query-strings.md"
               }
             ]
           },
@@ -787,6 +795,10 @@
               {
                 "label": "AWS EC2",
                 "path": "how-to-guides/aws-ec2.md"
+              },
+              {
+                "label": "GCP",
+                "path": "how-to-guides/gcp-linux.md"
               }
             ]
           }
@@ -2643,6 +2655,10 @@
                   {
                     "label": "Where can I find the password for the Deephaven IDE?",
                     "path": "reference/community-questions/find-password-for-ide.md"
+                  },
+                  {
+                    "label": "How do I increase the maximum message size?",
+                    "path": "reference/community-questions/message-larger-than-max.md"
                   }
                 ]
               },
