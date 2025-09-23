@@ -14,7 +14,7 @@ import io.deephaven.proto.backplane.grpc.BatchTableRequest;
 import io.deephaven.proto.backplane.grpc.HeadOrTailByRequest;
 import io.deephaven.proto.util.Exceptions;
 import io.deephaven.server.session.SessionState;
-import io.deephaven.server.table.validation.ColumnExpressionValidator;
+import io.deephaven.engine.validation.ColumnExpressionValidator;
 import io.deephaven.util.SafeCloseable;
 import io.grpc.StatusRuntimeException;
 import org.jetbrains.annotations.NotNull;
