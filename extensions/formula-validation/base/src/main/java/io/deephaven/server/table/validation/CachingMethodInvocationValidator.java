@@ -3,7 +3,7 @@
 //
 package io.deephaven.server.table.validation;
 
-import io.deephaven.csv.util.MutableObject;
+import io.deephaven.engine.validation.MethodInvocationValidator;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;

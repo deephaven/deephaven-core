@@ -13,7 +13,7 @@ import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest;
 import io.deephaven.proto.backplane.grpc.SelectOrUpdateRequest;
 import io.deephaven.server.session.SessionState;
-import io.deephaven.server.table.validation.ColumnExpressionValidator;
+import io.deephaven.engine.validation.ColumnExpressionValidator;
 import io.deephaven.server.table.validation.ParsingColumnExpressionValidator;
 import org.jetbrains.annotations.NotNull;
 

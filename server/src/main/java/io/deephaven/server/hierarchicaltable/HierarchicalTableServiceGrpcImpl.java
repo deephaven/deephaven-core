@@ -36,7 +36,7 @@ import io.deephaven.server.session.*;
 import io.deephaven.server.table.ops.AggregationAdapter;
 import io.deephaven.server.table.ops.FilterTableGrpcImpl;
 import io.deephaven.server.table.ops.filter.FilterFactory;
-import io.deephaven.server.table.validation.ColumnExpressionValidator;
+import io.deephaven.engine.validation.ColumnExpressionValidator;
 import io.deephaven.util.SafeCloseable;
 import io.grpc.stub.StreamObserver;
 import org.jetbrains.annotations.NotNull;

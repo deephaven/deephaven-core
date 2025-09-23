@@ -19,7 +19,7 @@ import io.deephaven.server.table.ops.filter.FlipNonReferenceMatchExpression;
 import io.deephaven.server.table.ops.filter.MakeExpressionsNullSafe;
 import io.deephaven.server.table.ops.filter.MergeNestedBinaryOperations;
 import io.deephaven.server.table.ops.filter.NormalizeNots;
-import io.deephaven.server.table.validation.ColumnExpressionValidator;
+import io.deephaven.engine.validation.ColumnExpressionValidator;
 import org.jetbrains.annotations.NotNull;
 
 import javax.inject.Inject;
