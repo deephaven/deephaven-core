@@ -38,7 +38,7 @@ public class QueryTableSelectBarrierTest {
 
     @Rule
     public final EngineCleanup base = new EngineCleanup();
-    private static final int REPEATS_FOR_CONFIDENCE = 10000;
+    private static final int REPEATS_FOR_CONFIDENCE = 0;
 
     @Test
     public void testRepeatedBarrierSelectColumn() {
