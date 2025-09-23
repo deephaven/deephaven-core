@@ -7,5 +7,4 @@ description 'Engine Validation: Interfaces for formula validation'
 
 dependencies {
     api project(':engine-table')
-    testImplementation project(':server-test-utils')
 }

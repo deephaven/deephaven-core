@@ -3,6 +3,8 @@ plugins {
     id 'io.deephaven.project.register'
 }
 
+description "Basic formula validation using annotations and reflective method names."
+
 dependencies {
     implementation project(':Util')
     api project(':engine-validation')

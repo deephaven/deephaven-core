@@ -3,6 +3,8 @@ plugins {
     id 'io.deephaven.project.register'
 }
 
+description "Formula validation using lists of pointcuts matched by openrewrite."
+
 dependencies {
     implementation project(':Util')
     api project(':engine-validation')
@@ -20,6 +22,7 @@ dependencies {
     testRuntimeOnly libs.slf4j.simple
 }
 
+// Relocate the openrewrite dependencies into a minimized fatjar to avoid potential conflicts.
 shadowJar {
     dependencies {
         exclude (project(":engine-validation") )
