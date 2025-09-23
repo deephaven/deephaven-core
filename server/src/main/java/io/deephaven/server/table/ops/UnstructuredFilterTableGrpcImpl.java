@@ -11,7 +11,7 @@ import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest;
 import io.deephaven.proto.backplane.grpc.UnstructuredFilterTableRequest;
 import io.deephaven.server.session.SessionState;
-import io.deephaven.server.table.validation.ColumnExpressionValidator;
+import io.deephaven.engine.validation.ColumnExpressionValidator;
 import org.jetbrains.annotations.NotNull;
 
 import javax.inject.Inject;

@@ -1,0 +1,47 @@
+plugins {
+    id 'java-library'
+    id 'io.deephaven.project.register'
+}
+
+dependencies {
+    implementation project(':Util')
+    api project(':engine-validation')
+    implementation libs.rewrite.java
+    testImplementation project(":engine-test-utils")
+    testImplementation project(":server")
+    testImplementation project(':authorization')
+    testImplementation project(':extensions-validation-base')
+    testImplementation libs.commons.lang3
+    testImplementation libs.javaparser.core
+
+    testRuntimeOnly project(':log-to-slf4j')
+    testRuntimeOnly project(':configs')
+    testRuntimeOnly project(':test-configs')
+    testRuntimeOnly libs.slf4j.simple
+}
+
+shadowJar {
+    dependencies {
+        exclude (project(":engine-validation") )
+        exclude (project(":engine-table") )
+        exclude (project(":Util") )
+        exclude (dependency("io.deephaven:.*:.*") )
+    }
+    relocate 'com', 'io.deephaven.server.table.validation.methodlist.rebased.com'
+    relocate 'de', 'io.deephaven.server.table.validation.methodlist.rebased.de'
+    relocate 'google', 'io.deephaven.server.table.validation.methodlist.rebased.google'
+    relocate 'groovy', 'io.deephaven.server.table.validation.methodlist.rebased.groovy'
+    relocate 'io.micrometer', 'io.deephaven.server.table.validation.methodlist.rebased.io.micrometer'
+    relocate 'io.github', 'io.deephaven.server.table.validation.methodlist.rebased.io.github'
+    relocate 'io.grpc', 'io.deephaven.server.table.validation.methodlist.rebased.io.grpc'
+    relocate 'io.netty', 'io.deephaven.server.table.validation.methodlist.rebased.io.netty'
+    relocate 'io.perfmark', 'io.deephaven.server.table.validation.methodlist.rebased.io.perfmark'
+    relocate 'io.quarkus', 'io.deephaven.server.table.validation.methodlist.rebased.io.quarkus'
+    relocate 'it.unimi', 'io.deephaven.server.table.validation.methodlist.rebased.it.unimi'
+    relocate 'nonapi', 'io.deephaven.server.table.validation.methodlist.rebased.nonapi'
+    relocate 'net', 'io.deephaven.server.table.validation.methodlist.rebased.net'
+    relocate 'org', 'io.deephaven.server.table.validation.methodlist.rebased.org'
+    mergeServiceFiles()
+    zip64 = true
+    minimize()
+}

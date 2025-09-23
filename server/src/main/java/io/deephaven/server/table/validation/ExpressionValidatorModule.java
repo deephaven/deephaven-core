@@ -7,14 +7,16 @@ import dagger.Module;
 import dagger.Provides;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.configuration.Configuration;
+import io.deephaven.engine.validation.ColumnExpressionValidator;
+import io.deephaven.engine.validation.MethodInvocationValidator;
+import io.deephaven.server.table.validation.methodlist.MethodListInvocationValidator;
 import io.deephaven.util.annotations.UserInvocationPermitted;
 import org.jetbrains.annotations.NotNull;
 
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Module
@@ -107,7 +109,7 @@ public class ExpressionValidatorModule {
     }
 
     /**
-     * Create a list of pointcuts for the {@link MethodListInvocationValidator} based on configuration properties.
+     * Create a list of pointcuts for the MethodListInvocationValidator based on configuration properties.
      *
      * <p>
      * For instance methods, any overriding class's implementation of the method may be called. For example, if

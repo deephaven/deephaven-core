@@ -3,12 +3,13 @@
 //
 package io.deephaven.server.table.validation;
 
-import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.lang.FormulaMethodInvocations;
 import io.deephaven.engine.table.impl.select.*;
 import io.deephaven.engine.util.TableTools;
+import io.deephaven.engine.validation.ColumnExpressionValidator;
+import io.deephaven.engine.validation.MethodInvocationValidator;
 import org.jetbrains.annotations.NotNull;
 
 import java.lang.reflect.Constructor;
