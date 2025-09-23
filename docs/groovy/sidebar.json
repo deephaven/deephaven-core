@@ -452,10 +452,6 @@
                 "path": "conceptual/liveness-scope-concept.md"
               },
               {
-                "label": "Variables",
-                "path": "how-to-guides/groovy-variables.md"
-              },
-              {
                 "label": "Generate query strings",
                 "path": "how-to-guides/generate-query-strings.md"
               }
