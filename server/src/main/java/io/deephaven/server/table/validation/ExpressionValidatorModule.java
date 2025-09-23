@@ -5,7 +5,6 @@ package io.deephaven.server.table.validation;
 
 import dagger.Module;
 import dagger.Provides;
-import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.validation.ColumnExpressionValidator;
 import io.deephaven.engine.validation.MethodInvocationValidator;
@@ -13,9 +12,6 @@ import io.deephaven.server.table.validation.methodlist.MethodListInvocationValid
 import io.deephaven.util.annotations.UserInvocationPermitted;
 import org.jetbrains.annotations.NotNull;
 
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.util.*;
 import java.util.stream.Collectors;
 
