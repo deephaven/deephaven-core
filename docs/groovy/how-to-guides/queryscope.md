@@ -55,7 +55,7 @@ result = processWithLocalVar(source, 5)
 
 Variables from enclosing scopes (such as variables in outer functions) are not automatically available in query strings and must be explicitly added to the query scope.
 
-```groovy order=source,result
+```groovy order=result
 def outerFunction() {
     def enclosingVar = 10
     
