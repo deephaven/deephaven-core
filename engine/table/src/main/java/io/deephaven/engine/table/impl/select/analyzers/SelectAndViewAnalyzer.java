@@ -195,7 +195,6 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
             final Stream<String> allDependencies =
                     Stream.concat(sc.getColumns().stream(), sc.getColumnArrays().stream());
             final String[] distinctDeps = allDependencies.distinct().toArray(String[]::new);
-
             final ModifiedColumnSet mcsBuilder = new ModifiedColumnSet(parentTable.getModifiedColumnSetForUpdates());
 
 
@@ -266,7 +265,6 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
                     // created array with the proper componentType (in the case of Vectors).
                     final WritableColumnSource<?> scs = parentIsFlat || context.flatResult
                             ? sc.newFlatDestInstance(targetDestinationCapacity)
-
                             : sc.newDestInstance(targetDestinationCapacity);
                     maybeSetStaticColumnSourceImmutable(scs);
                     maybeCreateAlias.accept(scs);
