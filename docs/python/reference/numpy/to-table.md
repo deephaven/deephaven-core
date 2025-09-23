@@ -50,7 +50,7 @@ from deephaven.numpy import to_table
 
 source = np.arange(10000).reshape(100, 100)
 
-# programatically name columns
+# programmatically name columns
 result = to_table(source, cols=[f"X{i}" for i in range(source.shape[1])])
 ```
 

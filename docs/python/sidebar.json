@@ -506,7 +506,7 @@
                 "path": "how-to-guides/deephaven-python-package.md"
               },
               {
-                "label": "Generate query strings with Python",
+                "label": "Generate query strings",
                 "path": "how-to-guides/generate-query-strings.md"
               },
               {
