@@ -5,8 +5,10 @@ plugins {
 }
 
 jacoco {
-    toolVersion = '0.8.12'
+    toolVersion = '0.8.13'
 }
+
+
 
 tasks.register("jacoco-merge", JacocoReport) {
     def jprojects = rootProject.allprojects.findAll { p ->
@@ -17,18 +19,13 @@ tasks.register("jacoco-merge", JacocoReport) {
     classDirectories = files(jprojects.sourceSets.main.output)
     reports {
         html.required = true
+        html.outputLocation = layout.buildDirectory.dir('./reports/java/java-coverage.html')
         csv.required = true
+        csv.destination = file("$buildDir/reports/java/java-coverage.csv")
         xml.required = false
     }
     def projRootDir = rootProject.rootDir.absolutePath
     executionData fileTree(projRootDir).include("**/build/jacoco/*.exec")
-    doLast {
-        def javaDir = "$buildDir/reports/java/"
-        file("$buildDir/reports/jacoco/jacoco-merge/").renameTo(javaDir)
-        delete file("$buildDir/reports/jacoco/")
-        file(javaDir + "html").renameTo(file(javaDir + "java-coverage.html"))
-        file(javaDir + "jacoco-merge.csv").renameTo(file(javaDir + "java-coverage.csv"))
-    }
 }
 
 tasks.register("python-merge") {

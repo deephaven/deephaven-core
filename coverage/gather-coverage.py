@@ -64,6 +64,7 @@ with open(coverage_output_path, 'w', newline='') as outfile:
         print('Merging', os.path.basename(csv_file))
         with open(csv_file, 'r') as csv_in:
             for row in csv.reader(csv_in):
+                if row[0] == 'Language' and row[1] == 'Package': continue
                 if row[1] in excludes: continue
                 new_row = [row[0],row[1],row[2],row[3],row[4]]
                 csv_writer.writerow(new_row)
