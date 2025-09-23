@@ -452,8 +452,8 @@
                 "path": "conceptual/liveness-scope-concept.md"
               },
               {
-                "label": "Variables in query strings",
-                "path": "conceptual/queryscope.md"
+                "label": "Variables",
+                "path": "how-to-guides/groovy-variables.md"
               },
               {
                 "label": "Generate query strings",
