@@ -6,8 +6,8 @@ plugins {
 description "Formula validation using lists of pointcuts matched by openrewrite."
 
 dependencies {
-    implementation project(':Util')
-    api project(':engine-validation')
+    shadow project(':Util')
+    shadow project(':engine-validation')
     implementation libs.rewrite.java
     testImplementation project(":engine-test-utils")
     testImplementation project(":server")
@@ -24,26 +24,9 @@ dependencies {
 
 // Relocate the openrewrite dependencies into a minimized fatjar to avoid potential conflicts.
 shadowJar {
-    dependencies {
-        exclude (project(":engine-validation") )
-        exclude (project(":engine-table") )
-        exclude (project(":Util") )
-        exclude (dependency("io.deephaven:.*:.*") )
+    for (String pattern : ["com", "de", "google", "groovy", "io", "nonapi", "net", "org"]) {
+        relocate pattern, 'io.deephaven.server.table.validation.methodlist.rebased.' + pattern
     }
-    relocate 'com', 'io.deephaven.server.table.validation.methodlist.rebased.com'
-    relocate 'de', 'io.deephaven.server.table.validation.methodlist.rebased.de'
-    relocate 'google', 'io.deephaven.server.table.validation.methodlist.rebased.google'
-    relocate 'groovy', 'io.deephaven.server.table.validation.methodlist.rebased.groovy'
-    relocate 'io.micrometer', 'io.deephaven.server.table.validation.methodlist.rebased.io.micrometer'
-    relocate 'io.github', 'io.deephaven.server.table.validation.methodlist.rebased.io.github'
-    relocate 'io.grpc', 'io.deephaven.server.table.validation.methodlist.rebased.io.grpc'
-    relocate 'io.netty', 'io.deephaven.server.table.validation.methodlist.rebased.io.netty'
-    relocate 'io.perfmark', 'io.deephaven.server.table.validation.methodlist.rebased.io.perfmark'
-    relocate 'io.quarkus', 'io.deephaven.server.table.validation.methodlist.rebased.io.quarkus'
-    relocate 'it.unimi', 'io.deephaven.server.table.validation.methodlist.rebased.it.unimi'
-    relocate 'nonapi', 'io.deephaven.server.table.validation.methodlist.rebased.nonapi'
-    relocate 'net', 'io.deephaven.server.table.validation.methodlist.rebased.net'
-    relocate 'org', 'io.deephaven.server.table.validation.methodlist.rebased.org'
     mergeServiceFiles()
     zip64 = true
     minimize()
