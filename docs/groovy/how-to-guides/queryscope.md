@@ -6,12 +6,71 @@ This guide will show you techniques for using variables and functions in query s
 
 In Groovy, the Deephaven Query Language resolves variables using the [`QueryScope`](/core/javadoc/io/deephaven/engine/context/QueryScope.html) singleton. Unlike some other languages, Groovy requires explicit management of the query scope for most use cases.
 
-This guide will walk you through the process for adding variables and using functions in Groovy query strings.
+This guide will walk you through Groovy's scoping rules and the process for adding variables and using functions in Groovy query strings.
 
 If you'd like to learn more about query strings and the basic rationale of the query scope, see our [conceptual guide](../how-to-guides/queryscope.md).
 
 > [!NOTE]
 > Variable names and function names are case-sensitive.
+
+## Query scope in Groovy
+
+When the Deephaven engine compiles a query string, it must be able to resolve all variables in the query string using the query scope. Groovy's query scope resolution follows these rules:
+
+- **Global (script-level) scope**: Variables defined at the top level of a Groovy script are automatically added to the query scope
+- **Local (function) scope**: Variables defined within functions or closures must be explicitly added to the query scope using `QueryScope.addParam()`
+- **Enclosing scope**: Variables from enclosing scopes are not automatically available and must be explicitly added to the query scope
+
+Unlike Python's LEGB (Local, Enclosing, Global, Built-in) scoping rule where variables are automatically resolved, Groovy requires explicit management of the query scope for variables that are not at the script level.
+
+### Global (script-level) scope
+
+Variables defined at the top level of a Groovy script are automatically available in query strings without any additional setup.
+
+```groovy order=source,result
+globalVar = 42
+
+source = newTable(intCol("A", 1, 2, 3))
+
+result = source.update("X = A * globalVar")
+```
+
+### Local (function) scope
+
+Variables defined within functions, closures, or any local scope must be explicitly added to the query scope to be used in query strings.
+
+```groovy order=source,result
+def processWithLocalVar(Table table, int multiplier) {
+    // Local variable must be explicitly added to query scope
+    QueryScope.addParam("multiplier", multiplier)
+    return table.update("X = A * multiplier")
+}
+
+source = newTable(intCol("A", 1, 2, 3))
+
+result = processWithLocalVar(source, 5)
+```
+
+### Enclosing scope
+
+Variables from enclosing scopes (such as variables in outer functions) are not automatically available in query strings and must be explicitly added to the query scope.
+
+```groovy order=source,result
+def outerFunction() {
+    def enclosingVar = 10
+    
+    def innerFunction = { Table table ->
+        // Enclosing variable must be explicitly added to query scope
+        QueryScope.addParam("enclosingVar", enclosingVar)
+        return table.update("X = A * enclosingVar")
+    }
+    
+    def source = newTable(intCol("A", 1, 2, 3))
+    return innerFunction(source)
+}
+
+result = outerFunction()
+```
 
 ## Use variables in a query string
 
