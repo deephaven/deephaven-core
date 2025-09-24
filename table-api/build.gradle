@@ -8,7 +8,6 @@ description = 'The Deephaven table operations API'
 dependencies {
   implementation project(':engine-query-constants')
   implementation libs.commons.text
-  implementation project(":Base")
 
   compileOnly project(':util-immutables')
   annotationProcessor libs.immutables.value

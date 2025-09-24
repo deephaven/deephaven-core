@@ -89,12 +89,12 @@ enum FilterSimplifier implements Visitor<Filter> {
 
     @Override
     public Filter visit(FilterBarrier barrier) {
-        return barrier.filter().walk(this).withBarriers(barrier.barriers());
+        return barrier.filter().walk(this).withDeclaredBarriers(barrier.barriers());
     }
 
     @Override
     public Filter visit(FilterRespectsBarrier respectsBarrier) {
-        return respectsBarrier.filter().walk(this).respectsBarriers(respectsBarrier.respectedBarriers());
+        return respectsBarrier.filter().walk(this).withRespectsBarriers(respectsBarrier.respectedBarriers());
     }
 
     @Override

@@ -41,13 +41,13 @@ public interface SelectColumn extends Selectable, ConcurrencyControl<Selectable>
         } else {
             result = new StatelessSelectColumn(result);
         }
-        Object[] declaredBarriers = selectable.barriers();
+        Object[] declaredBarriers = selectable.declaredBarriers();
         if (declaredBarriers != null && declaredBarriers.length > 0) {
-            result = SelectColumnWithBarrier.addBarriers(result, declaredBarriers);
+            result = SelectColumnWithDeclaredBarriers.addDeclaredBarriers(result, declaredBarriers);
         }
         Object[] respectedBarriers = selectable.respectedBarriers();
         if (respectedBarriers != null && respectedBarriers.length > 0) {
-            result = SelectColumnWithRespectsBarrier.addRespectsBarriers(result, respectedBarriers);
+            result = SelectColumnWithRespectedBarriers.addRespectedBarriers(result, respectedBarriers);
         }
         return result;
     }
@@ -349,20 +349,20 @@ public interface SelectColumn extends Selectable, ConcurrencyControl<Selectable>
     }
 
     @Override
-    default SelectColumn withBarriers(Object... barriers) {
-        return SelectColumnWithBarrier.addBarriers(this, barriers);
+    default SelectColumn withDeclaredBarriers(Object... barriers) {
+        return SelectColumnWithDeclaredBarriers.addDeclaredBarriers(this, barriers);
     }
 
     @Override
-    default SelectColumn respectsBarriers(Object... respectsBarriers) {
-        return SelectColumnWithRespectsBarrier.addRespectsBarriers(this, respectsBarriers);
+    default SelectColumn withRespectsBarriers(Object... respectsBarriers) {
+        return SelectColumnWithRespectedBarriers.addRespectedBarriers(this, respectsBarriers);
     }
 
     default Object[] respectedBarriers() {
         return null;
     }
 
-    default Object[] barriers() {
+    default Object[] declaredBarriers() {
         return null;
     }
 }

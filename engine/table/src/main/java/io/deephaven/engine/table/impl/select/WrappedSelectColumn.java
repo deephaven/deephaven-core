@@ -164,7 +164,7 @@ abstract class WrappedSelectColumn implements SelectColumn {
     }
 
     @Override
-    public Object[] barriers() {
-        return inner.barriers();
+    public Object[] declaredBarriers() {
+        return inner.declaredBarriers();
     }
 }

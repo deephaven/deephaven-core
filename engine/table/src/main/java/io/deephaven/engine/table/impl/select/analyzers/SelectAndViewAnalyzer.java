@@ -4,9 +4,7 @@
 package io.deephaven.engine.table.impl.select.analyzers;
 
 import gnu.trove.list.array.TIntArrayList;
-import gnu.trove.map.TIntIntMap;
 import gnu.trove.map.TObjectIntMap;
-import gnu.trove.map.hash.TIntIntHashMap;
 import gnu.trove.map.hash.TObjectIntHashMap;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.log.LogOutputAppendable;
@@ -43,7 +41,6 @@ import org.jetbrains.annotations.Nullable;
 import java.util.*;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class SelectAndViewAnalyzer implements LogOutputAppendable {
@@ -122,7 +119,7 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
         final Set<String> resultColumnNames = new HashSet<>();
         for (final SelectColumn sc : selectColumns) {
             if (context.remainingCols != null) {
-                context.remainingCols.add(SelectColumnWithRespectsBarrier.removeBarriers(sc, preShiftBarriers));
+                context.remainingCols.add(SelectColumnWithRespectedBarriers.removeBarriers(sc, preShiftBarriers));
                 continue;
             }
 
@@ -151,8 +148,8 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
             resultColumnNames.add(sc.getName());
 
             context.processedCols.add(sc);
-            if (sc.barriers() != null) {
-                preShiftBarriers.addAll(Arrays.asList(sc.barriers()));
+            if (sc.declaredBarriers() != null) {
+                preShiftBarriers.addAll(Arrays.asList(sc.declaredBarriers()));
             }
         }
 
@@ -210,7 +207,7 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
             }
 
             if (sc.hasConstantValue()) {
-                if (sc.barriers() != null && sc.barriers().length > 0) {
+                if (sc.declaredBarriers() != null && sc.declaredBarriers().length > 0) {
                     throw new IllegalArgumentException(
                             "Constant values are not evaluated during select() and update() processing, therefore may not declare barriers");
                 }
@@ -315,7 +312,7 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
             final Map<Object, Integer> barrierToLayerIndex,
             final Layer layer,
             final AnalyzerContext context) {
-        final Object[] declaredBarriers = sc.barriers();
+        final Object[] declaredBarriers = sc.declaredBarriers();
         if (declaredBarriers != null) {
             for (final Object barrier : declaredBarriers) {
                 final Integer oldIndex = barrierToLayerIndex.put(barrier, layer.getLayerIndex());

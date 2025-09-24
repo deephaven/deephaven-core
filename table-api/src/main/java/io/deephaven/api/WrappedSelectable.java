@@ -4,19 +4,14 @@
 package io.deephaven.api;
 
 import io.deephaven.api.expression.Expression;
-import io.deephaven.base.ArrayUtil;
 
-class SelectableWithBarriers implements Selectable {
+import java.util.Arrays;
+
+class WrappedSelectable implements Selectable {
     Selectable wrapped;
-    Object[] barriers;
 
-    SelectableWithBarriers(Selectable wrapped, final Object[] barriers) {
+    WrappedSelectable(Selectable wrapped) {
         this.wrapped = wrapped;
-        if (wrapped.barriers() != null && wrapped.barriers().length > 0) {
-            this.barriers = ArrayUtil.concat(barriers, wrapped.barriers());
-        } else {
-            this.barriers = barriers;
-        }
     }
 
     @Override
@@ -35,8 +30,8 @@ class SelectableWithBarriers implements Selectable {
     }
 
     @Override
-    public Object[] barriers() {
-        return barriers;
+    public Object[] declaredBarriers() {
+        return wrapped.declaredBarriers();
     }
 
     @Override
@@ -50,12 +45,12 @@ class SelectableWithBarriers implements Selectable {
     }
 
     @Override
-    public Selectable withBarriers(Object... barriers) {
-        return new SelectableWithBarriers(this, barriers);
+    public Selectable withDeclaredBarriers(Object... barriers) {
+        return new SelectableWithDeclaredBarriers(this, Arrays.stream(barriers));
     }
 
     @Override
-    public Selectable respectsBarriers(Object... barriers) {
-        return new SelectableWithBarriers(this, barriers);
+    public Selectable withRespectsBarriers(Object... barriers) {
+        return new SelectableWithRespectedBarrier(this, Arrays.stream(barriers));
     }
 }

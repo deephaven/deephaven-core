@@ -477,13 +477,13 @@ public class FilterTest {
 
         @Override
         public Void visit(FilterBarrier barrier) {
-            out.add(Function.of("my_serial_function", FOO).withBarriers("TEST_BARRIER"));
+            out.add(Function.of("my_serial_function", FOO).withDeclaredBarriers("TEST_BARRIER"));
             return null;
         }
 
         @Override
         public Void visit(FilterRespectsBarrier respectsBarrier) {
-            out.add(Function.of("my_serial_function", FOO).respectsBarriers("TEST_BARRIER"));
+            out.add(Function.of("my_serial_function", FOO).withRespectsBarriers("TEST_BARRIER"));
             return null;
         }
 

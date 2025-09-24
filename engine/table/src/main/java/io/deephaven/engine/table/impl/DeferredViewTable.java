@@ -5,7 +5,6 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.api.Selectable;
 import io.deephaven.api.filter.Filter;
-import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.liveness.Liveness;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.filter.ExtractBarriers;
@@ -324,7 +323,8 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
                 .flatMap(wf -> ExtractBarriers.of(wf).stream())
                 .collect(Collectors.toSet());
         if (!preViewBarriers.isEmpty() && !postViewFilters.isEmpty()) {
-            postViewFilters.add(0, WhereAllFilter.INSTANCE.withBarriers(preViewBarriers.toArray(Object[]::new)));
+            postViewFilters.add(0,
+                    WhereAllFilter.INSTANCE.withDeclaredBarriers(preViewBarriers.toArray(Object[]::new)));
         }
         compilationProcessor.compile();
 

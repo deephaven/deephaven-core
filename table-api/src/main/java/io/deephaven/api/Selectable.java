@@ -66,14 +66,25 @@ public interface Selectable extends ConcurrencyControl<Selectable> {
      */
     Expression expression();
 
+    /**
+     * @return the barriers this selectable respects
+     */
     default Object[] respectedBarriers() {
         return null;
     }
 
-    default Object[] barriers() {
+    /**
+     * @return the barriers this selectable declares
+     */
+    default Object[] declaredBarriers() {
         return null;
     }
 
+    /**
+     * @return null if this Selectable has no opinion on whether it is serial (so the system default should be used);
+     *         false if this Selectable can be reordered within a column; or true if this Selectable must be evaluated
+     *         in order.
+     */
     default Boolean isSerial() {
         return null;
     }
@@ -84,12 +95,12 @@ public interface Selectable extends ConcurrencyControl<Selectable> {
     }
 
     @Override
-    default Selectable withBarriers(Object... barriers) {
-        return new SelectableWithBarriers(this, barriers);
+    default Selectable withDeclaredBarriers(Object... barriers) {
+        return new SelectableWithDeclaredBarriers(this, Arrays.stream(barriers));
     }
 
     @Override
-    default Selectable respectsBarriers(Object... barriers) {
-        return new SelectableWithRespectsBarrier(this, barriers);
+    default Selectable withRespectsBarriers(Object... barriers) {
+        return new SelectableWithRespectedBarrier(this, Arrays.stream(barriers));
     }
 }

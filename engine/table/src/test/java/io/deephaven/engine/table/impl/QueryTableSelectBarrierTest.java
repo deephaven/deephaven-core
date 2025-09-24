@@ -102,8 +102,8 @@ public class QueryTableSelectBarrierTest {
             slow_a.reset(0, 1);
 
             System.out.println(Instant.now() + ": barrier");
-            final Table u = x.update(List.of(SelectColumn.ofStateless(sa).withBarriers(slow_a),
-                    SelectColumn.ofStateless(sb).respectsBarriers(slow_a)));
+            final Table u = x.update(List.of(SelectColumn.ofStateless(sa).withDeclaredBarriers(slow_a),
+                    SelectColumn.ofStateless(sb).withRespectsBarriers(slow_a)));
 
             // check for swizzling
             checkMixedColumns(u, false);
@@ -189,7 +189,7 @@ public class QueryTableSelectBarrierTest {
             slow_a.reset(0, 1);
 
             System.out.println(Instant.now() + ": barriers");
-            final Table u = x.update(List.of(sa.withBarriers(slow_a), sb.respectsBarriers(slow_a)));
+            final Table u = x.update(List.of(sa.withDeclaredBarriers(slow_a), sb.withRespectsBarriers(slow_a)));
 
             // check for swizzling
             checkMixedColumns(u, false);
@@ -288,8 +288,8 @@ public class QueryTableSelectBarrierTest {
             // now let's keep things stateless, but insert a barrier so that A and B do not intermix
             slow_a.reset(0, 1);
 
-            final Table u = x.update(List.of(SelectColumn.ofStateless(sa).withBarriers(slow_a),
-                    SelectColumn.ofStateless(sb).respectsBarriers(slow_a), SelectColumn.ofStateless(sc),
+            final Table u = x.update(List.of(SelectColumn.ofStateless(sa).withDeclaredBarriers(slow_a),
+                    SelectColumn.ofStateless(sb).withRespectsBarriers(slow_a), SelectColumn.ofStateless(sc),
                     SelectColumn.ofStateless(sd)));
 
             // check for swizzling
@@ -308,9 +308,9 @@ public class QueryTableSelectBarrierTest {
             // now let's put the barrier on a and respect it on d, which is trivially going to be enforced; but also
             // ensures we don't blow up with a missing barrier
             slow_a.reset(2, 4);
-            final Table v = x.update(List.of(SelectColumn.ofStateless(sa).withBarriers(slow_a),
+            final Table v = x.update(List.of(SelectColumn.ofStateless(sa).withDeclaredBarriers(slow_a),
                     SelectColumn.ofStateless(sb), SelectColumn.ofStateless(sc),
-                    SelectColumn.ofStateless(sd).respectsBarriers(slow_a)));
+                    SelectColumn.ofStateless(sd).withRespectsBarriers(slow_a)));
 
             // check for swizzling
             checkMixedColumns(v, true);
@@ -406,9 +406,10 @@ public class QueryTableSelectBarrierTest {
             slow_a.reset(0, 1);
             slow_b.reset(0, 2);
             final Table u =
-                    x.update(List.of(SelectColumn.ofStateless(sb), SelectColumn.ofStateless(sa).withBarriers(slow_a),
+                    x.update(List.of(SelectColumn.ofStateless(sb),
+                            SelectColumn.ofStateless(sa).withDeclaredBarriers(slow_a),
                             SelectColumn.ofStateless(sc), SelectColumn.ofStateless(sd), SelectColumn.ofStateless(sa1),
-                            SelectColumn.ofStateless(sb1).respectsBarriers(slow_a)));
+                            SelectColumn.ofStateless(sb1).withRespectsBarriers(slow_a)));
 
             assertTrue(isOutOfOrder(u, "A"));
             assertTrue(isOutOfOrder(u, "B"));
@@ -427,28 +428,28 @@ public class QueryTableSelectBarrierTest {
         final Table t = TableTools.emptyTable(1);
 
         final IllegalArgumentException iae1 = assertThrows(IllegalArgumentException.class,
-                () -> t.update(List.of(SelectColumnFactory.getExpression("A=1").withBarriers(t))));
+                () -> t.update(List.of(SelectColumnFactory.getExpression("A=1").withDeclaredBarriers(t))));
         assertEquals(
                 "Constant values are not evaluated during select() and update() processing, therefore may not declare barriers.",
                 iae1.getMessage());
         final IllegalArgumentException iae2 = assertThrows(IllegalArgumentException.class,
-                () -> t.update(List.of(SelectColumnFactory.getExpression("A=i").withBarriers(t),
-                        SelectColumnFactory.getExpression("B=1").respectsBarriers(t))));
+                () -> t.update(List.of(SelectColumnFactory.getExpression("A=i").withDeclaredBarriers(t),
+                        SelectColumnFactory.getExpression("B=1").withRespectsBarriers(t))));
         assertEquals(
                 "Constant values are not evaluated during select() and update() processing, therefore may not respect barriers.",
                 iae2.getMessage());
         final IllegalArgumentException iae3 = assertThrows(IllegalArgumentException.class,
-                () -> t.update(List.of(SelectColumnFactory.getExpression("A=i").withBarriers(t),
-                        SelectColumnFactory.getExpression("B=2*i").withBarriers(t))));
+                () -> t.update(List.of(SelectColumnFactory.getExpression("A=i").withDeclaredBarriers(t),
+                        SelectColumnFactory.getExpression("B=2*i").withDeclaredBarriers(t))));
         assertEquals("Duplicate barrier, emptyTable(1), declared for A and B", iae3.getMessage());
         final IllegalArgumentException iae4 = assertThrows(IllegalArgumentException.class,
                 () -> t.update(List.of(SelectColumnFactory.getExpression("A=i"),
-                        SelectColumnFactory.getExpression("B=2*i").respectsBarriers(t))));
+                        SelectColumnFactory.getExpression("B=2*i").withRespectsBarriers(t))));
         assertEquals("Respected barrier, emptyTable(1), is not defined for B", iae4.getMessage());
 
         final IllegalArgumentException iae5 = assertThrows(IllegalArgumentException.class,
-                () -> t.view(List.of(SelectColumnFactory.getExpression("A=i").withBarriers(t),
-                        SelectColumnFactory.getExpression("B=i").respectsBarriers(t))));
+                () -> t.view(List.of(SelectColumnFactory.getExpression("A=i").withDeclaredBarriers(t),
+                        SelectColumnFactory.getExpression("B=i").withRespectsBarriers(t))));
         assertEquals("view and updateView cannot respect barriers", iae5.getMessage());
     }
 
@@ -461,35 +462,46 @@ public class QueryTableSelectBarrierTest {
 
         final SelectColumn sc = SelectColumnFactory.getExpression("A=B * 2");
 
-        assertEquals(List.of(a), List.of(sc.withBarriers(a).barriers()));
-        assertEquals(List.of(b), List.of(sc.withBarriers(b).barriers()));
-        assertEquals(List.of(a, b), List.of(sc.withBarriers(a, b).barriers()));
-        assertEquals(List.of(a, b), List.of(sc.withBarriers(a).withBarriers(b).barriers()));
+        assertEquals(List.of(a), List.of(sc.withDeclaredBarriers(a).declaredBarriers()));
+        assertEquals(List.of(b), List.of(sc.withDeclaredBarriers(b).declaredBarriers()));
+        assertEquals(List.of(a, b), List.of(sc.withDeclaredBarriers(a, b).declaredBarriers()));
+        assertEquals(List.of(a, b), List.of(sc.withDeclaredBarriers(a).withDeclaredBarriers(b).declaredBarriers()));
 
-        assertEquals(List.of(a), List.of(sc.respectsBarriers(a).respectedBarriers()));
-        assertEquals(List.of(b), List.of(sc.respectsBarriers(b).respectedBarriers()));
-        assertEquals(List.of(a, b), List.of(sc.respectsBarriers(a, b).respectedBarriers()));
-        assertEquals(List.of(a, b), List.of(sc.respectsBarriers(a).respectsBarriers(b).respectedBarriers()));
+        assertEquals(List.of(a), List.of(sc.withRespectsBarriers(a).respectedBarriers()));
+        assertEquals(List.of(b), List.of(sc.withRespectsBarriers(b).respectedBarriers()));
+        assertEquals(List.of(a, b), List.of(sc.withRespectsBarriers(a, b).respectedBarriers()));
+        assertEquals(List.of(a, b), List.of(sc.withRespectsBarriers(a).withRespectsBarriers(b).respectedBarriers()));
 
 
-        assertEquals(List.of(a), List.of(sc.withBarriers(a).copy().barriers()));
-        assertEquals(List.of(b), List.of(sc.withBarriers(b).copy().barriers()));
-        assertEquals(List.of(a, b), List.of(sc.withBarriers(a, b).copy().barriers()));
-        assertEquals(List.of(a, b), List.of(sc.withBarriers(a).withBarriers(b).copy().barriers()));
-
-        assertEquals(List.of(a), List.of(sc.withBarriers(a).respectsBarriers(c).barriers()));
-        assertEquals(List.of(c), List.of(sc.withBarriers(a).respectsBarriers(c).respectedBarriers()));
-        assertEquals(List.of(c), List.of(sc.withBarriers(a).respectsBarriers(c).withBarriers(b).respectedBarriers()));
-        assertEquals(List.of(a, b), List.of(sc.withBarriers(a).respectsBarriers(c).withBarriers(b).barriers()));
+        assertEquals(List.of(a), List.of(sc.withDeclaredBarriers(a).copy().declaredBarriers()));
+        assertEquals(List.of(b), List.of(sc.withDeclaredBarriers(b).copy().declaredBarriers()));
+        assertEquals(List.of(a, b), List.of(sc.withDeclaredBarriers(a, b).copy().declaredBarriers()));
         assertEquals(List.of(a, b),
-                List.of(sc.respectsBarriers(c).withBarriers(a).respectsBarriers(d).withBarriers(b).barriers()));
+                List.of(sc.withDeclaredBarriers(a).withDeclaredBarriers(b).copy().declaredBarriers()));
+
+        assertEquals(List.of(a), List.of(sc.withDeclaredBarriers(a).withRespectsBarriers(c).declaredBarriers()));
+        assertEquals(List.of(c), List.of(sc.withDeclaredBarriers(a).withRespectsBarriers(c).respectedBarriers()));
+        assertEquals(List.of(c),
+                List.of(sc.withDeclaredBarriers(a).withRespectsBarriers(c).withDeclaredBarriers(b)
+                        .respectedBarriers()));
+        assertEquals(List.of(a, b),
+                List.of(sc.withDeclaredBarriers(a).withRespectsBarriers(c).withDeclaredBarriers(b).declaredBarriers()));
+        assertEquals(List.of(a, b),
+                List.of(sc.withRespectsBarriers(c).withDeclaredBarriers(a).withRespectsBarriers(d)
+                        .withDeclaredBarriers(b)
+                        .declaredBarriers()));
         assertEquals(List.of(c, d), List
-                .of(sc.respectsBarriers(c).withBarriers(b).respectsBarriers(d).withBarriers(b).respectedBarriers()));
+                .of(sc.withRespectsBarriers(c).withDeclaredBarriers(b).withRespectsBarriers(d).withDeclaredBarriers(b)
+                        .respectedBarriers()));
 
         assertEquals(List.of(a, b),
-                List.of(sc.respectsBarriers(c).withBarriers(a).respectsBarriers(d).withBarriers(b).copy().barriers()));
+                List.of(sc.withRespectsBarriers(c).withDeclaredBarriers(a).withRespectsBarriers(d)
+                        .withDeclaredBarriers(b)
+                        .copy().declaredBarriers()));
         assertEquals(List.of(c, d), List.of(
-                sc.respectsBarriers(c).withBarriers(b).respectsBarriers(d).withBarriers(b).copy().respectedBarriers()));
+                sc.withRespectsBarriers(c).withDeclaredBarriers(b).withRespectsBarriers(d).withDeclaredBarriers(b)
+                        .copy()
+                        .respectedBarriers()));
     }
 
     private static void checkIndividualSums(int size, Table u) {

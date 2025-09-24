@@ -8,7 +8,7 @@ import io.deephaven.base.ArrayUtil;
 /**
  * A SelectColumn that declares the given barriers.
  */
-public class SelectColumnWithBarrier extends WrappedSelectColumn {
+public class SelectColumnWithDeclaredBarriers extends WrappedSelectColumn {
     private final Object[] barriers;
 
     /**
@@ -18,14 +18,14 @@ public class SelectColumnWithBarrier extends WrappedSelectColumn {
      * @param barriers the barriers to declare on the result
      * @return a new SelectColumn that respects the given barriers.
      */
-    public static SelectColumn addBarriers(SelectColumn toWrap, Object... barriers) {
-        return new SelectColumnWithBarrier(toWrap, true, barriers);
+    public static SelectColumn addDeclaredBarriers(SelectColumn toWrap, Object... barriers) {
+        return new SelectColumnWithDeclaredBarriers(toWrap, true, barriers);
     }
 
-    private SelectColumnWithBarrier(SelectColumn wrapped, final boolean merge, Object... barriers) {
+    private SelectColumnWithDeclaredBarriers(SelectColumn wrapped, final boolean merge, Object... barriers) {
         super(wrapped);
-        if (merge && wrapped.barriers() != null && wrapped.barriers().length > 0) {
-            this.barriers = ArrayUtil.concat(wrapped.barriers(), barriers);
+        if (merge && wrapped.declaredBarriers() != null && wrapped.declaredBarriers().length > 0) {
+            this.barriers = ArrayUtil.concat(wrapped.declaredBarriers(), barriers);
         } else {
             this.barriers = barriers;
         }
@@ -33,11 +33,11 @@ public class SelectColumnWithBarrier extends WrappedSelectColumn {
 
     @Override
     public SelectColumn copy() {
-        return new SelectColumnWithBarrier(inner.copy(), false, barriers);
+        return new SelectColumnWithDeclaredBarriers(inner.copy(), false, barriers);
     }
 
     @Override
-    public Object[] barriers() {
+    public Object[] declaredBarriers() {
         return barriers;
     }
 }
