@@ -79,7 +79,7 @@ dependencies {
     }
 
     implementation project(':extensions-validation-base')
-    implementation project(':extensions-validation-method-list')
+    implementation project(path: ':extensions-validation-method-list', configuration: 'shadow')
 
     api(project(':plugin')) {
         because 'downstream dagger compile, see deephaven-core#1722'

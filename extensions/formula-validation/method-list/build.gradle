@@ -9,12 +9,9 @@ dependencies {
     shadow project(':Util')
     shadow project(':engine-validation')
     implementation libs.rewrite.java
+
     testImplementation project(":engine-test-utils")
-    testImplementation project(":server")
-    testImplementation project(':authorization')
-    testImplementation project(':extensions-validation-base')
-    testImplementation libs.commons.lang3
-    testImplementation libs.javaparser.core
+    testImplementation project(":extensions-validation-base")
 
     testRuntimeOnly project(':log-to-slf4j')
     testRuntimeOnly project(':configs')
@@ -24,9 +21,13 @@ dependencies {
 
 // Relocate the openrewrite dependencies into a minimized fatjar to avoid potential conflicts.
 shadowJar {
-    for (String pattern : ["com", "de", "google", "groovy", "io", "nonapi", "net", "org"]) {
+    for (String pattern : ["com", "de", "google", "groovy", "nonapi", "net", "org"]) {
         relocate pattern, 'io.deephaven.server.table.validation.methodlist.rebased.' + pattern
     }
+    relocate('io', 'io.deephaven.server.table.validation.methodlist.rebased.io') {
+        exclude 'io.deephaven.**'
+    }
+
     mergeServiceFiles()
     zip64 = true
     minimize()
