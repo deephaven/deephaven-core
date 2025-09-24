@@ -6,11 +6,9 @@ sidebar_label: Variables
 
 The ability to use your own custom Groovy variables, [closures](./groovy-closures.md), and [classes](./groovy-classes.md) in Deephaven query strings is one of its most powerful features. The use of Groovy variables in query strings follows some basic rules, which are outlined in this guide.
 
-## Groovy variables in query strings
-
 There are three types of Groovy variables supported in the Deephaven Query Language (DQL). The use of variables in queries follows Groovy's scoping rules and Deephaven's [query scope](./queryscope.md) mechanism.
 
-### Scalars
+## Scalars
 
 Scalars are single values, such as numbers or booleans. They can be used directly in query strings without special syntax. The following example shows the basic use of Groovy variables in query strings to create new columns in a table:
 
@@ -23,7 +21,7 @@ source = emptyTable(1).update("A = a", "B = b", "C = c + 1")
 sourceMeta = source.meta()
 ```
 
-### Strings
+## Strings
 
 Like [scalars](#scalars), Groovy strings can be used in [query strings](./query-string-overview.md) with no special syntax. The following example creates a table with two string columns:
 
@@ -35,7 +33,7 @@ source = emptyTable(1).update("FirstString = myFirstString", "SecondString = myS
 sourceMeta = source.meta()
 ```
 
-### Sequences
+## Sequences
 
 In Groovy, sequences include lists, arrays, and more. These can be used in [query strings](./query-string-overview.md) as well.
 
