@@ -1,11 +1,11 @@
 ---
-title: How do row keys and positional indices behave during merge table operations?
-sidebar_label: How do row keys and positional indices behave during merge table operations?
+title: How do row keys and positional indices behave during table operations?
+sidebar_label: How do row keys and positional indices behave during table operations?
 ---
 
-_When merging tables in Deephaven, I understand that "shifts" can happen when one table grows beyond its allocated row key slots. How do the row key (k) and positional index (i) attributes change during these shifts, and what impact does this have on downstream operations?_
+_When working with tables in Deephaven, I understand that "shifts" can happen when tables grow beyond their allocated row key slots. How do the row key (k) and positional index (i) attributes change during these shifts, and what impact does this have on downstream operations?_
 
-When you merge tables in Deephaven, the engine pre-allocates row key slots for each constituent table. Understanding how row keys (`k`) and positional indices (`i`) behave during growth and shifts is crucial for working with formulas that reference these attributes.
+**Shifts can occur with any table operation that works with live/refreshing data** - including merges, joins, updates, selects, and other operations. When you merge tables in Deephaven, the engine pre-allocates row key slots for each constituent table. Understanding how row keys (`k`) and positional indices (`i`) behave during growth and shifts is crucial for working with formulas that reference these attributes.
 
 ## Key terms
 
@@ -23,7 +23,7 @@ Before diving into the details, let's define the key concepts:
 
 - **Refreshing tables**: Tables that can change over time (live data), as opposed to static tables that never change after creation. Append-only tables are a special type of refreshing table where new rows are only added (never moved or deleted), making positional indices safe to use.
 
-> [!CAUTION] > **Formulas using positional indices (`i`, `ii`, `k`) or column array variables are unsafe on refreshing tables and will cause `IllegalArgumentException` errors.** The engine blocks these formulas by default to prevent incorrect results. While you can override this with the system property `io.deephaven.engine.table.impl.select.AbstractFormulaColumn.allowUnsafeRefreshingFormulas=true`, doing so **will produce incorrect results** when table shifts occur. **Note that shifts can happen with any table operation, not just merges** - including joins, updates, selects, and other operations on live/refreshing tables. These formulas are safe to use on static tables or append-only tables (like `time_table("PT1s").update("X = ii")`) where shifts cannot happen because rows are only added, never moved.
+> [!CAUTION] > **Formulas using positional indices (`i`, `ii`, `k`) or column array variables are unsafe on refreshing tables and will cause `IllegalArgumentException` errors.** The engine blocks these formulas by default to prevent incorrect results. While you can override this with the system property `io.deephaven.engine.table.impl.select.AbstractFormulaColumn.allowUnsafeRefreshingFormulas=true`, doing so **will produce incorrect results** when table shifts occur. Additionally, any table operations that add or remove rows can also cause positional indices to become incorrect. **Note that shifts can happen with any table operation, not just merges** - including joins, updates, selects, and other operations on live/refreshing tables. These formulas are safe to use on static tables or append-only tables (like `time_table("PT1s").update("X = ii")`) where shifts cannot happen because rows are only added, never moved.
 
 ## Row key allocation and shifts
 
@@ -139,7 +139,9 @@ The `zebra` and `bear` rows maintain their original `MyRowIdx` values because th
 
 Shifts are a performance optimization that allows the engine to avoid re-evaluating formulas, joins, and aggregations when rows are simply moved to accommodate table growth. Only when row data is actually modified does the engine need to recalculate dependent operations.
 
-While this example focuses on merge operations, **shifts can occur with any table operation** that works with live/refreshing data, including joins, updates, selects, and other operations. The same safety concerns about positional indices apply regardless of which operation triggers the shift.
+For more detailed information about shifts and the table update model, see [Table update model - Shifts](../../../conceptual/table-update-model.md#shifts).
+
+While this example focuses on merge operations, **shifts can occur with any table operation** that works with live/refreshing data, including joins, updates, selects, and other operations. The same safety concerns about positional indices apply regardless of which operation triggers the shift. Note that even without shifts, any operations that add or remove rows from refreshing tables can similarly cause positional indices (`i`, `ii`) to become incorrect in downstream operations.
 
 > [!NOTE]
 > These FAQ pages contain answers to questions about Deephaven Community Core that our users have asked in our [Community Slack](/slack). If you have a question that is not answered in our documentation, [join our Community](/slack) and ask it there. We are happy to help!
