@@ -2497,7 +2497,7 @@
                     "path": "reference/community-questions/query-memoization.md"
                   },
                   {
-                    "label": "How do row keys and positional indices behave during merge table operations?",
+                    "label": "How do row keys and positional indices behave during table operations?",
                     "path": "reference/community-questions/shifts.md"
                   },
                   {

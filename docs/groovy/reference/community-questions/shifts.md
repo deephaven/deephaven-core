@@ -13,15 +13,22 @@ Before diving into the details, let's define the key concepts:
 
 - **Row key (`k`)**: A unique identifier assigned to each row in a table. Row keys are used internally by the engine to track rows and are typically sequential integers starting from 0.
 
-- **Positional index (`i`)**: The current position of a row within a table, starting from 0 for the first row. Unlike row keys, positional indices always reflect the current order of rows.
+- **Positional index (`i` and `ii`)**: The current position of a row within a table, starting from 0 for the first row. Unlike row keys, positional indices always reflect the current order of rows.
 
-- **Shifts**: When a table grows beyond its pre-allocated row key space, the engine may need to move (shift) other tables' rows to new row key positions to make room. The row data itself doesn't change, but the row keys do.
+- **Shifts**: When rows need to be inserted between existing rows (such as in sorted tables), Deephaven communicates row shift data that moves ranges of row keys by a positive or negative shift delta. This allows the engine to maintain proper ordering without spurious modifications. The row data itself doesn't change, but the row keys do. See [Table update model - Shifts](../../conceptual/table-update-model.md#shifts) for detailed technical information.
 
-- **Constituent tables**: The individual tables that are being merged together. Each constituent table gets its own allocated range of row keys in the merged result.
+- **Constituent tables**: The individual tables that make up a larger table structure, such as tables being merged, joined, or subtables within a partitioned table. Each constituent table gets its own allocated range of row keys in the result.
 
 - **Row key slots**: Pre-allocated ranges of row keys reserved for each constituent table. For example, table A might get slots 0-4095, while table B gets slots 4096-8191.
 
-- **Refreshing tables**: Tables that can change over time (live data), as opposed to static tables that never change after creation. Append-only tables are a special type of refreshing table where new rows are only added (never moved or deleted), making positional indices safe to use.
+- **Refreshing tables**: Tables that can change over time (live data), as opposed to static tables that never change after creation. This includes:
+
+  - tables created from live data sources (like `timeTable`, Kafka streams, etc.).
+  - tables that are the result of operations on refreshing tables.
+  - any table where rows can be added, removed, or shifted after creation.
+    In contrast, **[static tables](../../conceptual/table-types.md#static-tables)** never change after creation - they contain fixed data that remains constant.
+
+- **Append-only tables**: A special type of refreshing table where new rows are only added (never moved or deleted), making positional indices safe to use. See [Table types - Append-only](../../conceptual/table-types.md#specialization-1-append-only) for more information.
 
 > [!CAUTION] > **Formulas using positional indices (`i`, `ii`, `k`) or column array variables are unsafe on refreshing tables and will cause `IllegalArgumentException` errors.** The engine blocks these formulas by default to prevent incorrect results. While you can override this with the system property `io.deephaven.engine.table.impl.select.AbstractFormulaColumn.allowUnsafeRefreshingFormulas=true`, doing so **will produce incorrect results** when table shifts occur. Additionally, any table operations that add or remove rows can also cause positional indices to become incorrect. **Note that shifts can happen with any table operation, not just merges** - including joins, updates, selects, and other operations on live/refreshing tables. These formulas are safe to use on static tables or append-only tables (like `timeTable("PT1s").update("X = ii")`) where shifts cannot happen because rows are only added, never moved.
 
