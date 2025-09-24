@@ -1011,6 +1011,7 @@ public class TestColumnExpressionValidator {
         Assert.assertNull(validator2.permitConstructor(BigInteger.class.getConstructor(byte[].class)));
         Assert.assertNull(validator2.permitConstructor(BigDecimal.class.getConstructor(String.class)));
     }
+
     @Test
     public void testCachingConstructorBehavior() throws NoSuchMethodException {
         final MutableInt allowedMethodCount = new MutableInt(0);
