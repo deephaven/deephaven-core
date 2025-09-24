@@ -309,7 +309,7 @@ public class QueryTable extends BaseTable<QueryTable> {
             Configuration.getInstance().getBooleanWithDefault("QueryTable.statelessFiltersByDefault", false);
 
     /**
-     * If set to true, then the default behavior of Formulas is to be stateless. Stateless formulas are allowed to be
+     * If set to true, then the default behavior of formulas is to be stateless. Stateless formulas are allowed to be
      * processed in parallel by the engine. If set to false, then formulas may not be parallelized within a column. To
      * make a specific SelectColumn stateful, use {@link SelectColumn#withSerial()}. To make a specific SelectColumn
      * stateless, use {@link SelectColumn#ofStateless(Selectable)}.
