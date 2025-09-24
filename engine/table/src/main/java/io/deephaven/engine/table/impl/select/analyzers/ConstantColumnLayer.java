@@ -24,7 +24,7 @@ public class ConstantColumnLayer extends SelectOrViewColumnLayer {
         super(context, sc, ws, null, recomputeDependencies, mcsBuilder);
         if (sc.recomputeOnModifiedRow()) {
             throw new IllegalArgumentException(
-                    "SelectColumn may not have alwaysEvaluate set for a constant column: " + sc);
+                    "SelectColumn may not have recomputeOnModifiedRow set for a constant column: " + sc);
         }
         if (!sc.isStateless()) {
             throw new IllegalArgumentException(

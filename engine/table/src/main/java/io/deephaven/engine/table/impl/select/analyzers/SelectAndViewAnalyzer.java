@@ -212,11 +212,11 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
             if (sc.hasConstantValue()) {
                 if (sc.barriers() != null && sc.barriers().length > 0) {
                     throw new IllegalArgumentException(
-                            "Constant values are not evaluated during select() and update() processing, therefore may not declare barriers.");
+                            "Constant values are not evaluated during select() and update() processing, therefore may not declare barriers");
                 }
                 if (sc.respectedBarriers() != null && sc.respectedBarriers().length > 0) {
                     throw new IllegalArgumentException(
-                            "Constant values are not evaluated during select() and update() processing, therefore may not respect barriers.");
+                            "Constant values are not evaluated during select() and update() processing, therefore may not respect barriers");
                 }
                 final WritableColumnSource<?> constViewSource =
                         SingleValueColumnSource.getSingleValueColumnSource(sc.getReturnedType());
