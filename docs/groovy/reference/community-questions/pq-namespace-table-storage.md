@@ -17,9 +17,9 @@ This is a great question that touches on several different concepts in Deephaven
 
 In **Deephaven Community**, you specify the location where tables are stored when using data export methods:
 
-- **Parquet files**: Use `writeTable()`, `writeKeyValuePartitionedTable()`, or `writeTables()` with a specified `path` parameter (local filesystem)
-- **CSV files**: Use `writeCsv()` with a specified destination path
-- **Other formats**: Various export functions allow you to specify the output location
+- **Parquet files**: Use `writeTable`, `writeKeyValuePartitionedTable`, or `writeTables` with a specified `path` parameter (local filesystem).
+- **CSV files**: Use `writeCsv` with a specified destination path.
+- **Other formats**: Various export functions allow you to specify the output location.
 
 Example:
 
@@ -37,21 +37,21 @@ writeTable(myTable, "/data/output/my_table.parquet")
 
 In **Deephaven Enterprise merge queries**, you can specify the output location using the merge settings:
 
-- **Namespace**: Specify the target namespace for the merged data
-- **Table**: Specify the target table name within that namespace
+- **Namespace**: Specify the target namespace for the merged data.
+- **Table**: Specify the target table name within that namespace.
 
 The merge query configuration includes:
 
-- `Namespace`: The namespace where the merged data will be stored
-- `Table`: The table name for the merged data
-- Additional settings for partitioning, format, and compression
+- `Namespace`: The namespace where the merged data will be stored.
+- `Table`: The table name for the merged data.
+- Additional settings for partitioning, format, and compression.
 
 ## 4. Deephaven Enterprise - User Table Saving
 
 In **Deephaven Enterprise regular queries**, when you save user tables using the Database APIs, you specify both the namespace and table name:
 
-- **System namespaces**: Follow structured administrative processes and are typically managed by administrators
-- **User namespaces**: Managed directly by users via the Database APIs with limited privileges
+- **System namespaces**: Follow structured administrative processes and are typically managed by administrators.
+- **User namespaces**: Managed directly by users via the Database APIs with limited privileges.
 
 The format is typically: `UserNamespace.TableName`
 
@@ -63,10 +63,10 @@ dhconfig schemas delete UserNamespace.TableName --force
 
 ## Summary
 
-- **PQ itself**: No namespace (it's a query execution mechanism)
-- **Community**: You specify the file path/location when exporting
-- **Enterprise merge queries**: You specify the namespace and table in merge settings
-- **Enterprise user tables**: Stored in user-specified namespaces via Database APIs
+- **PQ itself**: No namespace (it's a query execution mechanism).
+- **Community**: You specify the file path/location when exporting.
+- **Enterprise merge queries**: You specify the namespace and table in merge settings.
+- **Enterprise user tables**: Stored in user-specified namespaces via Database APIs.
 
 For more specific details about Enterprise merge queries and user table management, I'd recommend consulting the Enterprise documentation or contacting Deephaven support, as these features have additional configuration options and administrative considerations.
 
