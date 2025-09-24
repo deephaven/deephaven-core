@@ -639,7 +639,7 @@ public class QueryTableSelectBarrierTest {
         }
 
         /**
-         * Do the get and increment on the underlying atomic integer. Possibly, sleeping to cause data to be
+         * Do the get and increment on the underlying atomic integer, possibly sleeping to cause data to be
          * interspersed if there are not declared barriers.
          * 
          * @param columnNumber the column number we are updating
