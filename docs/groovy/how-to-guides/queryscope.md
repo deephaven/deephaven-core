@@ -15,15 +15,15 @@ If you'd like to learn more about query strings and the basic rationale of the q
 
 ## Query scope in Groovy
 
-When the Deephaven engine compiles a query string, it must be able to resolve all variables in the query string using the query scope. Groovy's query scope resolution follows these rules:
+When the Deephaven engine compiles a query string, it must be able to resolve all variables in the query string using the query scope. Groovy's query scope resolution follows these rules in order:
 
-- **Global (script-level) scope**: Variables defined at the top level of a Groovy script are automatically added to the query scope
-- **Local (function) scope**: Variables defined within functions or closures must be explicitly added to the query scope using `QueryScope.addParam()`
-- **Enclosing scope**: Variables from enclosing scopes are not automatically available and must be explicitly added to the query scope
+1. **Local (function) scope**: Variables explicitly added to the query scope using `QueryScope.addParam()` are checked first
+2. **Script-level scope**: Variables defined at the top level of a Groovy script are automatically added to the query scope and checked second
+3. **Global scope**: Built-in functions and globally available variables are checked last
 
-Unlike Python's LEGB (Local, Enclosing, Global, Built-in) scoping rule where variables are automatically resolved, Groovy requires explicit management of the query scope for variables that are not at the script level.
+This means that local variables (when explicitly added) take precedence over script-level variables, which in turn take precedence over global variables. Unlike Python's LEGB (Local, Enclosing, Global, Built-in) scoping rule where variables are automatically resolved, Groovy requires explicit management of the query scope for variables that are not at the script level.
 
-### Global (script-level) scope
+### Script-level scope
 
 Variables defined at the top level of a Groovy script are automatically available in query strings without any additional setup.
 
