@@ -28,16 +28,38 @@ import java.util.Map;
  * Base class for {@link PushdownFilterContext} to help with execution cost tracking.
  */
 public class BasePushdownFilterContext implements PushdownFilterContext {
+
+    /**
+     * Enum for the behavior of a filter when applied to null values.
+     */
+    public enum FilterNullBehavior {
+        /**
+         * The filter includes nulls in its results, like {@code x == null}.
+         */
+        INCLUDES_NULLS,
+
+        /**
+         * The filter does not include nulls in its results, like {@code x > 5}.
+         */
+        EXCLUDES_NULLS,
+
+        /**
+         * The filter throws an exception when applied to nulls, like {@code x.beginsWith("A")}.
+         */
+        FAILS_ON_NULLS
+    }
+
     protected final WhereFilter filter;
     private final List<ColumnSource<?>> columnSources;
 
     private final boolean isRangeFilter;
     private final boolean isMatchFilter;
     private final boolean supportsChunkFilter;
+    private final boolean filterSupportsPushdown;
 
     private long executedFilterCost;
 
-    private volatile Boolean filterIncludesNulls;
+    private volatile FilterNullBehavior filterNullBehavior;
 
     /**
      * A dummy table to use for initializing {@link ConditionFilter}.
@@ -60,23 +82,23 @@ public class BasePushdownFilterContext implements PushdownFilterContext {
 
         executedFilterCost = 0;
 
+        isRangeFilter = filter instanceof RangeFilter
+                && ((RangeFilter) filter).getRealFilter() instanceof AbstractRangeFilter;
+        isMatchFilter = filter instanceof MatchFilter &&
+                ((MatchFilter) filter).getFailoverFilterIfCached() == null;
+        final boolean isConditionFilter = filter instanceof ConditionFilter;
+
         // TODO (DH-19666): Multi column filters are not supported yet
-        final boolean isSingleColumn = columnSources.size() == 1;
-        if (isSingleColumn) {
-            isRangeFilter = filter instanceof RangeFilter
-                    && ((RangeFilter) filter).getRealFilter() instanceof AbstractRangeFilter;
-            isMatchFilter = filter instanceof MatchFilter &&
-                    ((MatchFilter) filter).getFailoverFilterIfCached() == null;
-            supportsChunkFilter =
-                    (filter instanceof ExposesChunkFilter && ((ExposesChunkFilter) filter).chunkFilter().isPresent())
-                            || filter instanceof ConditionFilter;
-            filterIncludesNulls = null; // lazily initialized
-        } else {
-            isRangeFilter = false;
-            isMatchFilter = false;
-            supportsChunkFilter = false;
-            filterIncludesNulls = false;
-        }
+        filterSupportsPushdown = isRangeFilter || isMatchFilter ||
+                (isConditionFilter && ((ConditionFilter) filter).getNumInputsUsed() == 1);
+        // Do not use columnSources.size(), multiple logical columns may alias (rename) the same physical column,
+        // yielding a single entry.
+
+        supportsChunkFilter = filterSupportsPushdown &&
+                ((filter instanceof ExposesChunkFilter && ((ExposesChunkFilter) filter).chunkFilter().isPresent())
+                        || isConditionFilter);
+
+        filterNullBehavior = null; // lazily initialized
     }
 
     /**
@@ -101,6 +123,14 @@ public class BasePushdownFilterContext implements PushdownFilterContext {
     }
 
     /**
+     * Whether this filter supports pushdown-based filtering. This includes simple range filters, match filters, and
+     * ConditionFilters with exactly one column.
+     */
+    public boolean filterSupportsPushdown() {
+        return filterSupportsPushdown;
+    }
+
+    /**
      * Whether this filter supports direct chunk filtering, i.e., it can be applied to a chunk of data rather than a
      * table. This includes any filter that implements {#@link ExposesChunkFilter} or {@link ConditionFilter} with
      * exactly one column.
@@ -109,13 +139,11 @@ public class BasePushdownFilterContext implements PushdownFilterContext {
         return supportsChunkFilter;
     }
 
-    /**
-     * Whether this filter includes nulls in its results.
-     */
-    public boolean filterIncludesNulls() {
-        if (filterIncludesNulls == null) {
+    public FilterNullBehavior filterNullBehavior() {
+        if (filterNullBehavior == null) {
             synchronized (this) {
-                if (filterIncludesNulls == null) {
+                if (filterNullBehavior == null) {
+                    FilterNullBehavior temp;
                     // Create a dummy table with a single row and column, and `null` entry, and apply the filter to see
                     // if the filter includes nulls.
                     final ColumnSource<?> columnSource = columnSources.get(0);
@@ -127,13 +155,18 @@ public class BasePushdownFilterContext implements PushdownFilterContext {
                             final TrackingWritableRowSet rowSet = RowSetFactory.flat(1).toTracking()) {
                         final Table nullTestDummyTable = new QueryTable(rowSet, columnSourceMap);
                         try (final RowSet result = filter.filter(rowSet, rowSet, nullTestDummyTable, false)) {
-                            filterIncludesNulls = !result.isEmpty();
+                            temp = result.isEmpty()
+                                    ? FilterNullBehavior.EXCLUDES_NULLS
+                                    : FilterNullBehavior.INCLUDES_NULLS;
+                        } catch (final Exception e) {
+                            temp = FilterNullBehavior.FAILS_ON_NULLS;
                         }
                     }
+                    filterNullBehavior = temp;
                 }
             }
         }
-        return filterIncludesNulls;
+        return filterNullBehavior;
     }
 
     /**
@@ -173,7 +206,6 @@ public class BasePushdownFilterContext implements PushdownFilterContext {
             // Create a dummy table with no rows and single column of the correct type and name as the filter. This is
             // used to extract a chunk filter kernel from the conditional filter and bind it to the correct name and
             // type without capturing references to the actual table or its column sources.
-            // That is why it can be reused across threads.
             if (conditionalFilterInitTable == null) {
                 synchronized (this) {
                     if (conditionalFilterInitTable == null) {

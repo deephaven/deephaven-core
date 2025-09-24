@@ -504,10 +504,15 @@ public class ParquetTableLocation extends AbstractTableLocation {
             return Long.MAX_VALUE;
         }
 
-        initialize();
-
         final RegionedColumnSourceManager.RegionedColumnSourcePushdownFilterContext ctx =
                 (RegionedColumnSourceManager.RegionedColumnSourcePushdownFilterContext) context;
+
+        if (!ctx.filterSupportsPushdown()) {
+            return Long.MAX_VALUE;
+        }
+
+        initialize();
+
         final long executedFilterCost = context.executedFilterCost();
 
         final Optional<List<ResolvedColumnInfo>> maybeResolvedColumns = resolveColumns(filter, ctx.renameMap());
@@ -673,14 +678,20 @@ public class ParquetTableLocation extends AbstractTableLocation {
             return;
         }
 
-        initialize();
-
         final RegionedColumnSourceManager.RegionedColumnSourcePushdownFilterContext ctx =
                 (RegionedColumnSourceManager.RegionedColumnSourcePushdownFilterContext) context;
-        final long executedFilterCost = context.executedFilterCost();
 
         // Initialize the pushdown result with the selection rowset as "maybe" rows
         PushdownResult result = PushdownResult.allMaybeMatch(selection);
+
+        if (!ctx.filterSupportsPushdown()) {
+            onComplete.accept(result);
+            return;
+        }
+
+        initialize();
+
+        final long executedFilterCost = context.executedFilterCost();
 
         final Map<String, String> renameMap = ctx.renameMap();
         final Optional<List<ResolvedColumnInfo>> maybeResolvedColumns = resolveColumns(filter, renameMap);
@@ -797,9 +808,6 @@ public class ParquetTableLocation extends AbstractTableLocation {
                 if (rs.isEmpty()) {
                     continue;
                 }
-
-                // TODO This might fail if there is an empty row group
-
                 consumer.accept(rgIdx, rs);
             }
         }
@@ -904,6 +912,13 @@ public class ParquetTableLocation extends AbstractTableLocation {
             final String[] parquetColumnNames,
             final PushdownResult result) {
 
+        final BasePushdownFilterContext.FilterNullBehavior filterNullBehavior = ctx.filterNullBehavior();
+        if (filterNullBehavior == BasePushdownFilterContext.FilterNullBehavior.FAILS_ON_NULLS) {
+            // We cannot use dictionary-based filtering, keep all the rows as "maybe" rows. Later when the
+            // filter is applied to actual data, it will NPE if there are null values in the table.
+            return result.copy();
+        }
+
         final RowSetBuilderSequential matchBuilder = RowSetFactory.builderSequential();
         final RowSetBuilderSequential maybeBuilder = RowSetFactory.builderSequential();
         final MutableLong maybeCount = new MutableLong(0);
@@ -956,25 +971,30 @@ public class ParquetTableLocation extends AbstractTableLocation {
                     return;
                 }
 
-                // Run the filter on the dictionary to find which dictionary entries satisfy the filter.
-                final LongChunk<OrderedRowKeys> keyMatch = chunkFilter.filter(dictionaryChunk, keyCandidates);
-                if (keyMatch.size() == 0) {
-                    // We have no matches, we can't eliminate anything, so keep all the rows as "maybe" rows.
-                    maybeBuilder.appendRowSequence(rs);
-                    maybeCount.add(rs.size());
-                    return;
-                }
-
-                // Build an array of matching dictionary key IDs.
+                // Run the filter on the dictionary to find which dictionary entries satisfy the filter and build an
+                // array of matching dictionary key IDs.
                 final long[] keyMatchArray;
-                if (ctx.filterIncludesNulls()) {
-                    // Include one extra slot for NULL_LONG as a matching key if the filter includes nulls.
-                    keyMatchArray = new long[keyMatch.size() + 1];
-                    keyMatchArray[keyMatch.size()] = NULL_LONG;
-                } else {
-                    keyMatchArray = new long[keyMatch.size()];
+                try (final WritableLongChunk<OrderedRowKeys> keyCandidatesForChunk =
+                        keyCandidates.slice(0, dictionaryChunk.size())) {
+                    final LongChunk<OrderedRowKeys> keyMatch =
+                            chunkFilter.filter(dictionaryChunk, keyCandidatesForChunk);
+                    if (keyMatch.size() == 0) {
+                        // We have no matches, we can't eliminate anything, so keep all the rows as "maybe" rows.
+                        maybeBuilder.appendRowSequence(rs);
+                        maybeCount.add(rs.size());
+                        return;
+                    }
+                    if (filterNullBehavior == BasePushdownFilterContext.FilterNullBehavior.INCLUDES_NULLS) {
+                        // Include one extra slot for NULL_LONG as a matching key if the filter includes nulls.
+                        keyMatchArray = new long[keyMatch.size() + 1];
+                        keyMatchArray[keyMatch.size()] = NULL_LONG;
+                    } else if (filterNullBehavior == BasePushdownFilterContext.FilterNullBehavior.EXCLUDES_NULLS) {
+                        keyMatchArray = new long[keyMatch.size()];
+                    } else {
+                        throw new IllegalStateException("Unexpected null behavior: " + filterNullBehavior);
+                    }
+                    keyMatch.copyToTypedArray(0, keyMatchArray, 0, keyMatch.size());
                 }
-                keyMatch.copyToTypedArray(0, keyMatchArray, 0, keyMatch.size());
 
                 // Make a MatchFilter with the matching dictionary key IDs. This will accept any encoded value whose
                 // dictionary index is in keyMatchArray
