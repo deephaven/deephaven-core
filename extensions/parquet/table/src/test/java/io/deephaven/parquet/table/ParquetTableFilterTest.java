@@ -1008,8 +1008,8 @@ public final class ParquetTableFilterTest {
     }
 
     /**
-     * Single parquet file with three row groups, first and third row group are non-empty, and second row groupis empty.
-     * To generate this file, the following branch was used:
+     * Single parquet file with three row groups, first and third row group are non-empty, and second row group is
+     * empty. To generate this file, the following branch was used:
      * https://github.com/malhotrashivam/deephaven-core/tree/sm-empty-rowgroup-dict
      */
     @Test
