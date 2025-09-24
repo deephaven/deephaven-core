@@ -111,7 +111,7 @@ dependencies {
     testRuntimeOnly project(':log-to-slf4j')
     testRuntimeOnly libs.slf4j.simple
 
-    runtimeOnly project(':authentication:example-providers:psk')
+    runtimeOnly project(path: ':authentication:example-providers:psk', configuration: 'shadow')
 }
 
 TestTools.addEngineOutOfBandTest(project)
