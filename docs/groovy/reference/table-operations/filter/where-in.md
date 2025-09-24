@@ -80,5 +80,5 @@ result = source.whereIn(filter, "Color = Colors", "Code = Codes")
 ## Related documentation
 
 - [Create a new table](../../../how-to-guides/new-and-empty-table.md#newtable)
-- [How to use filters](../../../how-to-guides/use-filters.md)
+- [How to use filters](../../../how-to-guides/filters.md)
 - [Javadoc](https://deephaven.io/core/javadoc/io/deephaven/api/TableOperations.html#whereIn(TABLE,java.lang.String...))

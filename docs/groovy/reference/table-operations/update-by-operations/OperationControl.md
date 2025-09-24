@@ -100,7 +100,7 @@ result = source.updateBy(Ema(ctrl, 5, "EmaX = X"), "Letter")
 
 - [How to use `updateBy`](../../../how-to-guides/use-update-by.md)
 - [How to create an empty table](../../../how-to-guides/new-and-empty-table.md#emptytable)
-- [How to handle handle null, infinity, and not-a-number values](../../../how-to-guides/handle-null-inf-nan.md)
+- [How to handle handle null, infinity, and not-a-number values](../../../how-to-guides/null-inf-nan.md)
 - [ternary conditional operator](../../../how-to-guides/ternary-if-how-to.md)
 - [`update`](../select/update.md)
 - [`updateBy`](./updateBy.md)

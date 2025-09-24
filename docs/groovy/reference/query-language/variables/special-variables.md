@@ -94,9 +94,9 @@ Deephaven provides the following global constants:
 
 ## Related documentation
 
-- [How to use Deephaven's built-in query language functions](../../../how-to-guides/query-language-functions.md)
+- [How to use Deephaven's built-in query language functions](../../../how-to-guides/built-in-functions.md)
 - [Query language functions](../query-library/query-language-function-reference.md)
 - [`emptyTable`](../../table-operations/create/emptyTable.md)
 - [`meta`](../../table-operations/metadata/meta.md)
-- [operators](../../../how-to-guides/formulas-how-to.md#operators)
+- [operators](../../../how-to-guides/operators.md)
 - [`update`](../../table-operations/select/update.md)

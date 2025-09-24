@@ -254,10 +254,6 @@
                 "path": "how-to-guides/format-columns.md"
               },
               {
-                "label": "Filter",
-                "path": "how-to-guides/use-filters.md"
-              },
-              {
                 "label": "Sort",
                 "path": "how-to-guides/sort.md"
               },
@@ -336,47 +332,111 @@
             ]
           },
           {
-            "label": "Query Strings",
+            "label": "Query strings",
             "items": [
               {
-                "label": "Built-in query language functions",
-                "path": "how-to-guides/query-language-functions.md"
+                "label": "Overview",
+                "path": "how-to-guides/query-string-overview.md"
+              },
+              {
+                "label": "Literals",
+                "items": [
+                  {
+                    "label": "Boolean & numeric",
+                    "path": "how-to-guides/boolean-numeric-literals.md"
+                  },
+                  {
+                    "label": "String & char",
+                    "path": "how-to-guides/string-char-literals.md"
+                  },
+                  {
+                    "label": "Date-time",
+                    "path": "how-to-guides/date-time-literals.md"
+                  }
+                ]
+              },
+              {
+                "label": "Formulas, filters, and operators",
+                "items": [
+                  {
+                    "label": "Formulas",
+                    "path": "how-to-guides/formulas.md"
+                  },
+                  {
+                    "label": "Filters",
+                    "path": "how-to-guides/filters.md"
+                  },
+                  {
+                    "label": "Operators",
+                    "path": "how-to-guides/operators.md"
+                  },
+                  {
+                    "label": "Casting",
+                    "path": "how-to-guides/casting.md"
+                  },
+                  {
+                    "label": "Ternary-if",
+                    "path": "how-to-guides/ternary-if-how-to.md"
+                  }
+                ]
+              },
+              {
+                "label": "Built-ins",
+                "items": [
+                  {
+                    "label": "Built-in constants",
+                    "path": "how-to-guides/built-in-constants.md"
+                  },
+                  {
+                    "label": "Built-in Variables",
+                    "path": "how-to-guides/built-in-variables.md"
+                  },
+                  {
+                    "label": "Built-in functions",
+                    "path": "how-to-guides/built-in-functions.md"
+                  }
+                ]
+              },
+              {
+                "label": "Groovy",
+                "items": [
+                  {
+                    "label": "Query Scope",
+                    "path": "how-to-guides/queryscope.md"
+                  },
+                  {
+                    "label": "Variables",
+                    "path": "how-to-guides/groovy-variables.md"
+                  },
+                  {
+                    "label": "Closures",
+                    "path": "how-to-guides/groovy-closures.md"
+                  },
+                  {
+                    "label": "Classes & Objects",
+                    "path": "how-to-guides/groovy-classes.md"
+                  }
+                ]
+              },
+              {
+                "label": "Data types",
+                "path": "how-to-guides/data-types.md"
+              },
+              {
+                "label": "Nulls, infs, and NaNs",
+                "path": "how-to-guides/null-inf-nan.md"
               },
               {
                 "label": "Arrays",
                 "path": "how-to-guides/work-with-arrays.md"
               },
               {
-                "label": "Formulas and filters",
-                "path": "how-to-guides/formulas-how-to.md"
-              },
-              {
-                "label": "Nulls, infs, and NaNs",
-                "path": "how-to-guides/handle-null-inf-nan.md"
-              },
-              {
-                "label": "Objects",
-                "path": "how-to-guides/use-objects.md"
-              },
-              {
                 "label": "Strings",
-                "path": "how-to-guides/work-with-strings.md"
+                "path": "how-to-guides/strings.md"
               },
               {
-                "label": "Ternary-if",
-                "path": "how-to-guides/ternary-if-how-to.md"
-              },
-              {
-                "label": "User-defined functions",
-                "path": "how-to-guides/user-defined-functions.md"
-              },
-              {
-                "label": "Variables and functions in query strings",
-                "path": "how-to-guides/queryscope.md"
-              },
-              {
-                "label": "Groovy data types",
-                "path": "conceptual/groovy-data-types.md"
+                "label": "Java classes & objects",
+                "path": "how-to-guides/java-classes.md"
               }
             ]
           },
@@ -390,10 +450,6 @@
               {
                 "label": "Liveness Scopes",
                 "path": "conceptual/liveness-scope-concept.md"
-              },
-              {
-                "label": "Variables in query strings",
-                "path": "conceptual/queryscope.md"
               },
               {
                 "label": "Generate query strings",
