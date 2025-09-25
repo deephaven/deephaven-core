@@ -40,6 +40,6 @@ public class WhereFilterWithDeclaredBarriersImpl extends WhereFilterDelegatingBa
 
     @Override
     public String toString() {
-        return "declaredBarrier{" + Arrays.toString(declaredBarriers) + ", filter=" + filter + "}";
+        return "withDeclaredBarriers{" + Arrays.toString(declaredBarriers) + ", filter=" + filter + "}";
     }
 }

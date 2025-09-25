@@ -41,7 +41,7 @@ public class WhereFilterWithRespectedBarriersImpl extends WhereFilterDelegatingB
 
     @Override
     public String toString() {
-        return "respectedBarrier{" +
+        return "withRespectedBarriers{" +
                 "respectedBarriers=" + Arrays.toString(respectedBarriers) +
                 ", filter=" + filter +
                 '}';

@@ -39,9 +39,8 @@ public class QueryTableSelectBarrierTest {
 
     @Rule
     public final EngineCleanup base = new EngineCleanup();
-    // if you would like to convince yourself that we are reliably producing out-of-order conditions as appropriate;
-    // then
-    // you can increase this amount to run the tests many times
+    // If you would like to convince yourself that we are reliably producing out-of-order conditions as appropriate,
+    // then you can increase this amount to run the tests many times.
     private static final int REPEATS_FOR_CONFIDENCE = 1;
 
     @Test

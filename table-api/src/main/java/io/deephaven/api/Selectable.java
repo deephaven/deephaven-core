@@ -81,9 +81,9 @@ public interface Selectable extends ConcurrencyControl<Selectable> {
     }
 
     /**
-     * @return null if this Selectable has no opinion on whether it is serial (so the system default should be used);
-     *         false if this Selectable can be reordered within a column; or true if this Selectable must be evaluated
-     *         in order.
+     * @return null if this Selectable has no opinion on whether it is serial (so the system default should be used),
+     *         false if this Selectable can be reordered within a column, or true if this Selectable must be evaluated
+     *         in order
      */
     default Boolean isSerial() {
         return null;
