@@ -37,6 +37,7 @@ import io.deephaven.extensions.barrage.table.BarrageTable;
 import io.deephaven.extensions.barrage.util.BarrageMessageReaderImpl;
 import io.deephaven.extensions.barrage.util.BarrageUtil;
 import io.deephaven.extensions.barrage.util.ExposedByteArrayOutputStream;
+import io.deephaven.extensions.barrage.util.GrpcMarshallingException;
 import io.deephaven.server.arrow.ArrowModule;
 import io.deephaven.server.session.SessionService;
 import io.deephaven.server.util.Scheduler;
@@ -47,6 +48,7 @@ import io.deephaven.util.annotations.ReferentialIntegrity;
 import io.deephaven.util.annotations.ScriptApi;
 import io.deephaven.util.mutable.MutableInt;
 import io.deephaven.vector.IntVector;
+import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
 import junit.framework.TestCase;
 import org.apache.commons.lang3.mutable.MutableObject;
@@ -1556,6 +1558,36 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
         remoteNugget.validate("snapshot");
     }
 
+    public void testFailingNestedVectors() {
+        // Same as testNestedArrays, except we verify that we get expected exceptions for cases where BarrageTable can't
+        // handle the type
+        final Table failingTable = TableTools.emptyTable(1)
+                .update("triplevector_int=i", "triplevector_string=``").groupBy()
+                .update("doublevector_string=``").groupBy()
+                .groupBy();
+
+        failingTable.setRefreshing(true);
+        for (int i = 0; i < failingTable.getColumnSourceMap().size(); i++) {
+            BitSet oneColumn = new BitSet(failingTable.getColumnSourceMap().size());
+            oneColumn.set(i);
+            final RemoteNugget remoteNugget = new RemoteNugget(() -> failingTable);
+
+            final RemoteClient remoteClient =
+                    remoteNugget.newClient(RowSetFactory.fromRange(0, 0), oneColumn, "snapshot");
+            flushProducerTable();
+            remoteNugget.flushClientEvents();
+            final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+            updateGraph.runWithinUnitTestCycle(updateSourceCombiner::run);
+
+            assertNotNull(remoteClient.dummyObserver.failure);
+            assertTrue(remoteClient.dummyObserver.failure.getCause() instanceof GrpcMarshallingException);
+            assertTrue(remoteClient.dummyObserver.failure.getCause().getCause() instanceof StatusRuntimeException);
+            StatusRuntimeException sre =
+                    (StatusRuntimeException) remoteClient.dummyObserver.failure.getCause().getCause();
+            assertTrue(sre.getMessage().contains("Column with type java.lang.Object cannot be serialized directly"));
+        }
+    }
+
     // Helpers for testNestedArrays
     @ScriptApi
     public static String arrayToString(int[] arr) {
@@ -1569,6 +1601,7 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
 
     public static class DummyObserver implements StreamObserver<BarrageMessageWriter.MessageView> {
         volatile boolean completed = false;
+        volatile Throwable failure = null;
 
         private final BarrageDataMarshaller marshaller;
         private final Queue<BarrageMessage> receivedCommands;
@@ -1591,11 +1624,13 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
                         if (message != null) {
                             receivedCommands.add(message);
                         }
-                    } catch (final IOException e) {
+                    } catch (final Exception e) {
+                        this.failure = e;
                         throw new IllegalStateException("Failed to parse barrage message: ", e);
                     }
                 });
-            } catch (final IOException e) {
+            } catch (final Exception e) {
+                this.failure = e;
                 throw new IllegalStateException("Failed to parse barrage message: ", e);
             }
         }

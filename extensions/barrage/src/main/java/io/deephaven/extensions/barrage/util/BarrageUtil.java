@@ -1118,8 +1118,9 @@ public class BarrageUtil {
         final FieldType fieldType = arrowFieldTypeFor(type, metadata, columnAsList);
         if (fieldType.getType().isComplex()) {
             if (type.isArray()) {
+                Assert.eq(componentType, "componentType", type.getComponentType(), "type.getComponentType()");
                 children = Collections.singletonList(arrowFieldFor(
-                        "", componentType, componentType == null ? null : componentType.getComponentType(),
+                        "", componentType, componentType.getComponentType(),
                         Collections.emptyMap(),
                         false));
             } else if (Vector.class.isAssignableFrom(type)) {
