@@ -23,8 +23,8 @@ import java.util.Set;
 
 /**
  * Performs a recursive "respected-barrier-extraction" against {@code filter}. If {@code filter}, or any sub-filter, is
- * a {@link FilterWithRespectedBarriers}, {@link FilterWithRespectedBarriers#respectedBarriers()} will be included in the
- * returned collection. Otherwise, an empty collection will be returned.
+ * a {@link FilterWithRespectedBarriers}, {@link FilterWithRespectedBarriers#respectedBarriers()} will be included in
+ * the returned collection. Otherwise, an empty collection will be returned.
  */
 public enum ExtractRespectedBarriers
         implements Filter.Visitor<Collection<Object>>, WhereFilter.Visitor<Collection<Object>> {

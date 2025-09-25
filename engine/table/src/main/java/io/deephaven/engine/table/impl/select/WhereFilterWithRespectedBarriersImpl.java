@@ -6,8 +6,9 @@ package io.deephaven.engine.table.impl.select;
 import java.util.Arrays;
 
 /**
- * A wrapper for a {@link WhereFilter} that declares this filter as respecting one or more barriers. A barrier is a
- * filter that must be executed before other filters that respect it. It is an error to respect a non-declared barrier.
+ * A wrapper for a {@link WhereFilter} that declares this filter as respecting one or more barriers. A barrier indicates
+ * that one filter must be executed before other filters that respect it. It is an error to respect a non-declared
+ * barrier.
  */
 public class WhereFilterWithRespectedBarriersImpl extends WhereFilterDelegatingBase {
     /**

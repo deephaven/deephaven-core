@@ -6,8 +6,8 @@ package io.deephaven.engine.table.impl.select;
 import java.util.Arrays;
 
 /**
- * A wrapper for a {@link WhereFilter} that declares this filter as a barrier. A barrier is a filter that must be
- * executed before other filters that respect it.
+ * A wrapper for a {@link WhereFilter} that declares a barrier on this filter. A barrier indicates that one filter must
+ * be executed before other filters that respect it.
  */
 public class WhereFilterWithDeclaredBarriersImpl extends WhereFilterDelegatingBase {
     /**
