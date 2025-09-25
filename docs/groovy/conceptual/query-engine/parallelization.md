@@ -80,6 +80,8 @@ The `select`, `update`, and `where` operations can parallelize within a single w
 
 The [`ConcurrencyControl`](https://docs.deephaven.io/core/javadoc/io/deephaven/api/ConcurrencyControl.html) interface allows you to control the behavior of [`Filter`](https://docs.deephaven.io/core/javadoc/io/deephaven/api/filter/Filter.html) (where clause) and [`Selectable`](https://docs.deephaven.io/core/javadoc/io/deephaven/api/Selectable.html) (column formula) objects.
 
+ConccurencyControl cannot be applied to Selectables passed to `view` or `updateView`.  The `view` and `updateView` operations compute results on demand, and therefore cannot enforce ordering constraints.
+
 To explicitly mark a Selectable or Filter as stateful, use the `withSerial` method.
 
 - A serial Filter cannot be reordered with respect to other Filters. Every input row to a stateful Filter is evaluated in order.
