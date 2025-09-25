@@ -10,9 +10,9 @@ import io.deephaven.api.filter.*;
 import io.deephaven.engine.table.impl.select.ConjunctiveFilter;
 import io.deephaven.engine.table.impl.select.DisjunctiveFilter;
 import io.deephaven.engine.table.impl.select.WhereFilter;
-import io.deephaven.engine.table.impl.select.WhereFilterDeclaredBarrierImpl;
+import io.deephaven.engine.table.impl.select.WhereFilterWithDeclaredBarrierImpl;
 import io.deephaven.engine.table.impl.select.WhereFilterInvertedImpl;
-import io.deephaven.engine.table.impl.select.WhereFilterRespectedBarrierImpl;
+import io.deephaven.engine.table.impl.select.WhereFilterWithRespectedBarrierImpl;
 import io.deephaven.engine.table.impl.select.WhereFilterSerialImpl;
 
 import java.util.Arrays;
@@ -23,8 +23,8 @@ import java.util.Set;
 
 /**
  * Performs a recursive "respected-barrier-extraction" against {@code filter}. If {@code filter}, or any sub-filter, is
- * a {@link FilterWithRespectedBarrier}, {@link FilterWithRespectedBarrier#respectedBarriers()} will be included in the returned
- * collection. Otherwise, an empty collection will be returned.
+ * a {@link FilterWithRespectedBarrier}, {@link FilterWithRespectedBarrier#respectedBarriers()} will be included in the
+ * returned collection. Otherwise, an empty collection will be returned.
  */
 public enum ExtractRespectedBarriers
         implements Filter.Visitor<Collection<Object>>, WhereFilter.Visitor<Collection<Object>> {
@@ -130,12 +130,12 @@ public enum ExtractRespectedBarriers
     }
 
     @Override
-    public Collection<Object> visitWhereFilter(WhereFilterDeclaredBarrierImpl filter) {
+    public Collection<Object> visitWhereFilter(WhereFilterWithDeclaredBarrierImpl filter) {
         return of(filter.getWrappedFilter());
     }
 
     @Override
-    public Collection<Object> visitWhereFilter(WhereFilterRespectedBarrierImpl filter) {
+    public Collection<Object> visitWhereFilter(WhereFilterWithRespectedBarrierImpl filter) {
         final Set<Object> barriers = new HashSet<>(Arrays.asList(filter.respectedBarriers()));
         barriers.addAll(of(filter.getWrappedFilter()));
         return barriers;

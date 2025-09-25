@@ -6,9 +6,9 @@ package io.deephaven.engine.table.impl.filter;
 import io.deephaven.engine.table.impl.select.ConjunctiveFilter;
 import io.deephaven.engine.table.impl.select.DisjunctiveFilter;
 import io.deephaven.engine.table.impl.select.WhereFilter;
-import io.deephaven.engine.table.impl.select.WhereFilterDeclaredBarrierImpl;
+import io.deephaven.engine.table.impl.select.WhereFilterWithDeclaredBarrierImpl;
 import io.deephaven.engine.table.impl.select.WhereFilterInvertedImpl;
-import io.deephaven.engine.table.impl.select.WhereFilterRespectedBarrierImpl;
+import io.deephaven.engine.table.impl.select.WhereFilterWithRespectedBarrierImpl;
 import io.deephaven.engine.table.impl.select.WhereFilterSerialImpl;
 
 import java.util.List;
@@ -41,14 +41,14 @@ public class ExtractInnerConjunctiveFilters implements WhereFilter.Visitor<List<
     }
 
     @Override
-    public List<WhereFilter> visitWhereFilter(final WhereFilterDeclaredBarrierImpl filter) {
+    public List<WhereFilter> visitWhereFilter(final WhereFilterWithDeclaredBarrierImpl filter) {
         return List.of(filter);
     }
 
     @Override
-    public List<WhereFilter> visitWhereFilter(final WhereFilterRespectedBarrierImpl filter) {
+    public List<WhereFilter> visitWhereFilter(final WhereFilterWithRespectedBarrierImpl filter) {
         return visitWhereFilter(filter.getWrappedFilter()).stream()
-                .map(wf -> WhereFilterRespectedBarrierImpl.of(wf, filter.respectedBarriers()))
+                .map(wf -> WhereFilterWithRespectedBarrierImpl.of(wf, filter.respectedBarriers()))
                 .collect(Collectors.toList());
     }
 

@@ -11,9 +11,9 @@ import io.deephaven.api.filter.Filter.Visitor;
 import io.deephaven.engine.table.impl.select.ConjunctiveFilter;
 import io.deephaven.engine.table.impl.select.DisjunctiveFilter;
 import io.deephaven.engine.table.impl.select.WhereFilter;
-import io.deephaven.engine.table.impl.select.WhereFilterDeclaredBarrierImpl;
+import io.deephaven.engine.table.impl.select.WhereFilterWithDeclaredBarrierImpl;
 import io.deephaven.engine.table.impl.select.WhereFilterInvertedImpl;
-import io.deephaven.engine.table.impl.select.WhereFilterRespectedBarrierImpl;
+import io.deephaven.engine.table.impl.select.WhereFilterWithRespectedBarrierImpl;
 import io.deephaven.engine.table.impl.select.WhereFilterSerialImpl;
 
 import java.util.Collection;
@@ -24,8 +24,8 @@ import java.util.Set;
 
 /**
  * Performs a recursive "barrier-extraction" against {@code filter}. If {@code filter}, or any sub-filter, is a
- * {@link FilterWithDeclaredBarrier}, {@link FilterWithDeclaredBarrier#barriers()} will be included in the returned collection.
- * Otherwise, an empty collection will be returned.
+ * {@link FilterWithDeclaredBarrier}, {@link FilterWithDeclaredBarrier#barriers()} will be included in the returned
+ * collection. Otherwise, an empty collection will be returned.
  */
 public enum ExtractBarriers implements Visitor<Collection<Object>>, WhereFilter.Visitor<Collection<Object>> {
     INSTANCE;
@@ -130,14 +130,14 @@ public enum ExtractBarriers implements Visitor<Collection<Object>>, WhereFilter.
     }
 
     @Override
-    public Collection<Object> visitWhereFilter(WhereFilterDeclaredBarrierImpl filter) {
+    public Collection<Object> visitWhereFilter(WhereFilterWithDeclaredBarrierImpl filter) {
         final Set<Object> resultBarriers = new HashSet<>(List.of(filter.declaredBarriers()));
         resultBarriers.addAll(of(filter.getWrappedFilter()));
         return resultBarriers;
     }
 
     @Override
-    public Collection<Object> visitWhereFilter(WhereFilterRespectedBarrierImpl filter) {
+    public Collection<Object> visitWhereFilter(WhereFilterWithRespectedBarrierImpl filter) {
         return of(filter.getWrappedFilter());
     }
 

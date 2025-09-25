@@ -9,7 +9,7 @@ import java.util.Arrays;
  * A wrapper for a {@link WhereFilter} that declares this filter as respecting one or more barriers. A barrier is a
  * filter that must be executed before other filters that respect it. It is an error to respect a non-declared barrier.
  */
-public class WhereFilterRespectedBarrierImpl extends WhereFilterDelegatingBase {
+public class WhereFilterWithRespectedBarrierImpl extends WhereFilterDelegatingBase {
     /**
      * Wraps the provided {@link WhereFilter} with respecting-barrier behavior.
      *
@@ -18,12 +18,12 @@ public class WhereFilterRespectedBarrierImpl extends WhereFilterDelegatingBase {
      * @return a new {@code WhereFilter} instance that respects the barriers
      */
     public static WhereFilter of(WhereFilter filter, Object... respectedBarriers) {
-        return new WhereFilterRespectedBarrierImpl(filter, respectedBarriers);
+        return new WhereFilterWithRespectedBarrierImpl(filter, respectedBarriers);
     }
 
     private final Object[] respectedBarriers;
 
-    private WhereFilterRespectedBarrierImpl(
+    private WhereFilterWithRespectedBarrierImpl(
             WhereFilter filter,
             Object... respectedBarriers) {
         super(filter);
@@ -35,7 +35,7 @@ public class WhereFilterRespectedBarrierImpl extends WhereFilterDelegatingBase {
     }
 
     public WhereFilter copy() {
-        return new WhereFilterRespectedBarrierImpl(filter.copy(), respectedBarriers);
+        return new WhereFilterWithRespectedBarrierImpl(filter.copy(), respectedBarriers);
     }
 
     @Override

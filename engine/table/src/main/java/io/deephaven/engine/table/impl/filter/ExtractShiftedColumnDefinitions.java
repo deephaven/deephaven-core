@@ -8,9 +8,9 @@ import io.deephaven.engine.table.impl.select.ConjunctiveFilter;
 import io.deephaven.engine.table.impl.select.DisjunctiveFilter;
 import io.deephaven.engine.table.impl.select.ShiftedColumnDefinition;
 import io.deephaven.engine.table.impl.select.WhereFilter;
-import io.deephaven.engine.table.impl.select.WhereFilterDeclaredBarrierImpl;
+import io.deephaven.engine.table.impl.select.WhereFilterWithDeclaredBarrierImpl;
 import io.deephaven.engine.table.impl.select.WhereFilterInvertedImpl;
-import io.deephaven.engine.table.impl.select.WhereFilterRespectedBarrierImpl;
+import io.deephaven.engine.table.impl.select.WhereFilterWithRespectedBarrierImpl;
 import io.deephaven.engine.table.impl.select.WhereFilterSerialImpl;
 
 import java.util.HashSet;
@@ -46,12 +46,12 @@ public class ExtractShiftedColumnDefinitions
     }
 
     @Override
-    public Set<ShiftedColumnDefinition> visitWhereFilter(final WhereFilterDeclaredBarrierImpl filter) {
+    public Set<ShiftedColumnDefinition> visitWhereFilter(final WhereFilterWithDeclaredBarrierImpl filter) {
         return visitWhereFilter(filter.getWrappedFilter());
     }
 
     @Override
-    public Set<ShiftedColumnDefinition> visitWhereFilter(final WhereFilterRespectedBarrierImpl filter) {
+    public Set<ShiftedColumnDefinition> visitWhereFilter(final WhereFilterWithRespectedBarrierImpl filter) {
         return visitWhereFilter(filter.getWrappedFilter());
     }
 
