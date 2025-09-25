@@ -24,7 +24,6 @@ import org.jetbrains.annotations.NotNull;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -94,13 +93,13 @@ public class FilterTableGrpcImpl extends GrpcTableOperation<FilterTableRequest> 
             }
 
             @Override
-            public Void visitWhereFilter(WhereFilterBarrierImpl filter) {
+            public Void visitWhereFilter(WhereFilterWithDeclaredBarriersImpl filter) {
                 visitWhereFilter(filter.getWrappedFilter());
                 return null;
             }
 
             @Override
-            public Void visitWhereFilter(WhereFilterRespectsBarrierImpl filter) {
+            public Void visitWhereFilter(WhereFilterWithRespectedBarriersImpl filter) {
                 visitWhereFilter(filter.getWrappedFilter());
                 return null;
             }
