@@ -879,15 +879,18 @@ public class RegionedColumnSourceManager
      * Get (or create) a map from column source to column name.
      */
     private Map<String, ColumnDefinition<?>> columnNameToDefinition() {
-        if (columnNameToDefinition == null) {
+        Map<String, ColumnDefinition<?>> local = columnNameToDefinition;
+        if (local == null) {
             synchronized (this) {
-                if (columnNameToDefinition == null) {
-                    columnNameToDefinition = columnDefinitions.stream()
+                local = columnNameToDefinition;
+                if (local == null) {
+                    local = columnDefinitions.stream()
                             .collect(Collectors.toMap(ColumnDefinition::getName, cd -> cd));
+                    columnNameToDefinition = local;
                 }
             }
         }
-        return columnNameToDefinition;
+        return local;
     }
 
     public static class RegionedColumnSourcePushdownFilterContext extends BasePushdownFilterContext {
