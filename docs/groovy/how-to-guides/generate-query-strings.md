@@ -13,16 +13,16 @@ source = emptyTable(7).update("Value = i")
 result = source.update("X = sqrt(Value) + Value").where("X > 2 && X < 8")
 ```
 
-Deephaven query strings are passed into table operations as [Groovy strings](https://groovy-lang.org/syntax.html#_string_literals). As such, all of the power of Groovy can be used to generate query strings. This can be convenient when working with complex queries. Let's work though a few examples that are simplified by using Groovy to generate query strings.
+Deephaven query strings are passed into table operations as [Groovy strings](https://groovy-lang.org/syntax.html#all-strings). As such, all of the power of Groovy can be used to generate query strings. This can be convenient when working with complex queries. Let's work though a few examples that are simplified by using Groovy to generate query strings.
 
 > [!NOTE]
-> This guide assumes you are familiar with the use of [strings](https://groovy-lang.org/syntax.html#_string_literals), [GStrings](https://groovy-lang.org/syntax.html#_gstring), [loops](https://groovy-lang.org/syntax.html#_looping_structures), and [list operations](https://groovy-lang.org/syntax.html#_lists) in Groovy. If not, please refer to the Groovy documentation for more information.
+> This guide assumes you are familiar with the use of [strings](https://groovy-lang.org/syntax.html#all-strings), [GStrings](https://groovy-lang.org/syntax.html#_gstring_and_string_hashcodes), [loops](https://groovy-lang.org/semantics.html#_looping_structures), and [list operations](https://groovy-lang.org/syntax.html#_lists) in Groovy. If not, please refer to the Groovy documentation for more information.
 
 ## Many columns
 
 In practice, queries may have a large number of inputs, making it inconvenient to type in each column name. Other times, the input column names are determined by user inputs and are not known when the query is written. Both of these situations can be addressed by using a list of column names to generate queries.
 
-In the following example, a [GString](https://groovy-lang.org/syntax.html#_gstring) and [`join`](https://groovy-lang.org/groovy-dev-kit.html#_working_with_collections) are used to create a query string to sum up all of the columns and then take the square root.
+In the following example, a [GString](https://groovy-lang.org/syntax.html#_gstring_and_string_hashcodes) and [`join`](https://groovy-lang.org/groovy-dev-kit.html#_working_with_collections) are used to create a query string to sum up all of the columns and then take the square root.
 
 ```groovy order=result,source
 cols = ["A", "B", "C", "D"]
@@ -46,7 +46,7 @@ result = source.update("X = sqrt(sum(${cols.join(',')}))")
 
 Some queries repeat the same logic -- with minor tweaks. For example, a query may add columns containing data from 1, 5, and 10 minutes ago. Generated query strings can also help simplify these situations.
 
-In the following example, a [GString](https://groovy-lang.org/syntax.html#_gstring) is used to create columns of data from 1, 5, and 10 rows before.
+In the following example, a [GString](https://groovy-lang.org/syntax.html#_gstring_and_string_hashcodes) is used to create columns of data from 1, 5, and 10 rows before.
 
 ```groovy order=result,source
 source = emptyTable(100).update("X = ii")
