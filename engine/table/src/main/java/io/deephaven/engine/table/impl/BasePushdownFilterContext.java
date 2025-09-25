@@ -288,8 +288,7 @@ public class BasePushdownFilterContext implements PushdownFilterContext {
                 Chunk<? extends Values> values,
                 LongChunk<OrderedRowKeys> keys) {
             // noinspection unchecked
-            return (LongChunk<OrderedRowKeys>) acfFilter.filter(conditionFilterContext, keys,
-                    new Chunk[] {values});
+            return acfFilter.filter(conditionFilterContext, keys, new Chunk[] {values});
         }
 
         @Override

@@ -1031,11 +1031,11 @@ public class ParquetTableLocation extends AbstractTableLocation {
 
         final WritableRowSet matching = matchBuilder.build();
         matching.insert(result.match());
-        final WritableRowSet maybe = maybeCount.get() == result.maybeMatch().size()
+        try (final WritableRowSet maybe = maybeCount.get() == result.maybeMatch().size()
                 ? result.maybeMatch().copy()
-                : maybeBuilder.build();
-
-        return PushdownResult.of(selection, matching, maybe);
+                : maybeBuilder.build()) {
+            return PushdownResult.of(selection, matching, maybe);
+        }
     }
 
 
