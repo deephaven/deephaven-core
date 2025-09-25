@@ -8,7 +8,7 @@ import io.deephaven.api.expression.Function;
 import io.deephaven.api.expression.Method;
 import io.deephaven.api.filter.*;
 import io.deephaven.api.filter.Filter.Visitor;
-import io.deephaven.api.filter.FilterWithRespectedBarrier;
+import io.deephaven.api.filter.FilterWithRespectedBarriers;
 import io.deephaven.api.literal.Literal;
 
 import java.util.ArrayList;
@@ -79,12 +79,12 @@ enum FilterSimplifier implements Visitor<Filter> {
     }
 
     @Override
-    public Filter visit(FilterWithDeclaredBarrier declaredBarrier) {
+    public Filter visit(FilterWithDeclaredBarriers declaredBarrier) {
         return declaredBarrier.filter().walk(this).withDeclaredBarriers(declaredBarrier.barriers());
     }
 
     @Override
-    public Filter visit(FilterWithRespectedBarrier respectedBarrier) {
+    public Filter visit(FilterWithRespectedBarriers respectedBarrier) {
         return respectedBarrier.filter().walk(this).withRespectedBarriers(respectedBarrier.respectedBarriers());
     }
 

@@ -7,10 +7,10 @@ import io.deephaven.engine.table.impl.select.AbstractConditionFilter;
 import io.deephaven.engine.table.impl.select.ConjunctiveFilter;
 import io.deephaven.engine.table.impl.select.DisjunctiveFilter;
 import io.deephaven.engine.table.impl.select.WhereFilter;
-import io.deephaven.engine.table.impl.select.WhereFilterWithDeclaredBarrierImpl;
+import io.deephaven.engine.table.impl.select.WhereFilterWithDeclaredBarriersImpl;
 import io.deephaven.engine.table.impl.select.WhereFilterFactory;
 import io.deephaven.engine.table.impl.select.WhereFilterInvertedImpl;
-import io.deephaven.engine.table.impl.select.WhereFilterWithRespectedBarrierImpl;
+import io.deephaven.engine.table.impl.select.WhereFilterWithRespectedBarriersImpls;
 import io.deephaven.engine.table.impl.select.WhereFilterSerialImpl;
 
 public class TransformToFinalFormula implements WhereFilter.Visitor<WhereFilter> {
@@ -42,12 +42,12 @@ public class TransformToFinalFormula implements WhereFilter.Visitor<WhereFilter>
     }
 
     @Override
-    public WhereFilter visitWhereFilter(final WhereFilterWithDeclaredBarrierImpl filter) {
+    public WhereFilter visitWhereFilter(final WhereFilterWithDeclaredBarriersImpl filter) {
         return visitWhereFilter(filter.getWrappedFilter()).withDeclaredBarriers(filter.declaredBarriers());
     }
 
     @Override
-    public WhereFilter visitWhereFilter(final WhereFilterWithRespectedBarrierImpl filter) {
+    public WhereFilter visitWhereFilter(final WhereFilterWithRespectedBarriersImpls filter) {
         return visitWhereFilter(filter.getWrappedFilter()).withRespectedBarriers(filter.respectedBarriers());
     }
 

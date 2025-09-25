@@ -93,12 +93,12 @@ public interface WhereFilter extends Filter {
 
     @Override
     default WhereFilter withDeclaredBarriers(Object... declaredBarriers) {
-        return WhereFilterWithDeclaredBarrierImpl.of(this, declaredBarriers);
+        return WhereFilterWithDeclaredBarriersImpl.of(this, declaredBarriers);
     }
 
     @Override
     default WhereFilter withRespectedBarriers(Object... respectedBarriers) {
-        return WhereFilterWithRespectedBarrierImpl.of(this, respectedBarriers);
+        return WhereFilterWithRespectedBarriersImpls.of(this, respectedBarriers);
     }
 
     @Override
@@ -375,10 +375,10 @@ public interface WhereFilter extends Filter {
                 return visitWhereFilter((WhereFilterInvertedImpl) filter);
             } else if (filter instanceof WhereFilterSerialImpl) {
                 return visitWhereFilter((WhereFilterSerialImpl) filter);
-            } else if (filter instanceof WhereFilterWithDeclaredBarrierImpl) {
-                return visitWhereFilter((WhereFilterWithDeclaredBarrierImpl) filter);
-            } else if (filter instanceof WhereFilterWithRespectedBarrierImpl) {
-                return visitWhereFilter((WhereFilterWithRespectedBarrierImpl) filter);
+            } else if (filter instanceof WhereFilterWithDeclaredBarriersImpl) {
+                return visitWhereFilter((WhereFilterWithDeclaredBarriersImpl) filter);
+            } else if (filter instanceof WhereFilterWithRespectedBarriersImpls) {
+                return visitWhereFilter((WhereFilterWithRespectedBarriersImpls) filter);
             } else if (filter instanceof DisjunctiveFilter) {
                 return visitWhereFilter((DisjunctiveFilter) filter);
             } else if (filter instanceof ConjunctiveFilter) {
@@ -391,9 +391,9 @@ public interface WhereFilter extends Filter {
 
         T visitWhereFilter(WhereFilterSerialImpl filter);
 
-        T visitWhereFilter(WhereFilterWithDeclaredBarrierImpl filter);
+        T visitWhereFilter(WhereFilterWithDeclaredBarriersImpl filter);
 
-        T visitWhereFilter(WhereFilterWithRespectedBarrierImpl filter);
+        T visitWhereFilter(WhereFilterWithRespectedBarriersImpls filter);
 
         T visitWhereFilter(DisjunctiveFilter filter);
 

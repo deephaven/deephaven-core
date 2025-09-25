@@ -10,9 +10,9 @@ import io.deephaven.api.filter.*;
 import io.deephaven.engine.table.impl.select.ConjunctiveFilter;
 import io.deephaven.engine.table.impl.select.DisjunctiveFilter;
 import io.deephaven.engine.table.impl.select.WhereFilter;
-import io.deephaven.engine.table.impl.select.WhereFilterWithDeclaredBarrierImpl;
+import io.deephaven.engine.table.impl.select.WhereFilterWithDeclaredBarriersImpl;
 import io.deephaven.engine.table.impl.select.WhereFilterInvertedImpl;
-import io.deephaven.engine.table.impl.select.WhereFilterWithRespectedBarrierImpl;
+import io.deephaven.engine.table.impl.select.WhereFilterWithRespectedBarriersImpls;
 import io.deephaven.engine.table.impl.select.WhereFilterSerialImpl;
 
 import java.util.Arrays;
@@ -23,7 +23,7 @@ import java.util.Set;
 
 /**
  * Performs a recursive "respected-barrier-extraction" against {@code filter}. If {@code filter}, or any sub-filter, is
- * a {@link FilterWithRespectedBarrier}, {@link FilterWithRespectedBarrier#respectedBarriers()} will be included in the
+ * a {@link FilterWithRespectedBarriers}, {@link FilterWithRespectedBarriers#respectedBarriers()} will be included in the
  * returned collection. Otherwise, an empty collection will be returned.
  */
 public enum ExtractRespectedBarriers
@@ -88,12 +88,12 @@ public enum ExtractRespectedBarriers
     }
 
     @Override
-    public Collection<Object> visit(FilterWithDeclaredBarrier declaredBarrier) {
+    public Collection<Object> visit(FilterWithDeclaredBarriers declaredBarrier) {
         return of(declaredBarrier.filter());
     }
 
     @Override
-    public Collection<Object> visit(FilterWithRespectedBarrier respectedBarrier) {
+    public Collection<Object> visit(FilterWithRespectedBarriers respectedBarrier) {
         final Set<Object> barriers = new HashSet<>(Arrays.asList(respectedBarrier.respectedBarriers()));
         barriers.addAll(of(respectedBarrier.filter()));
         return barriers;
@@ -130,12 +130,12 @@ public enum ExtractRespectedBarriers
     }
 
     @Override
-    public Collection<Object> visitWhereFilter(WhereFilterWithDeclaredBarrierImpl filter) {
+    public Collection<Object> visitWhereFilter(WhereFilterWithDeclaredBarriersImpl filter) {
         return of(filter.getWrappedFilter());
     }
 
     @Override
-    public Collection<Object> visitWhereFilter(WhereFilterWithRespectedBarrierImpl filter) {
+    public Collection<Object> visitWhereFilter(WhereFilterWithRespectedBarriersImpls filter) {
         final Set<Object> barriers = new HashSet<>(Arrays.asList(filter.respectedBarriers()));
         barriers.addAll(of(filter.getWrappedFilter()));
         return barriers;

@@ -93,13 +93,13 @@ public class FilterTableGrpcImpl extends GrpcTableOperation<FilterTableRequest> 
             }
 
             @Override
-            public Void visitWhereFilter(WhereFilterWithDeclaredBarrierImpl filter) {
+            public Void visitWhereFilter(WhereFilterWithDeclaredBarriersImpl filter) {
                 visitWhereFilter(filter.getWrappedFilter());
                 return null;
             }
 
             @Override
-            public Void visitWhereFilter(WhereFilterWithRespectedBarrierImpl filter) {
+            public Void visitWhereFilter(WhereFilterWithRespectedBarriersImpls filter) {
                 visitWhereFilter(filter.getWrappedFilter());
                 return null;
             }

@@ -101,6 +101,6 @@ public interface Selectable extends ConcurrencyControl<Selectable> {
 
     @Override
     default Selectable withRespectedBarriers(Object... respectedBarriers) {
-        return new SelectableWithRespectedBarrier(this, Arrays.stream(respectedBarriers));
+        return new SelectableWithRespectedBarriers(this, Arrays.stream(respectedBarriers));
     }
 }

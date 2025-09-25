@@ -252,19 +252,19 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
                 }
 
                 @Override
-                public WhereFilter visitWhereFilter(WhereFilterWithDeclaredBarrierImpl filter) {
+                public WhereFilter visitWhereFilter(WhereFilterWithDeclaredBarriersImpl filter) {
                     final WhereFilter innerPreFilter = filter.getWrappedFilter().walkWhereFilter(this);
                     return innerPreFilter == null
                             ? null
-                            : WhereFilterWithDeclaredBarrierImpl.of(innerPreFilter, filter.declaredBarriers());
+                            : WhereFilterWithDeclaredBarriersImpl.of(innerPreFilter, filter.declaredBarriers());
                 }
 
                 @Override
-                public WhereFilter visitWhereFilter(WhereFilterWithRespectedBarrierImpl filter) {
+                public WhereFilter visitWhereFilter(WhereFilterWithRespectedBarriersImpls filter) {
                     final WhereFilter innerPreFilter = filter.getWrappedFilter().walkWhereFilter(this);
                     return innerPreFilter == null
                             ? null
-                            : WhereFilterWithRespectedBarrierImpl.of(innerPreFilter, filter.respectedBarriers());
+                            : WhereFilterWithRespectedBarriersImpls.of(innerPreFilter, filter.respectedBarriers());
                 }
 
                 @Override

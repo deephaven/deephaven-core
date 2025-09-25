@@ -11,9 +11,9 @@ import io.deephaven.api.filter.Filter.Visitor;
 import io.deephaven.engine.table.impl.select.ConjunctiveFilter;
 import io.deephaven.engine.table.impl.select.DisjunctiveFilter;
 import io.deephaven.engine.table.impl.select.WhereFilter;
-import io.deephaven.engine.table.impl.select.WhereFilterWithDeclaredBarrierImpl;
+import io.deephaven.engine.table.impl.select.WhereFilterWithDeclaredBarriersImpl;
 import io.deephaven.engine.table.impl.select.WhereFilterInvertedImpl;
-import io.deephaven.engine.table.impl.select.WhereFilterWithRespectedBarrierImpl;
+import io.deephaven.engine.table.impl.select.WhereFilterWithRespectedBarriersImpls;
 import io.deephaven.engine.table.impl.select.WhereFilterSerialImpl;
 
 import java.util.Collection;
@@ -24,7 +24,7 @@ import java.util.Set;
 
 /**
  * Performs a recursive "barrier-extraction" against {@code filter}. If {@code filter}, or any sub-filter, is a
- * {@link FilterWithDeclaredBarrier}, {@link FilterWithDeclaredBarrier#barriers()} will be included in the returned
+ * {@link FilterWithDeclaredBarriers}, {@link FilterWithDeclaredBarriers#barriers()} will be included in the returned
  * collection. Otherwise, an empty collection will be returned.
  */
 public enum ExtractBarriers implements Visitor<Collection<Object>>, WhereFilter.Visitor<Collection<Object>> {
@@ -88,14 +88,14 @@ public enum ExtractBarriers implements Visitor<Collection<Object>>, WhereFilter.
     }
 
     @Override
-    public Collection<Object> visit(FilterWithDeclaredBarrier declaredBarrier) {
+    public Collection<Object> visit(FilterWithDeclaredBarriers declaredBarrier) {
         final Set<Object> resultBarriers = new HashSet<>(List.of(declaredBarrier.barriers()));
         resultBarriers.addAll(of(declaredBarrier.filter()));
         return resultBarriers;
     }
 
     @Override
-    public Collection<Object> visit(FilterWithRespectedBarrier respectedBarrier) {
+    public Collection<Object> visit(FilterWithRespectedBarriers respectedBarrier) {
         return of(respectedBarrier.filter());
     }
 
@@ -130,14 +130,14 @@ public enum ExtractBarriers implements Visitor<Collection<Object>>, WhereFilter.
     }
 
     @Override
-    public Collection<Object> visitWhereFilter(WhereFilterWithDeclaredBarrierImpl filter) {
+    public Collection<Object> visitWhereFilter(WhereFilterWithDeclaredBarriersImpl filter) {
         final Set<Object> resultBarriers = new HashSet<>(List.of(filter.declaredBarriers()));
         resultBarriers.addAll(of(filter.getWrappedFilter()));
         return resultBarriers;
     }
 
     @Override
-    public Collection<Object> visitWhereFilter(WhereFilterWithRespectedBarrierImpl filter) {
+    public Collection<Object> visitWhereFilter(WhereFilterWithRespectedBarriersImpls filter) {
         return of(filter.getWrappedFilter());
     }
 

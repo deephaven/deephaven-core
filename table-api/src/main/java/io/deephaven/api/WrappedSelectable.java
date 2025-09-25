@@ -54,6 +54,6 @@ class WrappedSelectable implements Selectable {
 
     @Override
     public Selectable withRespectedBarriers(Object... respectedBarriers) {
-        return new SelectableWithRespectedBarrier(this, Arrays.stream(respectedBarriers));
+        return new SelectableWithRespectedBarriers(this, Arrays.stream(respectedBarriers));
     }
 }

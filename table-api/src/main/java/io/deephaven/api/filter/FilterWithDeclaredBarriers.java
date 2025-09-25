@@ -16,7 +16,7 @@ import org.immutables.value.Value.Parameter;
  */
 @Immutable
 @SimpleStyle
-public abstract class FilterWithDeclaredBarrier extends FilterBase implements Filter {
+public abstract class FilterWithDeclaredBarriers extends FilterBase implements Filter {
 
     /**
      * The underlying filter being wrapped.
@@ -41,8 +41,8 @@ public abstract class FilterWithDeclaredBarrier extends FilterBase implements Fi
      * @param barriers the barrier object being declared
      * @return a new instance of FilterBarrier
      */
-    public static FilterWithDeclaredBarrier of(Filter filter, Object... barriers) {
-        return ImmutableFilterWithDeclaredBarrier.of(filter, barriers);
+    public static FilterWithDeclaredBarriers of(Filter filter, Object... barriers) {
+        return ImmutableFilterWithDeclaredBarriers.of(filter, barriers);
     }
 
     /**
@@ -52,7 +52,7 @@ public abstract class FilterWithDeclaredBarrier extends FilterBase implements Fi
      */
     @Override
     public Filter invert() {
-        return FilterWithDeclaredBarrier.of(filter().invert(), barriers());
+        return FilterWithDeclaredBarriers.of(filter().invert(), barriers());
     }
 
     @Override

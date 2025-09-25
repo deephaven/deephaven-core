@@ -10,20 +10,19 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * A wrapper around selectable that respects a set of barriers.
+ * A wrapper around Selectable that respects a set of barriers.
  */
-class SelectableWithRespectedBarrier extends WrappedSelectable {
+class SelectableWithRespectedBarriers extends WrappedSelectable {
     private final Object[] respectedBarriers;
 
-    SelectableWithRespectedBarrier(Selectable wrapped, final Stream<Object> respectedBarriers) {
+    SelectableWithRespectedBarriers(Selectable wrapped, final Stream<Object> respectedBarriers) {
         super(wrapped);
         final Object[] existingRespects = wrapped.respectedBarriers();
         final Stream<Object> existingRespectsStream =
                 existingRespects == null ? Stream.empty() : Arrays.stream(existingRespects);
-        this.respectedBarriers = Stream.concat(respectedBarriers, existingRespectsStream)
+        this.respectedBarriers = Stream.concat(existingRespectsStream, respectedBarriers)
                 .collect(Collectors.toCollection(() -> Collections.newSetFromMap(new IdentityHashMap<>())))
                 .toArray(Object[]::new);
-
     }
 
     @Override

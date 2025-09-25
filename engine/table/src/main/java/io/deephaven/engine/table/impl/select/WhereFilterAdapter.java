@@ -130,15 +130,15 @@ class WhereFilterAdapter implements Filter.Visitor<WhereFilter> {
         return WhereFilterSerialImpl.of(innerFilter);
     }
 
-    public static WhereFilter of(FilterWithDeclaredBarrier barrier, boolean inverted) {
+    public static WhereFilter of(FilterWithDeclaredBarriers barrier, boolean inverted) {
         final WhereFilter innerFilter = WhereFilter.of(inverted ? barrier.filter().invert() : barrier.filter());
-        return WhereFilterWithDeclaredBarrierImpl.of(innerFilter, barrier.barriers());
+        return WhereFilterWithDeclaredBarriersImpl.of(innerFilter, barrier.barriers());
     }
 
-    public static WhereFilter of(FilterWithRespectedBarrier respectedBarrier, boolean inverted) {
+    public static WhereFilter of(FilterWithRespectedBarriers respectedBarrier, boolean inverted) {
         final WhereFilter innerFilter = WhereFilter.of(
                 inverted ? respectedBarrier.filter().invert() : respectedBarrier.filter());
-        return WhereFilterWithRespectedBarrierImpl.of(innerFilter, respectedBarrier.respectedBarriers());
+        return WhereFilterWithRespectedBarriersImpls.of(innerFilter, respectedBarrier.respectedBarriers());
     }
 
     public static WhereFilter of(Function function, boolean inverted) {
@@ -203,12 +203,12 @@ class WhereFilterAdapter implements Filter.Visitor<WhereFilter> {
     }
 
     @Override
-    public WhereFilter visit(FilterWithDeclaredBarrier declaredBarrier) {
+    public WhereFilter visit(FilterWithDeclaredBarriers declaredBarrier) {
         return of(declaredBarrier, inverted);
     }
 
     @Override
-    public WhereFilter visit(FilterWithRespectedBarrier respectedBarrier) {
+    public WhereFilter visit(FilterWithRespectedBarriers respectedBarrier) {
         return of(respectedBarrier, inverted);
     }
 

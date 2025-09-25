@@ -60,7 +60,7 @@ enum ExtractAnds implements Visitor<Collection<Filter>> {
     }
 
     @Override
-    public Collection<Filter> visit(FilterWithDeclaredBarrier declaredBarrier) {
+    public Collection<Filter> visit(FilterWithDeclaredBarriers declaredBarrier) {
         // Note that this visitor is not generally recursive; we are always evaluating the top level filter. A top-level
         // wrapped barrier provides no functionality. We'll unwrap the barrier in the hopeful event that it wraps a
         // FilterAnd.
@@ -68,7 +68,7 @@ enum ExtractAnds implements Visitor<Collection<Filter>> {
     }
 
     @Override
-    public Collection<Filter> visit(FilterWithRespectedBarrier respectedBarrier) {
+    public Collection<Filter> visit(FilterWithRespectedBarriers respectedBarrier) {
         // Note that this visitor is not generally recursive; we are always evaluating the top level filter. A top-level
         // wrapped barrier provides no functionality. We'll unwrap the barrier in the hopeful event that it wraps a
         // FilterAnd.

@@ -20,7 +20,7 @@ class SelectableWithDeclaredBarriers extends WrappedSelectable {
         final Object[] existingBarriers = wrapped.declaredBarriers();
         final Stream<Object> existingBarriersStream =
                 existingBarriers == null ? Stream.empty() : Arrays.stream(existingBarriers);
-        this.declaredBarriers = Stream.concat(barriers, existingBarriersStream)
+        this.declaredBarriers = Stream.concat(existingBarriersStream, barriers)
                 .collect(Collectors.toCollection(() -> Collections.newSetFromMap(new IdentityHashMap<>())))
                 .toArray(Object[]::new);
     }

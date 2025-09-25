@@ -9,7 +9,7 @@ import io.deephaven.api.expression.Expression;
 import io.deephaven.api.expression.Function;
 import io.deephaven.api.expression.Method;
 import io.deephaven.api.filter.*;
-import io.deephaven.api.filter.FilterWithRespectedBarrier;
+import io.deephaven.api.filter.FilterWithRespectedBarriers;
 import io.deephaven.api.literal.Literal;
 import org.apache.commons.text.StringEscapeUtils;
 
@@ -239,26 +239,26 @@ public class Strings {
         return "invokeSerially(" + of(serial.filter(), invert) + ")";
     }
 
-    public static String of(FilterWithDeclaredBarrier barrier) {
+    public static String of(FilterWithDeclaredBarriers barrier) {
         return of(barrier, false);
     }
 
-    public static String of(FilterWithDeclaredBarrier barrier, boolean invert) {
+    public static String of(FilterWithDeclaredBarriers barrier, boolean invert) {
         // we don't have a way to represent barrier in the query language; so this can't round trip
         final String barrierId = Arrays.toString(barrier.barriers());
-        return "withBarrier(" + barrierId + ", " + of(barrier.filter(), invert) + ")";
+        return "withDeclaredBarriers(" + barrierId + ", " + of(barrier.filter(), invert) + ")";
     }
 
-    public static String of(FilterWithRespectedBarrier respectedBarrier) {
+    public static String of(FilterWithRespectedBarriers respectedBarrier) {
         return of(respectedBarrier, false);
     }
 
-    public static String of(FilterWithRespectedBarrier respectedBarrier, boolean invert) {
+    public static String of(FilterWithRespectedBarriers respectedBarrier, boolean invert) {
         // we don't have a way to represent respects barrier in the query language; so this can't round trip
         final String barrierText = Arrays.stream(respectedBarrier.respectedBarriers())
                 .map(Object::toString)
                 .collect(Collectors.joining(",", "[", "]"));
-        return "respectedBarrier(" + barrierText + ", " + of(respectedBarrier.filter(), invert) + ")";
+        return "withRespectedBarriers(" + barrierText + ", " + of(respectedBarrier.filter(), invert) + ")";
     }
 
     public static String of(boolean literal) {
@@ -405,12 +405,12 @@ public class Strings {
         }
 
         @Override
-        public String visit(FilterWithDeclaredBarrier declaredBarrier) {
+        public String visit(FilterWithDeclaredBarriers declaredBarrier) {
             return of(declaredBarrier, invert);
         }
 
         @Override
-        public String visit(FilterWithRespectedBarrier respectedBarrier) {
+        public String visit(FilterWithRespectedBarriers respectedBarrier) {
             return of(respectedBarrier, invert);
         }
 
