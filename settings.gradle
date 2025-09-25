@@ -229,6 +229,9 @@ project(':engine-processor').projectDir = file('engine/processor')
 include ':engine-processor-function'
 project(':engine-processor-function').projectDir = file('engine/processor-function')
 
+include ':engine-validation'
+project(':engine-validation').projectDir = file('engine/validation')
+
 include(':extensions-csv')
 project(':extensions-csv').projectDir = file('extensions/csv')
 
@@ -255,6 +258,12 @@ project(':extensions-barrage').projectDir = file('extensions/barrage')
 
 include(':extensions-classgraph')
 project(':extensions-classgraph').projectDir = file('extensions/classgraph')
+
+include(':extensions-validation-method-list')
+project(':extensions-validation-method-list').projectDir = file('extensions/formula-validation/method-list')
+
+include(':extensions-validation-base')
+project(':extensions-validation-base').projectDir = file('extensions/formula-validation/base')
 
 include(':extensions-jdbc')
 project(':extensions-jdbc').projectDir = file('extensions/jdbc')

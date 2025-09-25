@@ -1,7 +1,7 @@
 //
 // Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
-package io.deephaven.server.table.validation;
+package io.deephaven.server.table.validation.methodlist;
 
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.filter.Filter;
@@ -19,10 +19,14 @@ import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.util.GroovyDeephavenSession;
 import io.deephaven.engine.util.TableTools;
+import io.deephaven.engine.validation.ColumnExpressionValidator;
+import io.deephaven.engine.validation.MethodInvocationValidator;
 import io.deephaven.plugin.type.ObjectTypeLookup;
 import io.deephaven.proto.backplane.grpc.FilterTableRequest;
 import io.deephaven.server.session.SessionState;
 import io.deephaven.server.table.ops.FilterTableGrpcImpl;
+import io.deephaven.server.table.validation.*;
+import io.deephaven.server.table.validation.methodlist.MethodListInvocationValidator;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.UserInvocationPermitted;
 import io.deephaven.util.mutable.MutableInt;
@@ -30,8 +34,6 @@ import org.apache.commons.lang3.mutable.MutableObject;
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
-import org.openrewrite.java.MethodMatcher;
-import org.openrewrite.java.tree.JavaType;
 
 import java.io.IOException;
 import java.lang.reflect.Constructor;
@@ -418,12 +420,12 @@ public class TestColumnExpressionValidator {
 
         // The method "frog" is not in our method allow-list
         disallowedFilterMethod(validator, input,
-                "User expressions are not permitted to use method frog(java.lang.String) on class io.deephaven.server.table.validation.TestColumnExpressionValidator$NotAString1",
+                "User expressions are not permitted to use method frog(java.lang.String) on class io.deephaven.server.table.validation.methodlist.TestColumnExpressionValidator$NotAString1",
                 "D.frog(`Asdf`) = ``");
 
         // The E is not the same class
         disallowedFilterMethod(validator, input,
-                "User expressions are not permitted to use method frog(java.lang.Integer) on class io.deephaven.server.table.validation.TestColumnExpressionValidator$NotAString2",
+                "User expressions are not permitted to use method frog(java.lang.Integer) on class io.deephaven.server.table.validation.methodlist.TestColumnExpressionValidator$NotAString2",
                 "E.frog(8) = ``");
     }
 
@@ -445,12 +447,12 @@ public class TestColumnExpressionValidator {
 
         // The method "frog" is not in our method allow-list
         disallowedFilterMethod(validator, input,
-                "User expressions are not permitted to use method frog(java.lang.String) on class io.deephaven.server.table.validation.TestColumnExpressionValidator$NotAString1",
+                "User expressions are not permitted to use method frog(java.lang.String) on class io.deephaven.server.table.validation.methodlist.TestColumnExpressionValidator$NotAString1",
                 "D.frog(`Asdf`) = ``");
 
         // The E is not the same class
         disallowedFilterMethod(validator, input,
-                "User expressions are not permitted to use method frog(java.lang.Integer) on class io.deephaven.server.table.validation.TestColumnExpressionValidator$NotAString2",
+                "User expressions are not permitted to use method frog(java.lang.Integer) on class io.deephaven.server.table.validation.methodlist.TestColumnExpressionValidator$NotAString2",
                 "E.frog(8) = ``");
     }
 
@@ -580,12 +582,12 @@ public class TestColumnExpressionValidator {
         // We are permitting all methods on string, which is catching the length and toString method of D; even though
         // it was not explicitly permitted.
         disallowedFilterMethod(validator, input,
-                "User expressions are not permitted to use method length() on class io.deephaven.server.table.validation.TestColumnExpressionValidator$NotAString1",
+                "User expressions are not permitted to use method length() on class io.deephaven.server.table.validation.methodlist.TestColumnExpressionValidator$NotAString1",
                 "D.length() = 1");
 
         // The method "frog" is also not in our method allow-list
         disallowedFilterMethod(validator, input,
-                "User expressions are not permitted to use method frog() on class io.deephaven.server.table.validation.TestColumnExpressionValidator$NotAString1",
+                "User expressions are not permitted to use method frog() on class io.deephaven.server.table.validation.methodlist.TestColumnExpressionValidator$NotAString1",
                 "D.frog() = ``");
 
         // We let you toString all the things
@@ -644,11 +646,11 @@ public class TestColumnExpressionValidator {
 
         final String noAnnotation = "X=new " + AnnotatedConstructor.class.getCanonicalName() + "()";
         disallowedSelectMethod(noAnnotation, validator, input,
-                "User expressions are not permitted to instantiate class io.deephaven.server.table.validation.TestColumnExpressionValidator$AnnotatedConstructor()");
+                "User expressions are not permitted to instantiate class io.deephaven.server.table.validation.methodlist.TestColumnExpressionValidator$AnnotatedConstructor()");
 
         final String wrongAnnotation = "X=new " + AnnotatedConstructor.class.getCanonicalName() + "(`Asdf`)";
         disallowedSelectMethod(wrongAnnotation, validator, input,
-                "User expressions are not permitted to instantiate class io.deephaven.server.table.validation.TestColumnExpressionValidator$AnnotatedConstructor(java.lang.String)");
+                "User expressions are not permitted to instantiate class io.deephaven.server.table.validation.methodlist.TestColumnExpressionValidator$AnnotatedConstructor(java.lang.String)");
 
         final String goodAnnotation = "X=new " + AnnotatedConstructor.class.getCanonicalName() + "(7)";
         allowedSelectMethod(goodAnnotation, validator, input);
@@ -665,11 +667,11 @@ public class TestColumnExpressionValidator {
 
         final String callInstance = "X= new " + AnnotatedStaticClass.class.getCanonicalName() + "().instance()";
         disallowedSelectMethod(callInstance, validator, input,
-                "User expressions are not permitted to use method instance() on class io.deephaven.server.table.validation.TestColumnExpressionValidator$AnnotatedStaticClass");
+                "User expressions are not permitted to use method instance() on class io.deephaven.server.table.validation.methodlist.TestColumnExpressionValidator$AnnotatedStaticClass");
 
         final String noAnnotations = "X=" + UnannotatedClass.class.getCanonicalName() + ".stm()";
         disallowedSelectMethod(noAnnotations, validator, input,
-                "User expressions are not permitted to use static method stm() on class io.deephaven.server.table.validation.TestColumnExpressionValidator$UnannotatedClass");
+                "User expressions are not permitted to use static method stm() on class io.deephaven.server.table.validation.methodlist.TestColumnExpressionValidator$UnannotatedClass");
 
         final String callStatic = "X=" + AnnotatedStaticClass.class.getCanonicalName() + ".stm()";
         allowedSelectMethod(callStatic, validator, input);
@@ -694,11 +696,11 @@ public class TestColumnExpressionValidator {
 
         final String noAnnotationInstance = "X= new " + AnnotatedMethods.class.getCanonicalName() + "().im8()";
         disallowedSelectMethod(noAnnotationInstance, validator, input,
-                "User expressions are not permitted to use method im8() on class io.deephaven.server.table.validation.TestColumnExpressionValidator$AnnotatedMethods");
+                "User expressions are not permitted to use method im8() on class io.deephaven.server.table.validation.methodlist.TestColumnExpressionValidator$AnnotatedMethods");
 
         final String noAnnotationStatic = "X= new " + AnnotatedMethods.class.getCanonicalName() + "().stm9()";
         disallowedSelectMethod(noAnnotationStatic, validator, input,
-                "User expressions are not permitted to use static method stm9() on class io.deephaven.server.table.validation.TestColumnExpressionValidator$AnnotatedMethods");
+                "User expressions are not permitted to use static method stm9() on class io.deephaven.server.table.validation.methodlist.TestColumnExpressionValidator$AnnotatedMethods");
     }
 
     @Test
@@ -713,11 +715,11 @@ public class TestColumnExpressionValidator {
         final String callStatic = "X=" + AnnotatedInstanceClass.class.getCanonicalName() + ".stm()";
 
         disallowedSelectMethod(callStatic, validator, input,
-                "User expressions are not permitted to use static method stm() on class io.deephaven.server.table.validation.TestColumnExpressionValidator$AnnotatedInstanceClass");
+                "User expressions are not permitted to use static method stm() on class io.deephaven.server.table.validation.methodlist.TestColumnExpressionValidator$AnnotatedInstanceClass");
 
         final String noAnnotations = "X= new " + UnannotatedClass.class.getCanonicalName() + "().im()";
         disallowedSelectMethod(noAnnotations, validator, input,
-                "User expressions are not permitted to use method im() on class io.deephaven.server.table.validation.TestColumnExpressionValidator$UnannotatedClass");
+                "User expressions are not permitted to use method im() on class io.deephaven.server.table.validation.methodlist.TestColumnExpressionValidator$UnannotatedClass");
 
         final String callInstance = "X= new " + AnnotatedInstanceClass.class.getCanonicalName() + "().im()";
         allowedSelectMethod(callInstance, validator, input);
@@ -738,7 +740,7 @@ public class TestColumnExpressionValidator {
                 () -> validator.validateColumnExpressions(sc1, new String[] {callConstructor}, input));
 
         Assert.assertEquals(
-                "User expressions are not permitted to instantiate class io.deephaven.server.table.validation.TestColumnExpressionValidator$AnnotatedConstructor()",
+                "User expressions are not permitted to instantiate class io.deephaven.server.table.validation.methodlist.TestColumnExpressionValidator$AnnotatedConstructor()",
                 ise.getMessage());
 
         final ParsingColumnExpressionValidator validator2 =
@@ -747,7 +749,7 @@ public class TestColumnExpressionValidator {
         final IllegalStateException ise2 = Assert.assertThrows(IllegalStateException.class,
                 () -> validator2.validateColumnExpressions(sc1, new String[] {callConstructor}, input));
         Assert.assertEquals(
-                "User expressions are not permitted to instantiate class io.deephaven.server.table.validation.TestColumnExpressionValidator$AnnotatedConstructor()",
+                "User expressions are not permitted to instantiate class io.deephaven.server.table.validation.methodlist.TestColumnExpressionValidator$AnnotatedConstructor()",
                 ise2.getMessage());
 
         final ParsingColumnExpressionValidator validator3 =
@@ -763,7 +765,7 @@ public class TestColumnExpressionValidator {
         final IllegalStateException ise3 = Assert.assertThrows(IllegalStateException.class,
                 () -> validator5.validateColumnExpressions(sc1, new String[] {callConstructor}, input));
         Assert.assertEquals(
-                "User expressions are not permitted to instantiate class io.deephaven.server.table.validation.TestColumnExpressionValidator$AnnotatedConstructor()",
+                "User expressions are not permitted to instantiate class io.deephaven.server.table.validation.methodlist.TestColumnExpressionValidator$AnnotatedConstructor()",
                 ise3.getMessage());
     }
 
@@ -822,7 +824,7 @@ public class TestColumnExpressionValidator {
 
         disallowedSelectMethod("X= new " + InheritedAnnotation.class.getCanonicalName() + "().m2(7.0)", validator,
                 input,
-                "User expressions are not permitted to use method m2(double) on class io.deephaven.server.table.validation.TestColumnExpressionValidator$InheritedAnnotation");
+                "User expressions are not permitted to use method m2(double) on class io.deephaven.server.table.validation.methodlist.TestColumnExpressionValidator$InheritedAnnotation");
 
         allowedSelectMethod("X= new " + InheritedAnnotation.class.getCanonicalName() + "().m2(8)", validator, input);
     }
@@ -846,12 +848,12 @@ public class TestColumnExpressionValidator {
         disallowedSelectMethod("X= new " + InheritedAnnotationGeneric.class.getCanonicalName() + "().m2(7.0)",
                 validator,
                 input,
-                "User expressions are not permitted to use method m2(double) on class io.deephaven.server.table.validation.TestColumnExpressionValidator$InheritedAnnotationGeneric");
+                "User expressions are not permitted to use method m2(double) on class io.deephaven.server.table.validation.methodlist.TestColumnExpressionValidator$InheritedAnnotationGeneric");
 
         disallowedSelectMethod("X= new " + InheritedAnnotationGeneric.class.getCanonicalName() + "().m1(7.0)",
                 validator,
                 input,
-                "User expressions are not permitted to use method m1(java.lang.Double) on class io.deephaven.server.table.validation.TestColumnExpressionValidator$InheritedAnnotationGeneric");
+                "User expressions are not permitted to use method m1(java.lang.Double) on class io.deephaven.server.table.validation.methodlist.TestColumnExpressionValidator$InheritedAnnotationGeneric");
 
         // good
         // Integer m1(final Integer a);
@@ -869,12 +871,12 @@ public class TestColumnExpressionValidator {
         disallowedSelectMethod("X= new " + InheritedAnnotationGenericNoParam.class.getCanonicalName() + "().m2(7.0)",
                 validator,
                 input,
-                "User expressions are not permitted to use method m2(double) on class io.deephaven.server.table.validation.TestColumnExpressionValidator$InheritedAnnotationGenericNoParam");
+                "User expressions are not permitted to use method m2(double) on class io.deephaven.server.table.validation.methodlist.TestColumnExpressionValidator$InheritedAnnotationGenericNoParam");
 
         disallowedSelectMethod("X= new " + InheritedAnnotationGenericNoParam.class.getCanonicalName() + "().m1(7.0)",
                 validator,
                 input,
-                "User expressions are not permitted to use method m1(java.lang.Double) on class io.deephaven.server.table.validation.TestColumnExpressionValidator$InheritedAnnotationGenericNoParam");
+                "User expressions are not permitted to use method m1(java.lang.Double) on class io.deephaven.server.table.validation.methodlist.TestColumnExpressionValidator$InheritedAnnotationGenericNoParam");
 
         // good
         // Integer m1(final Number a);
@@ -911,20 +913,20 @@ public class TestColumnExpressionValidator {
         disallowedSelectMethod("X= new " + DoubleInheritance.class.getCanonicalName() + "().m3(7)",
                 validator,
                 input,
-                "User expressions are not permitted to use method m3(int) on class io.deephaven.server.table.validation.TestColumnExpressionValidator$DoubleInheritance");
+                "User expressions are not permitted to use method m3(int) on class io.deephaven.server.table.validation.methodlist.TestColumnExpressionValidator$DoubleInheritance");
         disallowedSelectMethod("X= new " + DoubleInheritance.class.getCanonicalName() + "().m2(7.0)",
                 validator,
                 input,
-                "User expressions are not permitted to use method m2(double) on class io.deephaven.server.table.validation.TestColumnExpressionValidator$DoubleInheritance");
+                "User expressions are not permitted to use method m2(double) on class io.deephaven.server.table.validation.methodlist.TestColumnExpressionValidator$DoubleInheritance");
         disallowedSelectMethod("X= new " + DoubleInheritance.class.getCanonicalName() + "().m2(new Short((short)5))",
                 validator,
                 input,
-                "User expressions are not permitted to use method m2(java.lang.Short) on class io.deephaven.server.table.validation.TestColumnExpressionValidator$DoubleInheritance");
+                "User expressions are not permitted to use method m2(java.lang.Short) on class io.deephaven.server.table.validation.methodlist.TestColumnExpressionValidator$DoubleInheritance");
 
         disallowedSelectMethod("X= new " + DoubleInheritance.class.getCanonicalName() + "().m5()",
                 validator,
                 input,
-                "User expressions are not permitted to use method m5() on class io.deephaven.server.table.validation.TestColumnExpressionValidator$DoubleInheritance");
+                "User expressions are not permitted to use method m5() on class io.deephaven.server.table.validation.methodlist.TestColumnExpressionValidator$DoubleInheritance");
 
         // good
         // public int m3(); - just part of the directly inherited interface
@@ -951,7 +953,7 @@ public class TestColumnExpressionValidator {
 
         disallowedSelectMethod("X= new " + InheritedAnnotation.class.getCanonicalName() + "().m2(7.0)", validator,
                 input,
-                "User expressions are not permitted to use method m2(double) on class io.deephaven.server.table.validation.TestColumnExpressionValidator$InheritedAnnotation");
+                "User expressions are not permitted to use method m2(double) on class io.deephaven.server.table.validation.methodlist.TestColumnExpressionValidator$InheritedAnnotation");
 
         allowedSelectMethod("X= new " + InheritedAnnotation.class.getCanonicalName() + "().m2(8)", validator, input);
     }
@@ -1008,66 +1010,6 @@ public class TestColumnExpressionValidator {
         Assert.assertTrue(validator2.permitConstructor(BigInteger.class.getConstructor(String.class)));
         Assert.assertNull(validator2.permitConstructor(BigInteger.class.getConstructor(byte[].class)));
         Assert.assertNull(validator2.permitConstructor(BigDecimal.class.getConstructor(String.class)));
-    }
-
-    @Test
-    public void testMethodCachingBehavior() throws NoSuchMethodException {
-        final List<String> disallowedMethods = List.of("java.lang.StringBuilder toString()");
-        final List<String> allowedMethods = List.of("java.lang.Object toString()");
-
-        final MutableInt allowedMethodCount = new MutableInt(0);
-        final MutableInt disallowedMethodCount = new MutableInt(0);
-        final MutableInt nullMethodCount = new MutableInt(0);
-
-        final MethodListInvocationValidator validator = new MethodListInvocationValidator(allowedMethods) {
-            final List<MethodMatcher> disallowedMatchers =
-                    disallowedMethods.stream().map(MethodMatcher::new).collect(Collectors.toUnmodifiableList());
-
-            @Override
-            public Boolean permitMethod(Method method) {
-                final JavaType.Method jtm = toJavaType(method);
-
-                if (disallowedMatchers.stream().anyMatch(mm -> mm.matches(jtm))) {
-                    disallowedMethodCount.increment();
-                    return false;
-                }
-                Boolean result = super.permitMethod(method);
-                if (result == null) {
-                    nullMethodCount.increment();
-                } else if (!result) {
-                    throw new IllegalStateException();
-                } else {
-                    allowedMethodCount.increment();
-                }
-                return result;
-            }
-        };
-        final CachingMethodInvocationValidator cachingValidator = new CachingMethodInvocationValidator(validator);
-
-        final Method integerToString = Integer.class.getMethod("toString");
-        final Method toUnsignedLong = Integer.class.getMethod("toUnsignedLong", int.class);
-        final Method stringBuilderToString = StringBuilder.class.getMethod("toString");
-
-        Assert.assertTrue(cachingValidator.permitMethod(integerToString));
-        Assert.assertEquals(1, allowedMethodCount.get());
-        Assert.assertEquals(0, disallowedMethodCount.get());
-        Assert.assertEquals(0, nullMethodCount.get());
-        Assert.assertFalse(cachingValidator.permitMethod(stringBuilderToString));
-        Assert.assertEquals(1, allowedMethodCount.get());
-        Assert.assertEquals(1, disallowedMethodCount.get());
-        Assert.assertEquals(0, nullMethodCount.get());
-        Assert.assertNull(cachingValidator.permitMethod(toUnsignedLong));
-        Assert.assertEquals(1, allowedMethodCount.get());
-        Assert.assertEquals(1, disallowedMethodCount.get());
-        Assert.assertEquals(1, nullMethodCount.get());
-
-        // verify we did not need to ask the validator a second time
-        Assert.assertTrue(cachingValidator.permitMethod(integerToString));
-        Assert.assertFalse(cachingValidator.permitMethod(stringBuilderToString));
-        Assert.assertNull(cachingValidator.permitMethod(toUnsignedLong));
-        Assert.assertEquals(1, allowedMethodCount.get());
-        Assert.assertEquals(1, disallowedMethodCount.get());
-        Assert.assertEquals(1, nullMethodCount.get());
     }
 
     @Test

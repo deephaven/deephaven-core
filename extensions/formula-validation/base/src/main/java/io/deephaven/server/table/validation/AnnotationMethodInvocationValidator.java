@@ -3,6 +3,7 @@
 //
 package io.deephaven.server.table.validation;
 
+import io.deephaven.engine.validation.MethodInvocationValidator;
 import io.deephaven.util.annotations.UserInvocationPermitted;
 import io.deephaven.util.annotations.UserInvocationPermitted.ScopeType;
 import org.jetbrains.annotations.NotNull;

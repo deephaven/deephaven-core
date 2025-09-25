@@ -15,11 +15,10 @@ dependencies {
     implementation project(':extensions-parquet-table')
     implementation project(':extensions-performance')
     implementation project(':extensions-jdbc')
-    implementation project(':Util');
+    implementation project(':Util')
     implementation project(':Integrations')
     implementation libs.commons.lang3
     implementation libs.commons.text
-    implementation libs.rewrite.java
 
     implementation libs.javaparser.core
     implementation project(':open-api-lang-parser')
@@ -48,6 +47,7 @@ dependencies {
     }
 
     api project(':ssl-config')
+    api project(':engine-validation')
 
     implementation libs.flatbuffers.java
 
@@ -77,6 +77,9 @@ dependencies {
     if ('true' == project.findProperty('extensions.suanshu.enabled')) {
         runtimeOnly project(':extensions-suanshu')
     }
+
+    implementation project(':extensions-validation-base')
+    implementation project(path: ':extensions-validation-method-list', configuration: 'shadow')
 
     api(project(':plugin')) {
         because 'downstream dagger compile, see deephaven-core#1722'
@@ -108,7 +111,7 @@ dependencies {
     testRuntimeOnly project(':log-to-slf4j')
     testRuntimeOnly libs.slf4j.simple
 
-    runtimeOnly project(':authentication:example-providers:psk')
+    runtimeOnly project(path: ':authentication:example-providers:psk', configuration: 'shadow')
 }
 
 TestTools.addEngineOutOfBandTest(project)
