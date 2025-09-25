@@ -6,7 +6,7 @@ package io.deephaven.api;
 /**
  * A Selectable that wraps another selectable, but reports a serial result.
  */
-class SelectableWithSerial extends WrappedSelectable implements Selectable {
+class SelectableWithSerial extends WrappedSelectable {
     SelectableWithSerial(Selectable wrapped) {
         super(wrapped);
     }
@@ -14,10 +14,5 @@ class SelectableWithSerial extends WrappedSelectable implements Selectable {
     @Override
     public Boolean isSerial() {
         return true;
-    }
-
-    @Override
-    public Selectable withSerial() {
-        return this;
     }
 }

@@ -130,13 +130,13 @@ public class FilterAdapter implements Filter.Visitor<Condition> {
     }
 
     @Override
-    public Condition visit(FilterBarrier barrier) {
+    public Condition visit(FilterDeclaredBarrier barrier) {
         // TODO(DH-19051): integrate serial/barrier filter/selectables w/gRPC
         throw new UnsupportedOperationException("Can't build Condition with FilterBarrier");
     }
 
     @Override
-    public Condition visit(FilterRespectsBarrier respectsBarrier) {
+    public Condition visit(FilterRespectedBarrier respectsBarrier) {
         // TODO(DH-19051): integrate serial/barrier filter/selectables w/gRPC
         throw new UnsupportedOperationException("Can't build Condition with FilterRespectsBarrier");
     }

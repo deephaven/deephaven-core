@@ -79,6 +79,17 @@ public interface SelectColumn extends Selectable, ConcurrencyControl<Selectable>
     }
 
     /**
+     * Produce a {@link #isStateless() stateless} SelectColumn[] from {@code selectables}.
+     *
+     * @param selectables The {@link Selectable selectables} to adapt and mark as stateless
+     * @return The resulting SelectColumn[] array
+     */
+    static SelectColumn[] ofStateless(@NotNull final Selectable... selectables) {
+        return Arrays.stream(selectables).map(selectable -> new StatelessSelectColumn(of(selectable)))
+                .toArray(SelectColumn[]::new);
+    }
+
+    /**
      * Produce a SelectColumn that {@link #recomputeOnModifiedRow()} recomputes values on any modified row} from
      * {@code selectable}.
      *
@@ -349,20 +360,12 @@ public interface SelectColumn extends Selectable, ConcurrencyControl<Selectable>
     }
 
     @Override
-    default SelectColumn withDeclaredBarriers(Object... barriers) {
-        return SelectColumnWithDeclaredBarriers.addDeclaredBarriers(this, barriers);
+    default SelectColumn withDeclaredBarriers(Object... declaredBarriers) {
+        return SelectColumnWithDeclaredBarriers.addDeclaredBarriers(this, declaredBarriers);
     }
 
     @Override
-    default SelectColumn withRespectsBarriers(Object... respectsBarriers) {
-        return SelectColumnWithRespectedBarriers.addRespectedBarriers(this, respectsBarriers);
-    }
-
-    default Object[] respectedBarriers() {
-        return null;
-    }
-
-    default Object[] declaredBarriers() {
-        return null;
+    default SelectColumn withRespectedBarriers(Object... respectedBarriers) {
+        return SelectColumnWithRespectedBarriers.addRespectedBarriers(this, respectedBarriers);
     }
 }

@@ -41,16 +41,19 @@ class WrappedSelectable implements Selectable {
 
     @Override
     public Selectable withSerial() {
+        if (isSerial() != null && isSerial()) {
+            return this;
+        }
         return new SelectableWithSerial(this);
     }
 
     @Override
-    public Selectable withDeclaredBarriers(Object... barriers) {
-        return new SelectableWithDeclaredBarriers(this, Arrays.stream(barriers));
+    public Selectable withDeclaredBarriers(Object... declaredBarriers) {
+        return new SelectableWithDeclaredBarriers(this, Arrays.stream(declaredBarriers));
     }
 
     @Override
-    public Selectable withRespectsBarriers(Object... barriers) {
-        return new SelectableWithRespectedBarrier(this, Arrays.stream(barriers));
+    public Selectable withRespectedBarriers(Object... respectedBarriers) {
+        return new SelectableWithRespectedBarrier(this, Arrays.stream(respectedBarriers));
     }
 }

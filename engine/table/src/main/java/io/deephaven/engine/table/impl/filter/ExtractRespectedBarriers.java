@@ -6,23 +6,13 @@ package io.deephaven.engine.table.impl.filter;
 import io.deephaven.api.RawString;
 import io.deephaven.api.expression.Function;
 import io.deephaven.api.expression.Method;
-import io.deephaven.api.filter.Filter;
-import io.deephaven.api.filter.FilterAnd;
-import io.deephaven.api.filter.FilterBarrier;
-import io.deephaven.api.filter.FilterComparison;
-import io.deephaven.api.filter.FilterIn;
-import io.deephaven.api.filter.FilterIsNull;
-import io.deephaven.api.filter.FilterNot;
-import io.deephaven.api.filter.FilterOr;
-import io.deephaven.api.filter.FilterPattern;
-import io.deephaven.api.filter.FilterRespectsBarrier;
-import io.deephaven.api.filter.FilterSerial;
+import io.deephaven.api.filter.*;
 import io.deephaven.engine.table.impl.select.ConjunctiveFilter;
 import io.deephaven.engine.table.impl.select.DisjunctiveFilter;
 import io.deephaven.engine.table.impl.select.WhereFilter;
-import io.deephaven.engine.table.impl.select.WhereFilterBarrierImpl;
+import io.deephaven.engine.table.impl.select.WhereFilterDeclaredBarrierImpl;
 import io.deephaven.engine.table.impl.select.WhereFilterInvertedImpl;
-import io.deephaven.engine.table.impl.select.WhereFilterRespectsBarrierImpl;
+import io.deephaven.engine.table.impl.select.WhereFilterRespectedBarrierImpl;
 import io.deephaven.engine.table.impl.select.WhereFilterSerialImpl;
 
 import java.util.Arrays;
@@ -33,7 +23,7 @@ import java.util.Set;
 
 /**
  * Performs a recursive "respected-barrier-extraction" against {@code filter}. If {@code filter}, or any sub-filter, is
- * a {@link FilterRespectsBarrier}, {@link FilterRespectsBarrier#respectedBarriers()} will be included in the returned
+ * a {@link FilterRespectedBarrier}, {@link FilterRespectedBarrier#respectedBarriers()} will be included in the returned
  * collection. Otherwise, an empty collection will be returned.
  */
 public enum ExtractRespectedBarriers
@@ -98,12 +88,12 @@ public enum ExtractRespectedBarriers
     }
 
     @Override
-    public Collection<Object> visit(FilterBarrier barrier) {
+    public Collection<Object> visit(FilterDeclaredBarrier barrier) {
         return of(barrier.filter());
     }
 
     @Override
-    public Collection<Object> visit(FilterRespectsBarrier respectsBarrier) {
+    public Collection<Object> visit(FilterRespectedBarrier respectsBarrier) {
         final Set<Object> barriers = new HashSet<>(Arrays.asList(respectsBarrier.respectedBarriers()));
         barriers.addAll(of(respectsBarrier.filter()));
         return barriers;
@@ -140,12 +130,12 @@ public enum ExtractRespectedBarriers
     }
 
     @Override
-    public Collection<Object> visitWhereFilter(WhereFilterBarrierImpl filter) {
+    public Collection<Object> visitWhereFilter(WhereFilterDeclaredBarrierImpl filter) {
         return of(filter.getWrappedFilter());
     }
 
     @Override
-    public Collection<Object> visitWhereFilter(WhereFilterRespectsBarrierImpl filter) {
+    public Collection<Object> visitWhereFilter(WhereFilterRespectedBarrierImpl filter) {
         final Set<Object> barriers = new HashSet<>(Arrays.asList(filter.respectedBarriers()));
         barriers.addAll(of(filter.getWrappedFilter()));
         return barriers;

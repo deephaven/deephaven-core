@@ -9,14 +9,14 @@ import io.deephaven.api.expression.Method;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.api.filter.Filter.Visitor;
 import io.deephaven.api.filter.FilterAnd;
-import io.deephaven.api.filter.FilterBarrier;
+import io.deephaven.api.filter.FilterDeclaredBarrier;
 import io.deephaven.api.filter.FilterComparison;
 import io.deephaven.api.filter.FilterIn;
 import io.deephaven.api.filter.FilterIsNull;
 import io.deephaven.api.filter.FilterNot;
 import io.deephaven.api.filter.FilterOr;
 import io.deephaven.api.filter.FilterPattern;
-import io.deephaven.api.filter.FilterRespectsBarrier;
+import io.deephaven.api.filter.FilterRespectedBarrier;
 import io.deephaven.api.filter.FilterSerial;
 import io.deephaven.api.literal.Literal;
 
@@ -88,13 +88,13 @@ enum FilterSimplifier implements Visitor<Filter> {
     }
 
     @Override
-    public Filter visit(FilterBarrier barrier) {
+    public Filter visit(FilterDeclaredBarrier barrier) {
         return barrier.filter().walk(this).withDeclaredBarriers(barrier.barriers());
     }
 
     @Override
-    public Filter visit(FilterRespectsBarrier respectsBarrier) {
-        return respectsBarrier.filter().walk(this).withRespectsBarriers(respectsBarrier.respectedBarriers());
+    public Filter visit(FilterRespectedBarrier respectsBarrier) {
+        return respectsBarrier.filter().walk(this).withRespectedBarriers(respectsBarrier.respectedBarriers());
     }
 
     @Override

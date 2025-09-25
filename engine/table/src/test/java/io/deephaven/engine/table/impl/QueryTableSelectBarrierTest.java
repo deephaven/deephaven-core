@@ -4,6 +4,7 @@
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.api.ColumnName;
+import io.deephaven.api.RawString;
 import io.deephaven.api.Selectable;
 import io.deephaven.api.expression.Method;
 import io.deephaven.api.literal.Literal;
@@ -38,7 +39,10 @@ public class QueryTableSelectBarrierTest {
 
     @Rule
     public final EngineCleanup base = new EngineCleanup();
-    private static final int REPEATS_FOR_CONFIDENCE = 0;
+    // if you would like to convince yourself that we are reliably producing out-of-order conditions as appropriate;
+    // then
+    // you can increase this amount to run the tests many times
+    private static final int REPEATS_FOR_CONFIDENCE = 1;
 
     @Test
     public void testRepeatedBarrierSelectColumn() {
@@ -50,8 +54,7 @@ public class QueryTableSelectBarrierTest {
         }
     }
 
-    @Test
-    public void testBarrierSelectColumn() {
+    private void testBarrierSelectColumn() {
         final int segments = 10;
         final int size = Math.toIntExact(QueryTable.MINIMUM_PARALLEL_SELECT_ROWS * segments);
 
@@ -70,6 +73,7 @@ public class QueryTableSelectBarrierTest {
                 final SafeCloseable ignored2 = new SaveQueryTableOptions();
                 final SafeCloseable ignored3 = threadPool::shutdown) {
             QueryTable.FORCE_PARALLEL_SELECT_AND_UPDATE = true;
+            QueryTable.STATELESS_SELECT_BY_DEFAULT = false;
 
             final SelectColumn sa =
                     SelectColumnFactory.getExpression("A=slow_a.getAndIncrementSlow(0, new int[]{ 0, 1 })");
@@ -103,7 +107,7 @@ public class QueryTableSelectBarrierTest {
 
             System.out.println(Instant.now() + ": barrier");
             final Table u = x.update(List.of(SelectColumn.ofStateless(sa).withDeclaredBarriers(slow_a),
-                    SelectColumn.ofStateless(sb).withRespectsBarriers(slow_a)));
+                    SelectColumn.ofStateless(sb).withRespectedBarriers(slow_a)));
 
             // check for swizzling
             checkMixedColumns(u, false);
@@ -129,8 +133,7 @@ public class QueryTableSelectBarrierTest {
         }
     }
 
-    @Test
-    public void testBarrierSelectable() {
+    private void testBarrierSelectable() {
         QueryTable.FORCE_PARALLEL_SELECT_AND_UPDATE = true;
 
         final int segments = 10;
@@ -166,7 +169,9 @@ public class QueryTableSelectBarrierTest {
             System.out.println(Instant.now() + ": serial");
             final Table y = x.update(List.of(sa.withSerial(), sb.withSerial()));
 
-            final Table expected = x.updateView("A=i", "B=size + i");
+            final Table expected =
+                    x.updateView(List.of(SelectColumn.ofStateless(SelectColumnFactory.getExpression("A=i"),
+                            SelectColumnFactory.getExpression("B=size + i"))));
             assertTableEquals(expected, y);
 
             slow_a.reset(0, 2);
@@ -189,7 +194,7 @@ public class QueryTableSelectBarrierTest {
             slow_a.reset(0, 1);
 
             System.out.println(Instant.now() + ": barriers");
-            final Table u = x.update(List.of(sa.withDeclaredBarriers(slow_a), sb.withRespectsBarriers(slow_a)));
+            final Table u = x.update(List.of(sa.withDeclaredBarriers(slow_a), sb.withRespectedBarriers(slow_a)));
 
             // check for swizzling
             checkMixedColumns(u, false);
@@ -234,8 +239,7 @@ public class QueryTableSelectBarrierTest {
         }
     }
 
-    @Test
-    public void testBarrierAcrossShift() {
+    private void testBarrierAcrossShift() {
         final int segments = 10;
         final int size = Math.toIntExact(QueryTable.MINIMUM_PARALLEL_SELECT_ROWS * segments);
         final Table x = TableTools.emptyTable(size);
@@ -250,6 +254,7 @@ public class QueryTableSelectBarrierTest {
                 final SafeCloseable ignored2 = new SaveQueryTableOptions();
                 final SafeCloseable ignored3 = threadPool::shutdown) {
             QueryTable.FORCE_PARALLEL_SELECT_AND_UPDATE = true;
+            QueryTable.STATELESS_SELECT_BY_DEFAULT = false;
 
             final SelectColumn sa =
                     SelectColumnFactory.getExpression("A=slow_a.getAndIncrementSlow(0, new int[] { 0, 1, 0, 1 })");
@@ -289,7 +294,7 @@ public class QueryTableSelectBarrierTest {
             slow_a.reset(0, 1);
 
             final Table u = x.update(List.of(SelectColumn.ofStateless(sa).withDeclaredBarriers(slow_a),
-                    SelectColumn.ofStateless(sb).withRespectsBarriers(slow_a), SelectColumn.ofStateless(sc),
+                    SelectColumn.ofStateless(sb).withRespectedBarriers(slow_a), SelectColumn.ofStateless(sc),
                     SelectColumn.ofStateless(sd)));
 
             // check for swizzling
@@ -310,7 +315,7 @@ public class QueryTableSelectBarrierTest {
             slow_a.reset(2, 4);
             final Table v = x.update(List.of(SelectColumn.ofStateless(sa).withDeclaredBarriers(slow_a),
                     SelectColumn.ofStateless(sb), SelectColumn.ofStateless(sc),
-                    SelectColumn.ofStateless(sd).withRespectsBarriers(slow_a)));
+                    SelectColumn.ofStateless(sd).withRespectedBarriers(slow_a)));
 
             // check for swizzling
             checkMixedColumns(v, true);
@@ -326,10 +331,9 @@ public class QueryTableSelectBarrierTest {
         }
     }
 
-    // if you would like to convince yourself that we are reliably producing out-of-order conditions as appropriate
-    @Ignore
+    @Test
     public void testRepeatedBarrierAliases() {
-        for (int ii = 0; ii < 10000; ++ii) {
+        for (int ii = 0; ii < REPEATS_FOR_CONFIDENCE; ++ii) {
             System.out.println("Repetition " + ii);
             try (final SafeCloseable ignored = LivenessScopeStack.open()) {
                 testBarrierAliases();
@@ -337,8 +341,7 @@ public class QueryTableSelectBarrierTest {
         }
     }
 
-    @Test
-    public void testBarrierAliases() {
+    private void testBarrierAliases() {
         final int segments = 10;
         final int size = Math.toIntExact(QueryTable.MINIMUM_PARALLEL_SELECT_ROWS * segments);
         final Table x = TableTools.emptyTable(size);
@@ -360,6 +363,7 @@ public class QueryTableSelectBarrierTest {
                 final SafeCloseable ignored2 = new SaveQueryTableOptions();
                 final SafeCloseable ignored3 = threadPool::shutdown) {
             QueryTable.FORCE_PARALLEL_SELECT_AND_UPDATE = true;
+            QueryTable.STATELESS_SELECT_BY_DEFAULT = false;
 
             final SelectColumn sa = SelectColumnFactory
                     .getExpression("A=slow_a.getAndIncrementSlow(0, new int[] { 0, 1 })");
@@ -409,7 +413,7 @@ public class QueryTableSelectBarrierTest {
                     x.update(List.of(SelectColumn.ofStateless(sb),
                             SelectColumn.ofStateless(sa).withDeclaredBarriers(slow_a),
                             SelectColumn.ofStateless(sc), SelectColumn.ofStateless(sd), SelectColumn.ofStateless(sa1),
-                            SelectColumn.ofStateless(sb1).withRespectsBarriers(slow_a)));
+                            SelectColumn.ofStateless(sb1).withRespectedBarriers(slow_a)));
 
             assertTrue(isOutOfOrder(u, "A"));
             assertTrue(isOutOfOrder(u, "B"));
@@ -430,13 +434,13 @@ public class QueryTableSelectBarrierTest {
         final IllegalArgumentException iae1 = assertThrows(IllegalArgumentException.class,
                 () -> t.update(List.of(SelectColumnFactory.getExpression("A=1").withDeclaredBarriers(t))));
         assertEquals(
-                "Constant values are not evaluated during select() and update() processing, therefore may not declare barriers.",
+                "Constant values are not evaluated during select() and update() processing, therefore may not declare barriers",
                 iae1.getMessage());
         final IllegalArgumentException iae2 = assertThrows(IllegalArgumentException.class,
                 () -> t.update(List.of(SelectColumnFactory.getExpression("A=i").withDeclaredBarriers(t),
-                        SelectColumnFactory.getExpression("B=1").withRespectsBarriers(t))));
+                        SelectColumnFactory.getExpression("B=1").withRespectedBarriers(t))));
         assertEquals(
-                "Constant values are not evaluated during select() and update() processing, therefore may not respect barriers.",
+                "Constant values are not evaluated during select() and update() processing, therefore may not respect barriers",
                 iae2.getMessage());
         final IllegalArgumentException iae3 = assertThrows(IllegalArgumentException.class,
                 () -> t.update(List.of(SelectColumnFactory.getExpression("A=i").withDeclaredBarriers(t),
@@ -444,12 +448,12 @@ public class QueryTableSelectBarrierTest {
         assertEquals("Duplicate barrier, emptyTable(1), declared for A and B", iae3.getMessage());
         final IllegalArgumentException iae4 = assertThrows(IllegalArgumentException.class,
                 () -> t.update(List.of(SelectColumnFactory.getExpression("A=i"),
-                        SelectColumnFactory.getExpression("B=2*i").withRespectsBarriers(t))));
+                        SelectColumnFactory.getExpression("B=2*i").withRespectedBarriers(t))));
         assertEquals("Respected barrier, emptyTable(1), is not defined for B", iae4.getMessage());
 
         final IllegalArgumentException iae5 = assertThrows(IllegalArgumentException.class,
                 () -> t.view(List.of(SelectColumnFactory.getExpression("A=i").withDeclaredBarriers(t),
-                        SelectColumnFactory.getExpression("B=i").withRespectsBarriers(t))));
+                        SelectColumnFactory.getExpression("B=i").withRespectedBarriers(t))));
         assertEquals("view and updateView cannot respect barriers", iae5.getMessage());
     }
 
@@ -464,44 +468,90 @@ public class QueryTableSelectBarrierTest {
 
         assertEquals(List.of(a), List.of(sc.withDeclaredBarriers(a).declaredBarriers()));
         assertEquals(List.of(b), List.of(sc.withDeclaredBarriers(b).declaredBarriers()));
-        assertEquals(List.of(a, b), List.of(sc.withDeclaredBarriers(a, b).declaredBarriers()));
-        assertEquals(List.of(a, b), List.of(sc.withDeclaredBarriers(a).withDeclaredBarriers(b).declaredBarriers()));
+        assertEquals(Set.of(a, b), Set.of(sc.withDeclaredBarriers(a, b).declaredBarriers()));
+        assertEquals(Set.of(a, b), Set.of(sc.withDeclaredBarriers(a).withDeclaredBarriers(b).declaredBarriers()));
 
-        assertEquals(List.of(a), List.of(sc.withRespectsBarriers(a).respectedBarriers()));
-        assertEquals(List.of(b), List.of(sc.withRespectsBarriers(b).respectedBarriers()));
-        assertEquals(List.of(a, b), List.of(sc.withRespectsBarriers(a, b).respectedBarriers()));
-        assertEquals(List.of(a, b), List.of(sc.withRespectsBarriers(a).withRespectsBarriers(b).respectedBarriers()));
+        assertEquals(List.of(a), List.of(sc.withRespectedBarriers(a).respectedBarriers()));
+        assertEquals(List.of(b), List.of(sc.withRespectedBarriers(b).respectedBarriers()));
+        assertEquals(Set.of(a, b), Set.of(sc.withRespectedBarriers(a, b).respectedBarriers()));
+        assertEquals(Set.of(a, b), Set.of(sc.withRespectedBarriers(a).withRespectedBarriers(b).respectedBarriers()));
 
 
         assertEquals(List.of(a), List.of(sc.withDeclaredBarriers(a).copy().declaredBarriers()));
         assertEquals(List.of(b), List.of(sc.withDeclaredBarriers(b).copy().declaredBarriers()));
-        assertEquals(List.of(a, b), List.of(sc.withDeclaredBarriers(a, b).copy().declaredBarriers()));
-        assertEquals(List.of(a, b),
-                List.of(sc.withDeclaredBarriers(a).withDeclaredBarriers(b).copy().declaredBarriers()));
+        assertEquals(Set.of(a, b), Set.of(sc.withDeclaredBarriers(a, b).copy().declaredBarriers()));
+        assertEquals(Set.of(a, b),
+                Set.of(sc.withDeclaredBarriers(a).withDeclaredBarriers(b).copy().declaredBarriers()));
 
-        assertEquals(List.of(a), List.of(sc.withDeclaredBarriers(a).withRespectsBarriers(c).declaredBarriers()));
-        assertEquals(List.of(c), List.of(sc.withDeclaredBarriers(a).withRespectsBarriers(c).respectedBarriers()));
+        assertEquals(List.of(a), List.of(sc.withDeclaredBarriers(a).withRespectedBarriers(c).declaredBarriers()));
+        assertEquals(List.of(c), List.of(sc.withDeclaredBarriers(a).withRespectedBarriers(c).respectedBarriers()));
         assertEquals(List.of(c),
-                List.of(sc.withDeclaredBarriers(a).withRespectsBarriers(c).withDeclaredBarriers(b)
+                List.of(sc.withDeclaredBarriers(a).withRespectedBarriers(c).withDeclaredBarriers(b)
                         .respectedBarriers()));
-        assertEquals(List.of(a, b),
-                List.of(sc.withDeclaredBarriers(a).withRespectsBarriers(c).withDeclaredBarriers(b).declaredBarriers()));
-        assertEquals(List.of(a, b),
-                List.of(sc.withRespectsBarriers(c).withDeclaredBarriers(a).withRespectsBarriers(d)
+        assertEquals(Set.of(a, b),
+                Set.of(sc.withDeclaredBarriers(a).withRespectedBarriers(c).withDeclaredBarriers(b)
+                        .declaredBarriers()));
+        assertEquals(Set.of(a, b),
+                Set.of(sc.withRespectedBarriers(c).withDeclaredBarriers(a).withRespectedBarriers(d)
                         .withDeclaredBarriers(b)
                         .declaredBarriers()));
-        assertEquals(List.of(c, d), List
-                .of(sc.withRespectsBarriers(c).withDeclaredBarriers(b).withRespectsBarriers(d).withDeclaredBarriers(b)
+        assertEquals(Set.of(c, d), Set
+                .of(sc.withRespectedBarriers(c).withDeclaredBarriers(b).withRespectedBarriers(d).withDeclaredBarriers(b)
                         .respectedBarriers()));
 
-        assertEquals(List.of(a, b),
-                List.of(sc.withRespectsBarriers(c).withDeclaredBarriers(a).withRespectsBarriers(d)
-                        .withDeclaredBarriers(b)
-                        .copy().declaredBarriers()));
-        assertEquals(List.of(c, d), List.of(
-                sc.withRespectsBarriers(c).withDeclaredBarriers(b).withRespectsBarriers(d).withDeclaredBarriers(b)
-                        .copy()
+        final SelectColumn sc2 = sc.withRespectedBarriers(c).withDeclaredBarriers(a).withRespectedBarriers(d)
+                .withDeclaredBarriers(b).copy();
+        assertEquals(Set.of(a, b), Set.of(sc2.declaredBarriers()));
+        assertEquals(Set.of(c, d), Set.of(sc2.respectedBarriers()));
+
+        final SelectColumn sc3 = SelectColumn.ofStateless(sc2);
+        assertTrue(sc3.isStateless());
+        final SelectColumn sc4 = sc3.withSerial().withRespectedBarriers().withDeclaredBarriers();
+        assertFalse(sc4.isStateless());
+        assertEquals(Set.of(a, b), Set.of(sc4.declaredBarriers()));
+        assertEquals(Set.of(c, d), Set.of(sc4.respectedBarriers()));
+    }
+
+    @Test
+    public void testMergingSelectable() {
+        final Object a = new Object();
+        final Object b = new Object();
+        final Object c = new Object();
+        final Object d = new Object();
+
+        final Selectable ss = Selectable.of(ColumnName.of("A"), RawString.of("B + 7"));
+        assertNull(ss.isSerial());
+
+        assertEquals(List.of(a), List.of(ss.withDeclaredBarriers(a).declaredBarriers()));
+        assertEquals(List.of(b), List.of(ss.withDeclaredBarriers(b).declaredBarriers()));
+        assertEquals(Set.of(a, b), Set.of(ss.withDeclaredBarriers(a, b).declaredBarriers()));
+        assertEquals(Set.of(a, b), Set.of(ss.withDeclaredBarriers(a).withDeclaredBarriers(b).declaredBarriers()));
+
+        assertEquals(List.of(a), List.of(ss.withRespectedBarriers(a).respectedBarriers()));
+        assertEquals(List.of(b), List.of(ss.withRespectedBarriers(b).respectedBarriers()));
+        assertEquals(Set.of(a, b), Set.of(ss.withRespectedBarriers(a, b).respectedBarriers()));
+        assertEquals(Set.of(a, b), Set.of(ss.withRespectedBarriers(a).withRespectedBarriers(b).respectedBarriers()));
+
+        assertEquals(List.of(a), List.of(ss.withDeclaredBarriers(a).withRespectedBarriers(c).declaredBarriers()));
+        assertEquals(List.of(c), List.of(ss.withDeclaredBarriers(a).withRespectedBarriers(c).respectedBarriers()));
+        assertEquals(List.of(c),
+                List.of(ss.withDeclaredBarriers(a).withRespectedBarriers(c).withDeclaredBarriers(b)
                         .respectedBarriers()));
+        assertEquals(Set.of(a, b),
+                Set.of(ss.withDeclaredBarriers(a).withRespectedBarriers(c).withDeclaredBarriers(b)
+                        .declaredBarriers()));
+        assertEquals(Set.of(a, b),
+                Set.of(ss.withRespectedBarriers(c).withDeclaredBarriers(a).withRespectedBarriers(d)
+                        .withDeclaredBarriers(b)
+                        .declaredBarriers()));
+
+        final Selectable ss2 = ss.withRespectedBarriers(c).withSerial().withDeclaredBarriers(b).withRespectedBarriers(d)
+                .withDeclaredBarriers(b);
+        assertEquals(Set.of(c, d), Set.of(ss2.respectedBarriers()));
+        assertEquals(List.of(b), List.of(ss2.declaredBarriers()));
+        assertTrue(ss2.isSerial());
+        assertTrue(ss2.withSerial().isSerial());
+        assertTrue(ss2.withSerial().withRespectedBarriers(1).withDeclaredBarriers(2).isSerial());
     }
 
     private static void checkIndividualSums(int size, Table u) {
@@ -639,8 +689,8 @@ public class QueryTableSelectBarrierTest {
         }
 
         /**
-         * Do the get and increment on the underlying atomic integer, possibly sleeping to cause data to be
-         * interspersed if there are not declared barriers.
+         * Do the get and increment on the underlying atomic integer, possibly sleeping to cause data to be interspersed
+         * if there are not declared barriers.
          * 
          * @param columnNumber the column number we are updating
          * @param checkThreads an array of column numbers that we should verify had at least two threads access them. -1

@@ -204,7 +204,7 @@ public class DeferredViewTableTest {
                 .where(ConjunctiveFilter.of(
                         filter2,
                         filter0.withDeclaredBarriers(barrier),
-                        filter1.withRespectsBarriers(barrier)))
+                        filter1.withRespectedBarriers(barrier)))
                 .coalesce();
 
         Assert.eq(deferredTable.size(), "deferredTable.size()", 10_000);
@@ -239,7 +239,7 @@ public class DeferredViewTableTest {
                 .updateView("Y = ii")
                 .where(ConjunctiveFilter.of(
                         filter0.withDeclaredBarriers(barrier),
-                        filter1.withRespectsBarriers(barrier),
+                        filter1.withRespectedBarriers(barrier),
                         filter2))
                 .coalesce();
 
@@ -273,7 +273,7 @@ public class DeferredViewTableTest {
                 .updateView("Y = ii")
                 .where(ConjunctiveFilter.of(
                         filter0.withDeclaredBarriers(barrier),
-                        filter1.withRespectsBarriers(barrier)))
+                        filter1.withRespectedBarriers(barrier)))
                 .coalesce();
 
         Assert.eq(deferredTable.size(), "deferredTable.size()", 25_000);
@@ -316,7 +316,7 @@ public class DeferredViewTableTest {
         final WhereFilter filter = new MatchFilter(MatchFilter.MatchType.Regular, "Y", "A");
         verifyFilterIsPrioritized(ConjunctiveFilter.of(
                 ConditionFilter.createConditionFilter("true").withDeclaredBarriers(barrier),
-                filter.withRespectsBarriers(barrier)));
+                filter.withRespectedBarriers(barrier)));
     }
 
     @Test

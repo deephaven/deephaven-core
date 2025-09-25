@@ -18,21 +18,21 @@ public class SelectColumnWithRespectedBarriers extends WrappedSelectColumn {
     private final Object[] respectedBarriers;
 
     /**
-     * Return a new SelectColumn that respects the given barriers.
+     * Return a possibly new SelectColumn that respects the given barriers.
      * 
      * @param toWrap SelectColumn to wrap
-     * @param respectBarriers the barriers to respect
+     * @param respectedBarriers the barriers to respect
      * @return a new select colum that respects the given barriers.
      */
-    public static SelectColumn addRespectedBarriers(SelectColumn toWrap, Object... respectBarriers) {
-        if (respectBarriers == null || respectBarriers.length == 0) {
+    public static SelectColumn addRespectedBarriers(SelectColumn toWrap, Object... respectedBarriers) {
+        if (respectedBarriers == null || respectedBarriers.length == 0) {
             return toWrap;
         }
 
         final Object[] existingRespected = toWrap.respectedBarriers();
         final Stream<Object> existingRespectedStream =
                 existingRespected == null ? Stream.empty() : Arrays.stream(existingRespected);
-        final Object[] barriersToRespect = Stream.concat(existingRespectedStream, Arrays.stream(respectBarriers))
+        final Object[] barriersToRespect = Stream.concat(existingRespectedStream, Arrays.stream(respectedBarriers))
                 .collect(Collectors.toCollection(() -> Collections.newSetFromMap(new IdentityHashMap<>())))
                 .toArray(Object[]::new);
 
@@ -41,25 +41,27 @@ public class SelectColumnWithRespectedBarriers extends WrappedSelectColumn {
 
     /**
      * Return a possibly new SelectColumn that does not respect the given barriers.
-     * 
+     *
      * @param toWrap SelectColumn to wrap
-     * @param respectBarriersToRemove the barriers to remove from toWrap's respected barriers.
+     * @param respectBarriersToRemove the barriers to remove from toWrap's respected barriers. The set of barriers
+     *        should implement contains using object reference equality (i.e. identity, not
+     *        {@link Object#equals(Object)}).
      * @return a SelectColumn that does not respect the given barriers
      */
-    public static SelectColumn removeBarriers(SelectColumn toWrap, Set<Object> respectBarriersToRemove) {
+    public static SelectColumn removeRespectedBarriers(SelectColumn toWrap, Set<Object> respectBarriersToRemove) {
         if (toWrap.respectedBarriers() != null
                 && Arrays.stream(toWrap.respectedBarriers()).anyMatch(respectBarriersToRemove::contains)) {
             final Object[] barriersToRespect = Arrays.stream(toWrap.respectedBarriers())
                     .filter(Predicate.not(respectBarriersToRemove::contains))
                     .collect(Collectors.toCollection(() -> Collections.newSetFromMap(new IdentityHashMap<>())))
                     .toArray(Object[]::new);
-            return new SelectColumnWithRespectedBarriers(toWrap, false, barriersToRespect);
+            return new SelectColumnWithRespectedBarriers(toWrap, barriersToRespect);
         } else {
             return toWrap;
         }
     }
 
-    private SelectColumnWithRespectedBarriers(SelectColumn wrapped, final Object... respectBarriers) {
+    private SelectColumnWithRespectedBarriers(SelectColumn wrapped, final Object[] respectBarriers) {
         super(wrapped);
         this.respectedBarriers = respectBarriers;
     }

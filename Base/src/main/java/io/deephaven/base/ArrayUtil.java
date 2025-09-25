@@ -1475,18 +1475,4 @@ public class ArrayUtil {
             array[i] = producer.get();
         }
     }
-
-    /**
-     * Concatenate the object arrays a and b into a newly allocated array.
-     *
-     * @param a the first array to concatenate
-     * @param b the second array to concatenate
-     * @return a newly allocated array with the elements from a and b
-     * @param <T> the element type of the input and output arrays
-     */
-    public static <T> T[] concat(final T[] a, final T[] b) {
-        final T[] result = Arrays.copyOf(a, a.length + b.length);
-        System.arraycopy(b, 0, result, a.length, b.length);
-        return result;
-    }
 }

@@ -159,7 +159,7 @@ public class TestPartitionAwareSourceTableNoMocks {
 
         // do the same test, but make the outer filter respect the barrier on the inner filter
         final Table res1 = testFilterVisibility(
-                partitionSize, filter0.withDeclaredBarriers(barrier), filter1.withRespectsBarriers(barrier));
+                partitionSize, filter0.withDeclaredBarriers(barrier), filter1.withRespectedBarriers(barrier));
 
         // ensure the inner filter sees all four partitions' data
         Assert.eq(filter0.numRowsProcessed(), "filter0.numRowsProcessed()", 4 * partitionSize);
@@ -181,7 +181,7 @@ public class TestPartitionAwareSourceTableNoMocks {
         final RowSetCapturingFilter filter2 = new RowSetCapturingFilter(FilterIn.of(
                 ColumnName.of("partition"), Literal.of("B")));
         final Table res0 = testFilterVisibility(
-                partitionSize, filter0, filter1.withDeclaredBarriers(barrier), filter2.withRespectsBarriers(barrier));
+                partitionSize, filter0, filter1.withDeclaredBarriers(barrier), filter2.withRespectedBarriers(barrier));
 
         // ensure the inner filter sees only the one partitions' data
         Assert.eq(filter0.numRowsProcessed(), "filter0.numRowsProcessed()", partitionSize);
@@ -205,7 +205,7 @@ public class TestPartitionAwareSourceTableNoMocks {
                 ColumnName.of("partition"), Literal.of("B")));
         final Table res0 = testFilterVisibility(
                 partitionSize, filter1.withDeclaredBarriers(barrier), filter0.withSerial(),
-                filter2.withRespectsBarriers(barrier));
+                filter2.withRespectedBarriers(barrier));
 
         // ensure the inner filter sees two partitions' data
         Assert.eq(filter0.numRowsProcessed(), "filter0.numRowsProcessed()", 2 * partitionSize);
@@ -293,7 +293,7 @@ public class TestPartitionAwareSourceTableNoMocks {
 
         // do the same test, but make the outer filter respect the barrier on the inner filter
         final Table res1 = testDeferredFilterVisibility(
-                partitionSize, filter0.withDeclaredBarriers(barrier), filter1.withRespectsBarriers(barrier));
+                partitionSize, filter0.withDeclaredBarriers(barrier), filter1.withRespectedBarriers(barrier));
 
         // ensure the inner filter sees all four partitions' data
         Assert.eq(filter0.numRowsProcessed(), "filter0.numRowsProcessed()", 4 * partitionSize);
@@ -315,7 +315,7 @@ public class TestPartitionAwareSourceTableNoMocks {
         final RowSetCapturingFilter filter2 = new RowSetCapturingFilter(FilterIn.of(
                 ColumnName.of("partition"), Literal.of("B")));
         final Table res0 = testDeferredFilterVisibility(
-                partitionSize, filter0, filter1.withDeclaredBarriers(barrier), filter2.withRespectsBarriers(barrier));
+                partitionSize, filter0, filter1.withDeclaredBarriers(barrier), filter2.withRespectedBarriers(barrier));
 
         // ensure the inner filter sees only the one partitions' data
         Assert.eq(filter0.numRowsProcessed(), "filter0.numRowsProcessed()", partitionSize);
@@ -340,7 +340,7 @@ public class TestPartitionAwareSourceTableNoMocks {
         // we need to add a "dummy" filter in the front to defer the other three
         final Table res0 = testDeferredFilterVisibility(
                 partitionSize, RawString.of("II < 128"), filter1.withDeclaredBarriers(barrier), filter0.withSerial(),
-                filter2.withRespectsBarriers(barrier));
+                filter2.withRespectedBarriers(barrier));
 
         // ensure the inner filter sees two partitions' data
         Assert.eq(filter0.numRowsProcessed(), "filter0.numRowsProcessed()", 2 * partitionSize);

@@ -3,6 +3,7 @@
 //
 package io.deephaven.engine.table.impl.select.analyzers;
 
+import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.map.TObjectIntMap;
 import gnu.trove.map.hash.TObjectIntHashMap;
@@ -119,7 +120,8 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
         final Set<String> resultColumnNames = new HashSet<>();
         for (final SelectColumn sc : selectColumns) {
             if (context.remainingCols != null) {
-                context.remainingCols.add(SelectColumnWithRespectedBarriers.removeBarriers(sc, preShiftBarriers));
+                context.remainingCols
+                        .add(SelectColumnWithRespectedBarriers.removeRespectedBarriers(sc, preShiftBarriers));
                 continue;
             }
 
@@ -131,7 +133,7 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
             if (useShiftedColumns && sc.hasConstantArrayAccess()) {
                 context.remainingCols = new LinkedList<>();
                 context.shiftColumn = sc.maybeGetFormulaColumn().orElseThrow(() -> new IllegalStateException(
-                        "Expected formula column when constant array access is present."));
+                        "Expected formula column when constant array access is present"));
                 context.shiftColumnHasPositiveOffset = hasPositiveOffsetConstantArrayAccess(context.shiftColumn);
                 continue;
             }
@@ -176,7 +178,7 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
 
             // execution dependencies are based on layer; the recomputation dependendencies are done by name (a barrier
             // can reach across name aliases, but the formula inputs cannot)
-            final TIntArrayList execDeps = new TIntArrayList();
+            final TIntList execDeps = new TIntArrayList();
             final Object[] respectedBarriers = sc.respectedBarriers();
             if (respectedBarriers != null) {
                 for (final Object barrier : respectedBarriers) {

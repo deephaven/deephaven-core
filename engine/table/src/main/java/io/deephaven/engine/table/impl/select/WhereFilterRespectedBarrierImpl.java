@@ -3,15 +3,13 @@
 //
 package io.deephaven.engine.table.impl.select;
 
-import io.deephaven.api.Strings;
-
 import java.util.Arrays;
 
 /**
  * A wrapper for a {@link WhereFilter} that declares this filter as respecting one or more barriers. A barrier is a
  * filter that must be executed before other filters that respect it. It is an error to respect a non-declared barrier.
  */
-public class WhereFilterRespectsBarrierImpl extends WhereFilterDelegatingBase {
+public class WhereFilterRespectedBarrierImpl extends WhereFilterDelegatingBase {
     /**
      * Wraps the provided {@link WhereFilter} with respecting-barrier behavior.
      *
@@ -20,12 +18,12 @@ public class WhereFilterRespectsBarrierImpl extends WhereFilterDelegatingBase {
      * @return a new {@code WhereFilterRespectsBarrierImpl} instance that respects the barriers
      */
     public static WhereFilter of(WhereFilter filter, Object... respectedBarriers) {
-        return new WhereFilterRespectsBarrierImpl(filter, respectedBarriers);
+        return new WhereFilterRespectedBarrierImpl(filter, respectedBarriers);
     }
 
     private final Object[] respectedBarriers;
 
-    private WhereFilterRespectsBarrierImpl(
+    private WhereFilterRespectedBarrierImpl(
             WhereFilter filter,
             Object... respectedBarriers) {
         super(filter);
@@ -37,12 +35,12 @@ public class WhereFilterRespectsBarrierImpl extends WhereFilterDelegatingBase {
     }
 
     public WhereFilter copy() {
-        return new WhereFilterRespectsBarrierImpl(filter.copy(), respectedBarriers);
+        return new WhereFilterRespectedBarrierImpl(filter.copy(), respectedBarriers);
     }
 
     @Override
     public String toString() {
-        return "respectsBarrier{" +
+        return "respectedBarrier{" +
                 "respectedBarriers=" + Arrays.toString(respectedBarriers) +
                 ", filter=" + filter +
                 '}';
