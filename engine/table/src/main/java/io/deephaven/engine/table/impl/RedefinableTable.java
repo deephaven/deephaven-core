@@ -101,31 +101,72 @@ public abstract class RedefinableTable<IMPL_TYPE extends RedefinableTable<IMPL_T
 
     @Override
     public Table renameColumns(Collection<Pair> pairs) {
+        // TODO: this logic is ~95% similar to QueryTable#renameColumnsImpl(); could combine some logic (validation?)
         if (pairs == null || pairs.isEmpty()) {
             return prepareReturnThis();
         }
-        Map<String, Set<String>> columnDependency = new HashMap<>();
-        Map<String, String> pairLookup = new HashMap<>();
-        for (Pair pair : pairs) {
+
+        Set<String> notFound = null;
+        Set<String> duplicateSource = null;
+        Set<String> duplicateDest = null;
+
+        final Set<String> maskedNames = new HashSet<>();
+        final Set<String> newNames = new HashSet<>();
+        final Map<String, String> pairLookup = new LinkedHashMap<>();
+        for (final Pair pair : pairs) {
             ColumnDefinition<?> cDef = definition.getColumn(pair.input().name());
             if (cDef == null) {
-                throw new IllegalArgumentException("Column \"" + pair.input().name() + "\" not found");
+                (notFound == null ? notFound = new LinkedHashSet<>() : notFound)
+                        .add(pair.input().name());
             }
-            pairLookup.put(pair.input().name(), pair.output().name());
+            if (pairLookup.put(pair.input().name(), pair.output().name()) != null) {
+                (duplicateSource == null ? duplicateSource = new LinkedHashSet<>(1) : duplicateSource)
+                        .add(pair.input().name());
+            }
+            if (definition.getColumn(pair.output().name()) != null) {
+                maskedNames.add(pair.input().name());
+            }
+            if (!newNames.add(pair.output().name())) {
+                (duplicateDest == null ? duplicateDest = new LinkedHashSet<>() : duplicateDest)
+                        .add(pair.output().name());
+            }
         }
 
+        // if we accumulated any errors, build one mega error message and throw it
+        if (notFound != null || duplicateSource != null || duplicateDest != null) {
+            throw new IllegalArgumentException(Stream.of(
+                    notFound == null ? null : "Column(s) not found: " + String.join(", ", notFound),
+                    duplicateSource == null ? null
+                            : "Duplicate source column(s): " + String.join(", ", duplicateSource),
+                    duplicateDest == null ? null
+                            : "Duplicate destination column(s): " + String.join(", ", duplicateDest))
+                    .filter(Objects::nonNull).collect(Collectors.joining("\n")));
+        }
+
+        // How many columns are removed (masked and not replaced) from the table?
+        final int removedCount = (int) maskedNames.stream().filter(n -> !newNames.contains(n)).count();
+
         ColumnDefinition<?>[] columnDefinitions = definition.getColumnsArray();
-        ColumnDefinition<?>[] resultColumnsExternal = new ColumnDefinition[columnDefinitions.length];
-        SelectColumn[] viewColumns = new SelectColumn[columnDefinitions.length];
-        for (int ci = 0; ci < columnDefinitions.length; ++ci) {
-            ColumnDefinition<?> cDef = columnDefinitions[ci];
-            String newName = pairLookup.get(cDef.getName());
+        // Create arrays that will contain the new column definitions (excluding removed columns)
+        ColumnDefinition<?>[] resultColumnsExternal = new ColumnDefinition[columnDefinitions.length - removedCount];
+        SelectColumn[] viewColumns = new SelectColumn[columnDefinitions.length - removedCount];
+
+        int resultColIdx = 0;
+        for (final ColumnDefinition<?> cDef : columnDefinitions) {
+            final String oldName = cDef.getName();
+            final String newName = pairLookup.get(oldName);
             if (newName == null) {
-                resultColumnsExternal[ci] = cDef;
-                viewColumns[ci] = new SourceColumn(cDef.getName());
+                if (newNames.contains(oldName)) {
+                    // this column is being masked by a rename; skip it
+                    continue;
+                }
+                resultColumnsExternal[resultColIdx] = cDef;
+                viewColumns[resultColIdx] = new SourceColumn(cDef.getName());
+                resultColIdx++;
             } else {
-                resultColumnsExternal[ci] = cDef.withName(newName);
-                viewColumns[ci] = new SourceColumn(cDef.getName(), newName);
+                resultColumnsExternal[resultColIdx] = cDef.withName(newName);
+                viewColumns[resultColIdx] = new SourceColumn(cDef.getName(), newName);
+                resultColIdx++;
             }
         }
         return redefine(TableDefinition.of(resultColumnsExternal), definition, viewColumns);

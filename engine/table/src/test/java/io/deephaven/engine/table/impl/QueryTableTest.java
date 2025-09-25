@@ -881,6 +881,21 @@ public class QueryTableTest extends QueryTableTestBase {
         assertTableEquals(
                 emptyTable(1).update("C = 3", "D = 4", "B = 1", "A = 2", "E = 5"),
                 table.moveColumns(2, "B = A", "A = B"));
+
+        // Original `C = 3` column missing after move and rename
+        assertTableEquals(
+                emptyTable(1).update("E = 5", "C = 4", "B = 1", "A = 2"),
+                table.moveColumns(1, "C = D", "B = A", "A = B"));
+
+        // Original `A = 1` column missing after move and rename
+        assertTableEquals(
+                emptyTable(1).update("E = 5", "C = 4", "B = 3", "A = 2"),
+                table.moveColumns(1, "C = D", "B = C", "A = B"));
+
+        // Original `B = 2` column missing after move and rename
+        assertTableEquals(
+                emptyTable(1).update("C = 4", "B = 3", "A = 1", "E = 5"),
+                table.moveColumns(0, "C = D", "B = C"));
     }
 
     public static WhereFilter stringContainsFilter(
@@ -3441,6 +3456,43 @@ public class QueryTableTest extends QueryTableTestBase {
         assertEquals(
                 "Cannot convert ColumnSource componentType of type java.lang.String to java.lang.Integer (for [Ljava.lang.String; / [Ljava.lang.Object;)",
                 castExceptionWithCompNoColName.getMessage());
+    }
+
+    public void testColumnRenameCollision() {
+        // Create a test table with a String column and an array column
+        final Table testTable = TableTools.newTable(
+                TableTools.stringCol("ColumnA", "A", "B", "C"),
+                TableTools.intCol("ColumnB", 1, 2, 3),
+                TableTools.intCol("ColumnC", 10, 20, 30));
+
+        Table result;
+
+        result = testTable.renameColumns("ColumnA=ColumnB");
+        assertEquals(2, result.numColumns());
+        // Verify column names and datatypes
+        assertEquals(int.class, result.getColumnSource("ColumnA").getType());
+        assertEquals(int.class, result.getColumnSource("ColumnC").getType());
+
+        result = testTable.where("ColumnA=`A`").renameColumns("ColumnA=ColumnB");
+        assertEquals(2, result.numColumns());
+        // Verify column names and datatypes
+        assertEquals(int.class, result.getColumnSource("ColumnA").getType());
+        assertEquals(int.class, result.getColumnSource("ColumnC").getType());
+
+        // Repeat with refreshing
+        testTable.setRefreshing(true);
+
+        result = testTable.renameColumns("ColumnA=ColumnB");
+        assertEquals(2, result.numColumns());
+        // Verify column names and datatypes
+        assertEquals(int.class, result.getColumnSource("ColumnA").getType());
+        assertEquals(int.class, result.getColumnSource("ColumnC").getType());
+
+        result = testTable.where("ColumnA=`A`").renameColumns("ColumnA=ColumnB");
+        assertEquals(2, result.numColumns());
+        // Verify column names and datatypes
+        assertEquals(int.class, result.getColumnSource("ColumnA").getType());
+        assertEquals(int.class, result.getColumnSource("ColumnC").getType());
     }
 
     private static final class DummyUpdateGraph implements UpdateGraph {

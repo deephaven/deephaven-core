@@ -2077,6 +2077,7 @@ public class QueryTable extends BaseTable<QueryTable> {
                     Set<String> duplicateSource = null;
                     Set<String> duplicateDest = null;
 
+                    final Set<ColumnName> maskedNames = new HashSet<>();
                     final Set<ColumnName> newNames = new HashSet<>();
                     final Map<ColumnName, ColumnName> pairLookup = new LinkedHashMap<>();
                     for (final Pair pair : pairs) {
@@ -2087,6 +2088,9 @@ public class QueryTable extends BaseTable<QueryTable> {
                         if (pairLookup.put(pair.input(), pair.output()) != null) {
                             (duplicateSource == null ? duplicateSource = new LinkedHashSet<>(1) : duplicateSource)
                                     .add(pair.input().name());
+                        }
+                        if (pair.input() != pair.output() && definition.getColumn(pair.output().name()) != null) {
+                            maskedNames.add(pair.input());
                         }
                         if (!newNames.add(pair.output())) {
                             (duplicateDest == null ? duplicateDest = new LinkedHashSet<>() : duplicateDest)
@@ -2105,8 +2109,11 @@ public class QueryTable extends BaseTable<QueryTable> {
                                 .filter(Objects::nonNull).collect(Collectors.joining("\n")));
                     }
 
+                    // How many columns are removed (masked and not replaced) from the table?
+                    final int removedCount = (int) maskedNames.stream().filter(n -> !newNames.contains(n)).count();
+
                     final MutableInt mcsPairIdx = new MutableInt();
-                    final Pair[] modifiedColumnSetPairs = new Pair[columns.size()];
+                    final Pair[] modifiedColumnSetPairs = new Pair[columns.size() - removedCount];
                     final Map<String, ColumnSource<?>> newColumns = new LinkedHashMap<>();
 
                     final Runnable moveColumns = () -> {
