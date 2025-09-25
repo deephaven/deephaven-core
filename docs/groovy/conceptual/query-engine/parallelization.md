@@ -71,6 +71,56 @@ and `my_table_filtered2` at the same time. However, since `merged_tables` depend
 engine cannot update the result of the [`merge`](../../reference/table-operations/merge/merge.md) operation until after
 the `update()` and `where()`s for those three tables have been processed.
 
+### Controlling Concurrency for `select`, `update` and `where`
+
+The `select`, `update`, and `where` operations can parallelize within a single column. This can greatly improve throughput by using multiple threads to read existing columns or compute functions. Deephaven can only parallelize within a single column if that column is _stateless_, meaning it does not depend on any external inputs or the order in which rows are evaluated. Many operations, such as String manipulation or arithmetic on one or more input columns are stateless. By default, the Deephaven engine assumes that columns are not stateless. For `select` and `update`, you can change the configuration property `QueryTable.statelessSelectByDefault` to `true` to make columns stateless by default. For filters, change the property `QueryTable.statelessFiltersByDefault`.
+
+> [!NOTE]
+> In a future version of Deephaven, filters and selectables will be stateless by default.
+
+The [`ConcurrencyControl`](https://docs.deephaven.io/core/javadoc/io/deephaven/api/ConcurrencyControl.html) interface allows you to control the behavior of filters and formulas.
+
+To explicitly mark a column or filter as stateful, use the `withSerial` method. A serial filter cannot be reordered with respect to other filters. Every input row to a stateful filter is evaluated in order. When a [`Selectable`](https://docs.deephaven.io/core/javadoc/io/deephaven/api/Selectable.html) (e.g. a formula) is serial, then every row for that column is evaluated in order. For Selectables, no additional ordering between expressions is imposed. As with every `select` or `update` call, if column B references column A, then the necessary inputs from column A are evaluated before column B is evaluated. To impose further ordering constraints, use barriers.
+
+Filters and Selectables may declare a _barrier_. A barrier is an opaque object (compared using reference equality) that is used to mark a particular filter or Selectable. Subsequent filters or Selectables may respect a previously declared barrier. If a filter respects a barrier, that filter cannot begin evaluation until the filter which declares the barrier has been completely evaluated. Similarly, if a Selectable respects a barrier, then it cannot begin evaluation until the column which declared the barrier has been completely evaluated.
+
+In this code block, two columns reference the AtomicInteger `a`:
+
+```groovy skip-test
+import java.util.concurrent.atomic.AtomicInteger
+
+a = new AtomicInteger(0)
+t=emptyTable(1_000_000).update("A=a.getAndIncrement()", "B=a.getAndIncrement()")
+```
+
+Deephaven's default behavior is to treat both `A` and `B` statefully, therefore the table is equivalent to:
+
+```groovy skip-test
+t=emptyTable(1_000_000).update("A=i", "B=1_000_000 + i")
+```
+
+However, when the columns are stateless, then the rows from either column can be evaluated in any order. To indicate that `A` must be evaluated before `B`, we can use a barrier:
+
+```groovy skip-test
+import java.util.concurrent.atomic.AtomicInteger
+
+a = new AtomicInteger(0)
+t=emptyTable(1_000_000).update(
+        Selectable.of(ColumnName.of("A"), RawString.of("a.getAndIncrement()")).withDeclaredBarriers(a),
+        Selectable.of(ColumnName.of("B"), RawString.of("a.getAndIncrement()")).withRespectedBarriers(a))
+```
+
+Similarly, we can prevent values of A from appearing out of order using `withSerial`:
+
+```groovy skip-test
+import java.util.concurrent.atomic.AtomicInteger
+
+a = new AtomicInteger(0)
+t=emptyTable(1_000_000).update(List.of(
+        Selectable.of(ColumnName.of("A"), RawString.of("a.getAndIncrement()")).withSerial(),
+        Selectable.of(ColumnName.of("B"), RawString.of("a.getAndIncrement()"))))
+```
+
 ### Managing thread pool sizes
 
 The maximum parallelism of query initialization and update processing is determined by the Operation Initialization
