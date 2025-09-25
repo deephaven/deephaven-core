@@ -4570,7 +4570,6 @@ public final class ParquetTableReadWriteTest {
 
     @Test
     public void testColumnRenameCollision() {
-        // Create a test table with a String column and an array column
         final Table testTable = TableTools.newTable(
                 TableTools.stringCol("ColumnA", "A", "B", "C"),
                 TableTools.intCol("ColumnB", 1, 2, 3),
