@@ -187,10 +187,10 @@ public class FilterTest {
                 assertThat(results).isEqualTo(((FilterAnd) filter).filters());
             } else if (Filter.ofTrue().equals(filter)) {
                 assertThat(results).isEmpty();
-            } else if (filter instanceof FilterDeclaredBarrier) {
-                assertThat(results).containsExactly(((FilterDeclaredBarrier) filter).filter());
-            } else if (filter instanceof FilterRespectedBarrier) {
-                assertThat(results).containsExactly(((FilterRespectedBarrier) filter).filter());
+            } else if (filter instanceof FilterWithDeclaredBarrier) {
+                assertThat(results).containsExactly(((FilterWithDeclaredBarrier) filter).filter());
+            } else if (filter instanceof FilterWithRespectedBarrier) {
+                assertThat(results).containsExactly(((FilterWithRespectedBarrier) filter).filter());
             } else {
                 assertThat(results).containsExactly(filter);
             }
@@ -216,8 +216,8 @@ public class FilterTest {
         visitor.visit((FilterAnd) null);
         visitor.visit((FilterPattern) null);
         visitor.visit((FilterSerial) null);
-        visitor.visit((FilterDeclaredBarrier) null);
-        visitor.visit((FilterRespectedBarrier) null);
+        visitor.visit((FilterWithDeclaredBarrier) null);
+        visitor.visit((FilterWithRespectedBarrier) null);
         visitor.visit((Function) null);
         visitor.visit((Method) null);
         visitor.visit(false);
@@ -269,12 +269,12 @@ public class FilterTest {
         }
 
         @Override
-        public String visit(FilterDeclaredBarrier declaredBarrier) {
+        public String visit(FilterWithDeclaredBarrier declaredBarrier) {
             return of(declaredBarrier);
         }
 
         @Override
-        public String visit(FilterRespectedBarrier respectedBarrier) {
+        public String visit(FilterWithRespectedBarrier respectedBarrier) {
             return of(respectedBarrier);
         }
 
@@ -321,13 +321,13 @@ public class FilterTest {
         }
 
         @Override
-        public CountingVisitor visit(FilterDeclaredBarrier declaredBarrier) {
+        public CountingVisitor visit(FilterWithDeclaredBarrier declaredBarrier) {
             ++count;
             return null;
         }
 
         @Override
-        public CountingVisitor visit(FilterRespectedBarrier respectedBarrier) {
+        public CountingVisitor visit(FilterWithRespectedBarrier respectedBarrier) {
             ++count;
             return null;
         }
@@ -476,13 +476,13 @@ public class FilterTest {
         }
 
         @Override
-        public Void visit(FilterDeclaredBarrier declaredBarrier) {
+        public Void visit(FilterWithDeclaredBarrier declaredBarrier) {
             out.add(Function.of("my_serial_function", FOO).withDeclaredBarriers("TEST_BARRIER"));
             return null;
         }
 
         @Override
-        public Void visit(FilterRespectedBarrier respectedBarrier) {
+        public Void visit(FilterWithRespectedBarrier respectedBarrier) {
             out.add(Function.of("my_serial_function", FOO).withRespectedBarriers("TEST_BARRIER"));
             return null;
         }

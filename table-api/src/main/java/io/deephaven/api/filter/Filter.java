@@ -206,8 +206,8 @@ public interface Filter extends Expression, ConcurrencyControl<Filter> {
      * @param barriers the barrier objects being declared
      * @return a FilterBarrier instance wrapping the provided filter
      */
-    static FilterDeclaredBarrier declaredBarriers(Filter filter, Object... barriers) {
-        return FilterDeclaredBarrier.of(filter, barriers);
+    static FilterWithDeclaredBarrier declaredBarriers(Filter filter, Object... barriers) {
+        return FilterWithDeclaredBarrier.of(filter, barriers);
     }
 
     /**
@@ -217,8 +217,8 @@ public interface Filter extends Expression, ConcurrencyControl<Filter> {
      * @param respectedBarriers the barrier objects that need to be respected
      * @return a FilterBarrier instance wrapping the provided filter
      */
-    static FilterRespectedBarrier respectedBarrier(Filter filter, Object... respectedBarriers) {
-        return FilterRespectedBarrier.of(filter, respectedBarriers);
+    static FilterWithRespectedBarrier respectedBarrier(Filter filter, Object... respectedBarriers) {
+        return FilterWithRespectedBarrier.of(filter, respectedBarriers);
     }
 
     /**
@@ -277,9 +277,9 @@ public interface Filter extends Expression, ConcurrencyControl<Filter> {
 
         T visit(FilterSerial serial);
 
-        T visit(FilterDeclaredBarrier declaredBarrier);
+        T visit(FilterWithDeclaredBarrier declaredBarrier);
 
-        T visit(FilterRespectedBarrier respectedBarrier);
+        T visit(FilterWithRespectedBarrier respectedBarrier);
 
         T visit(Function function);
 

@@ -24,7 +24,7 @@ import java.util.Set;
 
 /**
  * Performs a recursive "barrier-extraction" against {@code filter}. If {@code filter}, or any sub-filter, is a
- * {@link FilterDeclaredBarrier}, {@link FilterDeclaredBarrier#barriers()} will be included in the returned collection.
+ * {@link FilterWithDeclaredBarrier}, {@link FilterWithDeclaredBarrier#barriers()} will be included in the returned collection.
  * Otherwise, an empty collection will be returned.
  */
 public enum ExtractBarriers implements Visitor<Collection<Object>>, WhereFilter.Visitor<Collection<Object>> {
@@ -88,14 +88,14 @@ public enum ExtractBarriers implements Visitor<Collection<Object>>, WhereFilter.
     }
 
     @Override
-    public Collection<Object> visit(FilterDeclaredBarrier declaredBarrier) {
+    public Collection<Object> visit(FilterWithDeclaredBarrier declaredBarrier) {
         final Set<Object> resultBarriers = new HashSet<>(List.of(declaredBarrier.barriers()));
         resultBarriers.addAll(of(declaredBarrier.filter()));
         return resultBarriers;
     }
 
     @Override
-    public Collection<Object> visit(FilterRespectedBarrier respectedBarrier) {
+    public Collection<Object> visit(FilterWithRespectedBarrier respectedBarrier) {
         return of(respectedBarrier.filter());
     }
 

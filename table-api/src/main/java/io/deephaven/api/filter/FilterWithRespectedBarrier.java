@@ -10,13 +10,13 @@ import org.immutables.value.Value.Parameter;
 /**
  * An immutable wrapper that declares a concurrency control barrier on a filter.
  * <p>
- * {@link FilterDeclaredBarrier} wraps an underlying filter and declares a barrier that other filters can respect.
+ * {@link FilterWithDeclaredBarrier} wraps an underlying filter and declares a barrier that other filters can respect.
  * Respecting a barrier ensures that filters are not reordered with respect to the barrier. This is useful to ensure
  * that stateful filters process a predictable and well-defined set of rows.
  */
 @Immutable
 @SimpleStyle
-public abstract class FilterRespectedBarrier extends FilterBase implements Filter {
+public abstract class FilterWithRespectedBarrier extends FilterBase implements Filter {
 
     /**
      * The underlying filter being wrapped.
@@ -41,8 +41,8 @@ public abstract class FilterRespectedBarrier extends FilterBase implements Filte
      * @param barriers the barrier objects that must be respected
      * @return a new instance of FilterSerial
      */
-    public static FilterRespectedBarrier of(Filter filter, Object... barriers) {
-        return ImmutableFilterRespectedBarrier.of(filter, barriers);
+    public static FilterWithRespectedBarrier of(Filter filter, Object... barriers) {
+        return ImmutableFilterWithRespectedBarrier.of(filter, barriers);
     }
 
     /**
@@ -52,7 +52,7 @@ public abstract class FilterRespectedBarrier extends FilterBase implements Filte
      */
     @Override
     public Filter invert() {
-        return FilterRespectedBarrier.of(filter().invert(), respectedBarriers());
+        return FilterWithRespectedBarrier.of(filter().invert(), respectedBarriers());
     }
 
     @Override

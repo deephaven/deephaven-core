@@ -42,6 +42,8 @@ import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.annotations.ReferentialIntegrity;
 import io.deephaven.util.mutable.MutableInt;
 import io.deephaven.vector.IntVector;
+import io.deephaven.vector.ObjectVector;
+import io.deephaven.vector.ObjectVectorDirect;
 import io.grpc.stub.StreamObserver;
 import junit.framework.TestCase;
 import org.apache.commons.lang3.mutable.MutableObject;

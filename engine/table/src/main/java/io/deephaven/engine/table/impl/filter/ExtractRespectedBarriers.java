@@ -23,7 +23,7 @@ import java.util.Set;
 
 /**
  * Performs a recursive "respected-barrier-extraction" against {@code filter}. If {@code filter}, or any sub-filter, is
- * a {@link FilterRespectedBarrier}, {@link FilterRespectedBarrier#respectedBarriers()} will be included in the returned
+ * a {@link FilterWithRespectedBarrier}, {@link FilterWithRespectedBarrier#respectedBarriers()} will be included in the returned
  * collection. Otherwise, an empty collection will be returned.
  */
 public enum ExtractRespectedBarriers
@@ -88,12 +88,12 @@ public enum ExtractRespectedBarriers
     }
 
     @Override
-    public Collection<Object> visit(FilterDeclaredBarrier declaredBarrier) {
+    public Collection<Object> visit(FilterWithDeclaredBarrier declaredBarrier) {
         return of(declaredBarrier.filter());
     }
 
     @Override
-    public Collection<Object> visit(FilterRespectedBarrier respectedBarrier) {
+    public Collection<Object> visit(FilterWithRespectedBarrier respectedBarrier) {
         final Set<Object> barriers = new HashSet<>(Arrays.asList(respectedBarrier.respectedBarriers()));
         barriers.addAll(of(respectedBarrier.filter()));
         return barriers;
