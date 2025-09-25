@@ -80,16 +80,16 @@ The `select`, `update`, and `where` operations can parallelize within a single w
 
 The [`ConcurrencyControl`](https://docs.deephaven.io/core/javadoc/io/deephaven/api/ConcurrencyControl.html) interface allows you to control the behavior of [`Filter`](https://docs.deephaven.io/core/javadoc/io/deephaven/api/filter/Filter.html) (where clause) and [`Selectable`](https://docs.deephaven.io/core/javadoc/io/deephaven/api/Selectable.html) (column formula) objects.
 
-ConccurencyControl cannot be applied to Selectables passed to `view` or `updateView`. The `view` and `updateView` operations compute results on demand, and therefore cannot enforce ordering constraints.
+`ConcurrencyControl` cannot be applied to `Selectable`s passed to `view` or `updateView`. The `view` and `updateView` operations compute results on demand, and therefore cannot enforce ordering constraints.
 
-To explicitly mark a Selectable or Filter as stateful, use the `withSerial` method.
+To explicitly mark a `Selectable` or `Filter` as stateful, use the `withSerial` method.
 
-- A serial Filter cannot be reordered with respect to other Filters. Every input row to a stateful Filter is evaluated in order.
-- When a Selectable is serial, then every row for that column is evaluated in order. For Selectables, no additional ordering between expressions is imposed. As with every `select` or `update` call, if column B references column A, then the necessary inputs to column B from column A are evaluated before column B is evaluated. To impose further ordering constraints, use barriers.
+- A serial `Filter` cannot be reordered with respect to other `Filter`s. Every input row to a stateful `Filter` is evaluated in order.
+- When a `Selectable` is serial, then every row for that column is evaluated in order. For `Selectable`s, no additional ordering between expressions is imposed. As with every `select` or `update` call, if column B references column A, then the necessary inputs to column B from column A are evaluated before column B is evaluated. To impose further ordering constraints, use barriers.
 
-Filters and Selectables may declare a _barrier_. A barrier is an opaque object (compared using reference equality) that is used to mark a particular Filter or Selectable. Subsequent Filters or Selectables may respect a previously declared barrier. If a Filter respects a barrier, that Filter cannot begin evaluation until the Filter which declares the barrier has been completely evaluated. Similarly, if a Selectable respects a barrier, then it cannot begin evaluation until the Selectable which declared the barrier has been completely evaluated.
+`Filter`s and `Selectable`s may declare a _barrier_. A barrier is an opaque object (compared using reference equality) that is used to mark a particular `Filter` or `Selectable`. Subsequent `Filter`s or `Selectable`s may respect a previously declared barrier. If a `Filter` respects a barrier, that `Filter` cannot begin evaluation until the `Filter` that declares the barrier has been completely evaluated. Similarly, if a `Selectable` respects a barrier, it cannot begin evaluation until the `Selectable` that declared the barrier has been completely evaluated.
 
-In this code block, two columns reference the AtomicInteger `a`:
+In this code block, two columns reference the `AtomicInteger` `a`:
 
 ```groovy order=null
 import java.util.concurrent.atomic.AtomicInteger
@@ -98,13 +98,13 @@ a = new AtomicInteger(0)
 t = emptyTable(1_000_000).update("A=a.getAndIncrement()", "B=a.getAndIncrement()")
 ```
 
-Deephaven's default behavior is to treat both `A` and `B` statefully, therefore the table is equivalent to:
+Deephaven's default behavior is to treat both `A` and `B` statefully; therefore, the table is equivalent to:
 
 ```groovy order=null
 t = emptyTable(1_000_000).update("A=i", "B=1_000_000 + i")
 ```
 
-However, when the columns are stateless, then the rows from either column can be evaluated in any order. To indicate that `A` must be evaluated before `B`, we can use a barrier:
+However, when the columns are stateless, the rows from either column can be evaluated in any order. To indicate that `A` must be evaluated before `B`, we can use a barrier:
 
 ```groovy order=null
 import java.util.concurrent.atomic.AtomicInteger
