@@ -10,7 +10,7 @@ import org.immutables.value.Value.Parameter;
 /**
  * An immutable wrapper that declares a concurrency control barrier on a filter.
  * <p>
- * {@link FilterWithDeclaredBarriers} wraps an underlying filter and declares a barrier that other filters can respect.
+ * {@link FilterWithDeclaredBarriers} wraps an underlying filter and declares barriers that other filters can respect.
  * Respecting a barrier ensures that filters are not reordered with respect to the barrier. This is useful to ensure
  * that stateful filters process a predictable and well-defined set of rows.
  */
