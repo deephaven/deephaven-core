@@ -269,13 +269,13 @@ public class FilterTest {
         }
 
         @Override
-        public String visit(FilterDeclaredBarrier barrier) {
-            return of(barrier);
+        public String visit(FilterDeclaredBarrier declaredBarrier) {
+            return of(declaredBarrier);
         }
 
         @Override
-        public String visit(FilterRespectedBarrier respectsBarrier) {
-            return of(respectsBarrier);
+        public String visit(FilterRespectedBarrier respectedBarrier) {
+            return of(respectedBarrier);
         }
 
         @Override
@@ -321,13 +321,13 @@ public class FilterTest {
         }
 
         @Override
-        public CountingVisitor visit(FilterDeclaredBarrier barrier) {
+        public CountingVisitor visit(FilterDeclaredBarrier declaredBarrier) {
             ++count;
             return null;
         }
 
         @Override
-        public CountingVisitor visit(FilterRespectedBarrier respectsBarrier) {
+        public CountingVisitor visit(FilterRespectedBarrier respectedBarrier) {
             ++count;
             return null;
         }
@@ -476,13 +476,13 @@ public class FilterTest {
         }
 
         @Override
-        public Void visit(FilterDeclaredBarrier barrier) {
+        public Void visit(FilterDeclaredBarrier declaredBarrier) {
             out.add(Function.of("my_serial_function", FOO).withDeclaredBarriers("TEST_BARRIER"));
             return null;
         }
 
         @Override
-        public Void visit(FilterRespectedBarrier respectsBarrier) {
+        public Void visit(FilterRespectedBarrier respectedBarrier) {
             out.add(Function.of("my_serial_function", FOO).withRespectedBarriers("TEST_BARRIER"));
             return null;
         }

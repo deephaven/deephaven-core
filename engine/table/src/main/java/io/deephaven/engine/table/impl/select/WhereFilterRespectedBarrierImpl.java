@@ -15,7 +15,7 @@ public class WhereFilterRespectedBarrierImpl extends WhereFilterDelegatingBase {
      *
      * @param filter the filter to wrap
      * @param respectedBarriers the barriers that this filter respects
-     * @return a new {@code WhereFilterRespectsBarrierImpl} instance that respects the barriers
+     * @return a new {@code WhereFilter} instance that respects the barriers
      */
     public static WhereFilter of(WhereFilter filter, Object... respectedBarriers) {
         return new WhereFilterRespectedBarrierImpl(filter, respectedBarriers);

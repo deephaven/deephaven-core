@@ -249,16 +249,16 @@ public class Strings {
         return "withBarrier(" + barrierId + ", " + of(barrier.filter(), invert) + ")";
     }
 
-    public static String of(FilterRespectedBarrier respectsBarrier) {
-        return of(respectsBarrier, false);
+    public static String of(FilterRespectedBarrier respectedBarrier) {
+        return of(respectedBarrier, false);
     }
 
-    public static String of(FilterRespectedBarrier respectsBarrier, boolean invert) {
+    public static String of(FilterRespectedBarrier respectedBarrier, boolean invert) {
         // we don't have a way to represent respects barrier in the query language; so this can't round trip
-        final String barrierText = Arrays.stream(respectsBarrier.respectedBarriers())
+        final String barrierText = Arrays.stream(respectedBarrier.respectedBarriers())
                 .map(Object::toString)
                 .collect(Collectors.joining(",", "[", "]"));
-        return "respectsBarrier(" + barrierText + ", " + of(respectsBarrier.filter(), invert) + ")";
+        return "respectedBarrier(" + barrierText + ", " + of(respectedBarrier.filter(), invert) + ")";
     }
 
     public static String of(boolean literal) {
@@ -405,13 +405,13 @@ public class Strings {
         }
 
         @Override
-        public String visit(FilterDeclaredBarrier barrier) {
-            return of(barrier, invert);
+        public String visit(FilterDeclaredBarrier declaredBarrier) {
+            return of(declaredBarrier, invert);
         }
 
         @Override
-        public String visit(FilterRespectedBarrier respectsBarrier) {
-            return of(respectsBarrier, invert);
+        public String visit(FilterRespectedBarrier respectedBarrier) {
+            return of(respectedBarrier, invert);
         }
 
         @Override

@@ -77,13 +77,13 @@ enum FilterToListImpl implements Filter.Visitor<List<Filter>> {
     }
 
     @Override
-    public List<Filter> visit(FilterDeclaredBarrier barrier) {
-        return List.of(barrier);
+    public List<Filter> visit(FilterDeclaredBarrier declaredBarrier) {
+        return List.of(declaredBarrier);
     }
 
     @Override
-    public List<Filter> visit(FilterRespectedBarrier respectsBarrier) {
-        return List.of(respectsBarrier);
+    public List<Filter> visit(FilterRespectedBarrier respectedBarrier) {
+        return List.of(respectedBarrier);
     }
 
     @Override

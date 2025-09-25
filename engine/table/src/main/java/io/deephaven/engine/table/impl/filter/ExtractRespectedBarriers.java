@@ -88,14 +88,14 @@ public enum ExtractRespectedBarriers
     }
 
     @Override
-    public Collection<Object> visit(FilterDeclaredBarrier barrier) {
-        return of(barrier.filter());
+    public Collection<Object> visit(FilterDeclaredBarrier declaredBarrier) {
+        return of(declaredBarrier.filter());
     }
 
     @Override
-    public Collection<Object> visit(FilterRespectedBarrier respectsBarrier) {
-        final Set<Object> barriers = new HashSet<>(Arrays.asList(respectsBarrier.respectedBarriers()));
-        barriers.addAll(of(respectsBarrier.filter()));
+    public Collection<Object> visit(FilterRespectedBarrier respectedBarrier) {
+        final Set<Object> barriers = new HashSet<>(Arrays.asList(respectedBarrier.respectedBarriers()));
+        barriers.addAll(of(respectedBarrier.filter()));
         return barriers;
     }
 

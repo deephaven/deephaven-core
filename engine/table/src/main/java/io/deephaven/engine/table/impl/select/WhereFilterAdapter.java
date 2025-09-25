@@ -135,10 +135,10 @@ class WhereFilterAdapter implements Filter.Visitor<WhereFilter> {
         return WhereFilterDeclaredBarrierImpl.of(innerFilter, barrier.barriers());
     }
 
-    public static WhereFilter of(FilterRespectedBarrier respectsBarrier, boolean inverted) {
+    public static WhereFilter of(FilterRespectedBarrier respectedBarrier, boolean inverted) {
         final WhereFilter innerFilter = WhereFilter.of(
-                inverted ? respectsBarrier.filter().invert() : respectsBarrier.filter());
-        return WhereFilterRespectedBarrierImpl.of(innerFilter, respectsBarrier.respectedBarriers());
+                inverted ? respectedBarrier.filter().invert() : respectedBarrier.filter());
+        return WhereFilterRespectedBarrierImpl.of(innerFilter, respectedBarrier.respectedBarriers());
     }
 
     public static WhereFilter of(Function function, boolean inverted) {
@@ -203,13 +203,13 @@ class WhereFilterAdapter implements Filter.Visitor<WhereFilter> {
     }
 
     @Override
-    public WhereFilter visit(FilterDeclaredBarrier barrier) {
-        return of(barrier, inverted);
+    public WhereFilter visit(FilterDeclaredBarrier declaredBarrier) {
+        return of(declaredBarrier, inverted);
     }
 
     @Override
-    public WhereFilter visit(FilterRespectedBarrier respectsBarrier) {
-        return of(respectsBarrier, inverted);
+    public WhereFilter visit(FilterRespectedBarrier respectedBarrier) {
+        return of(respectedBarrier, inverted);
     }
 
     @Override

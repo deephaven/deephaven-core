@@ -88,15 +88,15 @@ public enum ExtractBarriers implements Visitor<Collection<Object>>, WhereFilter.
     }
 
     @Override
-    public Collection<Object> visit(FilterDeclaredBarrier barrier) {
-        final Set<Object> resultBarriers = new HashSet<>(List.of(barrier.barriers()));
-        resultBarriers.addAll(of(barrier.filter()));
+    public Collection<Object> visit(FilterDeclaredBarrier declaredBarrier) {
+        final Set<Object> resultBarriers = new HashSet<>(List.of(declaredBarrier.barriers()));
+        resultBarriers.addAll(of(declaredBarrier.filter()));
         return resultBarriers;
     }
 
     @Override
-    public Collection<Object> visit(FilterRespectedBarrier respectsBarrier) {
-        return of(respectsBarrier.filter());
+    public Collection<Object> visit(FilterRespectedBarrier respectedBarrier) {
+        return of(respectedBarrier.filter());
     }
 
     @Override

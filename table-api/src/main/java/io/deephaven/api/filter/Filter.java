@@ -277,9 +277,9 @@ public interface Filter extends Expression, ConcurrencyControl<Filter> {
 
         T visit(FilterSerial serial);
 
-        T visit(FilterDeclaredBarrier barrier);
+        T visit(FilterDeclaredBarrier declaredBarrier);
 
-        T visit(FilterRespectedBarrier respectsBarrier);
+        T visit(FilterRespectedBarrier respectedBarrier);
 
         T visit(Function function);
 

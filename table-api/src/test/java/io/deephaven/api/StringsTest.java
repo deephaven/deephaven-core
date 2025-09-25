@@ -116,13 +116,13 @@ public class StringsTest {
         }
 
         @Override
-        public Void visit(FilterDeclaredBarrier barrier) {
+        public Void visit(FilterDeclaredBarrier declaredBarrier) {
             ensureExplicitStringOf(FilterDeclaredBarrier.class);
             return null;
         }
 
         @Override
-        public Void visit(FilterRespectedBarrier respectsBarrier) {
+        public Void visit(FilterRespectedBarrier respectedBarrier) {
             ensureExplicitStringOf(FilterRespectedBarrier.class);
             return null;
         }
