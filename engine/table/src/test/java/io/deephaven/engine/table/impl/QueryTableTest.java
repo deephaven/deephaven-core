@@ -714,6 +714,43 @@ public class QueryTableTest extends QueryTableTestBase {
         }
     }
 
+    public void testColumnRenameCollision() {
+        // Create a test table with a String column and an array column
+        final Table testTable = TableTools.newTable(
+                TableTools.stringCol("ColumnA", "A", "B", "C"),
+                TableTools.intCol("ColumnB", 1, 2, 3),
+                TableTools.intCol("ColumnC", 10, 20, 30));
+
+        Table result;
+
+        result = testTable.renameColumns("ColumnA=ColumnB");
+        assertEquals(2, result.numColumns());
+        // Verify column names and datatypes
+        assertEquals(int.class, result.getColumnSource("ColumnA").getType());
+        assertEquals(int.class, result.getColumnSource("ColumnC").getType());
+
+        result = testTable.where("ColumnA=`A`").renameColumns("ColumnA=ColumnB");
+        assertEquals(2, result.numColumns());
+        // Verify column names and datatypes
+        assertEquals(int.class, result.getColumnSource("ColumnA").getType());
+        assertEquals(int.class, result.getColumnSource("ColumnC").getType());
+
+        // Repeat with refreshing
+        testTable.setRefreshing(true);
+
+        result = testTable.renameColumns("ColumnA=ColumnB");
+        assertEquals(2, result.numColumns());
+        // Verify column names and datatypes
+        assertEquals(int.class, result.getColumnSource("ColumnA").getType());
+        assertEquals(int.class, result.getColumnSource("ColumnC").getType());
+
+        result = testTable.where("ColumnA=`A`").renameColumns("ColumnA=ColumnB");
+        assertEquals(2, result.numColumns());
+        // Verify column names and datatypes
+        assertEquals(int.class, result.getColumnSource("ColumnA").getType());
+        assertEquals(int.class, result.getColumnSource("ColumnC").getType());
+    }
+
     public void testMoveColumnsUp() {
         final Table table = emptyTable(1).update("A = 1", "B = 2", "C = 3", "D = 4", "E = 5");
 
@@ -3456,43 +3493,6 @@ public class QueryTableTest extends QueryTableTestBase {
         assertEquals(
                 "Cannot convert ColumnSource componentType of type java.lang.String to java.lang.Integer (for [Ljava.lang.String; / [Ljava.lang.Object;)",
                 castExceptionWithCompNoColName.getMessage());
-    }
-
-    public void testColumnRenameCollision() {
-        // Create a test table with a String column and an array column
-        final Table testTable = TableTools.newTable(
-                TableTools.stringCol("ColumnA", "A", "B", "C"),
-                TableTools.intCol("ColumnB", 1, 2, 3),
-                TableTools.intCol("ColumnC", 10, 20, 30));
-
-        Table result;
-
-        result = testTable.renameColumns("ColumnA=ColumnB");
-        assertEquals(2, result.numColumns());
-        // Verify column names and datatypes
-        assertEquals(int.class, result.getColumnSource("ColumnA").getType());
-        assertEquals(int.class, result.getColumnSource("ColumnC").getType());
-
-        result = testTable.where("ColumnA=`A`").renameColumns("ColumnA=ColumnB");
-        assertEquals(2, result.numColumns());
-        // Verify column names and datatypes
-        assertEquals(int.class, result.getColumnSource("ColumnA").getType());
-        assertEquals(int.class, result.getColumnSource("ColumnC").getType());
-
-        // Repeat with refreshing
-        testTable.setRefreshing(true);
-
-        result = testTable.renameColumns("ColumnA=ColumnB");
-        assertEquals(2, result.numColumns());
-        // Verify column names and datatypes
-        assertEquals(int.class, result.getColumnSource("ColumnA").getType());
-        assertEquals(int.class, result.getColumnSource("ColumnC").getType());
-
-        result = testTable.where("ColumnA=`A`").renameColumns("ColumnA=ColumnB");
-        assertEquals(2, result.numColumns());
-        // Verify column names and datatypes
-        assertEquals(int.class, result.getColumnSource("ColumnA").getType());
-        assertEquals(int.class, result.getColumnSource("ColumnC").getType());
     }
 
     private static final class DummyUpdateGraph implements UpdateGraph {
