@@ -51,9 +51,9 @@ public interface ConcurrencyControl<T> {
     /**
      * Designates the filter/selectable as declaring the specified barrier object(s).
      * <p>
-     * A barrier does not affect concurrency but imposes an ordering constraint for the filters or selectables that respect
-     * the same barrier. When a filter/selectable is marked as respecting a barrier object, it indicates that the
-     * respecting filter/selectable will be executed entirely after the filter/selectable declaring the barrier.
+     * A barrier does not affect concurrency but imposes an ordering constraint for the filters or selectables that
+     * respect the same barrier. When a filter/selectable is marked as respecting a barrier object, it indicates that
+     * the respecting filter/selectable will be executed entirely after the filter/selectable declaring the barrier.
      * <p>
      * Each barrier must be unique and declared by at most one filter. Object {@link Object#equals(Object) equals} and
      * {@link Object#hashCode()} hashCode will be used to determine uniqueness and identification of barrier objects.
