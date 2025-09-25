@@ -6,6 +6,7 @@ package io.deephaven.server.barrage;
 import dagger.BindsInstance;
 import dagger.Component;
 import io.deephaven.api.ColumnName;
+import io.deephaven.api.RawString;
 import io.deephaven.api.Selectable;
 import io.deephaven.base.Pair;
 import io.deephaven.base.verify.Assert;
@@ -19,6 +20,9 @@ import io.deephaven.engine.table.impl.InstrumentedTableUpdateListener;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.table.impl.TableUpdateValidator;
+import io.deephaven.engine.table.impl.select.FunctionalColumn;
+import io.deephaven.engine.table.impl.select.SelectColumnFactory;
+import io.deephaven.engine.table.impl.select.WhereFilterFactory;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
 import io.deephaven.engine.table.vectors.IntVectorColumnWrapper;
 import io.deephaven.engine.testutil.*;
@@ -40,6 +44,7 @@ import io.deephaven.server.util.TestControlledScheduler;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.annotations.ReferentialIntegrity;
+import io.deephaven.util.annotations.ScriptApi;
 import io.deephaven.util.mutable.MutableInt;
 import io.deephaven.vector.IntVector;
 import io.grpc.stub.StreamObserver;
@@ -55,10 +60,13 @@ import java.io.StringWriter;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+import java.util.function.UnaryOperator;
+import java.util.stream.Collectors;
 
 import static io.deephaven.engine.table.impl.remote.ConstructSnapshot.SNAPSHOT_CHUNK_SIZE;
 import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.engine.util.TableTools.col;
+import static io.deephaven.engine.util.TableTools.emptyTable;
 
 @Category(OutOfBandTest.class)
 public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
@@ -160,6 +168,8 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
         private final Queue<BarrageMessage> commandQueue = new ArrayDeque<>();
         private final DummyObserver dummyObserver;
 
+        private UnaryOperator<QueryTable> transform = null;
+
         // The replicated table's TableUpdateValidator will be confused if the table is a viewport. Instead we rely on
         // comparing the producer table to the consumer table to validate contents are correct.
         RemoteClient(final RowSet viewport, final BitSet subscribedColumns,
@@ -216,6 +226,10 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
             }
         }
 
+        public void setTransform(UnaryOperator<QueryTable> transform) {
+            this.transform = transform;
+        }
+
         public void doSubscribe() {
             subscribed = true;
             final BarrageSubscriptionOptions options = BarrageSubscriptionOptions.builder()
@@ -244,6 +258,11 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
                 }
                 expected = (QueryTable) expected.view(columns);
                 toCheck = (QueryTable) toCheck.view(columns);
+            }
+
+            if (transform != null) {
+                expected = transform.apply(expected);
+                toCheck = transform.apply(toCheck);
             }
 
             // Data should be identical and in-order.
@@ -1487,6 +1506,65 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
         remoteNugget.flushClientEvents();
         updateGraph.runWithinUnitTestCycle(updateSourceCombiner::run);
         remoteNugget.validate("end-of-test tables should match");
+    }
+
+    public void testNestedArrays() {
+        // Two cases that aren't expected to work in the java client, since it doesn't have enough type info:
+        // * triply nested groupBy(), where we have ObjectVector of ObjectVector of some vector
+        // * double nested groupBy() where the inner type is not a primitive
+        final Table queryTable = TableTools.emptyTable(1)
+                // .update("triplevector_int=i", "triplevector_string=``").groupBy()
+                .update("doublevector_int=i"/* , "doublevector_string=``" */).groupBy()
+                .update("vector_int=i", "vector_string=``").groupBy()
+                .update("array_int=new int[]{i}", "doublearray_int=new int[][] {{i}}",
+                        "array_string=new String[]{``}",
+                        "doublearray_string=new String[][]{{``}}");
+        queryTable.setRefreshing(true);
+        final BitSet allColumns = new BitSet(queryTable.getColumnSourceMap().size());
+        for (int i = 0; i < queryTable.getColumnSourceMap().size(); i++) {
+            allColumns.set(i);
+        }
+        final RemoteNugget remoteNugget = new RemoteNugget(() -> queryTable);
+
+        final RemoteClient remoteClient =
+                remoteNugget.newClient(RowSetFactory.fromRange(0, 0), allColumns, "snapshot");
+        remoteClient.setTransform(t -> {
+            // Based on the column type, if we see an array turn it into a string. While this seems to mask the types
+            // that we're getting over the wire, it doesn't function correctly without those types having arrived, so we
+            // should still be correctly validating the table.
+            return (QueryTable) t.updateView(t.getDefinition().getColumnNameMap().entrySet().stream()
+                    .map(entry -> {
+                        String colName = entry.getKey();
+                        Class<?> type = entry.getValue().getDataType();
+                        if (type.isArray()) {
+                            return Selectable.of(
+                                    ColumnName.of(colName),
+                                    RawString
+                                            .of("io.deephaven.server.barrage.BarrageMessageRoundTripTest.arrayToString("
+                                                    + colName + ")"));
+                        }
+                        return null;
+                    })
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toList()));
+        });
+        // Obtain snapshot of original viewport.
+        flushProducerTable();
+        remoteNugget.flushClientEvents();
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(updateSourceCombiner::run);
+        remoteNugget.validate("snapshot");
+    }
+
+    // Helpers for testNestedArrays
+    @ScriptApi
+    public static String arrayToString(int[] arr) {
+        return Arrays.toString(arr);
+    }
+
+    @ScriptApi
+    public static String arrayToString(Object[] arr) {
+        return Arrays.deepToString(arr);
     }
 
     public static class DummyObserver implements StreamObserver<BarrageMessageWriter.MessageView> {
