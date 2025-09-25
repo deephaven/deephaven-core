@@ -510,6 +510,12 @@ public class QueryTableSelectBarrierTest {
         assertFalse(sc4.isStateless());
         assertEquals(Set.of(a, b), Set.of(sc4.declaredBarriers()));
         assertEquals(Set.of(c, d), Set.of(sc4.respectedBarriers()));
+
+        // deduplication
+        assertEquals(Set.of(sc4.declaredBarriers()), Set.of(sc4.withDeclaredBarriers(b, b).declaredBarriers()));
+        assertEquals(sc4.declaredBarriers().length, sc4.withDeclaredBarriers(b, b).declaredBarriers().length);
+        assertEquals(Set.of(sc4.respectedBarriers()), Set.of(sc4.withRespectedBarriers(c, c).respectedBarriers()));
+        assertEquals(sc4.respectedBarriers().length, sc4.withRespectedBarriers(c, c).respectedBarriers().length);
     }
 
     @Test
@@ -552,6 +558,12 @@ public class QueryTableSelectBarrierTest {
         assertTrue(ss2.isSerial());
         assertTrue(ss2.withSerial().isSerial());
         assertTrue(ss2.withSerial().withRespectedBarriers(1).withDeclaredBarriers(2).isSerial());
+
+        // deduplication
+        assertEquals(Set.of(ss2.declaredBarriers()), Set.of(ss2.withDeclaredBarriers(b, b).declaredBarriers()));
+        assertEquals(ss2.declaredBarriers().length, ss2.withDeclaredBarriers(b, b).declaredBarriers().length);
+        assertEquals(Set.of(ss2.respectedBarriers()), Set.of(ss2.withRespectedBarriers(c, c).respectedBarriers()));
+        assertEquals(ss2.respectedBarriers().length, ss2.withRespectedBarriers(c, c).respectedBarriers().length);
     }
 
     private static void checkIndividualSums(int size, Table u) {
