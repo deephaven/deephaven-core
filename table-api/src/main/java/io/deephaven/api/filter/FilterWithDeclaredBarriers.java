@@ -32,7 +32,7 @@ public abstract class FilterWithDeclaredBarriers extends FilterBase implements F
      * @return the barrier objects
      */
     @Parameter
-    public abstract Object[] barriers();
+    public abstract Object[] declaredBarriers();
 
     /**
      * Creates a new FilterBarrier wrapper for the given filter and barrier.
@@ -52,7 +52,7 @@ public abstract class FilterWithDeclaredBarriers extends FilterBase implements F
      */
     @Override
     public Filter invert() {
-        return FilterWithDeclaredBarriers.of(filter().invert(), barriers());
+        return FilterWithDeclaredBarriers.of(filter().invert(), declaredBarriers());
     }
 
     @Override

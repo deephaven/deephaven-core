@@ -98,7 +98,7 @@ public interface WhereFilter extends Filter {
 
     @Override
     default WhereFilter withRespectedBarriers(Object... respectedBarriers) {
-        return WhereFilterWithRespectedBarriersImpls.of(this, respectedBarriers);
+        return WhereFilterWithRespectedBarriersImpl.of(this, respectedBarriers);
     }
 
     @Override
@@ -377,8 +377,8 @@ public interface WhereFilter extends Filter {
                 return visitWhereFilter((WhereFilterSerialImpl) filter);
             } else if (filter instanceof WhereFilterWithDeclaredBarriersImpl) {
                 return visitWhereFilter((WhereFilterWithDeclaredBarriersImpl) filter);
-            } else if (filter instanceof WhereFilterWithRespectedBarriersImpls) {
-                return visitWhereFilter((WhereFilterWithRespectedBarriersImpls) filter);
+            } else if (filter instanceof WhereFilterWithRespectedBarriersImpl) {
+                return visitWhereFilter((WhereFilterWithRespectedBarriersImpl) filter);
             } else if (filter instanceof DisjunctiveFilter) {
                 return visitWhereFilter((DisjunctiveFilter) filter);
             } else if (filter instanceof ConjunctiveFilter) {
@@ -393,7 +393,7 @@ public interface WhereFilter extends Filter {
 
         T visitWhereFilter(WhereFilterWithDeclaredBarriersImpl filter);
 
-        T visitWhereFilter(WhereFilterWithRespectedBarriersImpls filter);
+        T visitWhereFilter(WhereFilterWithRespectedBarriersImpl filter);
 
         T visitWhereFilter(DisjunctiveFilter filter);
 

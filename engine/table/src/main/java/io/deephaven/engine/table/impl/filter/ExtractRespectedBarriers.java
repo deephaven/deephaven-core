@@ -12,7 +12,7 @@ import io.deephaven.engine.table.impl.select.DisjunctiveFilter;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.select.WhereFilterWithDeclaredBarriersImpl;
 import io.deephaven.engine.table.impl.select.WhereFilterInvertedImpl;
-import io.deephaven.engine.table.impl.select.WhereFilterWithRespectedBarriersImpls;
+import io.deephaven.engine.table.impl.select.WhereFilterWithRespectedBarriersImpl;
 import io.deephaven.engine.table.impl.select.WhereFilterSerialImpl;
 
 import java.util.Arrays;
@@ -135,7 +135,7 @@ public enum ExtractRespectedBarriers
     }
 
     @Override
-    public Collection<Object> visitWhereFilter(WhereFilterWithRespectedBarriersImpls filter) {
+    public Collection<Object> visitWhereFilter(WhereFilterWithRespectedBarriersImpl filter) {
         final Set<Object> barriers = new HashSet<>(Arrays.asList(filter.respectedBarriers()));
         barriers.addAll(of(filter.getWrappedFilter()));
         return barriers;

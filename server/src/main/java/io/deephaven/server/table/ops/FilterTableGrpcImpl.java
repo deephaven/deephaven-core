@@ -99,7 +99,7 @@ public class FilterTableGrpcImpl extends GrpcTableOperation<FilterTableRequest> 
             }
 
             @Override
-            public Void visitWhereFilter(WhereFilterWithRespectedBarriersImpls filter) {
+            public Void visitWhereFilter(WhereFilterWithRespectedBarriersImpl filter) {
                 visitWhereFilter(filter.getWrappedFilter());
                 return null;
             }

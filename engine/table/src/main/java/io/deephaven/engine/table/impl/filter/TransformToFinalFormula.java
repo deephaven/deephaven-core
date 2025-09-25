@@ -10,7 +10,7 @@ import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.select.WhereFilterWithDeclaredBarriersImpl;
 import io.deephaven.engine.table.impl.select.WhereFilterFactory;
 import io.deephaven.engine.table.impl.select.WhereFilterInvertedImpl;
-import io.deephaven.engine.table.impl.select.WhereFilterWithRespectedBarriersImpls;
+import io.deephaven.engine.table.impl.select.WhereFilterWithRespectedBarriersImpl;
 import io.deephaven.engine.table.impl.select.WhereFilterSerialImpl;
 
 public class TransformToFinalFormula implements WhereFilter.Visitor<WhereFilter> {
@@ -47,7 +47,7 @@ public class TransformToFinalFormula implements WhereFilter.Visitor<WhereFilter>
     }
 
     @Override
-    public WhereFilter visitWhereFilter(final WhereFilterWithRespectedBarriersImpls filter) {
+    public WhereFilter visitWhereFilter(final WhereFilterWithRespectedBarriersImpl filter) {
         return visitWhereFilter(filter.getWrappedFilter()).withRespectedBarriers(filter.respectedBarriers());
     }
 

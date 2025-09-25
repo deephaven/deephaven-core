@@ -260,11 +260,11 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
                 }
 
                 @Override
-                public WhereFilter visitWhereFilter(WhereFilterWithRespectedBarriersImpls filter) {
+                public WhereFilter visitWhereFilter(WhereFilterWithRespectedBarriersImpl filter) {
                     final WhereFilter innerPreFilter = filter.getWrappedFilter().walkWhereFilter(this);
                     return innerPreFilter == null
                             ? null
-                            : WhereFilterWithRespectedBarriersImpls.of(innerPreFilter, filter.respectedBarriers());
+                            : WhereFilterWithRespectedBarriersImpl.of(innerPreFilter, filter.respectedBarriers());
                 }
 
                 @Override

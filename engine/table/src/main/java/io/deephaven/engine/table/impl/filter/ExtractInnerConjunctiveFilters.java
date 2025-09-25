@@ -8,7 +8,7 @@ import io.deephaven.engine.table.impl.select.DisjunctiveFilter;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.select.WhereFilterWithDeclaredBarriersImpl;
 import io.deephaven.engine.table.impl.select.WhereFilterInvertedImpl;
-import io.deephaven.engine.table.impl.select.WhereFilterWithRespectedBarriersImpls;
+import io.deephaven.engine.table.impl.select.WhereFilterWithRespectedBarriersImpl;
 import io.deephaven.engine.table.impl.select.WhereFilterSerialImpl;
 
 import java.util.List;
@@ -46,9 +46,9 @@ public class ExtractInnerConjunctiveFilters implements WhereFilter.Visitor<List<
     }
 
     @Override
-    public List<WhereFilter> visitWhereFilter(final WhereFilterWithRespectedBarriersImpls filter) {
+    public List<WhereFilter> visitWhereFilter(final WhereFilterWithRespectedBarriersImpl filter) {
         return visitWhereFilter(filter.getWrappedFilter()).stream()
-                .map(wf -> WhereFilterWithRespectedBarriersImpls.of(wf, filter.respectedBarriers()))
+                .map(wf -> WhereFilterWithRespectedBarriersImpl.of(wf, filter.respectedBarriers()))
                 .collect(Collectors.toList());
     }
 

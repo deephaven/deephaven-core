@@ -80,7 +80,7 @@ enum FilterSimplifier implements Visitor<Filter> {
 
     @Override
     public Filter visit(FilterWithDeclaredBarriers declaredBarrier) {
-        return declaredBarrier.filter().walk(this).withDeclaredBarriers(declaredBarrier.barriers());
+        return declaredBarrier.filter().walk(this).withDeclaredBarriers(declaredBarrier.declaredBarriers());
     }
 
     @Override

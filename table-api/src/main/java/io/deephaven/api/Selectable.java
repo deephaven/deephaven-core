@@ -91,6 +91,9 @@ public interface Selectable extends ConcurrencyControl<Selectable> {
 
     @Override
     default Selectable withSerial() {
+        if (isSerial() != null && isSerial()) {
+            return this;
+        }
         return new SelectableWithSerial(this);
     }
 

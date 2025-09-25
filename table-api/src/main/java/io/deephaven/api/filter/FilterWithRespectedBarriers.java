@@ -35,7 +35,7 @@ public abstract class FilterWithRespectedBarriers extends FilterBase implements 
     public abstract Object[] respectedBarriers();
 
     /**
-     * Creates a new FilterRespectedBarrier wrapper for the given filter and the provided barriers.
+     * Creates a new FilterWithRespectedBarriers wrapper for the given filter and the provided barriers.
      *
      * @param filter the filter to wrap
      * @param barriers the barrier objects that must be respected

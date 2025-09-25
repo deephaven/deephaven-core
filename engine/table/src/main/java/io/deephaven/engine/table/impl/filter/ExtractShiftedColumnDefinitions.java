@@ -10,7 +10,7 @@ import io.deephaven.engine.table.impl.select.ShiftedColumnDefinition;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.select.WhereFilterWithDeclaredBarriersImpl;
 import io.deephaven.engine.table.impl.select.WhereFilterInvertedImpl;
-import io.deephaven.engine.table.impl.select.WhereFilterWithRespectedBarriersImpls;
+import io.deephaven.engine.table.impl.select.WhereFilterWithRespectedBarriersImpl;
 import io.deephaven.engine.table.impl.select.WhereFilterSerialImpl;
 
 import java.util.HashSet;
@@ -51,7 +51,7 @@ public class ExtractShiftedColumnDefinitions
     }
 
     @Override
-    public Set<ShiftedColumnDefinition> visitWhereFilter(final WhereFilterWithRespectedBarriersImpls filter) {
+    public Set<ShiftedColumnDefinition> visitWhereFilter(final WhereFilterWithRespectedBarriersImpl filter) {
         return visitWhereFilter(filter.getWrappedFilter());
     }
 
