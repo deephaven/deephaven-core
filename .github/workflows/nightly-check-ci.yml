@@ -44,7 +44,7 @@ jobs:
     steps:
      - name: Free Disk Space
        uses: endersonmenezes/free-disk-space@v2
-        with:
+       with:
           remove_android: true
           remove_haskell: true
           remove_packages: "azure-cli google-cloud-cli microsoft-edge-stable google-chrome-stable firefox postgresql* temurin-* *llvm* mysql* dotnet-sdk-*"
