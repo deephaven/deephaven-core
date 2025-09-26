@@ -11,28 +11,28 @@ This guide discusses how to control various `QueryTable` features that affect yo
 
 The `QueryTable` has the following user-configurable properties:
 
-| Category                                                                          | Property                                                 | Default    |
-| --------------------------------------------------------------------------------- | -------------------------------------------------------- | ---------- |
-| [Memoization](#memoization)                                                       | `QueryTable.memoizeResults`                              | true       |
-| [Memoization](#memoization)                                                       | `QueryTable.redirectUpdate`                              | false      |
-| [Memoization](#memoization)                                                       | `QueryTable.redirectSelect`                              | false      |
-| [Memoization](#memoization)                                                       | `QueryTable.maximumStaticSelectMemoryOverhead`           | 1.1        |
-| [DataIndex](#dataindex)                                                           | `QueryTable.useDataIndexForWhere`                        | true       |
-| [DataIndex](#dataindex)                                                           | `QueryTable.useDataIndexForAggregation`                  | true       |
-| [DataIndex](#dataindex)                                                           | `QueryTable.useDataIndexForJoins`                        | true       |
-| [Pushdown predicates with where](#pushdown-predicates-with-where)                 | `QueryTable.disableWherePushdownDataIndex`               | false      |
-| [Pushdown predicates with where](#pushdown-predicates-with-where)                 | `QueryTable.disableWherePushdownParquetRowGroupMetadata` | false      |
-| [Parallel processing with where](#parallel-processing-with-where)                 | `QueryTable.disableParallelWhere`                        | false      |
-| [Parallel processing with where](#parallel-processing-with-where)                 | `QueryTable.parallelWhereRowsPerSegment`                 | `1 << 16`  |
-| [Parallel processing with where](#parallel-processing-with-where)                 | `QueryTable.parallelWhereSegments`                       | -1         |
-| [Parallel processing with where](#parallel-processing-with-where)                 | `QueryTable.forceParallelWhere` (test-focused)           | false      |
-| [Parallel processing with select](#parallel-processing-with-select)               | `QueryTable.enableParallelSelectAndUpdate`               | true       |
-| [Parallel processing with select](#parallel-processing-with-select)               | `QueryTable.minimumParallelSelectRows`                   | `1L << 22` |
-| [Parallel processing with select](#parallel-processing-with-select)               | `QueryTable.forceParallelSelectAndUpdate` (test-focused) | false      |
-| [Parallel snapshotting](#parallel-snapshotting)                                   | `QueryTable.enableParallelSnapshot`                      | true       |
-| [Parallel snapshotting](#parallel-snapshotting)                                   | `QueryTable.minimumParallelSnapshotRows`                 | `1L << 20` |
-| [Stateless filters by default (experimental)](#stateless-by-default-experimental) | `QueryTable.statelessFiltersByDefault`                   | false      |
-| [Stateless select by default (experimental)](#stateless-by-default-experimental)  | `QueryTable.statelessSelectByDefault`                    | false      |
+| Category                                                            | Property                                                 | Default    |
+| ------------------------------------------------------------------- | -------------------------------------------------------- | ---------- |
+| [Memoization](#memoization)                                         | `QueryTable.memoizeResults`                              | true       |
+| [Memoization](#memoization)                                         | `QueryTable.redirectUpdate`                              | false      |
+| [Memoization](#memoization)                                         | `QueryTable.redirectSelect`                              | false      |
+| [Memoization](#memoization)                                         | `QueryTable.maximumStaticSelectMemoryOverhead`           | 1.1        |
+| [DataIndex](#dataindex)                                             | `QueryTable.useDataIndexForWhere`                        | true       |
+| [DataIndex](#dataindex)                                             | `QueryTable.useDataIndexForAggregation`                  | true       |
+| [DataIndex](#dataindex)                                             | `QueryTable.useDataIndexForJoins`                        | true       |
+| [Pushdown predicates with where](#pushdown-predicates-with-where)   | `QueryTable.disableWherePushdownDataIndex`               | false      |
+| [Pushdown predicates with where](#pushdown-predicates-with-where)   | `QueryTable.disableWherePushdownParquetRowGroupMetadata` | false      |
+| [Parallel processing with where](#parallel-processing-with-where)   | `QueryTable.disableParallelWhere`                        | false      |
+| [Parallel processing with where](#parallel-processing-with-where)   | `QueryTable.parallelWhereRowsPerSegment`                 | `1 << 16`  |
+| [Parallel processing with where](#parallel-processing-with-where)   | `QueryTable.parallelWhereSegments`                       | -1         |
+| [Parallel processing with where](#parallel-processing-with-where)   | `QueryTable.forceParallelWhere` (test-focused)           | false      |
+| [Parallel processing with select](#parallel-processing-with-select) | `QueryTable.enableParallelSelectAndUpdate`               | true       |
+| [Parallel processing with select](#parallel-processing-with-select) | `QueryTable.minimumParallelSelectRows`                   | `1L << 22` |
+| [Parallel processing with select](#parallel-processing-with-select) | `QueryTable.forceParallelSelectAndUpdate` (test-focused) | false      |
+| [Parallel snapshotting](#parallel-snapshotting)                     | `QueryTable.enableParallelSnapshot`                      | true       |
+| [Parallel snapshotting](#parallel-snapshotting)                     | `QueryTable.minimumParallelSnapshotRows`                 | `1L << 20` |
+| [Stateless filters by default](#stateless-by-default)               | `QueryTable.statelessFiltersByDefault`                   | false      |
+| [Stateless select by default](#stateless-by-default)                | `QueryTable.statelessSelectByDefault`                    | false      |
 
 Each property is described below, roughly categorized by similarity.
 
