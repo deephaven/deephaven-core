@@ -42,14 +42,18 @@ jobs:
       COVER: ${{ (github.event_name == 'schedule' || startsWith(github.ref_name, 'coverage/')) && matrix.test-jvm-version == '21' && matrix.jetty-version == '12' }}
       JETTY_FLAG: ${{ matrix.jetty-version == '11' && '-Pjetty11' || '' }}
     steps:
-      - name: Delete unused tools
-        run: |
-          rm -rf /usr/share/dotnet /opt/ghc /opt/hostedtoolcache/CodeQL
+     - name: Free Disk Space
+       uses: endersonmenezes/free-disk-space@v2
+        with:
+          remove_android: true
+          remove_haskell: true
+          remove_packages: "azure-cli google-cloud-cli microsoft-edge-stable google-chrome-stable firefox postgresql* temurin-* *llvm* mysql* dotnet-sdk-*"
+          remove_packages_one_command: true
+          remove_folders: "/usr/share/swift /usr/share/miniconda /usr/share/az* /usr/local/lib/node_modules /usr/local/share/chromium /usr/local/share/powershell /usr/local/julia /usr/local/aws-cli /usr/local/aws-sam-cli /usr/share/gradle"
+          testing: false
 
-      # If we need yet more space, we can do this; but it is slow (4minutes)
-      #- name: Delete android
-      #  run: |
-      #    rm -rf /usr/local/lib/android || true
+      - name: Starting available disk space
+        run: df -h
 
       - name: Checkout
         uses: actions/checkout@v5
