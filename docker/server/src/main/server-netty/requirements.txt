@@ -9,12 +9,14 @@ jedi==0.19.1
 jpy==1.1.0
 llvmlite==0.45.0
 numba==0.62.0
-numpy==2.2.6
+numpy==2.3.3
 pandas==2.3.2
 parso==0.8.5
 pyarrow==21.0.0
 python-dateutil==2.9.0.post0
 pytz==2025.2
+setuptools==80.9.0
 six==1.17.0
 typing_extensions==4.15.0
 tzdata==2025.2
+wheel==0.45.1
