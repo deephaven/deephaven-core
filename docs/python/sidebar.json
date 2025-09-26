@@ -2664,6 +2664,10 @@
                     "path": "reference/community-questions/iso-week-number.md"
                   },
                   {
+                    "label": "How do row keys and positional indices behave during table operations?",
+                    "path": "reference/community-questions/shifts.md"
+                  },
+                  {
                     "label": "Why do queries run faster the second time they are run?",
                     "path": "reference/community-questions/query-memoization.md"
                   },
