@@ -42,6 +42,15 @@ jobs:
       COVER: ${{ (github.event_name == 'schedule' || startsWith(github.ref_name, 'coverage/')) && matrix.test-jvm-version == '21' && matrix.jetty-version == '12' }}
       JETTY_FLAG: ${{ matrix.jetty-version == '11' && '-Pjetty11' || '' }}
     steps:
+      - name: Delete unused tools
+        run: |
+          rm -rf /usr/share/dotnet /opt/ghc /opt/hostedtoolcache/CodeQL
+
+      # If we need yet more space, we can do this; but it is slow (4minutes)
+      #- name: Delete android
+      #  run: |
+      #    rm -rf /usr/local/lib/android || true
+
       - name: Checkout
         uses: actions/checkout@v5
         with:
@@ -89,6 +98,16 @@ jobs:
       - name: Run gradle ${{ matrix.gradle-task }} on java ${{ matrix.test-jvm-version }} with coverage=${{ env.COVER }}
         run: ./gradlew --scan --continue --rerun-tasks ${{ matrix.gradle-task }} -PtestRuntimeVersion=${{ matrix.test-jvm-version }} -Pcoverage.enabled=$COVER $JETTY_FLAG
         
+      - name: Run df -h after build
+        run: |
+          df -h
+
+      - name: Run du on build directories
+        run: find . -name build |xargs du -hs |sort -h | tail -n 20
+
+      - name: List docker images
+        run: docker image ls -a
+
       - name: Upload Coverage Results
         if: ${{ env.COVER == 'true' }}
         uses: actions/upload-artifact@v4
