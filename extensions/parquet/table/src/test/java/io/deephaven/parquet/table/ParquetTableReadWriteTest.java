@@ -4569,8 +4569,8 @@ public final class ParquetTableReadWriteTest {
     }
 
     /**
-    This test is similar to {@code QueryTableTest#testRenameColumnCollision} but tests
-     {@link io.deephaven.engine.table.impl.RedefinableTable} column renaming functionality.
+     * This test is similar to {@code QueryTableTest#testRenameColumnCollision} but tests
+     * {@link io.deephaven.engine.table.impl.RedefinableTable} column renaming functionality.
      */
     @Test
     public void testRenameColumnCollision() {
