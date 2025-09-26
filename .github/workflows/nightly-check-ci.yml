@@ -42,9 +42,9 @@ jobs:
       COVER: ${{ (github.event_name == 'schedule' || startsWith(github.ref_name, 'coverage/')) && matrix.test-jvm-version == '21' && matrix.jetty-version == '12' }}
       JETTY_FLAG: ${{ matrix.jetty-version == '11' && '-Pjetty11' || '' }}
     steps:
-     - name: Free Disk Space
-       uses: endersonmenezes/free-disk-space@v2
-       with:
+      - name: Free Disk Space
+        uses: endersonmenezes/free-disk-space@v2
+        with:
           remove_android: true
           remove_haskell: true
           remove_packages: "azure-cli google-cloud-cli microsoft-edge-stable google-chrome-stable firefox postgresql* temurin-* *llvm* mysql* dotnet-sdk-*"
