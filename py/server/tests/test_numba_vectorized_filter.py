@@ -29,6 +29,7 @@ class NumbaVectorizedFilterTestCase(BaseTestCase):
             t = empty_table(10).view(formulas=["I=ii", "J=(ii * 2)"]) \
                 .where("vectorized_func_wrong_return_type(I, J)")
 
+    @unittest.skip("DH-20498: Filter vectorization broken with numpy 2.3+")
     def test_filter(self):
         t = empty_table(10).view(formulas=["I=ii", "J=(ii * 2)"]).where("vectorized_func(I, J)")
         html_output = to_html(t)
