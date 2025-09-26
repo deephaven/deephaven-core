@@ -1117,9 +1117,18 @@ public class BarrageUtil {
 
         final FieldType fieldType = arrowFieldTypeFor(type, metadata, columnAsList);
         if (fieldType.getType().isComplex()) {
-            if (type.isArray() || Vector.class.isAssignableFrom(type)) {
+            if (type.isArray()) {
+                Assert.eq(componentType, "componentType", type.getComponentType(), "type.getComponentType()");
                 children = Collections.singletonList(arrowFieldFor(
-                        "", componentType, componentType == null ? null : componentType.getComponentType(),
+                        "", componentType, componentType.getComponentType(),
+                        Collections.emptyMap(),
+                        false));
+            } else if (Vector.class.isAssignableFrom(type)) {
+                Class<?> vectorComponentType =
+                        componentType == null ? VectorExpansionKernel.getComponentType(type, null) : componentType;
+                children = Collections.singletonList(arrowFieldFor(
+                        "", vectorComponentType,
+                        vectorComponentType == null ? null : vectorComponentType.getComponentType(),
                         Collections.emptyMap(),
                         false));
             } else {
@@ -1184,37 +1193,39 @@ public class BarrageUtil {
             case Double:
                 return Types.MinorType.FLOAT8.getType();
             case Object:
-                if (type.isArray()) {
-                    if (type.getComponentType() == byte.class && !columnAsList) {
+                if (type != null) {
+                    if (type.isArray()) {
+                        if (type.getComponentType() == byte.class && !columnAsList) {
+                            return Types.MinorType.VARBINARY.getType();
+                        }
+                        return Types.MinorType.LIST.getType();
+                    }
+                    if (Vector.class.isAssignableFrom(type)) {
+                        return Types.MinorType.LIST.getType();
+                    }
+                    if (type == LocalDate.class) {
+                        return Types.MinorType.DATEMILLI.getType();
+                    }
+                    if (type == LocalTime.class) {
+                        return Types.MinorType.TIMENANO.getType();
+                    }
+                    if (type == BigDecimal.class
+                            || type == BigInteger.class
+                            || type == Schema.class) {
                         return Types.MinorType.VARBINARY.getType();
                     }
-                    return Types.MinorType.LIST.getType();
-                }
-                if (Vector.class.isAssignableFrom(type)) {
-                    return Types.MinorType.LIST.getType();
-                }
-                if (type == LocalDate.class) {
-                    return Types.MinorType.DATEMILLI.getType();
-                }
-                if (type == LocalTime.class) {
-                    return Types.MinorType.TIMENANO.getType();
-                }
-                if (type == BigDecimal.class
-                        || type == BigInteger.class
-                        || type == Schema.class) {
-                    return Types.MinorType.VARBINARY.getType();
-                }
-                if (type == Instant.class || type == ZonedDateTime.class) {
-                    return NANO_SINCE_EPOCH_TYPE;
-                }
-                if (type == Duration.class) {
-                    return NANO_DURATION_TYPE;
-                }
-                if (type == Period.class) {
-                    return new ArrowType.Interval(IntervalUnit.YEAR_MONTH);
-                }
-                if (type == PeriodDuration.class) {
-                    return new ArrowType.Interval(IntervalUnit.MONTH_DAY_NANO);
+                    if (type == Instant.class || type == ZonedDateTime.class) {
+                        return NANO_SINCE_EPOCH_TYPE;
+                    }
+                    if (type == Duration.class) {
+                        return NANO_DURATION_TYPE;
+                    }
+                    if (type == Period.class) {
+                        return new ArrowType.Interval(IntervalUnit.YEAR_MONTH);
+                    }
+                    if (type == PeriodDuration.class) {
+                        return new ArrowType.Interval(IntervalUnit.MONTH_DAY_NANO);
+                    }
                 }
 
                 // everything gets converted to a string
