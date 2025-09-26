@@ -67,6 +67,7 @@ final class ColumnWriterImpl implements ColumnWriter {
     private long totalValueCount;
     private DictionaryPageHeader dictionaryPage;
     private final OffsetIndexBuilder offsetIndexBuilder;
+    private final boolean writeStatistics;
 
     private final EncodingStats.Builder encodingStatsBuilder = new EncodingStats.Builder();
 
@@ -76,7 +77,8 @@ final class ColumnWriterImpl implements ColumnWriter {
             final ColumnDescriptor column,
             final CompressorAdapter compressorAdapter,
             final int targetPageSize,
-            final ByteBufferAllocator allocator) {
+            final ByteBufferAllocator allocator,
+            final boolean writeStatistics) {
         this.countingOutput = Objects.requireNonNull(countingOutput);
         this.column = Objects.requireNonNull(column);
         this.compressorAdapter = Objects.requireNonNull(compressorAdapter);
@@ -90,7 +92,8 @@ final class ColumnWriterImpl implements ColumnWriter {
                         getWidthFromMaxInt(column.getMaxRepetitionLevel()), MIN_SLAB_SIZE, targetPageSize, allocator);
         this.owner = owner;
         offsetIndexBuilder = OffsetIndexBuilder.getBuilder();
-        statistics = Statistics.createStats(column.getPrimitiveType());
+        this.writeStatistics = writeStatistics;
+        resetStats();
     }
 
     @Override
@@ -448,7 +451,7 @@ final class ColumnWriterImpl implements ColumnWriter {
 
     @Override
     public void resetStats() {
-        statistics = Statistics.createStats(column.getPrimitiveType());
+        statistics = writeStatistics ? Statistics.createStats(column.getPrimitiveType()) : NullStatistics.INSTANCE;
     }
 
     @Override

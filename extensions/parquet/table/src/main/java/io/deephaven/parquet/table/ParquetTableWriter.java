@@ -400,7 +400,8 @@ public class ParquetTableWriter {
         extraMetaData.put(METADATA_KEY, tableInfoBuilder.build().serializeToJSON());
         return new ParquetFileWriter(dest, destOutputStream, writeInstructions.getTargetPageSize(),
                 new HeapByteBufferAllocator(), mappedSchema.getParquetSchema(),
-                writeInstructions.getCompressionCodecName(), extraMetaData, metadataFileWriter);
+                writeInstructions.getCompressionCodecName(), extraMetaData, metadataFileWriter,
+                writeInstructions.writeRowGroupStatistics());
     }
 
     private static <DATA_TYPE> void writeColumnSource(

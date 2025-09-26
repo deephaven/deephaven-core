@@ -80,8 +80,24 @@ public class ConditionFilter extends AbstractConditionFilter {
         return createConditionFilter(formula, FormulaParserConfiguration.parser);
     }
 
+    public static WhereFilter createStateless(@NotNull String formula) {
+        return new ConditionFilter(formula) {
+            @Override
+            public boolean permitParallelization() {
+                return true;
+            }
+        };
+    }
+
     String getClassBodyStr() {
         return classBody;
+    }
+
+    /**
+     * Get the number of inputs (columns and special variables) used by this filter.
+     */
+    public int getNumInputsUsed() {
+        return usedInputs.size();
     }
 
     public interface FilterKernel<CONTEXT extends FilterKernel.Context> {
