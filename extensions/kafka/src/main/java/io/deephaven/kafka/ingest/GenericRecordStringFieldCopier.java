@@ -29,7 +29,7 @@ public class GenericRecordStringFieldCopier extends GenericRecordFieldCopier {
         for (int ii = 0; ii < length; ++ii) {
             final GenericRecord record = (GenericRecord) inputChunk.get(ii + sourceOffset);
             final Object value = GenericRecordUtil.getPath(record, fieldPath);
-            output.set(ii + destOffset, value == null ? null : Objects.toString(value));
+            output.set(ii + destOffset, value == null ? null : value.toString());
         }
     }
 }
