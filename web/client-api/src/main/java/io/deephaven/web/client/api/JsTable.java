@@ -3,6 +3,7 @@
 //
 package io.deephaven.web.client.api;
 
+import com.google.flatbuffers.FlatBufferBuilder;
 import com.vertispan.tsdefs.annotations.TsName;
 import com.vertispan.tsdefs.annotations.TsTypeRef;
 import com.vertispan.tsdefs.annotations.TsUnion;
@@ -10,6 +11,10 @@ import com.vertispan.tsdefs.annotations.TsUnionMember;
 import elemental2.core.JsArray;
 import elemental2.promise.IThenable.ThenOnFulfilledCallbackFn;
 import elemental2.promise.Promise;
+import io.deephaven.barrage.flatbuf.BarrageMessageType;
+import io.deephaven.barrage.flatbuf.BarrageSnapshotRequest;
+import io.deephaven.extensions.barrage.BarrageSnapshotOptions;
+import io.deephaven.javascript.proto.dhinternal.arrow.flight.protocol.flight_pb.FlightData;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.hierarchicaltable_pb.RollupRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.hierarchicaltable_pb.TreeRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.partitionedtable_pb.PartitionByRequest;
@@ -36,7 +41,13 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb
 import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.runchartdownsamplerequest.ZoomRange;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.ticket_pb.Ticket;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.ticket_pb.TypedTicket;
+import io.deephaven.util.mutable.MutableLong;
+import io.deephaven.web.client.api.barrage.WebBarrageMessage;
+import io.deephaven.web.client.api.barrage.WebBarrageMessageReader;
+import io.deephaven.web.client.api.barrage.WebBarrageUtils;
+import io.deephaven.web.client.api.barrage.data.WebBarrageSubscription;
 import io.deephaven.web.client.api.barrage.def.TableAttributesDefinition;
+import io.deephaven.web.client.api.barrage.stream.BiDiStream;
 import io.deephaven.web.client.api.barrage.stream.ResponseStreamWrapper;
 import io.deephaven.web.client.api.batch.RequestBatcher;
 import io.deephaven.web.client.api.console.JsVariableType;
@@ -45,6 +56,8 @@ import io.deephaven.web.client.api.input.JsInputTable;
 import io.deephaven.web.client.api.lifecycle.HasLifecycle;
 import io.deephaven.web.client.api.state.StateCache;
 import io.deephaven.web.client.api.subscription.AbstractTableSubscription;
+import io.deephaven.web.client.api.subscription.DataOptions;
+import io.deephaven.web.client.api.subscription.SubscriptionType;
 import io.deephaven.web.client.api.subscription.TableSubscription;
 import io.deephaven.web.client.api.subscription.TableViewportSubscription;
 import io.deephaven.web.client.api.subscription.ViewportData;
@@ -75,9 +88,11 @@ import jsinterop.base.Any;
 import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
+import java.io.IOException;
 import java.util.*;
 import java.util.stream.Stream;
 
+import static io.deephaven.web.client.api.barrage.WebBarrageUtils.serializeRanges;
 import static io.deephaven.web.client.fu.LazyPromise.logError;
 
 /**
@@ -151,6 +166,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
 
     private final WorkerConnection workerConnection;
 
+    @Deprecated
     private final Map<TableTicket, TableViewportSubscription> subscriptions = new HashMap<>();
 
     private ClientTableState lastVisibleState;
@@ -696,18 +712,21 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
      * @param columns
      * @param updateIntervalMs
      * @return {@link TableViewportSubscription}
+     * @deprecated Use {@link #createViewportSubscription(Object)} instead.
      */
     @JsMethod
+    @Deprecated
     public TableViewportSubscription setViewport(double firstRow, double lastRow,
             @JsOptional @JsNullable JsArray<Column> columns,
             @JsOptional @JsNullable Double updateIntervalMs,
             @JsOptional @JsNullable Boolean isReverseViewport) {
-        Column[] columnsCopy = columns != null ? Js.uncheckedCast(columns.slice()) : state().getColumns();
         ClientTableState currentState = state();
+        Column[] columnsCopy = columns != null ? Js.uncheckedCast(columns.slice()) : currentState.getColumns();
         TableViewportSubscription activeSubscription = subscriptions.get(getHandle());
         if (activeSubscription != null && !activeSubscription.isClosed()) {
             // hasn't finished, lets reuse it
-            activeSubscription.setInternalViewport(firstRow, lastRow, columnsCopy, updateIntervalMs, isReverseViewport);
+            activeSubscription.setInternalViewport(RangeSet.ofRange((long) firstRow, (long) lastRow), columnsCopy,
+                    updateIntervalMs, isReverseViewport);
             return activeSubscription;
         } else {
             // In the past, we left the old sub going until the new one was ready, then started the new one. But now,
@@ -718,8 +737,14 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
             // is running.
 
             // rewrap current state in a new one, when ready the viewport will be applied
-            TableViewportSubscription replacement =
-                    TableViewportSubscription.make(firstRow, lastRow, columnsCopy, updateIntervalMs, this);
+            DataOptions.ViewportSubscriptionOptions options = new DataOptions.ViewportSubscriptionOptions();
+            options.previewOptions = new DataOptions.PreviewOptions();
+            options.previewOptions.convertArrayToString = true;
+            options.rows = Js.uncheckedCast(new JsRangeSet(RangeSet.ofRange((long) firstRow, (long) lastRow)));
+            options.columns = Js.uncheckedCast(columnsCopy);
+            options.updateIntervalMs = updateIntervalMs;
+            options.isReverseViewport = isReverseViewport;
+            TableViewportSubscription replacement = TableViewportSubscription.make(options, this);
 
             subscriptions.put(currentState.getHandle(), replacement);
             return replacement;
@@ -733,8 +758,11 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
      * {@link TableViewportSubscription#getViewportData()} on the result from {@link #setViewport(double, double)}.
      *
      * @return Promise of {@link TableData}
+     * @deprecated use {@link TableViewportSubscription#getViewportData()} on the result from
+     *             {@link #createViewportSubscription(Object)} instead.
      */
     @JsMethod
+    @Deprecated
     public Promise<AbstractTableSubscription.@TsTypeRef(ViewportData.class) UpdateEventData> getViewportData() {
         TableViewportSubscription subscription = subscriptions.get(getHandle());
         if (subscription == null) {
@@ -761,10 +789,173 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
      * @param columns
      * @param updateIntervalMs
      * @return {@link TableSubscription}
+     * @deprecated Use {@link #createSubscription(Object)} with a {@link DataOptions.SubscriptionOptions} instead.
      */
     @JsMethod
+    @Deprecated
     public TableSubscription subscribe(JsArray<Column> columns, @JsOptional Double updateIntervalMs) {
-        return new TableSubscription(columns, this, updateIntervalMs);
+        DataOptions.SubscriptionOptions options = new DataOptions.SubscriptionOptions();
+        options.previewOptions = new DataOptions.PreviewOptions();
+        options.previewOptions.convertArrayToString = true;
+        options.columns = columns;
+        options.updateIntervalMs = updateIntervalMs;
+        return TableSubscription.createTableSubscription(options, this);
+    }
+
+    /**
+     * Creates a subscription to the specified columns, across all rows in the table. Useful for charts or taking a
+     * snapshot of the table atomically. The initial snapshot will arrive in a single event, but later changes will be
+     * sent as updates. However, this may still be very expensive to run from a browser for very large tables. Each call
+     * to {@code createSubscription} creates a new subscription, which must have {@link TableSubscription#close()}
+     * called on it to stop it and release its resources, and all events are fired from the TableSubscription instance.
+     * 
+     * @param options options for the subscription; see {@link DataOptions.SubscriptionOptions} for details
+     * @return a new {@link TableSubscription}
+     */
+    @JsMethod
+    public TableSubscription createSubscription(@TsTypeRef(DataOptions.SubscriptionOptions.class) Object options) {
+        return TableSubscription.createTableSubscription(DataOptions.SubscriptionOptions.of(options), this);
+    }
+
+    /**
+     * Creates a viewport subscription to the specified columns, across the specified rows in the table. The returned
+     * TableViewportSubscription instance allows the viewport to be changed over time, and events are fired from it when
+     * the data changes or when a viewport change has been applied. Each call to {@code createSubscription} creates a
+     * new subscription, which must have {@link TableViewportSubscription#close()} called on it to stop it and release
+     * its resources
+     *
+     * @param options options for the viewport subscription; see {@link DataOptions.ViewportSubscriptionOptions} for
+     *        details
+     * @return a new {@link TableViewportSubscription}
+     */
+    @JsMethod
+    public TableViewportSubscription createViewportSubscription(
+            @TsTypeRef(DataOptions.ViewportSubscriptionOptions.class) Object options) {
+        DataOptions.ViewportSubscriptionOptions copy = DataOptions.ViewportSubscriptionOptions.of(options);
+        if (copy.columns == null) {
+            throw new IllegalArgumentException("Missing 'columns' property in viewport subscription options");
+        }
+        return TableViewportSubscription.make(copy, this);
+    }
+
+
+    /**
+     * Returns a promise that will resolve to a TableData containing a snapshot of the current state of the table,
+     * within the bounds of the specified rows and columns.
+     *
+     * @param options options for the snapshot; see {@link DataOptions.SnapshotOptions} for details
+     * @return Promise of {@link TableData}
+     */
+    @JsMethod
+    public Promise<TableData> createSnapshot(@TsTypeRef(DataOptions.SnapshotOptions.class) Object options) {
+        DataOptions.SnapshotOptions snapshotOptions = DataOptions.SnapshotOptions.of(options);
+        JsArray<Column> columns = snapshotOptions.columns;
+        RangeSet rows = snapshotOptions.rows.asRangeSet().getRange();
+
+        // TODO #1039 slice rows and drop columns
+        int previewListLengthLimit = AbstractTableSubscription.getPreviewListLengthLimit(snapshotOptions);
+        BarrageSnapshotOptions barrageSnapshotOptions = BarrageSnapshotOptions.builder()
+                .batchSize(WebBarrageSubscription.BATCH_SIZE)
+                .maxMessageSize(WebBarrageSubscription.MAX_MESSAGE_SIZE)
+                .useDeephavenNulls(true)
+                .previewListLengthLimit(previewListLengthLimit)
+                .build();
+
+        ClientTableState previewed =
+                AbstractTableSubscription.createPreview(workerConnection, state(), snapshotOptions.previewOptions);
+
+        LazyPromise<TableData> promise = new LazyPromise<>();
+        previewed.onRunning(cts -> {
+            int rowStyleColumn = cts.getRowFormatColumn() == null ? TableData.NO_ROW_FORMAT_COLUMN
+                    : cts.getRowFormatColumn().getIndex();
+
+            WebBarrageSubscription snapshot = WebBarrageSubscription.subscribe(
+                    SubscriptionType.SNAPSHOT, cts,
+                    (serverViewport1, serverColumns, serverReverseViewport) -> {
+                    },
+                    (rowsAdded, rowsRemoved, totalMods, shifted, modifiedColumnSet) -> {
+                    });
+
+            WebBarrageMessageReader reader = new WebBarrageMessageReader();
+
+            BiDiStream<FlightData, FlightData> doExchange =
+                    workerConnection.<FlightData, FlightData>streamFactory().create(
+                            headers -> workerConnection.flightServiceClient().doExchange(headers),
+                            (first, headers) -> workerConnection.browserFlightServiceClient().openDoExchange(first,
+                                    headers),
+                            (next, headers, c) -> workerConnection.browserFlightServiceClient().nextDoExchange(next,
+                                    headers,
+                                    c::apply),
+                            new FlightData());
+            MutableLong rowsReceived = new MutableLong(0);
+            doExchange.onData(data -> {
+                WebBarrageMessage message;
+                try {
+                    message = reader.parseFrom(barrageSnapshotOptions, cts.columnTypes(),
+                            cts.componentTypes(), data);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+                if (message != null) {
+                    // Replace rowsets with flat versions
+                    long resultSize = message.rowsIncluded.size();
+                    if (resultSize != 0) {
+                        message.rowsAdded = RangeSet.ofRange(rowsReceived.get(), rowsReceived.get() + resultSize - 1);
+                        message.rowsIncluded = message.rowsAdded;
+                        message.snapshotRowSet = null;
+                        rowsReceived.add(resultSize);
+                    }
+
+                    // Update our table data with the complete message
+                    snapshot.applyUpdates(message);
+                }
+            });
+            FlightData payload = new FlightData();
+            final FlatBufferBuilder metadata = new FlatBufferBuilder();
+
+            int colOffset = BarrageSnapshotRequest.createColumnsVector(metadata,
+                    cts.makeBitset(Js.uncheckedCast(columns)).toByteArray());
+            int vpOffset =
+                    BarrageSnapshotRequest.createViewportVector(metadata, serializeRanges(Collections.singleton(rows)));
+            int optOffset = barrageSnapshotOptions.appendTo(metadata);
+
+            final int ticOffset = BarrageSnapshotRequest.createTicketVector(metadata,
+                    Js.<byte[]>uncheckedCast(cts.getHandle().getTicket()));
+            BarrageSnapshotRequest.startBarrageSnapshotRequest(metadata);
+            BarrageSnapshotRequest.addColumns(metadata, colOffset);
+            BarrageSnapshotRequest.addViewport(metadata, vpOffset);
+            BarrageSnapshotRequest.addSnapshotOptions(metadata, optOffset);
+            BarrageSnapshotRequest.addTicket(metadata, ticOffset);
+            BarrageSnapshotRequest.addReverseViewport(metadata, false);
+            metadata.finish(BarrageSnapshotRequest.endBarrageSnapshotRequest(metadata));
+
+            payload.setAppMetadata(WebBarrageUtils.wrapMessage(metadata, BarrageMessageType.BarrageSnapshotRequest));
+            doExchange.onEnd(status -> {
+                if (status.isOk()) {
+                    // notify the caller that the snapshot is finished
+                    RangeSet result;
+                    if (rowsReceived.get() != 0) {
+                        result = RangeSet.ofRange(0, rowsReceived.get() - 1);
+                    } else {
+                        result = RangeSet.empty();
+                    }
+
+                    promise.succeed(new AbstractTableSubscription.SubscriptionEventData(snapshot, rowStyleColumn,
+                            Js.uncheckedCast(columns),
+                            result,
+                            RangeSet.empty(),
+                            RangeSet.empty(),
+                            null));
+                } else {
+                    promise.fail(status);
+                }
+            });
+
+            doExchange.send(payload);
+            doExchange.end();
+
+        }, promise::fail, () -> promise.fail("Table was closed"));
+        return promise.asPromise();
     }
 
     /**
@@ -1329,11 +1520,6 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
      */
     @JsMethod
     public Promise<JsColumnStatistics> getColumnStatistics(Column column) {
-        if (column.getDescription() != null && column.getDescription().startsWith("Preview of type")) {
-            // TODO (deephaven-core#188) Remove this workaround when we don't preview columns until just before
-            // subscription
-            return Promise.reject("Can't produce column statistics for preview column");
-        }
         List<Runnable> toRelease = new ArrayList<>();
         return workerConnection.newState((c, state, metadata) -> {
             ColumnStatisticsRequest req = new ColumnStatisticsRequest();
@@ -1346,10 +1532,15 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
                 .then(state -> {
                     JsTable table = new JsTable(workerConnection, state);
                     toRelease.add(table::close);
-                    table.setViewport(0, 0);
-                    return table.getViewportData();
+                    DataOptions.SnapshotOptions options = new DataOptions.SnapshotOptions();
+                    options.rows = Js.uncheckedCast(JsRangeSet.ofRange(0, 0));
+                    options.columns = table.getColumns();
+                    return table.createSnapshot(options);
                 })
-                .then(tableData -> Promise.resolve(new JsColumnStatistics(tableData)));
+                .then(tableData -> Promise.resolve(new JsColumnStatistics(tableData)))
+                .finally_(() -> {
+                    toRelease.forEach(Runnable::run);
+                });
     }
 
     private Literal objectToLiteral(String valueType, Object value) {

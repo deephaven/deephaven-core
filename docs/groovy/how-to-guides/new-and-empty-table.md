@@ -40,7 +40,7 @@ source = emptyTable(100).update(
 )
 ```
 
-DQL is a powerful, versatile tool for table transformations. For more information, see the [formula documentation](../how-to-guides/formulas-how-to.md).
+DQL is a powerful, versatile tool for table transformations. For more information, see the [formula documentation](../how-to-guides/formulas.md).
 
 ## `newTable`
 
@@ -53,7 +53,7 @@ result = newTable(
 )
 ```
 
-Here, we create an example with two integer columns. Then, we update the table to add a new column `X` via a formula that uses a [variable](../reference/query-language/variables/scope.md), a [user-defined function](../how-to-guides/user-defined-functions.md), an [auto-imported Java function](../reference/query-language/formulas/auto-imported-functions.md), and various [operators](../how-to-guides/formulas-how-to.md#operators):
+Here, we create an example with two integer columns. Then, we update the table to add a new column `X` via a formula that uses a [variable](../reference/query-language/variables/scope.md), a [user-defined closure](../how-to-guides/groovy-closures.md), an [auto-imported Java function](../reference/query-language/formulas/auto-imported-functions.md), and various [operators](../how-to-guides/operators.md):
 
 ```groovy order=source,result
 var = 3
@@ -68,10 +68,10 @@ result = source.update("X = A + 3 * sqrt(B) + var + (int)f(A, B)")
 
 Here, we will go into detail on creating new columns in your tables.
 
-[Selection methods](./use-select-view-update.md) -- such as [`select`](../reference/table-operations/select/select.md), [`view`](../reference/table-operations/select/view.md), [`update`](../reference/table-operations/select/update.md), [`updateView`](../reference/table-operations/select/update-view.md), and [`lazyUpdate`](../reference/table-operations/select/lazy-update.md) -- and [formulas](../how-to-guides/formulas-how-to.md) are used to create new columns:
+[Selection methods](./use-select-view-update.md) -- such as [`select`](../reference/table-operations/select/select.md), [`view`](../reference/table-operations/select/view.md), [`update`](../reference/table-operations/select/update.md), [`updateView`](../reference/table-operations/select/update-view.md), and [`lazyUpdate`](../reference/table-operations/select/lazy-update.md) -- and [formulas](../how-to-guides/formulas.md) are used to create new columns:
 
 - The [selection method](./use-select-view-update.md) determines which columns will be in the output table and how the values are computed.
-- The [formulas](../how-to-guides/formulas-how-to.md) are the recipes for computing the cell values.
+- The [formulas](../how-to-guides/formulas.md) are the recipes for computing the cell values.
 
 In the following examples, we use a table of student test results. Using [`update`](../reference/table-operations/select/update.md), we create a new `Total` column containing the sum of each student's math, science, and art scores. Notice that [`update`](../reference/table-operations/select/update.md) includes the columns from the source table in the output table.
 

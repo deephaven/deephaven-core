@@ -77,6 +77,9 @@ def testPyClient = Docker.registerDockerTask(project, 'testPyClient') {
         from ('README.md') {
             into 'project/'
         }
+        from ('run-tests.sh') {
+            into 'project/'
+        }
     }
     containerDependencies.dependsOn = [deephavenDocker.healthyTask]
     containerDependencies.finalizedBy = deephavenDocker.endTask
@@ -92,11 +95,12 @@ def testPyClient = Docker.registerDockerTask(project, 'testPyClient') {
 
         environmentVariable 'DEEPHAVEN_VERSION', project.version
         runCommand 'pip install .'
+        runCommand 'pip install coverage'
         environmentVariable 'DH_HOST', deephavenDocker.containerName.get()
         environmentVariable 'DH_PORT', '10000'
     }
     parentContainers = [ Docker.registryTask(project, 'python') ]
-    entrypoint = ['python', '-m', 'xmlrunner', 'discover', 'tests', '-v', '-o', '/out/report']
+    entrypoint = ['./run-tests.sh', project.hasProperty("coverage.enabled")?project.property("coverage.enabled"):'false']
     copyOut {
         into layout.buildDirectory.dir('test-results')
     }

@@ -15,6 +15,7 @@ import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.QueryCompilerRequestProcessor;
+import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.lang.FormulaMethodInvocations;
 import io.deephaven.engine.table.impl.lang.QueryLanguageParser;
 import io.deephaven.engine.table.impl.select.codegen.FormulaAnalyzer;
@@ -887,6 +888,9 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
 
     @Override
     public boolean isStateless() {
+        if (QueryTable.STATELESS_SELECT_BY_DEFAULT) {
+            return true;
+        }
         return Arrays.stream(params).allMatch(DhFormulaColumn::isImmutableType)
                 && usedColumns.stream().allMatch(this::isUsedColumnStateless)
                 && usedColumnArrays.stream().allMatch(this::isUsedColumnStateless);
