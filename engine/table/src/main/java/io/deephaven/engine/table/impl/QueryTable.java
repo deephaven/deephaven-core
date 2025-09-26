@@ -2089,12 +2089,12 @@ public class QueryTable extends BaseTable<QueryTable> {
                             (duplicateSource == null ? duplicateSource = new LinkedHashSet<>(1) : duplicateSource)
                                     .add(pair.input().name());
                         }
-                        if (pair.input() != pair.output() && definition.getColumn(pair.output().name()) != null) {
-                            maskedNames.add(pair.input());
-                        }
                         if (!newNames.add(pair.output())) {
                             (duplicateDest == null ? duplicateDest = new LinkedHashSet<>() : duplicateDest)
                                     .add(pair.output().name());
+                        }
+                        if (definition.getColumn(pair.output().name()) != null) {
+                            maskedNames.add(pair.output());
                         }
                     }
 
@@ -2110,7 +2110,7 @@ public class QueryTable extends BaseTable<QueryTable> {
                     }
 
                     // How many columns are removed (masked and not replaced) from the table?
-                    final int removedCount = (int) maskedNames.stream().filter(n -> !newNames.contains(n)).count();
+                    final int removedCount = (int) maskedNames.stream().filter(n -> !pairLookup.containsKey(n)).count();
 
                     final MutableInt mcsPairIdx = new MutableInt();
                     final Pair[] modifiedColumnSetPairs = new Pair[columns.size() - removedCount];

@@ -123,12 +123,12 @@ public abstract class RedefinableTable<IMPL_TYPE extends RedefinableTable<IMPL_T
                 (duplicateSource == null ? duplicateSource = new LinkedHashSet<>(1) : duplicateSource)
                         .add(pair.input().name());
             }
-            if (definition.getColumn(pair.output().name()) != null) {
-                maskedNames.add(pair.input().name());
-            }
             if (!newNames.add(pair.output().name())) {
                 (duplicateDest == null ? duplicateDest = new LinkedHashSet<>() : duplicateDest)
                         .add(pair.output().name());
+            }
+            if (definition.getColumn(pair.output().name()) != null) {
+                maskedNames.add(pair.output().name());
             }
         }
 
@@ -144,7 +144,7 @@ public abstract class RedefinableTable<IMPL_TYPE extends RedefinableTable<IMPL_T
         }
 
         // How many columns are removed (masked and not replaced) from the table?
-        final int removedCount = (int) maskedNames.stream().filter(n -> !newNames.contains(n)).count();
+        final int removedCount = (int) maskedNames.stream().filter(n -> !pairLookup.containsKey(n)).count();
 
         ColumnDefinition<?>[] columnDefinitions = definition.getColumnsArray();
         // Create arrays that will contain the new column definitions (excluding removed columns)
@@ -176,7 +176,7 @@ public abstract class RedefinableTable<IMPL_TYPE extends RedefinableTable<IMPL_T
      * Redefine this table with a subset of its current columns.
      *
      * @param newDefinition A TableDefinition with a subset of this RedefinableTable's ColumnDefinitions.
-     * @return
+     * @return the redefined table
      */
     protected abstract Table redefine(TableDefinition newDefinition);
 
@@ -189,7 +189,7 @@ public abstract class RedefinableTable<IMPL_TYPE extends RedefinableTable<IMPL_T
      * @param newDefinitionInternal A TableDefinition with a subset of this RedefinableTable's ColumnDefinitions.
      * @param viewColumns A set of SelectColumns to apply in order to transform a table with newDefinitionInternal to a
      *        table with newDefinitionExternal.
-     * @return
+     * @return the redefined table
      */
     protected abstract Table redefine(TableDefinition newDefinitionExternal, TableDefinition newDefinitionInternal,
             SelectColumn[] viewColumns);

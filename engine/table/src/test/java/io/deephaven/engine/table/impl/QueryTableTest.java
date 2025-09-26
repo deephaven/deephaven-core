@@ -714,7 +714,7 @@ public class QueryTableTest extends QueryTableTestBase {
         }
     }
 
-    public void testColumnRenameCollision() {
+    public void testRenameColumnCollision() {
         // Create a test table with a String column and an array column
         final Table testTable = TableTools.newTable(
                 TableTools.stringCol("ColumnA", "A", "B", "C"),
@@ -735,6 +735,19 @@ public class QueryTableTest extends QueryTableTestBase {
         assertEquals(int.class, result.getColumnSource("ColumnA").getType());
         assertEquals(int.class, result.getColumnSource("ColumnC").getType());
 
+        result = testTable.renameColumns("ColumnX=ColumnA", "ColumnA=ColumnB");
+        assertEquals(3, result.numColumns());
+        // Verify column names and datatypes
+        assertEquals(String.class, result.getColumnSource("ColumnX").getType());
+        assertEquals(int.class, result.getColumnSource("ColumnA").getType());
+        assertEquals(int.class, result.getColumnSource("ColumnC").getType());
+
+        result = testTable.renameColumns("ColumnC=ColumnC", "ColumnA=ColumnB");
+        assertEquals(2, result.numColumns());
+        // Verify column names and datatypes
+        assertEquals(int.class, result.getColumnSource("ColumnA").getType());
+        assertEquals(int.class, result.getColumnSource("ColumnC").getType());
+
         // Repeat with refreshing
         testTable.setRefreshing(true);
 
@@ -745,6 +758,19 @@ public class QueryTableTest extends QueryTableTestBase {
         assertEquals(int.class, result.getColumnSource("ColumnC").getType());
 
         result = testTable.where("ColumnA=`A`").renameColumns("ColumnA=ColumnB");
+        assertEquals(2, result.numColumns());
+        // Verify column names and datatypes
+        assertEquals(int.class, result.getColumnSource("ColumnA").getType());
+        assertEquals(int.class, result.getColumnSource("ColumnC").getType());
+
+        result = testTable.renameColumns("ColumnX=ColumnA", "ColumnA=ColumnB");
+        assertEquals(3, result.numColumns());
+        // Verify column names and datatypes
+        assertEquals(String.class, result.getColumnSource("ColumnX").getType());
+        assertEquals(int.class, result.getColumnSource("ColumnA").getType());
+        assertEquals(int.class, result.getColumnSource("ColumnC").getType());
+
+        result = testTable.renameColumns("ColumnC=ColumnC", "ColumnA=ColumnB");
         assertEquals(2, result.numColumns());
         // Verify column names and datatypes
         assertEquals(int.class, result.getColumnSource("ColumnA").getType());

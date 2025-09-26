@@ -4568,8 +4568,12 @@ public final class ParquetTableReadWriteTest {
                                 ParquetInstructions.ParquetFileLayout.SINGLE_FILE)));
     }
 
+    /**
+    This test is similar to {@code QueryTableTest#testRenameColumnCollision} but tests
+     {@link io.deephaven.engine.table.impl.RedefinableTable} column renaming functionality.
+     */
     @Test
-    public void testColumnRenameCollision() {
+    public void testRenameColumnCollision() {
         final Table testTable = TableTools.newTable(
                 TableTools.stringCol("ColumnA", "A", "B", "C"),
                 TableTools.intCol("ColumnB", 1, 2, 3),
@@ -4590,6 +4594,19 @@ public final class ParquetTableReadWriteTest {
 
         result = fromDisk.renameColumns("ColumnA=ColumnB");
         assertEquals(2, result.numColumns());
+        assertEquals(int.class, result.getColumnSource("ColumnA").getType());
+        assertEquals(int.class, result.getColumnSource("ColumnC").getType());
+
+        result = fromDisk.renameColumns("ColumnX=ColumnA", "ColumnA=ColumnB");
+        assertEquals(3, result.numColumns());
+        // Verify column names and datatypes
+        assertEquals(String.class, result.getColumnSource("ColumnX").getType());
+        assertEquals(int.class, result.getColumnSource("ColumnA").getType());
+        assertEquals(int.class, result.getColumnSource("ColumnC").getType());
+
+        result = fromDisk.renameColumns("ColumnC=ColumnC", "ColumnA=ColumnB");
+        assertEquals(2, result.numColumns());
+        // Verify column names and datatypes
         assertEquals(int.class, result.getColumnSource("ColumnA").getType());
         assertEquals(int.class, result.getColumnSource("ColumnC").getType());
 
