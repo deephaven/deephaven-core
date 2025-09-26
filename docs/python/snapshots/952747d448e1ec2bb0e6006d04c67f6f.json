@@ -1,0 +1,1 @@
+{"file":"core/docs/how-to-guides/handle-null-inf-nan.md","objects":{":log":{"type":"Log","data":"Infinity value for pos_float: inf\nInfinity value for pos_double: inf\nInfinity value for neg_float: -inf\nInfinity value for neg_double: -inf\n"}}}

@@ -6,7 +6,6 @@ autoservice = "1.1.1"
 avro = "1.12.0"
 awssdk = "2.29.52"
 aws-s3-tables-catalog-for-iceberg = "0.1.6"
-analyticsaccelerator = "1.1.0"
 # See dependency matrix for particular gRPC versions at https://github.com/grpc/grpc-java/blob/master/SECURITY.md#netty
 boringssl = "2.0.61.Final"
 calcite = "1.39.0"
@@ -42,8 +41,8 @@ gwt = "2.12.2"
 gwtJetty = "9.4.44.v20210927"
 hadoop = "3.4.1"
 hdrhistogram = "2.2.2"
-iceberg = "1.9.2"
-immutables = "2.10.1"
+iceberg = "1.10.0"
+immutables = "2.11.3"
 jackson = "2.19.2"
 jakarta-servlet = "6.0.0"
 jakarta-websocket = "2.1.1"
@@ -66,12 +65,13 @@ mindrot = "0.4"
 nidi = "0.18.1"
 oshi = "5.8.3"
 pac4j = "5.7.0"
-parquet = "1.15.2"
+parquet = "1.16.0"
 picocli = "4.7.7"
 postgresql = "42.7.4"
 protobuf = "3.25.4"
 randelshofer = "2.0.1"
 rdblue = "0.1.1"
+rewrite-java = "8.60.2"
 selenium = "4.30.0"
 slf4j = "2.0.17"
 snappy = "1.1.10.8"
@@ -84,7 +84,7 @@ univocity = "2.9.1"
 vertispan-nio = "1.0-alpha-2"
 vertispan-flatbuffers-gwt = "24.3.25-1"
 vertispan-ts-defs = "1.0.0-RC4"
-xerial = "3.49.1.0"
+xerial = "3.50.3.0"
 
 # test versions
 assertj = "3.27.3"
@@ -124,9 +124,7 @@ awssdk-kms = { module = "software.amazon.awssdk:kms" }
 awssdk-s3tables = { module = "software.amazon.awssdk:s3tables" }
 awssdk-sso = { module = "software.amazon.awssdk:sso" }
 awssdk-ssooidc = { module = "software.amazon.awssdk:ssooidc" }
-
-# TODO (DH-19508) : Remove this dependency when https://github.com/apache/iceberg/issues/13133 fix is released
-analyticsaccelerator-s3 = { module = "software.amazon.s3.analyticsaccelerator:analyticsaccelerator-s3", version.ref = "analyticsaccelerator" }
+awssdk-netty-nio = { module = "software.amazon.awssdk:netty-nio-client" }
 
 s3-tables-catalog-for-iceberg = { module = "software.amazon.s3tables:s3-tables-catalog-for-iceberg", version.ref = "aws-s3-tables-catalog-for-iceberg" }
 
@@ -295,6 +293,7 @@ protobuf-java = { module = "com.google.protobuf:protobuf-java", version.ref = "p
 randelshofer-fastdoubleparser = { module = "ch.randelshofer:fastdoubleparser", version.ref = "randelshofer" }
 
 rdblue-brotli-codec = { module = "com.github.rdblue:brotli-codec", version.ref = "rdblue" }
+rewrite-java = { module = "org.openrewrite:rewrite-java", version.ref= "rewrite-java"}
 
 selenium-remote-driver = { module = "org.seleniumhq.selenium:selenium-remote-driver", version.ref = "selenium" }
 

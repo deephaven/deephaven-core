@@ -1,0 +1,1 @@
+{"file":"core/docs/tutorials/crash-course/4-table-ops.md","objects":{"t_avg":{"type":"Table","data":{"columns":[{"name":"X","type":"double"},{"name":"Y","type":"double"}],"rows":[[{"value":"50.1800"},{"value":"4.4989"}]]}}}}

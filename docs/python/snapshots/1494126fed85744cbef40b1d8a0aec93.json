@@ -1,0 +1,1 @@
+{"file":"core/docs/reference/table-operations/filter/head.md","objects":{"source":{"type":"Table","data":{"columns":[{"name":"Timestamp","type":"java.time.Instant"}],"rows":[]}},"result":{"type":"Table","data":{"columns":[{"name":"Timestamp","type":"java.time.Instant"}],"rows":[]}}}}

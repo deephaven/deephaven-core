@@ -30,6 +30,7 @@ import static io.deephaven.engine.util.IterableUtils.makeCommaSeparatedList;
 
 public class JavaKernelBuilder {
     private static final String FORMULA_KERNEL_FACTORY_NAME = "__FORMULA_KERNEL_FACTORY";
+    private static final String CLASS_NAME = "FormulaKernel";
 
     public static CompletionStageFuture<Result> create(
             @NotNull final String originalFormulaString,
@@ -47,7 +48,7 @@ public class JavaKernelBuilder {
 
         return compilationRequestProcessor.submit(QueryCompilerRequest.builder()
                 .description("FormulaKernel: " + originalFormulaString)
-                .className("Formula")
+                .className(CLASS_NAME)
                 .classBody(classBody)
                 .packageNameRoot(QueryCompilerImpl.FORMULA_CLASS_PREFIX)
                 .build()).thenApply(clazz -> {
@@ -105,7 +106,8 @@ public class JavaKernelBuilder {
 
         final CodeGenerator g = CodeGenerator.create(
                 CodeGenerator.create(ExecutionContext.getContext().getQueryLibrary().getImportStrings().toArray()), "",
-                "public class $CLASSNAME$ implements [[FORMULA_KERNEL_INTERFACE_CANONICAL]]", CodeGenerator.block(
+                "public class " + CLASS_NAME + " implements [[FORMULA_KERNEL_INTERFACE_CANONICAL]]",
+                CodeGenerator.block(
                         generateFactoryLambda(), "",
                         CodeGenerator.repeated("instanceVar", "private final [[TYPE]] [[NAME]];"),
                         timeInstanceVariables,
@@ -133,7 +135,8 @@ public class JavaKernelBuilder {
 
     private CodeGenerator generateFactoryLambda() {
         final CodeGenerator g = CodeGenerator.create(
-                "public static final [[FORMULA_KERNEL_FACTORY_CANONICAL]] [[FORMULA_KERNEL_FACTORY_NAME]] = $CLASSNAME$::new;");
+                "public static final [[FORMULA_KERNEL_FACTORY_CANONICAL]] [[FORMULA_KERNEL_FACTORY_NAME]] = "
+                        + CLASS_NAME + "::new;");
         g.replace("FORMULA_KERNEL_FACTORY_CANONICAL", FormulaKernelFactory.class.getCanonicalName());
         g.replace("FORMULA_KERNEL_FACTORY_NAME", FORMULA_KERNEL_FACTORY_NAME);
         return g.freeze();
@@ -141,7 +144,7 @@ public class JavaKernelBuilder {
 
     private CodeGenerator generateKernelConstructor() {
         final CodeGenerator g = CodeGenerator.create(
-                "public $CLASSNAME$([[VECTOR_CANONICAL]][] __vectors,", CodeGenerator.indent(
+                "public " + CLASS_NAME + "([[VECTOR_CANONICAL]][] __vectors,", CodeGenerator.indent(
                         "[[PARAM_CANONICAL]][] __params)"),
                 CodeGenerator.block(
                         CodeGenerator.repeated("getVector", "[[NAME]] = ([[TYPE]])__vectors[[[INDEX]]];"),

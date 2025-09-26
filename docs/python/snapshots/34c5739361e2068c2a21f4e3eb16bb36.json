@@ -1,0 +1,1 @@
+{"file":"core/docs/conceptual/table-types.md","objects":{"t_no_blink":{"type":"Table","data":{"columns":[{"name":"Timestamp","type":"java.time.Instant"},{"name":"X","type":"long"},{"name":"Group","type":"java.lang.String"}],"rows":[]}},"t_sum_no_blink":{"type":"Table","data":{"columns":[{"name":"Group","type":"java.lang.String"},{"name":"X","type":"long"}],"rows":[]}}}}

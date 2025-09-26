@@ -1,0 +1,1 @@
+{"file":"core/docs/how-to-guides/query-strings.md","objects":{"source":{"type":"Table","data":{"columns":[{"name":"PositiveInfinityFloat","type":"float"},{"name":"NegativeInfinityFloat","type":"float"},{"name":"PositiveInfinityDouble","type":"double"},{"name":"NegativeInfinityDouble","type":"double"}],"rows":[[{"value":"∞"},{"value":"-∞"},{"value":"∞"},{"value":"-∞"}]]}}}}

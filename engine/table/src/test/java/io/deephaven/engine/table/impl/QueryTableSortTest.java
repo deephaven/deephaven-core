@@ -40,6 +40,8 @@ import java.lang.reflect.Array;
 import java.math.BigInteger;
 import java.nio.file.Files;
 import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.LongUnaryOperator;
@@ -1121,6 +1123,26 @@ public class QueryTableSortTest extends QueryTableTestBase {
         } finally {
             tempFolder.delete();
         }
+    }
+
+    public static ZonedDateTime[] toZdtLondon(Instant[] instants) {
+        return Arrays.stream(instants).map(vv -> vv.atZone(ZoneId.of("Europe/London"))).toArray(ZonedDateTime[]::new);
+    }
+
+    public void testInstantArray() {
+        Instant lt_a = DateTimeUtils.parseInstant("2024-01-01T00:00:00 NY");
+        Instant a = DateTimeUtils.parseInstant("2025-01-01T00:00:00 NY");
+        Instant b = DateTimeUtils.parseInstant("2025-02-01T00:00:00 NY");
+        Instant c = DateTimeUtils.parseInstant("2025-03-01T00:00:00 NY");
+        final Table x = TableTools.newTable(intCol("Sentinel", 20, 10, 50, 40, 30, 15, 21),
+                col("InstArray", new Instant[] {a}, new Instant[] {}, new Instant[] {b}, new Instant[] {a, b, c},
+                        new Instant[] {a, b}, new Instant[] {lt_a}, new Instant[] {a}));
+        final Table s = x.sort("InstArray");
+        assertTableEquals(x.sort("Sentinel"), s);
+
+        final Table y = x.update("ZD=" + QueryTableSortTest.class.getCanonicalName() + ".toZdtLondon(InstArray)");
+        final Table s2 = y.sort("ZD");
+        assertTableEquals(y.sort("Sentinel"), s2);
     }
 
     private static void checkMixed(final Table resultRows, final boolean mixed) {

@@ -665,14 +665,17 @@ public class WorkerConnection {
     }
 
     public Promise<JsTable> getTable(JsVariableDefinition varDef, @Nullable Boolean applyPreviewColumns) {
+        if (applyPreviewColumns != null && applyPreviewColumns) {
+            JsLog.warn("applyPreviewColumns is deprecated, and will be removed in a future release");
+        }
         return whenServerReady("get a table").then(serve -> {
             JsLog.debug("innerGetTable", varDef.getTitle(), " started");
             return newState(info,
                     (c, cts, metadata) -> {
                         JsLog.debug("performing fetch for ", varDef.getTitle(), " / ", cts,
                                 " (" + LazyString.of(cts::getHandle), ")");
-                        // TODO (deephaven-core#188): eliminate this branch by applying preview cols before subscribing
-                        if (applyPreviewColumns == null || applyPreviewColumns) {
+                        // Only apply preview if specifically requested
+                        if (applyPreviewColumns != null && applyPreviewColumns) {
                             ApplyPreviewColumnsRequest req = new ApplyPreviewColumnsRequest();
                             req.setSourceId(Tickets.createTableRef(varDef));
                             req.setResultId(cts.getHandle().makeTicket());

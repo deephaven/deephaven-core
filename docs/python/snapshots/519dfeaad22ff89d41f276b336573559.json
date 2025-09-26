@@ -1,0 +1,1 @@
+{"file":"core/docs/how-to-guides/work-with-arrays.md","objects":{"source":{"type":"Table","data":{"columns":[{"name":"X","type":"java.lang.String"}],"rows":[[{"value":"[0,1,2,3,4, ...]"}]]}},"result":{"type":"Table","data":{"columns":[{"name":"X","type":"java.lang.String"},{"name":"LenX","type":"long"}],"rows":[[{"value":"[0,1,2,3,4, ...]"},{"value":"10"}]]}}}}

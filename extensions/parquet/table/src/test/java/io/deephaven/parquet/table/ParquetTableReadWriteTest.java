@@ -55,6 +55,7 @@ import io.deephaven.parquet.base.NullStatistics;
 import io.deephaven.parquet.base.materializers.ParquetMaterializerUtils;
 import io.deephaven.parquet.table.location.ParquetTableLocation;
 import io.deephaven.parquet.table.location.ParquetTableLocationKey;
+import io.deephaven.parquet.table.metadata.RowGroupInfo;
 import io.deephaven.parquet.table.pagestore.ColumnChunkPageStore;
 import io.deephaven.parquet.table.transfer.StringDictionary;
 import io.deephaven.qst.type.Type;
@@ -99,9 +100,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -3330,6 +3329,55 @@ public final class ParquetTableReadWriteTest {
         fromDisk = readTable(destRelativePathStr,
                 ParquetInstructions.EMPTY.withLayout(ParquetInstructions.ParquetFileLayout.SINGLE_FILE));
         assertTableEquals(table, fromDisk);
+        FileUtils.deleteRecursively(parentDir);
+    }
+
+    private static void writeAndVerifyTable(final Table tableToWrite, final File targetFile, final RowGroupInfo rgi,
+            final Long[] expectedRowGroups) {
+        final ParquetInstructions writeInstructions = new ParquetInstructions.Builder()
+                .setRowGroupInfo(rgi)
+                .build();
+        ParquetTools.writeTable(tableToWrite, targetFile.getAbsolutePath(), writeInstructions);
+
+        final Table readTable = ParquetTools.readTable(targetFile.getAbsolutePath());
+        assertTableEquals(tableToWrite, readTable);
+
+        final ParquetMetadata metadata =
+                new ParquetTableLocationKey(convertToURI(targetFile, false), 0, null, ParquetInstructions.EMPTY)
+                        .getMetadata();
+
+        // make sure we have the expected number of RowGroups, and each RowGroup is of the expected size
+        assertEquals(expectedRowGroups.length, metadata.getBlocks().size());
+        for (int ii = 0; ii < expectedRowGroups.length; ii++) {
+            assertEquals((long) expectedRowGroups[ii], metadata.getBlocks().get(ii).getRowCount());
+        }
+    }
+
+    @Test
+    public void writingParquetWithMultipleRowGroups() {
+        final Table testTable = TableTools.emptyTable(10)
+                .update("A=(int)i", "B=`String ` + ii", "C=(double)i")
+                .groupBy().update("D = new Long[] {0L, 1L, 1L, 2L, 2L, 2L, 3L, 3L, 3L, 3L}").ungroup();
+
+        final File parentDir = new File(rootFile, "multipleRowGroups");
+        parentDir.mkdir();
+
+        // write a single RowGroup
+        writeAndVerifyTable(testTable, new File(parentDir, "multipleRowGroups0.parquet"), RowGroupInfo.singleGroup(),
+                new Long[] {10L});
+
+        // write a (very inefficient) table with a RowGroup dedicated to each row
+        writeAndVerifyTable(testTable, new File(parentDir, "multipleRowGroups1.parquet"), RowGroupInfo.maxRows(1),
+                new Long[] {1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L});
+
+        // write a table with 3 RowGroups (of sizes {4, 3, 3})
+        writeAndVerifyTable(testTable, new File(parentDir, "multipleRowGroups2.parquet"), RowGroupInfo.maxGroups(3),
+                new Long[] {4L, 3L, 3L});
+
+        // write a table split by column `D`, with a maximum of 3 rows per RowGroup
+        writeAndVerifyTable(testTable, new File(parentDir, "multipleRowGroups3.parquet"), RowGroupInfo.byGroups(3, "D"),
+                new Long[] {1L, 2L, 3L, 2L, 2L});
+
         FileUtils.deleteRecursively(parentDir);
     }
 

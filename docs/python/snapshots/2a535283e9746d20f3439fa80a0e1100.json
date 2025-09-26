@@ -1,0 +1,1 @@
+{"file":"core/docs/how-to-guides/metadata.md","objects":{":log":{"type":"Log","data":"[Column(name='Month', data_type=java.lang.String, component_type=None, column_type=NORMAL), Column(name='Temp', data_type=int, component_type=None, column_type=NORMAL), Column(name='Rain', data_type=double, component_type=None, column_type=NORMAL)]\n"}}}

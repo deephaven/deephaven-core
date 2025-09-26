@@ -1,0 +1,1 @@
+{"file":"core/docs/how-to-guides/use-numba.md","objects":{":log":{"type":"Log","data":"Add vectors of doubles (first run): 3.6716461181640625e-05 seconds.\nAdd vectors of doubles (second run): 2.1696090698242188e-05 seconds.\nAdd vectors of integers (first run): 0.00010728836059570312 seconds.\nAdd vectors of integers (second run): 3.3855438232421875e-05 seconds.\n"}}}

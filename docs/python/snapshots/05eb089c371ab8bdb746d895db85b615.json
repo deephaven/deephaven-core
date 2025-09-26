@@ -1,0 +1,1 @@
+{"file":"core/docs/how-to-guides/data-import-export/kafka-stream.md","objects":{"source":{"type":"Table","data":{"columns":[{"name":"Timestamp","type":"java.time.Instant"},{"name":"X","type":"int"}],"rows":[[{"value":"2023-12-22 09:33:08.200"},{"value":"0"}]]}}}}
