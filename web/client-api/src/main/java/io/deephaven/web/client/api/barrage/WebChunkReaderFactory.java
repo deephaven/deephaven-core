@@ -267,7 +267,8 @@ public class WebChunkReaderFactory implements ChunkReader.Factory {
                     listMode = ListChunkReader.Mode.VARIABLE;
                 }
 
-                if (typeInfo.componentType() == byte.class && listMode == ListChunkReader.Mode.VARIABLE) {
+                Class<?> componentType = typeInfo.componentType();
+                if (componentType == byte.class && listMode == ListChunkReader.Mode.VARIABLE) {
                     // special case for byte[]
                     return (fieldNodeIter, bufferInfoIter, is, outChunk, outOffset,
                             totalRows) -> (T) extractChunkFromInputStream(
@@ -278,10 +279,10 @@ public class WebChunkReaderFactory implements ChunkReader.Factory {
                                     outChunk, outOffset, totalRows);
                 }
 
-                // noinspection DataFlowIssue
+                // noinspection DataFlowIssue,ConstantValue
                 final BarrageTypeInfo<Field> componentTypeInfo = new BarrageTypeInfo<>(
-                        typeInfo.componentType(),
-                        typeInfo.componentType().getComponentType(),
+                        componentType,
+                        componentType == null ? null : componentType.getComponentType(),
                         typeInfo.arrowField().children(0));
                 final ChunkType chunkType = ListChunkReader.getChunkTypeFor(componentTypeInfo.type());
                 final ExpansionKernel<?> kernel =
