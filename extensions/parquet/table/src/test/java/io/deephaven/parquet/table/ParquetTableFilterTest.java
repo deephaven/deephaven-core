@@ -1660,7 +1660,7 @@ public final class ParquetTableFilterTest {
     @Test
     public void dictionaryNullEntryFilterTest() {
         final Table source = TableTools.newTable(
-                stringCol("animal", "Centipede", null, "Elephant", "Cat"));
+                stringCol("animal", "Centipede", null, "Elephant", "Cat", "Cat"));
 
         // Disable writing row group statistics to verify filtering using dictionary
         final ParquetInstructions writeInstructions = new ParquetInstructions.Builder()
@@ -1678,6 +1678,7 @@ public final class ParquetTableFilterTest {
         filterAndVerifyThrowsSame(diskTable, memTable, "animal.startsWith(`C`)");
         filterAndVerifyResults(diskTable, memTable, ConditionFilter.createConditionFilter("animal = null"));
         filterAndVerifyResults(diskTable, memTable, ConditionFilter.createConditionFilter("animal != null"));
+        filterAndVerifyResults(diskTable, memTable, ConditionFilter.createConditionFilter("animal == `Cat`"));
     }
 
     @Test

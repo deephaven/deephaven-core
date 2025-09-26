@@ -59,7 +59,7 @@ public final class PushdownResult implements SafeCloseable {
      */
     @VisibleForTesting
     static final boolean FORCE_VALIDATION =
-            Configuration.getInstance().getBooleanWithDefault("PushdownResult.forceValidation", false);
+            Configuration.getInstance().getBooleanWithDefault("PushdownResult.forceValidation", true);
 
     /**
      * Rows that match the predicate.

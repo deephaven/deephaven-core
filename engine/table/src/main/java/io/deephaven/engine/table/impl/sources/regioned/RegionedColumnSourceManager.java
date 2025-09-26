@@ -75,7 +75,7 @@ public class RegionedColumnSourceManager
     /**
      * The column definitions of this table as a map from column name.
      */
-    private volatile Map<String, ColumnDefinition<?>> columnNameToDefinition;
+    private final Map<String, ColumnDefinition<?>> columnNameToDefinition;
 
     /**
      * The column sources that make up this table.
@@ -186,10 +186,13 @@ public class RegionedColumnSourceManager
 
         this.isRefreshing = isRefreshing;
         this.columnDefinitions = columnDefinitions;
+        this.columnNameToDefinition = new HashMap<>(columnDefinitions.size());
         for (final ColumnDefinition<?> columnDefinition : columnDefinitions) {
+            final String columnName = columnDefinition.getName();
             columnSources.put(
-                    columnDefinition.getName(),
+                    columnName,
                     componentFactory.createRegionedColumnSource(this, columnDefinition, codecMappings));
+            columnNameToDefinition.put(columnName, columnDefinition);
         }
 
         // Create the table that will hold the location data
@@ -875,24 +878,6 @@ public class RegionedColumnSourceManager
         return columnSourceToName;
     }
 
-    /**
-     * Get (or create) a map from column source to column name.
-     */
-    private Map<String, ColumnDefinition<?>> columnNameToDefinition() {
-        Map<String, ColumnDefinition<?>> local = columnNameToDefinition;
-        if (local == null) {
-            synchronized (this) {
-                local = columnNameToDefinition;
-                if (local == null) {
-                    local = columnDefinitions.stream()
-                            .collect(Collectors.toMap(ColumnDefinition::getName, cd -> cd));
-                    columnNameToDefinition = local;
-                }
-            }
-        }
-        return local;
-    }
-
     public static class RegionedColumnSourcePushdownFilterContext extends BasePushdownFilterContext {
         private final List<ColumnDefinition<?>> columnDefinitions;
         private final Map<String, String> renameMap;
@@ -911,7 +896,7 @@ public class RegionedColumnSourceManager
             columnDefinitions = new ArrayList<>(columnSources.size());
             renameMap = new HashMap<>();
             final IdentityHashMap<ColumnSource<?>, String> columnSourceToName = manager.columnSourceToName();
-            final Map<String, ColumnDefinition<?>> columnNameToDefinition = manager.columnNameToDefinition();
+            final Map<String, ColumnDefinition<?>> columnNameToDefinition = manager.columnNameToDefinition;
 
             for (int ii = 0; ii < filterColumns.size(); ii++) {
                 final String filterColumnName = filterColumns.get(ii);

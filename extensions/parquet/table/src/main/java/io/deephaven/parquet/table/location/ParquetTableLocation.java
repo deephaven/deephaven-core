@@ -916,6 +916,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
         if (filterNullBehavior == BasePushdownFilterContext.FilterNullBehavior.FAILS_ON_NULLS) {
             // We cannot use dictionary-based filtering, keep all the rows as "maybe" rows. Later when the
             // filter is applied to actual data, it will NPE if there are null values in the table.
+            // Future optimization: Use the row-group statistics to determine if there are any nulls in the column
             return result.copy();
         }
 
@@ -978,17 +979,15 @@ public class ParquetTableLocation extends AbstractTableLocation {
                         keyCandidates.slice(0, dictionaryChunk.size())) {
                     final LongChunk<OrderedRowKeys> keyMatch =
                             chunkFilter.filter(dictionaryChunk, keyCandidatesForChunk);
-                    if (keyMatch.size() == 0) {
-                        // We have no matches, we can't eliminate anything, so keep all the rows as "maybe" rows.
-                        maybeBuilder.appendRowSequence(rs);
-                        maybeCount.add(rs.size());
-                        return;
-                    }
                     if (filterNullBehavior == BasePushdownFilterContext.FilterNullBehavior.INCLUDES_NULLS) {
                         // Include one extra slot for NULL_LONG as a matching key if the filter includes nulls.
                         keyMatchArray = new long[keyMatch.size() + 1];
                         keyMatchArray[keyMatch.size()] = NULL_LONG;
                     } else if (filterNullBehavior == BasePushdownFilterContext.FilterNullBehavior.EXCLUDES_NULLS) {
+                        if (keyMatch.size() == 0) {
+                            // No matches, and nulls are excluded, so all rows in this row group are excluded.
+                            return;
+                        }
                         keyMatchArray = new long[keyMatch.size()];
                     } else {
                         throw new IllegalStateException("Unexpected null behavior: " + filterNullBehavior);
@@ -1016,13 +1015,13 @@ public class ParquetTableLocation extends AbstractTableLocation {
                         final RowSequence tmpRs = tmpIt.getNextRowSequenceWithLength(CHUNK_SIZE);
                         final Chunk<? extends DictionaryKeys> valueChunk = valueStore.getChunk(getContext, tmpRs);
                         matchChunkFilter.filter(valueChunk, tmpRs.asRowKeyChunk(), results);
-                        if (results.size() > 0) {
-                            final LongChunkIterator longIt = new LongChunkIterator(results);
-                            longIt.forEachRemaining((LongConsumer) rowKey -> {
-                                // Convert the row key to the original row key in the table.
-                                final long originalRowKey = subRegionFirstKey + rowKey;
-                                matchBuilder.appendKey(originalRowKey);
-                            });
+
+                        // Iterate over matching row keys, convert them to original row space and save them as a match
+                        final int numMatches = results.size();
+                        for (int idx = 0; idx < numMatches; idx++) {
+                            final long rowKey = results.get(idx);
+                            final long originalRowKey = subRegionFirstKey + rowKey;
+                            matchBuilder.appendKey(originalRowKey);
                         }
                     }
                 }
