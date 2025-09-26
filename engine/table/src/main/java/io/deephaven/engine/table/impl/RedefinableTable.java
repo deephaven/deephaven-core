@@ -161,11 +161,11 @@ public abstract class RedefinableTable<IMPL_TYPE extends RedefinableTable<IMPL_T
                     continue;
                 }
                 resultColumnsExternal[resultColIdx] = cDef;
-                viewColumns[resultColIdx] = new SourceColumn(cDef.getName());
+                viewColumns[resultColIdx] = new SourceColumn(oldName);
                 resultColIdx++;
             } else {
                 resultColumnsExternal[resultColIdx] = cDef.withName(newName);
-                viewColumns[resultColIdx] = new SourceColumn(cDef.getName(), newName);
+                viewColumns[resultColIdx] = new SourceColumn(oldName, newName);
                 resultColIdx++;
             }
         }
