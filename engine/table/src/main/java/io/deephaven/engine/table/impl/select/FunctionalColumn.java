@@ -8,6 +8,7 @@ import io.deephaven.engine.table.*;
 import io.deephaven.api.util.NameValidator;
 import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.NoSuchColumnException;
+import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
 import io.deephaven.engine.table.impl.sources.SparseArrayColumnSource;
 import io.deephaven.engine.table.impl.sources.ViewColumnSource;
@@ -235,7 +236,7 @@ public class FunctionalColumn<S, D> implements SelectColumn {
 
     @Override
     public boolean isStateless() {
-        return false;
+        return QueryTable.STATELESS_SELECT_BY_DEFAULT;
     }
 
     @Override

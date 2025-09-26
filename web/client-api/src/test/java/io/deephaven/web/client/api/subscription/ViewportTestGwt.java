@@ -55,7 +55,11 @@ public class ViewportTestGwt extends AbstractAsyncGwtTestCase {
                     "time_table(\"PT00:00:01\").update([\"I=i\", \"J=1\"]).last_by(by=\"J\").where(\"I%2 != 0\")")
             .script("big", "empty_table(1_000_000).update_view(['I=i', 'Str=``+I']).where('I % 2 == 0')")
             .script("small", "big.head(100)")
-            .script("arrays", "small.update('A = I % 4').group_by('A').update('J = I.toArray()')");
+            .script("arrays", "small.update('A = I % 4').group_by('A').update('J = I.toArray()')")
+            .script("more_arrays",
+                    "empty_table(1).update([\"doublevector_int=i\", \"doublevector_string=``\"]).group_by()" +
+                            ".update([\"vector_int=i\", \"vector_string=``\"]).group_by()" +
+                            ".update([\"array_int=new int[]{i}\", \"doublearray_int=new int[][] {{i}}\",\"array_string=new String[]{``}\",\"doublearray_string=new String[][]{{``}}\"])");
 
     public void testViewportOnStaticTable() {
         connect(tables)
@@ -996,6 +1000,38 @@ public class ViewportTestGwt extends AbstractAsyncGwtTestCase {
                             snapshotTest,
                             subPromise,
                             viewportSubPromise);
+                })
+                .then(this::finish).catch_(this::report);
+    }
+
+    public void testNestedArrays() {
+        connect(tables)
+                .then(table("more_arrays"))
+                .then(t -> {
+                    delayTestFinish(8413);
+
+                    DataOptions.SnapshotOptions snapshotOptions = new DataOptions.SnapshotOptions();
+                    snapshotOptions.columns = t.getColumns();
+                    snapshotOptions.rows = Js.uncheckedCast(JsRangeSet.ofRange(0, 1));
+                    return t.createSnapshot(snapshotOptions).then(snapshot -> {
+                        for (int i = 0; i < t.getColumns().length; i++) {
+                            Column c = t.getColumns().getAt(i);
+                            Any data = snapshot.getData(0, c);
+                            assertNotNull(data);
+                            // single array/vector
+                            assertTrue(JsArray.isArray(data));
+                            assertEquals(1, data.asArrayLike().getLength());
+                            if (c.getName().startsWith("double") || c.getName().startsWith("triple")) {
+                                // double array/vector
+                                assertTrue(JsArray.isArray(data.asArray()[0]));
+                                if (c.getName().startsWith("triple")) {
+                                    // triple array/vector
+                                    assertTrue(JsArray.isArray(data.asArray()[0].asArray()[0]));
+                                }
+                            }
+                        }
+                        return Promise.resolve(snapshot);
+                    });
                 })
                 .then(this::finish).catch_(this::report);
     }

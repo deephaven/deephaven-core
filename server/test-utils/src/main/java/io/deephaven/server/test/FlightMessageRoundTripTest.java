@@ -59,6 +59,7 @@ import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.mutable.MutableInt;
 import io.deephaven.vector.DoubleVector;
 import io.deephaven.vector.IntVector;
+import io.deephaven.vector.ObjectVector;
 import io.grpc.*;
 import io.grpc.CallOptions;
 import org.apache.arrow.flight.*;
@@ -619,6 +620,175 @@ public abstract class FlightMessageRoundTripTest {
             // row count should match what we expect
             assertEquals(10, totalRowCount);
         }
+    }
+
+    @Test
+    public void testComplexTypedTable() throws Exception {
+        Flight.Ticket simpleTableTicket = FlightExportTicketHelper.exportIdToFlightTicket(1);
+        currentSession.newExport(simpleTableTicket, "test")
+                .submit(() -> TableTools.emptyTable(1)
+                        .update("triplevector_int=i", "triplevector_string=``").groupBy()
+                        .update("doublevector_int=i", "doublevector_string=``").groupBy()
+                        .update("vector_int=i", "vector_string=``").groupBy()
+                        .update("array_int=new int[]{i}", "doublearray_int=new int[][] {{i}}",
+                                "array_string=new String[]{``}",
+                                "doublearray_string=new String[][]{{``}}"));
+
+        Map<String, Field> arrowFieldTypeMap = new HashMap<>();
+        Map<String, String> dhTypeMap = new HashMap<>();
+        Map<String, String> dhComponentTypeMap = new HashMap<>();
+        int seen = 0;
+        try (FlightStream stream = flightClient.getStream(new Ticket(simpleTableTicket.getTicket().toByteArray()))) {
+            Schema schema = stream.getSchema();
+            for (Field field : schema.getFields()) {
+                if (!field.getName().isBlank()) {
+                    seen++;
+                    switch (field.getName()) {
+                        case "triplevector_int": {
+                            assertEquals(ArrowType.ArrowTypeID.List, field.getType().getTypeID());
+                            List<Field> children = field.getChildren();
+                            assertEquals(1, children.size());
+                            Field child = children.get(0);
+                            assertEquals(ArrowType.ArrowTypeID.List, child.getType().getTypeID());
+                            List<Field> grandChildren = child.getChildren();
+                            assertEquals(1, grandChildren.size());
+                            Field grandChild = grandChildren.get(0);
+                            // Even though this is a primitive int vector, the third layer of wrapping means it has to
+                            // be made into a string
+                            assertEquals(ArrowType.ArrowTypeID.Utf8, grandChild.getType().getTypeID());
+
+                            assertEquals(ObjectVector.class.getName(), field.getMetadata().get("deephaven:type"));
+                            assertEquals(ObjectVector.class.getName(),
+                                    field.getMetadata().get("deephaven:componentType"));
+                            break;
+                        }
+                        case "triplevector_string": {
+                            assertEquals(ArrowType.ArrowTypeID.List, field.getType().getTypeID());
+                            List<Field> children = field.getChildren();
+                            assertEquals(1, children.size());
+                            Field child = children.get(0);
+                            assertEquals(ArrowType.ArrowTypeID.List, child.getType().getTypeID());
+                            List<Field> grandChildren = child.getChildren();
+                            assertEquals(1, grandChildren.size());
+                            Field grandChild = grandChildren.get(0);
+                            // Even though this is a ObjectVector<String>, the third layer of wrapping means it has to
+                            // be made into a string
+                            assertEquals(ArrowType.ArrowTypeID.Utf8, grandChild.getType().getTypeID());
+
+                            assertEquals(ObjectVector.class.getName(), field.getMetadata().get("deephaven:type"));
+                            assertEquals(ObjectVector.class.getName(),
+                                    field.getMetadata().get("deephaven:componentType"));
+                            break;
+                        }
+                        case "doublevector_int": {
+                            assertEquals(ArrowType.ArrowTypeID.List, field.getType().getTypeID());
+                            List<Field> children = field.getChildren();
+                            assertEquals(1, children.size());
+                            Field child = children.get(0);
+                            assertEquals(ArrowType.ArrowTypeID.List, child.getType().getTypeID());
+                            List<Field> grandChildren = child.getChildren();
+                            assertEquals(1, grandChildren.size());
+                            Field grandChild = grandChildren.get(0);
+                            assertEquals(ArrowType.ArrowTypeID.Int, grandChild.getType().getTypeID());
+                            assertEquals(ObjectVector.class.getName(), field.getMetadata().get("deephaven:type"));
+                            assertEquals(IntVector.class.getName(), field.getMetadata().get("deephaven:componentType"));
+                            break;
+                        }
+                        case "doublevector_string": {
+                            assertEquals(ArrowType.ArrowTypeID.List, field.getType().getTypeID());
+                            List<Field> children = field.getChildren();
+                            assertEquals(1, children.size());
+                            Field child = children.get(0);
+                            assertEquals(ArrowType.ArrowTypeID.List, child.getType().getTypeID());
+                            List<Field> grandChildren = child.getChildren();
+                            assertEquals(1, grandChildren.size());
+                            Field grandChild = grandChildren.get(0);
+                            assertEquals(ArrowType.ArrowTypeID.Utf8, grandChild.getType().getTypeID());
+                            assertEquals(ObjectVector.class.getName(), field.getMetadata().get("deephaven:type"));
+                            assertEquals(ObjectVector.class.getName(),
+                                    field.getMetadata().get("deephaven:componentType"));
+                            break;
+                        }
+                        case "vector_int": {
+                            assertEquals(ArrowType.ArrowTypeID.List, field.getType().getTypeID());
+                            List<Field> children = field.getChildren();
+                            assertEquals(1, children.size());
+                            Field child = children.get(0);
+                            assertEquals(ArrowType.ArrowTypeID.Int, child.getType().getTypeID());
+                            assertEquals(IntVector.class.getName(), field.getMetadata().get("deephaven:type"));
+                            assertEquals("int", field.getMetadata().get("deephaven:componentType"));
+                            break;
+                        }
+                        case "vector_string": {
+                            assertEquals(ArrowType.ArrowTypeID.List, field.getType().getTypeID());
+                            List<Field> children = field.getChildren();
+                            assertEquals(1, children.size());
+                            Field child = children.get(0);
+                            assertEquals(ArrowType.ArrowTypeID.Utf8, child.getType().getTypeID());
+                            assertEquals(ObjectVector.class.getName(), field.getMetadata().get("deephaven:type"));
+                            assertEquals("java.lang.String", field.getMetadata().get("deephaven:componentType"));
+                            break;
+                        }
+                        case "array_int": {
+                            assertEquals(ArrowType.ArrowTypeID.List, field.getType().getTypeID());
+                            List<Field> children = field.getChildren();
+                            assertEquals(1, children.size());
+                            Field child = children.get(0);
+                            assertEquals(ArrowType.ArrowTypeID.Int, child.getType().getTypeID());
+                            assertEquals("int[]", field.getMetadata().get("deephaven:type"));
+                            assertEquals("int", field.getMetadata().get("deephaven:componentType"));
+                            break;
+                        }
+                        case "doublearray_int": {
+                            assertEquals(ArrowType.ArrowTypeID.List, field.getType().getTypeID());
+                            List<Field> children = field.getChildren();
+                            assertEquals(1, children.size());
+                            Field child = children.get(0);
+                            assertEquals(ArrowType.ArrowTypeID.List, child.getType().getTypeID());
+                            List<Field> grandChildren = child.getChildren();
+                            assertEquals(1, grandChildren.size());
+                            Field grandChild = grandChildren.get(0);
+                            assertEquals(ArrowType.ArrowTypeID.Int, grandChild.getType().getTypeID());
+                            assertEquals("int[][]", field.getMetadata().get("deephaven:type"));
+                            assertEquals("int[]", field.getMetadata().get("deephaven:componentType"));
+                            break;
+                        }
+                        case "array_string": {
+                            assertEquals(ArrowType.ArrowTypeID.List, field.getType().getTypeID());
+                            List<Field> children = field.getChildren();
+                            assertEquals(1, children.size());
+                            Field child = children.get(0);
+                            assertEquals(ArrowType.ArrowTypeID.Utf8, child.getType().getTypeID());
+                            assertEquals("java.lang.String[]", field.getMetadata().get("deephaven:type"));
+                            assertEquals("java.lang.String", field.getMetadata().get("deephaven:componentType"));
+
+                            break;
+                        }
+                        case "doublearray_string": {
+                            assertEquals(ArrowType.ArrowTypeID.List, field.getType().getTypeID());
+                            List<Field> children = field.getChildren();
+                            assertEquals(1, children.size());
+                            Field child = children.get(0);
+                            assertEquals(ArrowType.ArrowTypeID.List, child.getType().getTypeID());
+                            List<Field> grandChildren = child.getChildren();
+                            assertEquals(1, grandChildren.size());
+                            Field grandChild = grandChildren.get(0);
+                            assertEquals(ArrowType.ArrowTypeID.Utf8, grandChild.getType().getTypeID());
+                            assertEquals("java.lang.String[][]", field.getMetadata().get("deephaven:type"));
+                            assertEquals("java.lang.String[]", field.getMetadata().get("deephaven:componentType"));
+
+                            break;
+                        }
+                        default:
+                            fail("Unexpected field: " + field.getName());
+                    }
+                    arrowFieldTypeMap.put(field.getName(), field);
+                    dhTypeMap.put(field.getName(), field.getMetadata().get("deephaven:type"));
+                    dhComponentTypeMap.put(field.getName(), field.getMetadata().get("deephaven:componentType"));
+                }
+            }
+        }
+        assertEquals(10, seen);
     }
 
     @Test

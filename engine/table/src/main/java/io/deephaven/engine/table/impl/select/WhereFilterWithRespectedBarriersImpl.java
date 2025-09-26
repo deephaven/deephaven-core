@@ -3,29 +3,28 @@
 //
 package io.deephaven.engine.table.impl.select;
 
-import io.deephaven.api.Strings;
-
 import java.util.Arrays;
 
 /**
- * A wrapper for a {@link WhereFilter} that declares this filter as respecting one or more barriers. A barrier is a
- * filter that must be executed before other filters that respect it. It is an error to respect a non-declared barrier.
+ * A wrapper for a {@link WhereFilter} that declares this filter as respecting one or more barriers. A barrier indicates
+ * that one filter must be executed before other filters that respect it. It is an error to respect a non-declared
+ * barrier.
  */
-public class WhereFilterRespectsBarrierImpl extends WhereFilterDelegatingBase {
+public class WhereFilterWithRespectedBarriersImpl extends WhereFilterDelegatingBase {
     /**
      * Wraps the provided {@link WhereFilter} with respecting-barrier behavior.
      *
      * @param filter the filter to wrap
      * @param respectedBarriers the barriers that this filter respects
-     * @return a new {@code WhereFilterRespectsBarrierImpl} instance that respects the barriers
+     * @return a new {@code WhereFilter} instance that respects the barriers
      */
     public static WhereFilter of(WhereFilter filter, Object... respectedBarriers) {
-        return new WhereFilterRespectsBarrierImpl(filter, respectedBarriers);
+        return new WhereFilterWithRespectedBarriersImpl(filter, respectedBarriers);
     }
 
     private final Object[] respectedBarriers;
 
-    private WhereFilterRespectsBarrierImpl(
+    private WhereFilterWithRespectedBarriersImpl(
             WhereFilter filter,
             Object... respectedBarriers) {
         super(filter);
@@ -37,12 +36,12 @@ public class WhereFilterRespectsBarrierImpl extends WhereFilterDelegatingBase {
     }
 
     public WhereFilter copy() {
-        return new WhereFilterRespectsBarrierImpl(filter.copy(), respectedBarriers);
+        return new WhereFilterWithRespectedBarriersImpl(filter.copy(), respectedBarriers);
     }
 
     @Override
     public String toString() {
-        return "respectsBarrier{" +
+        return "withRespectedBarriers{" +
                 "respectedBarriers=" + Arrays.toString(respectedBarriers) +
                 ", filter=" + filter +
                 '}';
