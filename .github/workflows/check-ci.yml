@@ -14,6 +14,21 @@ jobs:
   checks:
     runs-on: ubuntu-24.04
     steps:
+      - name: Free Disk Space
+        uses: endersonmenezes/free-disk-space@v2
+        with:
+          remove_haskell: true
+          remove_folders: "/usr/share/swift /usr/share/miniconda /usr/share/az* /usr/local/share/chromium /usr/local/share/powershell /usr/local/julia /usr/local/aws-cli /usr/share/gradle"
+          testing: false
+
+      - name: Starting available disk space
+        run: df -h
+
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          lfs: true
+
       - name: Checkout
         uses: actions/checkout@v5
         with:
@@ -46,6 +61,9 @@ jobs:
 
       - name: Check
         run: ./gradlew --scan --continue check
+
+      - name: Run df -h after build
+        run: df -h
 
       - name: Upload Test Results
         uses: actions/upload-artifact@v4
