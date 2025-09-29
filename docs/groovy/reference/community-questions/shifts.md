@@ -5,7 +5,7 @@ sidebar_label: How do row keys and positional indices behave during table operat
 
 _When working with tables in Deephaven, I understand that "shifts" can happen when tables grow beyond their allocated row key slots. How do the row key (k) and positional index (i) attributes change during these shifts, and what impact does this have on downstream operations?_
 
-**Shifts can occur with any table operation that works with live/refreshing data** - including merges, joins, updates, selects, and other operations. When you merge tables in Deephaven, the engine pre-allocates row key slots for each constituent table. Understanding how row keys (`k`) and positional indices (`i`) behave during growth and shifts is crucial for working with formulas that reference these attributes.
+**Shifts can occur with any table operation that works with live/refreshing data** - including merges, joins, updates, selects, and other operations. For example, when you merge tables in Deephaven, the engine pre-allocates row key slots for each constituent table. Understanding how row keys (`k`) and positional indices (`i`) behave during growth and shifts is crucial for working with formulas that reference these attributes.
 
 ## Key terms
 
