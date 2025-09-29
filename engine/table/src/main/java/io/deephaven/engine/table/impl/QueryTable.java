@@ -272,6 +272,13 @@ public class QueryTable extends BaseTable<QueryTable> {
             Configuration.getInstance().getBooleanWithDefault("QueryTable.disableWherePushdownDataIndex", false);
 
     /**
+     * Disable the usage of parquet row group dictionaries during push-down filtering.
+     */
+    public static boolean DISABLE_WHERE_PUSHDOWN_PARQUET_DICTIONARY =
+            Configuration.getInstance().getBooleanWithDefault("QueryTable.disableWherePushdownParquetDictionary",
+                    false);
+
+    /**
      * You can choose to enable or disable the column parallel select and update.
      */
     static boolean ENABLE_PARALLEL_SELECT_AND_UPDATE =
@@ -303,7 +310,8 @@ public class QueryTable extends BaseTable<QueryTable> {
 
     /**
      * If set to true, then the default behavior of condition filters is to be stateless. Stateless filters are allowed
-     * to be processed in parallel by the engine.
+     * to be processed in parallel by the engine. Also, enabling this setting allows the engine to push down filters to
+     * the data source when possible, like in case of parquet files.
      */
     public static boolean STATELESS_FILTERS_BY_DEFAULT =
             Configuration.getInstance().getBooleanWithDefault("QueryTable.statelessFiltersByDefault", false);
