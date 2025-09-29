@@ -69,7 +69,7 @@ Package persistence will not be a problem if you're using pip-installed Deephave
 
 Large datasets require significant memory — often much more than the 4G that Deephaven allocates by default. Fortunately, it's easy to give Deephaven more memory, whether you have a Docker or a pip installation.
 
-If you're using Docker-installed Deephaven, Docker itself imposes memory constraints on processes it runs - you can raise this ceiling in [Docker Desktop](https://docs.docker.com/desktop/settings/mac/#resources) by going to `Settings > Resources` and raising the memory parameter. Then, you can specify the memory allocated to Deephaven with the `-Xmx` flag. Here's the command to pull and run the latest version of the Deephaven server with 16G of RAM:
+If you're using Docker-installed Deephaven, Docker itself imposes memory constraints on processes it runs - you can raise this ceiling in [Docker Desktop](https://docs.docker.com/desktop/settings-and-maintenance/settings/#resources) by going to `Settings > Resources` and raising the memory parameter. Then, you can specify the memory allocated to Deephaven with the `-Xmx` flag. Here's the command to pull and run the latest version of the Deephaven server with 16G of RAM:
 
 ```bash skip-test
 docker run --rm --name deephaven -p 10000:10000 --env START_OPTS=-Xmx16g ghcr.io/deephaven/server:latest
