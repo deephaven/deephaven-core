@@ -12,7 +12,7 @@ calcite = "1.39.0"
 classgraph = "4.8.180"
 commons-compress = "1.27.1"
 commons-io = "2.20.0"
-commons-lang3 = "3.18.0"
+commons-lang3 = "3.19.0"
 commons-math3 = "3.6.1"
 commons-text = "1.13.1"
 # confluent and confluent-kafak-clients should be kept in-sync
