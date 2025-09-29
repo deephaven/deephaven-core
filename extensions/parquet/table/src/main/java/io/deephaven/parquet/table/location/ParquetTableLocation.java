@@ -1006,15 +1006,15 @@ public class ParquetTableLocation extends AbstractTableLocation {
                 // row group.
                 final long subRegionFirstKey = getSubRegionFirstKey(rgIdx);
                 final int CHUNK_SIZE = 4096;
-                try (final RowSet tmpRowSet = rs.asRowSet().shift(-subRegionFirstKey);
-                        final RowSequence.Iterator tmpIt = tmpRowSet.getRowSequenceIterator();
+                try (final RowSet shiftedRowSet = rs.asRowSet().shift(-subRegionFirstKey);
+                        final RowSequence.Iterator it = shiftedRowSet.getRowSequenceIterator();
                         final ChunkSource.GetContext getContext = valueStore.makeGetContext(CHUNK_SIZE);
                         final WritableLongChunk<OrderedRowKeys> results =
                                 WritableLongChunk.makeWritableChunk(CHUNK_SIZE)) {
-                    while (tmpIt.hasMore()) {
-                        final RowSequence tmpRs = tmpIt.getNextRowSequenceWithLength(CHUNK_SIZE);
-                        final Chunk<? extends DictionaryKeys> valueChunk = valueStore.getChunk(getContext, tmpRs);
-                        matchChunkFilter.filter(valueChunk, tmpRs.asRowKeyChunk(), results);
+                    while (it.hasMore()) {
+                        final RowSequence nextRowSeq = it.getNextRowSequenceWithLength(CHUNK_SIZE);
+                        final Chunk<? extends DictionaryKeys> valueChunk = valueStore.getChunk(getContext, nextRowSeq);
+                        matchChunkFilter.filter(valueChunk, nextRowSeq.asRowKeyChunk(), results);
 
                         // Iterate over matching row keys, convert them to original row space and save them as a match
                         final int numMatches = results.size();

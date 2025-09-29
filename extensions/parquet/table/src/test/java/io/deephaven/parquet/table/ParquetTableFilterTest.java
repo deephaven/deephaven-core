@@ -1754,4 +1754,89 @@ public final class ParquetTableFilterTest {
         filterAndVerifyResults(diskTable, diskTable.select(),
                 ConditionFilter.createStateless("new TestHelperClass().compare(X, ii)"));
     }
+
+    @Test
+    public void testMixedDictionaryEncodingRowGroups() {
+        final Table source = TableTools.newTable(
+                stringCol("StringCol",
+                        "This", "is", "okay", // Row group 1
+                        "This is too long for dictionary", "but we keep going", null, // Row group 2
+                        "Something", null)); // Row group 3
+
+        final ParquetInstructions writeInstructions = new ParquetInstructions.Builder()
+                .setRowGroupInfo(RowGroupInfo.maxRows(3))
+                .setMaximumDictionarySize(15) // Force second row group to use non-dictionary encoding
+                .setWriteRowGroupStatistics(false)
+                .build();
+
+        final String destPath = Path.of(rootFile.getPath(), "mixedDictionaryEncodingRowGroups") + ".parquet";
+        writeTable(source, destPath, writeInstructions);
+
+        // Verify the first and third row group are properly dictionary encoded, while the second is not
+        {
+            final ParquetMetadata metadata =
+                    new ParquetTableLocationKey(new File(destPath).toURI(), 0, null, ParquetInstructions.EMPTY)
+                            .getMetadata();
+            final String firstRowGroupMetadata = metadata.getBlocks().get(0).getColumns().get(0).toString();
+            assertTrue(firstRowGroupMetadata.contains("StringCol") && firstRowGroupMetadata.contains("RLE_DICTIONARY"));
+
+            final String secondRowGroupMetadata = metadata.getBlocks().get(1).getColumns().get(0).toString();
+            assertTrue(
+                    secondRowGroupMetadata.contains("StringCol") && !secondRowGroupMetadata.contains("RLE_DICTIONARY"));
+
+            final String thirdRowGroupMetadata = metadata.getBlocks().get(2).getColumns().get(0).toString();
+            assertTrue(thirdRowGroupMetadata.contains("StringCol") && thirdRowGroupMetadata.contains("RLE_DICTIONARY"));
+        }
+
+        // Read back and test filtering
+        final Table diskTable = ParquetTools.readTable(destPath);
+        final Table memTable = diskTable.select();
+
+        filterAndVerifyResults(diskTable, memTable,
+                ConditionFilter.createStateless("StringCol = `This`"));
+        filterAndVerifyResults(diskTable, memTable,
+                ConditionFilter.createStateless("StringCol = `but we keep going`"));
+        filterAndVerifyResults(diskTable, memTable,
+                ConditionFilter.createStateless("StringCol = null"));
+        filterAndVerifyResults(diskTable, memTable,
+                ConditionFilter.createStateless("StringCol = null || StringCol = `This`"));
+        filterAndVerifyResults(diskTable, memTable,
+                ConditionFilter.createStateless("StringCol = null || StringCol != null"));
+    }
+
+
+    @Test
+    public void testNonDictionaryEncodingStrings() {
+        final Table source = TableTools.newTable(
+                stringCol("StringCol",
+                        "This is too long for dictionary", "but we keep going", null, "anyways", null));
+
+        final ParquetInstructions writeInstructions = new ParquetInstructions.Builder()
+                .setMaximumDictionarySize(15) // Force row group to use non-dictionary encoding
+                .setWriteRowGroupStatistics(false)
+                .build();
+
+        final String destPath = Path.of(rootFile.getPath(), "nonDictionaryEncodingStrings") + ".parquet";
+        writeTable(source, destPath, writeInstructions);
+
+        // Verify tht the row group is not dictionary encoded
+        {
+            final ParquetMetadata metadata =
+                    new ParquetTableLocationKey(new File(destPath).toURI(), 0, null, ParquetInstructions.EMPTY)
+                            .getMetadata();
+            final String rowGroupMetadata = metadata.getBlocks().get(0).getColumns().get(0).toString();
+            assertTrue(rowGroupMetadata.contains("StringCol") && !rowGroupMetadata.contains("RLE_DICTIONARY"));
+        }
+
+        // Read back and test filtering
+        final Table diskTable = ParquetTools.readTable(destPath);
+        final Table memTable = diskTable.select();
+
+        filterAndVerifyResults(diskTable, memTable,
+                ConditionFilter.createStateless("StringCol = `anyways`"));
+        filterAndVerifyResults(diskTable, memTable,
+                ConditionFilter.createStateless("StringCol = null"));
+        filterAndVerifyResults(diskTable, memTable,
+                ConditionFilter.createStateless("StringCol = null || StringCol != null"));
+    }
 }
