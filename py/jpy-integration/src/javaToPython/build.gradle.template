@@ -15,6 +15,6 @@ test.systemProperties([
         // when necessary.
         // TODO issue #651 to see if we can remove this
         'PyObject.cleanup_on_thread':'false',
-        'jpy.debug':'true',
+        //'jpy.debug':'true',
         //'jpy.flags':'ALL'
 ])
