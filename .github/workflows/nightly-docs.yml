@@ -29,7 +29,7 @@ jobs:
           path: docs/snapshotter/errors/
 
       - name: Slack Notification
-        uses: slackapi/slack-github-action@v1.23.0
+        uses: slackapi/slack-github-action@v2.1.1
         if: failure()
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL_DEVREL}}
@@ -67,7 +67,7 @@ jobs:
         path: docs/validator-results/
 
     - name: Slack Notification
-      uses: slackapi/slack-github-action@v1.23.0
+      uses: slackapi/slack-github-action@v2.1.1
       if: failure()
       env:
         SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL_DEVREL}}
