@@ -12,7 +12,7 @@ Each method invocation is then either permitted or denied based on configuration
 - Annotations
 - Pointcut expressions
 
-# Annotations
+## Annotations
 
 When you control the source code of the class defining the methods you would like to call, the most flexible way to control access to those methods is using the [`@UserInvocationPermitted`](https://docs.deephaven.io/core/javadoc/io/deephaven/util/annotations/UserInvocationPermitted.html) annotation. The `value` argument of the annotation is a string name used to identify permitted methods in the configuration properties. You can apply the annotation to a class, in which case all methods are permitted by default. You can limit the methods to either `Static` or `Instance` by specifying a `classScope` parameter to the annotation.
 
@@ -70,7 +70,7 @@ The default configuration for Deephaven libraries is:
 ColumnExpressionValidator.annotationSets.default=base,vector,function_library
 ```
 
-# Pointcut expressions
+## Pointcut expressions
 
 If you do not control the class defining the methods you would like to call (like for those provided by the JDK), you can define properties to permit methods using pattern matching.
 
