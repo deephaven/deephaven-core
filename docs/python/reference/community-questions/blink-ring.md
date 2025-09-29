@@ -1,5 +1,5 @@
 ---
-title: "How can I construct a ring table of the first row of the last N update cycles of a blink table?
+title: "How can I construct a ring table of the first row of the last N update cycles of a blink table?"
 sidebar_label: "How can I store the first row of the last N blinks of a table?"
 ---
 
