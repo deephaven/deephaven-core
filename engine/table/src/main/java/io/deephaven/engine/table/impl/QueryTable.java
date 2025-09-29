@@ -314,7 +314,7 @@ public class QueryTable extends BaseTable<QueryTable> {
      * the data source when possible, like in case of parquet files.
      */
     public static boolean STATELESS_FILTERS_BY_DEFAULT =
-            Configuration.getInstance().getBooleanWithDefault("QueryTable.statelessFiltersByDefault", true);
+            Configuration.getInstance().getBooleanWithDefault("QueryTable.statelessFiltersByDefault", false);
 
     /**
      * If set to true, then the default behavior of formulas is to be stateless. Stateless formulas are allowed to be

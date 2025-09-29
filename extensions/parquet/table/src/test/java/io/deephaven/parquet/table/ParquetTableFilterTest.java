@@ -69,11 +69,6 @@ public final class ParquetTableFilterTest {
 
     private static File rootFile;
 
-    static {
-        // Enable stateless filters to enable pushdown-based filtering for Condition filters
-        Configuration.getInstance().setProperty("QueryTable.statelessFiltersByDefault", "true");
-    }
-
     @Rule
     public final EngineCleanup framework = new EngineCleanup();
 
