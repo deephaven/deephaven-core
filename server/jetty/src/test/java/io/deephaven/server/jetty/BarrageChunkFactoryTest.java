@@ -1413,7 +1413,7 @@ public class BarrageChunkFactoryTest {
             new Utf8RoundTripTest(BarrageChunkFactoryTest.class, new ArrowType.Utf8()).runTest();
             Assert.statementNeverExecuted("Should have thrown an exception");
         } catch (FlightRuntimeException fre) {
-            assertTrue(fre.getMessage().contains("No known Barrage ChunkReader"));
+            assertTrue(fre.getMessage().contains("cannot be serialized directly. Consider an updateView()"));
         }
     }
 

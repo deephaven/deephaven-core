@@ -88,7 +88,7 @@ The following example adds new data to the publisher with [`emptyTable`](./new-a
 > [!IMPORTANT]
 > A ticking table in a thread must be updated from within an [execution context](../conceptual/execution-context.md).
 
-```groovy ticking-table order=null
+```groovy ticking-table order=null reset
 import io.deephaven.engine.context.ExecutionContext
 import io.deephaven.csv.util.MutableBoolean
 import io.deephaven.engine.table.ColumnDefinition
@@ -317,12 +317,12 @@ All table updates emanate from the [Periodic Update Graph](/core/docs/conceptual
 ## Related documentation
 
 - [Create new tables](./new-and-empty-table.md#newtable)
-- [Deephaven data types](../conceptual/groovy-data-types.md)
+- [Deephaven data types](./data-types.md)
 - [Deephaven's table update model](../conceptual/table-update-model.md)
 - [DynamicTableWriter](../reference/table-operations/create/DynamicTableWriter.md)
 - [Execution Context](../conceptual/execution-context.md)
 - [How to use Java packages in query strings](./install-and-use-java-packages.md#use-java-packages-in-query-strings)
-- [Query Scope](../conceptual/queryscope.md)
+- [Query Scope](./queryscope.md)
 - [`TablePublisher`](../reference/table-operations/create/TablePublisher.md)
 - [`DynamicTableWriter` Javadoc](/core/javadoc/io/deephaven/engine/table/impl/util/DynamicTableWriter.html)
 - [`TablePublisher` Javadoc](https://docs.deephaven.io/core/javadoc/io/deephaven/stream/TablePublisher.html)

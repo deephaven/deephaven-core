@@ -57,7 +57,7 @@ Step-by-step guides to help you achieve a specific goal. Most useful when you're
 
 Popular guides
 
-- [Use filters](./how-to-guides/use-filters.md)
+- [Use filters](./how-to-guides/filters.md)
 - [Group and ungroup data](./how-to-guides/grouping-data.md)
 - [Read Parquet files](./how-to-guides/data-import-export/parquet-import.md)
 - [Write Parquet files](./how-to-guides/data-import-export/parquet-export.md)

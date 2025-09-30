@@ -206,19 +206,19 @@ public interface Filter extends Expression, ConcurrencyControl<Filter> {
      * @param barriers the barrier objects being declared
      * @return a FilterBarrier instance wrapping the provided filter
      */
-    static FilterBarrier barrier(Filter filter, Object... barriers) {
-        return FilterBarrier.of(filter, barriers);
+    static FilterWithDeclaredBarriers declaredBarriers(Filter filter, Object... barriers) {
+        return FilterWithDeclaredBarriers.of(filter, barriers);
     }
 
     /**
      * Wraps the given filter with a FilterBarrier to declare a barrier that other filters can respect.
      *
      * @param filter the filter to wrap
-     * @param barriers the barrier objects that need to be respected
+     * @param respectedBarriers the barrier objects that need to be respected
      * @return a FilterBarrier instance wrapping the provided filter
      */
-    static FilterRespectsBarrier respectsBarrier(Filter filter, Object... barriers) {
-        return FilterRespectsBarrier.of(filter, barriers);
+    static FilterWithRespectedBarriers respectedBarrier(Filter filter, Object... respectedBarriers) {
+        return FilterWithRespectedBarriers.of(filter, respectedBarriers);
     }
 
     /**
@@ -248,13 +248,13 @@ public interface Filter extends Expression, ConcurrencyControl<Filter> {
     }
 
     @Override
-    default Filter respectsBarriers(Object... barriers) {
-        return respectsBarrier(this, barriers);
+    default Filter withRespectedBarriers(Object... respectedBarriers) {
+        return respectedBarrier(this, respectedBarriers);
     }
 
     @Override
-    default Filter withBarriers(Object... barriers) {
-        return barrier(this, barriers);
+    default Filter withDeclaredBarriers(Object... declaredBarriers) {
+        return declaredBarriers(this, declaredBarriers);
     }
 
     <T> T walk(Visitor<T> visitor);
@@ -277,9 +277,9 @@ public interface Filter extends Expression, ConcurrencyControl<Filter> {
 
         T visit(FilterSerial serial);
 
-        T visit(FilterBarrier barrier);
+        T visit(FilterWithDeclaredBarriers declaredBarrier);
 
-        T visit(FilterRespectsBarrier respectsBarrier);
+        T visit(FilterWithRespectedBarriers respectedBarrier);
 
         T visit(Function function);
 

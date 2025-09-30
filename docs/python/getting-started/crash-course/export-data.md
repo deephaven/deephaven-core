@@ -144,7 +144,7 @@ deephaven_table = my_iceberg_table_adapter.table(
 
 Similarly, this code writes a Deephaven table to an Iceberg table. If the target table does not exist, it will be created.
 
-```python test-set=6 docker-config=iceberg order=null
+```python docker-config=iceberg order=null
 from deephaven.experimental import iceberg
 from deephaven import new_table
 from deephaven.column import int_col, string_col
@@ -217,7 +217,7 @@ Deephaven provides a seamless way to convert tables to [Pandas DataFrames](https
 
 To convert a Deephaven table to a Pandas DataFrame, use the `to_pandas()` function.
 
-```python test-set=6 order=iris,iris_df
+```python order=iris,iris_df
 from deephaven import read_csv
 from deephaven.pandas import to_pandas
 
@@ -234,7 +234,7 @@ iris_df = to_pandas(iris)
 
 You can also convert a Pandas DataFrame back to a Deephaven table using `to_table()` from the same module.
 
-```python test-set=6 order=sample_df,deephaven_table_from_df
+```python order=sample_df,deephaven_table_from_df
 import pandas as pd
 from deephaven.pandas import to_table
 

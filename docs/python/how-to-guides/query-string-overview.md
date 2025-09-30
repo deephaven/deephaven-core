@@ -66,7 +66,7 @@ For more on filtering table data, see [Use filters](./use-filters.md).
 
 ### Literals
 
-A literal is a fixed value that's used in a query string. The [previous section](#filters) used numeric literals in some of the filter statements. The value is defined in the query string itself, not outside of it and then passed in as a parameter. The following example creates a table with several columns, each containing a literal value. The table metadata is included to show the resultant column data types.
+A literal is a fixed value that's used in a query string. The [previous section](#filters) used literals in some of the filter statements. The value is defined in the query string itself, not outside of it and then passed in as a parameter. The following example creates a table with several columns, each containing a literal value. The table metadata is included to show the resultant column data types.
 
 ```python order=literals,literals_meta
 from deephaven import empty_table
@@ -119,7 +119,7 @@ The above example uses the following built-ins:
 - [`randomDouble`](https://docs.deephaven.io/core/javadoc/io/deephaven/function/Random.html#randomDouble(double,double)): A function that generates a random double floating-point precision value between the two input arguments.
 - [`MAX_LONG`](https://docs.deephaven.io/core/javadoc/io/deephaven/util/QueryConstants.html#MAX_LONG): A constant that equals the maximum value of a Java primitive `long`.
 - [`NULL_DOUBLE`](https://docs.deephaven.io/core/javadoc/io/deephaven/util/QueryConstants.html#NULL_DOUBLE): A constant that equals null for a Java primitive `double`.
-- [`now()`](https://docs.deephaven.io/core/javadoc/io/deephaven/time/DateTimeUtils.html#now()): A function that returns the current date-time as an Instant.
+- [`now`](https://docs.deephaven.io/core/javadoc/io/deephaven/time/DateTimeUtils.html#now()): A function that returns the current date-time as an Instant.
 
 For more on query language built-in constants, variables, and functions, see:
 

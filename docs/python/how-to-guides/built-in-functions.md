@@ -71,7 +71,7 @@ To use a non-default Java class in a Deephaven Query Language (DQL) query string
 
 The following example adds the [`java.net.URL`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/net/URL.html) class to the query library then uses it in table operations.
 
-```python order=source
+```python order=source reset
 from deephaven import empty_table
 from deephaven import query_library
 
@@ -91,8 +91,10 @@ You can also import static methods from a class into the query language to use t
 
 > [!NOTE]
 > [`import_static`](https://docs.deephaven.io/core/pydoc/code/deephaven.query_library.html#deephaven.query_library.import_static) allows you to call methods without the class name. The class name is included in the examples below because methods of the same name also exist in the [built-in](./built-in-functions.md) [`io.deephaven.function.Numeric`](https://docs.deephaven.io/core/javadoc/io/deephaven/function/Numeric.html) class.
+>
+> In this case, you can no longer use just `acos`, `exp`, or any of the other method names that exist in both classes as it will be an ambiguous reference.
 
-```python order=source
+```python order=source reset
 from deephaven import empty_table
 from deephaven import query_library
 
@@ -102,7 +104,7 @@ source = empty_table(10).update(
     [
         "X = randomDouble(-1.67, 1.67)",
         "AcosX = StrictMath.acos(X)",
-        "ExpX = StrictMath.exp(X)",
+        "ExpX = io.deephaven.function.Numeric.exp(X)",
         "ExponentX = StrictMath.getExponent(X)",
     ]
 )

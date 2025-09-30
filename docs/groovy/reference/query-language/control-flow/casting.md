@@ -2,7 +2,7 @@
 title: Casting
 ---
 
-Casting is one of the operators used to construct [formulas](../../../how-to-guides/formulas-how-to.md).
+Casting is one of the operators used to construct [formulas](../../../how-to-guides/formulas.md).
 
 ## Usage
 
@@ -87,11 +87,11 @@ numbersMaxMeta = numbersMax.meta().view("Name", "DataType")
 
 - [Access metadata](../../../how-to-guides/metadata.md)
 - [Create an empty table](../../../how-to-guides/new-and-empty-table.md#emptytable)
-- [How to use filters](../../../how-to-guides/use-filters.md)
+- [How to use filters](../../../how-to-guides/filters.md)
 - [How to use select, view, and update](../../../how-to-guides/use-select-view-update.md)
-- [How to use Deephaven's built-in query language functions](../../../how-to-guides/query-language-functions.md)
+- [How to use Deephaven's built-in query language functions](../../../how-to-guides/built-in-functions.md)
 - [Query language functions](../query-library/query-language-function-reference.md)
-- [Formulas](../../../how-to-guides/formulas-how-to.md)
+- [Formulas](../../../how-to-guides/formulas.md)
 - [`meta`](../../table-operations/metadata/meta.md)
 - [`update`](../../table-operations/select/update.md)
 

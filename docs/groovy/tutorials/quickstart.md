@@ -164,7 +164,7 @@ cryptoStreamingRev = cryptoStreamingRev.dropColumns("TransactionTotal")
 
 ![Animated GIF showing removal of TransactionTotal column using drop_columns](../assets/tutorials/quickstart/quickstart-5.gif)
 
-Next, Deephaven offers many operations for filtering tables. These include [`where`](../reference/table-operations/filter/where.md), [`whereIn`](../reference/table-operations/filter/where-in.md), [`whereNotIn`](../reference/table-operations/filter/where-not-in.md), and [more](../how-to-guides/use-filters.md).
+Next, Deephaven offers many operations for filtering tables. These include [`where`](../reference/table-operations/filter/where.md), [`whereIn`](../reference/table-operations/filter/where-in.md), [`whereNotIn`](../reference/table-operations/filter/where-not-in.md), and [more](../how-to-guides/filters.md).
 
 The following code uses [`where`](../reference/table-operations/filter/where.md) to filter for only Bitcoin transactions, and then for Bitcoin and Ethereum transactions:
 
@@ -416,5 +416,5 @@ Now that you've imported data, created tables, and manipulated static and real-t
 - [Joins: Exact and relational](../how-to-guides/joins-exact-relational.md)
 - [Joins: Time series and range joins](../how-to-guides/joins-timeseries-range.md)
 - [Select, view, and update data](../how-to-guides/use-select-view-update.md)
-- [Use filters](../how-to-guides/use-filters.md)
-- [Write a Groovy function](../how-to-guides/user-defined-functions.md)
+- [Use filters](../how-to-guides/filters.md)
+- [Write a Groovy function](../how-to-guides/groovy-closures.md)

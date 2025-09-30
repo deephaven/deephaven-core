@@ -77,7 +77,7 @@ Where:
 - `MM` is the two-digit month (01-12)
 - `DD` is the two-digit day of the month (01-31)
 
-The following code block creates a LocalDate column using a literal:
+The following code block creates a `LocalDate` column using a literal:
 
 ```python order=source
 from deephaven import empty_table
@@ -98,7 +98,7 @@ Where:
 - `ss` is the two-digit second (00-59)
 - `ddddddddd` is the optional fraction of a second in nanoseconds (0-999999999)
 
-The following code block creates a LocalTime column using a literal:
+The following code block creates a `LocalTime` column using a literal:
 
 ```python order=source
 from deephaven import empty_table

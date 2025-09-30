@@ -56,7 +56,7 @@ All three are supported in query strings.
 
 The following example demonstrates all three method types by calling static methods, creating instances with constructors, and calling instance methods:
 
-```python order=source,source_meta
+```python order=source,source_meta reset
 from deephaven import empty_table
 from deephaven import query_library
 
