@@ -19,11 +19,11 @@ This guide explains how to configure formula validation using two main approache
 
 Formula validation happens when you:
 
-- Create calculated columns using `.select()` or `.update()`.
-- Filter tables using `.where()`.
+- Create calculated columns using `select` or `update`.
+- Filter tables using `where`.
 - Use any table operation that involves a formula expression.
 
-**Important**: Validation does **not** apply to:
+Validation does **not** apply to:
 
 - Code you write directly in the console/script editor.
 - Python functions or Groovy closures in your session scope (these are blocked when validation is enabled).
@@ -67,7 +67,7 @@ public class MathUtils {
 
 You can restrict which types of methods are allowed:
 
-```java
+```java syntax
 // Only STATIC methods are allowed from this class
 @UserInvocationPermitted(value = "static_math_methods", classScope = UserInvocationPermitted.ScopeType.Static)
 public class MathOperations {
@@ -97,7 +97,7 @@ public class StringHelper {
 
 For more precise control, annotate specific methods instead of entire classes:
 
-```java
+```java syntax
 public class MixedUtilities {
     @UserInvocationPermitted(value = "safe_math")
     public static double safeDivide(double a, double b) {
@@ -204,44 +204,6 @@ ColumnExpressionValidator.allowedMethods.time=java.time.Instant *(..);java.time.
 ColumnExpressionValidator.allowedMethods.toString=java.lang.Object toString()
 ColumnExpressionValidator.allowedMethods.equals=java.lang.Object equals(java.lang.Object)
 ColumnExpressionValidator.allowedMethods.hashCode=java.lang.Object hashCode()
-```
-
-## Practical examples
-
-### Example 1: Using validated formulas
-
-```groovy
-// These work because String methods are pre-configured
-myTable.select("UpperName = Name.toUpperCase()")
-myTable.select("NameLength = Name.length()")
-
-// This works because Integer methods are pre-configured
-myTable.select("DoubleValue = MyInt.doubleValue()")
-```
-
-### Example 2: Adding your own methods
-
-If you have a custom utility class:
-
-```java
-@UserInvocationPermitted(value = "custom_utils")
-public class MyUtils {
-    public static String formatCurrency(double amount) {
-        return String.format("$%.2f", amount);
-    }
-}
-```
-
-Configure it:
-
-```properties
-ColumnExpressionValidator.annotationSets.myapp=custom_utils
-```
-
-Use it in formulas:
-
-```groovy
-myTable.select("FormattedPrice = MyUtils.formatCurrency(Price)")
 ```
 
 ## Backwards compatibility (Deephaven 0.39.x and earlier)
