@@ -325,6 +325,14 @@ public class QueryTable extends BaseTable<QueryTable> {
     public static boolean STATELESS_SELECT_BY_DEFAULT =
             Configuration.getInstance().getBooleanWithDefault("QueryTable.statelessSelectByDefault", false);
 
+    /**
+     * If set to true, then stateful SelectColumns form implicit barriers. If set to false, then StatefulSelectColumns
+     * do not form implicit barriers.
+     */
+    public static boolean SERIAL_SELECT_IMPLICIT_BARRIERS =
+            Configuration.getInstance().getBooleanWithDefault("QueryTable.serialSelectImplicitBarriers",
+                    STATELESS_SELECT_BY_DEFAULT);
+
     private static final AtomicReferenceFieldUpdater<QueryTable, ModifiedColumnSet> MODIFIED_COLUMN_SET_UPDATER =
             AtomicReferenceFieldUpdater.newUpdater(QueryTable.class, ModifiedColumnSet.class, "modifiedColumnSet");
     private static final AtomicReferenceFieldUpdater<QueryTable, Map> CACHED_OPERATIONS_UPDATER =
