@@ -56,7 +56,7 @@ result = source.update(
 )
 ```
 
-The following example shows how to filter data to only business days and business hours. The `source` table is [filtered](./use-filters.md) twice to create two result tables. The first contains only data that takes place during an NYSE business day, while the second contains only data that takes place during NYSE business hours.
+The following example shows how to filter data to only business days and business hours. The `source` table is [filtered](./filters.md) twice to create two result tables. The first contains only data that takes place during an NYSE business day, while the second contains only data that takes place during NYSE business hours.
 
 ```groovy test-set=1 order=result_bizdays,result_bizhours
 result_bizdays = source.where("nyse_cal.isBusinessDay(Timestamp)")
