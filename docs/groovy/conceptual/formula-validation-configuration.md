@@ -1,12 +1,11 @@
 ---
 title: Formula validation configuration
-sidebar_label: Formula validation configuration
 ---
 
 When you work with Deephaven tables, you often create custom columns or filter data using expressions like:
 
 - `myColumn = x + y * 2`
-- `myTable.where("Price > 100")`
+- `myTable.where("Double.isFinite(Price)")`
 
 These expressions get sent to the Deephaven server over gRPC and compiled into executable code. For security reasons, the server needs to validate that these expressions only call approved methods and functions. Script session code execution is not validated as the Deephaven engine does not parse script code. The console service can be disabled via [configuration](../how-to-guides/configuration/console-service.md#configuration).
 
@@ -40,7 +39,7 @@ When you write a formula, Deephaven:
 
 Use this approach when you're writing your own Java classes and want to make specific methods available in Deephaven formulas.
 
-Annotations are special markers you add to your Java code to indicate which methods should be allowed in formulas. The key annotation is `@UserInvocationPermitted`.
+Annotations are special markers you add to your Java code to indicate which methods should be allowed in formulas. The key annotation is [`@UserInvocationPermitted`](https://docs.deephaven.io/core/javadoc/io/deephaven/util/annotations/UserInvocationPermitted.html).
 
 ### How annotations work
 
@@ -151,7 +150,7 @@ ColumnExpressionValidator.annotationSets.myapp=static_math_methods,string_helper
 
 Use this approach when you want to allow methods from libraries you don't control (like Java's built-in classes, third-party libraries, etc.).
 
-Since you can't add annotations to external code, you use pointcut expressions - patterns that match method signatures.
+Since you can't add annotations to external code, you use pointcut expressions - patterns that match method signatures. AspectJ Pointcut expressions, as defined by [OpenRewrite's method matcher](https://docs.openrewrite.org/reference/method-patterns#examples), are a simple way to match one or more Java methods.
 
 ### Understanding pointcut patterns
 
@@ -200,7 +199,7 @@ ColumnExpressionValidator.allowedMethods.numbers=java.math.BigInteger *(..);java
 # Date and time classes
 ColumnExpressionValidator.allowedMethods.time=java.time.Instant *(..);java.time.LocalTime *(..);java.time.LocalDate *(..);java.time.ZonedDateTime *(..)
 
-# Common Object methods that are always safe
+# Common Object methods that are permitted
 ColumnExpressionValidator.allowedMethods.toString=java.lang.Object toString()
 ColumnExpressionValidator.allowedMethods.equals=java.lang.Object equals(java.lang.Object)
 ColumnExpressionValidator.allowedMethods.hashCode=java.lang.Object hashCode()
