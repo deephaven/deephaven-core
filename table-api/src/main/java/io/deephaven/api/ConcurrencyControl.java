@@ -38,22 +38,23 @@ public interface ConcurrencyControl<T> {
      * </p>
      * <p>
      * For selectables, additional ordering constraints are controlled by the value of the
-     * QueryTable.SERIAL_SELECT_IMPLICIT_BARRIERS. This is set by the property `QueryTable.serialSelectImplicitBarriers`
-     * (defaulting to the value of `QueryTable.statelessSelectByDefault`).
+     * {@code QueryTable.SERIAL_SELECT_IMPLICIT_BARRIERS}. This is set by the property
+     * {@code QueryTable.serialSelectImplicitBarriers} (defaulting to the value of
+     * {@code QueryTable.statelessSelectByDefault}).
      * </p>
      *
      * <p>
-     * If QueryTable.SERIAL_SELECT_IMPLICIT_BARRIERS is false, then no additional ordering between selectable
+     * If {@code QueryTable.SERIAL_SELECT_IMPLICIT_BARRIERS} is false, then no additional ordering between selectable
      * expressions is imposed. As with every select or update call, if column B references column A, then the necessary
      * inputs from column A are evaluated before column B is evaluated. To impose further ordering constraints, use
      * barriers.
      * </p>
      *
      * <p>
-     * If QueryTable.SERIAL_SELECT_IMPLICIT_BARRIERS is true, then a serial selectable is an absolute barrier with
-     * respect to all other serial selectables. This prohibits serial selectables from being evaluated concurrently,
-     * permitting them to access global state. Selectables that are not serial may be reordered with respect to a serial
-     * selectable.
+     * If {@code QueryTable.SERIAL_SELECT_IMPLICIT_BARRIERS} is true, then a serial selectable is an absolute barrier
+     * with respect to all other serial selectables. This prohibits serial selectables from being evaluated
+     * concurrently, permitting them to access global state. Selectables that are not serial may be reordered with
+     * respect to a serial selectable.
      * </p>
      * </li>
      * </ul>
