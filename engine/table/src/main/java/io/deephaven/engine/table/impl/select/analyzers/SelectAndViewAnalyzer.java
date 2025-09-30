@@ -153,7 +153,6 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
             if (sc.declaredBarriers() != null) {
                 preShiftBarriers.addAll(Arrays.asList(sc.declaredBarriers()));
             }
-
         }
 
         compilationProcessor.compile();
