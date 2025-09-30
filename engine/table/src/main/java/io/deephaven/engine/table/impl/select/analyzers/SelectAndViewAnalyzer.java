@@ -158,11 +158,12 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
         compilationProcessor.compile();
 
         final Map<Object, Integer> barrierToLayerIndex = new IdentityHashMap<>();
+        final List<Object> implicitSerialBarriers = new ArrayList<>();
 
         // Second pass builds the analyzer and destination columns
         final HashMap<String, ColumnSource<?>> resultAlias = new HashMap<>();
         for (int columnIndex = 0; columnIndex < context.processedCols.size(); ++columnIndex) {
-            final SelectColumn sc = context.processedCols.get(columnIndex);
+            SelectColumn sc = context.processedCols.get(columnIndex);
 
             // if this select column depends on result column then its updates must happen in result-key-space
             // note: if flatResult is true then we are not preserving any parent columns
@@ -171,6 +172,17 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
                             .anyMatch(columnName -> context.getLayerIndexFor(columnName) != Layer.PARENT_TABLE_INDEX);
 
             sc.initInputs(rowSet, useResultKeySpace ? context.allSourcesInResultKeySpace : context.allSources);
+
+            if (QueryTable.SERIAL_SELECT_IMPLICIT_BARRIERS && !sc.isStateless()) {
+                final Object implicitBarrier = new ImplicitBarrier(sc.getName(), columnIndex);
+                if (!implicitSerialBarriers.isEmpty()) {
+                    sc = sc.withRespectedBarriers(implicitSerialBarriers.toArray())
+                            .withDeclaredBarriers(implicitBarrier);
+                } else {
+                    sc = sc.withDeclaredBarriers(implicitBarrier);
+                }
+                implicitSerialBarriers.add(implicitBarrier);
+            }
 
             // TODO (deephaven-core#5760): If layers may define more than one column, we'll need to fix resultAlias.
             // new columns shadow known aliases
@@ -880,6 +892,24 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
         }
 
         scheduler.tryToKickOffWork();
+    }
+
+    /**
+     * A class used as an implicit barrier for serial selectables, with a useful toString.
+     */
+    private static class ImplicitBarrier {
+        private final String name;
+        private final int fci;
+
+        public ImplicitBarrier(String name, int fci) {
+            this.name = name;
+            this.fci = fci;
+        }
+
+        @Override
+        public String toString() {
+            return "Implicit barrier for Serial column " + name + " (index " + fci + ")";
+        }
     }
 
     private class UpdateScheduler {
