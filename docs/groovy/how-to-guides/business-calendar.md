@@ -2,7 +2,7 @@
 title: Work with calendars
 ---
 
-This guide will show you how to create and use business calendars in Deephaven. It covers the use of Deephaven's calendar API, and the use of a Java [`BusinessCalendar`](/core/javadoc/io/deephaven/time/calendar/BusinessCalendar.html) object from both Groovy and Deephaven tables.
+This guide will show you how to create and use business calendars in Deephaven. It covers the use of Deephaven's calendar API, and the use of a Java [`BusinessCalendar`](/core/javadoc/io/deephaven/time/calendar/BusinessCalendar.html) object in both Groovy and Deephaven tables.
 
 The calendar API is minimal - it allows users to add or remove calendars, as well as get a calendar. The returned calendar is a Java [`BusinessCalendar`](/core/javadoc/io/deephaven/time/calendar/BusinessCalendar.html) object. This object is easier to use in table operations and provides optimal performance.
 
@@ -56,8 +56,7 @@ result = source.update(
 )
 ```
 
-The following example shows how to filter data to only business days and business hours.
-The `source` table is [filtered](./use-filters.md) twice to create two result tables. The first contains only data that takes place during an NYSE business day, while the second contains only data that takes place during NYSE business hours.
+The following example shows how to filter data to only business days and business hours. The `source` table is [filtered](./use-filters.md) twice to create two result tables. The first contains only data that takes place during an NYSE business day, while the second contains only data that takes place during NYSE business hours.
 
 ```groovy test-set=1 order=result_bizdays,result_bizhours
 result_bizdays = source.where("nyse_cal.isBusinessDay(Timestamp)")
@@ -83,7 +82,7 @@ The calendar configuration files can be found [here](https://github.com/deephave
 - Holidays
 - More
 
-Users can build their own calendar by creating a calendar file using the format described in [this Javadoc](/core/javadoc/io/deephaven/time/calendar/BusinessCalendarXMLParser.html). This section goes over an example of using a custom-built calendar for a hypothetical business for the year 2024.
+Users can build their own calendars by creating a calendar file using the format described in [this Javadoc](/core/javadoc/io/deephaven/time/calendar/BusinessCalendarXMLParser.html). This section goes over an example of using a custom-built calendar for a hypothetical business for the year 2024.
 
 This example uses a calendar file found in Deephaven's [examples repository](https://github.com/deephaven/examples/tree/main/Calendar). This guide assumes you have the file on your local machine in the [/data mount point](../conceptual/docker-data-volumes.md). This hypothetical business is called "Company Y", and the calendar only covers the year 2024.
 
