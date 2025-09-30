@@ -22,7 +22,7 @@ jobs:
         with:
           filters: |
             non-docs:
-              - 'docs/**'
+              - '!docs/**'
 
   checks:
     runs-on: ubuntu-24.04
