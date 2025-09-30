@@ -16,6 +16,10 @@ jobs:
     outputs:
       non-docs: ${{ steps.filter.outputs.non-docs }}
     steps:
+      # Must checkout for push, but not pull_request according to the action
+      - name: Checkout on push
+        if: github.event_name == 'push'
+        uses: actions/checkout@v5
       - name: Check for non-docs changes
         id: filter
         uses: dorny/paths-filter@v3
