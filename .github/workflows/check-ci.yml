@@ -11,8 +11,23 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  changes:
+    runs-on: ubuntu-24.04
+    outputs:
+      non-docs: ${{ steps.filter.outputs.non-docs }}
+    steps:
+      - name: Check for non-docs changes
+        id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            non-docs:
+              - '!docs/**'
+
   checks:
     runs-on: ubuntu-24.04
+    needs: changes
+    if: ${{ needs.changes.outputs.non-docs == 'true' }}
     steps:
       - name: Free Disk Space
         uses: endersonmenezes/free-disk-space@v2
