@@ -175,14 +175,7 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
             sc.initInputs(rowSet, useResultKeySpace ? context.allSourcesInResultKeySpace : context.allSources);
 
             if (QueryTable.SERIAL_SELECT_IMPLICIT_BARRIERS && !sc.isStateless()) {
-                final String name = sc.getName();
-                final int fci = columnIndex;
-                final Object implicitBarrier = new Object() {
-                    @Override
-                    public String toString() {
-                        return "Implicit barrier for Serial column " + name + " (index " + fci + ")";
-                    }
-                };
+                final Object implicitBarrier = new ImplicitBarrier(sc.getName(), columnIndex);
                 if (!implicitSerialBarriers.isEmpty()) {
                     sc = sc.withRespectedBarriers(implicitSerialBarriers.toArray())
                             .withDeclaredBarriers(implicitBarrier);
@@ -900,6 +893,24 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
         }
 
         scheduler.tryToKickOffWork();
+    }
+
+    /**
+     * A class used as an implicit barrier for serial selectables, with a useful toString.
+     */
+    private static class ImplicitBarrier {
+        private final String name;
+        private final int fci;
+
+        public ImplicitBarrier(String name, int fci) {
+            this.name = name;
+            this.fci = fci;
+        }
+
+        @Override
+        public String toString() {
+            return "Implicit barrier for Serial column " + name + " (index " + fci + ")";
+        }
     }
 
     private class UpdateScheduler {
