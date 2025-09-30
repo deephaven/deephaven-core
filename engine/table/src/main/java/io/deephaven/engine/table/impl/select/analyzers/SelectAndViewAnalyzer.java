@@ -153,16 +153,18 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
             if (sc.declaredBarriers() != null) {
                 preShiftBarriers.addAll(Arrays.asList(sc.declaredBarriers()));
             }
+
         }
 
         compilationProcessor.compile();
 
         final Map<Object, Integer> barrierToLayerIndex = new IdentityHashMap<>();
+        final List<Object> implicitSerialBarriers = new ArrayList<>();
 
         // Second pass builds the analyzer and destination columns
         final HashMap<String, ColumnSource<?>> resultAlias = new HashMap<>();
         for (int columnIndex = 0; columnIndex < context.processedCols.size(); ++columnIndex) {
-            final SelectColumn sc = context.processedCols.get(columnIndex);
+            SelectColumn sc = context.processedCols.get(columnIndex);
 
             // if this select column depends on result column then its updates must happen in result-key-space
             // note: if flatResult is true then we are not preserving any parent columns
@@ -171,6 +173,24 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
                             .anyMatch(columnName -> context.getLayerIndexFor(columnName) != Layer.PARENT_TABLE_INDEX);
 
             sc.initInputs(rowSet, useResultKeySpace ? context.allSourcesInResultKeySpace : context.allSources);
+
+            if (QueryTable.SERIAL_SELECT_IMPLICIT_BARRIERS && !sc.isStateless()) {
+                final String name = sc.getName();
+                final int fci = columnIndex;
+                final Object implicitBarrier = new Object() {
+                    @Override
+                    public String toString() {
+                        return "Implicit barrier for Serial column " + name + " (index " + fci + ")";
+                    }
+                };
+                if (!implicitSerialBarriers.isEmpty()) {
+                    sc = sc.withRespectedBarriers(implicitSerialBarriers.toArray())
+                            .withDeclaredBarriers(implicitBarrier);
+                } else {
+                    sc = sc.withDeclaredBarriers(implicitBarrier);
+                }
+                implicitSerialBarriers.add(implicitBarrier);
+            }
 
             // TODO (deephaven-core#5760): If layers may define more than one column, we'll need to fix resultAlias.
             // new columns shadow known aliases
