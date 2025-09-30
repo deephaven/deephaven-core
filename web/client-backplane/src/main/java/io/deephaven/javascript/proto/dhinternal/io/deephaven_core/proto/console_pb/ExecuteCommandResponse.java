@@ -410,6 +410,10 @@ public class ExecuteCommandResponse {
 
     public native void setErrorMessage(String value);
 
+    public native String getStartTimestamp();
+
+    public native String getEndTimestamp();
+
     public native ExecuteCommandResponse.ToObjectReturnType0 toObject();
 
     public native ExecuteCommandResponse.ToObjectReturnType0 toObject(boolean includeInstance);
