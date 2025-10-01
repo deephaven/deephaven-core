@@ -11,7 +11,6 @@ import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.chunk.util.LongChunkIterator;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.primitive.iterator.CloseableIterator;
 import io.deephaven.engine.rowset.*;
@@ -507,13 +506,23 @@ public class ParquetTableLocation extends AbstractTableLocation {
         final RegionedColumnSourceManager.RegionedColumnSourcePushdownFilterContext ctx =
                 (RegionedColumnSourceManager.RegionedColumnSourcePushdownFilterContext) context;
 
-        if (!ctx.filterSupportsPushdown()) {
+        final long executedFilterCost = context.executedFilterCost();
+
+        final boolean tryMetadataFiltering = ctx.supportsMetadataFiltering()
+                && costAllowsMetadataFiltering(executedFilterCost);
+        final boolean tryDictionaryFiltering = ctx.supportsDictionaryFiltering()
+                && costAllowsDictionaryFiltering(executedFilterCost);
+        final boolean tryInMemoryDataIndex = ctx.supportsInMemoryDataIndexFiltering()
+                && costAllowsInMemoryDataIndexFiltering(executedFilterCost)
+                && hasAnyCachedDataIndex();
+        final boolean tryDeferredDataIndex = ctx.supportsDeferredDataIndexFiltering()
+                && costAllowsDeferredDataIndexFiltering(executedFilterCost);
+
+        if (!(tryMetadataFiltering || tryDictionaryFiltering || tryInMemoryDataIndex || tryDeferredDataIndex)) {
             return Long.MAX_VALUE;
         }
 
         initialize();
-
-        final long executedFilterCost = context.executedFilterCost();
 
         final Optional<List<ResolvedColumnInfo>> maybeResolvedColumns = resolveColumns(filter, ctx.renameMap());
         if (maybeResolvedColumns.isEmpty()) {
@@ -522,9 +531,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
         }
         final List<ResolvedColumnInfo> resolvedColumnsInfo = maybeResolvedColumns.get();
 
-        if (shouldExecute(QueryTable.DISABLE_WHERE_PUSHDOWN_PARQUET_ROW_GROUP_METADATA,
-                PushdownResult.METADATA_STATS_COST, executedFilterCost)
-                && (ctx.isMatchFilter() || ctx.isRangeFilter())) {
+        if (tryMetadataFiltering) {
             return PushdownResult.METADATA_STATS_COST;
         }
 
@@ -533,23 +540,23 @@ public class ParquetTableLocation extends AbstractTableLocation {
                 .map(resolvedColumn -> resolvedColumn.columnPath.get(0))
                 .toArray(String[]::new);
 
-        if (shouldExecute(QueryTable.DISABLE_WHERE_PUSHDOWN_PARQUET_DICTIONARY,
-                PushdownResult.DICTIONARY_DATA_COST, executedFilterCost)
-                && ctx.supportsChunkFilter()
-                && hasDictionaryPage(parquetColumnNames[0], ctx.columnDefinitions().get(0))) {
-            return PushdownResult.DICTIONARY_DATA_COST;
+        // Do we have a data indexes for the column(s)?
+        if (tryInMemoryDataIndex) {
+            if (hasCachedDataIndex(parquetColumnNames)) {
+                return PushdownResult.IN_MEMORY_DATA_INDEX_COST;
+            }
         }
 
-        // Do we have a data indexes for the column(s)?
-        if (shouldExecute(QueryTable.DISABLE_WHERE_PUSHDOWN_DATA_INDEX,
-                PushdownResult.IN_MEMORY_DATA_INDEX_COST, executedFilterCost)
-                && hasCachedDataIndex(parquetColumnNames)) {
-            return PushdownResult.IN_MEMORY_DATA_INDEX_COST;
+        if (tryDictionaryFiltering) {
+            if (hasDictionaryPage(parquetColumnNames[0], ctx.columnDefinitions().get(0))) {
+                return PushdownResult.DICTIONARY_DATA_COST;
+            }
         }
-        if (shouldExecute(QueryTable.DISABLE_WHERE_PUSHDOWN_DATA_INDEX,
-                PushdownResult.DEFERRED_DATA_INDEX_COST, executedFilterCost)
-                && hasDataIndex(parquetColumnNames)) {
-            return PushdownResult.DEFERRED_DATA_INDEX_COST;
+
+        if (tryDeferredDataIndex) {
+            if (hasDataIndex(parquetColumnNames)) {
+                return PushdownResult.DEFERRED_DATA_INDEX_COST;
+            }
         }
 
         // TODO(DH-19666): Add support for bloom filters, sortedness, etc.
@@ -684,14 +691,24 @@ public class ParquetTableLocation extends AbstractTableLocation {
         // Initialize the pushdown result with the selection rowset as "maybe" rows
         PushdownResult result = PushdownResult.allMaybeMatch(selection);
 
-        if (!ctx.filterSupportsPushdown()) {
+        final long executedFilterCost = context.executedFilterCost();
+
+        final boolean tryMetadataFiltering = ctx.supportsMetadataFiltering()
+                && costAllowsMetadataFiltering(executedFilterCost, costCeiling);
+        final boolean tryDictionaryFiltering = ctx.supportsDictionaryFiltering()
+                && costAllowsDictionaryFiltering(executedFilterCost, costCeiling);
+        final boolean tryInMemoryDataIndex = ctx.supportsInMemoryDataIndexFiltering()
+                && costAllowsInMemoryDataIndexFiltering(executedFilterCost, costCeiling)
+                && hasAnyCachedDataIndex();
+        final boolean tryDeferredDataIndex = ctx.supportsDeferredDataIndexFiltering()
+                && costAllowsDeferredDataIndexFiltering(executedFilterCost, costCeiling);
+
+        if (!(tryMetadataFiltering || tryDictionaryFiltering || tryInMemoryDataIndex || tryDeferredDataIndex)) {
             onComplete.accept(result);
             return;
         }
 
         initialize();
-
-        final long executedFilterCost = context.executedFilterCost();
 
         final Map<String, String> renameMap = ctx.renameMap();
         final Optional<List<ResolvedColumnInfo>> maybeResolvedColumns = resolveColumns(filter, renameMap);
@@ -714,27 +731,9 @@ public class ParquetTableLocation extends AbstractTableLocation {
         }
 
         // Pushdown via row group statistics
-        if (shouldExecute(QueryTable.DISABLE_WHERE_PUSHDOWN_PARQUET_ROW_GROUP_METADATA,
-                PushdownResult.METADATA_STATS_COST, executedFilterCost, costCeiling)
-                && (ctx.isRangeFilter() || ctx.isMatchFilter())) {
+        if (tryMetadataFiltering) {
             try (final PushdownResult ignored = result) {
-                result = pushdownRowGroupMetadata(selection,
-                        ctx.isRangeFilter() ? ((RangeFilter) filter).getRealFilter() : filter, columnIndices, result);
-            }
-            if (result.maybeMatch().isEmpty()) {
-                // No maybe rows remaining, so no reason to continue filtering.
-                onComplete.accept(result);
-                return;
-            }
-        }
-
-        // Pushdown via dictionary
-        if (shouldExecute(QueryTable.DISABLE_WHERE_PUSHDOWN_PARQUET_DICTIONARY,
-                PushdownResult.DICTIONARY_DATA_COST, executedFilterCost, costCeiling)
-                && ctx.supportsChunkFilter()
-                && hasDictionaryPage(parquetColumnNames[0], ctx.columnDefinitions().get(0))) {
-            try (final PushdownResult ignored = result) {
-                result = pushdownFilterDictionary(selection, ctx, parquetColumnNames, result);
+                result = pushdownRowGroupMetadata(selection, ctx.filterForMetadataFiltering(), columnIndices, result);
             }
             if (result.maybeMatch().isEmpty()) {
                 // No maybe rows remaining, so no reason to continue filtering.
@@ -744,8 +743,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
         }
 
         // Pushdown via in-memory data index
-        if (shouldExecute(QueryTable.DISABLE_WHERE_PUSHDOWN_DATA_INDEX,
-                PushdownResult.IN_MEMORY_DATA_INDEX_COST, executedFilterCost, costCeiling)) {
+        if (tryInMemoryDataIndex) {
             final BasicDataIndex dataIndex =
                     hasCachedDataIndex(parquetColumnNames) ? getDataIndex(parquetColumnNames) : null;
             if (dataIndex != null) {
@@ -757,9 +755,22 @@ public class ParquetTableLocation extends AbstractTableLocation {
             }
         }
 
+        // Pushdown via dictionary
+        if (tryDictionaryFiltering) {
+            if (hasDictionaryPage(parquetColumnNames[0], ctx.columnDefinitions().get(0))) {
+                try (final PushdownResult ignored = result) {
+                    result = pushdownFilterDictionary(selection, ctx, parquetColumnNames, result);
+                }
+                if (result.maybeMatch().isEmpty()) {
+                    // No maybe rows remaining, so no reason to continue filtering.
+                    onComplete.accept(result);
+                    return;
+                }
+            }
+        }
+
         // Pushdown via reading a data index from disk
-        if (shouldExecute(QueryTable.DISABLE_WHERE_PUSHDOWN_DATA_INDEX,
-                PushdownResult.DEFERRED_DATA_INDEX_COST, executedFilterCost, costCeiling)) {
+        if (tryDeferredDataIndex) {
             // If we have a data index, apply the filter to the data index table and retain the incoming maybe rows.
             final BasicDataIndex dataIndex = hasDataIndex(parquetColumnNames) ? getDataIndex(parquetColumnNames) : null;
             if (dataIndex != null) {
@@ -774,14 +785,54 @@ public class ParquetTableLocation extends AbstractTableLocation {
         onComplete.accept(result);
     }
 
+    private static boolean costAllowsMetadataFiltering(long executedFilterCost, long costCeiling) {
+        return shouldExecute(QueryTable.DISABLE_WHERE_PUSHDOWN_PARQUET_ROW_GROUP_METADATA,
+                PushdownResult.METADATA_STATS_COST, executedFilterCost, costCeiling);
+    }
+
+    private static boolean costAllowsMetadataFiltering(long executedFilterCost) {
+        return shouldExecute(QueryTable.DISABLE_WHERE_PUSHDOWN_PARQUET_ROW_GROUP_METADATA,
+                PushdownResult.METADATA_STATS_COST, executedFilterCost);
+    }
+
+    private static boolean costAllowsDictionaryFiltering(long executedFilterCost, long costCeiling) {
+        return shouldExecute(QueryTable.DISABLE_WHERE_PUSHDOWN_PARQUET_DICTIONARY, PushdownResult.DICTIONARY_DATA_COST,
+                executedFilterCost, costCeiling);
+    }
+
+    private static boolean costAllowsDictionaryFiltering(long executedFilterCost) {
+        return shouldExecute(QueryTable.DISABLE_WHERE_PUSHDOWN_PARQUET_DICTIONARY, PushdownResult.DICTIONARY_DATA_COST,
+                executedFilterCost);
+    }
+
+    private static boolean costAllowsInMemoryDataIndexFiltering(long executedFilterCost, long costCeiling) {
+        return shouldExecute(QueryTable.DISABLE_WHERE_PUSHDOWN_DATA_INDEX, PushdownResult.IN_MEMORY_DATA_INDEX_COST,
+                executedFilterCost, costCeiling);
+    }
+
+    private static boolean costAllowsInMemoryDataIndexFiltering(long executedFilterCost) {
+        return shouldExecute(QueryTable.DISABLE_WHERE_PUSHDOWN_DATA_INDEX, PushdownResult.IN_MEMORY_DATA_INDEX_COST,
+                executedFilterCost);
+    }
+
+    private static boolean costAllowsDeferredDataIndexFiltering(long executedFilterCost, long costCeiling) {
+        return shouldExecute(QueryTable.DISABLE_WHERE_PUSHDOWN_DATA_INDEX, PushdownResult.DEFERRED_DATA_INDEX_COST,
+                executedFilterCost, costCeiling);
+    }
+
+    private static boolean costAllowsDeferredDataIndexFiltering(long executedFilterCost) {
+        return shouldExecute(QueryTable.DISABLE_WHERE_PUSHDOWN_DATA_INDEX, PushdownResult.DEFERRED_DATA_INDEX_COST,
+                executedFilterCost);
+    }
+
     /**
      * Helper methods to determine if we should execute this push-down technique.
      */
-    private boolean shouldExecute(final boolean disable, final long filterCost, final long executedFilterCost) {
+    private static boolean shouldExecute(final boolean disable, final long filterCost, final long executedFilterCost) {
         return !disable && executedFilterCost < filterCost;
     }
 
-    private boolean shouldExecute(final boolean disable, final long filterCost, final long executedFilterCost,
+    private static boolean shouldExecute(final boolean disable, final long filterCost, final long executedFilterCost,
             final long costCeiling) {
         return shouldExecute(disable, filterCost, executedFilterCost) && filterCost <= costCeiling;
     }
