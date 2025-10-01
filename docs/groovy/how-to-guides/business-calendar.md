@@ -2,7 +2,7 @@
 title: Work with calendars
 ---
 
-This guide will show you how to create and use business calendars in Deephaven. It covers the use of Deephaven's calendar API, and the use of a Java [`BusinessCalendar`](/core/javadoc/io/deephaven/time/calendar/BusinessCalendar.html) object in both Groovy and Deephaven tables.
+This guide will show you how to create and use business calendars in Deephaven. It covers the use of Deephaven's calendar API, and the use of [`BusinessCalendar`](/core/javadoc/io/deephaven/time/calendar/BusinessCalendar.html) objects in both Groovy code and Deephaven tables.
 
 The calendar API is minimal - it allows users to add or remove calendars, as well as get a calendar. The returned calendar is a Java [`BusinessCalendar`](/core/javadoc/io/deephaven/time/calendar/BusinessCalendar.html) object. This object is easier to use in table operations and provides optimal performance.
 
@@ -15,27 +15,21 @@ import static io.deephaven.time.calendar.Calendars.calendar
 import static io.deephaven.time.calendar.Calendars.calendarNames
 
 println calendarNames()
-nyse_cal = calendar("USNYSE_EXAMPLE")
-println nyse_cal.getClass()
+nyseCal = calendar("USNYSE_EXAMPLE")
+println nyseCal.getClass()
 ```
 
-We can see from the output that `nyse_cal` is an [`io.deephaven.time.calendar.BusinessCalendar`](/core/javadoc/io/deephaven/time/calendar/BusinessCalendar.html) object. It's Deephaven's Java business calendar object. A `BusinessCalendar` has many different methods available that can be useful in queries. The sections below explore those uses.
+We can see from the output that `nyseCal` is an [`io.deephaven.time.calendar.BusinessCalendar`](/core/javadoc/io/deephaven/time/calendar/BusinessCalendar.html) object. It's Deephaven's business calendar object. A `BusinessCalendar` has many different methods available that can be useful in queries. The sections below explore those uses.
 
 ## Business calendar use
 
 ### Input data types
 
-All of a `BusinessCalendar`'s methods take either strings or Java date-time data types as input. Java's date-time types include:
-
-- [`java.time.Instant`](https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/time/Instant.html)
-- [`java.time.ZonedDateTime`](https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/time/ZonedDateTime.html)
-- [`java.time.LocalDate`](https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/time/LocalDate.html)
-
-Deephaven has [built-in functionalities for converting to and from these data types](../conceptual/time-in-deephaven.md#1-built-in-java-functions). The methods will be used in examples below.
+`BusinessCalendar` methods accept either strings or Java date-time types ([`Instant`](https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/time/Instant.html), [`ZonedDateTime`](https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/time/ZonedDateTime.html), [`LocalDate`](https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/time/LocalDate.html)). See [Time in Deephaven](../conceptual/time-in-deephaven.md#1-built-in-java-functions) for conversion functions.
 
 ### Create data
 
-Before we can demonstrate the use of business calendars in queries, we'll need to create a table with some data. The following code block creates a month's worth of date-time data spaced 3 hours apart.
+Before we can demonstrate the use of business calendars in queries, we'll need to create a table with some data. The following code block creates a month's worth of date-time data spaced 3 minutes apart.
 
 ```groovy test-set=1 order=source
 // Create sample data
@@ -51,17 +45,17 @@ The following example calculates the number of business days and non-business da
 
 ```groovy test-set=1 order=result
 result = source.update(
-    "NumBizDays = nyse_cal.numberBusinessDates('2024-01-01T00:00:00 ET', Timestamp)",
-    "NumNonBizDays = nyse_cal.numberNonBusinessDates('2024-01-01T00:00:00 ET', Timestamp)"
+    "NumBizDays = nyseCal.numberBusinessDates('2024-01-01T00:00:00 ET', Timestamp)",
+    "NumNonBizDays = nyseCal.numberNonBusinessDates('2024-01-01T00:00:00 ET', Timestamp)"
 )
 ```
 
 The following example shows how to filter data to only business days and business hours. The `source` table is [filtered](./filters.md) twice to create two result tables. The first contains only data that takes place during an NYSE business day, while the second contains only data that takes place during NYSE business hours.
 
-```groovy test-set=1 order=result_bizdays,result_bizhours
-result_bizdays = source.where("nyse_cal.isBusinessDay(Timestamp)")
+```groovy test-set=1 order=resultBizDays,resultBizHours
+resultBizDays = source.where("nyseCal.isBusinessDay(Timestamp)")
 
-result_bizhours = source.where("nyse_cal.isBusinessTime(Timestamp)")
+resultBizHours = source.where("nyseCal.isBusinessTime(Timestamp)")
 ```
 
 These filtered tables can be used for analysis, reporting, or plotting data that occurs only during business days or business hours.
@@ -205,7 +199,7 @@ Alternatively, a [configuration file](./configuration/config-file.md) could be u
 ```groovy skip-test
 import static io.deephaven.time.calendar.Calendars.calendar
 
-test_2024_cal = calendar("TestCalendar_2024")
+test2024Cal = calendar("TestCalendar_2024")
 ```
 
 Happy calendar-ing!
