@@ -59,7 +59,7 @@ source = newTable(
 result = source.renameColumns("Fruit = A", "Type = C")
 ```
 
-The following example renames column `C` to `A`.  Because `A` already exists, it is silently replaced with the renamed `C` column:
+The following example renames column `C` to `A`. Because `A` already exists, it is silently replaced with the renamed `C` column:
 
 ```groovy order=source,result
 source = newTable(

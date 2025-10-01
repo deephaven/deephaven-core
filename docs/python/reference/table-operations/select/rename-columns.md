@@ -51,7 +51,7 @@ source = new_table(
 result = source.rename_columns(cols=["Fruit = A", "Type = C"])
 ```
 
-The following example renames column `C` to `A`.  Because `A` already exists, it is silently replaced with the renamed `C` column:
+The following example renames column `C` to `A`. Because `A` already exists, it is silently replaced with the renamed `C` column:
 
 ```python order=source,result
 from deephaven import new_table

@@ -1025,7 +1025,8 @@ class Table(JObjectWrapper):
     def rename_columns(self, cols: Union[str, Sequence[str]]) -> Table:
         """The rename_columns method creates a new table with the specified columns renamed. The renames are
         simultaneous and unordered, enabling direct swaps between column names. Specifying a source or
-         destination more than once is prohibited.
+        destination more than once is prohibited. If a new column name conflicts with an existing column
+        name in the table, the existing column will be silently replaced.
 
         Args:
             cols (Union[str, Sequence[str]]) : the column rename expr(s) as "X = Y"
