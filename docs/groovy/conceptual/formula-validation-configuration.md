@@ -16,7 +16,7 @@ This guide explains how to configure formula validation using two main approache
 
 ## When does validation occur?
 
-Formula validation happens when you:
+Formula validation happens when a client request:
 
 - Creates calculated columns using `select`, `update`, `view`, `updateView`, or `lazyUpdate`.
 - Filters tables using `where`.
