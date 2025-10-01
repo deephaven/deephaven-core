@@ -30,7 +30,7 @@ import java.util.Map;
  * </p>
  *
  * <p>
- * <b>his class is intended for testing and demonstrating validation functionality, it is not production ready and may
+ * <b>This class is intended for testing and demonstrating validation functionality, it is not production ready and may
  * be changed or removed at any time.</b>
  * </p>
  */
