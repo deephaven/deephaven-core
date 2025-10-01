@@ -11,6 +11,7 @@ import io.deephaven.engine.util.input.InputTableStatusListener;
 import io.deephaven.engine.util.input.InputTableUpdater;
 import io.deephaven.engine.util.input.InputTableValidationException;
 import io.deephaven.engine.util.input.StructuredErrorImpl;
+import io.deephaven.util.annotations.TestUseOnly;
 import io.deephaven.util.mutable.MutableInt;
 import org.jetbrains.annotations.Nullable;
 
@@ -19,12 +20,37 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * This is an example of an {@link InputTableUpdater} that validates that the values in an Integer column are within a
+ * given range.
+ *
+ * <p>
+ * This class wraps an existing input table, and before performing the underlying validation performs its own validation
+ * on the range of the column.
+ * </p>
+ *
+ * <p>
+ * <b>his class is intended for testing and demonstrating validation functionality, it is not production ready and may
+ * be changed or removed at any time.</b>
+ * </p>
+ */
+@TestUseOnly
 public class RangeValidatingInputTable implements InputTableUpdater {
     private final InputTableUpdater wrapped;
     private final String column;
     private final int min;
     private final int max;
 
+    /**
+     * Wrap {@code input}, which must be an input table into a new input table that validates that the values in
+     * {@code column} are within the range {@code ([min, max]}.
+     * 
+     * @param input the table to wrap
+     * @param column the column to validate, must be an integer type
+     * @param min the minimum value allowed, inclusive
+     * @param max the maximum value allowed, inclusive
+     * @return a new input table that validates the range of {@code column}
+     */
     public static Table make(Table input, final String column,
             final int min,
             final int max) {
