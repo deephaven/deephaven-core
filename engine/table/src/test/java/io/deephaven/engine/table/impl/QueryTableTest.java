@@ -719,34 +719,42 @@ public class QueryTableTest extends QueryTableTestBase {
         final Table testTable = TableTools.newTable(
                 TableTools.stringCol("ColumnA", "A", "B", "C"),
                 TableTools.intCol("ColumnB", 1, 2, 3),
-                TableTools.intCol("ColumnC", 10, 20, 30));
+                TableTools.longCol("ColumnC", 10L, 20L, 30L));
 
         Table result;
+
+        // Dummy with no renames
+        result = testTable.renameColumns();
+        assertEquals(3, result.numColumns());
+        // Verify column names and datatypes
+        assertEquals(String.class, result.getColumnSource("ColumnA").getType());
+        assertEquals(int.class, result.getColumnSource("ColumnB").getType());
+        assertEquals(long.class, result.getColumnSource("ColumnC").getType());
 
         result = testTable.renameColumns("ColumnA=ColumnB");
         assertEquals(2, result.numColumns());
         // Verify column names and datatypes
         assertEquals(int.class, result.getColumnSource("ColumnA").getType());
-        assertEquals(int.class, result.getColumnSource("ColumnC").getType());
+        assertEquals(long.class, result.getColumnSource("ColumnC").getType());
 
         result = testTable.where("ColumnA=`A`").renameColumns("ColumnA=ColumnB");
         assertEquals(2, result.numColumns());
         // Verify column names and datatypes
         assertEquals(int.class, result.getColumnSource("ColumnA").getType());
-        assertEquals(int.class, result.getColumnSource("ColumnC").getType());
+        assertEquals(long.class, result.getColumnSource("ColumnC").getType());
 
         result = testTable.renameColumns("ColumnX=ColumnA", "ColumnA=ColumnB");
         assertEquals(3, result.numColumns());
         // Verify column names and datatypes
         assertEquals(String.class, result.getColumnSource("ColumnX").getType());
         assertEquals(int.class, result.getColumnSource("ColumnA").getType());
-        assertEquals(int.class, result.getColumnSource("ColumnC").getType());
+        assertEquals(long.class, result.getColumnSource("ColumnC").getType());
 
         result = testTable.renameColumns("ColumnC=ColumnC", "ColumnA=ColumnB");
         assertEquals(2, result.numColumns());
         // Verify column names and datatypes
         assertEquals(int.class, result.getColumnSource("ColumnA").getType());
-        assertEquals(int.class, result.getColumnSource("ColumnC").getType());
+        assertEquals(long.class, result.getColumnSource("ColumnC").getType());
 
         // Repeat with refreshing
         testTable.setRefreshing(true);
@@ -755,26 +763,83 @@ public class QueryTableTest extends QueryTableTestBase {
         assertEquals(2, result.numColumns());
         // Verify column names and datatypes
         assertEquals(int.class, result.getColumnSource("ColumnA").getType());
-        assertEquals(int.class, result.getColumnSource("ColumnC").getType());
+        assertEquals(long.class, result.getColumnSource("ColumnC").getType());
 
         result = testTable.where("ColumnA=`A`").renameColumns("ColumnA=ColumnB");
         assertEquals(2, result.numColumns());
         // Verify column names and datatypes
         assertEquals(int.class, result.getColumnSource("ColumnA").getType());
-        assertEquals(int.class, result.getColumnSource("ColumnC").getType());
+        assertEquals(long.class, result.getColumnSource("ColumnC").getType());
 
         result = testTable.renameColumns("ColumnX=ColumnA", "ColumnA=ColumnB");
         assertEquals(3, result.numColumns());
         // Verify column names and datatypes
         assertEquals(String.class, result.getColumnSource("ColumnX").getType());
         assertEquals(int.class, result.getColumnSource("ColumnA").getType());
-        assertEquals(int.class, result.getColumnSource("ColumnC").getType());
+        assertEquals(long.class, result.getColumnSource("ColumnC").getType());
 
         result = testTable.renameColumns("ColumnC=ColumnC", "ColumnA=ColumnB");
         assertEquals(2, result.numColumns());
         // Verify column names and datatypes
         assertEquals(int.class, result.getColumnSource("ColumnA").getType());
-        assertEquals(int.class, result.getColumnSource("ColumnC").getType());
+        assertEquals(long.class, result.getColumnSource("ColumnC").getType());
+    }
+
+    public void testRenameColumnExeptions() {
+        // Create a test table with a String column and an array column
+        final Table testTable = TableTools.newTable(
+                TableTools.stringCol("ColumnA", "A", "B", "C"),
+                TableTools.intCol("ColumnB", 1, 2, 3),
+                TableTools.intCol("ColumnC", 10, 20, 30));
+
+        Exception e;
+
+        // Column not found.
+        e = Assert.assertThrows(IllegalArgumentException.class, () -> {
+            testTable.renameColumns("ColumnX=ColumnY");
+        });
+        assertTrue(e.getMessage().contains("Column(s) not found: ColumnY"));
+
+        // Duplicate source.
+        e = Assert.assertThrows(IllegalArgumentException.class, () -> {
+            testTable.renameColumns("ColumnX=ColumnA", "ColumnY=ColumnA");
+        });
+        assertTrue(e.getMessage().contains("Duplicate source column(s): ColumnA"));
+
+        // Duplicate destination.
+        e = Assert.assertThrows(IllegalArgumentException.class, () -> {
+            testTable.renameColumns("ColumnX=ColumnA", "ColumnX=ColumnB");
+        });
+        assertTrue(e.getMessage().contains("Duplicate destination column(s): ColumnX"));
+
+        // Multiple errors: Not Found + Duplicate source
+        e = Assert.assertThrows(IllegalArgumentException.class, () -> {
+            testTable.renameColumns("ColumnX=ColumnA", "ColumnY=ColumnA", "ColumnZ=ColumnQ");
+        });
+        assertTrue(e.getMessage().contains("Column(s) not found: ColumnQ"));
+        assertTrue(e.getMessage().contains("Duplicate source column(s): ColumnA"));
+
+        // Multiple errors: Not Found + Duplicate destination
+        e = Assert.assertThrows(IllegalArgumentException.class, () -> {
+            testTable.renameColumns("ColumnX=ColumnA", "ColumnX=ColumnB", "ColumnZ=ColumnQ");
+        });
+        assertTrue(e.getMessage().contains("Column(s) not found: ColumnQ"));
+        assertTrue(e.getMessage().contains("Duplicate destination column(s): ColumnX"));
+
+        // Multiple errors: Duplicate source + Duplicate destination
+        e = Assert.assertThrows(IllegalArgumentException.class, () -> {
+            testTable.renameColumns("ColumnX=ColumnA", "ColumnX=ColumnB", "ColumnY=ColumnA");
+        });
+        assertTrue(e.getMessage().contains("Duplicate source column(s): ColumnA"));
+        assertTrue(e.getMessage().contains("Duplicate destination column(s): ColumnX"));
+
+        // Multiple errors: Not Found + Duplicate source + Duplicate destination
+        e = Assert.assertThrows(IllegalArgumentException.class, () -> {
+            testTable.renameColumns("ColumnX=ColumnA", "ColumnX=ColumnB", "ColumnY=ColumnA", "ColumnZ=ColumnQ");
+        });
+        assertTrue(e.getMessage().contains("Column(s) not found: ColumnQ"));
+        assertTrue(e.getMessage().contains("Duplicate source column(s): ColumnA"));
+        assertTrue(e.getMessage().contains("Duplicate destination column(s): ColumnX"));
     }
 
     public void testMoveColumnsUp() {
