@@ -4,7 +4,7 @@ title: Formula validation configuration
 
 When you work with Deephaven tables, you often create custom columns or filter data using expressions like:
 
-- `myColumn = x + y * 2`
+- `myTable.update(myColumn = x + y * 2)`
 - `myTable.where("Double.isFinite(Price)")`
 
 These expressions get sent to the Deephaven server over gRPC and compiled into executable code. For security reasons, the server needs to validate that these expressions only call approved methods and functions. Script session code execution is not validated as the Deephaven engine does not parse script code. The console service can be disabled via [configuration](../how-to-guides/configuration/console-service.md#configuration).
@@ -18,8 +18,8 @@ This guide explains how to configure formula validation using two main approache
 
 Formula validation happens when you:
 
-- Create calculated columns using `select` or `update`.
-- Filter tables using `where`.
+- Creates calculated columns using `select`, `update`, `view`, `updateView`, or `lazyUpdate`.
+- Filters tables using `where`.
 - Use any table operation that involves a formula expression.
 
 Validation does **not** apply to:
@@ -48,7 +48,7 @@ Annotations are special markers you add to your Java code to indicate which meth
 3. **Configure Deephaven** to recognize that category name.
 4. **Optionally specify scope** to limit to static or instance methods only.
 
-### Annotating entire classes
+### Annotate entire classes
 
 When you annotate a class, **all public methods** in that class become available:
 
@@ -62,7 +62,7 @@ public class MathUtils {
 }
 ```
 
-### Limiting to static or instance methods
+### Limit annotations to static or instance methods
 
 You can restrict which types of methods are allowed:
 
@@ -92,7 +92,7 @@ public class StringHelper {
 }
 ```
 
-### Annotating individual methods
+### Annotate individual methods
 
 For more precise control, annotate specific methods instead of entire classes:
 
