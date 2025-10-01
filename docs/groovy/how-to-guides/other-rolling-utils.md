@@ -9,7 +9,7 @@ This guide covers general rolling operations in the [`updateBy`](/core/javadoc/i
 
 The [`updateBy`](/core/javadoc/io/deephaven/engine/table/impl/updateby/UpdateBy.html) module enables users to create custom rolling aggregations with the [`RollingFormula`](../reference/table-operations/update-by-operations/rolling-formula.md) function. For more information on tick vs. time operations, see [this section](../how-to-guides/rolling-calculations.md#time-based-vs-tick-based-operations) of the rolling statistics guide.
 
-The user-defined formula can utilize any of Deephaven's [built-in functions](../reference/query-language/query-library/auto-imported-functions.md), [arithmetic operators](../how-to-guides/formulas-how-to.md#arithmetic-operators), or even [user-defined Groovy functions](../how-to-guides/user-defined-functions.md).
+The user-defined formula can utilize any of Deephaven's [built-in functions](../reference/query-language/query-library/auto-imported-functions.md), [arithmetic operators](../how-to-guides/operators.md), or even [user-defined Groovy functions](../how-to-guides/groovy-closures.md).
 
 ### `RollingFormula`
 
@@ -193,8 +193,8 @@ result = source.updateBy(Fill("FillX=X"), "Letter")
 - [How to create plots with the legacy API](./plotting/api-plotting.md)
 - [How to use select, view, and update](./use-select-view-update.md)
 - [How to use update_by](./use-update-by.md)
-- [Handle nulls, infs, and NaNs](./handle-null-inf-nan.md)
-- [Formulas](../how-to-guides/formulas-how-to.md)
+- [Handle nulls, infs, and NaNs](./null-inf-nan.md)
+- [Formulas](../how-to-guides/formulas.md)
 - [`RollingFormula`](../reference/table-operations/update-by-operations/rolling-formula.md)
 - [`RollingGroup`](../reference/table-operations/update-by-operations/rolling-group.md)
 - [`delta`](../reference/table-operations/update-by-operations/delta.md)

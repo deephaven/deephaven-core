@@ -203,8 +203,8 @@ public class DeferredViewTableTest {
                 .updateView("Y = ii")
                 .where(ConjunctiveFilter.of(
                         filter2,
-                        filter0.withBarriers(barrier),
-                        filter1.respectsBarriers(barrier)))
+                        filter0.withDeclaredBarriers(barrier),
+                        filter1.withRespectedBarriers(barrier)))
                 .coalesce();
 
         Assert.eq(deferredTable.size(), "deferredTable.size()", 10_000);
@@ -238,8 +238,8 @@ public class DeferredViewTableTest {
                 WhereFilter.ZERO_LENGTH_WHERE_FILTER_ARRAY)
                 .updateView("Y = ii")
                 .where(ConjunctiveFilter.of(
-                        filter0.withBarriers(barrier),
-                        filter1.respectsBarriers(barrier),
+                        filter0.withDeclaredBarriers(barrier),
+                        filter1.withRespectedBarriers(barrier),
                         filter2))
                 .coalesce();
 
@@ -272,8 +272,8 @@ public class DeferredViewTableTest {
                 WhereFilter.ZERO_LENGTH_WHERE_FILTER_ARRAY)
                 .updateView("Y = ii")
                 .where(ConjunctiveFilter.of(
-                        filter0.withBarriers(barrier),
-                        filter1.respectsBarriers(barrier)))
+                        filter0.withDeclaredBarriers(barrier),
+                        filter1.withRespectedBarriers(barrier)))
                 .coalesce();
 
         Assert.eq(deferredTable.size(), "deferredTable.size()", 25_000);
@@ -307,7 +307,7 @@ public class DeferredViewTableTest {
     @Test
     public void testBarrierWrappedRenames() {
         final Filter filter = new MatchFilter(MatchFilter.MatchType.Regular, "Y", "A");
-        verifyFilterIsPrioritized(filter.withBarriers(new Object()));
+        verifyFilterIsPrioritized(filter.withDeclaredBarriers(new Object()));
     }
 
     @Test
@@ -315,8 +315,8 @@ public class DeferredViewTableTest {
         final Object barrier = new Object();
         final WhereFilter filter = new MatchFilter(MatchFilter.MatchType.Regular, "Y", "A");
         verifyFilterIsPrioritized(ConjunctiveFilter.of(
-                ConditionFilter.createConditionFilter("true").withBarriers(barrier),
-                filter.respectsBarriers(barrier)));
+                ConditionFilter.createConditionFilter("true").withDeclaredBarriers(barrier),
+                filter.withRespectedBarriers(barrier)));
     }
 
     @Test
@@ -327,7 +327,7 @@ public class DeferredViewTableTest {
                 ConditionFilter.createConditionFilter("false"),
                 ConjunctiveFilter.of(
                         ConditionFilter.createConditionFilter("true"),
-                        filter.withBarriers(new Object()))));
+                        filter.withDeclaredBarriers(new Object()))));
     }
 
 
@@ -339,7 +339,7 @@ public class DeferredViewTableTest {
                 ConditionFilter.createConditionFilter("true"),
                 ConjunctiveFilter.of(
                         ConditionFilter.createConditionFilter("true"),
-                        filter.withBarriers(new Object()))));
+                        filter.withDeclaredBarriers(new Object()))));
     }
 
 

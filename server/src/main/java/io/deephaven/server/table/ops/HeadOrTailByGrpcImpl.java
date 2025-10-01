@@ -14,9 +14,10 @@ import io.deephaven.proto.backplane.grpc.BatchTableRequest;
 import io.deephaven.proto.backplane.grpc.HeadOrTailByRequest;
 import io.deephaven.proto.util.Exceptions;
 import io.deephaven.server.session.SessionState;
-import io.deephaven.server.table.validation.ColumnExpressionValidator;
+import io.deephaven.engine.validation.ColumnExpressionValidator;
 import io.deephaven.util.SafeCloseable;
 import io.grpc.StatusRuntimeException;
+import org.jetbrains.annotations.NotNull;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -29,14 +30,19 @@ public abstract class HeadOrTailByGrpcImpl extends GrpcTableOperation<HeadOrTail
         Table apply(Table source, long nRows, String[] columnSpecs);
     }
 
+    @NotNull
     private final RealTableOperation realTableOperation;
+    @NotNull
+    private final ColumnExpressionValidator columnExpressionValidator;
 
     protected HeadOrTailByGrpcImpl(
-            final PermissionFunction<HeadOrTailByRequest> permission,
-            final Function<BatchTableRequest.Operation, HeadOrTailByRequest> getRequest,
-            final RealTableOperation realTableOperation) {
+            @NotNull final PermissionFunction<HeadOrTailByRequest> permission,
+            @NotNull final Function<BatchTableRequest.Operation, HeadOrTailByRequest> getRequest,
+            @NotNull final RealTableOperation realTableOperation,
+            @NotNull final ColumnExpressionValidator columnExpressionValidator) {
         super(permission, getRequest, HeadOrTailByRequest::getResultId, HeadOrTailByRequest::getSourceId);
         this.realTableOperation = realTableOperation;
+        this.columnExpressionValidator = columnExpressionValidator;
     }
 
     @Override
@@ -59,7 +65,7 @@ public abstract class HeadOrTailByGrpcImpl extends GrpcTableOperation<HeadOrTail
 
         // note: we don't use the output from validateColumnExpressions because the headBy/tailBy
         // overloads that take SelectColumn arrays throw UnsupportedOperationException, but we validate anyway
-        ColumnExpressionValidator.validateColumnExpressions(expressions, columnSpecs, parent);
+        columnExpressionValidator.validateColumnExpressions(expressions, columnSpecs, parent);
 
         // note that headBy/tailBy use ungroup which currently requires the UGP lock
         try (final SafeCloseable ignored = lock(parent)) {
@@ -79,16 +85,20 @@ public abstract class HeadOrTailByGrpcImpl extends GrpcTableOperation<HeadOrTail
     @Singleton
     public static class HeadByGrpcImpl extends HeadOrTailByGrpcImpl {
         @Inject
-        public HeadByGrpcImpl(final TableServiceContextualAuthWiring authWiring) {
-            super(authWiring::checkPermissionHeadBy, BatchTableRequest.Operation::getHeadBy, Table::headBy);
+        public HeadByGrpcImpl(final TableServiceContextualAuthWiring authWiring,
+                @NotNull final ColumnExpressionValidator columnExpressionValidator) {
+            super(authWiring::checkPermissionHeadBy, BatchTableRequest.Operation::getHeadBy, Table::headBy,
+                    columnExpressionValidator);
         }
     }
 
     @Singleton
     public static class TailByGrpcImpl extends HeadOrTailByGrpcImpl {
         @Inject
-        public TailByGrpcImpl(final TableServiceContextualAuthWiring authWiring) {
-            super(authWiring::checkPermissionTailBy, BatchTableRequest.Operation::getTailBy, Table::tailBy);
+        public TailByGrpcImpl(final TableServiceContextualAuthWiring authWiring,
+                @NotNull final ColumnExpressionValidator columnExpressionValidator) {
+            super(authWiring::checkPermissionTailBy, BatchTableRequest.Operation::getTailBy, Table::tailBy,
+                    columnExpressionValidator);
         }
     }
 }

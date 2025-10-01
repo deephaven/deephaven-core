@@ -506,7 +506,7 @@
                 "path": "how-to-guides/deephaven-python-package.md"
               },
               {
-                "label": "Generate query strings with Python",
+                "label": "Generate query strings",
                 "path": "how-to-guides/generate-query-strings.md"
               },
               {
@@ -2662,6 +2662,10 @@
                   {
                     "label": "How do I get the ISO week number from a datetime?",
                     "path": "reference/community-questions/iso-week-number.md"
+                  },
+                  {
+                    "label": "How do row keys and positional indices behave during table operations?",
+                    "path": "reference/community-questions/shifts.md"
                   },
                   {
                     "label": "Why do queries run faster the second time they are run?",

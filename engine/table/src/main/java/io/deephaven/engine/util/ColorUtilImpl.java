@@ -6,6 +6,7 @@ package io.deephaven.engine.util;
 import io.deephaven.gui.color.Color;
 import io.deephaven.gui.color.Colors;
 import gnu.trove.map.hash.TObjectIntHashMap;
+import io.deephaven.util.annotations.UserInvocationPermitted;
 
 import static io.deephaven.util.QueryConstants.NULL_LONG;
 
@@ -15,6 +16,7 @@ import static io.deephaven.util.QueryConstants.NULL_LONG;
  * This class won't be necessary once we can import ColorUtil as static again. TODO
  * (deephaven/deephaven-core/issues/175): Move this to a new module and package
  */
+@UserInvocationPermitted(value = "function_library")
 public class ColorUtilImpl {
     public static final long COLOR_SET_BIT = 0x01;
     public static final long SELECTION_OVERRIDE_BIT = 0x02;

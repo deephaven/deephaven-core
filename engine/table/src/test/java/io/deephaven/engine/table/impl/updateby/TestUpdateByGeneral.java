@@ -507,4 +507,18 @@ public class TestUpdateByGeneral extends BaseUpdateByTest implements UpdateError
                     t.updateBy(UpdateByOperation.RollingSum("ts", prevTime, postTime, "data"));
         }
     }
+
+
+    @Test
+    public void testDH20413() {
+        final Table expected = TableTools.timeTable("PT1S").update("X=ii")
+                .updateBy(RollingAvg("Timestamp", Duration.ofSeconds(5), Duration.ofSeconds(5), "AvgX=X"));
+
+        final Table actual = TableTools.timeTable("PT1S").update("X=ii")
+                .reverse()
+                .updateBy(RollingAvg("Timestamp", Duration.ofSeconds(5), Duration.ofSeconds(5), "AvgX=X"))
+                .reverse();
+
+        assertTableEquals(expected, actual);
+    }
 }

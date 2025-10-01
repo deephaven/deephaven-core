@@ -71,7 +71,7 @@ restAdapter = IcebergTools.createAdapter(
 
 If you are working with a REST catalog backed by S3 storage, you can use the more specific [`createS3Rest`](https://deephaven.io/core/javadoc/io/deephaven/iceberg/util/IcebergToolsS3.html#createS3Rest(java.lang.String,java.lang.String,java.lang.String,java.lang.String,java.lang.String,java.lang.String,java.lang.String)) method:
 
-```groovy docker-config=iceberg test-set=1 order=null
+```groovy docker-config=iceberg test-set=1 order=null reset
 import io.deephaven.iceberg.util.*
 
 restAdapter = IcebergToolsS3.createS3Rest(
@@ -195,7 +195,9 @@ sourceDef = source2024.getDefinition()
 
 Then, create an [`IcebergTableAdapter`](/core/javadoc/io/deephaven/iceberg/util/IcebergTableAdapter.html) from the `source2024` table's definition, and a table identifier, which must include the Iceberg namespace (`nyc`):
 
-```groovy docker-config=iceberg test-set=1 order=null
+<!-- This reset is needed because another example also creates nyc.source table and that throws an error if it already exists -->
+
+```groovy docker-config=iceberg test-set=1 order=null reset
 sourceAdapter = restAdapter.createTable("nyc.source", sourceDef)
 ```
 

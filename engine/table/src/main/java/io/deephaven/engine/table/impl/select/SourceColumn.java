@@ -15,10 +15,7 @@ import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.rowset.TrackingRowSet;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class SourceColumn implements SelectColumn {
 
@@ -171,6 +168,11 @@ public class SourceColumn implements SelectColumn {
     @Override
     public boolean isStateless() {
         return sourceColumn.isStateless();
+    }
+
+    @Override
+    public Optional<SourceColumn> maybeGetSourceColumn() {
+        return Optional.of(this);
     }
 
     @Override

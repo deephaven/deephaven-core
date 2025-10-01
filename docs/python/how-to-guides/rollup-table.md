@@ -1,5 +1,5 @@
 ---
-title: Create a hierarchical rollup table programatically
+title: Create a hierarchical rollup table programmatically
 sidebar_label: Rollup tables
 ---
 

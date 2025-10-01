@@ -663,7 +663,7 @@ result = emptyTable(5).update("Y = a")
 
 See our guides:
 
-- [How to write a Groovy closure](../../how-to-guides/user-defined-functions.md)
+- [How to write a Groovy closure](../../how-to-guides/groovy-closures.md)
 
 ```groovy test-set=1 order=null
 // Create and Use a custom function

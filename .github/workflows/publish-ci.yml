@@ -3,19 +3,30 @@ name: Publish CI
 on:
   push:
     branches: [ 'main', 'release/v*' ]
-    paths-ignore:
-      - 'docs/**'
   pull_request:
     branches: [ 'main', 'rc/v*' ]
-    paths-ignore:
-      - 'docs/**'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
+  changes:
+    runs-on: ubuntu-24.04
+    outputs:
+      non-docs: ${{ steps.filter.outputs.non-docs }}
+    steps:
+      - name: Check for non-docs changes
+        id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            non-docs:
+              - '!docs/**'
+
   publish:
+    needs: changes
+    if: ${{ needs.changes.outputs.non-docs == 'true' }}
     runs-on: ubuntu-24.04
     permissions:
       id-token: write

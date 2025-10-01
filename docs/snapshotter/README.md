@@ -89,7 +89,7 @@ In a `test-set`, the `docker-config` only needs to be specified on 1 snippet (ty
 
 These tags are used to control the behavior of the snapshotter tool when running code blocks.
 
-`reset` will completely reset the Docker container after the code block test set is run. Normally, we delete all new global scope variables that have been created by the code block, but this can cause issues with some code blocks such as threading examples. The `reset` tag ensures we don't break while cleaning up after a test set.
+`reset` will completely reset the Docker container after the code block test set is run. Normally, we delete all new global scope variables that have been created by the code block, but this can cause issues with some code blocks such as threading examples or configuring global objects. The `reset` tag ensures we don't break while cleaning up after a test set.
 
 `timeout` adjusts the default 30 second timeout. This should rarely be used as your examples should be relatively small/quick. Set to `0` to disable the timeout (highly discouraged).
 
