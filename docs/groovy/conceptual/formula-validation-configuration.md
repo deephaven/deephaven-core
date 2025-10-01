@@ -18,11 +18,11 @@ This guide explains how to configure formula validation using two main approache
 
 Formula validation happens when client API requests are sent via gRPC that:
 
-- Create calculated columns using [`select`](../reference/table-operations/select/select.md), [`update`](../reference/table-operations/select/update.md), [`view`](../reference/table-operations/select/view.md), [`updateView`](../reference/table-operations/select/updateView.md), or [`lazyUpdate`](../reference/table-operations/select/lazyUpdate.md).
-- Filter tables using [`where`](../reference/table-operations/filter/where.md) or [`whereIn`](../reference/table-operations/filter/whereIn.md).
+- Create calculated columns using [`select`](../reference/table-operations/select/select.md), [`update`](../reference/table-operations/select/update.md), [`view`](../reference/table-operations/select/view.md), [`updateView`](../reference/table-operations/select/update-view.md), or [`lazyUpdate`](../reference/table-operations/select/lazy-update.md).
+- Filter tables using [`where`](../reference/table-operations/filter/where.md) or [`whereIn`](../reference/table-operations/filter/where-in.md).
 - Perform aggregations with formula-based operations like [`AggFormula`](../reference/table-operations/group-and-aggregate/AggFormula.md) or [`AggCountWhere`](../reference/table-operations/group-and-aggregate/AggCountWhere.md).
 - Use formula-based join conditions in operations like [`join`](../reference/table-operations/join/join.md), [`naturalJoin`](../reference/table-operations/join/natural-join.md), or [`rangeJoin`](../reference/table-operations/join/rangeJoin.md).
-- Apply conditional logic in update operations like [`updateBy`](../reference/table-operations/update-by-operations/ema-tick.md) with custom formulas.
+- Apply conditional logic in update operations like [`updateBy`](../reference/table-operations/update-by-operations/updateBy.md) with custom formulas.
 
 Validation does **not** apply to:
 
