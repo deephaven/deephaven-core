@@ -43,6 +43,13 @@ public class QueryTableSelectBarrierTest {
     private static final int REPEATS_FOR_CONFIDENCE = 1;
 
     @Test
+    public void testPropertyDefaults() {
+        assertFalse(QueryTable.STATELESS_FILTERS_BY_DEFAULT);
+        assertFalse(QueryTable.STATELESS_SELECT_BY_DEFAULT);
+        assertTrue(QueryTable.SERIAL_SELECT_IMPLICIT_BARRIERS);
+    }
+
+    @Test
     public void testRepeatedBarrierSelectColumn() {
         for (int ii = 0; ii < REPEATS_FOR_CONFIDENCE; ++ii) {
             System.out.println("Repetition " + ii);
