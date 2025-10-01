@@ -320,10 +320,16 @@ public class QueryTable extends BaseTable<QueryTable> {
     /**
      * If set to true, then stateful SelectColumns form implicit barriers. If set to false, then StatefulSelectColumns
      * do not form implicit barriers.
+     *
+     * <p>
+     * When stateless selectables are on by default ({@code QueryTable.statelessSelectByDefault=true}), no implicit
+     * barriers are added (i.e., this defaults to false). When stateless columns are off by default
+     * ({@code QueryTable.statelessSelectByDefault=false}), implicit barriers are added (i.e., this defaults to true).
+     * </p>
      */
     public static boolean SERIAL_SELECT_IMPLICIT_BARRIERS =
             Configuration.getInstance().getBooleanWithDefault("QueryTable.serialSelectImplicitBarriers",
-                    STATELESS_SELECT_BY_DEFAULT);
+                    !STATELESS_SELECT_BY_DEFAULT);
 
     private static final AtomicReferenceFieldUpdater<QueryTable, ModifiedColumnSet> MODIFIED_COLUMN_SET_UPDATER =
             AtomicReferenceFieldUpdater.newUpdater(QueryTable.class, ModifiedColumnSet.class, "modifiedColumnSet");
