@@ -16,7 +16,7 @@ This guide explains how to configure formula validation using two main approache
 
 ## When does validation occur?
 
-Formula validation happens when client API requests are sent via gRPC that:
+Formula validation happens when requests are sent over gRPC, such as those made by any of Deephaven's client APIs:
 
 - Create calculated columns using [`select`](../reference/table-operations/select/select.md), [`update`](../reference/table-operations/select/update.md), [`view`](../reference/table-operations/select/view.md), [`updateView`](../reference/table-operations/select/update-view.md), or [`lazyUpdate`](../reference/table-operations/select/lazy-update.md).
 - Filter tables using [`where`](../reference/table-operations/filter/where.md) or [`whereIn`](../reference/table-operations/filter/where-in.md).
