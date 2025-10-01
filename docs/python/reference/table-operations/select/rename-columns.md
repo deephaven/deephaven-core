@@ -23,7 +23,7 @@ Columns that will be renamed in the new table.
 </ParamTable>
 
 > [!IMPORTANT]
-> If the new column name conflicts with an existing column name in the table, the existing column is silently replaced.
+> If the new column name conflicts with an existing column name in the table, the existing column will be silently replaced.
 
 ## Returns
 
