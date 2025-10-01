@@ -733,6 +733,10 @@
                     "path": "conceptual/periodic-update-graph-configuration.md"
                   },
                   {
+                    "label": "Formula validation configuration",
+                    "path": "conceptual/formula-validation-configuration.md"
+                  },
+                  {
                     "label": "Query table configuration",
                     "path": "conceptual/query-table-configuration.md"
                   },
