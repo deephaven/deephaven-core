@@ -244,4 +244,3 @@ result = keyed_transpose(
 - [Aggregations guide](./combined-aggregations.md)
 - [`keyed_transpose`](../../reference/table-operations/format/keyed-transpose.md)
 - [Pydoc](https://docs.deephaven.io/core/pydoc/code/deephaven.table.html#deephaven.table.keyed_transpose)
-
