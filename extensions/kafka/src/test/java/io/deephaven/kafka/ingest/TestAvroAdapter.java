@@ -206,7 +206,8 @@ public class TestAvroAdapter {
         genericRecord.put("A", 123);
         genericRecord.put("B", "hello");
         genericRecord.put("C", 45.67);
-        genericRecord.put("Result", new GenericData.Array<>(avroSchema.getField("Result").schema(), Arrays.asList("pass", "ok", "done")));
+        genericRecord.put("Result",
+                new GenericData.Array<>(avroSchema.getField("Result").schema(), Arrays.asList("pass", "ok", "done")));
 
         final Map<String, String> colMap = new HashMap<>();
         colMap.put("A", "A");
@@ -215,7 +216,7 @@ public class TestAvroAdapter {
         colMap.put("Result", "Result");
 
         try (final WritableObjectChunk<Object, Values> inputValues =
-                     WritableObjectChunk.makeWritableChunk(1)) {
+                WritableObjectChunk.makeWritableChunk(1)) {
             inputValues.setSize(0);
             inputValues.add(genericRecord);
 
@@ -243,7 +244,8 @@ public class TestAvroAdapter {
                 TestCase.assertEquals(123, output[0].asIntChunk().get(0));
                 TestCase.assertEquals("hello", output[1].asObjectChunk().get(0));
                 TestCase.assertEquals(45.67, output[2].asDoubleChunk().get(0));
-                TestCase.assertTrue(Arrays.equals(new String[]{"pass", "ok", "done"}, (String[]) output[3].asObjectChunk().get(0)));
+                TestCase.assertTrue(Arrays.equals(new String[] {"pass", "ok", "done"},
+                        (String[]) output[3].asObjectChunk().get(0)));
             }
         }
     }
@@ -270,7 +272,7 @@ public class TestAvroAdapter {
         colMap.put("Result", "Result");
 
         try (final WritableObjectChunk<Object, Values> inputValues =
-                     WritableObjectChunk.makeWritableChunk(1)) {
+                WritableObjectChunk.makeWritableChunk(1)) {
             inputValues.setSize(0);
             inputValues.add(genericRecord);
 
@@ -298,7 +300,8 @@ public class TestAvroAdapter {
                 TestCase.assertEquals(123, output[0].asIntChunk().get(0));
                 TestCase.assertEquals("hello", output[1].asObjectChunk().get(0));
                 TestCase.assertEquals(45.67, output[2].asDoubleChunk().get(0));
-                TestCase.assertTrue(Arrays.equals(new String[]{"pass", "ok", "done"}, (String[]) output[3].asObjectChunk().get(0)));
+                TestCase.assertTrue(Arrays.equals(new String[] {"pass", "ok", "done"},
+                        (String[]) output[3].asObjectChunk().get(0)));
             }
         }
     }
