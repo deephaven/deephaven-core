@@ -2116,57 +2116,34 @@ public class QueryTable extends BaseTable<QueryTable> {
                         return prepareReturnThis();
                     }
 
-                    Set<String> notFound = null;
-                    Set<String> duplicateSource = null;
-                    Set<String> duplicateDest = null;
+                    // Ensure we have no conflicts during the rename.
+                    final Map<String, String> pairLookup =
+                            RenameColumnHelper.createLookupAndValidate(definition, pairs);
+                    final Set<String> newNames = RenameColumnHelper.getNewColumns(pairs);
+                    final Set<String> maskedNames = RenameColumnHelper.getMaskedColumns(definition, pairs);
 
-                    final Set<ColumnName> newNames = new HashSet<>();
-                    final Map<ColumnName, ColumnName> pairLookup = new LinkedHashMap<>();
-                    for (final Pair pair : pairs) {
-                        if (!columns.containsKey(pair.input().name())) {
-                            (notFound == null ? notFound = new LinkedHashSet<>() : notFound)
-                                    .add(pair.input().name());
-                        }
-                        if (pairLookup.put(pair.input(), pair.output()) != null) {
-                            (duplicateSource == null ? duplicateSource = new LinkedHashSet<>(1) : duplicateSource)
-                                    .add(pair.input().name());
-                        }
-                        if (!newNames.add(pair.output())) {
-                            (duplicateDest == null ? duplicateDest = new LinkedHashSet<>() : duplicateDest)
-                                    .add(pair.output().name());
-                        }
-                    }
-
-                    // if we accumulated any errors, build one mega error message and throw it
-                    if (notFound != null || duplicateSource != null || duplicateDest != null) {
-                        throw new IllegalArgumentException(Stream.of(
-                                notFound == null ? null : "Column(s) not found: " + String.join(", ", notFound),
-                                duplicateSource == null ? null
-                                        : "Duplicate source column(s): " + String.join(", ", duplicateSource),
-                                duplicateDest == null ? null
-                                        : "Duplicate destination column(s): " + String.join(", ", duplicateDest))
-                                .filter(Objects::nonNull).collect(Collectors.joining("\n")));
-                    }
+                    // How many columns are removed (masked and not replaced) from the table?
+                    final int removedCount = (int) maskedNames.stream().filter(n -> !pairLookup.containsKey(n)).count();
 
                     final MutableInt mcsPairIdx = new MutableInt();
-                    final Pair[] modifiedColumnSetPairs = new Pair[columns.size()];
+                    final Pair[] modifiedColumnSetPairs = new Pair[columns.size() - removedCount];
                     final Map<String, ColumnSource<?>> newColumns = new LinkedHashMap<>();
 
                     final Runnable moveColumns = () -> {
-                        for (final Map.Entry<ColumnName, ColumnName> rename : pairLookup.entrySet()) {
-                            final ColumnName oldName = rename.getKey();
-                            final ColumnName newName = rename.getValue();
-                            final ColumnSource<?> columnSource = columns.get(oldName.name());
-                            newColumns.put(newName.name(), columnSource);
+                        for (final Map.Entry<String, String> rename : pairLookup.entrySet()) {
+                            final String oldName = rename.getKey();
+                            final String newName = rename.getValue();
+                            final ColumnSource<?> columnSource = columns.get(oldName);
+                            newColumns.put(newName, columnSource);
                             modifiedColumnSetPairs[mcsPairIdx.getAndIncrement()] =
-                                    Pair.of(newName, oldName);
+                                    Pair.of(ColumnName.of(newName), ColumnName.of(oldName));
                         }
                     };
 
                     for (final Map.Entry<String, ? extends ColumnSource<?>> entry : columns.entrySet()) {
-                        final ColumnName oldName = ColumnName.of(entry.getKey());
+                        final String oldName = entry.getKey();
                         final ColumnSource<?> columnSource = entry.getValue();
-                        ColumnName newName = pairLookup.get(oldName);
+                        String newName = pairLookup.get(oldName);
                         if (newName == null) {
                             if (newNames.contains(oldName)) {
                                 // this column is being replaced by a rename
@@ -2183,8 +2160,8 @@ public class QueryTable extends BaseTable<QueryTable> {
                         }
 
                         modifiedColumnSetPairs[mcsPairIdx.getAndIncrement()] =
-                                Pair.of(newName, oldName);
-                        newColumns.put(newName.name(), columnSource);
+                                Pair.of(ColumnName.of(newName), ColumnName.of(oldName));
+                        newColumns.put(newName, columnSource);
                     }
 
                     if (mcsPairIdx.get() <= movePosition) {
