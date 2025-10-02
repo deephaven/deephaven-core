@@ -81,6 +81,10 @@ public class BasePushdownFilterContext implements PushdownFilterContext {
     public BasePushdownFilterContext(
             final WhereFilter filter,
             final List<ColumnSource<?>> columnSources) {
+        if (!filter.permitParallelization()) {
+            throw new IllegalArgumentException(
+                    "filter must be stateless, but does not permit parallelization: " + filter);
+        }
         this.filter = filter;
         this.columnSources = columnSources;
 
@@ -137,12 +141,14 @@ public class BasePushdownFilterContext implements PushdownFilterContext {
     }
 
     public final boolean supportsInMemoryDataIndexFiltering() {
-        // TODO: is there a cheap way to check if this filter may not support in-memory data index?
+        // Note: if there is a cheap way to check if the filter will never be applicable for an in-memory data index, we
+        // would like to add that check here.
         return true;
     }
 
     public final boolean supportsDeferredDataIndexFiltering() {
-        // TODO: is there a cheap way to check if this filter may not support deferred data index?
+        // Note: if there is a cheap way to check if the filter will never be applicable for a deferred data index, we
+        // would like to add that check here.
         return true;
     }
 

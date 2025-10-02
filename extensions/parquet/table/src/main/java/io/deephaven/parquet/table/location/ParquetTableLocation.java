@@ -14,18 +14,9 @@ import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.primitive.iterator.CloseableIterator;
-import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.RowSetBuilderRandom;
-import io.deephaven.engine.rowset.RowSetBuilderSequential;
-import io.deephaven.engine.rowset.RowSetFactory;
-import io.deephaven.engine.rowset.WritableRowSet;
+import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
-import io.deephaven.engine.table.BasicDataIndex;
-import io.deephaven.engine.table.ChunkSource;
-import io.deephaven.engine.table.ColumnDefinition;
-import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.BasePushdownFilterContext;
 import io.deephaven.engine.table.impl.PushdownFilterContext;
 import io.deephaven.engine.table.impl.PushdownResult;
@@ -34,26 +25,9 @@ import io.deephaven.engine.table.impl.chunkattributes.DictionaryKeys;
 import io.deephaven.engine.table.impl.chunkfilter.ChunkFilter;
 import io.deephaven.engine.table.impl.chunkfilter.LongChunkMatchFilterFactory;
 import io.deephaven.engine.table.impl.dataindex.StandaloneDataIndex;
-import io.deephaven.engine.table.impl.locations.ColumnLocation;
-import io.deephaven.engine.table.impl.locations.TableDataException;
-import io.deephaven.engine.table.impl.locations.TableKey;
-import io.deephaven.engine.table.impl.locations.TableLocationState;
+import io.deephaven.engine.table.impl.locations.*;
 import io.deephaven.engine.table.impl.locations.impl.AbstractTableLocation;
-import io.deephaven.engine.table.impl.select.ByteRangeFilter;
-import io.deephaven.engine.table.impl.select.CharRangeFilter;
-import io.deephaven.engine.table.impl.select.ComparableRangeFilter;
-import io.deephaven.engine.table.impl.select.DoubleRangeFilter;
-import io.deephaven.engine.table.impl.select.FloatRangeFilter;
-import io.deephaven.engine.table.impl.select.FunctionalColumn;
-import io.deephaven.engine.table.impl.select.InstantRangeFilter;
-import io.deephaven.engine.table.impl.select.IntRangeFilter;
-import io.deephaven.engine.table.impl.select.LongRangeFilter;
-import io.deephaven.engine.table.impl.select.MatchFilter;
-import io.deephaven.engine.table.impl.select.MultiSourceFunctionalColumn;
-import io.deephaven.engine.table.impl.select.ShortRangeFilter;
-import io.deephaven.engine.table.impl.select.SingleSidedComparableRangeFilter;
-import io.deephaven.engine.table.impl.select.SourceColumn;
-import io.deephaven.engine.table.impl.select.WhereFilter;
+import io.deephaven.engine.table.impl.select.*;
 import io.deephaven.engine.table.impl.sources.regioned.RegionedColumnSource;
 import io.deephaven.engine.table.impl.sources.regioned.RegionedColumnSourceManager;
 import io.deephaven.engine.table.impl.sources.regioned.RegionedPageStore;
@@ -91,17 +65,7 @@ import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.OptionalInt;
+import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.LongConsumer;
 import java.util.function.Predicate;
@@ -110,10 +74,8 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static io.deephaven.parquet.base.ParquetFileReader.FILE_URI_SCHEME;
-import static io.deephaven.parquet.table.ParquetTableWriter.GROUPING_BEGIN_POS_COLUMN_NAME;
+import static io.deephaven.parquet.table.ParquetTableWriter.*;
 import static io.deephaven.parquet.table.ParquetTableWriter.GROUPING_END_POS_COLUMN_NAME;
-import static io.deephaven.parquet.table.ParquetTableWriter.GROUPING_KEY_COLUMN_NAME;
-import static io.deephaven.parquet.table.ParquetTableWriter.INDEX_ROW_SET_COLUMN_NAME;
 import static io.deephaven.util.QueryConstants.NULL_LONG;
 
 public class ParquetTableLocation extends AbstractTableLocation {
@@ -773,7 +735,6 @@ public class ParquetTableLocation extends AbstractTableLocation {
                         continue;
                     }
                     try (final PushdownResult ignored = result) {
-                        // TODO: note, this is a change in behavior
                         result = pushdownDataIndex(selection, filter, renameMap, dataIndex, result);
                     }
                     break;
@@ -788,15 +749,12 @@ public class ParquetTableLocation extends AbstractTableLocation {
                     break;
                 }
                 case DeferredDataIndex: {
-                    // If we have a data index, apply the filter to the data index table and retain the incoming maybe
-                    // rows.
                     final BasicDataIndex dataIndex =
                             hasDataIndex(parquetColumnNames) ? getDataIndex(parquetColumnNames) : null;
                     if (dataIndex == null) {
                         continue;
                     }
                     try (final PushdownResult ignored = result) {
-                        // Assuming this applies successfully, we sh
                         result = pushdownDataIndex(selection, filter, renameMap, dataIndex, result);
                     }
                     break;
@@ -815,6 +773,8 @@ public class ParquetTableLocation extends AbstractTableLocation {
     // ---------------------------------------------------------------------------------------------------------------
     // The following should be _cheap_ checks that don't require materializing Parquet metadata to check.
     // ---------------------------------------------------------------------------------------------------------------
+    // Note: in the future, we this would be an easy way to allow turning off Parquet pushdown on a location by location
+    // basis; we could expose the options through ParquetInstructions
 
     private boolean supportsMetadataFiltering() {
         return true;
