@@ -536,7 +536,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
             final boolean isApplicable;
             switch (mode) {
                 case ParquetRowGroupMetadata:
-                    // TODO: check if there are any stats in parquet?
+                    // Note: it should be possible to check if there is any statistics
                     isApplicable = true;
                     break;
                 case InMemoryDataIndex:
