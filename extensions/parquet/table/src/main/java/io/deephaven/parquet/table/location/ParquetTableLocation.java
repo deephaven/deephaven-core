@@ -66,6 +66,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.*;
+import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.function.LongConsumer;
 import java.util.function.Predicate;
@@ -797,22 +798,22 @@ public class ParquetTableLocation extends AbstractTableLocation {
     enum PushdownMode {
         // @formatter:off
         ParquetRowGroupMetadata(
-                QueryTable.DISABLE_WHERE_PUSHDOWN_PARQUET_ROW_GROUP_METADATA,
+                () -> QueryTable.DISABLE_WHERE_PUSHDOWN_PARQUET_ROW_GROUP_METADATA,
                 PushdownResult.METADATA_STATS_COST,
                 BasePushdownFilterContext::supportsMetadataFiltering,
                 ParquetTableLocation::supportsMetadataFiltering),
         InMemoryDataIndex(
-                QueryTable.DISABLE_WHERE_PUSHDOWN_DATA_INDEX,
+                () -> QueryTable.DISABLE_WHERE_PUSHDOWN_DATA_INDEX,
                 PushdownResult.IN_MEMORY_DATA_INDEX_COST,
                 BasePushdownFilterContext::supportsInMemoryDataIndexFiltering,
                 ParquetTableLocation::supportsInMemoryDataIndexFiltering),
         ParquetDictionary(
-                QueryTable.DISABLE_WHERE_PUSHDOWN_PARQUET_DICTIONARY,
+                () -> QueryTable.DISABLE_WHERE_PUSHDOWN_PARQUET_DICTIONARY,
                 PushdownResult.DICTIONARY_DATA_COST,
                 BasePushdownFilterContext::supportsDictionaryFiltering,
                 ParquetTableLocation::supportsDictionaryFiltering),
         DeferredDataIndex(
-                QueryTable.DISABLE_WHERE_PUSHDOWN_DATA_INDEX,
+                () -> QueryTable.DISABLE_WHERE_PUSHDOWN_DATA_INDEX,
                 PushdownResult.DEFERRED_DATA_INDEX_COST,
                 BasePushdownFilterContext::supportsDeferredDataIndexFiltering,
                 ParquetTableLocation::supportsDeferredDataIndexFiltering);
@@ -824,17 +825,20 @@ public class ParquetTableLocation extends AbstractTableLocation {
             return Arrays.asList(PushdownMode.values());
         }
 
-        private final boolean disabled;
+        // Note: the disabled static configuration values are _not_ currently final. While ill-advised to change them in
+        // this way, it is better that we retain the current behavior until a better pattern can be established.
+        // private final boolean disabled;
+        private final BooleanSupplier disabled;
         private final long filterCost;
         private final Predicate<BasePushdownFilterContext> contextAllows;
         private final Predicate<ParquetTableLocation> locationAllows;
 
         PushdownMode(
-                final boolean disabled,
+                final BooleanSupplier disabled,
                 final long filterCost,
                 final Predicate<BasePushdownFilterContext> contextAllows,
                 final Predicate<ParquetTableLocation> locationAllows) {
-            this.disabled = disabled;
+            this.disabled = Objects.requireNonNull(disabled);
             this.filterCost = filterCost;
             this.contextAllows = Objects.requireNonNull(contextAllows);
             this.locationAllows = Objects.requireNonNull(locationAllows);
@@ -847,7 +851,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
         public boolean allows(
                 final ParquetTableLocation location,
                 final BasePushdownFilterContext context) {
-            return !disabled
+            return !disabled.getAsBoolean()
                     && contextAllows(context)
                     && locationAllows(location);
         }
