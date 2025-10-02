@@ -8,10 +8,10 @@ This guide shows you how to use `keyed_transpose` to transform data from a long 
 
 Use `keyed_transpose` when you need to:
 
-- **Pivot data from long to wide format**: Convert rows of categorical data into columns
-- **Create cross-tabulations**: Build summary tables with aggregated values
-- **Reshape time-series data**: Transform data where categories are in rows into a format where they become columns
-- **Prepare data for visualization**: Many charts require data in wide format
+- **Pivot data from long to wide format**: Convert rows of categorical data into columns.
+- **Create cross-tabulations**: Build summary tables with aggregated values.
+- **Reshape time-series data**: Transform data where categories are in rows into a format where they become columns.
+- **Prepare data for visualization**: Many charts require data in wide format.
 
 ## Basic usage
 
@@ -241,6 +241,7 @@ result = keyed_transpose(
 
 ## Related documentation
 
-- [keyed_transpose reference](/python/reference/table-operations/format/keyed-transpose.md)
-- [Javadoc](/core/javadoc/io/deephaven/engine/table/impl/util/KeyedTranspose.html)
-- [Aggregations guide](/python/how-to-guides/combined-aggregations.md)
+- [Aggregations guide](./combined-aggregations.md)
+- [`keyed_transpose`](../../reference/table-operations/format/keyed-transpose.md)
+- [Pydoc](https://docs.deephaven.io/core/pydoc/code/deephaven.table.html#deephaven.table.keyed_transpose)
+

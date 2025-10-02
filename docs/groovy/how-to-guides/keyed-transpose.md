@@ -236,6 +236,6 @@ result = KeyedTranspose.keyedTranspose(
 
 ## Related documentation
 
-- [keyedTranspose reference](/groovy/reference/table-operations/format/keyedTranspose.md)
-- [Javadoc](/core/javadoc/io/deephaven/engine/table/impl/util/KeyedTranspose.html)
 - [Aggregations guide](/groovy/how-to-guides/aggregations.md)
+- [`keyedTranspose`](../reference/table-operations/format/keyedTranspose.md)
+- [Javadoc](/core/javadoc/io/deephaven/engine/table/impl/util/KeyedTranspose.html)
