@@ -13,6 +13,7 @@ import io.deephaven.util.SafeCloseableArray;
 import junit.framework.TestCase;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericData;
+import org.apache.avro.util.Utf8;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 
@@ -189,6 +190,115 @@ public class TestAvroAdapter {
                 TestCase.assertEquals(QueryConstants.NULL_LONG, output[4].asLongChunk().get(2));
                 TestCase.assertEquals(30000, output[5].asIntChunk().get(2));
                 TestCase.assertEquals(300000, output[6].asLongChunk().get(2));
+            }
+        }
+    }
+
+    @Test
+    public void testStringArray() throws IOException {
+        final Schema avroSchema = getSchema("stringarray.avsc");
+
+        final String[] names = new String[] {"A", "B", "C", "Result"};
+        final Class<?>[] types = new Class[] {int.class, String.class, double.class, String[].class};
+        final TableDefinition definition = TableDefinition.from(Arrays.asList(names), Arrays.asList(types));
+
+        final GenericData.Record genericRecord = new GenericData.Record(avroSchema);
+        genericRecord.put("A", 123);
+        genericRecord.put("B", "hello");
+        genericRecord.put("C", 45.67);
+        genericRecord.put("Result", new GenericData.Array<>(avroSchema.getField("Result").schema(), Arrays.asList("pass", "ok", "done")));
+
+        final Map<String, String> colMap = new HashMap<>();
+        colMap.put("A", "A");
+        colMap.put("B", "B");
+        colMap.put("C", "C");
+        colMap.put("Result", "Result");
+
+        try (final WritableObjectChunk<Object, Values> inputValues =
+                     WritableObjectChunk.makeWritableChunk(1)) {
+            inputValues.setSize(0);
+            inputValues.add(genericRecord);
+
+            final WritableChunk[] output = new WritableChunk[names.length];
+            try (final SafeCloseableArray ignored = new SafeCloseableArray(output)) {
+                output[0] = WritableIntChunk.makeWritableChunk(1);
+                output[1] = WritableObjectChunk.makeWritableChunk(1);
+                output[2] = WritableDoubleChunk.makeWritableChunk(1);
+                output[3] = WritableObjectChunk.makeWritableChunk(1);
+
+                for (WritableChunk wc : output) {
+                    wc.setSize(0);
+                }
+
+                final GenericRecordChunkAdapter adapter = GenericRecordChunkAdapter.make(definition,
+                        (idx) -> output[idx].getChunkType(), colMap, Pattern.compile(Pattern.quote(".")), avroSchema,
+                        true);
+                adapter.handleChunk(inputValues, output);
+
+                TestCase.assertEquals(1, output[0].size());
+                TestCase.assertEquals(1, output[1].size());
+                TestCase.assertEquals(1, output[2].size());
+                TestCase.assertEquals(1, output[3].size());
+
+                TestCase.assertEquals(123, output[0].asIntChunk().get(0));
+                TestCase.assertEquals("hello", output[1].asObjectChunk().get(0));
+                TestCase.assertEquals(45.67, output[2].asDoubleChunk().get(0));
+                TestCase.assertTrue(Arrays.equals(new String[]{"pass", "ok", "done"}, (String[]) output[3].asObjectChunk().get(0)));
+            }
+        }
+    }
+
+    @Test
+    public void testUtf8Array() throws IOException {
+        final Schema avroSchema = getSchema("stringarray.avsc");
+
+        final String[] names = new String[] {"A", "B", "C", "Result"};
+        final Class<?>[] types = new Class[] {int.class, String.class, double.class, String[].class};
+        final TableDefinition definition = TableDefinition.from(Arrays.asList(names), Arrays.asList(types));
+
+        final GenericData.Record genericRecord = new GenericData.Record(avroSchema);
+        genericRecord.put("A", 123);
+        genericRecord.put("B", "hello");
+        genericRecord.put("C", 45.67);
+        genericRecord.put("Result", new GenericData.Array<>(avroSchema.getField("Result").schema(),
+                Arrays.asList(new Utf8("pass"), new Utf8("ok"), new Utf8("done"))));
+
+        final Map<String, String> colMap = new HashMap<>();
+        colMap.put("A", "A");
+        colMap.put("B", "B");
+        colMap.put("C", "C");
+        colMap.put("Result", "Result");
+
+        try (final WritableObjectChunk<Object, Values> inputValues =
+                     WritableObjectChunk.makeWritableChunk(1)) {
+            inputValues.setSize(0);
+            inputValues.add(genericRecord);
+
+            final WritableChunk[] output = new WritableChunk[names.length];
+            try (final SafeCloseableArray ignored = new SafeCloseableArray(output)) {
+                output[0] = WritableIntChunk.makeWritableChunk(1);
+                output[1] = WritableObjectChunk.makeWritableChunk(1);
+                output[2] = WritableDoubleChunk.makeWritableChunk(1);
+                output[3] = WritableObjectChunk.makeWritableChunk(1);
+
+                for (WritableChunk wc : output) {
+                    wc.setSize(0);
+                }
+
+                final GenericRecordChunkAdapter adapter = GenericRecordChunkAdapter.make(definition,
+                        (idx) -> output[idx].getChunkType(), colMap, Pattern.compile(Pattern.quote(".")), avroSchema,
+                        true);
+                adapter.handleChunk(inputValues, output);
+
+                TestCase.assertEquals(1, output[0].size());
+                TestCase.assertEquals(1, output[1].size());
+                TestCase.assertEquals(1, output[2].size());
+                TestCase.assertEquals(1, output[3].size());
+
+                TestCase.assertEquals(123, output[0].asIntChunk().get(0));
+                TestCase.assertEquals("hello", output[1].asObjectChunk().get(0));
+                TestCase.assertEquals(45.67, output[2].asDoubleChunk().get(0));
+                TestCase.assertTrue(Arrays.equals(new String[]{"pass", "ok", "done"}, (String[]) output[3].asObjectChunk().get(0)));
             }
         }
     }
