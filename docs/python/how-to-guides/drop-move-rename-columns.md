@@ -117,6 +117,9 @@ result_grades_last = source.move_columns_down(["TestGrade", "HomeworkGrade"])
 
 [`rename_columns`](../reference/table-operations/select/rename-columns.md) renames one or more columns in a table. Renaming a column follows the syntax `NewColumnName = OldColumnName`.
 
+> [!IMPORTANT]
+> If the new column name conflicts with an existing column name in the table, the existing column will be silently replaced.
+
 The following example renames `StudentID` to `ID` and `GPA` to `GradePointAverage`.
 
 ```python test-set=1

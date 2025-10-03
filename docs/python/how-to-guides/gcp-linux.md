@@ -40,13 +40,19 @@ For this demo, we will be using:
   - No GPU
   - No display device
 
+![The **Machine configuration** window](../assets/how-to/machine-config.png)
+
 Another option is [confidential computing](https://cloud.google.com/confidential-computing), which encrypts your data while it's being processed. If you are working with sensitive data, this option is likely important to enable. For this guide, we will _not_ be enabling confidential computing.
 
 ### Docker Container
 
 A Google Cloud VM can be configured to run Docker containers on startup. Since Deephaven can be [launched from pre-built Docker images](../getting-started/quickstart.md), that will make running Deephaven in the cloud a breeze.
 
-Click on **DEPLOY CONTAINER** in the **Containers** option. It's here that the VM can be configured to build and run containers from pre-built Docker images without having to manually do anything on the VM itself. Deephaven has several pre-built Docker images to choose from. Your choice should depend on your needs.
+Click on **DEPLOY CONTAINER** in the **Containers** option.
+
+![The **Containers** option with **DEPLOY CONTAINER** highlighted](../assets/how-to/deploy-container.png)
+
+It's here that the VM can be configured to build and run containers from pre-built Docker images without having to manually do anything on the VM itself. Deephaven has several pre-built Docker images to choose from. Your choice should depend on your needs.
 
 > [!NOTE]
 > `{VERSION}` in the list below is the Deephaven Core version number. Version numbers can be found [here](https://github.com/deephaven/deephaven-core/releases). Additionally, `{VERSION}` can be `latest`, which will always pull the latest version number.

@@ -26,3 +26,4 @@
 *.proto @devinrsmith @nbauernfeind @niloc132 @rcaudy @cpwright
 *.gwt.xml @niloc132 @rcaudy @nbauernfeind @cpwright
 /docs/**/*.md @margaretkennedy @jjbrosnan @rcaudy @elijahpetty
+/gradle @devinrsmith @rcaudy

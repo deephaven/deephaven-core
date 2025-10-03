@@ -116,7 +116,7 @@ tFiltered3 = tUpdated.where("Group == 3 || IntRowIndex % 2 == 0")
 
 In addition to [`where`](../../reference/table-operations/filter/where.md), Deephaven offers [`whereIn`](../../reference/table-operations/filter/where-in.md) and [`whereNotIn`](../../reference/table-operations/filter/where-not-in.md), which filter table data based on another table.
 
-See the [filtering guide](../../how-to-guides/use-filters.md) for more information.
+See the [filtering guide](../../how-to-guides/filters.md) for more information.
 
 ### By row position
 
@@ -149,7 +149,7 @@ tSlice = tUpdated.slice(40, 60)
 tSlicePct = tUpdated.slicePct(0.4, 0.6)
 ```
 
-See the [filtering guide](../../how-to-guides/use-filters.md) for more information.
+See the [filtering guide](../../how-to-guides/filters.md) for more information.
 
 ## Sort
 

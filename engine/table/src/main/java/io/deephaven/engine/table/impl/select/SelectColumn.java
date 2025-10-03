@@ -3,10 +3,7 @@
 //
 package io.deephaven.engine.table.impl.select;
 
-import io.deephaven.api.ColumnName;
-import io.deephaven.api.RawString;
-import io.deephaven.api.Selectable;
-import io.deephaven.api.Strings;
+import io.deephaven.api.*;
 import io.deephaven.api.expression.Expression;
 import io.deephaven.api.expression.Function;
 import io.deephaven.api.expression.Method;
@@ -23,22 +20,36 @@ import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.table.impl.QueryCompilerRequestProcessor;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
  * The interface for a query table to perform retrieve values from a column for select like operations.
  */
-public interface SelectColumn extends Selectable {
+public interface SelectColumn extends Selectable, ConcurrencyControl<Selectable> {
 
     static SelectColumn of(Selectable selectable) {
-        return (selectable instanceof SelectColumn)
-                ? (SelectColumn) selectable
-                : selectable.expression().walk(new ExpressionAdapter(selectable.newColumn()));
+        if (selectable instanceof SelectColumn) {
+            return (SelectColumn) selectable;
+        }
+        SelectColumn result = selectable.expression().walk(new ExpressionAdapter(selectable.newColumn()));
+        Boolean serial = selectable.isSerial();
+        if (serial == null) {
+            // we don't care
+        } else if (serial) {
+            result = new StatefulSelectColumn(result);
+        } else {
+            result = new StatelessSelectColumn(result);
+        }
+        Object[] declaredBarriers = selectable.declaredBarriers();
+        if (declaredBarriers != null && declaredBarriers.length > 0) {
+            result = SelectColumnWithDeclaredBarriers.addDeclaredBarriers(result, declaredBarriers);
+        }
+        Object[] respectedBarriers = selectable.respectedBarriers();
+        if (respectedBarriers != null && respectedBarriers.length > 0) {
+            result = SelectColumnWithRespectedBarriers.addRespectedBarriers(result, respectedBarriers);
+        }
+        return result;
     }
 
     static SelectColumn[] from(Selectable... selectables) {
@@ -65,6 +76,17 @@ public interface SelectColumn extends Selectable {
      */
     static SelectColumn ofStateless(@NotNull final Selectable selectable) {
         return new StatelessSelectColumn(of(selectable));
+    }
+
+    /**
+     * Produce a {@link #isStateless() stateless} SelectColumn[] from {@code selectables}.
+     *
+     * @param selectables The {@link Selectable selectables} to adapt and mark as stateless
+     * @return The resulting SelectColumn[] array
+     */
+    static SelectColumn[] ofStateless(@NotNull final Selectable... selectables) {
+        return Arrays.stream(selectables).map(selectable -> new StatelessSelectColumn(of(selectable)))
+                .toArray(SelectColumn[]::new);
     }
 
     /**
@@ -315,4 +337,35 @@ public interface SelectColumn extends Selectable {
     }
 
     // endregion Selectable impl
+
+    default boolean hasConstantArrayAccess() {
+        return false;
+    }
+
+    default boolean hasConstantValue() {
+        return false;
+    }
+
+    default Optional<SourceColumn> maybeGetSourceColumn() {
+        return Optional.empty();
+    }
+
+    default Optional<FormulaColumn> maybeGetFormulaColumn() {
+        return Optional.empty();
+    }
+
+    @Override
+    default SelectColumn withSerial() {
+        return new StatefulSelectColumn(this);
+    }
+
+    @Override
+    default SelectColumn withDeclaredBarriers(Object... declaredBarriers) {
+        return SelectColumnWithDeclaredBarriers.addDeclaredBarriers(this, declaredBarriers);
+    }
+
+    @Override
+    default SelectColumn withRespectedBarriers(Object... respectedBarriers) {
+        return SelectColumnWithRespectedBarriers.addRespectedBarriers(this, respectedBarriers);
+    }
 }

@@ -7,6 +7,7 @@ package io.deephaven.function;
 import io.deephaven.base.verify.Require;
 import io.deephaven.vector.*;
 import io.deephaven.engine.primitive.iterator.*;
+import io.deephaven.util.annotations.UserInvocationPermitted;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 
 import java.util.Arrays;
@@ -22,6 +23,7 @@ import static io.deephaven.function.Cast.castDouble;
  * A set of commonly used numeric functions that can be applied to numeric types.
  */
 @SuppressWarnings({"RedundantCast", "unused", "ManualMinMaxCalculation"})
+@UserInvocationPermitted({"function_library"})
 public class Numeric {
 
     //////////////////////////// Constants ////////////////////////////

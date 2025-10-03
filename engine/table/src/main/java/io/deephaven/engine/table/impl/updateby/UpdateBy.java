@@ -1385,6 +1385,21 @@ public abstract class UpdateBy {
                 "OperatorCollection TableDef",
                 "Source TableDef");
 
+        // Verify the timestamp column is a supported data type (already long or can be reinterpreted as long)
+        if (operatorCollection.timestampColumnName != null) {
+            final ColumnSource<?> timestampSource = source.getColumnSource(operatorCollection.timestampColumnName);
+            final Class<?> timestampType = timestampSource.getType();
+            if (timestampType != long.class && timestampType != Long.class) {
+                // Can we reinterpret the column as a long
+                final ColumnSource<?> reinterpreted = ReinterpretUtils.maybeConvertToPrimitive(timestampSource);
+                final Class<?> reinterpretedType = reinterpreted.getType();
+                if (reinterpretedType != long.class && reinterpretedType != Long.class) {
+                    throw new IllegalArgumentException("Unsupported timestamp column type " + timestampType +
+                            " for column '" + operatorCollection.timestampColumnName + "'");
+                }
+            }
+        }
+
         // Create the rowRedirection (if instructed by the user)
         final RowRedirection rowRedirection;
         if (control.useRedirectionOrDefault()) {

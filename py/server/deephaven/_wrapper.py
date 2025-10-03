@@ -9,6 +9,7 @@ The primary purpose of this ABC is to enable downstream code to retrieve the wra
 from __future__ import annotations
 
 import importlib
+import warnings
 import inspect
 import pkgutil
 import sys
@@ -29,7 +30,9 @@ _recursive_import_lock = threading.Lock()
 def _recursive_import(package_path: str) -> None:
     """ Recursively import every module in a package. """
     try:
-        pkg = importlib.import_module(package_path)
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            pkg = importlib.import_module(package_path)
     except ModuleNotFoundError:
         return
 
@@ -37,7 +40,9 @@ def _recursive_import(package_path: str) -> None:
     for mod in mods:
         if mod.name not in sys.modules:
             try:
-                importlib.import_module(mod.name)
+                with warnings.catch_warnings():
+                    warnings.simplefilter("ignore")
+                    importlib.import_module(mod.name)
             except:
                 ...
 

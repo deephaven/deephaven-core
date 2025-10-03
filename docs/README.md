@@ -8,7 +8,7 @@ This directory contains the Deephaven Core documentation for Python and Groovy. 
 ./docs/start # Start docs server on port 3001. -p <port> to run on a different port.
 ./docs/format # Format all docs using dprint.
 ./docs/updateSnapshots # Update changed/added code block snapshots in the docs.
-./docs/formatSnapshots -t local # Update changed/added code block snapshots using a local build of Deephaven Core.
+./docs/updateSnapshots -t local # Update changed/added code block snapshots using a local build of Deephaven Core.
 ```
 
 ## GitHub LFS
@@ -40,11 +40,6 @@ git lfs track "*.mp4"
 ```
 
 ## Local Preview
-
-```py
-print('test')
-print("test")
-```
 
 Use the following script to run the docs with a local preview on [http://localhost:3001](http://localhost:3001):
 

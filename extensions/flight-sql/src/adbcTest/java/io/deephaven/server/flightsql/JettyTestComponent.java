@@ -12,6 +12,7 @@ import io.deephaven.server.flightsql.JettyTestComponent.JettyTestConfig;
 import io.deephaven.server.jetty.JettyConfig;
 import io.deephaven.server.jetty.JettyServerModule;
 import io.deephaven.server.runner.ExecutionContextUnitTestModule;
+import io.deephaven.server.table.validation.ExpressionValidatorModule;
 
 import javax.inject.Singleton;
 import java.time.Duration;
@@ -25,6 +26,7 @@ import java.util.Set;
         JettyTestConfig.class,
         FlightSqlTestModule.class,
         ExchangeMarshallerModule.class,
+        ExpressionValidatorModule.class,
 })
 public interface JettyTestComponent extends TestComponent {
 

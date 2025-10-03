@@ -268,6 +268,11 @@ The [`write`](/core/pydoc/code/deephaven.parquet.html#deephaven.parquet.write), 
 - `max_dictionary_size`: The maximum number of bytes the writer should add to the dictionary before switching to non-dictionary encoding. This is never evaluated for non-string columns. Defaults to 2^20 (1,048,576).
 - `target_page_size`: The target page size in bytes. Defaults to 2^20 bytes (1 MiB).
 - `generate_metadata_files`: Whether to generate Parquet `_metadata` and `_common_metadata` files. Defaults to `False`.
+- `row_group_info`: Sets the Row Group type used for writing. Available Row Group types are:
+  - `RowGroupInfo.single_group()`: All data is within a single Row Group. This is the default `RowGroupInfo` implementation.
+  - `RowGroupInfo.max_rows(max_rows)`: Splits into a number of Row Groups, each of which has no more than the requested number of rows.
+  - `RowGroupInfo.max_groups(num_row_groups)`: Split evenly into a pre-defined number of Row Groups, each of which contains the same number of rows. If the input table size is not evenly divisible by the number of Row Groups requested, then some Row Groups will contain one fewer row.
+  - `RowGroupInfo.by_groups(groups, (Optional) max_rows)`: Splits each unique group into a Row Group. If the table does not have all values for the group(s) contiguously, then an error will be raised. If `max_rows` is set and a given Row Group yields a row count greater than the requested number of rows, then it will be split further using `max_rows(...)`.
 - `index_columns`: Sequence of sequences containing the column names for indexes to persist. The write operation will store the index info for the provided columns as sidecar tables. For example, if the input is `[[“Col1”], [“Col1”, “Col2”]]`, the write operation will store the index info for `[“Col1”]` and for `[“Col1”, “Col2”]`. By default, data indexes to write are determined by those of the source table. This argument can be used to narrow the set of indexes to write or to be explicit about the expected set of indexes present on all sources. Indexes that are specified but missing will be computed on demand.
 
 ## Column instructions and special instructions

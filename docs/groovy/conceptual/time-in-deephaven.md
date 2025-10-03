@@ -22,7 +22,7 @@ t = (
 ```
 
 > [!NOTE]
-> To learn more about the details of the DQL syntax and exactly what these commands do, refer to the DQL section in our User Guide, which includes guides on [writing basic formulas](../how-to-guides/formulas-how-to.md), [working with strings](../how-to-guides/work-with-strings.md), [using built-in functions](../how-to-guides/query-language-functions.md), and more.
+> To learn more about the details of the DQL syntax and exactly what these commands do, refer to the DQL section in our User Guide, which includes guides on [writing basic formulas](../how-to-guides/formulas.md), [working with strings](../how-to-guides/strings.md), [using built-in functions](../how-to-guides/built-in-functions.md), and more.
 
 There are four important tools provided by DQL that are relevant to the discussion on date-time types.
 
@@ -91,7 +91,7 @@ t = emptyTable(5).update(
 ```
 
 > [!NOTE]
-> This example uses backticks to represent strings. For more info, see the guide on [working with strings](../how-to-guides/work-with-strings.md).
+> This example uses backticks to represent strings. For more info, see the guide on [working with strings](../how-to-guides/strings.md).
 
 ### 4. Date-times using DQL
 
@@ -400,7 +400,7 @@ events = newTable(
 
 ### Filter to events after a certain time
 
-The following query returns all events after 10AM 2020-04-01. Note that comparison [operators](../how-to-guides/formulas-how-to.md#operators) on [date-times](../reference/query-language/types/date-time.md) are supported in query language strings. To use a comparison operator on a date-time string, the date-time string must be wrapped in single quotes `’`.
+The following query returns all events after 10AM 2020-04-01. Note that comparison [operators](../how-to-guides/operators.md) on [date-times](../reference/query-language/types/date-time.md) are supported in query language strings. To use a comparison operator on a date-time string, the date-time string must be wrapped in single quotes `’`.
 
 ```groovy test-set=1 order=eventsAfterTen
 eventsAfterTen = events.where("EventDateTime > '2020-04-01T10:00 ET'")
@@ -411,7 +411,7 @@ eventsAfterTen = events.where("EventDateTime > '2020-04-01T10:00 ET'")
 
 ### Filter to events within a range
 
-The following example returns all events between 10AM - 4PM on 2020-04-01, using a [formula](../how-to-guides/formulas-how-to.md) within the query [string](../reference/query-language/types/strings.md).
+The following example returns all events between 10AM - 4PM on 2020-04-01, using a [formula](../how-to-guides/formulas.md) within the query [string](../reference/query-language/types/strings.md).
 
 ```groovy test-set=1 order=eventsMiddleDay1
 eventsMiddleDay1 = events.where("EventDateTime >= '2020-04-01T10:00 ET' && EventDateTime <= '2020-04-01T16:00 ET'")
@@ -425,8 +425,8 @@ eventsMiddleDay2 = events.where("inRange(EventDateTime, '2020-04-01T10:00 ET', '
 
 ## Related documentation
 
-- [How to use filters](../how-to-guides/use-filters.md)
-- [How to work with strings](../how-to-guides/work-with-strings.md)
+- [How to use filters](../how-to-guides/filters.md)
+- [How to work with strings](../how-to-guides/strings.md)
 - [date-time](../reference/query-language/types/date-time.md)
 - [`update`](../reference/table-operations/select/update.md)
 - [`where`](../reference/table-operations/filter/where.md)
