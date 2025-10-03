@@ -254,6 +254,11 @@ public abstract class AbstractTableLocation
         }
     }
 
+    protected boolean hasAnyCachedDataIndex() {
+        final KeyedObjectHashMap<List<String>, CachedDataIndex> localCachedDataIndexes = cachedDataIndexes;
+        return localCachedDataIndexes != null && !localCachedDataIndexes.isEmpty();
+    }
+
     @Override
     public boolean hasCachedDataIndex(@NotNull final String... columns) {
         final List<String> columnNames = new ArrayList<>(columns.length);
