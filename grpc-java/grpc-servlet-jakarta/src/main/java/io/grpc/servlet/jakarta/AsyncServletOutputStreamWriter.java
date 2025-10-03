@@ -87,7 +87,7 @@ final class AsyncServletOutputStreamWriter {
             @Override
             public void fine(String str, Object... params) {
                 if (logger.isLoggable(FINE)) {
-                    logger.log(FINE, "[" + logId + "]" + str, params);
+                    logger.log(FINE, "[" + logId + "] " + str, params);
                 }
             }
 
