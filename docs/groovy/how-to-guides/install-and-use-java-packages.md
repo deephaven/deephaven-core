@@ -61,7 +61,7 @@ services:
 
 ### Mount the JAR into the container manually
 
-Adding JARs to a Docker container does not require building a custom image. Instead, you can simply mount a folder into the container that contains whatever JARS you wish to use.
+Adding JARs to a Docker container does not require building a custom image. Instead, you can simply mount a folder into the container that contains whatever JARs you wish to use.
 
 The following YAML assumes you've placed the `plexus-utils-4.0.2.jar` file into a folder called `./apps/libs`:
 
