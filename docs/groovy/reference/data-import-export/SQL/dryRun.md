@@ -26,20 +26,16 @@ A TableSpec object that can be used to create a Deephaven table from the origina
 
 ## Examples-
 
-```groovy order=table
+```groovy order=t1,t2,result
 import io.deephaven.engine.sql.Sql
 
 t1 = emptyTable(10).update("X = i", "Y = i * 2")
 t2 = emptyTable(10).update("X = i + 1", "Y = i * 3")
 
-
 tableSpec = Sql.dryRun("SELECT t1.X, t2.Y FROM t1 JOIN t2 ON t1.X = t2.X")
 
-println tableSpec.getClass()
-
 // To materialize the SQL into a Deephaven Table, use evaluate with the same SQL
-table = Sql.evaluate("SELECT t1.X, t2.Y FROM t1 JOIN t2 ON t1.X = t2.X")
-println table.getClass()
+result = Sql.evaluate("SELECT t1.X, t2.Y FROM t1 JOIN t2 ON t1.X = t2.X")
 ```
 
 ## Related documentation

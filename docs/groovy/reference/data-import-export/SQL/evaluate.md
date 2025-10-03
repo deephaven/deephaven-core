@@ -26,7 +26,7 @@ A new in-memory table resulting from executing the SQL query on Deephavden data.
 
 ## Examples
 
-```groovy order=result,t1,t2
+```groovy order=t1,t2,result
 import io.deephaven.engine.sql.Sql
 import io.deephaven.engine.table.impl.TableCreatorImpl
 

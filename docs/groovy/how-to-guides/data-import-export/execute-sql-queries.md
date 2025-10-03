@@ -12,7 +12,7 @@ This guide will show you how to execute SQL queries on Deephaven tables in your 
 The [`Sql`](https://docs.deephaven.io/core/javadoc/io/deephaven/engine/sql/Sql.html) class provides high-level methods for executing SQL queries against tables in your script session. It offers two main methods:
 
 - [`evaluate`](../../reference/data-import-export/SQL/evaluate.md) - Executes a SQL query and returns a Deephaven table.
-- [`dryRun`](../../reference/data-import-export/SQL/dryRun.md) - Parses a SQL query into a `TableSpec` without executing it, useful for validation.
+- [`dryRun`](../../reference/data-import-export/SQL/dryRun.md) - Parses a SQL query into a [`TableSpec`](https://docs.deephaven.io/core/javadoc/io/deephaven/qst/table/TableSpec.html) without executing it. Useful for validation.
 
 These methods automatically use tables from your script session's [query scope](../queryscope.md) as the catalog for SQL queries.
 
@@ -20,7 +20,7 @@ These methods automatically use tables from your script session's [query scope](
 
 The simplest way to execute SQL against Deephaven tables is with `evaluate()`:
 
-```groovy order=result,source,other
+```groovy order=source,other,result
 import io.deephaven.engine.sql.Sql
 
 // Create some example tables in the script session
@@ -49,7 +49,7 @@ Deephaven's SQL implementation supports:
 
 Use `dryRun` to validate SQL syntax and parse the query without executing it:
 
-```groovy order=result
+```groovy order=source,other,result
 import io.deephaven.engine.sql.Sql
 
 source = emptyTable(10).update("X = i", "Y = i * 2")
@@ -58,8 +58,6 @@ other = emptyTable(10).update("X = i + 5", "Y = i * 3")
 // Parse the query without executing
 tableSpec = Sql.dryRun("SELECT source.X, other.Y FROM source JOIN other ON source.X = other.X")
 
-println tableSpec.getClass()  // Prints the TableSpec class
-
 // Execute the same query to get a table
 result = Sql.evaluate("SELECT source.X, other.Y FROM source JOIN other ON source.X = other.X")
 ```
@@ -67,14 +65,15 @@ result = Sql.evaluate("SELECT source.X, other.Y FROM source JOIN other ON source
 This is useful for:
 
 - Validating SQL syntax before execution
+- Validating a query quickly without the overhead of execution
 - Inspecting the query plan
 - Building tools that work with SQL queries
 
 ## Advanced usage with SqlAdapter
 
-For more control over SQL parsing, use [`SqlAdapter.parseSql()`](../../reference/data-import-export/SQL/parseSql.md). This low-level API allows you to specify an explicit `Scope` (catalog) instead of using the script session's query scope.
+For more control over SQL parsing, use [`SqlAdapter.parseSql()`](../../reference/data-import-export/SQL/parseSql.md). This method allows you to specify an explicit `Scope` (catalog) instead of using the script session's query scope.
 
-```groovy order=result,t1,t2
+```groovy order=t1,t2,result
 import io.deephaven.engine.table.Table
 import io.deephaven.qst.column.header.ColumnHeader
 import io.deephaven.qst.table.TableHeader
@@ -125,53 +124,11 @@ This approach is useful when:
 
 ## Choose the right method
 
-When deciding which API to use, consider:
+Each of the above methods serves different use cases.
 
-### `evaluate` - High-level execution
-
-**Best for:** Most use cases where you want to execute SQL against tables in your script session.
-
-**Pros:**
-
-- Simple and concise
-- Automatically uses script session tables
-- Returns a Deephaven table directly
-
-**Cons:**
-
-- Less control over the catalog/scope
-- Cannot inspect query plan before execution
-
-### `dryRun` - Validation
-
-**Best for:** Validating SQL syntax or inspecting query plans without execution.
-
-**Pros:**
-
-- Fast validation without execution
-- Returns a `TableSpec` for inspection
-- Useful for building SQL tools
-
-**Cons:**
-
-- Doesn't execute the query
-- Still requires `evaluate()` to get results
-
-### `parseSql` - Low-level control
-
-**Best for:** Advanced use cases requiring explicit scope control or custom SQL tooling.
-
-**Pros:**
-
-- Full control over catalog/scope
-- Can use tables not in script session
-- Useful for building custom integrations
-
-**Cons:**
-
-- More verbose
-- Requires manual scope construction
-- Requires manual execution with `TableCreatorTicketInterceptor`
+- **`evaluate`:** This is the simplest and most direct way to run SQL queries against tables in your script session. Use it if you don't need control over the scope.
+- **`dryRun`:** Use this when you want to validate SQL syntax without executing it. It's a lightweight way to check your queries.
+- **`parseSql`:** Use this for advanced use cases requiring explicit scope control or custom SQL tooling, or if you want to use tables not in your script session.
 
 ## Related documentation
 
