@@ -2,9 +2,7 @@
 title: Work with calendars
 ---
 
-This guide will show you how to create and use business calendars in Deephaven. It covers the use of Deephaven's calendar API, and the use of [`BusinessCalendar`](/core/javadoc/io/deephaven/time/calendar/BusinessCalendar.html) objects in both Groovy code and Deephaven tables.
-
-The calendar API is minimal - it allows users to add or remove calendars, as well as get a calendar. The returned calendar is a Java [`BusinessCalendar`](/core/javadoc/io/deephaven/time/calendar/BusinessCalendar.html) object. This object is easier to use in table operations and provides optimal performance.
+This guide will show you how to create and use business calendars in Deephaven. In Deephaven, the calendar API is centered around the [`BusinessCalendar`](/core/javadoc/io/deephaven/time/calendar/BusinessCalendar.html) object, which is a calendar with the concept of business and non-business time. These calendars are highly useful in both Groovy code and Deephaven tables.
 
 ## Get a calendar
 
