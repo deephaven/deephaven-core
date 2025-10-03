@@ -9,7 +9,7 @@ jedi==0.19.1
 jpy==1.1.0
 llvmlite==0.45.0
 numba==0.62.0
-numpy==2.2.6
+numpy==2.3.3
 pandas==2.3.2
 parso==0.8.5
 pyarrow==21.0.0
