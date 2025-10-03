@@ -143,8 +143,7 @@ public final class BridgingLogHandler extends Handler {
             Level.CONFIG, LogLevel.INFO,
             Level.FINE, LogLevel.DEBUG,
             Level.FINER, LogLevel.TRACE,
-            Level.FINEST, LogLevel.TRACE
-    );
+            Level.FINEST, LogLevel.TRACE);
 
     private static LogLevel mapLevel(final Level level) {
         final LogLevel mapping = LEVEL_MAPPINGS.get(level);
