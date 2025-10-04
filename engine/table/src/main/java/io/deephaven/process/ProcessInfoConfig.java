@@ -57,9 +57,9 @@ public class ProcessInfoConfig {
     private static volatile ProcessInfo thisProcessInfo;
 
     /**
-     * Generates a unique identifier string suitable for use as a process identifier. This allows a creating
-     * process to obtain an identifier that can be passed to a new process for use as the processInfoId.
-     * Generating it here encapsulates where it comes from.
+     * Generates a unique identifier string suitable for use as a process identifier. This allows a creating process to
+     * obtain an identifier that can be passed to a new process for use as the processInfoId. Generating it here
+     * encapsulates where it comes from.
      *
      * @return a unique identifier string
      */
@@ -82,7 +82,8 @@ public class ProcessInfoConfig {
         return createForCurrentProcess(config, null);
     }
 
-    public static synchronized ProcessInfo createForCurrentProcess(Configuration config, String processInfoId) throws IOException {
+    public static synchronized ProcessInfo createForCurrentProcess(Configuration config, String processInfoId)
+            throws IOException {
         if (thisProcessId != null || thisProcessInfo != null) {
             throw new IllegalStateException("ProcessInfo already created with ID " + thisProcessId);
         }
@@ -111,7 +112,8 @@ public class ProcessInfoConfig {
         return thisProcessInfo = builder.build();
     }
 
-    public static synchronized ProcessInfo createOrGetForCurrentProcess(final Configuration config, final String processInfoId) throws IOException {
+    public static synchronized ProcessInfo createOrGetForCurrentProcess(final Configuration config,
+            final String processInfoId) throws IOException {
         if (thisProcessInfo != null) {
             return thisProcessInfo;
         } else {
