@@ -1411,14 +1411,8 @@ public class QueryTable extends BaseTable<QueryTable> {
                                 .map(filter -> filter.beginOperation(this)).collect(SafeCloseableList.COLLECTOR)) {
                             final OperationSnapshotControl snapshotControl = createSnapshotControlIfRefreshing(
                                     (final BaseTable<?> parent) -> {
-                                        /*
-                                         * Note that the dependencies for instantiation may be different from the
-                                         * dependencies for the WhereListener. Do not refactor to share this array with
-                                         * the WhereListener unless you ensure that this no longer holds, i.e. if
-                                         * MatchFilter starts applying data indexes during update processing.
-                                         */
                                         final NotificationQueue.Dependency[] filterDependencies =
-                                                WhereListener.extractDependencies(filters)
+                                                WhereListener.extractInitialDependencies(this, filters)
                                                         .toArray(NotificationQueue.Dependency[]::new);
                                         getUpdateGraph(filterDependencies);
                                         return filterDependencies.length > 0

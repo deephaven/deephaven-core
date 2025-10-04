@@ -91,6 +91,11 @@ public class RemappedDataIndex extends AbstractDataIndex implements DataIndexer.
     }
 
     @Override
+    public boolean tableIsCached() {
+        return sourceIndex.tableIsCached();
+    }
+
+    @Override
     @NotNull
     public Table table(final DataIndexOptions options) {
         return sourceIndex.table(options);

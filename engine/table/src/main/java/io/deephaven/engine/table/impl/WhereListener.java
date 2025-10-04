@@ -8,8 +8,8 @@ import io.deephaven.engine.liveness.LivenessReferent;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.WritableRowSet;
-import io.deephaven.engine.table.ModifiedColumnSet;
-import io.deephaven.engine.table.TableUpdate;
+import io.deephaven.engine.table.*;
+import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.select.DynamicWhereFilter;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.util.DelayedErrorNotifier;
@@ -94,6 +94,48 @@ class WhereListener extends MergedListener {
                         filterColumnNames.toArray(String[]::new));
     }
 
+    /**
+     * Extract data index dependencies from the provided table and filters.
+     */
+    static List<Table> extractDataIndexDependencies(@NotNull final Table table, @NotNull final WhereFilter[] filters) {
+        final DataIndexer dataIndexer = DataIndexer.existingOf(table.getRowSet());
+        if (dataIndexer == null) {
+            return Collections.emptyList();
+        }
+
+        final List<Table> result = new ArrayList<>();
+        for (final WhereFilter f : filters) {
+            final List<String> columnNames = f.getColumns();
+            final List<ColumnSource<?>> columnSources = columnNames.stream()
+                    .map(table::getColumnSource)
+                    .collect(Collectors.toList());
+            final DataIndex dataIndex = dataIndexer.getDataIndex(columnSources);
+            // `where` calls only leverage data index tables which are fully populated.
+            if (dataIndex != null && dataIndex.tableIsCached()) {
+                result.add(dataIndex.table());
+            }
+        }
+        return result;
+    }
+
+    /**
+     * Extract initial dependencies from the provided filters. This will include data index tables which are leveraged
+     * only during the initial construction of the filtered table.
+     */
+    @NotNull
+    static List<NotificationQueue.Dependency> extractInitialDependencies(
+            @NotNull final Table table,
+            @NotNull final WhereFilter[] filters) {
+        return Stream.concat(
+                extractDataIndexDependencies(table, filters).stream(),
+                extractDependencies(filters).stream())
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Extract dependencies from the provided filters. This is limited to dependencies needed for table update
+     * operations.
+     */
     @NotNull
     static List<NotificationQueue.Dependency> extractDependencies(@NotNull final WhereFilter[] filters) {
         return Stream.concat(
