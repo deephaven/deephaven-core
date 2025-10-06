@@ -198,7 +198,7 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
 
                         // If not set, we'll use defaults, otherwise we will explicitly set the systemicness.
                         final ScriptSession.Changes changes;
-                        String startTimestamp = Long.toString(Clock.system().currentTimeNanos());
+                        long startTimestamp = Clock.system().currentTimeNanos();
                         switch (systemicOption) {
                             case NOT_SET_SYSTEMIC:
                                 changes = scriptSession.evaluateScript(request.getCode());
@@ -215,7 +215,7 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
                                 throw new UnsupportedOperationException(
                                         "Unrecognized systemic option: " + systemicOption);
                         }
-                        String endTimestamp = Long.toString(Clock.system().currentTimeNanos());
+                        long endTimestamp = Clock.system().currentTimeNanos();
 
                         final ExecuteCommandResponse.Builder diff = ExecuteCommandResponse.newBuilder();
                         final FieldsChangeUpdate.Builder fieldChanges = FieldsChangeUpdate.newBuilder();
@@ -229,11 +229,11 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
                             diff.setErrorMessage(Throwables.getStackTraceAsString(changes.error));
                             log.error().append("Error running script: ").append(changes.error).endl();
                         }
-                        diff.setChanges(fieldChanges);
-                        diff.setStartTimestamp(startTimestamp);
-                        diff.setEndTimestamp(endTimestamp);
 
-                        return diff.build();
+                        return diff.setChanges(fieldChanges)
+                                .setStartTimestamp(startTimestamp)
+                                .setEndTimestamp(endTimestamp)
+                                .build();
                     });
         }
     }
