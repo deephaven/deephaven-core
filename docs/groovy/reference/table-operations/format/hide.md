@@ -4,6 +4,12 @@ title: hide
 
 The `hide` method is used within [`setLayoutHints`](./layout-hints.md) to hide columns in the table by default.
 
+:::
+
+[Hiding columns](/core/ui/docs/components/table/#column-order-and-visibility) can also be accomplished using the [`deephaven.ui`](/core/ui/docs/) Python package. 
+
+:::
+
 ## Syntax
 
 ```

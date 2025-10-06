@@ -4,6 +4,12 @@ title: formatRowWhere
 
 The `formatRowWhere` method applies color formatting to rows of the source table, based on user-specified conditions.
 
+:::
+
+[Formatting rows](/core/ui/docs/components/table/#formatting-rows-and-columns) can also be accomplished using the [`deephaven.ui`](/core/ui/docs/) Python package. 
+
+:::
+
 ## Syntax
 
 ```groovy syntax
@@ -21,12 +27,9 @@ The condition expression.
 <Param name="formula" type="String">
 
 Formulas to compute formats for columns or rows in the table; e.g., `"X = Y > 5 ? RED : NO_FORMATTING"`.
-For color formats, the result of each formula must be either a color string (such as a hexadecimal RGB color,
-e.g. `"#040427`"), a [Color](/core/javadoc/io/deephaven/gui/color/Color.html), or a packed `long`
-representation of the background and foreground color (as returned by `bgfg()` or `bgfga()`).
+For color formats, the result of each formula must be either a color string (such as a hexadecimal RGB color, e.g. `"#040427`"), a [Color](/core/javadoc/io/deephaven/gui/color/Color.html), or a packed `long` representation of the background and foreground color (as returned by `bgfg()` or `bgfga()`).
 
-For decimal formats, the result must be a string, and the formula must be wrapped in the special internal
-function `Decimal()`; e.g., ``"X = Decimal(`$#,##0.00`)"``.
+For decimal formats, the result must be a string, and the formula must be wrapped in the special internal function `Decimal()`; e.g., ``"X = Decimal(`$#,##0.00`)"``.
 
 </Param>
 </ParamTable>

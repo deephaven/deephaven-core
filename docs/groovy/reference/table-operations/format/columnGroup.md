@@ -4,6 +4,12 @@ title: columnGroup
 
 The `columnGroup` method is used within [`setLayoutHints`](./layout-hints.md) create column groups, which will be moved so their children are adjacent in the UI.
 
+:::
+
+[Reordering columns](/core/ui/docs/components/table/#grouping-columns) can also be accomplished using the [`deephaven.ui`](/core/ui/docs/) Python package. 
+
+:::
+
 ## Syntax
 
 ```
