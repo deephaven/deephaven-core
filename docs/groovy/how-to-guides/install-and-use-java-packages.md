@@ -13,7 +13,7 @@ The examples in this guide add the [Plexus Common Utilities](https://codehaus-pl
 
 ## Docker
 
-If you [Run Deephaven with Docker](../getting-started/docker-install.md), you can either build a custom Docker image or mount a volume containing the JAR into the container.
+If you [Run Deephaven with Docker](../tutorials/docker-install.md), you can either build a custom Docker image or mount a volume containing the JAR into the container.
 
 ### Build a custom Docker image
 
@@ -55,56 +55,16 @@ The following command assumes you've placed the JAR file into a folder called `/
 docker run --rm -v /home/user/java/libs:/apps/libs -p 10000:10000 ghcr.io/deephaven/server:latest
 ```
 
-## pip-installed Deephaven (Python)
-
-Unlike Docker, [pip-installed Deephaven](../getting-started/pip-install.md) has visibility to the entire host file system. Thus, you should change the `EXTRA_CLASSPATH` environment variable to point at the directory containing the JARs you wish to use. The following Python code assumes you've placed the JARS in `/home/user/java/libs/`:
-
-<!-- This test is skipped because we don't support testing pip-installed Deephaven -->
-
-```python skip-test
-from deephaven_server import Server
-
-s = Server(
-    port=10000,
-    jvm_args=[
-        "-Xmx4g",
-        "-DAuthHandlers=io.deephaven.auth.AnonymousAuthenticationHandler",
-    ],
-    extra_classpath="/home/user/java/libs/",
-)
-s.start()
-```
-
-You can also point `extra_classpath` at one or more specific JARs instead of a folder:
-
-<!-- This test is skipped because we don't support testing pip-installed Deephaven -->
-
-```python skip-test
-from deephaven_server import Server
-
-s = Server(
-    port=10000,
-    jvm_args=[
-        "-Xmx4g",
-        "-DAuthHandlers=io.deephaven.auth.AnonymousAuthenticationHandler",
-    ],
-    extra_classpath=[
-        "/home/user/java/libs/plexus-utils-4.0.2.jar",
-        "/home/user/java/libs/some-other-library-1.0.0.jar",
-    ],
-)
-s.start()
-```
 
 ## Production application
 
-The [Production application](../getting-started/production-application.md) uses the environment variable `EXTRA_CLASSPATH` to include additional JARs in the classpath. See [Configure the production application](./configuration/configure-production-application.md#environment-variables) for more details, including other configuration options.
+The [Production application](../tutorials/production-application.md) uses the environment variable `EXTRA_CLASSPATH` to include additional JARs in the classpath. See [Configure the production application](./configuration/configure-production-application.md#environment-variables) for more details, including other configuration options.
 
 ## Build from source
 
-Adding Java packages to [Deephaven built from source code](../getting-started/launch-build.md) is similar to the [production application](#production-application). It does, however, change how you launch Deephaven built from source.
+Adding Java packages to [Deephaven built from source code](./launch-build.md) is similar to the [production application](#production-application). It does, however, change how you launch Deephaven built from source.
 
-You still follow all the steps up to and including [Build and install the wheel](../getting-started/launch-build.md#build-and-install-the-wheel). However, the next step changes. Rather than run `./gradlew server-jetty-app:run`, run this instead:
+Rather than run `./gradlew server-jetty-app:run`, run this instead:
 
 ```bash
 ./gradlew server-jetty-app:installDist
@@ -147,11 +107,10 @@ source = empty_table(1).update(
 
 ## Related documentation
 
-- [Create static tables](./new-and-empty-table.md)
+- [Create an empty table](./new-and-empty-table.md#emptytable)
 - [How to install packages](./install-packages.md)
 - [How to configure the Deephaven Docker application](./configuration/docker-application.md)
-- [Launch Deephaven from pre-built images](../getting-started/docker-install.md)
-- [Build and launch Deephaven from source code](../getting-started/launch-build.md)
+- [Launch Deephaven from pre-built images](../tutorials/docker-install.md)
+- [Build and launch Deephaven from source code](./launch-build.md)
 - [How to use Java packages in query strings](./install-and-use-java-packages.md#use-java-packages-in-query-strings)
-- [How to use jpy](./use-jpy.md)
 - [Access your file system with Docker data volumes](../conceptual/docker-data-volumes.md)
