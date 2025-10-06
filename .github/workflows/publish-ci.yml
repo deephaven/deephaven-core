@@ -11,7 +11,26 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  changes:
+    runs-on: ubuntu-24.04
+    outputs:
+      non-docs: ${{ steps.filter.outputs.non-docs }}
+    steps:
+      # Must checkout for push, but not pull_request according to the action
+      - name: Checkout
+        if: github.event_name != 'pull_request'
+        uses: actions/checkout@v5
+      - name: Check for non-docs changes
+        id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            non-docs:
+              - '!docs/**'
+
   publish:
+    needs: changes
+    if: ${{ needs.changes.outputs.non-docs == 'true' }}
     runs-on: ubuntu-24.04
     permissions:
       id-token: write

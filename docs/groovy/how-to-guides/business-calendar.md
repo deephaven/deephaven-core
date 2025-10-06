@@ -2,58 +2,38 @@
 title: Work with calendars
 ---
 
-This guide will show you how to create and use business calendars in Deephaven. It covers the use of Deephaven's [Python calendar API](/core/pydoc/code/deephaven.calendar.html#module-deephaven.calendar), and the use of a Java [`BusinessCalendar`](/core/javadoc/io/deephaven/time/calendar/BusinessCalendar.html) object from both Python and Deephaven tables.
-
-The Python API is minimal - it allows users to add or remove calendars, as well as get a calendar. The returned calendar is a Java [`BusinessCalendar`](/core/javadoc/io/deephaven/time/calendar/BusinessCalendar.html) object. This object is easier to use in table operations than a Python object and minimizes [Python-Java boundary crossings](../conceptual/python-java-boundary.md), which improves performance.
+This guide will show you how to create and use business calendars in Deephaven. In Deephaven, the calendar API is centered around the [`BusinessCalendar`](/core/javadoc/io/deephaven/time/calendar/BusinessCalendar.html) object, which is a calendar with the concept of business and non-business time. These calendars are highly useful in both Groovy code and Deephaven tables.
 
 ## Get a calendar
 
 Getting a calendar is simple. The code block below lists the available calendars and grabs the `USNYSE_EXAMPLE` calendar.
 
-```python test-set=1 order=:log
-from deephaven.calendar import calendar_names, calendar
+```groovy test-set=1 order=:log
+import static io.deephaven.time.calendar.Calendars.calendar
+import static io.deephaven.time.calendar.Calendars.calendarNames
 
-print(calendar_names())
-nyse_cal = calendar("USNYSE_EXAMPLE")
-print(type(nyse_cal))
+println calendarNames()
+nyseCal = calendar("USNYSE_EXAMPLE")
+println nyseCal.getClass()
 ```
 
-We can see from the output that `nyse_cal` is an [`io.deephaven.time.calendar.BusinessCalendar`](/core/javadoc/io/deephaven/time/calendar/BusinessCalendar.html) object. It's Deephaven's Java business calendar object. Don't fret at the mention of Java - you don't need to be a Java developer to use it. A `BusinessCalendar` has many different methods available that can be useful in queries. The sections below explore those uses.
+We can see from the output that `nyseCal` is an [`io.deephaven.time.calendar.BusinessCalendar`](/core/javadoc/io/deephaven/time/calendar/BusinessCalendar.html) object. It's Deephaven's business calendar object. A `BusinessCalendar` has many different methods available that can be useful in queries. The sections below explore those uses.
 
 ## Business calendar use
 
 ### Input data types
 
-All of a `BusinessCalendar`'s methods take either strings or Java date-time data types as input. Java's date-time types include:
-
-- [`java.time.Instant`](https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/time/Instant.html)
-- [`java.time.ZonedDateTime`](https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/time/ZonedDateTime.html)
-- [`java.time.LocalDate`](https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/time/LocalDate.html)
-
-Deephaven has [built-in functionalities for converting to and from these data types](../conceptual/time-in-deephaven.md#1-built-in-java-functions). The methods will be used in examples below.
+`BusinessCalendar` methods accept either strings or Java date-time types ([`Instant`](https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/time/Instant.html), [`ZonedDateTime`](https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/time/ZonedDateTime.html), [`LocalDate`](https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/time/LocalDate.html)). See [Time in Deephaven](../conceptual/time-in-deephaven.md#1-built-in-java-functions) for conversion functions.
 
 ### Create data
 
 Before we can demonstrate the use of business calendars in queries, we'll need to create a table with some data. The following code block creates a month's worth of date-time data spaced 3 minutes apart.
 
-```python test-set=1 order=source
-from deephaven import empty_table
-import random
-
-last = 0.0
-
-
-def new_point() -> float:
-    global last
-    last = last + random.gauss(0.0, 0.1)
-    return last
-
-
-source = empty_table(10000).update(
-    [
-        "Timestamp = '2024-01-01T00:00:00 ET' + i * 3 * MINUTE",
-        "Value = new_point()",
-    ]
+```groovy test-set=1 order=source
+// Create sample data
+source = emptyTable(10000).update(
+    "Timestamp = '2024-01-01T00:00:00 ET' + i * 3 * MINUTE",
+    "Value = randomGaussian(0.0, 0.1)"
 )
 ```
 
@@ -61,36 +41,22 @@ source = empty_table(10000).update(
 
 The following example calculates the number of business days and non-business days (weekends & holidays) between two timestamps.
 
-```python test-set=1 order=result
+```groovy test-set=1 order=result
 result = source.update(
-    [
-        "NumBizDays = nyse_cal.numberBusinessDates('2024-01-01T00:00:00 ET', Timestamp)",
-        "NumNonBizDays = nyse_cal.numberNonBusinessDates('2024-01-01T00:00:00 ET', Timestamp)",
-    ]
+    "NumBizDays = nyseCal.numberBusinessDates('2024-01-01T00:00:00 ET', Timestamp)",
+    "NumNonBizDays = nyseCal.numberNonBusinessDates('2024-01-01T00:00:00 ET', Timestamp)"
 )
 ```
 
-The following example limits the data to only business days, and then only plots data that takes place during business hours.
-The `source` table is [filtered](./use-filters.md) twice to create two result tables. The first contains only data that takes place during an NYSE business day, while the second contains only data that takes place during NYSE business hours.
+The following example shows how to filter data to only business days and business hours. The `source` table is [filtered](./filters.md) twice to create two result tables. The first contains only data that takes place during an NYSE business day, while the second contains only data that takes place during NYSE business hours.
 
-```python test-set=1 order=result_bizdays,result_bizhours
-result_bizdays = source.where(["nyse_cal.isBusinessDay(Timestamp)"])
+```groovy test-set=1 order=resultBizDays,resultBizHours
+resultBizDays = source.where("nyseCal.isBusinessDay(Timestamp)")
 
-result_bizhours = source.where(["nyse_cal.isBusinessTime(Timestamp)"])
+resultBizHours = source.where("nyseCal.isBusinessTime(Timestamp)")
 ```
 
-The tables created in the previous code block could be used to plot data occurring only during business days/hours. When plotting this type of data, the recommended practice is to use an [`axis`](/core/pydoc/code/deephaven.plot.figure.html#deephaven.plot.figure.Figure.axis) to limit the data to business time only. The following code block plots only data that occurs during NYSE business time.
-
-```python test-set=1 order=bizday_plot
-from deephaven.plot.figure import Figure
-
-bizday_plot = (
-    Figure()
-    .axis(dim=0, business_time=True, calendar=nyse_cal)
-    .plot_xy(series_name="Business day data", t=source, x="Timestamp", y="Value")
-    .show()
-)
-```
+These filtered tables can be used for analysis, reporting, or plotting data that occurs only during business days or business hours.
 
 ## Create a calendar
 
@@ -108,7 +74,7 @@ The calendar configuration files can be found [here](https://github.com/deephave
 - Holidays
 - More
 
-Users can build their own calendar by creating a calendar file using the format described in [this Javadoc](/core/javadoc/io/deephaven/time/calendar/BusinessCalendarXMLParser.html). This section goes over an example of using a custom-built calendar for a hypothetical business for the year 2024.
+Users can build their own calendars by creating a calendar file using the format described in [this Javadoc](/core/javadoc/io/deephaven/time/calendar/BusinessCalendarXMLParser.html). This section goes over an example of using a custom-built calendar for a hypothetical business for the year 2024.
 
 This example uses a calendar file found in Deephaven's [examples repository](https://github.com/deephaven/examples/tree/main/Calendar). This guide assumes you have the file on your local machine in the [/data mount point](../conceptual/docker-data-volumes.md). This hypothetical business is called "Company Y", and the calendar only covers the year 2024.
 
@@ -194,12 +160,12 @@ For more information on formatting custom calendars, see the [XML Parser Javadoc
 
 There are two ways to add a calendar to the set of available calendars.
 
-The first and simplest way to do so is through the Python calendar API. The following code block shows how it's done using the path to the calendar file just created.
+The first and simplest way to do so is through the calendar API. The following code block shows how it's done using the path to the calendar file just created.
 
-```python skip-test
-from deephaven.calendar import add_calendar
+```groovy skip-test
+import static io.deephaven.time.calendar.Calendars.addCalendarFromFile
 
-add_calendar("/data/examples/Calendar/TestCalendar_2024.calendar")
+addCalendarFromFile("/data/examples/Calendar/TestCalendar_2024.calendar")
 ```
 
 The second way is through the configuration property `Calendar.importPath`. This should point to a text file with line-separated locations of any calendar files to load by default. Say your Docker configuration has a `/data/Calendar` folder that contains three calendar files: `MyCalendar.calendar`, `TestCalendar_2024.calendar`, `CrazyCalendar.calendar`. The text file, which we'll name `calendar_imports.txt` and place in the root of your Deephaven deployment, would look as follows:
@@ -228,10 +194,10 @@ Alternatively, a [configuration file](./configuration/config-file.md) could be u
 
 ### Get an instance of the new calendar
 
-```python skip-test
-from deephaven.calendar import calendar
+```groovy skip-test
+import static io.deephaven.time.calendar.Calendars.calendar
 
-test_2024_cal = calendar("TestCalendar_2024")
+test2024Cal = calendar("TestCalendar_2024")
 ```
 
 Happy calendar-ing!
@@ -239,11 +205,5 @@ Happy calendar-ing!
 ## Related documentation
 
 - [Time in Deephaven](../conceptual/time-in-deephaven.md)
-- [`add-calendar`](../reference/time/calendar/add-calendar.md)
-- [`calendar`](../reference/time/calendar/calendar.md)
-- [`calendar_name`](../reference/time/calendar/calendar-name.md)
-- [`calendar_names`](../reference/time/calendar/calendar-names.md)
-- [`remove-calendar`](../reference/time/calendar/remove-calendar.md)
-- [`set-calendar`](../reference/time/calendar/set-calendar.md)
 - [BusinessCalendar Javadoc](/core/javadoc/io/deephaven/time/calendar/BusinessCalendar.html)
 - [XML Parser Javadoc](/core/javadoc/io/deephaven/time/calendar/BusinessCalendarXMLParser.html)

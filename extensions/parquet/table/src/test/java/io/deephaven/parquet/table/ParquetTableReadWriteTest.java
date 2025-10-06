@@ -4023,6 +4023,40 @@ public final class ParquetTableReadWriteTest {
     }
 
     @Test
+    public void enableDisableStatisticsTest() {
+        final Table table = TableTools.emptyTable(10).update("A=(int)i", "B=(long)i", "C=(double)i");
+
+        // Enabled by default
+        {
+            final File destDefault = new File(rootFile, "default.parquet");
+            writeTable(table, destDefault.getPath());
+            final ParquetMetadata metadataDefault =
+                    new ParquetTableLocationKey(destDefault.toURI(), 0, null, ParquetInstructions.EMPTY).getMetadata();
+            assertTrue(metadataDefault.getBlocks().get(0).getColumns().get(0).getStatistics().hasNonNullValue());
+        }
+
+        {
+            final File destWithStats = new File(rootFile, "withStats.parquet");
+            writeTable(table, destWithStats.getPath(), new ParquetInstructions.Builder()
+                    .setWriteRowGroupStatistics(true)
+                    .build());
+            final ParquetMetadata metadataWithStats =
+                    new ParquetTableLocationKey(destWithStats.toURI(), 0, null, EMPTY).getMetadata();
+            assertTrue(metadataWithStats.getBlocks().get(0).getColumns().get(0).getStatistics().hasNonNullValue());
+        }
+
+        {
+            final File destWithoutStats = new File(rootFile, "withoutStats.parquet");
+            writeTable(table, destWithoutStats.getPath(), new ParquetInstructions.Builder()
+                    .setWriteRowGroupStatistics(false)
+                    .build());
+            final ParquetMetadata metadataWithoutStats =
+                    new ParquetTableLocationKey(destWithoutStats.toURI(), 0, null, EMPTY).getMetadata();
+            assertFalse(metadataWithoutStats.getBlocks().get(0).getColumns().get(0).getStatistics().hasNonNullValue());
+        }
+    }
+
+    @Test
     public void readWriteStatisticsTest() {
         // Test simple structured table.
         final ColumnDefinition<byte[]> columnDefinition =
@@ -4566,6 +4600,62 @@ public final class ParquetTableReadWriteTest {
                 readTable(file.getPath(),
                         EMPTY.withTableDefinitionAndLayout(TableDefinition.of(ColumnDefinition.ofTime("Instant")),
                                 ParquetInstructions.ParquetFileLayout.SINGLE_FILE)));
+    }
+
+    /**
+     * This test is similar to {@code QueryTableTest#testRenameColumnCollision} but tests
+     * {@link io.deephaven.engine.table.impl.RedefinableTable} column renaming functionality.
+     */
+    @Test
+    public void testRenameColumnCollision() {
+        final Table testTable = TableTools.newTable(
+                TableTools.stringCol("ColumnA", "A", "B", "C"),
+                TableTools.intCol("ColumnB", 1, 2, 3),
+                TableTools.longCol("ColumnC", 10L, 20L, 30L));
+
+        // Round trip to disk
+        final File source = new File(rootFile, "renameCollision.parquet");
+        writeTable(testTable, source.getPath());
+        final Table fromDisk = readTable(source.getPath());
+
+        Table result;
+
+        // Dummy with no renames
+        result = fromDisk.renameColumns();
+        assertEquals(3, result.numColumns());
+        // Verify column names and datatypes
+        assertEquals(String.class, result.getColumnSource("ColumnA").getType());
+        assertEquals(int.class, result.getColumnSource("ColumnB").getType());
+        assertEquals(long.class, result.getColumnSource("ColumnC").getType());
+
+        // Verify column names and datatypes
+        result = fromDisk.renameColumns("ColumnA=ColumnB");
+        assertEquals(2, result.numColumns());
+        assertEquals(int.class, result.getColumnSource("ColumnA").getType());
+        assertEquals(long.class, result.getColumnSource("ColumnC").getType());
+
+        result = fromDisk.renameColumns("ColumnX=ColumnA", "ColumnA=ColumnB");
+        assertEquals(3, result.numColumns());
+        // Verify column names and datatypes
+        assertEquals(String.class, result.getColumnSource("ColumnX").getType());
+        assertEquals(int.class, result.getColumnSource("ColumnA").getType());
+        assertEquals(long.class, result.getColumnSource("ColumnC").getType());
+
+        result = fromDisk.renameColumns("ColumnC=ColumnC", "ColumnA=ColumnB");
+        assertEquals(2, result.numColumns());
+        // Verify column names and datatypes
+        assertEquals(int.class, result.getColumnSource("ColumnA").getType());
+        assertEquals(long.class, result.getColumnSource("ColumnC").getType());
+
+        // Verify table contents
+        assertTableEquals(testTable, fromDisk);
+        assertTableEquals(
+                testTable.renameColumns("ColumnA=ColumnB"),
+                fromDisk.renameColumns("ColumnA=ColumnB"));
+
+        assertTableEquals(
+                testTable.where("ColumnA=`A`").renameColumns("ColumnA=ColumnB"),
+                fromDisk.where("ColumnA=`A`").renameColumns("ColumnA=ColumnB"));
     }
 
     private void assertTableStatistics(Table inputTable, File dest) {

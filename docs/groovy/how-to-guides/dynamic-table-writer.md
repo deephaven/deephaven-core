@@ -88,7 +88,7 @@ The following example adds new data to the publisher with [`emptyTable`](./new-a
 > [!IMPORTANT]
 > A ticking table in a thread must be updated from within an [execution context](../conceptual/execution-context.md).
 
-```groovy ticking-table order=null
+```groovy ticking-table order=null reset
 import io.deephaven.engine.context.ExecutionContext
 import io.deephaven.csv.util.MutableBoolean
 import io.deephaven.engine.table.ColumnDefinition

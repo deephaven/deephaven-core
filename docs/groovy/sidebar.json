@@ -324,6 +324,10 @@
                     "path": "conceptual/time-in-deephaven.md"
                   },
                   {
+                    "label": "Work with calendars",
+                    "path": "how-to-guides/business-calendar.md"
+                  },
+                  {
                     "label": "Downsample data",
                     "path": "how-to-guides/downsampling.md"
                   }
@@ -731,6 +735,10 @@
                   {
                     "label": "Periodic Update Graph configuration",
                     "path": "conceptual/periodic-update-graph-configuration.md"
+                  },
+                  {
+                    "label": "Formula validation configuration",
+                    "path": "conceptual/formula-validation-configuration.md"
                   },
                   {
                     "label": "Query table configuration",
@@ -2559,6 +2567,10 @@
                   {
                     "label": "Why do queries run faster the second time they are run?",
                     "path": "reference/community-questions/query-memoization.md"
+                  },
+                  {
+                    "label": "How do row keys and positional indices behave during table operations?",
+                    "path": "reference/community-questions/shifts.md"
                   },
                   {
                     "label": "How do I automatically execute Groovy code based on a Deephaven table column value?",

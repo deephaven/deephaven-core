@@ -28,7 +28,7 @@ When constructing an `IcebergTableWriter`, the [`IcebergWriteInstructions`](./ic
 
 The following example creates an `IcebergTableWriter` from an [`IcebergTableAdapter`](./iceberg-table-adapter.md) and appends two tables with identical definitions to an Iceberg table. It uses the Docker deployment defined in the [Deephaven and Iceberg](../../../how-to-guides/data-import-export/iceberg.md#a-deephaven-deployment-for-iceberg) guide.
 
-```groovy docker-config=iceberg order=sourceData2024,sourceData2025
+```groovy docker-config=iceberg order=sourceData2024,sourceData2025 reset
 import io.deephaven.iceberg.util.*
 import io.deephaven.extensions.s3.*
 import org.apache.iceberg.catalog.*
