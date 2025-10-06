@@ -55,7 +55,6 @@ The following command assumes you've placed the JAR file into a folder called `/
 docker run --rm -v /home/user/java/libs:/apps/libs -p 10000:10000 ghcr.io/deephaven/server:latest
 ```
 
-
 ## Production application
 
 The [Production application](../tutorials/production-application.md) uses the environment variable `EXTRA_CLASSPATH` to include additional JARs in the classpath. See [Configure the production application](./configuration/configure-production-application.md#environment-variables) for more details, including other configuration options.
