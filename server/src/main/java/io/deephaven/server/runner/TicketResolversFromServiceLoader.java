@@ -7,6 +7,7 @@ import dagger.Module;
 import dagger.Provides;
 import dagger.multibindings.ElementsIntoSet;
 import io.deephaven.annotations.BuildableStyle;
+import io.deephaven.engine.validation.ColumnExpressionValidator;
 import io.deephaven.server.auth.AuthorizationProvider;
 import io.deephaven.server.session.TicketResolver;
 import org.immutables.value.Value;
@@ -22,9 +23,11 @@ import java.util.stream.Collectors;
 public class TicketResolversFromServiceLoader {
     @Provides
     @ElementsIntoSet
-    static Set<TicketResolver> provideTicketResolver(AuthorizationProvider authorizationProvider) {
+    static Set<TicketResolver> provideTicketResolver(AuthorizationProvider authorizationProvider,
+            ColumnExpressionValidator columnExpressionValidator) {
         final TicketResolverOptions options =
-                TicketResolverOptions.builder().authorizationProvider(authorizationProvider).build();
+                TicketResolverOptions.builder().authorizationProvider(authorizationProvider)
+                        .columnExpressionValidator(columnExpressionValidator).build();
         return ServiceLoader.load(TicketResolversFromServiceLoader.Factory.class)
                 .stream()
                 .map(factory -> factory.get().create(options))
@@ -55,5 +58,10 @@ public class TicketResolversFromServiceLoader {
          * @return the AuthorizationProvider for these ticket resolvers.
          */
         public abstract AuthorizationProvider authorizationProvider();
+
+        /**
+         * @return the ColumnExpressionValidator for these ticket resolvers.
+         */
+        public abstract ColumnExpressionValidator columnExpressionValidator();
     }
 }
