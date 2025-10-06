@@ -147,7 +147,7 @@ source = empty_table(1).update(
 
 ## Related documentation
 
-- [Create an empty table](./new-and-empty-table.md#empty_table)
+- [Create static tables](./new-and-empty-table.md)
 - [How to install packages](./install-packages.md)
 - [How to configure the Deephaven Docker application](./configuration/docker-application.md)
 - [Launch Deephaven from pre-built images](../getting-started/docker-install.md)
