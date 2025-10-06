@@ -315,8 +315,6 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         final Table tableStart =
                 TstUtils.testRefreshingTable(i(2, 6).toTracking(),
                         col("x", 1, 3), col("y", "a", "c"), col("z", true, true));
-        final Table tableUpdate = TstUtils.testRefreshingTable(i(2, 3, 6).toTracking(),
-                col("x", 1, 4, 3), col("y", "a", "d", "c"), col("z", true, true, true));
 
         updateGraph.startCycleForUnitTests(false);
 
@@ -334,12 +332,19 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         table.notifyListeners(i(3), i(), i());
         updateGraph.markSourcesRefreshedForUnitTests();
 
+        // Allow the table update to propagate to the data index table.
+        // noinspection StatementWithEmptyBody
+        while (updateGraph.flushOneNotificationForUnitTests());
+
         final Table filter3 = pool.submit(() -> table.where("z")).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
 
         TstUtils.assertTableEquals(tableStart, prevTable(filter1));
         TstUtils.assertTableEquals(tableStart, prevTable(filter2));
 
         updateGraph.completeCycleForUnitTests();
+
+        final Table tableUpdate = TstUtils.testRefreshingTable(i(2, 3, 6).toTracking(),
+                col("x", 1, 4, 3), col("y", "a", "d", "c"), col("z", true, true, true));
 
         TstUtils.assertTableEquals(tableUpdate, filter1);
         TstUtils.assertTableEquals(tableUpdate, filter2);
