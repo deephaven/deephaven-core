@@ -27,7 +27,11 @@ class ColumnTestCase(BaseTestCase):
     def test_column_error(self):
         jobj = j_array_list([1, -1])
         with self.assertRaises(DHError) as cm:
-            bool_input_col = bool_col(name="Boolean", data=[True, 'abc'])
+            class NoBoolAllowed:
+                def __bool__(self):
+                    raise TypeError("This object cannot be converted to a boolean")
+
+            _ = bool_col(name="Boolean", data=[True, NoBoolAllowed()])
 
         self.assertNotIn("bool_input_col", dir())
 
