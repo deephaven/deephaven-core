@@ -484,28 +484,17 @@ abstract class AbstractFilterExecution {
         try {
             for (int ii = 0; ii < filters.size(); ii++) {
                 final WhereFilter filter = filters.get(ii);
-                final PushdownFilterMatcher executor;
-
-                // Select the executor to use for this filter (or assign null if pushdown is not supported).
-                if (filter.hasVirtualRowVariables() || !filter.getColumnArrays().isEmpty()) {
-                    // TODO: should this pushdown ability test be promoted to a more common/accessible location?
-                    // Maybe WhereFilter or one of the Pushdown classes?
-                    executor = null;
-                } else if (filter.getColumns().size() > 1) {
-                    executor = PushdownPredicateManager.getSharedPPM(filter.getColumns().stream()
-                            .map(sourceTable::getColumnSource)
-                            .collect(Collectors.toList()));
-                } else if (filter.getColumns().size() == 1) {
-                    final ColumnSource<?> columnSource = sourceTable.getColumnSource(filter.getColumns().get(0));
-                    executor = (columnSource instanceof AbstractColumnSource)
-                            ? (AbstractColumnSource<?>) columnSource
-                            : null;
-                } else {
-                    executor = null;
-                }
+                // Only consider column sources that are actually present in the source table, because filters may refer
+                // to columns like "i" or "ii" that are not actually in the table.
+                final Map<String, ColumnSource<?>> columnSourceMap = sourceTable.getColumnSourceMap();
+                final List<ColumnSource<?>> filterSources = filter.getColumns().stream()
+                        .filter(columnSourceMap::containsKey)
+                        .map(sourceTable::getColumnSource)
+                        .collect(Collectors.toList());
+                final PushdownFilterMatcher executor =
+                        PushdownFilterMatcher.getPushdownFilterMatcher(filter, filterSources);
                 if (executor != null) {
-                    final PushdownFilterContext context = executor.makePushdownFilterContext(filter, filter.getColumns()
-                            .stream().map(sourceTable::getColumnSource).collect(Collectors.toList()));
+                    final PushdownFilterContext context = executor.makePushdownFilterContext(filter, filterSources);
                     statelessFilters[ii] = new StatelessFilter(ii, filter, executor, context, barrierDependencies);
                 } else {
                     statelessFilters[ii] = new StatelessFilter(ii, filter, null, null, barrierDependencies);

@@ -10,8 +10,8 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Collection;
-import java.util.TimeZone;
 
 // --------------------------------------------------------------------
 /**
@@ -24,7 +24,7 @@ import java.util.TimeZone;
  */
 public interface LogOutput {
 
-    TimestampBuffer millisFormatter = new TimestampBuffer(TimeZone.getDefault());
+    TimestampBuffer millisFormatter = new TimestampBuffer(ZoneId.systemDefault());
 
     LogOutput start();
 
@@ -309,7 +309,7 @@ public interface LogOutput {
         } else {
             // This involves some overhead, but a timezone is really useful in logs
             logOutput.append(millisFormatter
-                    .getTimestamp(localDateTime.atZone(TimeZone.getDefault().toZoneId()).toInstant().toEpochMilli()));
+                    .getTimestamp(localDateTime.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()));
         }
     };
 

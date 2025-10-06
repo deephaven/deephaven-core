@@ -73,6 +73,11 @@ public class RegionedColumnSourceManager
     private final List<ColumnDefinition<?>> columnDefinitions;
 
     /**
+     * The column definitions of this table as a map from column name.
+     */
+    private final Map<String, ColumnDefinition<?>> columnNameToDefinition;
+
+    /**
      * The column sources that make up this table.
      */
     private final Map<String, RegionedColumnSource<?>> columnSources = new LinkedHashMap<>();
@@ -181,10 +186,13 @@ public class RegionedColumnSourceManager
 
         this.isRefreshing = isRefreshing;
         this.columnDefinitions = columnDefinitions;
+        this.columnNameToDefinition = new HashMap<>(columnDefinitions.size());
         for (final ColumnDefinition<?> columnDefinition : columnDefinitions) {
+            final String columnName = columnDefinition.getName();
             columnSources.put(
-                    columnDefinition.getName(),
+                    columnName,
                     componentFactory.createRegionedColumnSource(this, columnDefinition, codecMappings));
+            columnNameToDefinition.put(columnName, columnDefinition);
         }
 
         // Create the table that will hold the location data
@@ -830,7 +838,7 @@ public class RegionedColumnSourceManager
             final WhereFilter filter,
             final RowSet selection,
             final boolean usePrev,
-            final PushdownFilterContext context,
+            final io.deephaven.engine.table.impl.PushdownFilterContext context,
             final JobScheduler jobScheduler,
             final LongConsumer onComplete,
             final Consumer<Exception> onError) {
@@ -844,7 +852,7 @@ public class RegionedColumnSourceManager
             final WhereFilter filter,
             final RowSet selection,
             final boolean usePrev,
-            final PushdownFilterContext context,
+            final io.deephaven.engine.table.impl.PushdownFilterContext context,
             final long costCeiling,
             final JobScheduler jobScheduler,
             final Consumer<PushdownResult> onComplete,
@@ -871,18 +879,25 @@ public class RegionedColumnSourceManager
     }
 
     public static class RegionedColumnSourcePushdownFilterContext extends BasePushdownFilterContext {
+        private final List<ColumnDefinition<?>> columnDefinitions;
         private final Map<String, String> renameMap;
 
         public RegionedColumnSourcePushdownFilterContext(
                 final RegionedColumnSourceManager manager,
                 final WhereFilter filter,
                 final List<ColumnSource<?>> columnSources) {
+            super(filter, columnSources);
+
             final List<String> filterColumns = filter.getColumns();
             Require.eq(filterColumns.size(), "filterColumns.size()",
                     columnSources.size(), "columnSources.size()");
 
-            final IdentityHashMap<ColumnSource<?>, String> columnSourceToName = manager.columnSourceToName();
+            // Map the incoming column sources to their local name and definition.
+            columnDefinitions = new ArrayList<>(columnSources.size());
             renameMap = new HashMap<>();
+            final IdentityHashMap<ColumnSource<?>, String> columnSourceToName = manager.columnSourceToName();
+            final Map<String, ColumnDefinition<?>> columnNameToDefinition = manager.columnNameToDefinition;
+
             for (int ii = 0; ii < filterColumns.size(); ii++) {
                 final String filterColumnName = filterColumns.get(ii);
                 final ColumnSource<?> filterSource = columnSources.get(ii);
@@ -891,6 +906,8 @@ public class RegionedColumnSourceManager
                     throw new IllegalArgumentException(
                             "No associated source for '" + filterColumnName + "' found in column sources");
                 }
+                // Add the definition.
+                columnDefinitions.add(columnNameToDefinition.get(localColumnName));
 
                 // Add the rename (if needed)
                 if (localColumnName.equals(filterColumnName)) {
@@ -900,9 +917,17 @@ public class RegionedColumnSourceManager
             }
         }
 
-        @Override
+        public List<ColumnDefinition<?>> columnDefinitions() {
+            return columnDefinitions;
+        }
+
         public Map<String, String> renameMap() {
             return renameMap;
+        }
+
+        @Override
+        public void close() {
+            super.close();
         }
     }
 
@@ -962,13 +987,13 @@ public class RegionedColumnSourceManager
         abstract class JobRunner implements JobScheduler.IterateResumeAction<JobScheduler.JobThreadContext> {
             protected final WhereFilter filter;
             protected final boolean usePrev;
-            protected final PushdownFilterContext context;
+            protected final io.deephaven.engine.table.impl.PushdownFilterContext context;
             protected final JobScheduler jobScheduler;
 
             JobRunner(
                     final WhereFilter filter,
                     final boolean usePrev,
-                    final PushdownFilterContext context,
+                    final io.deephaven.engine.table.impl.PushdownFilterContext context,
                     final JobScheduler jobScheduler) {
                 this.filter = Objects.requireNonNull(filter);
                 this.usePrev = usePrev;
@@ -1029,7 +1054,7 @@ public class RegionedColumnSourceManager
                 final JobScheduler jobScheduler,
                 final WhereFilter filter,
                 final boolean usePrev,
-                final PushdownFilterContext context) {
+                final io.deephaven.engine.table.impl.PushdownFilterContext context) {
             iterateParallel(jobScheduler, new EstimateJobRunner(filter, usePrev, context, jobScheduler));
         }
 
@@ -1055,7 +1080,8 @@ public class RegionedColumnSourceManager
         }
 
         final class EstimateJobRunner extends JobRunner {
-            EstimateJobRunner(WhereFilter filter, boolean usePrev, PushdownFilterContext context,
+            EstimateJobRunner(WhereFilter filter, boolean usePrev,
+                    io.deephaven.engine.table.impl.PushdownFilterContext context,
                     JobScheduler jobScheduler) {
                 super(filter, usePrev, context, jobScheduler);
             }
@@ -1102,7 +1128,7 @@ public class RegionedColumnSourceManager
                 final JobScheduler jobScheduler,
                 final WhereFilter filter,
                 final boolean usePrev,
-                final PushdownFilterContext context,
+                final io.deephaven.engine.table.impl.PushdownFilterContext context,
                 final long costCeiling) {
             iterateParallel(jobScheduler, new PushdownJobRunner(filter, usePrev, context, jobScheduler, costCeiling));
         }
@@ -1185,7 +1211,8 @@ public class RegionedColumnSourceManager
 
             private final long costCeiling;
 
-            public PushdownJobRunner(WhereFilter filter, boolean usePrev, PushdownFilterContext context,
+            public PushdownJobRunner(WhereFilter filter, boolean usePrev,
+                    io.deephaven.engine.table.impl.PushdownFilterContext context,
                     JobScheduler jobScheduler, long costCeiling) {
                 super(filter, usePrev, context, jobScheduler);
                 this.costCeiling = costCeiling;

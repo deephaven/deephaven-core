@@ -596,11 +596,12 @@ public abstract class BaseUpdateGraph implements UpdateGraph, LogOutputAppendabl
             if (outstandingCountAtStart == 0 && nothingBecameSatisfied) {
                 if (!printDependencyInformation) {
                     // Let's drop some breadcrumbs here, because this is a very bad state to be in and hard to debug.
-                    log.error().append(Thread.currentThread().getName())
+                    log.error().append(getName()).append(" ").append(Thread.currentThread().getName())
                             .append(": No outstanding notifications, yet notification queue size=")
                             .append(pendingToEvaluate.size()).endl();
                     for (final Notification notification : pendingToEvaluate) {
-                        log.error().append(Thread.currentThread().getName()).append(": Unmet dependencies for ")
+                        log.error().append(getName()).append(" ").append(Thread.currentThread().getName())
+                                .append(": Unmet dependencies for ")
                                 .append(notification).endl();
                     }
                 }
@@ -733,11 +734,11 @@ public abstract class BaseUpdateGraph implements UpdateGraph, LogOutputAppendabl
             logDependencies().append(Thread.currentThread().getName()).append(": Completed ").append(notification)
                     .endl();
         } catch (final Exception e) {
-            log.error().append(Thread.currentThread().getName())
+            log.error().append(getName()).append(" ").append(Thread.currentThread().getName())
                     .append(": Exception while executing UpdateGraph notification: ").append(notification)
                     .append(": ").append(e).endl();
             ProcessEnvironment.getGlobalFatalErrorReporter()
-                    .report("Exception while processing UpdateGraph notification", e);
+                    .report("Exception while processing UpdateGraph (" + getName() + ") notification", e);
         }
     }
 
@@ -874,7 +875,8 @@ public abstract class BaseUpdateGraph implements UpdateGraph, LogOutputAppendabl
 
     private void logSuppressedCycles() {
         LogEntry entry = log.info()
-                .append("Minimal Update Graph Processor cycle times: ")
+                .append(getName())
+                .append(": Minimal Update Graph Processor cycle times: ")
                 .appendDouble((double) (suppressedCyclesTotalNanos) / 1_000_000.0, 3).append("ms / ")
                 .append(suppressedCycles).append(" cycles = ")
                 .appendDouble(
@@ -899,7 +901,7 @@ public abstract class BaseUpdateGraph implements UpdateGraph, LogOutputAppendabl
             try {
                 updatePerformanceTracker.flush();
             } catch (Exception err) {
-                log.error().append("Error flushing UpdatePerformanceTracker: ").append(err).endl();
+                log.error().append(getName()).append(": Error flushing UpdatePerformanceTracker: ").append(err).endl();
             }
         }
     }

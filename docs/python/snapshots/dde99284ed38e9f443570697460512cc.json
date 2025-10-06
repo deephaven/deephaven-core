@@ -1,0 +1,1 @@
+{"file":"core/docs/reference/table-operations/create/inputColumn.md","objects":{"result":{"type":"Table","data":{"columns":[{"name":"floats","type":"double"}],"rows":[[{"value":"1.1000"}],[{"value":"2.2000"}],[{"value":"3.3000"}]]}}}}

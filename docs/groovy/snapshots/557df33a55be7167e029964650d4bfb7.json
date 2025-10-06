@@ -1,0 +1,1 @@
+{"file":"core_versioned_docs/version-groovy/docs/how-to-guides/metadata.md","objects":{":log":{"type":"Log","data":"TableDefinition {columns=[ColumnDefinition {name=Doubles, dataType=double, componentType=null, columnType=Normal}, ColumnDefinition {name=Strings, dataType=class java.lang.String, componentType=null, columnType=Normal}]}\n"}}}

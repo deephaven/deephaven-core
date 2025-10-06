@@ -1,0 +1,1 @@
+{"file":"core/docs/reference/table-operations/metadata/is_blink.md","objects":{"tt1":{"type":"Table","data":{"columns":[{"name":"Timestamp","type":"java.time.Instant"}],"rows":[]}},"tt2":{"type":"Table","data":{"columns":[{"name":"Timestamp","type":"java.time.Instant"}],"rows":[]}},":log":{"type":"Log","data":"True\nFalse\n"}}}

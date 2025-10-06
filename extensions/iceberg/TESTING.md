@@ -8,17 +8,25 @@ As such, the following convention has been established for testing purposes:
 
 Both writers and readers of this catalog need to be setup to support relative metadata locations to ensure portability.
 
-A root directory for extension-iceberg testing has been established at `extensions/iceberg/src/test/resources/io/deephaven/iceberg/sqlite/db_resource`.
+The iceberg test data is stored in a JAR at `extensions/iceberg/src/test/resources/iceberg-test-data.jar`, with the test data underneath `io/deephaven/iceberg/sqlite/db_resource`.  The Iceberg unit tests use a junit extension to unpack the jar before the test class is executed, and then remove it afterwards.  The filenames in are otherwise too long for checking the repository out on Windows.
 
 ## Usage
 
 ### Java
 
 ```java
-import org.apache.iceberg.catalog.Catalog;
+import io.deephaven.iceberg.util.IcebergCatalogAdapter;
 import io.deephaven.iceberg.sqlite.DbResource;
 
-Catalog catalog = DbResource.openCatalog("<catalogName>");
+private IcebergCatalogAdapter catalogAdapter;
+
+@RegisterExtension
+public static final DbResource dbResource = new DbResource();
+
+@BeforeEach
+void setUp() {
+    catalogAdapter = dbResource.openCatalog("pyiceberg-1");
+}
 ```
 
 ### pyiceberg
@@ -41,6 +49,12 @@ catalog = SqlCatalog(
 
 Note that any scripts that write data should be run relative to
 [db_resource](src/test/resources/io/deephaven/iceberg/sqlite/db_resource) working directory to ensure unit testability.
+
+You can unpack the jar with:
+```bash
+cd extensions/iceberg/src/test/resources
+unzip iceberg-test-data.jar
+```
 
 ### pyiceberg-1
 
@@ -123,3 +137,14 @@ If we add a lot of catalogs to the database, we may want to look into vacuuming 
 Ideally, the sqlite database can be a small collection of catalogs that were created via external tooling to verify that
 we can integrate with them successfully.
 
+### JAR
+
+After generating the data, create the jar with:  
+```bash
+zip -r -0 iceberg-test-data.jar io
+```
+
+You can remove the Python scripts from the jar with:
+```bash
+zip -d iceberg-test-data.jar '*.py'
+```

@@ -19,6 +19,7 @@ import org.apache.iceberg.catalog.TableIdentifier;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
 
 import java.nio.file.Path;
@@ -55,10 +56,13 @@ class PyIceberg4aTest {
 
     private IcebergCatalogAdapter catalogAdapter;
 
+    @RegisterExtension
+    public static final DbResource dbResource = new DbResource();
+
     @BeforeEach
     void setUp(@TempDir Path rootDir) throws Exception {
         engineCleanup.setUp();
-        catalogAdapter = DbResource.openCatalog("pyiceberg-4", rootDir);
+        catalogAdapter = dbResource.openReadWriteCatalog("pyiceberg-4", rootDir);
     }
 
     @Test

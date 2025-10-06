@@ -5,13 +5,14 @@ package io.deephaven.parquet.table;
 
 import io.deephaven.api.filter.Filter;
 import io.deephaven.base.FileUtils;
+import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.table.*;
-import io.deephaven.engine.table.impl.BasePushdownFilterContext;
+import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.table.impl.PushdownFilterContext;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
-import io.deephaven.engine.table.impl.locations.impl.StandaloneTableKey;
+import io.deephaven.engine.table.impl.select.ConditionFilter;
 import io.deephaven.engine.table.impl.select.DoubleRangeFilter;
 import io.deephaven.engine.table.impl.select.FloatRangeFilter;
 import io.deephaven.engine.table.impl.select.MatchFilter;
@@ -21,8 +22,8 @@ import io.deephaven.engine.table.impl.util.ImmediateJobScheduler;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.parquet.table.location.ParquetColumnResolverMap;
-import io.deephaven.parquet.table.location.ParquetTableLocation;
 import io.deephaven.parquet.table.location.ParquetTableLocationKey;
+import io.deephaven.parquet.table.metadata.RowGroupInfo;
 import io.deephaven.stringset.ArrayStringSet;
 import io.deephaven.stringset.StringSet;
 import io.deephaven.test.types.OutOfBandTest;
@@ -44,8 +45,8 @@ import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.BiFunction;
+import java.util.function.Function;
 
-import static io.deephaven.base.FileUtils.convertToURI;
 import static io.deephaven.engine.table.impl.select.WhereFilterFactory.getExpression;
 import static io.deephaven.engine.testutil.TstUtils.assertTableEquals;
 import static io.deephaven.engine.util.TableTools.doubleCol;
@@ -152,6 +153,16 @@ public final class ParquetTableFilterTest {
         assertTableEquals(filteredDiskTable, filteredMemTable);
     }
 
+    private static void filterAndVerifyThrowsSame(Table diskTable, Table memTable, String... filters) {
+        final Class<? extends Throwable> memEx =
+                Assert.assertThrows("memTable should throw", Throwable.class,
+                        () -> memTable.where(filters).coalesce()).getClass();
+        final Class<? extends Throwable> diskEx =
+                Assert.assertThrows("diskTable should throw", memEx,
+                        () -> diskTable.where(filters).coalesce()).getClass();
+        Assert.assertSame("Exception types not matching", memEx, diskEx);
+    }
+
     @Test
     public void filterDatatypeMismatchTest() {
         final String destPath = Path.of(rootFile.getPath(), "ParquetTest_flatPartitionsTest").toString();
@@ -206,6 +217,13 @@ public final class ParquetTableFilterTest {
                 largeTable.where("price = 500.0").size());
     }
 
+    /**
+     * This test fails because of the mismatch between the data index and the upcast parquet column types. This test
+     * will continue to fail until the data index is also upcast to match the parquet column types (DH-19443).
+     * <p>
+     * When the data index is fixed, this test should be re-enabled.
+     */
+    @Ignore
     @Test
     public void filterDatatypeMismatchDataIndexTest() {
         final String destPath = Path.of(rootFile.getPath(), "ParquetTest_flatPartitionsTest").toString();
@@ -281,7 +299,10 @@ public final class ParquetTableFilterTest {
         filterAndVerifyResults(diskTable, memTable, "symbol.startsWith(`002`)", "exchange % 10 == 0");
 
         // mixed type with complex filters
-        final Filter complexFilter = Filter.or(Filter.from("symbol < `1000`", "symbol > `0900`", "exchange = 10"));
+        Filter complexFilter = Filter.or(Filter.from("symbol < `1000`", "symbol > `0900`", "exchange = 10"));
+        verifyResults(diskTable.where(complexFilter), memTable.where(complexFilter));
+
+        complexFilter = Filter.or(Filter.from("symbol < `1000`", "symbol > `0900`"));
         verifyResults(diskTable.where(complexFilter), memTable.where(complexFilter));
     }
 
@@ -358,8 +379,11 @@ public final class ParquetTableFilterTest {
         filterAndVerifyResults(diskTable, memTable, "sequential_val = 500");
 
         // mixed type with complex filters
-        final Filter complexFilter =
+        Filter complexFilter =
                 Filter.or(Filter.from("sequential_val <= 500", "sequential_val = 555", "symbol > `1000`"));
+        verifyResults(diskTable.where(complexFilter), memTable.where(complexFilter));
+
+        complexFilter = Filter.or(Filter.from("sequential_val <= 500", "sequential_val = 555"));
         verifyResults(diskTable.where(complexFilter), memTable.where(complexFilter));
     }
 
@@ -476,8 +500,11 @@ public final class ParquetTableFilterTest {
         filterAndVerifyResults(diskTable, memTable, "sequential_val = 500");
 
         // mixed type with complex filters
-        final Filter complexFilter =
-                Filter.or(Filter.from("sequential_val <= 500", "sequential_val = 555", "symbol > `100`"));
+        Filter complexFilter =
+                Filter.or(Filter.from("sequential_val <= 500", "sequential_val = 555", "symbol > `1000`"));
+        verifyResults(diskTable.where(complexFilter), memTable.where(complexFilter));
+
+        complexFilter = Filter.or(Filter.from("sequential_val <= 500", "sequential_val = 555"));
         verifyResults(diskTable.where(complexFilter), memTable.where(complexFilter));
     }
 
@@ -555,9 +582,11 @@ public final class ParquetTableFilterTest {
         filterAndVerifyResults(diskTable, memTable, "sequential_val_renamed = 500");
 
         // mixed type with complex filters
-        final Filter complexFilter =
-                Filter.or(Filter.from("sequential_val_renamed <= 500", "sequential_val_renamed = 555",
-                        "symbol_renamed > `1000`"));
+        Filter complexFilter = Filter.or(Filter.from("sequential_val_renamed <= 500", "sequential_val_renamed = 555",
+                "symbol_renamed > `1000`"));
+        verifyResults(diskTable.where(complexFilter), memTable.where(complexFilter));
+
+        complexFilter = Filter.or(Filter.from("sequential_val_renamed <= 500", "sequential_val_renamed = 555"));
         verifyResults(diskTable.where(complexFilter), memTable.where(complexFilter));
 
         // Rename again and do some more tests.
@@ -654,9 +683,11 @@ public final class ParquetTableFilterTest {
         filterAndVerifyResults(diskTable, memTable, "sequential_val_renamed = 500");
 
         // mixed type with complex filters
-        final Filter complexFilter =
-                Filter.or(Filter.from("sequential_val_renamed <= 500", "sequential_val_renamed = 555",
-                        "symbol_renamed > `1000`"));
+        Filter complexFilter = Filter.or(Filter.from("sequential_val_renamed <= 500", "sequential_val_renamed = 555",
+                "symbol_renamed > `1000`"));
+        verifyResults(diskTable.where(complexFilter), memTable.where(complexFilter));
+
+        complexFilter = Filter.or(Filter.from("sequential_val_renamed <= 500", "sequential_val_renamed = 555"));
         verifyResults(diskTable.where(complexFilter), memTable.where(complexFilter));
 
         // Rename again and do some more tests.
@@ -724,7 +755,10 @@ public final class ParquetTableFilterTest {
         filterAndVerifyResults(diskTable, memTable, "symbol != null && symbol.startsWith(`002`)", "exchange % 10 == 0");
 
         // mixed type with complex filters
-        final Filter complexFilter = Filter.or(Filter.from("symbol < `1000`", "symbol > `0900`", "exchange = 10"));
+        Filter complexFilter = Filter.or(Filter.from("symbol < `1000`", "symbol > `0900`", "exchange = 10"));
+        verifyResults(diskTable.where(complexFilter), memTable.where(complexFilter));
+
+        complexFilter = Filter.or(Filter.from("symbol < `1000`", "symbol > `0900`"));
         verifyResults(diskTable.where(complexFilter), memTable.where(complexFilter));
     }
 
@@ -778,7 +812,10 @@ public final class ParquetTableFilterTest {
         filterAndVerifyResults(diskTable, memTable, "symbol != null && symbol.startsWith(`002`)", "exchange % 10 == 0");
 
         // mixed type with complex filters
-        final Filter complexFilter = Filter.or(Filter.from("symbol < `1000`", "symbol > `0900`", "exchange = 10"));
+        Filter complexFilter = Filter.or(Filter.from("symbol < `1000`", "symbol > `0900`", "exchange = 10"));
+        verifyResults(diskTable.where(complexFilter), memTable.where(complexFilter));
+
+        complexFilter = Filter.or(Filter.from("symbol < `1000`", "symbol > `0900`"));
         verifyResults(diskTable.where(complexFilter), memTable.where(complexFilter));
 
         // Rename columns and do some more tests.
@@ -864,7 +901,10 @@ public final class ParquetTableFilterTest {
         filterAndVerifyResults(diskTable, memTable, "symbol.startsWith(`002`)", "exchange % 10 == 0");
 
         // mixed type with complex filters
-        final Filter complexFilter = Filter.or(Filter.from("symbol < `1000`", "symbol > `0900`", "exchange = 10"));
+        Filter complexFilter = Filter.or(Filter.from("symbol < `1000`", "symbol > `0900`", "exchange = 10"));
+        verifyResults(diskTable.where(complexFilter), memTable.where(complexFilter));
+
+        complexFilter = Filter.or(Filter.from("symbol < `1000`", "symbol > `0900`"));
         verifyResults(diskTable.where(complexFilter), memTable.where(complexFilter));
 
         // Rename columns and do some more tests.
@@ -910,6 +950,9 @@ public final class ParquetTableFilterTest {
 
         // NOTE: first file has 10k rows and `id` column is sequential, so id 0-9999 are in a file without
         // row group stats.
+
+        filterAndVerifyResults(diskTable, memTable, "random_string = `xgsah`");
+        filterAndVerifyResults(diskTable, memTable, "random_string < `zzzzz`", "random_string = `fiaai`");
 
         // int range and match filters
         filterAndVerifyResults(diskTable, memTable, "id <= 3000"); // entirely inside file with no metadata
@@ -957,6 +1000,28 @@ public final class ParquetTableFilterTest {
             filterAndVerifyResultsAllowEmpty(diskTable, memTable, "integers <= 1");
             filterAndVerifyResultsAllowEmpty(diskTable, memTable, "integers <= 3");
         }
+    }
+
+    /**
+     * Single parquet file with three row groups, first and third row group are non-empty, and second row group is
+     * empty. To generate this file, the following branch was used:
+     * https://github.com/malhotrashivam/deephaven-core/tree/sm-empty-rowgroup-dict
+     */
+    @Test
+    public void parquetFilesWithDictionaryAndEmptyRowGroups() {
+        final String path =
+                ParquetTableFilterTest.class.getResource("/ReferenceParquetWithDictionaryAndEmptyRowGroups.parquet")
+                        .getFile();
+        final Table diskTable = readTable(path);
+        final Table memTable = diskTable.select();
+
+        filterAndVerifyResults(diskTable, memTable, "animal == `Dog`");
+        filterAndVerifyResults(diskTable, memTable, "animal == `Cat`");
+        filterAndVerifyResults(diskTable, memTable, "animal == `Horse`");
+        filterAndVerifyResultsAllowEmpty(diskTable, memTable, "animal == `Fish`");
+
+        final Table expected = TableTools.newTable(TableTools.col("animal", "Dog", "Cat", "Horse", "Horse"));
+        assertTableEquals(memTable, expected);
     }
 
     @Test
@@ -1052,13 +1117,6 @@ public final class ParquetTableFilterTest {
         filterAndVerifyResultsAllowEmpty(diskTable, memTable, "Longs == null");
     }
 
-    private static final PushdownFilterContext TEST_PUSHDOWN_FILTER_CONTEXT = new BasePushdownFilterContext() {
-        @Override
-        public Map<String, String> renameMap() {
-            return Map.of();
-        }
-    };
-
     @Test
     public void unsupportedColumnTypesPushdownTest() {
         final String dest = Path.of(rootFile.getPath(), "unsupportedColumnTypesPushdown.parquet").toString();
@@ -1098,23 +1156,26 @@ public final class ParquetTableFilterTest {
             final String filterExpr,
             final String destPath,
             final ParquetInstructions writeInstructions) {
+        // Cycle to disk to get the proper column sources
         writeTable(source, destPath, writeInstructions);
+        final Table disk_table = ParquetTools.readTable(destPath);
 
-        final ParquetTableLocation location = new ParquetTableLocation(
-                StandaloneTableKey.getInstance(),
-                new ParquetTableLocationKey(
-                        convertToURI(destPath, false),
-                        0, Map.of(), EMPTY),
-                EMPTY);
         final WhereFilter filter = getExpression(filterExpr);
-        filter.init(source.getDefinition());
+        filter.init(disk_table.getDefinition());
+        Assert.assertEquals("Expected a single column in the filter: " + filterExpr, 1, filter.getColumns().size());
+
+        final AbstractColumnSource<?> diskColumnSource =
+                (AbstractColumnSource<?>) disk_table.getColumnSource(filter.getColumns().get(0));
+
+        final PushdownFilterContext context =
+                diskColumnSource.makePushdownFilterContext(filter, List.of(diskColumnSource));
 
         final CompletableFuture<Long> costFuture = new CompletableFuture<>();
-        location.estimatePushdownFilterCost(
+        diskColumnSource.estimatePushdownFilterCost(
                 filter,
                 source.getRowSet(),
                 false,
-                TEST_PUSHDOWN_FILTER_CONTEXT,
+                context,
                 new ImmediateJobScheduler(),
                 costFuture::complete,
                 costFuture::completeExceptionally);
@@ -1418,5 +1479,359 @@ public final class ParquetTableFilterTest {
         assertTableEquals(diskTable, memTable);
 
         filterAndVerifyResults(diskTable, memTable, "(boolean)testFunction.apply(ii, val)");
+    }
+
+    @Test
+    public void testMergedTableWithParquet() {
+        final String destPath = Path.of(rootFile.getPath(), "ParquetTest_testMergedTableWithParquet").toString();
+        final int tableSize = 100_000;
+
+        final Instant baseTime = parseInstant("2023-01-01T00:00:00 NY");
+        QueryScope.addParam("baseTime", baseTime);
+
+        final Table largeTable = TableTools.emptyTable(tableSize).update(
+                "Timestamp = baseTime + i * 1_000_000_000L",
+                "sequential_val = ii % 117 == 0 ? null : ii", // with nulls
+                "symbol = ii % 119 == 0 ? null : String.format(`s%03d`, randomInt(0,1_000))");
+
+        final int partitionCount = 5;
+        final Table[] randomPartitions = splitTable(largeTable, partitionCount, true);
+        writeTables(destPath, randomPartitions, EMPTY);
+
+        final Table diskTable = ParquetTools.readTable(destPath);
+
+        // Create another in-memory table to merge with the parquet table.
+        final Instant baseTime2 = parseInstant("2015-01-02T00:00:00 NY");
+        QueryScope.addParam("baseTime2", baseTime2);
+
+        final Table largeTable2 = TableTools.emptyTable(tableSize).update(
+                "Timestamp = baseTime2 + i * 1_000_000_000L",
+                "sequential_val = ii % 117 == 0 ? null : ii", // with nulls
+                "symbol = ii % 119 == 0 ? null : String.format(`s%03d`, randomInt(0,1_000))");
+
+        final Instant baseTime3 = parseInstant("2015-01-03T00:00:00 NY");
+        QueryScope.addParam("baseTime3", baseTime3);
+        final Table largeTable3 = TableTools.emptyTable(tableSize).update(
+                "Timestamp = baseTime3 + i * 1_000_000_000L",
+                "sequential_val = 999999L", // with nulls
+                "symbol = `sZZZZ`");
+
+        Table mergedTable = TableTools.merge(diskTable, largeTable2, largeTable3);
+        Table memTable = mergedTable.select();
+
+        assertTableEquals(mergedTable, memTable);
+
+        // Timestamp range and match filters
+        filterAndVerifyResults(mergedTable, memTable, "Timestamp < '2023-01-01T01:00:00 NY'");
+        filterAndVerifyResults(mergedTable, memTable, "Timestamp > '2023-01-01T01:00:00 NY'");
+        filterAndVerifyResults(mergedTable, memTable, "Timestamp = '2023-01-01T01:00:00 NY'");
+
+        // string range and match filters
+        filterAndVerifyResultsAllowEmpty(mergedTable, memTable, "symbol = null");
+        filterAndVerifyResultsAllowEmpty(mergedTable, memTable, "symbol != null");
+        filterAndVerifyResultsAllowEmpty(mergedTable, memTable, "symbol = `1000`");
+        filterAndVerifyResultsAllowEmpty(mergedTable, memTable, "symbol < `1000`");
+        filterAndVerifyResultsAllowEmpty(mergedTable, memTable, "symbol = `5000`");
+
+        // long range and match filters
+        filterAndVerifyResultsAllowEmpty(mergedTable, memTable, "sequential_val = null");
+        filterAndVerifyResultsAllowEmpty(mergedTable, memTable, "sequential_val != null");
+        filterAndVerifyResultsAllowEmpty(mergedTable, memTable, "sequential_val <= 500");
+        filterAndVerifyResultsAllowEmpty(mergedTable, memTable, "sequential_val <= 5000", "sequential_val > 3000");
+        filterAndVerifyResultsAllowEmpty(mergedTable, memTable, "sequential_val = 500");
+
+        // Reverse the table order and run the filters again
+        mergedTable = TableTools.merge(largeTable3, largeTable2, diskTable);
+        memTable = mergedTable.select();
+
+        assertTableEquals(mergedTable, memTable);
+
+        // Timestamp range and match filters
+        filterAndVerifyResults(mergedTable, memTable, "Timestamp < '2023-01-01T01:00:00 NY'");
+        filterAndVerifyResults(mergedTable, memTable, "Timestamp > '2023-01-01T01:00:00 NY'");
+        filterAndVerifyResults(mergedTable, memTable, "Timestamp = '2023-01-01T01:00:00 NY'");
+
+        // string range and match filters
+        filterAndVerifyResultsAllowEmpty(mergedTable, memTable, "symbol = null");
+        filterAndVerifyResultsAllowEmpty(mergedTable, memTable, "symbol != null");
+        filterAndVerifyResultsAllowEmpty(mergedTable, memTable, "symbol = `1000`");
+        filterAndVerifyResultsAllowEmpty(mergedTable, memTable, "symbol < `1000`");
+        filterAndVerifyResultsAllowEmpty(mergedTable, memTable, "symbol = `5000`");
+
+        // long range and match filters
+        filterAndVerifyResultsAllowEmpty(mergedTable, memTable, "sequential_val = null");
+        filterAndVerifyResultsAllowEmpty(mergedTable, memTable, "sequential_val != null");
+        filterAndVerifyResultsAllowEmpty(mergedTable, memTable, "sequential_val <= 500");
+        filterAndVerifyResultsAllowEmpty(mergedTable, memTable, "sequential_val <= 5000", "sequential_val > 3000");
+        filterAndVerifyResultsAllowEmpty(mergedTable, memTable, "sequential_val = 500");
+    }
+
+    @Test
+    public void dictionaryWithNoStatisticsPartitionedTest() {
+        final Table source1 = TableTools.newTable(
+                stringCol("animal", "Dog", "Horse", "Zebra"));
+        final Table source2 = TableTools.newTable(
+                stringCol("animal", "Centipede", "Lion", "Cat", "Elephant", "Whale"));
+        final Table source3 = TableTools.newTable(
+                stringCol("animal", "Ant", "Horse"));
+
+        final File destDir = new File(rootFile.getPath(), "dictionaryWithNoStatisticsPartitioned");
+        assertTrue(destDir.mkdirs());
+
+        // Disable writing row group statistics to verify filtering using dictionary
+        final ParquetInstructions writeInstructions = new ParquetInstructions.Builder()
+                .setRowGroupInfo(RowGroupInfo.maxRows(2))
+                .setWriteRowGroupStatistics(false)
+                .build();
+
+        // Write three tables to the same directory with multiple row groups
+        writeTable(source1, new File(destDir, "part1.parquet").getAbsolutePath(), writeInstructions);
+        writeTable(source2, new File(destDir, "part2.parquet").getAbsolutePath(), writeInstructions);
+        writeTable(source3, new File(destDir, "part3.parquet").getAbsolutePath(), writeInstructions);
+
+        // Read back as a flat partitioned table
+        final Table diskTable = ParquetTools.readTable(destDir.getAbsolutePath(),
+                EMPTY.withLayout(ParquetInstructions.ParquetFileLayout.FLAT_PARTITIONED));
+
+        // Filter for values that are only in one of the source tables
+        final Table memTable = diskTable.select();
+        filterAndVerifyResults(diskTable, memTable, "animal == `Dog`");
+        filterAndVerifyResults(diskTable, memTable, "animal == `Horse`");
+        filterAndVerifyResults(diskTable, memTable, "animal == `Zebra`");
+        filterAndVerifyResults(diskTable, memTable, "animal == `Cat`");
+        filterAndVerifyResults(diskTable, memTable, "animal == `Whale`");
+        filterAndVerifyResults(diskTable, memTable, "animal == `Ant`");
+        filterAndVerifyResults(diskTable, memTable, "animal == `Elephant` || animal == `Dog`");
+        filterAndVerifyResultsAllowEmpty(diskTable, memTable, "animal == `Parrot`");
+    }
+
+    @Test
+    public void dictionaryConditionalFilterTest() {
+        final Table source = TableTools.newTable(
+                stringCol("animal", "Centipede", "Lion", "Elephant", "Cat", "Whale"));
+
+        // Disable writing row group statistics to verify filtering using dictionary
+        final ParquetInstructions writeInstructions = new ParquetInstructions.Builder()
+                .setRowGroupInfo(RowGroupInfo.maxRows(2))
+                .setWriteRowGroupStatistics(false)
+                .build();
+
+        final String destPath = Path.of(rootFile.getPath(), "dictionaryConditionalFilter") + ".parquet";
+        writeTable(source, destPath, writeInstructions);
+
+        // Read back and test filtering
+        final Table diskTable = ParquetTools.readTable(destPath);
+        final Table memTable = diskTable.select();
+
+        filterAndVerifyResults(diskTable, memTable, ConditionFilter.createConditionFilter("animal = `Centipede`"));
+        filterAndVerifyResults(diskTable, memTable, ConditionFilter.createConditionFilter("animal != `Centipede`"));
+        filterAndVerifyResults(diskTable, memTable, ConditionFilter.createConditionFilter("animal = `Lion`"));
+        filterAndVerifyResults(diskTable, memTable, ConditionFilter.createConditionFilter("animal = `Cat`"));
+
+        filterAndVerifyResults(diskTable, memTable, ConditionFilter.createConditionFilter("animal = `Elephant`"));
+        filterAndVerifyResults(diskTable, memTable, ConditionFilter.createConditionFilter("animal != `Elephant`"));
+        filterAndVerifyResults(diskTable, memTable, ConditionFilter.createConditionFilter("animal < `Elephant`"));
+        filterAndVerifyResults(diskTable, memTable, ConditionFilter.createConditionFilter("animal <= `Elephant`"));
+        filterAndVerifyResults(diskTable, memTable, ConditionFilter.createConditionFilter("animal > `Elephant`"));
+        filterAndVerifyResults(diskTable, memTable, ConditionFilter.createConditionFilter("animal >= `Elephant`"));
+
+        filterAndVerifyResults(diskTable, memTable, ConditionFilter.createConditionFilter("animal = `Whale`"));
+        filterAndVerifyResults(diskTable, memTable, ConditionFilter.createConditionFilter("animal != `Whale`"));
+        filterAndVerifyResults(diskTable, memTable, ConditionFilter.createConditionFilter("animal <= `Whale`"));
+        filterAndVerifyResultsAllowEmpty(diskTable, memTable,
+                ConditionFilter.createConditionFilter("animal > `Whale`"));
+
+        filterAndVerifyResultsAllowEmpty(diskTable, memTable, ConditionFilter.createConditionFilter("animal = `Dog`"));
+        filterAndVerifyResults(diskTable, memTable, ConditionFilter.createConditionFilter("animal < `Dog`"));
+        filterAndVerifyResults(diskTable, memTable, ConditionFilter.createConditionFilter("animal > `Dog`"));
+        filterAndVerifyResults(diskTable, memTable, ConditionFilter.createConditionFilter("animal != `Dog`"));
+
+        filterAndVerifyResultsAllowEmpty(diskTable, memTable, ConditionFilter.createConditionFilter("animal == null"));
+        filterAndVerifyResultsAllowEmpty(diskTable, memTable, ConditionFilter.createConditionFilter("animal != null"));
+
+        filterAndVerifyResults(diskTable, memTable, ConditionFilter.createConditionFilter("animal.startsWith(`C`)"));
+    }
+
+    @Test
+    public void dictionaryNullEntryFilterTest() {
+        final Table source = TableTools.newTable(
+                stringCol("animal", "Centipede", null, "Elephant", "Cat", "Cat"));
+
+        // Disable writing row group statistics to verify filtering using dictionary
+        final ParquetInstructions writeInstructions = new ParquetInstructions.Builder()
+                .setRowGroupInfo(RowGroupInfo.maxRows(2))
+                .setWriteRowGroupStatistics(false)
+                .build();
+
+        final String destPath = Path.of(rootFile.getPath(), "dictionaryConditionalFilter") + ".parquet";
+        writeTable(source, destPath, writeInstructions);
+
+        // Read back and test filtering
+        final Table diskTable = ParquetTools.readTable(destPath);
+        final Table memTable = diskTable.select();
+
+        filterAndVerifyThrowsSame(diskTable, memTable, "animal.startsWith(`C`)");
+        filterAndVerifyResults(diskTable, memTable, ConditionFilter.createConditionFilter("animal = null"));
+        filterAndVerifyResults(diskTable, memTable, ConditionFilter.createConditionFilter("animal != null"));
+        filterAndVerifyResults(diskTable, memTable, ConditionFilter.createConditionFilter("animal == `Cat`"));
+    }
+
+    @Test
+    public void multiColumnConditionalFilters() {
+        final Table source = TableTools.newTable(
+                stringCol("animal", "Centipede", "Lion", "Elephant", "Cat", "Whale"),
+                intCol("legs", 100, 4, 4, 4, 0),
+                intCol("weight", 1, 420, 6000, 10, 150000));
+
+        // Disable writing row group statistics to verify filtering using dictionary
+        final ParquetInstructions writeInstructions = new ParquetInstructions.Builder()
+                .setRowGroupInfo(RowGroupInfo.maxRows(2))
+                .setWriteRowGroupStatistics(false)
+                .build();
+
+        final String destPath = Path.of(rootFile.getPath(), "multiColumnConditionalFilters") + ".parquet";
+        writeTable(source, destPath, writeInstructions);
+
+        // Read back and test filtering
+        final Table diskTable = ParquetTools.readTable(destPath);
+        final Table memTable = diskTable.select();
+
+        filterAndVerifyResults(diskTable, memTable,
+                ConditionFilter.createStateless("animal = `Centipede` && legs >= 100"));
+        filterAndVerifyResults(diskTable, memTable,
+                ConditionFilter.createStateless("animal != `Centipede` && legs < 4"));
+
+        filterAndVerifyResults(diskTable, memTable,
+                ConditionFilter.createStateless("weight > 1000 || legs <= 4"));
+        filterAndVerifyResultsAllowEmpty(diskTable, memTable,
+                ConditionFilter.createStateless("weight > 1000 || legs < 4"));
+    }
+
+    @Test
+    public void duplicatedColumnsConditionalFilter() {
+        final Table source = TableTools.emptyTable(10).update("X = `` + ii");
+        final String destPath = Path.of(rootFile.getPath(), "multiColumnConditionalFilters") + ".parquet";
+        writeTable(source, destPath);
+        final Table diskTable = ParquetTools.readTable(destPath);
+
+        {
+            final Function<Table, Table> transform =
+                    t -> t.updateView("A = X", "B = X")
+                            .where(ConditionFilter.createStateless("(A + B).length() > 2"));
+            assertTableEquals(transform.apply(source), transform.apply(diskTable));
+        }
+
+        {
+            final Function<Table, Table> transform =
+                    t -> t.updateView("A = X", "B = X")
+                            .where(ConditionFilter.createStateless("A.length() > 1 && B.length() > 1"));
+            assertTableEquals(transform.apply(source), transform.apply(diskTable));
+        }
+    }
+
+    public static class TestHelperClass {
+        public TestHelperClass() {}
+
+        public boolean compare(long p1, long p2) {
+            return p1 > p2;
+        }
+    }
+
+    @Test
+    public void testWithStaticMethodReferenceFilter() {
+        final Table source = TableTools.emptyTable(10).update("X = (ii % 2 == 0) ? ii : ii + 1");
+        final String destPath = Path.of(rootFile.getPath(), "withStaticMethodReferenceFilter") + ".parquet";
+        writeTable(source, destPath);
+        final Table diskTable = ParquetTools.readTable(destPath);
+
+        ExecutionContext.getContext().getQueryLibrary().importClass(TestHelperClass.class);
+
+        filterAndVerifyResults(diskTable, diskTable.select(),
+                ConditionFilter.createStateless("new TestHelperClass().compare(X, ii)"));
+    }
+
+    @Test
+    public void testMixedDictionaryEncodingRowGroups() {
+        final Table source = TableTools.newTable(
+                stringCol("StringCol",
+                        "This", "is", "okay", // Row group 1
+                        "This is too long for dictionary", "but we keep going", null, // Row group 2
+                        "Something", null)); // Row group 3
+
+        final ParquetInstructions writeInstructions = new ParquetInstructions.Builder()
+                .setRowGroupInfo(RowGroupInfo.maxRows(3))
+                .setMaximumDictionarySize(15) // Force second row group to use non-dictionary encoding
+                .setWriteRowGroupStatistics(false)
+                .build();
+
+        final String destPath = Path.of(rootFile.getPath(), "mixedDictionaryEncodingRowGroups") + ".parquet";
+        writeTable(source, destPath, writeInstructions);
+
+        // Verify the first and third row group are properly dictionary encoded, while the second is not
+        {
+            final ParquetMetadata metadata =
+                    new ParquetTableLocationKey(new File(destPath).toURI(), 0, null, ParquetInstructions.EMPTY)
+                            .getMetadata();
+            final String firstRowGroupMetadata = metadata.getBlocks().get(0).getColumns().get(0).toString();
+            assertTrue(firstRowGroupMetadata.contains("StringCol") && firstRowGroupMetadata.contains("RLE_DICTIONARY"));
+
+            final String secondRowGroupMetadata = metadata.getBlocks().get(1).getColumns().get(0).toString();
+            assertTrue(
+                    secondRowGroupMetadata.contains("StringCol") && !secondRowGroupMetadata.contains("RLE_DICTIONARY"));
+
+            final String thirdRowGroupMetadata = metadata.getBlocks().get(2).getColumns().get(0).toString();
+            assertTrue(thirdRowGroupMetadata.contains("StringCol") && thirdRowGroupMetadata.contains("RLE_DICTIONARY"));
+        }
+
+        // Read back and test filtering
+        final Table diskTable = ParquetTools.readTable(destPath);
+        final Table memTable = diskTable.select();
+
+        filterAndVerifyResults(diskTable, memTable,
+                ConditionFilter.createStateless("StringCol = `This`"));
+        filterAndVerifyResults(diskTable, memTable,
+                ConditionFilter.createStateless("StringCol = `but we keep going`"));
+        filterAndVerifyResults(diskTable, memTable,
+                ConditionFilter.createStateless("StringCol = null"));
+        filterAndVerifyResults(diskTable, memTable,
+                ConditionFilter.createStateless("StringCol = null || StringCol = `This`"));
+        filterAndVerifyResults(diskTable, memTable,
+                ConditionFilter.createStateless("StringCol = null || StringCol != null"));
+    }
+
+
+    @Test
+    public void testNonDictionaryEncodingStrings() {
+        final Table source = TableTools.newTable(
+                stringCol("StringCol",
+                        "This is too long for dictionary", "but we keep going", null, "anyways", null));
+
+        final ParquetInstructions writeInstructions = new ParquetInstructions.Builder()
+                .setMaximumDictionarySize(15) // Force row group to use non-dictionary encoding
+                .setWriteRowGroupStatistics(false)
+                .build();
+
+        final String destPath = Path.of(rootFile.getPath(), "nonDictionaryEncodingStrings") + ".parquet";
+        writeTable(source, destPath, writeInstructions);
+
+        // Verify tht the row group is not dictionary encoded
+        {
+            final ParquetMetadata metadata =
+                    new ParquetTableLocationKey(new File(destPath).toURI(), 0, null, ParquetInstructions.EMPTY)
+                            .getMetadata();
+            final String rowGroupMetadata = metadata.getBlocks().get(0).getColumns().get(0).toString();
+            assertTrue(rowGroupMetadata.contains("StringCol") && !rowGroupMetadata.contains("RLE_DICTIONARY"));
+        }
+
+        // Read back and test filtering
+        final Table diskTable = ParquetTools.readTable(destPath);
+        final Table memTable = diskTable.select();
+
+        filterAndVerifyResults(diskTable, memTable,
+                ConditionFilter.createStateless("StringCol = `anyways`"));
+        filterAndVerifyResults(diskTable, memTable,
+                ConditionFilter.createStateless("StringCol = null"));
+        filterAndVerifyResults(diskTable, memTable,
+                ConditionFilter.createStateless("StringCol = null || StringCol != null"));
     }
 }

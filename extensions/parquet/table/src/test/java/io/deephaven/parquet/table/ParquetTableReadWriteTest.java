@@ -10,6 +10,7 @@ import io.deephaven.api.SortColumn;
 import io.deephaven.base.FileUtils;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.primitive.function.ByteConsumer;
 import io.deephaven.engine.primitive.function.CharConsumer;
@@ -54,6 +55,7 @@ import io.deephaven.parquet.base.NullStatistics;
 import io.deephaven.parquet.base.materializers.ParquetMaterializerUtils;
 import io.deephaven.parquet.table.location.ParquetTableLocation;
 import io.deephaven.parquet.table.location.ParquetTableLocationKey;
+import io.deephaven.parquet.table.metadata.RowGroupInfo;
 import io.deephaven.parquet.table.pagestore.ColumnChunkPageStore;
 import io.deephaven.parquet.table.transfer.StringDictionary;
 import io.deephaven.qst.type.Type;
@@ -98,9 +100,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -449,6 +449,44 @@ public final class ParquetTableReadWriteTest {
         System.gc();
         Assert.eqTrue(DataIndexer.hasDataIndex(child, "symbol"), "hasDataIndex -> symbol");
         Assert.eqTrue(DataIndexer.hasDataIndex(child, "indexed_val"), "hasDataIndex -> indexed_val");
+    }
+
+
+    @Test
+    public void testLazyDataIndex() {
+        testLazyDataIndex(false);
+        testLazyDataIndex(true);
+    }
+
+    private void testLazyDataIndex(final boolean disablePushdown) {
+        final boolean restore = QueryTable.DISABLE_WHERE_PUSHDOWN_DATA_INDEX;
+        try (final SafeCloseable ignored = () -> QueryTable.DISABLE_WHERE_PUSHDOWN_DATA_INDEX = restore) {
+            QueryTable.DISABLE_WHERE_PUSHDOWN_DATA_INDEX = disablePushdown;
+            final String destPath = Path.of(rootFile.getPath(), "ParquetTest_indexRetention_test").toString();
+            final int tableSize = 10_000;
+            QueryScope.addParam("syms", List.of("TSLA", "NVDA", "AAPL", "MSFT"));
+            final Table testTable = TableTools.emptyTable(tableSize).update(
+                    "symbol = randomInt(0,4)",
+                    "indexed_str = (String)syms.get(i % syms.size())",
+                    "sentinel_val = ii");
+            final ParquetInstructions writeInstructions = ParquetInstructions.builder()
+                    .setGenerateMetadataFiles(true)
+                    .addIndexColumns("indexed_str")
+                    .build();
+            final PartitionedTable partitionedTable = testTable.partitionBy("symbol");
+            ParquetTools.writeKeyValuePartitionedTable(partitionedTable, destPath, writeInstructions);
+
+            final Table fromDisk = ParquetTools.readTable(destPath);
+            final Table filtered = fromDisk.where("indexed_str icase in `nvDa`");
+            final Table inMemory = fromDisk.select("symbol", "indexed_str=indexed_str.toUpperCase()", "sentinel_val")
+                    .where("indexed_str in `NVDA`");
+            assertTableEquals(inMemory, filtered);
+
+            final Table filtered2 = fromDisk.where("indexed_str icase in `Aapl`, `nvda`");
+            final Table inMemory2 = fromDisk.select("symbol", "indexed_str=indexed_str.toUpperCase()", "sentinel_val")
+                    .where("indexed_str in `AAPL`, `NVDA`");
+            assertTableEquals(inMemory2, filtered2);
+        }
     }
 
     @Test
@@ -3294,6 +3332,55 @@ public final class ParquetTableReadWriteTest {
         FileUtils.deleteRecursively(parentDir);
     }
 
+    private static void writeAndVerifyTable(final Table tableToWrite, final File targetFile, final RowGroupInfo rgi,
+            final Long[] expectedRowGroups) {
+        final ParquetInstructions writeInstructions = new ParquetInstructions.Builder()
+                .setRowGroupInfo(rgi)
+                .build();
+        ParquetTools.writeTable(tableToWrite, targetFile.getAbsolutePath(), writeInstructions);
+
+        final Table readTable = ParquetTools.readTable(targetFile.getAbsolutePath());
+        assertTableEquals(tableToWrite, readTable);
+
+        final ParquetMetadata metadata =
+                new ParquetTableLocationKey(convertToURI(targetFile, false), 0, null, ParquetInstructions.EMPTY)
+                        .getMetadata();
+
+        // make sure we have the expected number of RowGroups, and each RowGroup is of the expected size
+        assertEquals(expectedRowGroups.length, metadata.getBlocks().size());
+        for (int ii = 0; ii < expectedRowGroups.length; ii++) {
+            assertEquals((long) expectedRowGroups[ii], metadata.getBlocks().get(ii).getRowCount());
+        }
+    }
+
+    @Test
+    public void writingParquetWithMultipleRowGroups() {
+        final Table testTable = TableTools.emptyTable(10)
+                .update("A=(int)i", "B=`String ` + ii", "C=(double)i")
+                .groupBy().update("D = new Long[] {0L, 1L, 1L, 2L, 2L, 2L, 3L, 3L, 3L, 3L}").ungroup();
+
+        final File parentDir = new File(rootFile, "multipleRowGroups");
+        parentDir.mkdir();
+
+        // write a single RowGroup
+        writeAndVerifyTable(testTable, new File(parentDir, "multipleRowGroups0.parquet"), RowGroupInfo.singleGroup(),
+                new Long[] {10L});
+
+        // write a (very inefficient) table with a RowGroup dedicated to each row
+        writeAndVerifyTable(testTable, new File(parentDir, "multipleRowGroups1.parquet"), RowGroupInfo.maxRows(1),
+                new Long[] {1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L});
+
+        // write a table with 3 RowGroups (of sizes {4, 3, 3})
+        writeAndVerifyTable(testTable, new File(parentDir, "multipleRowGroups2.parquet"), RowGroupInfo.maxGroups(3),
+                new Long[] {4L, 3L, 3L});
+
+        // write a table split by column `D`, with a maximum of 3 rows per RowGroup
+        writeAndVerifyTable(testTable, new File(parentDir, "multipleRowGroups3.parquet"), RowGroupInfo.byGroups(3, "D"),
+                new Long[] {1L, 2L, 3L, 2L, 2L});
+
+        FileUtils.deleteRecursively(parentDir);
+    }
+
 
     /**
      * These are tests for writing to a table with indexes to a parquet file and making sure there are no unnecessary
@@ -3936,6 +4023,40 @@ public final class ParquetTableReadWriteTest {
     }
 
     @Test
+    public void enableDisableStatisticsTest() {
+        final Table table = TableTools.emptyTable(10).update("A=(int)i", "B=(long)i", "C=(double)i");
+
+        // Enabled by default
+        {
+            final File destDefault = new File(rootFile, "default.parquet");
+            writeTable(table, destDefault.getPath());
+            final ParquetMetadata metadataDefault =
+                    new ParquetTableLocationKey(destDefault.toURI(), 0, null, ParquetInstructions.EMPTY).getMetadata();
+            assertTrue(metadataDefault.getBlocks().get(0).getColumns().get(0).getStatistics().hasNonNullValue());
+        }
+
+        {
+            final File destWithStats = new File(rootFile, "withStats.parquet");
+            writeTable(table, destWithStats.getPath(), new ParquetInstructions.Builder()
+                    .setWriteRowGroupStatistics(true)
+                    .build());
+            final ParquetMetadata metadataWithStats =
+                    new ParquetTableLocationKey(destWithStats.toURI(), 0, null, EMPTY).getMetadata();
+            assertTrue(metadataWithStats.getBlocks().get(0).getColumns().get(0).getStatistics().hasNonNullValue());
+        }
+
+        {
+            final File destWithoutStats = new File(rootFile, "withoutStats.parquet");
+            writeTable(table, destWithoutStats.getPath(), new ParquetInstructions.Builder()
+                    .setWriteRowGroupStatistics(false)
+                    .build());
+            final ParquetMetadata metadataWithoutStats =
+                    new ParquetTableLocationKey(destWithoutStats.toURI(), 0, null, EMPTY).getMetadata();
+            assertFalse(metadataWithoutStats.getBlocks().get(0).getColumns().get(0).getStatistics().hasNonNullValue());
+        }
+    }
+
+    @Test
     public void readWriteStatisticsTest() {
         // Test simple structured table.
         final ColumnDefinition<byte[]> columnDefinition =
@@ -4479,6 +4600,62 @@ public final class ParquetTableReadWriteTest {
                 readTable(file.getPath(),
                         EMPTY.withTableDefinitionAndLayout(TableDefinition.of(ColumnDefinition.ofTime("Instant")),
                                 ParquetInstructions.ParquetFileLayout.SINGLE_FILE)));
+    }
+
+    /**
+     * This test is similar to {@code QueryTableTest#testRenameColumnCollision} but tests
+     * {@link io.deephaven.engine.table.impl.RedefinableTable} column renaming functionality.
+     */
+    @Test
+    public void testRenameColumnCollision() {
+        final Table testTable = TableTools.newTable(
+                TableTools.stringCol("ColumnA", "A", "B", "C"),
+                TableTools.intCol("ColumnB", 1, 2, 3),
+                TableTools.longCol("ColumnC", 10L, 20L, 30L));
+
+        // Round trip to disk
+        final File source = new File(rootFile, "renameCollision.parquet");
+        writeTable(testTable, source.getPath());
+        final Table fromDisk = readTable(source.getPath());
+
+        Table result;
+
+        // Dummy with no renames
+        result = fromDisk.renameColumns();
+        assertEquals(3, result.numColumns());
+        // Verify column names and datatypes
+        assertEquals(String.class, result.getColumnSource("ColumnA").getType());
+        assertEquals(int.class, result.getColumnSource("ColumnB").getType());
+        assertEquals(long.class, result.getColumnSource("ColumnC").getType());
+
+        // Verify column names and datatypes
+        result = fromDisk.renameColumns("ColumnA=ColumnB");
+        assertEquals(2, result.numColumns());
+        assertEquals(int.class, result.getColumnSource("ColumnA").getType());
+        assertEquals(long.class, result.getColumnSource("ColumnC").getType());
+
+        result = fromDisk.renameColumns("ColumnX=ColumnA", "ColumnA=ColumnB");
+        assertEquals(3, result.numColumns());
+        // Verify column names and datatypes
+        assertEquals(String.class, result.getColumnSource("ColumnX").getType());
+        assertEquals(int.class, result.getColumnSource("ColumnA").getType());
+        assertEquals(long.class, result.getColumnSource("ColumnC").getType());
+
+        result = fromDisk.renameColumns("ColumnC=ColumnC", "ColumnA=ColumnB");
+        assertEquals(2, result.numColumns());
+        // Verify column names and datatypes
+        assertEquals(int.class, result.getColumnSource("ColumnA").getType());
+        assertEquals(long.class, result.getColumnSource("ColumnC").getType());
+
+        // Verify table contents
+        assertTableEquals(testTable, fromDisk);
+        assertTableEquals(
+                testTable.renameColumns("ColumnA=ColumnB"),
+                fromDisk.renameColumns("ColumnA=ColumnB"));
+
+        assertTableEquals(
+                testTable.where("ColumnA=`A`").renameColumns("ColumnA=ColumnB"),
+                fromDisk.where("ColumnA=`A`").renameColumns("ColumnA=ColumnB"));
     }
 
     private void assertTableStatistics(Table inputTable, File dest) {

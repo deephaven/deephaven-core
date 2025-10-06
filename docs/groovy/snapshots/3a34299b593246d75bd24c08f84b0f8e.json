@@ -1,0 +1,1 @@
+{"file":"core_versioned_docs/version-groovy/docs/how-to-guides/new-and-empty-table.md","objects":{"result":{"type":"Table","data":{"columns":[{"name":"NameOfStringCol","type":"java.lang.String"},{"name":"NameOfIntCol","type":"int"}],"rows":[[{"value":"Data String 1"},{"value":"4"}],[{"value":"Data String 2"},{"value":"5"}],[{"value":"Data String 3"},{"value":"6"}]]}}}}

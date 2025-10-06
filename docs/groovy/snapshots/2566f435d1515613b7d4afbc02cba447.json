@@ -1,0 +1,1 @@
+{"file":"core_versioned_docs/version-groovy/docs/tutorials/crash-course/7-export-data.md","objects":{"employeesNew":{"type":"Table","data":{"columns":[{"name":"FirstName","type":"java.lang.String"},{"name":"LastName","type":"java.lang.String"},{"name":"IdNumber","type":"int"}],"rows":[[{"value":"James"},{"value":"Smith"},{"value":"3,544"}]]}}}}

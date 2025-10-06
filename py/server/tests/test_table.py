@@ -712,6 +712,18 @@ class TableTestCase(BaseTestCase):
         t = self.test_table.format_columns("a = heatmap(b, 1, 400, BRIGHT_GREEN, BRIGHT_RED)")
         self.assertIsNotNone(t)
 
+    def test_format_columns_scope(self):
+        def format_columns_formula():
+            def my_fn(val):
+                return val > 3
+
+            t = empty_table(10).update_view(["A=i%2", "B=A+3"])
+            t = t.format_columns("B = (boolean) my_fn(B) ? BLUE : RED")
+            return t
+
+        t = format_columns_formula()
+        self.assertIsNotNone(t)
+
     def test_format_column_where(self):
         t = self.test_table.format_column_where("c", "c % 2 = 0", "ORANGE")
         self.assertIsNotNone(t)
@@ -719,8 +731,30 @@ class TableTestCase(BaseTestCase):
         t = self.test_table.format_column_where("c", "c % 2 = 0", "bg(colorRGB(255, 93, 0))")
         self.assertIsNotNone(t)
 
+    def test_format_column_where_scope(self):
+        def format_column_where_formula():
+            def my_fn(val):
+                return val > 3
+            t = empty_table(1000).update_view(["A=i%2", "B=A+3"])
+            t = t.format_column_where(col="B", cond="(boolean)my_fn(B)", formula="BLUE")
+            return t
+
+        t = format_column_where_formula()
+        self.assertIsNotNone(t)
+
     def test_format_row_where(self):
         t = self.test_table.format_row_where("e % 3 = 1", "TEAL")
+        self.assertIsNotNone(t)
+
+    def test_format_row_where_scope(self):
+        def format_row_where_formula():
+            def my_fn(val):
+                return val > 3
+            t = empty_table(1000).update_view(["A=i%2", "B=A+3"])
+            t = t.format_row_where(cond="(boolean)my_fn(B)", formula="BLUE") # This fails, my_fn cannot be found
+            return t
+
+        t = format_row_where_formula()
         self.assertIsNotNone(t)
 
     def test_layout_hints(self):

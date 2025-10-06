@@ -7,7 +7,7 @@ import io.deephaven.api.filter.Filter;
 import io.deephaven.auth.codegen.impl.TableServiceContextualAuthWiring;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.impl.select.WhereFilter;
+import io.deephaven.engine.table.impl.select.*;
 import io.deephaven.proto.backplane.grpc.AndCondition;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest;
 import io.deephaven.proto.backplane.grpc.Condition;
@@ -19,10 +19,12 @@ import io.deephaven.server.table.ops.filter.FlipNonReferenceMatchExpression;
 import io.deephaven.server.table.ops.filter.MakeExpressionsNullSafe;
 import io.deephaven.server.table.ops.filter.MergeNestedBinaryOperations;
 import io.deephaven.server.table.ops.filter.NormalizeNots;
+import io.deephaven.engine.validation.ColumnExpressionValidator;
 import org.jetbrains.annotations.NotNull;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -30,10 +32,15 @@ import java.util.stream.Collectors;
 @Singleton
 public class FilterTableGrpcImpl extends GrpcTableOperation<FilterTableRequest> {
 
+    @NotNull
+    private final ColumnExpressionValidator validator;
+
     @Inject
-    public FilterTableGrpcImpl(final TableServiceContextualAuthWiring authWiring) {
+    public FilterTableGrpcImpl(@NotNull final TableServiceContextualAuthWiring authWiring,
+            @NotNull final ColumnExpressionValidator validator) {
         super(authWiring::checkPermissionFilter, BatchTableRequest.Operation::getFilter,
                 FilterTableRequest::getResultId, FilterTableRequest::getSourceId);
+        this.validator = validator;
     }
 
     @Override
@@ -53,8 +60,66 @@ public class FilterTableGrpcImpl extends GrpcTableOperation<FilterTableRequest> 
                 .map(f -> FilterFactory.makeFilter(sourceTable.getDefinition(), f))
                 .collect(Collectors.toList());
 
+        final List<ConditionFilter> conditionFilters = extractConditionFilters(whereFilters);
+        validator.validateConditionFilters(conditionFilters, sourceTable);
+
         // execute the filters
         return sourceTable.where(Filter.and(whereFilters));
+    }
+
+    private static List<ConditionFilter> extractConditionFilters(List<WhereFilter> whereFilters) {
+        final List<ConditionFilter> conditionFilters = new ArrayList<>();
+
+        final WhereFilter.Visitor<Void> visitor = new WhereFilter.Visitor<>() {
+            @Override
+            public Void visitWhereFilter(WhereFilter filter) {
+                if (filter instanceof ConditionFilter) {
+                    conditionFilters.add((ConditionFilter) filter);
+                    return null;
+                }
+                return WhereFilter.Visitor.super.visitWhereFilter(filter);
+            }
+
+            @Override
+            public Void visitWhereFilter(WhereFilterInvertedImpl filter) {
+                visitWhereFilter(filter.getWrappedFilter());
+                return null;
+            }
+
+            @Override
+            public Void visitWhereFilter(WhereFilterSerialImpl filter) {
+                visitWhereFilter(filter.getWrappedFilter());
+                return null;
+            }
+
+            @Override
+            public Void visitWhereFilter(WhereFilterWithDeclaredBarriersImpl filter) {
+                visitWhereFilter(filter.getWrappedFilter());
+                return null;
+            }
+
+            @Override
+            public Void visitWhereFilter(WhereFilterWithRespectedBarriersImpl filter) {
+                visitWhereFilter(filter.getWrappedFilter());
+                return null;
+            }
+
+            @Override
+            public Void visitWhereFilter(DisjunctiveFilter filter) {
+                filter.getFilters().forEach(this::visitWhereFilter);
+                return null;
+            }
+
+            @Override
+            public Void visitWhereFilter(ConjunctiveFilter filter) {
+                filter.getFilters().forEach(this::visitWhereFilter);
+                return null;
+            }
+        };
+
+        whereFilters.forEach(visitor::visitWhereFilter);
+
+        return conditionFilters;
     }
 
     @NotNull

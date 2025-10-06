@@ -42,35 +42,45 @@ jobs:
       COVER: ${{ (github.event_name == 'schedule' || startsWith(github.ref_name, 'coverage/')) && matrix.test-jvm-version == '21' && matrix.jetty-version == '12' }}
       JETTY_FLAG: ${{ matrix.jetty-version == '11' && '-Pjetty11' || '' }}
     steps:
+      - name: Free Disk Space
+        uses: endersonmenezes/free-disk-space@v2
+        with:
+          remove_haskell: true
+          remove_folders: "/usr/share/swift /usr/share/miniconda /usr/share/az* /usr/local/share/chromium /usr/local/share/powershell /usr/local/julia /usr/local/aws-cli /usr/share/gradle"
+          testing: false
+
+      - name: Starting available disk space
+        run: df -h
+
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           lfs: true
 
       - name: Setup JDK 11
         id: setup-java-11
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
           java-version: '11'
 
       - name: Setup JDK 17
         id: setup-java-17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
           java-version: '17'
 
       - name: Setup JDK 21
         id: setup-java-21
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
           java-version: '21'
 
       - name: Setup JDK 24
         id: setup-java-24
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
           java-version: '24'
@@ -89,6 +99,16 @@ jobs:
       - name: Run gradle ${{ matrix.gradle-task }} on java ${{ matrix.test-jvm-version }} with coverage=${{ env.COVER }}
         run: ./gradlew --scan --continue --rerun-tasks ${{ matrix.gradle-task }} -PtestRuntimeVersion=${{ matrix.test-jvm-version }} -Pcoverage.enabled=$COVER $JETTY_FLAG
         
+      - name: Run df -h after build
+        run: |
+          df -h
+
+      - name: Run du on build directories
+        run: find . -name build |xargs du -hs |sort -h | tail -n 20
+
+      - name: List docker images
+        run: docker image ls -a
+
       - name: Upload Coverage Results
         if: ${{ env.COVER == 'true' }}
         uses: actions/upload-artifact@v4
@@ -96,6 +116,8 @@ jobs:
           name: coverage-${{ matrix.gradle-task }}-results
           path: |
             **/build/jacoco/*.exec
+            **/build/test-results/**/coverage/*.tsv
+            **/build/test-results/**/coverage/*.html
 
       - name: Upload Test Results
         uses: actions/upload-artifact@v4
@@ -146,7 +168,7 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           lfs: true
 
@@ -158,14 +180,14 @@ jobs:
 
       - name: Setup JDK 21
         id: setup-java-21
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
           java-version: '21'
 
       - name: Setup JDK 11
         id: setup-java-11
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
           java-version: '11'
@@ -191,5 +213,6 @@ jobs:
         with:
           name: combined-coverage-results
           path: |
-            coverage/build/reports/jacoco/**
+            coverage/build/reports/java/**
+            coverage/build/reports/python/**
             coverage/build/reports/coverage/**

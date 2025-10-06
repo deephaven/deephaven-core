@@ -16,6 +16,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 public class SwitchColumn implements SelectColumn {
 
@@ -152,6 +153,26 @@ public class SwitchColumn implements SelectColumn {
     @Override
     public boolean hasVirtualRowVariables() {
         return getRealColumn().hasVirtualRowVariables();
+    }
+
+    @Override
+    public boolean hasConstantArrayAccess() {
+        return getRealColumn().hasConstantArrayAccess();
+    }
+
+    @Override
+    public Optional<SourceColumn> maybeGetSourceColumn() {
+        return getRealColumn().maybeGetSourceColumn();
+    }
+
+    @Override
+    public boolean hasConstantValue() {
+        return getRealColumn().hasConstantValue();
+    }
+
+    @Override
+    public Optional<FormulaColumn> maybeGetFormulaColumn() {
+        return getRealColumn().maybeGetFormulaColumn();
     }
 
     @Override

@@ -1,0 +1,1 @@
+{"file":"core_versioned_docs/version-groovy/docs/how-to-guides/convert-add-append-tables-to-blink.md","objects":{"source":{"type":"Table","data":{"columns":[{"name":"Timestamp","type":"java.time.Instant"}],"rows":[]}},"result":{"type":"Table","data":{"columns":[{"name":"Timestamp","type":"java.time.Instant"}],"rows":[]}}}}

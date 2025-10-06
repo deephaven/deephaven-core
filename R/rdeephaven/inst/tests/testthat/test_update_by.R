@@ -4,6 +4,11 @@ library(rdeephaven)
 library(lubridate)
 library(zoo)
 
+# Arrow blows up when the underlying typeof() of a POSIXct value is not a double
+fix_ts <- function(x){
+  return(as.POSIXct(as.double(x), tz="UTC"))
+}
+
 # We suppress warnings because warnings are thrown when min() and max() are
 # applied to empty sets, which happens in the pure-R versions of rolling_*_time()
 options(warn = -1)
@@ -22,13 +27,13 @@ setup <- function() {
   )
 
   df3 <- data.frame(
-    time_col = seq.POSIXt(as.POSIXct(Sys.Date()), as.POSIXct(Sys.Date() + 30), by = "1 sec")[1:250000],
+    time_col = fix_ts(seq(as.POSIXct(Sys.Date(), tz="UTC"), as.POSIXct(Sys.Date(), tz="UTC") + 249999, by = 1)),
     bool_col = sample(c(TRUE, FALSE), 250000, TRUE),
     int_col = sample(0:10000, 250000, TRUE)
   )
 
   deterministic_df3 <- data.frame(
-    time_col = seq.POSIXt(as.POSIXct(Sys.Date()), as.POSIXct(Sys.Date() + 30), by = "1 sec")[1:500],
+    time_col = fix_ts(seq(as.POSIXct(Sys.Date(), tz="UTC"), as.POSIXct(Sys.Date(), tz="UTC") + 499, by = 1)),
     bool_col = rep(c(TRUE, TRUE, FALSE, FALSE, TRUE, FALSE, TRUE, FALSE, FALSE, TRUE), 50),
     int_col = 1:500
   )
@@ -2522,7 +2527,7 @@ test_that("uby_rolling_wavg_time behaves as expected", {
     update("weight_col = sqrt(int_col)")
 
   base_df <- data.frame(
-    time_col = seq.POSIXt(as.POSIXct(Sys.Date()), as.POSIXct(Sys.Date() + 0.001), by = "1 sec")[1:50],
+    time_col = fix_ts(seq(as.POSIXct(Sys.Date(), tz="UTC"), as.POSIXct(Sys.Date(), tz="UTC") + 49, by = 1)),
     bool_col = c(
       TRUE, TRUE, FALSE, FALSE, TRUE, FALSE, TRUE, FALSE, FALSE, TRUE,
       TRUE, TRUE, FALSE, FALSE, TRUE, FALSE, TRUE, FALSE, FALSE, TRUE,

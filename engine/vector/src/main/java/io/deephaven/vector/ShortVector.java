@@ -8,12 +8,14 @@
 package io.deephaven.vector;
 
 import io.deephaven.base.verify.Require;
+import io.deephaven.util.annotations.UserInvocationPermitted;
 import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfShort;
 import io.deephaven.engine.primitive.value.iterator.ValueIteratorOfShort;
 import io.deephaven.qst.type.ShortType;
 import io.deephaven.qst.type.PrimitiveVectorType;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.annotations.FinalDefault;
+import io.deephaven.util.compare.ShortComparisons;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -37,6 +39,7 @@ public interface ShortVector extends Vector<ShortVector>, Iterable<Short> {
      * @param index An offset into this ShortVector
      * @return The element at the specified offset, or the {@link QueryConstants#NULL_SHORT null short}
      */
+    @UserInvocationPermitted({"vector"})
     short get(long index);
 
     @Override
@@ -54,6 +57,7 @@ public interface ShortVector extends Vector<ShortVector>, Iterable<Short> {
     @Override
     ShortVector getDirect();
 
+    @UserInvocationPermitted({"vector"})
     @Override
     @FinalDefault
     default ValueIteratorOfShort iterator() {
@@ -101,6 +105,22 @@ public interface ShortVector extends Vector<ShortVector>, Iterable<Short> {
     @FinalDefault
     default String toString(final int prefixLength) {
         return toString(this, prefixLength);
+    }
+
+    /**
+     * <p>
+     * Compare this vector with another vector.
+     * </p>
+     *
+     * <p>
+     * The vectors are ordered lexicographically using Deephaven sorting rules.
+     * </p>
+     *
+     * {@see Comparable#compareTo}
+     */
+    @Override
+    default int compareTo(final ShortVector o) {
+        return compareTo(this, o);
     }
 
     static String shortValToString(final Object val) {
@@ -173,6 +193,37 @@ public interface ShortVector extends Vector<ShortVector>, Iterable<Short> {
     }
 
     /**
+     * Helper method for {@link Comparable#compareTo(Object)} for a generic ShortVector.
+     * 
+     * @param aVector the first vector (this in compareTo)
+     * @param bVector the second vector ("o" or other in compareTo)
+     * @return -1, 0, or 1 if aVector is less than, equal to, or greater than bVector (respectively)
+     */
+    static int compareTo(final ShortVector aVector, final ShortVector bVector) {
+        if (aVector == bVector) {
+            return 0;
+        }
+        try (final CloseablePrimitiveIteratorOfShort aIterator = aVector.iterator();
+                final CloseablePrimitiveIteratorOfShort bIterator = bVector.iterator()) {
+            while (aIterator.hasNext()) {
+                if (!bIterator.hasNext()) {
+                    return 1;
+                }
+                final short aValue = aIterator.nextShort();
+                final short bValue = bIterator.nextShort();
+                final int compare = ShortComparisons.compare(aValue, bValue);
+                if (compare != 0) {
+                    return compare;
+                }
+            }
+            if (bIterator.hasNext()) {
+                return -1;
+            }
+        }
+        return 0;
+    }
+
+    /**
      * Helper method for implementing {@link Object#hashCode()}. Follows the pattern in {@link Arrays#hashCode(short[])}.
      *
      * @param vector The ShortVector to hash
@@ -185,7 +236,9 @@ public interface ShortVector extends Vector<ShortVector>, Iterable<Short> {
         }
         try (final CloseablePrimitiveIteratorOfShort iterator = vector.iterator()) {
             while (iterator.hasNext()) {
+                // region ElementHash
                 result = 31 * result + Short.hashCode(iterator.nextShort());
+                // endregion ElementHash
             }
         }
         return result;
@@ -196,6 +249,7 @@ public interface ShortVector extends Vector<ShortVector>, Iterable<Short> {
      */
     abstract class Indirect implements ShortVector {
 
+        @UserInvocationPermitted({"vector"})
         @Override
         public short[] toArray() {
             final int size = intSize("ShortVector.toArray");

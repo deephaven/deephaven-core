@@ -1,0 +1,1 @@
+{"file":"core/docs/reference/table-operations/create/stringCol.md","objects":{"result":{"type":"Table","data":{"columns":[{"name":"Strings","type":"java.lang.String"}],"rows":[[{"value":"Deephaven"}],[{"value":"3.14"}],[{"value":"Community"}]]}}}}

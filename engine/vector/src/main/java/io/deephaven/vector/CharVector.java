@@ -4,12 +4,14 @@
 package io.deephaven.vector;
 
 import io.deephaven.base.verify.Require;
+import io.deephaven.util.annotations.UserInvocationPermitted;
 import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfChar;
 import io.deephaven.engine.primitive.value.iterator.ValueIteratorOfChar;
 import io.deephaven.qst.type.CharType;
 import io.deephaven.qst.type.PrimitiveVectorType;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.annotations.FinalDefault;
+import io.deephaven.util.compare.CharComparisons;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -33,6 +35,7 @@ public interface CharVector extends Vector<CharVector>, Iterable<Character> {
      * @param index An offset into this CharVector
      * @return The element at the specified offset, or the {@link QueryConstants#NULL_CHAR null char}
      */
+    @UserInvocationPermitted({"vector"})
     char get(long index);
 
     @Override
@@ -50,6 +53,7 @@ public interface CharVector extends Vector<CharVector>, Iterable<Character> {
     @Override
     CharVector getDirect();
 
+    @UserInvocationPermitted({"vector"})
     @Override
     @FinalDefault
     default ValueIteratorOfChar iterator() {
@@ -97,6 +101,22 @@ public interface CharVector extends Vector<CharVector>, Iterable<Character> {
     @FinalDefault
     default String toString(final int prefixLength) {
         return toString(this, prefixLength);
+    }
+
+    /**
+     * <p>
+     * Compare this vector with another vector.
+     * </p>
+     *
+     * <p>
+     * The vectors are ordered lexicographically using Deephaven sorting rules.
+     * </p>
+     *
+     * {@see Comparable#compareTo}
+     */
+    @Override
+    default int compareTo(final CharVector o) {
+        return compareTo(this, o);
     }
 
     static String charValToString(final Object val) {
@@ -169,6 +189,37 @@ public interface CharVector extends Vector<CharVector>, Iterable<Character> {
     }
 
     /**
+     * Helper method for {@link Comparable#compareTo(Object)} for a generic CharVector.
+     * 
+     * @param aVector the first vector (this in compareTo)
+     * @param bVector the second vector ("o" or other in compareTo)
+     * @return -1, 0, or 1 if aVector is less than, equal to, or greater than bVector (respectively)
+     */
+    static int compareTo(final CharVector aVector, final CharVector bVector) {
+        if (aVector == bVector) {
+            return 0;
+        }
+        try (final CloseablePrimitiveIteratorOfChar aIterator = aVector.iterator();
+                final CloseablePrimitiveIteratorOfChar bIterator = bVector.iterator()) {
+            while (aIterator.hasNext()) {
+                if (!bIterator.hasNext()) {
+                    return 1;
+                }
+                final char aValue = aIterator.nextChar();
+                final char bValue = bIterator.nextChar();
+                final int compare = CharComparisons.compare(aValue, bValue);
+                if (compare != 0) {
+                    return compare;
+                }
+            }
+            if (bIterator.hasNext()) {
+                return -1;
+            }
+        }
+        return 0;
+    }
+
+    /**
      * Helper method for implementing {@link Object#hashCode()}. Follows the pattern in {@link Arrays#hashCode(char[])}.
      *
      * @param vector The CharVector to hash
@@ -181,7 +232,9 @@ public interface CharVector extends Vector<CharVector>, Iterable<Character> {
         }
         try (final CloseablePrimitiveIteratorOfChar iterator = vector.iterator()) {
             while (iterator.hasNext()) {
+                // region ElementHash
                 result = 31 * result + Character.hashCode(iterator.nextChar());
+                // endregion ElementHash
             }
         }
         return result;
@@ -192,6 +245,7 @@ public interface CharVector extends Vector<CharVector>, Iterable<Character> {
      */
     abstract class Indirect implements CharVector {
 
+        @UserInvocationPermitted({"vector"})
         @Override
         public char[] toArray() {
             final int size = intSize("CharVector.toArray");

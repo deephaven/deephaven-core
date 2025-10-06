@@ -32,7 +32,6 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb
 import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.TimeTableRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.UngroupRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.UnstructuredFilterTableRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.UpdateByRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.WhereInRequest;
 import jsinterop.annotations.JsOverlay;
 import jsinterop.annotations.JsPackage;
@@ -5730,8 +5729,6 @@ public class Operation {
 
     public native SelectOrUpdateRequest getUpdate();
 
-    public native UpdateByRequest getUpdateBy();
-
     public native SelectOrUpdateRequest getUpdateView();
 
     public native SelectOrUpdateRequest getView();
@@ -5935,8 +5932,6 @@ public class Operation {
     public native void setUpdate(SelectOrUpdateRequest value);
 
     public native void setUpdateBy();
-
-    public native void setUpdateBy(UpdateByRequest value);
 
     public native void setUpdateView();
 
