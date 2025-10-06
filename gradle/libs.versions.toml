@@ -55,7 +55,7 @@ jdom2 = "2.0.6.1"
 jetbrains = "26.0.1"
 jetty = "12.0.18"
 jetty11 = "11.0.20"
-jpy = "1.1.0"
+jpy = "1.2.0"
 jsinterop = "2.0.2"
 # google is annoying, and have different versions released for the same groupId
 jsinterop-base = "1.0.3"
