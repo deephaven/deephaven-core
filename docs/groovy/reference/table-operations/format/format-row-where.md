@@ -6,7 +6,7 @@ The `formatRowWhere` method applies color formatting to rows of the source table
 
 :::
 
-[Formatting rows](/core/ui/docs/components/table/#formatting-rows-and-columns) can also be accomplished using the [`deephaven.ui`](/core/ui/docs/) Python package. 
+[Formatting rows](/core/ui/docs/components/table/#formatting-rows-and-columns) can also be accomplished using the [`deephaven.ui`](/core/ui/docs/) Python package.
 
 :::
 

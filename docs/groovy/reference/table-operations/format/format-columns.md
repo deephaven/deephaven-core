@@ -8,7 +8,7 @@ Since `formatColumns` is implemented using `updateView`, the new columns are not
 
 :::
 
-[Formatting columns](/core/ui/docs/components/table/#formatting-rows-and-columns) can also be accomplished using the [`deephaven.ui`](/core/ui/docs/) Python package. 
+[Formatting columns](/core/ui/docs/components/table/#formatting-rows-and-columns) can also be accomplished using the [`deephaven.ui`](/core/ui/docs/) Python package.
 
 :::
 

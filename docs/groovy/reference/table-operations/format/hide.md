@@ -6,7 +6,7 @@ The `hide` method is used within [`setLayoutHints`](./layout-hints.md) to hide c
 
 :::
 
-[Hiding columns](/core/ui/docs/components/table/#column-order-and-visibility) can also be accomplished using the [`deephaven.ui`](/core/ui/docs/) Python package. 
+[Hiding columns](/core/ui/docs/components/table/#column-order-and-visibility) can also be accomplished using the [`deephaven.ui`](/core/ui/docs/) Python package.
 
 :::
 

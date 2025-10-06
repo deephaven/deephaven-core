@@ -4,10 +4,9 @@ title: freeze
 
 The `freeze` method is used within [`setLayoutHints`](./layout-hints.md) to freeze columns in place at the front of the table. They will always be visible even when scrolling horizontally.
 
-
 :::
 
-[Freezing columns](/core/ui/docs/components/table/#column-order-and-visibility) can also be accomplished using the [`deephaven.ui`](/core/ui/docs/) Python package. 
+[Freezing columns](/core/ui/docs/components/table/#column-order-and-visibility) can also be accomplished using the [`deephaven.ui`](/core/ui/docs/) Python package.
 
 :::
 

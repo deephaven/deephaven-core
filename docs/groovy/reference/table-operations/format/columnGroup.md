@@ -6,7 +6,7 @@ The `columnGroup` method is used within [`setLayoutHints`](./layout-hints.md) cr
 
 :::
 
-[Grouping columns](/core/ui/docs/components/table/#grouping-columns) can also be accomplished using the [`deephaven.ui`](/core/ui/docs/) Python package. 
+[Grouping columns](/core/ui/docs/components/table/#grouping-columns) can also be accomplished using the [`deephaven.ui`](/core/ui/docs/) Python package.
 
 :::
 

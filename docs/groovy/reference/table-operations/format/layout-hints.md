@@ -6,7 +6,7 @@ The `setLayoutHints` method creates a new table with information about how the U
 
 :::
 
-You can also [show, hide, freeze, group, and reorder](/core/ui/docs/components/table/#column-order-and-visibility) columns using the [`deephaven.ui`](/core/ui/docs/) Python package. 
+You can also [show, hide, freeze, group, and reorder](/core/ui/docs/components/table/#column-order-and-visibility) columns using the [`deephaven.ui`](/core/ui/docs/) Python package.
 
 :::
 
