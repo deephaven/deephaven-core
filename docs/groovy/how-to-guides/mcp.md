@@ -214,8 +214,8 @@ If that works, you're all set! Try Deephaven MCP for:
 
 The following parameters are available for the systems server:
 
-| Field                | Type    | Required When | Description                                                                                                          |
-| -------------------- | ------- | ------------- | -------------------------------------------------------------------------------------------------------------------- |
+| Field                | Type    | Required When | Description                                                                                                           |
+| -------------------- | ------- | ------------- | --------------------------------------------------------------------------------------------------------------------- |
 | `host`               | string  | Optional      | Hostname or IP address of the Deephaven Community Core session (e.g., `"localhost"`).                                 |
 | `port`               | integer | Optional      | Port number for the session connection (e.g., `10000`).                                                               |
 | `auth_type`          | string  | Optional      | Authentication type: `"Anonymous"` (default), `"Basic"`, or custom authenticator strings.                             |
