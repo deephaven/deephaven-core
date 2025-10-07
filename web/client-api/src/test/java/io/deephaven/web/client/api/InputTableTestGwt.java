@@ -129,9 +129,14 @@ public class InputTableTestGwt extends AbstractAsyncGwtTestCase {
                     row.set("Dumber", 4);
                     return inputTable.addRows(new JsPropertyMap[] {row}, null);
                 })
-                .then(inputTable -> Promise.resolve(inputTable.getTable().getSize()))
-                .then(size -> {
-                    assertEquals(6, size.intValue());
+                .then(inputTable -> {
+                    delayTestFinish(8000);
+                    JsTable table = inputTable.getTable();
+                    table.setViewport(0, 100, null);
+                    return waitForEvent(table, JsTable.EVENT_ROWADDED, 2001).onInvoke(table);
+                })
+                .then(table -> {
+                    assertEquals(6.0, table.getSize());
                     return null;
                 })
                 .then(this::finish).catch_(this::report);
