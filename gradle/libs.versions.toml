@@ -76,7 +76,7 @@ selenium = "4.30.0"
 slf4j = "2.0.17"
 snappy = "1.1.10.8"
 squareup = "1.13.0"
-sslcontext = "9.1.0"
+ayza = "10.0.0"
 tdunning = "3.3"
 trove = "3.0.3"
 undercouch = "2.18.0"
@@ -305,9 +305,9 @@ snappy-java = { module = "org.xerial.snappy:snappy-java", version.ref = "snappy"
 
 squareup-javapoet = { module = "com.squareup:javapoet", version.ref = "squareup" }
 
-sslcontext-kickstart = { module = "io.github.hakky54:sslcontext-kickstart", version.ref = "sslcontext" }
-sslcontext-kickstart-jetty = { module = "io.github.hakky54:sslcontext-kickstart-for-jetty", version.ref = "sslcontext" }
-sslcontext-kickstart-netty = { module = "io.github.hakky54:sslcontext-kickstart-for-netty", version.ref = "sslcontext" }
+ayza = { module = "io.github.hakky54:ayza", version.ref = "ayza" }
+ayza-jetty = { module = "io.github.hakky54:ayza-for-jetty", version.ref = "ayza" }
+ayza-netty = { module = "io.github.hakky54:ayza-for-netty", version.ref = "ayza" }
 
 tdunning-t-digest = { module = "com.tdunning:t-digest", version.ref = "tdunning" }
 
