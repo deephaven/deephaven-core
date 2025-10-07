@@ -2,7 +2,7 @@
 title: dryRun
 ---
 
-The `dryRun` method will create a TableSpec for an SQL query without actually running it. This is useful for validating SQL queries before running them or for creating a TableSpec that can be used later to create a Deephaven table.
+The `dryRun` method creates a `TableSpec` for an SQL query without actually running it. This is useful for validating SQL queries before running them or for creating a `TableSpec` that can be used later to create a Deephaven table.
 
 ## Syntax
 
@@ -15,16 +15,16 @@ dryRun(sql)
 <ParamTable>
 <Param name="sql" type="String">
 
-The SQL query to create a TableSpec for.
+The SQL query for which to create a `TableSpec`.
 
 </Param>
 </ParamTable>
 
 ## Returns
 
-A TableSpec object that can be used to create a Deephaven table from the original SQL query.
+A `TableSpec` object that can be used to create a Deephaven table from the original SQL query.
 
-## Examples-
+## Examples
 
 ```groovy order=t1,t2,result
 import io.deephaven.engine.sql.Sql
