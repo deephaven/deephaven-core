@@ -2,7 +2,6 @@
 title: layout_hints
 ---
 
-
 The `layout_hints` method creates a new table with information about how the UI should layout the table.
 
 :::
@@ -80,16 +79,18 @@ from deephaven import new_table
 from deephaven.table import SearchDisplayMode
 from deephaven.column import string_col, int_col
 
-source = new_table([
-    string_col("A", ["A", "a"]),
-    string_col("B", ["B", "b"]),
-    string_col("C", ["C", "c"]),
-    string_col("D", ["D", "d"]),
-    string_col("E", ["E", "e"]),
-    string_col("Y", ["Y", "y"]),
-    int_col("Even", [2, 4]),
-    int_col("Odd", [1, 3])
-])
+source = new_table(
+    [
+        string_col("A", ["A", "a"]),
+        string_col("B", ["B", "b"]),
+        string_col("C", ["C", "c"]),
+        string_col("D", ["D", "d"]),
+        string_col("E", ["E", "e"]),
+        string_col("Y", ["Y", "y"]),
+        int_col("Even", [2, 4]),
+        int_col("Odd", [1, 3]),
+    ]
+)
 
 result = source.layout_hints(
     front=["Odd"],
@@ -97,7 +98,7 @@ result = source.layout_hints(
     freeze=["Even"],
     hide=["C"],
     column_groups=[{"name": "Vowels", "children": ["A", "E"], "color": "RED"}],
-    search_display_mode=SearchDisplayMode.SHOW
+    search_display_mode=SearchDisplayMode.SHOW,
 )
 ```
 
