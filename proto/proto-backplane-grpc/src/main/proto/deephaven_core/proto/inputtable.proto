@@ -34,8 +34,22 @@ message AddTableRequest {
     Ticket table_to_add = 2;
 }
 
-message AddTableResponse {
+// An error indicating invalid values were passed to AddTableRequest, optionally annotated with the input row and column
+// that caused the error.
+message InputTableValidationError {
+    // the error message
+    string message = 1;
+    // the row position in the table_to_add that caused this error, not present when unknown
+    optional int64 row = 2;
+    // the column name in the table_to_add that caused this error, not present when unknown
+    optional string column = 3;
+}
 
+message InputTableValidationErrorList {
+    repeated InputTableValidationError validation_errors = 1;
+}
+
+message AddTableResponse {
 }
 
 message DeleteTableRequest {
