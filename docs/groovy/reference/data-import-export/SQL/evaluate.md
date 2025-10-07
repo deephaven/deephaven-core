@@ -2,7 +2,7 @@
 title: evaluate
 ---
 
-The `evaluate` method will evaluate a SQL string and return the equivalent Deephaven table.
+The `evaluate` method evaluates a SQL string and returns the equivalent Deephaven table.
 
 ## Syntax
 
@@ -22,7 +22,7 @@ The SQL query, in string format, to evaluate.
 
 ## Returns
 
-A new in-memory table resulting from executing the SQL query on Deephavden data.
+A new in-memory table resulting from executing the SQL query on Deephaven data.
 
 ## Examples
 
