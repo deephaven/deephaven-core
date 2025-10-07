@@ -6,6 +6,7 @@ package io.deephaven.web.client.api;
 import elemental2.core.JsArray;
 import elemental2.promise.Promise;
 import jsinterop.base.Js;
+import jsinterop.base.JsPropertyMap;
 
 import java.util.Set;
 
@@ -115,6 +116,27 @@ public class InputTableTestGwt extends AbstractAsyncGwtTestCase {
                 })
                 .then(this::finish).catch_(this::report);
     }
+
+    public void testAddRowsExtraColumns() {
+        connect(tables)
+                .then(table("result6"))
+                .then(JsTable::inputTable)
+                .then(inputTable -> {
+                    JsPropertyMap<Object> row = JsPropertyMap.of();
+                    row.set("A", 1);
+                    row.set("B", 2);
+                    row.set("Dummy", 3);
+                    row.set("Dumber", 4);
+                    return inputTable.addRows(new JsPropertyMap[]{row}, null);
+                })
+                .then(inputTable -> Promise.resolve(inputTable.getTable().getSize()))
+                .then(size -> {
+                    assertEquals(6, size.intValue());
+                    return null;
+                })
+                .then(this::finish).catch_(this::report);
+    }
+
 
     @Override
     public String getModuleName() {
