@@ -2,7 +2,7 @@
 title: parseSql
 ---
 
-The `SqlAdapter.parseSql` method parses a SQL query string into a TableSpec using an explicit Scope (catalog). This is a low-level API that provides full control over the catalog/scope, unlike the higher-level `evaluate` and `dryRun` methods which automatically use the script session's query scope.
+The `SqlAdapter.parseSql` method parses a SQL query string into a `TableSpec` using an explicit Scope (catalog). This is a low-level API that provides full control over the catalog/scope, unlike the higher-level `evaluate` and `dryRun` methods, which automatically use the script session's query scope.
 
 ## Syntax
 
@@ -27,7 +27,7 @@ The Scope object that defines the catalog of available tables for the SQL query.
 
 ## Returns
 
-A TableSpec object representing the parsed SQL query. This can be materialized into a Deephaven table using a `TableCreator` with appropriate ticket mappings.
+A `TableSpec` object representing the parsed SQL query. This can be materialized into a Deephaven table using a `TableCreator` with appropriate ticket mappings.
 
 ## Examples
 
