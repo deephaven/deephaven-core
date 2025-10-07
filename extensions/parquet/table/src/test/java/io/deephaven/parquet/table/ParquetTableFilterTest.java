@@ -440,7 +440,7 @@ public final class ParquetTableFilterTest {
         filterAndVerifyResultsAllowEmpty(diskTable, memTable, "boolean_col = true");
     }
 
-    // New test with custom founction counting invocations
+    // New test with custom function counting invocations
     @Test
     public void partitionedDataSerialFilterTest() {
         final String destPath = Path.of(rootFile.getPath(), "ParquetTest_kvPartitionsSerialTest").toString();
