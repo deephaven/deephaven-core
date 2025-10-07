@@ -5,7 +5,6 @@ package io.deephaven.parquet.table;
 
 import io.deephaven.api.filter.Filter;
 import io.deephaven.base.FileUtils;
-import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.table.*;
@@ -44,6 +43,7 @@ import java.nio.file.Path;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
@@ -135,6 +135,10 @@ public final class ParquetTableFilterTest {
 
     private static void filterAndVerifyResults(Table diskTable, Table memTable, String... filters) {
         verifyResults(diskTable.where(filters).coalesce(), memTable.where(filters).coalesce());
+    }
+
+    private static void filterAndVerifyResults(Table diskTable, Table memTable, Filter filter) {
+        verifyResults(diskTable.where(filter).coalesce(), memTable.where(filter).coalesce());
     }
 
     private static void filterAndVerifyResults(Table diskTable, Table memTable, WhereFilter filter) {
@@ -436,6 +440,71 @@ public final class ParquetTableFilterTest {
         filterAndVerifyResultsAllowEmpty(diskTable, memTable, "boolean_col = true");
     }
 
+    // New test with custom founction counting invocations
+    @Test
+    public void partitionedDataSerialFilterTest() {
+        final String destPath = Path.of(rootFile.getPath(), "ParquetTest_kvPartitionsSerialTest").toString();
+        final int tableSize = 1_000_000;
+
+        final Instant baseTime = parseInstant("2023-01-01T00:00:00 NY");
+        QueryScope.addParam("baseTime", baseTime);
+
+        final Table largeTable = TableTools.emptyTable(tableSize).update(
+                "symbol = ii % 100",
+                "sequential_val = ii");
+
+        final PartitionedTable partitionedTable = largeTable.partitionBy("symbol");
+        ParquetTools.writeKeyValuePartitionedTable(partitionedTable, destPath, EMPTY);
+
+        final Table diskTable = ParquetTools.readTable(destPath);
+        final Table memTable = diskTable.select();
+
+        assertTableEquals(diskTable, memTable);
+
+        final AtomicLong invocationCount = new AtomicLong();
+        QueryScope.addParam("invocationCount", invocationCount);
+
+        final Filter partitionFilter = Filter.and(Filter.from("symbol >= 0 && invocationCount.incrementAndGet() >= 0"));
+        final Filter serialPartitionFilter = partitionFilter.withSerial();
+
+        final Filter nonPartitionFilter =
+                Filter.and(Filter.from("sequential_val >= 0 && invocationCount.incrementAndGet() >= 0"));
+        final Filter serialNonPartitionFilter = nonPartitionFilter.withSerial();
+
+        Table result;
+
+        // Test non-serial partition filter
+        assertEquals(0L, invocationCount.get());
+        result = diskTable.where(partitionFilter).coalesce();
+        assertEquals(100L, invocationCount.get()); // one per partition
+        // Verify the table contents are equivalent
+        assertTableEquals(result, diskTable.coalesce().where(partitionFilter));
+
+        // Test serial partition filter
+        invocationCount.set(0);
+        assertEquals(0L, invocationCount.get());
+        result = diskTable.where(serialPartitionFilter).coalesce();
+        assertEquals(1_000_000L, invocationCount.get()); // one per row
+        // Verify the table contents are equivalent
+        assertTableEquals(result, diskTable.coalesce().where(serialPartitionFilter));
+
+        // Test non-serial non-partition filter
+        invocationCount.set(0);
+        assertEquals(0L, invocationCount.get());
+        result = diskTable.where(nonPartitionFilter).coalesce();
+        assertEquals(1_000_000L, invocationCount.get()); // one per row
+        // Verify the table contents are equivalent
+        assertTableEquals(result, diskTable.coalesce().where(nonPartitionFilter));
+
+        // Test serial non-partition filter
+        invocationCount.set(0);
+        assertEquals(0L, invocationCount.get());
+        result = diskTable.where(serialNonPartitionFilter).coalesce();
+        assertEquals(1_000_000L, invocationCount.get()); // one per row
+        // Verify the table contents are equivalent
+        assertTableEquals(result, diskTable.coalesce().where(serialNonPartitionFilter));
+    }
+
     @Test
     public void partitionedNoDataIndexTest() {
         final String destPath = Path.of(rootFile.getPath(), "ParquetTest_kvPartitionsTest").toString();
@@ -465,6 +534,18 @@ public final class ParquetTableFilterTest {
         filterAndVerifyResultsAllowEmpty(diskTable, memTable, "symbol = `s100`");
         filterAndVerifyResults(diskTable, memTable, "symbol < `s100`");
         filterAndVerifyResults(diskTable, memTable, "symbol = `s500`");
+
+        // Conditional on partition column
+        filterAndVerifyResults(diskTable, memTable, "symbol = `s` + `500`");
+        // Serial conditional on partition column
+        filterAndVerifyResults(diskTable, memTable,
+                Filter.serial(Filter.and(Filter.from("symbol = `s` + `500`"))));
+
+        // Conditional on non-partition column
+        filterAndVerifyResults(diskTable, memTable, "sequential_val >= 50 + 1");
+        // Serial conditional on non-partition column
+        filterAndVerifyResults(diskTable, memTable,
+                Filter.serial(Filter.and(Filter.from("sequential_val >= 50 + 1"))));
 
         // Timestamp range and match filters
         filterAndVerifyResults(diskTable, memTable, "Timestamp < '2023-01-02T00:00:00 NY'");

@@ -11,6 +11,7 @@ import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.filter.ExtractBarriers;
 import io.deephaven.engine.table.impl.filter.ExtractInnerConjunctiveFilters;
 import io.deephaven.engine.table.impl.filter.ExtractRespectedBarriers;
+import io.deephaven.engine.table.impl.filter.ExtractSerialFilters;
 import io.deephaven.engine.table.impl.select.analyzers.SelectAndViewAnalyzer;
 import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
@@ -305,7 +306,8 @@ public class PartitionAwareSourceTable extends SourceTable<PartitionAwareSourceT
         for (WhereFilter whereFilter : whereFilters) {
             whereFilter.init(definition, compilationProcessor);
 
-            if (!whereFilter.permitParallelization()) {
+            // Test for user-mandated serial filters (e.g. FilterSerial.of() or Filter.serial())
+            if (!ExtractSerialFilters.of(whereFilter).isEmpty()) {
                 serialFilterFound = true;
             }
 
