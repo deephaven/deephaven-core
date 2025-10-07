@@ -1752,6 +1752,10 @@
                     "path": "reference/table-operations/format/format-row-where.md"
                   },
                   {
+                    "label": "layout_hints",
+                    "path": "reference/table-operations/format/layout-hints.md"
+                  },
+                  {
                     "label": "keyed_transpose",
                     "path": "reference/table-operations/format/keyed-transpose.md"
                   }
