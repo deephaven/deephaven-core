@@ -127,7 +127,7 @@ public class InputTableTestGwt extends AbstractAsyncGwtTestCase {
                     row.set("B", 2);
                     row.set("Dummy", 3);
                     row.set("Dumber", 4);
-                    return inputTable.addRows(new JsPropertyMap[]{row}, null);
+                    return inputTable.addRows(new JsPropertyMap[] {row}, null);
                 })
                 .then(inputTable -> Promise.resolve(inputTable.getTable().getSize()))
                 .then(size -> {
