@@ -7,7 +7,7 @@ sidebar_label: SQL queries in Deephaven
 
 This guide will show you how to execute SQL queries on Deephaven tables in your script session.
 
-## The Sql class
+## The `Sql` class
 
 The [`Sql`](https://docs.deephaven.io/core/javadoc/io/deephaven/engine/sql/Sql.html) class provides high-level methods for executing SQL queries against tables in your script session. It offers two main methods:
 
@@ -64,12 +64,12 @@ result = Sql.evaluate("SELECT source.X, other.Y FROM source JOIN other ON source
 
 This is useful for:
 
-- Validating SQL syntax before execution
-- Validating a query quickly without the overhead of execution
-- Inspecting the query plan
-- Building tools that work with SQL queries
+- Validating SQL syntax before execution.
+- Validating a query quickly without the overhead of execution.
+- Inspecting the query plan.
+- Building tools that work with SQL queries.
 
-## Advanced usage with SqlAdapter
+## Advanced usage with `SqlAdapter`
 
 For more control over SQL parsing, use [`SqlAdapter.parseSql()`](../../reference/data-import-export/SQL/parseSql.md). This method allows you to specify an explicit `Scope` (catalog) instead of using the script session's query scope.
 
@@ -118,9 +118,9 @@ result = tableSpec.logic().create(new TableCreatorTicketInterceptor(TableCreator
 
 This approach is useful when:
 
-- Building custom SQL tooling
-- Integrating SQL parsing into other systems
-- You need full control over the catalog/scope
+- Building custom SQL tooling.
+- Integrating SQL parsing into other systems.
+- You need full control over the catalog/scope.
 
 ## Choose the right method
 
