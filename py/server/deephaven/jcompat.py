@@ -224,6 +224,24 @@ def to_sequence(v: Union[T, Sequence[T]] = None, wrapped: bool = False) -> Seque
         return tuple((unwrap(o) for o in v))
 
 
+def _j_array_to_sequence(j_array: jpy.JType) -> Sequence[Any]:
+    """ Converts a Java array to a Python sequence of wrapped objects.
+
+    Args:
+        j_array (jpy.JType): the Java array to convert
+
+    Returns:
+        Sequence[Any]: a sequence of wrapped objects or an empty tuple if the input is None
+
+    Raises:
+        DHError
+    """
+    if j_array is None:
+        return ()
+
+    return tuple(wrap_j_object(j_array[i]) for i in range(len(j_array)))
+
+
 def _j_array_to_numpy_array(dtype: DType, j_array: jpy.JType, conv_null: bool, type_promotion: bool = False) -> \
         Optional[np.ndarray]:
     """ Produces a numpy array from the DType and given Java array.

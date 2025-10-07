@@ -19,6 +19,8 @@ from typing import Set, Union, Optional, Any, List
 
 import jpy
 
+from deephaven import DHError
+
 # a set of all the directly initializable wrapper classes
 _di_wrapper_classes: Set[JObjectWrapper] = set()
 _has_all_wrappers_imported = False
@@ -51,6 +53,9 @@ class JObjectWrapper(ABC):
     j_object_type: type
 
     def __init_subclass__(cls, *args, **kwargs):
+        if inspect.isabstract(cls):
+            return
+
         required_cls_attr = "j_object_type"
         if not hasattr(cls, required_cls_attr):
             raise NotImplementedError(f"Class {cls} lacks required `{required_cls_attr}` class attribute")

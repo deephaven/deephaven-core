@@ -10,8 +10,8 @@ from typing import List, Union, Sequence
 
 import jpy
 
-from deephaven import DHError
-from deephaven._wrapper import JObjectWrapper
+from deephaven import DHError, dtypes
+from deephaven.concurrency_control import ConcurrencyControl, T, Barrier
 from deephaven.jcompat import to_sequence
 
 _JFilter = jpy.get_type("io.deephaven.api.filter.Filter")
@@ -21,8 +21,11 @@ _JPatternMode = jpy.get_type("io.deephaven.api.filter.FilterPattern$Mode")
 _JPattern = jpy.get_type("java.util.regex.Pattern")
 
 
-class Filter(JObjectWrapper):
-    """A Filter object represents a filter that can be used in Table's filtering(where) operations."""
+class Filter(ConcurrencyControl["Filter"]):
+    """A Filter object represents a filter that can be used in Table's filtering(where) operations.
+    Explicit concurrency and ordering control can be specified on a Filter to affects the parallelization of its
+    evaluation during Table filtering operation.
+    """
 
     j_object_type = _JFilter
 
@@ -32,6 +35,56 @@ class Filter(JObjectWrapper):
 
     def __init__(self, j_filter):
         self.j_filter = j_filter
+
+    def with_declared_barriers(self, barriers: Union[Barrier, Sequence[Barrier]]) -> Filter:
+        """ Returns a new Filter with the given declared barriers.
+
+        Args:
+            barriers (Union[Barrier, Sequence[Barrier]]): the barrier(s) to declare
+
+        Returns:
+            a new Filter with the given declared barriers
+
+        Raises:
+            DHError
+        """
+        try:
+            barriers = to_sequence(barriers)
+            return Filter(j_filter=self.j_filter.withDeclaredBarriers(*barriers))
+        except Exception as e:
+            raise DHError(e, "failed to create filter with declared barriers.") from e
+
+    def with_respected_barriers(self, barriers: Union[Barrier, Sequence[Barrier]]) -> Filter:
+        """ Returns a new Filter with the given respected barriers.
+
+        Args:
+            barriers (Union[Barrier, Sequence[Barrier]]): the barrier(s) to respect
+
+        Returns:
+            a new Filter with the given respected barriers
+
+        Raises:
+            DHError
+        """
+        try:
+            barriers = to_sequence(barriers)
+            return Filter(j_filter=self.j_filter.withRespectedBarriers(*barriers))
+        except Exception as e:
+            raise DHError(e, "failed to create filter with respected barriers.") from e
+
+    def with_serial(self) -> Filter:
+        """ Returns a new Filter with serial evaluation enforced.
+
+        Returns:
+            a new Filter with serial evaluation enforced
+
+        Raises:
+            DHError
+        """
+        try:
+            return Filter(j_filter = self.j_filter.withSerial())
+        except Exception as e:
+            raise DHError(e, "failed to create filter with serial evaluation.") from e
 
     def not_(self):
         """Creates a new filter that evaluates to the opposite of what this filter evaluates to.

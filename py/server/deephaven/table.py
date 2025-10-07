@@ -26,6 +26,7 @@ from deephaven._wrapper import JObjectWrapper
 from deephaven._wrapper import unwrap
 from deephaven.agg import Aggregation
 from deephaven.column import col_def, ColumnDefinition
+from deephaven.concurrency_control import ConcurrencyControl, Barrier
 from deephaven.filters import Filter, and_, or_
 from deephaven.jcompat import j_unary_operator, j_binary_operator, j_map_to_dict, j_hashmap
 from deephaven.jcompat import to_sequence, j_array_list
@@ -38,8 +39,6 @@ _JAttributeMap = jpy.get_type("io.deephaven.engine.table.AttributeMap")
 _JTableTools = jpy.get_type("io.deephaven.engine.util.TableTools")
 _JColumnName = jpy.get_type("io.deephaven.api.ColumnName")
 _JSortColumn = jpy.get_type("io.deephaven.api.SortColumn")
-_JFilter = jpy.get_type("io.deephaven.api.filter.Filter")
-_JFilterOr = jpy.get_type("io.deephaven.api.filter.FilterOr")
 _JPair = jpy.get_type("io.deephaven.api.Pair")
 _JLayoutHintBuilder = jpy.get_type("io.deephaven.engine.util.LayoutHintBuilder")
 _JSearchDisplayMode = jpy.get_type("io.deephaven.engine.util.LayoutHintBuilder$SearchDisplayModes")
@@ -85,6 +84,96 @@ _JMultiJoinFactory = jpy.get_type("io.deephaven.engine.table.MultiJoinFactory")
 # Keyed Transpose Table
 _JKeyedTranspose = jpy.get_type("io.deephaven.engine.table.impl.util.KeyedTranspose")
 _JNewColumnBehaviorType = jpy.get_type("io.deephaven.engine.table.impl.util.KeyedTranspose$NewColumnBehavior")
+
+# Selectable
+_JSelectable = jpy.get_type("io.deephaven.api.Selectable")
+
+
+class Selectable(ConcurrencyControl["Selectable"]):
+    """A Selectable possibly attached with concurrency and ordering control that affects the parallelization of its
+    evaluation when used in table operations `update`, `select`.
+
+    Note that Selectables with concurrency/ordering control are not supported in `update_view` and `view` operations.
+    TODO: are they just ignored or would cause an error?
+
+    https://deephaven.io/core/docs/conceptual/query-engine/parallelization/
+    """
+    j_object_type = _JSelectable
+
+    @property
+    def j_object(self) -> jpy.JType:
+        return self.j_selectable
+
+    def __init__(self, j_selectable: jpy.JType):
+        self.j_selectable = j_selectable
+
+    @classmethod
+    def parse(cls, formula: str) -> Selectable:
+        """Creates a Selectable from the given formula string.
+
+        Args:
+            formula (str): The formula string.
+
+        Returns:
+            Selectable
+
+        Raises:
+            DHError
+        """
+        try:
+            return Selectable(j_selectable=_JSelectable.parse(formula))
+        except Exception as e:
+            raise DHError(e, f"failed to create a Selectable: {formula}") from e
+
+    def with_declared_barriers(self, barriers: Union[Barrier, Sequence[Barrier]]) -> Selectable:
+        """ Returns a new instance with the given declared barriers.
+
+        Args:
+            barriers (Union[Barrier, Sequence[Barrier]]): The declared barrier(s).
+
+        Returns:
+            Selectable
+
+        Raises:
+            DHError
+        """
+        try:
+            barriers = to_sequence(barriers)
+            return Selectable(j_selectable=self.j_selectable.withDeclaredBarriers(*barriers))
+        except Exception as e:
+            raise DHError(e, f"failed to create selectable with declared barriers: {barriers}") from e
+
+    def with_respected_barriers(self, barriers: Union[Barrier, Sequence[Barrier]]) -> Selectable:
+        """ Returns a new instance with the given respected barriers.
+
+        Args:
+            barriers (Union[Barrier, Sequence[Barrier]]): The respected barrier(s).
+
+        Returns:
+            Selectable
+
+        Raises:
+            DHError
+        """
+        try:
+            barriers = to_sequence(barriers)
+            return Selectable(j_selectable=self.j_selectable.withRespectedBarriers(*barriers))
+        except Exception as e:
+            raise DHError(e, f"failed to create selectable with respected barriers: {barriers}") from e
+
+    def with_serial(self) -> Selectable:
+        """ Returns a new instance with serial evaluation enforced.
+
+        Returns:
+            Selectable
+
+        Raises:
+            DHError
+        """
+        try:
+            return Selectable(j_selectable=self.j_selectable.withSerial())
+        except Exception as e:
+            raise DHError(e, "failed to create selectable with serial evaluation.") from e
 
 
 class NodeType(Enum):
@@ -1043,11 +1132,11 @@ class Table(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "table rename_columns operation failed.") from e
 
-    def update(self, formulas: Union[str, Sequence[str]]) -> Table:
+    def update(self, formulas: Union[str, Sequence[str], Selectable, Sequence[Selectable]]) -> Table:
         """The update method creates a new table containing a new, in-memory column for each formula.
 
         Args:
-            formulas (Union[str, Sequence[str]]): the column formula(s)
+            formulas (Union[str, Sequence[str], Selectable, Sequence[Selectable]): the column formula(s) or Selectable(s)
 
         Returns:
             A new table
@@ -1058,15 +1147,18 @@ class Table(JObjectWrapper):
         try:
             formulas = to_sequence(formulas)
             with _query_scope_ctx(), auto_locking_ctx(self):
+                if isinstance(formulas[0], Selectable.j_object_type):
+                    return Table(j_table=self.j_table.update(j_array_list(formulas)))
+
                 return Table(j_table=self.j_table.update(*formulas))
         except Exception as e:
             raise DHError(e, "table update operation failed.") from e
 
-    def lazy_update(self, formulas: Union[str, Sequence[str]]) -> Table:
+    def lazy_update(self, formulas: Union[str, Sequence[str], Selectable, Sequence[Selectable]]) -> Table:
         """The lazy_update method creates a new table containing a new, cached, formula column for each formula.
 
         Args:
-            formulas (Union[str, Sequence[str]]): the column formula(s)
+            formulas (Union[str, Sequence[str], Selectable, Sequence[Selectable]]): the column formula(s) or Selectable(s)
 
         Returns:
             a new table
@@ -1077,6 +1169,9 @@ class Table(JObjectWrapper):
         try:
             formulas = to_sequence(formulas)
             with _query_scope_ctx(), auto_locking_ctx(self):
+                if isinstance(formulas[0], Selectable.j_object_type):
+                    return Table(j_table=self.j_table.lazyUpdate(j_array_list(formulas)))
+
                 return Table(j_table=self.j_table.lazyUpdate(*formulas))
         except Exception as e:
             raise DHError(e, "table lazy_update operation failed.") from e
@@ -1119,12 +1214,13 @@ class Table(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "table update_view operation failed.") from e
 
-    def select(self, formulas: Union[str, Sequence[str]] = None) -> Table:
+    def select(self, formulas: Union[str, Sequence[str], Selectable, Sequence[Selectable]] = None) -> Table:
         """The select method creates a new in-memory table that includes one column for each formula. If no formula
         is specified, all columns will be included.
 
         Args:
-            formulas (Union[str, Sequence[str]], optional): the column formula(s), default is None
+            formulas (Union[str, Sequence[str], Selectable, Sequence[Selectable], optional): the column formula(s)
+                or Selectable(s), default is None
 
         Returns:
             a new table
@@ -1136,7 +1232,11 @@ class Table(JObjectWrapper):
             with _query_scope_ctx(), auto_locking_ctx(self):
                 if not formulas:
                     return Table(j_table=self.j_table.select())
+
                 formulas = to_sequence(formulas)
+                if isinstance(formulas[0], Selectable.j_object_type):
+                    return Table(j_table=self.j_table.select(j_array_list(formulas)))
+
                 return Table(j_table=self.j_table.select(*formulas))
         except Exception as e:
             raise DHError(e, "table select operation failed.") from e
