@@ -51,7 +51,7 @@ public enum ExtractSerialFilters implements Visitor<Collection<Filter>>, WhereFi
 
     @Override
     public Collection<Filter> visit(FilterOr ors) {
-        final Set<Filter> serialFilters = new HashSet<>();
+        final List<Filter> serialFilters = new ArrayList<>();
         for (final Filter filter : ors.filters()) {
             serialFilters.addAll(of(filter));
         }
@@ -60,7 +60,7 @@ public enum ExtractSerialFilters implements Visitor<Collection<Filter>>, WhereFi
 
     @Override
     public Collection<Filter> visit(FilterAnd ands) {
-        final Set<Filter> serialFilters = new HashSet<>();
+        final List<Filter> serialFilters = new ArrayList<>();
         for (final Filter filter : ands.filters()) {
             serialFilters.addAll(of(filter));
         }
@@ -129,7 +129,7 @@ public enum ExtractSerialFilters implements Visitor<Collection<Filter>>, WhereFi
 
     @Override
     public Collection<Filter> visitWhereFilter(DisjunctiveFilter disjunctiveFilters) {
-        final Set<Filter> serialFilters = new HashSet<>();
+        final List<Filter> serialFilters = new ArrayList<>();
         for (final Filter filter : disjunctiveFilters.getFilters()) {
             serialFilters.addAll(of(filter));
         }
@@ -138,7 +138,7 @@ public enum ExtractSerialFilters implements Visitor<Collection<Filter>>, WhereFi
 
     @Override
     public Collection<Filter> visitWhereFilter(ConjunctiveFilter conjunctiveFilters) {
-        final Set<Filter> serialFilters = new HashSet<>();
+        final List<Filter> serialFilters = new ArrayList<>();
         for (final Filter filter : conjunctiveFilters.getFilters()) {
             serialFilters.addAll(of(filter));
         }

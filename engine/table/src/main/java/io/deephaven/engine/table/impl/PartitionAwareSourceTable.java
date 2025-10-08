@@ -321,7 +321,7 @@ public class PartitionAwareSourceTable extends SourceTable<PartitionAwareSourceT
 
             // similarly, anytime we prioritize a partitioning filter, we record the barriers that it declares. A filter
             // that respects no barriers, or only those prioritized barriers may also be prioritized. A filter that
-            // respects any barrier which was not in partition filters (meaning it must be in in otherFilters - because
+            // respects any barrier which was not in partition filters (meaning it must be in otherFilters - because
             // otherwise you would be respecting an undeclared barrier); cannot be prioritized because that would jump
             // the barrier.
             if (serialFilterFound || missingBarrier) {
