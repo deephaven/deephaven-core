@@ -3,6 +3,7 @@
 //
 using Grpc.Core;
 using Grpc.Net.Client;
+using System.Security.Cryptography.X509Certificates;
 
 namespace Deephaven.Dh_NetClient;
 
@@ -19,27 +20,40 @@ public static class GrpcUtil {
     var channelOptions = new GrpcChannelOptions();
 
     if (!clientOptions.UseTls && !clientOptions.TlsRootCerts.IsEmpty()) {
-      throw new Exception("Server.CreateFromTarget: ClientOptions: UseTls is false but pem provided");
+      throw new Exception("GrpcUtil.MakeChannelOptions: UseTls is false but pem provided");
+    }
+
+    if (clientOptions.TlsRootCerts.IsEmpty()) {
+      return channelOptions;
     }
 
     var handler = new HttpClientHandler();
-    handler.ServerCertificateCustomValidationCallback =
-      HttpClientHandler.DangerousAcceptAnyServerCertificateValidator;
+    handler.ServerCertificateCustomValidationCallback = (_, cert, _, _) => {
+      if (cert == null) {
+        return false;
+      }
+      var certColl = new X509Certificate2Collection();
+      certColl.ImportFromPem(clientOptions.TlsRootCerts);
+
+      var chain = new X509Chain();
+      var chainPol = chain.ChainPolicy;
+      chainPol.TrustMode = X509ChainTrustMode.CustomRootTrust;
+      chainPol.RevocationMode = X509RevocationMode.Online;
+      chainPol.UrlRetrievalTimeout = new TimeSpan(0, 0, 30);
+      chainPol.VerificationFlags = X509VerificationFlags.NoFlag;
+
+      for (var i = 0; i != certColl.Count; ++i) {
+        chainPol.CustomTrustStore.Add(certColl[i]);
+      }
+
+      try {
+        return chain.Build(cert);
+      } catch (Exception) {
+        return false;
+      }
+    };
 
     channelOptions.HttpHandler = handler;
-
-    // var httpClientHandler = new HttpClientHandler();
-    // httpClientHandler.ServerCertificateCustomValidationCallback = (message, cert, chain, _) => {
-    //   chain.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
-    //   chain.ChainPolicy.CustomTrustStore.Add(mycert);
-    //   etc etc get this to work
-    // https://github.com/grpc/grpc-dotnet/blob/dd72d6a38ab2984fd224aa8ed53686dc0153b9da/testassets/InteropTestsClient/InteropClient.cs#L170
-    //
-    //
-    // };
-    //
-    // channelOptions.Credentials = GetCredentials(clientOptions.UseTls, clientOptions.TlsRootCerts,
-    //   clientOptions.ClientCertChain, clientOptions.ClientPrivateKey);
     return channelOptions;
   }
 

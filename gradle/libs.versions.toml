@@ -8,23 +8,27 @@ awssdk = "2.29.52"
 aws-s3-tables-catalog-for-iceberg = "0.1.6"
 # See dependency matrix for particular gRPC versions at https://github.com/grpc/grpc-java/blob/master/SECURITY.md#netty
 boringssl = "2.0.61.Final"
+
+# Note: when bumping Calcite version, see if we still need the version constraint for json-smart
 calcite = "1.39.0"
+json-smart = "2.5.2"
+
 classgraph = "4.8.180"
-commons-compress = "1.27.1"
+commons-compress = "1.28.0"
 commons-io = "2.20.0"
 commons-lang3 = "3.18.0"
 commons-math3 = "3.6.1"
 commons-text = "1.13.1"
 # confluent and confluent-kafak-clients should be kept in-sync
-confluent = "7.8.0"
-confluent-kafka-clients = "7.8.0-ccs"
+confluent = "7.9.2"
+confluent-kafka-clients = "7.9.2-ccs"
 dagger = "2.56.2"
 deephaven-barrage = "0.7.2"
 deephaven-csv = "0.17.0"
 deephaven-hash = "0.5.0"
 deephaven-suan-shu = "0.1.1"
 dev-dirs = "26"
-dsi = "8.5.15"
+dsi = "8.5.18"
 elemental = "1.2.3"
 f4b6a3 = "6.1.1"
 flatbuffers = "24.3.25"
@@ -42,8 +46,8 @@ gwtJetty = "9.4.44.v20210927"
 hadoop = "3.4.1"
 hdrhistogram = "2.2.2"
 iceberg = "1.10.0"
-immutables = "2.11.3"
-jackson = "2.19.2"
+immutables = "2.11.4"
+jackson = "2.20.0"
 jakarta-servlet = "6.0.0"
 jakarta-websocket = "2.1.1"
 jama = "1.1.1"
@@ -55,11 +59,11 @@ jdom2 = "2.0.6.1"
 jetbrains = "26.0.1"
 jetty = "12.0.18"
 jetty11 = "11.0.20"
-jpy = "1.1.0"
+jpy = "1.2.0"
 jsinterop = "2.0.2"
 # google is annoying, and have different versions released for the same groupId
 jsinterop-base = "1.0.3"
-logback = "1.5.18"
+logback = "1.5.19"
 lz4 = "1.8.0"
 mindrot = "0.4"
 nidi = "0.18.1"
@@ -67,7 +71,7 @@ oshi = "5.8.3"
 pac4j = "5.7.0"
 parquet = "1.16.0"
 picocli = "4.7.7"
-postgresql = "42.7.4"
+postgresql = "42.7.8"
 protobuf = "3.25.4"
 randelshofer = "2.0.1"
 rdblue = "0.1.1"
@@ -87,7 +91,7 @@ vertispan-ts-defs = "1.0.0-RC4"
 xerial = "3.50.3.0"
 
 # test versions
-assertj = "3.27.3"
+assertj = "3.27.6"
 h2database = "2.3.232"
 jmock = "2.13.1"
 junit = "5.12.1"
@@ -131,6 +135,7 @@ s3-tables-catalog-for-iceberg = { module = "software.amazon.s3tables:s3-tables-c
 boringssl = { module = "io.netty:netty-tcnative-boringssl-static", version.ref = "boringssl" }
 
 calcite-core = { module = "org.apache.calcite:calcite-core", version.ref = "calcite" }
+json-smart = { module = "net.minidev:json-smart", version.ref = "json-smart" }
 
 classgraph = { module = "io.github.classgraph:classgraph", version.ref = "classgraph" }
 

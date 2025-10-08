@@ -876,6 +876,10 @@
             "label": "Development tools",
             "items": [
               {
+                "label": "MCP",
+                "path": "how-to-guides/mcp.md"
+              },
+              {
                 "label": "Copilot extension",
                 "path": "how-to-guides/copilot-extension.md"
               }
@@ -2662,6 +2666,10 @@
                   {
                     "label": "How do I get the ISO week number from a datetime?",
                     "path": "reference/community-questions/iso-week-number.md"
+                  },
+                  {
+                    "label": "How do row keys and positional indices behave during table operations?",
+                    "path": "reference/community-questions/shifts.md"
                   },
                   {
                     "label": "Why do queries run faster the second time they are run?",

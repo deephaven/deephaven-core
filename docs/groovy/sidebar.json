@@ -212,6 +212,15 @@
                 ]
               },
               {
+                "label": "SQL",
+                "items": [
+                  {
+                    "label": "SQL queries in Deephaven",
+                    "path": "how-to-guides/data-import-export/execute-sql-queries.md"
+                  }
+                ]
+              },
+              {
                 "label": "URI",
                 "path": "how-to-guides/use-uris.md"
               },
@@ -322,6 +331,10 @@
                   {
                     "label": "Work with time",
                     "path": "conceptual/time-in-deephaven.md"
+                  },
+                  {
+                    "label": "Work with calendars",
+                    "path": "how-to-guides/business-calendar.md"
                   },
                   {
                     "label": "Downsample data",
@@ -579,6 +592,10 @@
             "label": "Development tools",
             "items": [
               {
+                "label": "MCP",
+                "path": "how-to-guides/mcp.md"
+              },
+              {
                 "label": "Copilot extension",
                 "path": "how-to-guides/copilot-extension.md"
               }
@@ -731,6 +748,10 @@
                   {
                     "label": "Periodic Update Graph configuration",
                     "path": "conceptual/periodic-update-graph-configuration.md"
+                  },
+                  {
+                    "label": "Formula validation configuration",
+                    "path": "conceptual/formula-validation-configuration.md"
                   },
                   {
                     "label": "Query table configuration",
@@ -1112,6 +1133,23 @@
                   {
                     "label": "writeTable",
                     "path": "reference/data-import-export/Parquet/writeTable.md"
+                  }
+                ]
+              },
+              {
+                "label": "SQL",
+                "items": [
+                  {
+                    "label": "dryRun",
+                    "path": "reference/data-import-export/SQL/dryRun.md"
+                  },
+                  {
+                    "label": "evaluate",
+                    "path": "reference/data-import-export/SQL/evaluate.md"
+                  },
+                  {
+                    "label": "parseSql",
+                    "path": "reference/data-import-export/SQL/parseSql.md"
                   }
                 ]
               },
@@ -2559,6 +2597,10 @@
                   {
                     "label": "Why do queries run faster the second time they are run?",
                     "path": "reference/community-questions/query-memoization.md"
+                  },
+                  {
+                    "label": "How do row keys and positional indices behave during table operations?",
+                    "path": "reference/community-questions/shifts.md"
                   },
                   {
                     "label": "How do I automatically execute Groovy code based on a Deephaven table column value?",
