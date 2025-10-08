@@ -182,7 +182,7 @@ scenario3 = KeyedTranspose.keyedTranspose(
 )
 
 // Combined example showing all scenarios together
-result = scenario1
+result = scenario1.naturalJoin(scenario2, "RowKey").naturalJoin(scenario3, "RowKey")
 ```
 
 In this example:

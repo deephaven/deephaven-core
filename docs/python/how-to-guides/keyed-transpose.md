@@ -141,8 +141,6 @@ The `keyed_transpose` operation follows specific rules for naming output columns
 | Starts with number                   | Prefixed with `column_`       | `123` → `column_123`     |
 | Duplicate names                      | Suffix added                  | `INFO`, `INFO2`          |
 
-### Example: All column naming scenarios
-
 This example demonstrates each of the column naming scenarios described above:
 
 ```python order=result,source
@@ -153,8 +151,26 @@ from deephaven.table import keyed_transpose
 # Create a source table with various edge cases
 source = new_table(
     [
-        string_col("RowKey", ["A", "A", "A", "A", "A", "A", "B", "B", "B", "B", "B", "B"]),
-        string_col("Category", ["Normal", "1-2.3/4", "123", "INFO", "INFO", "WARN", "Normal", "1-2.3/4", "123", "INFO", "INFO", "WARN"]),
+        string_col(
+            "RowKey", ["A", "A", "A", "A", "A", "A", "B", "B", "B", "B", "B", "B"]
+        ),
+        string_col(
+            "Category",
+            [
+                "Normal",
+                "1-2.3/4",
+                "123",
+                "INFO",
+                "INFO",
+                "WARN",
+                "Normal",
+                "1-2.3/4",
+                "123",
+                "INFO",
+                "INFO",
+                "WARN",
+            ],
+        ),
         int_col("NodeId", [1, 1, 1, 10, 10, 10, 1, 1, 1, 20, 20, 20]),
         int_col("Value", [5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60]),
     ]
@@ -162,36 +178,24 @@ source = new_table(
 
 # Scenario 1: Single aggregation, single column-by
 # Result columns: RowKey, Normal, 1234, column_123, INFO, INFO2, WARN
-scenario1 = keyed_transpose(
-    source,
-    [agg.sum_(["Value"])],
-    ["RowKey"],
-    ["Category"]
-)
+scenario1 = keyed_transpose(source, [agg.sum_(["Value"])], ["RowKey"], ["Category"])
 
 # Scenario 2: Multiple aggregations
 # Result columns: RowKey, Sum_Normal, Sum_1234, Sum_column_123, Sum_INFO, Sum_INFO2, Sum_WARN, Count_Normal, Count_1234, Count_column_123, Count_INFO, Count_INFO2, Count_WARN
 scenario2 = keyed_transpose(
-    source,
-    [
-        agg.sum_(["Sum=Value"]),
-        agg.count_("Count")
-    ],
-    ["RowKey"],
-    ["Category"]
+    source, [agg.sum_(["Sum=Value"]), agg.count_("Count")], ["RowKey"], ["Category"]
 )
 
 # Scenario 3: Multiple column-by columns
 # Result columns: RowKey, Normal_1, 1234_1, column_123_1, INFO_10, INFO2_10, WARN_10, Normal_1_2, 1234_1_2, column_123_1_2, INFO_20, INFO2_20, WARN_20
 scenario3 = keyed_transpose(
-    source,
-    [agg.sum_(["Value"])],
-    ["RowKey"],
-    ["Category", "NodeId"]
+    source, [agg.sum_(["Value"])], ["RowKey"], ["Category", "NodeId"]
 )
 
 # Combined example showing all scenarios together
-result = scenario1
+result = scenario1.natural_join(scenario2, ["RowKey"]).natural_join(
+    scenario3, ["RowKey"]
+)
 ```
 
 In this example:
