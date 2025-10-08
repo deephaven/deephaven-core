@@ -1,5 +1,5 @@
 #
-#  Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 #
 """This module defines the ConcurrencyControl generic class that can be subclassed and implemented by Selectable and
 Filter to provide explicit concurrency control during evaluation of select and where.
