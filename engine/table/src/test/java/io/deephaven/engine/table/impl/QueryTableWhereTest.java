@@ -31,6 +31,7 @@ import io.deephaven.engine.table.impl.util.JobScheduler;
 import io.deephaven.engine.table.impl.verify.TableAssertions;
 import io.deephaven.engine.testutil.*;
 import io.deephaven.engine.testutil.QueryTableTestBase.TableComparator;
+import io.deephaven.engine.testutil.filters.ParallelizedRowSetCapturingFilter;
 import io.deephaven.engine.testutil.filters.RowSetCapturingFilter;
 import io.deephaven.engine.testutil.generator.*;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
@@ -2391,20 +2392,6 @@ public abstract class QueryTableWhereTest {
         testRowKeyAgnosticColumnSource(
                 NullValueColumnSource.getInstance(Instant.class, null),
                 "A", "A = null", "A != null");
-    }
-
-    /**
-     * Private helper to force parallelization of the RowSetCapturingFilter.
-     */
-    private class ParallelizedRowSetCapturingFilter extends RowSetCapturingFilter {
-        public ParallelizedRowSetCapturingFilter(Filter filter) {
-            super(filter);
-        }
-
-        @Override
-        public boolean permitParallelization() {
-            return true;
-        }
     }
 
     private void testRowKeyAgnosticColumnSource(
