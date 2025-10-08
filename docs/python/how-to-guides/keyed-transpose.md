@@ -2,11 +2,11 @@
 title: Keyed transpose
 ---
 
-This guide shows you how to use `keyed_transpose` to transform data from a long format to a wide format by pivoting column values into new column names. This is useful when you need to reshape data for analysis, reporting, or visualization.
+This guide shows you how to use [`keyed_transpose`](../reference/table-operations/format/keyed-transpose.md) to transform data from a long format to a wide format by pivoting column values into new column names. This is useful when you need to reshape data for analysis, reporting, or visualization.
 
-## When to use keyed_transpose
+## When to use `keyed transpose`
 
-Use `keyed_transpose` when you need to:
+Use [`keyed_transpose`](../reference/table-operations/format/keyed-transpose.md) when you need to:
 
 - **Pivot data from long to wide format**: Convert rows of categorical data into columns.
 - **Create cross-tabulations**: Build summary tables with aggregated values.
@@ -43,7 +43,7 @@ In this example:
 - Each unique `Level` value (INFO, WARN, ERROR) becomes a column.
 - The `Count` aggregation counts occurrences for each Date-Level combination.
 
-## Working with multiple row keys
+## Multiple row keys
 
 You can specify multiple columns as row keys to create more granular groupings:
 
@@ -68,7 +68,7 @@ result = keyed_transpose(
 
 Each unique combination of `Date` and `Server` creates a separate row in the output.
 
-## Using multiple aggregations
+## Multiple aggregations
 
 You can apply multiple aggregations simultaneously. When you do this, column names are prefixed with the aggregation name:
 
@@ -96,7 +96,7 @@ result = keyed_transpose(
 
 The resulting columns will be named like `TotalSales_North`, `TotalSales_South`, `AvgRevenue_North`, `AvgRevenue_South`.
 
-## Handling initial groups for ticking tables
+## Initial groups for ticking tables
 
 When working with ticking (live updating) tables, you may want to ensure all expected columns exist from the start, even if no data has arrived yet. Use the `initial_groups` parameter:
 
@@ -128,7 +128,7 @@ result = keyed_transpose(
 
 Even though the source only has INFO logs from NodeId 10, the result will include columns for all Level-NodeId combinations specified in `init_groups`.
 
-## Understanding column naming
+## Column naming
 
 The `keyed_transpose` operation follows specific rules for naming output columns:
 
@@ -140,6 +140,69 @@ The `keyed_transpose` operation follows specific rules for naming output columns
 | Invalid characters                   | Characters removed            | `1-2.3/4` → `1234`       |
 | Starts with number                   | Prefixed with `column_`       | `123` → `column_123`     |
 | Duplicate names                      | Suffix added                  | `INFO`, `INFO2`          |
+
+### Example: All column naming scenarios
+
+This example demonstrates each of the column naming scenarios described above:
+
+```python order=result,source
+from deephaven import agg, new_table
+from deephaven.column import string_col, int_col
+from deephaven.table import keyed_transpose
+
+# Create a source table with various edge cases
+source = new_table(
+    [
+        string_col("RowKey", ["A", "A", "A", "A", "A", "A", "B", "B", "B", "B", "B", "B"]),
+        string_col("Category", ["Normal", "1-2.3/4", "123", "INFO", "INFO", "WARN", "Normal", "1-2.3/4", "123", "INFO", "INFO", "WARN"]),
+        int_col("NodeId", [1, 1, 1, 10, 10, 10, 1, 1, 1, 20, 20, 20]),
+        int_col("Value", [5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60]),
+    ]
+)
+
+# Scenario 1: Single aggregation, single column-by
+# Result columns: RowKey, Normal, 1234, column_123, INFO, INFO2, WARN
+scenario1 = keyed_transpose(
+    source,
+    [agg.sum_(["Value"])],
+    ["RowKey"],
+    ["Category"]
+)
+
+# Scenario 2: Multiple aggregations
+# Result columns: RowKey, Sum_Normal, Sum_1234, Sum_column_123, Sum_INFO, Sum_INFO2, Sum_WARN, Count_Normal, Count_1234, Count_column_123, Count_INFO, Count_INFO2, Count_WARN
+scenario2 = keyed_transpose(
+    source,
+    [
+        agg.sum_(["Sum=Value"]),
+        agg.count_("Count")
+    ],
+    ["RowKey"],
+    ["Category"]
+)
+
+# Scenario 3: Multiple column-by columns
+# Result columns: RowKey, Normal_1, 1234_1, column_123_1, INFO_10, INFO2_10, WARN_10, Normal_1_2, 1234_1_2, column_123_1_2, INFO_20, INFO2_20, WARN_20
+scenario3 = keyed_transpose(
+    source,
+    [agg.sum_(["Value"])],
+    ["RowKey"],
+    ["Category", "NodeId"]
+)
+
+# Combined example showing all scenarios together
+result = scenario1
+```
+
+In this example:
+
+- **Normal**: Standard column name (single aggregation, single column-by)
+- **1234**: Invalid characters (`-`, `.`, `/`) are removed
+- **column_123**: Numeric value is prefixed with `column_`
+- **INFO** and **INFO2**: Duplicate names get suffixes
+- **WARN**: Additional standard column name
+- **Sum_Normal**, **Count_Normal**: Multiple aggregations prefix the column name
+- **INFO_10**, **WARN_10**: Multiple column-by values are joined with underscores
 
 ### Best practice: Sanitize data before transposing
 
@@ -166,9 +229,9 @@ result = keyed_transpose(
 )
 ```
 
-## Common patterns
+## Simple examples
 
-### Pattern 1: Sales by region and product
+### Sales by region and product
 
 ```python order=sales_data,result
 from deephaven import agg, new_table
@@ -188,7 +251,7 @@ sales_data = new_table(
 result = keyed_transpose(sales_data, [agg.sum_(["Sales"])], ["Product"], ["Region"])
 ```
 
-### Pattern 2: Time-series metrics
+### Time-series metrics
 
 ```python order=metrics_data,result
 from deephaven import agg, new_table
@@ -208,7 +271,7 @@ metrics_data = new_table(
 result = keyed_transpose(metrics_data, [agg.last(["Value"])], ["Timestamp"], ["Metric"])
 ```
 
-### Pattern 3: Survey responses
+### Survey responses
 
 ```python order=survey_data,result
 from deephaven import agg, new_table
