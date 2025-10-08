@@ -60,7 +60,6 @@ jobs:
     steps:
       - name: Slack Notification
         uses: slackapi/slack-github-action@v1.23.0
-        if: failure()
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL_DEVREL}}
         with:
