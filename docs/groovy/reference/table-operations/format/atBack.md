@@ -4,12 +4,6 @@ title: atBack
 
 The `atBack` method is used within `setLayoutHints` to keep specified columns at the back of the table. They will not be movable and will scroll off screen.
 
-:::
-
-[Reordering columns](https://deephaven.io/core/ui/docs/components/table/#column-order-and-visibility) can also be accomplished using the [`deephaven.ui`](/core/ui/docs/) Python package.
-
-:::
-
 ## Syntax
 
 ```

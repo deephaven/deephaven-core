@@ -6,12 +6,6 @@ The `formatColumns` method creates a new table containing a new, formula column 
 
 Since `formatColumns` is implemented using `updateView`, the new columns are not stored in memory, and instead a formula is stored that is used to determine the format for each cell/row when necessary.
 
-:::
-
-[Formatting columns](/core/ui/docs/components/table/#formatting-rows-and-columns) can also be accomplished using the [`deephaven.ui`](/core/ui/docs/) Python package.
-
-:::
-
 ## Syntax
 
 ```
