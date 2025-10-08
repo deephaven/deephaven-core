@@ -3,6 +3,7 @@
 //
 package io.deephaven.parquet.table;
 
+import io.deephaven.api.RawString;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.base.FileUtils;
 import io.deephaven.engine.context.ExecutionContext;
@@ -18,6 +19,8 @@ import io.deephaven.engine.table.impl.select.MatchFilter;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
 import io.deephaven.engine.table.impl.util.ImmediateJobScheduler;
+import io.deephaven.engine.testutil.filters.ParallelizedRowSetCapturingFilter;
+import io.deephaven.engine.testutil.filters.RowSetCapturingFilter;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.parquet.table.location.ParquetColumnResolverMap;
@@ -464,11 +467,11 @@ public final class ParquetTableFilterTest {
         final AtomicLong invocationCount = new AtomicLong();
         QueryScope.addParam("invocationCount", invocationCount);
 
-        final Filter partitionFilter = Filter.and(Filter.from("symbol >= 0 && invocationCount.incrementAndGet() >= 0"));
+        final Filter partitionFilter = RawString.of("symbol >= 0 && invocationCount.incrementAndGet() >= 0");
         final Filter serialPartitionFilter = partitionFilter.withSerial();
 
         final Filter nonPartitionFilter =
-                Filter.and(Filter.from("sequential_val >= 0 && invocationCount.incrementAndGet() >= 0"));
+                RawString.of("sequential_val >= 0 && invocationCount.incrementAndGet() >= 0");
         final Filter serialNonPartitionFilter = nonPartitionFilter.withSerial();
 
         Table result;
@@ -503,6 +506,18 @@ public final class ParquetTableFilterTest {
         assertEquals(1_000_000L, invocationCount.get()); // one per row
         // Verify the table contents are equivalent
         assertTableEquals(result, diskTable.coalesce().where(serialNonPartitionFilter));
+
+        // Test stateless partition filter
+        final RowSetCapturingFilter statelessPartitionFilter =
+                new ParallelizedRowSetCapturingFilter(RawString.of("symbol >= 0"));
+        result = diskTable.where(statelessPartitionFilter).coalesce();
+        assertEquals(100, statelessPartitionFilter.numRowsProcessed()); // one per partition
+
+        // Test stateless non-partition filter
+        final RowSetCapturingFilter statelessNonPartitionFilter =
+                new ParallelizedRowSetCapturingFilter(RawString.of("sequential_val >= 0"));
+        result = diskTable.where(statelessNonPartitionFilter).coalesce();
+        assertEquals(1_000_000, statelessNonPartitionFilter.numRowsProcessed()); // one per row
     }
 
     @Test
