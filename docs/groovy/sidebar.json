@@ -212,6 +212,15 @@
                 ]
               },
               {
+                "label": "SQL",
+                "items": [
+                  {
+                    "label": "SQL queries in Deephaven",
+                    "path": "how-to-guides/data-import-export/execute-sql-queries.md"
+                  }
+                ]
+              },
+              {
                 "label": "URI",
                 "path": "how-to-guides/use-uris.md"
               },
@@ -1124,6 +1133,23 @@
                   {
                     "label": "writeTable",
                     "path": "reference/data-import-export/Parquet/writeTable.md"
+                  }
+                ]
+              },
+              {
+                "label": "SQL",
+                "items": [
+                  {
+                    "label": "dryRun",
+                    "path": "reference/data-import-export/SQL/dryRun.md"
+                  },
+                  {
+                    "label": "evaluate",
+                    "path": "reference/data-import-export/SQL/evaluate.md"
+                  },
+                  {
+                    "label": "parseSql",
+                    "path": "reference/data-import-export/SQL/parseSql.md"
                   }
                 ]
               },
