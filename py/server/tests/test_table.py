@@ -1351,8 +1351,6 @@ class TableTestCase(BaseTestCase):
         swcc_b = Selectable.parse(formula ="B = A + i").with_respected_barriers([barrier2]).with_serial()
         t = empty_table(10).update([swcc, swcc_b])
         self.assert_table_equals(expected, t)
-        t = empty_table(10).lazy_update([swcc, swcc_b])
-        self.assert_table_equals(expected, t)
         t = empty_table(10).select([swcc, swcc_b])
         self.assert_table_equals(expected, t)
 

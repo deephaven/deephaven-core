@@ -11,7 +11,7 @@ from typing import List, Union, Sequence
 import jpy
 
 from deephaven import DHError, dtypes
-from deephaven.concurrency_control import ConcurrencyControl, T, Barrier
+from deephaven.concurrency_control import _ConcurrencyControl, T, Barrier
 from deephaven.jcompat import to_sequence
 
 _JFilter = jpy.get_type("io.deephaven.api.filter.Filter")
@@ -21,7 +21,7 @@ _JPatternMode = jpy.get_type("io.deephaven.api.filter.FilterPattern$Mode")
 _JPattern = jpy.get_type("java.util.regex.Pattern")
 
 
-class Filter(ConcurrencyControl["Filter"]):
+class Filter(_ConcurrencyControl["Filter"]):
     """A Filter object represents a filter that can be used in Table's filtering(where) operations.
     Explicit concurrency and ordering control can be specified on a Filter to affects the parallelization of its
     evaluation during Table filtering operation.

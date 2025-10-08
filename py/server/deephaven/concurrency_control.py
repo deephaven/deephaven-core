@@ -1,8 +1,13 @@
 #
 # Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 #
-"""This module defines the ConcurrencyControl generic class that can be subclassed and implemented by Selectable and
-Filter to provide explicit concurrency control during evaluation of select and where.
+"""This module defines the Barrier marker class and the _ConcurrencyControl generic class that can be subclassed and
+implemented by Selectable and Filter to provide explicit concurrency control during evaluation of the select, update,
+and where table operations.
+
+
+See https://deephaven.io/core/docs/conceptual/query-engine/parallelization/ for more details on concurrency control.
+
 """
 from __future__ import annotations
 
@@ -17,10 +22,10 @@ _J_Object = jpy.get_type("java.lang.Object")
 
 
 class Barrier(JObjectWrapper):
-    """A hollow marker class representing a barrier. A barrier does not affect concurrency but imposes an ordering
-    constraint for the filters or selectables that respect the same barrier. When a filter/selectable is marked as
-    respecting a barrier object, it indicates that the respecting filter/selectable will be executed entirely after
-    the filter/selectable declaring the barrier."""
+    """A hollow marker class representing a barrier. A barrier imposes an ordering constraint for the filters or
+    selectables that respect the same barrier. When a filter/selectable is marked as respecting a barrier object,
+    it indicates that the respecting filter/selectable will be executed entirely after the filter/selectable declaring
+    the barrier."""
 
     j_object_type = _J_Object
 
@@ -33,8 +38,8 @@ class Barrier(JObjectWrapper):
 
 T = TypeVar("T")
 
-class ConcurrencyControl(Generic[T], JObjectWrapper):
-    """A protocol representing concurrency control features for Selectable and Filter."""
+class _ConcurrencyControl(Generic[T], JObjectWrapper):
+    """An abstract class representing concurrency control features for Selectable and Filter."""
 
     @abstractmethod
     def with_declared_barriers(self, barriers: Union[Barrier, Sequence[Barrier]]) -> T:

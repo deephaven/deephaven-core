@@ -9,17 +9,15 @@ The primary purpose of this ABC is to enable downstream code to retrieve the wra
 from __future__ import annotations
 
 import importlib
-import warnings
 import inspect
 import pkgutil
 import sys
 import threading
+import warnings
 from abc import ABC, abstractmethod
 from typing import Set, Union, Optional, Any, List
 
 import jpy
-
-from deephaven import DHError
 
 # a set of all the directly initializable wrapper classes
 _di_wrapper_classes: Set[JObjectWrapper] = set()
