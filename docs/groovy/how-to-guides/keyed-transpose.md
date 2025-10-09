@@ -8,19 +8,19 @@ This guide shows you how to use [`keyedTranspose`](../reference/table-operations
 
 Use [`keyedTranspose`](../reference/table-operations/format/keyedTranspose.md) when you need to:
 
-- **Pivot data from long to wide format**: Convert rows of categorical data into columns
-- **Create cross-tabulations**: Build summary tables with aggregated values
-- **Reshape time-series data**: Transform data where categories are in rows into a format where they become columns
-- **Prepare data for visualization**: Many charts require data in wide format
+- **Pivot data from long to wide format**: Convert rows of categorical data into columns.
+- **Create cross-tabulations**: Build summary tables with aggregated values.
+- **Reshape time-series data**: Transform data where categories are in rows into a format where they become columns.
+- **Prepare data for visualization**: Many charts require data in wide format.
 
 ## Basic usage
 
 The simplest use case involves specifying:
 
-1. A source table
-2. An aggregation to apply
-3. Columns to use as row keys (`rowByColumns`)
-4. Columns whose values become new column names (`columnByColumns`)
+1. A source table.
+2. An aggregation to apply.
+3. Columns to use as row keys (`rowByColumns`).
+4. Columns whose values become new column names (`columnByColumns`).
 
 ```groovy order=result,source
 import io.deephaven.engine.table.impl.util.KeyedTranspose
@@ -93,11 +93,11 @@ result = KeyedTranspose.keyedTranspose(
 )
 ```
 
-The resulting columns will be named like `TotalSales_North`, `TotalSales_South`, `AvgRevenue_North`, `AvgRevenue_South`.
+The resulting columns will be named like `TotalSales_North`, `TotalSales_South`, `AvgRevenue_North`, and `AvgRevenue_South`.
 
 ## Initial groups for ticking tables
 
-When working with ticking (live updating) tables, you may want to ensure all expected columns exist from the start, even if no data has arrived yet. Use the `initialGroups` parameter:
+When working with ticking (live updating) tables, you may want to ensure all expected columns exist from the start, even if no data has yet arrived. Use the `initialGroups` parameter:
 
 ```groovy order=result,source
 import io.deephaven.engine.table.impl.util.KeyedTranspose
@@ -187,15 +187,15 @@ result = scenario1.naturalJoin(scenario2, "RowKey").naturalJoin(scenario3, "RowK
 
 In this example:
 
-- **Normal**: Standard column name (single aggregation, single column-by)
-- **1234**: Invalid characters (`-`, `.`, `/`) are removed
-- **column_123**: Numeric value is prefixed with `column_`
-- **INFO** and **INFO2**: Duplicate names get suffixes
-- **WARN**: Additional standard column name
-- **Sum_Normal**, **Count_Normal**: Multiple aggregations prefix the column name
-- **INFO_10**, **WARN_10**: Multiple column-by values are joined with underscores
+- **Normal**: Standard column name (single aggregation, single column-by).
+- **1234**: Invalid characters (`-`, `.`, `/`) are removed.
+- **column_123**: Numeric value is prefixed with `column_`.
+- **INFO** and **INFO2**: Duplicate names get suffixes.
+- **WARN**: Additional standard column name.
+- **Sum_Normal**, **Count_Normal**: Multiple aggregations prefix the column name.
+- **INFO_10**, **WARN_10**: Multiple column-by values are joined with underscores.
 
-### Best practice: Sanitize data before transposing
+### Sanitize data before transposing
 
 To maintain control over column names, clean your data values before using `keyedTranspose`:
 
@@ -284,11 +284,11 @@ result = KeyedTranspose.keyedTranspose(
 )
 ```
 
-## Tips and considerations
+## Best practices
 
-- **Performance**: `keyedTranspose` creates new columns dynamically. For very high-cardinality data (many unique values in `columnByColumns`), this can create tables with many columns.
+- **Performance**: `keyedTranspose` creates new columns dynamically. This can create tables with many columns for very high-cardinality data (many unique values in `columnByColumns`).
 - **Ticking tables**: Use `initialGroups` to ensure consistent column structure when working with live data.
-- **Column limits**: Be mindful of the number of unique values in your `columnByColumns` - each becomes a separate column.
+**Column limits**: Be mindful of the number of unique values in your `columnByColumns` — each becomes a separate column.
 - **Aggregation choice**: Choose aggregations that make sense for your data. Common choices include `AggCount`, `AggSum`, `AggAvg`, `AggFirst`, and `AggLast`.
 
 ## Related documentation
