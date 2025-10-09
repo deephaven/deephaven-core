@@ -26,7 +26,7 @@ from deephaven._wrapper import JObjectWrapper
 from deephaven._wrapper import unwrap
 from deephaven.agg import Aggregation
 from deephaven.column import col_def, ColumnDefinition
-from deephaven.concurrency_control import _ConcurrencyControl, Barrier
+from deephaven.concurrency_control import ConcurrencyControl, Barrier
 from deephaven.filters import Filter, and_, or_
 from deephaven.jcompat import j_unary_operator, j_binary_operator, j_map_to_dict, j_hashmap
 from deephaven.jcompat import to_sequence, j_array_list
@@ -89,7 +89,7 @@ _JNewColumnBehaviorType = jpy.get_type("io.deephaven.engine.table.impl.util.Keye
 _JSelectable = jpy.get_type("io.deephaven.api.Selectable")
 
 
-class Selectable(_ConcurrencyControl["Selectable"]):
+class Selectable(ConcurrencyControl["Selectable"], JObjectWrapper):
     """A Selectable represents a formula with explicit ordering control that affects the order and the parallelization
     of its evaluation when used in table operations `update`, `select`.
 

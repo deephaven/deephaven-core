@@ -1,7 +1,7 @@
 #
 # Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 #
-"""This module defines the Barrier marker class and the _ConcurrencyControl generic class that can be subclassed and
+"""This module defines the Barrier marker class and the ConcurrencyControl generic protocol that can be subclassed and
 implemented by Selectable and Filter to provide explicit concurrency control during evaluation of the select, update,
 and where table operations.
 
@@ -12,7 +12,7 @@ See https://deephaven.io/core/docs/conceptual/query-engine/parallelization/ for 
 from __future__ import annotations
 
 from abc import abstractmethod
-from typing import Sequence, Generic, TypeVar, Union
+from typing import Sequence, TypeVar, Union, Protocol
 
 import jpy
 
@@ -38,7 +38,7 @@ class Barrier(JObjectWrapper):
 
 T = TypeVar("T")
 
-class _ConcurrencyControl(Generic[T], JObjectWrapper):
+class ConcurrencyControl(Protocol[T]):
     """An abstract class representing concurrency control features for Selectable and Filter."""
 
     @abstractmethod
@@ -52,7 +52,8 @@ class _ConcurrencyControl(Generic[T], JObjectWrapper):
 
     @abstractmethod
     def with_serial(self) -> T:
-        """Returns a new instance with serial evaluation enforced."""
+        """Returns a new instance with column-wise serial evaluation enforced, i.e. rows in the column are guaranteed to
+        evaluated in order."""
 
 
 
