@@ -23,7 +23,7 @@ public static class GrpcUtil {
       throw new Exception("GrpcUtil.MakeChannelOptions: UseTls is false but pem provided");
     }
 
-    if (clientOptions.TlsRootCerts.IsEmpty()) {
+    if (clientOptions.TlsRootCerts.IsEmpty() || !clientOptions.OverrideAuthority) {
       return channelOptions;
     }
 
