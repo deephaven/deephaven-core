@@ -288,7 +288,7 @@ result = KeyedTranspose.keyedTranspose(
 
 - **Performance**: `keyedTranspose` creates new columns dynamically. This can create tables with many columns for very high-cardinality data (many unique values in `columnByColumns`).
 - **Ticking tables**: Use `initialGroups` to ensure consistent column structure when working with live data.
-**Column limits**: Be mindful of the number of unique values in your `columnByColumns` — each becomes a separate column.
+  **Column limits**: Be mindful of the number of unique values in your `columnByColumns` — each becomes a separate column.
 - **Aggregation choice**: Choose aggregations that make sense for your data. Common choices include `AggCount`, `AggSum`, `AggAvg`, `AggFirst`, and `AggLast`.
 
 ## Related documentation
