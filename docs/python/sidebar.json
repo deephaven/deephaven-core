@@ -308,6 +308,10 @@
                 "path": "how-to-guides/sort.md"
               },
               {
+                "label": "Keyed transpose",
+                "path": "how-to-guides/keyed-transpose.md"
+              },
+              {
                 "label": "Merge",
                 "path": "how-to-guides/merge-tables.md"
               },
