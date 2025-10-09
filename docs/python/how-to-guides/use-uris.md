@@ -4,12 +4,12 @@ title: Use URIs to share tables
 sidebar_label: URI
 ---
 
-This guide will show you to use Deephaven's [URIs](https://deephaven.io/core/javadoc/io/deephaven/uri/package-summary.html) to share tables across server instances and networks.
+This guide will show you how to use Deephaven's [URIs](https://docs.deephaven.io/core/pydoc/code/deephaven.uri.html#module-deephaven.uri) to share tables across server instances and networks.
 
 A URI, short for [Uniform Resource Identifier](https://en.wikipedia.org/wiki/Uniform_Resource_Identifier), is a sequence of characters that identifies a resource on the web. Think of a URI as a generalization of a URL. A Deephaven URI identifies a table on a server instance. By linking to a URI, you can access and work with tables from other Deephaven server instances without needing to replicate the data or queries that created them.
 
 > [!NOTE]
-> URIs can be used to share tables across Groovy and Python instances interchangably. For how to use URIs in Groovy, see [the equivalent guide](/core/groovy/docs/how-to-guides/use-uris).
+> URIs can be used to share tables across Groovy and Python instances interchangeably. For how to use URIs in Groovy, see [the equivalent guide](/core/groovy/docs/how-to-guides/use-uris).
 
 ## Why use URIs?
 
@@ -66,7 +66,7 @@ The components are:
   - The Deephaven instance is running on a non-default port (something other than 10000).
   - You're connecting across a network to a specific port.
 - **`<scope>`** identifies the namespace where the resource exists. This is typically `scope` for variables created in interactive console sessions, or `app/<app_name>/field` for resources exported from Application Mode applications.
-- **`<table_name>`** is the exact name of the table you want to access.
+- **`<resource_name>`** is the exact name of the table or resource you want to access.
 
 ### Resolving URIs in your code
 
@@ -142,30 +142,32 @@ Deephaven uses scopes to separate resources based on their origin and purpose:
 
 The query scope contains variables created in interactive console sessions - when you create tables, variables, or other objects directly in the Deephaven IDE console or through client connections.
 
-```groovy
-// This creates a table in the query scope
-my_table = emptyTable(100).update("X = i", "Y = i * 2")
-// Accessible via: dh://hostname/scope/my_table
+```python
+# This creates a table in the query scope
+from deephaven import empty_table
+
+my_table = empty_table(100).update(["X = i", "Y = i * 2"])
+# Accessible via: dh://hostname/scope/my_table
 ```
 
 ### Application scope (`app/<app_name>/field`)
 
 The application scope contains fields exported from [Application Mode](./application-mode.md) applications. These are pre-configured resources that are available when the server starts, defined by application scripts.
 
-```groovy
-// In an Application Mode script, this exports a field
-// Accessible via: dh://hostname/app/trading_app/field/market_data
+```python syntax
+# In an Application Mode script, this exports a field
+# Accessible via: dh://hostname/app/trading_app/field/market_data
 ```
 
 Scopes ensure that:
 
-- **No naming conflicts**: A table named `trades` in the query scope is completely separate from a field named `trades` in an application scope
-- **Clear resource organization**: You know immediately whether a resource comes from interactive work or a pre-built application
-- **Proper access control**: Different scopes can have different permission models
+- **No naming conflicts**: A table named `trades` in the query scope is completely separate from a field named `trades` in an application scope.
+- **Clear resource organization**: You know immediately whether a resource comes from interactive work or a pre-built application.
+- **Proper access control**: Different scopes can have different permission models.
 
 ### URI format by scope type
 
-```
+```syntax
 # Query scope variable (most common)
 dh+plain://hostname/scope/table_name
 dh://hostname/scope/table_name
