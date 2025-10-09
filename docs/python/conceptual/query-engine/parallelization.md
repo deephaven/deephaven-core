@@ -113,7 +113,9 @@ t = empty_table(1_000_000).update(
 Deephaven's default behavior is to treat both `A` and `B` statefully, therefore the table is equivalent to:
 
 ```python order=null
-t = empty_table(1_000_000).update("A=i", "B=1_000_000 + i")
+from deephaven import empty_table
+
+t = empty_table(1_000_000).update(["A=i", "B=1_000_000 + i"])
 ```
 
 However, when the columns are stateless, then the rows from either column can be evaluated in any order. To indicate that `A` must be evaluated before `B`, we can use a barrier together with Selectables:
