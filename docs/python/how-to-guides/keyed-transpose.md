@@ -303,8 +303,8 @@ result = keyed_transpose(
 
 - **Performance**: `keyed_transpose` creates new columns dynamically. This can create tables with many columns for very high-cardinality data (many unique values in `col_by_cols`).
 - **Ticking tables**: Use `initial_groups` to ensure consistent column structure when working with live data.
-- **Column limits**: Be mindful of the number of unique values in your `col_by_cols` -- each becomes a separate column.
-- **Aggregation choice**: Choose aggregations that make sense for your data. Common choices include `agg.count_`, `agg.sum_`, `agg.avg`, `agg.first`, and `agg.last`.
+- **Column limits**: Be mindful of the number of unique values in your `col_by_cols` - each becomes a separate column.
+- **Aggregation choice**: Choose aggregations that make sense for your data. Common choices include [`agg.count_`](../reference/table-operations/group-and-aggregate/AggCount.md), [`agg.sum_`](../reference/table-operations/group-and-aggregate/AggSum.md), [`agg.avg`](../reference/table-operations/group-and-aggregate/AggAvg.md), [`agg.first`](../reference/table-operations/group-and-aggregate/AggFirst.md), and [`agg.last`](../reference/table-operations/group-and-aggregate/AggLast.md).
 
 ## Related documentation
 
