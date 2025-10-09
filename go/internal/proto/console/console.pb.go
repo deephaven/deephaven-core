@@ -1127,9 +1127,10 @@ type ExecuteCommandResponse struct {
 
 	ErrorMessage string                          `protobuf:"bytes,1,opt,name=error_message,json=errorMessage,proto3" json:"error_message,omitempty"`
 	Changes      *application.FieldsChangeUpdate `protobuf:"bytes,2,opt,name=changes,proto3" json:"changes,omitempty"`
-	// Start and end timestamps for command execution, in nanoseconds since the unix epoch.
+	// Start timestamp for command execution, in nanoseconds since the unix epoch.
 	StartTimestamp int64 `protobuf:"varint,3,opt,name=start_timestamp,json=startTimestamp,proto3" json:"start_timestamp,omitempty"`
-	EndTimestamp   int64 `protobuf:"varint,4,opt,name=end_timestamp,json=endTimestamp,proto3" json:"end_timestamp,omitempty"`
+	// End timestamp for command execution, in nanoseconds since the unix epoch.
+	EndTimestamp int64 `protobuf:"varint,4,opt,name=end_timestamp,json=endTimestamp,proto3" json:"end_timestamp,omitempty"`
 }
 
 func (x *ExecuteCommandResponse) Reset() {
