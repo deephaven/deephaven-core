@@ -47,29 +47,29 @@ public class ExtractFilterWithoutBarriers implements WhereFilter.Visitor<WhereFi
 
     @Override
     public WhereFilter visitWhereFilter(final DisjunctiveFilter filter) {
-        final WhereFilter[] innnerUnwrapped = filter.getFilters().stream()
+        final WhereFilter[] innerUnwrapped = filter.getFilters().stream()
                 .map(this::visitWhereFilter)
                 .toArray(WhereFilter[]::new);
 
         // Verify we have exactly the same number of filters after unwrapping.
-        Assert.eq(innnerUnwrapped.length, "innnerUnwrapped.length", filter.getFilters().size(),
+        Assert.eq(innerUnwrapped.length, "innerUnwrapped.length", filter.getFilters().size(),
                 "filter.getFilters()..size()");
 
         // return a single DisjunctiveFilter containing all the unwrapped inner filters.
-        return DisjunctiveFilter.of(innnerUnwrapped);
+        return DisjunctiveFilter.of(innerUnwrapped);
     }
 
     @Override
     public WhereFilter visitWhereFilter(final ConjunctiveFilter filter) {
-        final WhereFilter[] innnerUnwrapped = filter.getFilters().stream()
+        final WhereFilter[] innerUnwrapped = filter.getFilters().stream()
                 .map(this::visitWhereFilter)
                 .toArray(WhereFilter[]::new);
 
         // Verify we have exactly the same number of filters after unwrapping.
-        Assert.eq(innnerUnwrapped.length, "innnerUnwrapped.length", filter.getFilters().size(),
+        Assert.eq(innerUnwrapped.length, "innerUnwrapped.length", filter.getFilters().size(),
                 "filter.getFilters()..size()");
 
         // return a single ConjunctiveFilter containing all the unwrapped inner filters.
-        return ConjunctiveFilter.of(innnerUnwrapped);
+        return ConjunctiveFilter.of(innerUnwrapped);
     }
 }
