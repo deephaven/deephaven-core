@@ -35,7 +35,7 @@ import java.util.stream.LongStream;
  * Each time the set table ticks, the entire where filter is recalculated.
  */
 public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
-        implements NotificationQueue.Dependency, HasParentPerformanceIds {
+        implements NotificationQueue.Dependency, HasParentPerformanceIds, NoPredicatePushdown {
 
     private static final int CHUNK_SIZE = 1 << 16;
 

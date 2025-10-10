@@ -83,6 +83,11 @@ public class TableBackedDataIndex extends AbstractDataIndex {
     }
 
     @Override
+    public boolean tableIsCached() {
+        return indexTable != null;
+    }
+
+    @Override
     @NotNull
     public Table table(final DataIndexOptions unused) {
         Table localIndexTable;
@@ -116,7 +121,7 @@ public class TableBackedDataIndex extends AbstractDataIndex {
                                 sourceTable, false, null, ColumnName.from(keyColumnNames));
 
                         resultLookupFunction.setValue(AggregationProcessor.getRowLookup(groupedTable));
-                        Assert.neqNull(resultLookupFunction.getValue(), "AggregationRowLookup");
+                        Assert.neqNull(resultLookupFunction.get(), "AggregationRowLookup");
 
                         final Table withWrappedRowSetSource =
                                 indexTableWrapper(groupedTable, EXPOSED_GROUP_ROW_SETS.name(), ROW_SET_COLUMN_NAME);
@@ -126,7 +131,7 @@ public class TableBackedDataIndex extends AbstractDataIndex {
                         return withWrappedRowSetSource;
                     }
                 });
-        lookupFunction = resultLookupFunction.getValue();
+        lookupFunction = resultLookupFunction.get();
         indexTable = resultIndexTable;
         if (isRefreshing) {
             unmanage(sourceTable);

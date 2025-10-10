@@ -133,8 +133,8 @@ public class TestPartitionAwareSourceTableNoMocks {
 
         // ensure the inner filter sees all four partitions' data
         Assert.eq(filter0.numRowsProcessed(), "filter0.numRowsProcessed()", 4 * partitionSize);
-        // ensure the partitioning filter sees only the rows that match filter0
-        Assert.eq(filter1.numRowsProcessed(), "filter1.numRowsProcessed()", 4 * (partitionSize / 2));
+        // ensure the partitioning filter sees only the rows from the partition column data index
+        Assert.eq(filter1.numRowsProcessed(), "filter1.numRowsProcessed()", 4);
 
         TstUtils.assertTableEquals(res0, res1);
         Assert.eq(res0.size(), "res0.size()", 2 * (partitionSize / 2));
@@ -163,8 +163,8 @@ public class TestPartitionAwareSourceTableNoMocks {
 
         // ensure the inner filter sees all four partitions' data
         Assert.eq(filter0.numRowsProcessed(), "filter0.numRowsProcessed()", 4 * partitionSize);
-        // ensure the partitioning filter sees only the rows that match filter0
-        Assert.eq(filter1.numRowsProcessed(), "filter1.numRowsProcessed()", 4 * (partitionSize / 2));
+        // ensure the partitioning filter sees only the rows from the partition column data index
+        Assert.eq(filter1.numRowsProcessed(), "filter1.numRowsProcessed()", 4);
 
         TstUtils.assertTableEquals(res0, res1);
         Assert.eq(res0.size(), "res0.size()", 2 * (partitionSize / 2));
@@ -211,8 +211,9 @@ public class TestPartitionAwareSourceTableNoMocks {
         Assert.eq(filter0.numRowsProcessed(), "filter0.numRowsProcessed()", 2 * partitionSize);
         // ensure we see the barrier partition filter as filtering only the partitioned rows
         Assert.eq(filter1.numRowsProcessed(), "filter1.numRowsProcessed()", 4);
-        // however, the respects barrier could not be lifted, so it should match result of filter0
-        Assert.eq(filter2.numRowsProcessed(), "filter2.numRowsProcessed()", 2 * (partitionSize / 2));
+        // however, the respects barrier could not be lifted, it uses the data index from a filtered table that
+        // was created by filter0 (so the index reflects that filtering)
+        Assert.eq(filter2.numRowsProcessed(), "filter2.numRowsProcessed()", 2);
 
         Assert.eq(res0.size(), "res0.size()", partitionSize / 2);
     }
@@ -267,8 +268,8 @@ public class TestPartitionAwareSourceTableNoMocks {
 
         // ensure the inner filter sees all four partitions' data
         Assert.eq(filter0.numRowsProcessed(), "filter0.numRowsProcessed()", 4 * partitionSize);
-        // ensure the partitioning filter sees only the rows that match filter0
-        Assert.eq(filter1.numRowsProcessed(), "filter1.numRowsProcessed()", 4 * (partitionSize / 2));
+        // ensure the partitioning filter sees only the rows from the partition column data index
+        Assert.eq(filter1.numRowsProcessed(), "filter1.numRowsProcessed()", 4);
 
         TstUtils.assertTableEquals(res0, res1);
         Assert.eq(res0.size(), "res0.size()", 2 * (partitionSize / 2));
@@ -297,8 +298,8 @@ public class TestPartitionAwareSourceTableNoMocks {
 
         // ensure the inner filter sees all four partitions' data
         Assert.eq(filter0.numRowsProcessed(), "filter0.numRowsProcessed()", 4 * partitionSize);
-        // ensure the partitioning filter sees only the rows that match filter0
-        Assert.eq(filter1.numRowsProcessed(), "filter1.numRowsProcessed()", 4 * (partitionSize / 2));
+        // ensure the partitioning filter sees only the rows from the partition column data index
+        Assert.eq(filter1.numRowsProcessed(), "filter1.numRowsProcessed()", 4);
 
         TstUtils.assertTableEquals(res0, res1);
         Assert.eq(res0.size(), "res0.size()", 2 * (partitionSize / 2));
