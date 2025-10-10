@@ -6,6 +6,7 @@ import unittest
 
 from deephaven import new_table, read_csv, DHError
 from deephaven.column import string_col
+from deephaven.concurrency_control import Barrier
 from deephaven.filters import Filter, PatternMode, and_, is_not_null, is_null, or_, not_, pattern
 from tests.testbase import BaseTestCase
 
@@ -67,6 +68,21 @@ class FilterTestCase(BaseTestCase):
         x_not_is_not_null = new_table([string_col("X", [None])])
         self.assert_table_equals(x.where(is_not_null("X")), x_is_not_null)
         self.assert_table_equals(x.where(not_(is_not_null("X"))), x_not_is_not_null)
+
+    def test_filters_with_concurrency_control(self):
+        conditions = ["a > 100", "b < 1000", "c < 0"]
+        filters = Filter.from_(conditions)
+        filters[0] = filters[0].with_serial()
+        barrier = Barrier()
+        filters[1] = filters[1].with_declared_barriers([barrier])
+        filters[2] = filters[2].with_respected_barriers([barrier])
+
+        filtered_table = self.test_table.where(filters)
+        filter_and = and_(filters)
+        filter_and.with_serial()
+        filtered_table_and = self.test_table.where(filter_and)
+        self.assert_table_equals(filtered_table, filtered_table_and)
+
 
 if __name__ == '__main__':
     unittest.main()
