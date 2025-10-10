@@ -257,6 +257,26 @@ public class DataIndexer implements TrackingRowSet.Indexer {
     }
 
     /**
+     * Get a list of all the {@link DataIndex DataIndexes} in this DataIndexer that contain the supplied key columns.
+     * This will return indexes that contain for supersets of the supplied key columns.
+     *
+     * @param keyColumns The {@link ColumnSource column sources} for which to retrieve a {@link DataIndex}
+     * @return All the {@link DataIndex DataIndexes} in this DataIndexer
+     */
+    public List<DataIndex> getCompatibleDataIndexes(@NotNull final Collection<ColumnSource<?>> keyColumns) {
+        if (keyColumns.isEmpty()) {
+            return List.of();
+        }
+
+        final List<DataIndex> result = new ArrayList<>();
+        rootCache.getAll(result, true);
+
+        return result.stream()
+                .filter(di -> di.keyColumnNamesByIndexedColumn().keySet().containsAll(keyColumns))
+                .collect(Collectors.toList());
+    }
+
+    /**
      * Create a {@link DataIndex} for {@code table} indexing {@code keyColumns}, if no valid, live data index already
      * exists for these inputs.
      *

@@ -95,41 +95,35 @@ class WhereListener extends MergedListener {
     }
 
     /**
-     * Extract data index dependencies from the provided table and filters.
+     * Create a filter to data index map from the provided table and filters.
      */
-    static List<Table> extractDataIndexDependencies(@NotNull final Table table, @NotNull final WhereFilter[] filters) {
+    static Map<WhereFilter, DataIndex> extractFilterDataIndexMap(
+            @NotNull final Table table,
+            @NotNull final WhereFilter[] filters) {
+
         final DataIndexer dataIndexer = DataIndexer.existingOf(table.getRowSet());
         if (dataIndexer == null) {
-            return Collections.emptyList();
+            return Collections.emptyMap();
         }
 
-        final List<Table> result = new ArrayList<>();
-        for (final WhereFilter f : filters) {
-            final List<String> columnNames = f.getColumns();
+        final Map<WhereFilter, DataIndex> result = new LinkedHashMap<>();
+        for (final WhereFilter filter : filters) {
+            final List<String> columnNames = filter.getColumns();
             final List<ColumnSource<?>> columnSources = columnNames.stream()
                     .map(table::getColumnSource)
                     .collect(Collectors.toList());
-            final DataIndex dataIndex = dataIndexer.getDataIndex(columnSources);
-            // `where` calls only leverage data index tables which are fully populated.
-            if (dataIndex != null && dataIndex.tableIsCached()) {
-                result.add(dataIndex.table());
+
+            final List<DataIndex> compatibleIndexes = dataIndexer.getCompatibleDataIndexes(columnSources);
+            for (final DataIndex dataIndex : compatibleIndexes) {
+                // `where` calls only leverage data index tables which are fully populated.
+                if (dataIndex.tableIsCached()) {
+                    result.compute(filter, (k, v) -> v == null
+                            ? dataIndex
+                            : (v.table().size() < dataIndex.table().size() ? v : dataIndex));
+                }
             }
         }
         return result;
-    }
-
-    /**
-     * Extract initial dependencies from the provided filters. This will include data index tables which are leveraged
-     * only during the initial construction of the filtered table.
-     */
-    @NotNull
-    static List<NotificationQueue.Dependency> extractInitialDependencies(
-            @NotNull final Table table,
-            @NotNull final WhereFilter[] filters) {
-        return Stream.concat(
-                extractDataIndexDependencies(table, filters).stream(),
-                extractDependencies(filters).stream())
-                .collect(Collectors.toList());
     }
 
     /**
@@ -299,8 +293,8 @@ class WhereListener extends MergedListener {
                 @NotNull final RowSet modifiedInput,
                 final boolean runModifiedFilters,
                 final ModifiedColumnSet sourceModColumns) {
-            super(WhereListener.this.sourceTable, WhereListener.this.filters, addedInput, modifiedInput,
-                    false, runModifiedFilters, sourceModColumns);
+            super(WhereListener.this.sourceTable, WhereListener.this.filters, Collections.emptyMap(), addedInput,
+                    modifiedInput, false, runModifiedFilters, sourceModColumns);
             // Create the proper JobScheduler for the following parallel tasks
             if (permitParallelization) {
                 jobScheduler = new UpdateGraphJobScheduler(getUpdateGraph());

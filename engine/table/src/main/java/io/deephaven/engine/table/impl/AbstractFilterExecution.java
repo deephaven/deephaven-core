@@ -12,7 +12,9 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.DataIndex;
 import io.deephaven.engine.table.ModifiedColumnSet;
+import io.deephaven.engine.table.impl.dataindex.DataIndexPushdownManager;
 import io.deephaven.engine.table.impl.filter.ExtractBarriers;
 import io.deephaven.engine.table.impl.filter.ExtractRespectedBarriers;
 import io.deephaven.engine.table.impl.perf.BasePerformanceEntry;
@@ -57,6 +59,11 @@ abstract class AbstractFilterExecution {
     final QueryTable sourceTable;
     final WhereFilter[] filters;
 
+    /**
+     * Maps a {@link WhereFilter} to a data index.
+     */
+    final Map<WhereFilter, DataIndex> filterDataIndexMap;
+
     final boolean runModifiedFilters;
     final ModifiedColumnSet sourceModColumns;
 
@@ -76,15 +83,17 @@ abstract class AbstractFilterExecution {
     final boolean usePrev;
 
     AbstractFilterExecution(
-            final QueryTable sourceTable,
+            @NotNull final QueryTable sourceTable,
             final WhereFilter[] filters,
+            @NotNull final Map<WhereFilter, DataIndex> filterDataIndexMap,
             @NotNull final RowSet addedInput,
             @NotNull final RowSet modifiedInput,
             final boolean usePrev,
             final boolean runModifiedFilters,
-            final ModifiedColumnSet sourceModColumns) {
+            @NotNull final ModifiedColumnSet sourceModColumns) {
         this.sourceTable = sourceTable;
         this.filters = filters;
+        this.filterDataIndexMap = filterDataIndexMap;
         this.addedInput = addedInput;
         this.modifiedInput = modifiedInput;
         this.usePrev = usePrev;
@@ -491,8 +500,12 @@ abstract class AbstractFilterExecution {
                         .filter(columnSourceMap::containsKey)
                         .map(sourceTable::getColumnSource)
                         .collect(Collectors.toList());
-                final PushdownFilterMatcher executor =
-                        PushdownFilterMatcher.getPushdownFilterMatcher(filter, filterSources);
+                PushdownFilterMatcher executor = PushdownFilterMatcher.getPushdownFilterMatcher(filter, filterSources);
+                // Potentially wrap the executor to add DataIndex support.
+                final DataIndex dataIndex = filterDataIndexMap.get(filter);
+                if (dataIndex != null) {
+                    executor = DataIndexPushdownManager.wrap(dataIndex, executor);
+                }
                 if (executor != null) {
                     final PushdownFilterContext context = executor.makePushdownFilterContext(filter, filterSources);
                     statelessFilters[ii] = new StatelessFilter(ii, filter, executor, context, barrierDependencies);
