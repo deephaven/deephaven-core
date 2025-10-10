@@ -496,9 +496,8 @@ abstract class AbstractFilterExecution {
                 if (!PushdownFilterMatcher.canPushdownFilter(filter)) {
                     statelessFilters[ii] = new StatelessFilter(ii, filter, null, null, barrierDependencies);
                 } else {
-                    // Only consider column sources that are actually present in the source table, because filters may
-                    // refer
-                    // to columns like "i" or "ii" that are not actually in the table.
+                    // Only consider column sources that are actually present in the source table,because filters may
+                    // refer to columns like "i" or "ii" that are not actually in the table.
                     final Map<String, ColumnSource<?>> columnSourceMap = sourceTable.getColumnSourceMap();
                     final List<ColumnSource<?>> filterSources = filter.getColumns().stream()
                             .filter(columnSourceMap::containsKey)
