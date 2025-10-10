@@ -258,9 +258,9 @@ public class DataIndexer implements TrackingRowSet.Indexer {
 
     /**
      * Get a list of all the {@link DataIndex DataIndexes} in this DataIndexer that contain the supplied key columns.
-     * This will return indexes that contain for supersets of the supplied key columns.
+     * This will return indexes with key columns that are supersets of the supplied key columns.
      *
-     * @param keyColumns The {@link ColumnSource column sources} for which to retrieve a {@link DataIndex}
+     * @param keyColumns The {@link ColumnSource column sources} for which to retrieve {@link DataIndex data indexes}
      * @return All the {@link DataIndex DataIndexes} in this DataIndexer
      */
     public List<DataIndex> getCompatibleDataIndexes(@NotNull final Collection<ColumnSource<?>> keyColumns) {

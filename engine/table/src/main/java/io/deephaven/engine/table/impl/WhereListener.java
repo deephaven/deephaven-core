@@ -108,6 +108,11 @@ class WhereListener extends MergedListener {
 
         final Map<WhereFilter, DataIndex> result = new LinkedHashMap<>();
         for (final WhereFilter filter : filters) {
+            if (!PushdownFilterMatcher.canPushdownFilter(filter)) {
+                // data indexes are used only for pushdown filters.
+                continue;
+            }
+
             final List<String> columnNames = filter.getColumns();
             final List<ColumnSource<?>> columnSources = columnNames.stream()
                     .map(table::getColumnSource)

@@ -1964,27 +1964,30 @@ public abstract class QueryTableWhereTest {
         assertEquals(25_000, numRowsFiltered(postFilter));
     }
 
-    @Test
-    public void testMultiColumnDataIndex() {
+    private Table getMultiColumnTestSourceTable() {
+        final QueryTable source = testRefreshingTable(RowSetFactory.flat(100_000).toTracking());
+        return source.update("A = ii % 97", "B = ii % 11", "C = ii");
+    }
+
+    private void testMultiColumnDataIndexInternal(
+            final Table source,
+            final String columnA,
+            final String columnB,
+            final String columnC) {
         QueryTable.PARALLEL_WHERE_SEGMENTS = 10;
         QueryTable.PARALLEL_WHERE_ROWS_PER_SEGMENT = 10_000;
-        final QueryTable source = testRefreshingTable(RowSetFactory.flat(100_000).toTracking());
-        final QueryTable sourceWithData = (QueryTable) source.update("A = ii % 97", "B = ii % 11", "C = ii");
-
-        final DataIndex dataIndexA = DataIndexer.getOrCreateDataIndex(sourceWithData, "A");
-        final DataIndex dataIndexAB = DataIndexer.getOrCreateDataIndex(sourceWithData, "A", "B");
 
         final RowSetCapturingFilter preFilter = new RowSetCapturingFilter();
         final RowSetCapturingFilter postFilter = new RowSetCapturingFilter();
 
-        final RowSetCapturingFilter filterA = new ParallelizedRowSetCapturingFilter(RawString.of("A < 50"));
-        final RowSetCapturingFilter filterB = new ParallelizedRowSetCapturingFilter(RawString.of("B < 3"));
+        final RowSetCapturingFilter filterA = new ParallelizedRowSetCapturingFilter(RawString.of(columnA + " < 50"));
+        final RowSetCapturingFilter filterB = new ParallelizedRowSetCapturingFilter(RawString.of(columnB + " < 3"));
         final RowSetCapturingFilter filterAConditional =
-                new ParallelizedRowSetCapturingFilter(RawString.of("A < (49 + 1)"));
+                new ParallelizedRowSetCapturingFilter(RawString.of(columnA + " < (49 + 1)"));
         final RowSetCapturingFilter filterBConditional =
-                new ParallelizedRowSetCapturingFilter(RawString.of("B < (2 + 1)"));
+                new ParallelizedRowSetCapturingFilter(RawString.of(columnB + " < (2 + 1)"));
         final RowSetCapturingFilter filterABConditional =
-                new ParallelizedRowSetCapturingFilter(RawString.of("A < 50 && B < 3"));
+                new ParallelizedRowSetCapturingFilter(RawString.of(columnA + " < 50 && " + columnB + " < 3"));
 
         final ArrayList<RowSetCapturingFilter> allFilters = Lists.newArrayList(preFilter, postFilter, filterA, filterB,
                 filterAConditional, filterBConditional, filterABConditional);
@@ -1992,7 +1995,7 @@ public abstract class QueryTableWhereTest {
         Table result;
 
         // Single column filter
-        result = sourceWithData.where(Filter.and(preFilter.withSerial(), filterA, postFilter));
+        result = source.where(Filter.and(preFilter.withSerial(), filterA, postFilter));
 
         assertEquals(100_000, preFilter.numRowsProcessed());
         assertEquals(97, filterA.numRowsProcessed()); // indexA table size
@@ -2002,7 +2005,7 @@ public abstract class QueryTableWhereTest {
         allFilters.forEach(RowSetCapturingFilter::reset);
 
         // Single column filter
-        result = sourceWithData.where(Filter.and(preFilter.withSerial(), filterB, postFilter));
+        result = source.where(Filter.and(preFilter.withSerial(), filterB, postFilter));
 
         assertEquals(100_000, preFilter.numRowsProcessed());
         assertEquals(1_067, filterB.numRowsProcessed()); // indexAB table size
@@ -2012,7 +2015,7 @@ public abstract class QueryTableWhereTest {
         allFilters.forEach(RowSetCapturingFilter::reset);
 
         // Conjunctive filter
-        result = sourceWithData.where(Filter.and(preFilter.withSerial(), Filter.and(filterA, filterB), postFilter));
+        result = source.where(Filter.and(preFilter.withSerial(), Filter.and(filterA, filterB), postFilter));
 
         assertEquals(100_000, preFilter.numRowsProcessed());
         assertEquals(97, filterA.numRowsProcessed()); // indexA table size
@@ -2023,7 +2026,7 @@ public abstract class QueryTableWhereTest {
         allFilters.forEach(RowSetCapturingFilter::reset);
 
         // Conditional multi-column filter
-        result = sourceWithData.where(Filter.and(preFilter.withSerial(), filterABConditional, postFilter));
+        result = source.where(Filter.and(preFilter.withSerial(), filterABConditional, postFilter));
 
         assertEquals(100_000, preFilter.numRowsProcessed());
         assertEquals(1_067, filterABConditional.numRowsProcessed()); // indexAB table size
@@ -2033,7 +2036,7 @@ public abstract class QueryTableWhereTest {
         allFilters.forEach(RowSetCapturingFilter::reset);
 
         // Conditional single column filter
-        result = sourceWithData.where(Filter.and(preFilter.withSerial(), filterAConditional, postFilter));
+        result = source.where(Filter.and(preFilter.withSerial(), filterAConditional, postFilter));
 
         assertEquals(100_000, preFilter.numRowsProcessed());
         assertEquals(97, filterAConditional.numRowsProcessed()); // indexA table size
@@ -2043,7 +2046,7 @@ public abstract class QueryTableWhereTest {
         allFilters.forEach(RowSetCapturingFilter::reset);
 
         // Conditional single column filter
-        result = sourceWithData.where(Filter.and(preFilter.withSerial(), filterBConditional, postFilter));
+        result = source.where(Filter.and(preFilter.withSerial(), filterBConditional, postFilter));
 
         assertEquals(100_000, preFilter.numRowsProcessed());
         assertEquals(1_067, filterBConditional.numRowsProcessed()); // indexAB table size
@@ -2053,7 +2056,7 @@ public abstract class QueryTableWhereTest {
         allFilters.forEach(RowSetCapturingFilter::reset);
 
         // Disjunctive filter
-        result = sourceWithData.where(Filter.and(preFilter.withSerial(), Filter.or(filterA, filterB), postFilter));
+        result = source.where(Filter.and(preFilter.withSerial(), Filter.or(filterA, filterB), postFilter));
 
         assertEquals(100_000, preFilter.numRowsProcessed());
         // NOTE: the disjunctive filter is executed completely against the indexAB table, running A first
@@ -2066,8 +2069,8 @@ public abstract class QueryTableWhereTest {
         allFilters.forEach(RowSetCapturingFilter::reset);
 
         // Complex filter with internal barriers
-        RowSetCapturingFilter tmpFilter = new ParallelizedRowSetCapturingFilter(RawString.of("A > 10"));
-        result = sourceWithData.where(Filter.and(preFilter.withSerial(),
+        RowSetCapturingFilter tmpFilter = new ParallelizedRowSetCapturingFilter(RawString.of(columnA + " > 10"));
+        result = source.where(Filter.and(preFilter.withSerial(),
                 Filter.and(
                         filterB.withDeclaredBarriers("b1"),
                         Filter.and(
@@ -2085,10 +2088,10 @@ public abstract class QueryTableWhereTest {
         allFilters.forEach(RowSetCapturingFilter::reset);
 
         // Ensure data-index-capable filters are prioritized over other filters (when no barriers are present)
-        tmpFilter = new RowSetCapturingFilter(RawString.of("C > 50000")); // non-indexed column
+        tmpFilter = new RowSetCapturingFilter(RawString.of(columnC + " > 50000")); // non-indexed column
 
         // force the pre-filter to run before the user filters
-        result = sourceWithData.where(Filter.and(
+        result = source.where(Filter.and(
                 preFilter.withSerial(),
                 tmpFilter, // user order puts this before filterA
                 filterABConditional,
@@ -2103,9 +2106,9 @@ public abstract class QueryTableWhereTest {
         allFilters.forEach(RowSetCapturingFilter::reset);
 
         // Ensure data-index-capable filters honor barriers
-        tmpFilter = new RowSetCapturingFilter(RawString.of("C > 50000")); // non-indexed column
+        tmpFilter = new RowSetCapturingFilter(RawString.of(columnC + " > 50000")); // non-indexed column
 
-        result = sourceWithData.where(Filter.and(
+        result = source.where(Filter.and(
                 preFilter.withSerial(),
                 tmpFilter.withDeclaredBarriers("b1"),
                 filterABConditional.withRespectedBarriers("b1"),
@@ -2120,9 +2123,9 @@ public abstract class QueryTableWhereTest {
         allFilters.forEach(RowSetCapturingFilter::reset);
 
         // make the non-data-index-capable filter serial
-        tmpFilter = new RowSetCapturingFilter(RawString.of("C > 50000")); // non-indexed column
+        tmpFilter = new RowSetCapturingFilter(RawString.of(columnC + " > 50000")); // non-indexed column
 
-        result = sourceWithData.where(Filter.and(
+        result = source.where(Filter.and(
                 preFilter.withSerial(),
                 tmpFilter.withSerial(),
                 filterABConditional,
@@ -2135,183 +2138,40 @@ public abstract class QueryTableWhereTest {
         assertEquals(7025, result.size());
 
         allFilters.forEach(RowSetCapturingFilter::reset);
+    }
+
+    @Test
+    public void testMultiColumnDataIndex() {
+        final Table source = getMultiColumnTestSourceTable();
+
+        final DataIndex dataIndexA = DataIndexer.getOrCreateDataIndex(source, "A");
+        final DataIndex dataIndexAB = DataIndexer.getOrCreateDataIndex(source, "A", "B");
+
+        testMultiColumnDataIndexInternal(source, "A", "B", "C");
     }
 
     @Test
     public void testMultiColumnDataIndexRenamedColumns() {
-        QueryTable.PARALLEL_WHERE_SEGMENTS = 10;
-        QueryTable.PARALLEL_WHERE_ROWS_PER_SEGMENT = 10_000;
-        final QueryTable source = testRefreshingTable(RowSetFactory.flat(100_000).toTracking());
-        final QueryTable sourceWithData = (QueryTable) source.update("A = ii % 97", "B = ii % 11", "C = ii");
+        final Table source = getMultiColumnTestSourceTable();
 
-        final DataIndex dataIndexA = DataIndexer.getOrCreateDataIndex(sourceWithData, "A");
-        final DataIndex dataIndexAB = DataIndexer.getOrCreateDataIndex(sourceWithData, "A", "B");
+        final DataIndex dataIndexA = DataIndexer.getOrCreateDataIndex(source, "A");
+        final DataIndex dataIndexAB = DataIndexer.getOrCreateDataIndex(source, "A", "B");
 
-        final Table renamedTable = sourceWithData.renameColumns("A_renamed=A", "B_renamed=B", "C_renamed=C");
+        final Table renamedTable = source.renameColumns("A_renamed=A", "B_renamed=B", "C_renamed=C");
 
-        final RowSetCapturingFilter preFilter = new RowSetCapturingFilter();
-        final RowSetCapturingFilter postFilter = new RowSetCapturingFilter();
-
-        final RowSetCapturingFilter filterA = new ParallelizedRowSetCapturingFilter(RawString.of("A_renamed < 50"));
-        final RowSetCapturingFilter filterB = new ParallelizedRowSetCapturingFilter(RawString.of("B_renamed < 3"));
-        final RowSetCapturingFilter filterAConditional =
-                new ParallelizedRowSetCapturingFilter(RawString.of("A_renamed < (49 + 1)"));
-        final RowSetCapturingFilter filterBConditional =
-                new ParallelizedRowSetCapturingFilter(RawString.of("B_renamed < (2 + 1)"));
-        final RowSetCapturingFilter filterABConditional =
-                new ParallelizedRowSetCapturingFilter(RawString.of("A_renamed < 50 && B_renamed < 3"));
-
-        final ArrayList<RowSetCapturingFilter> allFilters = Lists.newArrayList(preFilter, postFilter, filterA, filterB,
-                filterAConditional, filterBConditional, filterABConditional);
-
-        Table result;
-
-        // Single column filter
-        result = renamedTable.where(Filter.and(preFilter.withSerial(), filterA, postFilter));
-
-        assertEquals(100_000, preFilter.numRowsProcessed());
-        assertEquals(97, filterA.numRowsProcessed()); // indexA table size
-        assertEquals(51550, postFilter.numRowsProcessed());
-        assertEquals(51550, result.size());
-
-        allFilters.forEach(RowSetCapturingFilter::reset);
-
-        // Single column filter
-        result = renamedTable.where(Filter.and(preFilter.withSerial(), filterB, postFilter));
-
-        assertEquals(100_000, preFilter.numRowsProcessed());
-        assertEquals(1_067, filterB.numRowsProcessed()); // indexAB table size
-        assertEquals(27273, postFilter.numRowsProcessed());
-        assertEquals(27273, result.size());
-
-        allFilters.forEach(RowSetCapturingFilter::reset);
-
-        // Conjunctive filter
-        result = renamedTable.where(Filter.and(preFilter.withSerial(), Filter.and(filterA, filterB), postFilter));
-
-        assertEquals(100_000, preFilter.numRowsProcessed());
-        assertEquals(97, filterA.numRowsProcessed()); // indexA table size
-        assertEquals(1_067, filterB.numRowsProcessed()); // indexAB table size
-        assertEquals(14062, postFilter.numRowsProcessed());
-        assertEquals(14062, result.size());
-
-        allFilters.forEach(RowSetCapturingFilter::reset);
-
-        // Conditional multi-column filter
-        result = renamedTable.where(Filter.and(preFilter.withSerial(), filterABConditional, postFilter));
-
-        assertEquals(100_000, preFilter.numRowsProcessed());
-        assertEquals(1_067, filterABConditional.numRowsProcessed()); // indexAB table size
-        assertEquals(14062, postFilter.numRowsProcessed());
-        assertEquals(14062, result.size());
-
-        allFilters.forEach(RowSetCapturingFilter::reset);
-
-        // Conditional single column filter
-        result = renamedTable.where(Filter.and(preFilter.withSerial(), filterAConditional, postFilter));
-
-        assertEquals(100_000, preFilter.numRowsProcessed());
-        assertEquals(97, filterAConditional.numRowsProcessed()); // indexA table size
-        assertEquals(51550, postFilter.numRowsProcessed());
-        assertEquals(51550, result.size());
-
-        allFilters.forEach(RowSetCapturingFilter::reset);
-
-        // Conditional single column filter
-        result = renamedTable.where(Filter.and(preFilter.withSerial(), filterBConditional, postFilter));
-
-        assertEquals(100_000, preFilter.numRowsProcessed());
-        assertEquals(1_067, filterBConditional.numRowsProcessed()); // indexAB table size
-        assertEquals(27273, postFilter.numRowsProcessed());
-        assertEquals(27273, result.size());
-
-        allFilters.forEach(RowSetCapturingFilter::reset);
-
-        // Disjunctive filter
-        result = renamedTable.where(Filter.and(preFilter.withSerial(), Filter.or(filterA, filterB), postFilter));
-
-        assertEquals(100_000, preFilter.numRowsProcessed());
-        // NOTE: the disjunctive filter is executed completely against the indexAB table, running A first
-        // then B against the A == false results
-        assertEquals(1_067, filterA.numRowsProcessed()); // indexAB table size
-        assertEquals(517, filterB.numRowsProcessed()); // indexAB minus A == true
-        assertEquals(64761, postFilter.numRowsProcessed());
-        assertEquals(64761, result.size());
-
-        allFilters.forEach(RowSetCapturingFilter::reset);
-
-        // Complex filter with internal barriers
-        RowSetCapturingFilter tmpFilter = new ParallelizedRowSetCapturingFilter(RawString.of("A_renamed > 10"));
-        result = renamedTable.where(Filter.and(preFilter.withSerial(),
-                Filter.and(
-                        filterB.withDeclaredBarriers("b1"),
-                        Filter.and(
-                                tmpFilter.withDeclaredBarriers("b2"),
-                                filterA.withRespectedBarriers("b1", "b2"))),
-                postFilter));
-
-        assertEquals(100_000, preFilter.numRowsProcessed());
-        assertEquals(97, filterA.numRowsProcessed()); // indexA table size
-        assertEquals(1_067, filterB.numRowsProcessed()); // indexAB table size
-        assertEquals(97, tmpFilter.numRowsProcessed()); // indexA table size
-        assertEquals(10969, postFilter.numRowsProcessed());
-        assertEquals(10969, result.size());
-
-        allFilters.forEach(RowSetCapturingFilter::reset);
-
-        // Ensure data-index-capable filters are prioritized over other filters (when no barriers are present)
-        tmpFilter = new RowSetCapturingFilter(RawString.of("C_renamed > 50000")); // non-indexed column
-
-        // force the pre-filter to run before the user filters
-        result = renamedTable.where(Filter.and(
-                preFilter.withSerial(),
-                tmpFilter, // user order puts this before filterA
-                filterABConditional,
-                postFilter));
-
-        assertEquals(100_000, preFilter.numRowsProcessed());
-        assertEquals(1_067, filterABConditional.numRowsProcessed()); // indexAB table size
-        assertEquals(14062, tmpFilter.numRowsProcessed()); // only rows that passed through indexed filter
-        assertEquals(7025, postFilter.numRowsProcessed());
-        assertEquals(7025, result.size());
-
-        allFilters.forEach(RowSetCapturingFilter::reset);
-
-        // Ensure data-index-capable filters honor barriers
-        tmpFilter = new RowSetCapturingFilter(RawString.of("C_renamed > 50000")); // non-indexed column
-
-        result = renamedTable.where(Filter.and(
-                preFilter.withSerial(),
-                tmpFilter.withDeclaredBarriers("b1"),
-                filterABConditional.withRespectedBarriers("b1"),
-                postFilter));
-
-        assertEquals(100_000, preFilter.numRowsProcessed());
-        assertEquals(100_000, tmpFilter.numRowsProcessed()); // processes all rows
-        assertEquals(1_067, filterABConditional.numRowsProcessed()); // indexAB table size
-        assertEquals(7025, postFilter.numRowsProcessed());
-        assertEquals(7025, result.size());
-
-        allFilters.forEach(RowSetCapturingFilter::reset);
-
-        // make the non-data-index-capable filter serial
-        tmpFilter = new RowSetCapturingFilter(RawString.of("C_renamed > 50000")); // non-indexed column
-
-        result = renamedTable.where(Filter.and(
-                preFilter.withSerial(),
-                tmpFilter.withSerial(),
-                filterABConditional,
-                postFilter));
-
-        assertEquals(100_000, preFilter.numRowsProcessed());
-        assertEquals(100_000, tmpFilter.numRowsProcessed()); // processes all rows
-        assertEquals(1_067, filterABConditional.numRowsProcessed()); // indexAB table size
-        assertEquals(7025, postFilter.numRowsProcessed());
-        assertEquals(7025, result.size());
-
-        allFilters.forEach(RowSetCapturingFilter::reset);
+        testMultiColumnDataIndexInternal(renamedTable, "A_renamed", "B_renamed", "C_renamed");
     }
 
+    @Test
+    public void testMultiColumnDataIndexOnRenamedColumns() {
+        final Table source = getMultiColumnTestSourceTable();
+        final DataIndex dataIndexA = DataIndexer.getOrCreateDataIndex(source, "A");
+
+        final Table renamedTable = source.renameColumns("A_renamed=A", "B_renamed=B", "C_renamed=C");
+        final DataIndex dataIndexAB = DataIndexer.getOrCreateDataIndex(renamedTable, "A_renamed", "B_renamed");
+
+        testMultiColumnDataIndexInternal(renamedTable, "A_renamed", "B_renamed", "C_renamed");
+    }
 
     @Test
     public void testPushdownBarriersAndSerial() {

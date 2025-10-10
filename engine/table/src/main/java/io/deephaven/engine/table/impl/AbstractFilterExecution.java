@@ -493,24 +493,31 @@ abstract class AbstractFilterExecution {
         try {
             for (int ii = 0; ii < filters.size(); ii++) {
                 final WhereFilter filter = filters.get(ii);
-                // Only consider column sources that are actually present in the source table, because filters may refer
-                // to columns like "i" or "ii" that are not actually in the table.
-                final Map<String, ColumnSource<?>> columnSourceMap = sourceTable.getColumnSourceMap();
-                final List<ColumnSource<?>> filterSources = filter.getColumns().stream()
-                        .filter(columnSourceMap::containsKey)
-                        .map(sourceTable::getColumnSource)
-                        .collect(Collectors.toList());
-                PushdownFilterMatcher executor = PushdownFilterMatcher.getPushdownFilterMatcher(filter, filterSources);
-                // Potentially wrap the executor to add DataIndex support.
-                final DataIndex dataIndex = filterDataIndexMap.get(filter);
-                if (dataIndex != null) {
-                    executor = DataIndexPushdownManager.wrap(dataIndex, executor);
-                }
-                if (executor != null) {
-                    final PushdownFilterContext context = executor.makePushdownFilterContext(filter, filterSources);
-                    statelessFilters[ii] = new StatelessFilter(ii, filter, executor, context, barrierDependencies);
-                } else {
+                if (!PushdownFilterMatcher.canPushdownFilter(filter)) {
                     statelessFilters[ii] = new StatelessFilter(ii, filter, null, null, barrierDependencies);
+                } else {
+                    // Only consider column sources that are actually present in the source table, because filters may
+                    // refer
+                    // to columns like "i" or "ii" that are not actually in the table.
+                    final Map<String, ColumnSource<?>> columnSourceMap = sourceTable.getColumnSourceMap();
+                    final List<ColumnSource<?>> filterSources = filter.getColumns().stream()
+                            .filter(columnSourceMap::containsKey)
+                            .map(sourceTable::getColumnSource)
+                            .collect(Collectors.toList());
+
+                    PushdownFilterMatcher executor =
+                            PushdownFilterMatcher.getPushdownFilterMatcher(filter, filterSources);
+                    // Potentially wrap the executor to add DataIndex support.
+                    final DataIndex dataIndex = filterDataIndexMap.get(filter);
+                    if (dataIndex != null) {
+                        executor = DataIndexPushdownManager.wrap(dataIndex, executor);
+                    }
+                    if (executor != null) {
+                        final PushdownFilterContext context = executor.makePushdownFilterContext(filter, filterSources);
+                        statelessFilters[ii] = new StatelessFilter(ii, filter, executor, context, barrierDependencies);
+                    } else {
+                        statelessFilters[ii] = new StatelessFilter(ii, filter, null, null, barrierDependencies);
+                    }
                 }
                 for (Object barrier : statelessFilters[ii].declaredBarriers) {
                     if (barrierDependencies.containsKey(barrier)) {

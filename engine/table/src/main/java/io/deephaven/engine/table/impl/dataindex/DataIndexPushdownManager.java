@@ -97,57 +97,60 @@ public class DataIndexPushdownManager implements PushdownPredicateManager {
                 return;
             }
             onComplete.accept(PushdownResult.allMaybeMatch(selection));
-        } else {
-            // If we have a wrapped matcher, run it up to the data index cost.
-            if (wrappedMatcher != null) {
-                wrappedMatcher.pushdownFilter(
-                        filter,
-                        selection,
-                        usePrev,
-                        ctx.wrappedContext,
-                        PushdownResult.IN_MEMORY_DATA_INDEX_COST - 1,
-                        jobScheduler,
-                        result -> {
-                            // Run the data index filter?
-                            if (result.maybeMatch().size() > selectionThreshold) {
-                                onComplete.accept(pushdownDataIndex(
-                                        selection,
-                                        filter,
-                                        ctx.renameMap,
-                                        dataIndex,
-                                        result));
-                            } else {
-                                // We need to run the wrapped filter up to the cost ceiling.
-                                wrappedMatcher.pushdownFilter(
-                                        filter,
-                                        result.maybeMatch(),
-                                        usePrev,
-                                        ctx.wrappedContext,
-                                        costCeiling,
-                                        jobScheduler,
-                                        nextResult -> {
-                                            // Combine the match results from earlier pushdown
-                                            nextResult.match().insert(result.match());
-                                            onComplete.accept(nextResult);
-                                        },
-                                        onError);
-                            }
-                        },
-                        onError);
-            } else {
-                // Should we run the filter against the index?
-                if (selection.size() > selectionThreshold) {
-                    onComplete.accept(pushdownDataIndex(
-                            selection,
-                            filter,
-                            ctx.renameMap,
-                            dataIndex,
-                            PushdownResult.allMaybeMatch(selection)));
-                } else {
-                    onComplete.accept(PushdownResult.allMaybeMatch(selection));
-                }
-            }
+            return;
         }
+
+        // If we have a wrapped matcher, run it up to the data index cost.
+        if (wrappedMatcher != null) {
+            wrappedMatcher.pushdownFilter(
+                    filter,
+                    selection,
+                    usePrev,
+                    ctx.wrappedContext,
+                    PushdownResult.IN_MEMORY_DATA_INDEX_COST - 1,
+                    jobScheduler,
+                    result -> {
+                        // Run the data index filter if under the threshold.
+                        if (result.maybeMatch().size() > selectionThreshold) {
+                            onComplete.accept(pushdownDataIndex(
+                                    selection,
+                                    filter,
+                                    ctx.renameMap,
+                                    dataIndex,
+                                    result));
+                            return;
+                        }
+
+                        // Skipping the data index filter, continue the wrapped filter up to the cost ceiling.
+                        wrappedMatcher.pushdownFilter(
+                                filter,
+                                result.maybeMatch(),
+                                usePrev,
+                                ctx.wrappedContext,
+                                costCeiling,
+                                jobScheduler,
+                                nextResult -> {
+                                    // Combine the match results from earlier pushdown
+                                    nextResult.match().insert(result.match());
+                                    onComplete.accept(nextResult);
+                                },
+                                onError);
+                    },
+                    onError);
+            return;
+        }
+
+        // Run the data index filter if under the threshold.
+        if (selection.size() > selectionThreshold) {
+            onComplete.accept(pushdownDataIndex(
+                    selection,
+                    filter,
+                    ctx.renameMap,
+                    dataIndex,
+                    PushdownResult.allMaybeMatch(selection)));
+            return;
+        }
+        onComplete.accept(PushdownResult.allMaybeMatch(selection));
     }
 
     public static class DataIndexPushdownContext extends BasePushdownFilterContext {
@@ -187,6 +190,9 @@ public class DataIndexPushdownManager implements PushdownPredicateManager {
 
         @Override
         public void close() {
+            if (wrappedContext != null) {
+                wrappedContext.close();
+            }
             super.close();
         }
     }
@@ -225,7 +231,6 @@ public class DataIndexPushdownManager implements PushdownPredicateManager {
             } else {
                 toFilter = dataIndex.table();
             }
-            copiedFilter.init(toFilter.getDefinition());
             try {
                 final Table filteredTable = toFilter.where(copiedFilter);
                 try (final CloseableIterator<RowSet> it =

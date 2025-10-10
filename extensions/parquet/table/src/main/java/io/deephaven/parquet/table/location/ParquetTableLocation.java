@@ -1140,12 +1140,10 @@ public class ParquetTableLocation extends AbstractTableLocation {
             final PushdownResult result) {
         final RowSetBuilderRandom matchingBuilder = RowSetFactory.builderRandom();
         try (final SafeCloseable ignored = LivenessScopeStack.open()) {
-
             final long threshold = (long) (dataIndex.table().size() / QueryTable.DATA_INDEX_FOR_WHERE_THRESHOLD);
             if (result.maybeMatch().size() <= threshold) {
                 return result.copy();
             }
-
             // Extract the fundamental filter, ignoring barriers and serial wrappers.
             final WhereFilter copiedFilter = ExtractFilterWithoutBarriers.of(filter).copy();
             final Table toFilter;
@@ -1160,8 +1158,6 @@ public class ParquetTableLocation extends AbstractTableLocation {
             } else {
                 toFilter = dataIndex.table();
             }
-            copiedFilter.init(toFilter.getDefinition());
-
             // Apply the filter to the data index table
             try {
                 final Table filteredTable = toFilter.where(copiedFilter);

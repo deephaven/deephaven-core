@@ -3,15 +3,10 @@
 //
 package io.deephaven.engine.table.impl;
 
-import io.deephaven.base.stats.Stats;
-import io.deephaven.base.stats.ThreadSafeCounter;
-import io.deephaven.base.stats.Value;
-import io.deephaven.base.string.cache.CharSequenceUtils;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.ColumnSource;
@@ -22,7 +17,6 @@ import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.sources.UnboxedLongBackedColumnSource;
 import io.deephaven.engine.table.impl.util.JobScheduler;
 import io.deephaven.engine.updategraph.UpdateGraph;
-import io.deephaven.hash.KeyedObjectKey;
 import io.deephaven.util.annotations.VisibleForTesting;
 import io.deephaven.util.type.TypeUtils;
 import io.deephaven.vector.*;
@@ -41,47 +35,10 @@ public abstract class AbstractColumnSource<T> implements
         PushdownFilterMatcher {
 
     /**
-     * For a {@link #match(boolean, boolean, boolean, RowSet, Object...)} call that uses a DataIndex, by default we do
-     * not force the entire DataIndex to be loaded into memory. This is because many
-     * {@link io.deephaven.engine.table.impl.select.MatchFilter}s are highly selective and only need to instantiate a
-     * single RowSet value rather than the complete DataIndex for the entire table. When the Configuration property
-     * "AbstractColumnSource.usePartialDataIndex" is set to false, the query engine materializes the entire DataIndex
-     * table for the match call.
-     */
-    public static boolean USE_PARTIAL_TABLE_DATA_INDEX = Configuration.getInstance()
-            .getBooleanWithDefault("AbstractColumnSource.usePartialDataIndex", true);
-    /**
-     * After generating a DataIndex table and identifying which row keys are responsive to the filter, the result RowSet
-     * can be built in serial or in parallel. By default, the index is built in parallel which may take advantage of
-     * using more threads for I/O of the index data structure. Parallel builds do require more setup and thread
-     * synchronization, so they can be disabled by setting the Configuration property
-     * "AbstractColumnSource.useParallelIndexBuild" to false.
-     */
-    public static boolean USE_PARALLEL_ROWSET_BUILD = Configuration.getInstance()
-            .getBooleanWithDefault("AbstractColumnSource.useParallelRowSetBuild", true);
-
-    /**
-     * Duration of match() calls using a DataIndex (also provides the count).
-     */
-    private static final Value INDEX_FILTER_MILLIS =
-            Stats.makeItem("AbstractColumnSource", "indexFilterMillis", ThreadSafeCounter.FACTORY,
-                    "Duration of match() with a DataIndex in millis")
-                    .getValue();
-    /**
-     * Duration of match() calls using a chunk filter (i.e. no DataIndex).
-     */
-    private static final Value CHUNK_FILTER_MILLIS =
-            Stats.makeItem("AbstractColumnSource", "chunkFilterMillis", ThreadSafeCounter.FACTORY,
-                    "Duration of match() without a DataIndex in millis")
-                    .getValue();
-
-    /**
      * Minimum average run length in an {@link RowSequence} that should trigger {@link Chunk}-filling by key ranges
      * instead of individual keys.
      */
     public static final long USE_RANGES_AVERAGE_RUN_LENGTH = 5;
-
-    private static final int CHUNK_SIZE = 1 << 11;
 
     protected final Class<T> type;
     protected final Class<?> componentType;
@@ -159,31 +116,8 @@ public abstract class AbstractColumnSource<T> implements
             final boolean caseInsensitive,
             @NotNull final RowSet rowsetToFilter,
             final Object[] keys) {
-        final long t0 = System.nanoTime();
-        try {
-            return ChunkFilter.applyChunkFilter(rowsetToFilter, this, usePrev,
-                    ChunkMatchFilterFactory.getChunkFilter(type, caseInsensitive, invertMatch, keys));
-        } finally {
-            final long t1 = System.nanoTime();
-            CHUNK_FILTER_MILLIS.sample((t1 - t0) / 1_000_000);
-        }
-    }
-
-    private static final class CIStringKey implements KeyedObjectKey<String, String> {
-        @Override
-        public String getKey(String s) {
-            return s;
-        }
-
-        @Override
-        public int hashKey(String s) {
-            return (s == null) ? 0 : CharSequenceUtils.caseInsensitiveHashCode(s);
-        }
-
-        @Override
-        public boolean equalKey(String s, String s2) {
-            return (s == null) ? s2 == null : s.equalsIgnoreCase(s2);
-        }
+        return ChunkFilter.applyChunkFilter(rowsetToFilter, this, usePrev,
+                ChunkMatchFilterFactory.getChunkFilter(type, caseInsensitive, invertMatch, keys));
     }
 
     @Override

@@ -332,9 +332,16 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         table.notifyListeners(i(3), i(), i());
         updateGraph.markSourcesRefreshedForUnitTests();
 
-        // Allow the table update to propagate to the data index table.
-        // noinspection StatementWithEmptyBody
-        while (updateGraph.flushOneNotificationForUnitTests());
+        if (indexed) {
+            final Table indexTable = DataIndexer.getDataIndex(table, "z").table();
+            Assert.eqFalse(indexTable.satisfied(updateGraph.clock().currentStep()), "indexTable.satisfied");
+
+            // The next where() call will depend on the index table. Make sure it is satisfied before proceeding.
+            while (!indexTable.satisfied(updateGraph.clock().currentStep())) {
+                updateGraph.flushOneNotificationForUnitTests();
+            }
+            Assert.eqTrue(indexTable.satisfied(updateGraph.clock().currentStep()), "indexTable.satisfied");
+        }
 
         final Table filter3 = pool.submit(() -> table.where("z")).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
 
