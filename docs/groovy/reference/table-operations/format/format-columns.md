@@ -32,7 +32,7 @@ A new table that includes all the original columns from the source table and the
 
 ## Examples
 
-In the following example, the column `A` is formatted with a color depending on the value of column `B`, and column `C` is specified to display values as a percentage using the decimal format pattern `0.00%`.
+In the following example, column `A` is formatted with a color depending on the value of column `B`, and column `C` is specified to display values as a percentage using the decimal format pattern `0.00%`.
 
 ```groovy order=source,result
 source = newTable(

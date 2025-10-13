@@ -50,9 +50,9 @@ The columns to hide.
 
 A list of dicts specifying which columns should be grouped in the UI. The dicts can specify the following:
 
-- name (str): The group name.
-- children (List[str]): The column names in the group.
-- color (Optional[str]): The hex color string or Deephaven color name.
+- `name (str)`: The group name.
+- `children (List[str])`: The column names in the group.
+- `color (Optional[str])`: The hex color string or Deephaven color name.
 
 </Param>
 <Param name="search_display_mode" type="SearchDisplayMode">
@@ -72,7 +72,7 @@ A new table with layout instructions for the UI.
 
 ## Examples
 
-In the following example, the column `Even` is frozen to the front of the table, `Odd` is moved to the front, `B` is moved to the back, `C` is hidden, and `A` and `E` form a column group called `Vowels`.
+In the following example, column `Even` is frozen to the front of the table, `Odd` is moved to the front, `B` is moved to the back, `C` is hidden, and `A` and `E` form a column group called `Vowels`.
 
 ```python order=source,result default=result
 from deephaven import new_table
