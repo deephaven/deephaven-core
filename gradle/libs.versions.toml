@@ -11,7 +11,7 @@ boringssl = "2.0.61.Final"
 
 # Note: when bumping Calcite version, see if we still need the version constraint for json-smart
 calcite = "1.39.0"
-json-smart = "2.5.2"
+json-smart = "2.6.0"
 
 classgraph = "4.8.180"
 commons-compress = "1.28.0"
