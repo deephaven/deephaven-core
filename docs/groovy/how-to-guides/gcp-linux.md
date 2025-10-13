@@ -123,6 +123,7 @@ docker run \
 ```
 
 This startup script will:
+
 - Install Docker if it's not already present (using Docker's official installation script)
 - Stop and remove any existing Deephaven container (useful for VM restarts)
 - Pull the latest Deephaven image
