@@ -27,14 +27,9 @@ import io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.Updat
 import io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.*;
 import io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOptions;
 import io.deephaven.proto.util.Exceptions;
-import io.deephaven.qst.type.GenericVectorType;
 import io.deephaven.server.session.SessionState;
 import io.deephaven.time.DateTimeUtils;
-import io.deephaven.vector.IntVector;
-import io.deephaven.vector.ObjectVector;
-import io.deephaven.vector.Vector;
 import io.grpc.StatusRuntimeException;
-import org.jetbrains.annotations.NotNull;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
