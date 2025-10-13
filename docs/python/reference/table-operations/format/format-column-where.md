@@ -4,6 +4,12 @@ title: format_column_where
 
 The `format_column_where` method applies color formatting to a column of the source table, based on user-specified conditions.
 
+:::
+
+[Formatting columns](/core/ui/docs/components/table/#formatting-rows-and-columns) can also be accomplished using the [`deephaven.ui`](/core/ui/docs/) Python package.
+
+:::
+
 ## Syntax
 
 ```python syntax
