@@ -13,7 +13,7 @@ boringssl = "2.0.61.Final"
 calcite = "1.39.0"
 json-smart = "2.5.2"
 
-classgraph = "4.8.180"
+classgraph = "4.8.184"
 commons-compress = "1.28.0"
 commons-io = "2.20.0"
 commons-lang3 = "3.18.0"
