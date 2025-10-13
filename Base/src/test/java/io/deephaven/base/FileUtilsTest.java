@@ -66,7 +66,9 @@ public class FileUtilsTest extends TestCase {
         // the following possibly does nothing (like if we're on *nix system)
         final DosFileAttributeView dosView =
                 Files.getFileAttributeView(hiddenFile, DosFileAttributeView.class, LinkOption.NOFOLLOW_LINKS);
-        dosView.setHidden(true);
+        if (dosView != null) {
+            dosView.setHidden(true);
+        }
     }
 
     public void testConvertToFileURI() throws IOException {
