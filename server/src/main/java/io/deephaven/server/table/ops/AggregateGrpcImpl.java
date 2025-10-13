@@ -4,13 +4,14 @@
 package io.deephaven.server.table.ops;
 
 import io.deephaven.api.ColumnName;
+import io.deephaven.api.agg.*;
 import io.deephaven.auth.codegen.impl.TableServiceContextualAuthWiring;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.Table;
-import io.deephaven.proto.backplane.grpc.AggregateRequest;
+import io.deephaven.engine.table.impl.select.SelectColumn;
+import io.deephaven.engine.validation.ColumnExpressionValidator;
+import io.deephaven.proto.backplane.grpc.*;
 import io.deephaven.proto.backplane.grpc.Aggregation;
-import io.deephaven.proto.backplane.grpc.BatchTableRequest;
-import io.deephaven.proto.backplane.grpc.TableReference;
 import io.deephaven.server.grpc.Common;
 import io.deephaven.server.grpc.GrpcErrorHelper;
 import io.deephaven.server.session.SessionState.ExportObject;
@@ -23,18 +24,22 @@ import java.util.stream.Collectors;
 
 @Singleton
 public final class AggregateGrpcImpl extends GrpcTableOperation<AggregateRequest> {
+    private final ColumnExpressionValidator expressionValidator;
+
     private static List<TableReference> refs(AggregateRequest request) {
         return request.hasInitialGroupsId() ? List.of(request.getSourceId(), request.getInitialGroupsId())
                 : List.of(request.getSourceId());
     }
 
     @Inject
-    public AggregateGrpcImpl(final TableServiceContextualAuthWiring authWiring) {
+    public AggregateGrpcImpl(final TableServiceContextualAuthWiring authWiring,
+            final ColumnExpressionValidator expressionValidator) {
         super(
                 authWiring::checkPermissionAggregate,
                 BatchTableRequest.Operation::getAggregate,
                 AggregateRequest::getResultId,
                 AggregateGrpcImpl::refs);
+        this.expressionValidator = expressionValidator;
     }
 
     @Override
@@ -57,11 +62,35 @@ public final class AggregateGrpcImpl extends GrpcTableOperation<AggregateRequest
         Assert.gtZero(request.getAggregationsCount(), "request.getAggregationsCount()");
         final Table parent = sourceTables.get(0).get();
         final Table initialGroups = request.hasInitialGroupsId() ? sourceTables.get(1).get() : null;
+        request.getAggregationsList().forEach(agg -> validateFormulas(agg, parent));
         final List<io.deephaven.api.agg.Aggregation> aggregations = request.getAggregationsList()
                 .stream()
                 .map(AggregationAdapter::adapt)
                 .collect(Collectors.toList());
         final List<ColumnName> groupByColumns = ColumnName.from(request.getGroupByColumnsList());
         return parent.aggBy(aggregations, request.getPreserveEmpty(), initialGroups, groupByColumns);
+    }
+
+    private void validateFormulas(Aggregation agg, Table parent) {
+        if (agg.hasCountWhere()) {
+            final String[] filters = agg.getCountWhere().getFiltersList().toArray(String[]::new);
+            expressionValidator.validateSelectFilters(filters, parent);
+        }
+        if (agg.hasFormula()) {
+            final Selectable selectableGrpc = agg.getFormula().getSelectable();
+            switch (selectableGrpc.getTypeCase()) {
+                case RAW:
+                    final String selectableRaw = selectableGrpc.getRaw();
+                    io.deephaven.api.Selectable selectableParsed = io.deephaven.api.Selectable.parse(selectableRaw);
+                    final SelectColumn sc = SelectColumn.of(selectableParsed);
+                    expressionValidator.validateColumnExpressions(new SelectColumn[] {sc}, new String[] {selectableRaw},
+                            parent);
+                case TYPE_NOT_SET:
+                    break;
+                default:
+                    throw new IllegalArgumentException(
+                            "Unsupported Selectable type (" + selectableGrpc.getTypeCase() + ") in Aggregation.");
+            }
+        }
     }
 }
