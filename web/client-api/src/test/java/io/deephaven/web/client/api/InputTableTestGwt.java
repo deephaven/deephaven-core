@@ -123,10 +123,8 @@ public class InputTableTestGwt extends AbstractAsyncGwtTestCase {
                 .then(JsTable::inputTable)
                 .then(inputTable -> {
                     JsPropertyMap<Object> row = JsPropertyMap.of();
-                    row.set("A", 1);
-                    row.set("B", 2);
-                    row.set("Dummy", 3);
-                    row.set("Dumber", 4);
+                    row.set("E", "5");
+                    row.set("F", "10");
                     return inputTable.addRows(new JsPropertyMap[] {row}, null);
                 })
                 .then(inputTable -> {
