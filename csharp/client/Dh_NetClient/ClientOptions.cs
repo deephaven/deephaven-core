@@ -45,9 +45,11 @@ public class ClientOptions {
   public string ClientPrivateKey { get; set; } = "";
 
   /// <summary>
-  /// This flag indicates that we want to override the default SSL authentication algorithm.
+  /// This value indicates that we want to override the default SSL authentication algorithm.
+  /// The value specifies the target name override. It is used in a similar manner as the
+  /// C++ GRPC client's GRPC_SSL_TARGET_NAME_OVERRIDE_ARG flag.
   /// </summary>
-  public bool OverrideAuthority { get; set; } = false;
+  public string? OverrideAuthority { get; set; } = null;
 
   /// <summary>
   /// Extra headers that should be sent with each outgoing server request.

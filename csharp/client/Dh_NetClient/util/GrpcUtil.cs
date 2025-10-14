@@ -1,6 +1,8 @@
 ﻿//
 // Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
+
+using System.Net.Security;
 using Grpc.Core;
 using Grpc.Net.Client;
 using System.Security.Cryptography.X509Certificates;
@@ -23,15 +25,25 @@ public static class GrpcUtil {
       throw new Exception("GrpcUtil.MakeChannelOptions: UseTls is false but pem provided");
     }
 
-    if (clientOptions.TlsRootCerts.IsEmpty() || !clientOptions.OverrideAuthority) {
+    if (clientOptions.TlsRootCerts.IsEmpty() || clientOptions.OverrideAuthority == null) {
       return channelOptions;
     }
 
     var handler = new HttpClientHandler();
-    handler.ServerCertificateCustomValidationCallback = (_, cert, _, _) => {
+    handler.ServerCertificateCustomValidationCallback = (_, cert, _, errors) => {
+      if (errors == SslPolicyErrors.None) {
+        return true;
+      }
+
       if (cert == null) {
         return false;
       }
+
+      var subjectName = cert.GetNameInfo(X509NameType.SimpleName, false);
+      if (subjectName != clientOptions.OverrideAuthority) {
+        return false;
+      }
+
       var certColl = new X509Certificate2Collection();
       certColl.ImportFromPem(clientOptions.TlsRootCerts);
 
