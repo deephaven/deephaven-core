@@ -1601,4 +1601,57 @@ public final class ParquetTableFilterTest {
         filterAndVerifyResultsAllowEmpty(mergedTable, memTable, "sequential_val <= 5000", "sequential_val > 3000");
         filterAndVerifyResultsAllowEmpty(mergedTable, memTable, "sequential_val = 500");
     }
+
+    @Test
+    public void testLocationDataIndexWithFilterBarriers() {
+        final Table memTable = TableTools.emptyTable(100_000).update("A = ii % 97", "B = ii % 11", "C = ii");
+        final String destPath = Path.of(rootFile.getPath(), "locationDataIndexWithFilterBarriers") + ".parquet";
+        final ParquetInstructions writeInstructions = new ParquetInstructions.Builder()
+                .addIndexColumns("A")
+                .build();
+        writeTable(memTable, destPath, writeInstructions);
+
+        final Table diskTable = ParquetTools.readTable(destPath);
+        assertTableEquals(memTable, diskTable);
+
+        // Create some capturing filters to verify the row sets being passed through the filter chain.
+        final RowSetCapturingFilter filterA = new ParallelizedRowSetCapturingFilter(RawString.of("A < 50"));
+        final RowSetCapturingFilter filterB = new ParallelizedRowSetCapturingFilter(RawString.of("B < 5"));
+
+        final List<RowSetCapturingFilter> allFilters = List.of(filterA, filterB);
+
+        Table result;
+
+        // Test with no barrier, expect A then B
+        result = diskTable.where(Filter.and(filterA, filterB));
+        assertEquals(97, filterA.numRowsProcessed()); // only indexA rows
+        assertEquals(51550, filterB.numRowsProcessed());
+
+        assertEquals(23435, result.size());
+        allFilters.forEach(RowSetCapturingFilter::reset);
+
+        // Test with no barrier, expect A then B despite user ordering
+        result = diskTable.where(Filter.and(filterB, filterA));
+        assertEquals(97, filterA.numRowsProcessed()); // only indexA rows
+        assertEquals(51550, filterB.numRowsProcessed());
+
+        assertEquals(23435, result.size());
+        allFilters.forEach(RowSetCapturingFilter::reset);
+
+        // Barrier to force B then A
+        result = diskTable.where(Filter.and(filterB.withDeclaredBarriers("b1"), filterA.withRespectedBarriers("b1")));
+        assertEquals(97, filterA.numRowsProcessed()); // only indexA rows
+        assertEquals(100_000, filterB.numRowsProcessed());
+
+        assertEquals(23435, result.size());
+        allFilters.forEach(RowSetCapturingFilter::reset);
+
+        // Barrier to force B then A
+        result = diskTable.where(Filter.and(filterB.withSerial(), filterA));
+        assertEquals(97, filterA.numRowsProcessed()); // only indexA rows
+        assertEquals(100_000, filterB.numRowsProcessed());
+
+        assertEquals(23435, result.size());
+        allFilters.forEach(RowSetCapturingFilter::reset);
+    }
 }
