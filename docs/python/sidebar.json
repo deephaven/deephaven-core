@@ -140,7 +140,7 @@
               },
               {
                 "label": "Servers & clients",
-                "path": "conceptual/server-client-model.md"
+                "path": "conceptual/client-server-model.md"
               }
             ]
           },

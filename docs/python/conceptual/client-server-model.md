@@ -6,17 +6,17 @@ Deephaven offers server-side and client-side APIs in multiple languages. These A
 
 When should you use server-side APIs? When should you use client-side APIs? When might you need multiple servers? This guide answers these questions by:
 
-- Explaining the differences between server-client and peer-to-peer architectures.
+- Explaining the differences between client-server and peer-to-peer architectures.
 - Covering how Deephaven's server- and client-side APIs work.
 - Providing guidance on choosing the right architecture for your application.
 
 ## Software architecture
 
-Platforms generally support two software architectures: Server-client and peer-to-peer.
+Platforms generally support two software architectures: Client-server and peer-to-peer.
 
-### Server-client software architecture
+### Client-server software architecture
 
-Server-client architecture in modern software development follows a model where:
+Client-server architecture in modern software development follows a model where:
 
 - A centralized process, called the server, provides services to users.
 - Decentralized processes, called clients, send requests to the server to access services.
@@ -31,9 +31,9 @@ Peer-to-peer architecture in software development follows a model where every pr
 
 ## Deephaven servers and clients
 
-Deephaven servers and clients follow the standard server-client software architecture. When you connect a client to a Deephaven server, you establish a communication channel to that server. The server processes your requests and sends responses back to the client. For ticking tables, Deephaven uses its Barrage protocol to efficiently stream data: the client receives an initial snapshot followed by incremental updates containing only the changes. The heavy lifting is done by the server itself; that's where the processing happens. The client merely sends and receives requests and consumes the responses.
+Deephaven servers and clients follow the standard client-server software architecture. When you connect a client to a Deephaven server, you establish a communication channel to that server. The server processes your requests and sends responses back to the client. For ticking tables, Deephaven uses its Barrage protocol to efficiently stream data: the client receives an initial snapshot followed by incremental updates containing only the changes. The heavy lifting is done by the server itself; that's where the processing happens. The client merely sends and receives requests and consumes the responses.
 
-Key characteristics of Deephaven's server-client model:
+Key characteristics of Deephaven's client-server model:
 
 - **Server-side processing**: The vast majority of computational work happens on the server, where data is stored and transformed.
 - **Lightweight clients**: Clients do little to no real data processing. They send requests to the server and receive responses with the requested information.
@@ -121,7 +121,7 @@ Your architecture choices have significant implications for data security:
 
 - **Single server**: Simplifies security management with a single point of control but creates a single point of failure.
 - **Multiple servers**: Allows for data segregation and compartmentalization but requires careful security configuration between servers.
-- **Server-client model**: Enables fine-grained access control but requires secure communication channels between clients and servers.
+- **Client-server model**: Enables fine-grained access control but requires secure communication channels between clients and servers.
 
 Common security aspects that require careful thought when designing application architecture include:
 
@@ -137,9 +137,9 @@ Address these concerns early in your architecture planning, as they often influe
 
 The following examples demonstrate how the planning considerations discussed above lead to different architectural choices.
 
-### Example: Server-client application
+### Example: Client-server application
 
-Consider a portfolio risk monitoring system for a trading desk. Here's how a Deephaven server-client architecture enables real-time risk management:
+Consider a portfolio risk monitoring system for a trading desk. Here's how a Deephaven client-server architecture enables real-time risk management:
 
 **Server side:**
 
@@ -170,26 +170,35 @@ Multi-server applications distribute workloads across multiple machines to handl
   - Cryptocurrency exchanges
   - Futures markets
   - Options data
-- Maintains connections to historical databases
-- Performs initial data cleaning and normalization
-- Exposes ticking tables via URIs for other servers to access
+- Maintains connections to historical databases.
+- Performs initial data cleaning and normalization.
+- Exposes ticking tables via URIs for other servers to access.
 
 **Server B (Analysis & Client Services):**
 
-- Connects to Server A using [URIs](../how-to-guides/use-uris.md) to access live market data
+- Connects to Server A using [URIs](../how-to-guides/use-uris.md) to access live market data.
 - Performs complex calculations:
   - Risk analytics
   - Trading signals
   - Portfolio optimization
-- Serves processed data to client applications
-- Executes automated trading strategies based on signals
+- Serves processed data to client applications.
+- Executes automated trading strategies based on signals.
+
+**Server C (Load-Balanced Analysis):**
+
+- Configured as a peer to Server B, sharing the same analytical workload.
+- Provides load balancing for high-demand periods when client requests increase.
+- Acts as a fallback if Server B experiences hardware failure or needs maintenance.
+- Allows the system to gracefully degrade performance rather than losing analytical capabilities entirely.
 
 **Benefits of this architecture:**
 
-- Separation of concerns allows each server to be optimized for its specific task
-- Data ingestion continues uninterrupted even during intensive analysis operations
-- System can scale by adding specialized servers for specific markets or strategies
-- Fault tolerance improves as the failure of one component doesn't bring down the entire system
+- Separation of concerns allows each server to be optimized for its specific task.
+- Data ingestion continues uninterrupted even during intensive analysis operations.
+- System can scale by adding specialized servers for specific markets or strategies.
+- Load balancing between Servers B and C distributes client requests and computational workload.
+- Fault tolerance: if one analytical server fails, the other continues serving clients with graceful performance degradation rather than complete service loss.
+- Maintenance can be performed on individual servers without taking the entire system offline.
 
 This implementation demonstrates the [peer-to-peer](#peer-to-peer-software-architecture) software architecture, where each Deephaven instance functions as both a client and a server.
 
@@ -210,4 +219,4 @@ The examples and considerations throughout this document provide a framework for
 ## Related documentation
 
 - [Core API design](./deephaven-core-api.md)
-- [URIs in Deephaven](/core/docs/how-to-guides/use-uris/)
+- [URIs in Deephaven](../how-to-guides/use-uris.md)
