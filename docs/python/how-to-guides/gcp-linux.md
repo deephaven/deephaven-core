@@ -52,16 +52,16 @@ Next, navigate to **OS and storage** on the left of the page, then click **Chang
 
 For the operating system, select **Container-Optimized OS**, which is a Linux distribution created by Google that comes with Docker pre-installed and is optimized for running containers:
 
-- Look for the **Boot disk** section and click **CHANGE**
-- Select **Container-Optimized OS** from the operating system list
-- Select the latest stable version
-- Click **SELECT** to confirm
+- Look for the **Boot disk** section and click **CHANGE**.
+- Select **Container-Optimized OS** from the operating system list.
+- Select the latest stable version.
+- Click **SELECT** to confirm.
 
 Alternatively, you can use other Linux distributions like Ubuntu or Debian. The startup script will automatically install Docker if it's not already present.
 
 ### Startup script for Docker container
 
-A Google Cloud VM can be configured to run Docker containers on startup using a startup script. Since Deephaven can be [launched from pre-built Docker images](../getting-started/quickstart.md), we'll create a startup script that automatically pulls and runs the Deephaven container when the VM starts.
+A Google Cloud VM can be configured to run Docker containers on startup using a script. Since Deephaven can be [launched from pre-built Docker images](../getting-started/quickstart.md), we'll create a startup script that automatically pulls and runs the Deephaven container when the VM starts.
 
 Deephaven has several pre-built Docker images to choose from. Your choice should depend on your needs.
 
@@ -80,9 +80,9 @@ For this guide, we'll use the basic Python image `ghcr.io/deephaven/server:lates
 
 To configure the startup script:
 
-1. Expand the **Advanced options** section at the bottom of the VM creation page
-2. Expand the **Management** section
-3. In the **Automation** section, find the **Startup script** text box
+1. Expand the **Advanced options** section at the bottom of the VM creation page.
+2. Expand the **Management** section.
+3. In the **Automation** section, find the **Startup script** text box.
 4. Paste the following script:
 
 ```bash
