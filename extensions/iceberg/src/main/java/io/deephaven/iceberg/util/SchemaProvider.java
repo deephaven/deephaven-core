@@ -157,16 +157,22 @@ public interface SchemaProvider {
         }
     }
 
+    private static boolean sameSchemaAndId(final Schema schema, final Schema other) {
+        // Note: sameSchema is explicitly documented as _not_ checking schemaId, but we want to be stricter that that
+        // here.
+        return schema.schemaId() == other.schemaId() && schema.sameSchema(other);
+    }
+
+    /**
+     * This is a wrapper around {@link Schema} that provides a more lenient equality check. Two {@link DirectSchema} are
+     * equal if their {@link #schema()} have equal {@link Schema#schemaId()} and {@link Schema#sameSchema(Schema)} is
+     * {@code true}.
+     */
     final class DirectSchema implements SchemaProvider {
         private final Schema schema;
 
         private DirectSchema(Schema schema) {
             this.schema = Objects.requireNonNull(schema);
-            if (schema.schemaId() != 0) {
-                // It's unfortunate that org.apache.iceberg.Schema.DEFAULT_SCHEMA_ID overlaps with a real schema id
-                throw new IllegalArgumentException(
-                        "Direct schemas should not set a schema id; use fromSchemaId instead");
-            }
         }
 
         public Schema schema() {
@@ -183,7 +189,7 @@ public interface SchemaProvider {
             if (!(o instanceof DirectSchema))
                 return false;
             DirectSchema that = (DirectSchema) o;
-            return schema == that.schema || schema.sameSchema(that.schema);
+            return schema == that.schema || sameSchemaAndId(schema, that.schema);
         }
 
         @Override
@@ -192,7 +198,14 @@ public interface SchemaProvider {
             // but different identifierFieldIds (see implementation of Schema.sameSchema). This is unlikely an issue in
             // practice, and simplifies this layer of code from having to know more implementation details of sameSchema
             // (for example, if sameSchema adds new fields in the future, this code should still be correct).
-            return schema.asStruct().hashCode();
+            return 31 * schema.schemaId() + schema.asStruct().hashCode();
+        }
+
+        @Override
+        public String toString() {
+            return "DirectSchema{" +
+                    "schema=" + schema +
+                    '}';
         }
     }
 }
