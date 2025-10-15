@@ -22,13 +22,14 @@ import io.deephaven.engine.table.impl.sources.ChunkedBackingStoreExposedWritable
 import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.SafeCloseable;
-import io.deephaven.util.SafeCloseableList;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -36,6 +37,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.TimeZone;
+import java.util.function.Function;
 
 /**
  * The JdbcToTableAdapter class provides a simple interface to convert a Java Database Connectivity (JDBC)
@@ -184,6 +186,148 @@ public class JdbcToTableAdapter {
         return new ReadJdbcOptions();
     }
 
+    public interface RowSinkFactory<RST extends RowSink> {
+        RST make(ResultSet resultSet, int numRows, ReadJdbcOptions options) throws SQLException;
+    }
+
+    public interface RowSink extends SafeCloseable {
+        void appendRow() throws SQLException;
+    }
+
+    public static <RST extends RowSink> RST readJdbc(
+            final ResultSet resultSet,
+            final ReadJdbcOptions options,
+            final RowSinkFactory<RST> rowSinkFactory) throws SQLException {
+        // Note: JDBC result set cardinality is limited to Integer.MAX_VALUE
+        final int numRows = options.maxRows < 0
+                ? getExpectedSize(resultSet)
+                : Math.min(options.maxRows, getExpectedSize(resultSet));
+
+        try (final RST rowSink = rowSinkFactory.make(resultSet, numRows, options)) {
+            long numRowsRead = 0;
+            while (resultSet.next() && (options.maxRows == -1 || numRowsRead < options.maxRows)) {
+                rowSink.appendRow();
+                ++numRowsRead;
+            }
+            return rowSink;
+        }
+    }
+
+    private static final class TableRowSink implements RowSink {
+
+        private final ResultSet resultSet;
+
+        private final Map<String, ? extends ColumnSource<?>> columnSources;
+        private final SourceFiller[] sourceFillers;
+        final JdbcTypeMapper.Context typeMapperContext;
+
+        boolean errorEncountered;
+        int numRowsRead;
+        Table result;
+
+        private TableRowSink(
+                @NotNull final ResultSet resultSet,
+                final int numRows,
+                @NotNull final ReadJdbcOptions options,
+                @Nullable final Function<String, String> resultSetColumnNameToTableColumnName,
+                @NotNull String... resultSetColumnNames) throws SQLException {
+            this.resultSet = resultSet;
+
+            final ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
+
+            if (resultSetColumnNames.length == 0) {
+                resultSetColumnNames = new String[resultSetMetaData.getColumnCount()];
+                for (int ii = 0; ii < resultSetColumnNames.length; ++ii) {
+                    resultSetColumnNames[ii] = resultSetMetaData.getColumnName(ii + 1);
+                }
+            }
+
+            final int numColumns = resultSetColumnNames.length;
+            final String[] columnNames;
+            if (resultSetColumnNameToTableColumnName == null) {
+                columnNames = fixColumnNames(options, resultSetColumnNames);
+            } else {
+                columnNames = Arrays.stream(resultSetColumnNames)
+                        .map(resultSetColumnNameToTableColumnName)
+                        .toArray(String[]::new);
+            }
+
+            final Map<String, WritableColumnSource<?>> columnSources = new LinkedHashMap<>(numColumns);
+            final SourceFiller[] sourceFillers = new SourceFiller[numColumns];
+            try {
+                for (int ci = 0; ci < numColumns; ++ci) {
+                    final int columnIndex = resultSet.findColumn(resultSetColumnNames[ci]);
+                    final String columnName = columnNames[ci];
+                    final Class<?> destinationType = options.targetTypeMap.get(columnName);
+
+                    final JdbcTypeMapper.DataTypeMapping<?> typeMapping =
+                            JdbcTypeMapper.getColumnTypeMapping(resultSet, columnIndex, destinationType);
+
+                    final Class<?> deephavenType = typeMapping.getDeephavenType();
+                    final Class<?> componentType = deephavenType.getComponentType();
+                    final WritableColumnSource<?> columnSource = numRows == 0
+                            ? ArrayBackedColumnSource.getMemoryColumnSource(0, deephavenType, componentType)
+                            : InMemoryColumnSource.getImmutableMemoryColumnSource(numRows, deephavenType,
+                                    componentType);
+                    if (numRows > 0) {
+                        columnSource.ensureCapacity(numRows, false);
+                    }
+                    columnSources.put(columnName, columnSource);
+
+                    if (ChunkedBackingStoreExposedWritableSource.exposesChunkedBackingStore(columnSource)) {
+                        // noinspection resource
+                        sourceFillers[ci] = new BackingStoreSourceFiller(columnIndex, typeMapping, columnSource);
+                    } else {
+                        // noinspection resource
+                        sourceFillers[ci] = new ChunkFlushingSourceFiller(columnIndex, typeMapping, columnSource);
+                    }
+                }
+            } catch (final Throwable t) {
+                SafeCloseable.closeAll(sourceFillers);
+                throw t;
+            }
+
+            this.columnSources = columnSources;
+            this.sourceFillers = sourceFillers;
+            typeMapperContext = JdbcTypeMapper.Context.of(
+                    options.sourceTimeZone, options.arrayDelimiter, options.strict);
+        }
+
+        @Override
+        public void appendRow() throws SQLException {
+            if (errorEncountered) {
+                throw new IllegalStateException("Previously encountered an error in append");
+            }
+            try {
+                for (SourceFiller filler : sourceFillers) {
+                    filler.readRow(resultSet, typeMapperContext, numRowsRead);
+                }
+            } catch (final Throwable t) {
+                errorEncountered = true;
+                throw t;
+            }
+            ++numRowsRead;
+        }
+
+        @Override
+        public void close() {
+            SafeCloseable.closeAll(sourceFillers);
+            if (errorEncountered) {
+                return;
+            }
+            // noinspection resource
+            result = new QueryTable(RowSetFactory.flat(numRowsRead).toTracking(), columnSources);
+        }
+
+        public Table getResult() {
+            if (result == null) {
+                throw new IllegalStateException(
+                        "TableRowSink has not been closed, or encountered an error in append or close");
+            }
+            return result;
+        }
+    }
+
     /**
      * Returns a table that was populated from the provided result set.
      *
@@ -207,63 +351,9 @@ public class JdbcToTableAdapter {
      */
     public static Table readJdbc(final ResultSet rs, final ReadJdbcOptions options, String... origColumnNames)
             throws SQLException {
-        final ResultSetMetaData md = rs.getMetaData();
-
-        if (origColumnNames.length == 0) {
-            origColumnNames = new String[md.getColumnCount()];
-            for (int ii = 0; ii < origColumnNames.length; ++ii) {
-                origColumnNames[ii] = md.getColumnName(ii + 1);
-            }
-        }
-
-        // Note: JDBC result set cardinality is limited to Integer.MAX_VALUE
-        final int numRows = options.maxRows < 0 ? getExpectedSize(rs) : Math.min(options.maxRows, getExpectedSize(rs));
-        final int numColumns = origColumnNames.length;
-        final String[] columnNames = fixColumnNames(options, origColumnNames);
-        final SourceFiller[] sourceFillers = new SourceFiller[numColumns];
-
-        final HashMap<String, ColumnSource<?>> columnMap = new LinkedHashMap<>();
-        long numRowsRead = 0;
-        try (final SafeCloseableList toClose = new SafeCloseableList()) {
-            for (int ii = 0; ii < numColumns; ++ii) {
-                final int columnIndex = rs.findColumn(origColumnNames[ii]);
-                final String columnName = columnNames[ii];
-                final Class<?> destType = options.targetTypeMap.get(columnName);
-
-                final JdbcTypeMapper.DataTypeMapping<?> typeMapping =
-                        JdbcTypeMapper.getColumnTypeMapping(rs, columnIndex, destType);
-
-                final Class<?> deephavenType = typeMapping.getDeephavenType();
-                final Class<?> componentType = deephavenType.getComponentType();
-                final WritableColumnSource<?> cs = numRows == 0
-                        ? ArrayBackedColumnSource.getMemoryColumnSource(0, deephavenType, componentType)
-                        : InMemoryColumnSource.getImmutableMemoryColumnSource(numRows, deephavenType, componentType);
-
-                if (numRows > 0) {
-                    cs.ensureCapacity(numRows, false);
-                }
-
-                if (ChunkedBackingStoreExposedWritableSource.exposesChunkedBackingStore(cs)) {
-                    sourceFillers[ii] = toClose.add(new BackingStoreSourceFiller(columnIndex, typeMapping, cs));
-                } else {
-                    sourceFillers[ii] = toClose.add(new ChunkFlushingSourceFiller(columnIndex, typeMapping, cs));
-                }
-
-                columnMap.put(columnName, cs);
-            }
-
-            final JdbcTypeMapper.Context context = JdbcTypeMapper.Context.of(
-                    options.sourceTimeZone, options.arrayDelimiter, options.strict);
-
-            while (rs.next() && (options.maxRows == -1 || numRowsRead < options.maxRows)) {
-                for (SourceFiller filler : sourceFillers) {
-                    filler.readRow(rs, context, numRowsRead);
-                }
-                ++numRowsRead;
-            }
-        }
-
-        return new QueryTable(RowSetFactory.flat(numRowsRead).toTracking(), columnMap);
+        return readJdbc(rs, options,
+                (rsc, nr, oc) -> new TableRowSink(rsc, nr, oc, null, origColumnNames))
+                .getResult();
     }
 
     private interface SourceFiller extends SafeCloseable {
@@ -366,14 +456,14 @@ public class JdbcToTableAdapter {
     }
 
     /**
-     * Ensures that columns names are valid for use in Deephaven and applies optional casing rules
+     * Ensures that columns names are valid for use in Deephaven and applies optional casing rules.
      *
      * @param originalColumnName Column name to be checked for validity and uniqueness
      * @param usedNames List of names already used in the table
-     * @param casing Optional CasingStyle to use when processing source names, if null or None the source name's casing
-     *        is not modified
+     * @param casing Optional {@link CasingStyle} to use when processing source names, if null or
+     *        {@link CasingStyle#None} the source name's casing is not modified
      * @param replacement A String to use as a replacement for invalid characters in the source name
-     * @return legalized, uniqueified, column name, with specified Guava casing applied
+     * @return Legalized, uniquified, column name, with specified casing applied
      */
     private static String fixColumnName(final String originalColumnName,
             @NotNull final Set<String> usedNames,
@@ -385,8 +475,8 @@ public class JdbcToTableAdapter {
         }
 
         // Run through the legalization and casing process twice, in case legalization returns a name that doesn't
-        // conform with casing
-        // During casing adjustment, we'll allow hyphen, space, backslash, forward slash, and period as word separators
+        // conform with casing.
+        // During casing adjustment, we'll allow hyphen, space, backslash, forward slash, and period as word separators.
         // noinspection unchecked
         final String intermediateLegalName =
                 NameValidator.legalizeColumnName(
@@ -396,7 +486,7 @@ public class JdbcToTableAdapter {
                         .replaceAll("[_]", "-").toLowerCase();
 
         // There should be no reason for the casing options to return a String with hyphen or space in them, but, in
-        // case we add other CasingStyles later, we'll check
+        // case we add other CasingStyles later, we'll check.
         return NameValidator.legalizeColumnName(
                 fromFormat.to(
                         caseFormats.get(casing),
@@ -418,29 +508,29 @@ public class JdbcToTableAdapter {
     /**
      * Gets the expected size of the ResultSet, or 0 if we can not figure it out.
      *
-     * @param rs the result to determine the size of
-     * @return the expected size (or 0 if unknown)
+     * @param resultSet The result to determine the size of
+     * @return The expected size (or 0 if unknown)
      */
-    private static int getExpectedSize(ResultSet rs) {
-        // it would be swell to get the size of our ResultSet, but only if it is scrollable
+    public static int getExpectedSize(@NotNull final ResultSet resultSet) {
+        // It would be swell to get the size of our ResultSet, but only if it is scrollable
         final int type;
         try {
-            type = rs.getType();
+            type = resultSet.getType();
         } catch (SQLException e) {
             throw new UncheckedDeephavenException("Can not determine ResultSet type!", e);
         }
 
         if (type == ResultSet.TYPE_SCROLL_INSENSITIVE || type == ResultSet.TYPE_SCROLL_SENSITIVE) {
             try {
-                final int firstRow = rs.getRow();
-                if (!rs.isBeforeFirst() && firstRow == 0 || rs.isAfterLast()) {
+                final int firstRow = resultSet.getRow();
+                if (!resultSet.isBeforeFirst() && firstRow == 0 || resultSet.isAfterLast()) {
                     // this result set appears to be empty
                     return 0;
                 }
 
-                rs.last();
-                final int lastRow = rs.getRow();
-                rs.absolute(firstRow);
+                resultSet.last();
+                final int lastRow = resultSet.getRow();
+                resultSet.absolute(firstRow);
                 return lastRow - firstRow;
             } catch (SQLException ignored) {
             }
