@@ -63,6 +63,11 @@ public class StandaloneDataIndex extends LivenessArtifact implements BasicDataIn
     }
 
     @Override
+    public boolean tableIsCached() {
+        return true;
+    }
+
+    @Override
     @NotNull
     public Table table(final DataIndexOptions unused) {
         return table;

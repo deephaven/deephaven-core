@@ -6,6 +6,7 @@ package io.deephaven.engine.table.impl;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.impl.select.NoPredicatePushdown;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.util.JobScheduler;
 
@@ -132,6 +133,7 @@ public interface PushdownFilterMatcher {
     static boolean canPushdownFilter(final WhereFilter filter) {
         return !filter.getColumns().isEmpty()
                 && !filter.hasVirtualRowVariables()
-                && filter.getColumnArrays().isEmpty();
+                && filter.getColumnArrays().isEmpty()
+                && !(filter instanceof NoPredicatePushdown);
     }
 }

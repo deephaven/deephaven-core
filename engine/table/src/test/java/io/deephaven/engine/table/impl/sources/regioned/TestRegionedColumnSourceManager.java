@@ -496,6 +496,11 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
         }
 
         @Override
+        public boolean tableIsCached() {
+            return true;
+        }
+
+        @Override
         public @NotNull Table table(DataIndexOptions ignored) {
             return table;
         }
