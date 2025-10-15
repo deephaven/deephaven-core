@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools >= 64"]
+build-backend = "setuptools.build_meta"
+
+[tool.mypy]
+namespace_packages = true
+exclude = "deephaven_core/proto/.*"
+
+[[tool.mypy.overrides]]
+module = "pyarrow"
+ignore_missing_imports = true
+[[tool.mypy.overrides]]
+module = "pyarrow.*"
+ignore_missing_imports = true
+
+[tool.ruff.lint.per-file-ignores]
+"pydeephaven/proto/**" = ["ALL"]
+"deephaven_core/proto/**" = ["ALL"]
+"docs/**" = ["ALL"]
+
+[tool.ruff]
+exclude = ["deephaven_core/proto"]
+
+[tool.ruff.format]
+exclude = ["deephaven_core/proto"]

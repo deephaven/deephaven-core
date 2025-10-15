@@ -17,7 +17,8 @@ class ConfigService:
         try:
             response = self.session.wrap_rpc(
                 self._grpc_app_stub.GetConfigurationConstants,
-                config_pb2.ConfigurationConstantsRequest())
+                config_pb2.ConfigurationConstantsRequest(),
+            )
             return dict(response.config_values)
         except Exception as e:
             raise DHError("failed to get the configuration constants.") from e

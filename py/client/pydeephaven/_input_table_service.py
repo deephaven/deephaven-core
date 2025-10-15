@@ -10,15 +10,19 @@ from pydeephaven.table import InputTable
 class InputTableService:
     def __init__(self, session):
         self.session = session
-        self._grpc_input_table_stub = inputtable_pb2_grpc.InputTableServiceStub(session.grpc_channel)
+        self._grpc_input_table_stub = inputtable_pb2_grpc.InputTableServiceStub(
+            session.grpc_channel
+        )
 
     def add(self, input_table: InputTable, table: Table):
         """Adds a table to the InputTable."""
         try:
             self.session.wrap_rpc(
                 self._grpc_input_table_stub.AddTableToInputTable,
-                inputtable_pb2.AddTableRequest(input_table=input_table.pb_ticket,
-                                               table_to_add=table.pb_ticket))
+                inputtable_pb2.AddTableRequest(
+                    input_table=input_table.pb_ticket, table_to_add=table.pb_ticket
+                ),
+            )
         except Exception as e:
             raise DHError("failed to add to InputTable") from e
 
@@ -28,7 +32,8 @@ class InputTableService:
             self.session.wrap_rpc(
                 self._grpc_input_table_stub.DeleteTableFromInputTable,
                 inputtable_pb2.DeleteTableRequest(
-                    input_table=input_table.pb_ticket,
-                    table_to_remove=table.pb_ticket))
+                    input_table=input_table.pb_ticket, table_to_remove=table.pb_ticket
+                ),
+            )
         except Exception as e:
             raise DHError("failed to delete from InputTable") from e

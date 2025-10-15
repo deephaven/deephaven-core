@@ -12,7 +12,9 @@ import pyarrow as pa
 from pyarrow import csv
 
 
-def make_random_csv(num_cols=2, num_rows=10, linesep='\r\n', write_names=True, output_file='csv_data'):
+def make_random_csv(
+    num_cols=2, num_rows=10, linesep="\r\n", write_names=True, output_file="csv_data"
+):
     arr = np.random.RandomState(42).randint(0, 1000, size=(num_cols, num_rows))
     csv_writer = io.StringIO()
     col_names = list(itertools.islice(generate_col_names(), num_cols))
@@ -22,7 +24,7 @@ def make_random_csv(num_cols=2, num_rows=10, linesep='\r\n', write_names=True, o
     for row in arr.T:
         csv_writer.write(",".join(map(str, row)))
         csv_writer.write(linesep)
-    csv_data = csv_writer.getvalue().encode()
+    csv_writer.getvalue().encode()
     columns = [pa.array(a, type=pa.int64()) for a in arr]
     pa_table = pa.Table.from_arrays(columns, col_names)
     csv.write_csv(pa_table, output_file=output_file)

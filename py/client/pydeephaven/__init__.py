@@ -25,20 +25,28 @@ Examples:
 
 import importlib.metadata
 
-from .session import Session
-from .dherror import DHError
 from ._table_interface import SortDirection, NaturalJoinType
+from .dherror import DHError
 from .query import Query
+from .session import Session
 from .table import Table
 
+__all__ = ["Session", "DHError", "SortDirection", "Query", "Table", "NaturalJoinType"]
+
 try:
-    from pydeephaven_ticking.table_listener import TableListener, TableListenerHandle, TableUpdate, listen
+    from pydeephaven_ticking.table_listener import (  # type: ignore[import]  # noqa: F401
+        TableListener,
+        TableListenerHandle,
+        TableUpdate,
+        listen,
+    )
+
+    __all__.extend(["TableListener", "TableListenerHandle", "TableUpdate", "listen"])
 except ImportError:
     pass
 
-__all__ = ["Session", "DHError", "SortDirection"]
 
 # Note: this is the _distribution_ name, not the _package_ name. Until 3.10, there is not an easy way to get the
-# distribution name from the package name.
+# distribution name from the package name.c
 # https://docs.python.org/3/library/importlib.metadata.html#package-distributions
-__version__ = importlib.metadata.version('pydeephaven')
+__version__ = importlib.metadata.version("pydeephaven")

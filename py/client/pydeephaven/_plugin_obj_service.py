@@ -1,13 +1,11 @@
 #
 # Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 #
-import io
 from typing import Any
 
-from pydeephaven.dherror import DHError
 from deephaven_core.proto import object_pb2_grpc
+from pydeephaven.dherror import DHError
 from pydeephaven.experimental.plugin_client import PluginRequestStream
-
 
 """This module provides internal tools to communicate with plugins on the server."""
 
@@ -16,7 +14,8 @@ class PluginObjService:
     """
     PluginObjectService defines utility methods to make gRPC calls to the ObjectService.
     """
-    def __init__(self, session: 'pydeephaven.session.Session'):
+
+    def __init__(self, session):
         self.session = session
         self._grpc_app_stub = object_pb2_grpc.ObjectServiceStub(session.grpc_channel)
 
@@ -24,8 +23,10 @@ class PluginObjService:
         """Opens a connection to the server-side implementation of this plugin."""
         try:
             resp = self.session.wrap_bidi_rpc(
-                self._grpc_app_stub.MessageStream,
-                req_stream)
+                self._grpc_app_stub.MessageStream, req_stream
+            )
             return resp
         except Exception as e:
-            raise DHError("failed to establish bidirectional stream with the server.") from e
+            raise DHError(
+                "failed to establish bidirectional stream with the server."
+            ) from e

@@ -5,7 +5,7 @@
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import List, Union, Any, Optional
+from typing import List, Union, Optional
 
 import numpy as np
 
@@ -29,6 +29,8 @@ class Aggregation(ABC):
     Note: It should not be instantiated directly by user code but rather through the factory functions in the module.
     """
 
+    agg_spec: _GrpcAggSpec
+
     @abstractmethod
     def make_grpc_message(self):
         pass
@@ -40,7 +42,9 @@ class _AggregationColumns(Aggregation):
     cols: Union[str, List[str]]
 
     def make_grpc_message(self) -> _GrpcAggregation:
-        agg_columns = _GrpcAggregationColumns(spec=self.agg_spec, match_pairs=to_list(self.cols))
+        agg_columns = _GrpcAggregationColumns(
+            spec=self.agg_spec, match_pairs=to_list(self.cols)
+        )
         return _GrpcAggregation(columns=agg_columns)
 
 
@@ -59,7 +63,9 @@ class _AggregationCountWhere(Aggregation):
     filters: Union[str, List[str]]
 
     def make_grpc_message(self) -> _GrpcAggregation:
-        agg_count_where = _GrpcAggregationCountWhere(column_name=self.col, filters=to_list(self.filters))
+        agg_count_where = _GrpcAggregationCountWhere(
+            column_name=self.col, filters=to_list(self.filters)
+        )
         return _GrpcAggregation(count_where=agg_count_where)
 
 
@@ -78,11 +84,13 @@ class _AggregationPartition(Aggregation):
     include_by_columns: bool
 
     def make_grpc_message(self) -> _GrpcAggregation:
-        agg_count = _GrpcAggregationPartition(column_name=self.col, include_group_by_columns=self.include_by_columns)
+        agg_count = _GrpcAggregationPartition(
+            column_name=self.col, include_group_by_columns=self.include_by_columns
+        )
         return _GrpcAggregation(partition=agg_count)
 
 
-def sum_(cols: Union[str, List[str]] = None) -> Aggregation:
+def sum_(cols: Optional[Union[str, List[str]]] = None) -> Aggregation:
     """Creates a Sum aggregation.
 
     Args:
@@ -96,7 +104,7 @@ def sum_(cols: Union[str, List[str]] = None) -> Aggregation:
     return _AggregationColumns(agg_spec=agg_spec, cols=to_list(cols))
 
 
-def abs_sum(cols: Union[str, List[str]] = None) -> Aggregation:
+def abs_sum(cols: Optional[Union[str, List[str]]] = None) -> Aggregation:
     """Creates an Absolute-sum aggregation.
 
     Args:
@@ -110,7 +118,7 @@ def abs_sum(cols: Union[str, List[str]] = None) -> Aggregation:
     return _AggregationColumns(agg_spec=agg_spec, cols=to_list(cols))
 
 
-def group(cols: Union[str, List[str]] = None) -> Aggregation:
+def group(cols: Optional[Union[str, List[str]]] = None) -> Aggregation:
     """Creates a Group aggregation.
 
     Args:
@@ -124,7 +132,7 @@ def group(cols: Union[str, List[str]] = None) -> Aggregation:
     return _AggregationColumns(agg_spec=agg_spec, cols=to_list(cols))
 
 
-def avg(cols: Union[str, List[str]] = None) -> Aggregation:
+def avg(cols: Optional[Union[str, List[str]]] = None) -> Aggregation:
     """Creates an Average aggregation.
 
     Args:
@@ -175,7 +183,9 @@ def partition(col: str, include_by_columns: bool = True) -> Aggregation:
     return _AggregationPartition(col=col, include_by_columns=include_by_columns)
 
 
-def count_distinct(cols: Union[str, List[str]] = None, count_nulls: bool = False) -> Aggregation:
+def count_distinct(
+    cols: Optional[Union[str, List[str]]] = None, count_nulls: bool = False
+) -> Aggregation:
     """Creates a Count Distinct aggregation which computes the count of distinct values within an aggregation group for
     each of the given columns.
 
@@ -187,11 +197,13 @@ def count_distinct(cols: Union[str, List[str]] = None, count_nulls: bool = False
     Returns:
         an aggregation
     """
-    agg_spec = _GrpcAggSpec(count_distinct=_GrpcAggSpec.AggSpecCountDistinct(count_nulls=count_nulls))
+    agg_spec = _GrpcAggSpec(
+        count_distinct=_GrpcAggSpec.AggSpecCountDistinct(count_nulls=count_nulls)
+    )
     return _AggregationColumns(agg_spec=agg_spec, cols=to_list(cols))
 
 
-def first(cols: Union[str, List[str]] = None) -> Aggregation:
+def first(cols: Optional[Union[str, List[str]]] = None) -> Aggregation:
     """Creates a First aggregation.
 
     Args:
@@ -205,7 +217,11 @@ def first(cols: Union[str, List[str]] = None) -> Aggregation:
     return _AggregationColumns(agg_spec=agg_spec, cols=to_list(cols))
 
 
-def formula(formula: str, formula_param: Optional[str] = None, cols: Optional[Union[str, List[str]]] = None) -> Aggregation:
+def formula(
+    formula: str,
+    formula_param: Optional[str] = None,
+    cols: Optional[Union[str, List[str]]] = None,
+) -> Aggregation:
     """Creates a user defined formula aggregation. This formula can contain a combination of any of the following:
         |  Built-in functions such as `min`, `max`, etc.
         |  Mathematical arithmetic such as `*`, `+`, `/`, etc.
@@ -236,13 +252,17 @@ def formula(formula: str, formula_param: Optional[str] = None, cols: Optional[Un
         an aggregation
     """
     if formula_param:
-        agg_spec = _GrpcAggSpec(formula=_GrpcAggSpec.AggSpecFormula(formula=formula, param_token=formula_param))
+        agg_spec = _GrpcAggSpec(
+            formula=_GrpcAggSpec.AggSpecFormula(
+                formula=formula, param_token=formula_param
+            )
+        )
         return _AggregationColumns(agg_spec=agg_spec, cols=to_list(cols))
     selectable = _GrpcSelectable(raw=formula)
     return _AggregationFormula(selectable=selectable)
 
 
-def last(cols: Union[str, List[str]] = None) -> Aggregation:
+def last(cols: Optional[Union[str, List[str]]] = None) -> Aggregation:
     """Creates a Last aggregation.
 
     Args:
@@ -256,7 +276,7 @@ def last(cols: Union[str, List[str]] = None) -> Aggregation:
     return _AggregationColumns(agg_spec=agg_spec, cols=to_list(cols))
 
 
-def min_(cols: Union[str, List[str]] = None) -> Aggregation:
+def min_(cols: Optional[Union[str, List[str]]] = None) -> Aggregation:
     """Creates a Min aggregation.
 
     Args:
@@ -270,7 +290,7 @@ def min_(cols: Union[str, List[str]] = None) -> Aggregation:
     return _AggregationColumns(agg_spec=agg_spec, cols=to_list(cols))
 
 
-def max_(cols: Union[str, List[str]] = None) -> Aggregation:
+def max_(cols: Optional[Union[str, List[str]]] = None) -> Aggregation:
     """Creates a Max aggregation.
 
     Args:
@@ -284,7 +304,9 @@ def max_(cols: Union[str, List[str]] = None) -> Aggregation:
     return _AggregationColumns(agg_spec=agg_spec, cols=to_list(cols))
 
 
-def median(cols: Union[str, List[str]] = None, average_evenly_divided: bool = True) -> Aggregation:
+def median(
+    cols: Optional[Union[str, List[str]]] = None, average_evenly_divided: bool = True
+) -> Aggregation:
     """Creates a Median aggregation which computes the median value within an aggregation group for each of the
     given columns.
 
@@ -298,11 +320,17 @@ def median(cols: Union[str, List[str]] = None, average_evenly_divided: bool = Tr
     Returns:
         an aggregation
     """
-    agg_spec = _GrpcAggSpec(median=_GrpcAggSpec.AggSpecMedian(average_evenly_divided=average_evenly_divided))
+    agg_spec = _GrpcAggSpec(
+        median=_GrpcAggSpec.AggSpecMedian(average_evenly_divided=average_evenly_divided)
+    )
     return _AggregationColumns(agg_spec=agg_spec, cols=to_list(cols))
 
 
-def pct(percentile: float, cols: Union[str, List[str]] = None, average_evenly_divided: bool = False) -> Aggregation:
+def pct(
+    percentile: float,
+    cols: Optional[Union[str, List[str]]] = None,
+    average_evenly_divided: bool = False,
+) -> Aggregation:
     """Creates a Percentile aggregation which computes the percentile value within an aggregation group for each of
     the given columns.
 
@@ -317,12 +345,17 @@ def pct(percentile: float, cols: Union[str, List[str]] = None, average_evenly_di
     Returns:
         an aggregation
     """
-    agg_spec = _GrpcAggSpec(percentile=_GrpcAggSpec.AggSpecPercentile(percentile=percentile,
-                                                                      average_evenly_divided=average_evenly_divided))
+    agg_spec = _GrpcAggSpec(
+        percentile=_GrpcAggSpec.AggSpecPercentile(
+            percentile=percentile, average_evenly_divided=average_evenly_divided
+        )
+    )
     return _AggregationColumns(agg_spec=agg_spec, cols=to_list(cols))
 
 
-def sorted_first(order_by: str, cols: Union[str, List[str]] = None) -> Aggregation:
+def sorted_first(
+    order_by: str, cols: Optional[Union[str, List[str]]] = None
+) -> Aggregation:
     """Creates a SortedFirst aggregation.
 
     Args:
@@ -334,11 +367,15 @@ def sorted_first(order_by: str, cols: Union[str, List[str]] = None) -> Aggregati
         an aggregation
     """
     sorted_column = _GrpcAggSpec.AggSpecSortedColumn(column_name=order_by)
-    agg_spec = _GrpcAggSpec(sorted_first=_GrpcAggSpec.AggSpecSorted(columns=[sorted_column]))
+    agg_spec = _GrpcAggSpec(
+        sorted_first=_GrpcAggSpec.AggSpecSorted(columns=[sorted_column])
+    )
     return _AggregationColumns(agg_spec=agg_spec, cols=to_list(cols))
 
 
-def sorted_last(order_by: str, cols: Union[str, List[str]] = None) -> Aggregation:
+def sorted_last(
+    order_by: str, cols: Optional[Union[str, List[str]]] = None
+) -> Aggregation:
     """Creates a SortedLast aggregation.
 
     Args:
@@ -350,11 +387,13 @@ def sorted_last(order_by: str, cols: Union[str, List[str]] = None) -> Aggregatio
         an aggregation
     """
     sorted_column = _GrpcAggSpec.AggSpecSortedColumn(column_name=order_by)
-    agg_spec = _GrpcAggSpec(sorted_last=_GrpcAggSpec.AggSpecSorted(columns=[sorted_column]))
+    agg_spec = _GrpcAggSpec(
+        sorted_last=_GrpcAggSpec.AggSpecSorted(columns=[sorted_column])
+    )
     return _AggregationColumns(agg_spec=agg_spec, cols=to_list(cols))
 
 
-def std(cols: Union[str, List[str]] = None) -> Aggregation:
+def std(cols: Optional[Union[str, List[str]]] = None) -> Aggregation:
     """Creates a Std (sample standard deviation) aggregation.
 
     Sample standard deviation is computed using `Bessel's correction <https://en.wikipedia.org/wiki/Bessel%27s_correction>`_,
@@ -371,8 +410,11 @@ def std(cols: Union[str, List[str]] = None) -> Aggregation:
     return _AggregationColumns(agg_spec=agg_spec, cols=to_list(cols))
 
 
-def unique(cols: Union[str, List[str]] = None, include_nulls: bool = False,
-           non_unique_sentinel: Union[np.number, str, bool] = None) -> Aggregation:
+def unique(
+    cols: Optional[Union[str, List[str]]] = None,
+    include_nulls: bool = False,
+    non_unique_sentinel: Optional[Union[np.number, str, bool]] = None,
+) -> Aggregation:
     """Creates a Unique aggregation which computes the single unique value within an aggregation group for each of
     the given columns. If all values in a column are null, or if there is more than one distinct value in a column, the
     result is the specified non_unique_sentinel value (defaults to null).
@@ -395,35 +437,60 @@ def unique(cols: Union[str, List[str]] = None, include_nulls: bool = False,
     """
     if non_unique_sentinel is not None:
         if isinstance(non_unique_sentinel, np.byte):
-            agg_spec_non_unique_sentinel = _GrpcAggSpec.AggSpecNonUniqueSentinel(byte_value=non_unique_sentinel)
+            agg_spec_non_unique_sentinel = _GrpcAggSpec.AggSpecNonUniqueSentinel(
+                byte_value=int(non_unique_sentinel)
+            )
         elif isinstance(non_unique_sentinel, np.short):
-            agg_spec_non_unique_sentinel = _GrpcAggSpec.AggSpecNonUniqueSentinel(short_value=non_unique_sentinel)
+            agg_spec_non_unique_sentinel = _GrpcAggSpec.AggSpecNonUniqueSentinel(
+                short_value=int(non_unique_sentinel)
+            )
         elif isinstance(non_unique_sentinel, np.int32):
-            agg_spec_non_unique_sentinel = _GrpcAggSpec.AggSpecNonUniqueSentinel(int_value=non_unique_sentinel)
+            agg_spec_non_unique_sentinel = _GrpcAggSpec.AggSpecNonUniqueSentinel(
+                int_value=int(non_unique_sentinel)
+            )
         elif isinstance(non_unique_sentinel, (np.int64, int)):
-            agg_spec_non_unique_sentinel = _GrpcAggSpec.AggSpecNonUniqueSentinel(long_value=non_unique_sentinel)
+            agg_spec_non_unique_sentinel = _GrpcAggSpec.AggSpecNonUniqueSentinel(
+                long_value=int(non_unique_sentinel)
+            )
         elif isinstance(non_unique_sentinel, np.float32):
-            agg_spec_non_unique_sentinel = _GrpcAggSpec.AggSpecNonUniqueSentinel(float_value=non_unique_sentinel)
+            agg_spec_non_unique_sentinel = _GrpcAggSpec.AggSpecNonUniqueSentinel(
+                float_value=float(non_unique_sentinel)
+            )
         elif isinstance(non_unique_sentinel, (np.float64, float)):
-            agg_spec_non_unique_sentinel = _GrpcAggSpec.AggSpecNonUniqueSentinel(double_value=non_unique_sentinel)
+            agg_spec_non_unique_sentinel = _GrpcAggSpec.AggSpecNonUniqueSentinel(
+                double_value=float(non_unique_sentinel)
+            )
         elif isinstance(non_unique_sentinel, np.uint16):
-            agg_spec_non_unique_sentinel = _GrpcAggSpec.AggSpecNonUniqueSentinel(char_value=non_unique_sentinel)
+            agg_spec_non_unique_sentinel = _GrpcAggSpec.AggSpecNonUniqueSentinel(
+                char_value=int(non_unique_sentinel)
+            )
         elif isinstance(non_unique_sentinel, str):
-            agg_spec_non_unique_sentinel = _GrpcAggSpec.AggSpecNonUniqueSentinel(string_value=non_unique_sentinel)
+            agg_spec_non_unique_sentinel = _GrpcAggSpec.AggSpecNonUniqueSentinel(
+                string_value=non_unique_sentinel
+            )
         elif isinstance(non_unique_sentinel, (bool, np.bool_)):
-            agg_spec_non_unique_sentinel = _GrpcAggSpec.AggSpecNonUniqueSentinel(bool_value=non_unique_sentinel)
+            agg_spec_non_unique_sentinel = _GrpcAggSpec.AggSpecNonUniqueSentinel(
+                bool_value=bool(non_unique_sentinel)
+            )
         else:
-            raise TypeError(f"invalid non-unique-sentinel value type {type(non_unique_sentinel)}")
+            raise TypeError(
+                f"invalid non-unique-sentinel value type {type(non_unique_sentinel)}"
+            )
     else:
-        agg_spec_non_unique_sentinel = _GrpcAggSpec.AggSpecNonUniqueSentinel(null_value=_GrpcNullValue.NULL_VALUE)
+        agg_spec_non_unique_sentinel = _GrpcAggSpec.AggSpecNonUniqueSentinel(
+            null_value=_GrpcNullValue.NULL_VALUE
+        )
 
     agg_spec = _GrpcAggSpec(
-        unique=_GrpcAggSpec.AggSpecUnique(include_nulls=include_nulls,
-                                          non_unique_sentinel=agg_spec_non_unique_sentinel))
+        unique=_GrpcAggSpec.AggSpecUnique(
+            include_nulls=include_nulls,
+            non_unique_sentinel=agg_spec_non_unique_sentinel,
+        )
+    )
     return _AggregationColumns(agg_spec=agg_spec, cols=to_list(cols))
 
 
-def var(cols: Union[str, List[str]] = None) -> Aggregation:
+def var(cols: Optional[Union[str, List[str]]] = None) -> Aggregation:
     """Creates a sample Variance aggregation.
 
     Sample variance is computed using `Bessel's correction <https://en.wikipedia.org/wiki/Bessel%27s_correction>`_,
@@ -440,7 +507,9 @@ def var(cols: Union[str, List[str]] = None) -> Aggregation:
     return _AggregationColumns(agg_spec=agg_spec, cols=to_list(cols))
 
 
-def weighted_avg(wcol: str, cols: Union[str, List[str]] = None) -> Aggregation:
+def weighted_avg(
+    wcol: str, cols: Optional[Union[str, List[str]]] = None
+) -> Aggregation:
     """Creates a Weighted-average aggregation.
 
     Args:
@@ -451,11 +520,15 @@ def weighted_avg(wcol: str, cols: Union[str, List[str]] = None) -> Aggregation:
     Returns:
         an aggregation
     """
-    agg_spec = _GrpcAggSpec(weighted_avg=_GrpcAggSpec.AggSpecWeighted(weight_column=wcol))
+    agg_spec = _GrpcAggSpec(
+        weighted_avg=_GrpcAggSpec.AggSpecWeighted(weight_column=wcol)
+    )
     return _AggregationColumns(agg_spec=agg_spec, cols=to_list(cols))
 
 
-def weighted_sum(wcol: str, cols: Union[str, List[str]] = None) -> Aggregation:
+def weighted_sum(
+    wcol: str, cols: Optional[Union[str, List[str]]] = None
+) -> Aggregation:
     """Creates a Weighted-sum aggregation.
 
     Args:
@@ -466,11 +539,15 @@ def weighted_sum(wcol: str, cols: Union[str, List[str]] = None) -> Aggregation:
     Returns:
         an aggregation
     """
-    agg_spec = _GrpcAggSpec(weighted_sum=_GrpcAggSpec.AggSpecWeighted(weight_column=wcol))
+    agg_spec = _GrpcAggSpec(
+        weighted_sum=_GrpcAggSpec.AggSpecWeighted(weight_column=wcol)
+    )
     return _AggregationColumns(agg_spec=agg_spec, cols=to_list(cols))
 
 
-def distinct(cols: Union[str, List[str]] = None, include_nulls: bool = False) -> Aggregation:
+def distinct(
+    cols: Optional[Union[str, List[str]]] = None, include_nulls: bool = False
+) -> Aggregation:
     """Creates a Distinct aggregation which computes the distinct values within an aggregation group for each of the
     given columns and stores them as vectors.
 
@@ -482,5 +559,7 @@ def distinct(cols: Union[str, List[str]] = None, include_nulls: bool = False) ->
     Returns:
         an aggregation
     """
-    agg_spec = _GrpcAggSpec(distinct=_GrpcAggSpec.AggSpecDistinct(include_nulls=include_nulls))
+    agg_spec = _GrpcAggSpec(
+        distinct=_GrpcAggSpec.AggSpecDistinct(include_nulls=include_nulls)
+    )
     return _AggregationColumns(agg_spec=agg_spec, cols=to_list(cols))

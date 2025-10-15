@@ -5,6 +5,7 @@
 """
 Experimental module to communicate with server-side plugins from the client.
 """
+
 import threading
 from queue import SimpleQueue
 from typing import Any, List, Union, Tuple
@@ -22,17 +23,22 @@ class PluginClient(ServerObject):
     Use resp_stream to read messages that the server has sent, and req_stream to send messages back to the server, if
     supported.
     """
-    def __init__(self, session: 'pydeephaven.session.Session', server_obj: ServerObject):
+
+    def __init__(self, session, server_obj: ServerObject):
         self.export_ticket = None
         # make sure we have an ExportTicket on the server object so that it will remain alive for
         # the lifespan of this PluginClient
         if not isinstance(server_obj.ticket, ExportTicket):
             self.export_ticket = session.fetch(server_obj.ticket)
-            self.server_obj = ServerObject(type=server_obj.type, ticket=self.export_ticket)
+            self.server_obj = ServerObject(
+                type=server_obj.type, ticket=self.export_ticket
+            )
         else:
             self.server_obj = server_obj
         self.session = session
-        self.req_stream = PluginRequestStream(SimpleQueue(), self.server_obj.pb_typed_ticket)
+        self.req_stream = PluginRequestStream(
+            SimpleQueue(), self.server_obj.pb_typed_ticket
+        )
         self.resp_stream = PluginResponseStream(self._open(), self.session)
         super().__init__(type=self.server_obj.type, ticket=self.server_obj.ticket)
 
@@ -65,9 +71,11 @@ class Fetchable(ServerObject):
         the server.
         """
         if self.pb_typed_ticket.type is None:
-            raise DHError("Cannot fetch an object with no type, the server has no ObjectType plugin registered to "
-                          "support it.")
-        if self.pb_typed_ticket.type == 'Table':
+            raise DHError(
+                "Cannot fetch an object with no type, the server has no ObjectType plugin registered to "
+                "support it."
+            )
+        if self.pb_typed_ticket.type == "Table":
             return self.session.table_service.fetch_etcr(self.pb_typed_ticket.ticket)
         return PluginClient(self.session, self)
 
@@ -92,7 +100,9 @@ class PluginRequestStream:
         """
         Sends a message to the server, consisting of a payload of bytes and a list of objects that exist on the server.
         """
-        data_message = object_pb2.ClientData(payload=payload, references=[obj.pb_typed_ticket for obj in references])
+        data_message = object_pb2.ClientData(
+            payload=payload, references=[obj.pb_typed_ticket for obj in references]
+        )
         stream_req = object_pb2.StreamRequest(data=data_message)
         self.req_queue.put(stream_req)
 
@@ -115,7 +125,7 @@ class PluginResponseStream:
     to, depending on the server implementation.
     """
 
-    def __init__(self, stream_resp, session: 'pydeephaven.session.Session'):
+    def __init__(self, stream_resp, session):
         self.stream_resp = stream_resp
         self.session = session
         self._rlock = threading.RLock()
@@ -126,10 +136,13 @@ class PluginResponseStream:
                 raise RuntimeError("the response stream is closed.")
             try:
                 resp = next(self.stream_resp)
-            except StopIteration as e:
+            except StopIteration:
                 raise
             else:
-                return resp.data.payload, [Fetchable(self.session, ticket) for ticket in resp.data.exported_references]
+                return resp.data.payload, [
+                    Fetchable(self.session, ticket)
+                    for ticket in resp.data.exported_references
+                ]
 
     def __iter__(self):
         return self
