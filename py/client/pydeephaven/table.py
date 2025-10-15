@@ -959,7 +959,7 @@ class MultiJoinInput:
 
 def multi_join(
     input: Union[Table, Sequence[Table], MultiJoinInput, Sequence[MultiJoinInput]],
-    on: Union[str, Sequence[str]],
+    on: Optional[Union[str, Sequence[str]]] = None,
 ) -> MultiJoinTable:
     """The multi_join method creates a new table by performing a multi-table natural join on the input tables. The
     result consists of the set of distinct keys from the input tables natural joined to each input table. Input
@@ -986,6 +986,8 @@ def multi_join(
         session = tables[0].session
         if not all([t.session == session for t in tables]):
             raise DHError(message="all tables must be from the same session.")
+        if on is None:
+            raise DHError(message="on parameter is required when Table objects are provided.")
         multi_join_inputs = [MultiJoinInput(table=t, on=on) for t in tables]
     elif isinstance(input, MultiJoinInput) or (
         isinstance(input, Sequence)
