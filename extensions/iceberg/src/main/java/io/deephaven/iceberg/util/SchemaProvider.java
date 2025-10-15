@@ -183,7 +183,7 @@ public interface SchemaProvider {
             if (!(o instanceof DirectSchema))
                 return false;
             DirectSchema that = (DirectSchema) o;
-            return schema.sameSchema(that.schema);
+            return schema == that.schema || schema.sameSchema(that.schema);
         }
 
         @Override

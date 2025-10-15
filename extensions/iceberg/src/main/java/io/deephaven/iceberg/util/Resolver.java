@@ -9,6 +9,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.qst.type.Type;
+import io.deephaven.util.annotations.InternalUseOnly;
 import io.deephaven.util.annotations.VisibleForTesting;
 import org.apache.iceberg.PartitionField;
 import org.apache.iceberg.PartitionSpec;
@@ -106,7 +107,12 @@ public abstract class Resolver implements ResolverProvider {
     /**
      * The Iceberg schema.
      */
-    public abstract Schema schema();
+    public final Schema schema() {
+        return directSchema().schema();
+    }
+
+    // Implementation detail to provide a better equality check
+    abstract SchemaProvider.DirectSchema directSchema();
 
     /**
      * The Iceberg partition specification. Only necessary to set when the {@link #definition()} has
@@ -157,7 +163,12 @@ public abstract class Resolver implements ResolverProvider {
 
         Builder definition(TableDefinition definition);
 
-        Builder schema(Schema schema);
+        default Builder schema(Schema schema) {
+            return directSchema(SchemaProvider.fromSchema(schema));
+        }
+
+        @InternalUseOnly
+        Builder directSchema(SchemaProvider.DirectSchema directSchema);
 
         Builder spec(PartitionSpec spec);
 
