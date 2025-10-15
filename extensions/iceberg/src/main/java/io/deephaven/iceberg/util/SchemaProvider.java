@@ -49,6 +49,18 @@ public interface SchemaProvider {
         return TableSnapshot.TABLE_SNAPSHOT;
     }
 
+    /**
+     * Provides a stricter version of {@link Schema#sameSchema(Schema)} that also checks for equality of the
+     * {@link Schema#schemaId() schema ids}.
+     *
+     * @param schema the first Schema
+     * @param other the second Schema
+     * @return if the Schemas are the same and have equal ids
+     */
+    static boolean sameSchemaAndId(final Schema schema, final Schema other) {
+        return schema.schemaId() == other.schemaId() && schema.sameSchema(other);
+    }
+
     interface Visitor<T> {
         T visit(TableSchema tableSchema);
 
@@ -157,16 +169,8 @@ public interface SchemaProvider {
         }
     }
 
-    private static boolean sameSchemaAndId(final Schema schema, final Schema other) {
-        // Note: sameSchema is explicitly documented as _not_ checking schemaId, but we want to be stricter that that
-        // here.
-        return schema.schemaId() == other.schemaId() && schema.sameSchema(other);
-    }
-
     /**
-     * This is a wrapper around {@link Schema} that provides a more lenient equality check. Two {@link DirectSchema} are
-     * equal if their {@link #schema()} have equal {@link Schema#schemaId()} and {@link Schema#sameSchema(Schema)} is
-     * {@code true}.
+     * This is a wrapper around {@link Schema} that provides equality based on {@link #sameSchemaAndId(Schema, Schema)}.
      */
     final class DirectSchema implements SchemaProvider {
         private final Schema schema;

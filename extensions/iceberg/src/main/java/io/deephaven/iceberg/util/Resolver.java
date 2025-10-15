@@ -105,7 +105,8 @@ public abstract class Resolver implements ResolverProvider {
     public abstract TableDefinition definition();
 
     /**
-     * The Iceberg schema.
+     * The Iceberg schema. Equality for this Schema is defined by
+     * {@link SchemaProvider#sameSchemaAndId(Schema, Schema)}.
      */
     public final Schema schema() {
         return directSchema().schema();

@@ -46,6 +46,7 @@ public abstract class InferenceInstructions {
     /**
      * The schema to use for {@link Resolver#infer(InferenceInstructions) inference}. The resulting
      * {@link Resolver#definition() definition} will have columns in the same order as defined by this {@link Schema}.
+     * Equality for this Schema is defined by {@link SchemaProvider#sameSchemaAndId(Schema, Schema)}.
      */
     public final Schema schema() {
         return directSchema().schema();
