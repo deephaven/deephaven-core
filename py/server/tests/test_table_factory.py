@@ -226,7 +226,11 @@ class TableFactoryTestCase(BaseTestCase):
         self.assertIsNotNone(bool_col(name="Boolean", data=[True, -1]))
 
         with self.assertRaises(DHError):
-            bool_col(name="Boolean", data=[True, j_al])
+            class NoBoolAllowed:
+                def __bool__(self):
+                    raise TypeError("This object cannot be converted to a boolean")
+
+            bool_col(name="Boolean", data=[True, NoBoolAllowed()])
 
     def test_dynamic_table_writer(self):
         with self.subTest("Correct Input"):

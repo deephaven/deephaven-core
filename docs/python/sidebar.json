@@ -308,6 +308,10 @@
                 "path": "how-to-guides/sort.md"
               },
               {
+                "label": "Keyed transpose",
+                "path": "how-to-guides/keyed-transpose.md"
+              },
+              {
                 "label": "Merge",
                 "path": "how-to-guides/merge-tables.md"
               },
@@ -875,6 +879,10 @@
           {
             "label": "Development tools",
             "items": [
+              {
+                "label": "MCP",
+                "path": "how-to-guides/mcp.md"
+              },
               {
                 "label": "Copilot extension",
                 "path": "how-to-guides/copilot-extension.md"
@@ -1750,6 +1758,10 @@
                   {
                     "label": "format_row_where",
                     "path": "reference/table-operations/format/format-row-where.md"
+                  },
+                  {
+                    "label": "layout_hints",
+                    "path": "reference/table-operations/format/layout-hints.md"
                   },
                   {
                     "label": "keyed_transpose",
