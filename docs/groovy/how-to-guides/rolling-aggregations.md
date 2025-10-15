@@ -135,21 +135,20 @@ Cumulative aggregations are the simplest operations in the [`updateby`](/core/ja
 
 ### Cumulative sum
 
-To illustrate a cumulative statistic, consider the cumulative sum. This operation computes the sum of all previous data points for every row in a table. Here's an illustration of the cumulative sum:
+To illustrate a cumulative statistic, consider the cumulative sum. For each row, this operation calculates the sum of all previous values in a column, including the current row's value. The following illustration shows this:
 
-![A diagram illustrating how a cumulative sum is calculated](../assets/how-to/rolling-calculations-3.png)
+![img](../assets/how-to/updateby-cum-sum.png)
 
-The fourth element of the cumulative sum column is the sum of the first four data points, the fifth element is the sum of the first five data points, and so on.
+The code for the illustration above looks like this:
 
-This calculation is implemented in Deephaven with the [`CumSum`](../reference/table-operations/update-by-operations/cum-sum.md) function and the [`updateBy`](../reference/table-operations/update-by-operations/updateBy.md) table operation:
-
-```groovy order=result
+```groovy order=source,result
 source = emptyTable(8).update("X = ii")
 
 result = source.updateBy(CumSum("SumX=X"))
 ```
 
-Here, the `"SumX=X"` argument indicates that the resulting column will be renamed `SumX`.
+> [!NOTE]
+> The syntax `SumX=X` indicates that the resultant column from the operation is named `SumX`.
 
 ### Cumulative average
 
@@ -212,21 +211,50 @@ Simple moving (or rolling) aggregations are statistics computed over a finite, m
 
 Deephaven also offers the [`RollingGroup`](../reference/table-operations/update-by-operations/rolling-group.md) function for creating rolling groups, and the [`RollingFormula`](../reference/table-operations/update-by-operations/rolling-formula.md) function for implementing custom rolling operations using DQL.
 
-### Rolling average
+To illustrate a simple moving aggregation, consider the rolling average. For each row, this operation calculates the average of all values within a specified window. The following illustration shows this:
 
-To illustrate a simple moving statistic, consider the simple moving average. It is the average of all data points inside of a given window, and that window moves across the dataset to generate the simple moving average for each row. Here is an illustration of a 4-tick moving average:
+![img](../assets/how-to/updateby-rolling-avg.png)
 
-![Diagram illustrating how a rolling average is calculated](../assets/how-to/rolling-calculations-1.png)
+The code for the illustration above looks like this:
 
-The fourth element of the moving average column is the average of the first four data points, the fifth element is the average of the second through fifth data points, and so on.
-
-This calculation is implemented in Deephaven using the [`RollingAvg`](../reference/table-operations/update-by-operations/rolling-avg.md) function and the [`updateBy`](../reference/table-operations/update-by-operations/updateBy.md) table operation:
-
-```groovy order=result
+```groovy order=source,result
 source = emptyTable(8).update("X = ii")
 
 result = source.updateBy(RollingAvg(4, "AvgX=X"))
 ```
+
+The following example demonstrates a series of different tick-based windows that look backwards, forwards, and both. Each example calculates the rolling sum of the `Value` column:
+
+```groovy order=source,result
+source = emptyTable(50).update("Value = ii")
+
+updateByOps = [
+    RollingSum(10, 0, "SumValueBackwards=Value"),
+    RollingSum(1, 9, "SumValueForwards=Value"),
+    RollingSum(6, 5, "SumValueBoth=Value"),
+]
+
+result = source.updateBy(updateByOps)
+```
+
+The above example can be modified to use time-based windows instead of tick-based windows:
+
+```groovy order=source,result
+source = emptyTable(50).update(
+    "Timestamp = '2025-05-01T09:30:00 ET' + ii * SECOND",
+    "Value = ii"
+)
+
+updateByOps = [
+    RollingSum("Timestamp", parseDuration("PT10s"), parseDuration("PT00:00:00"), "SumValueBackwards=Value"),
+    RollingSum("Timestamp", parseDuration("PT00:00:00"), parseDuration("PT10s"), "SumValueForwards=Value"),
+    RollingSum("Timestamp", parseDuration("PT5s"), parseDuration("PT5s"), "SumValueBoth=Value"),
+]
+
+result = source.updateBy(updateByOps)
+```
+
+### Rolling average
 
 When creating a tick-based rolling operation, the `revTicks` parameter can configure how far the window extends behind the row. The current row is considered to belong to the backward-looking window, so setting `revTicks=10` includes the current row and previous 9 rows.
 
@@ -306,11 +334,9 @@ Exponential moving statistics are another form of moving aggregations. Unlike si
 
 To visualize an exponential moving statistic, consider the exponential moving average (EMA). The following illustration shows this:
 
-![Diagram illustrating how an exponential moving average is calculated](../assets/how-to/rolling-calculations-2.png)
+![img](../assets/how-to/updateby-ema.png)
 
-Each element in the new column depends on _every_ data point that came before it, but distant data points only have a very small effect. Check out the [reference documentation for `Ema`](../reference/table-operations/update-by-operations/ema.md) for the formula used to compute this statistic.
-
-This calculation is implemented in Deephaven using the [`Ema`](../reference/table-operations/update-by-operations/ema.md) function and the [`updateBy`](../reference/table-operations/update-by-operations/updateBy.md) table operation:
+The code for the illustration above looks like this:
 
 ```groovy order=result
 source = emptyTable(8).update("X = ii")
