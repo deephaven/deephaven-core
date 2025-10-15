@@ -315,7 +315,7 @@ tWindowed = t.updateBy(updateByOps)
 
 > **_NOTE:_** A backward-looking window counts the current row as the first row backward. A forward-looking window counts the row ahead of the current row as the first row forward.
 
-See the [`updateBy` user guide](../../how-to-guides/use-update-by.md) to learn more.
+See the [`updateBy` user guide](../../how-to-guides/rolling-aggregations.md) to learn more.
 
 ## Combine tables
 

@@ -292,19 +292,11 @@
                 ]
               },
               {
-                "label": "Rolling and moving calculations",
+                "label": "Rolling aggregations",
                 "items": [
                   {
-                    "label": "updateBy",
-                    "path": "how-to-guides/use-update-by.md"
-                  },
-                  {
-                    "label": "Cumulative, rolling, and moving statistics",
-                    "path": "how-to-guides/rolling-calculations.md"
-                  },
-                  {
-                    "label": "Other rolling utilities",
-                    "path": "how-to-guides/other-rolling-utils.md"
+                    "label": "Rolling aggregations",
+                    "path": "how-to-guides/rolling-aggregations.md"
                   }
                 ]
               },
