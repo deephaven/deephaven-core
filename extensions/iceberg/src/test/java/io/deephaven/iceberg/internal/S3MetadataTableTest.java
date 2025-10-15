@@ -34,6 +34,8 @@ class S3MetadataTableTest {
      *   org.apache.iceberg.Table s3MetadataTable = catalog.loadTable(...);
      *   System.out.println(org.apache.iceberg.SchemaParser.toJson(s3MetadataTable.schema()));
      * </pre>
+     *
+     * See io.deephaven.iceberg.internal.S3MetadataTableTestBootstrap in extensions-iceberg-s3 for more details.
      */
     private static Schema s3MetadataSchema() throws IOException {
         final String json;
