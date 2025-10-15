@@ -157,7 +157,7 @@ resultMeta = result.meta()
 ### Built-in query language functions
 
 > [!CAUTION]
-> [Dedicated aggregations](./dedicated-aggregations.md), [Combined aggregations](./combined-aggregations.md), and [`updateBy`](./rolling-calculations.md) are always more performant than [`groupBy`](../reference/table-operations/group-and-aggregate/groupBy.md) followed by manual calculations when used on ticking tables.
+> [Dedicated aggregations](./dedicated-aggregations.md), [Combined aggregations](./combined-aggregations.md), and [`updateBy`](./rolling-aggregations.md) are always more performant than [`groupBy`](../reference/table-operations/group-and-aggregate/groupBy.md) followed by manual calculations when used on ticking tables.
 
 Many [built-in query language methods](./built-in-functions.md) take arrays as input. The following example uses the [`sum`](https://docs.deephaven.io/core/javadoc/io/deephaven/function/Numeric.html#sum(io.deephaven.vector.LongVector)) and [`avg`](https://docs.deephaven.io/core/javadoc/io/deephaven/function/Numeric.html#avg(io.deephaven.vector.LongVector)) functions on a column containing [arrays](../reference/query-language/types/arrays.md).
 
