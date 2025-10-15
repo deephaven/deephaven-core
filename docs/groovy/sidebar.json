@@ -104,6 +104,10 @@
               {
                 "label": "Core API design",
                 "path": "conceptual/deephaven-core-api.md"
+              },
+              {
+                "label": "Servers & clients",
+                "path": "conceptual/client-server-model.md"
               }
             ]
           },
