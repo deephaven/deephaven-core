@@ -2,17 +2,19 @@
 # Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 #
 
-""" This module implement various filters that can be used in deephaven table's filter operations."""
+"""This module implement various filters that can be used in deephaven table's filter operations."""
+
 from __future__ import annotations
 
+from collections.abc import Sequence
 from enum import Enum
-from typing import List, Union, Sequence
+from typing import Union
 
 import jpy
 
-from deephaven import DHError, dtypes
+from deephaven import DHError
 from deephaven._wrapper import JObjectWrapper
-from deephaven.concurrency_control import ConcurrencyControl, T, Barrier
+from deephaven.concurrency_control import ConcurrencyControl, Barrier
 from deephaven.jcompat import to_sequence
 
 _JFilter = jpy.get_type("io.deephaven.api.filter.Filter")
@@ -96,7 +98,7 @@ class Filter(ConcurrencyControl["Filter"], JObjectWrapper):
         return Filter(j_filter=getattr(_JFilter, "not")(self.j_filter))
 
     @classmethod
-    def from_(cls, conditions: Union[str, List[str]]) -> Union[Filter, List[Filter]]:
+    def from_(cls, conditions: Union[str, list[str]]) -> Union[Filter, list[Filter]]:
         """Creates filter(s) from the given condition(s).
 
         Args:
@@ -198,10 +200,7 @@ class PatternMode(Enum):
 
 
 def pattern(
-    mode: PatternMode,
-    col: str,
-    regex: str,
-    invert_pattern: bool = False
+    mode: PatternMode, col: str, regex: str, invert_pattern: bool = False
 ) -> Filter:
     """Creates a regular-expression pattern filter.
 

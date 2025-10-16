@@ -4,15 +4,17 @@
 import inspect
 from typing import Callable
 
-from docstring_parser import parse, Docstring
+from docstring_parser import parse
 from jedi import Script, Interpreter
 
-from deephaven_internal.auto_completer._signature_help import _get_params, _generate_description_markdown
+from deephaven_internal.auto_completer._signature_help import (
+    _get_params,
+    _generate_description_markdown,
+)
 from tests.testbase import BaseTestCase
 
 
 class DocstringParser(BaseTestCase):
-
     def get_script_signature(self, func: Callable, func_call_append=""):
         """
         Get the signature of the function passed in. using Jedi Script.
@@ -28,12 +30,16 @@ class DocstringParser(BaseTestCase):
         return s[0]
 
     def get_interpreter_signature(self, func: Callable, func_call_append=""):
-        i = Interpreter(f"{func.__name__}({func_call_append}", [{func.__name__: func}]).get_signatures()
+        i = Interpreter(
+            f"{func.__name__}({func_call_append}", [{func.__name__: func}]
+        ).get_signatures()
         self.assertIsInstance(i, list)
         self.assertEqual(len(i), 1)
         return i[0]
 
-    def expect_description(self, func: Callable, expected_result: str, func_call_append =""):
+    def expect_description(
+        self, func: Callable, expected_result: str, func_call_append=""
+    ):
         """
         Test whether the function passed in results in the expected markdown docs. Tests both interpreter and script.
 
@@ -45,19 +51,32 @@ class DocstringParser(BaseTestCase):
         script_signature = self.get_script_signature(func, func_call_append)
         script_docstring = script_signature.docstring(raw=True)
         self.assertEqual(
-            _generate_description_markdown(parse(script_docstring), _get_params(script_signature, parse(script_docstring))),
-            expected_result
+            _generate_description_markdown(
+                parse(script_docstring),
+                _get_params(script_signature, parse(script_docstring)),
+            ),
+            expected_result,
         )
 
         interpreter_signature = self.get_interpreter_signature(func, func_call_append)
         interpreter_docstring = interpreter_signature.docstring(raw=True)
         self.assertEqual(
-            _generate_description_markdown(parse(interpreter_docstring), _get_params(interpreter_signature, parse(interpreter_docstring))),
-            expected_result
+            _generate_description_markdown(
+                parse(interpreter_docstring),
+                _get_params(interpreter_signature, parse(interpreter_docstring)),
+            ),
+            expected_result,
         )
 
     def test_args(self):
-        def args(has_docs, has_type: str | int, *positional, has_default=1, has_type_default: str | int = 1, **keyword):
+        def args(
+            has_docs,
+            has_type: str | int,
+            *positional,
+            has_default=1,
+            has_type_default: str | int = 1,
+            **keyword,
+        ):
             """
             Description
 
@@ -71,7 +90,9 @@ class DocstringParser(BaseTestCase):
                 **keyword: Keyword arg has docs
             """
 
-        self.expect_description(args, """\
+        self.expect_description(
+            args,
+            """\
 Description
 
 #### **Parameters**
@@ -92,7 +113,8 @@ Description
 > Arg has type and default
 
 > ****keyword**  
-> Keyword arg has docs""")
+> Keyword arg has docs""",
+        )
 
     def test_args_no_docs(self):
         def args_no_docs(no_docs, /, *, keyword_no_docs=None):
@@ -105,7 +127,9 @@ Description
                 *: Should not show
             """
 
-        self.expect_description(args_no_docs, """\
+        self.expect_description(
+            args_no_docs,
+            """\
 Description
 
 #### **Parameters**
@@ -113,7 +137,8 @@ Description
 > **no_docs**  
 
 
-> **keyword_no_docs** ⋅ (default: *None*)""")
+> **keyword_no_docs** ⋅ (default: *None*)""",
+        )
 
     def test_raises_various(self):
         def raises_various():
@@ -126,7 +151,9 @@ Description
                   This is a continuation of ValueError
             """
 
-        self.expect_description(raises_various, """\
+        self.expect_description(
+            raises_various,
+            """\
 Description
 
 #### **Raises**
@@ -136,7 +163,8 @@ Description
 
 > **ValueError**  
 > ValueError description.
-This is a continuation of ValueError""")
+This is a continuation of ValueError""",
+        )
 
     def test_returns_various(self):
         def returns_various():
@@ -146,7 +174,9 @@ This is a continuation of ValueError""")
             :returns bar: bar description
             """
 
-        self.expect_description(returns_various, """\
+        self.expect_description(
+            returns_various,
+            """\
 #### **Returns**
 
 > Return has docs
@@ -155,7 +185,8 @@ This is a continuation of ValueError""")
 > foo description
 
 > **bar**  
-> bar description""")
+> bar description""",
+        )
 
     def test_example_string(self):
         def example_string():
@@ -166,12 +197,15 @@ This is a continuation of ValueError""")
                 Plain text
             """
 
-        self.expect_description(example_string, """\
+        self.expect_description(
+            example_string,
+            """\
 Description
 
 #### **Examples**
 
-Plain text""")
+Plain text""",
+        )
 
     def test_example_code(self):
         def example_code():
@@ -183,7 +217,9 @@ Plain text""")
                 Still code
             """
 
-        self.expect_description(example_code, """\
+        self.expect_description(
+            example_code,
+            """\
 Description
 
 #### **Examples**
@@ -191,4 +227,5 @@ Description
 ```
 >>> Code
 Still code
-```""")
+```""",
+        )

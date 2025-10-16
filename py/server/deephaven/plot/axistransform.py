@@ -2,7 +2,7 @@
 # Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 #
 
-""" This module implements the AxisTransform class for performing axis transformation on plots before rendering. """
+"""This module implements the AxisTransform class for performing axis transformation on plots before rendering."""
 
 from typing import List
 
@@ -16,8 +16,8 @@ _JPlottingConvenience = jpy.get_type("io.deephaven.plot.PlottingConvenience")
 
 
 class AxisTransform(JObjectWrapper):
-    """ An axis transformation that is applied before rendering a plot. Axis transforms include logarithms,
-    business time, etc. """
+    """An axis transformation that is applied before rendering a plot. Axis transforms include logarithms,
+    business time, etc."""
 
     j_object_type = _JAxisTransform
 
@@ -30,12 +30,12 @@ class AxisTransform(JObjectWrapper):
 
 
 def axis_transform_names() -> List[str]:
-    """ Returns the names of available axis transforms. """
+    """Returns the names of available axis transforms."""
     return list(_JPlottingConvenience.axisTransformNames())
 
 
 def axis_transform(name: str) -> AxisTransform:
-    """ Returns a predefined AxisTransform object by its name.
+    """Returns a predefined AxisTransform object by its name.
 
     Args:
         name (str): the predefined AxisTransform name

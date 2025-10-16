@@ -19,4 +19,4 @@ class PandasDataFrameSerializer(FetchOnlyObjectType):
 
     def to_bytes(self, exporter: Exporter, data_frame: DataFrame):
         exporter.reference(to_table(data_frame))
-        return b''
+        return b""

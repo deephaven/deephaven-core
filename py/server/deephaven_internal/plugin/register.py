@@ -5,8 +5,8 @@
 import jpy
 import deephaven.plugin
 
-from typing import Union, Type
-from deephaven.plugin import Plugin, Registration, Callback
+from typing import Union
+from deephaven.plugin import Plugin, Callback
 from deephaven.plugin.object_type import ObjectType
 from deephaven.plugin.js import JsPlugin
 from .object import ObjectTypeAdapter
@@ -26,7 +26,7 @@ class RegistrationAdapter(Callback):
     def __init__(self, callback: _JCallbackAdapter):
         self._callback = callback
 
-    def register(self, plugin: Union[Plugin, Type[Plugin]]):
+    def register(self, plugin: Union[Plugin, type[Plugin]]):
         if isinstance(plugin, type):
             # If registering a class, instantiate it before adapting it and passing to java
             plugin = plugin()

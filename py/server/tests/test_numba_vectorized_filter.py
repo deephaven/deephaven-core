@@ -23,14 +23,20 @@ def vectorized_func_wrong_return_type(x, y):
 
 
 class NumbaVectorizedFilterTestCase(BaseTestCase):
-
     def test_wrong_return_type(self):
         with self.assertRaises(Exception):
-            t = empty_table(10).view(formulas=["I=ii", "J=(ii * 2)"]) \
+            t = (
+                empty_table(10)
+                .view(formulas=["I=ii", "J=(ii * 2)"])
                 .where("vectorized_func_wrong_return_type(I, J)")
+            )
 
     def test_filter(self):
-        t = empty_table(10).view(formulas=["I=ii", "J=(ii * 2)"]).where("vectorized_func(I, J)")
+        t = (
+            empty_table(10)
+            .view(formulas=["I=ii", "J=(ii * 2)"])
+            .where("vectorized_func(I, J)")
+        )
         html_output = to_html(t)
         self.assertIn("<td>5</td><td>10</td>", html_output)
 

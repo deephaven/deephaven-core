@@ -31,7 +31,9 @@ class ExperimentalTestCase(BaseTestCase):
             rt = full_outer_join(t1, t2, on="a = c")
             self.assertTrue(rt.is_refreshing)
             self.wait_ticking_table_update(rt, row_count=100, timeout=5)
-            self.assertEqual(len(rt.definition), len(t1.definition) + len(t2.definition))
+            self.assertEqual(
+                len(rt.definition), len(t1.definition) + len(t2.definition)
+            )
 
         with self.subTest("full outer join with no matching keys"):
             t1 = empty_table(2).update(["X = i", "a = i"])
@@ -52,7 +54,9 @@ class ExperimentalTestCase(BaseTestCase):
             rt = left_outer_join(t1, t2, on="a = c")
             self.assertTrue(rt.is_refreshing)
             self.wait_ticking_table_update(rt, row_count=100, timeout=5)
-            self.assertEqual(len(rt.definition), len(t1.definition) + len(t2.definition))
+            self.assertEqual(
+                len(rt.definition), len(t1.definition) + len(t2.definition)
+            )
 
         with self.subTest("left outer join with no matching keys"):
             t1 = empty_table(2).update(["X = i", "a = i"])
@@ -69,7 +73,9 @@ class ExperimentalTestCase(BaseTestCase):
         with self.subTest("user-explicit lock"):
             with exclusive_lock(self.test_update_graph):
                 source_table = time_table("PT00:00:00.01").update(["TS=now()"])
-                t = time_window(source_table, ts_col="TS", window=10 ** 8, bool_col="InWindow")
+                t = time_window(
+                    source_table, ts_col="TS", window=10**8, bool_col="InWindow"
+                )
 
             self.assertEqual("InWindow", t.columns[-1].name)
             self.wait_ticking_table_update(t, row_count=20, timeout=60)
@@ -78,12 +84,15 @@ class ExperimentalTestCase(BaseTestCase):
 
         with self.subTest("auto-lock"):
             source_table = time_table("PT00:00:00.01").update(["TS=now()"])
-            t = time_window(source_table, ts_col="TS", window=10 ** 8, bool_col="InWindow")
+            t = time_window(
+                source_table, ts_col="TS", window=10**8, bool_col="InWindow"
+            )
 
             self.assertEqual("InWindow", t.columns[-1].name)
             self.wait_ticking_table_update(t, row_count=20, timeout=60)
             self.assertIn("true", t.to_string(1000))
             self.assertIn("false", t.to_string(1000))
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()

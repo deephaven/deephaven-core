@@ -5,7 +5,7 @@
 
 import jpy
 
-from typing import Callable, Dict, Optional, Tuple, Union, List
+from typing import Callable, Optional
 
 from deephaven._wrapper import JObjectWrapper
 from deephaven.execution_context import get_exec_ctx
@@ -78,7 +78,7 @@ def table_publisher(
     on_shutdown_callback: Optional[Callable[[], None]] = None,
     update_graph: Optional[UpdateGraph] = None,
     chunk_size: int = 2048,
-) -> Tuple[Table, TablePublisher]:
+) -> tuple[Table, TablePublisher]:
     """Constructs a blink Table and TablePublisher to populate it.
 
     Args:

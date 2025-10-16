@@ -2,14 +2,14 @@
 # Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 #
 
-""" Tools for resolving Uniform Resource Identifiers (URIs) into objects. """
+"""Tools for resolving Uniform Resource Identifiers (URIs) into objects."""
 
 from typing import Any
 
 import jpy
 
 from deephaven import DHError
-from deephaven._wrapper import JObjectWrapper, wrap_j_object
+from deephaven._wrapper import wrap_j_object
 
 _JResolveTools = jpy.get_type("io.deephaven.uri.ResolveTools")
 

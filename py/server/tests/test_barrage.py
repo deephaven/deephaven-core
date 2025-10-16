@@ -22,11 +22,18 @@ class BarrageTestCase(BaseTestCase):
         super().setUpClass()
         # the cacheDir env var is required to avoid a problem when the same cache dir is used by two server instances,
         # in which case the later server instance will wipe out the cache dir of the earlier server instance.
-        env = {"START_OPTS": "-DAuthHandlers=io.deephaven.auth.AnonymousAuthenticationHandler -Ddeephaven.cacheDir=/cache/tmp"}
+        env = {
+            "START_OPTS": "-DAuthHandlers=io.deephaven.auth.AnonymousAuthenticationHandler -Ddeephaven.cacheDir=/cache/tmp"
+        }
         env.update(dict(os.environ))
-        cls.server_proc = subprocess.Popen(["/opt/deephaven/server/bin/start"], shell=False, env=env,
-                                            stdin=subprocess.PIPE,
-                                            stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        cls.server_proc = subprocess.Popen(
+            ["/opt/deephaven/server/bin/start"],
+            shell=False,
+            env=env,
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
         cls.ensure_server_running()
 
     @classmethod
@@ -42,7 +49,7 @@ class BarrageTestCase(BaseTestCase):
             try:
                 Session("localhost", 10000)
                 break
-            except Exception as e:
+            except Exception:
                 time.sleep(1)
         else:
             raise RuntimeError("Cannot connect to the server")
@@ -66,10 +73,20 @@ class BarrageTestCase(BaseTestCase):
             barrage_session(host="invalid", port=10000, auth_token="Anonymous")
 
         with self.assertRaises(DHError):
-            barrage_session(host="localhost", port=10000, auth_type="Basic", auth_token="user:password")
+            barrage_session(
+                host="localhost",
+                port=10000,
+                auth_type="Basic",
+                auth_token="user:password",
+            )
 
     def test_barrage_session_with_extra_headers(self):
-        session = barrage_session(host="localhost", port=10000, auth_type="Anonymous", extra_headers={"envoy-prefix": "test"})
+        session = barrage_session(
+            host="localhost",
+            port=10000,
+            auth_type="Anonymous",
+            extra_headers={"envoy-prefix": "test"},
+        )
         self.assertIsNotNone(session)
 
     def test_subscribe(self):
@@ -85,7 +102,9 @@ class BarrageTestCase(BaseTestCase):
         self.assertEqual(t.size, 1000)
 
         with self.subTest("using barrage session as a context manager"):
-            with barrage_session(host="localhost", port=10000, auth_type="Anonymous") as cm:
+            with barrage_session(
+                host="localhost", port=10000, auth_type="Anonymous"
+            ) as cm:
                 t = cm.subscribe(ticket=self.shared_ticket.bytes)
                 t1 = t.update("Z = X + Y")
                 self.assertEqual(t1.size, 1000)
@@ -125,7 +144,9 @@ class BarrageTestCase(BaseTestCase):
         t2 = session.snapshot(self.shared_ticket.bytes)
 
         with self.subTest("using barrage session as a context manager"):
-            with barrage_session(host="localhost", port=10000, auth_type="Anonymous") as cm:
+            with barrage_session(
+                host="localhost", port=10000, auth_type="Anonymous"
+            ) as cm:
                 t = cm.snapshot(ticket=self.shared_ticket.bytes)
             t1 = t.update("Z = X + Y")
             self.assertEqual(t1.size, 1000)

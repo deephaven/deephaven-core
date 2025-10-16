@@ -48,7 +48,9 @@ class FilterTestCase(BaseTestCase):
 
         filter_not = not_(filter_or)
         filtered_table_not = self.test_table.where(filter_not)
-        self.assertEqual(filtered_table_or.size + filtered_table_not.size, self.test_table.size)
+        self.assertEqual(
+            filtered_table_or.size + filtered_table_not.size, self.test_table.size
+        )
 
         filtered_table_mixed = self.test_table.where(
             ["a > 100", "b < 1000", Filter.from_("c < 0")]

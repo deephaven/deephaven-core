@@ -2,8 +2,7 @@
 # Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 #
 
-""" This module implements the Color class and provides a list of predefined colors that can be used to paint a plot.
-"""
+"""This module implements the Color class and provides a list of predefined colors that can be used to paint a plot."""
 
 from __future__ import annotations
 
@@ -16,7 +15,7 @@ _JColor = jpy.get_type("io.deephaven.gui.color.Color")
 
 
 class Color(JObjectWrapper):
-    """ A color. """
+    """A color."""
 
     j_object_type = _JColor
 
@@ -32,7 +31,7 @@ class Color(JObjectWrapper):
 
     @staticmethod
     def of_name(name: str) -> Color:
-        """ Creates a Color instance represented by the name string.
+        """Creates a Color instance represented by the name string.
 
         Colors are specified by name or hex value.
         Hex values are parsed as follows: first two digits set the Red component of the color; second two digits set the
@@ -54,7 +53,7 @@ class Color(JObjectWrapper):
 
     @staticmethod
     def of_rgb(r: int, g: int, b: int, alpha: int = 255) -> Color:
-        """ Creates a Color with the specified red, green, blue, and alpha values.
+        """Creates a Color with the specified red, green, blue, and alpha values.
 
         Args:
             r (int): the red component in the range (0 - 255)
@@ -76,7 +75,7 @@ class Color(JObjectWrapper):
 
     @staticmethod
     def of_rgb_f(r: float, g: float, b: float, alpha: float = 1.0) -> Color:
-        """ Creates a Color with the specified red, green, blue, and alpha values expressed in floating numbers.
+        """Creates a Color with the specified red, green, blue, and alpha values expressed in floating numbers.
 
         Args:
             r (float): the red component in the range (0.0 - 1.0)
@@ -98,7 +97,7 @@ class Color(JObjectWrapper):
 
     @staticmethod
     def of_hsl(h: float, s: float, l: float, alpha: float = 1.0) -> Color:
-        """ Creates a Color with the specified hue, saturation, lightness, and alpha. The lower the alpha, the more
+        """Creates a Color with the specified hue, saturation, lightness, and alpha. The lower the alpha, the more
         transparent the color.
 
         Args:
@@ -117,11 +116,14 @@ class Color(JObjectWrapper):
         try:
             return Color(j_color=_JColor.colorHSL(h, s, l, alpha))
         except Exception as e:
-            raise DHError(e, "failed to create a color from hue, saturation, lightness values.") from e
+            raise DHError(
+                e, "failed to create a color from hue, saturation, lightness values."
+            ) from e
 
 
 class Colors:
-    """ The Colors class provides a namespace for all the predefined colors. """
+    """The Colors class provides a namespace for all the predefined colors."""
+
     ALICEBLUE = Color.of_name("#F0F8FF")
     ANTIQUEWHITE = Color.of_name("#FAEBD7")
     AQUA = Color.of_name("#00FFFF")

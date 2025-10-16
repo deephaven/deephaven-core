@@ -4,7 +4,8 @@
 import contextlib
 import inspect
 import jpy
-from typing import Dict, Union, Mapping, Optional, Any
+from typing import Union, Any
+from collections.abc import Mapping
 
 from deephaven import DHError
 from deephaven.table import Table, _j_py_script_session

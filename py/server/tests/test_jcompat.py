@@ -5,7 +5,14 @@
 import unittest
 
 from deephaven import dtypes
-from deephaven.jcompat import j_function, j_lambda, AutoCloseable, j_array_list, j_collection_to_list, j_hashset
+from deephaven.jcompat import (
+    j_function,
+    j_lambda,
+    AutoCloseable,
+    j_array_list,
+    j_collection_to_list,
+    j_hashset,
+)
 from tests.testbase import BaseTestCase
 
 import jpy
@@ -27,7 +34,9 @@ class JCompatTestCase(BaseTestCase):
         def int_to_str(v: int) -> str:
             return str(v)
 
-        j_func = j_lambda(int_to_str, jpy.get_type('java.util.function.Function'), dtypes.string)
+        j_func = j_lambda(
+            int_to_str, jpy.get_type("java.util.function.Function"), dtypes.string
+        )
 
         r = j_func.apply(10)
         self.assertEqual(r, "10")

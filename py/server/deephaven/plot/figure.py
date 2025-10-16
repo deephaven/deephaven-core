@@ -6,7 +6,7 @@
 #               This code is auto generated. DO NOT EDIT FILE!
 # Run generatePythonFigureWrapper or "./gradlew :Generators:generatePythonFigureWrapper" to generate
 ######################################################################################################################
-""" This module implements the Figure class for creating plots, charts, line, axis, color, etc. """
+"""This module implements the Figure class for creating plots, charts, line, axis, color, etc."""
 
 from __future__ import annotations
 
@@ -19,9 +19,17 @@ import jpy
 
 from deephaven import DHError, dtypes
 from deephaven._wrapper import JObjectWrapper
-from deephaven.dtypes import Instant, PyObject, BusinessCalendar
-from deephaven.plot import LineStyle, PlotStyle, Color, Font, AxisFormat, Shape, AxisTransform, \
-    SelectableDataSet
+from deephaven.dtypes import Instant, BusinessCalendar
+from deephaven.plot import (
+    LineStyle,
+    PlotStyle,
+    Color,
+    Font,
+    AxisFormat,
+    Shape,
+    AxisTransform,
+    SelectableDataSet,
+)
 from deephaven.table import Table
 from deephaven.jcompat import j_function
 
@@ -40,11 +48,18 @@ def _assert_type(name: str, obj: Any, types: List) -> None:
         DHError
     """
 
-    types_no_subscript = tuple(set(t.__origin__ if isinstance(t, _GenericAlias) else t for t in types))
+    types_no_subscript = tuple(
+        set(t.__origin__ if isinstance(t, _GenericAlias) else t for t in types)
+    )
 
     if not isinstance(obj, types_no_subscript):
-        supported = [t._name if isinstance(t, _GenericAlias) else t.__name__ for t in types_no_subscript]
-        raise DHError(message=f"Improper input type: name={name} type={type(obj)} supported={supported}")
+        supported = [
+            t._name if isinstance(t, _GenericAlias) else t.__name__
+            for t in types_no_subscript
+        ]
+        raise DHError(
+            message=f"Improper input type: name={name} type={type(obj)} supported={supported}"
+        )
 
 
 def _no_convert_j(name: str, obj: Any, types: List) -> Any:
@@ -100,13 +115,13 @@ def _convert_j(name: str, obj: Any, types: List) -> Any:
 
 
 class Figure(JObjectWrapper):
-    """ A Figure represents a graphical figure such as a plot, chart, line, axis, color, etc. A Figure is immutable,
-    and all function calls return a new immutable Figure instance. """
+    """A Figure represents a graphical figure such as a plot, chart, line, axis, color, etc. A Figure is immutable,
+    and all function calls return a new immutable Figure instance."""
 
     j_object_type = jpy.get_type("io.deephaven.plot.Figure")
 
     def __init__(self, rows: int = 1, cols: int = 1, j_figure: jpy.JType = None):
-        """ Initializes a Figure object that is used for displaying plots
+        """Initializes a Figure object that is used for displaying plots
 
         Args:
             rows (int, optional): Number of rows in the figure. Defaults to 1.
@@ -406,7 +421,9 @@ class Figure(JObjectWrapper):
 
         if multi_series_key is not None:
             non_null_args.add("multi_series_key")
-            multi_series_key = _convert_j("multi_series_key", multi_series_key, [List[Any]])
+            multi_series_key = _convert_j(
+                "multi_series_key", multi_series_key, [List[Any]]
+            )
         if remove_series is not None:
             non_null_args.add("remove_series")
             remove_series = _convert_j("remove_series", remove_series, [List[str]])
@@ -457,7 +474,9 @@ class Figure(JObjectWrapper):
             f_called = True
 
         if {"pie_label_format", "multi_series_key"}.issubset(non_null_args):
-            j_figure = j_figure.piePercentLabelFormat(pie_label_format, multi_series_key)
+            j_figure = j_figure.piePercentLabelFormat(
+                pie_label_format, multi_series_key
+            )
             non_null_args = non_null_args.difference({"pie_label_format"})
             f_called = True
             multi_series_key_used = True
@@ -617,7 +636,9 @@ class Figure(JObjectWrapper):
             max_rows = _convert_j("max_rows", max_rows, [int])
         if column_names_in_title is not None:
             non_null_args.add("column_names_in_title")
-            column_names_in_title = _convert_j("column_names_in_title", column_names_in_title, [bool])
+            column_names_in_title = _convert_j(
+                "column_names_in_title", column_names_in_title, [bool]
+            )
         if color is not None:
             non_null_args.add("color")
             color = _convert_j("color", color, [str, int, Color])
@@ -630,7 +651,9 @@ class Figure(JObjectWrapper):
 
         if {"column_names_in_title", "t", "columns"}.issubset(non_null_args):
             j_figure = j_figure.chartTitle(column_names_in_title, t, columns)
-            non_null_args = non_null_args.difference({"column_names_in_title", "t", "columns"})
+            non_null_args = non_null_args.difference(
+                {"column_names_in_title", "t", "columns"}
+            )
             f_called = True
 
         if {"format", "t", "columns"}.issubset(non_null_args):
@@ -698,7 +721,9 @@ class Figure(JObjectWrapper):
             remove_series = _convert_j("remove_series", remove_series, [List[str]])
         if remove_chart_index is not None:
             non_null_args.add("remove_chart_index")
-            remove_chart_index = _convert_j("remove_chart_index", remove_chart_index, [int])
+            remove_chart_index = _convert_j(
+                "remove_chart_index", remove_chart_index, [int]
+            )
         if remove_chart_row is not None:
             non_null_args.add("remove_chart_row")
             remove_chart_row = _convert_j("remove_chart_row", remove_chart_row, [int])
@@ -714,7 +739,9 @@ class Figure(JObjectWrapper):
 
         if {"remove_chart_row", "remove_chart_col"}.issubset(non_null_args):
             j_figure = j_figure.removeChart(remove_chart_row, remove_chart_col)
-            non_null_args = non_null_args.difference({"remove_chart_row", "remove_chart_col"})
+            non_null_args = non_null_args.difference(
+                {"remove_chart_row", "remove_chart_col"}
+            )
             f_called = True
 
         if {"remove_series"}.issubset(non_null_args):
@@ -870,7 +897,9 @@ class Figure(JObjectWrapper):
 
         if multi_series_key is not None:
             non_null_args.add("multi_series_key")
-            multi_series_key = _convert_j("multi_series_key", multi_series_key, [List[Any]])
+            multi_series_key = _convert_j(
+                "multi_series_key", multi_series_key, [List[Any]]
+            )
         if color is not None:
             non_null_args.add("color")
             color = _convert_j("color", color, [str, int, Color])
@@ -1043,16 +1072,22 @@ class Figure(JObjectWrapper):
             t = _convert_j("t", t, [Table, SelectableDataSet])
         if category is not None:
             non_null_args.add("category")
-            category = _convert_j("category", category, [str, List[str], List[int], List[float]])
+            category = _convert_j(
+                "category", category, [str, List[str], List[int], List[float]]
+            )
         if y is not None:
             non_null_args.add("y")
             y = _convert_j("y", y, [str, List[int], List[float], List[Instant]])
         if y_low is not None:
             non_null_args.add("y_low")
-            y_low = _convert_j("y_low", y_low, [str, List[int], List[float], List[Instant]])
+            y_low = _convert_j(
+                "y_low", y_low, [str, List[int], List[float], List[Instant]]
+            )
         if y_high is not None:
             non_null_args.add("y_high")
-            y_high = _convert_j("y_high", y_high, [str, List[int], List[float], List[Instant]])
+            y_high = _convert_j(
+                "y_high", y_high, [str, List[int], List[float], List[Instant]]
+            )
         if by is not None:
             non_null_args.add("by")
             by = _no_convert_j("by", by, [List[str]])
@@ -1062,13 +1097,35 @@ class Figure(JObjectWrapper):
         elif non_null_args == {"series_name", "t", "category", "y"}:
             return Figure(j_figure=self.j_figure.catPlot(series_name, t, category, y))
         elif non_null_args == {"series_name", "t", "category", "y", "by"}:
-            return Figure(j_figure=self.j_figure.catPlotBy(series_name, t, category, y, by))
+            return Figure(
+                j_figure=self.j_figure.catPlotBy(series_name, t, category, y, by)
+            )
         elif non_null_args == {"series_name", "category", "y", "y_low", "y_high"}:
-            return Figure(j_figure=self.j_figure.catErrorBar(series_name, category, y, y_low, y_high))
+            return Figure(
+                j_figure=self.j_figure.catErrorBar(
+                    series_name, category, y, y_low, y_high
+                )
+            )
         elif non_null_args == {"series_name", "t", "category", "y", "y_low", "y_high"}:
-            return Figure(j_figure=self.j_figure.catErrorBar(series_name, t, category, y, y_low, y_high))
-        elif non_null_args == {"series_name", "t", "category", "y", "y_low", "y_high", "by"}:
-            return Figure(j_figure=self.j_figure.catErrorBarBy(series_name, t, category, y, y_low, y_high, by))
+            return Figure(
+                j_figure=self.j_figure.catErrorBar(
+                    series_name, t, category, y, y_low, y_high
+                )
+            )
+        elif non_null_args == {
+            "series_name",
+            "t",
+            "category",
+            "y",
+            "y_low",
+            "y_high",
+            "by",
+        }:
+            return Figure(
+                j_figure=self.j_figure.catErrorBarBy(
+                    series_name, t, category, y, y_low, y_high, by
+                )
+            )
         else:
             raise DHError(f"unsupported parameter combination: {non_null_args}")
 
@@ -1103,7 +1160,9 @@ class Figure(JObjectWrapper):
             t = _convert_j("t", t, [Table, SelectableDataSet])
         if category is not None:
             non_null_args.add("category")
-            category = _convert_j("category", category, [str, List[str], List[int], List[float]])
+            category = _convert_j(
+                "category", category, [str, List[str], List[int], List[float]]
+            )
 
         if non_null_args == {"series_name", "category"}:
             return Figure(j_figure=self.j_figure.catHistPlot(series_name, category))
@@ -1156,26 +1215,51 @@ class Figure(JObjectWrapper):
             x = _convert_j("x", x, [str, List[Instant]])
         if open is not None:
             non_null_args.add("open")
-            open = _convert_j("open", open, [str, List[int], List[float], List[Instant]])
+            open = _convert_j(
+                "open", open, [str, List[int], List[float], List[Instant]]
+            )
         if high is not None:
             non_null_args.add("high")
-            high = _convert_j("high", high, [str, List[int], List[float], List[Instant]])
+            high = _convert_j(
+                "high", high, [str, List[int], List[float], List[Instant]]
+            )
         if low is not None:
             non_null_args.add("low")
             low = _convert_j("low", low, [str, List[int], List[float], List[Instant]])
         if close is not None:
             non_null_args.add("close")
-            close = _convert_j("close", close, [str, List[int], List[float], List[Instant]])
+            close = _convert_j(
+                "close", close, [str, List[int], List[float], List[Instant]]
+            )
         if by is not None:
             non_null_args.add("by")
             by = _no_convert_j("by", by, [List[str]])
 
         if non_null_args == {"series_name", "x", "open", "high", "low", "close"}:
-            return Figure(j_figure=self.j_figure.ohlcPlot(series_name, x, open, high, low, close))
+            return Figure(
+                j_figure=self.j_figure.ohlcPlot(series_name, x, open, high, low, close)
+            )
         elif non_null_args == {"series_name", "t", "x", "open", "high", "low", "close"}:
-            return Figure(j_figure=self.j_figure.ohlcPlot(series_name, t, x, open, high, low, close))
-        elif non_null_args == {"series_name", "t", "x", "open", "high", "low", "close", "by"}:
-            return Figure(j_figure=self.j_figure.ohlcPlotBy(series_name, t, x, open, high, low, close, by))
+            return Figure(
+                j_figure=self.j_figure.ohlcPlot(
+                    series_name, t, x, open, high, low, close
+                )
+            )
+        elif non_null_args == {
+            "series_name",
+            "t",
+            "x",
+            "open",
+            "high",
+            "low",
+            "close",
+            "by",
+        }:
+            return Figure(
+                j_figure=self.j_figure.ohlcPlotBy(
+                    series_name, t, x, open, high, low, close, by
+                )
+            )
         else:
             raise DHError(f"unsupported parameter combination: {non_null_args}")
 
@@ -1212,7 +1296,9 @@ class Figure(JObjectWrapper):
             t = _convert_j("t", t, [Table, SelectableDataSet])
         if category is not None:
             non_null_args.add("category")
-            category = _convert_j("category", category, [str, List[str], List[int], List[float]])
+            category = _convert_j(
+                "category", category, [str, List[str], List[int], List[float]]
+            )
         if y is not None:
             non_null_args.add("y")
             y = _convert_j("y", y, [str, List[int], List[float], List[Instant]])
@@ -1289,7 +1375,11 @@ class Figure(JObjectWrapper):
             color = _convert_j("color", color, [str])
 
         if set({"series_name", "t", "id", "parent"}).issubset(non_null_args):
-            return Figure(j_figure=self.j_figure.treemapPlot(series_name, t, id, parent, value, label, hover_text, color))
+            return Figure(
+                j_figure=self.j_figure.treemapPlot(
+                    series_name, t, id, parent, value, label, hover_text, color
+                )
+            )
         else:
             raise DHError(f"unsupported parameter combination: {non_null_args}")
 
@@ -1345,19 +1435,27 @@ class Figure(JObjectWrapper):
             x = _convert_j("x", x, [str, List[int], List[float], List[Instant]])
         if x_low is not None:
             non_null_args.add("x_low")
-            x_low = _convert_j("x_low", x_low, [str, List[int], List[float], List[Instant]])
+            x_low = _convert_j(
+                "x_low", x_low, [str, List[int], List[float], List[Instant]]
+            )
         if x_high is not None:
             non_null_args.add("x_high")
-            x_high = _convert_j("x_high", x_high, [str, List[int], List[float], List[Instant]])
+            x_high = _convert_j(
+                "x_high", x_high, [str, List[int], List[float], List[Instant]]
+            )
         if y is not None:
             non_null_args.add("y")
             y = _convert_j("y", y, [str, List[int], List[float], List[Instant]])
         if y_low is not None:
             non_null_args.add("y_low")
-            y_low = _convert_j("y_low", y_low, [str, List[int], List[float], List[Instant]])
+            y_low = _convert_j(
+                "y_low", y_low, [str, List[int], List[float], List[Instant]]
+            )
         if y_high is not None:
             non_null_args.add("y_high")
-            y_high = _convert_j("y_high", y_high, [str, List[int], List[float], List[Instant]])
+            y_high = _convert_j(
+                "y_high", y_high, [str, List[int], List[float], List[Instant]]
+            )
         if function is not None:
             non_null_args.add("function")
             function = _convert_j("function", function, [Callable])
@@ -1378,27 +1476,84 @@ class Figure(JObjectWrapper):
         elif non_null_args == {"series_name", "t", "x", "y"}:
             return Figure(j_figure=self.j_figure.plot(series_name, t, x, y))
         elif non_null_args == {"series_name", "x", "y", "x_time_axis", "y_time_axis"}:
-            return Figure(j_figure=self.j_figure.plot(series_name, x, y, x_time_axis, y_time_axis))
+            return Figure(
+                j_figure=self.j_figure.plot(series_name, x, y, x_time_axis, y_time_axis)
+            )
         elif non_null_args == {"series_name", "t", "x", "y", "by"}:
             return Figure(j_figure=self.j_figure.plotBy(series_name, t, x, y, by))
         elif non_null_args == {"series_name", "x", "x_low", "x_high", "y"}:
-            return Figure(j_figure=self.j_figure.errorBarX(series_name, x, x_low, x_high, y))
+            return Figure(
+                j_figure=self.j_figure.errorBarX(series_name, x, x_low, x_high, y)
+            )
         elif non_null_args == {"series_name", "t", "x", "x_low", "x_high", "y"}:
-            return Figure(j_figure=self.j_figure.errorBarX(series_name, t, x, x_low, x_high, y))
+            return Figure(
+                j_figure=self.j_figure.errorBarX(series_name, t, x, x_low, x_high, y)
+            )
         elif non_null_args == {"series_name", "t", "x", "x_low", "x_high", "y", "by"}:
-            return Figure(j_figure=self.j_figure.errorBarXBy(series_name, t, x, x_low, x_high, y, by))
+            return Figure(
+                j_figure=self.j_figure.errorBarXBy(
+                    series_name, t, x, x_low, x_high, y, by
+                )
+            )
         elif non_null_args == {"series_name", "x", "y", "y_low", "y_high"}:
-            return Figure(j_figure=self.j_figure.errorBarY(series_name, x, y, y_low, y_high))
+            return Figure(
+                j_figure=self.j_figure.errorBarY(series_name, x, y, y_low, y_high)
+            )
         elif non_null_args == {"series_name", "t", "x", "y", "y_low", "y_high"}:
-            return Figure(j_figure=self.j_figure.errorBarY(series_name, t, x, y, y_low, y_high))
+            return Figure(
+                j_figure=self.j_figure.errorBarY(series_name, t, x, y, y_low, y_high)
+            )
         elif non_null_args == {"series_name", "t", "x", "y", "y_low", "y_high", "by"}:
-            return Figure(j_figure=self.j_figure.errorBarYBy(series_name, t, x, y, y_low, y_high, by))
-        elif non_null_args == {"series_name", "x", "x_low", "x_high", "y", "y_low", "y_high"}:
-            return Figure(j_figure=self.j_figure.errorBarXY(series_name, x, x_low, x_high, y, y_low, y_high))
-        elif non_null_args == {"series_name", "t", "x", "x_low", "x_high", "y", "y_low", "y_high"}:
-            return Figure(j_figure=self.j_figure.errorBarXY(series_name, t, x, x_low, x_high, y, y_low, y_high))
-        elif non_null_args == {"series_name", "t", "x", "x_low", "x_high", "y", "y_low", "y_high", "by"}:
-            return Figure(j_figure=self.j_figure.errorBarXYBy(series_name, t, x, x_low, x_high, y, y_low, y_high, by))
+            return Figure(
+                j_figure=self.j_figure.errorBarYBy(
+                    series_name, t, x, y, y_low, y_high, by
+                )
+            )
+        elif non_null_args == {
+            "series_name",
+            "x",
+            "x_low",
+            "x_high",
+            "y",
+            "y_low",
+            "y_high",
+        }:
+            return Figure(
+                j_figure=self.j_figure.errorBarXY(
+                    series_name, x, x_low, x_high, y, y_low, y_high
+                )
+            )
+        elif non_null_args == {
+            "series_name",
+            "t",
+            "x",
+            "x_low",
+            "x_high",
+            "y",
+            "y_low",
+            "y_high",
+        }:
+            return Figure(
+                j_figure=self.j_figure.errorBarXY(
+                    series_name, t, x, x_low, x_high, y, y_low, y_high
+                )
+            )
+        elif non_null_args == {
+            "series_name",
+            "t",
+            "x",
+            "x_low",
+            "x_high",
+            "y",
+            "y_low",
+            "y_high",
+            "by",
+        }:
+            return Figure(
+                j_figure=self.j_figure.errorBarXYBy(
+                    series_name, t, x, x_low, x_high, y, y_low, y_high, by
+                )
+            )
         else:
             raise DHError(f"unsupported parameter combination: {non_null_args}")
 
@@ -1457,9 +1612,13 @@ class Figure(JObjectWrapper):
         elif non_null_args == {"series_name", "t", "x", "nbins"}:
             return Figure(j_figure=self.j_figure.histPlot(series_name, t, x, nbins))
         elif non_null_args == {"series_name", "x", "xmin", "xmax", "nbins"}:
-            return Figure(j_figure=self.j_figure.histPlot(series_name, x, xmin, xmax, nbins))
+            return Figure(
+                j_figure=self.j_figure.histPlot(series_name, x, xmin, xmax, nbins)
+            )
         elif non_null_args == {"series_name", "t", "x", "xmin", "xmax", "nbins"}:
-            return Figure(j_figure=self.j_figure.histPlot(series_name, t, x, xmin, xmax, nbins))
+            return Figure(
+                j_figure=self.j_figure.histPlot(series_name, t, x, xmin, xmax, nbins)
+            )
         else:
             raise DHError(f"unsupported parameter combination: {non_null_args}")
 
@@ -1468,10 +1627,37 @@ class Figure(JObjectWrapper):
         t: Union[Table, SelectableDataSet] = None,
         category: Union[str, List[str], List[int], List[float]] = None,
         multi_series_key: List[Any] = None,
-        color: Union[str, int, Color, List[str], List[int], List[Color], Callable, Dict[Any,str], Dict[Any,int], Dict[Any,Color]] = None,
-        label: Union[str, List[str], Callable, Dict[Any,str]] = None,
-        shape: Union[str, Shape, List[str], List[Shape], Callable, Dict[Any,str], Dict[Any,Shape]] = None,
-        size: Union[int, float, List[int], List[float], Callable, Dict[Any,int], Dict[Any,float]] = None,
+        color: Union[
+            str,
+            int,
+            Color,
+            List[str],
+            List[int],
+            List[Color],
+            Callable,
+            Dict[Any, str],
+            Dict[Any, int],
+            Dict[Any, Color],
+        ] = None,
+        label: Union[str, List[str], Callable, Dict[Any, str]] = None,
+        shape: Union[
+            str,
+            Shape,
+            List[str],
+            List[Shape],
+            Callable,
+            Dict[Any, str],
+            Dict[Any, Shape],
+        ] = None,
+        size: Union[
+            int,
+            float,
+            List[int],
+            List[float],
+            Callable,
+            Dict[Any, int],
+            Dict[Any, float],
+        ] = None,
         label_format: str = None,
         visible: int = None,
     ) -> Figure:
@@ -1501,22 +1687,67 @@ class Figure(JObjectWrapper):
             t = _convert_j("t", t, [Table, SelectableDataSet])
         if category is not None:
             non_null_args.add("category")
-            category = _convert_j("category", category, [str, List[str], List[int], List[float]])
+            category = _convert_j(
+                "category", category, [str, List[str], List[int], List[float]]
+            )
         if multi_series_key is not None:
             non_null_args.add("multi_series_key")
-            multi_series_key = _convert_j("multi_series_key", multi_series_key, [List[Any]])
+            multi_series_key = _convert_j(
+                "multi_series_key", multi_series_key, [List[Any]]
+            )
         if color is not None:
             non_null_args.add("color")
-            color = _convert_j("color", color, [str, int, Color, List[str], List[int], List[Color], Callable, Dict[Any,str], Dict[Any,int], Dict[Any,Color]])
+            color = _convert_j(
+                "color",
+                color,
+                [
+                    str,
+                    int,
+                    Color,
+                    List[str],
+                    List[int],
+                    List[Color],
+                    Callable,
+                    Dict[Any, str],
+                    Dict[Any, int],
+                    Dict[Any, Color],
+                ],
+            )
         if label is not None:
             non_null_args.add("label")
-            label = _convert_j("label", label, [str, List[str], Callable, Dict[Any,str]])
+            label = _convert_j(
+                "label", label, [str, List[str], Callable, Dict[Any, str]]
+            )
         if shape is not None:
             non_null_args.add("shape")
-            shape = _convert_j("shape", shape, [str, Shape, List[str], List[Shape], Callable, Dict[Any,str], Dict[Any,Shape]])
+            shape = _convert_j(
+                "shape",
+                shape,
+                [
+                    str,
+                    Shape,
+                    List[str],
+                    List[Shape],
+                    Callable,
+                    Dict[Any, str],
+                    Dict[Any, Shape],
+                ],
+            )
         if size is not None:
             non_null_args.add("size")
-            size = _convert_j("size", size, [int, float, List[int], List[float], Callable, Dict[Any,int], Dict[Any,float]])
+            size = _convert_j(
+                "size",
+                size,
+                [
+                    int,
+                    float,
+                    List[int],
+                    List[float],
+                    Callable,
+                    Dict[Any, int],
+                    Dict[Any, float],
+                ],
+            )
         if label_format is not None:
             non_null_args.add("label_format")
             label_format = _convert_j("label_format", label_format, [str])
@@ -1735,7 +1966,6 @@ class Figure(JObjectWrapper):
 
         return Figure(j_figure=j_figure)
 
-
     def save(
         self,
         path: str,
@@ -1786,7 +2016,9 @@ class Figure(JObjectWrapper):
         elif non_null_args == {"path", "width", "height"}:
             return Figure(j_figure=self.j_figure.save(path, width, height))
         elif non_null_args == {"path", "width", "height", "wait", "timeout_seconds"}:
-            return Figure(j_figure=self.j_figure.save(path, width, height, wait, timeout_seconds))
+            return Figure(
+                j_figure=self.j_figure.save(path, width, height, wait, timeout_seconds)
+            )
         else:
             raise DHError(f"unsupported parameter combination: {non_null_args}")
 
@@ -1838,7 +2070,9 @@ class Figure(JObjectWrapper):
             group = _convert_j("group", group, [int])
         if multi_series_key is not None:
             non_null_args.add("multi_series_key")
-            multi_series_key = _convert_j("multi_series_key", multi_series_key, [List[Any]])
+            multi_series_key = _convert_j(
+                "multi_series_key", multi_series_key, [List[Any]]
+            )
         if color is not None:
             non_null_args.add("color")
             color = _convert_j("color", color, [str, int, Color])
@@ -1847,13 +2081,19 @@ class Figure(JObjectWrapper):
             tool_tip_pattern = _convert_j("tool_tip_pattern", tool_tip_pattern, [str])
         if x_tool_tip_pattern is not None:
             non_null_args.add("x_tool_tip_pattern")
-            x_tool_tip_pattern = _convert_j("x_tool_tip_pattern", x_tool_tip_pattern, [str])
+            x_tool_tip_pattern = _convert_j(
+                "x_tool_tip_pattern", x_tool_tip_pattern, [str]
+            )
         if y_tool_tip_pattern is not None:
             non_null_args.add("y_tool_tip_pattern")
-            y_tool_tip_pattern = _convert_j("y_tool_tip_pattern", y_tool_tip_pattern, [str])
+            y_tool_tip_pattern = _convert_j(
+                "y_tool_tip_pattern", y_tool_tip_pattern, [str]
+            )
         if error_bar_color is not None:
             non_null_args.add("error_bar_color")
-            error_bar_color = _convert_j("error_bar_color", error_bar_color, [str, int, Color])
+            error_bar_color = _convert_j(
+                "error_bar_color", error_bar_color, [str, int, Color]
+            )
         if gradient_visible is not None:
             non_null_args.add("gradient_visible")
             gradient_visible = _convert_j("gradient_visible", gradient_visible, [bool])
