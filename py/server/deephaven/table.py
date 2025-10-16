@@ -26,6 +26,7 @@ from deephaven._wrapper import JObjectWrapper
 from deephaven._wrapper import unwrap
 from deephaven.agg import Aggregation
 from deephaven.column import col_def, ColumnDefinition
+from deephaven.concurrency_control import ConcurrencyControl, Barrier
 from deephaven.filters import Filter, and_, or_
 from deephaven.jcompat import j_unary_operator, j_binary_operator, j_map_to_dict, j_hashmap
 from deephaven.jcompat import to_sequence, j_array_list
@@ -38,8 +39,6 @@ _JAttributeMap = jpy.get_type("io.deephaven.engine.table.AttributeMap")
 _JTableTools = jpy.get_type("io.deephaven.engine.util.TableTools")
 _JColumnName = jpy.get_type("io.deephaven.api.ColumnName")
 _JSortColumn = jpy.get_type("io.deephaven.api.SortColumn")
-_JFilter = jpy.get_type("io.deephaven.api.filter.Filter")
-_JFilterOr = jpy.get_type("io.deephaven.api.filter.FilterOr")
 _JPair = jpy.get_type("io.deephaven.api.Pair")
 _JLayoutHintBuilder = jpy.get_type("io.deephaven.engine.util.LayoutHintBuilder")
 _JSearchDisplayMode = jpy.get_type("io.deephaven.engine.util.LayoutHintBuilder$SearchDisplayModes")
@@ -85,6 +84,93 @@ _JMultiJoinFactory = jpy.get_type("io.deephaven.engine.table.MultiJoinFactory")
 # Keyed Transpose Table
 _JKeyedTranspose = jpy.get_type("io.deephaven.engine.table.impl.util.KeyedTranspose")
 _JNewColumnBehaviorType = jpy.get_type("io.deephaven.engine.table.impl.util.KeyedTranspose$NewColumnBehavior")
+
+# Selectable
+_JSelectable = jpy.get_type("io.deephaven.api.Selectable")
+
+
+class Selectable(ConcurrencyControl["Selectable"], JObjectWrapper):
+    """A Selectable represents a formula with explicit ordering control that affects the order and the parallelization
+    of its evaluation when used in table operations `update`, `select`.
+
+    Note that, it can only be created with the factory method  `parse`.
+    """
+    j_object_type = _JSelectable
+
+    @property
+    def j_object(self) -> jpy.JType:
+        return self.j_selectable
+
+    def __init__(self, j_selectable: jpy.JType):
+        self.j_selectable = j_selectable
+
+    @classmethod
+    def parse(cls, formula: str) -> Selectable:
+        """Creates a Selectable from the given formula string.
+
+        Args:
+            formula (str): The formula string.
+
+        Returns:
+            Selectable
+
+        Raises:
+            DHError
+        """
+        try:
+            return Selectable(j_selectable=_JSelectable.parse(formula))
+        except Exception as e:
+            raise DHError(e, f"failed to create a Selectable: {formula}") from e
+
+    def with_declared_barriers(self, barriers: Union[Barrier, Sequence[Barrier]]) -> Selectable:
+        """ Returns a new Selectable with the given declared barriers.
+
+        Args:
+            barriers (Union[Barrier, Sequence[Barrier]]): The declared barrier(s).
+
+        Returns:
+            Selectable
+
+        Raises:
+            DHError
+        """
+        try:
+            barriers = to_sequence(barriers)
+            return Selectable(j_selectable=self.j_selectable.withDeclaredBarriers(*barriers))
+        except Exception as e:
+            raise DHError(e, f"failed to create selectable with declared barriers: {barriers}") from e
+
+    def with_respected_barriers(self, barriers: Union[Barrier, Sequence[Barrier]]) -> Selectable:
+        """ Returns a new Selectable with the given respected barriers.
+
+        Args:
+            barriers (Union[Barrier, Sequence[Barrier]]): The respected barrier(s).
+
+        Returns:
+            Selectable
+
+        Raises:
+            DHError
+        """
+        try:
+            barriers = to_sequence(barriers)
+            return Selectable(j_selectable=self.j_selectable.withRespectedBarriers(*barriers))
+        except Exception as e:
+            raise DHError(e, f"failed to create selectable with respected barriers: {barriers}") from e
+
+    def with_serial(self) -> Selectable:
+        """ Returns a new Selectable with serial evaluation enforced.
+
+        Returns:
+            Selectable
+
+        Raises:
+            DHError
+        """
+        try:
+            return Selectable(j_selectable=self.j_selectable.withSerial())
+        except Exception as e:
+            raise DHError(e, "failed to create selectable with serial evaluation.") from e
 
 
 class NodeType(Enum):
@@ -1043,11 +1129,11 @@ class Table(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "table rename_columns operation failed.") from e
 
-    def update(self, formulas: Union[str, Sequence[str]]) -> Table:
+    def update(self, formulas: Union[str, Sequence[str], Selectable, Sequence[Selectable]]) -> Table:
         """The update method creates a new table containing a new, in-memory column for each formula.
 
         Args:
-            formulas (Union[str, Sequence[str]]): the column formula(s)
+            formulas (Union[str, Sequence[str], Selectable, Sequence[Selectable]]): the column formula(s) or Selectable(s)
 
         Returns:
             A new table
@@ -1058,7 +1144,10 @@ class Table(JObjectWrapper):
         try:
             formulas = to_sequence(formulas)
             with _query_scope_ctx(), auto_locking_ctx(self):
-                return Table(j_table=self.j_table.update(*formulas))
+                if isinstance(formulas[0], Selectable.j_object_type):
+                    return Table(j_table=self.j_table.update(j_array_list(formulas)))
+                else:
+                    return Table(j_table=self.j_table.update(*formulas))
         except Exception as e:
             raise DHError(e, "table update operation failed.") from e
 
@@ -1119,12 +1208,13 @@ class Table(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "table update_view operation failed.") from e
 
-    def select(self, formulas: Union[str, Sequence[str]] = None) -> Table:
+    def select(self, formulas: Union[str, Sequence[str], Selectable, Sequence[Selectable]] = None) -> Table:
         """The select method creates a new in-memory table that includes one column for each formula. If no formula
         is specified, all columns will be included.
 
         Args:
-            formulas (Union[str, Sequence[str]], optional): the column formula(s), default is None
+            formulas (Union[str, Sequence[str], Selectable, Sequence[Selectable], optional): the column formula(s)
+                or Selectable(s), default is None
 
         Returns:
             a new table
@@ -1136,8 +1226,12 @@ class Table(JObjectWrapper):
             with _query_scope_ctx(), auto_locking_ctx(self):
                 if not formulas:
                     return Table(j_table=self.j_table.select())
+
                 formulas = to_sequence(formulas)
-                return Table(j_table=self.j_table.select(*formulas))
+                if isinstance(formulas[0], Selectable.j_object_type):
+                    return Table(j_table=self.j_table.select(j_array_list(formulas)))
+                else:
+                    return Table(j_table=self.j_table.select(*formulas))
         except Exception as e:
             raise DHError(e, "table select operation failed.") from e
 
@@ -3097,7 +3191,7 @@ class PartitionedTableProxy(JObjectWrapper):
         try:
             filters = to_sequence(filters)
             with _query_scope_ctx(), auto_locking_ctx(self):
-                return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.where(*filters))
+                return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.where(and_(filters).j_filter))
         except Exception as e:
             raise DHError(e, "where operation on the PartitionedTableProxy failed.") from e
 
@@ -3187,13 +3281,13 @@ class PartitionedTableProxy(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "update_view operation on the PartitionedTableProxy failed.") from e
 
-    def update(self, formulas: Union[str, Sequence[str]]) -> PartitionedTableProxy:
+    def update(self, formulas: Union[str, Sequence[str], Selectable, Sequence[Selectable]]) -> PartitionedTableProxy:
         """Applies the :meth:`~Table.update` table operation to all constituent tables of the underlying partitioned
         table, and produces a new PartitionedTableProxy with the result tables as the constituents of its underlying
         partitioned table.
 
         Args:
-            formulas (Union[str, Sequence[str]]): the column formula(s)
+            formulas (Union[str, Sequence[str], Selectable, Sequence[Selectable]]): the column formula(s) or Selectable(s)
 
         Returns:
             A new PartitionedTableProxy
@@ -3204,17 +3298,21 @@ class PartitionedTableProxy(JObjectWrapper):
         try:
             formulas = to_sequence(formulas)
             with _query_scope_ctx(), auto_locking_ctx(self):
-                return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.update(*formulas))
+                if isinstance(formulas[0], Selectable.j_object_type):
+                    return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.update(j_array_list(formulas)))
+                else:
+                    return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.update(*formulas))
         except Exception as e:
             raise DHError(e, "update operation on the PartitionedTableProxy failed.") from e
 
-    def select(self, formulas: Union[str, Sequence[str]] = None) -> PartitionedTableProxy:
+    def select(self, formulas: Union[str, Sequence[str], Selectable, Sequence[Selectable]] = None) -> PartitionedTableProxy:
         """Applies the :meth:`~Table.select` table operation to all constituent tables of the underlying partitioned
         table, and produces a new PartitionedTableProxy with the result tables as the constituents of its underlying
         partitioned table.
 
         Args:
-            formulas (Union[str, Sequence[str]], optional): the column formula(s), default is None
+            formulas (Union[str, Sequence[str], Selectable, Sequence[Selectable]], optional): the column formula(s) or
+                Selectable(s), default is None
 
         Returns:
             A new PartitionedTableProxy
@@ -3225,7 +3323,10 @@ class PartitionedTableProxy(JObjectWrapper):
         try:
             formulas = to_sequence(formulas)
             with _query_scope_ctx(), auto_locking_ctx(self):
-                return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.select(*formulas))
+                if isinstance(formulas[0], Selectable.j_object_type):
+                    return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.select(j_array_list(formulas)))
+                else:
+                    return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.select(*formulas))
         except Exception as e:
             raise DHError(e, "select operation on the PartitionedTableProxy failed.") from e
 
