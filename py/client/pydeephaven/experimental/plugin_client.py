@@ -8,7 +8,7 @@ Experimental module to communicate with server-side plugins from the client.
 
 import threading
 from queue import SimpleQueue
-from typing import Any, List, Union, Tuple
+from typing import Any, Union, Tuple
 
 from deephaven_core.proto import object_pb2
 from deephaven_core.proto import ticket_pb2
@@ -96,7 +96,7 @@ class PluginRequestStream:
         self.req_queue.put(stream_req)
         self._sentinel = object()
 
-    def write(self, payload: bytes, references: List[ServerObject]) -> None:
+    def write(self, payload: bytes, references: list[ServerObject]) -> None:
         """
         Sends a message to the server, consisting of a payload of bytes and a list of objects that exist on the server.
         """
@@ -130,7 +130,7 @@ class PluginResponseStream:
         self.session = session
         self._rlock = threading.RLock()
 
-    def __next__(self) -> Tuple[bytes, List[Fetchable]]:
+    def __next__(self) -> Tuple[bytes, list[Fetchable]]:
         with self._rlock:
             if not self.stream_resp:
                 raise RuntimeError("the response stream is closed.")

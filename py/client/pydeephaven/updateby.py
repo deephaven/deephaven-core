@@ -6,11 +6,11 @@ instances."""
 
 from abc import ABC, abstractmethod
 from enum import Enum
-from typing import Optional, List, Union, Any
+from typing import Optional, Union, Any
 
+from deephaven_core.proto import table_pb2
 from ._utils import to_list
 from .dherror import DHError
-from deephaven_core.proto import table_pb2
 
 _GrpcUpdateByOperation = table_pb2.UpdateByRequest.UpdateByOperation
 _GrpcUpdateByColumn = _GrpcUpdateByOperation.UpdateByColumn
@@ -133,11 +133,11 @@ class UpdateByOperation(_UpdateByBase):
         return _GrpcUpdateByOperation(column=self.ub_column)
 
 
-def cum_sum(cols: Union[str, List[str]]) -> UpdateByOperation:
+def cum_sum(cols: Union[str, list[str]]) -> UpdateByOperation:
     """Creates a cumulative sum UpdateByOperation for the supplied column names.
 
     Args:
-        cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
+        cols (Union[str, list[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by performs the operation on all applicable columns.
 
     Returns:
@@ -148,11 +148,11 @@ def cum_sum(cols: Union[str, List[str]]) -> UpdateByOperation:
     return UpdateByOperation(ub_column=ub_column)
 
 
-def cum_prod(cols: Union[str, List[str]]) -> UpdateByOperation:
+def cum_prod(cols: Union[str, list[str]]) -> UpdateByOperation:
     """Creates a cumulative product UpdateByOperation for the supplied column names.
 
     Args:
-        cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
+        cols (Union[str, list[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by performs the operation on all applicable columns.
 
     Returns:
@@ -163,11 +163,11 @@ def cum_prod(cols: Union[str, List[str]]) -> UpdateByOperation:
     return UpdateByOperation(ub_column=ub_column)
 
 
-def cum_min(cols: Union[str, List[str]]) -> UpdateByOperation:
+def cum_min(cols: Union[str, list[str]]) -> UpdateByOperation:
     """Creates a cumulative minimum UpdateByOperation for the supplied column names.
 
     Args:
-        cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
+        cols (Union[str, list[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by performs the operation on all applicable columns.
 
     Returns:
@@ -178,11 +178,11 @@ def cum_min(cols: Union[str, List[str]]) -> UpdateByOperation:
     return UpdateByOperation(ub_column=ub_column)
 
 
-def cum_max(cols: Union[str, List[str]]) -> UpdateByOperation:
+def cum_max(cols: Union[str, list[str]]) -> UpdateByOperation:
     """Creates a cumulative maximum UpdateByOperation for the supplied column names.
 
     Args:
-        cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
+        cols (Union[str, list[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by performing the operation on all applicable columns.
 
     Returns:
@@ -193,7 +193,7 @@ def cum_max(cols: Union[str, List[str]]) -> UpdateByOperation:
     return UpdateByOperation(ub_column=ub_column)
 
 
-def cum_count_where(col: str, filters: Union[str, List[str]]) -> UpdateByOperation:
+def cum_count_where(col: str, filters: Union[str, list[str]]) -> UpdateByOperation:
     """Creates a cumulative count where UpdateByOperation that counts the number of values that pass the provided
     filters.
 
@@ -220,12 +220,12 @@ def cum_count_where(col: str, filters: Union[str, List[str]]) -> UpdateByOperati
     return UpdateByOperation(ub_column=ub_column)
 
 
-def forward_fill(cols: Union[str, List[str]]) -> UpdateByOperation:
+def forward_fill(cols: Union[str, list[str]]) -> UpdateByOperation:
     """Creates a forward fill UpdateByOperation for the supplied column names. Null values in the column(s) are
     replaced by the last known non-null values. This operation is forward only.
 
     Args:
-        cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
+        cols (Union[str, list[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by performs the operation on all applicable columns.
 
     Returns:
@@ -237,7 +237,7 @@ def forward_fill(cols: Union[str, List[str]]) -> UpdateByOperation:
 
 
 def delta(
-    cols: Union[str, List[str]],
+    cols: Union[str, list[str]],
     delta_control: DeltaControl = DeltaControl.NULL_DOMINATES,
 ) -> UpdateByOperation:
     """Creates a delta UpdateByOperation for the supplied column names. The Delta operation produces values by computing
@@ -250,7 +250,7 @@ def delta(
 
     Args:
 
-        cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
+        cols (Union[str, list[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by performs the operation on all applicable columns.
         delta_control (DeltaControl): defines how special cases should behave; when None, the default DeltaControl
             settings of VALUE_DOMINATES will be used
@@ -270,7 +270,7 @@ def delta(
 
 def ema_tick(
     decay_ticks: float,
-    cols: Union[str, List[str]],
+    cols: Union[str, list[str]],
     op_control: Optional[OperationControl] = None,
 ) -> UpdateByOperation:
     """Creates an EMA (exponential moving average) UpdateByOperation for the supplied column names, using ticks as
@@ -282,7 +282,7 @@ def ema_tick(
 
     Args:
         decay_ticks (float): the decay rate in ticks
-        cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
+        cols (Union[str, list[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by performs the operation on all applicable columns.
         op_control (OperationControl): defines how special cases should behave; when None, the default OperationControl
             settings as specified in :meth:`~OperationControl.__init__` will be used
@@ -311,7 +311,7 @@ def ema_tick(
 def ema_time(
     ts_col: str,
     decay_time: Union[int, str],
-    cols: Union[str, List[str]],
+    cols: Union[str, list[str]],
     op_control: Optional[OperationControl] = None,
 ) -> UpdateByOperation:
     """Creates an EMA (exponential moving average) UpdateByOperation for the supplied column names, using time as the
@@ -325,7 +325,7 @@ def ema_time(
         ts_col (str): the column in the source table to use for timestamps
         decay_time (Union[int, str]): the decay rate, can be expressed as an integer in nanoseconds or a time
             interval string, e.g. "PT00:00:.001" or "PT5M"
-        cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
+        cols (Union[str, list[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by performs the operation on all applicable columns.
         op_control (OperationControl): defines how special cases should behave; when None, the default OperationControl
             settings as specified in :meth:`~OperationControl.__init__` will be used
@@ -359,7 +359,7 @@ def ema_time(
 
 def ems_tick(
     decay_ticks: float,
-    cols: Union[str, List[str]],
+    cols: Union[str, list[str]],
     op_control: Optional[OperationControl] = None,
 ) -> UpdateByOperation:
     """Creates an EMS (exponential moving sum) UpdateByOperation for the supplied column names, using ticks as
@@ -371,7 +371,7 @@ def ems_tick(
 
     Args:
         decay_ticks (float): the decay rate in ticks
-        cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
+        cols (Union[str, list[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by performs the operation on all applicable columns.
         op_control (OperationControl): defines how special cases should behave; when None, the default OperationControl
             settings as specified in :meth:`~OperationControl.__init__` will be used
@@ -400,7 +400,7 @@ def ems_tick(
 def ems_time(
     ts_col: str,
     decay_time: Union[int, str],
-    cols: Union[str, List[str]],
+    cols: Union[str, list[str]],
     op_control: Optional[OperationControl] = None,
 ) -> UpdateByOperation:
     """Creates an EMS (exponential moving sum) UpdateByOperation for the supplied column names, using time as the
@@ -414,7 +414,7 @@ def ems_time(
         ts_col (str): the column in the source table to use for timestamps
         decay_time (Union[int, str]): the decay rate, can be expressed as an integer in nanoseconds or a time
             interval string, e.g. "PT00:00:.001" or "PT5M"
-        cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
+        cols (Union[str, list[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by performs the operation on all applicable columns.
         op_control (OperationControl): defines how special cases should behave; when None, the default OperationControl
             settings as specified in :meth:`~OperationControl.__init__` will be used
@@ -448,7 +448,7 @@ def ems_time(
 
 def emmin_tick(
     decay_ticks: float,
-    cols: Union[str, List[str]],
+    cols: Union[str, list[str]],
     op_control: Optional[OperationControl] = None,
 ) -> UpdateByOperation:
     """Creates an EM Min (exponential moving minimum) UpdateByOperation for the supplied column names, using ticks as
@@ -460,7 +460,7 @@ def emmin_tick(
 
     Args:
         decay_ticks (float): the decay rate in ticks
-        cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
+        cols (Union[str, list[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by performs the operation on all applicable columns.
         op_control (OperationControl): defines how special cases should behave; when None, the default OperationControl
             settings as specified in :meth:`~OperationControl.__init__` will be used
@@ -489,7 +489,7 @@ def emmin_tick(
 def emmin_time(
     ts_col: str,
     decay_time: Union[int, str],
-    cols: Union[str, List[str]],
+    cols: Union[str, list[str]],
     op_control: Optional[OperationControl] = None,
 ) -> UpdateByOperation:
     """Creates an EM Min (exponential moving minimum) UpdateByOperation for the supplied column names, using time as the
@@ -503,7 +503,7 @@ def emmin_time(
         ts_col (str): the column in the source table to use for timestamps
         decay_time (Union[int, str]): the decay rate, can be expressed as an integer in nanoseconds or a time
             interval string, e.g. "PT00:00:.001" or "PT5M"
-        cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
+        cols (Union[str, list[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by performs the operation on all applicable columns.
         op_control (OperationControl): defines how special cases should behave; when None, the default OperationControl
             settings as specified in :meth:`~OperationControl.__init__` will be used
@@ -537,7 +537,7 @@ def emmin_time(
 
 def emmax_tick(
     decay_ticks: float,
-    cols: Union[str, List[str]],
+    cols: Union[str, list[str]],
     op_control: Optional[OperationControl] = None,
 ) -> UpdateByOperation:
     """Creates an EM Max (exponential moving maximum) UpdateByOperation for the supplied column names, using ticks as
@@ -549,7 +549,7 @@ def emmax_tick(
 
     Args:
         decay_ticks (float): the decay rate in ticks
-        cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
+        cols (Union[str, list[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by performs the operation on all applicable columns.
         op_control (OperationControl): defines how special cases should behave; when None, the default OperationControl
             settings as specified in :meth:`~OperationControl.__init__` will be used
@@ -578,7 +578,7 @@ def emmax_tick(
 def emmax_time(
     ts_col: str,
     decay_time: Union[int, str],
-    cols: Union[str, List[str]],
+    cols: Union[str, list[str]],
     op_control: Optional[OperationControl] = None,
 ) -> UpdateByOperation:
     """Creates an EM Max (exponential moving maximum) UpdateByOperation for the supplied column names, using time as the
@@ -592,7 +592,7 @@ def emmax_time(
         ts_col (str): the column in the source table to use for timestamps
         decay_time (Union[int, str]): the decay rate, can be expressed as an integer in nanoseconds or a time
             interval string, e.g. "PT00:00:.001" or "PT5M"
-        cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
+        cols (Union[str, list[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by performs the operation on all applicable columns.
         op_control (OperationControl): defines how special cases should behave; when None, the default OperationControl
             settings as specified in :meth:`~OperationControl.__init__` will be used
@@ -626,7 +626,7 @@ def emmax_time(
 
 def emstd_tick(
     decay_ticks: float,
-    cols: Union[str, List[str]],
+    cols: Union[str, list[str]],
     op_control: Optional[OperationControl] = None,
 ) -> UpdateByOperation:
     """Creates an EM Std (exponential moving standard deviation) UpdateByOperation for the supplied column names, using
@@ -640,7 +640,7 @@ def emstd_tick(
 
     Args:
         decay_ticks (float): the decay rate in ticks
-        cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
+        cols (Union[str, list[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by performs the operation on all applicable columns.
         op_control (OperationControl): defines how special cases should behave; when None, the default OperationControl
             settings as specified in :meth:`~OperationControl.__init__` will be used
@@ -669,7 +669,7 @@ def emstd_tick(
 def emstd_time(
     ts_col: str,
     decay_time: Union[int, str],
-    cols: Union[str, List[str]],
+    cols: Union[str, list[str]],
     op_control: Optional[OperationControl] = None,
 ) -> UpdateByOperation:
     """Creates an EM Std (exponential moving standard deviation) UpdateByOperation for the supplied column names, using
@@ -685,7 +685,7 @@ def emstd_time(
         ts_col (str): the column in the source table to use for timestamps
         decay_time (Union[int, str]): the decay rate, can be expressed as an integer in nanoseconds or a time
             interval string, e.g. "PT00:00:.001" or "PT5M"
-        cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
+        cols (Union[str, list[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by performs the operation on all applicable columns.
         op_control (OperationControl): defines how special cases should behave; when None, the default OperationControl
             settings as specified in :meth:`~OperationControl.__init__` will be used
@@ -718,7 +718,7 @@ def emstd_time(
 
 
 def rolling_sum_tick(
-    cols: Union[str, List[str]], rev_ticks: int, fwd_ticks: int = 0
+    cols: Union[str, list[str]], rev_ticks: int, fwd_ticks: int = 0
 ) -> UpdateByOperation:
     """Creates a rolling sum UpdateByOperation for the supplied column names, using ticks as the windowing unit. Ticks
     are row counts, and you may specify the reverse and forward window in number of rows to include. The current row
@@ -738,7 +738,7 @@ def rolling_sum_tick(
             current row (inclusive)
 
     Args:
-        cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
+        cols (Union[str, list[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by performs the rolling sum operation on all columns.
         rev_ticks (int): the look-behind window size (in rows/ticks)
         fwd_ticks (int): the look-forward window size (int rows/ticks), default is 0
@@ -768,7 +768,7 @@ def rolling_sum_tick(
 
 def rolling_sum_time(
     ts_col: str,
-    cols: Union[str, List[str]],
+    cols: Union[str, list[str]],
     rev_time: Union[int, str],
     fwd_time: Union[int, str] = 0,
 ) -> UpdateByOperation:
@@ -793,7 +793,7 @@ def rolling_sum_time(
 
     Args:
         ts_col (str): the timestamp column for determining the window
-        cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
+        cols (Union[str, list[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by performs the rolling sum operation on all columns.
         rev_time (Union[int, str]): the look-behind window size, can be expressed as an integer in nanoseconds or a time
             interval string, e.g. "PT00:00:.001" or "PT5M"
@@ -836,7 +836,7 @@ def rolling_sum_time(
 
 
 def rolling_group_tick(
-    cols: Union[str, List[str]], rev_ticks: int, fwd_ticks: int = 0
+    cols: Union[str, list[str]], rev_ticks: int, fwd_ticks: int = 0
 ) -> UpdateByOperation:
     """Creates a rolling group UpdateByOperation for the supplied column names, using ticks as the windowing unit. Ticks
     are row counts, and you may specify the reverse and forward window in number of rows to include. The current row
@@ -856,7 +856,7 @@ def rolling_group_tick(
                 current row (inclusive)
 
         Args:
-            cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
+            cols (Union[str, list[str]]): the column(s) to be operated on, can include expressions to rename the output,
                 i.e. "new_col = col"; when empty, update_by performs the rolling sum operation on all columns.
             rev_ticks (int): the look-behind window size (in rows/ticks)
             fwd_ticks (int): the look-forward window size (int rows/ticks), default is 0
@@ -888,7 +888,7 @@ def rolling_group_tick(
 
 def rolling_group_time(
     ts_col: str,
-    cols: Union[str, List[str]],
+    cols: Union[str, list[str]],
     rev_time: Union[int, str],
     fwd_time: Union[int, str] = 0,
 ) -> UpdateByOperation:
@@ -913,7 +913,7 @@ def rolling_group_time(
 
     Args:
         ts_col (str): the timestamp column for determining the window
-        cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
+        cols (Union[str, list[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by performs the rolling sum operation on all columns.
         rev_time (Union[int, str]): the look-behind window size, can be expressed as an integer in nanoseconds or a time
             interval string, e.g. "PT00:00:.001" or "PT5M"
@@ -958,7 +958,7 @@ def rolling_group_time(
 
 
 def rolling_avg_tick(
-    cols: Union[str, List[str]], rev_ticks: int, fwd_ticks: int = 0
+    cols: Union[str, list[str]], rev_ticks: int, fwd_ticks: int = 0
 ) -> UpdateByOperation:
     """Creates a rolling average UpdateByOperation for the supplied column names, using ticks as the windowing unit. Ticks
     are row counts, and you may specify the reverse and forward window in number of rows to include. The current row
@@ -978,7 +978,7 @@ def rolling_avg_tick(
             current row (inclusive)
 
     Args:
-        cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
+        cols (Union[str, list[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by performs the rolling average operation on all columns.
         rev_ticks (int): the look-behind window size (in rows/ticks)
         fwd_ticks (int): the look-forward window size (int rows/ticks), default is 0
@@ -1010,7 +1010,7 @@ def rolling_avg_tick(
 
 def rolling_avg_time(
     ts_col: str,
-    cols: Union[str, List[str]],
+    cols: Union[str, list[str]],
     rev_time: Union[int, str],
     fwd_time: Union[int, str] = 0,
 ) -> UpdateByOperation:
@@ -1035,7 +1035,7 @@ def rolling_avg_time(
 
     Args:
         ts_col (str): the timestamp column for determining the window
-        cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
+        cols (Union[str, list[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by performs the rolling sum operation on all columns.
         rev_time (Union[int, str]): the look-behind window size, can be expressed as an integer in nanoseconds or a time
             interval string, e.g. "PT00:00:.001" or "PT5M"
@@ -1080,7 +1080,7 @@ def rolling_avg_time(
 
 
 def rolling_min_tick(
-    cols: Union[str, List[str]], rev_ticks: int, fwd_ticks: int = 0
+    cols: Union[str, list[str]], rev_ticks: int, fwd_ticks: int = 0
 ) -> UpdateByOperation:
     """Creates a rolling minimum UpdateByOperation for the supplied column names, using ticks as the windowing unit. Ticks
     are row counts, and you may specify the reverse and forward window in number of rows to include. The current row
@@ -1100,7 +1100,7 @@ def rolling_min_tick(
             current row (inclusive)
 
     Args:
-        cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
+        cols (Union[str, list[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by performs the rolling minimum operation on all columns.
         rev_ticks (int): the look-behind window size (in rows/ticks)
         fwd_ticks (int): the look-forward window size (int rows/ticks), default is 0
@@ -1132,7 +1132,7 @@ def rolling_min_tick(
 
 def rolling_min_time(
     ts_col: str,
-    cols: Union[str, List[str]],
+    cols: Union[str, list[str]],
     rev_time: Union[int, str],
     fwd_time: Union[int, str] = 0,
 ) -> UpdateByOperation:
@@ -1157,7 +1157,7 @@ def rolling_min_time(
 
     Args:
         ts_col (str): the timestamp column for determining the window
-        cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
+        cols (Union[str, list[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by performs the rolling sum operation on all columns.
         rev_time (Union[int, str]): the look-behind window size, can be expressed as an integer in nanoseconds or a time
             interval string, e.g. "PT00:00:.001" or "PT5M"
@@ -1202,7 +1202,7 @@ def rolling_min_time(
 
 
 def rolling_max_tick(
-    cols: Union[str, List[str]], rev_ticks: int, fwd_ticks: int = 0
+    cols: Union[str, list[str]], rev_ticks: int, fwd_ticks: int = 0
 ) -> UpdateByOperation:
     """Creates a rolling maximum UpdateByOperation for the supplied column names, using ticks as the windowing unit. Ticks
     are row counts, and you may specify the reverse and forward window in number of rows to include. The current row
@@ -1222,7 +1222,7 @@ def rolling_max_tick(
             current row (inclusive)
 
     Args:
-        cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
+        cols (Union[str, list[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by performs the rolling maximum operation on all columns.
         rev_ticks (int): the look-behind window size (in rows/ticks)
         fwd_ticks (int): the look-forward window size (int rows/ticks), default is 0
@@ -1254,7 +1254,7 @@ def rolling_max_tick(
 
 def rolling_max_time(
     ts_col: str,
-    cols: Union[str, List[str]],
+    cols: Union[str, list[str]],
     rev_time: Union[int, str],
     fwd_time: Union[int, str] = 0,
 ) -> UpdateByOperation:
@@ -1279,7 +1279,7 @@ def rolling_max_time(
 
     Args:
         ts_col (str): the timestamp column for determining the window
-        cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
+        cols (Union[str, list[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by performs the rolling sum operation on all columns.
         rev_time (Union[int, str]): the look-behind window size, can be expressed as an integer in nanoseconds or a time
             interval string, e.g. "PT00:00:.001" or "PT5M"
@@ -1324,7 +1324,7 @@ def rolling_max_time(
 
 
 def rolling_prod_tick(
-    cols: Union[str, List[str]], rev_ticks: int, fwd_ticks: int = 0
+    cols: Union[str, list[str]], rev_ticks: int, fwd_ticks: int = 0
 ) -> UpdateByOperation:
     """Creates a rolling product UpdateByOperation for the supplied column names, using ticks as the windowing unit. Ticks
     are row counts, and you may specify the reverse and forward window in number of rows to include. The current row
@@ -1344,7 +1344,7 @@ def rolling_prod_tick(
             current row (inclusive)
 
     Args:
-        cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
+        cols (Union[str, list[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by performs the rolling product operation on all columns.
         rev_ticks (int): the look-behind window size (in rows/ticks)
         fwd_ticks (int): the look-forward window size (int rows/ticks), default is 0
@@ -1376,7 +1376,7 @@ def rolling_prod_tick(
 
 def rolling_prod_time(
     ts_col: str,
-    cols: Union[str, List[str]],
+    cols: Union[str, list[str]],
     rev_time: Union[int, str],
     fwd_time: Union[int, str] = 0,
 ) -> UpdateByOperation:
@@ -1401,7 +1401,7 @@ def rolling_prod_time(
 
     Args:
         ts_col (str): the timestamp column for determining the window
-        cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
+        cols (Union[str, list[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by performs the rolling sum operation on all columns.
         rev_time (Union[int, str]): the look-behind window size, can be expressed as an integer in nanoseconds or a time
             interval string, e.g. "PT00:00:.001" or "PT5M"
@@ -1446,7 +1446,7 @@ def rolling_prod_time(
 
 
 def rolling_count_tick(
-    cols: Union[str, List[str]], rev_ticks: int, fwd_ticks: int = 0
+    cols: Union[str, list[str]], rev_ticks: int, fwd_ticks: int = 0
 ) -> UpdateByOperation:
     """Creates a rolling count UpdateByOperation for the supplied column names, using ticks as the windowing unit. Ticks
     are row counts, and you may specify the reverse and forward window in number of rows to include. The current row
@@ -1466,7 +1466,7 @@ def rolling_count_tick(
             current row (inclusive)
 
     Args:
-        cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
+        cols (Union[str, list[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by performs the rolling count operation on all columns.
         rev_ticks (int): the look-behind window size (in rows/ticks)
         fwd_ticks (int): the look-forward window size (int rows/ticks), default is 0
@@ -1498,7 +1498,7 @@ def rolling_count_tick(
 
 def rolling_count_time(
     ts_col: str,
-    cols: Union[str, List[str]],
+    cols: Union[str, list[str]],
     rev_time: Union[int, str],
     fwd_time: Union[int, str] = 0,
 ) -> UpdateByOperation:
@@ -1523,7 +1523,7 @@ def rolling_count_time(
 
     Args:
         ts_col (str): the timestamp column for determining the window
-        cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
+        cols (Union[str, list[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by performs the rolling sum operation on all columns.
         rev_time (Union[int, str]): the look-behind window size, can be expressed as an integer in nanoseconds or a time
             interval string, e.g. "PT00:00:.001" or "PT5M"
@@ -1568,7 +1568,7 @@ def rolling_count_time(
 
 
 def rolling_std_tick(
-    cols: Union[str, List[str]], rev_ticks: int, fwd_ticks: int = 0
+    cols: Union[str, list[str]], rev_ticks: int, fwd_ticks: int = 0
 ) -> UpdateByOperation:
     """Creates a rolling sample standard deviation UpdateByOperation for the supplied column names, using ticks as the
     windowing unit. Ticks are row counts, and you may specify the reverse and forward window in number of rows to
@@ -1591,7 +1591,7 @@ def rolling_std_tick(
             current row (inclusive)
 
     Args:
-        cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
+        cols (Union[str, list[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by performs the rolling sample standard deviation operation on all columns.
         rev_ticks (int): the look-behind window size (in rows/ticks)
         fwd_ticks (int): the look-forward window size (int rows/ticks), default is 0
@@ -1623,7 +1623,7 @@ def rolling_std_tick(
 
 def rolling_std_time(
     ts_col: str,
-    cols: Union[str, List[str]],
+    cols: Union[str, list[str]],
     rev_time: Union[int, str],
     fwd_time: Union[int, str] = 0,
 ) -> UpdateByOperation:
@@ -1651,7 +1651,7 @@ def rolling_std_time(
 
     Args:
         ts_col (str): the timestamp column for determining the window
-        cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
+        cols (Union[str, list[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by performs the rolling sum operation on all columns.
         rev_time (Union[int, str]): the look-behind window size, can be expressed as an integer in nanoseconds or a time
             interval string, e.g. "PT00:00:.001" or "PT5M"
@@ -1696,7 +1696,7 @@ def rolling_std_time(
 
 
 def rolling_wavg_tick(
-    wcol: str, cols: Union[str, List[str]], rev_ticks: int, fwd_ticks: int = 0
+    wcol: str, cols: Union[str, list[str]], rev_ticks: int, fwd_ticks: int = 0
 ) -> UpdateByOperation:
     """Creates a rolling weighted average UpdateByOperation for the supplied column names, using ticks as the windowing unit. Ticks
     are row counts, and you may specify the reverse and forward window in number of rows to include. The current row
@@ -1716,7 +1716,7 @@ def rolling_wavg_tick(
             current row (inclusive)
 
     Args:
-        cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
+        cols (Union[str, list[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by performs the rolling weighted average operation on all columns.
         wcol (str):  the column containing the weight values
         rev_ticks (int): the look-behind window size (in rows/ticks)
@@ -1752,7 +1752,7 @@ def rolling_wavg_tick(
 def rolling_wavg_time(
     ts_col: str,
     wcol: str,
-    cols: Union[str, List[str]],
+    cols: Union[str, list[str]],
     rev_time: Union[int, str],
     fwd_time: Union[int, str] = 0,
 ) -> UpdateByOperation:
@@ -1777,7 +1777,7 @@ def rolling_wavg_time(
 
     Args:
         ts_col (str): the timestamp column for determining the window
-        cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
+        cols (Union[str, list[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by performs the rolling weighted average operation on all columns.
         wcol (str):  the column containing the weight values
         rev_time (Union[int, str]): the look-behind window size, can be expressed as an integer in nanoseconds or a time
@@ -1827,7 +1827,7 @@ def rolling_wavg_time(
 def rolling_formula_tick(
     formula: str,
     formula_param: str,
-    cols: Union[str, List[str]],
+    cols: Union[str, list[str]],
     rev_ticks: int,
     fwd_ticks: int = 0,
 ) -> UpdateByOperation:
@@ -1857,7 +1857,7 @@ def rolling_formula_tick(
         formula (str): the user defined formula to apply to each group.
         formula_param (str): the parameter name for the input column's vector within the formula. If formula is
             `max(each)`, then `each` is the formula_param.
-        cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
+        cols (Union[str, list[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by performs the rolling formula operation on all columns.
         rev_ticks (int): the look-behind window size (in rows/ticks)
         fwd_ticks (int): the look-forward window size (int rows/ticks), default is 0
@@ -1894,7 +1894,7 @@ def rolling_formula_time(
     ts_col: str,
     formula: str,
     formula_param: str,
-    cols: Union[str, List[str]],
+    cols: Union[str, list[str]],
     rev_time: Union[int, str],
     fwd_time: Union[int, str] = 0,
 ) -> UpdateByOperation:
@@ -1927,7 +1927,7 @@ def rolling_formula_time(
         formula (str): the user defined formula to apply to each group.
         formula_param (str): the parameter name for the input column's vector within the formula. If formula is
             `max(each)`, then `each` is the formula_param.
-        cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
+        cols (Union[str, list[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by performs the rolling formula operation on all columns.
         rev_time (int): the look-behind window size, can be expressed as an integer in nanoseconds or a time
             interval string, e.g. "PT00:00:00.001" or "PT5M"
@@ -1975,7 +1975,7 @@ def rolling_formula_time(
 
 
 def rolling_count_where_tick(
-    col: str, filters: Union[str, List[str]], rev_ticks: int, fwd_ticks: int = 0
+    col: str, filters: Union[str, list[str]], rev_ticks: int, fwd_ticks: int = 0
 ) -> UpdateByOperation:
     """Creates a rolling count where UpdateByOperation that counts the number of values that pass the provided
     filters, using ticks as the windowing unit. Ticks are row counts, and you may specify the reverse and forward
@@ -2039,7 +2039,7 @@ def rolling_count_where_tick(
 def rolling_count_where_time(
     ts_col: str,
     col: str,
-    filters: Union[str, List[str]],
+    filters: Union[str, list[str]],
     rev_time: Union[int, str],
     fwd_time: Union[int, str] = 0,
 ) -> UpdateByOperation:

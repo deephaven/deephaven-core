@@ -2,24 +2,24 @@
 # Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 #
 
-from typing import List, Any, Optional
+from typing import Any, Optional
 
-from pydeephaven._table_ops import TableOp
 from deephaven_core.proto import table_pb2
+from pydeephaven._table_ops import TableOp
 
 
 class BatchOpAssembler:
-    def __init__(self, session, table_ops: List[TableOp]):
+    def __init__(self, session, table_ops: list[TableOp]):
         self.session = session
         self.table_ops = table_ops
-        self.grpc_table_ops: List[Any] = []
+        self.grpc_table_ops: list[Any] = []
         self._curr_source: Optional[table_pb2.TableReference] = None
 
     @property
-    def batch(self) -> List[Any]:
+    def batch(self) -> list[Any]:
         return self.grpc_table_ops
 
-    def build_batch(self) -> List[Any]:
+    def build_batch(self) -> list[Any]:
         """Transforms the table ops into valid chained batch compatible ops."""
         self._curr_source = table_pb2.TableReference(
             ticket=self.table_ops[0].table.pb_ticket  # type: ignore[attr-defined]

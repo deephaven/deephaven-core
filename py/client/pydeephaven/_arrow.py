@@ -1,9 +1,9 @@
 #
 # Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 #
-from typing import Dict
 
 import pyarrow as pa
+
 from .dherror import DHError
 
 _ARROW_DH_DATA_TYPE_MAPPING = {
@@ -57,7 +57,7 @@ _SUPPORTED_ARROW_PARAMETERIZABLE_TYPES = {
 }
 
 
-def map_arrow_type(arrow_type: pa.DataType) -> Dict[str, str]:
+def map_arrow_type(arrow_type: pa.DataType) -> dict[str, str]:
     """Maps an Arrow type to the corresponding Deephaven column data type."""
     dh_type = _ARROW_DH_DATA_TYPE_MAPPING.get(arrow_type)
 

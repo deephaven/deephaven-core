@@ -3,13 +3,13 @@
 #
 from abc import ABC, abstractmethod
 from enum import Enum
-from typing import Optional, List, Any, Union
+from typing import Optional, Any, Union
 
 import pyarrow as pa
 
+from deephaven_core.proto import table_pb2, table_pb2_grpc
 from pydeephaven._arrow import map_arrow_type
 from pydeephaven.agg import Aggregation
-from deephaven_core.proto import table_pb2, table_pb2_grpc
 from pydeephaven.updateby import UpdateByOperation
 
 
@@ -126,7 +126,7 @@ class EmptyTableOp(TableOp):
 
 
 class DropColumnsOp(TableOp):
-    def __init__(self, column_names: List[str]):
+    def __init__(self, column_names: list[str]):
         self.column_names = column_names
 
     @classmethod
@@ -147,7 +147,7 @@ class DropColumnsOp(TableOp):
 
 
 class USVOp(TableOp):
-    column_specs: List[str]
+    column_specs: list[str]
 
     def make_grpc_request(self, result_id, source_id) -> Any:
         return table_pb2.SelectOrUpdateRequest(
@@ -156,7 +156,7 @@ class USVOp(TableOp):
 
 
 class UpdateOp(USVOp):
-    def __init__(self, column_specs: List[str]):
+    def __init__(self, column_specs: list[str]):
         self.column_specs = column_specs
 
     @classmethod
@@ -170,7 +170,7 @@ class UpdateOp(USVOp):
 
 
 class LazyUpdateOp(USVOp):
-    def __init__(self, column_specs: List[str]):
+    def __init__(self, column_specs: list[str]):
         self.column_specs = column_specs
 
     @classmethod
@@ -184,7 +184,7 @@ class LazyUpdateOp(USVOp):
 
 
 class ViewOp(USVOp):
-    def __init__(self, column_specs: List[str]):
+    def __init__(self, column_specs: list[str]):
         self.column_specs = column_specs
 
     @classmethod
@@ -198,7 +198,7 @@ class ViewOp(USVOp):
 
 
 class UpdateViewOp(USVOp):
-    def __init__(self, column_specs: List[str]):
+    def __init__(self, column_specs: list[str]):
         self.column_specs = column_specs
 
     @classmethod
@@ -212,7 +212,7 @@ class UpdateViewOp(USVOp):
 
 
 class SelectOp(USVOp):
-    def __init__(self, column_specs: List[str]):
+    def __init__(self, column_specs: list[str]):
         self.column_specs = column_specs
 
     @classmethod
@@ -226,7 +226,7 @@ class SelectOp(USVOp):
 
 
 class SelectDistinctOp(TableOp):
-    def __init__(self, column_names: List[str]):
+    def __init__(self, column_names: list[str]):
         self.column_names = column_names
 
     @classmethod
@@ -247,7 +247,7 @@ class SelectDistinctOp(TableOp):
 
 
 class UnstructuredFilterOp(TableOp):
-    def __init__(self, filters: List[str]):
+    def __init__(self, filters: list[str]):
         self.filters = filters
 
     @classmethod
@@ -268,7 +268,7 @@ class UnstructuredFilterOp(TableOp):
 
 
 class SortOp(TableOp):
-    def __init__(self, column_names: List[str], directions: List[SortDirection]):
+    def __init__(self, column_names: list[str], directions: list[SortDirection]):
         self.column_names = column_names
         self.directions = directions
 
@@ -338,7 +338,7 @@ class TailOp(HeadOrTailOp):
 
 class HeadOrTailByOp(TableOp):
     num_rows: int
-    column_names: List[str]
+    column_names: list[str]
 
     def make_grpc_request(self, result_id, source_id) -> Any:
         return table_pb2.HeadOrTailByRequest(
@@ -350,7 +350,7 @@ class HeadOrTailByOp(TableOp):
 
 
 class HeadByOp(HeadOrTailByOp):
-    def __init__(self, num_rows: int, column_names: List[str]):
+    def __init__(self, num_rows: int, column_names: list[str]):
         self.num_rows = num_rows
         self.column_names = column_names
 
@@ -365,7 +365,7 @@ class HeadByOp(HeadOrTailByOp):
 
 
 class TailByOp(HeadOrTailByOp):
-    def __init__(self, num_rows: int, column_names: List[str]):
+    def __init__(self, num_rows: int, column_names: list[str]):
         self.num_rows = num_rows
         self.column_names = column_names
 
@@ -380,7 +380,7 @@ class TailByOp(HeadOrTailByOp):
 
 
 class UngroupOp(TableOp):
-    def __init__(self, column_names: List[str], null_fill: bool = True):
+    def __init__(self, column_names: list[str], null_fill: bool = True):
         self.column_names = column_names
         self.null_fill = null_fill
 
@@ -403,7 +403,7 @@ class UngroupOp(TableOp):
 
 
 class MergeTablesOp(TableOp):
-    def __init__(self, tables: List[Any], key_column: str = ""):
+    def __init__(self, tables: list[Any], key_column: str = ""):
         self.tables = tables
         self.key_column = key_column
 
@@ -430,8 +430,8 @@ class NaturalJoinOp(TableOp):
     def __init__(
         self,
         table: Any,
-        keys: List[str],
-        columns_to_add: List[str],
+        keys: list[str],
+        columns_to_add: list[str],
         type: NaturalJoinType,
     ):
         self.table = table
@@ -464,7 +464,7 @@ class NaturalJoinOp(TableOp):
 
 
 class ExactJoinOp(TableOp):
-    def __init__(self, table: Any, keys: List[str], columns_to_add: List[str]):
+    def __init__(self, table: Any, keys: list[str], columns_to_add: list[str]):
         self.table = table
         self.keys = keys
         self.columns_to_add = columns_to_add
@@ -494,8 +494,8 @@ class CrossJoinOp(TableOp):
     def __init__(
         self,
         table: Any,
-        keys: List[str] = [],
-        columns_to_add: List[str] = [],
+        keys: list[str] = [],
+        columns_to_add: list[str] = [],
         reserve_bits: int = 10,
     ):
         self.table = table
@@ -527,7 +527,7 @@ class CrossJoinOp(TableOp):
 
 class AjOp(TableOp):
     def __init__(
-        self, table: Any, keys: List[str] = [], columns_to_add: List[str] = []
+        self, table: Any, keys: list[str] = [], columns_to_add: list[str] = []
     ):
         self.table = table
         self.keys = keys
@@ -557,7 +557,7 @@ class AjOp(TableOp):
 
 class RajOp(TableOp):
     def __init__(
-        self, table: Any, keys: List[str] = [], columns_to_add: List[str] = []
+        self, table: Any, keys: list[str] = [], columns_to_add: list[str] = []
     ):
         self.table = table
         self.keys = keys
@@ -615,7 +615,7 @@ class FetchTableOp(TableOp):
 
 class UpdateByOp(TableOp):
     def __init__(
-        self, operations: List[UpdateByOperation], by: Optional[List[str]] = None
+        self, operations: list[UpdateByOperation], by: Optional[list[str]] = None
     ):
         self.operations = operations
         self.by = by
@@ -657,7 +657,7 @@ class SnapshotWhenTableOp(TableOp):
     def __init__(
         self,
         trigger_table: Any,
-        stamp_cols: Optional[List[str]] = None,
+        stamp_cols: Optional[list[str]] = None,
         initial: bool = False,
         incremental: bool = False,
         history: bool = False,
@@ -694,7 +694,7 @@ class SnapshotWhenTableOp(TableOp):
 
 
 class AggregateOp(TableOp):
-    def __init__(self, aggs: List[Aggregation], by: List[str]):
+    def __init__(self, aggs: list[Aggregation], by: list[str]):
         self.aggs = aggs
         self.by = by
 
@@ -718,7 +718,7 @@ class AggregateOp(TableOp):
 
 
 class AggregateAllOp(TableOp):
-    def __init__(self, agg: Aggregation, by: List[str]):
+    def __init__(self, agg: Aggregation, by: list[str]):
         self.agg_spec = agg.agg_spec
         self.by = by
 
@@ -747,7 +747,7 @@ class CreateInputTableOp(TableOp):
         self,
         schema: pa.schema,
         init_table: Any,
-        key_cols: Optional[List[str]] = None,
+        key_cols: Optional[list[str]] = None,
         blink: bool = False,
     ):
         if blink and key_cols:
@@ -814,7 +814,7 @@ class CreateInputTableOp(TableOp):
 
 
 class WhereInTableOp(TableOp):
-    def __init__(self, filter_table: Any, cols: List[str], inverted: bool):
+    def __init__(self, filter_table: Any, cols: list[str], inverted: bool):
         self.filter_table = filter_table
         self.cols = cols
         self.inverted = inverted

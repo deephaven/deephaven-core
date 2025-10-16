@@ -9,9 +9,10 @@ from __future__ import annotations
 import base64
 import logging
 import os
-from random import random
 import threading
-from typing import Any, Dict, Iterable, List, Union, Tuple, NewType, Optional, cast
+from collections.abc import Iterable
+from random import random
+from typing import Any, Union, NewType, Optional, cast
 
 import grpc
 import pyarrow as pa
@@ -34,6 +35,11 @@ from pydeephaven._table_ops import (
     CreateInputTableOp,
 )
 from pydeephaven._table_service import TableService
+from pydeephaven._utils import to_list
+from pydeephaven.dherror import DHError
+from pydeephaven.experimental.plugin_client import PluginClient
+from pydeephaven.query import Query
+from pydeephaven.table import Table, InputTable
 from pydeephaven.ticket import (
     SharedTicket,
     ExportTicket,
@@ -42,11 +48,6 @@ from pydeephaven.ticket import (
     ServerObject,
     _server_object_from_proto,
 )
-from pydeephaven._utils import to_list
-from pydeephaven.dherror import DHError
-from pydeephaven.experimental.plugin_client import PluginClient
-from pydeephaven.query import Query
-from pydeephaven.table import Table, InputTable
 
 logger = logging.getLogger(__name__)
 
@@ -124,8 +125,8 @@ class Session:
         tls_root_certs: Optional[bytes] = None,
         client_cert_chain: Optional[bytes] = None,
         client_private_key: Optional[bytes] = None,
-        client_opts: Optional[List[Tuple[str, Union[int, str]]]] = None,
-        extra_headers: Optional[Dict[bytes, bytes]] = None,
+        client_opts: Optional[list[tuple[str, Union[int, str]]]] = None,
+        extra_headers: Optional[dict[bytes, bytes]] = None,
     ):
         """Initializes a Session object that connects to the Deephaven server
 
@@ -148,14 +149,14 @@ class Session:
                  which implies not using mutual TLS.
             client_private_key (bytes): PEM encoded client private key for client_cert_chain if using mutual TLS.
                  Defaults to None, which implies not using mutual TLS.
-            client_opts (List[Tuple[str,Union[int,str]]): list of tuples for name and value of options to
+            client_opts (list[Tuple[str,Union[int,str]]): list of tuples for name and value of options to
                 the underlying grpc channel creation.  Defaults to None, which implies not using any channel
                 options.
                 See https://grpc.github.io/grpc/cpp/group__grpc__arg__keys.html for a list of valid options.
                 Example options:
                   [ ('grpc.target_name_override', 'idonthaveadnsforthishost'),
                     ('grpc.min_reconnect_backoff_ms', 2000) ]
-            extra_headers (Dict[bytes, bytes]): additional headers (and values) to add to server requests.
+            extra_headers (dict[bytes, bytes]): additional headers (and values) to add to server requests.
                 Defaults to None, which implies not using any extra headers.
 
         Raises:
@@ -238,7 +239,7 @@ class Session:
         self.close()
 
     def update_metadata(
-        self, metadata: Iterable[Tuple[str, Union[str, bytes]]]
+        self, metadata: Iterable[tuple[str, Union[str, bytes]]]
     ) -> None:
         for header_tuple in metadata:
             if header_tuple[0] == "authorization":
@@ -283,7 +284,7 @@ class Session:
             ]
 
     @property
-    def exportable_objects(self) -> Dict[str, ServerObject]:
+    def exportable_objects(self) -> dict[str, ServerObject]:
         with self._r_lock:
             fields = self._fetch_fields()
             return {
@@ -728,7 +729,7 @@ class Session:
         """
         return self.flight_service.import_table(data=data)
 
-    def merge_tables(self, tables: List[Table], order_by: str = "") -> Table:
+    def merge_tables(self, tables: list[Table], order_by: str = "") -> Table:
         """Merges several tables into one table on the server.
 
         Args:
@@ -762,7 +763,7 @@ class Session:
         self,
         schema: Optional[pa.Schema] = None,
         init_table: Optional[Table] = None,
-        key_cols: Optional[Union[str, List[str]]] = None,
+        key_cols: Optional[Union[str, list[str]]] = None,
         blink_table: bool = False,
     ) -> InputTable:
         """Creates an InputTable from either Arrow schema or initial table.  When blink_table is True, the InputTable
