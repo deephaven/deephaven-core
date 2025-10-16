@@ -650,7 +650,6 @@ public class QueryTableSelectBarrierTest {
 
     @Test
     public void testDH20625() {
-        // Create a partitioned table with 4 partitions
         final Table source = TableTools.emptyTable(1_000)
                 .update("a = ii % 5", "b = ii % 11", "c = ii % 17", "d = ii");
 
