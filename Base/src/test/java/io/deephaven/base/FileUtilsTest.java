@@ -124,4 +124,38 @@ public class FileUtilsTest extends TestCase {
         } catch (IllegalArgumentException expected) {
         }
     }
+
+    /**
+     * Before the {@link FileUtils#hasScheme(String)} check, this was "successfully" parsing via the file-fallback path,
+     * to logic that looked something like:
+     *
+     * <pre>{@code
+     * // this is a valid relative File location
+     * final File relativeFile = new File("s3://bucket/path with spaces/cool");
+     * final URI uri = convertToURI(relativeFile, true);
+     * }</pre>
+     */
+    public void testInvalidURIPath() {
+        try {
+            FileUtils.convertToURI("s3://bucket/path with spaces/cool", true).toString();
+            Assert.fail("Expected IllegalArgumentException");
+        } catch (IllegalStateException e) {
+            Assert.assertEquals("Failed to convert to URI: 's3://bucket/path with spaces/cool'", e.getMessage());
+        }
+    }
+
+    public void testHasScheme() {
+        Assert.assertTrue(FileUtils.hasScheme("myScheme:something"));
+        Assert.assertTrue(FileUtils.hasScheme("dh+plain://localhost"));
+        Assert.assertTrue(FileUtils.hasScheme("x-y://localhost"));
+        Assert.assertTrue(FileUtils.hasScheme("x.y://localhost"));
+        Assert.assertTrue(FileUtils.hasScheme("justScheme:"));
+        Assert.assertTrue(FileUtils.hasScheme("s3://my/bucket"));
+        Assert.assertTrue(FileUtils.hasScheme("scheme: anything after scheme is okay, doesn't have to be a real URI"));
+
+        Assert.assertFalse(FileUtils.hasScheme("3://scheme-must-start-with-alpha"));
+        Assert.assertFalse(FileUtils.hasScheme("nocolon"));
+        Assert.assertFalse(FileUtils.hasScheme("/file/path"));
+        Assert.assertFalse(FileUtils.hasScheme("/file/path:something"));
+    }
 }

@@ -291,40 +291,57 @@ public class FileUtils {
         if (source.isEmpty()) {
             throw new IllegalArgumentException("Cannot convert empty source to URI");
         }
-        URI uri;
+        final URI uri;
         try {
             uri = new URI(source);
-            if (uri.getScheme() == null) {
-                // Convert to a "file" URI
-                return convertToURI(new File(source), isDirectory);
-            }
-            if (uri.getScheme().equals(FILE_URI_SCHEME)) {
-                return convertToURI(new File(uri), isDirectory);
-            }
-            String path = uri.getPath();
-            final boolean endsWithSlash = !path.isEmpty() && path.charAt(path.length() - 1) == URI_SEPARATOR_CHAR;
-            if (!isDirectory && endsWithSlash) {
-                throw new IllegalArgumentException("Non-directory URI should not end with a slash: " + uri);
-            }
-            boolean isUpdated = false;
-            if (isDirectory && !endsWithSlash) {
-                path = path + URI_SEPARATOR_CHAR;
-                isUpdated = true;
-            }
-            // Replace two or more consecutive slashes in the path with a single slash
-            if (path.contains(REPEATED_URI_SEPARATOR)) {
-                path = REPEATED_URI_SEPARATOR_PATTERN.matcher(path).replaceAll(URI_SEPARATOR);
-                isUpdated = true;
-            }
-            if (isUpdated) {
-                uri = new URI(uri.getScheme(), uri.getUserInfo(), uri.getHost(), uri.getPort(), path, uri.getQuery(),
-                        uri.getFragment());
-            }
         } catch (final URISyntaxException e) {
-            // If the URI is invalid, assume it's a file path
+            // If it looks like it already has a scheme, we should _not_ try to parse it as a file
+            if (hasScheme(source)) {
+                throw new IllegalStateException(String.format("Failed to convert to URI: '%s'", source), e);
+            }
+            // Otherwise, assume it's a file URI
             return convertToURI(new File(source), isDirectory);
         }
-        return uri;
+        if (uri.getScheme() == null) {
+            // Convert to a "file" URI
+            return convertToURI(new File(source), isDirectory);
+        }
+        if (uri.getScheme().equals(FILE_URI_SCHEME)) {
+            // Ensure it is absolute
+            return convertToURI(new File(uri), isDirectory);
+        }
+        String path = uri.getPath();
+        final boolean endsWithSlash = !path.isEmpty() && path.charAt(path.length() - 1) == URI_SEPARATOR_CHAR;
+        if (!isDirectory && endsWithSlash) {
+            throw new IllegalArgumentException("Non-directory URI should not end with a slash: " + uri);
+        }
+        boolean isUpdated = false;
+        if (isDirectory && !endsWithSlash) {
+            path = path + URI_SEPARATOR_CHAR;
+            isUpdated = true;
+        }
+        // Replace two or more consecutive slashes in the path with a single slash
+        if (path.contains(REPEATED_URI_SEPARATOR)) {
+            path = REPEATED_URI_SEPARATOR_PATTERN.matcher(path).replaceAll(URI_SEPARATOR);
+            isUpdated = true;
+        }
+        if (!isUpdated) {
+            return uri;
+        }
+        try {
+            return new URI(uri.getScheme(), uri.getUserInfo(), uri.getHost(), uri.getPort(), path, uri.getQuery(),
+                    uri.getFragment());
+        } catch (URISyntaxException e) {
+            throw new IllegalStateException("Failed to update URI: " + uri, e);
+        }
+    }
+
+    // URI scheme start looks like alpha, followed by (alphanum, plus, minus, or period) repeated, followed by colon
+    private static final Pattern URI_SCHEME_START = Pattern.compile("^\\p{Alpha}[\\p{Alnum}+\\-.]*:");
+
+    static boolean hasScheme(String source) {
+        // Note: using find() as it may be a bit more efficient than adding .* to end of regex + matches()
+        return URI_SCHEME_START.matcher(source).find();
     }
 
     /**
