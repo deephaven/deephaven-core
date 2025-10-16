@@ -1748,7 +1748,6 @@ public abstract class QueryTableWhereTest {
     }
 
     @Test
-    @Ignore
     public void testDataIndexRespectBarrierPartialPrioritization() {
         QueryTable.PARALLEL_WHERE_SEGMENTS = 10;
         QueryTable.PARALLEL_WHERE_ROWS_PER_SEGMENT = 10_000;
