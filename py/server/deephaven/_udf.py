@@ -5,6 +5,7 @@
 import inspect
 import re
 import sys
+import types
 import typing
 import warnings
 from dataclasses import dataclass, field
@@ -16,7 +17,6 @@ from collections.abc import Sequence
 import jpy
 import numpy
 import numpy as np
-import numpy._typing as npt
 import pandas as pd
 
 from deephaven import DHError, dtypes
@@ -365,48 +365,28 @@ def _py_sequence_component_type(t: type) -> Optional[type]:
 def _np_ndarray_component_type(t: type) -> Optional[type]:
     """Returns the numpy ndarray component type if the type is a numpy ndarray, otherwise return None."""
 
-    # Py3.8: npt.NDArray can be used in Py 3.8 as a generic alias, but a specific alias (e.g. npt.NDArray[np.int64])
-    # is an instance of a private class of np, yet we don't have a choice but to use it. And when npt.NDArray is used,
-    # the 1st argument is typing.Any, the 2nd argument is another generic alias of which the 1st argument is the
-    # component type
     component_type = None
-    if (3, 9) > sys.version_info >= (3, 8):
-        if (
-            isinstance(t, npt._generic_alias._GenericAlias)
-            and t.__origin__ is np.ndarray
-        ):
-            component_type = t.__args__[1].__args__[0]
-    # Py3.9+, np.ndarray as a generic alias is only supported in Python 3.9+, also npt.NDArray is still available but a
-    # specific alias (e.g. npt.NDArray[np.int64]) now is an instance of typing.GenericAlias.
-    # when npt.NDArray is used, the 1st argument is typing.Any, the 2nd argument is another generic alias of which
-    # the 1st argument is the component type
-    # when np.ndarray is used, the 1st argument is the component type
-    if not component_type and sys.version_info >= (3, 9):
-        import types
-
-        if isinstance(t, types.GenericAlias) and t.__origin__ is np.ndarray:  # novermin
-            nargs = len(t.__args__)
-            if nargs == 1:
-                component_type = t.__args__[0]
-            elif nargs == 2:  # for npt.NDArray[np.int64], etc.
-                a0 = t.__args__[0]
-                a1 = t.__args__[1]
-                # a0 is typing.Any before numpy 2.2.0 or a generic alias of tuple[int, ...] in numpy 2.2.0+. The latter
-                # is to support shape typing for numpy arrays. e.g. np.ndarray[tuple[Literal[2], Literal[3]], np.int32]
-                # is a 2x3 array of int32.
-                if (
-                    a0 == typing.Any
-                    or (isinstance(a0, types.GenericAlias) and a0.__origin__ is tuple)
-                ) and isinstance(a1, types.GenericAlias):  # novermin
-                    component_type = a1.__args__[0]
+    if isinstance(t, types.GenericAlias) and t.__origin__ is np.ndarray:  # novermin
+        nargs = len(t.__args__)
+        if nargs == 1:
+            component_type = t.__args__[0]
+        elif nargs == 2:  # for npt.NDArray[np.int64], etc.
+            a0 = t.__args__[0]
+            a1 = t.__args__[1]
+            # a0 is typing.Any before numpy 2.2.0 or a generic alias of tuple[int, ...] in numpy 2.2.0+. The latter
+            # is to support shape typing for numpy arrays. e.g. np.ndarray[tuple[Literal[2], Literal[3]], np.int32]
+            # is a 2x3 array of int32.
+            if (
+                a0 == typing.Any
+                or (isinstance(a0, types.GenericAlias) and a0.__origin__ is tuple)
+            ) and isinstance(a1, types.GenericAlias):  # novermin
+                component_type = a1.__args__[0]
     return component_type
 
 
 def _is_union_type(t: type) -> bool:
     """Return True if the type is a Union type"""
     if sys.version_info >= (3, 10):
-        import types
-
         if isinstance(t, types.UnionType):  # novermin
             return True
 

@@ -19,7 +19,7 @@ from deephaven import (
     update_graph,
     new_table,
     dtypes,
-    )
+)
 from deephaven.agg import (
     sum_,
     weighted_avg,
@@ -41,7 +41,7 @@ from deephaven.agg import (
     count_distinct,
     distinct,
     count_where,
-    )
+)
 from deephaven.column import datetime_col
 from deephaven.concurrency_control import Barrier
 from deephaven.execution_context import make_user_exec_ctx, get_exec_ctx
@@ -49,7 +49,14 @@ from deephaven.filters import or_
 from deephaven.html import to_html
 from deephaven.jcompat import j_hashmap
 from deephaven.pandas import to_pandas
-from deephaven.table import Table, TableDefinition, SearchDisplayMode, table_diff, NaturalJoinType, Selectable
+from deephaven.table import (
+    Table,
+    TableDefinition,
+    SearchDisplayMode,
+    table_diff,
+    NaturalJoinType,
+    Selectable,
+)
 from tests.testbase import BaseTestCase, table_equals
 
 
@@ -1520,18 +1527,25 @@ class TableTestCase(BaseTestCase):
             d = table_diff(t1, t2, max_diffs=10, floating_comparison="relative")
             self.assertFalse(d)
 
-
     def test_selectable_with_concurrency_control(self):
         barrier1 = Barrier()
         barrier2 = Barrier()
-        swcc = Selectable.parse(formula ="A = i").with_declared_barriers([barrier1, barrier2]).with_serial()
+        swcc = (
+            Selectable.parse(formula="A = i")
+            .with_declared_barriers([barrier1, barrier2])
+            .with_serial()
+        )
         self.assertIsNotNone(swcc)
         self.assertIn(barrier1.j_barrier, swcc.j_object.declaredBarriers())
         self.assertIn(barrier2.j_barrier, swcc.j_object.declaredBarriers())
         self.assertTrue(swcc.j_object.isSerial())
 
         # # circular barriers are allowed when defining a SelectableWithConcurrencyControl, but will cause an error when used in a query
-        swcc_a = Selectable.parse(formula ="A = i").with_declared_barriers([barrier1, barrier2]).with_respected_barriers([barrier1])
+        swcc_a = (
+            Selectable.parse(formula="A = i")
+            .with_declared_barriers([barrier1, barrier2])
+            .with_respected_barriers([barrier1])
+        )
         self.assertIsNotNone(swcc_a)
         self.assertIn(barrier1.j_barrier, swcc_a.j_object.declaredBarriers())
         self.assertIn(barrier2.j_barrier, swcc_a.j_object.declaredBarriers())
@@ -1539,13 +1553,21 @@ class TableTestCase(BaseTestCase):
         self.assertIn(barrier1.j_barrier, swcc_a.j_object.respectedBarriers())
 
         expected = empty_table(10).update(["A = i", "B = A + i"])
-        swcc_b = Selectable.parse(formula ="B = A + i").with_respected_barriers([barrier2]).with_serial()
+        swcc_b = (
+            Selectable.parse(formula="B = A + i")
+            .with_respected_barriers([barrier2])
+            .with_serial()
+        )
         t = empty_table(10).update([swcc, swcc_b])
         self.assert_table_equals(expected, t)
         t = empty_table(10).select([swcc, swcc_b])
         self.assert_table_equals(expected, t)
 
-        swcc_c = Selectable.parse(formula ="A = 1 + (2*8)").with_respected_barriers([barrier2]).with_serial()
+        swcc_c = (
+            Selectable.parse(formula="A = 1 + (2*8)")
+            .with_respected_barriers([barrier2])
+            .with_serial()
+        )
         with self.assertRaises(DHError):
             t = empty_table(10).update([swcc_c, swcc_b])
 

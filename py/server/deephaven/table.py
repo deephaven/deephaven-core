@@ -124,6 +124,7 @@ class Selectable(ConcurrencyControl["Selectable"], JObjectWrapper):
 
     Note that, it can only be created with the factory method  `parse`.
     """
+
     j_object_type = _JSelectable
 
     @property
@@ -151,8 +152,10 @@ class Selectable(ConcurrencyControl["Selectable"], JObjectWrapper):
         except Exception as e:
             raise DHError(e, f"failed to create a Selectable: {formula}") from e
 
-    def with_declared_barriers(self, barriers: Union[Barrier, Sequence[Barrier]]) -> Selectable:
-        """ Returns a new Selectable with the given declared barriers.
+    def with_declared_barriers(
+        self, barriers: Union[Barrier, Sequence[Barrier]]
+    ) -> Selectable:
+        """Returns a new Selectable with the given declared barriers.
 
         Args:
             barriers (Union[Barrier, Sequence[Barrier]]): The declared barrier(s).
@@ -165,12 +168,18 @@ class Selectable(ConcurrencyControl["Selectable"], JObjectWrapper):
         """
         try:
             barriers = to_sequence(barriers)
-            return Selectable(j_selectable=self.j_selectable.withDeclaredBarriers(*barriers))
+            return Selectable(
+                j_selectable=self.j_selectable.withDeclaredBarriers(*barriers)
+            )
         except Exception as e:
-            raise DHError(e, f"failed to create selectable with declared barriers: {barriers}") from e
+            raise DHError(
+                e, f"failed to create selectable with declared barriers: {barriers}"
+            ) from e
 
-    def with_respected_barriers(self, barriers: Union[Barrier, Sequence[Barrier]]) -> Selectable:
-        """ Returns a new Selectable with the given respected barriers.
+    def with_respected_barriers(
+        self, barriers: Union[Barrier, Sequence[Barrier]]
+    ) -> Selectable:
+        """Returns a new Selectable with the given respected barriers.
 
         Args:
             barriers (Union[Barrier, Sequence[Barrier]]): The respected barrier(s).
@@ -183,12 +192,16 @@ class Selectable(ConcurrencyControl["Selectable"], JObjectWrapper):
         """
         try:
             barriers = to_sequence(barriers)
-            return Selectable(j_selectable=self.j_selectable.withRespectedBarriers(*barriers))
+            return Selectable(
+                j_selectable=self.j_selectable.withRespectedBarriers(*barriers)
+            )
         except Exception as e:
-            raise DHError(e, f"failed to create selectable with respected barriers: {barriers}") from e
+            raise DHError(
+                e, f"failed to create selectable with respected barriers: {barriers}"
+            ) from e
 
     def with_serial(self) -> Selectable:
-        """ Returns a new Selectable with serial evaluation enforced.
+        """Returns a new Selectable with serial evaluation enforced.
 
         Returns:
             Selectable
@@ -199,7 +212,9 @@ class Selectable(ConcurrencyControl["Selectable"], JObjectWrapper):
         try:
             return Selectable(j_selectable=self.j_selectable.withSerial())
         except Exception as e:
-            raise DHError(e, "failed to create selectable with serial evaluation.") from e
+            raise DHError(
+                e, "failed to create selectable with serial evaluation."
+            ) from e
 
 
 class NodeType(Enum):
@@ -1289,7 +1304,9 @@ class Table(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "table rename_columns operation failed.") from e
 
-    def update(self, formulas: Union[str, Sequence[str], Selectable, Sequence[Selectable]]) -> Table:
+    def update(
+        self, formulas: Union[str, Sequence[str], Selectable, Sequence[Selectable]]
+    ) -> Table:
         """The update method creates a new table containing a new, in-memory column for each formula.
 
         Args:
@@ -1368,7 +1385,10 @@ class Table(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "table update_view operation failed.") from e
 
-    def select(self, formulas: Union[str, Sequence[str], Selectable, Sequence[Selectable]] = None) -> Table:
+    def select(
+        self,
+        formulas: Union[str, Sequence[str], Selectable, Sequence[Selectable]] = None,
+    ) -> Table:
         """The select method creates a new in-memory table that includes one column for each formula. If no formula
         is specified, all columns will be included.
 
@@ -3618,7 +3638,9 @@ class PartitionedTableProxy(JObjectWrapper):
         try:
             filters = to_sequence(filters)
             with _query_scope_ctx(), auto_locking_ctx(self):
-                return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.where(and_(filters).j_filter))
+                return PartitionedTableProxy(
+                    j_pt_proxy=self.j_pt_proxy.where(and_(filters).j_filter)
+                )
         except Exception as e:
             raise DHError(
                 e, "where operation on the PartitionedTableProxy failed."
@@ -3728,7 +3750,9 @@ class PartitionedTableProxy(JObjectWrapper):
                 e, "update_view operation on the PartitionedTableProxy failed."
             ) from e
 
-    def update(self, formulas: Union[str, Sequence[str], Selectable, Sequence[Selectable]]) -> PartitionedTableProxy:
+    def update(
+        self, formulas: Union[str, Sequence[str], Selectable, Sequence[Selectable]]
+    ) -> PartitionedTableProxy:
         """Applies the :meth:`~Table.update` table operation to all constituent tables of the underlying partitioned
         table, and produces a new PartitionedTableProxy with the result tables as the constituents of its underlying
         partitioned table.
@@ -3746,15 +3770,22 @@ class PartitionedTableProxy(JObjectWrapper):
             formulas = to_sequence(formulas)
             with _query_scope_ctx(), auto_locking_ctx(self):
                 if isinstance(formulas[0], Selectable.j_object_type):
-                    return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.update(j_array_list(formulas)))
+                    return PartitionedTableProxy(
+                        j_pt_proxy=self.j_pt_proxy.update(j_array_list(formulas))
+                    )
                 else:
-                    return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.update(*formulas))
+                    return PartitionedTableProxy(
+                        j_pt_proxy=self.j_pt_proxy.update(*formulas)
+                    )
         except Exception as e:
             raise DHError(
                 e, "update operation on the PartitionedTableProxy failed."
             ) from e
 
-    def select(self, formulas: Union[str, Sequence[str], Selectable, Sequence[Selectable]] = None) -> PartitionedTableProxy:
+    def select(
+        self,
+        formulas: Union[str, Sequence[str], Selectable, Sequence[Selectable]] = None,
+    ) -> PartitionedTableProxy:
         """Applies the :meth:`~Table.select` table operation to all constituent tables of the underlying partitioned
         table, and produces a new PartitionedTableProxy with the result tables as the constituents of its underlying
         partitioned table.
@@ -3773,9 +3804,13 @@ class PartitionedTableProxy(JObjectWrapper):
             formulas = to_sequence(formulas)
             with _query_scope_ctx(), auto_locking_ctx(self):
                 if isinstance(formulas[0], Selectable.j_object_type):
-                    return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.select(j_array_list(formulas)))
+                    return PartitionedTableProxy(
+                        j_pt_proxy=self.j_pt_proxy.select(j_array_list(formulas))
+                    )
                 else:
-                    return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.select(*formulas))
+                    return PartitionedTableProxy(
+                        j_pt_proxy=self.j_pt_proxy.select(*formulas)
+                    )
         except Exception as e:
             raise DHError(
                 e, "select operation on the PartitionedTableProxy failed."

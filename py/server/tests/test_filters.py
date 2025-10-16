@@ -7,7 +7,16 @@ import unittest
 from deephaven import new_table, read_csv, DHError
 from deephaven.column import string_col
 from deephaven.concurrency_control import Barrier
-from deephaven.filters import Filter, PatternMode, and_, is_not_null, is_null, or_, not_, pattern
+from deephaven.filters import (
+    Filter,
+    PatternMode,
+    and_,
+    is_not_null,
+    is_null,
+    or_,
+    not_,
+    pattern,
+)
 from tests.testbase import BaseTestCase
 
 
@@ -86,5 +95,5 @@ class FilterTestCase(BaseTestCase):
         self.assert_table_equals(filtered_table, filtered_table_and)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

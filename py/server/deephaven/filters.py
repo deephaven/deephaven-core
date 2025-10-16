@@ -39,8 +39,10 @@ class Filter(ConcurrencyControl["Filter"], JObjectWrapper):
     def __init__(self, j_filter):
         self.j_filter = j_filter
 
-    def with_declared_barriers(self, barriers: Union[Barrier, Sequence[Barrier]]) -> Filter:
-        """ Returns a new Filter with the given declared barriers.
+    def with_declared_barriers(
+        self, barriers: Union[Barrier, Sequence[Barrier]]
+    ) -> Filter:
+        """Returns a new Filter with the given declared barriers.
 
         Args:
             barriers (Union[Barrier, Sequence[Barrier]]): the barrier(s) to declare
@@ -57,8 +59,10 @@ class Filter(ConcurrencyControl["Filter"], JObjectWrapper):
         except Exception as e:
             raise DHError(e, "failed to create filter with declared barriers.") from e
 
-    def with_respected_barriers(self, barriers: Union[Barrier, Sequence[Barrier]]) -> Filter:
-        """ Returns a new Filter with the given respected barriers.
+    def with_respected_barriers(
+        self, barriers: Union[Barrier, Sequence[Barrier]]
+    ) -> Filter:
+        """Returns a new Filter with the given respected barriers.
 
         Args:
             barriers (Union[Barrier, Sequence[Barrier]]): the barrier(s) to respect
@@ -76,7 +80,7 @@ class Filter(ConcurrencyControl["Filter"], JObjectWrapper):
             raise DHError(e, "failed to create filter with respected barriers.") from e
 
     def with_serial(self) -> Filter:
-        """ Returns a new Filter with serial evaluation enforced.
+        """Returns a new Filter with serial evaluation enforced.
 
         Returns:
             a new Filter with serial evaluation enforced
@@ -85,7 +89,7 @@ class Filter(ConcurrencyControl["Filter"], JObjectWrapper):
             DHError
         """
         try:
-            return Filter(j_filter = self.j_filter.withSerial())
+            return Filter(j_filter=self.j_filter.withSerial())
         except Exception as e:
             raise DHError(e, "failed to create filter with serial evaluation.") from e
 

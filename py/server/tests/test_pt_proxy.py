@@ -4,9 +4,30 @@
 
 import unittest
 
-from deephaven import read_csv, empty_table, SortDirection, DHError, time_table, update_graph
-from deephaven.agg import sum_, avg, pct, weighted_avg, formula, group, first, last, max_, median, min_, std, abs_sum, \
-    var
+from deephaven import (
+    read_csv,
+    empty_table,
+    SortDirection,
+    DHError,
+    time_table,
+    update_graph,
+)
+from deephaven.agg import (
+    sum_,
+    avg,
+    pct,
+    weighted_avg,
+    formula,
+    group,
+    first,
+    last,
+    max_,
+    median,
+    min_,
+    std,
+    abs_sum,
+    var,
+)
 from deephaven.concurrency_control import Barrier
 from deephaven.execution_context import get_exec_ctx
 from deephaven.filters import Filter
@@ -546,16 +567,26 @@ class PartitionedTableProxyTestCase(BaseTestCase):
         ]
         barrier1 = Barrier()
         barrier2 = Barrier()
-        selectable_a = Selectable.parse("a").with_declared_barriers([barrier1, barrier2])
-        selectable_c = Selectable.parse("c").with_respected_barriers(barrier2).with_serial()
-        selectable_sum = Selectable.parse("Sum = a + b + c + d").with_respected_barriers(barrier1)
+        selectable_a = Selectable.parse("a").with_declared_barriers(
+            [barrier1, barrier2]
+        )
+        selectable_c = (
+            Selectable.parse("c").with_respected_barriers(barrier2).with_serial()
+        )
+        selectable_sum = Selectable.parse(
+            "Sum = a + b + c + d"
+        ).with_respected_barriers(barrier1)
 
         for op in ops:
             with self.subTest(op=op):
                 result_pt_proxy = op(
-                    self.pt_proxy, formulas=[selectable_a, selectable_c, selectable_sum])
+                    self.pt_proxy, formulas=[selectable_a, selectable_c, selectable_sum]
+                )
 
-                for rct, ct in zip(result_pt_proxy.target.constituent_tables, self.pt_proxy.target.constituent_tables):
+                for rct, ct in zip(
+                    result_pt_proxy.target.constituent_tables,
+                    self.pt_proxy.target.constituent_tables,
+                ):
                     self.assertTrue(len(rct.definition) >= 3)
                     self.assertLessEqual(rct.size, ct.size)
 
@@ -564,8 +595,10 @@ class PartitionedTableProxyTestCase(BaseTestCase):
         filter1 = Filter.from_("a > 10").with_declared_barriers(barrier1)
         filter2 = Filter.from_("b < 100").with_respected_barriers(barrier1)
         filtered_pt_proxy = self.pt_proxy.where(filters=[filter1, filter2])
-        for ct, filtered_ct in zip(self.pt_proxy.target.constituent_tables,
-                                   filtered_pt_proxy.target.constituent_tables):
+        for ct, filtered_ct in zip(
+            self.pt_proxy.target.constituent_tables,
+            filtered_pt_proxy.target.constituent_tables,
+        ):
             self.assertLessEqual(filtered_ct.size, ct.size)
 
 

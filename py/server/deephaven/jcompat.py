@@ -247,7 +247,7 @@ def to_sequence(
 
 
 def _j_array_to_sequence(j_array: jpy.JType) -> Sequence[Any]:
-    """ Converts a Java array to a Python sequence of wrapped objects.
+    """Converts a Java array to a Python sequence of wrapped objects.
 
     Args:
         j_array (jpy.JType): the Java array to convert
