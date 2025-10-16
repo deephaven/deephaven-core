@@ -673,7 +673,6 @@ public class QueryTableSelectBarrierTest {
                 Selectable.parse("Sum = a + b + c").withRespectedBarriers(b1)));
         // simple test, verify we have the same number of rows
         assertEquals(source.size(), result.size());
-
     }
 
     @Test
