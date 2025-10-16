@@ -365,7 +365,6 @@ class PartitionedTableProxyTestCase(BaseTestCase):
             ptp = agg_by_formula()
             self.assertIsNotNone(ptp)
 
-    @unittest.skip("https://deephaven.atlassian.net/browse/DH-20625")
     def test_update_select_concurrency_control(self):
         ops = [
             PartitionedTableProxy.update,
