@@ -20,7 +20,7 @@ with a 100,000-row table called `myTable`, running `myTable.update("X = random()
 100,000 times (once per row).
 
 If an operation's source table is
-[refreshing](<https://deephaven.io/core/javadoc/io/deephaven/engine/table/impl/BaseTable.html#isRefreshing()>),
+[refreshing](https://deephaven.io/core/javadoc/io/deephaven/engine/table/impl/BaseTable.html#isRefreshing()),
 then initialization will create a new node in the [update graph](../dag.md) as well.
 
 ### Query updates
@@ -73,9 +73,9 @@ the [`update`](../../reference/table-operations/select/update.md) and [`where`](
 
 ### Controlling Concurrency for `select`, `update` and `where`
 
-The [`select`](../../reference/table-operations/select/select.md), [`update`](../../reference/table-operations/select/update.md), and [`where`](../../reference/table-operations/filter/where.md) operations can parallelize within a single where clause or column expression. This can greatly improve throughput by using multiple threads to read existing columns or compute functions. 
+The [`select`](../../reference/table-operations/select/select.md), [`update`](../../reference/table-operations/select/update.md), and [`where`](../../reference/table-operations/filter/where.md) operations can parallelize within a single where clause or column expression. This can greatly improve throughput by using multiple threads to read existing columns or compute functions.
 
-Deephaven can only parallelize an expression if it is _stateless_, meaning it does not depend on any mutable external inputs or the order in which rows are evaluated. Many operations, such as string manipulation or arithmetic on one or more input columns, are stateless. 
+Deephaven can only parallelize an expression if it is _stateless_, meaning it does not depend on any mutable external inputs or the order in which rows are evaluated. Many operations, such as string manipulation or arithmetic on one or more input columns, are stateless.
 
 By default, the Deephaven engine assumes that expressions are stateful (not stateless). For [`select`](../../reference/table-operations/select/select.md) and [`update`](../../reference/table-operations/select/update.md), you can change the configuration property `QueryTable.statelessSelectByDefault` to `true` to make columns stateless by default. For filters, change the property `QueryTable.statelessFiltersByDefault`.
 
@@ -94,9 +94,10 @@ To explicitly mark a Selectable or Filter as stateful, use the `with_serial` met
 - If `QueryTable.SERIAL_SELECT_IMPLICIT_BARRIERS` is false, no additional ordering between expressions is imposed. As with every [`select`](../../reference/table-operations/select/select.md) or [`update`](../../reference/table-operations/select/update.md) call, if column B references column A, then column A is evaluated before column B. To impose further ordering constraints, use barriers.
 - If `QueryTable.SERIAL_SELECT_IMPLICIT_BARRIERS` is true, a serial Selectable acts as an absolute barrier with respect to all other serial Selectables. This prohibits serial Selectables from being evaluated concurrently, permitting them to access global state. Non-serial Selectables may be reordered with respect to a serial Selectable.
 
-Filters and Selectables may declare a [`Barrier`](https://docs.deephaven.io/core/pydoc/code/deephaven.concurrency_control.html#deephaven.concurrency_control.Barrier). A barrier is an opaque object (compared using reference equality) used to control evaluation order between Filters or Selectables. 
+Filters and Selectables may declare a [`Barrier`](https://docs.deephaven.io/core/pydoc/code/deephaven.concurrency_control.html#deephaven.concurrency_control.Barrier). A barrier is an opaque object (compared using reference equality) used to control evaluation order between Filters or Selectables.
 
 Subsequent Filters or Selectables may respect a previously declared barrier:
+
 - If a Filter respects a barrier, it cannot begin evaluation until the Filter that declared the barrier has been completely evaluated.
 - If a Selectable respects a barrier, it cannot begin evaluation until the Selectable that declared the barrier has been completely evaluated.
 
@@ -192,7 +193,7 @@ described in the table below:
 | PeriodicUpdateGraph.updateThreads         | -1            | Determines the number of threads available for parallel processing of the Update Graph Processor refresh cycle. |
 
 Setting either of these properties to `-1` instructs Deephaven to use all available processors. The number of available
-processors is retrieved from the Java Virtual Machine at Deephaven startup, using [Runtime.availableProcessors()](<https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/lang/Runtime.html#availableProcessors()>).
+processors is retrieved from the Java Virtual Machine at Deephaven startup, using [Runtime.availableProcessors()](https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/lang/Runtime.html#availableProcessors()).
 
 ### Related documentation
 
