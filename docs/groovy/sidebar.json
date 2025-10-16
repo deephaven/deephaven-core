@@ -282,7 +282,11 @@
                 "label": "Group and aggregate",
                 "items": [
                   {
-                    "label": "Dedicated aggregations",
+                    "label": "Group and ungroup data",
+                    "path": "how-to-guides/grouping-data.md"
+                  },
+                  {
+                    "label": "Single aggregation",
                     "path": "how-to-guides/dedicated-aggregations.md"
                   },
                   {
@@ -290,25 +294,8 @@
                     "path": "how-to-guides/combined-aggregations.md"
                   },
                   {
-                    "label": "Group and ungroup data",
-                    "path": "how-to-guides/grouping-data.md"
-                  }
-                ]
-              },
-              {
-                "label": "Rolling and moving calculations",
-                "items": [
-                  {
-                    "label": "updateBy",
-                    "path": "how-to-guides/use-update-by.md"
-                  },
-                  {
-                    "label": "Cumulative, rolling, and moving statistics",
-                    "path": "how-to-guides/rolling-calculations.md"
-                  },
-                  {
-                    "label": "Other rolling utilities",
-                    "path": "how-to-guides/other-rolling-utils.md"
+                    "label": "Rolling aggregations",
+                    "path": "how-to-guides/rolling-aggregations.md"
                   }
                 ]
               },
