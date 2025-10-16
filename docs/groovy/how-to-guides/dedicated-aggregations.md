@@ -43,8 +43,8 @@ Each dedicated aggregator performs one calculation at a time:
 - [`sumBy`](../reference/table-operations/group-and-aggregate/sumBy.md) - Sum of each group.
 - [`tailBy`](../reference/table-operations/group-and-aggregate/tailBy.md) - Last `n` rows of each group.
 - [`varBy`](../reference/table-operations/group-and-aggregate/varBy.md) - Sample variance of each group.
-- [`weightedAvgBy`](../reference/table-operations/group-and-aggregate/weighted-sum-by.md) - Weighted average of each group.
-- [`weightedSumBy`](../reference/table-operations/group-and-aggregate/weighted-sum-by.md) - Weighted sum of each group.
+- [`weightedAvgBy`](../reference/table-operations/group-and-aggregate/wavgBy.md) - Weighted average of each group.
+- [`weightedSumBy`](../reference/table-operations/group-and-aggregate/wsumBy.md) - Weighted sum of each group.
 
 In the following examples, we have test results in various subjects for some students. We want to summarize this information to see if students perform better in one class or another.
 
