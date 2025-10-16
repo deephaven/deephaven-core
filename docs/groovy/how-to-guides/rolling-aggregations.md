@@ -209,7 +209,16 @@ Simple moving (or rolling) aggregations are statistics computed over a finite, m
 | Weighted Average        | [`RollingWavg`](../reference/table-operations/update-by-operations/rolling-wavg.md)    |
 | Standard Deviation      | [`RollingStd`](../reference/table-operations/update-by-operations/rolling-std.md)      |
 
-Deephaven also offers the [`RollingGroup`](../reference/table-operations/update-by-operations/rolling-group.md) function for creating rolling groups, and the [`RollingFormula`](../reference/table-operations/update-by-operations/rolling-formula.md) function for implementing custom rolling operations using DQL.
+#### Additional rolling operations
+
+Deephaven offers two additional rolling operations that are not simple statistics, but rather for grouping or custom formulas:
+
+| Simple moving operation | Tick-based                                                                                | Time-based                                                                                             |
+| ----------------------- | ----------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| Grouping                | [`RollingGroup`](../reference/table-operations/update-by-operations/rolling-group.md)     | [`RollingGroup`](../reference/table-operations/update-by-operations/rolling-group.md) (time-based)     |
+| Custom formula          | [`RollingFormula`](../reference/table-operations/update-by-operations/rolling-formula.md) | [`RollingFormula`](../reference/table-operations/update-by-operations/rolling-formula.md) (time-based) |
+
+The grouping operations collect values within the rolling window into an array. The custom formula operations allow you to define a custom formula that is applied to the values in the window.
 
 To illustrate a simple moving aggregation, consider the rolling average. For each row, this operation calculates the average of all values within a specified window. The following illustration shows this:
 
@@ -584,13 +593,13 @@ fAbc = plotBollinger(result, "ABC")
 fXyz = plotBollinger(result, "XYZ")
 ```
 
-## Rolling formulas
+### Rolling formulas
 
 The [`updateBy`](/core/javadoc/io/deephaven/engine/table/impl/updateby/UpdateBy.html) module enables users to create custom rolling aggregations with the [`RollingFormula`](../reference/table-operations/update-by-operations/rolling-formula.md) function.
 
 The user-defined formula can utilize any of Deephaven's [built-in functions](../reference/query-language/query-library/auto-imported-functions.md), [arithmetic operators](../how-to-guides/operators.md), or even [user-defined Groovy functions](../how-to-guides/groovy-closures.md).
 
-### Tick-based rolling formulas
+#### Tick-based rolling formulas
 
 Use [`RollingFormula`](../reference/table-operations/update-by-operations/rolling-formula.md) to create custom tick-based rolling formulas. Here's an example that computes the rolling geometric mean of a column `X` by group:
 
@@ -602,7 +611,7 @@ result = source.updateBy(
 )
 ```
 
-### Time-based rolling formulas
+#### Time-based rolling formulas
 
 [`RollingFormula`](../reference/table-operations/update-by-operations/rolling-formula.md) can also be used to create custom time-based rolling formulas. You must supply a timestamp column, and can specify the time window as backward-looking, forward-looking, or both. Here's an example that computes the 5-second rolling geometric mean of a column `X` by group:
 
@@ -619,11 +628,11 @@ result = source.updateBy(
 )
 ```
 
-## Rolling groups
+### Rolling groups
 
 In addition to custom rolling formulas, [`updateby`](/core/javadoc/io/deephaven/api/updateby/package-summary.html) provides the ability to create rolling groups with [`RollingGroup`](../reference/table-operations/update-by-operations/rolling-group.md). The grouped data are represented as arrays. See the guide on [how to work with arrays](../how-to-guides/work-with-arrays.md) for more details.
 
-### Tick-based rolling groups
+#### Tick-based rolling groups
 
 Use [`RollingGroup`](../reference/table-operations/update-by-operations/rolling-group.md) to create tick-based rolling groups, where each group will have a specified number of entries determined by `revTicks` and `fwdTicks`. Here's an example that creates rolling groups with the three previous rows and the current row:
 
@@ -641,7 +650,7 @@ source = emptyTable(100).update("Letter = randomBool() ? `A` : `B`", "X = random
 result = source.updateBy(RollingGroup(3, 4, "GroupX=X"), "Letter")
 ```
 
-### Time-based rolling groups
+#### Time-based rolling groups
 
 Similarly, use [`RollingGroup`](../reference/table-operations/update-by-operations/rolling-group.md) to create time-based rolling groups:
 
@@ -675,7 +684,11 @@ result = source.updateBy(RollingGroup("Timestamp", parseDuration("PT5s"), parseD
 > [!NOTE]
 > It is always more performant to use a rolling aggregation than to perform a rolling group and then apply calculations.
 
-## Sequential difference
+## Additional operations
+
+[`updateBy`](../reference/table-operations/update-by-operations/updateBy.md) also supports several other operations that are not strictly rolling aggregations. This section provides a brief overview of these operations with examples.
+
+### Sequential difference
 
 The [`Delta`](../reference/table-operations/update-by-operations/delta.md) operation calculates the difference between a row's value and the previous row's value in a given column. This is useful for calculating the rate of change. The following example demonstrates this:
 
@@ -700,7 +713,7 @@ source = emptyTable(100).update(
 result = source.updateBy(Delta("DiffX=X"), "Letter")
 ```
 
-### Detrend time-series data
+#### Detrend time-series data
 
 Sequential differencing is often used as a first measure for detrending time-series data. The [`updateby`](/core/javadoc/io/deephaven/api/updateby/package-summary.html) module provides the [`Delta`](../reference/table-operations/update-by-operations/delta.md) function to make this easy:
 
@@ -722,7 +735,7 @@ detrend = plot("ABC", result.where("Ticker = `ABC`"), "Timestamp", "DiffPrice")
     .show()
 ```
 
-### Null handling
+#### Null handling
 
 The [`Delta`](../reference/table-operations/update-by-operations/delta.md) function takes an optional `deltaControl` argument to determine how null values are treated. You must supply a [`DeltaControl`](../reference/table-operations/update-by-operations/DeltaControl.md) instance to use this argument. The following behaviors are available:
 
@@ -750,7 +763,7 @@ result = source.updateBy(
 
 By default, [`Delta`](../reference/table-operations/update-by-operations/delta.md) uses `NULL_DOMINATES`, so differencing a number from a null will always return a null.
 
-## Forward fill
+### Forward fill
 
 The [`Fill`](../reference/table-operations/update-by-operations/fill.md) operation fills in null values with the most recent non-null value. This is useful for filling in missing data points in a time series. The following example demonstrates this:
 

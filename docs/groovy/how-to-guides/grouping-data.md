@@ -69,7 +69,7 @@ applesByNoColumn2 = apples.aggBy(AggGroup("Type", "Color", "WeightGrams", "Calor
 
 ## Ungroup data with `ungroup`
 
-The [`ungroup`](../reference/table-operations/group-and-aggregate/ungroup.md) method is the reverse of [`groupBy`](../reference/table-operations/group-and-aggregate/groupBy.md). It expands content from [arrays](../reference/query-language/types/arrays.md) or vectors and builds a new set of rows from it. The method takes optional columns as input. If no inputs are supplied, all [array](../reference/query-language/types/arrays.md) or vector columns are expanded. If one or more columns are given as input, only those columns will have their [array](../reference/query-language/types/arrays.md) values expanded into new rows.
+The [`ungroup`](../reference/table-operations/group-and-aggregate/ungroup.md) method is the opposite of [`groupBy`](../reference/table-operations/group-and-aggregate/groupBy.md). It expands content from [arrays](../reference/query-language/types/arrays.md) or vectors into columns of singular values and builds a new set of rows from it. The method takes optional columns as input. If no inputs are supplied, all [array](../reference/query-language/types/arrays.md) or vector columns are expanded. If one or more columns are given as input, only those columns will have their [array](../reference/query-language/types/arrays.md) values expanded into new rows.
 
 The example below shows how [`ungroup`](../reference/table-operations/group-and-aggregate/ungroup.md) reverses the [`groupBy`](../reference/table-operations/group-and-aggregate/groupBy.md) operation used to create `applesByClassAndDiet` when no columns are given as input. Notice how all [array](../reference/query-language/types/arrays.md) columns have been expanded, leaving a single element in each row of the resultant table:
 
@@ -132,7 +132,7 @@ t_ungroupedByZ = t.ungroup("Z")
 
 ## Null values
 
-Using [`groupBy`](../reference/table-operations/group-and-aggregate/groupBy.md) on a table with null values will work properly. Null values will appear as empty [array](../reference/query-language/types/arrays.md) elements when grouped with [`groupBy`](../reference/table-operations/group-and-aggregate/groupBy.md). Null [array](../reference/query-language/types/arrays.md) elements unwrapped using [`ungroup`](../reference/table-operations/group-and-aggregate/ungroup.md) will appear as null (empty) row entries in the corresponding column.
+Using [`groupBy`](../reference/table-operations/group-and-aggregate/groupBy.md) on a table with null values will work properly. Null values will appear as empty [array](../reference/query-language/types/arrays.md) elements when grouped with [`groupBy`](../reference/table-operations/group-and-aggregate/groupBy.md). Null [array](../reference/query-language/types/arrays.md) elements expanded using [`ungroup`](../reference/table-operations/group-and-aggregate/ungroup.md) will appear as null (empty) row entries in the corresponding column.
 
 The example below uses the [`emptyTable`](../reference/table-operations/create/emptyTable.md) method and the [ternary operator](../how-to-guides/ternary-if-how-to.md) to create a table with two columns of 5 rows. The first and second rows contain null values. Null values behave as expected during grouping and ungrouping.
 

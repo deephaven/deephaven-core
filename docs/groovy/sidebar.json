@@ -278,22 +278,17 @@
                 "label": "Group and aggregate",
                 "items": [
                   {
-                    "label": "Dedicated aggregations",
+                    "label": "Group and ungroup data",
+                    "path": "how-to-guides/grouping-data.md"
+                  },
+                  {
+                    "label": "Single aggregation",
                     "path": "how-to-guides/dedicated-aggregations.md"
                   },
                   {
                     "label": "Multi-aggregation",
                     "path": "how-to-guides/combined-aggregations.md"
                   },
-                  {
-                    "label": "Group and ungroup data",
-                    "path": "how-to-guides/grouping-data.md"
-                  }
-                ]
-              },
-              {
-                "label": "Rolling aggregations",
-                "items": [
                   {
                     "label": "Rolling aggregations",
                     "path": "how-to-guides/rolling-aggregations.md"

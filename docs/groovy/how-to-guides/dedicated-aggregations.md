@@ -1,11 +1,8 @@
 ---
-title: Perform dedicated aggregations for groups
-sidebar_label: Dedicated aggregations
+title: Single aggregation
 ---
 
-<!--TODO: will be retitled "Single Aggregation"-->
-
-This guide will show you how to programmatically compute summary information on groups of data using dedicated data aggregations.
+This guide will show you how to compute summary information on groups of data using dedicated data aggregations.
 
 Often when working with data, you will want to break the data into subgroups and then perform calculations on the grouped data. For example, a large multi-national corporation may want to know their average employee salary by country, or a teacher might want to calculate grade information for groups of students or in certain subject areas.
 
@@ -17,9 +14,14 @@ Deephaven provides many dedicated aggregations, such as [`maxBy`](../reference/t
 
 The general syntax follows:
 
+```groovy skip-test
+result = source.DEDICATED_AGG(columnNames)
+```
+
 The `columnNames` parameter determines the column(s) by which to group data.
 
-- `NULL` uses the whole table as a single group
+- `DEDICATED_AGG` should be substituted with one of the chosen aggregations below
+- `NULL` uses the whole table as a single group.
 - `"X"` will output the desired value for each group in column `X`.
 - `"X", "Y"` will output the desired value for each group designated from the `X` and `Y` columns.
 
@@ -27,19 +29,22 @@ The `columnNames` parameter determines the column(s) by which to group data.
 
 Each dedicated aggregator performs one calculation at a time:
 
+- [`absSumBy`](../reference/table-operations/group-and-aggregate/AbsSumBy.md) - Sum of absolute values of each group.
 - [`avgBy`](../reference/table-operations/group-and-aggregate/avgBy.md) - Average (mean) of each group.
 - [`countBy`](../reference/table-operations/group-and-aggregate/countBy.md) - Number of rows in each group.
 - [`firstBy`](../reference/table-operations/group-and-aggregate/firstBy.md) - First row of each group.
-- [`groupBy`](../reference/table-operations/group-and-aggregate/groupBy.md) - Array of values in each group.
+- [`groupBy`](../reference/table-operations/group-and-aggregate/groupBy.md) - Group column content into vectors.
 - [`headBy`](../reference/table-operations/group-and-aggregate/headBy.md) - First `n` rows of each group.
 - [`lastBy`](../reference/table-operations/group-and-aggregate/lastBy.md) - Last row of each group.
 - [`maxBy`](../reference/table-operations/group-and-aggregate/maxBy.md) - Maximum value of each group.
 - [`medianBy`](../reference/table-operations/group-and-aggregate/medianBy.md) - Median of each group.
 - [`minBy`](../reference/table-operations/group-and-aggregate/minBy.md) - Minimum value of each group.
-- [`stdBy`](../reference/table-operations/group-and-aggregate/stdBy.md) - Standard deviation of each group.
+- [`stdBy`](../reference/table-operations/group-and-aggregate/stdBy.md) - Sample standard deviation of each group.
 - [`sumBy`](../reference/table-operations/group-and-aggregate/sumBy.md) - Sum of each group.
 - [`tailBy`](../reference/table-operations/group-and-aggregate/tailBy.md) - Last `n` rows of each group.
-- [`varBy`](../reference/table-operations/group-and-aggregate/varBy.md) - Variance of each group.
+- [`varBy`](../reference/table-operations/group-and-aggregate/varBy.md) - Sample variance of each group.
+- [`weightedAvgBy`](../reference/table-operations/group-and-aggregate/weighted-sum-by.md) - Weighted average of each group.
+- [`weightedSumBy`](../reference/table-operations/group-and-aggregate/weighted-sum-by.md) - Weighted sum of each group.
 
 In the following examples, we have test results in various subjects for some students. We want to summarize this information to see if students perform better in one class or another.
 
@@ -189,7 +194,7 @@ mean = source.dropColumns("Subject").avgBy("Name")
 
 ### `stdBy`
 
-In this example, [`stdBy`](../reference/table-operations/group-and-aggregate/stdBy.md) calculates the standard deviation of test scores for each `Name`. Because a standard deviation cannot be computed for the string column `Subject`, this column is dropped before applying [`stdBy`](../reference/table-operations/group-and-aggregate/stdBy.md).
+In this example, [`stdBy`](../reference/table-operations/group-and-aggregate/stdBy.md) calculates the sample standard deviation of test scores for each `Name`. Because a sample standard deviation cannot be computed for the string column `Subject`, this column is dropped before applying [`stdBy`](../reference/table-operations/group-and-aggregate/stdBy.md).
 
 ```groovy test-set=1
 stdDev = source.dropColumns("Subject").stdBy("Name")
@@ -197,7 +202,7 @@ stdDev = source.dropColumns("Subject").stdBy("Name")
 
 ### `varBy`
 
-In this example, [`varBy`](../reference/table-operations/group-and-aggregate/varBy.md) calculates the variance of test scores for each `Name`. Because a variance cannot be computed for the string column `Subject`, this column is dropped before applying [`varBy`](../reference/table-operations/group-and-aggregate/varBy.md).
+In this example, [`varBy`](../reference/table-operations/group-and-aggregate/varBy.md) calculates the sample variance of test scores for each `Name`. Because sample variance cannot be computed for the string column `Subject`, this column is dropped before applying [`varBy`](../reference/table-operations/group-and-aggregate/varBy.md).
 
 ```groovy test-set=1
 var = source.dropColumns("Subject").varBy("Name")
