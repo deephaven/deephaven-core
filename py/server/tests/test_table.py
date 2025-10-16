@@ -1,9 +1,6 @@
 #
 # Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 #
-#
-# Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
-#
 import unittest
 from types import SimpleNamespace
 from typing import List, Any
