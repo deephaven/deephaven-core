@@ -29,7 +29,7 @@ The `columnNames` parameter determines the column(s) by which to group data.
 
 Each dedicated aggregator performs one calculation at a time:
 
-- [`absSumBy`](../reference/table-operations/group-and-aggregate/AbsSumBy.md) - Sum of absolute values of each group.
+- [`absSumBy`](../reference/table-operations/group-and-aggregate/absSumBy.md) - Sum of absolute values of each group.
 - [`avgBy`](../reference/table-operations/group-and-aggregate/avgBy.md) - Average (mean) of each group.
 - [`countBy`](../reference/table-operations/group-and-aggregate/countBy.md) - Number of rows in each group.
 - [`firstBy`](../reference/table-operations/group-and-aggregate/firstBy.md) - First row of each group.
