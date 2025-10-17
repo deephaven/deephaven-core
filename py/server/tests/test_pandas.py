@@ -11,13 +11,34 @@ import pandas as pd
 import pyarrow as pa
 
 from deephaven import dtypes, new_table, DHError, time
-from deephaven.column import byte_col, char_col, short_col, bool_col, int_col, long_col, float_col, double_col, \
-    string_col, datetime_col, pyobj_col, jobj_col
-from deephaven.constants import NULL_LONG, NULL_SHORT, NULL_INT, NULL_BYTE, NULL_CHAR, NULL_FLOAT, NULL_DOUBLE, \
-    NULL_BOOLEAN
+from deephaven.column import (
+    byte_col,
+    char_col,
+    short_col,
+    bool_col,
+    int_col,
+    long_col,
+    float_col,
+    double_col,
+    string_col,
+    datetime_col,
+    pyobj_col,
+    jobj_col,
+)
+from deephaven.constants import (
+    NULL_LONG,
+    NULL_SHORT,
+    NULL_INT,
+    NULL_BYTE,
+    NULL_CHAR,
+    NULL_FLOAT,
+    NULL_DOUBLE,
+    NULL_BOOLEAN,
+)
 from deephaven.jcompat import j_array_list
 from deephaven.pandas import to_pandas, to_table
 from tests.testbase import BaseTestCase
+
 
 @dataclass
 class CustomClass:
@@ -33,7 +54,7 @@ class PandasTestCase(BaseTestCase):
         input_cols = [
             bool_col(name="Boolean", data=[True, False]),
             byte_col(name="Byte", data=(1, -1)),
-            char_col(name="Char", data='-1'),
+            char_col(name="Char", data="-1"),
             short_col(name="Short", data=[1, -1]),
             int_col(name="Int_", data=[1, -1]),
             long_col(name="Long_", data=[1, NULL_LONG]),
@@ -41,10 +62,10 @@ class PandasTestCase(BaseTestCase):
             float_col(name="Float_", data=[1.01, -1.01]),
             double_col(name="Double_", data=[1.01, -1.01]),
             string_col(name="String", data=["foo", "bar"]),
-            datetime_col(name="Datetime", data=[1,-1]),
+            datetime_col(name="Datetime", data=[1, -1]),
             pyobj_col(name="PyObj", data=[CustomClass(1, "1"), CustomClass(-1, "-1")]),
             pyobj_col(name="PyObj1", data=[[1, 2, 3], CustomClass(-1, "-1")]),
-            pyobj_col(name="PyObj2", data=[False, 'False']),
+            pyobj_col(name="PyObj2", data=[False, "False"]),
             jobj_col(name="JObj", data=[j_array_list1, j_array_list2]),
         ]
         self.test_table = new_table(cols=input_cols)
@@ -68,30 +89,34 @@ class PandasTestCase(BaseTestCase):
 
     def test_to_pandas_remaps(self):
         prepared_table = self.test_table.update(
-            formulas=["Long = isNull(Long_) ? Double.NaN : Long_"])
+            formulas=["Long = isNull(Long_) ? Double.NaN : Long_"]
+        )
 
-        df = to_pandas(prepared_table, cols=["Boolean", "Long"], dtype_backend=None, conv_null=False)
-        self.assertEqual(df['Long'].dtype, np.float64)
-        self.assertEqual(df['Boolean'].values.dtype, np.bool_)
+        df = to_pandas(
+            prepared_table,
+            cols=["Boolean", "Long"],
+            dtype_backend=None,
+            conv_null=False,
+        )
+        self.assertEqual(df["Long"].dtype, np.float64)
+        self.assertEqual(df["Boolean"].values.dtype, np.bool_)
 
-        df1 = pd.DataFrame([[1, float('Nan')], [True, False]])
+        df1 = pd.DataFrame([[1, float("Nan")], [True, False]])
         df1.equals(df)
 
     def test_vector_column(self):
         strings = ["Str1", "Str1", "Str2", "Str2", "Str2"]
         doubles = [1.0, 2.0, 4.0, 8.0, 16.0]
-        test_table = new_table([
-            string_col("String", strings),
-            double_col("Doubles", doubles)
-        ]
+        test_table = new_table(
+            [string_col("String", strings), double_col("Doubles", doubles)]
         )
 
         test_table = test_table.group_by(["String"])
         df = to_pandas(test_table, cols=["String", "Doubles"])
-        self.assertEqual(df['String'].dtype, pd.StringDtype())
-        self.assertEqual(df['Doubles'].dtype, np.object_)
+        self.assertEqual(df["String"].dtype, pd.StringDtype())
+        self.assertEqual(df["Doubles"].dtype, np.object_)
 
-        double_series = df['Doubles']
+        double_series = df["Doubles"]
         self.assertEqual([1.0, 2.0], list(double_series[0]))
         self.assertEqual([4.0, 8.0, 16.0], list(double_series[1]))
 
@@ -105,7 +130,7 @@ class PandasTestCase(BaseTestCase):
         input_cols = [
             bool_col(name="Boolean", data=[True, False]),
             byte_col(name="Byte", data=(1, -1)),
-            char_col(name="Char", data='-1'),
+            char_col(name="Char", data="-1"),
             short_col(name="Short", data=[1, -1]),
             int_col(name="Int", data=[1, -1]),
             long_col(name="Long", data=[1, NULL_LONG]),
@@ -122,7 +147,10 @@ class PandasTestCase(BaseTestCase):
         input_cols = [bool_col(name="Boolean", data=[True, None])]
         table_with_null_bool = new_table(cols=input_cols)
         prepared_table = table_with_null_bool.update(
-            formulas=["Boolean = isNull(Boolean) ? (byte)NULL_BYTE : (Boolean == true ? 1: 0)"])
+            formulas=[
+                "Boolean = isNull(Boolean) ? (byte)NULL_BYTE : (Boolean == true ? 1: 0)"
+            ]
+        )
         df = to_pandas(prepared_table, dtype_backend=None, conv_null=False)
         table_from_df = to_table(df)
         self.assert_table_equals(table_from_df, prepared_table)
@@ -184,18 +212,20 @@ class PandasTestCase(BaseTestCase):
         string_array = pd.array(["s11", "s22", None], dtype=pd.StringDtype())
         object_array = pd.array([pd.NA, "s22", None], dtype=object)
 
-        df = pd.DataFrame({
-            "NullableBoolean": boolean_array,
-            "NullableInt8": int8_array,
-            "NullableInt16": int16_array,
-            "NullableChar": uint16_array,
-            "NullableInt32": int32_array,
-            "NullableInt64": int64_array,
-            "NullableFloat": float_array,
-            "NullableDouble": double_array,
-            "NullableString": string_array,
-            "NullableObject": object_array,
-        })
+        df = pd.DataFrame(
+            {
+                "NullableBoolean": boolean_array,
+                "NullableInt8": int8_array,
+                "NullableInt16": int16_array,
+                "NullableChar": uint16_array,
+                "NullableInt32": int32_array,
+                "NullableInt64": int64_array,
+                "NullableFloat": float_array,
+                "NullableDouble": double_array,
+                "NullableString": string_array,
+                "NullableObject": object_array,
+            }
+        )
 
         table = to_table(df)
         self.assertIs(table.columns[0].data_type, dtypes.bool_)
@@ -222,24 +252,39 @@ class PandasTestCase(BaseTestCase):
             self.assertTrue(df.equals(df1))
 
         with self.subTest("mixed python, numpy, arrow"):
-            df = pandas.DataFrame({
-                'pa_bool': pandas.Series([True, None], dtype='bool[pyarrow]'),
-                'pa_string': pandas.Series(['text1', None], dtype='string[pyarrow]'),
-                'pa_list': pandas.Series([['pandas', 'arrow', 'data'], None],
-                                         dtype=pandas.ArrowDtype(pa.list_(pa.string()))),
-                'pd_timestamp': pandas.Series(pa.array([pd.Timestamp('2017-01-01T12:01:01', tz='UTC'), None],
-                                                       type=pa.timestamp('ns'))),
-                'pd_datetime': pandas.Series(
-                    pd.date_range('2022-01-01T00:00:01', tz="Europe/London", periods=2, freq="3MS"),
-                    dtype=pd.DatetimeTZDtype(unit='ns', tz='UTC')
-                ),
-                'pa_byte': pandas.Series([1, None], dtype='int8[pyarrow]'),
-                'py_string': pandas.Series(['text1', None], dtype=pd.StringDtype()),
-                'pa_byte1': pandas.Series(np.array([1, 127], dtype=np.int8)),
-            })
+            df = pandas.DataFrame(
+                {
+                    "pa_bool": pandas.Series([True, None], dtype="bool[pyarrow]"),
+                    "pa_string": pandas.Series(
+                        ["text1", None], dtype="string[pyarrow]"
+                    ),
+                    "pa_list": pandas.Series(
+                        [["pandas", "arrow", "data"], None],
+                        dtype=pandas.ArrowDtype(pa.list_(pa.string())),
+                    ),
+                    "pd_timestamp": pandas.Series(
+                        pa.array(
+                            [pd.Timestamp("2017-01-01T12:01:01", tz="UTC"), None],
+                            type=pa.timestamp("ns"),
+                        )
+                    ),
+                    "pd_datetime": pandas.Series(
+                        pd.date_range(
+                            "2022-01-01T00:00:01",
+                            tz="Europe/London",
+                            periods=2,
+                            freq="3MS",
+                        ),
+                        dtype=pd.DatetimeTZDtype(unit="ns", tz="UTC"),
+                    ),
+                    "pa_byte": pandas.Series([1, None], dtype="int8[pyarrow]"),
+                    "py_string": pandas.Series(["text1", None], dtype=pd.StringDtype()),
+                    "pa_byte1": pandas.Series(np.array([1, 127], dtype=np.int8)),
+                }
+            )
             dh_table = to_table(df)
-            self.assertEqual(dh_table.to_string().count('null'), 5)
-            self.assertEqual(dh_table.to_string().count('NA'), 1)
+            self.assertEqual(dh_table.to_string().count("null"), 5)
+            self.assertEqual(dh_table.to_string().count("NA"), 1)
 
     def test_arrow_backend_nulls(self):
         input_cols = [
@@ -252,7 +297,7 @@ class PandasTestCase(BaseTestCase):
             float_col(name="Float_", data=[1.01, np.nan]),
             double_col(name="Double_", data=[1.01, np.nan]),
             datetime_col(name="Datetime", data=[1, None]),
-            string_col(name="String", data=["text1", None])
+            string_col(name="String", data=["text1", None]),
             # pyobj_col(name="PyObj", data=[CustomClass(1, "1"), None]), #DH arrow export it as strings
         ]
         test_table = new_table(cols=input_cols)
@@ -281,13 +326,22 @@ class PandasTestCase(BaseTestCase):
 
     def test_numpy_array(self):
         df_dict = {
-            "Datetime_s": pd.Series(["2016-01-01T00:00:01", "2018-01-01T00:00:01"], dtype=np.dtype("datetime64[s]")),
-            "Datetime_ms": pd.Series(["2016-01-01T00:00:01.001", "2018-01-01T00:00:01.001"], dtype=np.dtype(
-                "datetime64[ms]")),
-            "Datetime_us": pd.Series(["2016-01-01T00:00:01.000001", "2018-01-01T00:00:01.000001"], dtype=np.dtype(
-                "datetime64[us]")),
-            "Datetime_ns": pd.Series(["2016-01-01T00:00:01.000000001", "2018-01-01T00:00:01.000000001"], dtype=np.dtype(
-                "datetime64[ns]")),
+            "Datetime_s": pd.Series(
+                ["2016-01-01T00:00:01", "2018-01-01T00:00:01"],
+                dtype=np.dtype("datetime64[s]"),
+            ),
+            "Datetime_ms": pd.Series(
+                ["2016-01-01T00:00:01.001", "2018-01-01T00:00:01.001"],
+                dtype=np.dtype("datetime64[ms]"),
+            ),
+            "Datetime_us": pd.Series(
+                ["2016-01-01T00:00:01.000001", "2018-01-01T00:00:01.000001"],
+                dtype=np.dtype("datetime64[us]"),
+            ),
+            "Datetime_ns": pd.Series(
+                ["2016-01-01T00:00:01.000000001", "2018-01-01T00:00:01.000000001"],
+                dtype=np.dtype("datetime64[ns]"),
+            ),
         }
         df = pd.DataFrame(df_dict)
         dh_t = to_table(df)
@@ -295,16 +349,42 @@ class PandasTestCase(BaseTestCase):
             self.assertEqual(c.data_type, dtypes.Instant)
 
     def test_pandas_category_type(self):
-        df = pd.DataFrame({
-            'zipcode': {17384: 98125, 2680: 98107, 722: 98005, 18754: 98109, 14554: 98155},
-            'bathrooms': {17384: 1.5, 2680: 0.75, 722: 3.25, 18754: 1.0, 14554: 2.5},
-            'sqft_lot': {17384: 1650, 2680: 3700, 722: 51836, 18754: 2640, 14554: 9603},
-            'bedrooms': {17384: 2, 2680: 2, 722: 4, 18754: 2, 14554: 4},
-            'sqft_living': {17384: 1430, 2680: 1440, 722: 4670, 18754: 1130, 14554: 3180},
-            'floors': {17384: 3.0, 2680: 1.0, 722: 2.0, 18754: 1.0, 14554: 2.0}
-        })
-        df['zipcode'] = df.zipcode.astype('category')
-        df['bathrooms'] = df.bathrooms.astype('category')
+        df = pd.DataFrame(
+            {
+                "zipcode": {
+                    17384: 98125,
+                    2680: 98107,
+                    722: 98005,
+                    18754: 98109,
+                    14554: 98155,
+                },
+                "bathrooms": {
+                    17384: 1.5,
+                    2680: 0.75,
+                    722: 3.25,
+                    18754: 1.0,
+                    14554: 2.5,
+                },
+                "sqft_lot": {
+                    17384: 1650,
+                    2680: 3700,
+                    722: 51836,
+                    18754: 2640,
+                    14554: 9603,
+                },
+                "bedrooms": {17384: 2, 2680: 2, 722: 4, 18754: 2, 14554: 4},
+                "sqft_living": {
+                    17384: 1430,
+                    2680: 1440,
+                    722: 4670,
+                    18754: 1130,
+                    14554: 3180,
+                },
+                "floors": {17384: 3.0, 2680: 1.0, 722: 2.0, 18754: 1.0, 14554: 2.0},
+            }
+        )
+        df["zipcode"] = df.zipcode.astype("category")
+        df["bathrooms"] = df.bathrooms.astype("category")
         t = to_table(df)
         self.assertEqual(t.columns[0].data_type, dtypes.int64)
         self.assertEqual(t.columns[1].data_type, dtypes.double)
@@ -334,24 +414,42 @@ class PandasTestCase(BaseTestCase):
                 self.assert_table_equals(t, dh_table)
 
     def test_to_table_readonly(self):
-        source = new_table(cols=[
-            int_col("Ints", [4, 5, 6]),
-            float_col("Floats", [9.9, 8.8, 7.7]),
-            double_col("Doubles", [0.1, 0.2, 0.3])
-        ])
+        source = new_table(
+            cols=[
+                int_col("Ints", [4, 5, 6]),
+                float_col("Floats", [9.9, 8.8, 7.7]),
+                double_col("Doubles", [0.1, 0.2, 0.3]),
+            ]
+        )
         df = to_pandas(source)
         t = to_table(df)
         self.assert_table_equals(source, t)
 
     def test_infer_objects(self):
-        df = pd.DataFrame({
-            "A": pd.Series([1, 2, 3], dtype=np.dtype("O")),
-            "B": pd.Series(["a", "b", "c"], dtype=np.dtype("O")),
-            "C": pd.Series([1.1, 2.2, 3.3], dtype=np.dtype("O")),
-            "D": pd.Series([True, False, True], dtype=np.dtype("O")),
-            "E": pd.Series( [pd.Timestamp("2021-01-01"), pd.Timestamp("2021-01-02"), pd.Timestamp("2021-01-03")], dtype=np.dtype("O")),
-            "F": pd.Series( [np.datetime64("2021-01-01"), np.datetime64("2021-01-02"), np.datetime64("2021-01-03")], dtype=np.dtype("O")),
-        })
+        df = pd.DataFrame(
+            {
+                "A": pd.Series([1, 2, 3], dtype=np.dtype("O")),
+                "B": pd.Series(["a", "b", "c"], dtype=np.dtype("O")),
+                "C": pd.Series([1.1, 2.2, 3.3], dtype=np.dtype("O")),
+                "D": pd.Series([True, False, True], dtype=np.dtype("O")),
+                "E": pd.Series(
+                    [
+                        pd.Timestamp("2021-01-01"),
+                        pd.Timestamp("2021-01-02"),
+                        pd.Timestamp("2021-01-03"),
+                    ],
+                    dtype=np.dtype("O"),
+                ),
+                "F": pd.Series(
+                    [
+                        np.datetime64("2021-01-01"),
+                        np.datetime64("2021-01-02"),
+                        np.datetime64("2021-01-03"),
+                    ],
+                    dtype=np.dtype("O"),
+                ),
+            }
+        )
         self.assertTrue(all(df[col].dtype == object for col in list(df)))
         t = to_table(df)
         self.assertEqual(t.columns[0].data_type, dtypes.int64)
@@ -362,8 +460,10 @@ class PandasTestCase(BaseTestCase):
         self.assertEqual(t.columns[5].data_type, dtypes.Instant)
 
         t = to_table(df, infer_objects=False)
-        self.assertTrue(all([t.columns[i].data_type == dtypes.PyObject for i in range(6)]))
+        self.assertTrue(
+            all([t.columns[i].data_type == dtypes.PyObject for i in range(6)])
+        )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

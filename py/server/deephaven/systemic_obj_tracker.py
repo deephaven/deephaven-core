@@ -5,12 +5,15 @@
 all objects created in the current thread as systemic. These systemic objects will be tracked and if errors occur to
 them, the errors are deemed to be systemic and fatal.
 """
+
 import contextlib
 
 import jpy
 from deephaven import DHError
 
-_JSystemicObjectTracker = jpy.get_type("io.deephaven.engine.util.systemicmarking.SystemicObjectTracker")
+_JSystemicObjectTracker = jpy.get_type(
+    "io.deephaven.engine.util.systemicmarking.SystemicObjectTracker"
+)
 
 
 def is_systemic_object_marking_enabled() -> bool:

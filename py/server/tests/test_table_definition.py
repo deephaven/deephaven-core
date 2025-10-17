@@ -75,9 +75,7 @@ class TableDefinitionTestCase(BaseTestCase):
         self.assertEqual(
             col_def("Bool", dtypes.bool_), self.test_definition.get("Bool")
         )
-        self.assertEqual(
-            col_def("Char", dtypes.char), self.test_definition.get("Char")
-        )
+        self.assertEqual(col_def("Char", dtypes.char), self.test_definition.get("Char"))
         self.assertEqual(
             col_def("Short", dtypes.short),
             self.test_definition.get("Short"),

@@ -13,13 +13,14 @@ from tests.testbase import BaseTestCase
 
 class ExecCtxTestCase(BaseTestCase):
     def test_exec_ctx_threads(self):
-
         def assert_threads_ok(thread_func):
             threads = []
             thread_results = {}
 
             for i in range(4):
-                threads.append(threading.Thread(target=thread_func, args=(i, thread_results)))
+                threads.append(
+                    threading.Thread(target=thread_func, args=(i, thread_results))
+                )
 
             for th in threads:
                 th.start()
@@ -61,15 +62,17 @@ class ExecCtxTestCase(BaseTestCase):
 
         assert_threads_ok(main_exec_ctx(thread_update3))
 
-
     def test_thread_pool_executor(self):
-
         def assert_executor_ok(thread_func):
             thread_results = {}
 
             with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
-                future_table_updates = {executor.submit(thread_func, i): i for i in range(4)}
-                for future in concurrent.futures.as_completed(future_table_updates.keys()):
+                future_table_updates = {
+                    executor.submit(thread_func, i): i for i in range(4)
+                }
+                for future in concurrent.futures.as_completed(
+                    future_table_updates.keys()
+                ):
                     i = future_table_updates[future]
                     thread_results[i] = future.result()
 
@@ -102,7 +105,6 @@ class ExecCtxTestCase(BaseTestCase):
 
         assert_executor_ok(main_exec_ctx(thread_update3))
 
-
     def test_freeze_vars(self):
         to_keep = "Foo"
         to_drop = 2
@@ -110,7 +112,7 @@ class ExecCtxTestCase(BaseTestCase):
         def inner_func():
             nonlocal to_keep
             nonlocal to_drop
-            user_exec_ctx = make_user_exec_ctx(freeze_vars=['to_keep'])
+            user_exec_ctx = make_user_exec_ctx(freeze_vars=["to_keep"])
             with self.assertRaises(DHError):
                 with user_exec_ctx:
                     t = empty_table(1).update("X = to_drop")
@@ -129,5 +131,5 @@ class ExecCtxTestCase(BaseTestCase):
             t = empty_table(1).update("X = inner_func()")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

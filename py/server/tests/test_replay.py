@@ -71,5 +71,6 @@ class ReplayTestCase(BaseTestCase):
 
         self.historical_table_replayer(start_time, end_time)
 
+
 if __name__ == "__main__":
     unittest.main()

@@ -14,8 +14,15 @@ from deephaven.column import bool_col, string_col
 from deephaven.experimental import time_window
 from deephaven.jcompat import to_sequence
 from deephaven.table import Table
-from deephaven.table_listener import listen, TableListener, TableListenerHandle, MergedListener, TableUpdate, \
-    MergedListenerHandle, merged_listen
+from deephaven.table_listener import (
+    listen,
+    TableListener,
+    TableListenerHandle,
+    MergedListener,
+    TableUpdate,
+    MergedListenerHandle,
+    merged_listen,
+)
 from deephaven.execution_context import get_exec_ctx
 from deephaven.update_graph import exclusive_lock
 from tests.testbase import BaseTestCase
@@ -24,7 +31,12 @@ _JColumnVectors = jpy.get_type("io.deephaven.engine.table.vectors.ColumnVectors"
 
 
 class TableUpdateRecorder:
-    def __init__(self, table: Optional[Table] = None, chunk_size: int = None, cols: Union[str, List[str]] = None):
+    def __init__(
+        self,
+        table: Optional[Table] = None,
+        chunk_size: int = None,
+        cols: Union[str, List[str]] = None,
+    ):
         self.table = table
         self.chunk_size = chunk_size
         self.cols = cols
@@ -46,41 +58,61 @@ class TableUpdateRecorder:
             self.modified.append(update.modified())
             self.modified_prev.append(update.modified_prev())
         else:
-            for chunk in update.added_chunks(chunk_size=self.chunk_size, cols=self.cols):
+            for chunk in update.added_chunks(
+                chunk_size=self.chunk_size, cols=self.cols
+            ):
                 self.added.append(chunk)
-            for chunk in update.removed_chunks(chunk_size=self.chunk_size, cols=self.cols):
+            for chunk in update.removed_chunks(
+                chunk_size=self.chunk_size, cols=self.cols
+            ):
                 self.removed.append(chunk)
-            for chunk in update.modified_chunks(chunk_size=self.chunk_size, cols=self.cols):
+            for chunk in update.modified_chunks(
+                chunk_size=self.chunk_size, cols=self.cols
+            ):
                 self.modified.append(chunk)
-            for chunk in update.modified_prev_chunks(chunk_size=self.chunk_size, cols=self.cols):
+            for chunk in update.modified_prev_chunks(
+                chunk_size=self.chunk_size, cols=self.cols
+            ):
                 self.modified_prev.append(chunk)
 
         self.replays.append(is_replay)
         self.modified_columns_list.append(update.modified_columns)
 
 
-def ensure_ugp_cycles(table_update_recorder: TableUpdateRecorder, cycles: int = 2) -> None:
+def ensure_ugp_cycles(
+    table_update_recorder: TableUpdateRecorder, cycles: int = 2
+) -> None:
     while len(table_update_recorder.replays) < cycles:
         time.sleep(1)
 
 
 class TableListenerTestCase(BaseTestCase):
-
     def setUp(self) -> None:
         super().setUp()
         with exclusive_lock(get_exec_ctx().update_graph):
-            self.test_table = time_table("PT00:00:00.001").update(["X=i%11"]).sort("X").tail(16)
+            self.test_table = (
+                time_table("PT00:00:00.001").update(["X=i%11"]).sort("X").tail(16)
+            )
             source_table = time_table("PT00:00:00.001").update(["TS=now()"])
-            self.test_table2 = time_window(source_table, ts_col="TS", window=10 ** 7, bool_col="InWindow")
+            self.test_table2 = time_window(
+                source_table, ts_col="TS", window=10**7, bool_col="InWindow"
+            )
 
     def tearDown(self) -> None:
         self.test_table = None
         self.test_table2 = None
         super().tearDown()
 
-    def check_update_recorder(self, table_update_recorder: TableUpdateRecorder,
-                              cols: Union[str, List[str]] = None, *, has_replay: bool = False, has_added: bool = False,
-                              has_removed: bool = False, has_modified: bool = False):
+    def check_update_recorder(
+        self,
+        table_update_recorder: TableUpdateRecorder,
+        cols: Union[str, List[str]] = None,
+        *,
+        has_replay: bool = False,
+        has_added: bool = False,
+        has_removed: bool = False,
+        has_modified: bool = False,
+    ):
         if has_added:
             self.verify_data_changes(table_update_recorder.added, cols)
         if has_removed:
@@ -124,8 +156,14 @@ class TableListenerTestCase(BaseTestCase):
         ensure_ugp_cycles(table_update_recorder)
         table_listener_handle.stop()
 
-        self.check_update_recorder(table_update_recorder=table_update_recorder, cols="X", has_replay=False,
-                                   has_added=True, has_removed=True, has_modified=False)
+        self.check_update_recorder(
+            table_update_recorder=table_update_recorder,
+            cols="X",
+            has_replay=False,
+            has_added=True,
+            has_removed=True,
+            has_modified=False,
+        )
 
     def test_listener_func(self):
         table_update_recorder = TableUpdateRecorder(self.test_table)
@@ -138,8 +176,13 @@ class TableListenerTestCase(BaseTestCase):
         ensure_ugp_cycles(table_update_recorder, cycles=3)
         table_listener_handle.stop()
 
-        self.check_update_recorder(table_update_recorder, has_replay=True, has_added=True, has_removed=True,
-                                   has_modified=False)
+        self.check_update_recorder(
+            table_update_recorder,
+            has_replay=True,
+            has_added=True,
+            has_removed=True,
+            has_modified=False,
+        )
 
     def test_table_listener_handle_stop(self):
         table_update_recorder = TableUpdateRecorder(self.test_table)
@@ -166,8 +209,13 @@ class TableListenerTestCase(BaseTestCase):
         ensure_ugp_cycles(table_update_recorder, cycles=3)
         table_listener_handle.stop()
 
-        self.check_update_recorder(table_update_recorder, has_replay=True, has_added=True, has_removed=True,
-                                   has_modified=False)
+        self.check_update_recorder(
+            table_update_recorder,
+            has_replay=True,
+            has_added=True,
+            has_removed=True,
+            has_modified=False,
+        )
 
     def test_listener_obj_chunk(self):
         table_update_recorder = TableUpdateRecorder(self.test_table, chunk_size=4)
@@ -181,12 +229,19 @@ class TableListenerTestCase(BaseTestCase):
         ensure_ugp_cycles(table_update_recorder)
         table_listener_handle.stop()
 
-        self.check_update_recorder(table_update_recorder, has_replay=False, has_added=True, has_removed=True,
-                                   has_modified=False)
+        self.check_update_recorder(
+            table_update_recorder,
+            has_replay=False,
+            has_added=True,
+            has_removed=True,
+            has_modified=False,
+        )
 
     def test_listener_func_modified_chunk(self):
         cols = "InWindow"
-        table_update_recorder = TableUpdateRecorder(self.test_table2, chunk_size=1000, cols=cols)
+        table_update_recorder = TableUpdateRecorder(
+            self.test_table2, chunk_size=1000, cols=cols
+        )
 
         def listener_func(update, is_replay):
             table_update_recorder.record(update, is_replay)
@@ -195,9 +250,14 @@ class TableListenerTestCase(BaseTestCase):
         ensure_ugp_cycles(table_update_recorder)
         table_listener_handle.stop()
 
-        self.check_update_recorder(table_update_recorder=table_update_recorder, cols=cols, has_replay=False,
-                                   has_added=True, has_removed=False, has_modified=True)
-
+        self.check_update_recorder(
+            table_update_recorder=table_update_recorder,
+            cols=cols,
+            has_replay=False,
+            has_added=True,
+            has_removed=False,
+            has_modified=True,
+        )
 
     def test_listener_obj_with_deps(self):
         dep_table = time_table("PT00:00:05").update("X = i % 11")
@@ -212,18 +272,28 @@ class TableListenerTestCase(BaseTestCase):
                     table_update_recorder.record(update, is_replay)
                     with ec:
                         t2 = dep_table.view(["Y = i % 8"])
-                        j_arrays.append(_JColumnVectors.of(t2.j_table, "Y").copyToArray())
+                        j_arrays.append(
+                            _JColumnVectors.of(t2.j_table, "Y").copyToArray()
+                        )
 
             listener = ListenerClass()
-            table_listener_handle = listen(self.test_table, listener, dependencies=dep_table)
+            table_listener_handle = listen(
+                self.test_table, listener, dependencies=dep_table
+            )
             ensure_ugp_cycles(table_update_recorder, cycles=3)
             table_listener_handle.stop()
 
-            self.check_update_recorder(table_update_recorder=table_update_recorder, cols="X", has_replay=False,
-                                       has_added=True, has_removed=True, has_modified=False)
+            self.check_update_recorder(
+                table_update_recorder=table_update_recorder,
+                cols="X",
+                has_replay=False,
+                has_added=True,
+                has_removed=True,
+                has_modified=False,
+            )
             self.assertTrue(all([len(ja) > 0 for ja in j_arrays]))
 
-        with (self.subTest("update/group_by op on deps")):
+        with self.subTest("update/group_by op on deps"):
             table_update_recorder = TableUpdateRecorder(self.test_table)
             j_arrays = []
 
@@ -232,19 +302,29 @@ class TableListenerTestCase(BaseTestCase):
                     table_update_recorder.record(update, is_replay)
                     with ec:
                         t2 = dep_table.update(["Y = i % 8"]).group_by("X")
-                        j_arrays.append(_JColumnVectors.of(t2.j_table, "Y").copyToArray())
+                        j_arrays.append(
+                            _JColumnVectors.of(t2.j_table, "Y").copyToArray()
+                        )
 
             listener = ListenerClass()
             self.test_table.await_update()
-            table_listener_handle = listen(self.test_table, listener, dependencies=dep_table)
+            table_listener_handle = listen(
+                self.test_table, listener, dependencies=dep_table
+            )
             ensure_ugp_cycles(table_update_recorder, cycles=3)
             table_listener_handle.stop()
 
-            self.check_update_recorder(table_update_recorder=table_update_recorder, cols="X", has_replay=False,
-                                       has_added=True, has_removed=True, has_modified=False)
+            self.check_update_recorder(
+                table_update_recorder=table_update_recorder,
+                cols="X",
+                has_replay=False,
+                has_added=True,
+                has_removed=True,
+                has_modified=False,
+            )
             self.assertTrue(all([len(ja) > 0 for ja in j_arrays]))
 
-        with (self.subTest("join op on deps")):
+        with self.subTest("join op on deps"):
             table_update_recorder = TableUpdateRecorder(self.test_table)
             j_arrays = []
             dep_table_2 = time_table("PT00:00:05").update("X = i % 11")
@@ -253,22 +333,34 @@ class TableListenerTestCase(BaseTestCase):
                 def on_update(self, update, is_replay):
                     table_update_recorder.record(update, is_replay)
                     with ec:
-                        t2 = dep_table.update(["Y = i % 8"]).group_by("X").join(dep_table_2, on="X",
-                                                                                joins="Ts2=Timestamp")
-                        j_arrays.append(_JColumnVectors.of(t2.j_table, "Y").copyToArray())
+                        t2 = (
+                            dep_table.update(["Y = i % 8"])
+                            .group_by("X")
+                            .join(dep_table_2, on="X", joins="Ts2=Timestamp")
+                        )
+                        j_arrays.append(
+                            _JColumnVectors.of(t2.j_table, "Y").copyToArray()
+                        )
 
             listener = ListenerClass()
             self.test_table.await_update()
-            table_listener_handle = listen(self.test_table, listener, dependencies=[dep_table, dep_table_2])
+            table_listener_handle = listen(
+                self.test_table, listener, dependencies=[dep_table, dep_table_2]
+            )
             ensure_ugp_cycles(table_update_recorder, cycles=3)
             table_listener_handle.stop()
 
-            self.check_update_recorder(table_update_recorder=table_update_recorder, cols="X", has_replay=False,
-                                       has_added=True, has_removed=True, has_modified=False)
+            self.check_update_recorder(
+                table_update_recorder=table_update_recorder,
+                cols="X",
+                has_replay=False,
+                has_added=True,
+                has_removed=True,
+                has_modified=False,
+            )
             self.assertTrue(all([len(ja) > 0 for ja in j_arrays]))
 
         dep_table = dep_table_2 = None
-
 
     def test_listener_func_with_deps(self):
         cols = [
@@ -289,12 +381,19 @@ class TableListenerTestCase(BaseTestCase):
 
         with self.subTest("do_replay=False"):
             table_update_recorder = TableUpdateRecorder(self.test_table)
-            table_listener_handle = TableListenerHandle(self.test_table, listener_func, dependencies=dep_table)
+            table_listener_handle = TableListenerHandle(
+                self.test_table, listener_func, dependencies=dep_table
+            )
             table_listener_handle.start(do_replay=False)
             ensure_ugp_cycles(table_update_recorder, cycles=3)
             table_listener_handle.stop()
-            self.check_update_recorder(table_update_recorder, has_replay=False, has_added=True, has_removed=True,
-                                   has_modified=False)
+            self.check_update_recorder(
+                table_update_recorder,
+                has_replay=False,
+                has_added=True,
+                has_removed=True,
+                has_modified=False,
+            )
             self.assertEqual(dep_table.size, 0)
 
         with self.subTest("do_replay=True, replay_lock='exclusive'"):
@@ -302,27 +401,42 @@ class TableListenerTestCase(BaseTestCase):
             table_listener_handle.start(do_replay=True)
             ensure_ugp_cycles(table_update_recorder, cycles=3)
             table_listener_handle.stop()
-            self.check_update_recorder(table_update_recorder, has_replay=True, has_added=True, has_removed=True, has_modified=False)
+            self.check_update_recorder(
+                table_update_recorder,
+                has_replay=True,
+                has_added=True,
+                has_removed=True,
+                has_modified=False,
+            )
 
         with self.subTest("do_replay=True, replay_lock='shared'"):
             table_update_recorder = TableUpdateRecorder(self.test_table)
-            table_listener_handle.start(do_replay=True) # noqa
+            table_listener_handle.start(do_replay=True)  # noqa
             ensure_ugp_cycles(table_update_recorder, cycles=3)
             table_listener_handle.stop()
-            self.check_update_recorder(table_update_recorder, has_replay=True, has_added=True, has_removed=True, has_modified=False)
+            self.check_update_recorder(
+                table_update_recorder,
+                has_replay=True,
+                has_added=True,
+                has_removed=True,
+                has_modified=False,
+            )
 
     def test_listener_obj_with_deps_error(self):
-        _JPUG = jpy.get_type('io.deephaven.engine.updategraph.impl.PeriodicUpdateGraph')
+        _JPUG = jpy.get_type("io.deephaven.engine.updategraph.impl.PeriodicUpdateGraph")
         update_graph = _JPUG.newBuilder("TestUG").existingOrBuild()
 
         from deephaven import execution_context
-        _JEC = jpy.get_type('io.deephaven.engine.context.ExecutionContext')
-        ug_ctx = execution_context.ExecutionContext(j_exec_ctx=_JEC.newBuilder()
-                                                    .emptyQueryScope()
-                                                    .newQueryLibrary()
-                                                    .captureQueryCompiler()
-                                                    .setUpdateGraph(update_graph)
-                                                    .build())
+
+        _JEC = jpy.get_type("io.deephaven.engine.context.ExecutionContext")
+        ug_ctx = execution_context.ExecutionContext(
+            j_exec_ctx=_JEC.newBuilder()
+            .emptyQueryScope()
+            .newQueryLibrary()
+            .captureQueryCompiler()
+            .setUpdateGraph(update_graph)
+            .build()
+        )
 
         with ug_ctx:
             dep_table = time_table("PT1s")
@@ -331,7 +445,9 @@ class TableListenerTestCase(BaseTestCase):
             pass
 
         with self.assertRaises(DHError):
-            table_listener_handle = TableListenerHandle(self.test_table, listener_func, dependencies=dep_table)
+            table_listener_handle = TableListenerHandle(
+                self.test_table, listener_func, dependencies=dep_table
+            )
 
     def test_merged_listener_obj(self):
         t1 = time_table("PT1s").update(["X=i % 11"])
@@ -339,7 +455,9 @@ class TableListenerTestCase(BaseTestCase):
         t3 = time_table("PT3s").update(["Z=i % 5"])
 
         class TestMergedListener(MergedListener):
-            def on_update(self, updates: Dict[Table, TableUpdate], is_replay: bool) -> None:
+            def on_update(
+                self, updates: Dict[Table, TableUpdate], is_replay: bool
+            ) -> None:
                 for update in updates.values():
                     tur.record(update, is_replay)
 
@@ -409,8 +527,11 @@ class TableListenerTestCase(BaseTestCase):
 
         tur = TableUpdateRecorder()
         j_arrays = []
+
         class TestMergedListener(MergedListener):
-            def on_update(self, updates: Dict[Table, TableUpdate], is_replay: bool) -> None:
+            def on_update(
+                self, updates: Dict[Table, TableUpdate], is_replay: bool
+            ) -> None:
                 if updates[t1] and updates[t2]:
                     tur.record(updates[t2], is_replay)
 
@@ -419,7 +540,9 @@ class TableListenerTestCase(BaseTestCase):
                     j_arrays.append(_JColumnVectors.of(t.j_table, "Y").copyToArray())
 
         tml = TestMergedListener()
-        mlh = MergedListenerHandle(tables=[t1, t2, t3], listener=tml, dependencies=dep_table)
+        mlh = MergedListenerHandle(
+            tables=[t1, t2, t3], listener=tml, dependencies=dep_table
+        )
         mlh.start()
         ensure_ugp_cycles(tur, cycles=3)
         mlh.stop()
@@ -454,7 +577,9 @@ class TableListenerTestCase(BaseTestCase):
         t3 = time_table("PT3s").update(["Z=i % 5"])
 
         class TestMergedListener(MergedListener):
-            def on_update(self, updates: Dict[Table, TableUpdate], is_replay: bool) -> None:
+            def on_update(
+                self, updates: Dict[Table, TableUpdate], is_replay: bool
+            ) -> None:
                 for update in updates.values():
                     tur.record(update, is_replay)
 
@@ -493,6 +618,7 @@ class TableListenerTestCase(BaseTestCase):
     def test_on_error_listener_func(self):
         t = time_table("PT1S").update("X = i")
         with self.subTest("Bad Listener Good Error Callback"):
+
             def bad_listner_func(table_udpate, is_replay: bool) -> None:
                 raise ValueError("invalid value")
 
@@ -508,6 +634,7 @@ class TableListenerTestCase(BaseTestCase):
             self.assertTrue(tlh.j_object.isFailed())
 
         with self.subTest("Good Listener Good Error Callback"):
+
             def good_listner_func(table_udpate, is_replay: bool) -> None:
                 pass
 
@@ -541,6 +668,7 @@ class TableListenerTestCase(BaseTestCase):
         t = time_table("PT1S").update("X = i")
 
         with self.subTest("Bad Listener Good Error Callback"):
+
             class BadListener(TableListener):
                 def on_update(self, update: TableUpdate, is_replay: bool) -> None:
                     raise ValueError("invalid value")
@@ -558,14 +686,15 @@ class TableListenerTestCase(BaseTestCase):
             self.assertTrue(tlh.j_object.isFailed())
 
             with self.assertRaises(DHError):
-                def on_error(e: Exception) -> None:
-                    ...
+
+                def on_error(e: Exception) -> None: ...
+
                 tlh = listen(t, bad_listener_obj, on_error=on_error)
 
         with self.subTest("Good Listener Good Error Callback"):
+
             class GoodListener(TableListener):
-                def on_update(self, update: TableUpdate, is_replay: bool) -> None:
-                    ...
+                def on_update(self, update: TableUpdate, is_replay: bool) -> None: ...
 
                 def on_error(self, e: Exception) -> None:
                     nonlocal error_caught
@@ -580,6 +709,7 @@ class TableListenerTestCase(BaseTestCase):
             self.assertFalse(tlh.j_object.isFailed())
 
         with self.subTest("Bad Listener Bad Error Callback"):
+
             class GoodListener(TableListener):
                 def on_update(self, update: TableUpdate, is_replay: bool) -> None:
                     raise ValueError("invalid value")
@@ -606,7 +736,10 @@ class TableListenerTestCase(BaseTestCase):
         t3 = time_table("PT3s").update(["Z=i % 5"])
 
         with self.subTest("Bad Listener Good Error Callback"):
-            def bad_listner_func(updates: Dict[Table, TableUpdate], is_replay: bool) -> None:
+
+            def bad_listner_func(
+                updates: Dict[Table, TableUpdate], is_replay: bool
+            ) -> None:
                 raise ValueError("invalid value")
 
             def on_error(e: Exception) -> None:
@@ -621,7 +754,10 @@ class TableListenerTestCase(BaseTestCase):
             self.assertTrue(mlh.j_object.isFailed())
 
         with self.subTest("Good Listener Good Error Callback"):
-            def good_listner_func(updates: Dict[Table, TableUpdate], is_replay: bool) -> None:
+
+            def good_listner_func(
+                updates: Dict[Table, TableUpdate], is_replay: bool
+            ) -> None:
                 pass
 
             error_caught = False
@@ -631,7 +767,10 @@ class TableListenerTestCase(BaseTestCase):
             self.assertFalse(mlh.j_object.isFailed())
 
         with self.subTest("Bad Listener Bad Error Callback"):
-            def bad_listner_func(updates: Dict[Table, TableUpdate], is_replay: bool) -> None:
+
+            def bad_listner_func(
+                updates: Dict[Table, TableUpdate], is_replay: bool
+            ) -> None:
                 raise ValueError("invalid value")
 
             def bad_on_error(e: Exception) -> None:
@@ -655,8 +794,11 @@ class TableListenerTestCase(BaseTestCase):
         t3 = time_table("PT3s").update(["Z=i % 5"])
 
         with self.subTest("Bad Listener Good Error Callback"):
+
             class BadListener(MergedListener):
-                def on_update(self, updates: Dict[Table, TableUpdate], is_replay: bool) -> None:
+                def on_update(
+                    self, updates: Dict[Table, TableUpdate], is_replay: bool
+                ) -> None:
                     raise ValueError("invalid value")
 
                 def on_error(self, e: Exception) -> None:
@@ -672,15 +814,17 @@ class TableListenerTestCase(BaseTestCase):
             self.assertTrue(mlh.j_object.isFailed())
 
             with self.assertRaises(DHError):
-                def on_error(e: Exception) -> None:
-                    ...
+
+                def on_error(e: Exception) -> None: ...
+
                 tlh = merged_listen([t1, t2, t3], bad_listener_obj, on_error=on_error)
 
-
         with self.subTest("Good Listener Good Error Callback"):
+
             class GoodListener(MergedListener):
-                def on_update(self, updates: Dict[Table, TableUpdate], is_replay: bool) -> None:
-                    ...
+                def on_update(
+                    self, updates: Dict[Table, TableUpdate], is_replay: bool
+                ) -> None: ...
 
                 def on_error(self, e: Exception) -> None:
                     nonlocal error_caught
@@ -695,8 +839,11 @@ class TableListenerTestCase(BaseTestCase):
             self.assertFalse(mlh.j_object.isFailed())
 
         with self.subTest("Bad Listener Bad Error Callback"):
+
             class BadListener(MergedListener):
-                def on_update(self, updates: Dict[Table, TableUpdate], is_replay: bool) -> None:
+                def on_update(
+                    self, updates: Dict[Table, TableUpdate], is_replay: bool
+                ) -> None:
                     raise ValueError("invalid value")
 
                 def on_error(self, e: Exception) -> None:
@@ -738,7 +885,10 @@ class TableListenerTestCase(BaseTestCase):
         self.assertTrue(tlh.j_object.isFailed())
 
         t2 = time_table("PT1S").update("X = i")
-        def bad_listner_func(updates: Dict[Table, TableUpdate], is_replay: bool) -> None:
+
+        def bad_listner_func(
+            updates: Dict[Table, TableUpdate], is_replay: bool
+        ) -> None:
             raise ValueError("invalid value")
 
         mlh = merged_listen([t, t2], bad_listner_func)
@@ -748,7 +898,9 @@ class TableListenerTestCase(BaseTestCase):
         self.assertTrue(mlh.j_object.isFailed())
 
         class BadListener(MergedListener):
-            def on_update(self, updates: Dict[Table, TableUpdate], is_replay: bool) -> None:
+            def on_update(
+                self, updates: Dict[Table, TableUpdate], is_replay: bool
+            ) -> None:
                 raise ValueError("invalid value")
 
         mlh = merged_listen([t, t2], BadListener())

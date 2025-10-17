@@ -1,7 +1,7 @@
 #
 # Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 #
-from typing import Optional, Union
+from typing import Optional
 from warnings import warn
 
 import jpy
@@ -30,6 +30,7 @@ class Credentials(JObjectWrapper):
     """
     Credentials object for authenticating with an S3 server.
     """
+
     j_object_type = _JCredentials
 
     def __init__(self, _j_object: jpy.JType):
@@ -46,7 +47,7 @@ class Credentials(JObjectWrapper):
         return self._j_object
 
     @classmethod
-    def resolving(cls) -> 'Credentials':
+    def resolving(cls) -> "Credentials":
         """
         Default credentials provider used by Deephaven which resolves credentials in the following order:
 
@@ -65,7 +66,7 @@ class Credentials(JObjectWrapper):
         return cls(_JCredentials.resolving())
 
     @classmethod
-    def default(cls) -> 'Credentials':
+    def default(cls) -> "Credentials":
         """
         Default credentials provider used by the AWS SDK that looks for credentials in this order:
         Java System Properties (`aws.accessKeyId` and `aws.secretAccessKey`), Environment Variables (`AWS_ACCESS_KEY_ID`
@@ -78,7 +79,7 @@ class Credentials(JObjectWrapper):
         return cls(_JCredentials.defaultCredentials())
 
     @classmethod
-    def basic(cls, access_key_id: str, secret_access_key: str) -> 'Credentials':
+    def basic(cls, access_key_id: str, secret_access_key: str) -> "Credentials":
         """
         Basic credentials provider with the specified access key id and secret access key.
 
@@ -92,7 +93,9 @@ class Credentials(JObjectWrapper):
         return cls(_JCredentials.basic(access_key_id, secret_access_key))
 
     @classmethod
-    def session(cls, access_key_id: str, secret_access_key: str, session_token: str) -> 'Credentials':
+    def session(
+        cls, access_key_id: str, secret_access_key: str, session_token: str
+    ) -> "Credentials":
         """
         Session credentials provider with the specified access key id, secret access key, and session token.
         This is useful when using temporary credentials from AWS STS or similar services.
@@ -105,20 +108,22 @@ class Credentials(JObjectWrapper):
         Returns:
             Credentials: the credentials object.
         """
-        return cls(_JCredentials.session(access_key_id, secret_access_key, session_token))
+        return cls(
+            _JCredentials.session(access_key_id, secret_access_key, session_token)
+        )
 
     @classmethod
-    def anonymous(cls) -> 'Credentials':
+    def anonymous(cls) -> "Credentials":
         """
-       Anonymous credentials provider, which can only be used to read data with S3 policy set to allow anonymous access.
+        Anonymous credentials provider, which can only be used to read data with S3 policy set to allow anonymous access.
 
-        Returns:
-            Credentials: the credentials object.
+         Returns:
+             Credentials: the credentials object.
         """
         return cls(_JCredentials.anonymous())
 
     @classmethod
-    def profile(cls) -> 'Credentials':
+    def profile(cls) -> "Credentials":
         """
         Use the profile name, config file path, or credentials file path from S3 Instructions for loading the
         credentials and fail if none found.
@@ -136,25 +141,26 @@ class S3Instructions(JObjectWrapper):
 
     j_object_type = _JS3Instructions or type(None)
 
-    def __init__(self,
-                 region_name: Optional[str] = None,
-                 credentials: Optional[Credentials] = None,
-                 max_concurrent_requests: Optional[int] = None,
-                 read_ahead_count: Optional[int] = None,
-                 fragment_size: Optional[int] = None,
-                 connection_timeout: Optional[DurationLike] = None,
-                 read_timeout: Optional[DurationLike] = None,
-                 write_timeout: Optional[DurationLike] = None,
-                 access_key_id: Optional[str] = None,
-                 secret_access_key: Optional[str] = None,
-                 anonymous_access: bool = False,
-                 endpoint_override: Optional[str] = None,
-                 write_part_size: Optional[int] = None,
-                 num_concurrent_write_parts: Optional[int] = None,
-                 profile_name: Optional[str] = None,
-                 config_file_path: Optional[str] = None,
-                 credentials_file_path: Optional[str] = None):
-
+    def __init__(
+        self,
+        region_name: Optional[str] = None,
+        credentials: Optional[Credentials] = None,
+        max_concurrent_requests: Optional[int] = None,
+        read_ahead_count: Optional[int] = None,
+        fragment_size: Optional[int] = None,
+        connection_timeout: Optional[DurationLike] = None,
+        read_timeout: Optional[DurationLike] = None,
+        write_timeout: Optional[DurationLike] = None,
+        access_key_id: Optional[str] = None,
+        secret_access_key: Optional[str] = None,
+        anonymous_access: bool = False,
+        endpoint_override: Optional[str] = None,
+        write_part_size: Optional[int] = None,
+        num_concurrent_write_parts: Optional[int] = None,
+        profile_name: Optional[str] = None,
+        config_file_path: Optional[str] = None,
+        credentials_file_path: Optional[str] = None,
+    ):
         """
         Initializes the instructions.
 
@@ -235,8 +241,10 @@ class S3Instructions(JObjectWrapper):
         """
 
         if not _JS3Instructions or not _JCredentials:
-            raise DHError(message="S3Instructions requires the S3 specific deephaven extensions to be included in "
-                                  "the package")
+            raise DHError(
+                message="S3Instructions requires the S3 specific deephaven extensions to be included in "
+                "the package"
+            )
 
         try:
             builder = self.j_object_type.builder()
@@ -262,26 +270,42 @@ class S3Instructions(JObjectWrapper):
             if write_timeout is not None:
                 builder.writeTimeout(to_j_duration(write_timeout))
 
-            if ((access_key_id is not None and secret_access_key is None) or
-                    (access_key_id is None and secret_access_key is not None)):
-                raise DHError("Either both access_key_id and secret_access_key must be provided or neither")
+            if (access_key_id is not None and secret_access_key is None) or (
+                access_key_id is None and secret_access_key is not None
+            ):
+                raise DHError(
+                    "Either both access_key_id and secret_access_key must be provided or neither"
+                )
 
             def throw_multiple_credentials_error(credentials1: str, credentials2: str):
-                raise DHError(f"Only one set of credentials can be set, but found {credentials1} and {credentials2}")
+                raise DHError(
+                    f"Only one set of credentials can be set, but found {credentials1} and {credentials2}"
+                )
 
             # Configure the credentials
             if access_key_id is not None:
-                warn('access_key_id is deprecated, prefer setting credentials as '
-                     'Credentials.basic(access_key_id, secret_access_key)', DeprecationWarning, stacklevel=2)
+                warn(
+                    "access_key_id is deprecated, prefer setting credentials as "
+                    "Credentials.basic(access_key_id, secret_access_key)",
+                    DeprecationWarning,
+                    stacklevel=2,
+                )
                 # TODO(deephaven-core#6165): Delete deprecated parameters
                 if anonymous_access:
-                    throw_multiple_credentials_error("access_key_id", "anonymous_access")
+                    throw_multiple_credentials_error(
+                        "access_key_id", "anonymous_access"
+                    )
                 if credentials is not None:
                     throw_multiple_credentials_error("access_key_id", "credentials")
-                builder.credentials(_JCredentials.basic(access_key_id, secret_access_key))
+                builder.credentials(
+                    _JCredentials.basic(access_key_id, secret_access_key)
+                )
             elif anonymous_access:
-                warn("anonymous_access is deprecated, prefer setting credentials as Credentials.anonymous()",
-                     DeprecationWarning, stacklevel=2)
+                warn(
+                    "anonymous_access is deprecated, prefer setting credentials as Credentials.anonymous()",
+                    DeprecationWarning,
+                    stacklevel=2,
+                )
                 # TODO(deephaven-core#6165): Delete deprecated parameters
                 if credentials is not None:
                     throw_multiple_credentials_error("anonymous_access", "credentials")

@@ -2,8 +2,16 @@
 # Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 #
 """This module supports reading the data in a Deephaven table in a chunked manner."""
+
 from collections import namedtuple
-from typing import Union, Sequence, Generator, Dict, Optional, Any, Tuple, Callable, TypeVar, Iterable
+from typing import (
+    Union,
+    Optional,
+    Any,
+    Callable,
+    TypeVar,
+)
+from collections.abc import Sequence, Generator, Iterable
 
 import jpy
 import numpy as np
@@ -14,26 +22,38 @@ from deephaven.jcompat import to_sequence
 from deephaven.numpy import _column_to_numpy_array
 from deephaven.table import Table
 
-_JTableUpdateDataReader = jpy.get_type("io.deephaven.integrations.python.PythonTableDataReader")
+_JTableUpdateDataReader = jpy.get_type(
+    "io.deephaven.integrations.python.PythonTableDataReader"
+)
 
-T = TypeVar('T')
+T = TypeVar("T")
 
-def _col_defs(table: Table, cols: Union[str, Sequence[str]]) -> Sequence[ColumnDefinition]:
+
+def _col_defs(
+    table: Table, cols: Union[str, Sequence[str]]
+) -> Sequence[ColumnDefinition]:
     if not cols:
         col_defs = table.columns
     else:
         cols = to_sequence(cols)
         col_defs = [col for col in table.columns if col.name in cols]
         if len(col_defs) != len(cols):
-            raise ValueError(f"Invalid column names: {set(cols) - {col.name for col in col_defs} }")
+            raise ValueError(
+                f"Invalid column names: {set(cols) - {col.name for col in col_defs}}"
+            )
 
     return col_defs
 
 
-def _table_reader_all(table: Table, cols: Optional[Union[str, Sequence[str]]] = None, *,
-                     emitter: Callable[[Sequence[ColumnDefinition], jpy.JType], T], row_set: jpy.JType,
-                     prev: bool = False) -> T:
-    """ Reads all the rows in the given row set of a table. The emitter converts the Java data into a desired Python
+def _table_reader_all(
+    table: Table,
+    cols: Optional[Union[str, Sequence[str]]] = None,
+    *,
+    emitter: Callable[[Sequence[ColumnDefinition], jpy.JType], T],
+    row_set: jpy.JType,
+    prev: bool = False,
+) -> T:
+    """Reads all the rows in the given row set of a table. The emitter converts the Java data into a desired Python
     object.
 
     If the table is refreshing and no update graph locks are currently being held, the generator will try to acquire
@@ -65,15 +85,23 @@ def _table_reader_all(table: Table, cols: Optional[Union[str, Sequence[str]]] = 
     j_reader_context = _JTableUpdateDataReader.makeContext(row_set.size(), *col_sources)
     with update_graph.auto_locking_ctx(table):
         try:
-            j_array = _JTableUpdateDataReader.readChunkColumnMajor(j_reader_context, row_set, col_sources, prev)
+            j_array = _JTableUpdateDataReader.readChunkColumnMajor(
+                j_reader_context, row_set, col_sources, prev
+            )
             return emitter(col_defs, j_array)
         finally:
             j_reader_context.close()
 
 
-def _table_reader_all_dict(table: Table, cols: Optional[Union[str, Sequence[str]]] = None, *, row_set: jpy.JType,
-                           prev: bool = False, to_numpy: bool = True) -> Dict[str, Union[np.ndarray, jpy.JType]]:
-    """ Reads all the rows in the given row set of a table into a dictionary. The dictionary is a map of column names
+def _table_reader_all_dict(
+    table: Table,
+    cols: Optional[Union[str, Sequence[str]]] = None,
+    *,
+    row_set: jpy.JType,
+    prev: bool = False,
+    to_numpy: bool = True,
+) -> dict[str, Union[np.ndarray, jpy.JType]]:
+    """Reads all the rows in the given row set of a table into a dictionary. The dictionary is a map of column names
     to numpy arrays or Java arrays.
 
     If the table is refreshing and no update graph locks are currently being held, the generator will try to acquire
@@ -97,16 +125,28 @@ def _table_reader_all_dict(table: Table, cols: Optional[Union[str, Sequence[str]
     Raises:
         ValueError
     """
-    _emitter = lambda col_defs, j_array: {col_def.name: _column_to_numpy_array(col_def, j_array[i]) if to_numpy else j_array[i]
-            for i, col_def in enumerate(col_defs)}
+
+    def _emitter(col_defs, j_array):
+        return {
+            col_def.name: _column_to_numpy_array(col_def, j_array[i])
+            if to_numpy
+            else j_array[i]
+            for i, col_def in enumerate(col_defs)
+        }
+
     return _table_reader_all(table, cols, emitter=_emitter, row_set=row_set, prev=prev)
 
 
-def _table_reader_chunk(table: Table, cols: Optional[Union[str, Sequence[str]]] = None, *,
-                        emitter: Callable[[Sequence[ColumnDefinition], jpy.JType], Iterable[T]], row_set: jpy.JType,
-                        chunk_size: int = 2048, prev: bool = False) \
-        -> Generator[T, None, None]:
-    """ Returns a generator that reads one chunk of rows at a time from the table.  The emitter converts the Java chunk
+def _table_reader_chunk(
+    table: Table,
+    cols: Optional[Union[str, Sequence[str]]] = None,
+    *,
+    emitter: Callable[[Sequence[ColumnDefinition], jpy.JType], Iterable[T]],
+    row_set: jpy.JType,
+    chunk_size: int = 2048,
+    prev: bool = False,
+) -> Generator[T, None, None]:
+    """Returns a generator that reads one chunk of rows at a time from the table.  The emitter converts the Java chunk
     into the generator output value.
 
     If the table is refreshing and no update graph locks are currently being held, the generator will try to acquire
@@ -143,18 +183,27 @@ def _table_reader_chunk(table: Table, cols: Optional[Union[str, Sequence[str]]] 
     with update_graph.auto_locking_ctx(table):
         try:
             while row_sequence_iterator.hasMore():
-                chunk_row_set = row_sequence_iterator.getNextRowSequenceWithLength(chunk_size)
-                j_array = _JTableUpdateDataReader.readChunkColumnMajor(j_reader_context, chunk_row_set, col_sources,
-                                                                       prev)
+                chunk_row_set = row_sequence_iterator.getNextRowSequenceWithLength(
+                    chunk_size
+                )
+                j_array = _JTableUpdateDataReader.readChunkColumnMajor(
+                    j_reader_context, chunk_row_set, col_sources, prev
+                )
                 yield from emitter(col_defs, j_array)
         finally:
             j_reader_context.close()
             row_sequence_iterator.close()
 
-def _table_reader_chunk_dict(table: Table, cols: Optional[Union[str, Sequence[str]]] = None, *, row_set: jpy.JType,
-                                    chunk_size: int = 2048, prev: bool = False) \
-        -> Generator[Dict[str, np.ndarray], None, None]:
-    """ Returns a generator that reads one chunk of rows at a time from the table into a dictionary. The dictionary is
+
+def _table_reader_chunk_dict(
+    table: Table,
+    cols: Optional[Union[str, Sequence[str]]] = None,
+    *,
+    row_set: jpy.JType,
+    chunk_size: int = 2048,
+    prev: bool = False,
+) -> Generator[dict[str, np.ndarray], None, None]:
+    """Returns a generator that reads one chunk of rows at a time from the table into a dictionary. The dictionary is
     a map of column names to numpy arrays or Java arrays.
 
     If the table is refreshing and no update graph locks are currently being held, the generator will try to acquire
@@ -178,15 +227,28 @@ def _table_reader_chunk_dict(table: Table, cols: Optional[Union[str, Sequence[st
     Raises:
         ValueError
     """
-    def _emitter(col_defs: Sequence[ColumnDefinition], j_array: jpy.JType) -> Generator[Dict[str, np.ndarray], None, None]:
-        yield {col_def.name: _column_to_numpy_array(col_def, j_array[i]) for i, col_def in enumerate(col_defs)}
 
-    return _table_reader_chunk(table, cols, emitter=_emitter, row_set=row_set, chunk_size=chunk_size, prev=prev)
+    def _emitter(
+        col_defs: Sequence[ColumnDefinition], j_array: jpy.JType
+    ) -> Generator[dict[str, np.ndarray], None, None]:
+        yield {
+            col_def.name: _column_to_numpy_array(col_def, j_array[i])
+            for i, col_def in enumerate(col_defs)
+        }
+
+    return _table_reader_chunk(
+        table, cols, emitter=_emitter, row_set=row_set, chunk_size=chunk_size, prev=prev
+    )
 
 
-def _table_reader_chunk_tuple(table: Table, cols: Optional[Union[str, Sequence[str]]] = None, *,
-                tuple_name: str = 'Deephaven', chunk_size: int = 2048,) -> Generator[Tuple[np.ndarray, ...], None, None]:
-    """ Returns a generator that reads one chunk of rows at a time from the table into a named tuple. The named
+def _table_reader_chunk_tuple(
+    table: Table,
+    cols: Optional[Union[str, Sequence[str]]] = None,
+    *,
+    tuple_name: str = "Deephaven",
+    chunk_size: int = 2048,
+) -> Generator[tuple[np.ndarray, ...], None, None]:
+    """Returns a generator that reads one chunk of rows at a time from the table into a named tuple. The named
     tuple is made up of fields with their names being the column names and their values being numpy arrays of the
     column data types.
 
@@ -212,14 +274,32 @@ def _table_reader_chunk_tuple(table: Table, cols: Optional[Union[str, Sequence[s
     """
     named_tuple_class = namedtuple(tuple_name, cols or table.column_names, rename=False)
 
-    def _emitter(col_defs: Sequence[ColumnDefinition], j_array: jpy.JType) -> Generator[Tuple[np.ndarray], None, None]:
-        yield named_tuple_class._make([_column_to_numpy_array(col_def, j_array[i]) for i, col_def in enumerate(col_defs)])
+    def _emitter(
+        col_defs: Sequence[ColumnDefinition], j_array: jpy.JType
+    ) -> Generator[tuple[np.ndarray], None, None]:
+        yield named_tuple_class._make(
+            [
+                _column_to_numpy_array(col_def, j_array[i])
+                for i, col_def in enumerate(col_defs)
+            ]
+        )
 
-    return _table_reader_chunk(table, cols, emitter=_emitter, row_set=table.j_table.getRowSet(), chunk_size=chunk_size, prev=False)
+    return _table_reader_chunk(
+        table,
+        cols,
+        emitter=_emitter,
+        row_set=table.j_table.getRowSet(),
+        chunk_size=chunk_size,
+        prev=False,
+    )
 
-def _table_reader_row_dict(table: Table, cols: Optional[Union[str, Sequence[str]]] = None, chunk_size: int = 2048) \
-        -> Generator[Dict[str, Any], None, None]:
-    """ A generator that reads one row at a time from a table into a dictionary. The dictionary is a map of column names
+
+def _table_reader_row_dict(
+    table: Table,
+    cols: Optional[Union[str, Sequence[str]]] = None,
+    chunk_size: int = 2048,
+) -> Generator[dict[str, Any], None, None]:
+    """A generator that reads one row at a time from a table into a dictionary. The dictionary is a map of column names
     to scalar values of the column data type.
 
     If the table is refreshing and no update graph locks are currently being held, the generator will try to acquire
@@ -242,16 +322,36 @@ def _table_reader_row_dict(table: Table, cols: Optional[Union[str, Sequence[str]
     Raises:
         ValueError
     """
-    def _emitter(col_defs: Sequence[ColumnDefinition], j_array: jpy.JType) -> Iterable[Dict[str, Any]]:
-        make_dict = lambda values: {col_def.name: value for col_def, value in zip(col_defs, values)}
-        mvs = [memoryview(j_array[i]) if col_def.data_type.is_primitive else j_array[i] for i, col_def in enumerate(col_defs)]
+
+    def _emitter(
+        col_defs: Sequence[ColumnDefinition], j_array: jpy.JType
+    ) -> Iterable[dict[str, Any]]:
+        def make_dict(values):
+            return {col_def.name: value for col_def, value in zip(col_defs, values)}
+
+        mvs = [
+            memoryview(j_array[i]) if col_def.data_type.is_primitive else j_array[i]
+            for i, col_def in enumerate(col_defs)
+        ]
         return map(make_dict, zip(*mvs))
 
-    return _table_reader_chunk(table, cols, emitter=_emitter, row_set=table.j_table.getRowSet(), chunk_size=chunk_size, prev=False)
+    return _table_reader_chunk(
+        table,
+        cols,
+        emitter=_emitter,
+        row_set=table.j_table.getRowSet(),
+        chunk_size=chunk_size,
+        prev=False,
+    )
 
-def _table_reader_row_tuple(table: Table, cols: Optional[Union[str, Sequence[str]]] = None, tuple_name: str = 'Deephaven',
-                            chunk_size: int = 2048) -> Generator[Tuple[Any, ...], None, None]:
-    """ Returns a generator that reads one row at a time from the table into a named tuple. The named tuple is made
+
+def _table_reader_row_tuple(
+    table: Table,
+    cols: Optional[Union[str, Sequence[str]]] = None,
+    tuple_name: str = "Deephaven",
+    chunk_size: int = 2048,
+) -> Generator[tuple[Any, ...], None, None]:
+    """Returns a generator that reads one row at a time from the table into a named tuple. The named tuple is made
     up of fields with their names being the column names and their values being of the column data types.
 
     If the table is refreshing and no update graph locks are currently being held, the generator will try to acquire
@@ -277,8 +377,20 @@ def _table_reader_row_tuple(table: Table, cols: Optional[Union[str, Sequence[str
     """
     named_tuple_class = namedtuple(tuple_name, cols or table.column_names, rename=False)
 
-    def _emitter(col_defs: Sequence[ColumnDefinition], j_array: jpy.JType) -> Iterable[Tuple[Any, ...]]:
-        mvs = [memoryview(j_array[i]) if col_def.data_type.is_primitive else j_array[i] for i, col_def in enumerate(col_defs)]
+    def _emitter(
+        col_defs: Sequence[ColumnDefinition], j_array: jpy.JType
+    ) -> Iterable[tuple[Any, ...]]:
+        mvs = [
+            memoryview(j_array[i]) if col_def.data_type.is_primitive else j_array[i]
+            for i, col_def in enumerate(col_defs)
+        ]
         return map(named_tuple_class._make, zip(*mvs))
 
-    return _table_reader_chunk(table, cols, emitter=_emitter, row_set=table.j_table.getRowSet(), chunk_size=chunk_size, prev=False)
+    return _table_reader_chunk(
+        table,
+        cols,
+        emitter=_emitter,
+        row_set=table.j_table.getRowSet(),
+        chunk_size=chunk_size,
+        prev=False,
+    )

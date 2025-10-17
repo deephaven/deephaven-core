@@ -2,10 +2,11 @@
 # Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 #
 
-""" The deephaven.csv module supports reading an external CSV file into a Deephaven table and writing a
+"""The deephaven.csv module supports reading an external CSV file into a Deephaven table and writing a
 Deephaven table out as a CSV file.
 """
-from typing import Dict, List
+
+from typing import Optional
 
 import jpy
 
@@ -21,7 +22,7 @@ _JArrays = jpy.get_type("java.util.Arrays")
 
 def read(
     path: str,
-    header: Dict[str, dht.DType] = None,
+    header: Optional[dict[str, dht.DType]] = None,
     headless: bool = False,
     header_row: int = 0,
     skip_rows: int = 0,
@@ -107,7 +108,7 @@ def read(
         raise DHError(e, "read csv failed") from e
 
 
-def write(table: Table, path: str, cols: List[str] = []) -> None:
+def write(table: Table, path: str, cols: list[str] = []) -> None:
     """Write a table to a standard CSV file.
 
     Args:

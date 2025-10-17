@@ -2,8 +2,9 @@
 # Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 #
 
-""" The kafka.producer module supports publishing Deephaven tables to Kafka streams. """
-from typing import Dict, Callable, List, Optional
+"""The kafka.producer module supports publishing Deephaven tables to Kafka streams."""
+
+from typing import Callable, Optional
 
 import jpy
 
@@ -36,7 +37,7 @@ KeyValueSpec.IGNORE = KeyValueSpec(_JKafkaTools_Produce.IGNORE)
 
 def produce(
     table: Table,
-    kafka_config: Dict,
+    kafka_config: dict,
     topic: Optional[str],
     key_spec: KeyValueSpec,
     value_spec: KeyValueSpec,
@@ -97,7 +98,9 @@ def produce(
                 "at least one argument for 'key_spec' or 'value_spec' must be different from KeyValueSpec.IGNORE"
             )
         if not publish_initial and not table.is_refreshing:
-            raise ValueError("publish_initial == False and table.is_refreshing == False")
+            raise ValueError(
+                "publish_initial == False and table.is_refreshing == False"
+            )
         options_builder = (
             _JKafkaPublishOptions.builder()
             .table(table.j_table)
@@ -125,7 +128,9 @@ def produce(
             try:
                 runnable.run()
             except Exception as ex:
-                raise DHError(ex, "failed to stop publishing to Kafka and the clean-up.") from ex
+                raise DHError(
+                    ex, "failed to stop publishing to Kafka and the clean-up."
+                ) from ex
 
         return cleanup
     except Exception as e:
@@ -135,13 +140,13 @@ def produce(
 def avro_spec(
     schema: str,
     schema_version: str = "latest",
-    field_to_col_mapping: Dict[str, str] = None,
-    timestamp_field: str = None,
-    include_only_columns: List[str] = None,
-    exclude_columns: List[str] = None,
+    field_to_col_mapping: Optional[dict[str, str]] = None,
+    timestamp_field: Optional[str] = None,
+    include_only_columns: Optional[list[str]] = None,
+    exclude_columns: Optional[list[str]] = None,
     publish_schema: bool = False,
-    schema_namespace: str = None,
-    column_properties: Dict[str, str] = None,
+    schema_namespace: Optional[str] = None,
+    column_properties: Optional[dict[str, str]] = None,
 ) -> KeyValueSpec:
     """Creates a spec for how to use an Avro schema to produce a Kafka stream from a Deephaven table.
 
@@ -201,12 +206,12 @@ def avro_spec(
 
 
 def json_spec(
-    include_columns: List[str] = None,
-    exclude_columns: List[str] = None,
-    mapping: Dict[str, str] = None,
-    nested_delim: str = None,
+    include_columns: Optional[list[str]] = None,
+    exclude_columns: Optional[list[str]] = None,
+    mapping: Optional[dict[str, str]] = None,
+    nested_delim: Optional[str] = None,
     output_nulls: bool = False,
-    timestamp_field: str = None,
+    timestamp_field: Optional[str] = None,
 ) -> KeyValueSpec:
     """Creates a spec for how to generate JSON data when producing a Kafka stream from a Deephaven table.
 

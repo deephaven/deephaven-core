@@ -9,7 +9,11 @@ from jedi.api.classes import Signature
 
 
 _IGNORE_PARAM_NAMES = ("", "/", "*")
-_POSITIONAL_KINDS = (Parameter.POSITIONAL_ONLY, Parameter.POSITIONAL_OR_KEYWORD, Parameter.VAR_POSITIONAL)
+_POSITIONAL_KINDS = (
+    Parameter.POSITIONAL_ONLY,
+    Parameter.POSITIONAL_OR_KEYWORD,
+    Parameter.VAR_POSITIONAL,
+)
 
 # key: result from _hash
 # value: another dictionary that has the following keys:
@@ -17,10 +21,12 @@ _POSITIONAL_KINDS = (Parameter.POSITIONAL_ONLY, Parameter.POSITIONAL_OR_KEYWORD,
 #   param_docs: A list of param markdown descriptions (result from _generate_param_markdowns)
 _result_cache = {}
 
+
 class ParameterDetails(TypedDict):
     """
     Details of a parameter of a function
     """
+
     name: str
     """
     Name of the parameter
@@ -87,18 +93,22 @@ def _get_params(signature: Signature, docs: Docstring) -> list[ParameterDetails]
             type_ = params_info[param.name]["type"]
         else:
             type_ = None
-        
-        params.append({
-            "name": name,
-            "description": params_info.get(param.name, {}).get("description"),
-            "type": type_,
-            "default": param_str.split("=")[1] if "=" in param_str else None,
-        })
+
+        params.append(
+            {
+                "name": name,
+                "description": params_info.get(param.name, {}).get("description"),
+                "type": type_,
+                "default": param_str.split("=")[1] if "=" in param_str else None,
+            }
+        )
 
     return params
 
 
-def _generate_description_markdown(docs: Docstring, params: list[ParameterDetails]) -> str:
+def _generate_description_markdown(
+    docs: Docstring, params: list[ParameterDetails]
+) -> str:
     """
     Generate the description markdown for the signature help. This includes the description, parameters, returns, raises,
     and examples.
@@ -118,18 +128,18 @@ def _generate_description_markdown(docs: Docstring, params: list[ParameterDetail
     if len(params) > 0:
         description += "#### **Parameters**\n\n"
         for param in params:
-            if param['name'] in _IGNORE_PARAM_NAMES:
+            if param["name"] in _IGNORE_PARAM_NAMES:
                 continue
 
             description += f"> **{param['name']}**"
-            if param['type'] is not None:
+            if param["type"] is not None:
                 description += f": *{param['type']}*"
-            if param['default'] is not None:
+            if param["default"] is not None:
                 description += f" ⋅ (default: *{param['default']}*)"
             description += "  \n"
 
-            if param['description'] is not None:
-                description += f"> {param['description']}".replace('\n\n', '\n\n> ')
+            if param["description"] is not None:
+                description += f"> {param['description']}".replace("\n\n", "\n\n> ")
             description += "\n\n"
 
     if len(docs.many_returns) > 0:
@@ -153,13 +163,16 @@ def _generate_description_markdown(docs: Docstring, params: list[ParameterDetail
     if len(docs.examples) > 0:
         description += "#### **Examples**\n\n"
         for example in docs.examples:
-            if example.description is not None and example.description.startswith(">>> "):
+            if example.description is not None and example.description.startswith(
+                ">>> "
+            ):
                 description += f"```\n{example.description}\n```"
             else:
                 description += example.description
             description += "\n\n"
 
     return description.strip()
+
 
 def _generate_param_markdowns(signature: Signature, params: list[Any]) -> list[Any]:
     """
@@ -180,10 +193,10 @@ def _generate_param_markdowns(signature: Signature, params: list[Any]) -> list[A
 
         param = params[i]
         description = f"##### **{param['name']}**"
-        if param['type'] is not None:
+        if param["type"] is not None:
             description += f" : *{param['type']}*"
         description += "\n\n"
-        if param['description'] is not None:
+        if param["description"] is not None:
             description += f"{param['description']}\n\n"
         description += "---"
 
@@ -193,7 +206,7 @@ def _generate_param_markdowns(signature: Signature, params: list[Any]) -> list[A
 
 
 def get_signature_help(signature: Signature) -> list[Any]:
-    """ Gets the result of a signature to be used by `do_signature_help`
+    """Gets the result of a signature to be used by `do_signature_help`
 
     If no docstring information is parsed, then the signature will be displayed in Markdown but with plaintext style
     whitespace. Any cached docstring must have some docstring information.
@@ -218,7 +231,6 @@ def get_signature_help(signature: Signature) -> list[Any]:
             result["param_docs"],
             signature.index if signature.index is not None else -1,
         ]
-
 
     # Parse the docstring to extract information
     docs = parse(docstring)

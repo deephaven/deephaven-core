@@ -31,7 +31,9 @@ class UpdateGraphTestCase(BaseTestCase):
 
     def test_ug_context_manager(self):
         with self.assertRaises(DHError) as cm:
-            test_table = time_table("PT00:00:00.001").update(["X=i%11"]).sort("X").tail(16)
+            test_table = (
+                time_table("PT00:00:00.001").update(["X=i%11"]).sort("X").tail(16)
+            )
         self.assertRegex(str(cm.exception), r"IllegalStateException")
 
         with ug.exclusive_lock(self.test_update_graph):
@@ -50,7 +52,9 @@ class UpdateGraphTestCase(BaseTestCase):
             with ug.shared_lock(self.test_update_graph):
                 with ug.exclusive_lock(self.test_update_graph):
                     test_table = time_table("PT00:00:00.001").update(["TS=now()"])
-        self.assertRegex(str(cm.exception), "Cannot upgrade a shared lock to an exclusive lock")
+        self.assertRegex(
+            str(cm.exception), "Cannot upgrade a shared lock to an exclusive lock"
+        )
 
     def test_ug_decorator_exclusive(self):
         def ticking_table_op(tail_size: int, period: str = "PT00:00:01"):
@@ -141,13 +145,7 @@ class UpdateGraphTestCase(BaseTestCase):
 
         left_table = test_table.drop_columns(["Z", "Timestamp"])
         right_table = test_table.drop_columns(["Y", "Timestamp"])
-        ops = [
-            Table.natural_join,
-            Table.exact_join,
-            Table.join,
-            Table.aj,
-            Table.raj
-        ]
+        ops = [Table.natural_join, Table.exact_join, Table.join, Table.aj, Table.raj]
 
         for op in ops:
             with self.subTest(op=op):
@@ -164,7 +162,9 @@ class UpdateGraphTestCase(BaseTestCase):
     def test_auto_locking_head_tail_by(self):
         ops = [Table.head_by, Table.tail_by]
         with ug.shared_lock(self.test_update_graph):
-            test_table = time_table("PT00:00:00.001").update(["X=i%11"]).sort("X").tail(16)
+            test_table = (
+                time_table("PT00:00:00.001").update(["X=i%11"]).sort("X").tail(16)
+            )
 
         for op in ops:
             with self.subTest(op=op):
@@ -216,7 +216,9 @@ class UpdateGraphTestCase(BaseTestCase):
     def test_auto_locking_table_factory(self):
         with ug.shared_lock(self.test_update_graph):
             test_table = time_table("PT00:00:00.001").update(["X=i", "Y=i%13", "Z=X*Y"])
-            test_table1 = time_table("PT00:00:00.001").update(["X=i", "Y=i%23", "Z=X*Y"])
+            test_table1 = time_table("PT00:00:00.001").update(
+                ["X=i", "Y=i%23", "Z=X*Y"]
+            )
 
         with self.subTest("Merge"):
             ug.auto_locking = False
@@ -234,7 +236,9 @@ class UpdateGraphTestCase(BaseTestCase):
         with ug.shared_lock(self.test_update_graph):
             test_table = time_table("PT00:00:01").update(["X=i", "Y=i%13", "Z=X*Y"])
         proxy = test_table.drop_columns(["Timestamp", "Y"]).partition_by(by="X").proxy()
-        proxy2 = test_table.drop_columns(["Timestamp", "Z"]).partition_by(by="X").proxy()
+        proxy2 = (
+            test_table.drop_columns(["Timestamp", "Z"]).partition_by(by="X").proxy()
+        )
 
         with self.assertRaises(DHError) as cm:
             joined_pt_proxy = proxy.natural_join(proxy2, on="X")

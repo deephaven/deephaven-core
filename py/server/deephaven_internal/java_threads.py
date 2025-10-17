@@ -14,7 +14,7 @@ def create_thread_entry(thread_name):
     thread = threading.current_thread()
 
     # Assign the java thread name to the python thread
-    thread.name = 'java-' + thread_name
+    thread.name = "java-" + thread_name
 
     # Then, if pydevd has already been initialized, we should attempt to make ourselves known to it.
 
@@ -22,12 +22,15 @@ def create_thread_entry(thread_name):
     def JavaThread(runnable):
         try:
             # Test each of our known debugger impls
-            for name in ['pydevd', 'pydevd_pycharm']:
+            for name in ["pydevd", "pydevd_pycharm"]:
                 debugger = __import__(name)
 
                 # We don't want to be the first one to call settrace(), so check to see if setup completed on another
                 # thread before attempting it here
-                if hasattr(debugger, "SetupHolder") and debugger.SetupHolder.setup is not None:
+                if (
+                    hasattr(debugger, "SetupHolder")
+                    and debugger.SetupHolder.setup is not None
+                ):
                     debugger.settrace(suspend=False)
         except ImportError:
             # Debugger hasn't started yet (or we don't know which one is in use), so registering our thread

@@ -4,7 +4,7 @@
 import typing
 import warnings
 from datetime import datetime
-from typing import Optional, Union, Any, Sequence
+from typing import Optional, Union, Any
 import unittest
 
 import numpy as np
@@ -13,8 +13,15 @@ import jpy
 
 from deephaven import empty_table, DHError, dtypes, new_table
 from deephaven.column import int_col
-from deephaven.dtypes import double_array, int32_array, long_array, int16_array, char_array, int8_array, \
-    float32_array
+from deephaven.dtypes import (
+    double_array,
+    int32_array,
+    long_array,
+    int16_array,
+    char_array,
+    int8_array,
+    float32_array,
+)
 from tests.testbase import BaseTestCase
 
 _J_TYPE_NULL_MAP = {
@@ -135,7 +142,9 @@ def test_udf(col: {np_type}) -> bool: # no auto DH null conversion
                     with self.subTest(data_type):
                         tbl = empty_table(10).update([x_formula, y_formula])
                         res = tbl.update("Z = test_udf(Y)")
-                        self.assertEqual(0, res.to_string(num_rows=10, cols="Z").count("true"))
+                        self.assertEqual(
+                            0, res.to_string(num_rows=10, cols="Z").count("true")
+                        )
 
                     func = f"""
 def test_udf(col: Optional[{np_type}]) -> bool: # Optional enables auto DH null conversion to None
@@ -147,7 +156,9 @@ def test_udf(col: Optional[{np_type}]) -> bool: # Optional enables auto DH null 
                     with self.subTest(data_type):
                         tbl = empty_table(10).update([x_formula, y_formula])
                         res = tbl.update("Z = test_udf(Y)")
-                        self.assertEqual(5, res.to_string(num_rows=10, cols="Z").count("true"))
+                        self.assertEqual(
+                            5, res.to_string(num_rows=10, cols="Z").count("true")
+                        )
 
     def test_python_typehints(self):
         x_formula = "X = i % 10"
@@ -186,7 +197,9 @@ def test_udf(col: {py_type}) -> bool: # no auto DH null conversion
                     with self.subTest(data_type):
                         tbl = empty_table(10).update([x_formula, y_formula])
                         res = tbl.update("Z = test_udf(Y)")
-                        self.assertEqual(0, res.to_string(num_rows=10, cols="Z").count("true"))
+                        self.assertEqual(
+                            0, res.to_string(num_rows=10, cols="Z").count("true")
+                        )
 
                     func = f"""
 def test_udf(col: Optional[{py_type}]) -> bool: # Optional enables auto DH null conversion to None
@@ -198,11 +211,15 @@ def test_udf(col: Optional[{py_type}]) -> bool: # Optional enables auto DH null 
                     with self.subTest(data_type):
                         tbl = empty_table(10).update([x_formula, y_formula])
                         res = tbl.update("Z = test_udf(Y)")
-                        self.assertEqual(5, res.to_string(num_rows=10, cols="Z").count("true"))
+                        self.assertEqual(
+                            5, res.to_string(num_rows=10, cols="Z").count("true")
+                        )
 
     def test_str_bool_datetime(self):
         with self.subTest("str"):
-            t = empty_table(10).update(["X = i % 3", "Y = i % 2 == 0? `deephaven`: null"])
+            t = empty_table(10).update(
+                ["X = i % 3", "Y = i % 2 == 0? `deephaven`: null"]
+            )
 
             def test_udf(p1: str, p2=None) -> bool:  # str is nullable
                 return p1 is None
@@ -211,44 +228,58 @@ def test_udf(col: Optional[{py_type}]) -> bool: # Optional enables auto DH null 
             self.assertEqual(t1.columns[2].data_type, dtypes.bool_)
             self.assertEqual(5, t1.to_string(cols="Z").count("true"))
 
-            def test_udf(p1: Union[str, None],
-                         p2=None) -> bool:  # str is nullable regardless of Optional/Union[None, str]
+            def test_udf(
+                p1: Union[str, None], p2=None
+            ) -> bool:  # str is nullable regardless of Optional/Union[None, str]
                 return p1 is None
 
             t2 = t.update(["Z = test_udf(Y)"])
             self.assertEqual(5, t2.to_string(cols="Z").count("true"))
 
         with self.subTest("boolean"):
+
             def test_udf(p1: np.bool_, p2=None) -> np.bool_:
-                return p1 == True
+                return bool(p1)
 
-            t = empty_table(10).update(["X = i % 3", "Y = i % 2 == 0? true : false"])  # no null
+            t = empty_table(10).update(
+                ["X = i % 3", "Y = i % 2 == 0? true : false"]
+            )  # no null
             t1 = t.update(["Z = test_udf(Y)"])
             self.assertEqual(t1.columns[2].data_type, dtypes.bool_)
             self.assertEqual(5, t1.to_string(cols="Z").count("true"))
 
-            t = empty_table(10).update(["X = i % 3", "Y = i % 2 == 0? true : null"])  # null is mapped to None
+            t = empty_table(10).update(
+                ["X = i % 3", "Y = i % 2 == 0? true : null"]
+            )  # null is mapped to None
             t1 = t.update(["Z = test_udf(Y)"])
             self.assertEqual(t1.columns[2].data_type, dtypes.bool_)
             self.assertEqual(5, t1.to_string(cols="Z").count("true"))
 
-            def test_udf(p1: Optional[np.bool_], p2=None) -> bool:  # Optional enables auto DH null conversion to None
+            def test_udf(
+                p1: Optional[np.bool_], p2=None
+            ) -> bool:  # Optional enables auto DH null conversion to None
                 return p1 is None
 
             t2 = t.update(["Z = test_udf(null, Y)"])
             self.assertEqual(10, t2.to_string(cols="Z").count("true"))
 
         with self.subTest("datetime.datetime"):
+
             def test_udf(p1: datetime, p2=None) -> bool:
                 return p1 is None
 
-            t = empty_table(10).update(["X = i % 3", "Y = i % 2 == 0? now() : null"])  # datetime.datetime is nullable
+            t = empty_table(10).update(
+                ["X = i % 3", "Y = i % 2 == 0? now() : null"]
+            )  # datetime.datetime is nullable
             t1 = t.update(["Z = test_udf(Y)"])
             self.assertEqual(t1.columns[2].data_type, dtypes.bool_)
             self.assertEqual(5, t1.to_string(cols="Z").count("false"))
 
         with self.subTest("np.datetime64"):
-            def test_udf(p1: np.datetime64, p2=None) -> np.bool_:  # numpy supports NaT, NaT for null
+
+            def test_udf(
+                p1: np.datetime64, p2=None
+            ) -> np.bool_:  # numpy supports NaT, NaT for null
                 return p1.dtype.type == np.datetime64 and np.isnat(p1)
 
             t = empty_table(10).update(["X = i % 3", "Y = i % 2 == 0? now() : null"])
@@ -256,15 +287,19 @@ def test_udf(col: Optional[{py_type}]) -> bool: # Optional enables auto DH null 
             self.assertEqual(t1.columns[2].data_type, dtypes.bool_)
             self.assertEqual(5, t1.to_string(cols="Z").count("true"))
 
-            def test_udf(p1: Union[np.datetime64, None],
-                         p2=None) -> bool:  # Optional enables auto DH null conversion to None
+            def test_udf(
+                p1: Union[np.datetime64, None], p2=None
+            ) -> bool:  # Optional enables auto DH null conversion to None
                 return p1 is None
 
             t2 = t.update(["Z = test_udf(Y)"])
             self.assertEqual(5, t2.to_string(cols="Z").count("true"))
 
         with self.subTest("pd.Timestamp"):
-            def test_udf(p1: pd.Timestamp, p2=None) -> bool:  # pandas supports NaT, NaT for null
+
+            def test_udf(
+                p1: pd.Timestamp, p2=None
+            ) -> bool:  # pandas supports NaT, NaT for null
                 return pd.isna(p1)
 
             t = empty_table(10).update(["X = i % 3", "Y = i % 2 == 0? now() : null"])
@@ -272,8 +307,9 @@ def test_udf(col: Optional[{py_type}]) -> bool: # Optional enables auto DH null 
             self.assertEqual(t1.columns[2].data_type, dtypes.bool_)
             self.assertEqual(5, t1.to_string(cols="Z").count("false"))
 
-            def test_udf(p1: Optional[pd.Timestamp],
-                         p2=None) -> bool:  # Optional enables auto DH null conversion to None
+            def test_udf(
+                p1: Optional[pd.Timestamp], p2=None
+            ) -> bool:  # Optional enables auto DH null conversion to None
                 return p1 is None
 
             t2 = t.update(["Z = test_udf(Y)"])
@@ -318,7 +354,9 @@ def test_udf(x: {np_type}) -> bool:
     return type(x) == {np_type}
                         """
                         exec(func_str, globals())
-                        t = empty_table(1).update(["X = i", f"Y = test_udf(({p_type})X)"])
+                        t = empty_table(1).update(
+                            ["X = i", f"Y = test_udf(({p_type})X)"]
+                        )
                         self.assertEqual(1, t.to_string(cols="Y").count("true"))
 
         with self.subTest("narrowing"):
@@ -332,7 +370,9 @@ def test_udf(x: {np_type}) -> bool:
                         """
                         exec(func_str, globals())
                         with self.assertRaises(DHError) as cm:
-                            t = empty_table(1).update(["X = i", f"Y = test_udf(({p_type})X)"])
+                            t = empty_table(1).update(
+                                ["X = i", f"Y = test_udf(({p_type})X)"]
+                            )
                         self.assertRegex(str(cm.exception), "f: Expect")
 
         with self.subTest("int to floating types"):
@@ -346,7 +386,9 @@ def test_udf(x: {np_type}) -> bool:
                         """
                         exec(func_str, globals())
                         with self.assertRaises(DHError) as cm:
-                            t = empty_table(1).update(["X = i", f"Y = test_udf(({p_type})X)"])
+                            t = empty_table(1).update(
+                                ["X = i", f"Y = test_udf(({p_type})X)"]
+                            )
                         self.assertRegex(str(cm.exception), "f: Expect")
 
             with self.subTest("floating to int types"):
@@ -360,40 +402,47 @@ def test_udf(x: {np_type}) -> bool:
                             """
                             exec(func_str, globals())
                             with self.assertRaises(DHError) as cm:
-                                t = empty_table(1).update(["X = i", f"Y = test_udf(({p_type})X)"])
+                                t = empty_table(1).update(
+                                    ["X = i", f"Y = test_udf(({p_type})X)"]
+                                )
                             self.assertRegex(str(cm.exception), "f: Expect")
 
     def test_select_most_performant(self):
         with self.subTest("np.int64 vs. int -> int"):
+
             def test_udf(x: Union[np.int64, float, int]) -> bool:
-                return type(x) == int
+                return type(x) is int
 
             t = empty_table(10).update("X = test_udf(ii)")
             self.assertEqual(10, t.to_string().count("true"))
 
         with self.subTest("np.int32 vs. int -> int"):
+
             def test_udf(x: Union[np.int32, int]) -> bool:
-                return type(x) == int
+                return type(x) is int
 
             t = empty_table(10).update("X = test_udf(i)")
             self.assertEqual(10, t.to_string().count("true"))
 
         with self.subTest("np.float64 vs. float -> float"):
+
             def test_udf(x: Union[np.float64, float, int]) -> bool:
-                return type(x) == float
+                return type(x) is float
 
             t = empty_table(10).update("X = test_udf((double)i)")
             self.assertEqual(10, t.to_string().count("true"))
 
         with self.subTest("np.float32 vs. float -> float"):
+
             def test_udf(x: Union[np.float32, float, int]) -> bool:
-                return type(x) == float
+                return type(x) is float
 
             t = empty_table(10).update("X = test_udf((float)i)")
             self.assertEqual(10, t.to_string().count("true"))
 
     def test_positional_keyword_parameters(self):
         with self.subTest("positional only params"):
+
             def test_udf(p1: int, p2: float, kw1: str, /) -> bool:
                 return p1 == 1 and p2 == 1.0 and kw1 == "1"
 
@@ -401,6 +450,7 @@ def test_udf(x: {np_type}) -> bool:
             self.assertEqual(t.columns[0].data_type, dtypes.bool_)
 
         with self.subTest("no keyword only params"):
+
             def test_udf(p1: int, p2: float, kw1: str) -> bool:
                 return p1 == 1 and p2 == 1.0 and kw1 == "1"
 
@@ -408,10 +458,18 @@ def test_udf(x: {np_type}) -> bool:
             self.assertEqual(t.columns[0].data_type, dtypes.bool_)
 
             with self.assertRaises(DHError) as cm:
-                t = empty_table(1).update("X = `1`").update("Y = test_udf(1, 1.0, X = `1`)")
-            self.assertRegex(str(cm.exception), "test_udf: Expected argument .* got class java.lang.Boolean")
+                t = (
+                    empty_table(1)
+                    .update("X = `1`")
+                    .update("Y = test_udf(1, 1.0, X = `1`)")
+                )
+            self.assertRegex(
+                str(cm.exception),
+                "test_udf: Expected argument .* got class java.lang.Boolean",
+            )
 
         with self.subTest("with keyword only params"):
+
             def test_udf(p1: int, p2: float, *, kw1: str) -> bool:
                 return p1 == 1 and p2 == 1.0 and kw1 == "1"
 
@@ -424,6 +482,7 @@ def test_udf(x: {np_type}) -> bool:
         t = new_table([int_col(c, [0, 1, 2, 3, 4, 5, 6]) for c in cols])
 
         with self.subTest("valid varargs typehint"):
+
             def test_udf(p1: np.int32, *args: np.int64) -> np.int64:
                 return sum(args)
 
@@ -431,15 +490,19 @@ def test_udf(x: {np_type}) -> bool:
             self.assertEqual(result.columns[4].data_type, dtypes.int64)
 
         with self.subTest("invalid varargs typehint"):
+
             def test_udf(p1: np.int32, *args: np.int16) -> np.int64:
                 return sum(args)
 
             with self.assertRaises(DHError) as cm:
                 t.update(f"X = test_udf({','.join(cols)})")
-            self.assertRegex(str(cm.exception), "test_udf: Expected argument .* got int")
+            self.assertRegex(
+                str(cm.exception), "test_udf: Expected argument .* got int"
+            )
 
     def test_uncommon_cases(self):
         with self.subTest("f"):
+
             def f(p1: Union[np.ndarray[typing.Any], None]) -> bool:
                 return bool(p1)
 
@@ -447,6 +510,7 @@ def test_udf(x: {np_type}) -> bool:
                 t = empty_table(10).update(["X1 = f(i)"])
 
         with self.subTest("f1"):
+
             def f1(p1: Union[np.int16, np.int32]) -> bool:
                 return bool(p1)
 
@@ -454,6 +518,7 @@ def test_udf(x: {np_type}) -> bool:
             self.assertEqual(t.columns[0].data_type, dtypes.bool_)
 
         with self.subTest("f11"):
+
             def f11(p1: Union[float, np.float32]) -> bool:
                 return bool(p1)
 
@@ -461,6 +526,7 @@ def test_udf(x: {np_type}) -> bool:
                 t = empty_table(10).update(["X1 = f11(i)"])
 
         with self.subTest("f2"):
+
             def f2(p1: Union[np.int32, np.float64]) -> Union[Optional[bool]]:
                 return bool(p1)
 
@@ -469,6 +535,7 @@ def test_udf(x: {np_type}) -> bool:
             self.assertEqual(9, t.to_string().count("true"))
 
         with self.subTest("f21"):
+
             def f21(p1: Union[np.int16, np.float64]) -> Union[Optional[bool], int]:
                 return bool(p1)
 
@@ -476,6 +543,7 @@ def test_udf(x: {np_type}) -> bool:
                 t = empty_table(10).update(["X1 = f21(i)"])
 
         with self.subTest("f3"):
+
             def f3(p1: Union[np.int32, np.float64], p2=None) -> bool:
                 return bool(p1)
 
@@ -483,6 +551,7 @@ def test_udf(x: {np_type}) -> bool:
             self.assertEqual(t.columns[0].data_type, dtypes.bool_)
 
         with self.subTest("f4"):
+
             def f4(p1: Union[np.int16, np.float64], p2=None) -> bool:
                 return bool(p1)
 
@@ -493,6 +562,7 @@ def test_udf(x: {np_type}) -> bool:
             self.assertRegex(str(cm.exception), "f4: Expected .* got .*Instant")
 
         with self.subTest("f41"):
+
             def f41(p1: Union[np.int16, np.float64, Union[Any]], p2=None) -> bool:
                 return bool(p1)
 
@@ -500,6 +570,7 @@ def test_udf(x: {np_type}) -> bool:
             self.assertEqual(t.columns[0].data_type, dtypes.bool_)
 
         with self.subTest("f42"):
+
             def f42(p1: Union[np.int16, np.float64, np.datetime64], p2=None) -> bool:
                 return p1.dtype.char == "M"
 
@@ -508,6 +579,7 @@ def test_udf(x: {np_type}) -> bool:
             self.assertEqual(10, t.to_string().count("true"))
 
         with self.subTest("f5"):
+
             def f5(col1, col2: np.ndarray[np.int32]) -> np.bool_:
                 return np.nanmean(col2) == np.mean(col2)
 
@@ -518,6 +590,7 @@ def test_udf(x: {np_type}) -> bool:
             self.assertRegex(str(cm.exception), "f5: Expected .* got null")
 
         with self.subTest("f51"):
+
             def f51(col1, col2: Optional[np.ndarray[np.int32]]) -> np.bool_:
                 return np.nanmean(col2) == np.mean(col2)
 
@@ -530,6 +603,7 @@ def test_udf(x: {np_type}) -> bool:
         t = empty_table(10).update(["X = i % 3", "Y = i"]).group_by("X")
 
         with self.subTest("f6"):
+
             def f6(*args: np.int32, col2: np.ndarray[np.int32]) -> bool:
                 return np.nanmean(col2) == np.mean(col2)
 
@@ -539,19 +613,22 @@ def test_udf(x: {np_type}) -> bool:
 
             with self.assertRaises(DHError) as cm:
                 t1 = t.update(["X1 = f6(X, Y=null)"])
-            self.assertRegex(str(cm.exception), "f6: Expected argument \(col2\) to be either .* got class java.lang.Boolean")
+            self.assertRegex(
+                str(cm.exception),
+                "f6: Expected argument \(col2\) to be either .* got class java.lang.Boolean",
+            )
 
         with self.subTest("f7"):
-            def f1(x: int) -> Optional[float]:
-                ...
 
-            def f2(x: float) -> Optional[int]:
-                ...
+            def f1(x: int) -> Optional[float]: ...
+
+            def f2(x: float) -> Optional[int]: ...
 
             t = empty_table(1).update("X = f2(f1(ii))")
             self.assertEqual(t.columns[0].data_type, dtypes.int64)
 
         with self.subTest("jpy.JType"):
+
             def f1(x: jpy.JType) -> bool:
                 return isinstance(x, jpy.JType)
 
@@ -561,6 +638,7 @@ def test_udf(x: {np_type}) -> bool:
 
     def test_unsupported_typehints_with_PyObject(self):
         with self.subTest("Unsupported custom class paired with org.jpy.PyObject arg"):
+
             class C:
                 def __init__(self):
                     pass
@@ -579,12 +657,14 @@ def test_udf(x: {np_type}) -> bool:
 
             def misuse_c(c: int) -> bool:
                 return isinstance(c, C)
+
             t1 = t.update("V = misuse_c(C)")
             self.assertEqual(t1.columns[1].data_type, dtypes.bool_)
             self.assertEqual(3, t1.to_string().count("true"))
 
-
-        with self.subTest("Unsupported Python built-in type paired with org.jpy.PyObject arg"):
+        with self.subTest(
+            "Unsupported Python built-in type paired with org.jpy.PyObject arg"
+        ):
             from typing import Sequence
 
             def make_c():
@@ -599,6 +679,7 @@ def test_udf(x: {np_type}) -> bool:
 
             def misuse_c(c: int) -> int:
                 return c
+
             with self.assertRaises(DHError) as cm:
                 t.update("V = misuse_c(C)")
 
@@ -621,12 +702,14 @@ def test_udf(x: {np_type}) -> bool:
 
     def test_no_name(self):
         from functools import partial
+
         def fn(i: int, z: int) -> int:
             return i * 5 - z
+
         local_fn = partial(fn, z=5)
 
         t = empty_table(5).update("col=i*2")
-        t = t.update('col2=local_fn(col)')
+        t = t.update("col2=local_fn(col)")
         self.assertEqual(t.columns[1].data_type, dtypes.int64)
         self.assertEqual(5, t.size)
 

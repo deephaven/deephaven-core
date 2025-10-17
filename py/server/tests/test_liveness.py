@@ -15,7 +15,6 @@ from tests.testbase import BaseTestCase
 
 
 class LivenessTestCase(BaseTestCase):
-
     def setUp(self) -> None:
         super().setUp()
         self.test_update_graph = get_exec_ctx().update_graph
@@ -102,9 +101,9 @@ class LivenessTestCase(BaseTestCase):
                 with l_scope_2.open():
                     must_keep = self.create_table()
                     df = to_pandas(must_keep)
-                    l_scope.preserve(must_keep) # throws DHError
-                l_scope.release() # will never run
-            l_scope_2.release() # will never run
+                    l_scope.preserve(must_keep)  # throws DHError
+                l_scope.release()  # will never run
+            l_scope_2.release()  # will never run
         l_scope_2.release()
         l_scope.release()
 
@@ -205,5 +204,5 @@ class LivenessTestCase(BaseTestCase):
         must_keep.j_table.dropReference()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

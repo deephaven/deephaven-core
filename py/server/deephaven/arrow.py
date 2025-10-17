@@ -3,53 +3,57 @@
 #
 """This module supports conversions between pyarrow tables and Deephaven tables."""
 
-from typing import List, Dict
+from typing import Optional
 
 import jpy
 import pyarrow as pa
 
-from deephaven import DHError, dtypes
+from deephaven import DHError
 from deephaven.table import Table
 
-_JArrowToTableConverter = jpy.get_type("io.deephaven.extensions.barrage.util.ArrowToTableConverter")
-_JTableToArrowConverter = jpy.get_type("io.deephaven.extensions.barrage.util.TableToArrowConverter")
+_JArrowToTableConverter = jpy.get_type(
+    "io.deephaven.extensions.barrage.util.ArrowToTableConverter"
+)
+_JTableToArrowConverter = jpy.get_type(
+    "io.deephaven.extensions.barrage.util.TableToArrowConverter"
+)
 _JArrowWrapperTools = jpy.get_type("io.deephaven.extensions.arrow.ArrowWrapperTools")
 
 _ARROW_DH_DATA_TYPE_MAPPING = {
-    pa.null(): 'java.lang.Object',
-    pa.bool_(): 'java.lang.Boolean',
-    pa.int8(): 'byte',
-    pa.int16(): 'short',
-    pa.int32(): 'int',
-    pa.int64(): 'long',
-    pa.uint8(): 'short',
-    pa.uint16(): 'char',
-    pa.uint32(): 'long',
-    pa.uint64(): 'java.math.BigInteger',
-    pa.float16(): 'float',
-    pa.float32(): 'float',
-    pa.float64(): 'double',
-    pa.time32('s'): 'java.time.LocalTime',
-    pa.time32('ms'): 'java.time.LocalTime',
-    pa.time64('us'): 'java.time.LocalTime',
-    pa.time64('ns'): 'java.time.LocalTime',
-    pa.timestamp('s'): 'java.time.Instant',
-    pa.timestamp('ms'): 'java.time.Instant',
-    pa.timestamp('us'): 'java.time.Instant',
-    pa.timestamp('ns'): 'java.time.Instant',
-    pa.date32(): 'java.time.LocalDate',
-    pa.date64(): 'java.time.LocalDate',
-    pa.duration('s'): 'java.time.Duration',
-    pa.duration('ms'): 'java.time.Duration',
-    pa.duration('us'): 'java.time.Duration',
-    pa.duration('ns'): 'java.time.Duration',
-    pa.month_day_nano_interval(): 'org.apache.arrow.vector.PeriodDuration',
-    pa.binary(): 'byte[]',
-    pa.string(): 'java.lang.String',
-    pa.utf8(): 'java.lang.String',
-    pa.large_binary(): '',
-    pa.large_string(): '',
-    pa.large_utf8(): '',
+    pa.null(): "java.lang.Object",
+    pa.bool_(): "java.lang.Boolean",
+    pa.int8(): "byte",
+    pa.int16(): "short",
+    pa.int32(): "int",
+    pa.int64(): "long",
+    pa.uint8(): "short",
+    pa.uint16(): "char",
+    pa.uint32(): "long",
+    pa.uint64(): "java.math.BigInteger",
+    pa.float16(): "float",
+    pa.float32(): "float",
+    pa.float64(): "double",
+    pa.time32("s"): "java.time.LocalTime",
+    pa.time32("ms"): "java.time.LocalTime",
+    pa.time64("us"): "java.time.LocalTime",
+    pa.time64("ns"): "java.time.LocalTime",
+    pa.timestamp("s"): "java.time.Instant",
+    pa.timestamp("ms"): "java.time.Instant",
+    pa.timestamp("us"): "java.time.Instant",
+    pa.timestamp("ns"): "java.time.Instant",
+    pa.date32(): "java.time.LocalDate",
+    pa.date64(): "java.time.LocalDate",
+    pa.duration("s"): "java.time.Duration",
+    pa.duration("ms"): "java.time.Duration",
+    pa.duration("us"): "java.time.Duration",
+    pa.duration("ns"): "java.time.Duration",
+    pa.month_day_nano_interval(): "org.apache.arrow.vector.PeriodDuration",
+    pa.binary(): "byte[]",
+    pa.string(): "java.lang.String",
+    pa.utf8(): "java.lang.String",
+    pa.large_binary(): "",
+    pa.large_string(): "",
+    pa.large_utf8(): "",
     # decimal128(int precision, int scale=0)
     # list_(value_type, int list_size=-1)
     # large_list(value_type)
@@ -74,7 +78,7 @@ _SUPPORTED_ARROW_PARAMETERIZABLE_TYPES = {
 SUPPORTED_ARROW_TYPES = [k for k, v in _ARROW_DH_DATA_TYPE_MAPPING.items() if v]
 
 
-def _map_arrow_type(arrow_type) -> Dict[str, str]:
+def _map_arrow_type(arrow_type) -> dict[str, str]:
     """Maps a pyarrow type to the corresponding Deephaven column data type."""
     dh_type = _ARROW_DH_DATA_TYPE_MAPPING.get(arrow_type)
 
@@ -83,13 +87,15 @@ def _map_arrow_type(arrow_type) -> Dict[str, str]:
             # For parameterizable types let the server handle the mapping
             return {}
 
-        raise DHError(message=f'unsupported arrow data type : {arrow_type}, refer to '
-                              f'deephaven.arrow.SUPPORTED_ARROW_TYPES for the list of supported pyarrow types.')
+        raise DHError(
+            message=f"unsupported arrow data type : {arrow_type}, refer to "
+            f"deephaven.arrow.SUPPORTED_ARROW_TYPES for the list of supported pyarrow types."
+        )
 
     return {"deephaven:type": dh_type}
 
 
-def to_table(pa_table: pa.Table, cols: List[str] = None) -> Table:
+def to_table(pa_table: pa.Table, cols: Optional[list[str]] = None) -> Table:
     """Creates a Deephaven table from a pyarrow table.
 
     Args:
@@ -109,22 +115,28 @@ def to_table(pa_table: pa.Table, cols: List[str] = None) -> Table:
 
     dh_fields = []
     for f in pa_table.schema:
-        dh_fields.append(pa.field(name=f.name, type=f.type, metadata=_map_arrow_type(f.type)))
+        dh_fields.append(
+            pa.field(name=f.name, type=f.type, metadata=_map_arrow_type(f.type))
+        )
     dh_schema = pa.schema(dh_fields)
 
     try:
         j_barrage_table_builder.setSchema(jpy.byte_buffer(dh_schema.serialize()))
 
         record_batches = pa_table.to_batches()
-        j_barrage_table_builder.addRecordBatches([jpy.byte_buffer(rb.serialize()) for rb in record_batches])
+        j_barrage_table_builder.addRecordBatches(
+            [jpy.byte_buffer(rb.serialize()) for rb in record_batches]
+        )
         j_barrage_table_builder.onCompleted()
 
         return Table(j_table=j_barrage_table_builder.getResultTable())
     except Exception as e:
-        raise DHError(e, message="failed to create a Deephaven table from a pyarrow table.") from e
+        raise DHError(
+            e, message="failed to create a Deephaven table from a pyarrow table."
+        ) from e
 
 
-def to_arrow(table: Table, cols: List[str] = None) -> pa.Table:
+def to_arrow(table: Table, cols: Optional[list[str]] = None) -> pa.Table:
     """Produces a pyarrow table from a Deephaven table
 
     Args:
@@ -141,7 +153,7 @@ def to_arrow(table: Table, cols: List[str] = None) -> pa.Table:
         if cols:
             table = table.view(formulas=cols)
 
-        j_arrow_builder = _JTableToArrowConverter(table.j_table);
+        j_arrow_builder = _JTableToArrowConverter(table.j_table)
 
         pa_schema_buffer = j_arrow_builder.getSchema()
         with pa.ipc.open_stream(pa.py_buffer(pa_schema_buffer)) as reader:
@@ -156,7 +168,9 @@ def to_arrow(table: Table, cols: List[str] = None) -> pa.Table:
 
         return pa.Table.from_batches(record_batches, schema=schema)
     except Exception as e:
-        raise DHError(e, message="failed to create a pyarrow table from a Deephaven table.") from e
+        raise DHError(
+            e, message="failed to create a pyarrow table from a Deephaven table."
+        ) from e
 
 
 def read_feather(path: str) -> Table:
