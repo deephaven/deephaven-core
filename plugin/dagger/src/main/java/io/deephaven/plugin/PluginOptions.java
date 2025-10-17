@@ -17,7 +17,7 @@ public abstract class PluginOptions {
     /**
      * @return the {@link ColumnExpressionValidator} to use for user-provided formulas.
      */
-    abstract ColumnExpressionValidator columnExpressionValidator();
+    public abstract ColumnExpressionValidator columnExpressionValidator();
 
     static ImmutablePluginOptions.Builder builder() {
         return ImmutablePluginOptions.builder();
