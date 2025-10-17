@@ -13,6 +13,9 @@ build-backend = "setuptools.build_meta"
 #module = "pyarrow.*"
 #ignore_missing_imports = true
 
+[tool.ruff]
+exclude = ["deephaven/plot/figure.py"]
+
 [tool.ruff.lint.per-file-ignores]
 "deephaven/plot/**" = ["E741", "F405", "F403"]
 "tests/**" = ["E741", "F405", "F403", "F811", "F841"]
