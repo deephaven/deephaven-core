@@ -49,6 +49,38 @@ public class TableDefinition implements LogOutputAppendable {
         return new TableDefinition(definitions);
     }
 
+    /**
+     * Infer a table definition from the given source table and column sources for a new table. Where column sources are
+     * identical to those in the source table, the column definition will be identical (except for name); where new
+     * sources are encountered, a generic column definition will be inferred.
+     *
+     * @param sourceTable The source table
+     * @param newSources A map of name to column source for the new table
+     * @return The inferred table definition
+     */
+    public static TableDefinition inferFrom(
+            @NotNull final Table sourceTable,
+            @NotNull final Map<String, ? extends ColumnSource<?>> newSources) {
+        // Build a map from source table column source to source table column definition
+        final Map<ColumnSource<?>, ColumnDefinition<?>> sourceMap = new IdentityHashMap<>();
+        for (ColumnDefinition<?> cd : sourceTable.getDefinition().getColumns()) {
+            sourceMap.put(sourceTable.getColumnSource(cd.getName()), cd);
+        }
+        final List<ColumnDefinition<?>> definitions = new ArrayList<>(newSources.size());
+        for (Entry<String, ? extends ColumnSource<?>> e : newSources.entrySet()) {
+            final String newName = e.getKey();
+            final ColumnSource<?> newCS = e.getValue();
+            // Grab the matching column definition from the source table if it exists, otherwise infer a
+            // new definition and set the new name.
+            final ColumnDefinition<?> newDef =
+                    sourceMap.getOrDefault(newCS,
+                            ColumnDefinition.fromGenericType(newName, newCS.getType(), newCS.getComponentType()))
+                            .withName(newName);
+            definitions.add(newDef);
+        }
+        return TableDefinition.of(definitions);
+    }
+
     public static TableDefinition from(@NotNull final Iterable<ColumnHeader<?>> headers) {
         final List<ColumnDefinition<?>> definitions = new ArrayList<>();
         for (ColumnHeader<?> columnHeader : headers) {
