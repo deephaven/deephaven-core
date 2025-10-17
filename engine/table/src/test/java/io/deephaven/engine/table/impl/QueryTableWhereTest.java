@@ -1769,7 +1769,9 @@ public abstract class QueryTableWhereTest {
                         postFilter));
 
         assertEquals(100_000, numRowsFiltered(preFilter));
-        assertEquals(50_000, numRowsFiltered(preFilter2)); // raw-string prioritizes over prefilter2
+        // This filter isn't prioritized because the engine doesn't apply
+        // filters to data indexes generally (only MatchFilter)
+        assertEquals(100_000, numRowsFiltered(preFilter2));
         assertEquals(50_000, numRowsFiltered(postFilter));
         assertEquals(50_000, result.size());
     }
