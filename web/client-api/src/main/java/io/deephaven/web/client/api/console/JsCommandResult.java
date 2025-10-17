@@ -5,6 +5,7 @@ package io.deephaven.web.client.api.console;
 
 import com.vertispan.tsdefs.annotations.TsInterface;
 import com.vertispan.tsdefs.annotations.TsName;
+import io.deephaven.web.client.api.DateWrapper;
 import jsinterop.annotations.JsProperty;
 
 /**
@@ -15,10 +16,14 @@ import jsinterop.annotations.JsProperty;
 public class JsCommandResult {
     private final JsVariableChanges changes;
     private final String error;
+    private final String startTimestamp;
+    private final String endTimestamp;
 
-    public JsCommandResult(JsVariableChanges changes, String error) {
+    public JsCommandResult(JsVariableChanges changes, String error, String startTimestamp, String endTimestamp) {
         this.changes = changes;
         this.error = error;
+        this.startTimestamp = startTimestamp;
+        this.endTimestamp = endTimestamp;
     }
 
     /**
@@ -39,6 +44,26 @@ public class JsCommandResult {
     @JsProperty
     public String getError() {
         return error;
+    }
+
+    /**
+     * The timestamp when the command started running.
+     *
+     * @return DateWrapper
+     */
+    @JsProperty
+    public DateWrapper getStartTimestamp() {
+        return DateWrapper.of(Long.parseLong(startTimestamp));
+    }
+
+    /**
+     * The timestamp when the command finished running.
+     *
+     * @return DateWrapper
+     */
+    @JsProperty
+    public DateWrapper getEndTimestamp() {
+        return DateWrapper.of(Long.parseLong(endTimestamp));
     }
 
     @Override
