@@ -1918,10 +1918,13 @@ public class QueryTable extends BaseTable<QueryTable> {
                                         .toArray(SelectColumn[]::new);
 
                                 if (STATELESS_SELECT_BY_DEFAULT) {
-                                    // An updateView can fetch things in any order; therefore we cannot allow it to be stateful. That said, we
-                                    // cannot check this if stateful is the default, because it will break too much user code.
-                                    if (Arrays.stream(processedViewColumns).anyMatch(Predicate.not(SelectColumn::isStateless))) {
-                                        throw new IllegalArgumentException("A stateful column cannot safely be used in a view or updateView.");
+                                    // An updateView can fetch things in any order; therefore we cannot allow it to be
+                                    // stateful. That said, we cannot check this if stateful is the default, because
+                                    // it will break too much user code.
+                                    if (Arrays.stream(processedViewColumns)
+                                            .anyMatch(Predicate.not(SelectColumn::isStateless))) {
+                                        throw new IllegalArgumentException(
+                                                "A stateful column cannot safely be used in a view or updateView.");
                                     }
                                 }
 
