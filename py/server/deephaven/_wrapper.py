@@ -21,7 +21,7 @@ from typing import Union, Optional, Any
 import jpy
 
 # a set of all the directly initializable wrapper classes
-_di_wrapper_classes: set[JObjectWrapper] = set()
+_di_wrapper_classes: set[type[JObjectWrapper]] = set()
 _has_all_wrappers_imported = False
 
 JLivePyObjectWrapper = jpy.get_type(
@@ -52,7 +52,7 @@ def _recursive_import(package_path: str) -> None:
 
 
 class JObjectWrapper(ABC):
-    j_object_type: type
+    j_object_type: type[jpy.JType]
 
     def __init_subclass__(cls, *args, **kwargs):
         if inspect.isabstract(cls):
@@ -72,6 +72,9 @@ class JObjectWrapper(ABC):
     @property
     @abstractmethod
     def j_object(self) -> jpy.JType: ...
+
+    @abstractmethod
+    def __init__(self, *args, **kwargs): ...
 
     def __repr__(self):
         self_type = type(self)
@@ -144,7 +147,7 @@ def _is_direct_initialisable(cls) -> bool:
     return False
 
 
-def _lookup_wrapped_class(j_obj: jpy.JType) -> list[JObjectWrapper]:
+def _lookup_wrapped_class(j_obj: jpy.JType) -> list[type[JObjectWrapper]]:
     """Returns the wrapper classes for the specified Java object."""
     # load every module in the deephaven package so that all the wrapper classes are loaded and available to wrap
     # the Java objects returned by calling resolve()

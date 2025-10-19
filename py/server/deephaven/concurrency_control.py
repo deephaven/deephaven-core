@@ -38,7 +38,7 @@ class Barrier(JObjectWrapper):
         self.j_barrier = _J_Object()
 
 
-T = TypeVar("T")
+T = TypeVar("T", covariant=True)
 
 
 class ConcurrencyControl(Protocol[T]):

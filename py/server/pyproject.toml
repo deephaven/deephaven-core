@@ -2,16 +2,19 @@
 requires = ["setuptools >= 64"]
 build-backend = "setuptools.build_meta"
 
-#[tool.mypy]
-#namespace_packages = true
-#exclude = "deephaven_core/proto/.*"
-#
-#[[tool.mypy.overrides]]
-#module = "pyarrow"
-#ignore_missing_imports = true
-#[[tool.mypy.overrides]]
-#module = "pyarrow.*"
-#ignore_missing_imports = true
+[tool.mypy]
+namespace_packages = true
+exclude = "deephaven/plot/figure.py"
+
+[[tool.mypy.overrides]]
+module = "jpy"
+ignore_missing_imports = true
+[[tool.mypy.overrides]]
+module = "pyarrow"
+ignore_missing_imports = true
+[[tool.mypy.overrides]]
+module = "pyarrow.*"
+ignore_missing_imports = true
 
 [tool.ruff]
 exclude = ["deephaven/plot/figure.py"]

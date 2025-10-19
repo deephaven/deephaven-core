@@ -12,6 +12,7 @@ from __future__ import annotations
 import datetime
 from typing import Any, Callable, Union, Optional
 from collections.abc import Sequence
+from typing import TypeAlias
 
 import jpy
 import numpy as np
@@ -148,19 +149,19 @@ BigDecimal = DType(j_name="java.math.BigDecimal")
 """Java BigDecimal type"""
 StringSet = DType(j_name="io.deephaven.stringset.StringSet")
 """Deephaven StringSet type"""
-Instant = DType(j_name="java.time.Instant", np_type=np.dtype("datetime64[ns]"))
+Instant = DType(j_name="java.time.Instant", np_type=np.dtype("datetime64[ns]"))  # type: TypeAlias
 """Instant date time type"""
-LocalDate = DType(j_name="java.time.LocalDate")
+LocalDate = DType(j_name="java.time.LocalDate")  # type: TypeAlias
 """Local date type"""
-LocalTime = DType(j_name="java.time.LocalTime")
+LocalTime = DType(j_name="java.time.LocalTime")  # type: TypeAlias
 """Local time type"""
-ZonedDateTime = DType(j_name="java.time.ZonedDateTime")
+ZonedDateTime = DType(j_name="java.time.ZonedDateTime")  # type: TypeAlias
 """Zoned date time type"""
-Duration = DType(j_name="java.time.Duration")
+Duration = DType(j_name="java.time.Duration")  # type: TypeAlias
 """Time period type, which is a unit of time in terms of clock time (24-hour days, hours, minutes, seconds, and nanoseconds)."""
-Period = DType(j_name="java.time.Period")
+Period = DType(j_name="java.time.Period")  # type: TypeAlias
 """Time period type, which is a unit of time in terms of calendar time (days, weeks, months, years, etc.)."""
-TimeZone = DType(j_name="java.time.ZoneId")
+TimeZone = DType(j_name="java.time.ZoneId")  # type: TypeAlias
 """Time zone type."""
 BusinessCalendar = DType(j_name="io.deephaven.time.calendar.BusinessCalendar")
 """Business calendar type"""
