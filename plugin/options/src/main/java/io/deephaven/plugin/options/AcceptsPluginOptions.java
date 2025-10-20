@@ -3,10 +3,15 @@
 //
 package io.deephaven.plugin.options;
 
+import io.deephaven.plugin.Plugin;
+import io.deephaven.plugin.Registration;
+import io.deephaven.plugin.js.JsPlugin;
+import io.deephaven.plugin.type.ObjectType;
+
 /**
- * If a plugin (of type {@link Registration}, @{link Plugin}, @{link JsPlugin} or @{link ObjectType}) implements this
- * interface, then after the {@link PluginModule} service loads the plugin, it calls the {@link #setPluginOptions}
- * method to provide the {@link PluginOptions} derived from dagger.
+ * If a plugin (of type {@link Registration}, {@link Plugin}, {@link JsPlugin} or {@link ObjectType}) implements this
+ * interface, then after it is service loaded; the {@link #setPluginOptions} method is called to provide the
+ * {@link PluginOptions} derived from dagger.
  */
 public interface AcceptsPluginOptions {
     /**
