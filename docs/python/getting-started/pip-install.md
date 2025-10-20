@@ -135,7 +135,7 @@ deephaven server --port 10000 --jvm-args "-Xmx4g -Dprocess.info.system-info.enab
 
 This section contains a couple of scripts that demonstrate how to use Deephaven with pip.
 
-> [!WARNING]
+> [!CAUTION]
 > You **must** start the Deephaven server **before** importing any Deephaven packages or performing any Deephaven operations. If you import Deephaven packages before starting the server, you will encounter errors.
 
 This script creates three streaming tables. The first table (`t`) steadily increases in size, the second table (`t_last`) contains the most recent timestamp for each label, and the third table (`t_join`) joins the most recent timestamp onto the first table.

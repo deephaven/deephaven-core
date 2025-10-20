@@ -57,7 +57,7 @@ From there, create a notebook.
 
 You can use `deephaven-ipywidgets` to display Deephaven tables or figures (plots).
 
-> [!WARNING]
+> [!CAUTION]
 > You **must** start the Deephaven server **before** importing any Deephaven packages. If you import Deephaven packages before starting the server, you will encounter errors.
 
 Add the following code in a cell to run before working with tables or figures:
