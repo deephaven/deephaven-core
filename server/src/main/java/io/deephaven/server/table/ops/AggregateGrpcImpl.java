@@ -4,11 +4,11 @@
 package io.deephaven.server.table.ops;
 
 import io.deephaven.api.ColumnName;
-import io.deephaven.api.agg.*;
 import io.deephaven.auth.codegen.impl.TableServiceContextualAuthWiring;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.select.SelectColumn;
+import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.validation.ColumnExpressionValidator;
 import io.deephaven.proto.backplane.grpc.*;
 import io.deephaven.proto.backplane.grpc.Aggregation;
@@ -62,16 +62,17 @@ public final class AggregateGrpcImpl extends GrpcTableOperation<AggregateRequest
         Assert.gtZero(request.getAggregationsCount(), "request.getAggregationsCount()");
         final Table parent = sourceTables.get(0).get();
         final Table initialGroups = request.hasInitialGroupsId() ? sourceTables.get(1).get() : null;
-        request.getAggregationsList().forEach(agg -> validateFormulas(agg, parent));
+        final List<ColumnName> groupByColumns = ColumnName.from(request.getGroupByColumnsList());
+
+        request.getAggregationsList().forEach(agg -> validateFormulas(agg, parent, groupByColumns));
         final List<io.deephaven.api.agg.Aggregation> aggregations = request.getAggregationsList()
                 .stream()
                 .map(AggregationAdapter::adapt)
                 .collect(Collectors.toList());
-        final List<ColumnName> groupByColumns = ColumnName.from(request.getGroupByColumnsList());
         return parent.aggBy(aggregations, request.getPreserveEmpty(), initialGroups, groupByColumns);
     }
 
-    private void validateFormulas(Aggregation agg, Table parent) {
+    private void validateFormulas(Aggregation agg, Table parent, List<ColumnName> groupByColumns) {
         if (agg.hasCountWhere()) {
             final String[] filters = agg.getCountWhere().getFiltersList().toArray(String[]::new);
             expressionValidator.validateSelectFilters(filters, parent);
@@ -83,8 +84,13 @@ public final class AggregateGrpcImpl extends GrpcTableOperation<AggregateRequest
                     final String selectableRaw = selectableGrpc.getRaw();
                     io.deephaven.api.Selectable selectableParsed = io.deephaven.api.Selectable.parse(selectableRaw);
                     final SelectColumn sc = SelectColumn.of(selectableParsed);
+
+                    // We need to create the definition that would be used by the formula, which is just the parent
+                    // table, but aggregated. We create an empty table with the appropriate definition.
+                    final Table parentPrototype = TableTools.newTable(parent.getDefinition());
+                    final Table formulaPrototype = parentPrototype.groupBy(groupByColumns);
                     expressionValidator.validateColumnExpressions(new SelectColumn[] {sc}, new String[] {selectableRaw},
-                            parent);
+                            formulaPrototype);
                 case TYPE_NOT_SET:
                     break;
                 default:

@@ -262,11 +262,8 @@ public final class UpdateByGrpcImpl extends GrpcTableOperation<UpdateByRequest> 
 
     private void validateFormulaNoParamToken(Table parent, List<ColumnName> groupByColumns,
             final UpdateByColumn.UpdateBySpec spec) {
-        final Set<String> keyColumns =
-                groupByColumns.stream().map(ColumnName::name).collect(Collectors.toSet());
         // Uses columns from the original table, but with all non-key columns turned into a Vector
         final Table formulaInputPrototype = TableTools.newTable(parent.getDefinition()).groupBy(groupByColumns);
-
         final String formulaString = spec.getRollingFormula().getFormula();
         final SelectColumn[] sc = SelectColumn.from(Selectable.from(formulaString));
         expressionValidator.validateColumnExpressions(sc, new String[] {formulaString}, formulaInputPrototype);
@@ -277,7 +274,15 @@ public final class UpdateByGrpcImpl extends GrpcTableOperation<UpdateByRequest> 
         final Set<String> keyColumns =
                 groupByColumns.stream().map(ColumnName::name).collect(Collectors.toSet());
 
-        List<Pair> pairs = matchPairs.stream().map(Pair::parse).collect(Collectors.toList());
+        List<Pair> pairs;
+        if (matchPairs.isEmpty()) {
+            pairs = parent.getDefinition().getColumnStream()
+                    .filter(cd -> !keyColumns.contains(cd.getName()))
+                    .map(cd -> Pair.of(ColumnName.of(cd.getName()), ColumnName.of(cd.getName())))
+                    .collect(Collectors.toList());
+        } else {
+            pairs = matchPairs.stream().map(Pair::parse).collect(Collectors.toList());
+        }
         pairs.forEach(pair -> {
             final String inputName = pair.input().name();
 
@@ -447,6 +452,12 @@ public final class UpdateByGrpcImpl extends GrpcTableOperation<UpdateByRequest> 
     }
 
     private static RollingFormulaSpec adaptRollingFormula(UpdateByRollingFormula formula) {
+        if (formula.getParamToken().isEmpty()) {
+            return RollingFormulaSpec.of(
+                    adaptWindowScale(formula.getReverseWindowScale()),
+                    adaptWindowScale(formula.getForwardWindowScale()),
+                    formula.getFormula());
+        }
         return RollingFormulaSpec.of(
                 adaptWindowScale(formula.getReverseWindowScale()),
                 adaptWindowScale(formula.getForwardWindowScale()),

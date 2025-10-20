@@ -31,14 +31,7 @@ import org.jetbrains.annotations.VisibleForTesting;
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
-import java.util.Arrays;
-import java.util.Deque;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -134,6 +127,24 @@ public class SessionService {
             }
 
             return Exceptions.statusRuntimeException(statusCode, "Details Logged w/ID '" + errorId + "'");
+        }
+
+        /**
+         * Clear the error cache, so that we can start with a clean slate and retrieve the errors from this test.
+         */
+        @VisibleForTesting
+        public void clearCache() {
+            idCache.invalidateAll();
+        }
+
+        /**
+         * Get our transformed errors, so that we can validate we have the correct underlying error message.
+         * 
+         * @return
+         */
+        @VisibleForTesting
+        public List<Throwable> getErrors() {
+            return new ArrayList<>(idCache.asMap().keySet());
         }
     }
 
