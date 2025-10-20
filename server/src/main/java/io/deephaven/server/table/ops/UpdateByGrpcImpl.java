@@ -37,7 +37,6 @@ import java.math.MathContext;
 import java.math.RoundingMode;
 import java.util.Collection;
 import java.util.List;
-import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -91,7 +90,6 @@ public final class UpdateByGrpcImpl extends GrpcTableOperation<UpdateByRequest> 
                 request.getGroupByColumnsList().stream().map(ColumnName::of).collect(Collectors.toList());
 
         request.getOperationsList().forEach(op -> validateFormulas(op, parent, groupByColumns));
-
 
         if (parent.isRefreshing()) {
             return parent.getUpdateGraph().sharedLock().computeLocked(() -> control == null
@@ -285,9 +283,6 @@ public final class UpdateByGrpcImpl extends GrpcTableOperation<UpdateByRequest> 
         }
         pairs.forEach(pair -> {
             final String inputName = pair.input().name();
-
-            // Uses columns from the original table, but with all non-key columns turned into a Vector
-
 
             // Uses key columns from the original table, plus one input at a time
             final Collection<ColumnDefinition<?>> formulaInputDefinition =
