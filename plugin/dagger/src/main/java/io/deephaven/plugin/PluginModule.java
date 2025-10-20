@@ -8,6 +8,8 @@ import dagger.Provides;
 import dagger.multibindings.ElementsIntoSet;
 import io.deephaven.engine.validation.ColumnExpressionValidator;
 import io.deephaven.plugin.js.JsPlugin;
+import io.deephaven.plugin.options.AcceptsPluginOptions;
+import io.deephaven.plugin.options.PluginOptions;
 import io.deephaven.plugin.type.ObjectType;
 
 import java.util.ServiceLoader;

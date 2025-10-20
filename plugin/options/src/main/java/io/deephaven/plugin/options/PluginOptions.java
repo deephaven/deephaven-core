@@ -1,7 +1,7 @@
 //
 // Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
-package io.deephaven.plugin;
+package io.deephaven.plugin.options;
 
 import io.deephaven.annotations.BuildableStyle;
 import org.immutables.value.Value;
@@ -19,7 +19,7 @@ public abstract class PluginOptions {
      */
     public abstract ColumnExpressionValidator columnExpressionValidator();
 
-    static ImmutablePluginOptions.Builder builder() {
+    public static ImmutablePluginOptions.Builder builder() {
         return ImmutablePluginOptions.builder();
     }
 }

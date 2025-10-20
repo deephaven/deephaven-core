@@ -1,7 +1,7 @@
 //
 // Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
-package io.deephaven.plugin;
+package io.deephaven.plugin.options;
 
 /**
  * If a plugin (of type {@link Registration}, @{link Plugin}, @{link JsPlugin} or @{link ObjectType}) implements this

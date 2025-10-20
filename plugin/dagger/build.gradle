@@ -7,7 +7,7 @@ description = 'Dagger for Deephaven plugins'
 
 dependencies {
     api project(':plugin')
-    api project(':engine-validation')
+    api project(':plugin-options')
 
     implementation libs.dagger
     annotationProcessor libs.dagger.compiler
