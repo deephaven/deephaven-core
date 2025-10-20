@@ -31,6 +31,7 @@ import org.jetbrains.annotations.VisibleForTesting;
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Deque;
 import java.util.List;
@@ -134,6 +135,22 @@ public class SessionService {
             }
 
             return Exceptions.statusRuntimeException(statusCode, "Details Logged w/ID '" + errorId + "'");
+        }
+
+        /**
+         * Clear the error cache, so that we can start with a clean slate and retrieve the errors from this test.
+         */
+        @VisibleForTesting
+        public void clearCache() {
+            idCache.invalidateAll();
+        }
+
+        /**
+         * Get our transformed errors, so that we can validate we have the correct underlying error message.
+         */
+        @VisibleForTesting
+        public List<Throwable> getErrors() {
+            return new ArrayList<>(idCache.asMap().keySet());
         }
     }
 
