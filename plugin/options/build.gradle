@@ -1,0 +1,18 @@
+plugins {
+    id 'java-library'
+    id 'io.deephaven.project.register'
+}
+
+description = 'Options for Service loaded Deephaven plugins'
+
+dependencies {
+    api project(':plugin')
+    api project(':engine-validation')
+
+    compileOnly project(':util-immutables')
+    annotationProcessor libs.immutables.value
+}
+
+test {
+    useJUnitPlatform()
+}
