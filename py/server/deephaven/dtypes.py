@@ -10,9 +10,8 @@ Each data type is represented by a DType class which supports creating arrays of
 from __future__ import annotations
 
 import datetime
-from typing import Any, Callable, Union, Optional
+from typing import Any, Callable, Union, Optional, TYPE_CHECKING, cast
 from collections.abc import Sequence
-from typing import TypeAlias
 
 import jpy
 import numpy as np
@@ -28,6 +27,9 @@ from deephaven.constants import (
     NULL_DOUBLE,
     NULL_CHAR,
 )
+
+if TYPE_CHECKING:
+    from typing_extensions import TypeAlias  # novermin
 
 _JQstType = jpy.get_type("io.deephaven.qst.type.Type")
 _JTableTools = jpy.get_type("io.deephaven.engine.util.TableTools")
@@ -54,7 +56,7 @@ class DType:
         j_type: Optional[type] = None,
         qst_type: Optional[jpy.JType] = None,
         is_primitive: bool = False,
-        np_type: Any = np.object_,
+        np_type: type = np.object_,
     ):
         """
         Args:
@@ -149,19 +151,19 @@ BigDecimal = DType(j_name="java.math.BigDecimal")
 """Java BigDecimal type"""
 StringSet = DType(j_name="io.deephaven.stringset.StringSet")
 """Deephaven StringSet type"""
-Instant = DType(j_name="java.time.Instant", np_type=np.dtype("datetime64[ns]"))  # type: TypeAlias
+Instant = cast(type, DType(j_name="java.time.Instant", np_type=np.dtype("datetime64[ns]")))  # type: TypeAlias
 """Instant date time type"""
-LocalDate = DType(j_name="java.time.LocalDate")  # type: TypeAlias
+LocalDate = cast(type, DType(j_name="java.time.LocalDate"))  # type: TypeAlias
 """Local date type"""
-LocalTime = DType(j_name="java.time.LocalTime")  # type: TypeAlias
+LocalTime = cast(type, DType(j_name="java.time.LocalTime"))  # type: TypeAlias
 """Local time type"""
-ZonedDateTime = DType(j_name="java.time.ZonedDateTime")  # type: TypeAlias
+ZonedDateTime = cast(type, DType(j_name="java.time.ZonedDateTime"))  # type: TypeAlias
 """Zoned date time type"""
-Duration = DType(j_name="java.time.Duration")  # type: TypeAlias
+Duration = cast(type, DType(j_name="java.time.Duration"))  # type: TypeAlias
 """Time period type, which is a unit of time in terms of clock time (24-hour days, hours, minutes, seconds, and nanoseconds)."""
-Period = DType(j_name="java.time.Period")  # type: TypeAlias
+Period = cast(type, DType(j_name="java.time.Period"))  # type: TypeAlias
 """Time period type, which is a unit of time in terms of calendar time (days, weeks, months, years, etc.)."""
-TimeZone = DType(j_name="java.time.ZoneId")  # type: TypeAlias
+TimeZone = cast(type, DType(j_name="java.time.ZoneId"))  # type: TypeAlias
 """Time zone type."""
 BusinessCalendar = DType(j_name="io.deephaven.time.calendar.BusinessCalendar")
 """Business calendar type"""
@@ -262,7 +264,7 @@ def null_remap(dtype: DType) -> Callable[[Any], Any]:
     return lambda v: null_value if v is None else v
 
 
-def _instant_array(data: Sequence) -> jpy.JType:
+def _instant_array(data: Union[Sequence, np.ndarray]) -> jpy.JType:
     """Converts a sequence of either datetime64[ns], datetime.datetime, pandas.Timestamp, datetime strings,
     or integers in nanoseconds, to a Java array of Instant values."""
 

@@ -15,6 +15,9 @@ ignore_missing_imports = true
 [[tool.mypy.overrides]]
 module = "pyarrow.*"
 ignore_missing_imports = true
+[[tool.mypy.overrides]]
+module = "deephaven.plugin"
+ignore_missing_imports = true
 
 [tool.ruff]
 exclude = ["deephaven/plot/figure.py"]

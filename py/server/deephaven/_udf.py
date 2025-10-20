@@ -8,11 +8,12 @@ import sys
 import types
 import typing
 import warnings
+from collections.abc import Sequence
 from dataclasses import dataclass, field
 from datetime import datetime
 from functools import wraps, partial
-from typing import Callable, Any, Union, _GenericAlias, Optional
-from collections.abc import Sequence
+from typing import Callable, Any, Union, Optional
+from typing import get_origin, get_args
 
 import jpy
 import numpy
@@ -27,7 +28,7 @@ from deephaven.dtypes import (
     _PRIMITIVE_DTYPE_NULL_MAP,
     _BUILDABLE_ARRAY_DTYPE_MAP,
     DType,
-)
+    )
 from deephaven.jcompat import _j_array_to_numpy_array
 from deephaven.time import to_np_datetime64, to_datetime, to_pd_timestamp
 
@@ -61,7 +62,7 @@ def _is_lossless_convertible(from_type: str, to_type: str) -> bool:
 @dataclass
 class _ParsedParam:
     name: Union[str, int] = field(init=True)
-    orig_types: list[type] = field(default_factory=list)
+    orig_types: list[Union[type, DType]] = field(default_factory=list)
     effective_types: list[type] = field(default_factory=list)
     encoded_types: list[str] = field(default_factory=list)
     none_allowed: bool = False
@@ -171,10 +172,9 @@ class _ParsedParam:
                 )
 
 
-@dataclass
 class _ParsedReturnAnnotation:
-    orig_type: type = None
-    encoded_type: str = None
+    encoded_type: str
+    orig_type: Optional[type] = None
     none_allowed: bool = False
     has_array: bool = False
     ret_converter: Optional[Callable] = None
@@ -226,11 +226,14 @@ class _ParsedReturnAnnotation:
             self.ret_converter = None
 
 
-@dataclass
 class _ParsedSignature:
-    fn: Callable = None
-    params: list[_ParsedParam] = field(default_factory=list)
-    ret_annotation: _ParsedReturnAnnotation = None
+    ret_annotation: _ParsedReturnAnnotation
+    fn: Callable
+    params: list[_ParsedParam]
+
+    def __init__(self, fn: Callable):
+        self.fn = fn
+        self.params = []
 
     @property
     def encoded(self) -> str:
@@ -347,12 +350,12 @@ def _py_sequence_component_type(t: type) -> Optional[type]:
     import types
 
     if isinstance(t, types.GenericAlias) and issubclass(
-        t.__origin__, Sequence
+        get_origin(t), Sequence
     ):  # novermin
         component_type = t.__args__[0]
 
     if not component_type:
-        if isinstance(t, _GenericAlias) and issubclass(t.__origin__, Sequence):
+        if isinstance(t, typing._GenericAlias) and issubclass(get_origin(t), Sequence):  # type: ignore[attr-defined]
             component_type = t.__args__[0]
 
     # if the component type is a DType, get its numpy type
@@ -366,7 +369,7 @@ def _np_ndarray_component_type(t: type) -> Optional[type]:
     """Returns the numpy ndarray component type if the type is a numpy ndarray, otherwise return None."""
 
     component_type = None
-    if isinstance(t, types.GenericAlias) and t.__origin__ is np.ndarray:  # novermin
+    if isinstance(t, types.GenericAlias) and get_origin(t) is np.ndarray:  # novermin
         nargs = len(t.__args__)
         if nargs == 1:
             component_type = t.__args__[0]
@@ -378,7 +381,7 @@ def _np_ndarray_component_type(t: type) -> Optional[type]:
             # is a 2x3 array of int32.
             if (
                 a0 == typing.Any
-                or (isinstance(a0, types.GenericAlias) and a0.__origin__ is tuple)
+                or (isinstance(a0, types.GenericAlias) and get_origin(a0) is tuple)
             ) and isinstance(a1, types.GenericAlias):  # novermin
                 component_type = a1.__args__[0]
     return component_type
@@ -390,19 +393,19 @@ def _is_union_type(t: type) -> bool:
         if isinstance(t, types.UnionType):  # novermin
             return True
 
-    return isinstance(t, _GenericAlias) and t.__origin__ is Union
+    return isinstance(t, typing._GenericAlias) and get_origin(t) is Union  # type: ignore[attr-defined]
 
 
-def _parse_param(name: str, annotation: Union[type, dtypes.DType]) -> _ParsedParam:
+def _parse_param(name: str, annotation: type) -> _ParsedParam:
     """Parse a parameter annotation in a function's signature"""
     p_param = _ParsedParam(name)
 
-    if annotation is inspect._empty:
+    if annotation is inspect.Signature.empty:
         p_param.effective_types.append(object)
         p_param.encoded_types.append("O")
         p_param.none_allowed = True
     elif _is_union_type(annotation):
-        for t in annotation.__args__:
+        for t in get_args(annotation):
             _parse_type_no_nested(annotation, p_param, t)
     else:
         _parse_type_no_nested(annotation, p_param, annotation)
@@ -470,7 +473,7 @@ def _parse_return_annotation(annotation: Any) -> _ParsedReturnAnnotation:
 if numba:
 
     def _parse_numba_signature(
-        fn: Union[numba.np.ufunc.gufunc.GUFunc, numba.np.ufunc.dufunc.DUFunc],
+        fn: Union[numba.np.ufunc.gufunc.GUFunc, numba.np.ufunc.dufunc.DUFunc],  # type: ignore[name-defined]
     ) -> _ParsedSignature:
         """Parse a numba function's signature"""
         sigs = fn.types  # in the format of ll->l, ff->f,dd->d,OO->O, etc.
@@ -487,7 +490,7 @@ if numba:
             p_sig.ret_annotation = _ParsedReturnAnnotation()
             p_sig.ret_annotation.encoded_type = rt_char
 
-            if isinstance(fn, numba.np.ufunc.dufunc.DUFunc):
+            if isinstance(fn, numba.np.ufunc.dufunc.DUFunc):  # type: ignore[union-attr]
                 for i, p in enumerate(params):
                     pa = _ParsedParam(i + 1)
                     pa.encoded_types.append(p)
@@ -602,7 +605,7 @@ def _udf_parser(fn: Callable) -> Optional[Callable]:
 
     return_array = p_sig.ret_annotation.has_array
     ret_np_char = p_sig.ret_annotation.encoded_type[-1]
-    ret_dtype = dtypes.from_np_dtype(
+    ret_dtype: DType = dtypes.from_np_dtype(
         np.dtype(ret_np_char if ret_np_char != "X" else "O")
     )
 
@@ -639,20 +642,20 @@ def _udf_parser(fn: Callable) -> Optional[Callable]:
 
         return scope["_wrapper"]
 
-    _udf_decorator.j_name = ret_dtype.j_name
+    _udf_decorator.j_name = ret_dtype.j_name  # type: ignore[attr-defined]
     real_ret_dtype = (
         _BUILDABLE_ARRAY_DTYPE_MAP.get(ret_dtype, dtypes.PyObject)
         if return_array
         else ret_dtype
     )
 
-    if hasattr(ret_dtype.j_type, "jclass"):
+    if hasattr(real_ret_dtype.j_type, "jclass"):
         j_class = real_ret_dtype.j_type.jclass
     else:
         j_class = real_ret_dtype.qst_type.clazz()
 
-    _udf_decorator.return_type = j_class
-    _udf_decorator.signature = p_sig.encoded
+    _udf_decorator.return_type = j_class  # type: ignore[attr-defined]
+    _udf_decorator.signature = p_sig.encoded  # type: ignore[attr-defined]
 
     return _udf_decorator
 

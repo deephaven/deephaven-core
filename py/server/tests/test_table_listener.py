@@ -34,8 +34,8 @@ class TableUpdateRecorder:
     def __init__(
         self,
         table: Optional[Table] = None,
-        chunk_size: int = None,
-        cols: Union[str, List[str]] = None,
+        chunk_size: Optional[int] = None,
+        cols: Optional[Union[str, List[str]]] = None,
     ):
         self.table = table
         self.chunk_size = chunk_size
@@ -106,7 +106,7 @@ class TableListenerTestCase(BaseTestCase):
     def check_update_recorder(
         self,
         table_update_recorder: TableUpdateRecorder,
-        cols: Union[str, List[str]] = None,
+        cols: Optional[Union[str, List[str]]] = None,
         *,
         has_replay: bool = False,
         has_added: bool = False,

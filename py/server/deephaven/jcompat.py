@@ -7,6 +7,7 @@ data structures from corresponding Python ones in order to be able to call Java 
 
 from __future__ import annotations
 
+from collections.abc import Iterable, Sequence, Mapping
 from typing import (
     Any,
     Callable,
@@ -14,18 +15,18 @@ from typing import (
     Union,
     Optional,
     TYPE_CHECKING,
-)
-from collections.abc import Iterable, Sequence, Mapping
+    )
 from warnings import warn
 
 import jpy
 import numpy as np
 import pandas as pd
+from pandas.core.dtypes.base import ExtensionDtype
 
 from deephaven import dtypes, DHError
 from deephaven._wrapper import unwrap, wrap_j_object, JObjectWrapper
-from deephaven.dtypes import DType, _PRIMITIVE_DTYPE_NULL_MAP
 from deephaven.column import ColumnDefinition
+from deephaven.dtypes import DType, _PRIMITIVE_DTYPE_NULL_MAP, bool_, float64, float32, int64, int32, char, short, byte
 
 if TYPE_CHECKING:
     from deephaven.table import TableDefinition
@@ -38,15 +39,15 @@ _JPrimitiveArrayConversionUtility = jpy.get_type(
 )
 _JTableDefinition = jpy.get_type("io.deephaven.engine.table.TableDefinition")
 
-_DH_PANDAS_NULLABLE_TYPE_MAP: dict[DType, pd.api.extensions.ExtensionDtype] = {
-    dtypes.bool_: pd.BooleanDtype,
-    dtypes.byte: pd.Int8Dtype,
-    dtypes.short: pd.Int16Dtype,
-    dtypes.char: pd.UInt16Dtype,
-    dtypes.int32: pd.Int32Dtype,
-    dtypes.int64: pd.Int64Dtype,
-    dtypes.float32: pd.Float32Dtype,
-    dtypes.float64: pd.Float64Dtype,
+_DH_PANDAS_NULLABLE_TYPE_MAP: dict[DType, type[ExtensionDtype]] = {
+    bool_: pd.BooleanDtype,
+    byte: pd.Int8Dtype,
+    short: pd.Int16Dtype,
+    char: pd.UInt16Dtype,
+    int32: pd.Int32Dtype,
+    int64: pd.Int64Dtype,
+    float32: pd.Float32Dtype,
+    float64: pd.Float64Dtype,
 }
 
 
@@ -78,7 +79,7 @@ def j_hashmap(d: Optional[dict] = None) -> jpy.JType:
     return r
 
 
-def j_hashset(s: Optional[set] = None) -> jpy.JType:
+def j_hashset(s: Optional[Union[set, Sequence]] = None) -> jpy.JType:
     """Creates a Java HashSet from a set."""
     if s is None:
         return None
@@ -216,8 +217,8 @@ def j_lambda(
 
 
 def to_sequence(
-    v: Optional[Union[T, Sequence[T]]] = None, wrapped: bool = False
-) -> Sequence[Union[T, jpy.JType]]:
+    v: Optional[Any] = None, wrapped: bool = False
+) -> Sequence[Any]:
     """A convenience function to create a sequence of wrapped or unwrapped object from either one or a sequence of
     input values to help JPY find the matching Java overloaded method to call.
 
@@ -225,12 +226,12 @@ def to_sequence(
     for the convenience of the users, e.g. both x= "abc" and x = ["abc"] are valid arguments.
 
     Args:
-        v (Union[T, Sequence[T]], optional): the input value(s) to be converted to a sequence
+        v (Any, optional): the input value(s) to be converted to a sequence
         wrapped (bool, optional): if True, the input value(s) will remain wrapped in a JPy object; otherwise, the input
             value(s) will be unwrapped. Defaults to False.
 
     Returns:
-        Sequence[Union[T, jpy.JType]]: a sequence of wrapped or unwrapped objects
+        Sequence[Any]: a sequence of wrapped or unwrapped objects
     """
     if v is None or isinstance(v, Sequence) and not v:
         return ()
@@ -373,14 +374,13 @@ def _j_array_to_series(dtype: DType, j_array: jpy.JType, conv_null: bool) -> pd.
     """
     if conv_null and dtype == dtypes.bool_:
         j_array = _JPrimitiveArrayConversionUtility.translateArrayBooleanToByte(j_array)
-        np_array = np.frombuffer(j_array, dtype=np.byte)
-        s = pd.Series(data=np_array, dtype=pd.Int8Dtype(), copy=False)
+        np_array: Optional[np.ndarray[Any, Any]] = np.frombuffer(j_array, dtype=np.byte)
+        s: pd.Series = pd.Series(data=np_array, dtype=pd.Int8Dtype(), copy=False)
         s.mask(s == _NULL_BOOLEAN_AS_BYTE, inplace=True)
         return s.astype(pd.BooleanDtype(), copy=False)
 
     np_array = _j_array_to_numpy_array(dtype, j_array, conv_null=False)
-    if conv_null and (nv := _PRIMITIVE_DTYPE_NULL_MAP.get(dtype)) is not None:
-        pd_ex_dtype = _DH_PANDAS_NULLABLE_TYPE_MAP.get(dtype)
+    if conv_null and (nv := _PRIMITIVE_DTYPE_NULL_MAP.get(dtype)) is not None and (pd_ex_dtype := _DH_PANDAS_NULLABLE_TYPE_MAP.get(dtype)) is not None:
         s = pd.Series(data=np_array, dtype=pd_ex_dtype(), copy=False)
         s.mask(s == nv, inplace=True)
     else:

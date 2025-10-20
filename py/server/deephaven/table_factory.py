@@ -244,7 +244,7 @@ class DynamicTableWriter(JObjectWrapper):
     def write_row(self, *values: Any) -> None:
         """Writes a row to the newly created table.
 
-        The type of a value must be convertible (safely or unsafely, e.g. lose precision, overflow, etc.) to the type
+        The type of value must be convertible (safely or unsafely, e.g. lose precision, overflow, etc.) to the type
         of the corresponding column.
 
         Args:
@@ -255,7 +255,7 @@ class DynamicTableWriter(JObjectWrapper):
             DHError
         """
         try:
-            values = to_sequence(values)
+            values = tuple(to_sequence(values))
             self._j_table_writer.logRowPermissive(values)
         except Exception as e:
             raise DHError(e, "failed to write a row.") from e
@@ -442,10 +442,10 @@ def input_table(
         elif col_defs and init_table:
             raise ValueError("both column definitions and init table are provided.")
 
-        if col_defs:
-            j_arg_1 = TableDefinition(col_defs).j_table_definition
-        else:
+        if init_table:
             j_arg_1 = init_table.j_table
+        else:
+            j_arg_1 = TableDefinition(col_defs).j_table_definition
 
         key_cols = to_sequence(key_cols)
         if key_cols:
@@ -558,11 +558,7 @@ def function_generated_table(
     # Treat the table_generator_function as a Java lambda (i.e., wrap it in a Java Supplier):
     table_generator_j_function = j_lambda(table_generator_function, _JSupplier)
 
-    if refresh_interval_ms is not None:
-        j_function_generated_table = _JFunctionGeneratedTableFactory.create(
-            table_generator_j_function, refresh_interval_ms
-        )
-    else:
+    if source_tables is not None:
         # Make sure we have a list of Tables
         if isinstance(source_tables, Table):
             source_tables = [source_tables]
@@ -577,5 +573,9 @@ def function_generated_table(
             j_function_generated_table = _JFunctionGeneratedTableFactory.create(
                 table_generator_j_function, source_j_tables
             )
+    else:
+        j_function_generated_table = _JFunctionGeneratedTableFactory.create(
+            table_generator_j_function, refresh_interval_ms
+        )
 
     return Table(j_function_generated_table)

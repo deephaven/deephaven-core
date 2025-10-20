@@ -102,11 +102,11 @@ class Filter(ConcurrencyControl["Filter"], JObjectWrapper):
         return Filter(j_filter=getattr(_JFilter, "not")(self.j_filter))
 
     @classmethod
-    def from_(cls, conditions: Union[str, list[str]]) -> Union[Filter, list[Filter]]:
+    def from_(cls, conditions: Union[str, Sequence[str]]) -> Union[Filter, Sequence[Filter]]:
         """Creates filter(s) from the given condition(s).
 
         Args:
-            conditions (Union[str, List[str]]): filter condition(s)
+            conditions (Union[str, Sequence[str]]): filter condition(s)
 
         Returns:
             filter(s)
@@ -135,14 +135,14 @@ def or_(filters: Union[str, Filter, Sequence[str], Sequence[Filter]]) -> Filter:
         a new or Filter
     """
     seq = [
-        Filter.from_(f).j_filter if isinstance(f, str) else f
+        Filter.from_(f).j_filter if isinstance(f, str) else f  # type: ignore[union-attr]
         for f in to_sequence(filters)
     ]
     return Filter(j_filter=getattr(_JFilter, "or")(*seq))
 
 
 def and_(filters: Union[str, Filter, Sequence[str], Sequence[Filter]]) -> Filter:
-    """Creates a new filter that evaluates to true when all of the given filters evaluates to true.
+    """Creates a new filter that evaluates to true when all the given filters evaluates to true.
 
     Args:
         filters (Union[str, Filter, Sequence[str], Sequence[Filter]]): the component filters
@@ -151,7 +151,7 @@ def and_(filters: Union[str, Filter, Sequence[str], Sequence[Filter]]) -> Filter
         a new and Filter
     """
     seq = [
-        Filter.from_(f).j_filter if isinstance(f, str) else f
+        Filter.from_(f).j_filter if isinstance(f, str) else f  # type: ignore[union-attr]
         for f in to_sequence(filters)
     ]
     return Filter(j_filter=getattr(_JFilter, "and")(*seq))

@@ -272,7 +272,7 @@ def time_zone_alias_rm(alias: str) -> bool:
 # region Conversions: Python To Java
 
 
-def _tzinfo_to_j_time_zone(tzi: datetime.tzinfo) -> TimeZone:
+def _tzinfo_to_j_time_zone(tzi: Optional[datetime.tzinfo] = None) -> TimeZone:
     """
     Converts a Python time zone to a Java TimeZone.
 
@@ -357,7 +357,7 @@ def to_j_time_zone(tz: Optional[TimeZoneLike]) -> Optional[TimeZone]:
         DHError, TypeError
     """
     try:
-        if tz is None or pandas.isnull(tz):
+        if tz is None or pandas.isnull(tz):  # type: ignore[arg-type]
             return None
         elif isinstance(tz, TimeZone.j_type):
             return tz
@@ -445,7 +445,7 @@ def to_j_local_time(dt: Optional[LocalTimeLike]) -> Optional[LocalTime]:
     """
 
     try:
-        if dt is None or pandas.isnull(dt):
+        if dt is None or pandas.isnull(dt):  # type: ignore[arg-type]
             return None
         elif isinstance(dt, LocalTime.j_type):
             return dt
@@ -979,7 +979,7 @@ def to_pd_timedelta(dt: Union[None, Duration]) -> Optional[pandas.Timedelta]:
             seconds, nano = _JPythonTimeComponents.getDurationComponents(dt)
             micros, nanos = divmod(nano, _NANOS_PER_MICRO)
             return pandas.Timedelta(
-                seconds=seconds, microseconds=micros, nanoseconds=nanos
+                seconds=seconds, microseconds=micros, nanoseconds=nanos  # type: ignore[call-arg]
             )
         elif isinstance(dt, Period.j_type):
             y, m, d = _JPythonTimeComponents.getPeriodComponents(dt)

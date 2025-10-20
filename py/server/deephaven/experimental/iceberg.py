@@ -4,11 +4,13 @@
 """This module adds Iceberg table support into Deephaven."""
 
 from __future__ import annotations
-from typing import Optional, Union
+from typing import Optional, Union, cast, Any
 from collections.abc import Sequence, Mapping
 
 import jpy
 from warnings import warn
+
+from typing_extensions import TypeAlias
 
 from deephaven import DHError
 from deephaven._wrapper import JObjectWrapper
@@ -18,7 +20,8 @@ from deephaven.table import Table, TableDefinition, TableDefinitionLike
 from deephaven.jcompat import j_hashmap
 
 _JBuildCatalogOptions = jpy.get_type("io.deephaven.iceberg.util.BuildCatalogOptions")
-_JIcebergUpdateMode = jpy.get_type("io.deephaven.iceberg.util.IcebergUpdateMode")
+_JIcebergUpdateMode = cast(type[Any], jpy.get_type("io.deephaven.iceberg.util.IcebergUpdateMode"))  # type: TypeAlias
+# _JIcebergUpdateMode = jpy.get_type("io.deephaven.iceberg.util.IcebergUpdateMode")  # type: TypeAlias
 _JIcebergReadInstructions = jpy.get_type(
     "io.deephaven.iceberg.util.IcebergReadInstructions"
 )
@@ -30,11 +33,9 @@ _JSortOrderProvider = jpy.get_type("io.deephaven.iceberg.util.SortOrderProvider"
 _JTableParquetWriterOptions = jpy.get_type(
     "io.deephaven.iceberg.util.TableParquetWriterOptions"
 )
-_JIcebergCatalogAdapter = jpy.get_type(
-    "io.deephaven.iceberg.util.IcebergCatalogAdapter"
-)
-_JIcebergTableAdapter = jpy.get_type("io.deephaven.iceberg.util.IcebergTableAdapter")
-_JIcebergTableWriter = jpy.get_type("io.deephaven.iceberg.util.IcebergTableWriter")
+_JIcebergCatalogAdapter = cast(type[Any], jpy.get_type("io.deephaven.iceberg.util.IcebergCatalogAdapter"))  # type: TypeAlias
+_JIcebergTableAdapter = cast(type[Any], jpy.get_type("io.deephaven.iceberg.util.IcebergTableAdapter"))  # type: TypeAlias
+_JIcebergTableWriter = cast(type[Any], jpy.get_type("io.deephaven.iceberg.util.IcebergTableWriter"))  # type: TypeAlias
 _JIcebergTable = jpy.get_type("io.deephaven.iceberg.util.IcebergTable")
 _JIcebergTools = jpy.get_type("io.deephaven.iceberg.util.IcebergTools")
 _JLoadTableOptions = jpy.get_type("io.deephaven.iceberg.util.LoadTableOptions")
@@ -591,7 +592,7 @@ class IcebergTable(Table):
     def __init__(self, j_table: jpy.JType):
         super().__init__(j_table)
 
-    def update(self, snapshot_id: Optional[int] = None):
+    def update(self, snapshot_id: Optional[int] = None):  # type: ignore[override]
         """
         Updates the table to match the contents of the specified snapshot. This may result in row removes and additions
         that will be propagated asynchronously via this IcebergTable's UpdateGraph. If no snapshot is provided, the
@@ -1084,7 +1085,7 @@ def _build_catalog_options(
     name: Optional[str] = None,
     properties: Optional[dict[str, str]] = None,
     hadoop_config: Optional[dict[str, str]] = None,
-    enable_property_injection: bool = True,
+    enable_property_injection: Optional[bool] = True,
 ) -> jpy.JType:
     try:
         builder = _JBuildCatalogOptions.builder()

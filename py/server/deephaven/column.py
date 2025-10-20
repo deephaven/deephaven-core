@@ -58,7 +58,7 @@ class ColumnDefinition(JObjectWrapper):
     @cached_property
     def data_type(self) -> DType:
         """The column data type."""
-        return from_jtype(self.j_column_definition.getDataType())
+        return from_jtype(self.j_column_definition.getDataType())  # type: ignore[return-value]
 
     @cached_property
     def component_type(self) -> Optional[DType]:
@@ -97,8 +97,8 @@ class InputColumn:
 
     def __init__(
         self,
-        name: Optional[str] = None,
-        data_type: Optional[DType] = None,
+        name: str,
+        data_type: DType,
         component_type: Optional[DType] = None,
         column_type: ColumnType = ColumnType.NORMAL,
         input_data: Optional[Any] = None,

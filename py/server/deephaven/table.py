@@ -12,7 +12,7 @@ import inspect
 from enum import Enum
 from enum import auto
 from functools import cached_property
-from typing import Any, Optional, Callable, Literal
+from typing import Any, Optional, Callable, Literal, TYPE_CHECKING, cast
 from collections.abc import Generator
 from typing import Union, Protocol
 from collections.abc import Sequence, Mapping, Iterable
@@ -39,6 +39,9 @@ from deephaven.jcompat import (
 from deephaven.jcompat import to_sequence, j_array_list
 from deephaven.update_graph import auto_locking_ctx, UpdateGraph
 from deephaven.updateby import UpdateByOperation
+
+if TYPE_CHECKING:
+    from typing_extensions import TypeAlias
 
 # Table
 _JTable = jpy.get_type("io.deephaven.engine.table.Table")
@@ -76,9 +79,7 @@ _JExecutionContext = jpy.get_type("io.deephaven.engine.context.ExecutionContext"
 _JScriptSessionQueryScope = jpy.get_type(
     "io.deephaven.engine.util.AbstractScriptSession$ScriptSessionQueryScope"
 )
-_JPythonScriptSession = jpy.get_type(
-    "io.deephaven.integrations.python.PythonDeephavenSession"
-)
+_JPythonScriptSession = cast(type[Any], jpy.get_type("io.deephaven.integrations.python.PythonDeephavenSession"))  # type: TypeAlias
 
 # Rollup Table and Tree Table
 _JRollupTable = jpy.get_type("io.deephaven.engine.table.hierarchical.RollupTable")
@@ -271,7 +272,11 @@ class NewColumnBehaviorType(Enum):
 class _FormatOperationsRecorder(Protocol):
     """A mixin for creating format operations to be applied to individual nodes of either RollupTable or TreeTable."""
 
-    def format_column(self, formulas: Union[str, list[str]]):
+    j_node_ops_recorder: jpy.JType
+
+    def __init__(self, j_node_ops_recorder: jpy.JType): ...
+
+    def format_column(self, formulas: Union[str, Sequence[str]]):
         """Returns a new recorder with the :meth:`~deephaven.table.Table.format_columns` operation applied to nodes."""
         formulas = to_sequence(formulas)
         j_format_ops_recorder = jpy.cast(
@@ -302,6 +307,10 @@ class _SortOperationsRecorder(Protocol):
     """A mixin for creating sort operations to be applied to individual nodes of either RollupTable or
     TreeTable."""
 
+    j_node_ops_recorder: jpy.JType
+
+    def __init__(self, j_node_ops_recorder: jpy.JType): ...
+
     def sort(self, order_by: Union[str, Sequence[str]]):
         """Returns a new recorder with the :meth:`~deephaven.table.Table.sort` operation applied to nodes."""
         order_by = to_sequence(order_by)
@@ -323,6 +332,10 @@ class _FilterOperationsRecorder(Protocol):
     """A mixin for creating filter operations to be applied to individual nodes of either RollupTable or
     TreeTable."""
 
+    j_node_ops_recorder: jpy.JType
+
+    def __init__(self, j_node_ops_recorder: jpy.JType): ...
+
     def where(self, filters: Union[str, Filter, Sequence[str], Sequence[Filter]]):
         """Returns a new recorder with the :meth:`~deephaven.table.Table.where` operation applied to nodes."""
         j_filter_ops_recorder = jpy.cast(
@@ -333,6 +346,10 @@ class _FilterOperationsRecorder(Protocol):
 
 class _UpdateViewOperationsRecorder(Protocol):
     """A mixin for creating updateView operations to be applied to individual nodes of RollupTable."""
+
+    j_node_ops_recorder: jpy.JType
+
+    def __init__(self, j_node_ops_recorder: jpy.JType): ...
 
     def update_view(self, formulas: Union[str, Sequence[str]]):
         """Returns a new recorder with the :meth:`~deephaven.table.Table.update_view` operation applied to nodes."""
@@ -421,13 +438,13 @@ class RollupTable(JObjectWrapper):
             raise DHError(e, "failed to create a RollupNodeOperationsRecorder.") from e
 
     def with_node_operations(
-        self, recorders: list[RollupNodeOperationsRecorder]
+        self, recorders: Sequence[RollupNodeOperationsRecorder]
     ) -> RollupTable:
         """Returns a new RollupTable that will apply the recorded node operations to nodes when gathering
         snapshots requested by the Deephaven UI.
 
         Args:
-            recorders (List[RollupNodeOperationsRecorder]): a list of RollupNodeOperationsRecorder containing
+            recorders (Sequence[RollupNodeOperationsRecorder]): a list of RollupNodeOperationsRecorder containing
                 the node operations to be applied, they must be ones created by calling the 'node_operation_recorder'
                 method on the same table.
 
@@ -653,7 +670,7 @@ def _query_scope_agg_ctx(
 ) -> contextlib.AbstractContextManager:
     has_agg_formula = any([agg.is_formula for agg in aggs])
     if has_agg_formula:
-        cm = _query_scope_ctx()
+        cm: Any = _query_scope_ctx()
     else:
         cm = contextlib.nullcontext()
     return cm
@@ -718,7 +735,7 @@ class TableDefinition(JObjectWrapper, Mapping):
                     raise DHError(
                         f"Expected TableDefinitionLike Mapping to contain DType values, found type {type(data_type)}"
                     )
-            column_definitions = [
+            column_definitions: Iterable[ColumnDefinition] = [
                 col_def(name, data_type) for name, data_type in table_definition.items()
             ]
         elif isinstance(table_definition, Iterable):
@@ -727,7 +744,7 @@ class TableDefinition(JObjectWrapper, Mapping):
                     raise DHError(
                         f"Expected TableDefinitionLike Iterable to contain ColumnDefinition values, found type {type(column_definition)}"
                     )
-            column_definitions = table_definition
+            column_definitions = table_definition  # type: ignore[assignment]
         else:
             raise DHError(
                 f"Unexpected TableDefinitionLike type: {type(table_definition)}"
@@ -873,12 +890,12 @@ class Table(JObjectWrapper):
         return self._definition
 
     @property
-    def column_names(self) -> list[str]:
+    def column_names(self) -> Sequence[str]:
         """The column names of the table."""
         return list(self.definition.keys())
 
     @property
-    def columns(self) -> list[ColumnDefinition]:
+    def columns(self) -> Sequence[ColumnDefinition]:
         """The column definitions of the table."""
         return list(self.definition.values())
 
@@ -1151,7 +1168,7 @@ class Table(JObjectWrapper):
     def snapshot_when(
         self,
         trigger_table: Table,
-        stamp_cols: Optional[Union[str, list[str]]] = None,
+        stamp_cols: Optional[Union[str, Sequence[str]]] = None,
         initial: bool = False,
         incremental: bool = False,
         history: bool = False,
@@ -1387,7 +1404,7 @@ class Table(JObjectWrapper):
 
     def select(
         self,
-        formulas: Union[str, Sequence[str], Selectable, Sequence[Selectable]] = None,
+        formulas: Optional[Union[str, Sequence[str], Selectable, Sequence[Selectable]]] = None,
     ) -> Table:
         """The select method creates a new in-memory table that includes one column for each formula. If no formula
         is specified, all columns will be included.
@@ -1919,8 +1936,8 @@ class Table(JObjectWrapper):
     def range_join(
         self,
         table: Table,
-        on: Union[str, list[str]],
-        aggs: Union[Aggregation, list[Aggregation]],
+        on: Union[str, Sequence[str]],
+        aggs: Union[Aggregation, Sequence[Aggregation]],
     ) -> Table:
         """The range_join method creates a new table containing all the rows and columns of the left table,
         plus additional columns containing aggregated data from the right table. For columns appended to the
@@ -2005,9 +2022,9 @@ class Table(JObjectWrapper):
 
         Args:
             table (Table): the right table of the join
-            on (Union[str, List[str]]): the match expression(s) that must include zero-or-more exact match expression,
+            on (Union[str, Sequence[str]]): the match expression(s) that must include zero-or-more exact match expression,
                 and exactly one range match expression as described above
-            aggs (Union[Aggregation, List[Aggregation]]): the aggregation(s) to perform over the responsive ranges from
+            aggs (Union[Aggregation, Sequence[Aggregation]]): the aggregation(s) to perform over the responsive ranges from
                 the right table for each row from this Table
 
         Returns:
@@ -2548,11 +2565,11 @@ class Table(JObjectWrapper):
 
     # endregion
 
-    def format_columns(self, formulas: Union[str, list[str]]) -> Table:
+    def format_columns(self, formulas: Union[str, Sequence[str]]) -> Table:
         """Applies color formatting to the columns of the table.
 
         Args:
-            formulas (Union[str, List[str]]): formatting string(s) in the form of "column=color_expression"
+            formulas (Union[str, Sequence[str]]): formatting string(s) in the form of "column=color_expression"
                 where color_expression can be a color name or a Java ternary expression that results in a color.
 
         Returns:
@@ -2611,26 +2628,26 @@ class Table(JObjectWrapper):
 
     def layout_hints(
         self,
-        front: Optional[Union[str, list[str]]] = None,
-        back: Optional[Union[str, list[str]]] = None,
-        freeze: Optional[Union[str, list[str]]] = None,
-        hide: Optional[Union[str, list[str]]] = None,
-        column_groups: Optional[list[dict]] = None,
+        front: Optional[Union[str, Sequence[str]]] = None,
+        back: Optional[Union[str, Sequence[str]]] = None,
+        freeze: Optional[Union[str, Sequence[str]]] = None,
+        hide: Optional[Union[str, Sequence[str]]] = None,
+        column_groups: Optional[Sequence[dict]] = None,
         search_display_mode: Optional[SearchDisplayMode] = None,
     ) -> Table:
         """Sets layout hints on the Table
 
         Args:
-            front (Union[str, List[str]]): the columns to show at the front.
-            back (Union[str, List[str]]): the columns to show at the back.
-            freeze (Union[str, List[str]]): the columns to freeze to the front.
+            front (Union[str, Sequence[str]]): the columns to show at the front.
+            back (Union[str, Sequence[str]]): the columns to show at the back.
+            freeze (Union[str, Sequence[str]]): the columns to freeze to the front.
                 These will not be affected by horizontal scrolling.
-            hide (Union[str, List[str]]): the columns to hide.
-            column_groups (List[Dict]): A list of dicts specifying which columns should be grouped in the UI.
+            hide (Union[str, Sequence[str]]): the columns to hide.
+            column_groups (Sequence[Dict]): A list of dicts specifying which columns should be grouped in the UI.
                 The dicts can specify the following:
 
                 * name (str): The group name
-                * children (List[str]): The column names in the group
+                * children (Sequence[str]): The column names in the group
                 * color (Optional[str]): The hex color string or Deephaven color name
             search_display_mode (SearchDisplayMode): set the search bar to explicitly be accessible or inaccessible,
                 or use the system default. :attr:`SearchDisplayMode.SHOW` will show the search bar,
@@ -2707,8 +2724,8 @@ class Table(JObjectWrapper):
 
     def update_by(
         self,
-        ops: Union[UpdateByOperation, list[UpdateByOperation]],
-        by: Optional[Union[str, list[str]]] = None,
+        ops: Union[UpdateByOperation, Sequence[UpdateByOperation]],
+        by: Optional[Union[str, Sequence[str]]] = None,
     ) -> Table:
         """Creates a table with additional columns calculated from window-based aggregations of columns in this table.
         The aggregations are defined by the provided operations, which support incremental aggregations over the
@@ -2716,8 +2733,8 @@ class Table(JObjectWrapper):
         compute the results over the entire table or each row group as identified by the provided key columns.
 
         Args:
-            ops (Union[UpdateByOperation, List[UpdateByOperation]]): the update-by operation definition(s)
-            by (Union[str, List[str]]): the key column name(s) to group the rows of the table
+            ops (Union[UpdateByOperation, Sequence[UpdateByOperation]]): the update-by operation definition(s)
+            by (Union[str, Sequence[str]]): the key column name(s) to group the rows of the table
 
         Returns:
             a new Table
@@ -2952,7 +2969,7 @@ class PartitionedTable(JObjectWrapper):
     def from_partitioned_table(
         cls,
         table: Table,
-        key_cols: Optional[Union[str, list[str]]] = None,
+        key_cols: Optional[Union[str, Sequence[str]]] = None,
         unique_keys: Optional[bool] = None,
         constituent_column: Optional[str] = None,
         constituent_table_columns: Optional[TableDefinitionLike] = None,
@@ -2974,7 +2991,7 @@ class PartitionedTable(JObjectWrapper):
 
         Args:
             table (Table): the underlying partitioned table
-            key_cols (Union[str, List[str]]): the key column name(s) of 'table'
+            key_cols (Union[str, Sequence[str]]): the key column name(s) of 'table'
             unique_keys (bool): whether the keys in 'table' are guaranteed to be unique
             constituent_column (str): the constituent column name in 'table'
             constituent_table_columns (Optional[TableDefinitionLike]): the table definitions of the constituent table
@@ -3024,7 +3041,7 @@ class PartitionedTable(JObjectWrapper):
     @classmethod
     def from_constituent_tables(
         cls,
-        tables: list[Table],
+        tables: Sequence[Table],
         constituent_table_columns: Optional[TableDefinitionLike] = None,
     ) -> PartitionedTable:
         """Creates a PartitionedTable with a single column named '__CONSTITUENT__' containing the provided constituent
@@ -3035,7 +3052,7 @@ class PartitionedTable(JObjectWrapper):
         definitions of the first table in the provided constituent tables.
 
         Args:
-            tables (List[Table]): the constituent tables
+            tables (Sequence[Table]): the constituent tables
             constituent_table_columns (Optional[TableDefinitionLike]): the table definition compatible with all the
                 constituent tables, default is None
 
@@ -3082,7 +3099,7 @@ class PartitionedTable(JObjectWrapper):
         return self.table.is_refreshing
 
     @cached_property
-    def key_columns(self) -> list[str]:
+    def key_columns(self) -> Sequence[str]:
         """The partition key column names."""
         return list(self.j_partitioned_table.keyColumnNames().toArray())
 
@@ -3112,7 +3129,7 @@ class PartitionedTable(JObjectWrapper):
         return TableDefinition(self.j_partitioned_table.constituentDefinition())
 
     @property
-    def constituent_table_columns(self) -> list[ColumnDefinition]:
+    def constituent_table_columns(self) -> Sequence[ColumnDefinition]:
         """The column definitions for constituent tables. All constituent tables in a partitioned table have the
         same column definitions."""
         return list(self.constituent_table_definition.values())
@@ -3170,8 +3187,9 @@ class PartitionedTable(JObjectWrapper):
         """
         filters = to_sequence(filters)
         if isinstance(filters[0], str):
-            filters = Filter.from_(filters)
+            filters = Filter.from_(filters)  # type: ignore[arg-type]
             filters = to_sequence(filters)
+
         try:
             return PartitionedTable(
                 j_partitioned_table=self.j_partitioned_table.filter(
@@ -3245,7 +3263,7 @@ class PartitionedTable(JObjectWrapper):
             raise DHError(e, "unable to get constituent table.") from e
 
     @property
-    def constituent_tables(self) -> list[Table]:
+    def constituent_tables(self) -> Sequence[Table]:
         """Returns all the current constituent tables."""
         return list(map(Table, self.j_partitioned_table.constituents()))
 
@@ -3273,7 +3291,7 @@ class PartitionedTable(JObjectWrapper):
         """
         try:
             j_operator = j_unary_operator(
-                func, dtypes.from_jtype(Table.j_object_type.jclass)
+                func, dtypes.from_jtype(Table.j_object_type.jclass)  # type: ignore[arg-type]
             )
             dependencies = to_sequence(dependencies, wrapped=True)
             j_dependencies = [
@@ -3325,7 +3343,7 @@ class PartitionedTable(JObjectWrapper):
         """
         try:
             j_operator = j_binary_operator(
-                func, dtypes.from_jtype(Table.j_object_type.jclass)
+                func, dtypes.from_jtype(Table.j_object_type.jclass)  # type: ignore[arg-type]
             )
             dependencies = to_sequence(dependencies, wrapped=True)
             j_dependencies = [
@@ -3494,7 +3512,7 @@ class PartitionedTableProxy(JObjectWrapper):
     def snapshot_when(
         self,
         trigger_table: Union[Table, PartitionedTableProxy],
-        stamp_cols: Optional[Union[str, list[str]]] = None,
+        stamp_cols: Optional[Union[str, Sequence[str]]] = None,
         initial: bool = False,
         incremental: bool = False,
         history: bool = False,
@@ -3784,7 +3802,7 @@ class PartitionedTableProxy(JObjectWrapper):
 
     def select(
         self,
-        formulas: Union[str, Sequence[str], Selectable, Sequence[Selectable]] = None,
+        formulas: Optional[Union[str, Sequence[str], Selectable, Sequence[Selectable]]] = None,
     ) -> PartitionedTableProxy:
         """Applies the :meth:`~Table.select` table operation to all constituent tables of the underlying partitioned
         table, and produces a new PartitionedTableProxy with the result tables as the constituents of its underlying
@@ -4549,16 +4567,16 @@ class PartitionedTableProxy(JObjectWrapper):
 
     def update_by(
         self,
-        ops: Union[UpdateByOperation, list[UpdateByOperation]],
-        by: Optional[Union[str, list[str]]] = None,
+        ops: Union[UpdateByOperation, Sequence[UpdateByOperation]],
+        by: Optional[Union[str, Sequence[str]]] = None,
     ) -> PartitionedTableProxy:
         """Applies the :meth:`~Table.update_by` table operation to all constituent tables of the underlying partitioned
         table, and produces a new PartitionedTableProxy with the result tables as the constituents of its underlying
         partitioned table.
 
         Args:
-            ops (Union[UpdateByOperation, List[UpdateByOperation]]): the update-by operation definition(s)
-            by (Union[str, List[str]]): the key column name(s) to group the rows of the table
+            ops (Union[UpdateByOperation, Sequence[UpdateByOperation]]): the update-by operation definition(s)
+            by (Union[str, Sequence[str]]): the key column name(s) to group the rows of the table
 
         Returns:
             a new PartitionedTableProxy

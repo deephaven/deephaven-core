@@ -3,8 +3,9 @@
 #
 
 """The kafka.producer module supports publishing Deephaven tables to Kafka streams."""
+from __future__ import annotations
 
-from typing import Callable, Optional
+from typing import Callable, Optional, Sequence
 
 import jpy
 
@@ -22,6 +23,8 @@ _JColumnName = jpy.get_type("io.deephaven.api.ColumnName")
 
 
 class KeyValueSpec(JObjectWrapper):
+    IGNORE: KeyValueSpec
+
     j_object_type = jpy.get_type("io.deephaven.kafka.KafkaTools$Produce$KeyOrValueSpec")
 
     def __init__(self, j_spec: jpy.JType):
@@ -142,8 +145,8 @@ def avro_spec(
     schema_version: str = "latest",
     field_to_col_mapping: Optional[dict[str, str]] = None,
     timestamp_field: Optional[str] = None,
-    include_only_columns: Optional[list[str]] = None,
-    exclude_columns: Optional[list[str]] = None,
+    include_only_columns: Optional[Sequence[str]] = None,
+    exclude_columns: Optional[Sequence[str]] = None,
     publish_schema: bool = False,
     schema_namespace: Optional[str] = None,
     column_properties: Optional[dict[str, str]] = None,
@@ -160,9 +163,9 @@ def avro_spec(
             same name. The default is None, meaning all schema fields are mapped to columns of the same name.
         timestamp_field (str): the name of an extra timestamp field to be included in the produced Kafka message body,
             it is used mostly for debugging slowdowns,  default is None.
-        include_only_columns (List[str]): the list of column names in the source table to include in the generated
+        include_only_columns (Sequence[str]): the list of column names in the source table to include in the generated
             output, default is None. When not None, the 'exclude_columns' parameter must be None
-        exclude_columns (List[str]):  the list of column names to exclude from the generated output (every other column
+        exclude_columns (Sequence[str]):  the list of column names to exclude from the generated output (every other column
             will be included), default is None. When not None, the 'include_only_columns' must be None
         publish_schema (bool): when True, publish the given schema name to Schema Registry Server, according to an Avro
             schema generated from the table definition, for the columns and fields implied by field_to_col_mapping,
@@ -206,8 +209,8 @@ def avro_spec(
 
 
 def json_spec(
-    include_columns: Optional[list[str]] = None,
-    exclude_columns: Optional[list[str]] = None,
+    include_columns: Optional[Sequence[str]] = None,
+    exclude_columns: Optional[Sequence[str]] = None,
     mapping: Optional[dict[str, str]] = None,
     nested_delim: Optional[str] = None,
     output_nulls: bool = False,
@@ -220,10 +223,10 @@ def json_spec(
     how a JSON nested field name should be delimited in the mapping.
 
     Args:
-        include_columns (List[str]): the list of Deephaven column names to include in the JSON output as fields,
+        include_columns (Sequence[str]): the list of Deephaven column names to include in the JSON output as fields,
             default is None, meaning all except the ones mentioned in the 'exclude_columns' argument . If not None,
             the 'exclude_columns' must be None.
-        exclude_columns (List[str]): the list of Deephaven column names to omit in the JSON output as fields, default
+        exclude_columns (Sequence[str]): the list of Deephaven column names to omit in the JSON output as fields, default
             is None, meaning no column is omitted. If not None, include_columns must be None.
         mapping (Dict[str, str]): a mapping from column names to JSON field names.  Any column name implied by earlier
             arguments and not included as a key in the map implies a field of the same name. default is None,
@@ -245,7 +248,7 @@ def json_spec(
     try:
         if include_columns is not None and exclude_columns is not None:
             raise ValueError("One of include_columns and exclude_columns must be None.")
-        exclude_columns = j_hashset(exclude_columns)
+        exclude_columns = j_hashset(exclude_columns) if exclude_columns else None
         mapping = j_hashmap(mapping)
         return KeyValueSpec(
             _JKafkaTools_Produce.jsonSpec(

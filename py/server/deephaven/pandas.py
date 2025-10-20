@@ -4,7 +4,7 @@
 
 """This module supports the conversion between Deephaven tables and pandas DataFrames."""
 
-from typing import List, Literal
+from typing import Optional, List, Literal
 
 import jpy
 import numpy as np
@@ -101,7 +101,7 @@ _PYARROW_TO_PANDAS_TYPE_MAPPERS = {
 
 def to_pandas(
     table: Table,
-    cols: List[str] = None,
+    cols: Optional[List[str]] = None,
     dtype_backend: Literal[None, "pyarrow", "numpy_nullable"] = "numpy_nullable",
     conv_null: bool = True,
 ) -> pd.DataFrame:
@@ -229,7 +229,7 @@ def _map_na(array: [np.ndarray, pd.api.extensions.ExtensionArray]):
 
 
 def to_table(
-    df: pd.DataFrame, cols: List[str] = None, infer_objects: bool = True
+    df: pd.DataFrame, cols: Optional[List[str]] = None, infer_objects: bool = True
 ) -> Table:
     """Creates a new table from a pandas DataFrame.
 

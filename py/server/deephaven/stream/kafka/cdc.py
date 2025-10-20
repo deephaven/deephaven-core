@@ -78,7 +78,7 @@ def consume_raw(
     kafka_config: dict,
     cdc_spec: CDCSpec,
     partitions=None,
-    table_type: TableType = TableType.stream(),
+    table_type: TableType = TableType.Stream,
 ) -> Table:
     """Consume the raw events from a Change Data Capture (CDC) Kafka stream to a Deephaven table.
 
@@ -89,7 +89,7 @@ def consume_raw(
             and/or value Avro necessary schemas are stored.
         cdc_spec (CDCSpec): a CDCSpec obtained from calling either the cdc_long_spec or the cdc_short_spec function
         partitions (List[int]): a list of integer partition numbers, default is None indicating all partitions
-        table_type (TableType): a TableType enum, default is TableType.stream()
+        table_type (TableType): a TableType, default is TableType.Stream
 
     Returns:
         a Deephaven live table for the raw CDC events
@@ -100,10 +100,9 @@ def consume_raw(
     try:
         partitions = j_partitions(partitions)
         kafka_config = j_properties(kafka_config)
-        table_type_enum = table_type.value
         return Table(
             j_table=_JCdcTools.consumeRawToTable(
-                kafka_config, cdc_spec.j_object, partitions, table_type_enum
+                kafka_config, cdc_spec.j_object, partitions, table_type
             )
         )
     except Exception as e:
