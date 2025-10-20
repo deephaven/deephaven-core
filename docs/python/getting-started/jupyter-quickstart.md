@@ -39,7 +39,10 @@ jupyter lab
 jupyter notebook
 ```
 
-When using Deephaven from Jupyter, you _must_ start a Deephaven server before importing any Deephaven packages. The following code block starts a Deephaven server on port `10000` with 4GB of heap memory and anonymous authentication. Run it in your Jupyter instance:
+> [!WARNING]
+> When using Deephaven from Jupyter, you **must** start a Deephaven server **before** importing any Deephaven packages. If you import Deephaven packages before starting the server, you will encounter errors.
+
+The following code block starts a Deephaven server on port `10000` with 4GB of heap memory and anonymous authentication. Run it in your Jupyter instance:
 
 <!--TODO: Change to PSK when https://github.com/deephaven/deephaven-ipywidgets/issues/38 is resolved -->
 

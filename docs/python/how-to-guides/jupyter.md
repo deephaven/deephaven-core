@@ -55,7 +55,12 @@ From there, create a notebook.
 
 ### pip-installed Deephaven
 
-You can use `deephaven-ipywidgets` to display Deephaven tables or figures (plots). Before displaying either, you need to launch the Deephaven server. Add the following code in a cell to run before working with tables or figures:
+You can use `deephaven-ipywidgets` to display Deephaven tables or figures (plots).
+
+> [!WARNING]
+> You **must** start the Deephaven server **before** importing any Deephaven packages. If you import Deephaven packages before starting the server, you will encounter errors.
+
+Add the following code in a cell to run before working with tables or figures:
 
 ```python skip-test
 # Start up the Deephaven Server
