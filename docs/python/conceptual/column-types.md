@@ -35,7 +35,7 @@ Deephaven table columns support a rich type system built on Java's type system. 
       <td>Flags, single characters</td>
     </tr>
     <tr>
-      <td scope="row"><a href="#temporal-types">Temporal</a></td>
+      <td scope="row"><a href="#time-and-dates">Temporal</a></td>
       <td><code>Instant</code>, <code>ZonedDateTime</code>, <code>LocalDate</code>, <code>LocalTime</code></td>
       <td>✅</td>
       <td>✅</td>
@@ -665,7 +665,8 @@ sorted_with_nulls = t31.sort("NullableInt")
 ## Related documentation
 
 - [Table types](./table-types.md)
+- [Data types in Deephaven and Python](../how-to-guides/data-types.md)
+- [Work with strings](../how-to-guides/work-with-strings.md)
 - [Query language special variables](../reference/query-language/variables/special-variables.md)
-- [Date and time functions](../reference/query-language/functions/date-time.md)
-- [Math functions](../reference/query-language/functions/math.md)
-- [String functions](../reference/query-language/functions/string.md)
+- [Built-in functions](../how-to-guides/built-in-functions.md)
+- [Built-in constants](../how-to-guides/built-in-constants.md)
