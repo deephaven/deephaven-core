@@ -374,10 +374,10 @@ Object types can store any Java object. Common examples include `BigDecimal`, `B
 
 #### Object column considerations
 
-- **Performance**: Object columns are slower than primitive columns due to boxing/unboxing overhead
-- **Memory**: Objects require more memory (object header + data)
-- **Null handling**: Objects can be `null` (Java null, not a sentinel value)
-- **Use cases**: High-precision arithmetic (`BigDecimal`), custom data structures, complex types
+- **Performance**: Object columns are slower than primitive columns due to boxing/unboxing overhead.
+- **Memory**: Objects require more memory (object header + data).
+- **Null handling**: Objects can be `null` (Java null, not a sentinel value).
+- **Use cases**: High-precision arithmetic (`BigDecimal`), custom data structures, complex types.
 
 > [!NOTE]
 > For high-precision decimal arithmetic, use `java.math.BigDecimal` instead of `double` to avoid floating-point errors. However, `BigDecimal` operations are slower than primitive operations.
@@ -632,25 +632,25 @@ sorted_with_nulls = t31.sort("NullableInt")
 
 ### Choose the right type
 
-- **Integers**: Use the smallest type that fits your range (`byte` < `short` < `int` < `long`)
-- **Decimals**: Use `double` for most cases, `BigDecimal` only when exact precision is required
-- **Timestamps**: Use `Instant` for UTC timestamps, `ZonedDateTime` when time zones matter
-- **Text**: Use `String` for text data; consider enum patterns for low-cardinality categories
-- **Arrays**: Use when each row needs multiple related values; consider separate columns if querying individual elements frequently
+- **Integers**: Use the smallest type that fits your range (`byte` < `short` < `int` < `long`).
+- **Decimals**: Use `double` for most cases, `BigDecimal` only when exact precision is required.
+- **Timestamps**: Use `Instant` for UTC timestamps, `ZonedDateTime` when time zones matter.
+- **Text**: Use `String` for text data; consider enum patterns for low-cardinality categories.
+- **Arrays**: Use when each row needs multiple related values; consider separate columns if querying individual elements frequently.
 
 ### Optimize for memory
 
-- Prefer primitive types over objects (e.g., `int` over `Integer`, `double` over `BigDecimal`)
-- Use appropriate numeric precision (don't use `long` when `int` suffices)
-- Be cautious with high-cardinality strings and object columns
-- Consider string interning benefits for categorical data
+- Prefer primitive types over objects (e.g., `int` over `Integer`, `double` over `BigDecimal`).
+- Use appropriate numeric precision (don't use `long` when `int` suffices).
+- Be cautious with high-cardinality strings and object columns.
+- Consider string interning benefits for categorical data.
 
 ### Ensure type safety
 
-- Always validate and handle nulls explicitly
-- Use explicit casts when converting between types to make intent clear
-- Match types in join keys and comparisons
-- Test edge cases (nulls, extreme values, type boundaries)
+- Always validate and handle nulls explicitly.
+- Use explicit casts when converting between types to make intent clear.
+- Match types in join keys and comparisons.
+- Test edge cases (nulls, extreme values, type boundaries).
 
 ### Performance considerations
 
