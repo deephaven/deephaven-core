@@ -3,11 +3,11 @@ title: Deephaven's column types
 sidebar_label: Column types
 ---
 
-Deephaven tables store data in strongly-typed columns, where each column has a specific data type that determines what values it can hold and how operations behave on that data. Understanding column types is essential for writing efficient queries, avoiding type errors, and optimizing memory usage. This guide covers Deephaven's type system, including primitive types, temporal types, strings, objects, arrays, and how to work with nulls and type conversions.
+Deephaven tables store data in strongly-typed columns. Each column in a table must have a specific type that determines what values it can hold, how much memory it uses, and how operations behave on that column's data. Understanding column types is essential for designing efficient table schemas, writing correct queries, and optimizing performance. This guide covers the column types available in Deephaven tables, how to choose the right type for your data, and how types behave in table operations.
 
 ## Column type overview
 
-Deephaven supports a rich type system built on Java's type system. The main type categories are:
+Deephaven table columns support a rich type system built on Java's type system. The main column type categories are:
 
 <table className="text--center">
   <thead>
@@ -65,11 +65,17 @@ Deephaven supports a rich type system built on Java's type system. The main type
   </tbody>
 </table>
 
-## Primitive numeric types
+The rest of this guide explores each of these column types, their properties, and how to use them effectively in your tables.
+
+## Type fundamentals
+
+Understanding the fundamental types—numeric primitives, booleans, characters, and strings—is essential for working effectively with Deephaven tables.
+
+### Primitive numeric types
 
 Primitive numeric types are the most memory-efficient and performant types in Deephaven. They map directly to Java primitives and are stored unboxed in memory.
 
-### Numeric type reference
+#### Numeric type reference
 
 | Type     | Size   | Range                             | Null value    | Example use case                           |
 | -------- | ------ | --------------------------------- | ------------- | ------------------------------------------ |
@@ -80,9 +86,9 @@ Primitive numeric types are the most memory-efficient and performant types in De
 | `float`  | 32-bit | ~±3.4×10³⁸ (7 digits precision)   | `NULL_FLOAT`  | Approximate decimals, measurements         |
 | `double` | 64-bit | ~±1.7×10³⁰⁸ (15 digits precision) | `NULL_DOUBLE` | High-precision decimals, financial data    |
 
-### Creating numeric columns
+#### Creating numeric columns
 
-```python test-set=1 order=t1
+```python test-set=column-types order=t1
 from deephaven import empty_table
 
 # Create columns of various numeric types
@@ -98,11 +104,11 @@ t1 = empty_table(5).update(
 )
 ```
 
-### Null values for primitives
+#### Null values for primitives
 
 Unlike Java primitives, Deephaven's primitive columns can represent null values using special sentinel values:
 
-```python test-set=2 order=t2
+```python test-set=column-types order=t2
 from deephaven import empty_table
 from deephaven.constants import NULL_INT, NULL_DOUBLE
 
@@ -118,7 +124,7 @@ t2 = empty_table(5).update(
 
 You can check for nulls using `isNull()` or comparison with the null constant:
 
-```python test-set=2 order=t3
+```python test-set=column-types order=t3
 # Filter for non-null values
 t3 = t2.where("!isNull(WithNulls)")
 
@@ -126,11 +132,11 @@ t3 = t2.where("!isNull(WithNulls)")
 t4 = t2.where("WithNulls != NULL_INT")
 ```
 
-### Type promotion and arithmetic
+#### Type promotion and arithmetic
 
 When performing arithmetic with mixed numeric types, Deephaven follows Java's type promotion rules:
 
-```python test-set=3 order=t5
+```python test-set=column-types order=t5
 from deephaven import empty_table
 
 t5 = empty_table(3).update(
@@ -149,34 +155,33 @@ t5 = empty_table(3).update(
 )
 ```
 
-## Primitive boolean and char
+### Primitive boolean and char
 
-### Boolean type
+#### Boolean type
 
 The `boolean` type represents true/false values:
 
-```python test-set=4 order=t6
+```python test-set=column-types order=t6
 from deephaven import empty_table
 
 t6 = empty_table(5).update(["Value = i", "IsEven = i % 2 == 0", "IsPositive = i > 2"])
 ```
 
-### Char type
+#### Char type
 
 The `char` type represents a single 16-bit Unicode character:
 
-```python test-set=5 order=t7
+```python test-set=column-types order=t7
 from deephaven import empty_table
 
 t7 = empty_table(5).update(["Index = i", "Letter = (char)('A' + i)"])
 ```
 
-> [!NOTE]
-> `char` is distinct from `String`. A `char` column holds single characters, while a `String` column holds character sequences.
+> [!NOTE] > `char` is distinct from `String`. A `char` column holds single characters, while a `String` column holds character sequences.
 
-## Temporal types
+## Time and dates
 
-Deephaven provides rich support for date and time types, all based on Java 8's `java.time` package. These types are optimized for efficient storage and time-based operations.
+Deephaven provides rich support for date and time types, all based on Java 8's `java.time` package. These types are optimized for efficient storage and time-based operations, making them ideal for time-series data and temporal analysis.
 
 ### Temporal type reference
 
@@ -194,7 +199,7 @@ Deephaven provides rich support for date and time types, all based on Java 8's `
 
 `Instant` is the most commonly used temporal type, representing an instantaneous point on the timeline in UTC:
 
-```python test-set=6 order=t8
+```python test-set=column-types order=t8
 from deephaven import empty_table
 
 t8 = empty_table(5).update(
@@ -210,7 +215,7 @@ t8 = empty_table(5).update(
 
 Use `ZonedDateTime` when time zone information is important:
 
-```python test-set=7 order=t9
+```python test-set=column-types order=t9
 from deephaven import empty_table
 
 t9 = empty_table(3).update(
@@ -227,7 +232,7 @@ t9 = empty_table(3).update(
 
 `LocalDate` and `LocalTime` are useful for date-only or time-only operations:
 
-```python test-set=8 order=t10
+```python test-set=column-types order=t10
 from deephaven import empty_table
 
 t10 = empty_table(5).update(
@@ -245,7 +250,7 @@ t10 = empty_table(5).update(
 
 Deephaven provides constants and functions for temporal calculations:
 
-```python test-set=9 order=t11
+```python test-set=column-types order=t11
 from deephaven import empty_table
 
 t11 = empty_table(3).update(
@@ -266,7 +271,7 @@ t11 = empty_table(3).update(
 > [!IMPORTANT]
 > Always be explicit about time zones when converting between `Instant` and zone-aware types. Implicit conversions can lead to subtle bugs, especially around daylight saving time transitions.
 
-```python test-set=10 order=t12
+```python test-set=column-types order=t12
 from deephaven import empty_table
 
 t12 = empty_table(2).update(
@@ -282,13 +287,13 @@ t12 = empty_table(2).update(
 )
 ```
 
-## String type
+### String type
 
 The `String` type stores text data. Deephaven automatically interns strings to optimize memory usage for low-cardinality string columns.
 
-### Creating string columns
+#### Creating string columns
 
-```python test-set=11 order=t13
+```python test-set=column-types order=t13
 from deephaven import empty_table
 
 t13 = empty_table(5).update(
@@ -301,11 +306,11 @@ t13 = empty_table(5).update(
 )
 ```
 
-### String operations
+#### String operations
 
 String columns in Deephaven are `java.lang.String` objects, which means you can use standard Java String methods directly:
 
-```python test-set=12 order=t14
+```python test-set=column-types order=t14
 from deephaven import empty_table
 
 t14 = empty_table(3).update(
@@ -321,11 +326,11 @@ t14 = empty_table(3).update(
 )
 ```
 
-### String interning and memory
+#### String interning and memory
 
 Deephaven automatically interns strings, which means identical string values share the same memory location. This is very efficient for low-cardinality columns (like categories or symbols) but less beneficial for high-cardinality data (like unique IDs or free-form text).
 
-```python test-set=13 order=t15
+```python test-set=column-types order=t15
 from deephaven import empty_table
 
 # Low cardinality: memory efficient (only 3 unique strings stored)
@@ -341,11 +346,11 @@ t16 = empty_table(1000).update(
 )
 ```
 
-### Null strings
+#### Null strings
 
 Strings can be null, which is different from empty strings:
 
-```python test-set=14 order=t17
+```python test-set=column-types order=t17
 from deephaven import empty_table
 
 t17 = empty_table(5).update(
@@ -359,11 +364,15 @@ t17 = empty_table(5).update(
 )
 ```
 
-## Object types
+## Advanced types
+
+For specialized use cases, Deephaven supports object types and arrays that provide flexibility beyond primitive types.
+
+### Object types
 
 Object types can store any Java object. Common examples include `BigDecimal`, `BigInteger`, and custom classes.
 
-### Object column considerations
+#### Object column considerations
 
 - **Performance**: Object columns are slower than primitive columns due to boxing/unboxing overhead
 - **Memory**: Objects require more memory (object header + data)
@@ -373,13 +382,13 @@ Object types can store any Java object. Common examples include `BigDecimal`, `B
 > [!NOTE]
 > For high-precision decimal arithmetic, use `java.math.BigDecimal` instead of `double` to avoid floating-point errors. However, `BigDecimal` operations are slower than primitive operations.
 
-## Array types
+### Array types
 
 Array columns store arrays as values, allowing each cell to contain a list of items.
 
-### Creating array columns
+#### Creating array columns
 
-```python test-set=17 order=t20
+```python test-set=column-types order=t20
 from deephaven import empty_table
 
 t20 = empty_table(3).update(
@@ -393,11 +402,11 @@ t20 = empty_table(3).update(
 )
 ```
 
-### Working with array columns
+#### Working with array columns
 
 Access array elements and properties:
 
-```python test-set=17 order=t21
+```python test-set=column-types order=t21
 t21 = t20.update(
     [
         "ArrayLength = IntArray.length",
@@ -408,11 +417,11 @@ t21 = t20.update(
 )
 ```
 
-### Array null handling
+#### Array null handling
 
 Arrays themselves can be null, and array elements can also be null (for object arrays):
 
-```python test-set=18 order=t22
+```python test-set=column-types order=t22
 from deephaven import empty_table
 
 t22 = empty_table(5).update(
@@ -427,11 +436,11 @@ t22 = empty_table(5).update(
 )
 ```
 
-### Array operations
+#### Array operations
 
 Deephaven provides functions for array manipulation:
 
-```python test-set=19 order=t23
+```python test-set=column-types order=t23
 from deephaven import empty_table
 
 t23 = empty_table(3).update(
@@ -452,7 +461,7 @@ t23 = empty_table(3).update(
 
 Use explicit casts when you need to convert between numeric types:
 
-```python test-set=20 order=t24
+```python test-set=column-types order=t24
 from deephaven import empty_table
 
 t24 = empty_table(5).update(
@@ -472,7 +481,7 @@ t24 = empty_table(5).update(
 
 Convert strings to numeric types:
 
-```python test-set=21 order=t25
+```python test-set=column-types order=t25
 from deephaven import empty_table
 
 t25 = empty_table(3).update(
@@ -489,7 +498,7 @@ t25 = empty_table(3).update(
 
 Convert numbers to strings:
 
-```python test-set=22 order=t26
+```python test-set=column-types order=t26
 from deephaven import empty_table
 
 t26 = empty_table(3).update(
@@ -507,7 +516,7 @@ t26 = empty_table(3).update(
 
 Always validate input before converting to avoid runtime errors. Use conditional logic to handle cases where conversion might fail:
 
-```python test-set=23 order=t27
+```python test-set=column-types order=t27
 from deephaven import empty_table
 from deephaven.constants import NULL_INT
 
@@ -520,13 +529,15 @@ t27 = empty_table(5).update(
 )
 ```
 
-## Type considerations in table operations
+## Using types effectively
+
+Understanding how types behave in table operations and following best practices ensures optimal performance and maintainability.
 
 ### Aggregations and types
 
 Different aggregation operations have type-specific behavior:
 
-```python test-set=24 order=t28
+```python test-set=column-types order=t28
 from deephaven import empty_table
 
 source = empty_table(100).update(
@@ -555,7 +566,7 @@ t28 = source.agg_by(
 
 Joins require matching types in key columns:
 
-```python test-set=25 order=t29
+```python test-set=column-types order=t29
 from deephaven import empty_table
 
 left = empty_table(5).update(["IntKey = (int)i", "LeftValue = i * 10"])
@@ -579,7 +590,7 @@ right = empty_table(5).update("Key = (long)i")
 
 Cast to matching types when necessary:
 
-```python test-set=26 order=t30
+```python test-set=column-types order=t30
 from deephaven import empty_table
 
 left = empty_table(5).update(["Key = (int)i", "LeftValue = i * 10"])
@@ -593,7 +604,7 @@ t30 = left.update("LongKey = (long)Key").natural_join(right, on="LongKey")
 
 Sorting behavior varies by type:
 
-```python test-set=27 order=t31
+```python test-set=column-types order=t31
 from deephaven import empty_table
 from deephaven.constants import NULL_INT
 
@@ -618,8 +629,6 @@ sorted_time = t31.sort("Timestamp")
 # Nulls: appear first by default in ascending sort
 sorted_with_nulls = t31.sort("NullableInt")
 ```
-
-## Best practices
 
 ### Choose the right type
 
