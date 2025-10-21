@@ -957,8 +957,29 @@
                     "path": "how-to-guides/python-errors.md"
                   },
                   {
-                    "label": "Debugging with PyCharm",
-                    "path": "how-to-guides/debugging/pycharm-debugging.md"
+                    "label": "Debugging",
+                    "items": [
+                      {
+                        "label": "Overview",
+                        "path": "how-to-guides/debugging/debugging-landing.md"
+                      },
+                      {
+                        "label": "Docker setup",
+                        "path": "how-to-guides/debugging/docker-setup.md"
+                      },
+                      {
+                        "label": "pip setup",
+                        "path": "how-to-guides/debugging/pip-setup.md"
+                      },
+                      {
+                        "label": "Source setup",
+                        "path": "how-to-guides/debugging/source-setup.md"
+                      },
+                      {
+                        "label": "Common problems",
+                        "path": "how-to-guides/debugging/common-problems.md"
+                      }
+                    ]
                   },
                   {
                     "label": "Retrieve logs",
