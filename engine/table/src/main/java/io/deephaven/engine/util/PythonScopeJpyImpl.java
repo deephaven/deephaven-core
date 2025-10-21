@@ -43,7 +43,7 @@ public class PythonScopeJpyImpl implements PythonScope<PyObject> {
     public PyDictWrapper currentScope() {
         final ExecutionContext context = ExecutionContext.getContext();
         // noinspection unchecked
-        final Deque<PyDictWrapper> scopeStack = (Deque<PyDictWrapper>)context.getPythonScopeStack();
+        final Deque<PyDictWrapper> scopeStack = (Deque<PyDictWrapper>) context.getPythonScopeStack();
         if (scopeStack == null || scopeStack.isEmpty()) {
             return this.dict;
         } else {
@@ -128,7 +128,7 @@ public class PythonScopeJpyImpl implements PythonScope<PyObject> {
     public void pushScope(PyObject pydict) {
         final ExecutionContext context = ExecutionContext.getContext();
         // noinspection unchecked
-        Deque<PyDictWrapper> scopeStack = (Deque<PyDictWrapper>)context.getPythonScopeStack();
+        Deque<PyDictWrapper> scopeStack = (Deque<PyDictWrapper>) context.getPythonScopeStack();
         if (scopeStack == null) {
             scopeStack = new ArrayDeque<>();
             context.setPythonScopeStack(scopeStack);
@@ -140,7 +140,7 @@ public class PythonScopeJpyImpl implements PythonScope<PyObject> {
     public void popScope() {
         final ExecutionContext context = ExecutionContext.getContext();
         // noinspection unchecked
-        final Deque<PyDictWrapper> scopeStack = (Deque<PyDictWrapper>)context.getPythonScopeStack();
+        final Deque<PyDictWrapper> scopeStack = (Deque<PyDictWrapper>) context.getPythonScopeStack();
         if (scopeStack == null) {
             throw new IllegalStateException("The thread scope stack is empty.");
         }
