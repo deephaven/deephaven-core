@@ -56,7 +56,7 @@ class DType:
         j_type: Optional[type] = None,
         qst_type: Optional[jpy.JType] = None,
         is_primitive: bool = False,
-        np_type: type = np.object_,
+        np_type: Any = np.object_,
     ):
         """
         Args:
@@ -108,7 +108,7 @@ char = DType(
     j_name="char",
     qst_type=_JQstType.charType(),
     is_primitive=True,
-    np_type=np.dtype("uint16"),
+    np_type=np.uint16,
 )
 """Character type"""
 int32 = DType(
@@ -165,7 +165,7 @@ Period = cast(type, DType(j_name="java.time.Period"))  # type: TypeAlias
 """Time period type, which is a unit of time in terms of calendar time (days, weeks, months, years, etc.)."""
 TimeZone = cast(type, DType(j_name="java.time.ZoneId"))  # type: TypeAlias
 """Time zone type."""
-BusinessCalendar = DType(j_name="io.deephaven.time.calendar.BusinessCalendar")
+BusinessCalendar = cast(type, DType(j_name="io.deephaven.time.calendar.BusinessCalendar"))  # type: TypeAlias
 """Business calendar type"""
 PyObject = DType(j_name="org.jpy.PyObject")
 """Python object type"""

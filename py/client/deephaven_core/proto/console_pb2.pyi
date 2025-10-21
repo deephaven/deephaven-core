@@ -231,7 +231,13 @@ class ExecuteCommandResponse(google.protobuf.message.Message):
 
     ERROR_MESSAGE_FIELD_NUMBER: builtins.int
     CHANGES_FIELD_NUMBER: builtins.int
+    START_TIMESTAMP_FIELD_NUMBER: builtins.int
+    END_TIMESTAMP_FIELD_NUMBER: builtins.int
     error_message: builtins.str
+    start_timestamp: builtins.int
+    """Start timestamp for command execution, in nanoseconds since the unix epoch."""
+    end_timestamp: builtins.int
+    """End timestamp for command execution, in nanoseconds since the unix epoch."""
     @property
     def changes(self) -> deephaven_core.proto.application_pb2.FieldsChangeUpdate: ...
     def __init__(
@@ -239,9 +245,11 @@ class ExecuteCommandResponse(google.protobuf.message.Message):
         *,
         error_message: builtins.str = ...,
         changes: deephaven_core.proto.application_pb2.FieldsChangeUpdate | None = ...,
+        start_timestamp: builtins.int = ...,
+        end_timestamp: builtins.int = ...,
     ) -> None: ...
     def HasField(self, field_name: typing.Literal["changes", b"changes"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing.Literal["changes", b"changes", "error_message", b"error_message"]) -> None: ...
+    def ClearField(self, field_name: typing.Literal["changes", b"changes", "end_timestamp", b"end_timestamp", "error_message", b"error_message", "start_timestamp", b"start_timestamp"]) -> None: ...
 
 global___ExecuteCommandResponse = ExecuteCommandResponse
 

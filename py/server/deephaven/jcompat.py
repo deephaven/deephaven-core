@@ -267,7 +267,7 @@ def _j_array_to_sequence(j_array: jpy.JType) -> Sequence[Any]:
 
 def _j_array_to_numpy_array(
     dtype: DType, j_array: jpy.JType, conv_null: bool, type_promotion: bool = False
-) -> Optional[np.ndarray]:
+) -> np.ndarray:
     """Produces a numpy array from the DType and given Java array.
 
     Args:
@@ -283,15 +283,13 @@ def _j_array_to_numpy_array(
     Raises:
         DHError
     """
-    if j_array is None:
-        return None
 
     if dtype.is_primitive:
         np_array = np.frombuffer(j_array, dtype.np_type)
     elif dtype == dtypes.Instant:
         longs = _JPrimitiveArrayConversionUtility.translateArrayInstantToLong(j_array)
         np_long_array = np.frombuffer(longs, np.int64)
-        np_array = np_long_array.view(dtype.np_type)
+        np_array = np_long_array.view(np.dtype(dtype.np_type))
     elif dtype == dtypes.bool_:
         # dh nulls will be preserved and show up as True b/c the underlying byte array isn't modified
         bytes_ = _JPrimitiveArrayConversionUtility.translateArrayBooleanToByte(j_array)

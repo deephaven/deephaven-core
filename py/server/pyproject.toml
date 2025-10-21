@@ -18,6 +18,18 @@ ignore_missing_imports = true
 [[tool.mypy.overrides]]
 module = "deephaven.plugin"
 ignore_missing_imports = true
+[[tool.mypy.overrides]]
+module = "connectorx"
+ignore_missing_imports = true
+[[tool.mypy.overrides]]
+module = "turbodbc.*"
+ignore_missing_imports = true
+[[tool.mypy.overrides]]
+module = "adbc_driver_sqlite.*"
+ignore_missing_imports = true
+[[tool.mypy.overrides]]
+module = "adbc_driver_postgresql.*"
+ignore_missing_imports = true
 
 [tool.ruff]
 exclude = ["deephaven/plot/figure.py"]

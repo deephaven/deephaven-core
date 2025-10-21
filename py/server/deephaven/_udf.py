@@ -422,12 +422,13 @@ def _parse_type_no_nested(
 
     # if the annotation is a DH DType instance, we'll use its numpy type
     if isinstance(t, dtypes.DType):
-        t = t.np_type
-        p_param.effective_types.append(np.dtype(t).type)
+        np_t = t.np_type
+        p_param.effective_types.append(np.dtype(np_t).type)
     else:
         p_param.effective_types.append(t)
+        np_t = t
 
-    tc = _encode_param_type(t)
+    tc = _encode_param_type(np_t)
     if "[" in tc:
         p_param.has_array = True
     if tc in {"N", "O"}:

@@ -150,7 +150,7 @@ def to_table(np_array: np.ndarray, cols: list[str]) -> Table:
     try:
         _, *dims = np_array.shape
         if dims:
-            if not cols or len(cols) != dims[0]:
+            if not cols or not dims or len(cols) != dims[0]:
                 raise DHError(
                     message=f"the number of array columns {dims[0]} doesn't match "
                     f"the number of column names {len(cols)}"
@@ -161,13 +161,13 @@ def to_table(np_array: np.ndarray, cols: list[str]) -> Table:
 
         if len(cols) == 1:
             input_cols.append(
-                _make_input_column(cols[0], np.stack(np_array, axis=1)[0], dtype)
+                _make_input_column(cols[0], np_array.T[0], dtype)
             )
         else:
             for i, col in enumerate(cols):
                 input_cols.append(
                     _make_input_column(
-                        col, np.stack(np_array[:, [i]], axis=1)[0], dtype
+                        col, np_array[:, [i]].T[0], dtype
                     )
                 )
 

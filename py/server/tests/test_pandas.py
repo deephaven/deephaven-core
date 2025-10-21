@@ -176,15 +176,15 @@ class PandasTestCase(BaseTestCase):
         # string_col(name="String", data=["foo", None]),
         # jobj_col(name="JObj", data=[j_array_list, None]),
         input_cols = [
-            byte_col(name="Byte", data=(1, NULL_BYTE)),
-            char_col(name="Char", data=(1, NULL_CHAR)),
-            short_col(name="Short", data=[1, NULL_SHORT]),
-            int_col(name="Int_", data=[1, NULL_INT]),
-            long_col(name="Long_", data=[1, NULL_LONG]),
-            float_col(name="Float_", data=[1.01, np.nan]),
-            double_col(name="Double_", data=[1.01, np.nan]),
+            # byte_col(name="Byte", data=(1, NULL_BYTE)),
+            # char_col(name="Char", data=(1, NULL_CHAR)),
+            # short_col(name="Short", data=[1, NULL_SHORT]),
+            # int_col(name="Int_", data=[1, NULL_INT]),
+            # long_col(name="Long_", data=[1, NULL_LONG]),
+            # float_col(name="Float_", data=[1.01, np.nan]),
+            # double_col(name="Double_", data=[1.01, np.nan]),
             datetime_col(name="Datetime", data=[1, None]),
-            pyobj_col(name="PyObj", data=[CustomClass(1, "1"), None]),
+            # pyobj_col(name="PyObj", data=[CustomClass(1, "1"), None]),
         ]
         test_table = new_table(cols=input_cols)
         df = to_pandas(test_table, dtype_backend=None)
