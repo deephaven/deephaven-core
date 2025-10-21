@@ -303,6 +303,9 @@ project(':extensions-bson-jackson').projectDir = file('extensions/bson-jackson')
 
 include(':plugin')
 
+include(':plugin-options')
+project(':plugin-options').projectDir = file('plugin/options')
+
 include(':plugin-dagger')
 project(':plugin-dagger').projectDir = file('plugin/dagger')
 
