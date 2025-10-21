@@ -102,6 +102,8 @@ public class ExecutionContext {
     private final UpdateGraph updateGraph;
     private final OperationInitializer operationInitializer;
 
+    private Object pythonScopeStack;
+
     private ExecutionContext(
             final boolean isSystemic,
             final AuthContext authContext,
@@ -187,6 +189,14 @@ public class ExecutionContext {
                 operationInitializer);
     }
 
+    /**
+     * Sets the python scope stack for this execution context.
+     *
+     * @param pythonScopeStack the python scope stack to assign to this context
+     */
+    public void setPythonScopeStack(Object pythonScopeStack) {
+        this.pythonScopeStack = pythonScopeStack;
+    }
 
     /**
      * Execute runnable within this execution context.
@@ -247,6 +257,10 @@ public class ExecutionContext {
 
     public OperationInitializer getOperationInitializer() {
         return operationInitializer;
+    }
+
+    public Object getPythonScopeStack() {
+        return pythonScopeStack;
     }
 
     @SuppressWarnings("unused")
