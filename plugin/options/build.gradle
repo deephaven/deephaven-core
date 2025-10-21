@@ -12,7 +12,3 @@ dependencies {
     compileOnly project(':util-immutables')
     annotationProcessor libs.immutables.value
 }
-
-test {
-    useJUnitPlatform()
-}
