@@ -62,7 +62,7 @@ jetty11 = "11.0.20"
 jpy = "1.2.0"
 jsinterop = "2.0.2"
 # google is annoying, and have different versions released for the same groupId
-jsinterop-base = "1.0.3"
+jsinterop-base = "1.1.1"
 logback = "1.5.19"
 lz4 = "1.8.0"
 mindrot = "0.4"
