@@ -116,12 +116,12 @@ Attach the debugger to Deephaven by executing the following commands in the Deep
 import pydevd
 
 pydevd.settrace(
-    "host.docker.internal",           # Host where PyCharm is running (Docker-specific hostname)
-    port=4444,                        # Port matching your PyCharm debug config
-    suspend=False,                    # Don't pause execution immediately
+    "host.docker.internal",  # Host where PyCharm is running (Docker-specific hostname)
+    port=4444,  # Port matching your PyCharm debug config
+    suspend=False,  # Don't pause execution immediately
     trace_only_current_thread=False,  # Debug all threads
-    stdoutToServer=True,              # Send stdout to PyCharm console
-    stderrToServer=True,              # Send stderr to PyCharm console
+    stdoutToServer=True,  # Send stdout to PyCharm console
+    stderrToServer=True,  # Send stderr to PyCharm console
 )
 ```
 

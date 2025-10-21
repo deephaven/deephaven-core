@@ -256,9 +256,9 @@ To attach the debugger, navigate to the Deephaven IDE and execute the following 
 import pydevd
 
 pydevd.settrace(
-    "localhost",      # Host where PyCharm is running
-    port=4444,        # Port matching your PyCharm debug config
-    suspend=False     # Don't pause execution immediately
+    "localhost",  # Host where PyCharm is running
+    port=4444,  # Port matching your PyCharm debug config
+    suspend=False,  # Don't pause execution immediately
 )
 ```
 

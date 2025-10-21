@@ -12,7 +12,6 @@ It is common to build Deephaven from its source code for development tasks. In s
 > [!NOTE]
 > PyCharm professional is a paid product.
 
-
 ## Setup
 
 This guide assumes that Deephaven is built using the steps in the [guide on building Deephaven from source](../../getting-started/launch-build.md). Following these steps produces a local clone of [Deephaven Core](https://github.com/deephaven/deephaven-core) in a directory called `deephaven-core`, and a Python virtual environment for the Deephaven installation. This guide will assume that virtual environment is called `source-dh-venv`.
@@ -79,9 +78,9 @@ To attach the debugger, navigate to the Deephaven IDE and execute the following 
 import pydevd
 
 pydevd.settrace(
-    "localhost",      # Host where PyCharm is running
-    port=4444,        # Port matching your PyCharm debug config
-    suspend=False     # Don't pause execution immediately
+    "localhost",  # Host where PyCharm is running
+    port=4444,  # Port matching your PyCharm debug config
+    suspend=False,  # Don't pause execution immediately
 )
 ```
 
