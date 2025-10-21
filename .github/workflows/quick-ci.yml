@@ -60,7 +60,14 @@ jobs:
       - name: Quick Task
         # Even though quick includes spotlessCheck, we want to make sure it runs first and fails ASAP for quick feedback
         run: ./gradlew --scan spotlessCheck quick
-
+      - name: Upload Py build for review
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: quick-ci-py-build
+          path: |
+            py/client/build/
+            proto/proto-backplane-grpc/build/protoc-output/python/
       - name: Upload JVM Error Logs
         uses: actions/upload-artifact@v4
         if: failure()
