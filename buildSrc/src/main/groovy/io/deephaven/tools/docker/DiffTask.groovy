@@ -118,6 +118,10 @@ abstract class DiffTask extends DefaultTask {
                 // verify that the contents match
                 if (sourceFile.text != details.file.text) {
                     changed.add(sourceFile.toPath())
+                    int offset = differenceAt(sourceFile.text, details.file.text);
+                    int fromLen = Math.min(sourceFile.text.length(), offset + 20)
+                    int toLen = Math.min(details.file.text.length(), offset + 20)
+                    println("Difference at offset $offset for file \n$pathString:\n${sourceFile.text.substring(offset - 1, fromLen)}\nvs:\n${details.file.text.substring(offset - 1, toLen)}")
                 }
             }
         }
@@ -138,5 +142,12 @@ abstract class DiffTask extends DefaultTask {
                 throw new RuntimeException("Sources do not match expected");
             }
         }
+    }
+    static int differenceAt(String s1, String s2) {
+        int i;
+        for(i = 0; i < s1.length() && i < s2.length() && s1.charAt(i) == s2.charAt(i); ++i) {
+        }
+
+        return i >= s2.length() && i >= s1.length() ? -1 : i;
     }
 }
