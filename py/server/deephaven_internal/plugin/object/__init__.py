@@ -2,7 +2,7 @@
 # Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 #
 
-from typing import Optional, Any
+from typing import Optional, Any, TYPE_CHECKING, cast
 
 import jpy
 from deephaven.plugin.object_type import (
@@ -16,9 +16,16 @@ from deephaven.plugin.object_type import (
 from deephaven._wrapper import pythonify, javaify
 from deephaven.liveness_scope import liveness_scope
 
-JReference = jpy.get_type("io.deephaven.plugin.type.Exporter$Reference")
-JExporterAdapter = jpy.get_type("io.deephaven.server.plugin.python.ExporterAdapter")
-JMessageStream = jpy.get_type("io.deephaven.plugin.type.ObjectType$MessageStream")
+if TYPE_CHECKING:
+    from typing_extensions import TypeAlias  # novermin  # noqa
+
+JReference = cast(type, jpy.get_type("io.deephaven.plugin.type.Exporter$Reference"))  # type: TypeAlias
+JExporterAdapter = cast(
+    type, jpy.get_type("io.deephaven.server.plugin.python.ExporterAdapter")
+)  # type: TypeAlias
+JMessageStream = cast(
+    type, jpy.get_type("io.deephaven.plugin.type.ObjectType$MessageStream")
+)  # type: TypeAlias
 JPyObjectRefCountedNode = jpy.get_type(
     "io.deephaven.server.plugin.python.LivePyObjectWrapper"
 )

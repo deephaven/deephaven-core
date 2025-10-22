@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [tool.mypy]
 namespace_packages = true
-files = ["deephaven", "deephaven_internal", "test_helper", "tests"]
+files = ["deephaven", "deephaven_internal"]
 exclude = "deephaven/plot/figure.py"
 
 [[tool.mypy.overrides]]

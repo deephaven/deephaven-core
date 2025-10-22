@@ -4,8 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [tool.mypy]
 namespace_packages = true
-files = ["pydeephaven", "tests"]
-exclude = "deephaven_core/proto/.*"
+files = ["pydeephaven"]
 
 [[tool.mypy.overrides]]
 module = "pyarrow"

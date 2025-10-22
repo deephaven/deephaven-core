@@ -67,7 +67,7 @@ See the methods in this module more more details on modelling JSON values.
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import Union, Optional, Literal
+from typing import Union, Optional, Literal, Iterable
 
 import jpy
 
@@ -574,7 +574,7 @@ def tuple_val(
         the tuple value
     """
     if isinstance(values, tuple):
-        kvs = enumerate(values)
+        kvs: Iterable = enumerate(values)
     elif isinstance(values, dict):
         kvs = values.items()
     else:

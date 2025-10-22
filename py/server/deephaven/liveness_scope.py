@@ -56,15 +56,17 @@ import contextlib
 
 import jpy
 
-from typing import Union
+from typing import Union, cast, TYPE_CHECKING
 from collections.abc import Iterator
-
 
 from deephaven import DHError
 from deephaven._wrapper import JObjectWrapper
 
+if TYPE_CHECKING:
+    from typing_extensions import TypeAlias  # novermin  # noqa
+
 _JLivenessScopeStack = jpy.get_type("io.deephaven.engine.liveness.LivenessScopeStack")
-_JLivenessScope = jpy.get_type("io.deephaven.engine.liveness.LivenessScope")
+_JLivenessScope = cast(type, jpy.get_type("io.deephaven.engine.liveness.LivenessScope"))  # type: TypeAlias
 _JLivenessReferent = jpy.get_type("io.deephaven.engine.liveness.LivenessReferent")
 
 

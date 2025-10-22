@@ -2,11 +2,12 @@
 # Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 #
 from __future__ import annotations
-from inspect import Parameter
-from typing import Any, TypedDict, Union, cast
-from docstring_parser import parse, Docstring
-from jedi.api.classes import Signature, ParamName
 
+from inspect import Parameter
+from typing import Any, TypedDict, Union
+
+from docstring_parser import parse, Docstring
+from jedi.api.classes import Signature
 
 _IGNORE_PARAM_NAMES = ("", "/", "*")
 _POSITIONAL_KINDS = (
@@ -169,7 +170,9 @@ def _generate_description_markdown(
             ):
                 description += f"```\n{example.description}\n```"
             else:
-                description += example.description if example.description is not None else ""
+                description += (
+                    example.description if example.description is not None else ""
+                )
             description += "\n\n"
 
     return description.strip()

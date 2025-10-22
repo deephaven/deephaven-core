@@ -246,7 +246,7 @@ def _get_barrage_session_direct(client_config: jpy.JType, auth: str) -> BarrageS
 
 def _build_client_config(
     target_uri: str,
-    tls_root_certs: bytes,
+    tls_root_certs: Optional[bytes],
     extra_headers: Optional[dict[str, str]] = None,
 ) -> jpy.JType:
     j_client_config_builder = _JClientConfig.builder()

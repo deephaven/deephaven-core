@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import numbers
 from enum import Enum
-from typing import Any, Dict, Union, Sequence, List, Callable, _GenericAlias
+from typing import Optional, Any, Dict, Union, Sequence, List, Callable, _GenericAlias
 
 import numpy
 import jpy
@@ -105,7 +105,7 @@ class Figure(JObjectWrapper):
 
     j_object_type = jpy.get_type("io.deephaven.plot.Figure")
 
-    def __init__(self, rows: int = 1, cols: int = 1, j_figure: jpy.JType = None):
+    def __init__(self, rows: int = 1, cols: int = 1, j_figure: Optional[jpy.JType] = None):
         """ Initializes a Figure object that is used for displaying plots
 
         Args:
@@ -124,10 +124,10 @@ class Figure(JObjectWrapper):
 
     def axes(
         self,
-        name: str = None,
-        axes: int = None,
-        remove_series: List[str] = None,
-        plot_style: Union[str, PlotStyle] = None,
+        name: Optional[str] = None,
+        axes: Optional[int] = None,
+        remove_series: Optional[List[str]] = None,
+        plot_style: Optional[Union[str, PlotStyle]] = None,
     ) -> Figure:
         """Gets specific axes from the chart and updates the chart's axes's configurations.
 
@@ -188,20 +188,20 @@ class Figure(JObjectWrapper):
 
     def axis(
         self,
-        dim: int = None,
-        t: Union[Table, SelectableDataSet] = None,
-        label: str = None,
-        color: Union[str, int, Color] = None,
-        font: Font = None,
-        format: AxisFormat = None,
-        format_pattern: str = None,
-        min: Union[str, float] = None,
-        max: Union[str, float] = None,
-        invert: bool = None,
-        log: bool = None,
-        business_time: bool = None,
-        calendar: Union[str, BusinessCalendar] = None,
-        transform: AxisTransform = None,
+        dim: Optional[int] = None,
+        t: Optional[Union[Table, SelectableDataSet]] = None,
+        label: Optional[str] = None,
+        color: Optional[Union[str, int, Color]] = None,
+        font: Optional[Font] = None,
+        format: Optional[AxisFormat] = None,
+        format_pattern: Optional[str] = None,
+        min: Optional[Union[str, float]] = None,
+        max: Optional[Union[str, float]] = None,
+        invert: Optional[bool] = None,
+        log: Optional[bool] = None,
+        business_time: Optional[bool] = None,
+        calendar: Optional[Union[str, BusinessCalendar]] = None,
+        transform: Optional[AxisTransform] = None,
     ) -> Figure:
         """Gets a specific axis from a chart's axes and updates the axis's configurations.
 
@@ -367,18 +367,18 @@ class Figure(JObjectWrapper):
 
     def chart(
         self,
-        multi_series_key: List[Any] = None,
-        remove_series: List[str] = None,
-        index: int = None,
-        row: int = None,
-        col: int = None,
-        row_span: int = None,
-        col_span: int = None,
-        orientation: str = None,
-        grid_visible: bool = None,
-        x_grid_visible: bool = None,
-        y_grid_visible: bool = None,
-        pie_label_format: str = None,
+        multi_series_key: Optional[List[Any]] = None,
+        remove_series: Optional[List[str]] = None,
+        index: Optional[int] = None,
+        row: Optional[int] = None,
+        col: Optional[int] = None,
+        row_span: Optional[int] = None,
+        col_span: Optional[int] = None,
+        orientation: Optional[str] = None,
+        grid_visible: Optional[bool] = None,
+        x_grid_visible: Optional[bool] = None,
+        y_grid_visible: Optional[bool] = None,
+        pie_label_format: Optional[str] = None,
     ) -> Figure:
         """Gets a chart from the figure's grid and updates a chart's configuration.
 
@@ -517,9 +517,9 @@ class Figure(JObjectWrapper):
 
     def chart_legend(
         self,
-        color: Union[str, int, Color] = None,
-        font: Font = None,
-        visible: int = None,
+        color: Optional[Union[str, int, Color]] = None,
+        font: Optional[Font] = None,
+        visible: Optional[int] = None,
     ) -> Figure:
         """Updates a chart's legend's configuration.
 
@@ -571,14 +571,14 @@ class Figure(JObjectWrapper):
 
     def chart_title(
         self,
-        t: Union[Table, SelectableDataSet] = None,
-        title: str = None,
-        columns: List[str] = None,
-        format: str = None,
-        max_rows: int = None,
-        column_names_in_title: bool = None,
-        color: Union[str, int, Color] = None,
-        font: Font = None,
+        t: Optional[Union[Table, SelectableDataSet]] = None,
+        title: Optional[str] = None,
+        columns: Optional[List[str]] = None,
+        format: Optional[str] = None,
+        max_rows: Optional[int] = None,
+        column_names_in_title: Optional[bool] = None,
+        color: Optional[Union[str, int, Color]] = None,
+        font: Optional[Font] = None,
     ) -> Figure:
         """Sets the title of the chart.
 
@@ -670,11 +670,11 @@ class Figure(JObjectWrapper):
 
     def figure(
         self,
-        remove_series: List[str] = None,
-        remove_chart_index: int = None,
-        remove_chart_row: int = None,
-        remove_chart_col: int = None,
-        update_millis: int = None,
+        remove_series: Optional[List[str]] = None,
+        remove_chart_index: Optional[int] = None,
+        remove_chart_row: Optional[int] = None,
+        remove_chart_col: Optional[int] = None,
+        update_millis: Optional[int] = None,
     ) -> Figure:
         """Updates the figure's configuration.
 
@@ -739,9 +739,9 @@ class Figure(JObjectWrapper):
 
     def figure_title(
         self,
-        title: str = None,
-        color: Union[str, int, Color] = None,
-        font: Font = None,
+        title: Optional[str] = None,
+        color: Optional[Union[str, int, Color]] = None,
+        font: Optional[Font] = None,
     ) -> Figure:
         """Sets the title of the figure.
 
@@ -793,9 +793,9 @@ class Figure(JObjectWrapper):
 
     def func(
         self,
-        xmin: float = None,
-        xmax: float = None,
-        npoints: int = None,
+        xmin: Optional[float] = None,
+        xmax: Optional[float] = None,
+        npoints: Optional[int] = None,
     ) -> Figure:
         """Updates the configuration for plotting a function.
 
@@ -847,10 +847,10 @@ class Figure(JObjectWrapper):
 
     def line(
         self,
-        multi_series_key: List[Any] = None,
-        color: Union[str, int, Color] = None,
-        style: Union[str, LineStyle] = None,
-        visible: int = None,
+        multi_series_key: Optional[List[Any]] = None,
+        color: Optional[Union[str, int, Color]] = None,
+        style: Optional[Union[str, LineStyle]] = None,
+        visible: Optional[int] = None,
     ) -> Figure:
         """Sets the line color, style, visibility.
 
@@ -929,8 +929,8 @@ class Figure(JObjectWrapper):
 
     def new_axes(
         self,
-        name: str = None,
-        dim: int = None,
+        name: Optional[str] = None,
+        dim: Optional[int] = None,
     ) -> Figure:
         """Creates new axes.
 
@@ -966,9 +966,9 @@ class Figure(JObjectWrapper):
 
     def new_chart(
         self,
-        index: int = None,
-        row: int = None,
-        col: int = None,
+        index: Optional[int] = None,
+        row: Optional[int] = None,
+        col: Optional[int] = None,
     ) -> Figure:
         """Adds a new chart to this figure.
 
@@ -1007,12 +1007,12 @@ class Figure(JObjectWrapper):
     def plot_cat(
         self,
         series_name: str,
-        t: Union[Table, SelectableDataSet] = None,
-        category: Union[str, List[str], List[int], List[float]] = None,
-        y: Union[str, List[int], List[float], List[Instant]] = None,
-        y_low: Union[str, List[int], List[float], List[Instant]] = None,
-        y_high: Union[str, List[int], List[float], List[Instant]] = None,
-        by: List[str] = None,
+        t: Optional[Union[Table, SelectableDataSet]] = None,
+        category: Optional[Union[str, List[str], List[int], List[float]]] = None,
+        y: Optional[Union[str, List[int], List[float], List[Instant]]] = None,
+        y_low: Optional[Union[str, List[int], List[float], List[Instant]]] = None,
+        y_high: Optional[Union[str, List[int], List[float], List[Instant]]] = None,
+        by: Optional[List[str]] = None,
     ) -> Figure:
         """Creates a plot with a discrete, categorical axis. Categorical data must not have duplicates.
 
@@ -1075,8 +1075,8 @@ class Figure(JObjectWrapper):
     def plot_cat_hist(
         self,
         series_name: str,
-        t: Union[Table, SelectableDataSet] = None,
-        category: Union[str, List[str], List[int], List[float]] = None,
+        t: Optional[Union[Table, SelectableDataSet]] = None,
+        category: Optional[Union[str, List[str], List[int], List[float]]] = None,
     ) -> Figure:
         """Creates a histogram with a discrete axis. Charts the frequency of each unique element in the input data.
 
@@ -1115,13 +1115,13 @@ class Figure(JObjectWrapper):
     def plot_ohlc(
         self,
         series_name: str,
-        t: Union[Table, SelectableDataSet] = None,
-        x: Union[str, List[Instant]] = None,
-        open: Union[str, List[int], List[float], List[Instant]] = None,
-        high: Union[str, List[int], List[float], List[Instant]] = None,
-        low: Union[str, List[int], List[float], List[Instant]] = None,
-        close: Union[str, List[int], List[float], List[Instant]] = None,
-        by: List[str] = None,
+        t: Optional[Union[Table, SelectableDataSet]] = None,
+        x: Optional[Union[str, List[Instant]]] = None,
+        open: Optional[Union[str, List[int], List[float], List[Instant]]] = None,
+        high: Optional[Union[str, List[int], List[float], List[Instant]]] = None,
+        low: Optional[Union[str, List[int], List[float], List[Instant]]] = None,
+        close: Optional[Union[str, List[int], List[float], List[Instant]]] = None,
+        by: Optional[List[str]] = None,
     ) -> Figure:
         """Creates an open-high-low-close plot.
 
@@ -1182,9 +1182,9 @@ class Figure(JObjectWrapper):
     def plot_pie(
         self,
         series_name: str,
-        t: Union[Table, SelectableDataSet] = None,
-        category: Union[str, List[str], List[int], List[float]] = None,
-        y: Union[str, List[int], List[float], List[Instant]] = None,
+        t: Optional[Union[Table, SelectableDataSet]] = None,
+        category: Optional[Union[str, List[str], List[int], List[float]]] = None,
+        y: Optional[Union[str, List[int], List[float], List[Instant]]] = None,
     ) -> Figure:
         """Creates a pie plot. Categorical data must not have duplicates.
 
@@ -1230,10 +1230,10 @@ class Figure(JObjectWrapper):
         t: Union[Table, SelectableDataSet],
         id: str,
         parent: str,
-        value: str = None,
-        label: str = None,
-        hover_text: str = None,
-        color: str = None,
+        value: Optional[str] = None,
+        label: Optional[str] = None,
+        hover_text: Optional[str] = None,
+        color: Optional[str] = None,
     ) -> Figure:
         """Creates a treemap. Must have only one root.
 
@@ -1296,17 +1296,17 @@ class Figure(JObjectWrapper):
     def plot_xy(
         self,
         series_name: str,
-        t: Union[Table, SelectableDataSet] = None,
-        x: Union[str, List[int], List[float], List[Instant]] = None,
-        x_low: Union[str, List[int], List[float], List[Instant]] = None,
-        x_high: Union[str, List[int], List[float], List[Instant]] = None,
-        y: Union[str, List[int], List[float], List[Instant]] = None,
-        y_low: Union[str, List[int], List[float], List[Instant]] = None,
-        y_high: Union[str, List[int], List[float], List[Instant]] = None,
-        function: Callable = None,
-        by: List[str] = None,
-        x_time_axis: bool = None,
-        y_time_axis: bool = None,
+        t: Optional[Union[Table, SelectableDataSet]] = None,
+        x: Optional[Union[str, List[int], List[float], List[Instant]]] = None,
+        x_low: Optional[Union[str, List[int], List[float], List[Instant]]] = None,
+        x_high: Optional[Union[str, List[int], List[float], List[Instant]]] = None,
+        y: Optional[Union[str, List[int], List[float], List[Instant]]] = None,
+        y_low: Optional[Union[str, List[int], List[float], List[Instant]]] = None,
+        y_high: Optional[Union[str, List[int], List[float], List[Instant]]] = None,
+        function: Optional[Callable] = None,
+        by: Optional[List[str]] = None,
+        x_time_axis: Optional[bool] = None,
+        y_time_axis: Optional[bool] = None,
     ) -> Figure:
         """Creates an XY plot.
 
@@ -1405,11 +1405,11 @@ class Figure(JObjectWrapper):
     def plot_xy_hist(
         self,
         series_name: str,
-        t: Union[Table, SelectableDataSet] = None,
-        x: Union[str, List[int], List[float], List[Instant]] = None,
-        xmin: float = None,
-        xmax: float = None,
-        nbins: int = None,
+        t: Optional[Union[Table, SelectableDataSet]] = None,
+        x: Optional[Union[str, List[int], List[float], List[Instant]]] = None,
+        xmin: Optional[float] = None,
+        xmax: Optional[float] = None,
+        nbins: Optional[int] = None,
     ) -> Figure:
         """Creates an XY histogram.
 
@@ -1465,15 +1465,15 @@ class Figure(JObjectWrapper):
 
     def point(
         self,
-        t: Union[Table, SelectableDataSet] = None,
-        category: Union[str, List[str], List[int], List[float]] = None,
-        multi_series_key: List[Any] = None,
-        color: Union[str, int, Color, List[str], List[int], List[Color], Callable, Dict[Any,str], Dict[Any,int], Dict[Any,Color]] = None,
-        label: Union[str, List[str], Callable, Dict[Any,str]] = None,
-        shape: Union[str, Shape, List[str], List[Shape], Callable, Dict[Any,str], Dict[Any,Shape]] = None,
-        size: Union[int, float, List[int], List[float], Callable, Dict[Any,int], Dict[Any,float]] = None,
-        label_format: str = None,
-        visible: int = None,
+        t: Optional[Union[Table, SelectableDataSet]] = None,
+        category: Optional[Union[str, List[str], List[int], List[float]]] = None,
+        multi_series_key: Optional[List[Any]] = None,
+        color: Optional[Union[str, int, Color, List[str], List[int], List[Color], Callable, Dict[Any,str], Dict[Any,int], Dict[Any,Color]]] = None,
+        label: Optional[Union[str, List[str], Callable, Dict[Any,str]]] = None,
+        shape: Optional[Union[str, Shape, List[str], List[Shape], Callable, Dict[Any,str], Dict[Any,Shape]]] = None,
+        size: Optional[Union[int, float, List[int], List[float], Callable, Dict[Any,int], Dict[Any,float]]] = None,
+        label_format: Optional[str] = None,
+        visible: Optional[int] = None,
     ) -> Figure:
         """Sets the point color, label, size, visibility, etc.
 
@@ -1739,10 +1739,10 @@ class Figure(JObjectWrapper):
     def save(
         self,
         path: str,
-        height: int = None,
-        width: int = None,
-        wait: bool = None,
-        timeout_seconds: int = None,
+        height: Optional[int] = None,
+        width: Optional[int] = None,
+        wait: Optional[bool] = None,
+        timeout_seconds: Optional[int] = None,
     ) -> Figure:
         """Saves the Figure as an image.
 
@@ -1792,17 +1792,17 @@ class Figure(JObjectWrapper):
 
     def series(
         self,
-        name: str = None,
-        axes: int = None,
-        group: int = None,
-        multi_series_key: List[Any] = None,
-        color: Union[str, int, Color] = None,
-        tool_tip_pattern: str = None,
-        x_tool_tip_pattern: str = None,
-        y_tool_tip_pattern: str = None,
-        error_bar_color: Union[str, int, Color] = None,
-        gradient_visible: bool = None,
-        naming_function: Callable = None,
+        name: Optional[str] = None,
+        axes: Optional[int] = None,
+        group: Optional[int] = None,
+        multi_series_key: Optional[List[Any]] = None,
+        color: Optional[Union[str, int, Color]] = None,
+        tool_tip_pattern: Optional[str] = None,
+        x_tool_tip_pattern: Optional[str] = None,
+        y_tool_tip_pattern: Optional[str] = None,
+        error_bar_color: Optional[Union[str, int, Color]] = None,
+        gradient_visible: Optional[bool] = None,
+        naming_function: Optional[Callable] = None,
     ) -> Figure:
         """Gets a specific data series and updates the data series's configurations.
 
@@ -1988,11 +1988,11 @@ class Figure(JObjectWrapper):
 
     def ticks(
         self,
-        font: Font = None,
-        gap: float = None,
-        loc: List[float] = None,
-        angle: int = None,
-        visible: int = None,
+        font: Optional[Font] = None,
+        gap: Optional[float] = None,
+        loc: Optional[List[float]] = None,
+        angle: Optional[int] = None,
+        visible: Optional[int] = None,
     ) -> Figure:
         """Updates the configuration for major ticks of an axis.
 
@@ -2062,8 +2062,8 @@ class Figure(JObjectWrapper):
 
     def ticks_minor(
         self,
-        nminor: int = None,
-        visible: int = None,
+        nminor: Optional[int] = None,
+        visible: Optional[int] = None,
     ) -> Figure:
         """Updates the configuration for minor ticks of an axis.
 
@@ -2106,8 +2106,8 @@ class Figure(JObjectWrapper):
 
     def twin(
         self,
-        name: str = None,
-        dim: int = None,
+        name: Optional[str] = None,
+        dim: Optional[int] = None,
     ) -> Figure:
         """Creates a new Axes which shares one Axis with the current Axes. For example, this is used for creating plots with a common x-axis but two different y-axes.
 
@@ -2143,19 +2143,19 @@ class Figure(JObjectWrapper):
 
     def x_axis(
         self,
-        t: Union[Table, SelectableDataSet] = None,
-        label: str = None,
-        color: Union[str, int, Color] = None,
-        font: Font = None,
-        format: AxisFormat = None,
-        format_pattern: str = None,
-        min: Union[str, float] = None,
-        max: Union[str, float] = None,
-        invert: bool = None,
-        log: bool = None,
-        business_time: bool = None,
-        calendar: Union[str, BusinessCalendar] = None,
-        transform: AxisTransform = None,
+        t: Optional[Union[Table, SelectableDataSet]] = None,
+        label: Optional[str] = None,
+        color: Optional[Union[str, int, Color]] = None,
+        font: Optional[Font] = None,
+        format: Optional[AxisFormat] = None,
+        format_pattern: Optional[str] = None,
+        min: Optional[Union[str, float]] = None,
+        max: Optional[Union[str, float]] = None,
+        invert: Optional[bool] = None,
+        log: Optional[bool] = None,
+        business_time: Optional[bool] = None,
+        calendar: Optional[Union[str, BusinessCalendar]] = None,
+        transform: Optional[AxisTransform] = None,
     ) -> Figure:
         """Gets the x-Axis from a chart's axes and updates the x-Axis's configurations.
 
@@ -2317,11 +2317,11 @@ class Figure(JObjectWrapper):
 
     def x_ticks(
         self,
-        font: Font = None,
-        gap: float = None,
-        loc: List[float] = None,
-        angle: int = None,
-        visible: int = None,
+        font: Optional[Font] = None,
+        gap: Optional[float] = None,
+        loc: Optional[List[float]] = None,
+        angle: Optional[int] = None,
+        visible: Optional[int] = None,
     ) -> Figure:
         """Updates the configuration for major ticks of the x-Axis.
 
@@ -2391,8 +2391,8 @@ class Figure(JObjectWrapper):
 
     def x_ticks_minor(
         self,
-        nminor: int = None,
-        visible: int = None,
+        nminor: Optional[int] = None,
+        visible: Optional[int] = None,
     ) -> Figure:
         """Updates the configuration for minor ticks of the x-Axis.
 
@@ -2435,7 +2435,7 @@ class Figure(JObjectWrapper):
 
     def x_twin(
         self,
-        name: str = None,
+        name: Optional[str] = None,
     ) -> Figure:
         """Creates a new Axes which shares the x-Axis with the current Axes. For example, this is used for creating plots with a common x-axis but two different y-axes.
 
@@ -2463,19 +2463,19 @@ class Figure(JObjectWrapper):
 
     def y_axis(
         self,
-        t: Union[Table, SelectableDataSet] = None,
-        label: str = None,
-        color: Union[str, int, Color] = None,
-        font: Font = None,
-        format: AxisFormat = None,
-        format_pattern: str = None,
-        min: Union[str, float] = None,
-        max: Union[str, float] = None,
-        invert: bool = None,
-        log: bool = None,
-        business_time: bool = None,
-        calendar: Union[str, BusinessCalendar] = None,
-        transform: AxisTransform = None,
+        t: Optional[Union[Table, SelectableDataSet]] = None,
+        label: Optional[str] = None,
+        color: Optional[Union[str, int, Color]] = None,
+        font: Optional[Font] = None,
+        format: Optional[AxisFormat] = None,
+        format_pattern: Optional[str] = None,
+        min: Optional[Union[str, float]] = None,
+        max: Optional[Union[str, float]] = None,
+        invert: Optional[bool] = None,
+        log: Optional[bool] = None,
+        business_time: Optional[bool] = None,
+        calendar: Optional[Union[str, BusinessCalendar]] = None,
+        transform: Optional[AxisTransform] = None,
     ) -> Figure:
         """Gets the y-Axis from a chart's axes and updates the y-Axis's configurations.
 
@@ -2637,11 +2637,11 @@ class Figure(JObjectWrapper):
 
     def y_ticks(
         self,
-        font: Font = None,
-        gap: float = None,
-        loc: List[float] = None,
-        angle: int = None,
-        visible: int = None,
+        font: Optional[Font] = None,
+        gap: Optional[float] = None,
+        loc: Optional[List[float]] = None,
+        angle: Optional[int] = None,
+        visible: Optional[int] = None,
     ) -> Figure:
         """Updates the configuration for major ticks of the y-Axis.
 
@@ -2711,8 +2711,8 @@ class Figure(JObjectWrapper):
 
     def y_ticks_minor(
         self,
-        nminor: int = None,
-        visible: int = None,
+        nminor: Optional[int] = None,
+        visible: Optional[int] = None,
     ) -> Figure:
         """Updates the configuration for minor ticks of the y-Axis.
 
@@ -2755,7 +2755,7 @@ class Figure(JObjectWrapper):
 
     def y_twin(
         self,
-        name: str = None,
+        name: Optional[str] = None,
     ) -> Figure:
         """Creates a new Axes which shares the y-Axis with the current Axes. For example, this is used for creating plots with a common y-axis but two different x-axes.
 

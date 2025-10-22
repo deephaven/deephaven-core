@@ -88,40 +88,40 @@ class DType:
             raise DHError(e, f"failed to create an instance of {self.j_name}") from e
 
 
-bool_ = DType(
+bool_: DType = DType(
     j_name="java.lang.Boolean", qst_type=_JQstType.booleanType(), np_type=np.bool_
 )
 """Boolean type"""
-byte = DType(
+byte: DType = DType(
     j_name="byte", qst_type=_JQstType.byteType(), is_primitive=True, np_type=np.int8
 )
 """Signed byte integer type"""
 int8 = byte
 """Signed byte integer type"""
-short = DType(
+short: DType = DType(
     j_name="short", qst_type=_JQstType.shortType(), is_primitive=True, np_type=np.int16
 )
 """Signed short integer type"""
 int16 = short
 """Signed short integer type"""
-char = DType(
+char: DType = DType(
     j_name="char",
     qst_type=_JQstType.charType(),
     is_primitive=True,
     np_type=np.uint16,
 )
 """Character type"""
-int32 = DType(
+int32: DType = DType(
     j_name="int", qst_type=_JQstType.intType(), is_primitive=True, np_type=np.int32
 )
 """Signed 32bit integer type"""
-long = DType(
+int64: DType = DType(
     j_name="long", qst_type=_JQstType.longType(), is_primitive=True, np_type=np.int64
 )
 """Signed 64bit integer type"""
-int64 = long
+long = int64
 """Signed 64bit integer type"""
-float32 = DType(
+float32: DType = DType(
     j_name="float",
     qst_type=_JQstType.floatType(),
     is_primitive=True,
@@ -130,7 +130,7 @@ float32 = DType(
 """Single-precision floating-point number type"""
 single = float32
 """Single-precision floating-point number type"""
-float64 = DType(
+float64: DType = DType(
     j_name="double",
     qst_type=_JQstType.doubleType(),
     is_primitive=True,

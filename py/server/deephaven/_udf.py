@@ -382,7 +382,7 @@ def _np_ndarray_component_type(t: type) -> Optional[type]:
             if (
                 a0 == typing.Any
                 or (isinstance(a0, types.GenericAlias) and get_origin(a0) is tuple)
-            ) and isinstance(a1, types.GenericAlias):  # novermin
+            ) and isinstance(a1, types.GenericAlias):  # novermin  # noqa
                 component_type = a1.__args__[0]
     return component_type
 

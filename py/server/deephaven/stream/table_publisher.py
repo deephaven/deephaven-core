@@ -101,7 +101,7 @@ def table_publisher(
     """
 
     def adapt_callback(_table_publisher: jpy.JType):
-        on_flush_callback(TablePublisher(j_table_publisher=_table_publisher))
+        on_flush_callback(TablePublisher(j_table_publisher=_table_publisher))  # type: ignore[misc]
 
     j_table_publisher = _JTablePublisher.of(
         name,

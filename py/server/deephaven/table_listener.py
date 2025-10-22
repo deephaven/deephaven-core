@@ -521,7 +521,9 @@ class MergedListener(ABC):
     provides a default implementation for the on_error method that simply prints out the error."""
 
     @abstractmethod
-    def on_update(self, updates: dict[Table, Optional[TableUpdate]], is_replay: bool) -> None:
+    def on_update(
+        self, updates: dict[Table, Optional[TableUpdate]], is_replay: bool
+    ) -> None:
         """The required method on a listener object that receives table updates from the
         tables that are listened to.
         """
@@ -706,7 +708,9 @@ class MergedListenerHandle(JObjectWrapper):
 
 def merged_listen(
     tables: Sequence[Table],
-    listener: Union[Callable[[dict[Table, Optional[TableUpdate]], bool], None], MergedListener],
+    listener: Union[
+        Callable[[dict[Table, Optional[TableUpdate]], bool], None], MergedListener
+    ],
     do_replay: bool = False,
     description: Optional[str] = None,
     dependencies: Optional[Union[Table, Sequence[Table]]] = None,

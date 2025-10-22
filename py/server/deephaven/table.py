@@ -696,7 +696,7 @@ def _sort_column(col, dir_):
 
 
 if sys.version_info >= (3, 10):
-    from typing import TypeAlias  # novermin
+    from typing import TypeAlias  # novermin  # noqa
 
     TableDefinitionLike: TypeAlias = Union[
         "TableDefinition",

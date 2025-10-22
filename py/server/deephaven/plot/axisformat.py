@@ -8,6 +8,7 @@ import jpy
 from deephaven.time import TimeZone
 
 from deephaven._wrapper import JObjectWrapper
+from typing import Optional
 
 _JAxisFormat = jpy.get_type("io.deephaven.plot.axisformatters.AxisFormat")
 _JDecimalAxisFormat = jpy.get_type("io.deephaven.plot.axisformatters.DecimalAxisFormat")
@@ -53,7 +54,7 @@ class DecimalAxisFormat(AxisFormat):
 class NanosAxisFormat(AxisFormat):
     """A formatter for converting nanoseconds into formatted strings."""
 
-    def __init__(self, tz: TimeZone = None):
+    def __init__(self, tz: Optional[TimeZone] = None):
         """Creates a new NanosAxisFormat with the specified timezone.
 
         Args:

@@ -11,6 +11,7 @@ import jpy
 
 from deephaven import DHError
 from deephaven._wrapper import JObjectWrapper
+from typing import Optional
 
 _JLineStyle = jpy.get_type("io.deephaven.plot.LineStyle")
 _JLineEndStyle = jpy.get_type("io.deephaven.plot.LineStyle$LineEndStyle")
@@ -65,7 +66,7 @@ class LineStyle(JObjectWrapper):
         width: float = 1.0,
         end_style: LineEndStyle = LineEndStyle.ROUND,
         join_style: LineJoinStyle = LineJoinStyle.ROUND,
-        dash_pattern: list[Number] = None,
+        dash_pattern: Optional[list[Number]] = None,
     ):
         """Creates a LineStyle object.
 
@@ -73,7 +74,7 @@ class LineStyle(JObjectWrapper):
             width (float): the width of the line, default is 1.0
             end_style (LineEndStyle): the end style of the line, default is LineEndStyle.ROUND
             join_style (LineJoinStyle): the join style of the line, default is LineJoinStyle.ROUND
-            dash_pattern (list[Number]): a list of number specifying the dash pattern of the line
+            dash_pattern (Optional[list[Number]]): a list of number specifying the dash pattern of the line
 
         Raises:
             DHError

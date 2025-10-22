@@ -5,14 +5,19 @@
 import jpy
 import deephaven.plugin
 
-from typing import Union
+from typing import Union, cast, TYPE_CHECKING
 from deephaven.plugin import Plugin, Callback
 from deephaven.plugin.object_type import ObjectType
 from deephaven.plugin.js import JsPlugin
 from .object import ObjectTypeAdapter
 from .js import to_j_js_plugin
 
-_JCallbackAdapter = jpy.get_type("io.deephaven.server.plugin.python.CallbackAdapter")
+if TYPE_CHECKING:
+    from typing_extensions import TypeAlias  # novermin  # noqa
+
+_JCallbackAdapter = cast(
+    type, jpy.get_type("io.deephaven.server.plugin.python.CallbackAdapter")
+)  # type: TypeAlias
 
 
 def initialize_all_and_register_into(callback: _JCallbackAdapter):

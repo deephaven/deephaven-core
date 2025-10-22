@@ -247,7 +247,7 @@ class S3Instructions(JObjectWrapper):
             )
 
         try:
-            builder = self.j_object_type.builder()
+            builder = self.j_object_type.builder()  # type: ignore
 
             if region_name is not None:
                 builder.regionName(region_name)
