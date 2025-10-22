@@ -1,8 +1,9 @@
 #
 # Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 #
+
 import inspect
-from typing import Callable, Union
+from typing import Callable
 
 from docstring_parser import parse
 from jedi import Script, Interpreter
@@ -69,14 +70,7 @@ class DocstringParser(BaseTestCase):
         )
 
     def test_args(self):
-        def args(
-            has_docs,
-            has_type: Union[str, int],
-            *positional,
-            has_default=1,
-            has_type_default: Union[str, int] = 1,
-            **keyword,
-        ):
+        def args(has_docs, has_type: str | int,   *positional, has_default=1, has_type_default: str | int = 1,  **keyword):  # novermin
             """
             Description
 
