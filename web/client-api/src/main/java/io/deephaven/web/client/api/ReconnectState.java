@@ -72,11 +72,6 @@ public class ReconnectState {
      * After the connection closes or attempt fails, should be called.
      */
     public void failed() {
-        if (state == State.Disconnected) {
-            // we deliberately disconnected, don't try to reconnect
-            JsLog.debug("Connection failed after deliberate disconnect, not attempting reconnect", this);
-            return;
-        }
         if (state == State.Failed) {
             // dup call, we haven't yet tried reconnect yet or reached max tries, ignore
             JsLog.debug("Already queued new connection attempt", this);

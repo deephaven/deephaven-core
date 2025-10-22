@@ -332,6 +332,12 @@ public class WorkerConnection {
 
                     return Promise.resolve((Object) null);
                 }, fail -> {
+                    // Connection was explicitly closed. We don't want to change
+                    // the status unless a `forceReconnect` is called.
+                    if (state == State.Disconnected) {
+                        return null;
+                    }
+
                     // this is non-recoverable, connection/auth/registration failed, but we'll let it start again when
                     // state changes
                     state = State.Failed;
