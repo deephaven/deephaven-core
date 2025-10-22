@@ -273,9 +273,9 @@ def _table_reader_chunk_tuple(
     Raises:
         ValueError
     """
-    named_tuple_class: type[tuple] = namedtuple(
+    named_tuple_class: type[tuple] = namedtuple(  # type: ignore[misc]
         tuple_name, cols or table.column_names, rename=False
-    )  # type: ignore[misc]
+    )
 
     def _emitter(
         col_defs: Sequence[ColumnDefinition], j_array: jpy.JType
@@ -381,9 +381,9 @@ def _table_reader_row_tuple(
     Raises:
         ValueError
     """
-    named_tuple_class: type[tuple] = namedtuple(
+    named_tuple_class: type[tuple] = namedtuple(  # type: ignore[misc]
         tuple_name, cols or table.column_names, rename=False
-    )  # type: ignore[misc]
+    )
 
     def _emitter(
         col_defs: Sequence[ColumnDefinition], j_array: jpy.JType

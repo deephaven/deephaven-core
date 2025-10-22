@@ -297,7 +297,7 @@ def _wrap_listener_obj(t: Table, listener: TableListener):
         raise ValueError(
             "The on_update method must have 2 (update, is_replay) parameters."
         )
-    listener.on_update = _listener_wrapper(table=t)(listener.on_update)
+    listener.on_update = _listener_wrapper(table=t)(listener.on_update)  # type: ignore[method-assign]
     return listener
 
 
@@ -521,7 +521,7 @@ class MergedListener(ABC):
     provides a default implementation for the on_error method that simply prints out the error."""
 
     @abstractmethod
-    def on_update(self, updates: dict[Table, TableUpdate], is_replay: bool) -> None:
+    def on_update(self, updates: dict[Table, Optional[TableUpdate]], is_replay: bool) -> None:
         """The required method on a listener object that receives table updates from the
         tables that are listened to.
         """
@@ -539,6 +539,8 @@ class MergedListener(ABC):
 class MergedListenerHandle(JObjectWrapper):
     """A handle to manage a merged listener's lifecycle."""
 
+    listener: Callable[[dict[Table, Optional[TableUpdate]], bool], None]
+
     j_object_type = _JPythonMergedListenerAdapter
 
     @property
@@ -549,7 +551,7 @@ class MergedListenerHandle(JObjectWrapper):
         self,
         tables: Sequence[Table],
         listener: Union[
-            Callable[[dict[Table, TableUpdate], bool], None], MergedListener
+            Callable[[dict[Table, Optional[TableUpdate]], bool], None], MergedListener
         ],
         description: Optional[str] = None,
         dependencies: Optional[Union[Table, Sequence[Table]]] = None,
@@ -573,7 +575,7 @@ class MergedListenerHandle(JObjectWrapper):
 
         Args:
             tables (Sequence[Table]): tables to listen to
-            listener (Union[Callable[[dict[Table, TableUpdate], bool], None], MergedListener]): listener to process table updates
+            listener (Union[Callable[[dict[Table, Optional[TableUpdate]], bool], None], MergedListener]): listener to process table updates
                 from the tables.
             description (str, optional): description for the UpdatePerformanceTracker to append to the listener's entry
             dependencies (Union[Table, Sequence[Table]]): tables that must be satisfied before the listener's execution.
@@ -672,7 +674,7 @@ class MergedListenerHandle(JObjectWrapper):
                     j_replay_updates = (
                         self.merged_listener_adapter.currentRowsAsUpdates()
                     )
-                    replay_updates = {
+                    replay_updates: dict[Table, Optional[TableUpdate]] = {
                         t: TableUpdate(t, tu)
                         for t, tu in zip(self.tables, j_list_to_list(j_replay_updates))
                     }
@@ -680,7 +682,7 @@ class MergedListenerHandle(JObjectWrapper):
                         self.listener(replay_updates, True)
                     finally:
                         for replay_update in replay_updates.values():
-                            replay_update.j_object.release()
+                            replay_update.j_object.release() if replay_update is not None else None
 
                 for lr in self.listener_recorders:
                     lr.table.j_table.addUpdateListener(lr.j_listener_recorder)
@@ -704,7 +706,7 @@ class MergedListenerHandle(JObjectWrapper):
 
 def merged_listen(
     tables: Sequence[Table],
-    listener: Union[Callable[[dict[Table, TableUpdate]], None], MergedListener],
+    listener: Union[Callable[[dict[Table, Optional[TableUpdate]], bool], None], MergedListener],
     do_replay: bool = False,
     description: Optional[str] = None,
     dependencies: Optional[Union[Table, Sequence[Table]]] = None,
@@ -720,7 +722,7 @@ def merged_listen(
 
     Args:
         tables (Sequence[Table]): tables to listen to.
-        listener (Union[Callable[[dict[Table, TableUpdate]], None], MergedListener]): listener to process table updates
+        listener (Union[Callable[[dict[Table, Optional[TableUpdate]], bool], None], MergedListener]): listener to process table updates
             from the tables.
         description (str, optional): description for the UpdatePerformanceTracker to append to the listener's entry
             description, default is None

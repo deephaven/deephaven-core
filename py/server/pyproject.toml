@@ -4,10 +4,14 @@ build-backend = "setuptools.build_meta"
 
 [tool.mypy]
 namespace_packages = true
+files = ["deephaven", "deephaven_internal", "test_helper", "tests"]
 exclude = "deephaven/plot/figure.py"
 
 [[tool.mypy.overrides]]
-module = "jpy"
+module = "jpy.*"
+ignore_missing_imports = true
+[[tool.mypy.overrides]]
+module = "jpyutil.*"
 ignore_missing_imports = true
 [[tool.mypy.overrides]]
 module = "pyarrow"
@@ -16,7 +20,10 @@ ignore_missing_imports = true
 module = "pyarrow.*"
 ignore_missing_imports = true
 [[tool.mypy.overrides]]
-module = "deephaven.plugin"
+module = "deephaven.ui.*"
+ignore_missing_imports = true
+[[tool.mypy.overrides]]
+module = "deephaven.plugin.*"
 ignore_missing_imports = true
 [[tool.mypy.overrides]]
 module = "connectorx"
@@ -29,6 +36,9 @@ module = "adbc_driver_sqlite.*"
 ignore_missing_imports = true
 [[tool.mypy.overrides]]
 module = "adbc_driver_postgresql.*"
+ignore_missing_imports = true
+[[tool.mypy.overrides]]
+module = "jedi.*"
 ignore_missing_imports = true
 
 [tool.ruff]

@@ -3,9 +3,9 @@
 #
 from __future__ import annotations
 from inspect import Parameter
-from typing import Any, TypedDict, Union
+from typing import Any, TypedDict, Union, cast
 from docstring_parser import parse, Docstring
-from jedi.api.classes import Signature
+from jedi.api.classes import Signature, ParamName
 
 
 _IGNORE_PARAM_NAMES = ("", "/", "*")
@@ -19,7 +19,7 @@ _POSITIONAL_KINDS = (
 # value: another dictionary that has the following keys:
 #   description: The markdown description (result from _generate_description_markdown)
 #   param_docs: A list of param markdown descriptions (result from _generate_param_markdowns)
-_result_cache = {}
+_result_cache: dict[Any, Any] = {}
 
 
 class ParameterDetails(TypedDict):
@@ -32,7 +32,7 @@ class ParameterDetails(TypedDict):
     Name of the parameter
     """
 
-    description: str
+    description: Union[str, None]
     """
     Description of the parameter
     """
@@ -65,39 +65,40 @@ def _get_params(signature: Signature, docs: Docstring) -> list[ParameterDetails]
         A list of dictionaries that contain the parameter name, description, type, and default value.
     """
 
-    params = []
+    params: list[ParameterDetails] = []
     params_info = {}
 
     # Take information from docs first
     for param in docs.params:
-        params_info[param.arg_name.replace("*", "")] = {
-            "description": param.description.strip(),
-            "type": param.type_name,
-        }
+        if param.description:
+            params_info[param.arg_name.replace("*", "")] = {
+                "description": param.description.strip(),
+                "type": param.type_name,
+            }
 
-    for param in signature.params:
-        param_str = param.to_string().strip()
+    for s_param in signature.params:
+        param_str = s_param.to_string().strip()
 
         # Add back * or ** for display purposes only
-        if param.kind == Parameter.VAR_POSITIONAL:
-            name = f"*{param.name}"
-        elif param.kind == Parameter.VAR_KEYWORD:
-            name = f"**{param.name}"
+        if s_param.kind == Parameter.VAR_POSITIONAL:
+            name = f"*{s_param.name}"
+        elif s_param.kind == Parameter.VAR_KEYWORD:
+            name = f"**{s_param.name}"
         else:
-            name = param.name
+            name = s_param.name
 
         # Use type in signature first, then type in docs, then None
         if ":" in param_str:
             type_ = param_str.split(":")[1].split("=")[0].strip()
-        elif param.name in params_info:
-            type_ = params_info[param.name]["type"]
+        elif s_param.name in params_info:
+            type_ = params_info[s_param.name]["type"]
         else:
             type_ = None
 
         params.append(
             {
                 "name": name,
-                "description": params_info.get(param.name, {}).get("description"),
+                "description": params_info.get(s_param.name, {}).get("description"),
                 "type": type_,
                 "default": param_str.split("=")[1] if "=" in param_str else None,
             }
@@ -168,7 +169,7 @@ def _generate_description_markdown(
             ):
                 description += f"```\n{example.description}\n```"
             else:
-                description += example.description
+                description += example.description if example.description is not None else ""
             description += "\n\n"
 
     return description.strip()

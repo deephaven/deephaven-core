@@ -8,7 +8,7 @@ import pathlib
 # to use an external library `packaging`. From the context of building a wheel though, we'd prefer to not have to
 # install extra dependencies, at least until we can more properly manage the build environment (pyproject.toml).
 # TODO(deephaven-core#2233): upgrade setup.py to pyproject.toml
-from pkg_resources import parse_version
+from packaging.version import parse as parse_version
 from setuptools import find_namespace_packages, setup
 
 

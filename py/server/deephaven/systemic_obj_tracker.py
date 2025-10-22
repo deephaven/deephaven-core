@@ -9,6 +9,8 @@ them, the errors are deemed to be systemic and fatal.
 import contextlib
 
 import jpy
+
+
 from deephaven import DHError
 
 _JSystemicObjectTracker = jpy.get_type(
@@ -48,7 +50,7 @@ def set_systemic(systemic: bool) -> None:
 
 
 @contextlib.contextmanager
-def systemic_object_marking() -> None:
+def systemic_object_marking():
     """A Context manager to ensure the current thread is marked as systemic for the execution of the enclosed code
     block. On exit, the thread is restored to its previous systemic state.
 
@@ -69,7 +71,7 @@ def systemic_object_marking() -> None:
 
 
 @contextlib.contextmanager
-def no_systemic_object_marking() -> None:
+def no_systemic_object_marking():
     """A Context manager to ensure the current thread is marked as not systemic for the execution of the enclosed code
     block. On exit, the thread is restored to its previous systemic state.
 
