@@ -144,8 +144,8 @@ foo = Foo()
 
         dt_dtypes = [
             "np.ndarray[np.dtype('datetime64[ns]')]",
-            "List[datetime.datetime]",
-            "Tuple[pd.Timestamp]",
+            "list[datetime.datetime]",
+            "tuple[pd.Timestamp]",
         ]
 
         dt_data = [
@@ -170,7 +170,7 @@ foo = Foo()
                     self.assertEqual(t.columns[1].data_type, dtypes.instant_array)
 
     def test_return_value_errors(self):
-        def fn(col) -> List[object]:
+        def fn(col) -> list[object]:
             return [col]
 
         def fn1(col) -> List:
@@ -179,7 +179,7 @@ foo = Foo()
         def fn2(col):
             return col
 
-        def fn3(col) -> List[Union[datetime.datetime, int]]:
+        def fn3(col) -> list[Union[datetime.datetime, int]]:
             return [col]
 
         with self.subTest(fn):
@@ -211,7 +211,7 @@ foo = Foo()
             )
 
     def test_vectorization_off_on_return_type(self):
-        def f1(x) -> List[str]:
+        def f1(x) -> list[str]:
             return ["a"]
 
         t = empty_table(10).update("X = f1(3 + i)")
@@ -310,7 +310,7 @@ def fn(col) -> Optional[{np_dtype}]:
         t = empty_table(10).update(["X1 = f()"])
         self.assertEqual(t.columns[0].data_type, dtypes.long_array)
 
-        def f1(col) -> Optional[List[int]]:
+        def f1(col) -> Optional[list[int]]:
             return None if col % 2 == 0 else [col]
 
         t = empty_table(10).update(["X1 = f1(i)"])
@@ -345,7 +345,7 @@ def fn(col) -> Optional[{np_dtype}]:
         t = empty_table(10).update(["X1 = to_j_instant(`2021-01-01T00:00:00Z`)"])
         self.assertEqual(t.columns[0].data_type, dtypes.Instant)
 
-        def udf() -> List[dtypes.Instant]:
+        def udf() -> list[dtypes.Instant]:
             return [to_j_instant("2021-01-01T00:00:00Z")]
 
         t = empty_table(10).update(["X1 = udf()"])

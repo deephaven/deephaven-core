@@ -4,7 +4,7 @@
 
 import time
 import unittest
-from typing import List, Union, Optional, Dict
+from typing import Union, Optional
 
 import numpy
 import jpy
@@ -35,7 +35,7 @@ class TableUpdateRecorder:
         self,
         table: Optional[Table] = None,
         chunk_size: Optional[int] = None,
-        cols: Optional[Union[str, List[str]]] = None,
+        cols: Optional[Union[str, list[str]]] = None,
     ):
         self.table = table
         self.chunk_size = chunk_size
@@ -106,7 +106,7 @@ class TableListenerTestCase(BaseTestCase):
     def check_update_recorder(
         self,
         table_update_recorder: TableUpdateRecorder,
-        cols: Optional[Union[str, List[str]]] = None,
+        cols: Optional[Union[str, list[str]]] = None,
         *,
         has_replay: bool = False,
         has_added: bool = False,
@@ -130,7 +130,7 @@ class TableListenerTestCase(BaseTestCase):
             self.assertTrue(any(table_update_recorder.replays))
             self.assertTrue(not all(table_update_recorder.replays))
 
-    def verify_data_changes(self, changes, cols: Union[str, List[str]]):
+    def verify_data_changes(self, changes, cols: Union[str, list[str]]):
         changes = [c for c in changes if c]
         self.assertGreater(len(changes), 0)
         cols = to_sequence(cols)
@@ -456,7 +456,7 @@ class TableListenerTestCase(BaseTestCase):
 
         class TestMergedListener(MergedListener):
             def on_update(
-                self, updates: Dict[Table, TableUpdate], is_replay: bool
+                self, updates: dict[Table, TableUpdate], is_replay: bool
             ) -> None:
                 for update in updates.values():
                     tur.record(update, is_replay)
@@ -490,7 +490,7 @@ class TableListenerTestCase(BaseTestCase):
         t2 = time_table("PT2s").update(["Y=i % 8"])
         t3 = time_table("PT3s").update(["Z=i % 5"])
 
-        def test_ml_func(updates: Dict[Table, TableUpdate], is_replay: bool) -> None:
+        def test_ml_func(updates: dict[Table, TableUpdate], is_replay: bool) -> None:
             if updates[t1] or updates[t3]:
                 tur.record(updates[t1], is_replay)
 
@@ -530,7 +530,7 @@ class TableListenerTestCase(BaseTestCase):
 
         class TestMergedListener(MergedListener):
             def on_update(
-                self, updates: Dict[Table, TableUpdate], is_replay: bool
+                self, updates: dict[Table, TableUpdate], is_replay: bool
             ) -> None:
                 if updates[t1] and updates[t2]:
                     tur.record(updates[t2], is_replay)
@@ -557,7 +557,7 @@ class TableListenerTestCase(BaseTestCase):
     def test_merged_listener_error(self):
         t1 = time_table("PT1s").update(["X=i % 11"])
 
-        def test_ml_func(updates: Dict[Table, TableUpdate]) -> None:
+        def test_ml_func(updates: dict[Table, TableUpdate]) -> None:
             pass
 
         with self.assertRaises(DHError) as cm:
@@ -578,7 +578,7 @@ class TableListenerTestCase(BaseTestCase):
 
         class TestMergedListener(MergedListener):
             def on_update(
-                self, updates: Dict[Table, TableUpdate], is_replay: bool
+                self, updates: dict[Table, TableUpdate], is_replay: bool
             ) -> None:
                 for update in updates.values():
                     tur.record(update, is_replay)
@@ -598,7 +598,7 @@ class TableListenerTestCase(BaseTestCase):
             self.assertGreaterEqual(len(tur.replays), 6)
             self.assertEqual(tur.replays.count(True), 2 * 3)
 
-        def test_ml_func(updates: Dict[Table, TableUpdate], is_replay: bool) -> None:
+        def test_ml_func(updates: dict[Table, TableUpdate], is_replay: bool) -> None:
             tur.record(updates[t3], is_replay)
 
         with self.subTest("Direct Handle - replay"):
@@ -738,7 +738,7 @@ class TableListenerTestCase(BaseTestCase):
         with self.subTest("Bad Listener Good Error Callback"):
 
             def bad_listner_func(
-                updates: Dict[Table, TableUpdate], is_replay: bool
+                updates: dict[Table, TableUpdate], is_replay: bool
             ) -> None:
                 raise ValueError("invalid value")
 
@@ -756,7 +756,7 @@ class TableListenerTestCase(BaseTestCase):
         with self.subTest("Good Listener Good Error Callback"):
 
             def good_listner_func(
-                updates: Dict[Table, TableUpdate], is_replay: bool
+                updates: dict[Table, TableUpdate], is_replay: bool
             ) -> None:
                 pass
 
@@ -769,7 +769,7 @@ class TableListenerTestCase(BaseTestCase):
         with self.subTest("Bad Listener Bad Error Callback"):
 
             def bad_listner_func(
-                updates: Dict[Table, TableUpdate], is_replay: bool
+                updates: dict[Table, TableUpdate], is_replay: bool
             ) -> None:
                 raise ValueError("invalid value")
 
@@ -797,7 +797,7 @@ class TableListenerTestCase(BaseTestCase):
 
             class BadListener(MergedListener):
                 def on_update(
-                    self, updates: Dict[Table, TableUpdate], is_replay: bool
+                    self, updates: dict[Table, TableUpdate], is_replay: bool
                 ) -> None:
                     raise ValueError("invalid value")
 
@@ -823,7 +823,7 @@ class TableListenerTestCase(BaseTestCase):
 
             class GoodListener(MergedListener):
                 def on_update(
-                    self, updates: Dict[Table, TableUpdate], is_replay: bool
+                    self, updates: dict[Table, TableUpdate], is_replay: bool
                 ) -> None: ...
 
                 def on_error(self, e: Exception) -> None:
@@ -842,7 +842,7 @@ class TableListenerTestCase(BaseTestCase):
 
             class BadListener(MergedListener):
                 def on_update(
-                    self, updates: Dict[Table, TableUpdate], is_replay: bool
+                    self, updates: dict[Table, TableUpdate], is_replay: bool
                 ) -> None:
                     raise ValueError("invalid value")
 
@@ -887,7 +887,7 @@ class TableListenerTestCase(BaseTestCase):
         t2 = time_table("PT1S").update("X = i")
 
         def bad_listner_func(
-            updates: Dict[Table, TableUpdate], is_replay: bool
+            updates: dict[Table, TableUpdate], is_replay: bool
         ) -> None:
             raise ValueError("invalid value")
 
@@ -899,7 +899,7 @@ class TableListenerTestCase(BaseTestCase):
 
         class BadListener(MergedListener):
             def on_update(
-                self, updates: Dict[Table, TableUpdate], is_replay: bool
+                self, updates: dict[Table, TableUpdate], is_replay: bool
             ) -> None:
                 raise ValueError("invalid value")
 

@@ -567,7 +567,7 @@ def tuple_val(
         some_method((tuple_type_1, tuple_type_2))
 
     Args:
-        values (Union[Tuple[JsonValueType, ...], dict[str, JsonValueType]]): the tuple value types
+        values (Union[tuple[JsonValueType, ...], dict[str, JsonValueType]]): the tuple value types
         allow_missing (bool): if the array is allowed to be missing, by default is True
         allow_null (bool): if the array is allowed to be a JSON null type, by default is True
     Returns:

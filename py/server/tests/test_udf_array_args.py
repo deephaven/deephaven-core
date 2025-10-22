@@ -238,10 +238,10 @@ def test_udf(x, y: np.ndarray[{_J_TYPE_NP_DTYPE_MAP[j_dtype]}]) -> np.bool_:
         unsupported = {
             "Sequence",
             "Sequence[Any]",
-            "List[int]",
-            "Tuple[int]",
+            "list[int]",
+            "tuple[int]",
             "Set[int]",
-            "Dict[int, int]",
+            "dict[int, int]",
             "bytes",
             "bytearray",
             "Literal['A', 'B']",

@@ -979,7 +979,9 @@ def to_pd_timedelta(dt: Union[None, Duration]) -> Optional[pandas.Timedelta]:
             seconds, nano = _JPythonTimeComponents.getDurationComponents(dt)
             micros, nanos = divmod(nano, _NANOS_PER_MICRO)
             return pandas.Timedelta(
-                seconds=seconds, microseconds=micros, nanoseconds=nanos  # type: ignore[call-arg]
+                seconds=seconds,
+                microseconds=micros,
+                nanoseconds=nanos,  # type: ignore[call-arg]
             )
         elif isinstance(dt, Period.j_type):
             y, m, d = _JPythonTimeComponents.getPeriodComponents(dt)

@@ -102,7 +102,9 @@ class Filter(ConcurrencyControl["Filter"], JObjectWrapper):
         return Filter(j_filter=getattr(_JFilter, "not")(self.j_filter))
 
     @classmethod
-    def from_(cls, conditions: Union[str, Sequence[str]]) -> Union[Filter, Sequence[Filter]]:
+    def from_(
+        cls, conditions: Union[str, Sequence[str]]
+    ) -> Union[Filter, Sequence[Filter]]:
         """Creates filter(s) from the given condition(s).
 
         Args:

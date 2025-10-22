@@ -4,13 +4,12 @@
 """This module adds Iceberg table support into Deephaven."""
 
 from __future__ import annotations
-from typing import Optional, Union, cast, Any
+from typing import Optional, Union, cast, Any, TYPE_CHECKING
 from collections.abc import Sequence, Mapping
 
 import jpy
 from warnings import warn
 
-from typing_extensions import TypeAlias
 
 from deephaven import DHError
 from deephaven._wrapper import JObjectWrapper
@@ -19,8 +18,13 @@ from deephaven.table import Table, TableDefinition, TableDefinitionLike
 
 from deephaven.jcompat import j_hashmap
 
+if TYPE_CHECKING:
+    from typing_extensions import TypeAlias  # novermin  # noqa
+
 _JBuildCatalogOptions = jpy.get_type("io.deephaven.iceberg.util.BuildCatalogOptions")
-_JIcebergUpdateMode = cast(type[Any], jpy.get_type("io.deephaven.iceberg.util.IcebergUpdateMode"))  # type: TypeAlias
+_JIcebergUpdateMode = cast(
+    type[Any], jpy.get_type("io.deephaven.iceberg.util.IcebergUpdateMode")
+)  # type: TypeAlias
 # _JIcebergUpdateMode = jpy.get_type("io.deephaven.iceberg.util.IcebergUpdateMode")  # type: TypeAlias
 _JIcebergReadInstructions = jpy.get_type(
     "io.deephaven.iceberg.util.IcebergReadInstructions"
@@ -33,9 +37,15 @@ _JSortOrderProvider = jpy.get_type("io.deephaven.iceberg.util.SortOrderProvider"
 _JTableParquetWriterOptions = jpy.get_type(
     "io.deephaven.iceberg.util.TableParquetWriterOptions"
 )
-_JIcebergCatalogAdapter = cast(type[Any], jpy.get_type("io.deephaven.iceberg.util.IcebergCatalogAdapter"))  # type: TypeAlias
-_JIcebergTableAdapter = cast(type[Any], jpy.get_type("io.deephaven.iceberg.util.IcebergTableAdapter"))  # type: TypeAlias
-_JIcebergTableWriter = cast(type[Any], jpy.get_type("io.deephaven.iceberg.util.IcebergTableWriter"))  # type: TypeAlias
+_JIcebergCatalogAdapter = cast(
+    type[Any], jpy.get_type("io.deephaven.iceberg.util.IcebergCatalogAdapter")
+)  # type: TypeAlias
+_JIcebergTableAdapter = cast(
+    type[Any], jpy.get_type("io.deephaven.iceberg.util.IcebergTableAdapter")
+)  # type: TypeAlias
+_JIcebergTableWriter = cast(
+    type[Any], jpy.get_type("io.deephaven.iceberg.util.IcebergTableWriter")
+)  # type: TypeAlias
 _JIcebergTable = jpy.get_type("io.deephaven.iceberg.util.IcebergTable")
 _JIcebergTools = jpy.get_type("io.deephaven.iceberg.util.IcebergTools")
 _JLoadTableOptions = jpy.get_type("io.deephaven.iceberg.util.LoadTableOptions")
@@ -131,7 +141,7 @@ class IcebergReadInstructions(JObjectWrapper):
             data_instructions (Optional[s3.S3Instructions]): Special instructions for reading data files, useful when
                 reading files from a non-local file system, like S3. If omitted, the data instructions will be derived
                 from the catalog.
-            column_renames (Optional[Dict[str, str]]): this parameter is deprecated and has no effect
+            column_renames (Optional[dict[str, str]]): this parameter is deprecated and has no effect
             update_mode (Optional[IcebergUpdateMode]): The update mode for the table. If omitted, the default update
                 mode of :py:func:`IcebergUpdateMode.static() <IcebergUpdateMode.static>` is used.
             snapshot_id (Optional[int]): the snapshot id to read; if omitted the most recent snapshot will be selected.
@@ -512,7 +522,7 @@ class TableParquetWriterOptions(JObjectWrapper):
                 be used in conjunction with the field_id_to_column_name to map Deephaven columns from table_definition
                 to Iceberg columns.
                 Defaults to `None`, which means use the current schema from the table.
-            field_id_to_column_name: Optional[Dict[int, str]]: A one-to-one map from Iceberg field IDs from the
+            field_id_to_column_name: Optional[dict[int, str]]: A one-to-one map from Iceberg field IDs from the
                 schema_spec to Deephaven column names from the table_definition.
                 Defaults to `None`, which means map Iceberg columns to Deephaven columns using column names.
             compression_codec_name (Optional[str]): The compression codec to use for writing the parquet file. Allowed
@@ -1034,8 +1044,8 @@ def adapter(
     Args:
         name (Optional[str]): a descriptive name of the catalog; if omitted the catalog name is inferred from the
             catalog URI property.
-        properties (Optional[Dict[str, str]]): the properties of the catalog to load. By default, no properties are set.
-        hadoop_config (Optional[Dict[str, str]]): hadoop configuration properties for the catalog to load. By default,
+        properties (Optional[dict[str, str]]): the properties of the catalog to load. By default, no properties are set.
+        hadoop_config (Optional[dict[str, str]]): hadoop configuration properties for the catalog to load. By default,
             no properties are set.
         s3_instructions (Optional[s3.S3Instructions]): the S3 instructions to use for configuring the Deephaven managed
             AWS clients. If not provided, the catalog will internally use the Iceberg-managed AWS clients configured

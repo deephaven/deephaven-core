@@ -29,7 +29,7 @@ from deephaven.constants import (
 )
 
 if TYPE_CHECKING:
-    from typing_extensions import TypeAlias  # novermin
+    from typing_extensions import TypeAlias  # novermin  # noqa
 
 _JQstType = jpy.get_type("io.deephaven.qst.type.Type")
 _JTableTools = jpy.get_type("io.deephaven.engine.util.TableTools")
@@ -151,7 +151,9 @@ BigDecimal = DType(j_name="java.math.BigDecimal")
 """Java BigDecimal type"""
 StringSet = DType(j_name="io.deephaven.stringset.StringSet")
 """Deephaven StringSet type"""
-Instant = cast(type, DType(j_name="java.time.Instant", np_type=np.dtype("datetime64[ns]")))  # type: TypeAlias
+Instant = cast(
+    type, DType(j_name="java.time.Instant", np_type=np.dtype("datetime64[ns]"))
+)  # type: TypeAlias
 """Instant date time type"""
 LocalDate = cast(type, DType(j_name="java.time.LocalDate"))  # type: TypeAlias
 """Local date type"""
@@ -165,7 +167,9 @@ Period = cast(type, DType(j_name="java.time.Period"))  # type: TypeAlias
 """Time period type, which is a unit of time in terms of calendar time (days, weeks, months, years, etc.)."""
 TimeZone = cast(type, DType(j_name="java.time.ZoneId"))  # type: TypeAlias
 """Time zone type."""
-BusinessCalendar = cast(type, DType(j_name="io.deephaven.time.calendar.BusinessCalendar"))  # type: TypeAlias
+BusinessCalendar = cast(
+    type, DType(j_name="io.deephaven.time.calendar.BusinessCalendar")
+)  # type: TypeAlias
 """Business calendar type"""
 PyObject = DType(j_name="org.jpy.PyObject")
 """Python object type"""

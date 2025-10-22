@@ -3,6 +3,7 @@
 #
 
 """The kafka.consumer module supports consuming a Kakfa topic as a Deephaven live table."""
+
 from __future__ import annotations
 
 from typing import Callable, Union, Optional, Sequence, cast
@@ -21,7 +22,7 @@ from deephaven.table import (
     TableDefinition,
     TableDefinitionLike,
     PartitionedTable,
-    )
+)
 
 _JKafkaTools = jpy.get_type("io.deephaven.kafka.KafkaTools")
 _JKafkaTools_Consume = jpy.get_type("io.deephaven.kafka.KafkaTools$Consume")
@@ -87,6 +88,7 @@ in the properties as "key.column.name" or "value.column.name" in the config, and
 
 class TableType(JObjectWrapper):
     """A factory that creates the supported Table Type for consuming Kafka."""
+
     Stream: TableType
     Append: TableType
     Blink: TableType
@@ -174,7 +176,7 @@ def consume(
             org.apache.kafka.clients.consumer.KafkaConsumer; pass any KafkaConsumer specific desired configuration here
         topic (str): the Kafka topic name
         partitions (Sequence[int]) : a list of integer partition numbers, default is None which means all partitions
-        offsets (Dict[int, int]) : a mapping between partition numbers and offset numbers, and can be one of the
+        offsets (dict[int, int]) : a mapping between partition numbers and offset numbers, and can be one of the
             predefined ALL_PARTITIONS_SEEK_TO_BEGINNING, ALL_PARTITIONS_SEEK_TO_END or ALL_PARTITIONS_DONT_SEEK.
             The default is None which works the same as  ALL_PARTITIONS_DONT_SEEK. The offset numbers may be one
             of the predefined SEEK_TO_BEGINNING, SEEK_TO_END, or DONT_SEEK.
@@ -201,16 +203,19 @@ def consume(
     """
     if table_type is None:
         table_type = TableType.blink()
-    return cast(Table, _consume(
-        kafka_config,
-        topic,
-        partitions,
-        offsets,
-        key_spec,
-        value_spec,
-        table_type,
-        to_partitioned=False,
-    ))
+    return cast(
+        Table,
+        _consume(
+            kafka_config,
+            topic,
+            partitions,
+            offsets,
+            key_spec,
+            value_spec,
+            table_type,
+            to_partitioned=False,
+        ),
+    )
 
 
 def consume_to_partitioned_table(
@@ -230,7 +235,7 @@ def consume_to_partitioned_table(
             org.apache.kafka.clients.consumer.KafkaConsumer; pass any KafkaConsumer specific desired configuration here
         topic (str): the Kafka topic name
         partitions (Sequence[int]) : a list of integer partition numbers, default is None which means all partitions
-        offsets (Dict[int, int]) : a mapping between partition numbers and offset numbers, and can be one of the
+        offsets (dict[int, int]) : a mapping between partition numbers and offset numbers, and can be one of the
             predefined ALL_PARTITIONS_SEEK_TO_BEGINNING, ALL_PARTITIONS_SEEK_TO_END or ALL_PARTITIONS_DONT_SEEK.
             The default is None which works the same as  ALL_PARTITIONS_DONT_SEEK. The offset numbers may be one
             of the predefined SEEK_TO_BEGINNING, SEEK_TO_END, or DONT_SEEK.
@@ -260,16 +265,19 @@ def consume_to_partitioned_table(
     """
     if table_type is None:
         table_type = TableType.blink()
-    return cast(PartitionedTable, _consume(
-        kafka_config,
-        topic,
-        partitions,
-        offsets,
-        key_spec,
-        value_spec,
-        table_type,
-        to_partitioned=True,
-    ))
+    return cast(
+        PartitionedTable,
+        _consume(
+            kafka_config,
+            topic,
+            partitions,
+            offsets,
+            key_spec,
+            value_spec,
+            table_type,
+            to_partitioned=True,
+        ),
+    )
 
 
 def _consume(
@@ -445,7 +453,7 @@ def avro_spec(
             'kafka_config' parameter in the call to consume() should include the key 'schema.registry.url' with
             the value of the Schema Server URL for fetching the schema definition
         schema_version (str): the schema version to fetch from schema service, default is 'latest'
-        mapping (Dict[str, str]): a mapping from Avro field name to Deephaven table column name; the fields specified in
+        mapping (dict[str, str]): a mapping from Avro field name to Deephaven table column name; the fields specified in
             the mapping will have their column names defined by it; if 'mapped_only' parameter is False,
             any other fields
             not mentioned in the mapping will use the same Avro field name for Deephaven table column; otherwise, these
@@ -459,7 +467,9 @@ def avro_spec(
         DHError
     """
     try:
-        mapping_func: Optional[Callable[[str], str]] = _dict_to_j_func(mapping, mapped_only) if mapping else None
+        mapping_func: Optional[Callable[[str], str]] = (
+            _dict_to_j_func(mapping, mapped_only) if mapping else None
+        )
 
         if schema.strip().startswith("{"):
             jschema = _JKafkaTools.getAvroSchema(schema)

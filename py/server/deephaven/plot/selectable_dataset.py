@@ -5,8 +5,6 @@
 """This module defines the SelectableDateSet which is used to provides a view of a selectable subset of a table.
 For example, in some selectable data sets, a GUI click can be used to select a portion of a table."""
 
-from typing import List
-
 import jpy
 
 from deephaven import DHError
@@ -32,13 +30,13 @@ class SelectableDataSet(JObjectWrapper):
 
 
 def one_click(
-    t: Table, by: List[str] = None, require_all_filters: bool = False
+    t: Table, by: list[str] = None, require_all_filters: bool = False
 ) -> SelectableDataSet:
     """Creates a SelectableDataSet with the specified columns from a table.
 
     Args:
         t (Table): the source table
-        by (List[str]): the selected columns
+        by (list[str]): the selected columns
         require_all_filters (bool): false to display data when not all oneclicks are selected; true to only
             display data when appropriate oneclicks are selected
 

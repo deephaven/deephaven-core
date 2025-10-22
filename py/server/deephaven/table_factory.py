@@ -126,7 +126,7 @@ def new_table(cols: Union[list[InputColumn], Mapping[str, Sequence]]) -> Table:
     determined by Pandas' type inference logic.
 
     Args:
-        cols (Union[List[InputColumn], Mapping[str, Sequence]]): a list of InputColumns or a mapping of columns
+        cols (Union[list[InputColumn], Mapping[str, Sequence]]): a list of InputColumns or a mapping of columns
             names and column data.
 
     Returns:
@@ -154,7 +154,7 @@ def merge(tables: list[Table]):
     other. Null tables are ignored.
 
     Args:
-        tables (List[Table]): the source tables
+        tables (list[Table]): the source tables
 
     Returns:
         a Table
@@ -175,7 +175,7 @@ def merge_sorted(tables: list[Table], order_by: str) -> Table:
     followed by sort.
 
     Args:
-        tables (List[Table]): the source tables
+        tables (list[Table]): the source tables
         order_by (str): the name of the key column
 
     Returns:
@@ -205,7 +205,7 @@ class DynamicTableWriter(JObjectWrapper):
         """Initializes the writer and creates a new in-memory table.
 
         Args:
-            col_defs(Dict[str, DTypes]): a map of column names and types of the new table
+            col_defs(dict[str, DTypes]): a map of column names and types of the new table
 
         Raises:
             DHError
@@ -513,7 +513,7 @@ def function_generated_table(
 
     Args:
         table_generator (Callable[..., Table]): The table generator function. This function must return a Table.
-        source_tables (Union[Table, List[Table]]): Source tables used by the 'table_generator' function. The
+        source_tables (Union[Table, list[Table]]): Source tables used by the 'table_generator' function. The
             'table_generator' is rerun when any of these tables tick.
         refresh_interval_ms (int): Interval (in milliseconds) at which the 'table_generator' function is rerun.
         exec_ctx (ExecutionContext): A custom execution context. If 'None', the current

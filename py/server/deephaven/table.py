@@ -41,7 +41,7 @@ from deephaven.update_graph import auto_locking_ctx, UpdateGraph
 from deephaven.updateby import UpdateByOperation
 
 if TYPE_CHECKING:
-    from typing_extensions import TypeAlias
+    from typing_extensions import TypeAlias  # novermin  # noqa
 
 # Table
 _JTable = jpy.get_type("io.deephaven.engine.table.Table")
@@ -79,7 +79,9 @@ _JExecutionContext = jpy.get_type("io.deephaven.engine.context.ExecutionContext"
 _JScriptSessionQueryScope = jpy.get_type(
     "io.deephaven.engine.util.AbstractScriptSession$ScriptSessionQueryScope"
 )
-_JPythonScriptSession = cast(type[Any], jpy.get_type("io.deephaven.integrations.python.PythonDeephavenSession"))  # type: TypeAlias
+_JPythonScriptSession = cast(
+    type[Any], jpy.get_type("io.deephaven.integrations.python.PythonDeephavenSession")
+)  # type: TypeAlias
 
 # Rollup Table and Tree Table
 _JRollupTable = jpy.get_type("io.deephaven.engine.table.hierarchical.RollupTable")
@@ -1080,7 +1082,7 @@ class Table(JObjectWrapper):
         custom-built plug-ins.
 
         Args:
-            attrs (Dict[str, Any]): a dict of table attribute names and their values
+            attrs (dict[str, Any]): a dict of table attribute names and their values
 
         Returns:
             a new Table
@@ -1404,7 +1406,9 @@ class Table(JObjectWrapper):
 
     def select(
         self,
-        formulas: Optional[Union[str, Sequence[str], Selectable, Sequence[Selectable]]] = None,
+        formulas: Optional[
+            Union[str, Sequence[str], Selectable, Sequence[Selectable]]
+        ] = None,
     ) -> Table:
         """The select method creates a new in-memory table that includes one column for each formula. If no formula
         is specified, all columns will be included.
@@ -3291,7 +3295,8 @@ class PartitionedTable(JObjectWrapper):
         """
         try:
             j_operator = j_unary_operator(
-                func, dtypes.from_jtype(Table.j_object_type.jclass)  # type: ignore[arg-type]
+                func,
+                dtypes.from_jtype(Table.j_object_type.jclass),  # type: ignore[arg-type]
             )
             dependencies = to_sequence(dependencies, wrapped=True)
             j_dependencies = [
@@ -3343,7 +3348,8 @@ class PartitionedTable(JObjectWrapper):
         """
         try:
             j_operator = j_binary_operator(
-                func, dtypes.from_jtype(Table.j_object_type.jclass)  # type: ignore[arg-type]
+                func,
+                dtypes.from_jtype(Table.j_object_type.jclass),  # type: ignore[arg-type]
             )
             dependencies = to_sequence(dependencies, wrapped=True)
             j_dependencies = [
@@ -3802,7 +3808,9 @@ class PartitionedTableProxy(JObjectWrapper):
 
     def select(
         self,
-        formulas: Optional[Union[str, Sequence[str], Selectable, Sequence[Selectable]]] = None,
+        formulas: Optional[
+            Union[str, Sequence[str], Selectable, Sequence[Selectable]]
+        ] = None,
     ) -> PartitionedTableProxy:
         """Applies the :meth:`~Table.select` table operation to all constituent tables of the underlying partitioned
         table, and produces a new PartitionedTableProxy with the result tables as the constituents of its underlying

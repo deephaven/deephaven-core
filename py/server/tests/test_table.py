@@ -3,7 +3,7 @@
 #
 import unittest
 from types import SimpleNamespace
-from typing import List, Any
+from typing import Any
 
 import pandas as pd
 
@@ -913,7 +913,7 @@ class TableTestCase(BaseTestCase):
         self.assertIn("RuntimeError", cm.exception.compact_traceback)
 
     def verify_table_data(
-        self, t: Table, expected: List[Any], assert_not_in: bool = False
+        self, t: Table, expected: list[Any], assert_not_in: bool = False
     ):
         t_data = to_pandas(t, dtype_backend=None).values.flatten()
         for s in expected:

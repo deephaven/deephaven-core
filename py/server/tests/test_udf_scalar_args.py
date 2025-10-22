@@ -54,7 +54,7 @@ _J_TYPE_J_ARRAY_TYPE_MAP = {
     "double": double_array,
 }
 
-_J_TYPE_PY_TYPE_MAP: typing.Dict[str, type] = {
+_J_TYPE_PY_TYPE_MAP: dict[str, type] = {
     "byte": int,
     "short": int,
     "char": int,

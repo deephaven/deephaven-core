@@ -5,7 +5,7 @@ import os
 import unittest
 from datetime import date
 from decimal import Decimal
-from typing import List, Any
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -56,8 +56,8 @@ class ArrowTestCase(BaseTestCase):
 
     def verify_type_conversion(
         self,
-        pa_types: List[pa.DataType],
-        pa_data: List[Any],
+        pa_types: list[pa.DataType],
+        pa_data: list[Any],
         cast_for_round_trip: bool = False,
     ):
         fields = [pa.field(f"f{i}", ty) for i, ty in enumerate(pa_types)]

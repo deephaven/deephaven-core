@@ -6,7 +6,6 @@
 
 from enum import Enum
 from numbers import Number
-from typing import List
 
 import jpy
 
@@ -66,7 +65,7 @@ class LineStyle(JObjectWrapper):
         width: float = 1.0,
         end_style: LineEndStyle = LineEndStyle.ROUND,
         join_style: LineJoinStyle = LineJoinStyle.ROUND,
-        dash_pattern: List[Number] = None,
+        dash_pattern: list[Number] = None,
     ):
         """Creates a LineStyle object.
 
@@ -74,7 +73,7 @@ class LineStyle(JObjectWrapper):
             width (float): the width of the line, default is 1.0
             end_style (LineEndStyle): the end style of the line, default is LineEndStyle.ROUND
             join_style (LineJoinStyle): the join style of the line, default is LineJoinStyle.ROUND
-            dash_pattern (List[Number]): a list of number specifying the dash pattern of the line
+            dash_pattern (list[Number]): a list of number specifying the dash pattern of the line
 
         Raises:
             DHError

@@ -4,8 +4,6 @@
 
 """This module implements the AxisTransform class for performing axis transformation on plots before rendering."""
 
-from typing import List
-
 import jpy
 
 from deephaven import DHError
@@ -29,7 +27,7 @@ class AxisTransform(JObjectWrapper):
         self.j_axis_transform = j_axis_transform
 
 
-def axis_transform_names() -> List[str]:
+def axis_transform_names() -> list[str]:
     """Returns the names of available axis transforms."""
     return list(_JPlottingConvenience.axisTransformNames())
 

@@ -92,7 +92,7 @@ def table_to_numpy_2d(
         else:
             raise ValueError(f"Data type {np_type} is not supported.")
 
-        tensor = np.frombuffer(buffer, dtype=np_type)
+        tensor: np.ndarray = np.frombuffer(buffer, dtype=np_type)
 
         if order.is_row_major:
             tensor.shape = (len(col_set), row_set.intSize())

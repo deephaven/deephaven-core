@@ -10,6 +10,7 @@ from typing import (
     Any,
     Callable,
     TypeVar,
+    cast,
 )
 from collections.abc import Sequence, Generator, Iterable
 
@@ -30,7 +31,7 @@ T = TypeVar("T")
 
 
 def _col_defs(
-    table: Table, cols: Union[str, Sequence[str]]
+    table: Table, cols: Optional[Union[str, Sequence[str]]]
 ) -> Sequence[ColumnDefinition]:
     if not cols:
         col_defs = table.columns
@@ -272,16 +273,21 @@ def _table_reader_chunk_tuple(
     Raises:
         ValueError
     """
-    named_tuple_class = namedtuple(tuple_name, cols or table.column_names, rename=False)
+    named_tuple_class: type[tuple] = namedtuple(
+        tuple_name, cols or table.column_names, rename=False
+    )  # type: ignore[misc]
 
     def _emitter(
         col_defs: Sequence[ColumnDefinition], j_array: jpy.JType
     ) -> Generator[tuple[np.ndarray], None, None]:
-        yield named_tuple_class._make(
-            [
-                _column_to_numpy_array(col_def, j_array[i])
-                for i, col_def in enumerate(col_defs)
-            ]
+        yield cast(
+            tuple,
+            named_tuple_class._make(
+                [
+                    _column_to_numpy_array(col_def, j_array[i])
+                    for i, col_def in enumerate(col_defs)
+                ]
+            ),
         )
 
     return _table_reader_chunk(
@@ -375,7 +381,9 @@ def _table_reader_row_tuple(
     Raises:
         ValueError
     """
-    named_tuple_class = namedtuple(tuple_name, cols or table.column_names, rename=False)
+    named_tuple_class: type[tuple] = namedtuple(
+        tuple_name, cols or table.column_names, rename=False
+    )  # type: ignore[misc]
 
     def _emitter(
         col_defs: Sequence[ColumnDefinition], j_array: jpy.JType

@@ -148,10 +148,10 @@ def barrage_session(
             "user:password"; when auth_type is "Anonymous', it will be ignored; when auth_type is a custom-built
             authenticator, it must conform to the specific requirement of the authenticator
         use_tls (bool): if True, use a TLS connection.  Defaults to False
-        tls_root_certs (bytes): PEM encoded root certificates to use for TLS connection, or None to use system defaults.
+        tls_root_certs (Optional[bytes]): PEM encoded root certificates to use for TLS connection, or None to use system defaults.
              If not None implies use a TLS connection and the use_tls argument should have been passed
              as True. Defaults to None
-        extra_headers (Dict[str, str]): extra headers to set when configuring the gRPC channel. Defaults to None.
+        extra_headers (Optional[dict[str, str]]): extra headers to set when configuring the gRPC channel. Defaults to None.
 
     Returns:
         a Deephaven Barrage session

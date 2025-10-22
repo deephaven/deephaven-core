@@ -55,11 +55,11 @@ class Output:
         return self.output.toString()
 
 
-def _validate(inputs: Input, outputs: Output, table: Table):
+def _validate(inputs: list[Input], outputs: list[Output], table: Table):
     """Ensures that all input columns exist in the table, and that no output column names already exist in the table.
 
     Args:
-        inputs (Input)  : list of Inputs to validate.
+        inputs (list[Input])  : list of Inputs to validate.
         outputs (Output) : list of Outputs to validate.
         table (Table)  : table to check Input and Output columns against.
 
@@ -121,7 +121,7 @@ def _create_non_conflicting_col_name(table: Table, base_col_name: str) -> str:
 
 
 def learn(
-    table: Optional[Table] = None,
+    table: Table,
     model_func: Optional[Callable] = None,
     inputs: list[Input] = [],
     outputs: list[Output] = [],

@@ -247,7 +247,7 @@ def read(
 
     Args:
         path (str): the file or directory to examine
-        col_instructions (Optional[List[ColumnInstruction]]): instructions for customizations while reading particular
+        col_instructions (Optional[list[ColumnInstruction]]): instructions for customizations while reading particular
             columns, default is None, which means no specialization for any column
         is_legacy_parquet (bool): if the parquet data is legacy
         is_refreshing (bool): if the parquet data represents a refreshing source
@@ -331,7 +331,7 @@ def write(
             instead of the definitions implied by the table. Default is None, which means use the column definitions
             implied by the table. This definition can be used to skip some columns or add additional columns with
             null values.
-        col_instructions (Optional[List[ColumnInstruction]]): instructions for customizations while writing particular
+        col_instructions (Optional[list[ColumnInstruction]]): instructions for customizations while writing particular
             columns, default is None, which means no specialization for any column
         compression_codec_name (Optional[str]): the compression codec to use. Allowed values include "UNCOMPRESSED",
             "SNAPPY", "GZIP", "LZO", "LZ4", "LZ4_RAW", "ZSTD", etc. If not specified, defaults to "SNAPPY".
@@ -406,7 +406,7 @@ def write_partitioned(
             instead of the definitions implied by the table. Default is None, which means use the column definitions
             implied by the table. This definition can be used to skip some columns or add additional columns with
             null values.
-        col_instructions (Optional[List[ColumnInstruction]]): instructions for customizations while writing particular
+        col_instructions (Optional[list[ColumnInstruction]]): instructions for customizations while writing particular
             columns, default is None, which means no specialization for any column
         compression_codec_name (Optional[str]): the compression codec to use. Allowed values include "UNCOMPRESSED",
             "SNAPPY", "GZIP", "LZO", "LZ4", "LZ4_RAW", "ZSTD", etc. If not specified, defaults to "SNAPPY".
@@ -486,15 +486,15 @@ def batch_write(
     Note that either all the tables are written out successfully or none is.
 
     Args:
-        tables (List[Table]): the source tables
-        paths (List[str]): the destination paths or URIs. Any non-existing directories in the paths provided are
+        tables (list[Table]): the source tables
+        paths (list[str]): the destination paths or URIs. Any non-existing directories in the paths provided are
             created. If there is an error, any intermediate directories previously created are removed; note this makes
             this method unsafe for concurrent use
         table_definition (Optional[TableDefinitionLike]): the table definition to use for writing.
             This definition can be used to skip some columns or add additional columns with null values. Default is
             None, which means if all tables have the same definition, use the common table definition implied by the
             tables. Otherwise, this parameter must be specified.
-        col_instructions (Optional[List[ColumnInstruction]]): instructions for customizations while writing
+        col_instructions (Optional[list[ColumnInstruction]]): instructions for customizations while writing
         compression_codec_name (Optional[str]): the compression codec to use. Allowed values include "UNCOMPRESSED",
             "SNAPPY", "GZIP", "LZO", "LZ4", "LZ4_RAW", "ZSTD", etc. If not specified, defaults to "SNAPPY".
         max_dictionary_keys (Optional[int]): the maximum number of unique keys the writer should add to a dictionary page

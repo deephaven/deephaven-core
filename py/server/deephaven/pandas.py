@@ -4,13 +4,14 @@
 
 """This module supports the conversion between Deephaven tables and pandas DataFrames."""
 
-from typing import Optional, List, Literal
+from typing import Optional, Literal, Union, cast
 
 import jpy
 import numpy as np
 import pandas as pd
 import pyarrow as pa
 from pandas.api.types import is_object_dtype
+from pandas.api.extensions import ExtensionArray
 
 from deephaven import DHError, new_table, dtypes, arrow
 from deephaven.column import ColumnDefinition
@@ -101,7 +102,7 @@ _PYARROW_TO_PANDAS_TYPE_MAPPERS = {
 
 def to_pandas(
     table: Table,
-    cols: Optional[List[str]] = None,
+    cols: Optional[list[str]] = None,
     dtype_backend: Literal[None, "pyarrow", "numpy_nullable"] = "numpy_nullable",
     conv_null: bool = True,
 ) -> pd.DataFrame:
@@ -113,7 +114,7 @@ def to_pandas(
 
     Args:
         table (Table): the source table
-        cols (List[str]): the source column names, default is None which means include all columns
+        cols (list[str]): the source column names, default is None which means include all columns
         dtype_backend (str): which dtype_backend to use, e.g. whether a DataFrame should have NumPy arrays,
             nullable dtypes are used for all dtypes that have a nullable implementation when “numpy_nullable” is set,
             pyarrow is used for all dtypes if “pyarrow” is set. None means Numpy backed DataFrames with no nullable
@@ -143,7 +144,7 @@ def to_pandas(
             )
 
         # if nullable dtypes (pandas or pyarrow) is requested
-        if type_mapper := _PYARROW_TO_PANDAS_TYPE_MAPPERS.get(dtype_backend):
+        if type_mapper := _PYARROW_TO_PANDAS_TYPE_MAPPERS.get(str(dtype_backend)):
             pa_table = arrow.to_arrow(table=table, cols=cols)
             df = pa_table.to_pandas(types_mapper=type_mapper)
             del pa_table
@@ -197,12 +198,13 @@ _PANDAS_EXTYPE_DH_NULL_MAP = {
 }
 
 
-def _map_na(array: [np.ndarray, pd.api.extensions.ExtensionArray]):
+def _map_na(array: Union[np.ndarray, ExtensionArray]) -> np.ndarray:
     """Replaces the pd.NA values in the array if it is of pandas ExtensionDtype(nullable)."""
-    pd_dtype = array.dtype
-    if not isinstance(pd_dtype, pd.api.extensions.ExtensionDtype):
+    if isinstance(array, np.ndarray):
         return array
 
+    pd_dtype = array.dtype
+    array = cast(ExtensionArray, array)
     dh_null = _PANDAS_EXTYPE_DH_NULL_MAP.get(
         type(pd_dtype)
     ) or _PANDAS_EXTYPE_DH_NULL_MAP.get(pd_dtype)
@@ -211,8 +213,8 @@ def _map_na(array: [np.ndarray, pd.api.extensions.ExtensionArray]):
     if isinstance(pd_dtype, (pd.Float32Dtype, pd.Float64Dtype)) and isinstance(
         getattr(array, "_data"), np.ndarray
     ):
-        np_array = array._data
-        null_mask = np.logical_and(array._mask, np.logical_not(np.isnan(np_array)))
+        np_array = array._data  # type: ignore[attr-defined]
+        null_mask = np.logical_and(array._mask, np.logical_not(np.isnan(np_array)))  # type: ignore[attr-defined]
         if any(null_mask):
             np_array = np.copy(np_array)
             np_array[null_mask] = dh_null
@@ -225,17 +227,17 @@ def _map_na(array: [np.ndarray, pd.api.extensions.ExtensionArray]):
     elif dh_null is not None:
         array = array.fillna(dh_null)
 
-    return array
+    return cast(np.ndarray, array)
 
 
 def to_table(
-    df: pd.DataFrame, cols: Optional[List[str]] = None, infer_objects: bool = True
+    df: pd.DataFrame, cols: Optional[list[str]] = None, infer_objects: bool = True
 ) -> Table:
     """Creates a new table from a pandas DataFrame.
 
     Args:
         df (DataFrame): the pandas DataFrame instance
-        cols (List[str]): the dataframe column names, default is None which means including all columns in the DataFrame
+        cols (list[str]): the dataframe column names, default is None which means including all columns in the DataFrame
         infer_objects (bool): whether to infer the best possible types for columns of the generic 'object' type in the
             DataFrame before creating the table, default is True. When True, pandas convert_dtypes() method is called to
             perform the conversion. Note that any conversion will make a copy of the data.
@@ -248,9 +250,9 @@ def to_table(
     """
 
     if not cols:
-        cols = list(df)
+        cols = df.columns.tolist()
     else:
-        diff_set = set(cols) - set(list(df))
+        diff_set = set(cols) - set(df.columns.tolist())
         if diff_set:
             raise DHError(message=f"columns - {list(diff_set)} not found")
 
@@ -277,7 +279,9 @@ def to_table(
     try:
         input_cols = []
         for col in cols:
-            np_array = converted_df.get(col).values
+            series = converted_df.get(col)
+            assert series is not None
+            np_array = series.values
             if isinstance(converted_df.dtypes[col], pd.CategoricalDtype):
                 dtype = converted_df.dtypes[col].categories.dtype
             else:

@@ -5,7 +5,7 @@
 import threading
 import time
 import unittest
-from typing import Callable, Optional, Generator, Dict
+from typing import Callable, Optional, Generator
 
 import numpy as np
 import pyarrow as pa
@@ -78,8 +78,8 @@ class TestBackend(TableDataServiceBackend):
         self.sub_new_partition_cancelled: bool = False
         self.sub_new_partition_fail_test: bool = False
         self.sub_partition_size_fail_test: bool = False
-        self.partitions: Dict[TableLocationKey, pa.Table] = {}
-        self.partitions_size_subscriptions: Dict[TableLocationKey, bool] = {}
+        self.partitions: dict[TableLocationKey, pa.Table] = {}
+        self.partitions_size_subscriptions: dict[TableLocationKey, bool] = {}
         self.existing_partitions_called: int = 0
         self.partition_size_called: int = 0
         self.is_size_sub_failure_cb_called: bool = False

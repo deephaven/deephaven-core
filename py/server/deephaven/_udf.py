@@ -28,7 +28,7 @@ from deephaven.dtypes import (
     _PRIMITIVE_DTYPE_NULL_MAP,
     _BUILDABLE_ARRAY_DTYPE_MAP,
     DType,
-    )
+)
 from deephaven.jcompat import _j_array_to_numpy_array
 from deephaven.time import to_np_datetime64, to_datetime, to_pd_timestamp
 

@@ -3,6 +3,7 @@
 #
 
 """The kafka.producer module supports publishing Deephaven tables to Kafka streams."""
+
 from __future__ import annotations
 
 from typing import Callable, Optional, Sequence
@@ -158,7 +159,7 @@ def avro_spec(
             'kafka_config' parameter in the call to produce() should include the key 'schema.registry.url' with
             the value of the Schema Server URL for fetching the schema definition
         schema_version (str): the schema version to fetch from schema service, default is 'latest'
-        field_to_col_mapping (Dict[str, str]): a mapping from Avro field names in the schema to column names in
+        field_to_col_mapping (dict[str, str]): a mapping from Avro field names in the schema to column names in
             the Deephaven table. Any fields in the schema not present in the dict as keys are mapped to columns of the
             same name. The default is None, meaning all schema fields are mapped to columns of the same name.
         timestamp_field (str): the name of an extra timestamp field to be included in the produced Kafka message body,
@@ -173,7 +174,7 @@ def avro_spec(
             publishing does not match, an exception results. The default is False.
         schema_namespace (str): when 'publish_schema' is True, the namespace for the generated schema to be registered
             in the Schema Registry Server.
-        column_properties (Dict[str, str]): when 'publish_schema' is True, specifies the properties of the columns
+        column_properties (dict[str, str]): when 'publish_schema' is True, specifies the properties of the columns
             implying particular Avro type mappings for them. In particular, column X of BigDecimal type should specify
             properties 'x.precision' and 'x.scale'.
 
@@ -228,7 +229,7 @@ def json_spec(
             the 'exclude_columns' must be None.
         exclude_columns (Sequence[str]): the list of Deephaven column names to omit in the JSON output as fields, default
             is None, meaning no column is omitted. If not None, include_columns must be None.
-        mapping (Dict[str, str]): a mapping from column names to JSON field names.  Any column name implied by earlier
+        mapping (dict[str, str]): a mapping from column names to JSON field names.  Any column name implied by earlier
             arguments and not included as a key in the map implies a field of the same name. default is None,
             meaning all columns will be mapped to JSON fields of the same name.
         nested_delim (str): if nested JSON fields are desired, the field separator that is used for the field names

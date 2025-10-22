@@ -47,7 +47,7 @@ def has_data_index(table: Table, key_cols: list[str]) -> bool:
 
     Args:
         table (Table): the table to check
-        key_cols (List[str]): the names of the key columns indexed
+        key_cols (list[str]): the names of the key columns indexed
 
     Returns:
         bool: True if the table has a DataIndex, False otherwise
@@ -60,7 +60,7 @@ def _get_data_index(table: Table, key_cols: list[str]) -> Optional[DataIndex]:
 
     Args:
         table (Table): the table to get the DataIndex from
-        key_cols (List[str]): the names of the key columns indexed
+        key_cols (list[str]): the names of the key columns indexed
 
     Returns:
         a DataIndex or None
@@ -78,7 +78,7 @@ def data_index(
 
     Args:
         table (Table): the table to index
-        key_cols (List[str]): the names of the key columns to index
+        key_cols (list[str]): the names of the key columns to index
         create_if_absent (bool): if True, create the DataIndex if it does not already exist, default is True
 
     Returns:

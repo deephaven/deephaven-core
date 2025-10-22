@@ -15,7 +15,7 @@ from typing import (
     Union,
     Optional,
     TYPE_CHECKING,
-    )
+)
 from warnings import warn
 
 import jpy
@@ -26,7 +26,18 @@ from pandas.core.dtypes.base import ExtensionDtype
 from deephaven import dtypes, DHError
 from deephaven._wrapper import unwrap, wrap_j_object, JObjectWrapper
 from deephaven.column import ColumnDefinition
-from deephaven.dtypes import DType, _PRIMITIVE_DTYPE_NULL_MAP, bool_, float64, float32, int64, int32, char, short, byte
+from deephaven.dtypes import (
+    DType,
+    _PRIMITIVE_DTYPE_NULL_MAP,
+    bool_,
+    float64,
+    float32,
+    int64,
+    int32,
+    char,
+    short,
+    byte,
+)
 
 if TYPE_CHECKING:
     from deephaven.table import TableDefinition
@@ -216,9 +227,7 @@ def j_lambda(
     )
 
 
-def to_sequence(
-    v: Optional[Any] = None, wrapped: bool = False
-) -> Sequence[Any]:
+def to_sequence(v: Optional[Any] = None, wrapped: bool = False) -> Sequence[Any]:
     """A convenience function to create a sequence of wrapped or unwrapped object from either one or a sequence of
     input values to help JPY find the matching Java overloaded method to call.
 
@@ -378,7 +387,11 @@ def _j_array_to_series(dtype: DType, j_array: jpy.JType, conv_null: bool) -> pd.
         return s.astype(pd.BooleanDtype(), copy=False)
 
     np_array = _j_array_to_numpy_array(dtype, j_array, conv_null=False)
-    if conv_null and (nv := _PRIMITIVE_DTYPE_NULL_MAP.get(dtype)) is not None and (pd_ex_dtype := _DH_PANDAS_NULLABLE_TYPE_MAP.get(dtype)) is not None:
+    if (
+        conv_null
+        and (nv := _PRIMITIVE_DTYPE_NULL_MAP.get(dtype)) is not None
+        and (pd_ex_dtype := _DH_PANDAS_NULLABLE_TYPE_MAP.get(dtype)) is not None
+    ):
         s = pd.Series(data=np_array, dtype=pd_ex_dtype(), copy=False)
         s.mask(s == nv, inplace=True)
     else:

@@ -57,7 +57,7 @@ class TableUpdate(JObjectWrapper):
         all the added rows in the columns.
 
         Args:
-             cols (Union[str, List[str]): the column(s) for which to return the added rows
+             cols (Union[str, list[str]): the column(s) for which to return the added rows
 
         Returns:
             a dict
@@ -81,7 +81,7 @@ class TableUpdate(JObjectWrapper):
 
         Args:
             chunk_size (int): the size of the chunk
-            cols (Union[str, List[str]]): the columns(s) for which to return the added rows
+            cols (Union[str, list[str]]): the columns(s) for which to return the added rows
 
         Returns:
             a generator
@@ -104,7 +104,7 @@ class TableUpdate(JObjectWrapper):
         all the removed rows in the columns.
 
         Args:
-             cols (Union[str, List[str]): the column(s) for which to return the added rows
+             cols (Union[str, list[str]): the column(s) for which to return the added rows
 
         Returns:
             a dict
@@ -124,7 +124,7 @@ class TableUpdate(JObjectWrapper):
 
         Args:
             chunk_size (int): the size of the chunk
-            cols (Union[str, List[str]]): the columns(s) for which to return the added rows
+            cols (Union[str, list[str]]): the columns(s) for which to return the added rows
 
         Returns:
             a generator
@@ -147,7 +147,7 @@ class TableUpdate(JObjectWrapper):
         all the modified rows in the columns.
 
         Args:
-             cols (Union[str, List[str]): the column(s) for which to return the added rows
+             cols (Union[str, list[str]): the column(s) for which to return the added rows
 
         Returns:
             a dict
@@ -171,7 +171,7 @@ class TableUpdate(JObjectWrapper):
 
         Args:
             chunk_size (int): the size of the chunk
-            cols (Union[str, List[str]]): the columns(s) for which to return the added rows
+            cols (Union[str, list[str]]): the columns(s) for which to return the added rows
 
         Returns:
             a generator
@@ -194,7 +194,7 @@ class TableUpdate(JObjectWrapper):
         all the modified rows in the columns.
 
         Args:
-             cols (Union[str, List[str]): the column(s) for which to return the added rows
+             cols (Union[str, list[str]): the column(s) for which to return the added rows
 
         Returns:
             a dict
@@ -218,7 +218,7 @@ class TableUpdate(JObjectWrapper):
 
         Args:
             chunk_size (int): the size of the chunk
-            cols (Union[str, List[str]]): the columns(s) for which to return the added rows
+            cols (Union[str, list[str]]): the columns(s) for which to return the added rows
 
         Returns:
             a generator
@@ -563,7 +563,7 @@ class MergedListenerHandle(JObjectWrapper):
         override the default "on_error" method.
 
         The callable or the on_update method must have the following signature.
-        *(updates: Dict[Table, TableUpdate], is_replay: bool): support replaying the initial table snapshots and normal table updates
+        *(updates: dict[Table, TableUpdate], is_replay: bool): support replaying the initial table snapshots and normal table updates
         The 'updates' parameter is a dictionary of Table to TableUpdate;
         The 'is_replay' parameter is used only by replay listeners, it is set to 'True' when replaying the initial
         snapshots and 'False' during normal updates.
@@ -573,7 +573,7 @@ class MergedListenerHandle(JObjectWrapper):
 
         Args:
             tables (Sequence[Table]): tables to listen to
-            listener (Union[Callable[[Dict[Table, TableUpdate], bool], None], MergedListener]): listener to process table updates
+            listener (Union[Callable[[dict[Table, TableUpdate], bool], None], MergedListener]): listener to process table updates
                 from the tables.
             description (str, optional): description for the UpdatePerformanceTracker to append to the listener's entry
             dependencies (Union[Table, Sequence[Table]]): tables that must be satisfied before the listener's execution.
@@ -720,7 +720,7 @@ def merged_listen(
 
     Args:
         tables (Sequence[Table]): tables to listen to.
-        listener (Union[Callable[[Dict[Table, TableUpdate]], None], MergedListener]): listener to process table updates
+        listener (Union[Callable[[dict[Table, TableUpdate]], None], MergedListener]): listener to process table updates
             from the tables.
         description (str, optional): description for the UpdatePerformanceTracker to append to the listener's entry
             description, default is None

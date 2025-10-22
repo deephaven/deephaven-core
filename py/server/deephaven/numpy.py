@@ -96,7 +96,7 @@ def to_numpy(table: Table, cols: Optional[list[str]] = None) -> np.ndarray:
 
     Args:
         table (Table): the source table
-        cols (List[str]): the source column names, default is None which means include all columns
+        cols (list[str]): the source column names, default is None which means include all columns
 
     Returns:
         a numpy ndarray
@@ -138,7 +138,7 @@ def to_table(np_array: np.ndarray, cols: list[str]) -> Table:
 
     Args:
         np_array (np.ndarray): the numpy array
-        cols (List[str]): the table column names that will be assigned to each column in the numpy array
+        cols (list[str]): the table column names that will be assigned to each column in the numpy array
 
     Returns:
         a Deephaven table
@@ -160,16 +160,10 @@ def to_table(np_array: np.ndarray, cols: list[str]) -> Table:
         dtype = dtypes.from_np_dtype(np_array.dtype)
 
         if len(cols) == 1:
-            input_cols.append(
-                _make_input_column(cols[0], np_array.T[0], dtype)
-            )
+            input_cols.append(_make_input_column(cols[0], np_array.T[0], dtype))
         else:
             for i, col in enumerate(cols):
-                input_cols.append(
-                    _make_input_column(
-                        col, np_array[:, [i]].T[0], dtype
-                    )
-                )
+                input_cols.append(_make_input_column(col, np_array[:, [i]].T[0], dtype))
 
         return new_table(cols=input_cols)
     except DHError:
