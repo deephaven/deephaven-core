@@ -246,11 +246,11 @@ public final class UpdateByGrpcImpl extends GrpcTableOperation<UpdateByRequest> 
                 break;
             case COUNT_WHERE:
                 expressionValidator.validateSelectFilters(spec.getCountWhere().getFiltersList().toArray(String[]::new),
-                        parent);
+                        parent.getDefinition());
                 break;
             case ROLLING_COUNT_WHERE:
                 expressionValidator.validateSelectFilters(
-                        spec.getRollingCountWhere().getFiltersList().toArray(String[]::new), parent);
+                        spec.getRollingCountWhere().getFiltersList().toArray(String[]::new), parent.getDefinition());
                 break;
 
             default:
@@ -264,7 +264,8 @@ public final class UpdateByGrpcImpl extends GrpcTableOperation<UpdateByRequest> 
         final Table formulaInputPrototype = TableTools.newTable(parent.getDefinition()).groupBy(groupByColumns);
         final String formulaString = spec.getRollingFormula().getFormula();
         final SelectColumn[] sc = SelectColumn.from(Selectable.from(formulaString));
-        expressionValidator.validateColumnExpressions(sc, new String[] {formulaString}, formulaInputPrototype);
+        expressionValidator.validateColumnExpressions(sc, new String[] {formulaString},
+                formulaInputPrototype.getDefinition());
     }
 
     private void validateFormulaWithParamToken(Table parent, List<ColumnName> groupByColumns,
@@ -298,7 +299,8 @@ public final class UpdateByGrpcImpl extends GrpcTableOperation<UpdateByRequest> 
                     Selectable.from(pair.output().name() + "="
                             + formulaString.replaceAll(spec.getRollingFormula().getParamToken(), inputName)));
 
-            expressionValidator.validateColumnExpressions(sc, new String[] {formulaString}, formulaInputPrototype);
+            expressionValidator.validateColumnExpressions(sc, new String[] {formulaString},
+                    formulaInputPrototype.getDefinition());
         });
     }
 

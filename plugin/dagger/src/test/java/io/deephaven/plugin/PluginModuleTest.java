@@ -10,6 +10,7 @@ import dagger.Module;
 import dagger.Provides;
 import dagger.multibindings.IntoSet;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.select.ConditionFilter;
 import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.engine.table.impl.select.WhereFilter;
@@ -74,18 +75,19 @@ public class PluginModuleTest {
             return new ColumnExpressionValidator() {
 
                 @Override
-                public WhereFilter[] validateSelectFilters(String[] conditionalExpressions, Table table) {
+                public WhereFilter[] validateSelectFilters(String[] conditionalExpressions, TableDefinition table) {
                     throw new UnsupportedOperationException("Not a real column expression validator");
                 }
 
                 @Override
                 public void validateColumnExpressions(SelectColumn[] selectColumns, String[] originalExpressions,
-                        Table table) {
+                        TableDefinition table) {
                     throw new UnsupportedOperationException("Not a real column expression validator");
                 }
 
                 @Override
-                public void validateConditionFilters(List<ConditionFilter> conditionFilters, Table sourceTable) {
+                public void validateConditionFilters(List<ConditionFilter> conditionFilters,
+                        TableDefinition sourceTable) {
                     throw new UnsupportedOperationException("Not a real column expression validator");
                 }
             };
