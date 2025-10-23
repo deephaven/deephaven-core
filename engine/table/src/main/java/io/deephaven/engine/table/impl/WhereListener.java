@@ -118,6 +118,7 @@ class WhereListener extends MergedListener {
                     .map(table::getColumnSource)
                     .collect(Collectors.toList());
 
+
             final List<DataIndex> compatibleIndexes = dataIndexer.getCompatibleDataIndexes(columnSources);
             for (final DataIndex dataIndex : compatibleIndexes) {
                 // `where` calls only leverage data index tables which are fully populated.
