@@ -69,7 +69,7 @@ The rest of this guide explores each of these column types, their properties, an
 
 ## Type fundamentals
 
-Understanding the fundamental types—numeric primitives, booleans, characters, and strings—is essential for working effectively with Deephaven tables.
+Understanding the fundamental types — numeric primitives, booleans, characters, and strings — is essential for working effectively with Deephaven tables.
 
 ### Primitive numeric types
 
@@ -177,11 +177,12 @@ from deephaven import empty_table
 t7 = empty_table(5).update(["Index = i", "Letter = (char)('A' + i)"])
 ```
 
-> [!NOTE] > `char` is distinct from `String`. A `char` column holds single characters, while a `String` column holds character sequences.
+> [!NOTE] 
+> `char` is distinct from `String`. A `char` column holds single characters, while a `String` column holds character sequences.
 
 ## Time and dates
 
-Deephaven provides rich support for date and time types, all based on Java 8's `java.time` package. These types are optimized for efficient storage and time-based operations, making them ideal for time-series data and temporal analysis.
+Deephaven provides robust support for date and time types, all based on Java 8's `java.time` package. These types are optimized for efficient storage and time-based operations, making them ideal for time-series data and temporal analysis.
 
 ### Temporal type reference
 
@@ -635,8 +636,8 @@ sorted_with_nulls = t31.sort("NullableInt")
 - **Integers**: Use the smallest type that fits your range (`byte` < `short` < `int` < `long`).
 - **Decimals**: Use `double` for most cases, `BigDecimal` only when exact precision is required.
 - **Timestamps**: Use `Instant` for UTC timestamps, `ZonedDateTime` when time zones matter.
-- **Text**: Use `String` for text data; consider enum patterns for low-cardinality categories.
-- **Arrays**: Use when each row needs multiple related values; consider separate columns if querying individual elements frequently.
+- **Text**: Use `String` for text data. Consider enum patterns for low-cardinality categories.
+- **Arrays**: Use when each row needs multiple related values. Consider separate columns if querying individual elements frequently.
 
 ### Optimize for memory
 
