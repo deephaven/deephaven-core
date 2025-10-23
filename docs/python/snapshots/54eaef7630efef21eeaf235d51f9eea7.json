@@ -1,0 +1,1 @@
+{"file":"conceptual/column-types.md","objects":{"t27":{"type":"Table","data":{"columns":[{"name":"StringValue","type":"java.lang.String"},{"name":"SafeConversion","type":"int"}],"rows":[[{"value":"0"},{"value":"0"}],[{"value":"invalid"},{"value":""}],[{"value":"2"},{"value":"2"}],[{"value":"invalid"},{"value":""}],[{"value":"4"},{"value":"4"}]]}}}}
