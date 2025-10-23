@@ -4,8 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [tool.mypy]
 namespace_packages = true
-files = ["deephaven", "deephaven_internal"]
-exclude = "deephaven/plot/figure.py"
+exclude = ["tests", "test_helper", "deephaven/plot"]
 
 [[tool.mypy.overrides]]
 module = "jpy.*"
@@ -30,6 +29,9 @@ module = "connectorx"
 ignore_missing_imports = true
 [[tool.mypy.overrides]]
 module = "turbodbc.*"
+ignore_missing_imports = true
+[[tool.mypy.overrides]]
+module = "adbc_driver_manager.*"
 ignore_missing_imports = true
 [[tool.mypy.overrides]]
 module = "adbc_driver_sqlite.*"

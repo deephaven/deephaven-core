@@ -41,7 +41,7 @@ class ExporterAdapter(Exporter):
     def __init__(self, exporter: JExporterAdapter):
         self._exporter = exporter
 
-    def reference(
+    def reference(  # type: ignore
         self, obj: Any, allow_unknown_type: bool = True, force_new: bool = True
     ) -> Optional[Reference]:
         # No liveness scope required here, this must be called from the same thread as the call from gRPC
@@ -95,7 +95,7 @@ class ObjectTypeAdapter:
         return isinstance(self._user_object_type, FetchOnlyObjectType)
 
     def to_bytes(self, exporter: JExporterAdapter, obj: Any) -> bytes:
-        return self._user_object_type.to_bytes(
+        return self._user_object_type.to_bytes(  # type: ignore
             ExporterAdapter(exporter), pythonify(obj)
         )
 
@@ -103,7 +103,7 @@ class ObjectTypeAdapter:
         self, obj: Any, connection: JMessageStream
     ) -> MessageStream:
         return ServerRequestStreamAdapter(
-            self._user_object_type.create_client_connection(
+            self._user_object_type.create_client_connection(  # type: ignore
                 pythonify(obj), ClientResponseStreamAdapter(connection)
             )
         )

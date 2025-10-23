@@ -57,7 +57,7 @@ def read_sql(
             if not conn:
                 import adbc_driver_sqlite.dbapi as dbapi
             elif conn.strip().startswith("postgresql:"):
-                import adbc_driver_postgresql.dbapi as dbapi
+                import adbc_driver_postgresql.dbapi as dbapi  # type: ignore
             else:
                 raise DHError(message=f"unsupported ADBC connection string {conn}")
 
@@ -69,7 +69,7 @@ def read_sql(
             raise DHError(message=f"unsupported driver {driver}")
     else:
         try:
-            import adbc_driver_manager.dbapi as dbapi
+            import adbc_driver_manager.dbapi as dbapi  # type: ignore
 
             if isinstance(conn, dbapi.Connection):
                 from deephaven.dbc.adbc import read_cursor
