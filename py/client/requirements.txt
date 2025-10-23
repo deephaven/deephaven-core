@@ -3,4 +3,5 @@ grpcio
 protobuf
 bitstring
 numpy
-packaging
+
+

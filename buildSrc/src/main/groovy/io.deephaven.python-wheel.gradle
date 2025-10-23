@@ -45,8 +45,7 @@ def buildWheel = Docker.registerDockerTask(project, 'buildWheel') { config ->
         action.runCommand '''set -eux; \\
                       test -n "${DEEPHAVEN_VERSION}";\\
                       pip install --upgrade pip;\\
-                      pip install --root-user-action ignore -r requirements.txt;\\
-                      pip install --root-user-action ignore  mypy ruff;\\
+                      pip install --root-user-action ignore -r requirements-dev.txt;\\
                       mypy --install-types --non-interactive --config-file pyproject.toml .;\\
                       ruff check;\\
                       ruff format --check;\\

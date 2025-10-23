@@ -1,10 +1,12 @@
+pyarrow
+numpy
+pandas
 jpy
-deephaven-core
-java-utilities
-click
-packaging
+jedi
+docstring-parser
 setuptools
 wheel
+packaging
 unittest-xml-reporting
 mypy
 ruff

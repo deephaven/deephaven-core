@@ -1,12 +1,13 @@
 #
 # Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 #
-import click
-import signal
 import sys
 import webbrowser
 
+import click
+
 from .server import Server
+
 
 @click.group()
 def cli():
@@ -22,8 +23,16 @@ def cli():
 @click.option("--port", default=None, type=int, help="The port to bind to.")
 @click.option("--jvm-args", default=None, help="The JVM arguments to use.")
 @click.option("--extra-classpath", default=None, help="The extra classpath to use.")
-@click.option("--default-jvm-args", default=None, help="The advanced JVM arguments to use in place of the default ones that Deephaven recommends.")
-@click.option('--browser/--no-browser', default=True, help="Whether to open the browser when the server starts.")
+@click.option(
+    "--default-jvm-args",
+    default=None,
+    help="The advanced JVM arguments to use in place of the default ones that Deephaven recommends.",
+)
+@click.option(
+    "--browser/--no-browser",
+    default=True,
+    help="Whether to open the browser when the server starts.",
+)
 def server(host, port, jvm_args, extra_classpath, default_jvm_args, browser):
     """
     Start the Deephaven server.
@@ -34,7 +43,13 @@ def server(host, port, jvm_args, extra_classpath, default_jvm_args, browser):
     default_jvm_args = default_jvm_args.split() if default_jvm_args else None
     extra_classpath = extra_classpath.split() if extra_classpath else None
 
-    s = Server(host=host, port=port, jvm_args=jvm_args, extra_classpath=extra_classpath, default_jvm_args=default_jvm_args)
+    s = Server(
+        host=host,
+        port=port,
+        jvm_args=jvm_args,
+        extra_classpath=extra_classpath,
+        default_jvm_args=default_jvm_args,
+    )
     s.start()
 
     target_url_or_default = s.server_config.target_url_or_default

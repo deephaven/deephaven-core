@@ -83,5 +83,5 @@ setup(
             "registration_cls = deephaven.pandasplugin:PandasPluginRegistration"
         ]
     },
-    package_data={"deephaven": ["py.typed"]},
+    package_data={"deephaven": ["py.typed"], "deephaven_internal": ["py.typed"]},
 )

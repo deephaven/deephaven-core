@@ -2,5 +2,5 @@ pyarrow
 numpy
 pandas
 jpy
-packaging
+jedi
 docstring-parser
