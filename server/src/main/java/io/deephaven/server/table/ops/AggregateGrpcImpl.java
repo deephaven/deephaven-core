@@ -75,7 +75,7 @@ public final class AggregateGrpcImpl extends GrpcTableOperation<AggregateRequest
     private void validateFormulas(Aggregation agg, Table parent, List<ColumnName> groupByColumns) {
         if (agg.hasCountWhere()) {
             final String[] filters = agg.getCountWhere().getFiltersList().toArray(String[]::new);
-            expressionValidator.validateSelectFilters(filters, parent);
+            expressionValidator.validateSelectFilters(filters, parent.getDefinition());
         }
         if (agg.hasFormula()) {
             final Selectable selectableGrpc = agg.getFormula().getSelectable();
@@ -90,7 +90,7 @@ public final class AggregateGrpcImpl extends GrpcTableOperation<AggregateRequest
                     final Table parentPrototype = TableTools.newTable(parent.getDefinition());
                     final Table formulaPrototype = parentPrototype.groupBy(groupByColumns);
                     expressionValidator.validateColumnExpressions(new SelectColumn[] {sc}, new String[] {selectableRaw},
-                            formulaPrototype);
+                            formulaPrototype.getDefinition());
                 case TYPE_NOT_SET:
                     break;
                 default:

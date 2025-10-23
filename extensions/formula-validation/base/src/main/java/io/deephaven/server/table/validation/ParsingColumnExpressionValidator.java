@@ -4,6 +4,7 @@
 package io.deephaven.server.table.validation;
 
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.lang.FormulaMethodInvocations;
 import io.deephaven.engine.table.impl.select.*;
@@ -52,21 +53,23 @@ public class ParsingColumnExpressionValidator implements ColumnExpressionValidat
     }
 
     @Override
-    public WhereFilter[] validateSelectFilters(final String[] conditionalExpressions, final Table table) {
+    public WhereFilter[] validateSelectFilters(final String[] conditionalExpressions,
+            final TableDefinition definition) {
         final WhereFilter[] whereFilters = WhereFilterFactory.getExpressions(conditionalExpressions);
-        return doValidateWhereFilters(conditionalExpressions, table, whereFilters);
+        return doValidateWhereFilters(conditionalExpressions, definition, whereFilters);
     }
 
     @Override
-    public void validateConditionFilters(final List<ConditionFilter> conditionFilters, final Table table) {
+    public void validateConditionFilters(final List<ConditionFilter> conditionFilters,
+            final TableDefinition definition) {
         for (final ConditionFilter conditionFilter : conditionFilters) {
-            doValidateWhereFilters(new String[] {conditionFilter.toString()}, table,
+            doValidateWhereFilters(new String[] {conditionFilter.toString()}, definition,
                     new WhereFilter[] {conditionFilter});
         }
     }
 
     private WhereFilter @NotNull [] doValidateWhereFilters(final String[] conditionalExpressions,
-            final Table table,
+            final TableDefinition definition,
             final WhereFilter[] whereFilters) {
         final List<String> dummyAssignments = new ArrayList<>();
         for (int ii = 0; ii < whereFilters.length; ++ii) {
@@ -79,18 +82,18 @@ public class ParsingColumnExpressionValidator implements ColumnExpressionValidat
         if (!dummyAssignments.isEmpty()) {
             final String[] daArray = dummyAssignments.toArray(String[]::new);
             final SelectColumn[] selectColumns = SelectColumnFactory.getExpressions(daArray);
-            validateColumnExpressions(selectColumns, daArray, table);
+            validateColumnExpressions(selectColumns, daArray, definition);
         }
         return whereFilters;
     }
 
     @Override
     public void validateColumnExpressions(final SelectColumn[] selectColumns, final String[] originalExpressions,
-            final Table table) {
+            final TableDefinition definition) {
         // It's unfortunate that we have to validateSelect which does a bunch of analysis, just to get throw-away cloned
         // columns back, so we can check here for disallowed methods. (We need to make sure SwitchColumns get
         // initialized.)
-        final QueryTable prototype = (QueryTable) TableTools.newTable(table.getDefinition());
+        final QueryTable prototype = (QueryTable) TableTools.newTable(definition);
         final SelectColumn[] clonedColumns = prototype.validateSelect(selectColumns).getClonedColumns();
         validateColumnExpressions(clonedColumns, originalExpressions);
     }

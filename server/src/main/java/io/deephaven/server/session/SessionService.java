@@ -136,22 +136,6 @@ public class SessionService {
 
             return Exceptions.statusRuntimeException(statusCode, "Details Logged w/ID '" + errorId + "'");
         }
-
-        /**
-         * Clear the error cache, so that we can start with a clean slate and retrieve the errors from this test.
-         */
-        @VisibleForTesting
-        public void clearCache() {
-            idCache.invalidateAll();
-        }
-
-        /**
-         * Get our transformed errors, so that we can validate we have the correct underlying error message.
-         */
-        @VisibleForTesting
-        public List<Throwable> getErrors() {
-            return new ArrayList<>(idCache.asMap().keySet());
-        }
     }
 
     static final long MIN_COOKIE_EXPIRE_MS = 10_000; // 10 seconds

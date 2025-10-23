@@ -13,7 +13,7 @@ import io.deephaven.qst.column.header.ColumnHeader;
 import io.deephaven.qst.table.NewTable;
 import io.deephaven.qst.table.TableCreatorImpl;
 import io.deephaven.qst.table.TableSpec;
-import io.deephaven.server.session.SessionService;
+import io.deephaven.server.runner.RecordingErrorTransformer;
 import org.apache.arrow.flight.FlightStream;
 import org.apache.arrow.vector.BigIntVector;
 import org.apache.arrow.vector.VectorSchemaRoot;
@@ -120,7 +120,7 @@ public class DeephavenFlightSessionTest extends DeephavenFlightSessionTestBase {
 
     @Test
     public void updateByCountWhereNotPermitted() throws Exception {
-        ((SessionService.ObfuscatingErrorTransformer) errorTransformer).clearCache();
+        ((RecordingErrorTransformer) errorTransformer).clear();
 
         final int size = 100;
         final TableSpec spec = TableSpec.empty(size)
@@ -132,13 +132,13 @@ public class DeephavenFlightSessionTest extends DeephavenFlightSessionTestBase {
             Assert.fail("Expected exception");
         } catch (TableHandle.TableHandleException e) {
             assertThat(e.getMessage()).contains("INVALID_ARGUMENT");
-            final List<Throwable> errors = ((SessionService.ObfuscatingErrorTransformer) errorTransformer).getErrors();
+            final List<Throwable> errors = ((RecordingErrorTransformer) errorTransformer).getErrors();
             assertThat(errors.size()).isEqualTo(1);
             assertThat(errors.get(0).getMessage()).contains(
                     "User expressions are not permitted to use static method disallowedFunction(int) on class io.deephaven.client.DeephavenFlightSessionTest");
         }
 
-        ((SessionService.ObfuscatingErrorTransformer) errorTransformer).clearCache();
+        ((RecordingErrorTransformer) errorTransformer).clear();
         final TableSpec spec2 = TableSpec.empty(size)
                 .view("I=i")
                 .updateBy(UpdateByOperation.RollingCountWhere(2, "RC",
@@ -148,7 +148,7 @@ public class DeephavenFlightSessionTest extends DeephavenFlightSessionTestBase {
             Assert.fail("Expected exception");
         } catch (TableHandle.TableHandleException e) {
             assertThat(e.getMessage()).contains("INVALID_ARGUMENT");
-            final List<Throwable> errors = ((SessionService.ObfuscatingErrorTransformer) errorTransformer).getErrors();
+            final List<Throwable> errors = ((RecordingErrorTransformer) errorTransformer).getErrors();
             assertThat(errors.size()).isEqualTo(1);
             assertThat(errors.get(0).getMessage()).contains(
                     "User expressions are not permitted to use static method disallowedFunction(int) on class io.deephaven.client.DeephavenFlightSessionTest");
@@ -199,7 +199,7 @@ public class DeephavenFlightSessionTest extends DeephavenFlightSessionTestBase {
             Assert.fail("Expected exception");
         } catch (TableHandle.TableHandleException e) {
             assertThat(e.getMessage()).contains("INVALID_ARGUMENT");
-            final List<Throwable> errors = ((SessionService.ObfuscatingErrorTransformer) errorTransformer).getErrors();
+            final List<Throwable> errors = ((RecordingErrorTransformer) errorTransformer).getErrors();
             assertThat(errors.size()).isEqualTo(1);
             assertThat(errors.get(0).getMessage()).contains(
                     "User expressions are not permitted to use method toArray() on interface io.deephaven.vector.IntVector");
@@ -217,7 +217,7 @@ public class DeephavenFlightSessionTest extends DeephavenFlightSessionTestBase {
             Assert.fail("Expected exception");
         } catch (TableHandle.TableHandleException e) {
             assertThat(e.getMessage()).contains("INVALID_ARGUMENT");
-            final List<Throwable> errors = ((SessionService.ObfuscatingErrorTransformer) errorTransformer).getErrors();
+            final List<Throwable> errors = ((RecordingErrorTransformer) errorTransformer).getErrors();
             assertThat(errors.size()).isEqualTo(1);
             assertThat(errors.get(0).getMessage()).contains(
                     "User expressions are not permitted to use method toArray() on interface io.deephaven.vector.IntVector");
@@ -235,7 +235,7 @@ public class DeephavenFlightSessionTest extends DeephavenFlightSessionTestBase {
             Assert.fail("Expected exception");
         } catch (TableHandle.TableHandleException e) {
             assertThat(e.getMessage()).contains("INVALID_ARGUMENT");
-            final List<Throwable> errors = ((SessionService.ObfuscatingErrorTransformer) errorTransformer).getErrors();
+            final List<Throwable> errors = ((RecordingErrorTransformer) errorTransformer).getErrors();
             assertThat(errors.size()).isEqualTo(1);
             assertThat(errors.get(0).getMessage()).contains(
                     "User expressions are not permitted to use method toArray() on interface io.deephaven.vector.IntVector");
@@ -265,7 +265,7 @@ public class DeephavenFlightSessionTest extends DeephavenFlightSessionTestBase {
 
     @Test
     public void aggFormulaNotPermitted() throws Exception {
-        ((SessionService.ObfuscatingErrorTransformer) errorTransformer).clearCache();
+        ((RecordingErrorTransformer) errorTransformer).clear();
 
         final int size = 10;
         final TableSpec spec = TableSpec.empty(size)
@@ -276,7 +276,7 @@ public class DeephavenFlightSessionTest extends DeephavenFlightSessionTestBase {
             Assert.fail("Expected exception");
         } catch (TableHandle.TableHandleException e) {
             assertThat(e.getMessage()).contains("INVALID_ARGUMENT");
-            final List<Throwable> errors = ((SessionService.ObfuscatingErrorTransformer) errorTransformer).getErrors();
+            final List<Throwable> errors = ((RecordingErrorTransformer) errorTransformer).getErrors();
             assertThat(errors.size()).isEqualTo(1);
             assertThat(errors.get(0).getMessage()).contains(
                     "User expressions are not permitted to use method toArray() on interface io.deephaven.vector.IntVector");
@@ -313,7 +313,7 @@ public class DeephavenFlightSessionTest extends DeephavenFlightSessionTestBase {
 
     @Test
     public void aggCountWhereFormulaNotPermitted() throws Exception {
-        ((SessionService.ObfuscatingErrorTransformer) errorTransformer).clearCache();
+        ((RecordingErrorTransformer) errorTransformer).clear();
 
         final int size = 10;
         final TableSpec spec = TableSpec.empty(size)
@@ -324,7 +324,7 @@ public class DeephavenFlightSessionTest extends DeephavenFlightSessionTestBase {
             Assert.fail("Expected exception");
         } catch (TableHandle.TableHandleException e) {
             assertThat(e.getMessage()).contains("INVALID_ARGUMENT");
-            final List<Throwable> errors = ((SessionService.ObfuscatingErrorTransformer) errorTransformer).getErrors();
+            final List<Throwable> errors = ((RecordingErrorTransformer) errorTransformer).getErrors();
             assertThat(errors.size()).isEqualTo(1);
             assertThat(errors.get(0).getMessage()).contains(
                     "User expressions are not permitted to use static method disallowedFunction(int) on class io.deephaven.client.DeephavenFlightSessionTest");

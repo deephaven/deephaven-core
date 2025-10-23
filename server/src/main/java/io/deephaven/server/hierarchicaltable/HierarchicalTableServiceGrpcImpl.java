@@ -21,6 +21,7 @@ import io.deephaven.engine.table.impl.BaseGridAttributes;
 import io.deephaven.engine.table.impl.hierarchical.RollupTableImpl;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
+import io.deephaven.engine.table.impl.select.ConditionFilter;
 import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.extensions.barrage.util.ExportUtil;
@@ -354,12 +355,14 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
     }
 
     @NotNull
-    private static List<WhereFilter> makeWhereFilters(
+    private List<WhereFilter> makeWhereFilters(
             @NotNull final Collection<Condition> finishedConditions,
             @NotNull final TableDefinition nodeDefinition) {
-        return finishedConditions.stream()
+        final List<WhereFilter> whereFilters = finishedConditions.stream()
                 .map(condition -> FilterFactory.makeFilter(nodeDefinition, condition))
                 .collect(Collectors.toList());
+        columnExpressionValidator.validateWhereFilters(whereFilters, nodeDefinition);
+        return whereFilters;
     }
 
     @Nullable
@@ -401,7 +404,7 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
                 .map(Strings::of)
                 .toArray(String[]::new);
         final SelectColumn[] expressions = SelectColumn.from(selectables);
-        columnExpressionValidator.validateColumnExpressions(expressions, columnSpecs, source);
+        columnExpressionValidator.validateColumnExpressions(expressions, columnSpecs, source.getDefinition());
 
         return request.getUpdateViewsList().stream()
                 .map(uvr -> new UpdateViewRequest(
@@ -426,7 +429,7 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
                 .map(Strings::of)
                 .toArray(String[]::new);
         final SelectColumn[] expressions = SelectColumn.from(selectables);
-        columnExpressionValidator.validateColumnExpressions(expressions, columnSpecs, source);
+        columnExpressionValidator.validateColumnExpressions(expressions, columnSpecs, source.getDefinition());
 
         return request.getFormatViewsList().stream()
                 .map(uvr -> new UpdateViewRequest(

@@ -12,6 +12,7 @@ import io.deephaven.client.impl.FilterAdapter;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.select.ConditionFilter;
 import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.engine.table.impl.select.SelectColumnFactory;
@@ -26,7 +27,6 @@ import io.deephaven.proto.backplane.grpc.FilterTableRequest;
 import io.deephaven.server.session.SessionState;
 import io.deephaven.server.table.ops.FilterTableGrpcImpl;
 import io.deephaven.server.table.validation.*;
-import io.deephaven.server.table.validation.methodlist.MethodListInvocationValidator;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.UserInvocationPermitted;
 import io.deephaven.util.mutable.MutableInt;
@@ -44,7 +44,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 public class TestColumnExpressionValidator {
     @Rule
@@ -373,16 +372,16 @@ public class TestColumnExpressionValidator {
     private static void allowedSelectMethod(final String expression, final ColumnExpressionValidator validator,
             final Table input) {
         final SelectColumn[] sc = SelectColumnFactory.getExpressions(expression);
-        validator.validateColumnExpressions(sc, new String[] {expression}, input);
+        validator.validateColumnExpressions(sc, new String[] {expression}, input.getDefinition());
         // We like to do this call twice so caching is exercised
-        validator.validateColumnExpressions(sc, new String[] {expression}, input);
+        validator.validateColumnExpressions(sc, new String[] {expression}, input.getDefinition());
     }
 
     private static void disallowedSelectMethod(final String expression, final ColumnExpressionValidator validator,
             final Table input, final String expected) {
         final SelectColumn[] sc = SelectColumnFactory.getExpressions(expression);
         final IllegalStateException ise = Assert.assertThrows(IllegalStateException.class,
-                () -> validator.validateColumnExpressions(sc, new String[] {expression}, input));
+                () -> validator.validateColumnExpressions(sc, new String[] {expression}, input.getDefinition()));
 
         Assert.assertEquals(expected, ise.getMessage());
     }
@@ -415,8 +414,8 @@ public class TestColumnExpressionValidator {
                 TableTools.emptyTable(1).update("A=`A`", "D=new " + NotAString1.class.getCanonicalName() + "()",
                         "E=new " + NotAString2.class.getCanonicalName() + "()");
 
-        validator.validateSelectFilters(new String[] {"D.frog() = ``"}, input);
-        validator.validateSelectFilters(new String[] {"D.frog(7) = ``"}, input);
+        validator.validateSelectFilters(new String[] {"D.frog() = ``"}, input.getDefinition());
+        validator.validateSelectFilters(new String[] {"D.frog(7) = ``"}, input.getDefinition());
 
         // The method "frog" is not in our method allow-list
         disallowedFilterMethod(validator, input,
@@ -442,8 +441,8 @@ public class TestColumnExpressionValidator {
         final ColumnExpressionValidator validator = new ParsingColumnExpressionValidator(
                 List.of(new AnnotationMethodInvocationValidator(Set.of("function_library")), iv));
 
-        validator.validateSelectFilters(new String[] {"D.frog() = ``"}, input);
-        validator.validateSelectFilters(new String[] {"D.frog(7) = ``"}, input);
+        validator.validateSelectFilters(new String[] {"D.frog() = ``"}, input.getDefinition());
+        validator.validateSelectFilters(new String[] {"D.frog(7) = ``"}, input.getDefinition());
 
         // The method "frog" is not in our method allow-list
         disallowedFilterMethod(validator, input,
@@ -462,7 +461,7 @@ public class TestColumnExpressionValidator {
             final String expression) {
 
         final IllegalStateException ise = Assert.assertThrows(IllegalStateException.class,
-                () -> validator.validateSelectFilters(new String[] {expression}, input));
+                () -> validator.validateSelectFilters(new String[] {expression}, input.getDefinition()));
         Assert.assertEquals(errorMessage, ise.getMessage());
     }
 
@@ -474,7 +473,8 @@ public class TestColumnExpressionValidator {
                 .getParsingColumnExpressionValidatorFromConfiguration(Configuration.getInstance());
         final String[] expressions = new String[] {"A0=A.get(0)", "AS=A.size()", "SV=A.subVector(0, 10)"};
 
-        validator.validateColumnExpressions(SelectColumnFactory.getExpressions(expressions), expressions, input);
+        validator.validateColumnExpressions(SelectColumnFactory.getExpressions(expressions), expressions,
+                input.getDefinition());
     }
 
     @Test
@@ -502,22 +502,23 @@ public class TestColumnExpressionValidator {
         final ColumnExpressionValidator wrappingValidator = new ColumnExpressionValidator() {
 
             @Override
-            public WhereFilter[] validateSelectFilters(final String[] conditionalExpressions, final Table table) {
+            public WhereFilter[] validateSelectFilters(final String[] conditionalExpressions,
+                    final TableDefinition definition) {
                 throw new UnsupportedOperationException();
             }
 
             @Override
             public void validateColumnExpressions(final SelectColumn[] selectColumns,
                     final String[] originalExpressions,
-                    final Table table) {
+                    final TableDefinition definition) {
                 throw new UnsupportedOperationException();
             }
 
             @Override
             public void validateConditionFilters(final List<ConditionFilter> conditionFilters,
-                    final Table sourceTable) {
+                    final TableDefinition definition) {
                 validatedFilters.addAll(conditionFilters);
-                wrapped.getValue().validateConditionFilters(conditionFilters, sourceTable);
+                wrapped.getValue().validateConditionFilters(conditionFilters, definition);
             }
         };
 
@@ -563,11 +564,11 @@ public class TestColumnExpressionValidator {
         final Table input =
                 TableTools.emptyTable(1).update("A=`A`", "D=new " + NotAString1.class.getCanonicalName() + "()");
 
-        validator.validateSelectFilters(new String[] {"A.length() = 1"}, input);
+        validator.validateSelectFilters(new String[] {"A.length() = 1"}, input.getDefinition());
         // We are permitting all methods on string, which is catching the length and toString method of D; even though
         // it was not explicitly permitted.
-        validator.validateSelectFilters(new String[] {"D.length() = 1"}, input);
-        validator.validateSelectFilters(new String[] {"D.toString() = ``"}, input);
+        validator.validateSelectFilters(new String[] {"D.length() = 1"}, input.getDefinition());
+        validator.validateSelectFilters(new String[] {"D.toString() = ``"}, input.getDefinition());
 
         // The method "frog" is not in our method allow-list
         disallowedFilterMethod(validator, input, "User expressions are not permitted to use method frog",
@@ -578,7 +579,7 @@ public class TestColumnExpressionValidator {
         final Table input =
                 TableTools.emptyTable(1).update("A=`A`", "D=new " + NotAString1.class.getCanonicalName() + "()");
 
-        validator.validateSelectFilters(new String[] {"A.length() = 1"}, input);
+        validator.validateSelectFilters(new String[] {"A.length() = 1"}, input.getDefinition());
         // We are permitting all methods on string, which is catching the length and toString method of D; even though
         // it was not explicitly permitted.
         disallowedFilterMethod(validator, input,
@@ -591,7 +592,7 @@ public class TestColumnExpressionValidator {
                 "D.frog() = ``");
 
         // We let you toString all the things
-        validator.validateSelectFilters(new String[] {"D.toString() = ``"}, input);
+        validator.validateSelectFilters(new String[] {"D.toString() = ``"}, input.getDefinition());
     }
 
     @Test
@@ -605,7 +606,7 @@ public class TestColumnExpressionValidator {
         final String newObject = "X=new String()";
         final SelectColumn[] sc2 = SelectColumnFactory.getExpressions(newObject);
         final IllegalStateException ise = Assert.assertThrows(IllegalStateException.class,
-                () -> validator.validateColumnExpressions(sc2, new String[] {newObject}, input));
+                () -> validator.validateColumnExpressions(sc2, new String[] {newObject}, input.getDefinition()));
         Assert.assertTrue("Actual: " + ise.getMessage(),
                 ise.getMessage().startsWith("User expressions are not permitted to instantiate "));
         Assert.assertTrue("Actual: " + ise.getMessage(),
@@ -625,7 +626,7 @@ public class TestColumnExpressionValidator {
         final String newObject = "X=new Object()";
         final SelectColumn[] sc2 = SelectColumnFactory.getExpressions(newObject);
         final IllegalStateException ise = Assert.assertThrows(IllegalStateException.class,
-                () -> validator.validateColumnExpressions(sc2, new String[] {newObject}, input));
+                () -> validator.validateColumnExpressions(sc2, new String[] {newObject}, input.getDefinition()));
         Assert.assertTrue("Actual: " + ise.getMessage(),
                 ise.getMessage().startsWith("User expressions are not permitted to instantiate "));
         Assert.assertTrue("Actual: " + ise.getMessage(),
@@ -737,7 +738,7 @@ public class TestColumnExpressionValidator {
                         List.of(ALLOW_ALL_VALIDATOR, NO_OPINION_VALIDATOR, DENY_CONSTRUCTORS_VALIDATOR));
         final SelectColumn[] sc1 = SelectColumnFactory.getExpressions(callConstructor);
         final IllegalStateException ise = Assert.assertThrows(IllegalStateException.class,
-                () -> validator.validateColumnExpressions(sc1, new String[] {callConstructor}, input));
+                () -> validator.validateColumnExpressions(sc1, new String[] {callConstructor}, input.getDefinition()));
 
         Assert.assertEquals(
                 "User expressions are not permitted to instantiate class io.deephaven.server.table.validation.methodlist.TestColumnExpressionValidator$AnnotatedConstructor()",
@@ -747,23 +748,23 @@ public class TestColumnExpressionValidator {
                 new ParsingColumnExpressionValidator(List.of(NO_OPINION_VALIDATOR));
 
         final IllegalStateException ise2 = Assert.assertThrows(IllegalStateException.class,
-                () -> validator2.validateColumnExpressions(sc1, new String[] {callConstructor}, input));
+                () -> validator2.validateColumnExpressions(sc1, new String[] {callConstructor}, input.getDefinition()));
         Assert.assertEquals(
                 "User expressions are not permitted to instantiate class io.deephaven.server.table.validation.methodlist.TestColumnExpressionValidator$AnnotatedConstructor()",
                 ise2.getMessage());
 
         final ParsingColumnExpressionValidator validator3 =
                 new ParsingColumnExpressionValidator(List.of(ALLOW_ALL_VALIDATOR));
-        validator3.validateColumnExpressions(sc1, new String[] {callConstructor}, input);
+        validator3.validateColumnExpressions(sc1, new String[] {callConstructor}, input.getDefinition());
 
         final ParsingColumnExpressionValidator validator4 =
                 new ParsingColumnExpressionValidator(List.of(NO_OPINION_VALIDATOR, ALLOW_ALL_VALIDATOR));
-        validator4.validateColumnExpressions(sc1, new String[] {callConstructor}, input);
+        validator4.validateColumnExpressions(sc1, new String[] {callConstructor}, input.getDefinition());
 
         final ParsingColumnExpressionValidator validator5 =
                 new ParsingColumnExpressionValidator(List.of(DENY_CONSTRUCTORS_VALIDATOR));
         final IllegalStateException ise3 = Assert.assertThrows(IllegalStateException.class,
-                () -> validator5.validateColumnExpressions(sc1, new String[] {callConstructor}, input));
+                () -> validator5.validateColumnExpressions(sc1, new String[] {callConstructor}, input.getDefinition()));
         Assert.assertEquals(
                 "User expressions are not permitted to instantiate class io.deephaven.server.table.validation.methodlist.TestColumnExpressionValidator$AnnotatedConstructor()",
                 ise3.getMessage());
@@ -781,7 +782,7 @@ public class TestColumnExpressionValidator {
 
         final SelectColumn[] sc1 = SelectColumnFactory.getExpressions(methodCall);
         final IllegalStateException ise = Assert.assertThrows(IllegalStateException.class,
-                () -> validator.validateColumnExpressions(sc1, new String[] {methodCall}, input));
+                () -> validator.validateColumnExpressions(sc1, new String[] {methodCall}, input.getDefinition()));
 
         Assert.assertEquals(
                 "User expressions are not permitted to use static method valueOf(int) on class java.lang.Integer",
@@ -791,23 +792,23 @@ public class TestColumnExpressionValidator {
                 new ParsingColumnExpressionValidator(List.of(NO_OPINION_VALIDATOR));
 
         final IllegalStateException ise2 = Assert.assertThrows(IllegalStateException.class,
-                () -> validator2.validateColumnExpressions(sc1, new String[] {methodCall}, input));
+                () -> validator2.validateColumnExpressions(sc1, new String[] {methodCall}, input.getDefinition()));
         Assert.assertEquals(
                 "User expressions are not permitted to use static method valueOf(int) on class java.lang.Integer",
                 ise2.getMessage());
 
         final ParsingColumnExpressionValidator validator3 =
                 new ParsingColumnExpressionValidator(List.of(ALLOW_ALL_VALIDATOR));
-        validator3.validateColumnExpressions(sc1, new String[] {methodCall}, input);
+        validator3.validateColumnExpressions(sc1, new String[] {methodCall}, input.getDefinition());
 
         final ParsingColumnExpressionValidator validator4 =
                 new ParsingColumnExpressionValidator(List.of(NO_OPINION_VALIDATOR, ALLOW_ALL_VALIDATOR));
-        validator4.validateColumnExpressions(sc1, new String[] {methodCall}, input);
+        validator4.validateColumnExpressions(sc1, new String[] {methodCall}, input.getDefinition());
 
         final ParsingColumnExpressionValidator validator5 =
                 new ParsingColumnExpressionValidator(List.of(DENY_METHODS_VALIDATOR));
         final IllegalStateException ise3 = Assert.assertThrows(IllegalStateException.class,
-                () -> validator5.validateColumnExpressions(sc1, new String[] {methodCall}, input));
+                () -> validator5.validateColumnExpressions(sc1, new String[] {methodCall}, input.getDefinition()));
         Assert.assertEquals(
                 "User expressions are not permitted to use static method valueOf(int) on class java.lang.Integer",
                 ise3.getMessage());
@@ -995,7 +996,7 @@ public class TestColumnExpressionValidator {
         allowedSelectMethod(expr, validator, input);
 
         final String[] matchFilters = new String[] {"A in `def`, `qdz`", "D=8"};
-        validator.validateSelectFilters(matchFilters, input);
+        validator.validateSelectFilters(matchFilters, input.getDefinition());
     }
 
     @Test

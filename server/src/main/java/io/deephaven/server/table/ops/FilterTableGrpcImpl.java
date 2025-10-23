@@ -60,66 +60,10 @@ public class FilterTableGrpcImpl extends GrpcTableOperation<FilterTableRequest> 
                 .map(f -> FilterFactory.makeFilter(sourceTable.getDefinition(), f))
                 .collect(Collectors.toList());
 
-        final List<ConditionFilter> conditionFilters = extractConditionFilters(whereFilters);
-        validator.validateConditionFilters(conditionFilters, sourceTable);
+        validator.validateWhereFilters(whereFilters, sourceTable.getDefinition());
 
         // execute the filters
         return sourceTable.where(Filter.and(whereFilters));
-    }
-
-    private static List<ConditionFilter> extractConditionFilters(List<WhereFilter> whereFilters) {
-        final List<ConditionFilter> conditionFilters = new ArrayList<>();
-
-        final WhereFilter.Visitor<Void> visitor = new WhereFilter.Visitor<>() {
-            @Override
-            public Void visitWhereFilter(WhereFilter filter) {
-                if (filter instanceof ConditionFilter) {
-                    conditionFilters.add((ConditionFilter) filter);
-                    return null;
-                }
-                return WhereFilter.Visitor.super.visitWhereFilter(filter);
-            }
-
-            @Override
-            public Void visitWhereFilter(WhereFilterInvertedImpl filter) {
-                visitWhereFilter(filter.getWrappedFilter());
-                return null;
-            }
-
-            @Override
-            public Void visitWhereFilter(WhereFilterSerialImpl filter) {
-                visitWhereFilter(filter.getWrappedFilter());
-                return null;
-            }
-
-            @Override
-            public Void visitWhereFilter(WhereFilterWithDeclaredBarriersImpl filter) {
-                visitWhereFilter(filter.getWrappedFilter());
-                return null;
-            }
-
-            @Override
-            public Void visitWhereFilter(WhereFilterWithRespectedBarriersImpl filter) {
-                visitWhereFilter(filter.getWrappedFilter());
-                return null;
-            }
-
-            @Override
-            public Void visitWhereFilter(DisjunctiveFilter filter) {
-                filter.getFilters().forEach(this::visitWhereFilter);
-                return null;
-            }
-
-            @Override
-            public Void visitWhereFilter(ConjunctiveFilter filter) {
-                filter.getFilters().forEach(this::visitWhereFilter);
-                return null;
-            }
-        };
-
-        whereFilters.forEach(visitor::visitWhereFilter);
-
-        return conditionFilters;
     }
 
     @NotNull
