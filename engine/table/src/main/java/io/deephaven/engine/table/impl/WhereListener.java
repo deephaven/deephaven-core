@@ -8,8 +8,8 @@ import io.deephaven.engine.liveness.LivenessReferent;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.WritableRowSet;
-import io.deephaven.engine.table.ModifiedColumnSet;
-import io.deephaven.engine.table.TableUpdate;
+import io.deephaven.engine.table.*;
+import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.select.DynamicWhereFilter;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.util.DelayedErrorNotifier;
@@ -94,6 +94,48 @@ class WhereListener extends MergedListener {
                         filterColumnNames.toArray(String[]::new));
     }
 
+    /**
+     * Create a filter to data index map from the provided table and filters.
+     */
+    static Map<WhereFilter, DataIndex> extractFilterDataIndexMap(
+            @NotNull final Table table,
+            @NotNull final WhereFilter[] filters) {
+
+        final DataIndexer dataIndexer = DataIndexer.existingOf(table.getRowSet());
+        if (dataIndexer == null) {
+            return Collections.emptyMap();
+        }
+
+        final Map<WhereFilter, DataIndex> result = new LinkedHashMap<>();
+        for (final WhereFilter filter : filters) {
+            if (!PushdownFilterMatcher.canPushdownFilter(filter)) {
+                // data indexes are used only for pushdown filters.
+                continue;
+            }
+
+            final List<String> columnNames = filter.getColumns();
+            final List<ColumnSource<?>> columnSources = columnNames.stream()
+                    .map(table::getColumnSource)
+                    .collect(Collectors.toList());
+
+
+            final List<DataIndex> compatibleIndexes = dataIndexer.getCompatibleDataIndexes(columnSources);
+            for (final DataIndex dataIndex : compatibleIndexes) {
+                // `where` calls only leverage data index tables which are fully populated.
+                if (dataIndex.tableIsCached()) {
+                    result.compute(filter, (k, v) -> v == null
+                            ? dataIndex
+                            : (v.table().size() < dataIndex.table().size() ? v : dataIndex));
+                }
+            }
+        }
+        return result;
+    }
+
+    /**
+     * Extract dependencies from the provided filters. This is limited to dependencies needed for table update
+     * operations.
+     */
     @NotNull
     static List<NotificationQueue.Dependency> extractDependencies(@NotNull final WhereFilter[] filters) {
         return Stream.concat(
@@ -257,8 +299,8 @@ class WhereListener extends MergedListener {
                 @NotNull final RowSet modifiedInput,
                 final boolean runModifiedFilters,
                 final ModifiedColumnSet sourceModColumns) {
-            super(WhereListener.this.sourceTable, WhereListener.this.filters, addedInput, modifiedInput,
-                    false, runModifiedFilters, sourceModColumns);
+            super(WhereListener.this.sourceTable, WhereListener.this.filters, Collections.emptyMap(), addedInput,
+                    modifiedInput, false, runModifiedFilters, sourceModColumns);
             // Create the proper JobScheduler for the following parallel tasks
             if (permitParallelization) {
                 jobScheduler = new UpdateGraphJobScheduler(getUpdateGraph());

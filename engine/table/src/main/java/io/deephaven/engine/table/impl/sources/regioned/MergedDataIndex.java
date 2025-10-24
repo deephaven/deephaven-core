@@ -145,6 +145,11 @@ class MergedDataIndex extends AbstractDataIndex implements DataIndexer.Retainabl
     }
 
     @Override
+    public boolean tableIsCached() {
+        return indexTable != null || lazyTable != null;
+    }
+
+    @Override
     @NotNull
     public Table table(final DataIndexOptions options) {
         Table localIndexTable;

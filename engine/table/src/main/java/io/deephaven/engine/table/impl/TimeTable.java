@@ -17,7 +17,6 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.DataIndex;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.perf.PerformanceEntry;
 import io.deephaven.engine.table.impl.sources.FillUnordered;
@@ -272,7 +271,6 @@ public final class TimeTable extends QueryTable implements Runnable, HasRefreshi
                 final boolean invertMatch,
                 final boolean usePrev,
                 final boolean caseInsensitive,
-                @Nullable final DataIndex dataIndex,
                 @NotNull final RowSet selection,
                 final Object... keys) {
             if (startTime == null) {
@@ -415,7 +413,6 @@ public final class TimeTable extends QueryTable implements Runnable, HasRefreshi
                     final boolean invertMatch,
                     final boolean usePrev,
                     final boolean caseInsensitive,
-                    @Nullable final DataIndex dataIndex,
                     @NotNull final RowSet selection,
                     final Object... keys) {
                 if (startTime == null) {

@@ -179,7 +179,7 @@ public class ComparablePushdownHandlerTest {
 
         // null in the exclusion list
         assertTrue(ComparablePushdownHandler.maybeOverlaps(
-                makeMatchFilter(MatchFilter.MatchType.Inverted, "strCol", null),
+                makeMatchFilter(MatchFilter.MatchType.Inverted, "strCol", (Object) null),
                 stringStats("x", "y")));
 
         // exclusion list with a value that is in the stats range
