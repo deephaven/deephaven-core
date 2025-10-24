@@ -549,10 +549,6 @@
                       {
                         "label": "Use IFrames",
                         "path": "how-to-guides/user-interface/use-iframes.md"
-                      },
-                      {
-                        "label": "JS API",
-                        "path": "how-to-guides/use-jsapi.md"
                       }
                     ]
                   }
