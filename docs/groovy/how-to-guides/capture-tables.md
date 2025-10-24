@@ -25,7 +25,7 @@ You need an installation of [`pydeephaven`](/core/client-api/python/) on the loc
 pip install pydeephaven
 ```
 
-See the guide on [installing Python packages](../how-to-guides/install-and-use-python-packages.md) for more information. To learn about the Deephaven Python client, check out the [Python client Quickstart](../getting-started/pyclient-quickstart.md).
+See the guide on [installing Python packages](../../python/how-to-guides/install-and-use-python-packages.md) for more information. To learn about the Deephaven Python client, check out the [Python client Quickstart](../../python/getting-started/pyclient-quickstart.md).
 
 ## Connect the Python client to the remote Deephaven server
 
@@ -65,7 +65,7 @@ As an example, you can create a new static table on the server using [`empty_tab
 table_ref = client_session.empty_table(10).update(["X = i", "Y = X / 2"])
 ```
 
-`table_ref` is not a Deephaven table itself, but a _reference_ to a Deephaven table on the server. See this [overview of the Python client design](../getting-started/pyclient-quickstart.md) for more information on table references.
+`table_ref` is not a Deephaven table itself, but a _reference_ to a Deephaven table on the server. See this [overview of the Python client design](../../python/getting-started/pyclient-quickstart.md) for more information on table references.
 
 Similarly, you can use [`time_table`](/core/client-api/python/code/pydeephaven.html#pydeephaven.Session.time_table) to create a ticking table on the server:
 
@@ -123,7 +123,7 @@ Voila! You now have _real_ Deephaven server tables called `local_t_streaming` an
 
 <!--- TODO: link https://github.com/deephaven/deephaven.io/issues/3918 when complete.-->
 
-- [Python client Quickstart](../getting-started/pyclient-quickstart.md)
+- [Python client Quickstart](../../python/getting-started/pyclient-quickstart.md)
 - [Share tables with URIs](./use-uris.md)
 - [Anonymous authentication](./authentication/auth-anon.md)
 - [Pre-shared key authentication](./authentication/auth-psk.md)
