@@ -281,7 +281,10 @@ public class FileUtils {
 
     /**
      * Take the file source path or URI string and convert it to a URI object. Any unnecessary path separators will be
-     * removed. The URI object will always be {@link URI#isAbsolute() absolute}, i.e., will always have a scheme.
+     * removed. The URI object will always be {@link URI#isAbsolute() absolute}, i.e., will always have a scheme. Any
+     * {@code source} that is parsable via {@link URI#URI(String)} with the scheme "file" must also be a valid
+     * {@link File#File(URI) file via URI}. A {@code source} that results in a {@link URISyntaxException} will be
+     * assumed to be a {@link File#File(String) file via pathname}, unless the {@code source} appears to have a scheme.
      *
      * @param source The file source path or URI
      * @param isDirectory Whether the source is a directory
@@ -295,19 +298,19 @@ public class FileUtils {
         try {
             uri = new URI(source);
         } catch (final URISyntaxException e) {
-            // If it looks like it already has a scheme, we should _not_ try to parse it as a file
-            if (hasScheme(source)) {
-                throw new IllegalStateException(String.format("Failed to convert to URI: '%s'", source), e);
+            // If it looks it's a URI, we should _not_ try to parse it as a file
+            if (startsWithScheme(source)) {
+                throw new IllegalArgumentException(String.format("Failed to convert to URI: '%s'", source), e);
             }
             // Otherwise, assume it's a file URI
             return convertToURI(new File(source), isDirectory);
         }
         if (uri.getScheme() == null) {
-            // Convert to a "file" URI
+            // Convert to a "file" URI. Note, this is using `source`
             return convertToURI(new File(source), isDirectory);
         }
         if (uri.getScheme().equals(FILE_URI_SCHEME)) {
-            // Ensure it is absolute
+            // We don't want to be more lenient than new File(uri) would be. Note, this is using `uri`
             return convertToURI(new File(uri), isDirectory);
         }
         String path = uri.getPath();
@@ -336,10 +339,15 @@ public class FileUtils {
         }
     }
 
-    // URI scheme start looks like alpha, followed by (alphanum, plus, minus, or period) repeated, followed by colon
     private static final Pattern URI_SCHEME_START = Pattern.compile("^\\p{Alpha}[\\p{Alnum}+\\-.]*:");
 
-    static boolean hasScheme(String source) {
+    /**
+     * URI scheme start looks like alpha, followed by (alphanum, plus, minus, or period) repeated, followed by colon.
+     *
+     * @param source the source
+     * @return true if the source starts with a scheme
+     */
+    static boolean startsWithScheme(final String source) {
         // Note: using find() as it may be a bit more efficient than adding .* to end of regex + matches()
         return URI_SCHEME_START.matcher(source).find();
     }
