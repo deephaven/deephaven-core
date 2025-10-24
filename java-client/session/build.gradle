@@ -22,7 +22,7 @@ dependencies {
 
   api project(':ssl-config')
   implementation project(':ssl-kickstart')
-  implementation libs.sslcontext.kickstart.netty
+  implementation libs.ayza.netty
 
   compileOnly project(':util-immutables')
   annotationProcessor libs.immutables.value
