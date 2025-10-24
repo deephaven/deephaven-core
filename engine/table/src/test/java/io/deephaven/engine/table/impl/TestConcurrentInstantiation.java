@@ -405,66 +405,57 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
 
     private void testWhereDynamicInternal(final boolean sourceIndexed, final boolean setIndexed)
             throws ExecutionException, InterruptedException, TimeoutException {
-        final QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6).toTracking(),
-                col("x", 1, 2, 3), col("y", "a", "b", "c"), col("z", true, false, true));
+        final QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6, 8, 10).toTracking(),
+                col("x", 1, 2, 3, 4, 5), col("y", "a", "b", "c", "d", "e"), col("z", true, false, true, false, true));
         if (sourceIndexed) {
             DataIndexer.getOrCreateDataIndex(table, "z");
         }
-        final Table tableStart = TstUtils.testRefreshingTable(i(2, 6).toTracking(),
-                col("x", 1, 3), col("y", "a", "c"), col("z", true, true));
-        final Table testUpdate = TstUtils.testRefreshingTable(i(3, 6).toTracking(),
-                col("x", 4, 3), col("y", "d", "c"), col("z", true, true));
         final QueryTable whereTable = TstUtils.testRefreshingTable(i(0).toTracking(), col("z", true));
         if (setIndexed) {
             DataIndexer.getOrCreateDataIndex(whereTable, "z");
         }
 
-        // This is something of a silly test, so we've "hacked" the DynamicWhereFilter instance to let us initialize
-        // its DataIndex ahead of the operation so that that the where can proceed without a lock.
-        // Normally, DynamicWhereFilter is only used from whereIn and whereNotIn, which are not concurrent operations.
-        final DynamicWhereFilter filter = updateGraph.sharedLock().computeLocked(
-                () -> {
-                    final DynamicWhereFilter result =
-                            new DynamicWhereFilter(whereTable, true, MatchPairFactory.getExpressions("z")) {
-                                private boolean begun;
-
-                                @Override
-                                public SafeCloseable beginOperation(@NotNull Table sourceTable) {
-                                    if (!begun) {
-                                        begun = true;
-                                        return super.beginOperation(sourceTable);
-                                    }
-                                    return () -> {
-                                    };
-                                }
-                            };
-                    // noinspection resource
-                    result.beginOperation(table);
-                    return result;
-                });
+        // Create a dynamic where filter on the main thread.
+        final DynamicWhereFilter filter =
+                new DynamicWhereFilter(whereTable, true, MatchPairFactory.getExpressions("z"));
 
         updateGraph.startCycleForUnitTests(false);
 
-        final Future<Table> future1 = dualPool.submit(() -> table.where(filter));
-        try {
-            future1.get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
-            fail("Filtering should be blocked on UGP because DynamicWhereFilter does not support previous filtering,"
-                    + " and so the first where will eventually try to do a locked snapshot");
-        } catch (TimeoutException ignored) {
-        }
+        // Expected result of the filters before any mods to the table.
+        final Table tableStart = TstUtils.testRefreshingTable(i(2, 6, 10).toTracking(),
+                col("x", 1, 3, 5), col("y", "a", "c", "e"), col("z", true, true, true));
+
+        final Table table1 = dualPool.submit(() -> table.where(filter)).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
+        assertTableEquals(tableStart, table1);
+
+        // Add rows to the main table.
         TstUtils.addToTable(table, i(2, 3), col("x", 1, 4), col("y", "a", "d"), col("z", false, true));
+        assertTableEquals(tableStart, prevTable(table1));
 
-        final Table filter2 = dualPool.submit(() -> table.where("z")).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
+        final Table table2 = dualPool.submit(() -> table.where("z")).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
+        assertTableEquals(tableStart, prevTable(table2));
 
-        assertTableEquals(tableStart, prevTable(filter2));
+        final Table table3 = dualPool.submit(() -> {
+            // Create a dynamic where filter on a worker thread.
+            final DynamicWhereFilter filter3 =
+                    new DynamicWhereFilter(whereTable, true, MatchPairFactory.getExpressions("z"));
+            return table.where(filter3);
+        }).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
+        assertTableEquals(tableStart, prevTable(table3));
+
+        // Notify the children of the added / modified rows
         table.notifyListeners(i(3), i(), i(2));
         updateGraph.markSourcesRefreshedForUnitTests();
 
         updateGraph.completeCycleForUnitTests();
 
-        final Table filter1 = future1.get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
-        TstUtils.assertTableEquals(testUpdate, filter1);
-        TstUtils.assertTableEquals(filter2, filter1);
+        // Expected result of the filters after the cycle ends
+        final Table testUpdate = TstUtils.testRefreshingTable(i(3, 6, 10).toTracking(),
+                col("x", 4, 3, 5), col("y", "d", "c", "e"), col("z", true, true, true));
+
+        TstUtils.assertTableEquals(testUpdate, table1);
+        TstUtils.assertTableEquals(table2, table1);
+        TstUtils.assertTableEquals(table3, table2);
     }
 
     public void testSort() throws ExecutionException, InterruptedException, TimeoutException {

@@ -3,6 +3,7 @@
 //
 package io.deephaven.engine.table.impl.select;
 
+import com.google.common.collect.Sets;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.*;
@@ -27,6 +28,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.stream.LongStream;
 
 /**
@@ -64,13 +66,22 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
     private RecomputeListener listener;
     private QueryTable resultTable;
 
+    /**
+     * Construct a DynamicWhereFilter with key values from given set table. The set table may be static or refreshing.
+     * <p>
+     * NOTE: If the set table is refreshing, it must not contain duplicate keys for the given
+     * {@code sourceToSetColumnNamePairs}. A table update that adds or removes a duplicate key tuple will result in the
+     * filtered table containing incorrect results.
+     *
+     * @param setTable the table containing the inclusion or exclusion keys
+     * @param inclusion when true, rows matching the values in the set table are included in the results. When false,
+     *        matching rows are excluded.
+     * @param sourceToSetColumnNamePairs the mapping of source table column names to set table column names for the keys
+     */
     public DynamicWhereFilter(
             @NotNull final QueryTable setTable,
             final boolean inclusion,
             final MatchPair... sourceToSetColumnNamePairs) {
-        if (setTable.isRefreshing()) {
-            updateGraph.checkInitiateSerialTableOperation();
-        }
         this.sourceToSetColumnNamePairs = sourceToSetColumnNamePairs;
         this.inclusion = inclusion;
 
@@ -299,11 +310,28 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
      */
     @Nullable
     private static DataIndex optimalIndex(final Table inputTable, final String[] keyColumnNames) {
-        final DataIndex fullIndex = DataIndexer.getDataIndex(inputTable, keyColumnNames);
+        final DataIndexer indexer = DataIndexer.existingOf(inputTable.getRowSet());
+        if (indexer == null) {
+            return null;
+        }
+
+        final Set<ColumnSource<?>> columnSources = Arrays.stream(keyColumnNames)
+                .map(inputTable::getColumnSource)
+                .collect(Collectors.toSet());
+
+        // Find a full index if one exists
+        final DataIndex fullIndex = indexer.getDataIndex(columnSources);
         if (fullIndex != null) {
             return fullIndex;
         }
-        return DataIndexer.getOptimalPartialIndex(inputTable, keyColumnNames);
+
+        return LivenessScopeStack.computeEnclosed(() -> Sets.powerSet(columnSources).stream()
+                .filter(subset -> !subset.isEmpty() && subset.size() < columnSources.size())
+                .map(indexer::getDataIndex)
+                .filter(Objects::nonNull)
+                .max(Comparator.comparingLong(dataIndex -> dataIndex.table().size()))
+                .orElse(null),
+                inputTable.isRefreshing(), (final DataIndex result) -> result != null && result.isRefreshing());
     }
 
     /**
@@ -415,32 +443,28 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
             @NotNull final RowSet fullSet,
             @NotNull final Table table,
             final boolean usePrev) {
-        if (usePrev) {
-            throw new PreviousFilteringNotSupported();
-        }
-
         if (sourceDataIndex != null) {
             // Does our index contain every key column?
 
             if (sourceDataIndex.keyColumnNames().size() == sourceKeyColumns.length) {
                 // Even if we have an index, we may be better off with a linear search.
                 if (selection.size() > (sourceDataIndex.table().size() * 2L)) {
-                    return filterFullIndex(selection);
+                    return filterFullIndex(selection, usePrev);
                 } else {
-                    return filterLinear(selection, inclusion);
+                    return filterLinear(selection, inclusion, usePrev);
                 }
             }
 
             // We have a partial index, should we use it?
             if (selection.size() > (sourceDataIndex.table().size() * 4L)) {
-                return filterPartialIndex(selection);
+                return filterPartialIndex(selection, usePrev);
             }
         }
-        return filterLinear(selection, inclusion);
+        return filterLinear(selection, inclusion, usePrev);
     }
 
     @NotNull
-    private WritableRowSet filterFullIndex(@NotNull final RowSet selection) {
+    private WritableRowSet filterFullIndex(@NotNull final RowSet selection, final boolean usePrev) {
         Assert.neqNull(sourceDataIndex, "sourceDataIndex");
 
         final WritableRowSet filtered = inclusion ? RowSetFactory.empty() : selection.copy();
@@ -463,8 +487,8 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
 
         values.forEachRemaining(key -> {
             final Object mappedKey = keyMappingFunction.apply(key);
-            final long rowKey = rowKeyLookup.apply(mappedKey, false);
-            final RowSet rowSet = rowSetColumn.get(rowKey);
+            final long rowKey = rowKeyLookup.apply(mappedKey, usePrev);
+            final RowSet rowSet = usePrev ? rowSetColumn.getPrev(rowKey) : rowSetColumn.get(rowKey);
             if (rowSet != null) {
                 if (inclusion) {
                     try (final RowSet intersected = rowSet.intersect(selection)) {
@@ -479,7 +503,7 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
     }
 
     @NotNull
-    private WritableRowSet filterPartialIndex(@NotNull final RowSet selection) {
+    private WritableRowSet filterPartialIndex(@NotNull final RowSet selection, final boolean usePrev) {
         Assert.neqNull(sourceDataIndex, "sourceDataIndex");
         Assert.gt(sourceKeyColumns.length, "sourceKeyColumns.length", 1);
 
@@ -509,8 +533,8 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
 
             values.forEachRemaining(key -> {
                 final Object lookupKey = keyMappingFunction.apply(key);
-                final long rowKey = rowKeyLookup.apply(lookupKey, false);
-                final RowSet rowSet = rowSetColumn.get(rowKey);
+                final long rowKey = rowKeyLookup.apply(lookupKey, usePrev);
+                final RowSet rowSet = usePrev ? rowSetColumn.getPrev(rowKey) : rowSetColumn.get(rowKey);
                 if (rowSet != null) {
                     try (final RowSet intersected = rowSet.intersect(selection)) {
                         possiblyMatching.insert(intersected);
@@ -519,7 +543,7 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
             });
 
             // Now, do linear filter on possiblyMatching to determine the values to include or exclude from selection.
-            matching = filterLinear(possiblyMatching, true);
+            matching = filterLinear(possiblyMatching, true, usePrev);
         }
         if (inclusion) {
             return matching;
@@ -529,7 +553,7 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
         }
     }
 
-    private WritableRowSet filterLinear(final RowSet selection, final boolean filterInclusion) {
+    private WritableRowSet filterLinear(final RowSet selection, final boolean filterInclusion, final boolean usePrev) {
         if (selection.isEmpty()) {
             return RowSetFactory.empty();
         }
@@ -546,7 +570,10 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
             while (selectionIterator.hasMore()) {
                 final RowSequence selectionChunk = selectionIterator.getNextRowSequenceWithLength(maxChunkSize);
                 final LongChunk<OrderedRowKeys> selectionRowKeyChunk = selectionChunk.asRowKeyChunk();
-                final Chunk<Values> keyChunk = Chunk.downcast(sourceKeySource.getChunk(keyGetContext, selectionChunk));
+                final Chunk<? extends Values> sourceChunk = usePrev
+                        ? sourceKeySource.getPrevChunk(keyGetContext, selectionChunk)
+                        : sourceKeySource.getChunk(keyGetContext, selectionChunk);
+                final Chunk<Values> keyChunk = Chunk.downcast(sourceChunk);
                 setKernel.matchValues(keyChunk, selectionRowKeyChunk, matchingKeys, filterInclusion);
                 filteredRowSetBuilder.appendOrderedRowKeysChunk(matchingKeys);
             }

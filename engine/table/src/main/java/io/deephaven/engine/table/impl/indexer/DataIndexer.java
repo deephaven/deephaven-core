@@ -3,7 +3,6 @@
 //
 package io.deephaven.engine.table.impl.indexer;
 
-import com.google.common.collect.Sets;
 import io.deephaven.base.reference.HardSimpleReference;
 import io.deephaven.base.reference.SimpleReference;
 import io.deephaven.base.reference.WeakSimpleReference;
@@ -219,41 +218,6 @@ public class DataIndexer implements TrackingRowSet.Indexer {
             return null;
         }
         return rootCache.get(pathFor(keyColumns));
-    }
-
-    /**
-     * Return a valid, live {@link DataIndex} for a strict subset of the given key columns, or {@code null} if no such
-     * index exists. Will choose the DataIndex that results in the largest index table, following the assumption that
-     * the largest index table will divide the source table into the most specific partitions.
-     *
-     * @param table The indexed {@link Table}
-     * @param keyColumnNames The key column names to include
-     *
-     * @return The optimal partial {@link DataIndex}, or {@code null} if no such index exists
-     */
-    @Nullable
-    public static DataIndex getOptimalPartialIndex(Table table, final String... keyColumnNames) {
-        if (keyColumnNames.length == 0) {
-            return null;
-        }
-        if (table.isRefreshing()) {
-            table.getUpdateGraph().checkInitiateSerialTableOperation();
-        }
-        table = table.coalesce();
-        final DataIndexer indexer = DataIndexer.existingOf(table.getRowSet());
-        if (indexer == null) {
-            return null;
-        }
-        final Set<ColumnSource<?>> keyColumns = Arrays.stream(keyColumnNames)
-                .map(table::getColumnSource)
-                .collect(Collectors.toCollection(LinkedHashSet::new));
-        return LivenessScopeStack.computeEnclosed(() -> Sets.powerSet(keyColumns).stream()
-                .filter(subset -> !subset.isEmpty() && subset.size() < keyColumns.size())
-                .map(indexer::getDataIndex)
-                .filter(Objects::nonNull)
-                .max(Comparator.comparingLong(dataIndex -> dataIndex.table().size()))
-                .orElse(null),
-                table.isRefreshing(), (final DataIndex result) -> result != null && result.isRefreshing());
     }
 
     /**
@@ -497,7 +461,7 @@ public class DataIndexer implements TrackingRowSet.Indexer {
                 resultHolder.setValue(validateAndManageCachedDataIndex(cache.dataIndexReference.get()));
                 return true;
             });
-            return resultHolder.getValue();
+            return resultHolder.get();
         }
 
         /**
@@ -575,7 +539,7 @@ public class DataIndexer implements TrackingRowSet.Indexer {
                 resultHolder.setValue(dataIndex);
                 return true;
             });
-            return resultHolder.getValue();
+            return resultHolder.get();
         }
     }
 }
