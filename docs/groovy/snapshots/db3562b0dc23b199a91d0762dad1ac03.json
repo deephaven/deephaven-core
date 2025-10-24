@@ -1,0 +1,1 @@
+{"file":"how-to-guides/excel/excel-client.md","objects":{"crypto_table":{"type":"Table","data":{"columns":[{"name":"Timestamp","type":"java.time.Instant"},{"name":"Exchange","type":"java.lang.String"},{"name":"Price","type":"double"},{"name":"Size","type":"double"}],"rows":[]}}}}
