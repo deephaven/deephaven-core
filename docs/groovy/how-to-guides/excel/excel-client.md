@@ -313,7 +313,7 @@ You can also make the `DEEPHAVEN_SUBSCRIBE` formula dependent on a cell value. F
 
 ## Related Documentation
 
-- [`empty_table`](../../how-to-guides/new-and-empty-table.md#empty_table)
+- [`empty_table`](../../how-to-guides/new-and-empty-table.md#emptytable)
 - [`time_table`](../../how-to-guides/time-table.md)
 - [`update`](../../reference/table-operations/select/update.md)
 - [`tail`](../../reference/table-operations/filter/tail.md)
