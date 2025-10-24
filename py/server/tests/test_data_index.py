@@ -13,10 +13,22 @@ class DataIndexTestCase(BaseTestCase):
     def setUp(self) -> None:
         super().setUp()
         self.table = empty_table(10).update(
-            ["Timestamp = now()", "X=i%3", "Y=`Deephaven` + String.valueOf(ii)", "Z=ii*2"])
+            [
+                "Timestamp = now()",
+                "X=i%3",
+                "Y=`Deephaven` + String.valueOf(ii)",
+                "Z=ii*2",
+            ]
+        )
         self.data_index = data_index(self.table, ["X", "Y"])
-        self.table_nodi = empty_table(10).update(["Timestamp = now()", "X=i%3", "Y=`Deephaven` + String.valueOf(ii)",
-                                                  "Z=ii*2"])
+        self.table_nodi = empty_table(10).update(
+            [
+                "Timestamp = now()",
+                "X=i%3",
+                "Y=`Deephaven` + String.valueOf(ii)",
+                "Z=ii*2",
+            ]
+        )
 
     def test_data_index(self):
         self.assertFalse(has_data_index(self.table, ["X", "Z"]))
@@ -33,7 +45,9 @@ class DataIndexTestCase(BaseTestCase):
         self.assertIsNotNone(data_index(self.table, ["X", "Y"], create_if_absent=False))
         self.assertIsNone(data_index(self.table, ["X"], create_if_absent=False))
         self.assertIsNone(data_index(self.table, ["X", "Z"], create_if_absent=False))
-        self.assertIsNone(data_index(self.table_nodi, ["X", "Y"], create_if_absent=False))
+        self.assertIsNone(
+            data_index(self.table_nodi, ["X", "Y"], create_if_absent=False)
+        )
 
     def test_has_data_index(self):
         self.assertTrue(has_data_index(self.table, ["X", "Y"]))
@@ -54,5 +68,5 @@ class DataIndexTestCase(BaseTestCase):
         self.assertEqual(3, di.table.size)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

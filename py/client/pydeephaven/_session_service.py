@@ -4,15 +4,16 @@
 
 import grpc
 
+from deephaven_core.proto import session_pb2_grpc, session_pb2
 from pydeephaven.dherror import DHError
-from deephaven_core.proto import session_pb2_grpc, session_pb2, ticket_pb2
 from pydeephaven.ticket import Ticket, ExportTicket
 
 
 class SessionService:
+    _grpc_session_stub: session_pb2_grpc.SessionServiceStub
+
     def __init__(self, session):
         self.session = session
-        self._grpc_session_stub = None
 
     def connect(self) -> grpc.Channel:
         """Connects to the server and returns a gRPC channel upon success."""
@@ -21,21 +22,25 @@ class SessionService:
             credentials = grpc.ssl_channel_credentials(
                 root_certificates=self.session._tls_root_certs,
                 private_key=self.session._client_private_key,
-                certificate_chain=self.session._client_cert_chain)
-            grpc_channel = grpc.secure_channel(target, credentials, self.session._client_opts)
+                certificate_chain=self.session._client_cert_chain,
+            )
+            grpc_channel = grpc.secure_channel(
+                target, credentials, self.session._client_opts
+            )
         else:
             grpc_channel = grpc.insecure_channel(target, self.session._client_opts)
         self._grpc_session_stub = session_pb2_grpc.SessionServiceStub(grpc_channel)
         return grpc_channel
 
-    def close(self):
+    def close(self) -> None:
         """Closes the gRPC connection."""
         try:
             self.session.wrap_rpc(
                 self._grpc_session_stub.CloseSession,
                 session_pb2.HandshakeRequest(
-                    auth_protocol=0,
-                    payload=self.session._auth_header_value))
+                    auth_protocol=0, payload=self.session._auth_header_value
+                ),
+            )
         except Exception as e:
             raise DHError("failed to close the session.") from e
 
@@ -44,7 +49,8 @@ class SessionService:
         try:
             self.session.wrap_rpc(
                 self._grpc_session_stub.Release,
-                session_pb2.ReleaseRequest(id=ticket.pb_ticket))
+                session_pb2.ReleaseRequest(id=ticket.pb_ticket),
+            )
         except Exception as e:
             raise DHError("failed to release a ticket.") from e
 
@@ -62,8 +68,9 @@ class SessionService:
             self.session.wrap_rpc(
                 self._grpc_session_stub.PublishFromTicket,
                 session_pb2.PublishRequest(
-                    source_id=source_ticket.pb_ticket,
-                    result_id=result_ticket.pb_ticket))
+                    source_id=source_ticket.pb_ticket, result_id=result_ticket.pb_ticket
+                ),
+            )
         except Exception as e:
             raise DHError("failed to publish a ticket.") from e
 
@@ -80,7 +87,10 @@ class SessionService:
             result_id = self.session.make_export_ticket()
             self.session.wrap_rpc(
                 self._grpc_session_stub.ExportFromTicket,
-                session_pb2.ExportRequest(source_id=ticket.pb_ticket, result_id=result_id.pb_ticket))
+                session_pb2.ExportRequest(
+                    source_id=ticket.pb_ticket, result_id=result_id.pb_ticket
+                ),
+            )
             return result_id
         except Exception as e:
             raise DHError("failed to fetch a ticket.") from e

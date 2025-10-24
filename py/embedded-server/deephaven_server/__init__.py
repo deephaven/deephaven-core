@@ -16,3 +16,4 @@ check_py_env()
 __version__ = importlib.metadata.version("deephaven-server")
 
 
+__all__ = ["Server"]

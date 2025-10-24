@@ -11,15 +11,27 @@ import pandas as pd
 
 from deephaven import DHError, dtypes, new_table, time as dhtime
 from deephaven import empty_table
-from deephaven.column import byte_col, char_col, short_col, bool_col, int_col, long_col, float_col, double_col, \
-    string_col, datetime_col, jobj_col, ColumnType, col_def
+from deephaven.column import (
+    byte_col,
+    char_col,
+    short_col,
+    bool_col,
+    int_col,
+    long_col,
+    float_col,
+    double_col,
+    string_col,
+    datetime_col,
+    jobj_col,
+    ColumnType,
+    col_def,
+)
 from deephaven.constants import MAX_BYTE, MAX_SHORT, MAX_INT, MAX_LONG
 from deephaven.jcompat import j_array_list
 from tests.testbase import BaseTestCase
 
 
 class ColumnTestCase(BaseTestCase):
-
     def test_column_type(self):
         normal_type = ColumnType.NORMAL.value
         self.assertEqual(ColumnType.NORMAL, ColumnType(normal_type))
@@ -27,6 +39,7 @@ class ColumnTestCase(BaseTestCase):
     def test_column_error(self):
         jobj = j_array_list([1, -1])
         with self.assertRaises(DHError) as cm:
+
             class NoBoolAllowed:
                 def __bool__(self):
                     raise TypeError("This object cannot be converted to a boolean")
@@ -36,22 +49,22 @@ class ColumnTestCase(BaseTestCase):
         self.assertNotIn("bool_input_col", dir())
 
         with self.assertRaises(DHError) as cm:
-            _ = byte_col(name="Byte", data=[1, 'abc'])
+            _ = byte_col(name="Byte", data=[1, "abc"])
 
         with self.assertRaises(DHError) as cm:
             _ = char_col(name="Char", data=[jobj])
 
         with self.assertRaises(DHError) as cm:
-            _ = short_col(name="Short", data=[1, 'abc'])
+            _ = short_col(name="Short", data=[1, "abc"])
 
         with self.assertRaises(DHError) as cm:
             _ = int_col(name="Int", data=[1, [1, 2]])
 
         with self.assertRaises(DHError) as cm:
-            _ = long_col(name="Long", data=[1, float('inf')])
+            _ = long_col(name="Long", data=[1, float("inf")])
 
         with self.assertRaises(DHError) as cm:
-            _ = float_col(name="Float", data=[1.01, 'NaN'])
+            _ = float_col(name="Float", data=[1.01, "NaN"])
 
         with self.assertRaises(DHError) as cm:
             _ = double_col(name="Double", data=[1.01, jobj])
@@ -71,17 +84,18 @@ class ColumnTestCase(BaseTestCase):
         numbers = [1, 2, 3, 4]
         characters = [65, 66, 67, 68]
         bools = [True, True, False, False]
-        test_table = new_table([
-            string_col("StringColumn", strings),
-            double_col("Decimals", doubles),
-            float_col("Floats", doubles),
-            byte_col("Bytes", numbers),
-            short_col("Shorts", numbers),
-            char_col("Chars", characters),
-            int_col("Ints", numbers),
-            long_col("Longs", numbers),
-            bool_col("Bools", bools)
-        ]
+        test_table = new_table(
+            [
+                string_col("StringColumn", strings),
+                double_col("Decimals", doubles),
+                float_col("Floats", doubles),
+                byte_col("Bytes", numbers),
+                short_col("Shorts", numbers),
+                char_col("Chars", characters),
+                int_col("Ints", numbers),
+                long_col("Longs", numbers),
+                bool_col("Bools", bools),
+            ]
         )
 
         test_table = test_table.group_by(["StringColumn"])
@@ -119,7 +133,15 @@ class ColumnTestCase(BaseTestCase):
             self.assertIn(str(int(v)), t_func_str)
 
         t_list_integers = t_list.update(
-            ["A = (byte)X", "B = (short)X", "C = (int)X", "D = (long)X", "E = (float)X", "F = (double)X"])
+            [
+                "A = (byte)X",
+                "B = (short)X",
+                "C = (int)X",
+                "D = (long)X",
+                "E = (float)X",
+                "F = (double)X",
+            ]
+        )
         self.assertEqual(t_list_integers.columns[1].data_type, dtypes.byte)
         self.assertEqual(t_list_integers.columns[2].data_type, dtypes.short)
         self.assertEqual(t_list_integers.columns[3].data_type, dtypes.int32)
@@ -128,7 +150,15 @@ class ColumnTestCase(BaseTestCase):
         self.assertEqual(t_list_integers.columns[6].data_type, dtypes.double)
 
         t_func_integers = t_func.update(
-            ["A = (byte)X", "B = (short)X", "C = (int)X", "D = (long)X", "E = (float)X", "F = (double)X"])
+            [
+                "A = (byte)X",
+                "B = (short)X",
+                "C = (int)X",
+                "D = (long)X",
+                "E = (float)X",
+                "F = (double)X",
+            ]
+        )
         self.assertEqual(t_func_integers.columns[1].data_type, dtypes.byte)
         self.assertEqual(t_func_integers.columns[2].data_type, dtypes.short)
         self.assertEqual(t_func_integers.columns[3].data_type, dtypes.int32)
@@ -152,7 +182,9 @@ class ColumnTestCase(BaseTestCase):
         self.assertEqual(_._column_definition.name, "Datetime")
         self.assertEqual(_._column_definition.data_type, dtypes.Instant)
 
-        data = np.array(['1970-01-01T00:00:00.000-07:00', '2020-01-01T01:00:00.000+07:00'])
+        data = np.array(
+            ["1970-01-01T00:00:00.000-07:00", "2020-01-01T01:00:00.000+07:00"]
+        )
         np.array([pd.Timestamp(str(dt)).to_numpy() for dt in data], dtype=np.datetime64)
         _ = datetime_col(name="Datetime", data=data)
         self.assertEqual(_._column_definition.name, "Datetime")
@@ -196,5 +228,5 @@ class CustomClass:
     f2: str
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

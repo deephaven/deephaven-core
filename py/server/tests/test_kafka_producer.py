@@ -15,10 +15,10 @@ from tests.testbase import BaseTestCase
 
 def table_helper():
     columns = [
-        string_col('Symbol', ['MSFT', 'GOOG', 'AAPL', 'AAPL']),
-        string_col('Side', ['B', 'B', 'S', 'B']),
-        int_col('Qty', [200, 100, 300, 50]),
-        double_col('Price', [210.0, 310.5, 411.0, 411.5])
+        string_col("Symbol", ["MSFT", "GOOG", "AAPL", "AAPL"]),
+        string_col("Side", ["B", "B", "S", "B"]),
+        int_col("Qty", [200, 100, 300, 50]),
+        double_col("Price", [210.0, 310.5, 411.0, 411.5]),
     ]
     t = new_table(cols=columns)
     return t
@@ -39,13 +39,13 @@ class KafkaProducerTestCase(BaseTestCase):
         """
         Check a simple Kafka producer works without errors
         """
-        t = new_table(cols=[double_col('Price', [10.0, 10.5, 11.0, 11.5])])
+        t = new_table(cols=[double_col("Price", [10.0, 10.5, 11.0, 11.5])])
         cleanup = pk.produce(
             t,
-            {'bootstrap.servers': 'redpanda:29092'},
-            'orders',
+            {"bootstrap.servers": "redpanda:29092"},
+            "orders",
             key_spec=KeyValueSpec.IGNORE,
-            value_spec=pk.simple_spec('Price')
+            value_spec=pk.simple_spec("Price"),
         )
 
         self.assertIsNotNone(cleanup)
@@ -55,17 +55,19 @@ class KafkaProducerTestCase(BaseTestCase):
         """
         Check a simple Kafka producer works with a topic column but no default topic
         """
-        t = new_table(cols=[
-            string_col('Topic', ['orders_a', 'orders_b', 'orders_a', 'orders_b']),
-            double_col('Price', [10.0, 10.5, 11.0, 11.5])
-        ])
+        t = new_table(
+            cols=[
+                string_col("Topic", ["orders_a", "orders_b", "orders_a", "orders_b"]),
+                double_col("Price", [10.0, 10.5, 11.0, 11.5]),
+            ]
+        )
         cleanup = pk.produce(
             t,
-            {'bootstrap.servers': 'redpanda:29092'},
+            {"bootstrap.servers": "redpanda:29092"},
             None,
             key_spec=KeyValueSpec.IGNORE,
-            value_spec=pk.simple_spec('Price'),
-            topic_col='Topic'
+            value_spec=pk.simple_spec("Price"),
+            topic_col="Topic",
         )
 
         self.assertIsNotNone(cleanup)
@@ -75,17 +77,19 @@ class KafkaProducerTestCase(BaseTestCase):
         """
         Check a simple Kafka producer works with a topic column and a default topic
         """
-        t = new_table(cols=[
-            string_col('Topic', ['orders_a', None, 'orders_a', 'orders_b']),
-            double_col('Price', [10.0, 10.5, 11.0, 11.5])
-        ])
+        t = new_table(
+            cols=[
+                string_col("Topic", ["orders_a", None, "orders_a", "orders_b"]),
+                double_col("Price", [10.0, 10.5, 11.0, 11.5]),
+            ]
+        )
         cleanup = pk.produce(
             t,
-            {'bootstrap.servers': 'redpanda:29092'},
-            'orders',
+            {"bootstrap.servers": "redpanda:29092"},
+            "orders",
             key_spec=KeyValueSpec.IGNORE,
-            value_spec=pk.simple_spec('Price'),
-            topic_col='Topic'
+            value_spec=pk.simple_spec("Price"),
+            topic_col="Topic",
         )
 
         self.assertIsNotNone(cleanup)
@@ -95,16 +99,14 @@ class KafkaProducerTestCase(BaseTestCase):
         """
         Check a simple Kafka producer works with a default partition
         """
-        t = new_table(cols=[
-            double_col('Price', [10.0, 10.5, 11.0, 11.5])]
-        )
+        t = new_table(cols=[double_col("Price", [10.0, 10.5, 11.0, 11.5])])
         cleanup = pk.produce(
             t,
-            {'bootstrap.servers': 'redpanda:29092'},
+            {"bootstrap.servers": "redpanda:29092"},
             "orders",
             key_spec=KeyValueSpec.IGNORE,
-            value_spec=pk.simple_spec('Price'),
-            partition=0
+            value_spec=pk.simple_spec("Price"),
+            partition=0,
         )
 
         self.assertIsNotNone(cleanup)
@@ -114,17 +116,19 @@ class KafkaProducerTestCase(BaseTestCase):
         """
         Check a simple Kafka producer works with a partition column
         """
-        t = new_table(cols=[
-            int_col('Partition', [0, 0, 0, 0]),
-            double_col('Price', [10.0, 10.5, 11.0, 11.5])
-        ])
+        t = new_table(
+            cols=[
+                int_col("Partition", [0, 0, 0, 0]),
+                double_col("Price", [10.0, 10.5, 11.0, 11.5]),
+            ]
+        )
         cleanup = pk.produce(
             t,
-            {'bootstrap.servers': 'redpanda:29092'},
+            {"bootstrap.servers": "redpanda:29092"},
             "orders",
             key_spec=KeyValueSpec.IGNORE,
-            value_spec=pk.simple_spec('Price'),
-            partition_col='Partition'
+            value_spec=pk.simple_spec("Price"),
+            partition_col="Partition",
         )
 
         self.assertIsNotNone(cleanup)
@@ -134,18 +138,20 @@ class KafkaProducerTestCase(BaseTestCase):
         """
         Check a simple Kafka producer works with a partition column and default partition
         """
-        t = new_table(cols=[
-            int_col('Partition', [0, 0, None, 0]),
-            double_col('Price', [10.0, 10.5, 11.0, 11.5])
-        ])
+        t = new_table(
+            cols=[
+                int_col("Partition", [0, 0, None, 0]),
+                double_col("Price", [10.0, 10.5, 11.0, 11.5]),
+            ]
+        )
         cleanup = pk.produce(
             t,
-            {'bootstrap.servers': 'redpanda:29092'},
+            {"bootstrap.servers": "redpanda:29092"},
             "orders",
             key_spec=KeyValueSpec.IGNORE,
-            value_spec=pk.simple_spec('Price'),
+            value_spec=pk.simple_spec("Price"),
             partition=0,
-            partition_col='Partition'
+            partition_col="Partition",
         )
 
         self.assertIsNotNone(cleanup)
@@ -155,17 +161,21 @@ class KafkaProducerTestCase(BaseTestCase):
         """
         Check a simple Kafka producer works with a timestamp column
         """
-        t = new_table(cols=[
-            datetime_col('Timestamp', [datetime.now(), datetime.now(), None, datetime.now()]),
-            double_col('Price', [10.0, 10.5, 11.0, 11.5])
-        ])
+        t = new_table(
+            cols=[
+                datetime_col(
+                    "Timestamp", [datetime.now(), datetime.now(), None, datetime.now()]
+                ),
+                double_col("Price", [10.0, 10.5, 11.0, 11.5]),
+            ]
+        )
         cleanup = pk.produce(
             t,
-            {'bootstrap.servers': 'redpanda:29092'},
+            {"bootstrap.servers": "redpanda:29092"},
             "orders",
             key_spec=KeyValueSpec.IGNORE,
-            value_spec=pk.simple_spec('Price'),
-            timestamp_col='Timestamp'
+            value_spec=pk.simple_spec("Price"),
+            timestamp_col="Timestamp",
         )
 
         self.assertIsNotNone(cleanup)
@@ -175,11 +185,11 @@ class KafkaProducerTestCase(BaseTestCase):
         t = table_helper()
         cleanup = pk.produce(
             t,
-            {'bootstrap.servers': 'redpanda:29092'},
-            'orders',
+            {"bootstrap.servers": "redpanda:29092"},
+            "orders",
             key_spec=KeyValueSpec.IGNORE,
-            value_spec=pk.json_spec(['Symbol', 'Price']),
-            last_by_key_columns=False
+            value_spec=pk.json_spec(["Symbol", "Price"]),
+            last_by_key_columns=False,
         )
 
         self.assertIsNotNone(cleanup)
@@ -189,23 +199,22 @@ class KafkaProducerTestCase(BaseTestCase):
         t = table_helper()
         cleanup = pk.produce(
             t,
-            {'bootstrap.servers': 'redpanda:29092'},
-            'orders',
+            {"bootstrap.servers": "redpanda:29092"},
+            "orders",
             key_spec=KeyValueSpec.IGNORE,
             value_spec=pk.json_spec(
-                ['Symbol', 'Price'],
-                mapping={'Symbol': 'jSymbol', 'Price': 'jPrice'},
-                timestamp_field='jTs'
+                ["Symbol", "Price"],
+                mapping={"Symbol": "jSymbol", "Price": "jPrice"},
+                timestamp_field="jTs",
             ),
-            last_by_key_columns=False
+            last_by_key_columns=False,
         )
 
         self.assertIsNotNone(cleanup)
         cleanup()
 
     def test_avro_spec(self):
-        schema = \
-            """
+        schema = """
             { "type" : "record",
               "namespace" : "io.deephaven.examples",
               "name" : "share_price_timestamped",
@@ -224,25 +233,28 @@ class KafkaProducerTestCase(BaseTestCase):
             }
             """
 
-        schema_str = '{ "schema" : "%s" }' % \
-                     schema.replace('\n', ' ').replace('"', '\\"')
+        schema_str = '{ "schema" : "%s" }' % schema.replace("\n", " ").replace(
+            '"', '\\"'
+        )
 
-        sys_str = \
+        sys_str = (
             """
             curl -X POST \
                 -H 'Content-type: application/vnd.schemaregistry.v1+json; artifactType=AVRO' \
                 --data-binary '%s' \
                 http://redpanda:8081/subjects/share_price_timestamped_record/versions
-            """ % schema_str
+            """
+            % schema_str
+        )
 
         r = os.system(sys_str)
         self.assertEqual(0, r)
 
         kafka_config = {
-            'bootstrap.servers': 'redpanda:29092',
-            'schema.registry.url': 'http://redpanda:8081'
+            "bootstrap.servers": "redpanda:29092",
+            "schema.registry.url": "http://redpanda:8081",
         }
-        topic = 'share_price_timestamped'
+        topic = "share_price_timestamped"
         t = table_helper()
         cleanup = pk.produce(
             t,
@@ -250,10 +262,9 @@ class KafkaProducerTestCase(BaseTestCase):
             topic,
             key_spec=KeyValueSpec.IGNORE,
             value_spec=pk.avro_spec(
-                'share_price_timestamped_record',
-                timestamp_field='Timestamp'
+                "share_price_timestamped_record", timestamp_field="Timestamp"
             ),
-            last_by_key_columns=False
+            last_by_key_columns=False,
         )
 
         topics = kafka.topics(kafka_config)
@@ -271,10 +282,10 @@ class KafkaProducerTestCase(BaseTestCase):
         t = time_table("PT1s").view(["TimestampNanos=epochNanos(Timestamp)"])
         cleanup = pk.produce(
             t,
-            {'bootstrap.servers': 'redpanda:29092'},
-            'my_timestamps',
+            {"bootstrap.servers": "redpanda:29092"},
+            "my_timestamps",
             key_spec=KeyValueSpec.IGNORE,
-            value_spec=pk.simple_spec('TimestampNanos'),
+            value_spec=pk.simple_spec("TimestampNanos"),
             publish_initial=False,
         )
 
@@ -282,5 +293,5 @@ class KafkaProducerTestCase(BaseTestCase):
         cleanup()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

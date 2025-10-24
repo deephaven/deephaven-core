@@ -1,10 +1,10 @@
-pandas
-pyarrow
-grpcio
+jpy
+deephaven-core
+java-utilities
+click
+packaging
 setuptools
-protobuf
 wheel
-sphinx
-bitstring
 unittest-xml-reporting
-timeout-decorator
+mypy
+ruff

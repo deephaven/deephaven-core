@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools >= 64"]
+build-backend = "setuptools.build_meta"
+
+[tool.mypy]
+namespace_packages = true
+exclude = ["tests"]
+
+[[tool.mypy.overrides]]
+module = "jpy.*"
+ignore_missing_imports = true
+[[tool.mypy.overrides]]
+module = "jpyutil.*"
+ignore_missing_imports = true
+[[tool.mypy.overrides]]
+module = "deephaven_internal.*"
+ignore_missing_imports = true
+
+[tool.ruff]
+exclude = []
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["E741", "F405", "F403", "F811", "F841"]

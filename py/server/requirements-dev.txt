@@ -1,0 +1,12 @@
+pyarrow
+numpy
+pandas
+jpy
+jedi
+docstring-parser
+setuptools
+wheel
+packaging
+unittest-xml-reporting
+mypy
+ruff

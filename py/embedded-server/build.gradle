@@ -10,7 +10,7 @@ configurations {
 }
 wheel {
     contents {
-        include 'deephaven_server/', 'setup.py', 'README.md', 'README_PyPi.md'
+        include 'deephaven_server/', 'setup.py', 'README.md', 'README_PyPi.md', 'requirements-dev.txt', 'pyproject.toml'
         from(configurations.classpath) {
             include '*'
             into('deephaven_server/jars')

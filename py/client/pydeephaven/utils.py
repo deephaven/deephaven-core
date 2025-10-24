@@ -12,7 +12,7 @@ from ._arrow import map_arrow_type
 def is_deephaven_compatible(data_type: pa.DataType) -> bool:
     """Checks if the arrow data type is supported by Deephaven."""
     try:
-        dh_type = map_arrow_type(data_type)
+        map_arrow_type(data_type)
         return True
     except DHError:
         return False

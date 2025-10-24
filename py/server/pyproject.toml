@@ -1,0 +1,51 @@
+[build-system]
+requires = ["setuptools >= 64"]
+build-backend = "setuptools.build_meta"
+
+[tool.mypy]
+namespace_packages = true
+exclude = ["tests", "test_helper", "deephaven/plot"]
+
+[[tool.mypy.overrides]]
+module = "jpy.*"
+ignore_missing_imports = true
+[[tool.mypy.overrides]]
+module = "jpyutil.*"
+ignore_missing_imports = true
+[[tool.mypy.overrides]]
+module = "pyarrow"
+ignore_missing_imports = true
+[[tool.mypy.overrides]]
+module = "pyarrow.*"
+ignore_missing_imports = true
+[[tool.mypy.overrides]]
+module = "deephaven.ui.*"
+ignore_missing_imports = true
+[[tool.mypy.overrides]]
+module = "deephaven.plugin.*"
+ignore_missing_imports = true
+[[tool.mypy.overrides]]
+module = "connectorx"
+ignore_missing_imports = true
+[[tool.mypy.overrides]]
+module = "turbodbc.*"
+ignore_missing_imports = true
+[[tool.mypy.overrides]]
+module = "adbc_driver_manager.*"
+ignore_missing_imports = true
+[[tool.mypy.overrides]]
+module = "adbc_driver_sqlite.*"
+ignore_missing_imports = true
+[[tool.mypy.overrides]]
+module = "adbc_driver_postgresql.*"
+ignore_missing_imports = true
+[[tool.mypy.overrides]]
+module = "jedi.*"
+ignore_missing_imports = true
+
+[tool.ruff]
+exclude = ["deephaven/plot/figure.py", "tests/test_docstring_parser.py"]
+
+[tool.ruff.lint.per-file-ignores]
+"deephaven/plot/**" = ["E741", "F405", "F403"]
+"tests/**" = ["E741", "F405", "F403", "F811", "F841"]

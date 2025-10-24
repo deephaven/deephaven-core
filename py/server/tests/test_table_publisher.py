@@ -4,7 +4,6 @@
 
 import unittest
 from threading import Semaphore
-from typing import List
 
 from deephaven.table import Table
 from deephaven.column import string_col, int_col, double_col
@@ -64,7 +63,7 @@ class TablePublisherTestCase(BaseTestCase):
         self.assert_table_equals(my_table, goog_aapl_table)
 
     def test_add_on_flush(self):
-        my_tables: List[Table] = []
+        my_tables: list[Table] = []
 
         def on_flush(tp: TablePublisher):
             nonlocal my_tables

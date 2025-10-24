@@ -24,20 +24,25 @@ class ArrowFlightService:
             ticket = self.session.next_export_ticket_number()
             dh_fields = []
             for f in data.schema:
-                dh_fields.append(pa.field(name=f.name, type=f.type, metadata=map_arrow_type(f.type)))
+                dh_fields.append(
+                    pa.field(name=f.name, type=f.type, metadata=map_arrow_type(f.type))
+                )
             dh_schema = pa.schema(dh_fields)
 
             writer, reader = self._flight_client.do_put(
                 pa.flight.FlightDescriptor.for_path("export", str(ticket)),
                 dh_schema,
-                FlightCallOptions(headers=self.session.grpc_metadata))
+                FlightCallOptions(headers=self.session.grpc_metadata),
+            )
             writer.write_table(data)
             # Note that pyarrow's write_table completes the gRPC. If we send another gRPC close
             # it is possible that by the time the request arrives at the server that it no longer
             # knows what it is for and sends a RST_STREAM causing a failure.
             _ = reader.read()
             flight_ticket = self.session.make_export_ticket(ticket)
-            return Table(self.session, ticket=flight_ticket, size=data.num_rows, schema=dh_schema)
+            return Table(
+                self.session, ticket=flight_ticket, size=data.num_rows, schema=dh_schema
+            )
         except Exception as e:
             raise DHError("failed to create a Deephaven table from Arrow data.") from e
 
@@ -46,8 +51,8 @@ class ArrowFlightService:
         try:
             flight_ticket = paflight.Ticket(table.ticket.bytes)
             reader = self._flight_client.do_get(
-                flight_ticket,
-                FlightCallOptions(headers=self.session.grpc_metadata))
+                flight_ticket, FlightCallOptions(headers=self.session.grpc_metadata)
+            )
 
             return reader.read_all()
         except Exception as e:
@@ -62,10 +67,9 @@ class ArrowFlightService:
         try:
             desc = pa.flight.FlightDescriptor.for_command(b"dphn")
             writer, reader = self._flight_client.do_exchange(
-                desc,
-                FlightCallOptions(headers=self.session.grpc_metadata))
+                desc, FlightCallOptions(headers=self.session.grpc_metadata)
+            )
             return writer, reader
 
         except Exception as e:
             raise DHError("failed to perform a flight DoExchange on the table.") from e
-

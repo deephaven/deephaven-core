@@ -10,7 +10,7 @@ from tests.test_session import SessionTestCase
 from tests.test_table import TableTestCase
 from tests.test_multi_session import MultiSessionTestCase
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     suite = unittest.TestSuite()
     suite.addTests(unittest.TestLoader().loadTestsFromTestCase(SessionTestCase))
     suite.addTests(unittest.TestLoader().loadTestsFromTestCase(QueryTestCase))

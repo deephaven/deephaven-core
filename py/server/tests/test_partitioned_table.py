@@ -10,8 +10,14 @@ from deephaven.table import Table, PartitionedTable
 
 from deephaven.filters import Filter
 
-from deephaven import read_csv, DHError, new_table, update_graph, time_table, empty_table
-from deephaven.update_graph import shared_lock
+from deephaven import (
+    read_csv,
+    DHError,
+    new_table,
+    update_graph,
+    time_table,
+    empty_table,
+)
 from tests.testbase import BaseTestCase
 from deephaven.execution_context import get_exec_ctx
 
@@ -63,10 +69,15 @@ class PartitionedTableTestCase(BaseTestCase):
         self.assertFalse(self.partitioned_table.constituent_changes_permitted)
 
     def test_constituent_table_columns(self):
-        self.assertEqual(self.test_table.columns, self.partitioned_table.constituent_table_columns)
+        self.assertEqual(
+            self.test_table.columns, self.partitioned_table.constituent_table_columns
+        )
 
     def test_constituent_table_definition(self):
-        self.assertEqual(self.test_table.definition, self.partitioned_table.constituent_table_definition)
+        self.assertEqual(
+            self.test_table.definition,
+            self.partitioned_table.constituent_table_definition,
+        )
 
     def test_merge(self):
         t = self.partitioned_table.merge()
@@ -97,7 +108,9 @@ class PartitionedTableTestCase(BaseTestCase):
         self.assertIn("NoSuchColumnException", str(cm.exception))
 
         with self.assertRaises(DHError) as cm:
-            new_pt = self.partitioned_table.sort(order_by=self.partitioned_table.constituent_column)
+            new_pt = self.partitioned_table.sort(
+                order_by=self.partitioned_table.constituent_column
+            )
         self.assertIn("Unsupported sort on constituent column", str(cm.exception))
 
     def test_get_constituent(self):
@@ -106,15 +119,36 @@ class PartitionedTableTestCase(BaseTestCase):
 
         from deephaven.column import string_col, int_col, double_col
 
-        houses = new_table([
-            string_col("HomeType", ["Colonial", "Contemporary", "Contemporary", "Condo", "Colonial", "Apartment"]),
-            int_col("HouseNumber", [1, 3, 4, 15, 4, 9]),
-            string_col("StreetName", ["Test Drive", "Test Drive", "Test Drive", "Deephaven Road", "Community Circle",
-                                      "Community Circle"]),
-            int_col("SquareFeet", [2251, 1914, 4266, 1280, 3433, 981]),
-            int_col("Price", [450000, 400000, 1250000, 300000, 600000, 275000]),
-            double_col("LotSizeAcres", [0.41, 0.26, 1.88, 0.11, 0.95, 0.10])
-        ])
+        houses = new_table(
+            [
+                string_col(
+                    "HomeType",
+                    [
+                        "Colonial",
+                        "Contemporary",
+                        "Contemporary",
+                        "Condo",
+                        "Colonial",
+                        "Apartment",
+                    ],
+                ),
+                int_col("HouseNumber", [1, 3, 4, 15, 4, 9]),
+                string_col(
+                    "StreetName",
+                    [
+                        "Test Drive",
+                        "Test Drive",
+                        "Test Drive",
+                        "Deephaven Road",
+                        "Community Circle",
+                        "Community Circle",
+                    ],
+                ),
+                int_col("SquareFeet", [2251, 1914, 4266, 1280, 3433, 981]),
+                int_col("Price", [450000, 400000, 1250000, 300000, 600000, 275000]),
+                double_col("LotSizeAcres", [0.41, 0.26, 1.88, 0.11, 0.95, 0.10]),
+            ]
+        )
 
         houses_by_type = houses.partition_by("HomeType")
         colonial_homes = houses_by_type.get_constituent("Colonial")
@@ -136,7 +170,9 @@ class PartitionedTableTestCase(BaseTestCase):
             pt = self.partitioned_table.transform(Transformer, dependencies=[ticking_t])
             self.assertIn("f", [col.name for col in pt.constituent_table_columns])
 
-            pt = self.partitioned_table.transform(Transformer, dependencies=[self.test_table])
+            pt = self.partitioned_table.transform(
+                Transformer, dependencies=[self.test_table]
+            )
             self.assertIn("f", [col.name for col in pt.constituent_table_columns])
 
             with self.assertRaises(DHError) as cm:
@@ -146,18 +182,29 @@ class PartitionedTableTestCase(BaseTestCase):
     def test_partitioned_transform(self):
         with make_user_exec_ctx():
             other_pt = self.partitioned_table.transform(transform_func)
-            pt = self.partitioned_table.partitioned_transform(other_pt, partitioned_transform_func)
+            pt = self.partitioned_table.partitioned_transform(
+                other_pt, partitioned_transform_func
+            )
             self.assertIn("f", [col.name for col in pt.constituent_table_columns])
 
-            pt = self.partitioned_table.partitioned_transform(other_pt, PartitionedTransformer())
+            pt = self.partitioned_table.partitioned_transform(
+                other_pt, PartitionedTransformer()
+            )
             self.assertIn("f", [col.name for col in pt.constituent_table_columns])
 
-            ticking_pt = time_table("PT00:00:01").update(["X= i % 10", "Y = String.valueOf(i)"]).partition_by("X")
-            pt = self.partitioned_table.partitioned_transform(other_pt, PartitionedTransformer(),
-                                                              dependencies=[ticking_pt])
+            ticking_pt = (
+                time_table("PT00:00:01")
+                .update(["X= i % 10", "Y = String.valueOf(i)"])
+                .partition_by("X")
+            )
+            pt = self.partitioned_table.partitioned_transform(
+                other_pt, PartitionedTransformer(), dependencies=[ticking_pt]
+            )
             self.assertIn("f", [col.name for col in pt.constituent_table_columns])
 
-            pt = self.partitioned_table.partitioned_transform(other_pt, PartitionedTransformer(), dependencies=[other_pt])
+            pt = self.partitioned_table.partitioned_transform(
+                other_pt, PartitionedTransformer(), dependencies=[other_pt]
+            )
             self.assertIn("f", [col.name for col in pt.constituent_table_columns])
 
     def test_partition_agg(self):
@@ -166,13 +213,13 @@ class PartitionedTableTestCase(BaseTestCase):
         self.wait_ticking_table_update(test_table, row_count=1, timeout=5)
         agg = partition("aggPartition", include_by_columns=True)
         pt = PartitionedTable.from_partitioned_table(test_table.agg_by(agg, ["Y"]))
-        self.assertEqual(['Y'], pt.key_columns)
+        self.assertEqual(["Y"], pt.key_columns)
         # includes Timestamp column
         self.assertEqual(4, len(pt.constituent_table_columns))
 
         agg = partition("aggPartition", include_by_columns=False)
         pt = PartitionedTable.from_partitioned_table(test_table.agg_by(agg, ["Y"]))
-        self.assertEqual(['Y'], pt.key_columns)
+        self.assertEqual(["Y"], pt.key_columns)
         print(pt.constituent_table_columns)
         # includes Timestamp column, no "Y"
         self.assertEqual(3, len(pt.constituent_table_columns))
@@ -195,7 +242,9 @@ class PartitionedTableTestCase(BaseTestCase):
             constituent_changes_permitted=True,
         )
         self.assertEqual(pt.key_columns, pt1.key_columns)
-        self.assertEqual(len(pt.constituent_table_columns), len(pt1.constituent_table_columns))
+        self.assertEqual(
+            len(pt.constituent_table_columns), len(pt1.constituent_table_columns)
+        )
         self.assertTrue(pt1.is_refreshing)
 
         with self.assertRaises(DHError) as cm:
@@ -213,19 +262,27 @@ class PartitionedTableTestCase(BaseTestCase):
         with update_graph.shared_lock(self.test_update_graph):
             test_table = time_table("PT00:00:00.001").update(["X=i", "Y=i%13", "Z=X*Y"])
             test_table1 = time_table("PT00:00:01").update(["X=i", "Y=i%23", "Z=X*Y"])
-            test_table2 = time_table("PT00:00:00.001").update(["X=i", "Y=i%23", "Z=`foo`"])
-            test_table3 = time_table("PT00:00:00.001").update(["X=i", "Y=i%23", "Z=(int)(X*Y)"])
+            test_table2 = time_table("PT00:00:00.001").update(
+                ["X=i", "Y=i%23", "Z=`foo`"]
+            )
+            test_table3 = time_table("PT00:00:00.001").update(
+                ["X=i", "Y=i%23", "Z=(int)(X*Y)"]
+            )
 
         pt = PartitionedTable.from_constituent_tables([test_table, test_table1])
         self.assertEqual("__CONSTITUENT__", pt.constituent_column)
 
         with self.subTest("Incompatible Table Definition"):
             with self.assertRaises(DHError) as cm:
-                pt = PartitionedTable.from_constituent_tables([test_table, test_table1, test_table2])
+                pt = PartitionedTable.from_constituent_tables(
+                    [test_table, test_table1, test_table2]
+                )
             self.assertIn("IncompatibleTableDefinitionException", str(cm.exception))
 
         with self.subTest("Compatible table definition"):
-            pt = PartitionedTable.from_constituent_tables([test_table, test_table1, test_table3], test_table.definition)
+            pt = PartitionedTable.from_constituent_tables(
+                [test_table, test_table1, test_table3], test_table.definition
+            )
 
     def test_keys(self):
         keys_table = self.partitioned_table.keys()
@@ -246,5 +303,5 @@ class PartitionedTableTestCase(BaseTestCase):
         self.assertIsNotNone(x0)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

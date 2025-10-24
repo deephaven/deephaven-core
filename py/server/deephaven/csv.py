@@ -2,10 +2,11 @@
 # Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 #
 
-""" The deephaven.csv module supports reading an external CSV file into a Deephaven table and writing a
+"""The deephaven.csv module supports reading an external CSV file into a Deephaven table and writing a
 Deephaven table out as a CSV file.
 """
-from typing import Dict, List
+
+from typing import Optional
 
 import jpy
 
@@ -21,7 +22,7 @@ _JArrays = jpy.get_type("java.util.Arrays")
 
 def read(
     path: str,
-    header: Dict[str, dht.DType] = None,
+    header: Optional[dict[str, dht.DType]] = None,
     headless: bool = False,
     header_row: int = 0,
     skip_rows: int = 0,
@@ -38,7 +39,7 @@ def read(
 
     Args:
         path (str): a file path or a URL string
-        header (Dict[str, DType]): a dict to define the table columns with key being the name, value being the data type
+        header (dict[str, DType]): a dict to define the table columns with key being the name, value being the data type
         headless (bool): whether the csv file doesn't have a header row, default is False
         header_row (int): the header row number, all the rows before it will be skipped, default is 0. Must be 0 if
             headless is True, otherwise an exception will be raised
@@ -107,13 +108,13 @@ def read(
         raise DHError(e, "read csv failed") from e
 
 
-def write(table: Table, path: str, cols: List[str] = []) -> None:
+def write(table: Table, path: str, cols: list[str] = []) -> None:
     """Write a table to a standard CSV file.
 
     Args:
         table (Table): the source table
         path (str): the path of the CSV file
-        cols (List[str]): the names of the columns to be written out
+        cols (list[str]): the names of the columns to be written out
 
     Raises:
         DHError

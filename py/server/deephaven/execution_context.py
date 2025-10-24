@@ -5,7 +5,8 @@
 critical for applications to correctly launch deferred query evaluations, such as table update operations in threads.
 """
 
-from typing import Sequence, Union
+from typing import Optional, Union
+from collections.abc import Sequence
 from contextlib import ContextDecorator
 
 import jpy
@@ -30,6 +31,7 @@ class ExecutionContext(JObjectWrapper, ContextDecorator):
     Note that, a ExecutionContext can be shared among many threads. The most typical use pattern would be to obtain
     the script session's systemic ExecutionContext and use it to wrap a query run in a thread created by the user.
     """
+
     j_object_type = _JExecutionContext
 
     @property
@@ -51,7 +53,9 @@ class ExecutionContext(JObjectWrapper, ContextDecorator):
         self._j_safe_closable.close()
 
 
-def make_user_exec_ctx(freeze_vars: Union[str, Sequence[str]] = None) -> ExecutionContext:
+def make_user_exec_ctx(
+    freeze_vars: Optional[Union[str, Sequence[str]]] = None,
+) -> ExecutionContext:
     """Makes a new ExecutionContext based off the current thread's ExecutionContext. The optional parameter
     freeze_vars should be a list of names in the current query scope. If it is provided, the resulting ExecutionContext
     will include a new query scope that is made up of only these names together with their current values. Future
@@ -70,15 +74,19 @@ def make_user_exec_ctx(freeze_vars: Union[str, Sequence[str]] = None) -> Executi
     freeze_vars = to_sequence(freeze_vars)
 
     if not freeze_vars:
-        return ExecutionContext(j_exec_ctx=_JExecutionContext.makeExecutionContext(False))
+        return ExecutionContext(
+            j_exec_ctx=_JExecutionContext.makeExecutionContext(False)
+        )
     else:
         try:
-            j_exec_ctx = (_JExecutionContext.newBuilder()
-                          .captureQueryCompiler()
-                          .captureQueryLibrary()
-                          .captureQueryScopeVars(*freeze_vars)
-                          .captureUpdateGraph()
-                          .build())
+            j_exec_ctx = (
+                _JExecutionContext.newBuilder()
+                .captureQueryCompiler()
+                .captureQueryLibrary()
+                .captureQueryScopeVars(*freeze_vars)
+                .captureUpdateGraph()
+                .build()
+            )
             return ExecutionContext(j_exec_ctx=j_exec_ctx)
         except Exception as e:
             raise DHError(message="failed to make a new ExecutionContext") from e

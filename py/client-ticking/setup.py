@@ -72,11 +72,11 @@ setup(
         'Programming Language :: Python',
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3 :: Only',
-        'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: 3.9',
         'Programming Language :: Python :: 3.10',
         'Programming Language :: Python :: 3.11',
         'Programming Language :: Python :: 3.12',
+        'Programming Language :: Python :: 3.13',
     ],
 
     ext_modules = cythonize(
@@ -87,7 +87,7 @@ setup(
                    extra_link_args=extra_link_args,
                    libraries=libraries
         )]),
-    python_requires='>=3.8',
+    python_requires='>=3.9',
     install_requires=[f"pydeephaven=={_version}"],
     package_data={'pydeephaven_ticking': ['py.typed']}
 )
