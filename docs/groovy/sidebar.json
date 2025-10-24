@@ -549,10 +549,6 @@
                       {
                         "label": "Use IFrames",
                         "path": "how-to-guides/user-interface/use-iframes.md"
-                      },
-                      {
-                        "label": "JS API",
-                        "path": "how-to-guides/use-jsapi.md"
                       }
                     ]
                   }
@@ -573,10 +569,171 @@
                 ]
               },
               {
+                "label": "JS API",
+                "path": "how-to-guides/use-jsapi.md"
+              },
+              {
+                "label": "Python",
+                "items": [
+                  {
+                    "label": "Overview",
+                    "href": "https://deephaven.io/core/client-api/python/index.html"
+                  },
+                  {
+                    "label": "Initialize",
+                    "href": "https://deephaven.io/core/client-api/python/examples.html#initialize"
+                  },
+                  {
+                    "label": "Binding to a table",
+                    "href": "https://deephaven.io/core/client-api/python/examples.html#binding-to-a-table"
+                  },
+                  {
+                    "label": "Execute a query on a table",
+                    "href": "https://deephaven.io/core/client-api/python/examples.html#execute-a-query-on-a-table"
+                  },
+                  {
+                    "label": "Sort a table",
+                    "href": "https://deephaven.io/core/client-api/python/examples.html#sort-a-table"
+                  },
+                  {
+                    "label": "Filter a table",
+                    "href": "https://deephaven.io/core/client-api/python/examples.html#filter-a-table"
+                  },
+                  {
+                    "label": "Query objects",
+                    "href": "https://deephaven.io/core/client-api/python/examples.html#query-objects"
+                  },
+                  {
+                    "label": "Join two tables",
+                    "href": "https://deephaven.io/core/client-api/python/examples.html#join-2-tables"
+                  },
+                  {
+                    "label": "Perform aggregations on table",
+                    "href": "https://deephaven.io/core/client-api/python/examples.html#perform-aggregations-on-a-table"
+                  },
+                  {
+                    "label": "Convert a PyArrow table to a Deephaven table",
+                    "href": "https://deephaven.io/core/client-api/python/examples.html#convert-a-pyarrow-table-to-a-deephaven-table"
+                  },
+                  {
+                    "label": "Execute a script server side",
+                    "href": "https://deephaven.io/core/client-api/python/examples.html#execute-a-script-server-side"
+                  },
+                  {
+                    "label": "Subscribe to a ticking table",
+                    "href": "https://deephaven.io/core/client-api/python/examples.html#subscribe-to-a-ticking-table"
+                  },
+                  {
+                    "label": "Error handling",
+                    "href": "https://deephaven.io/core/client-api/python/examples.html#error-handling"
+                  },
+                  {
+                    "label": "Capture Python client tables",
+                    "path": "how-to-guides/capture-tables.md"
+                  }
+                ]
+              },
+              {
+                "label": "C++",
+                "items": [
+                  {
+                    "label": "Overview",
+                    "href": "https://deephaven.io/core/client-api/cpp-examples/index.html"
+                  },
+                  {
+                    "label": "Getting started",
+                    "href": "https://deephaven.io/core/client-api/cpp-examples/getting_started.html"
+                  },
+                  {
+                    "label": "Resource management",
+                    "href": "https://deephaven.io/core/client-api/cpp-examples/resource_mgmt.html"
+                  },
+                  {
+                    "label": "Data I/O",
+                    "href": "https://deephaven.io/core/client-api/cpp-examples/input_output.html"
+                  },
+                  {
+                    "label": "Fluent interface",
+                    "href": "https://deephaven.io/core/client-api/cpp-examples/fluent.html"
+                  }
+                ]
+              },
+              {
+                "label": "Go",
+                "items": [
+                  {
+                    "label": "Overview",
+                    "href": "https://pkg.go.dev/github.com/deephaven/deephaven-core/go#section-readme"
+                  },
+                  {
+                    "label": "Fetch tables",
+                    "href": "https://pkg.go.dev/github.com/deephaven/deephaven-core/go@v0.35.0/pkg/client#example-package-FetchTable"
+                  },
+                  {
+                    "label": "Import tables",
+                    "href": "https://pkg.go.dev/github.com/deephaven/deephaven-core/go@v0.35.0/pkg/client#example-package-ImportTable"
+                  },
+                  {
+                    "label": "Create input tables",
+                    "href": "https://pkg.go.dev/github.com/deephaven/deephaven-core/go@v0.35.0/pkg/client#example-package-InputTable"
+                  },
+                  {
+                    "label": "Run scripts",
+                    "href": "https://pkg.go.dev/github.com/deephaven/deephaven-core/go@v0.35.0/pkg/client#example-package-RunScript"
+                  },
+                  {
+                    "label": "Table operations",
+                    "href": "https://pkg.go.dev/github.com/deephaven/deephaven-core/go@v0.35.0/pkg/client#example-package-TableOps"
+                  }
+                ]
+              },
+              {
+                "label": "R",
+                "items": [
+                  {
+                    "label": "Overview",
+                    "href": "https://deephaven.io/core/client-api/r/index.html"
+                  },
+                  {
+                    "label": "Building blocks of the Deephaven R client",
+                    "href": "https://deephaven.io/core/client-api/r/articles/rdeephaven.html#building-blocks-of-the-deephaven-r-client"
+                  },
+                  {
+                    "label": "Real-time data analysis",
+                    "href": "https://deephaven.io/core/client-api/r/articles/rdeephaven.html#real-time-data-analysis"
+                  },
+                  {
+                    "label": "Powerful table operations",
+                    "href": "https://deephaven.io/core/client-api/r/articles/rdeephaven.html#powerful-table-operations"
+                  },
+                  {
+                    "label": "Aggregations",
+                    "href": "https://deephaven.io/core/client-api/r/articles/agg_by.html"
+                  },
+                  {
+                    "label": "Moving operations",
+                    "href": "https://deephaven.io/core/client-api/r/articles/update_by.html"
+                  }
+                ]
+              },
+              {
+                "label": "Flight SQL",
+                "path": "how-to-guides/flight-sql.md"
+              },
+              {
+                "label": "Excel",
+                "items": [
+                  {
+                    "label": "Excel Client",
+                    "path": "how-to-guides/excel/excel-client.md"
+                  }
+                ]
+              },
+              {
                 "label": "Protobuf",
                 "items": [
                   {
-                    "label": "Protocol Buffers",
+                    "label": "Protobuf and RPC",
                     "path": "how-to-guides/protobuf.md"
                   }
                 ]
