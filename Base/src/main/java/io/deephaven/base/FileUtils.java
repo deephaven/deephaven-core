@@ -335,7 +335,7 @@ public class FileUtils {
             return new URI(uri.getScheme(), uri.getUserInfo(), uri.getHost(), uri.getPort(), path, uri.getQuery(),
                     uri.getFragment());
         } catch (URISyntaxException e) {
-            throw new IllegalStateException("Failed to update URI: " + uri, e);
+            throw new IllegalStateException(String.format("Failed to update URI: '%s', source: '%s'", uri, source), e);
         }
     }
 
