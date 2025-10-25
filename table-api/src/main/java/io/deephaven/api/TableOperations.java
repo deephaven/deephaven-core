@@ -118,6 +118,7 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
      * @param columnsToMatch the columns to match between the two tables
      * @return a new table filtered on right table
      */
+    @ConcurrentMethod
     TOPS whereIn(TABLE rightTable, String... columnsToMatch);
 
     /**
@@ -131,6 +132,7 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
      * @param columnsToMatch the columns to match between the two tables
      * @return a new table filtered on right table
      */
+    @ConcurrentMethod
     TOPS whereIn(TABLE rightTable, Collection<? extends JoinMatch> columnsToMatch);
 
     // -------------------------------------------------------------------------------------------
@@ -145,6 +147,7 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
      * @param columnsToMatch the columns to match between the two tables
      * @return a new table filtered on right table
      */
+    @ConcurrentMethod
     TOPS whereNotIn(TABLE rightTable, String... columnsToMatch);
 
     /**
@@ -158,6 +161,7 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
      * @param columnsToMatch the columns to match between the two tables
      * @return a new table filtered on right table
      */
+    @ConcurrentMethod
     TOPS whereNotIn(TABLE rightTable, Collection<? extends JoinMatch> columnsToMatch);
 
     /**
