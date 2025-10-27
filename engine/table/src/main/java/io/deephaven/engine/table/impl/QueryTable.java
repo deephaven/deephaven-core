@@ -1423,22 +1423,17 @@ public class QueryTable extends BaseTable<QueryTable> {
                     return memoizeResult(MemoizedOperationKey.filter(filters), () -> {
                         try (final SafeCloseable ignored = Arrays.stream(filters)
                                 .map(filter -> filter.beginOperation(this)).collect(SafeCloseableList.COLLECTOR)) {
-                            final OperationSnapshotControl snapshotControl = createSnapshotControlIfRefreshing(
-                                    (final BaseTable<?> parent) -> {
-                                        /*
-                                         * Note that the dependencies for instantiation may be different from the
-                                         * dependencies for the WhereListener. Do not refactor to share this array with
-                                         * the WhereListener unless you ensure that this no longer holds, i.e. if
-                                         * MatchFilter starts applying data indexes during update processing.
-                                         */
-                                        final NotificationQueue.Dependency[] filterDependencies =
-                                                WhereListener.extractDependencies(filters)
-                                                        .toArray(NotificationQueue.Dependency[]::new);
-                                        getUpdateGraph(filterDependencies);
-                                        return filterDependencies.length > 0
-                                                ? new OperationSnapshotControlEx(parent, filterDependencies)
-                                                : new OperationSnapshotControl(parent);
-                                    });
+                            final NotificationQueue.Dependency[] filterDependencies =
+                                    WhereListener.extractDependencies(filters)
+                                            .toArray(NotificationQueue.Dependency[]::new);
+                            getUpdateGraph(filterDependencies);
+
+                            final OperationSnapshotControl snapshotControl =
+                                    isRefreshing() || filterDependencies.length > 0
+                                            ? filterDependencies.length > 0
+                                                    ? new OperationSnapshotControlEx(this, filterDependencies)
+                                                    : new OperationSnapshotControl(this)
+                                            : null;
 
                             final Mutable<QueryTable> result = new MutableObject<>();
                             initializeWithSnapshot("where", snapshotControl,
@@ -1539,8 +1534,6 @@ public class QueryTable extends BaseTable<QueryTable> {
         return QueryPerformanceRecorder.withNugget(
                 "whereIn(rightTable, " + inclusion + ", " + matchString(columnsToMatch) + ")",
                 sizeForInstrumentation(), () -> {
-                    checkInitiateOperation(rightTable);
-
                     final Table distinctValues;
                     final boolean setRefreshing = rightTable.isRefreshing();
 
