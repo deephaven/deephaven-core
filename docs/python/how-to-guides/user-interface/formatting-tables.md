@@ -6,7 +6,6 @@ This guide shows you how to format tables in Deephaven. This includes reordering
 
 > [!NOTE]
 > The [deephaven.ui](/core/ui/docs/) Python package provides a streamlined, programmatic way to format tables. With `deephaven.ui`, you can:
-
 > - [Show, hide, freeze, and reorder columns](/core/ui/docs/components/table/#column-order-and-visibility)
 > - [Format rows and columns](/core/ui/docs/components/table/#formatting-rows-and-columns)
 > - [Apply color formatting](/core/ui/docs/components/table/#formatting-color)
