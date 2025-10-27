@@ -1,13 +1,13 @@
 #
 # Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 #
-from typing import Union, Optional
+from typing import Optional, Union
 
-from deephaven_core.proto import table_pb2_grpc, table_pb2
+from deephaven_core.proto import table_pb2, table_pb2_grpc
 from pydeephaven._batch_assembler import BatchOpAssembler
 from pydeephaven._table_ops import TableOp
 from pydeephaven.dherror import DHError
-from pydeephaven.table import Table, InputTable
+from pydeephaven.table import InputTable, Table
 from pydeephaven.ticket import ExportTicket, _ticket_from_proto
 
 

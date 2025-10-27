@@ -6,14 +6,14 @@ import unittest
 
 from deephaven import read_csv
 from deephaven.plot import (
-    axis_transform_names,
-    axis_transform,
     DecimalAxisFormat,
+    Figure,
     NanosAxisFormat,
+    PlotStyle,
+    Shape,
+    axis_transform,
+    axis_transform_names,
 )
-from deephaven.plot import Shape
-from deephaven.plot import PlotStyle
-from deephaven.plot import Figure
 from deephaven.time import to_j_time_zone
 from tests.testbase import BaseTestCase
 

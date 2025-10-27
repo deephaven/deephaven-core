@@ -1,12 +1,13 @@
 #
 # Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 #
-import jpy
 import tempfile
 
-from tests.testbase import BaseTestCase
+import jpy
+
 from deephaven import DHError
 from deephaven.experimental import s3
+from tests.testbase import BaseTestCase
 
 _JCredentials = jpy.get_type("io.deephaven.extensions.s3.Credentials")
 

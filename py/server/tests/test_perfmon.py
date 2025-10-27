@@ -2,33 +2,30 @@
 # Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 #
 
+import os
+import tempfile
 import unittest
 
 from deephaven import empty_table
 from deephaven.perfmon import (
-    process_info_log,
-    process_metrics_log,
-    server_state_log,
-    query_operation_performance_log,
-    query_performance_log,
-    update_performance_log,
-    metrics_get_counters,
-    metrics_reset_counters,
-    query_performance_tree_table,
-    query_operation_performance_tree_table,
-    update_performance_ancestors_log,
     ancestor_dot,
     ancestor_svg,
-)
-from deephaven.perfmon import (
-    query_update_performance,
-    query_performance,
+    metrics_get_counters,
+    metrics_reset_counters,
+    process_info_log,
+    process_metrics_log,
     query_operation_performance,
+    query_operation_performance_log,
+    query_operation_performance_tree_table,
+    query_performance,
+    query_performance_log,
+    query_performance_tree_table,
+    query_update_performance,
     server_state,
+    server_state_log,
+    update_performance_ancestors_log,
+    update_performance_log,
 )
-
-import os
-import tempfile
 from tests.testbase import BaseTestCase
 
 

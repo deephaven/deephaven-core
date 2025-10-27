@@ -5,6 +5,7 @@
 """This package is a place for Deephaven experimental features."""
 
 import jpy
+
 from deephaven import DHError
 from deephaven.table import Table
 from deephaven.update_graph import auto_locking_ctx

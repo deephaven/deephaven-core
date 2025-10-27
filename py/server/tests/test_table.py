@@ -9,50 +9,50 @@ import pandas as pd
 
 from deephaven import (
     DHError,
-    read_csv,
-    empty_table,
     SortDirection,
+    dtypes,
+    empty_table,
+    new_table,
+    read_csv,
     time_table,
     update_graph,
-    new_table,
-    dtypes,
 )
 from deephaven.agg import (
-    sum_,
-    weighted_avg,
+    abs_sum,
     avg,
-    pct,
-    group,
     count_,
+    count_distinct,
+    count_where,
+    distinct,
     first,
+    formula,
+    group,
     last,
     max_,
     median,
     min_,
-    std,
-    abs_sum,
-    var,
-    formula,
     partition,
+    pct,
+    std,
+    sum_,
     unique,
-    count_distinct,
-    distinct,
-    count_where,
+    var,
+    weighted_avg,
 )
 from deephaven.column import datetime_col
 from deephaven.concurrency_control import Barrier
-from deephaven.execution_context import make_user_exec_ctx, get_exec_ctx
+from deephaven.execution_context import get_exec_ctx, make_user_exec_ctx
 from deephaven.filters import or_
 from deephaven.html import to_html
 from deephaven.jcompat import j_hashmap
 from deephaven.pandas import to_pandas
 from deephaven.table import (
+    NaturalJoinType,
+    SearchDisplayMode,
+    Selectable,
     Table,
     TableDefinition,
-    SearchDisplayMode,
     table_diff,
-    NaturalJoinType,
-    Selectable,
 )
 from tests.testbase import BaseTestCase, table_equals
 

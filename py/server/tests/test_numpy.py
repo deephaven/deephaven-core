@@ -5,28 +5,28 @@
 import unittest
 from dataclasses import dataclass
 
-import numpy as np
 import jpy
+import numpy as np
 
-from deephaven import DHError, new_table, dtypes
+from deephaven import DHError, dtypes, new_table
+from deephaven.calendar import add_calendar, calendar, remove_calendar
 from deephaven.column import (
+    bool_col,
     byte_col,
     char_col,
-    short_col,
-    bool_col,
-    int_col,
-    long_col,
-    float_col,
-    double_col,
-    string_col,
     datetime_col,
-    pyobj_col,
+    double_col,
+    float_col,
+    int_col,
     jobj_col,
+    long_col,
+    pyobj_col,
+    short_col,
+    string_col,
 )
-from deephaven.constants import NULL_LONG, MAX_LONG
-from deephaven.numpy import to_numpy, to_table, to_np_busdaycalendar
+from deephaven.constants import MAX_LONG, NULL_LONG
 from deephaven.jcompat import j_array_list
-from deephaven.calendar import add_calendar, remove_calendar, calendar
+from deephaven.numpy import to_np_busdaycalendar, to_numpy, to_table
 from tests.testbase import BaseTestCase
 
 

@@ -17,25 +17,25 @@ finally:
     del jvm
 
 from .dherror import DHError
-from .table import SortDirection
+from ._gc import garbage_collect
 from .csv import read as read_csv
 from .csv import write as write_csv
+from .dbc import read_sql
+from .replay import TableReplayer
 from .stream.kafka import consumer as kafka_consumer
 from .stream.kafka import producer as kafka_producer
+from .table import SortDirection
 from .table_factory import (
+    DynamicTableWriter,
     empty_table,
-    time_table,
+    function_generated_table,
+    input_table,
     merge,
     merge_sorted,
     new_table,
-    DynamicTableWriter,
-    input_table,
     ring_table,
-    function_generated_table,
+    time_table,
 )
-from .replay import TableReplayer
-from ._gc import garbage_collect
-from .dbc import read_sql
 
 __all__ = [
     "read_csv",

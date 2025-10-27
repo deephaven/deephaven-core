@@ -7,15 +7,15 @@ import unittest
 import jpy
 
 from deephaven import DHError, new_table
-from deephaven.column import string_col, bool_col
 from deephaven.calendar import (
     add_calendar,
+    calendar,
+    calendar_name,
+    calendar_names,
     remove_calendar,
     set_calendar,
-    calendar_names,
-    calendar_name,
-    calendar,
 )
+from deephaven.column import bool_col, string_col
 from tests.testbase import BaseTestCase
 
 _JDateTimeUtils = jpy.get_type("io.deephaven.time.DateTimeUtils")

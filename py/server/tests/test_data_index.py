@@ -4,7 +4,7 @@
 
 import unittest
 
-from deephaven import empty_table, DHError
+from deephaven import DHError, empty_table
 from deephaven.experimental.data_index import data_index, has_data_index
 from tests.testbase import BaseTestCase
 

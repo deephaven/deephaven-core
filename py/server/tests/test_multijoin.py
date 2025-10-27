@@ -4,10 +4,10 @@
 
 import unittest
 
-from deephaven import read_csv, time_table, update_graph, DHError
+from deephaven import DHError, read_csv, time_table, update_graph
+from deephaven.execution_context import get_exec_ctx
 from deephaven.table import MultiJoinInput, multi_join
 from tests.testbase import BaseTestCase
-from deephaven.execution_context import get_exec_ctx
 
 
 class MultiJoinTestCase(BaseTestCase):

@@ -4,13 +4,13 @@
 import datetime
 import typing
 import unittest
-from typing import List, Union, Optional, Tuple, Sequence  # noqa: F401
+from typing import List, Optional, Sequence, Tuple, Union  # noqa: F401
 
 import numpy as np
 import numpy.typing as npt
 import pandas as pd
 
-from deephaven import empty_table, dtypes, DHError
+from deephaven import DHError, dtypes, empty_table
 from tests.testbase import BaseTestCase
 
 _J_TYPE_NP_DTYPE_MAP = {

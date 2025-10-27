@@ -5,11 +5,11 @@
 import unittest
 from threading import Semaphore
 
+from deephaven.column import double_col, int_col, string_col
+from deephaven.dtypes import double, int32, string
+from deephaven.stream.table_publisher import TablePublisher, table_publisher
 from deephaven.table import Table
-from deephaven.column import string_col, int_col, double_col
-from deephaven.dtypes import string, int32, double
-from deephaven.table_factory import new_table, merge
-from deephaven.stream.table_publisher import table_publisher, TablePublisher
+from deephaven.table_factory import merge, new_table
 from tests.testbase import BaseTestCase
 
 

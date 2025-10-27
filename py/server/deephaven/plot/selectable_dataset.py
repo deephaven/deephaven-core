@@ -11,7 +11,7 @@ import jpy
 
 from deephaven import DHError
 from deephaven._wrapper import JObjectWrapper
-from deephaven.table import Table, PartitionedTable
+from deephaven.table import PartitionedTable, Table
 
 _JSelectableDataSet = jpy.get_type("io.deephaven.plot.filters.SelectableDataSet")
 _JSelectables = jpy.get_type("io.deephaven.plot.filters.Selectables")

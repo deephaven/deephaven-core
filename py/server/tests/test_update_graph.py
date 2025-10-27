@@ -4,9 +4,9 @@
 
 import unittest
 
-from deephaven import time_table, DHError, merge
+from deephaven import DHError, merge, time_table
 from deephaven import update_graph as ug
-from deephaven.execution_context import make_user_exec_ctx, get_exec_ctx
+from deephaven.execution_context import get_exec_ctx, make_user_exec_ctx
 from deephaven.table import Table
 from tests.testbase import BaseTestCase
 

@@ -37,6 +37,7 @@ def pyClientTickingWheel = { String pythonTag -> Docker.registerDockerTask(proje
     copyIn {
         from(layout.projectDirectory) {
             include 'setup.py'
+            include 'pyproject.toml'
             include 'README.md'
             include 'src/**/py.typed'
             include 'src/**/*.py'
@@ -55,7 +56,10 @@ def pyClientTickingWheel = { String pythonTag -> Docker.registerDockerTask(proje
                         '${prefix}/log' \\
                         '${prefix}/src/py-client-ticking/src' \\
                         '${prefix}/src/py-client-ticking/in-wheels'; \\
-                   /opt/python/${pythonTag}/bin/pip install cython setuptools
+                   /opt/python/${pythonTag}/bin/pip install --root-user-action ignore -r requirements-dev.txt; \\
+                   /opt/python/${pythonTag}/bin/mypy --install-types --config-file pyproject.toml .;\\
+                   /opt/python/${pythonTag}/bin/ruff check;\\
+                   /opt/python/${pythonTag}/bin/ruff format --check
                    """)
         copyFile('setup.py', "${prefix}/src/py-client-ticking")
         copyFile('README.md', "${prefix}/src/py-client-ticking")

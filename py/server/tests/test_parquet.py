@@ -2,41 +2,41 @@
 # Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 #
 
+import fnmatch
 import os
 import shutil
 import tempfile
 import unittest
-import fnmatch
 
 import numpy as np
 import pandas
 import pyarrow.parquet
 
-from deephaven import DHError, empty_table, dtypes, new_table
+from deephaven import DHError, dtypes, empty_table, new_table
 from deephaven import arrow as dharrow
 from deephaven.column import (
-    InputColumn,
     ColumnType,
-    col_def,
-    string_col,
-    int_col,
+    InputColumn,
     char_col,
+    col_def,
+    int_col,
     long_col,
     short_col,
+    string_col,
 )
+from deephaven.experimental import s3
 from deephaven.pandas import to_pandas, to_table
 from deephaven.parquet import (
-    write,
-    batch_write,
-    read,
-    delete,
     ColumnInstruction,
     ParquetFileLayout,
     RowGroupInfo,
+    batch_write,
+    delete,
+    read,
+    write,
     write_partitioned,
 )
 from tests.testbase import BaseTestCase
-from deephaven.experimental import s3
 
 
 class ParquetTestCase(BaseTestCase):

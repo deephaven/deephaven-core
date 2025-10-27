@@ -2,10 +2,10 @@
 # Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 #
 
-import unittest
 import importlib
 import pkgutil
 import sys
+import unittest
 
 
 class LoadAllModules(unittest.TestCase):

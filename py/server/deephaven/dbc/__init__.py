@@ -44,8 +44,9 @@ def read_sql(
                     e, message="failed to get a Arrow table from ConnectorX."
                 ) from e
         elif driver == "odbc":
-            from deephaven.dbc.odbc import read_cursor
             import turbodbc
+
+            from deephaven.dbc.odbc import read_cursor
 
             with turbodbc.connect(connection_string=conn) as conn:
                 with conn.cursor() as cursor:

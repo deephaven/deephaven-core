@@ -5,28 +5,28 @@
 import unittest
 
 from deephaven import (
-    read_csv,
-    empty_table,
-    SortDirection,
     DHError,
+    SortDirection,
+    empty_table,
+    read_csv,
     time_table,
     update_graph,
 )
 from deephaven.agg import (
-    sum_,
+    abs_sum,
     avg,
-    pct,
-    weighted_avg,
+    first,
     formula,
     group,
-    first,
     last,
     max_,
     median,
     min_,
+    pct,
     std,
-    abs_sum,
+    sum_,
     var,
+    weighted_avg,
 )
 from deephaven.concurrency_control import Barrier
 from deephaven.execution_context import get_exec_ctx

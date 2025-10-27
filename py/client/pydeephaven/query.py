@@ -6,11 +6,10 @@ batch."""
 
 from __future__ import annotations
 
-from typing import Any
-from typing import Optional, Union
+from typing import Any, Optional, Union
 
 from pydeephaven._table_interface import TableInterface
-from pydeephaven._table_ops import TableOp, NoneOp, SortDirection, NaturalJoinType
+from pydeephaven._table_ops import NaturalJoinType, NoneOp, SortDirection, TableOp
 from pydeephaven.agg import Aggregation
 from pydeephaven.dherror import DHError
 from pydeephaven.table import Table

@@ -3,8 +3,8 @@
 #
 from typing import Any
 
+from deephaven_core.proto import application_pb2, application_pb2_grpc
 from pydeephaven.dherror import DHError
-from deephaven_core.proto import application_pb2_grpc, application_pb2
 
 
 class AppService:

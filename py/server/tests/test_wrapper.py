@@ -5,6 +5,7 @@
 import unittest
 
 import jpy
+
 from deephaven._wrapper import JObjectWrapper
 from tests.testbase import BaseTestCase
 

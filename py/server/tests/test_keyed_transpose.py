@@ -4,12 +4,12 @@
 
 import unittest
 
-from deephaven import time_table, empty_table, new_table, update_graph, DHError
-from deephaven.column import string_col
+from deephaven import DHError, empty_table, new_table, time_table, update_graph
 from deephaven import agg as agg
-from deephaven.table import keyed_transpose, NewColumnBehaviorType
-from tests.testbase import BaseTestCase
+from deephaven.column import string_col
 from deephaven.execution_context import get_exec_ctx
+from deephaven.table import NewColumnBehaviorType, keyed_transpose
+from tests.testbase import BaseTestCase
 
 
 class KeyedTransposeTestCase(BaseTestCase):

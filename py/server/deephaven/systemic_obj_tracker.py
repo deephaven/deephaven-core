@@ -10,7 +10,6 @@ import contextlib
 
 import jpy
 
-
 from deephaven import DHError
 
 _JSystemicObjectTracker = jpy.get_type(

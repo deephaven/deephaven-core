@@ -3,19 +3,18 @@
 #
 from __future__ import annotations
 
-from typing import List, Sequence, TypeVar, Union
+from typing import Any, Optional, Sequence, Union
+
 import pydeephaven_ticking._core as dhc
 
-T = TypeVar("T")
 
-
-def _to_sequence(v: Union[T, Sequence[T]] = None) -> Sequence[T]:
+def _to_sequence(v: Optional[Any] = None) -> Sequence[Any]:
     """This  enables a function to provide parameters that can accept both singular and plural values of the same type
     for the convenience of the users, e.g. both x= "abc" and x = ["abc"] are valid arguments.
     (adapted from table_listener.py)
 
     Args:
-        v (Union[T, Sequence[T]]) : The input argument
+        v (Any) : The input argument
 
     Returns:
         A sequence containing 0, 1, or multiple values
@@ -23,12 +22,14 @@ def _to_sequence(v: Union[T, Sequence[T]] = None) -> Sequence[T]:
 
     if v is None:
         return ()
-    if isinstance(v, Sequence) or isinstance(v, str):
+    if not isinstance(v, Sequence) or isinstance(v, str):
         return (v,)
     return tuple(o for o in v)
 
 
-def canonicalize_cols_param(table: dhc.ClientTable, col_names: Union[str, List[str]] = None) -> Sequence[str]:
+def canonicalize_cols_param(
+    table: dhc.ClientTable, col_names: Optional[Union[str, Sequence[str]]] = None
+) -> Sequence[str]:
     """Canonicalizes the col_names parameter by turning it into a sequence of strings.
     If already a list of strings, just return it.
     If a single string, transform it into a sequence containing one string.

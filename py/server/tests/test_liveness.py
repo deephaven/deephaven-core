@@ -4,12 +4,10 @@
 
 import unittest
 
-from deephaven.pandas import to_pandas
-
-from deephaven import time_table, DHError
-
+from deephaven import DHError, time_table
 from deephaven.execution_context import get_exec_ctx
-from deephaven.liveness_scope import liveness_scope, LivenessScope
+from deephaven.liveness_scope import LivenessScope, liveness_scope
+from deephaven.pandas import to_pandas
 from deephaven.update_graph import exclusive_lock
 from tests.testbase import BaseTestCase
 

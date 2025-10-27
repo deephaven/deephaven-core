@@ -4,7 +4,7 @@
 
 from __future__ import annotations
 
-from typing import Optional, TYPE_CHECKING, Generic, TypeVar
+from typing import TYPE_CHECKING, Generic, Optional, TypeVar
 
 if TYPE_CHECKING:
     from pydeephaven import Table
@@ -13,34 +13,34 @@ from typing import Union
 
 from pydeephaven import agg
 from pydeephaven._table_ops import (
-    UpdateOp,
-    LazyUpdateOp,
-    ViewOp,
-    UpdateViewOp,
-    SelectOp,
-    DropColumnsOp,
-    SelectDistinctOp,
-    SortOp,
-    UnstructuredFilterOp,
-    HeadOp,
-    TailOp,
-    HeadByOp,
-    TailByOp,
-    UngroupOp,
-    NaturalJoinOp,
-    ExactJoinOp,
-    CrossJoinOp,
-    AjOp,
-    RajOp,
-    UpdateByOp,
-    SnapshotTableOp,
-    SnapshotWhenTableOp,
-    WhereInTableOp,
-    SliceOp,
     AggregateAllOp,
     AggregateOp,
-    SortDirection,
+    AjOp,
+    CrossJoinOp,
+    DropColumnsOp,
+    ExactJoinOp,
+    HeadByOp,
+    HeadOp,
+    LazyUpdateOp,
+    NaturalJoinOp,
     NaturalJoinType,
+    RajOp,
+    SelectDistinctOp,
+    SelectOp,
+    SliceOp,
+    SnapshotTableOp,
+    SnapshotWhenTableOp,
+    SortDirection,
+    SortOp,
+    TailByOp,
+    TailOp,
+    UngroupOp,
+    UnstructuredFilterOp,
+    UpdateByOp,
+    UpdateOp,
+    UpdateViewOp,
+    ViewOp,
+    WhereInTableOp,
 )
 from pydeephaven._utils import to_list
 from pydeephaven.agg import Aggregation, _AggregationColumns

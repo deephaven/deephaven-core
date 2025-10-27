@@ -7,7 +7,7 @@ import itertools
 import os
 import pathlib
 import types
-from typing import Optional, List, Dict
+from typing import Dict, List, Optional
 
 from deephaven_internal import jvm
 

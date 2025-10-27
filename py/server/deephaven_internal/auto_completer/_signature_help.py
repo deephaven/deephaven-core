@@ -6,7 +6,7 @@ from __future__ import annotations
 from inspect import Parameter
 from typing import Any, TypedDict, Union
 
-from docstring_parser import parse, Docstring
+from docstring_parser import Docstring, parse
 from jedi.api.classes import Signature
 
 _IGNORE_PARAM_NAMES = ("", "/", "*")

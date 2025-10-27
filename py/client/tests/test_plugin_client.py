@@ -4,7 +4,7 @@
 import unittest
 
 from pydeephaven.session import Session
-from pydeephaven.ticket import SharedTicket, ServerObject, ScopeTicket
+from pydeephaven.ticket import ScopeTicket, ServerObject, SharedTicket
 from tests.testbase import BaseTestCase
 
 

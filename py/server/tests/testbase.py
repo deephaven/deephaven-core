@@ -7,10 +7,8 @@ import unittest
 
 from deephaven import DHError
 from deephaven.liveness_scope import liveness_scope
-
+from deephaven.table import PartitionedTableProxy, Table, table_diff
 from deephaven.update_graph import exclusive_lock
-from deephaven.table import Table, PartitionedTableProxy, table_diff
-
 from test_helper import py_dh_session
 
 

@@ -4,9 +4,9 @@
 
 import importlib.metadata
 
-from .server import Server
-
 from deephaven_internal.jvm import check_py_env
+
+from .server import Server
 
 check_py_env()
 

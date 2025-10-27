@@ -8,15 +8,14 @@ be used to create Deephaven tables backed by the backend service."""
 
 import traceback
 from abc import ABC, abstractmethod
-from typing import Optional, Callable
+from typing import Callable, Optional
 
 import jpy
-
 import pyarrow as pa
 
-from deephaven.dherror import DHError
 from deephaven._wrapper import JObjectWrapper
-from deephaven.table import Table, PartitionedTable
+from deephaven.dherror import DHError
+from deephaven.table import PartitionedTable, Table
 
 _JPythonTableDataService = jpy.get_type(
     "io.deephaven.extensions.barrage.util.PythonTableDataService"

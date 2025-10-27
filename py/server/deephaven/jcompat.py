@@ -7,14 +7,14 @@ data structures from corresponding Python ones in order to be able to call Java 
 
 from __future__ import annotations
 
-from collections.abc import Iterable, Sequence, Mapping
+from collections.abc import Iterable, Mapping, Sequence
 from typing import (
+    TYPE_CHECKING,
     Any,
     Callable,
+    Optional,
     TypeVar,
     Union,
-    Optional,
-    TYPE_CHECKING,
 )
 from warnings import warn
 
@@ -23,20 +23,20 @@ import numpy as np
 import pandas as pd
 from pandas.core.dtypes.base import ExtensionDtype
 
-from deephaven import dtypes, DHError
-from deephaven._wrapper import unwrap, wrap_j_object, JObjectWrapper
+from deephaven import DHError, dtypes
+from deephaven._wrapper import JObjectWrapper, unwrap, wrap_j_object
 from deephaven.column import ColumnDefinition
 from deephaven.dtypes import (
-    DType,
     _PRIMITIVE_DTYPE_NULL_MAP,
+    DType,
     bool_,
-    float64,
-    float32,
-    int64,
-    int32,
-    char,
-    short,
     byte,
+    char,
+    float32,
+    float64,
+    int32,
+    int64,
+    short,
 )
 
 if TYPE_CHECKING:

@@ -14,14 +14,14 @@ import pyarrow as pa
 from pydeephaven._table_interface import TableInterface
 from pydeephaven._table_ops import (
     MetaTableOp,
-    SortDirection,
     MultijoinTablesOp,
     NaturalJoinType,
+    SortDirection,
 )
 from pydeephaven._utils import to_list
 from pydeephaven.agg import Aggregation
 from pydeephaven.dherror import DHError
-from pydeephaven.ticket import Ticket, ServerObject
+from pydeephaven.ticket import ServerObject, Ticket
 from pydeephaven.updateby import UpdateByOperation
 
 

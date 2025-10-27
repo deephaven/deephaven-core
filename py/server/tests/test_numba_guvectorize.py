@@ -6,9 +6,9 @@ import unittest
 import warnings
 
 import numpy as np
-from numba import guvectorize, int64, int32
+from numba import guvectorize, int32, int64
 
-from deephaven import empty_table, dtypes, DHError
+from deephaven import DHError, dtypes, empty_table
 from tests.testbase import BaseTestCase
 
 a = np.arange(5, dtype=np.int64)

@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import contextlib
 from functools import wraps
-from typing import Callable, Union, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Callable, Optional, Union
 
 import jpy
 
@@ -18,7 +18,7 @@ from deephaven import DHError
 from deephaven._wrapper import JObjectWrapper
 
 if TYPE_CHECKING:
-    from deephaven.table import Table, PartitionedTable, PartitionedTableProxy
+    from deephaven.table import PartitionedTable, PartitionedTableProxy, Table
 
 _JUpdateGraph = jpy.get_type("io.deephaven.engine.updategraph.UpdateGraph")
 

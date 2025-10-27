@@ -1,18 +1,16 @@
 #
 # Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 #
-import jpy
-
 from unittest.mock import Mock
 
+import jpy
+
 from deephaven import dtypes
-from deephaven.column import col_def, ColumnType
+from deephaven.column import ColumnType, col_def
+from deephaven.experimental import iceberg, s3
 from deephaven.experimental.iceberg import IcebergCatalogAdapter
-
-from tests.testbase import BaseTestCase
-from deephaven.experimental import s3, iceberg
-
 from deephaven.jcompat import j_list_to_list
+from tests.testbase import BaseTestCase
 
 _JTableDefinition = jpy.get_type("io.deephaven.engine.table.TableDefinition")
 

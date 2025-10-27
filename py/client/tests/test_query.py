@@ -8,7 +8,7 @@ import unittest
 from pyarrow import csv
 
 from pydeephaven import DHError, agg
-from pydeephaven.updateby import ema_tick, cum_prod
+from pydeephaven.updateby import cum_prod, ema_tick
 from tests.testbase import BaseTestCase
 
 

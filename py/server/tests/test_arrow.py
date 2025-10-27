@@ -13,18 +13,19 @@ import pyarrow as pa
 import pyarrow.feather as feather
 import pyarrow.parquet as papq
 
-from deephaven import arrow as dharrow, new_table, time_table
+from deephaven import arrow as dharrow
+from deephaven import new_table, time_table
 from deephaven.column import (
+    bool_col,
     byte_col,
     char_col,
-    short_col,
+    datetime_col,
+    double_col,
+    float_col,
     int_col,
     long_col,
-    float_col,
-    double_col,
+    short_col,
     string_col,
-    datetime_col,
-    bool_col,
 )
 from deephaven.table import Table
 from tests.testbase import BaseTestCase

@@ -3,14 +3,15 @@
 #
 """This module implement various aggregations that can be used in deephaven table's aggregation operations."""
 
-from typing import Union, Any, Optional
 from collections.abc import Sequence
+from typing import Any, Optional, Union
 
 import jpy
 
-from deephaven import DHError
-from deephaven.jcompat import to_sequence
 from deephaven.filters import Filter, and_
+from deephaven.jcompat import to_sequence
+
+from .dherror import DHError
 
 _JAggregation = jpy.get_type("io.deephaven.api.agg.Aggregation")
 _JAggSpec = jpy.get_type("io.deephaven.api.agg.spec.AggSpec")

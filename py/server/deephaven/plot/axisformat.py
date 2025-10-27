@@ -4,11 +4,12 @@
 
 """This module implements the AxisFormat class that can be applied to format axis tick labels on a plot."""
 
+from typing import Optional
+
 import jpy
-from deephaven.time import TimeZone
 
 from deephaven._wrapper import JObjectWrapper
-from typing import Optional
+from deephaven.time import TimeZone
 
 _JAxisFormat = jpy.get_type("io.deephaven.plot.axisformatters.AxisFormat")
 _JDecimalAxisFormat = jpy.get_type("io.deephaven.plot.axisformatters.DecimalAxisFormat")

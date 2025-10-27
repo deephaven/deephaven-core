@@ -6,6 +6,7 @@
 These classes or packages can then be used in Deephaven queries."""
 
 import jpy
+
 from deephaven import DHError
 
 _JPackage = jpy.get_type("java.lang.Package")

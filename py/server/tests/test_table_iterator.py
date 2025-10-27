@@ -7,24 +7,23 @@ from dataclasses import dataclass
 import numpy as np
 
 import deephaven.dtypes as dtypes
-from deephaven import read_csv, time_table, new_table
+from deephaven import new_table, read_csv, time_table
 from deephaven import update_graph as ug
 from deephaven.column import (
     bool_col,
     byte_col,
     char_col,
-    short_col,
-    int_col,
-    long_col,
-    float_col,
-    double_col,
-    string_col,
     datetime_col,
-    pyobj_col,
+    double_col,
+    float_col,
+    int_col,
     jobj_col,
+    long_col,
+    pyobj_col,
+    short_col,
+    string_col,
 )
 from deephaven.jcompat import j_array_list
-
 from tests.testbase import BaseTestCase
 
 

@@ -7,23 +7,23 @@ Parquet files."""
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass
 from enum import Enum
 from typing import Optional, Union
-from collections.abc import Sequence
 
 import jpy
 
 from deephaven import DHError
 from deephaven._wrapper import JObjectWrapper
+from deephaven.experimental import s3
 from deephaven.jcompat import j_array_list
 from deephaven.table import (
+    PartitionedTable,
     Table,
     TableDefinition,
     TableDefinitionLike,
-    PartitionedTable,
 )
-from deephaven.experimental import s3
 
 _JParquetTools = jpy.get_type("io.deephaven.parquet.table.ParquetTools")
 _JCompressionCodecName = jpy.get_type(

@@ -5,9 +5,9 @@
 critical for applications to correctly launch deferred query evaluations, such as table update operations in threads.
 """
 
-from typing import Optional, Union
 from collections.abc import Sequence
 from contextlib import ContextDecorator
+from typing import Optional, Union
 
 import jpy
 

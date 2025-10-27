@@ -7,7 +7,7 @@
 import jpy
 
 from deephaven import DHError
-from deephaven._wrapper import JObjectWrapper, pythonify, javaify
+from deephaven._wrapper import JObjectWrapper, javaify, pythonify
 
 _JApplicationContext = jpy.get_type("io.deephaven.appmode.ApplicationContext")
 _JApplicationState = jpy.get_type("io.deephaven.appmode.ApplicationState")

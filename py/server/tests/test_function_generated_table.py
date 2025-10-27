@@ -6,12 +6,12 @@ from typing import Any
 import deephaven.dtypes as dht
 from deephaven import (
     empty_table,
+    function_generated_table,
     input_table,
     new_table,
     update_graph,
-    function_generated_table,
 )
-from deephaven.column import string_col, int_col
+from deephaven.column import int_col, string_col
 from deephaven.execution_context import get_exec_ctx
 from deephaven.liveness_scope import liveness_scope
 from deephaven.table import Table

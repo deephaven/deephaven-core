@@ -6,7 +6,7 @@
 
 from __future__ import annotations
 
-from typing import Callable, Union, Optional, Sequence, cast
+from typing import Callable, Optional, Sequence, Union, cast
 from warnings import warn
 
 import jpy
@@ -16,12 +16,12 @@ from deephaven._wrapper import JObjectWrapper
 from deephaven.column import col_def
 from deephaven.dherror import DHError
 from deephaven.dtypes import DType
-from deephaven.jcompat import j_hashmap, j_properties, j_array_list
+from deephaven.jcompat import j_array_list, j_hashmap, j_properties
 from deephaven.table import (
+    PartitionedTable,
     Table,
     TableDefinition,
     TableDefinitionLike,
-    PartitionedTable,
 )
 
 _JKafkaTools = jpy.get_type("io.deephaven.kafka.KafkaTools")

@@ -4,7 +4,7 @@
 """This module supports building various operations for use with the update-by Table operation."""
 
 from enum import Enum
-from typing import Optional, Union, Sequence
+from typing import Optional, Sequence, Union
 
 import jpy
 

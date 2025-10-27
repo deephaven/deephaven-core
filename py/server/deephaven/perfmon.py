@@ -8,10 +8,10 @@ system and Deephaven queries.
 
 from __future__ import annotations
 
-from typing import Optional, Union, TYPE_CHECKING
+import base64
+from typing import TYPE_CHECKING, Optional, Union
 
 import jpy
-import base64
 
 from deephaven import DHError
 from deephaven.jcompat import j_map_to_dict

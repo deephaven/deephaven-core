@@ -6,22 +6,22 @@
 
 import datetime
 import sys
-import pytz
-from typing import Union, Optional, Literal
+from typing import Literal, Optional, Union
 
 import jpy
 import numpy
 import pandas
+import pytz
 
 from deephaven import DHError
 from deephaven.dtypes import (
+    Duration,
     Instant,
     LocalDate,
     LocalTime,
-    ZonedDateTime,
-    Duration,
     Period,
     TimeZone,
+    ZonedDateTime,
 )
 
 _JDateTimeUtils = jpy.get_type("io.deephaven.time.DateTimeUtils")

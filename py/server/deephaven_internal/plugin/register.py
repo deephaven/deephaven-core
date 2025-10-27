@@ -2,15 +2,16 @@
 # Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 #
 
-import jpy
-import deephaven.plugin
+from typing import TYPE_CHECKING, Union, cast
 
-from typing import Union, cast, TYPE_CHECKING
-from deephaven.plugin import Plugin, Callback
-from deephaven.plugin.object_type import ObjectType
+import deephaven.plugin
+import jpy
+from deephaven.plugin import Callback, Plugin
 from deephaven.plugin.js import JsPlugin
-from .object import ObjectTypeAdapter
+from deephaven.plugin.object_type import ObjectType
+
 from .js import to_j_js_plugin
+from .object import ObjectTypeAdapter
 
 if TYPE_CHECKING:
     from typing_extensions import TypeAlias  # novermin  # noqa

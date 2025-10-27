@@ -84,9 +84,11 @@ def init_py():
     where the process was started as Python, and Java was started from inside Python.
     """
 
-    import jpy
     import os
     import sys
+
+    import jpy
+
     from deephaven_internal.stream import TeeStream
 
     # Set stdin to /dev/null to prevent functions (like help()) that attempt to read from stdin from hanging python

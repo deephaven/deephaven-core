@@ -2,14 +2,14 @@
 # Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 #
 
+import math
 import unittest
 import warnings
 
-from numba import vectorize, int64
-import math
-from deephaven import empty_table, DHError
-from deephaven.html import to_html
+from numba import int64, vectorize
 
+from deephaven import DHError, empty_table
+from deephaven.html import to_html
 from tests.testbase import BaseTestCase
 
 

@@ -9,35 +9,40 @@ from __future__ import annotations
 
 import contextlib
 import inspect
-from enum import Enum
-from enum import auto
+import sys
+from collections.abc import Generator, Iterable, Mapping, Sequence
+from enum import Enum, auto
 from functools import cached_property
-from typing import Any, Optional, Callable, Literal, TYPE_CHECKING, cast
-from collections.abc import Generator
-from typing import Union, Protocol
-from collections.abc import Sequence, Mapping, Iterable
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    Literal,
+    Optional,
+    Protocol,
+    Union,
+    cast,
+)
 
 import jpy
 import numpy as np
-import sys
 
-from deephaven import DHError
-from deephaven import dtypes
+from deephaven import DHError, dtypes
 from deephaven._jpy import strict_cast
-from deephaven._wrapper import JObjectWrapper
-from deephaven._wrapper import unwrap
+from deephaven._wrapper import JObjectWrapper, unwrap
 from deephaven.agg import Aggregation
-from deephaven.column import col_def, ColumnDefinition
-from deephaven.concurrency_control import ConcurrencyControl, Barrier
+from deephaven.column import ColumnDefinition, col_def
+from deephaven.concurrency_control import Barrier, ConcurrencyControl
 from deephaven.filters import Filter, and_, or_
 from deephaven.jcompat import (
-    j_unary_operator,
+    j_array_list,
     j_binary_operator,
-    j_map_to_dict,
     j_hashmap,
+    j_map_to_dict,
+    j_unary_operator,
+    to_sequence,
 )
-from deephaven.jcompat import to_sequence, j_array_list
-from deephaven.update_graph import auto_locking_ctx, UpdateGraph
+from deephaven.update_graph import UpdateGraph, auto_locking_ctx
 from deephaven.updateby import UpdateByOperation
 
 if TYPE_CHECKING:

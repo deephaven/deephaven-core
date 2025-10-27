@@ -4,10 +4,8 @@
 
 import unittest
 
-from deephaven import read_csv, DHError
-from deephaven.plot import Color
-from deephaven.plot import Figure
-from deephaven.plot import font_family_names, Font, FontStyle
+from deephaven import DHError, read_csv
+from deephaven.plot import Color, Figure, Font, FontStyle, font_family_names
 from tests.testbase import BaseTestCase
 
 

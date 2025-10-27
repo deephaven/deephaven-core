@@ -9,21 +9,20 @@ import numpy as np
 import pandas as pd
 from pyarrow import csv
 
-from pydeephaven import DHError
-from pydeephaven import SortDirection, NaturalJoinType
+from pydeephaven import DHError, NaturalJoinType, SortDirection
 from pydeephaven.agg import (
-    sum_,
     avg,
-    pct,
-    weighted_avg,
     count_,
-    count_where,
-    partition,
-    median,
-    unique,
     count_distinct,
+    count_where,
     distinct,
     formula,
+    median,
+    partition,
+    pct,
+    sum_,
+    unique,
+    weighted_avg,
 )
 from pydeephaven.table import Table
 from tests.testbase import BaseTestCase

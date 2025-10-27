@@ -11,26 +11,27 @@ import warnings
 from collections.abc import Sequence
 from dataclasses import dataclass, field
 from datetime import datetime
-from functools import wraps, partial
-from typing import Callable, Any, Union, Optional
-from typing import get_origin, get_args
+from functools import partial, wraps
+from typing import Any, Callable, Optional, Union, get_args, get_origin
 
 import jpy
 import numpy
 import numpy as np
 import pandas as pd
 
-from deephaven import DHError, dtypes
+from deephaven import dtypes
 from deephaven._dep import soft_dependency
 from deephaven.dtypes import (
-    _NUMPY_INT_TYPE_CODES,
-    _NUMPY_FLOATING_TYPE_CODES,
-    _PRIMITIVE_DTYPE_NULL_MAP,
     _BUILDABLE_ARRAY_DTYPE_MAP,
+    _NUMPY_FLOATING_TYPE_CODES,
+    _NUMPY_INT_TYPE_CODES,
+    _PRIMITIVE_DTYPE_NULL_MAP,
     DType,
 )
 from deephaven.jcompat import _j_array_to_numpy_array
-from deephaven.time import to_np_datetime64, to_datetime, to_pd_timestamp
+from deephaven.time import to_datetime, to_np_datetime64, to_pd_timestamp
+
+from .dherror import DHError
 
 numba = soft_dependency("numba")
 

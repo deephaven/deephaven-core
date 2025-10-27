@@ -10,9 +10,9 @@ from typing import Optional
 import jpy
 
 from deephaven import DHError
-from deephaven.jcompat import j_properties
 from deephaven._wrapper import JObjectWrapper
-from deephaven.stream.kafka.consumer import j_partitions, TableType
+from deephaven.jcompat import j_properties
+from deephaven.stream.kafka.consumer import TableType, j_partitions
 from deephaven.table import Table
 
 _JCdcTools = jpy.get_type("io.deephaven.kafka.CdcTools")

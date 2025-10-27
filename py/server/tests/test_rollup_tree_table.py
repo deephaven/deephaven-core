@@ -3,9 +3,9 @@
 #
 import unittest
 
-from deephaven import read_csv, empty_table
+from deephaven import empty_table, read_csv
 from deephaven.agg import (
-    sum_,
+    abs_sum,
     avg,
     count_,
     count_where,
@@ -14,7 +14,7 @@ from deephaven.agg import (
     max_,
     min_,
     std,
-    abs_sum,
+    sum_,
     var,
 )
 from deephaven.filters import Filter

@@ -3,22 +3,20 @@
 #
 import random
 import unittest
-
 from typing import Optional
+
 import numpy as np
 
-from deephaven import DHError, empty_table, dtypes
-from deephaven import new_table
+import deephaven._udf as _udf
+from deephaven import DHError, dtypes, empty_table, new_table
 from deephaven.column import int_col
 from deephaven.filters import Filter, and_
-import deephaven._udf as _udf
-from tests.testbase import BaseTestCase
-
 from tests.test_udf_scalar_args import (
-    _J_TYPE_NULL_MAP,
-    _J_TYPE_NP_DTYPE_MAP,
     _J_TYPE_J_ARRAY_TYPE_MAP,
+    _J_TYPE_NP_DTYPE_MAP,
+    _J_TYPE_NULL_MAP,
 )
+from tests.testbase import BaseTestCase
 
 
 class VectorizationTestCase(BaseTestCase):

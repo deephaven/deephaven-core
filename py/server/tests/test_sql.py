@@ -5,11 +5,11 @@ import unittest
 
 import jpy
 
-from deephaven import read_csv, empty_table
+from deephaven import empty_table, read_csv
 from deephaven.execution_context import ExecutionContext
 from deephaven.experimental import sql
-from tests.testbase import BaseTestCase
 from test_helper import py_dh_session
+from tests.testbase import BaseTestCase
 
 _JTableSpec = jpy.get_type("io.deephaven.qst.table.TableSpec")
 

@@ -6,7 +6,7 @@
 as well as a framework for using popular machine-learning / deep-learning libraries with Deephaven tables.
 """
 
-from typing import Optional, Union, Callable
+from typing import Callable, Optional, Union
 
 import jpy
 

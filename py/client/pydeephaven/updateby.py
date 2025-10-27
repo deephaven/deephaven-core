@@ -6,9 +6,10 @@ instances."""
 
 from abc import ABC, abstractmethod
 from enum import Enum
-from typing import Optional, Union, Any
+from typing import Any, Optional, Union
 
 from deephaven_core.proto import table_pb2
+
 from ._utils import to_list
 from .dherror import DHError
 

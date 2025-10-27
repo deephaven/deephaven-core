@@ -6,7 +6,7 @@
 
 import jpy
 
-from deephaven import DHError
+from .dherror import DHError
 
 
 def strict_cast(j_obj: jpy.JType, to_type: type) -> jpy.JType:

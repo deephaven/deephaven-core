@@ -12,13 +12,13 @@ import os
 import threading
 from collections.abc import Iterable
 from random import random
-from typing import Any, Union, NewType, Optional, cast
+from typing import Any, NewType, Optional, Union, cast
 
 import grpc
 import pyarrow as pa
 import pyarrow.flight as paflight
 from bitstring import BitArray
-from pyarrow._flight import ClientMiddlewareFactory, ClientMiddleware
+from pyarrow._flight import ClientMiddleware, ClientMiddlewareFactory
 
 from pydeephaven._app_service import AppService
 from pydeephaven._arrow_flight_service import ArrowFlightService
@@ -28,24 +28,24 @@ from pydeephaven._input_table_service import InputTableService
 from pydeephaven._plugin_obj_service import PluginObjService
 from pydeephaven._session_service import SessionService
 from pydeephaven._table_ops import (
-    TimeTableOp,
-    EmptyTableOp,
-    MergeTablesOp,
-    FetchTableOp,
     CreateInputTableOp,
+    EmptyTableOp,
+    FetchTableOp,
+    MergeTablesOp,
+    TimeTableOp,
 )
 from pydeephaven._table_service import TableService
 from pydeephaven._utils import to_list
 from pydeephaven.dherror import DHError
 from pydeephaven.experimental.plugin_client import PluginClient
 from pydeephaven.query import Query
-from pydeephaven.table import Table, InputTable
+from pydeephaven.table import InputTable, Table
 from pydeephaven.ticket import (
-    SharedTicket,
     ExportTicket,
     ScopeTicket,
-    Ticket,
     ServerObject,
+    SharedTicket,
+    Ticket,
     _server_object_from_proto,
 )
 

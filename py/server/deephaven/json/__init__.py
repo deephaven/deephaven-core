@@ -67,7 +67,7 @@ See the methods in this module more more details on modelling JSON values.
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import Union, Optional, Literal, Iterable
+from typing import Iterable, Literal, Optional, Union
 
 import jpy
 

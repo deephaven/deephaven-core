@@ -2,18 +2,18 @@
 # Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 #
 
-from typing import Optional, Any, TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, Any, Optional, cast
 
 import jpy
 from deephaven.plugin.object_type import (
     Exporter,
+    FetchOnlyObjectType,
+    MessageStream,
     ObjectType,
     Reference,
-    MessageStream,
-    FetchOnlyObjectType,
 )
 
-from deephaven._wrapper import pythonify, javaify
+from deephaven._wrapper import javaify, pythonify
 from deephaven.liveness_scope import liveness_scope
 
 if TYPE_CHECKING:

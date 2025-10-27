@@ -4,18 +4,18 @@
 
 """This module implements the Column class and functions that work with Columns."""
 
+from collections.abc import Sequence
 from enum import Enum
 from functools import cached_property
 from typing import Any, Optional
-from collections.abc import Sequence
 from warnings import warn
 
 import jpy
 
 import deephaven.dtypes as dtypes
 from deephaven import DHError
-from deephaven.dtypes import DType, _instant_array, from_jtype
 from deephaven._wrapper import JObjectWrapper
+from deephaven.dtypes import DType, _instant_array, from_jtype
 
 _JColumnHeader = jpy.get_type("io.deephaven.qst.column.header.ColumnHeader")
 _JColumn = jpy.get_type("io.deephaven.qst.column.Column")

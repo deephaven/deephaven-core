@@ -8,8 +8,8 @@ from typing import Any
 
 import jpy
 
-from deephaven import DHError
-from deephaven._wrapper import wrap_j_object
+from ._wrapper import wrap_j_object
+from .dherror import DHError
 
 _JResolveTools = jpy.get_type("io.deephaven.uri.ResolveTools")
 

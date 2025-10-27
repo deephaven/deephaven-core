@@ -13,7 +13,7 @@ See https://deephaven.io/core/docs/conceptual/query-engine/parallelization/ for 
 from __future__ import annotations
 
 from abc import abstractmethod
-from typing import Sequence, TypeVar, Union, Protocol
+from typing import Protocol, Sequence, TypeVar, Union
 
 import jpy
 

@@ -1,9 +1,8 @@
 #
 # Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 #
-import unittest
-
 import time
+import unittest
 
 from pydeephaven import Session
 from tests.testbase import BaseTestCase

@@ -4,7 +4,7 @@
 
 import unittest
 
-from deephaven import new_table, read_csv, DHError
+from deephaven import DHError, new_table, read_csv
 from deephaven.column import string_col
 from deephaven.concurrency_control import Barrier
 from deephaven.filters import (
@@ -13,8 +13,8 @@ from deephaven.filters import (
     and_,
     is_not_null,
     is_null,
-    or_,
     not_,
+    or_,
     pattern,
 )
 from tests.testbase import BaseTestCase

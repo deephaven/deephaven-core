@@ -4,22 +4,19 @@
 
 import unittest
 
-from deephaven.agg import partition
-from deephaven.execution_context import make_user_exec_ctx
-from deephaven.table import Table, PartitionedTable
-
-from deephaven.filters import Filter
-
 from deephaven import (
-    read_csv,
     DHError,
-    new_table,
-    update_graph,
-    time_table,
     empty_table,
+    new_table,
+    read_csv,
+    time_table,
+    update_graph,
 )
+from deephaven.agg import partition
+from deephaven.execution_context import get_exec_ctx, make_user_exec_ctx
+from deephaven.filters import Filter
+from deephaven.table import PartitionedTable, Table
 from tests.testbase import BaseTestCase
-from deephaven.execution_context import get_exec_ctx
 
 
 def transform_func(t: Table) -> Table:
@@ -117,7 +114,7 @@ class PartitionedTableTestCase(BaseTestCase):
         keys = [967, 203]
         self.assertIsNotNone(self.partitioned_table.get_constituent(keys))
 
-        from deephaven.column import string_col, int_col, double_col
+        from deephaven.column import double_col, int_col, string_col
 
         houses = new_table(
             [

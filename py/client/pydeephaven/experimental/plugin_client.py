@@ -8,10 +8,9 @@ Experimental module to communicate with server-side plugins from the client.
 
 import threading
 from queue import SimpleQueue
-from typing import Any, Union, Tuple
+from typing import Any, Tuple, Union
 
-from deephaven_core.proto import object_pb2
-from deephaven_core.proto import ticket_pb2
+from deephaven_core.proto import object_pb2, ticket_pb2
 from pydeephaven.dherror import DHError
 from pydeephaven.table import Table
 from pydeephaven.ticket import ExportTicket, ServerObject

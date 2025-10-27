@@ -4,20 +4,19 @@
 """This module provides utilities for listening to table changes."""
 
 from abc import ABC, abstractmethod
+from collections.abc import Generator, Sequence
 from functools import wraps
 from inspect import signature
-from typing import Callable, Union, Optional
-from collections.abc import Generator, Sequence
+from typing import Callable, Optional, Union
 
 import jpy
 import numpy
 
-from deephaven import DHError
-from deephaven import update_graph
-from deephaven._wrapper import JObjectWrapper
-from deephaven.jcompat import to_sequence, j_list_to_list
-from deephaven.table import Table
+from deephaven import DHError, update_graph
 from deephaven._table_reader import _table_reader_all_dict, _table_reader_chunk_dict
+from deephaven._wrapper import JObjectWrapper
+from deephaven.jcompat import j_list_to_list, to_sequence
+from deephaven.table import Table
 from deephaven.table_factory import _error_callback_wrapper
 
 _JPythonReplayListenerAdapter = jpy.get_type(

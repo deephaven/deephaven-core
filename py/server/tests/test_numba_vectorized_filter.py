@@ -4,11 +4,10 @@
 
 import unittest
 
-from numba import vectorize, int64, boolean, short
+from numba import boolean, int64, short, vectorize
 
 from deephaven import empty_table
 from deephaven.html import to_html
-
 from tests.testbase import BaseTestCase
 
 

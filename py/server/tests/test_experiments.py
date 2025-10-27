@@ -4,13 +4,12 @@
 
 import unittest
 
-from deephaven import time_table, empty_table, DHError
-from deephaven.update_graph import exclusive_lock
-from deephaven.experimental import time_window
+from deephaven import DHError, empty_table, read_csv, time_table
 from deephaven.execution_context import get_exec_ctx
-from tests.testbase import BaseTestCase
-from deephaven import read_csv
+from deephaven.experimental import time_window
 from deephaven.experimental.outer_joins import full_outer_join, left_outer_join
+from deephaven.update_graph import exclusive_lock
+from tests.testbase import BaseTestCase
 
 
 class ExperimentalTestCase(BaseTestCase):

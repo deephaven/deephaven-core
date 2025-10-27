@@ -2,9 +2,10 @@
 # Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 #
 
+from pandas import DataFrame
+
 from deephaven.pandas import to_table
 from deephaven.plugin.object_type import Exporter, FetchOnlyObjectType
-from pandas import DataFrame
 
 NAME = "pandas.DataFrame"
 

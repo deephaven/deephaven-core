@@ -6,11 +6,11 @@ import os
 import unittest
 from datetime import datetime
 
-from deephaven import kafka_consumer as ck
-from deephaven.stream.kafka.consumer import TableType, KeyValueSpec
-from tests.testbase import BaseTestCase
 from deephaven import dtypes
+from deephaven import kafka_consumer as ck
 from deephaven.json.jackson import provider as jackson_provider
+from deephaven.stream.kafka.consumer import KeyValueSpec, TableType
+from tests.testbase import BaseTestCase
 
 
 class KafkaConsumerTestCase(BaseTestCase):

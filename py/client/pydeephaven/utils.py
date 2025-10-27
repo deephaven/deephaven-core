@@ -5,8 +5,8 @@
 
 import pyarrow as pa
 
-from .dherror import DHError
 from ._arrow import map_arrow_type
+from .dherror import DHError
 
 
 def is_deephaven_compatible(data_type: pa.DataType) -> bool:

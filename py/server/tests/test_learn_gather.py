@@ -5,6 +5,7 @@
 import unittest
 
 import numpy as np
+
 from deephaven import empty_table
 from deephaven.learn import gather
 from deephaven.pandas import to_pandas

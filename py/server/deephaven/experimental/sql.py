@@ -3,9 +3,10 @@
 #
 import contextlib
 import inspect
-import jpy
-from typing import Union, Any
 from collections.abc import Mapping
+from typing import Any, Union
+
+import jpy
 
 from deephaven import DHError
 from deephaven.table import Table, _j_py_script_session

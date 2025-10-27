@@ -2,14 +2,12 @@
 # Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 #
 import os
-import unittest
-
 import subprocess
 import time
+import unittest
 
 from deephaven import DHError
 from deephaven.barrage import barrage_session
-
 from tests.testbase import BaseTestCase
 
 

@@ -4,20 +4,20 @@
 """This module supports reading the data in a Deephaven table in a chunked manner."""
 
 from collections import namedtuple
+from collections.abc import Generator, Iterable, Sequence
 from typing import (
-    Union,
-    Optional,
     Any,
     Callable,
+    Optional,
     TypeVar,
+    Union,
     cast,
 )
-from collections.abc import Sequence, Generator, Iterable
 
 import jpy
 import numpy as np
-from deephaven import update_graph
 
+from deephaven import update_graph
 from deephaven.column import ColumnDefinition
 from deephaven.jcompat import to_sequence
 from deephaven.numpy import _column_to_numpy_array

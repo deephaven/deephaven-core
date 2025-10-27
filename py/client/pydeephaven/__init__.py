@@ -25,7 +25,7 @@ Examples:
 
 import importlib.metadata
 
-from ._table_interface import SortDirection, NaturalJoinType
+from ._table_interface import NaturalJoinType, SortDirection
 from .dherror import DHError
 from .query import Query
 from .session import Session

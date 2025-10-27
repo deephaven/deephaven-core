@@ -4,53 +4,54 @@
 
 import unittest
 from dataclasses import dataclass
+from time import sleep
 
 import jpy
 import numpy as np
-from time import sleep
+
 from deephaven import (
     DHError,
-    read_csv,
-    time_table,
+    _wrapper,
+    dtypes,
     empty_table,
+    input_table,
     merge,
     merge_sorted,
-    dtypes,
     new_table,
-    input_table,
+    read_csv,
     time,
-    _wrapper,
+    time_table,
 )
 from deephaven.column import (
+    bool_col,
     byte_col,
     char_col,
-    short_col,
-    bool_col,
-    int_col,
-    long_col,
-    float_col,
-    double_col,
-    string_col,
     datetime_col,
-    pyobj_col,
+    double_col,
+    float_col,
+    int_col,
     jobj_col,
+    long_col,
+    pyobj_col,
+    short_col,
+    string_col,
 )
 from deephaven.constants import (
+    NULL_BYTE,
     NULL_DOUBLE,
     NULL_FLOAT,
-    NULL_LONG,
     NULL_INT,
+    NULL_LONG,
     NULL_SHORT,
-    NULL_BYTE,
 )
-from deephaven.table_factory import DynamicTableWriter, InputTable, ring_table
-from tests.testbase import BaseTestCase
-from deephaven.table import Table
 from deephaven.stream import (
+    add_only_to_blink,
     blink_to_append_only,
     stream_to_append_only,
-    add_only_to_blink,
 )
+from deephaven.table import Table
+from deephaven.table_factory import DynamicTableWriter, InputTable, ring_table
+from tests.testbase import BaseTestCase
 
 JArrayList = jpy.get_type("java.util.ArrayList")
 _JBlinkTableTools = jpy.get_type("io.deephaven.engine.table.impl.BlinkTableTools")
@@ -573,8 +574,8 @@ class TableFactoryTestCase(BaseTestCase):
         self.assertEqual(t5.size, 1)
 
     def test_input_table_empty_data(self):
-        from deephaven import update_graph as ugp
         from deephaven import execution_context as ec
+        from deephaven import update_graph as ugp
 
         ug = ec.get_exec_ctx().update_graph
         cm = ugp.exclusive_lock(ug)

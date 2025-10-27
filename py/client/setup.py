@@ -9,7 +9,7 @@ import pathlib
 # install extra dependencies, at least until we can more properly manage the build environment (pyproject.toml).
 # TODO(deephaven-core#2233): upgrade setup.py to pyproject.toml
 from packaging.version import parse as parse_version
-from setuptools import setup, find_namespace_packages
+from setuptools import find_namespace_packages, setup
 
 
 def _get_readme() -> str:

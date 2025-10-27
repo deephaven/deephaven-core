@@ -4,10 +4,8 @@
 
 import unittest
 
-from deephaven import read_csv, DHError
-from deephaven.plot import Color, Colors
-from deephaven.plot import Figure
-from deephaven.plot import LineEndStyle, LineStyle
+from deephaven import DHError, read_csv
+from deephaven.plot import Color, Colors, Figure, LineEndStyle, LineStyle
 from tests.testbase import BaseTestCase
 
 

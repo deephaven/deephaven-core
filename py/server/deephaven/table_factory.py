@@ -3,14 +3,14 @@
 #
 """This module provides various ways to make a Deephaven table."""
 
+from collections.abc import Mapping, Sequence
 from functools import wraps
-from typing import Callable, Any, Union, Optional
-from collections.abc import Sequence, Mapping
+from typing import Any, Callable, Optional, Union
 
 import jpy
 import pandas as pd
 
-from deephaven import execution_context, DHError
+from deephaven import DHError, execution_context
 from deephaven._wrapper import JObjectWrapper
 from deephaven.column import InputColumn
 from deephaven.dtypes import DType

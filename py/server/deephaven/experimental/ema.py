@@ -4,8 +4,8 @@
 
 """This modules allows users to define exponential moving averages that can be used in the Deephaven query language."""
 
-import numpy
 import jpy
+import numpy
 
 _JAbstractMAType = jpy.get_type("io.deephaven.numerics.movingaverages.AbstractMa$Type")
 _JAbstractMATMode = jpy.get_type("io.deephaven.numerics.movingaverages.AbstractMa$Mode")

@@ -5,10 +5,10 @@
 import unittest
 
 from tests.test_console import ConsoleTestCase
+from tests.test_multi_session import MultiSessionTestCase
 from tests.test_query import QueryTestCase
 from tests.test_session import SessionTestCase
 from tests.test_table import TableTestCase
-from tests.test_multi_session import MultiSessionTestCase
 
 if __name__ == "__main__":
     suite = unittest.TestSuite()

@@ -3,9 +3,9 @@
 #
 """The table_publisher module supports publishing Deephaven Tables into blink Tables."""
 
-import jpy
-
 from typing import Callable, Optional
+
+import jpy
 
 from deephaven._wrapper import JObjectWrapper
 from deephaven.execution_context import get_exec_ctx

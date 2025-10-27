@@ -4,25 +4,25 @@
 
 """This module supports the conversion between Deephaven tables and pandas DataFrames."""
 
-from typing import Optional, Literal, Union, cast
+from typing import Literal, Optional, Union, cast
 
 import jpy
 import numpy as np
 import pandas as pd
 import pyarrow as pa
-from pandas.api.types import is_object_dtype
 from pandas.api.extensions import ExtensionArray
+from pandas.api.types import is_object_dtype
 
-from deephaven import DHError, new_table, dtypes, arrow
+from deephaven import DHError, arrow, dtypes, new_table
 from deephaven.column import ColumnDefinition
 from deephaven.constants import (
     NULL_BYTE,
-    NULL_SHORT,
+    NULL_CHAR,
+    NULL_DOUBLE,
+    NULL_FLOAT,
     NULL_INT,
     NULL_LONG,
-    NULL_FLOAT,
-    NULL_DOUBLE,
-    NULL_CHAR,
+    NULL_SHORT,
 )
 from deephaven.jcompat import _j_array_to_series
 from deephaven.numpy import _make_input_column

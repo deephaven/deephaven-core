@@ -53,11 +53,10 @@ Examples:
 """
 
 import contextlib
+from collections.abc import Iterator
+from typing import TYPE_CHECKING, Union, cast
 
 import jpy
-
-from typing import Union, cast, TYPE_CHECKING
-from collections.abc import Iterator
 
 from deephaven import DHError
 from deephaven._wrapper import JObjectWrapper

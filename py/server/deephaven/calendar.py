@@ -11,7 +11,6 @@ import jpy
 from deephaven import DHError
 from deephaven.dtypes import BusinessCalendar
 
-
 _JCalendars = jpy.get_type("io.deephaven.time.calendar.Calendars")
 
 

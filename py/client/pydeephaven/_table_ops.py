@@ -3,7 +3,7 @@
 #
 from abc import ABC, abstractmethod
 from enum import Enum
-from typing import Optional, Any, Union
+from typing import Any, Optional, Union
 
 import pyarrow as pa
 

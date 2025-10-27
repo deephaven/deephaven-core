@@ -10,23 +10,24 @@ Each data type is represented by a DType class which supports creating arrays of
 from __future__ import annotations
 
 import datetime
-from typing import Any, Callable, Union, Optional, TYPE_CHECKING, cast
 from collections.abc import Sequence
+from typing import TYPE_CHECKING, Any, Callable, Optional, Union, cast
 
 import jpy
 import numpy as np
 import pandas as pd
 
-from deephaven import DHError
 from deephaven.constants import (
     NULL_BYTE,
-    NULL_SHORT,
+    NULL_CHAR,
+    NULL_DOUBLE,
+    NULL_FLOAT,
     NULL_INT,
     NULL_LONG,
-    NULL_FLOAT,
-    NULL_DOUBLE,
-    NULL_CHAR,
+    NULL_SHORT,
 )
+
+from .dherror import DHError
 
 if TYPE_CHECKING:
     from typing_extensions import TypeAlias  # novermin  # noqa

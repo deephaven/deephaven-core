@@ -14,7 +14,7 @@ import jpy
 
 from deephaven import DHError
 from deephaven._wrapper import JObjectWrapper
-from deephaven.concurrency_control import ConcurrencyControl, Barrier
+from deephaven.concurrency_control import Barrier, ConcurrencyControl
 from deephaven.jcompat import to_sequence
 
 _JFilter = jpy.get_type("io.deephaven.api.filter.Filter")

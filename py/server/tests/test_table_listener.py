@@ -4,26 +4,26 @@
 
 import time
 import unittest
-from typing import Union, Optional
+from typing import Optional, Union
 
-import numpy
 import jpy
+import numpy
 
-from deephaven import time_table, new_table, input_table, DHError, empty_table
+from deephaven import DHError, empty_table, input_table, new_table, time_table
 from deephaven.column import bool_col, string_col
+from deephaven.execution_context import get_exec_ctx
 from deephaven.experimental import time_window
 from deephaven.jcompat import to_sequence
 from deephaven.table import Table
 from deephaven.table_listener import (
-    listen,
+    MergedListener,
+    MergedListenerHandle,
     TableListener,
     TableListenerHandle,
-    MergedListener,
     TableUpdate,
-    MergedListenerHandle,
+    listen,
     merged_listen,
 )
-from deephaven.execution_context import get_exec_ctx
 from deephaven.update_graph import exclusive_lock
 from tests.testbase import BaseTestCase
 

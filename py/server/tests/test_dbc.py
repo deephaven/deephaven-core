@@ -23,6 +23,7 @@ class DbcTestCase(BaseTestCase):
     @unittest.skipIf(not turbodbc_installed(), reason="turbodbc is not installed")
     def test_read_odbc(self):
         import turbodbc
+
         from deephaven.dbc import odbc as dhodbc
 
         connection_string = "Driver={PostgreSQL};Server=postgres;Port=5432;Database=test;Uid=test;Pwd=test;"

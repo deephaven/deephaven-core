@@ -4,18 +4,18 @@
 
 import unittest
 
+import jpy
+
 from deephaven import dtypes
 from deephaven.jcompat import (
-    j_function,
-    j_lambda,
     AutoCloseable,
     j_array_list,
     j_collection_to_list,
+    j_function,
     j_hashset,
+    j_lambda,
 )
 from tests.testbase import BaseTestCase
-
-import jpy
 
 _JSharedContext = jpy.get_type("io.deephaven.engine.table.SharedContext")
 

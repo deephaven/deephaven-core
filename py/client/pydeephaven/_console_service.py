@@ -3,8 +3,8 @@
 #
 from typing import Any, Optional
 
+from deephaven_core.proto import console_pb2, console_pb2_grpc
 from pydeephaven.dherror import DHError
-from deephaven_core.proto import console_pb2_grpc, console_pb2
 from pydeephaven.table import Table
 
 

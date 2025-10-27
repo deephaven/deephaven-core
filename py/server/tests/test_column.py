@@ -9,24 +9,24 @@ from dataclasses import dataclass
 import numpy as np
 import pandas as pd
 
-from deephaven import DHError, dtypes, new_table, time as dhtime
-from deephaven import empty_table
+from deephaven import DHError, dtypes, empty_table, new_table
+from deephaven import time as dhtime
 from deephaven.column import (
+    ColumnType,
+    bool_col,
     byte_col,
     char_col,
-    short_col,
-    bool_col,
-    int_col,
-    long_col,
-    float_col,
-    double_col,
-    string_col,
-    datetime_col,
-    jobj_col,
-    ColumnType,
     col_def,
+    datetime_col,
+    double_col,
+    float_col,
+    int_col,
+    jobj_col,
+    long_col,
+    short_col,
+    string_col,
 )
-from deephaven.constants import MAX_BYTE, MAX_SHORT, MAX_INT, MAX_LONG
+from deephaven.constants import MAX_BYTE, MAX_INT, MAX_LONG, MAX_SHORT
 from deephaven.jcompat import j_array_list
 from tests.testbase import BaseTestCase
 

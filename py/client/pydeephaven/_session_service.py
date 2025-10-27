@@ -4,9 +4,9 @@
 
 import grpc
 
-from deephaven_core.proto import session_pb2_grpc, session_pb2
+from deephaven_core.proto import session_pb2, session_pb2_grpc
 from pydeephaven.dherror import DHError
-from pydeephaven.ticket import Ticket, ExportTicket
+from pydeephaven.ticket import ExportTicket, Ticket
 
 
 class SessionService:

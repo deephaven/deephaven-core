@@ -2,25 +2,25 @@
 # Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 #
 import typing
+import unittest
 import warnings
 from datetime import datetime
-from typing import Optional, Union, Any
-import unittest
+from typing import Any, Optional, Union
 
+import jpy
 import numpy as np
 import pandas as pd
-import jpy
 
-from deephaven import empty_table, DHError, dtypes, new_table
+from deephaven import DHError, dtypes, empty_table, new_table
 from deephaven.column import int_col
 from deephaven.dtypes import (
+    char_array,
     double_array,
+    float32_array,
+    int8_array,
+    int16_array,
     int32_array,
     long_array,
-    int16_array,
-    char_array,
-    int8_array,
-    float32_array,
 )
 from tests.testbase import BaseTestCase
 

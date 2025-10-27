@@ -3,9 +3,9 @@
 #
 """This module supports embedding a Deephaven server in Python."""
 
-from typing import List, Optional
-import sys
 import atexit
+import sys
+from typing import List, Optional
 
 from .start_jvm import start_jvm
 

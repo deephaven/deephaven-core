@@ -44,7 +44,8 @@ module = "jedi.*"
 ignore_missing_imports = true
 
 [tool.ruff]
-exclude = ["deephaven/plot/figure.py", "tests/test_docstring_parser.py"]
+lint.select = ["F", "I"]
+exclude = ["deephaven/__init__.py", "deephaven/plot/__init__.py", "deephaven/plot/figure.py", "tests/test_docstring_parser.py"]
 
 [tool.ruff.lint.per-file-ignores]
 "deephaven/plot/**" = ["E741", "F405", "F403"]

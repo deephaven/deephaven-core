@@ -9,10 +9,11 @@ when there is no chance of using either lock.
 """
 
 from typing import Callable
-import jpy
-from deephaven.jcompat import j_runnable
-from deephaven import DHError
 
+import jpy
+
+from deephaven import DHError
+from deephaven.jcompat import j_runnable
 
 _executors: dict[str, Callable[[Callable[[], None]], None]] = {}
 

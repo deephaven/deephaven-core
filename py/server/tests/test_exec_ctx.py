@@ -5,8 +5,7 @@ import concurrent.futures
 import threading
 import unittest
 
-from deephaven import DHError
-from deephaven import empty_table
+from deephaven import DHError, empty_table
 from deephaven.execution_context import get_exec_ctx, make_user_exec_ctx
 from tests.testbase import BaseTestCase
 

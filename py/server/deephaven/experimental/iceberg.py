@@ -4,19 +4,18 @@
 """This module adds Iceberg table support into Deephaven."""
 
 from __future__ import annotations
-from typing import Optional, Union, cast, Any, TYPE_CHECKING
-from collections.abc import Sequence, Mapping
 
-import jpy
+from collections.abc import Mapping, Sequence
+from typing import TYPE_CHECKING, Any, Optional, Union, cast
 from warnings import warn
 
+import jpy
 
 from deephaven import DHError
 from deephaven._wrapper import JObjectWrapper
 from deephaven.experimental import s3
-from deephaven.table import Table, TableDefinition, TableDefinitionLike
-
 from deephaven.jcompat import j_hashmap
+from deephaven.table import Table, TableDefinition, TableDefinitionLike
 
 if TYPE_CHECKING:
     from typing_extensions import TypeAlias  # novermin  # noqa

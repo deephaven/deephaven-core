@@ -6,14 +6,14 @@
 #
 """This module allows users to perform SQL-style left outer and full outer joins on tables."""
 
-from typing import Optional, Union
 from collections.abc import Sequence
+from typing import Optional, Union
+
+import jpy
 
 from deephaven import DHError
 from deephaven.jcompat import to_sequence
 from deephaven.table import Table
-import jpy
-
 from deephaven.update_graph import auto_locking_ctx
 
 _JOuterJoinTools = jpy.get_type("io.deephaven.engine.util.OuterJoinTools")

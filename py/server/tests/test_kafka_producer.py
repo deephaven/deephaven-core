@@ -6,8 +6,9 @@ import os
 import unittest
 from datetime import datetime
 
-from deephaven import kafka_producer as pk, new_table, time_table
-from deephaven.column import string_col, int_col, double_col, datetime_col
+from deephaven import kafka_producer as pk
+from deephaven import new_table, time_table
+from deephaven.column import datetime_col, double_col, int_col, string_col
 from deephaven.stream import kafka
 from deephaven.stream.kafka.producer import KeyValueSpec
 from tests.testbase import BaseTestCase

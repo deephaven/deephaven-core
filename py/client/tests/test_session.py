@@ -4,13 +4,12 @@
 import unittest
 from time import sleep, time
 
-import pyarrow as pa
 import pandas as pd
+import pyarrow as pa
 from pyarrow import csv
 
-from pydeephaven import DHError
-from pydeephaven import Session
-from pydeephaven.ticket import SharedTicket, ScopeTicket
+from pydeephaven import DHError, Session
+from pydeephaven.ticket import ScopeTicket, SharedTicket
 from tests.testbase import BaseTestCase
 
 

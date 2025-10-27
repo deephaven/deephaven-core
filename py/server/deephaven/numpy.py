@@ -9,14 +9,12 @@ from typing import Optional
 
 import jpy
 import numpy as np
-from deephaven.dtypes import BusinessCalendar
 
 from deephaven import DHError, dtypes, new_table
-from deephaven.column import InputColumn, ColumnDefinition
-from deephaven.dtypes import DType
-from deephaven.jcompat import _j_array_to_numpy_array
+from deephaven.column import ColumnDefinition, InputColumn
+from deephaven.dtypes import BusinessCalendar, DType
+from deephaven.jcompat import _j_array_to_numpy_array, j_list_to_list
 from deephaven.table import Table
-from deephaven.jcompat import j_list_to_list
 
 _JColumnVectors = jpy.get_type("io.deephaven.engine.table.vectors.ColumnVectors")
 _JDayOfWeek = jpy.get_type("java.time.DayOfWeek")

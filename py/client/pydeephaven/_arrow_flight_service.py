@@ -4,8 +4,8 @@
 
 import pyarrow as pa
 import pyarrow.flight as paflight
-
 from pyarrow.flight import FlightCallOptions
+
 from pydeephaven._arrow import map_arrow_type
 from pydeephaven.dherror import DHError
 from pydeephaven.table import Table

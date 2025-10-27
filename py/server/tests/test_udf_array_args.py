@@ -1,18 +1,29 @@
 #
 # Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 #
-from typing import Optional, Union, Any, Sequence, List, Tuple, Set, Dict, Literal  # noqa: F401
 import unittest
+from typing import (  # noqa: F401
+    Any,
+    Dict,
+    List,
+    Literal,
+    Optional,
+    Sequence,
+    Set,
+    Tuple,
+    Union,
+)
 
 import numpy as np
 
-from deephaven import empty_table, DHError, dtypes
+from deephaven import DHError, dtypes, empty_table
 from deephaven.jcompat import dh_null_to_nan
 from tests.testbase import BaseTestCase
+
 from .test_udf_scalar_args import (
+    _J_TYPE_J_ARRAY_TYPE_MAP,  # noqa: F401
     _J_TYPE_NP_DTYPE_MAP,
     _J_TYPE_NULL_MAP,
-    _J_TYPE_J_ARRAY_TYPE_MAP,  # noqa: F401
 )
 
 

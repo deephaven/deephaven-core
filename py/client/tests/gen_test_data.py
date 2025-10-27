@@ -3,9 +3,8 @@
 #
 
 import io
-import string
-
 import itertools
+import string
 
 import numpy as np
 import pyarrow as pa

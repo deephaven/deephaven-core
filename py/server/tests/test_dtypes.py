@@ -2,11 +2,11 @@
 # Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 #
 
+import datetime
 import functools
 import math
 import time
 import unittest
-import datetime
 
 import numpy as np
 import pandas as pd
@@ -14,10 +14,10 @@ import pandas as pd
 from deephaven import dtypes
 from deephaven.constants import *
 from deephaven.dtypes import (
+    Duration,
     Instant,
     LocalDate,
     LocalTime,
-    Duration,
     Period,
     TimeZone,
     ZonedDateTime,

@@ -6,12 +6,12 @@
 
 from enum import Enum
 from numbers import Number
+from typing import Optional
 
 import jpy
 
 from deephaven import DHError
 from deephaven._wrapper import JObjectWrapper
-from typing import Optional
 
 _JLineStyle = jpy.get_type("io.deephaven.plot.LineStyle")
 _JLineEndStyle = jpy.get_type("io.deephaven.plot.LineStyle$LineEndStyle")

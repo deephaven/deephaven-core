@@ -4,17 +4,16 @@
 
 import unittest
 
-from deephaven import dtypes, DHError
-from deephaven import read_csv, write_csv, new_table
+from deephaven import DHError, dtypes, new_table, read_csv, write_csv
 from deephaven.column import (
     bool_col,
     byte_col,
     char_col,
-    short_col,
+    double_col,
+    float_col,
     int_col,
     long_col,
-    float_col,
-    double_col,
+    short_col,
 )
 from tests.testbase import BaseTestCase
 

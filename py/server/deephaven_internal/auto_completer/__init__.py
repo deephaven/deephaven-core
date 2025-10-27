@@ -16,7 +16,7 @@ strong mode: looks in your globals() for answers to autocomplete and analyzes yo
 later, we may add slow mode, which uses both static and interpreted completion modes.
 """
 
-from jedi import preload_module, Interpreter
+from jedi import Interpreter, preload_module
 
 from ._completer import Completer
 

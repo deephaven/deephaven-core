@@ -5,36 +5,35 @@
 import threading
 import time
 import unittest
-from typing import Callable, Optional, Generator
+from typing import Callable, Generator, Optional
 
 import numpy as np
 import pyarrow as pa
 import pyarrow.compute as pc
 
+import deephaven.arrow as dharrow
 from deephaven import new_table
 from deephaven.column import (
+    ColumnType,
+    bool_col,
     byte_col,
     char_col,
-    short_col,
+    datetime_col,
+    double_col,
+    float_col,
     int_col,
     long_col,
-    float_col,
-    double_col,
+    short_col,
     string_col,
-    datetime_col,
-    bool_col,
-    ColumnType,
 )
-from deephaven.execution_context import get_exec_ctx, ExecutionContext
+from deephaven.execution_context import ExecutionContext, get_exec_ctx
 from deephaven.experimental.table_data_service import (
+    TableDataService,
     TableDataServiceBackend,
     TableKey,
     TableLocationKey,
-    TableDataService,
 )
-import deephaven.arrow as dharrow
 from deephaven.liveness_scope import liveness_scope
-
 from tests.testbase import BaseTestCase
 
 

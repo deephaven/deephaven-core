@@ -4,7 +4,7 @@
 
 import unittest
 
-from deephaven import read_csv, DHError
+from deephaven import DHError, read_csv
 from deephaven.plot.selectable_dataset import one_click, one_click_partitioned_table
 from tests.testbase import BaseTestCase
 

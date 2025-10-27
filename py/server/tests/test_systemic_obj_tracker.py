@@ -3,8 +3,9 @@
 #
 import unittest
 from unittest.mock import patch
-from deephaven import DHError, empty_table
+
 import deephaven.systemic_obj_tracker as tracker
+from deephaven import DHError, empty_table
 
 
 class TestSystemicObjectTracker(unittest.TestCase):
