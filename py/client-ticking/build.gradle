@@ -38,6 +38,7 @@ def pyClientTickingWheel = { String pythonTag -> Docker.registerDockerTask(proje
         from(layout.projectDirectory) {
             include 'setup.py'
             include 'pyproject.toml'
+            include 'requirements-dev.txt'
             include 'README.md'
             include 'src/**/py.typed'
             include 'src/**/*.py'
@@ -55,16 +56,21 @@ def pyClientTickingWheel = { String pythonTag -> Docker.registerDockerTask(proje
                         /out \\
                         '${prefix}/log' \\
                         '${prefix}/src/py-client-ticking/src' \\
-                        '${prefix}/src/py-client-ticking/in-wheels'; \\
-                   /opt/python/${pythonTag}/bin/pip install --root-user-action ignore -r requirements-dev.txt; \\
+                        '${prefix}/src/py-client-ticking/in-wheels'
+                   """)
+        copyFile('setup.py', "${prefix}/src/py-client-ticking")
+        copyFile('pyproject.toml', "${prefix}/src/py-client-ticking")
+        copyFile('requirements-dev.txt', "${prefix}/src/py-client-ticking")
+        copyFile('README.md', "${prefix}/src/py-client-ticking")
+        copyFile('src/', "${prefix}/src/py-client-ticking/src/")
+        copyFile('pyClientTickingWheel/entrypoint.sh', '/entrypoint.sh')
+        runCommand("""cd "${prefix}/src/py-client-ticking"; \\
+                   /opt/python/${pythonTag}/bin/pip install --root-user-action ignore --upgrade pip; \\
+                   /opt/python/${pythonTag}/bin/pip install --root-user-action ignore --only-binary :all: -r requirements-dev.txt; \\
                    /opt/python/${pythonTag}/bin/mypy --install-types --config-file pyproject.toml .;\\
                    /opt/python/${pythonTag}/bin/ruff check;\\
                    /opt/python/${pythonTag}/bin/ruff format --check
                    """)
-        copyFile('setup.py', "${prefix}/src/py-client-ticking")
-        copyFile('README.md', "${prefix}/src/py-client-ticking")
-        copyFile('src/', "${prefix}/src/py-client-ticking/src/")
-        copyFile('pyClientTickingWheel/entrypoint.sh', '/entrypoint.sh')
         environmentVariable([
                 PREFIX: prefix,
                 PYTHON_TAG: pythonTag,
