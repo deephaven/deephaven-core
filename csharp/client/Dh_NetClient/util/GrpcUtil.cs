@@ -2,9 +2,9 @@
 // Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 
-using System.Net.Security;
 using Grpc.Core;
 using Grpc.Net.Client;
+using System.Net.Security;
 using System.Security.Cryptography.X509Certificates;
 
 namespace Deephaven.Dh_NetClient;
@@ -59,7 +59,14 @@ public static class GrpcUtil {
       }
 
       try {
-        return chain.Build(cert);
+        if (chain.Build(cert)) {
+          return true;
+        }
+
+        // The chain has failed. However, if the only error is RevocationStatusUnknown
+        // (emphasis on "Unknown" rather than "Revoked"), then we allow it.
+        return chain.ChainStatus.All(cs =>
+          cs.Status is X509ChainStatusFlags.NoError or X509ChainStatusFlags.RevocationStatusUnknown);
       } catch (Exception) {
         return false;
       }
