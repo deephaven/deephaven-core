@@ -1035,11 +1035,7 @@
                 "label": "Advanced table constructors",
                 "items": [
                   {
-                    "label": "blinkToAppendOnly",
-                    "path": "reference/table-operations/create/blink-to-append-only.md"
-                  },
-                  {
-                    "label": "create",
+                    "label": "FunctionGeneratedTableFactory",
                     "path": "reference/table-operations/create/create.md"
                   },
                   {
@@ -1047,28 +1043,36 @@
                     "path": "reference/table-operations/create/DynamicTableWriter.md"
                   },
                   {
-                    "label": "removeBlink",
-                    "path": "reference/table-operations/create/remove-blink.md"
-                  },
-                  {
-                    "label": "assertBlink",
-                    "path": "reference/table-operations/create/assert-blink.md"
-                  },
-                  {
-                    "label": "assertAppendOnly",
-                    "path": "reference/table-operations/create/assert-append-only.md"
-                  },
-                  {
-                    "label": "assertAddOnly",
-                    "path": "reference/table-operations/create/assert-add-only.md"
+                    "label": "Replayer",
+                    "path": "reference/table-operations/create/Replayer.md"
                   },
                   {
                     "label": "TablePublisher",
                     "path": "reference/table-operations/create/TablePublisher.md"
                   },
                   {
+                    "label": "blinkToAppendOnly",
+                    "path": "reference/table-operations/create/blink-to-append-only.md"
+                  },
+                  {
                     "label": "toBlink",
                     "path": "reference/table-operations/create/toBlink.md"
+                  },
+                  {
+                    "label": "removeBlink",
+                    "path": "reference/table-operations/create/remove-blink.md"
+                  },
+                  {
+                    "label": "assertAddOnly",
+                    "path": "reference/table-operations/create/assert-add-only.md"
+                  },
+                  {
+                    "label": "assertAppendOnly",
+                    "path": "reference/table-operations/create/assert-append-only.md"
+                  },
+                  {
+                    "label": "assertBlink",
+                    "path": "reference/table-operations/create/assert-blink.md"
                   }
                 ]
               },
