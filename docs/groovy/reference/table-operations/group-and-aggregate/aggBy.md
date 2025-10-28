@@ -152,4 +152,4 @@ result = source.aggBy([AggGroup("Numbers = Number"),AggMax("MaxNumber = Number")
 
 - [Create a new table](../../../how-to-guides/new-and-empty-table.md#newtable)
 - [How to create multiple summary statistics for groups](../../../how-to-guides/combined-aggregations.md)
-- [Javadoc](<https://deephaven.io/core/javadoc/io/deephaven/api/TableOperations.html#aggBy(io.deephaven.api.agg.Aggregation)>)
+- [Javadoc](https://deephaven.io/core/javadoc/io/deephaven/api/TableOperations.html#aggBy(io.deephaven.api.agg.Aggregation))
