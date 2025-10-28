@@ -126,7 +126,8 @@ pydevd.settrace(
 )
 ```
 
-> [!NOTE] > **Linux users**: `host.docker.internal` works on Docker Desktop for Mac/Windows. On Linux, use `--add-host=host.docker.internal:host-gateway` in your docker-compose.yml or replace `host.docker.internal` with your host machine's IP address (e.g., `192.168.1.x`).
+> [!NOTE] 
+> **Linux users**: `host.docker.internal` works on Docker Desktop for Mac/Windows. On Linux, use `--add-host=host.docker.internal:host-gateway` in your docker-compose.yml or replace `host.docker.internal` with your host machine's IP address (e.g., `192.168.1.x`).
 
 ![img](../../assets/how-to/debugging/doc-6.png)
 
