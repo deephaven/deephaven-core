@@ -24,7 +24,9 @@ import os
 os.system("pip install pydevd")
 ```
 
-This will create a non-persistent installation into the Deephaven container, and those commands will have to be re-run every time the server restarts. For a permanent installation, place these three files in a new, empty directory:
+This will create a non-persistent installation into the Deephaven container, and this command will have to be re-run every time the server restarts.
+
+For a permanent installation that persists across restarts, place these three files in a new, empty directory:
 
 <details>
 <summary> requirements.txt </summary>
@@ -38,7 +40,7 @@ pydevd
 <details>
 <summary> Dockerfile </summary>
 
-```text
+```dockerfile
 FROM ghcr.io/deephaven/server:latest
 COPY requirements.txt /requirements.txt
 RUN pip install -r /requirements.txt && rm /requirements.txt
@@ -81,14 +83,14 @@ Go to **Run > Edit Configurations**, which opens up the **Run/Debug Configuratio
 
 Give the configuration a reasonable, memorable name, like `docker-debugging-server`.
 
-Next, set the IDE host name. Since the Deephaven server will be running locally, the hostname is `localhost`.
+Next, set the IDE host name to `localhost`. This is the hostname from PyCharm's perspective - the debug server runs on your local machine.
 
 Now, choose a port for the debug server to run on. Note that this is _not the same_ as the port that the _Deephaven_ server runs on, which is port `10000` by default. Any unused port will work for this - we will use port `4444`.
 
-Finally, a non-empty path mapping is required to map the local PyCharm project to the root of the application in the Docker container. Use a path mapping like the following:
+Finally, configure path mapping to map the local PyCharm project directory to the Deephaven container's working directory. This allows PyCharm to correctly map breakpoints and source files between your local machine and the container:
 
-- Local path: `path/to/current-pycharm-project`
-- Remote path: `/app`
+- Local path: The absolute path to your current PyCharm project (e.g., `/Users/yourname/docker-debug-project`)
+- Remote path: `/app` (the Deephaven container's working directory)
 
 ![img](../../assets/how-to/debugging/doc-3.png)
 
@@ -96,9 +98,8 @@ Click **Apply** and **Ok**, and the new debug server will be immediately availab
 
 ## 4. Attach debugger to Deephaven
 
-:::warning
-The Deephaven server must be run with anonymous authentication for this kind of debugging to work. Otherwise, the debugger will fail to connect with the server.
-:::
+> [!WARNING]
+> The Deephaven server must be run with anonymous authentication for this kind of debugging to work. The `docker-compose.yml` file above includes the required `-DAuthHandlers=io.deephaven.auth.AnonymousAuthenticationHandler` setting.
 
 Start the debugger in PyCharm by clicking the small green bug icon in the window's top right corner. This will start the debugger and open a debugging console:
 
@@ -116,7 +117,7 @@ Attach the debugger to Deephaven by executing the following commands in the Deep
 import pydevd
 
 pydevd.settrace(
-    "host.docker.internal",  # Host where PyCharm is running (Docker-specific hostname)
+    "host.docker.internal",  # Docker Desktop hostname to reach host machine
     port=4444,  # Port matching your PyCharm debug config
     suspend=False,  # Don't pause execution immediately
     trace_only_current_thread=False,  # Debug all threads
@@ -124,6 +125,8 @@ pydevd.settrace(
     stderrToServer=True,  # Send stderr to PyCharm console
 )
 ```
+
+> [!NOTE] > **Linux users**: `host.docker.internal` works on Docker Desktop for Mac/Windows. On Linux, use `--add-host=host.docker.internal:host-gateway` in your docker-compose.yml or replace `host.docker.internal` with your host machine's IP address (e.g., `192.168.1.x`).
 
 ![img](../../assets/how-to/debugging/doc-6.png)
 
@@ -139,14 +142,19 @@ This means that the debugger is ready to go!
 
 ## 5. Use the PyCharm debugger
 
-To interface with the PyCharm debugger from the Deephaven IDE, use the `pydevd.settrace()` function. It behaves like a breakpoint in PyCharm, allowing the program to pause and step through the function at that point:
+Once connected, you can use the PyCharm debugger in two ways:
+
+1. **Set breakpoints in PyCharm**: Click in the left margin of your code editor to set breakpoints on any line
+2. **Use `pydevd.settrace()` in code**: Call this function to programmatically pause execution at that point
+
+After the initial connection (step 4), you no longer need to pass parameters to `settrace()`. Here's an example using it as a breakpoint:
 
 ```python skip-test
 from deephaven import empty_table
 
 
 def udf(x) -> int:
-    # acts like a breakpoint
+    # Acts like a breakpoint - execution will pause here
     pydevd.settrace()
     y = x + 1
     return y
@@ -159,7 +167,54 @@ t_new = t.update("Y = udf(X)")
 
 Navigating over to PyCharm, the debugger's full suite of capabilities is on offer. It can assist in stepping through Deephaven source code, setting breakpoints to halt execution, inspecting variables and intermediate values from deep within function calls, and much more. Many resources are available online for using PyCharm's debugger, and [this Jetbrains guide](https://www.jetbrains.com/help/pycharm/using-debug-console.html) is a good starting point.
 
-**There are some Deephaven-specific things to consider when debugging**. Check out [this guide](./common-problems.md) for some common problems when debugging Deephaven.
+**There are some Deephaven-specific things to consider when debugging**. Check out [Common problems](./common-problems.md) for issues specific to debugging Deephaven's table operations and ticking tables.
+
+## Troubleshooting
+
+### Debugger won't connect
+
+**Problem**: `pydevd.settrace()` fails with connection error.
+
+**Solutions**:
+
+- Verify the PyCharm debug server is running (green bug icon should be active).
+- Check that port 4444 is not blocked by a firewall.
+- On Linux, verify `host.docker.internal` is correctly configured.
+- Ensure the port in `settrace()` matches the PyCharm configuration.
+
+### Path mapping not working
+
+**Problem**: When stepping through code in PyCharm, source files don't match or show incorrectly.
+
+**When this matters**: Path mapping is primarily needed when stepping into Deephaven's internal source code or debugging Python files mounted into the container. It's less critical for console-based debugging with `pydevd.settrace()`.
+
+**Solutions**:
+
+- Verify the local path in PyCharm configuration points to your actual project directory (absolute path).
+- Ensure the remote path is `/app` (the Deephaven container's working directory).
+- If debugging mounted Python files, verify your volume mappings in docker-compose.yml match the path configuration.
+
+### Debugger disconnects after attaching
+
+**Problem**: Connection is established but immediately drops.
+
+**Solutions**:
+
+- Ensure anonymous authentication is enabled in docker-compose.yml (see the configuration in step 1).
+- Review PyCharm debug console for error messages that indicate the disconnect cause.
+- Try increasing JVM memory if you see out-of-memory errors (adjust `-Xmx4g` in START_OPTS).
+
+### Version compatibility issues
+
+**Problem**: Debugger behaves unexpectedly, shows errors, or features don't work.
+
+**Solutions**:
+
+- Verify PyCharm version is 2024 or higher (earlier versions have known compatibility issues).
+- Check that `pydevd` version is compatible with your PyCharm version.
+  - Run `pip show pydevd` in the container to check the installed version.
+  - PyCharm may suggest a specific version in the debug server configuration.
+- If versions mismatch, reinstall `pydevd` with the version PyCharm recommends.
 
 ## Related documentation
 
