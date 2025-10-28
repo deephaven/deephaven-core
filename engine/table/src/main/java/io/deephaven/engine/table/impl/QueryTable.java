@@ -1489,16 +1489,29 @@ public class QueryTable extends BaseTable<QueryTable> {
                                         }
 
                                         if (snapshotControl != null) {
-                                            final ListenerRecorder recorder = new ListenerRecorder(
-                                                    whereDescription, QueryTable.this,
-                                                    filteredTable);
-                                            final WhereListener whereListener = new WhereListener(
-                                                    log, this, recorder, filteredTable, filters);
-                                            filteredTable.setWhereListener(whereListener);
-                                            recorder.setMergedListener(whereListener);
-                                            snapshotControl.setListenerAndResult(recorder, filteredTable);
-                                            filteredTable.addParentReference(whereListener);
+                                            if (!QueryTable.this.isRefreshing()) {
+                                                // Static source, but had dependencies requiring snapshot control.
+                                                final WhereListener whereListener =
+                                                        new WhereListener(log, this, null, filteredTable, filters);
+                                                filteredTable.setWhereListener(whereListener);
+                                                snapshotControl.setListenerAndResult(null, filteredTable);
+                                                filteredTable.addParentReference(whereListener);
+
+                                                // Result is refreshing IFF filters are refreshing.
+                                                filteredTable.setIsRefreshing(refreshingFilters);
+                                            } else {
+                                                // Refreshing source, possibly refreshing filters with dependencies.
+                                                final ListenerRecorder recorder = new ListenerRecorder(whereDescription,
+                                                        QueryTable.this, filteredTable);
+                                                final WhereListener whereListener =
+                                                        new WhereListener(log, this, recorder, filteredTable, filters);
+                                                filteredTable.setWhereListener(whereListener);
+                                                recorder.setMergedListener(whereListener);
+                                                snapshotControl.setListenerAndResult(recorder, filteredTable);
+                                                filteredTable.addParentReference(whereListener);
+                                            }
                                         } else if (refreshingFilters) {
+                                            // Refreshing filters, but a static table.
                                             final WhereListener whereListener = new WhereListener(
                                                     log, this, null, filteredTable, filters);
                                             filteredTable.setWhereListener(whereListener);
