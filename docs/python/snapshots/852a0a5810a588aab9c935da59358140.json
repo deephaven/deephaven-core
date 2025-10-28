@@ -1,0 +1,1 @@
+{"file":"conceptual/column-types.md","objects":{"t7":{"type":"Table","data":{"columns":[{"name":"Index","type":"int"},{"name":"Letter","type":"char"}],"rows":[[{"value":"0"},{"value":"A"}],[{"value":"1"},{"value":"B"}],[{"value":"2"},{"value":"C"}],[{"value":"3"},{"value":"D"}],[{"value":"4"},{"value":"E"}]]}}}}
