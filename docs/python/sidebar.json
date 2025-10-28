@@ -2660,6 +2660,10 @@
                     "path": "reference/community-questions/extract-values-from-tables.md"
                   },
                   {
+                    "label": "How do I extract a list of distinct dates from a table?",
+                    "path": "reference/community-questions/extract-distinct-dates-list.md"
+                  },
+                  {
                     "label": "How do I get the ISO week number from a datetime?",
                     "path": "reference/community-questions/iso-week-number.md"
                   },
@@ -2678,6 +2682,10 @@
                   {
                     "label": "When should I use `where_in` or `natural_join`?",
                     "path": "reference/community-questions/wherein-vs-naturaljoin.md"
+                  },
+                  {
+                    "label": "How do I filter by time of day across all dates?",
+                    "path": "reference/community-questions/filter-time-window-all-dates.md"
                   }
                 ]
               },
