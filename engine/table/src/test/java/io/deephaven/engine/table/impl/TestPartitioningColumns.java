@@ -125,8 +125,7 @@ public class TestPartitioningColumns {
         final List<WhereFilter> filters = input.getDefinition().getColumnStream()
                 .map(cd -> new MatchFilter(MatchType.Regular, cd.getName(), (Object) null))
                 .collect(Collectors.toList());
-        final List<WhereFilter> copiedFilters = filters.stream().map(WhereFilter::copy).collect(Collectors.toList());
-        TstUtils.assertTableEquals(expected.where(Filter.and(filters)), result.where(Filter.and(copiedFilters)));
+        TstUtils.assertTableEquals(expected.where(Filter.and(filters)), result.where(Filter.and(filters)));
 
         TstUtils.assertTableEquals(expected.selectDistinct(), result.selectDistinct());
     }
