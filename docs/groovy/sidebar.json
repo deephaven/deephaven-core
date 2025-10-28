@@ -1171,10 +1171,6 @@
               {
                 "label": "URI",
                 "path": "reference/data-import-export/uri.md"
-              },
-              {
-                "label": "Replayer",
-                "path": "reference/table-operations/create/Replayer.md"
               }
             ]
           },
