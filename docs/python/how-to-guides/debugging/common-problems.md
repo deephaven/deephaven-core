@@ -30,3 +30,11 @@ Currently, Deephaven only notifies Python debuggers of its main thread. However,
 The main thread here shuts down before the UDF is reached. To remedy this, explicitly keep the main thread alive with a call to [`time.sleep`](https://docs.python.org/3/library/time.html#time.sleep):
 
 ![img](../../assets/how-to/debugging/prob-4.png)
+
+## Related documentation
+
+- [Table operations](../../reference/table-operations/index.md)
+- [`update_view`](../../reference/table-operations/select/update-view.md)
+- [`select`](../../reference/table-operations/select/select.md)
+- [User-defined functions](../../conceptual/user-defined-functions.md)
+- [Real-time tables](../../conceptual/real-time-tables.md)
