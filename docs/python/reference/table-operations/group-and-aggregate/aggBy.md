@@ -4,6 +4,9 @@ title: agg_by
 
 `agg_by` applies a list of aggregations to table data.
 
+> [!WARNING]
+> Aggregation keys consume memory that persists for the lifetime of the worker, even after the keys are removed from the table. Avoid including unnecessary columns in grouping keys, especially columns with many continuously increasing unique values.
+
 ## Syntax
 
 ```python syntax
@@ -29,6 +32,7 @@ A list of aggregations to compute. The following aggregations are available:
 - [`agg.count_`](./AggCount.md)
 - [`agg.count_distinct`](./AggCountDistinct.md)
 - [`agg.count_where`](./AggCountWhere.md)
+- [`agg.distinct`](./AggDistinct.md)
 - [`agg.first`](./AggFirst.md)
 - [`agg.formula`](./AggFormula.md)
 - [`agg.group`](./AggGroup.md)
@@ -36,6 +40,7 @@ A list of aggregations to compute. The following aggregations are available:
 - [`agg.max_`](./AggMax.md)
 - [`agg.median`](./AggMed.md)
 - [`agg.min_`](./AggMin.md)
+- [`agg.partition`](./AggPartition.md)
 - [`agg.pct`](./AggPct.md)
 - [`agg.sorted_first`](./AggSortedFirst.md)
 - [`agg.sorted_last`](./AggSortedLast.md)
@@ -120,5 +125,5 @@ result = source.agg_by(
 
 - [How to create static tables](../../../how-to-guides/new-and-empty-table.md)
 - [How to create multiple summary statistics for groups](../../../how-to-guides/combined-aggregations.md)
-- [Javadoc](https://deephaven.io/core/javadoc/io/deephaven/api/TableOperations.html#aggBy(io.deephaven.api.agg.Aggregation))
+- [Javadoc](<https://deephaven.io/core/javadoc/io/deephaven/api/TableOperations.html#aggBy(io.deephaven.api.agg.Aggregation)>)
 - [Pydoc](/core/pydoc/code/deephaven.table.html#deephaven.table.Table.agg_by)
