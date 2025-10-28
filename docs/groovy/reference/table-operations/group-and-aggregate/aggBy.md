@@ -5,7 +5,7 @@ title: aggBy
 `aggBy` applies a list of aggregations to table data.
 
 > [!WARNING]
-> Aggregation keys consume memory that persists for the lifetime of the worker, even after the keys are removed from the table. Avoid including unnecessary columns in grouping keys, especially columns with many continuously increasing unique values.
+> Aggregation keys consume memory that persists for the lifetime of the worker, even after the keys are removed from the table. Avoid including unnecessary columns in grouping keys, especially if they contain a high number of unique values.
 
 ## Syntax
 
@@ -152,4 +152,4 @@ result = source.aggBy([AggGroup("Numbers = Number"),AggMax("MaxNumber = Number")
 
 - [Create a new table](../../../how-to-guides/new-and-empty-table.md#newtable)
 - [How to create multiple summary statistics for groups](../../../how-to-guides/combined-aggregations.md)
-- [Javadoc](https://deephaven.io/core/javadoc/io/deephaven/api/TableOperations.html#aggBy(io.deephaven.api.agg.Aggregation))
+- [Javadoc](<https://deephaven.io/core/javadoc/io/deephaven/api/TableOperations.html#aggBy(io.deephaven.api.agg.Aggregation)>)
