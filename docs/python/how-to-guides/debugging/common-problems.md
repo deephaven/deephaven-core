@@ -33,8 +33,7 @@ The main thread here shuts down before the UDF is reached. To remedy this, expli
 
 ## Related documentation
 
-- [Table operations](../../reference/table-operations/index.md)
 - [`update_view`](../../reference/table-operations/select/update-view.md)
 - [`select`](../../reference/table-operations/select/select.md)
-- [User-defined functions](../../conceptual/user-defined-functions.md)
-- [Real-time tables](../../conceptual/real-time-tables.md)
+- [Python functions in query strings](../python-functions.md)
+- [Table types](../../conceptual/table-types.md)

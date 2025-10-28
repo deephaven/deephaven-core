@@ -321,6 +321,7 @@ Navigating over to PyCharm, the debugger's full suite of capabilities is on offe
 **Problem**: Commands like `deephaven server` or imports fail with "command not found" or "module not found" errors.
 
 **Solutions**:
+
 - Verify the virtual environment is activated: look for `(dh-venv)` in your terminal prompt.
 - Activate the environment: `source dh-venv/bin/activate` (on macOS/Linux) or `dh-venv\Scripts\activate` (on Windows).
 - Verify Deephaven is installed: `pip list | grep deephaven`.
@@ -330,6 +331,7 @@ Navigating over to PyCharm, the debugger's full suite of capabilities is on offe
 **Problem**: Debugger fails to start or can't find Deephaven modules.
 
 **Solutions**:
+
 - Verify the IDE is configured to use the `dh-venv` Python interpreter.
 - In PyCharm: Check the interpreter selector in the bottom-right corner.
 - In VS Code: Check the interpreter selector in the bottom-left status bar.
@@ -340,6 +342,7 @@ Navigating over to PyCharm, the debugger's full suite of capabilities is on offe
 **Problem**: `pydevd.settrace()` fails with connection error when using Deephaven IDE approach.
 
 **Solutions**:
+
 - Verify the PyCharm debug server is running (green bug icon should be active).
 - Check that port 4444 is not blocked by a firewall.
 - Ensure the port in `settrace()` matches the PyCharm configuration.
@@ -350,6 +353,7 @@ Navigating over to PyCharm, the debugger's full suite of capabilities is on offe
 **Problem**: Debugger behaves unexpectedly, shows errors, or features don't work.
 
 **Solutions**:
+
 - Verify PyCharm version is 2024 or higher (earlier versions have known compatibility issues).
 - For VS Code, verify version 1.94 or higher.
 - Check that `pydevd` version is compatible with your IDE version.

@@ -148,6 +148,7 @@ Navigating over to PyCharm, the debugger's full suite of capabilities is on offe
 **Problem**: `pydevd.settrace()` fails with connection error.
 
 **Solutions**:
+
 - Verify the PyCharm debug server is running (green bug icon should be active).
 - Check that port 4444 is not blocked by a firewall.
 - Ensure the port in `settrace()` matches the PyCharm configuration.
@@ -158,6 +159,7 @@ Navigating over to PyCharm, the debugger's full suite of capabilities is on offe
 **Problem**: The `./gradlew server-jetty-app:run` command fails with errors.
 
 **Solutions**:
+
 - Verify you successfully built Deephaven from source following the [build guide](../../getting-started/launch-build.md).
 - Check that you're running the gradle command from the `deephaven-core` repository root.
 - Ensure all build dependencies are installed.
@@ -168,6 +170,7 @@ Navigating over to PyCharm, the debugger's full suite of capabilities is on offe
 **Problem**: When debugging, PyCharm shows "Source code not available" or can't find files.
 
 **Solutions**:
+
 - Verify the PyCharm project was created from the same `deephaven-core` directory used to build and run the server.
 - Check that the Python interpreter is set to `source-dh-venv`.
 - Ensure the project structure in PyCharm matches the actual source directory structure.
@@ -177,6 +180,7 @@ Navigating over to PyCharm, the debugger's full suite of capabilities is on offe
 **Problem**: Debugger behaves unexpectedly, shows errors, or features don't work.
 
 **Solutions**:
+
 - Verify PyCharm version is 2024 or higher (earlier versions have known compatibility issues).
 - Check that `pydevd` version is compatible with your PyCharm version.
   - Run `pip show pydevd` in `source-dh-venv` to check installed version.
