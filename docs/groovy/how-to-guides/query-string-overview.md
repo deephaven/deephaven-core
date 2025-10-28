@@ -177,9 +177,8 @@ resultMeta = result.meta()
 
 Additionally, all columns in tables are backed by arrays. You can leverage this with the underscore operator (`_`). For example, the following code grabs previous and next elements from a column:
 
-:::caution
-The special row variable [`ii`](../reference/query-language/variables/special-variables.md) is not safe in ticking tables.
-:::
+> [!CAUTION]
+> The special row variable [`ii`](../reference/query-language/variables/special-variables.md) is not safe in ticking tables.
 
 ```groovy order=source
 source = emptyTable(10).update("X = ii")
