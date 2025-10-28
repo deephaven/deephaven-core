@@ -52,14 +52,14 @@ import java.util.function.Function;
  * Statement statement = connection.createStatement();
  * ResultSet resultSet = statement.executeQuery("SELECT * FROM Invoice");
  * </pre>
- * 
+ * <p>
  * Then convert the {@code ResultSet} to a {@code Table}:
- * 
+ *
  * <pre>
  * Table resultTable = JdbcToTableAdapter.readJdbc(resultSet);
  * </pre>
  * <p/>
- *
+ * <p>
  * There are several options than can be set to change the behavior of the ingestion. Provide the customized options
  * object to {@link JdbcToTableAdapter#readJdbc(ResultSet, ReadJdbcOptions, String...)} like this:
  *
@@ -67,7 +67,7 @@ import java.util.function.Function;
  * JdbcToTableAdapter.ReadJdbcOptions options = JdbcToTableAdapter.readJdbcOptions();
  * Table resultTable = JdbcToTableAdapter.readJdbc(resultSet, options);
  * </pre>
- *
+ * <p>
  * There are many supported mappings from JDBC type to Deephaven type. The default can be overridden by specifying the
  * desired result type in the options. For example, convert BigDecimal to double on 'MyCol' via
  * {@code options.columnTargetType("MyCol", double.class)}.
@@ -86,6 +86,7 @@ public class JdbcToTableAdapter {
      * Options applicable when reading JDBC data into a Deephaven in-memory table. Designed to constructed in a "fluent"
      * manner, with defaults applied if not specified by the user.
      */
+    @SuppressWarnings("UnusedReturnValue")
     public static class ReadJdbcOptions {
         private CasingStyle casingStyle = null;
         private String replacement = "_";
@@ -186,34 +187,92 @@ public class JdbcToTableAdapter {
         return new ReadJdbcOptions();
     }
 
-    public interface RowSinkFactory<RST extends RowSink> {
-        RST make(ResultSet resultSet, int numRows, ReadJdbcOptions options) throws SQLException;
+    /**
+     * A factory to produce a {@link RowSink} that will consume rows from a {@link ResultSet} as driven by
+     * {@link #readJdbc(ResultSet, ReadJdbcOptions, RowSinkFactory)} and produce a result of type {@code RESULT_TYPE}.
+     *
+     * @param <RESULT_TYPE> The result type produced by {@link RowSink row sinks}
+     *        {@link #make(ResultSet, int, ReadJdbcOptions) made} by this factory
+     */
+    public interface RowSinkFactory<RESULT_TYPE> {
+        /**
+         * Build and return a {@link RowSink} that will return a result of type {@code RESULT_TYPE}.
+         *
+         * @param resultSet The {@link ResultSet} that will be consumed
+         * @param numRows The number of rows expected to be consumed, 0 if the number is unknown
+         * @param options {@link ReadJdbcOptions} that should apply to the returned sink and its result
+         * @return The {@link RowSink} to be used to consume {@code resultSet}
+         * @throws SQLException If the RowSinkFactory encountered a {@link SQLException} while interacting with the
+         *         {@link ResultSet}
+         */
+        RowSink<RESULT_TYPE> make(
+                @NotNull ResultSet resultSet,
+                int numRows,
+                @NotNull ReadJdbcOptions options)
+                throws SQLException;
     }
 
-    public interface RowSink extends SafeCloseable {
-        void appendRow() throws SQLException;
+    /**
+     * A sink that {@link #consumeRow() consumes rows} and produces a {@link #result() result} from the data thus
+     * consumed.
+     *
+     * @param <RESULT_TYPE> The result type produced by {@link #result()}
+     */
+    public interface RowSink<RESULT_TYPE> extends SafeCloseable {
+
+        /**
+         * Consume a single row from the {@link ResultSet} provided when constructing this RowSink.
+         *
+         * @throws SQLException If the RowSink encountered a {@link SQLException} while interacting with the
+         *         {@link ResultSet}
+         */
+        void consumeRow() throws SQLException;
+
+        /**
+         * Perform any necessary final work and return the result for this RowSink.
+         *
+         * @return The result
+         */
+        RESULT_TYPE result();
     }
 
-    public static <RST extends RowSink> RST readJdbc(
-            final ResultSet resultSet,
+    /**
+     * Construct a {@link RowSink} for {@code resultSet} and {@code options} using {@code rowSinkFactory},
+     * {@link RowSink#consumeRow() consume} all rows from {@code resultSet} (limited by {@code options.maxRows}), and
+     * return the {@link RowSink#result() result}, ensuring that the sink is {@link RowSink#close() closed} before
+     * return.
+     *
+     * @param resultSet The {@link ResultSet} that will be consumed
+     * @param options {@link ReadJdbcOptions} that should apply to the returned sink and its result
+     * @param rowSinkFactory The {@link RowSinkFactory} to be used to consume {@code resultSet}
+     * @return The {@link RowSink#result() result}
+     * @throws SQLException If a {@link SQLException} was encountered while interacting with the {@link ResultSet}
+     * @param <RESULT_TYPE> The result type produced by the sink's {@link RowSink#result()}
+     */
+    public static <RESULT_TYPE> RESULT_TYPE readJdbc(
+            @NotNull final ResultSet resultSet,
             final ReadJdbcOptions options,
-            final RowSinkFactory<RST> rowSinkFactory) throws SQLException {
+            @NotNull final RowSinkFactory<RESULT_TYPE> rowSinkFactory) throws SQLException {
         // Note: JDBC result set cardinality is limited to Integer.MAX_VALUE
-        final int numRows = options.maxRows < 0
+        final int maxRows = options.maxRows;
+        final int numRows = maxRows < 0
                 ? getExpectedSize(resultSet)
-                : Math.min(options.maxRows, getExpectedSize(resultSet));
+                : Math.min(maxRows, getExpectedSize(resultSet));
 
-        try (final RST rowSink = rowSinkFactory.make(resultSet, numRows, options)) {
-            long numRowsRead = 0;
-            while (resultSet.next() && (options.maxRows == -1 || numRowsRead < options.maxRows)) {
-                rowSink.appendRow();
-                ++numRowsRead;
+        try (final RowSink<RESULT_TYPE> rowSink = rowSinkFactory.make(resultSet, numRows, options)) {
+            int numRowsConsumed = 0;
+            while (resultSet.next() && (maxRows == -1 || numRowsConsumed < maxRows)) {
+                rowSink.consumeRow();
+                ++numRowsConsumed;
             }
-            return rowSink;
+            return rowSink.result();
         }
     }
 
-    private static final class TableRowSink implements RowSink {
+    /**
+     * {@link RowSink} implementation that will return a static, coalesced {@link Table}.
+     */
+    private static final class TableRowSink implements RowSink<Table> {
 
         private final ResultSet resultSet;
 
@@ -222,8 +281,7 @@ public class JdbcToTableAdapter {
         final JdbcTypeMapper.Context typeMapperContext;
 
         boolean errorEncountered;
-        int numRowsRead;
-        Table result;
+        int numRowsConsumed;
 
         private TableRowSink(
                 @NotNull final ResultSet resultSet,
@@ -294,37 +352,34 @@ public class JdbcToTableAdapter {
         }
 
         @Override
-        public void appendRow() throws SQLException {
+        public void consumeRow() throws SQLException {
             if (errorEncountered) {
                 throw new IllegalStateException("Previously encountered an error in append");
             }
             try {
                 for (SourceFiller filler : sourceFillers) {
-                    filler.readRow(resultSet, typeMapperContext, numRowsRead);
+                    filler.readRow(resultSet, typeMapperContext, numRowsConsumed);
                 }
             } catch (final Throwable t) {
                 errorEncountered = true;
                 throw t;
             }
-            ++numRowsRead;
+            ++numRowsConsumed;
+        }
+
+        @Override
+        public Table result() {
+            if (errorEncountered) {
+                throw new IllegalStateException(
+                        "Unexpected call to result(), an error was encountered in consumeRow()!");
+            }
+            // noinspection resource
+            return new QueryTable(RowSetFactory.flat(numRowsConsumed).toTracking(), columnSources);
         }
 
         @Override
         public void close() {
             SafeCloseable.closeAll(sourceFillers);
-            if (errorEncountered) {
-                return;
-            }
-            // noinspection resource
-            result = new QueryTable(RowSetFactory.flat(numRowsRead).toTracking(), columnSources);
-        }
-
-        public Table getResult() {
-            if (result == null) {
-                throw new IllegalStateException(
-                        "TableRowSink has not been closed, or encountered an error in append or close");
-            }
-            return result;
         }
     }
 
@@ -343,17 +398,16 @@ public class JdbcToTableAdapter {
     /**
      * Returns a table that was populated from the provided result set.
      *
-     * @param rs result set to read, its cursor should be before the first row to import
+     * @param resultSet result set to read, its cursor should be before the first row to import
      * @param options options to change the way readJdbc behaves
      * @param origColumnNames columns to include or all if none provided
      * @return a deephaven static table
      * @throws SQLException if reading from the result set fails
      */
-    public static Table readJdbc(final ResultSet rs, final ReadJdbcOptions options, String... origColumnNames)
+    public static Table readJdbc(final ResultSet resultSet, final ReadJdbcOptions options, String... origColumnNames)
             throws SQLException {
-        return readJdbc(rs, options,
-                (rsc, nr, oc) -> new TableRowSink(rsc, nr, oc, null, origColumnNames))
-                .getResult();
+        return readJdbc(resultSet, options,
+                (rs, nr, o) -> new TableRowSink(rs, nr, o, null, origColumnNames));
     }
 
     private interface SourceFiller extends SafeCloseable {
@@ -385,7 +439,6 @@ public class JdbcToTableAdapter {
                 destChunkOffset = LongSizedDataStructure.intSize("JdbcToTableAdapter", destRowKey - firstRowOffset);
             }
 
-            // noinspection unchecked
             typeMapping.bindToChunk(destChunk, destChunkOffset++, rs, columnIndex, context);
         }
 
@@ -444,6 +497,7 @@ public class JdbcToTableAdapter {
 
     private static final CaseFormat fromFormat = CaseFormat.LOWER_HYPHEN;
     private static final Map<CasingStyle, CaseFormat> caseFormats;
+
     static {
         Map<CasingStyle, CaseFormat> initFormats = new HashMap<>();
         initFormats.put(CasingStyle.lowerCamel, CaseFormat.LOWER_CAMEL);
@@ -483,7 +537,7 @@ public class JdbcToTableAdapter {
                         originalColumnName.replaceAll("[- .\\\\/]", "_"),
                         (s) -> s,
                         Collections.EMPTY_SET)
-                        .replaceAll("[_]", "-").toLowerCase();
+                        .replaceAll("_", "-").toLowerCase();
 
         // There should be no reason for the casing options to return a String with hyphen or space in them, but, in
         // case we add other CasingStyles later, we'll check.
@@ -506,12 +560,13 @@ public class JdbcToTableAdapter {
     }
 
     /**
-     * Gets the expected size of the ResultSet, or 0 if we can not figure it out.
+     * Gets the expected size of the {@link ResultSet}, or 0 if we can not figure it out. This method may move the
+     * cursor, but will restore it before returning if so.
      *
      * @param resultSet The result to determine the size of
      * @return The expected size (or 0 if unknown)
      */
-    public static int getExpectedSize(@NotNull final ResultSet resultSet) {
+    private static int getExpectedSize(@NotNull final ResultSet resultSet) {
         // It would be swell to get the size of our ResultSet, but only if it is scrollable
         final int type;
         try {
@@ -528,9 +583,13 @@ public class JdbcToTableAdapter {
                     return 0;
                 }
 
-                resultSet.last();
-                final int lastRow = resultSet.getRow();
-                resultSet.absolute(firstRow);
+                final int lastRow;
+                try {
+                    resultSet.last();
+                    lastRow = resultSet.getRow();
+                } finally {
+                    resultSet.absolute(firstRow);
+                }
                 return lastRow - firstRow;
             } catch (SQLException ignored) {
             }
