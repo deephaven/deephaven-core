@@ -346,7 +346,8 @@ public class TestChunkSort {
 
         while (iterator.hasNext()) {
             final List<String> permutation = iterator.next();
-            try (final WritableObjectChunk<String, ? extends Any> chunk = WritableObjectChunk.makeWritableChunk(permutation.size())) {
+            try (final WritableObjectChunk<String, ? extends Any> chunk =
+                    WritableObjectChunk.makeWritableChunk(permutation.size())) {
                 chunk.setSize(0);
                 permutation.forEach(chunk::add);
                 chunk.sort();
@@ -378,7 +379,8 @@ public class TestChunkSort {
 
         while (iterator.hasNext()) {
             final List<BigInteger> permutation = iterator.next();
-            try (final WritableObjectChunk<BigInteger, ? extends Any> chunk = WritableObjectChunk.makeWritableChunk(permutation.size())) {
+            try (final WritableObjectChunk<BigInteger, ? extends Any> chunk =
+                    WritableObjectChunk.makeWritableChunk(permutation.size())) {
                 chunk.setSize(0);
                 permutation.forEach(chunk::add);
                 chunk.sort();
@@ -410,7 +412,8 @@ public class TestChunkSort {
 
         while (iterator.hasNext()) {
             final List<java.math.BigDecimal> permutation = iterator.next();
-            try (final WritableObjectChunk<java.math.BigDecimal, ? extends Any> chunk = WritableObjectChunk.makeWritableChunk(permutation.size())) {
+            try (final WritableObjectChunk<java.math.BigDecimal, ? extends Any> chunk =
+                    WritableObjectChunk.makeWritableChunk(permutation.size())) {
                 chunk.setSize(0);
                 permutation.forEach(chunk::add);
                 chunk.sort();
