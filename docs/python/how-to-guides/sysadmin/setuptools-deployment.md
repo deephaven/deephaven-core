@@ -113,14 +113,14 @@ if __name__ == "__main__":
     app()
 ```
 
-### **main**.py
+### __main__.py
 
 This file enables running the package as `python -m my_dh_tool`:
 
 ```python syntax
-if __name__ == "__main__":
-    from my_dh_tool.cli import app
+from my_dh_tool.cli import app
 
+if __name__ == "__main__":
     app()
 ```
 
