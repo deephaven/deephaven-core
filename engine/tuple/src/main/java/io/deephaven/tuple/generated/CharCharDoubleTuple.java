@@ -87,7 +87,7 @@ public class CharCharDoubleTuple implements Comparable<CharCharDoubleTuple>, Ext
         // @formatter:off
         return element1 == typedOther.element1 &&
                element2 == typedOther.element2 &&
-               element3 == typedOther.element3;
+               DoubleComparisons.eq(element3, typedOther.element3);
         // @formatter:on
     }
 

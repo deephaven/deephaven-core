@@ -88,7 +88,7 @@ public class ObjectFloatByteTuple implements Comparable<ObjectFloatByteTuple>, E
         final ObjectFloatByteTuple typedOther = (ObjectFloatByteTuple) other;
         // @formatter:off
         return ObjectComparisons.eq(element1, typedOther.element1) &&
-               element2 == typedOther.element2 &&
+               FloatComparisons.eq(element2, typedOther.element2) &&
                element3 == typedOther.element3;
         // @formatter:on
     }

@@ -87,7 +87,7 @@ public class LongDoubleByteTuple implements Comparable<LongDoubleByteTuple>, Ext
         final LongDoubleByteTuple typedOther = (LongDoubleByteTuple) other;
         // @formatter:off
         return element1 == typedOther.element1 &&
-               element2 == typedOther.element2 &&
+               DoubleComparisons.eq(element2, typedOther.element2) &&
                element3 == typedOther.element3;
         // @formatter:on
     }

@@ -75,7 +75,7 @@ public class DoubleLongTuple implements Comparable<DoubleLongTuple>, Externaliza
         }
         final DoubleLongTuple typedOther = (DoubleLongTuple) other;
         // @formatter:off
-        return element1 == typedOther.element1 &&
+        return DoubleComparisons.eq(element1, typedOther.element1) &&
                element2 == typedOther.element2;
         // @formatter:on
     }

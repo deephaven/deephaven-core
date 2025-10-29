@@ -76,7 +76,7 @@ public class FloatObjectTuple implements Comparable<FloatObjectTuple>, Externali
         }
         final FloatObjectTuple typedOther = (FloatObjectTuple) other;
         // @formatter:off
-        return element1 == typedOther.element1 &&
+        return FloatComparisons.eq(element1, typedOther.element1) &&
                ObjectComparisons.eq(element2, typedOther.element2);
         // @formatter:on
     }

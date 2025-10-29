@@ -87,7 +87,7 @@ public class CharFloatByteTuple implements Comparable<CharFloatByteTuple>, Exter
         final CharFloatByteTuple typedOther = (CharFloatByteTuple) other;
         // @formatter:off
         return element1 == typedOther.element1 &&
-               element2 == typedOther.element2 &&
+               FloatComparisons.eq(element2, typedOther.element2) &&
                element3 == typedOther.element3;
         // @formatter:on
     }

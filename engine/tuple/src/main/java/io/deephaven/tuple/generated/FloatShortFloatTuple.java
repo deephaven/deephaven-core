@@ -85,9 +85,9 @@ public class FloatShortFloatTuple implements Comparable<FloatShortFloatTuple>, E
         }
         final FloatShortFloatTuple typedOther = (FloatShortFloatTuple) other;
         // @formatter:off
-        return element1 == typedOther.element1 &&
+        return FloatComparisons.eq(element1, typedOther.element1) &&
                element2 == typedOther.element2 &&
-               element3 == typedOther.element3;
+               FloatComparisons.eq(element3, typedOther.element3);
         // @formatter:on
     }
 

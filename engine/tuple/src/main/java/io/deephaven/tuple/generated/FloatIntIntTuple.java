@@ -85,7 +85,7 @@ public class FloatIntIntTuple implements Comparable<FloatIntIntTuple>, Externali
         }
         final FloatIntIntTuple typedOther = (FloatIntIntTuple) other;
         // @formatter:off
-        return element1 == typedOther.element1 &&
+        return FloatComparisons.eq(element1, typedOther.element1) &&
                element2 == typedOther.element2 &&
                element3 == typedOther.element3;
         // @formatter:on

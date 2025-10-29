@@ -75,7 +75,7 @@ public class DoubleByteTuple implements Comparable<DoubleByteTuple>, Externaliza
         }
         final DoubleByteTuple typedOther = (DoubleByteTuple) other;
         // @formatter:off
-        return element1 == typedOther.element1 &&
+        return DoubleComparisons.eq(element1, typedOther.element1) &&
                element2 == typedOther.element2;
         // @formatter:on
     }

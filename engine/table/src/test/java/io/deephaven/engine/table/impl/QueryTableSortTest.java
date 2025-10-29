@@ -151,7 +151,8 @@ public class QueryTableSortTest extends QueryTableTestBase {
         assertArrayEquals(new int[] {NULL_INT, 2, 3}, ColumnVectors.ofInt(result, "Unsorted").toArray());
         assertArrayEquals(new String[] {"a", "b", "c"},
                 ColumnVectors.ofObject(result, "DataToSort", String.class).toArray());
-        result = newTable(col("Unsorted", 3, NULL_INT, 2), col("DataToSort", "c", "a", "b")).sortDescending("DataToSort");
+        result = newTable(col("Unsorted", 3, NULL_INT, 2), col("DataToSort", "c", "a", "b"))
+                .sortDescending("DataToSort");
         assertArrayEquals(new int[] {3, 2, NULL_INT}, ColumnVectors.ofInt(result, "Unsorted").toArray());
         assertArrayEquals(new String[] {"c", "b", "a"},
                 ColumnVectors.ofObject(result, "DataToSort", String.class).toArray());
@@ -171,7 +172,8 @@ public class QueryTableSortTest extends QueryTableTestBase {
         assertArrayEquals(new char[] {NULL_CHAR, '2', '3'}, ColumnVectors.ofChar(result, "Unsorted").toArray());
         assertArrayEquals(new String[] {"a", "b", "c"},
                 ColumnVectors.ofObject(result, "DataToSort", String.class).toArray());
-        result = newTable(col("Unsorted", '3', NULL_CHAR, '2'), col("DataToSort", "c", "a", "b")).sortDescending("Unsorted");
+        result = newTable(col("Unsorted", '3', NULL_CHAR, '2'), col("DataToSort", "c", "a", "b"))
+                .sortDescending("Unsorted");
         assertArrayEquals(new char[] {'3', '2', NULL_CHAR}, ColumnVectors.ofChar(result, "Unsorted").toArray());
         assertArrayEquals(new String[] {"c", "b", "a"},
                 ColumnVectors.ofObject(result, "DataToSort", String.class).toArray());
