@@ -67,7 +67,7 @@ Create your main script file that will serve as the entry point for your command
 
 This file contains the main application logic:
 
-```python
+```python syntax
 from deephaven import new_table
 from deephaven.column import string_col, int_col
 import argparse
@@ -117,7 +117,7 @@ if __name__ == "__main__":
 
 This file enables running the package as `python -m my_dh_tool`:
 
-```python
+```python syntax
 if __name__ == "__main__":
     from my_dh_tool.cli import app
 
@@ -282,7 +282,7 @@ my-dh-report = "my_dh_tool.reporter:generate_report"
 
 For more sophisticated CLIs, consider using [typer](https://typer.tiangolo.com/) or [click](https://click.palletsprojects.com/):
 
-```python
+```python syntax
 import typer
 from typing_extensions import Annotated
 
@@ -320,7 +320,7 @@ dependencies = [
 
 For more complex tools, consider using configuration files:
 
-```python
+```python syntax
 import configparser
 import os
 
