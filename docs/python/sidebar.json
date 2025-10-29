@@ -1041,6 +1041,10 @@
                     "path": "how-to-guides/install-and-use-python-packages.md"
                   },
                   {
+                    "label": "Setuptools deployment",
+                    "path": "how-to-guides/sysadmin/setuptools-deployment.md"
+                  },
+                  {
                     "label": "Install and use Java packages",
                     "path": "how-to-guides/install-and-use-java-packages.md"
                   },
