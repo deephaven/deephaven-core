@@ -6,7 +6,7 @@ sidebar_label: Docker
 
 This guide shows you how to set up a remote debugging server in PyCharm Professional to debug Deephaven code running in a Docker container.
 
-When Deephaven runs in Docker, the engine and user code execute inside a [Docker container](https://www.docker.com/resources/what-container/#:~:text=A%20Docker%20container%20image%20is,tools%2C%20system%20libraries%20and%20settings.). Debugging requires a remote debugging server, like the one available in [PyCharm Professional](https://www.jetbrains.com/pycharm/).
+When Deephaven runs in Docker, the engine and user code execute inside a [Docker container](https://www.docker.com/resources/what-container/). Debugging requires a remote debugging server, like the one available in [PyCharm Professional](https://www.jetbrains.com/pycharm/).
 
 > [!WARNING]
 > Debugging Deephaven with PyCharm has only been shown to work for PyCharm major version **2024** or higher. Some issues have been discovered with using PyCharm 2023, and there is no plan to fix these issues.
