@@ -51,8 +51,7 @@ import org.junit.rules.TemporaryFolder;
 
 import static io.deephaven.engine.util.TableTools.*;
 import static io.deephaven.engine.testutil.TstUtils.*;
-import static io.deephaven.util.QueryConstants.NULL_CHAR;
-import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
+import static io.deephaven.util.QueryConstants.*;
 import static org.junit.Assert.assertArrayEquals;
 
 @Category(OutOfBandTest.class)
@@ -60,40 +59,85 @@ public class QueryTableSortTest extends QueryTableTestBase {
 
     private static final float DELTA = 0.000001f;
 
-    public void testSort() {
-        final Table result0 = newTable(col("Unsorted", 3.0, null, 2.0), col("DataToSort", "c", "a", "b"));
-        show(result0.sort("Unsorted"));
-        Table table2 = result0.sort("Unsorted");
-        assertArrayEquals(new double[] {NULL_DOUBLE, 2.0, 3.0}, ColumnVectors.ofDouble(table2, "Unsorted").toArray(),
+    public void testSortStatic() {
+        Table source;
+        Table result;
+
+        // Single column sort
+
+        // Double sort with nulls
+        source = newTable(col("Unsorted", 3.0, null, 2.0), col("DataToSort", "c", "a", "b"));
+        show(source.sort("Unsorted"));
+        result = source.sort("Unsorted");
+        assertArrayEquals(new double[] {NULL_DOUBLE, 2.0, 3.0}, ColumnVectors.ofDouble(result, "Unsorted").toArray(),
                 DELTA);
-        show(result0.sortDescending("Unsorted"));
-        Table table1 = result0.sortDescending("Unsorted");
-        assertArrayEquals(new double[] {3.0, 2.0, NULL_DOUBLE}, ColumnVectors.ofDouble(table1, "Unsorted").toArray(),
+        show(result.sortDescending("Unsorted"));
+        result = result.sortDescending("Unsorted");
+        assertArrayEquals(new double[] {3.0, 2.0, NULL_DOUBLE}, ColumnVectors.ofDouble(result, "Unsorted").toArray(),
                 DELTA);
 
-        Table result1 = newTable(col("Unsorted", 4.0, 3.0, 1.1, Double.NaN, 2.0, 1.0, 5.0),
+        // Double sort with NaNs
+        source = newTable(col("Unsorted", 4.0, 3.0, 1.1, Double.NaN, 2.0, 1.0, 5.0),
                 col("DataToSort", "e", "d", "b", "g", "c", "a", "f"));
-        final Table nanSorted = result1.sort("Unsorted");
-        show(nanSorted);
+        result = source.sort("Unsorted");
+        show(result);
         assertArrayEquals(new double[] {1.0, 1.1, 2.0, 3.0, 4.0, 5.0, Double.NaN},
-                ColumnVectors.ofDouble(nanSorted, "Unsorted").toArray(), DELTA);
+                ColumnVectors.ofDouble(result, "Unsorted").toArray(), DELTA);
         assertArrayEquals(new String[] {"a", "b", "c", "d", "e", "f", "g"},
-                ColumnVectors.ofObject(nanSorted, "DataToSort", String.class).toArray());
+                ColumnVectors.ofObject(result, "DataToSort", String.class).toArray());
 
-        result1 = newTable(col("Unsorted", 4.1f, 3.1f, 1.2f, Float.NaN, 2.1f, 1.1f, 5.1f),
+        // Double sort with NaNs and nulls
+        source = newTable(col("Unsorted", 4.0, 3.0, 1.1, Double.NaN, 2.0, NULL_DOUBLE, 5.0),
                 col("DataToSort", "e", "d", "b", "g", "c", "a", "f"));
-        final Table nanFloatSorted = result1.sort("Unsorted");
-        System.out.println("result1");
-        show(result1);
-        System.out.println("nanFloatedSorted");
-        show(nanFloatSorted);
-        assertArrayEquals(new float[] {1.1f, 1.2f, 2.1f, 3.1f, 4.1f, 5.1f, Float.NaN},
-                ColumnVectors.ofFloat(nanFloatSorted, "Unsorted").toArray(), DELTA);
+        result = source.sort("Unsorted");
+        show(result);
+        assertArrayEquals(new double[] {NULL_DOUBLE, 1.1, 2.0, 3.0, 4.0, 5.0, Double.NaN},
+                ColumnVectors.ofDouble(result, "Unsorted").toArray(), DELTA);
         assertArrayEquals(new String[] {"a", "b", "c", "d", "e", "f", "g"},
-                ColumnVectors.ofObject(nanFloatSorted, "DataToSort", String.class).toArray());
+                ColumnVectors.ofObject(result, "DataToSort", String.class).toArray());
 
+        // Float sort with NaNs
+        source = newTable(col("Unsorted", 4.1f, 3.1f, 1.2f, Float.NaN, 2.1f, 1.1f, 5.1f),
+                col("DataToSort", "e", "d", "b", "g", "c", "a", "f"));
+        result = source.sort("Unsorted");
+        System.out.println("source");
+        show(source);
+        System.out.println("result");
+        show(result);
+        assertArrayEquals(new float[] {1.1f, 1.2f, 2.1f, 3.1f, 4.1f, 5.1f, Float.NaN},
+                ColumnVectors.ofFloat(result, "Unsorted").toArray(), DELTA);
+        assertArrayEquals(new String[] {"a", "b", "c", "d", "e", "f", "g"},
+                ColumnVectors.ofObject(result, "DataToSort", String.class).toArray());
 
-        Table result = newTable(col("Unsorted", 3, 1, 2), col("DataToSort", "c", "a", "b")).sort("DataToSort");
+        // Float sort with nulls
+        source = newTable(col("Unsorted", 3.0f, null, 2.0f), col("DataToSort", "c", "a", "b"));
+        show(source.sort("Unsorted"));
+        result = source.sort("Unsorted");
+        assertArrayEquals(new float[] {NULL_FLOAT, 2.0f, 3.0f}, ColumnVectors.ofFloat(result, "Unsorted").toArray(),
+                DELTA);
+        show(result.sortDescending("Unsorted"));
+        result = result.sortDescending("Unsorted");
+        assertArrayEquals(new float[] {3.0f, 2.0f, NULL_FLOAT}, ColumnVectors.ofFloat(result, "Unsorted").toArray(),
+                DELTA);
+
+        // Float sort with NaNs and nulls
+        source = newTable(col("Unsorted", 4.0f, 3.0f, 1.1f, Float.NaN, 2.0f, NULL_FLOAT, 5.0f),
+                col("DataToSort", "e", "d", "b", "g", "c", "a", "f"));
+        result = source.sort("Unsorted");
+        show(result);
+        assertArrayEquals(new float[] {NULL_FLOAT, 1.1f, 2.0f, 3.0f, 4.0f, 5.0f, Float.NaN},
+                ColumnVectors.ofFloat(result, "Unsorted").toArray(), DELTA);
+        assertArrayEquals(new String[] {"a", "b", "c", "d", "e", "f", "g"},
+                ColumnVectors.ofObject(result, "DataToSort", String.class).toArray());
+        result = result.sortDescending("Unsorted");
+        show(result);
+        assertArrayEquals(new float[] {Float.NaN, 5.0f, 4.0f, 3.0f, 2.0f, 1.1f, NULL_FLOAT},
+                ColumnVectors.ofFloat(result, "Unsorted").toArray(), DELTA);
+        assertArrayEquals(new String[] {"g", "f", "e", "d", "c", "b", "a"},
+                ColumnVectors.ofObject(result, "DataToSort", String.class).toArray());
+
+        // Int sort
+        result = newTable(col("Unsorted", 3, 1, 2), col("DataToSort", "c", "a", "b")).sort("DataToSort");
         assertArrayEquals(new int[] {1, 2, 3}, ColumnVectors.ofInt(result, "Unsorted").toArray());
         assertArrayEquals(new String[] {"a", "b", "c"},
                 ColumnVectors.ofObject(result, "DataToSort", String.class).toArray());
@@ -102,6 +146,17 @@ public class QueryTableSortTest extends QueryTableTestBase {
         assertArrayEquals(new String[] {"c", "b", "a"},
                 ColumnVectors.ofObject(result, "DataToSort", String.class).toArray());
 
+        // Int sort with nulls
+        result = newTable(col("Unsorted", 3, NULL_INT, 2), col("DataToSort", "c", "a", "b")).sort("DataToSort");
+        assertArrayEquals(new int[] {NULL_INT, 2, 3}, ColumnVectors.ofInt(result, "Unsorted").toArray());
+        assertArrayEquals(new String[] {"a", "b", "c"},
+                ColumnVectors.ofObject(result, "DataToSort", String.class).toArray());
+        result = newTable(col("Unsorted", 3, NULL_INT, 2), col("DataToSort", "c", "a", "b")).sortDescending("DataToSort");
+        assertArrayEquals(new int[] {3, 2, NULL_INT}, ColumnVectors.ofInt(result, "Unsorted").toArray());
+        assertArrayEquals(new String[] {"c", "b", "a"},
+                ColumnVectors.ofObject(result, "DataToSort", String.class).toArray());
+
+        // Char sort
         result = newTable(col("Unsorted", '3', '1', '2'), col("DataToSort", "c", "a", "b")).sort("Unsorted");
         assertArrayEquals(new char[] {'1', '2', '3'}, ColumnVectors.ofChar(result, "Unsorted").toArray());
         assertArrayEquals(new String[] {"a", "b", "c"},
@@ -111,34 +166,46 @@ public class QueryTableSortTest extends QueryTableTestBase {
         assertArrayEquals(new String[] {"c", "b", "a"},
                 ColumnVectors.ofObject(result, "DataToSort", String.class).toArray());
 
-        final ColumnHolder<?> c1 = TstUtils.colIndexed("Unsorted", 3, 1, 2);
-        final Table table = newTable(c1, col("DataToSort", "c", "a", "b"));
-        result = table.sort("DataToSort");
+        // Char sort with nulls
+        result = newTable(col("Unsorted", '3', NULL_CHAR, '2'), col("DataToSort", "c", "a", "b")).sort("Unsorted");
+        assertArrayEquals(new char[] {NULL_CHAR, '2', '3'}, ColumnVectors.ofChar(result, "Unsorted").toArray());
+        assertArrayEquals(new String[] {"a", "b", "c"},
+                ColumnVectors.ofObject(result, "DataToSort", String.class).toArray());
+        result = newTable(col("Unsorted", '3', NULL_CHAR, '2'), col("DataToSort", "c", "a", "b")).sortDescending("Unsorted");
+        assertArrayEquals(new char[] {'3', '2', NULL_CHAR}, ColumnVectors.ofChar(result, "Unsorted").toArray());
+        assertArrayEquals(new String[] {"c", "b", "a"},
+                ColumnVectors.ofObject(result, "DataToSort", String.class).toArray());
+
+        // Indexed string sorts
+        final ColumnHolder<?> c1 = colIndexed("Unsorted", 3, 1, 2);
+        source = newTable(c1, col("DataToSort", "c", "a", "b"));
+        result = source.sort("DataToSort");
         assertArrayEquals(new int[] {1, 2, 3}, ColumnVectors.ofInt(result, "Unsorted").toArray());
         assertArrayEquals(new String[] {"a", "b", "c"},
                 ColumnVectors.ofObject(result, "DataToSort", String.class).toArray());
-        final ColumnHolder<?> c11 = TstUtils.colIndexed("Unsorted", 3, 1, 2);
+        final ColumnHolder<?> c11 = colIndexed("Unsorted", 3, 1, 2);
         result = newTable(c11, col("DataToSort", "c", "a", "b")).sortDescending("DataToSort");
         assertArrayEquals(new int[] {3, 2, 1}, ColumnVectors.ofInt(result, "Unsorted").toArray());
         assertArrayEquals(new String[] {"c", "b", "a"},
                 ColumnVectors.ofObject(result, "DataToSort", String.class).toArray());
 
-        final ColumnHolder<?> c2 = TstUtils.colIndexed("Unsorted", '3', '1', '2');
+        // Indexed char sorts
+        final ColumnHolder<?> c2 = colIndexed("Unsorted", '3', '1', '2');
         result = newTable(c2, col("DataToSort", "c", "a", "b")).sort("Unsorted");
         assertArrayEquals(new char[] {'1', '2', '3'}, ColumnVectors.ofChar(result, "Unsorted").toArray());
         assertArrayEquals(new String[] {"a", "b", "c"},
                 ColumnVectors.ofObject(result, "DataToSort", String.class).toArray());
-        final ColumnHolder<?> c22 = TstUtils.colIndexed("Unsorted", '3', '1', '2');
+        final ColumnHolder<?> c22 = colIndexed("Unsorted", '3', '1', '2');
         result = newTable(c22, col("DataToSort", "c", "a", "b")).sortDescending("Unsorted");
         assertArrayEquals(new char[] {'3', '2', '1'}, ColumnVectors.ofChar(result, "Unsorted").toArray());
         assertArrayEquals(new String[] {"c", "b", "a"},
                 ColumnVectors.ofObject(result, "DataToSort", String.class).toArray());
 
-        final Table input =
-                newTable(col("C1", 2, 4, 2, 4), col("C2", '1', '1', '2', '2'), col("Witness", "a", "b", "c", "d"));
+        // Multicolumn sort, int then char
+        source = newTable(col("C1", 2, 4, 2, 4), col("C2", '1', '1', '2', '2'), col("Witness", "a", "b", "c", "d"));
         System.out.println("Input:");
-        showWithRowSet(input);
-        result = input.sort("C1", "C2");
+        showWithRowSet(source);
+        result = source.sort("C1", "C2");
         System.out.println("Result:");
         showWithRowSet(result);
         assertArrayEquals(new int[] {2, 2, 4, 4}, ColumnVectors.ofInt(result, "C1").toArray());
@@ -146,6 +213,7 @@ public class QueryTableSortTest extends QueryTableTestBase {
         assertArrayEquals(new String[] {"a", "c", "b", "d"},
                 ColumnVectors.ofObject(result, "Witness", String.class).toArray());
 
+        // Multicolumn sort, char then int
         result = newTable(col("C1", 2, 4, 2, 4), col("C2", '2', '2', '1', '1'), col("Witness", "a", "b", "c", "d"))
                 .sort("C2",
                         "C1");
@@ -154,6 +222,7 @@ public class QueryTableSortTest extends QueryTableTestBase {
         assertArrayEquals(new String[] {"c", "d", "a", "b"},
                 ColumnVectors.ofObject(result, "Witness", String.class).toArray());
 
+        // Multicolumn descending sort, int then char
         result = newTable(col("C1", 2, 4, 2, 4), col("C2", '1', '1', '2', '2'), col("Witness", "a", "b", "c", "d"))
                 .sortDescending("C1", "C2");
         assertArrayEquals(new int[] {4, 4, 2, 2}, ColumnVectors.ofInt(result, "C1").toArray());
@@ -161,6 +230,7 @@ public class QueryTableSortTest extends QueryTableTestBase {
         assertArrayEquals(new String[] {"d", "b", "c", "a"},
                 ColumnVectors.ofObject(result, "Witness", String.class).toArray());
 
+        // Multicolumn descending sort, char then int
         result = newTable(col("C1", 2, 4, 2, 4), col("C2", '2', '2', '1', '1'), col("Witness", "a", "b", "c", "d"))
                 .sortDescending("C2", "C1");
         assertArrayEquals(new int[] {4, 2, 4, 2}, ColumnVectors.ofInt(result, "C1").toArray());
@@ -168,21 +238,21 @@ public class QueryTableSortTest extends QueryTableTestBase {
         assertArrayEquals(new String[] {"b", "a", "d", "c"},
                 ColumnVectors.ofObject(result, "Witness", String.class).toArray());
 
-
-        final ColumnHolder<?> c3 = TstUtils.colIndexed("Unsorted", '3', '1', '2', null);
+        // Indexed char sorts with nulls
+        final ColumnHolder<?> c3 = colIndexed("Unsorted", '3', '1', '2', null);
         result = newTable(c3, col("DataToSort", "c", "a", "b", "d")).sort("Unsorted");
         show(result);
         assertArrayEquals(new char[] {NULL_CHAR, '1', '2', '3'}, ColumnVectors.ofChar(result, "Unsorted").toArray());
         assertArrayEquals(new String[] {"d", "a", "b", "c"},
                 ColumnVectors.ofObject(result, "DataToSort", String.class).toArray());
-        final ColumnHolder<?> c4 = TstUtils.colIndexed("Unsorted", '3', '1', null, '2');
+        final ColumnHolder<?> c4 = colIndexed("Unsorted", '3', '1', null, '2');
         result = newTable(c4, col("DataToSort", "c", "a", "d", "b")).sortDescending("Unsorted");
         assertArrayEquals(new char[] {'3', '2', '1', NULL_CHAR}, ColumnVectors.ofChar(result, "Unsorted").toArray());
         assertArrayEquals(new String[] {"c", "b", "a", "d"},
                 ColumnVectors.ofObject(result, "DataToSort", String.class).toArray());
     }
 
-    public void testSort2() {
+    public void testSortRefreshing() {
         final QueryTable table = testRefreshingTable(i(10, 20, 30).toTracking(),
                 col("A", 3, 1, 2), col("B", "c", "a", "b"));
 
