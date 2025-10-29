@@ -5,7 +5,7 @@ sidebar_label: How do I extract a list of distinct dates from a table?
 
 _I have a table with a date column that contains many repeated dates. How can I get a list of the unique dates?_
 
-Use [`selectDistinct`](../table-operations/filter/select-distinct.md) to get the unique dates:
+Use [`selectDistinct`](../table-operations/select/select-distinct.md) to get the unique dates:
 
 ```groovy test-set=dates order=source,distinctDates
 import static io.deephaven.time.DateTimeUtils.parseInstant

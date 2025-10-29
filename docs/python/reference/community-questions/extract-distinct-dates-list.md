@@ -5,7 +5,7 @@ sidebar_label: How do I extract a list of distinct dates from a table?
 
 _I have a table with a date column that contains many repeated dates. How can I get a list of the unique dates?_
 
-Use [`select_distinct`](../table-operations/filter/select-distinct.md) to get the unique dates, then convert the result to a Python list, NumPy array, or Pandas DataFrame:
+Use [`select_distinct`](../table-operations/select/select-distinct.md) to get the unique dates, then convert the result to a Python list, NumPy array, or Pandas DataFrame:
 
 ```python test-set=dates order=source,distinct_dates
 from deephaven import empty_table

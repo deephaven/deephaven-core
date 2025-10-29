@@ -19,14 +19,14 @@ t = emptyTable(10).update(
 )
 
 // Filter for times between 2:00 PM and 4:00 PM ET
-result = t.where("hourOfDay(Timestamp, timeZone(`ET`), false) >= 14 && hourOfDay(Timestamp, timeZone(`ET`), false) < 16")
+result = t.where("hourOfDay(Timestamp, et, false) >= 14 && hourOfDay(Timestamp, et, false) < 16")
 ```
 
 This approach works by:
 
-1. Using [`hourOfDay(Timestamp, timeZone(`ET`), false)`](https://docs.deephaven.io/core/javadoc/io/deephaven/time/DateTimeUtils.html#hourOfDay(java.time.Instant,java.time.ZoneId,boolean)) to extract the hour (0-23) from the timestamp in ET timezone.
+1. Using [`hourOfDay(Timestamp, et, false)`](https://docs.deephaven.io/core/javadoc/io/deephaven/time/DateTimeUtils.html#hourOfDay(java.time.Instant,java.time.ZoneId,boolean)) to extract the hour (0-23) from the timestamp in ET timezone.
 2. Filtering for hours between 14 (2:00 PM) and 15 (3:00 PM, up to but not including 4:00 PM).
-3. The condition `>= 14 && < 16` ensures times from 2:00:00 PM through 3:59:59 PM are included.
+3. The condition checks that the hour is greater than or equal to 14 and less than 16, ensuring times from 2:00:00 PM through 3:59:59 PM are included.
 
 ## Filtering with minutes
 
@@ -41,17 +41,17 @@ t2 = emptyTable(10).update(
 
 // Filter for times between 2:30 PM and 4:15 PM ET
 result2 = t2.where(
-    "(hourOfDay(Timestamp, timeZone(`ET`), false) == 14 && minuteOfHour(Timestamp, timeZone(`ET`)) >= 30) || " +
-    "(hourOfDay(Timestamp, timeZone(`ET`), false) == 15) || " +
-    "(hourOfDay(Timestamp, timeZone(`ET`), false) == 16 && minuteOfHour(Timestamp, timeZone(`ET`)) <= 15)"
+    "(hourOfDay(Timestamp, et, false) == 14 && minuteOfHour(Timestamp, et) >= 30) || " +
+    "(hourOfDay(Timestamp, et, false) == 15) || " +
+    "(hourOfDay(Timestamp, et, false) == 16 && minuteOfHour(Timestamp, et) <= 15)"
 )
 ```
 
 This filter includes:
 
-- Hour 14 (2:00 PM) with minutes >= 30
+- Hour 14 (2:00 PM) with minutes greater than or equal to 30
 - All of hour 15 (3:00 PM)
-- Hour 16 (4:00 PM) with minutes <= 15
+- Hour 16 (4:00 PM) with minutes less than or equal to 15
 
 > [!NOTE]
 > These FAQ pages contain answers to questions about Deephaven Community Core that our users have asked in our [Community Slack](/slack). If you have a question that is not in our documentation, [join our Community](/slack) and we'll be happy to help!
