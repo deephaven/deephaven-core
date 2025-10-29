@@ -7,6 +7,8 @@ import io.deephaven.chunk.attributes.Any;
 import junit.framework.TestCase;
 import org.junit.Test;
 
+import java.math.BigInteger;
+import java.math.BigDecimal;
 import java.util.*;
 
 import static io.deephaven.util.QueryConstants.*;
@@ -15,7 +17,7 @@ import static io.deephaven.util.QueryConstants.*;
  * Verify expectations about chunk sorting for NULL / NaN and regular values. Performs exhaustive testing of all
  * permutations of an expected data set for each primitive type.
  */
-public class TestChunkSorting {
+public class TestChunkSort {
 
     // region PermutationIterator
     public static class PermutationIterator<E extends Comparable<E>> implements Iterator<List<E>> {
@@ -23,11 +25,12 @@ public class TestChunkSorting {
         private final List<E> currentPermutation;
         private boolean firstPermutation = true;
         private boolean hasNextPermutation;
+        private final Comparator<E> comparator = Comparator.nullsFirst(Comparator.naturalOrder());
 
         public PermutationIterator(List<E> initialList) {
             // Sort the initial list to start with the lexicographically smallest permutation
             this.currentPermutation = new java.util.ArrayList<>(initialList);
-            Collections.sort(this.currentPermutation);
+            Collections.sort(this.currentPermutation, comparator);
             this.hasNextPermutation = true; // Assume there's at least one permutation
         }
 
@@ -50,7 +53,7 @@ public class TestChunkSorting {
             // Find the next permutation
             int k = -1;
             for (int i = currentPermutation.size() - 2; i >= 0; i--) {
-                if (currentPermutation.get(i).compareTo(currentPermutation.get(i + 1)) < 0) {
+                if (Objects.compare(currentPermutation.get(i), currentPermutation.get(i + 1), comparator) < 0) {
                     k = i;
                     break;
                 }
@@ -61,7 +64,7 @@ public class TestChunkSorting {
             } else {
                 int l = -1;
                 for (int i = currentPermutation.size() - 1; i > k; i--) {
-                    if (currentPermutation.get(k).compareTo(currentPermutation.get(i)) < 0) {
+                    if (Objects.compare(currentPermutation.get(k), currentPermutation.get(i), comparator) < 0) {
                         l = i;
                         break;
                     }
@@ -98,16 +101,16 @@ public class TestChunkSorting {
     // endregion PermutationIterator
 
     @Test
-    public void testChar() {
+    public void testCharChunkSort() {
         final List<Character> expected = new ArrayList<>();
         // this is explicitly the order we expect after sorting
-        expected.add(NULL_CHAR);
+        expected.add(NULL_CHAR); // NOTE: NULL_CHAR == Character.MAX_VALUE
         expected.add(Character.MIN_VALUE);
         expected.add((char) 0);
         expected.add((char) 1);
         expected.add((char) 2);
         expected.add((char) 3);
-        expected.add((char) (Character.MAX_VALUE - 1)); // NOTE: Character.MAX_VALUE == NULL_DOUBLE
+        expected.add((char) (Character.MAX_VALUE - 1));
 
         System.out.println("Exploring " + PermutationIterator.permutationCount(expected.size()) + " permutations");
         final PermutationIterator<Character> iterator = new PermutationIterator<>(expected);
@@ -129,15 +132,15 @@ public class TestChunkSorting {
     }
 
     @Test
-    public void testByte() {
+    public void testByteChunkSort() {
         final List<Byte> expected = new ArrayList<>();
         // this is explicitly the order we expect after sorting
-        expected.add(NULL_BYTE);
-        expected.add((byte) (Byte.MIN_VALUE + 1)); // NOTE: Byte.MIN_VALUE == NULL_BYTE
+        expected.add(NULL_BYTE); // NOTE: NULL_BYTE == Byte.MIN_VALUE
+        expected.add((byte) (Byte.MIN_VALUE + 1));
         expected.add((byte) -2);
         expected.add((byte) 0);
         expected.add((byte) 1);
-        expected.add((byte) (Byte.MAX_VALUE - 1)); // NOTE: Byte.MIN_VALUE == NULL_BYTE
+        expected.add((byte) (Byte.MAX_VALUE - 1));
         expected.add(Byte.MAX_VALUE);
 
         System.out.println("Exploring " + PermutationIterator.permutationCount(expected.size()) + " permutations");
@@ -160,11 +163,11 @@ public class TestChunkSorting {
     }
 
     @Test
-    public void testShort() {
+    public void testShortChunkSort() {
         final List<Short> expected = new ArrayList<>();
         // this is explicitly the order we expect after sorting
-        expected.add(NULL_SHORT);
-        expected.add((short) (Short.MIN_VALUE + 1)); // NOTE: Short.MIN_VALUE == NULL_SHORT
+        expected.add(NULL_SHORT); // NOTE: NULL_SHORT == Short.MIN_VALUE
+        expected.add((short) (Short.MIN_VALUE + 1));
         expected.add((short) -2);
         expected.add((short) 0);
         expected.add((short) 1);
@@ -191,11 +194,11 @@ public class TestChunkSorting {
     }
 
     @Test
-    public void testInt() {
+    public void testIntChunkSort() {
         final List<Integer> expected = new ArrayList<>();
         // this is explicitly the order we expect after sorting
-        expected.add(NULL_INT);
-        expected.add(Integer.MIN_VALUE + 1); // NOTE: Integer.MIN_VALUE == NULL_INT
+        expected.add(NULL_INT); // NOTE: NULL_INT == Integer.MIN_VALUE
+        expected.add(Integer.MIN_VALUE + 1);
         expected.add(-2);
         expected.add(0);
         expected.add(1);
@@ -222,11 +225,11 @@ public class TestChunkSorting {
     }
 
     @Test
-    public void testLong() {
+    public void testLongChunkSort() {
         final List<Long> expected = new ArrayList<>();
         // this is explicitly the order we expect after sorting
-        expected.add(NULL_LONG);
-        expected.add(Long.MIN_VALUE + 1); // NOTE: Long.MIN_VALUE == NULL_LONG
+        expected.add(NULL_LONG); // NOTE: NULL_LONG == Long.MIN_VALUE
+        expected.add(Long.MIN_VALUE + 1);
         expected.add(-2L);
         expected.add(0L);
         expected.add(1L);
@@ -253,16 +256,16 @@ public class TestChunkSorting {
     }
 
     @Test
-    public void testFloat() {
+    public void testFloatChunkSort() {
         final List<Float> expected = new ArrayList<>();
         // this is explicitly the order we expect after sorting
-        expected.add(NULL_FLOAT);
+        expected.add(NULL_FLOAT); // NOTE: NULL_FLOAT == -Float.MAX_VALUE
         expected.add(Float.NEGATIVE_INFINITY);
-        expected.add(Math.nextUp(-Float.MAX_VALUE)); // NOTE: -Float.MAX_VALUE == NULL_FLOAT
-        expected.add(-2.0f);
+        expected.add(MIN_FINITE_FLOAT);
+        expected.add(-Float.MIN_NORMAL);
         expected.add(-0.0f);
         expected.add(+0.0f);
-        expected.add(1.0f);
+        expected.add(Float.MIN_NORMAL);
         expected.add(Float.MAX_VALUE);
         expected.add(Float.POSITIVE_INFINITY);
         expected.add(Float.NaN);
@@ -289,16 +292,16 @@ public class TestChunkSorting {
     }
 
     @Test
-    public void testDouble() {
+    public void testDoubleChunkSort() {
         final List<Double> expected = new ArrayList<>();
         // this is explicitly the order we expect after sorting
-        expected.add(NULL_DOUBLE);
+        expected.add(NULL_DOUBLE); // NOTE: NULL_DOUBLE == -Double.MAX_VALUE
         expected.add(Double.NEGATIVE_INFINITY);
-        expected.add(Math.nextUp(-Double.MAX_VALUE)); // NOTE: -Double.MAX_VALUE == NULL_DOUBLE
-        expected.add(-2.0);
+        expected.add(MIN_FINITE_DOUBLE);
+        expected.add(-Double.MIN_NORMAL);
         expected.add(-0.0);
         expected.add(+0.0);
-        expected.add(1.0);
+        expected.add(Double.MIN_NORMAL);
         expected.add(Double.MAX_VALUE);
         expected.add(Double.POSITIVE_INFINITY);
         expected.add(Double.NaN);
@@ -321,6 +324,101 @@ public class TestChunkSorting {
                                 "Expected " + expected.get(i) + " but got " + chunk.get(i) + " at index " + i,
                                 (double) expected.get(i), chunk.get(i));
                     }
+                }
+            }
+        }
+    }
+
+    @Test
+    public void testStringChunkSort() {
+        final List<String> expected = new ArrayList<>();
+        // this is explicitly the order we expect after sorting
+        expected.add(null);
+        expected.add("A");
+        expected.add("AAAA");
+        expected.add("BBBB");
+        expected.add("a");
+        expected.add("aaaa");
+        expected.add("bbbb");
+
+        System.out.println("Exploring " + PermutationIterator.permutationCount(expected.size()) + " permutations");
+        final PermutationIterator<String> iterator = new PermutationIterator<>(expected);
+
+        while (iterator.hasNext()) {
+            final List<String> permutation = iterator.next();
+            try (final WritableObjectChunk<String, ? extends Any> chunk = WritableObjectChunk.makeWritableChunk(permutation.size())) {
+                chunk.setSize(0);
+                permutation.forEach(chunk::add);
+                chunk.sort();
+                TestCase.assertEquals(expected.size(), chunk.size());
+                for (int i = 0; i < expected.size(); i++) {
+                    TestCase.assertEquals(
+                            "Expected " + expected.get(i) + " but got " + chunk.get(i) + " at index " + i,
+                            expected.get(i), chunk.get(i));
+                }
+            }
+        }
+    }
+
+    @Test
+    public void testBigIntegerChunkSort() {
+        final List<BigInteger> expected = new ArrayList<>();
+        // this is explicitly the order we expect after sorting
+        expected.add(null);
+        expected.add(BigInteger.valueOf(Long.MIN_VALUE).subtract(BigInteger.ONE));
+        expected.add(BigInteger.valueOf(Long.MIN_VALUE));
+        expected.add(BigInteger.valueOf(-1));
+        expected.add(BigInteger.valueOf(0));
+        expected.add(BigInteger.valueOf(1));
+        expected.add(BigInteger.valueOf(Long.MAX_VALUE));
+        expected.add(BigInteger.valueOf(Long.MAX_VALUE).add(BigInteger.ONE));
+
+        System.out.println("Exploring " + PermutationIterator.permutationCount(expected.size()) + " permutations");
+        final PermutationIterator<BigInteger> iterator = new PermutationIterator<>(expected);
+
+        while (iterator.hasNext()) {
+            final List<BigInteger> permutation = iterator.next();
+            try (final WritableObjectChunk<BigInteger, ? extends Any> chunk = WritableObjectChunk.makeWritableChunk(permutation.size())) {
+                chunk.setSize(0);
+                permutation.forEach(chunk::add);
+                chunk.sort();
+                TestCase.assertEquals(expected.size(), chunk.size());
+                for (int i = 0; i < expected.size(); i++) {
+                    TestCase.assertEquals(
+                            "Expected " + expected.get(i) + " but got " + chunk.get(i) + " at index " + i,
+                            expected.get(i), chunk.get(i));
+                }
+            }
+        }
+    }
+
+    @Test
+    public void testBigDecimalChunkSort() {
+        final List<java.math.BigDecimal> expected = new ArrayList<>();
+        // this is explicitly the order we expect after sorting
+        expected.add(null);
+        expected.add(new BigDecimal("-1E+1000"));
+        expected.add(new BigDecimal("-1E+10"));
+        expected.add(new BigDecimal("-1"));
+        expected.add(new BigDecimal("0"));
+        expected.add(new BigDecimal("1"));
+        expected.add(new BigDecimal("1E+10"));
+        expected.add(new BigDecimal("1E+1000"));
+
+        System.out.println("Exploring " + PermutationIterator.permutationCount(expected.size()) + " permutations");
+        final PermutationIterator<java.math.BigDecimal> iterator = new PermutationIterator<>(expected);
+
+        while (iterator.hasNext()) {
+            final List<java.math.BigDecimal> permutation = iterator.next();
+            try (final WritableObjectChunk<java.math.BigDecimal, ? extends Any> chunk = WritableObjectChunk.makeWritableChunk(permutation.size())) {
+                chunk.setSize(0);
+                permutation.forEach(chunk::add);
+                chunk.sort();
+                TestCase.assertEquals(expected.size(), chunk.size());
+                for (int i = 0; i < expected.size(); i++) {
+                    TestCase.assertEquals(
+                            "Expected " + expected.get(i) + " but got " + chunk.get(i) + " at index " + i,
+                            expected.get(i), chunk.get(i));
                 }
             }
         }
