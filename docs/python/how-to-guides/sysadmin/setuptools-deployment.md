@@ -113,7 +113,7 @@ if __name__ == "__main__":
     app()
 ```
 
-### __main__.py
+### **main**.py
 
 This file enables running the package as `python -m my_dh_tool`:
 
