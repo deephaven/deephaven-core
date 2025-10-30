@@ -67,7 +67,11 @@ def consume(
         j_kafka_config = j_properties(kafka_config)
         return Table(
             j_table=_JCdcTools.consumeToTable(
-                j_kafka_config, cdc_spec.j_object, partitions, stream_table, cols_to_drop
+                j_kafka_config,
+                cdc_spec.j_object,
+                partitions,
+                stream_table,
+                cols_to_drop,
             )
         )
     except Exception as e:

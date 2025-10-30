@@ -1119,7 +1119,9 @@ class Table(JObjectWrapper):
         try:
             j_attrs = j_array_list(to_sequence(attrs))
             return Table(
-                j_table=jpy.cast(self.j_table, _JAttributeMap).withoutAttributes(j_attrs)
+                j_table=jpy.cast(self.j_table, _JAttributeMap).withoutAttributes(
+                    j_attrs
+                )
             )
         except Exception as e:
             raise DHError(e, "failed to create a table without attributes.") from e
