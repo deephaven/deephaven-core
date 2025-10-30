@@ -312,8 +312,13 @@
                 "path": "how-to-guides/sort.md"
               },
               {
-                "label": "Keyed transpose",
-                "path": "how-to-guides/keyed-transpose.md"
+                "label": "Transpose",
+                "items": [
+                  {
+                    "label": "Keyed transpose",
+                    "path": "how-to-guides/keyed-transpose.md"
+                  }
+                ]
               },
               {
                 "label": "Merge",
@@ -1787,7 +1792,12 @@
                   {
                     "label": "layout_hints",
                     "path": "reference/table-operations/format/layout-hints.md"
-                  },
+                  }
+                ]
+              },
+              {
+                "label": "Transpose",
+                "items": [
                   {
                     "label": "keyed_transpose",
                     "path": "reference/table-operations/format/keyed-transpose.md"
