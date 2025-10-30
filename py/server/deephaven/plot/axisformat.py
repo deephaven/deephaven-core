@@ -59,7 +59,7 @@ class NanosAxisFormat(AxisFormat):
         """Creates a new NanosAxisFormat with the specified timezone.
 
         Args:
-             tz (TimeZone): the timezone to use for formatting, default is None meaning to use the default time zone.
+             tz (Optional[TimeZone]): the timezone to use for formatting, default is None meaning to use the default time zone.
         """
         if not tz:
             self.j_axis_format = _JNanosAxisFormat()

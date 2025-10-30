@@ -284,7 +284,7 @@ class TableDataService(JObjectWrapper):
             backend (TableDataServiceBackend): the user-implemented backend service implementation
             chunk_reader_factory (Optional[jpy.JType]): the Barrage chunk reader factory, default is None
             stream_reader_options (Optional[jpy.JType]): the Barrage stream reader options, default is None
-            page_size (int): the page size for the table service, default is None, meaning to use the configurable
+            page_size (Optional[int]): the page size for the table service, default is None, meaning to use the configurable
                 jvm property: PythonTableDataService.defaultPageSize which defaults to 64K.
         """
         self._backend = backend

@@ -94,7 +94,7 @@ def to_numpy(table: Table, cols: Optional[list[str]] = None) -> np.ndarray:
 
     Args:
         table (Table): the source table
-        cols (list[str]): the source column names, default is None which means include all columns
+        cols (Optional[list[str]]): the source column names, default is None which means include all columns
 
     Returns:
         a numpy ndarray

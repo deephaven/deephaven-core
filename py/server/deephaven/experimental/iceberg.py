@@ -101,7 +101,7 @@ class IcebergUpdateMode(JObjectWrapper):
         Creates an IcebergUpdateMode with auto-refreshing enabled.
 
         Args:
-            auto_refresh_ms (int): the refresh interval in milliseconds; if omitted, the default of 60 seconds
+            auto_refresh_ms (Optional[int]): the refresh interval in milliseconds; if omitted, the default of 60 seconds
                 is used.
         """
         if auto_refresh_ms is None:

@@ -133,10 +133,10 @@ def learn(
 
     Args:
         table (Table): the Deephaven table to perform computations on.
-        model_func (Callable): function that performs computations on the table.
+        model_func (Optional[Callable]): function that performs computations on the table.
         inputs (list[Input]): list of Input objects that determine how data gets extracted from the table.
         outputs (list[Output]): list of Output objects that determine how data gets scattered back into the results table.
-        batch_size (int): maximum number of rows for which model_func is evaluated at once.
+        batch_size (Optional[int]): maximum number of rows for which model_func is evaluated at once.
 
     Returns:
         a Table with added columns containing the results of evaluating model_func.

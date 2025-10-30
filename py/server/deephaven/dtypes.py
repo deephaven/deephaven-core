@@ -62,8 +62,8 @@ class DType:
         """
         Args:
              j_name (str): the full qualified name of the Java class
-             j_type (Type): the mapped Python class created by JPY
-             qst_type (JType): the JPY wrapped object for a instance of QST Type
+             j_type (Optional[type]): the mapped Python class created by JPY
+             qst_type (Optional[JType]): the JPY wrapped object for a instance of QST Type
              is_primitive (bool): whether this instance represents a primitive Java type
              np_type (Any): an instance of numpy dtype (dtype("int64") or numpy class (e.g. np.int16), default is
                 np.object_
@@ -324,8 +324,8 @@ def array(
 
     Args:
         dtype (DType): the component type of the array
-        seq (Sequence): a sequence of compatible data, e.g. list, tuple, numpy array, Pandas series, etc.
-        remap (optional): a callable that takes one value and maps it to another, for handling the translation of
+        seq (Optional[Sequence]): a sequence of compatible data, e.g. list, tuple, numpy array, Pandas series, etc.
+        remap (Optional[Callable[[Any], Any]]): a callable that takes one value and maps it to another, for handling the translation of
             special DH values such as NULL_INT, NAN_INT between Python and the DH engine
 
     Returns:
@@ -372,7 +372,14 @@ def array(
 
 
 def from_jtype(j_class: Any) -> Optional[DType]:
-    """looks up a DType that matches the java type, if not found, creates a DType for it."""
+    """looks up a DType that matches the java type, if not found, creates a DType for it.
+
+    Args:
+        j_class (Any): the java class
+
+    Returns:
+        an instance of DType or None if j_class is None
+    """
     if not j_class:
         return None
 

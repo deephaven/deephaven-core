@@ -137,7 +137,7 @@ def ema_tick(
         decay_ticks (float): the decay rate in ticks
         cols (Union[str, list[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by performs the operation on all applicable columns.
-        op_control (OperationControl): defines how special cases should behave; when None, the default OperationControl
+        op_control (Optional[OperationControl]): defines how special cases should behave; when None, the default OperationControl
             settings as specified in :meth:`~OperationControl.__init__` will be used
 
     Returns:
@@ -184,7 +184,7 @@ def ema_time(
             interval string, e.g. "PT00:00:00.001" or "PT5M"
         cols (Union[str, list[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by performs the operation on all applicable columns.
-        op_control (OperationControl): defines how special cases should behave; when None, the default OperationControl
+        op_control (Optional[OperationControl]): defines how special cases should behave; when None, the default OperationControl
             settings as specified in :meth:`~OperationControl.__init__` will be used
 
     Returns:
@@ -232,7 +232,7 @@ def ems_tick(
         decay_ticks (float): the decay rate in ticks
         cols (Union[str, list[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by performs the operation on all applicable columns.
-        op_control (OperationControl): defines how special cases should behave; when None, the default OperationControl
+        op_control (Optional[OperationControl]): defines how special cases should behave; when None, the default OperationControl
             settings as specified in :meth:`~OperationControl.__init__` will be used
 
     Returns:
@@ -279,7 +279,7 @@ def ems_time(
             interval string, e.g. "PT00:00:00.001" or "PT5M"
         cols (Union[str, list[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by performs the operation on all columns.
-        op_control (OperationControl): defines how special cases should behave; when None, the default OperationControl
+        op_control (Optional[OperationControl]): defines how special cases should behave; when None, the default OperationControl
             settings as specified in :meth:`~OperationControl.__init__` will be used
 
     Returns:
@@ -327,7 +327,7 @@ def emmin_tick(
         decay_ticks (float): the decay rate in ticks
         cols (Union[str, list[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by performs the operation on all columns.
-        op_control (OperationControl): defines how special cases should behave; when None, the default OperationControl
+        op_control (Optional[OperationControl]): defines how special cases should behave; when None, the default OperationControl
             settings as specified in :meth:`~OperationControl.__init__` will be used
 
     Returns:
@@ -376,7 +376,7 @@ def emmin_time(
             interval string, e.g. "PT00:00:00.001" or "PT5M"
         cols (Union[str, list[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by performs the operation on all columns.
-        op_control (OperationControl): defines how special cases should behave; when None, the default OperationControl
+        op_control (Optional[OperationControl]): defines how special cases should behave; when None, the default OperationControl
             settings as specified in :meth:`~OperationControl.__init__` will be used
 
     Returns:
@@ -426,7 +426,7 @@ def emmax_tick(
         decay_ticks (float): the decay rate in ticks
         cols (Union[str, list[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by performs the operation on all columns.
-        op_control (OperationControl): defines how special cases should behave; when None, the default OperationControl
+        op_control (Optional[OperationControl]): defines how special cases should behave; when None, the default OperationControl
             settings as specified in :meth:`~OperationControl.__init__` will be used
 
     Returns:
@@ -475,7 +475,7 @@ def emmax_time(
             interval string, e.g. "PT00:00:00.001" or "PT5M"
         cols (Union[str, list[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by performs the operation on all columns.
-        op_control (OperationControl): defines how special cases should behave; when None, the default OperationControl
+        op_control (Optional[OperationControl]): defines how special cases should behave; when None, the default OperationControl
             settings as specified in :meth:`~OperationControl.__init__` will be used
 
     Returns:
@@ -525,7 +525,7 @@ def emstd_tick(
         decay_ticks (float): the decay rate in ticks
         cols (Union[str, list[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by performs the ems operation on all columns.
-        op_control (OperationControl): defines how special cases should behave; when None, the default OperationControl
+        op_control (Optional[OperationControl]): defines how special cases should behave; when None, the default OperationControl
             settings as specified in :meth:`~OperationControl.__init__` will be used
 
     Returns:
@@ -575,7 +575,7 @@ def emstd_time(
             interval string, e.g. "PT00:00:00.001" or "PT5M"
         cols (Union[str, list[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by performs the ems operation on all columns.
-        op_control (OperationControl): defines how special cases should behave; when None, the default OperationControl
+        op_control (Optional[OperationControl]): defines how special cases should behave; when None, the default OperationControl
             settings as specified in :meth:`~OperationControl.__init__` will be used
 
     Returns:
@@ -1799,10 +1799,10 @@ def rolling_formula_tick(
 
     Args:
         formula (str): the user defined formula to apply to each group.
-        formula_param (str): If provided, supplies the parameter name for the input column's vector within the formula.
+        formula_param (Optional[str]): If provided, supplies the parameter name for the input column's vector within the formula.
             If formula is `max(each)`, then `each` is the formula_param. Default is None, implying the `formula`
             argument specifies the input and output columns.
-        cols (Union[str, list[str]]): If provided, supplies the column(s) to operate on, can include expressions to
+        cols (Optional[Union[str, list[str]]]): If provided, supplies the column(s) to operate on, can include expressions to
             rename the output, i.e. "new_col = col". If omitted and the `formula_param` is provided, update_by performs
             the rolling formula operation on all columns
         rev_ticks (int): the look-behind window size (in rows/ticks)
@@ -1882,10 +1882,10 @@ def rolling_formula_time(
     Args:
         ts_col (str): the timestamp column for determining the window
         formula (str): the user defined formula to apply to each group.
-        formula_param (str): If provided, supplies the parameter name for the input column's vector within the formula.
+        formula_param (Optional[str]): If provided, supplies the parameter name for the input column's vector within the formula.
             If formula is `max(each)`, then `each` is the formula_param. Default is None, implying the `formula`
             argument specifies the input and output columns.
-        cols (Union[str, list[str]]): If provided, supplies the column(s) to operate on, can include expressions to
+        cols (Optional[Union[str, list[str]]]): If provided, supplies the column(s) to operate on, can include expressions to
             rename the output, i.e. "new_col = col". If omitted and the `formula_param` is provided, update_by performs
             the rolling formula operation on all columns
         rev_time (int): the look-behind window size, can be expressed as an integer in nanoseconds or a time

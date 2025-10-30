@@ -64,10 +64,10 @@ def consume(
     """
     try:
         partitions = j_partitions(partitions)
-        kafka_config = j_properties(kafka_config)
+        j_kafka_config = j_properties(kafka_config)
         return Table(
             j_table=_JCdcTools.consumeToTable(
-                kafka_config, cdc_spec.j_object, partitions, stream_table, cols_to_drop
+                j_kafka_config, cdc_spec.j_object, partitions, stream_table, cols_to_drop
             )
         )
     except Exception as e:
@@ -99,10 +99,10 @@ def consume_raw(
     """
     try:
         partitions = j_partitions(partitions)
-        kafka_config = j_properties(kafka_config)
+        j_kafka_config = j_properties(kafka_config)
         return Table(
             j_table=_JCdcTools.consumeRawToTable(
-                kafka_config, cdc_spec.j_object, partitions, table_type
+                j_kafka_config, cdc_spec.j_object, partitions, table_type
             )
         )
     except Exception as e:

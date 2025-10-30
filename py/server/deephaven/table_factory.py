@@ -325,8 +325,8 @@ class InputTable(Table):
 
         Args:
             table (Table): the table that provides the rows to write
-            on_success (Callable[[], None]): the success callback function, default is None
-            on_error (Callable[[Exception], None]): the error callback function, default is None. When None, a default
+            on_success (Optional[Callable[[], None]]): the success callback function, default is None
+            on_error (Optional[Callable[[Exception], None]]): the error callback function, default is None. When None, a default
                 callback function will be provided that simply prints out the received exception. If the callback
                 function itself raises an exception, the new exception will be logged in the Deephaven server log and
                 will not be further processed by the server.
@@ -370,8 +370,8 @@ class InputTable(Table):
 
         Args:
             table (Table): the table with the keys to delete
-            on_success (Callable[[], None]): the success callback function, default is None
-            on_error (Callable[[Exception], None]): the error callback function, default is None. When None, a default
+            on_success (Optional[Callable[[], None]]): the success callback function, default is None
+            on_error (Optional[Callable[[Exception], None]]): the error callback function, default is None. When None, a default
                 callback function will be provided that simply prints out the received exception. If the callback
                 function itself raises an exception, the new exception will be logged in the Deephaven server log and
                 will not be further processed by the server.
@@ -424,8 +424,8 @@ def input_table(
 
     Args:
         col_defs (Optional[TableDefinitionLike]): the table definition
-        init_table (Table): the initial table
-        key_cols (Union[str, Sequence[str]): the name(s) of the key column(s)
+        init_table (Optional[Table]): the initial table
+        key_cols (Optional[Union[str, Sequence[str]]): the name(s) of the key column(s)
 
     Returns:
         an InputTable
@@ -513,10 +513,10 @@ def function_generated_table(
 
     Args:
         table_generator (Callable[..., Table]): The table generator function. This function must return a Table.
-        source_tables (Union[Table, list[Table]]): Source tables used by the 'table_generator' function. The
+        source_tables (Optional[Union[Table, list[Table]]]): Source tables used by the 'table_generator' function. The
             'table_generator' is rerun when any of these tables tick.
-        refresh_interval_ms (int): Interval (in milliseconds) at which the 'table_generator' function is rerun.
-        exec_ctx (ExecutionContext): A custom execution context. If 'None', the current
+        refresh_interval_ms (Optional[int]): Interval (in milliseconds) at which the 'table_generator' function is rerun.
+        exec_ctx (Optional[ExecutionContext]): A custom execution context. If 'None', the current
             execution context is used. If there is no current execution context, a ValueError is raised.
         args (Tuple): Optional tuple of positional arguments to pass to table_generator. Defaults to ()
         kwargs (Dict): Optional dictionary of keyword arguments to pass to table_generator. Defaults to {}

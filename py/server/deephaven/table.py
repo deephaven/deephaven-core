@@ -479,7 +479,7 @@ class RollupTable(JObjectWrapper):
         """Returns a new RollupTable by applying the given set of filters to the group-by columns of this RollupTable.
 
         Args:
-            filters (Union[str, Filter, Sequence[str], Sequence[Filter]], optional): the filter condition
+            filters (Union[str, Filter, Sequence[str], Sequence[Filter]]): the filter condition
                 expression(s) or Filter object(s)
 
         Returns:
@@ -610,7 +610,7 @@ class TreeTable(JObjectWrapper):
         """Returns a new TreeTable by applying the given set of filters to the columns of this TreeTable.
 
         Args:
-            filters (Union[str, Filter, Sequence[str], Sequence[Filter]], optional): the filter condition
+            filters (Union[str, Filter, Sequence[str], Sequence[Filter]]): the filter condition
                 expression(s) or Filter object(s)
 
         Returns:
@@ -1117,9 +1117,9 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
-            attrs = j_array_list(to_sequence(attrs))
+            j_attrs = j_array_list(to_sequence(attrs))
             return Table(
-                j_table=jpy.cast(self.j_table, _JAttributeMap).withoutAttributes(attrs)
+                j_table=jpy.cast(self.j_table, _JAttributeMap).withoutAttributes(j_attrs)
             )
         except Exception as e:
             raise DHError(e, "failed to create a table without attributes.") from e
@@ -1131,7 +1131,7 @@ class Table(JObjectWrapper):
 
         Args:
             num_rows (int): the number of rows at the beginning of the table
-            cols (Union[str, Sequence[str]]): the column name(s), default is None
+            cols (Optional[Union[str, Sequence[str]]]): the column name(s), default is None
 
         Returns:
             string
@@ -1419,7 +1419,7 @@ class Table(JObjectWrapper):
         is specified, all columns will be included.
 
         Args:
-            formulas (Union[str, Sequence[str], Selectable, Sequence[Selectable], optional): the column formula(s)
+            formulas (Union[str, Sequence[str], Selectable, Sequence[Selectable]): the column formula(s)
                 or Selectable(s), default is None
 
         Returns:
@@ -1449,7 +1449,7 @@ class Table(JObjectWrapper):
         the selected columns.
 
         Args:
-            formulas (Union[str, Sequence[str]], optional): the column name(s), default is None
+            formulas (Optional[Union[str, Sequence[str]]]): the column name(s), default is None
 
         Returns:
             a new table
@@ -1479,7 +1479,7 @@ class Table(JObjectWrapper):
         the table.
 
         Args:
-            filters (Union[str, Filter, Sequence[str], Sequence[Filter]], optional): the filter condition
+            filters (Union[str, Filter, Sequence[str], Sequence[Filter]]): the filter condition
                 expression(s) or Filter object(s), default is None
 
         Returns:
@@ -1549,7 +1549,7 @@ class Table(JObjectWrapper):
         least one filter.
 
         Args:
-            filters (Union[str, Filter, Sequence[str], Sequence[Filter]], optional): the filter condition expression(s), default is None
+            filters (Union[str, Filter, Sequence[str], Sequence[Filter]]): the filter condition expression(s), default is None
 
         Returns:
             a new table
@@ -1663,7 +1663,7 @@ class Table(JObjectWrapper):
         the order_by column(s).
 
         Args:
-            order_by (Union[str, Sequence[str]], optional): the column name(s)
+            order_by (Union[str, Sequence[str]]): the column name(s)
 
         Returns:
             a new table
@@ -1700,7 +1700,7 @@ class Table(JObjectWrapper):
 
         Args:
             order_by (Union[str, Sequence[str]]): the column(s) to be sorted on
-            order (Union[SortDirection, Sequence[SortDirection], optional): the corresponding sort directions for
+            order (Optional[Union[SortDirection, Sequence[SortDirection]]): the corresponding sort directions for
                 each sort column, default is None, meaning ascending order for all the sort columns.
 
         Returns:
@@ -1761,9 +1761,9 @@ class Table(JObjectWrapper):
             table (Table): the right-table of the join
             on (Union[str, Sequence[str]]): the column(s) to match, can be a common name or an equal expression,
                 i.e. "col_a = col_b" for different column names
-            joins (Union[str, Sequence[str]], optional): the column(s) to be added from the right table to the result
+            joins (Optional[Union[str, Sequence[str]]]): the column(s) to be added from the right table to the result
                 table, can be renaming expressions, i.e. "new_col = col"; default is None
-            joinType (NaturalJoinType, optional): the action to be taken when duplicate right hand rows are
+            joinType (NaturalJoinType): the action to be taken when duplicate right hand rows are
                 encountered; default is ERROR_ON_DUPLICATE
 
         Returns:
@@ -1806,7 +1806,7 @@ class Table(JObjectWrapper):
             table (Table): the right-table of the join
             on (Union[str, Sequence[str]]): the column(s) to match, can be a common name or an equal expression,
                 i.e. "col_a = col_b" for different column names
-            joins (Union[str, Sequence[str]], optional): the column(s) to be added from the right table to the result
+            joins (Optional[Union[str, Sequence[str]]]): the column(s) to be added from the right table to the result
                 table, can be renaming expressions, i.e. "new_col = col"; default is None
 
         Returns:
@@ -1845,9 +1845,9 @@ class Table(JObjectWrapper):
 
         Args:
             table (Table): the right-table of the join
-            on (Union[str, Sequence[str]]): the column(s) to match, can be a common name or an equal expression,
+            on (Optional[Union[str, Sequence[str]]]): the column(s) to match, can be a common name or an equal expression,
                 i.e. "col_a = col_b" for different column names; default is None
-            joins (Union[str, Sequence[str]], optional): the column(s) to be added from the right table to the result
+            joins (Optional[Union[str, Sequence[str]]]): the column(s) to be added from the right table to the result
                 table, can be renaming expressions, i.e. "new_col = col"; default is None
 
         Returns:
@@ -1889,7 +1889,7 @@ class Table(JObjectWrapper):
                 columns, e.g. 'col_a = col_b'. The first 'N-1' matches are exact matches.  The final match is an inexact
                 match.  The inexact match can use either '>' or '>='.  If a common name is used for the inexact match,
                 '>=' is used for the comparison.
-            joins (Union[str, Sequence[str]], optional): the column(s) to be added from the right table to the result
+            joins (Optional[Union[str, Sequence[str]]]): the column(s) to be added from the right table to the result
                 table, can be renaming expressions, i.e. "new_col = col"; default is None
         Returns:
             a new table
@@ -1924,7 +1924,7 @@ class Table(JObjectWrapper):
                 columns, e.g. 'col_a = col_b'. The first 'N-1' matches are exact matches.  The final match is an inexact
                 match.  The inexact match can use either '<' or '<='.  If a common name is used for the inexact match,
                 '<=' is used for the comparison.
-            joins (Union[str, Sequence[str]], optional): the column(s) to be added from the right table to the result
+            joins (Optional[Union[str, Sequence[str]]]): the column(s) to be added from the right table to the result
                 table, can be renaming expressions, i.e. "new_col = col"; default is None
 
         Returns:
@@ -2033,7 +2033,7 @@ class Table(JObjectWrapper):
             table (Table): the right table of the join
             on (Union[str, Sequence[str]]): the match expression(s) that must include zero-or-more exact match expression,
                 and exactly one range match expression as described above
-            aggs (Union[Aggregation, Sequence[Aggregation]]): the aggregation(s) to perform over the responsive ranges from
+            aggs (Optional[Union[Aggregation, Sequence[Aggregation]]]): the aggregation(s) to perform over the responsive ranges from
                 the right table for each row from this Table
 
         Returns:
@@ -2067,7 +2067,7 @@ class Table(JObjectWrapper):
 
         Args:
             num_rows (int): the number of rows at the beginning of each group
-            by (Union[str, Sequence[str]]): the group-by column name(s), default is None
+            by (Optional[Union[str, Sequence[str]]]): the group-by column name(s), default is None
 
         Returns:
             a new table
@@ -2089,7 +2089,7 @@ class Table(JObjectWrapper):
 
         Args:
             num_rows (int): the number of rows at the end of each group
-            by (Union[str, Sequence[str]]): the group-by column name(s), default is None
+            by (Optional[Union[str, Sequence[str]]]): the group-by column name(s), default is None
 
         Returns:
             a new table
@@ -2109,7 +2109,7 @@ class Table(JObjectWrapper):
         grouped into vectors.
 
         Args:
-            by (Union[str, Sequence[str]], optional): the group-by column name(s), default is None
+            by (Optional[Union[str, Sequence[str]]]): the group-by column name(s), default is None
 
         Returns:
             a new table
@@ -2131,7 +2131,7 @@ class Table(JObjectWrapper):
         separate rows.
 
         Args:
-            cols (Union[str, Sequence[str]], optional): the name(s) of the array column(s), if None, all array columns
+            cols (Optional[Union[str, Sequence[str]]]): the name(s) of the array column(s), if None, all array columns
                 will be ungrouped, default is None
 
         Returns:
@@ -2154,7 +2154,7 @@ class Table(JObjectWrapper):
         """The first_by method creates a new table containing the first row for each group.
 
         Args:
-            by (Union[str, Sequence[str]], optional): the group-by column name(s), default is None
+            by (Optional[Union[str, Sequence[str]]]): the group-by column name(s), default is None
 
         Returns:
             a new table
@@ -2175,7 +2175,7 @@ class Table(JObjectWrapper):
         """The last_by method creates a new table containing the last row for each group.
 
         Args:
-            by (Union[str, Sequence[str]], optional): the group-by column name(s), default is None
+            by (Optional[Union[str, Sequence[str]]]): the group-by column name(s), default is None
 
         Returns:
             a new table
@@ -2196,7 +2196,7 @@ class Table(JObjectWrapper):
         """The sum_by method creates a new table containing the sum for each group.
 
         Args:
-            by (Union[str, Sequence[str]], optional): the group-by column name(s), default is None
+            by (Optional[Union[str, Sequence[str]]]): the group-by column name(s), default is None
 
         Returns:
             a new table
@@ -2217,7 +2217,7 @@ class Table(JObjectWrapper):
         """The abs_sum_by method creates a new table containing the absolute sum for each group.
 
         Args:
-            by (Union[str, Sequence[str]], optional): the group-by column name(s), default is None
+            by (Optional[Union[str, Sequence[str]]]): the group-by column name(s), default is None
 
         Returns:
             a new table
@@ -2241,7 +2241,7 @@ class Table(JObjectWrapper):
 
         Args:
             wcol (str): the name of the weight column
-            by (Union[str, Sequence[str]], optional): the group-by column name(s), default is None
+            by (Optional[Union[str, Sequence[str]]]): the group-by column name(s), default is None
 
         Returns:
             a new table
@@ -2262,7 +2262,7 @@ class Table(JObjectWrapper):
         """The avg_by method creates a new table containing the average for each group.
 
         Args:
-            by (Union[str, Sequence[str]], optional): the group-by column name(s), default is None
+            by (Optional[Union[str, Sequence[str]]]): the group-by column name(s), default is None
 
         Returns:
             a new table
@@ -2286,7 +2286,7 @@ class Table(JObjectWrapper):
 
         Args:
             wcol (str): the name of the weight column
-            by (Union[str, Sequence[str]], optional): the group-by column name(s), default is None
+            by (Optional[Union[str, Sequence[str]]]): the group-by column name(s), default is None
 
         Returns:
             a new table
@@ -2310,7 +2310,7 @@ class Table(JObjectWrapper):
         which ensures that the sample variance will be an unbiased estimator of population variance.
 
         Args:
-            by (Union[str, Sequence[str]], optional): the group-by column name(s), default is None
+            by (Optional[Union[str, Sequence[str]]]): the group-by column name(s), default is None
 
         Returns:
             a new table
@@ -2334,7 +2334,7 @@ class Table(JObjectWrapper):
         which ensures that the sample variance will be an unbiased estimator of population variance.
 
         Args:
-            by (Union[str, Sequence[str]], optional): the group-by column name(s), default is None
+            by (Optional[Union[str, Sequence[str]]]): the group-by column name(s), default is None
 
         Returns:
             a new table
@@ -2355,7 +2355,7 @@ class Table(JObjectWrapper):
         """The median_by method creates a new table containing the median for each group.
 
         Args:
-            by (Union[str, Sequence[str]], optional): the group-by column name(s), default is None
+            by (Optional[Union[str, Sequence[str]]]): the group-by column name(s), default is None
 
         Returns:
             a new table
@@ -2376,7 +2376,7 @@ class Table(JObjectWrapper):
         """The min_by method creates a new table containing the minimum value for each group.
 
         Args:
-            by (Union[str, Sequence[str]], optional): the group-by column name(s), default is None
+            by (Optional[Union[str, Sequence[str]]]): the group-by column name(s), default is None
 
         Returns:
             a new table
@@ -2397,7 +2397,7 @@ class Table(JObjectWrapper):
         """The max_by method creates a new table containing the maximum value for each group.
 
         Args:
-            by (Union[str, Sequence[str]], optional): the group-by column name(s), default is None
+            by (Optional[Union[str, Sequence[str]]]): the group-by column name(s), default is None
 
         Returns:
             a new table
@@ -2421,7 +2421,7 @@ class Table(JObjectWrapper):
 
         Args:
             col (str): the name of the column to store the counts
-            by (Union[str, Sequence[str]], optional): the group-by column name(s), default is None
+            by (Optional[Union[str, Sequence[str]]]): the group-by column name(s), default is None
 
         Returns:
             a new table
@@ -2450,11 +2450,11 @@ class Table(JObjectWrapper):
 
         Args:
             aggs (Union[Aggregation, Sequence[Aggregation]]): the aggregation(s)
-            by (Union[str, Sequence[str]]): the group-by column name(s), if not provided, all rows from this table are
+            by (Optional[Union[str, Sequence[str]]]): the group-by column name(s), if not provided, all rows from this table are
                 grouped into a single group of rows before the aggregations are applied to the result, default is None.
             preserve_empty (bool): whether to keep result rows for groups that are initially empty or become empty as
                 a result of updates. Each aggregation operator defines its own value for empty groups. Default is False.
-            initial_groups (Table): a table whose distinct combinations of values for the group-by column(s)
+            initial_groups (Optional[Table]): a table whose distinct combinations of values for the group-by column(s)
                 should be used to create an initial set of aggregation groups. All other columns are ignored. This is
                 useful in combination with preserve_empty=True to ensure that particular groups appear in the result
                 table, or with preserve_empty=False to control the encounter order for a collection of groups and
@@ -2511,10 +2511,10 @@ class Table(JObjectWrapper):
 
         Args:
             aggs (Union[Aggregation, Sequence[Aggregation]]): the aggregation(s)
-            by (Union[str, Sequence[str]]): the group-by column name(s), default is None
+            by (Optional[Union[str, Sequence[str]]]): the group-by column name(s), default is None
             preserve_empty (bool): whether to keep result rows for groups that are initially empty or become empty as
                 a result of updates. Each aggregation operator defines its own value for empty groups. Default is False.
-            initial_groups (Table): a table whose distinct combinations of values for the group-by column(s)
+            initial_groups (Optional[Table]): a table whose distinct combinations of values for the group-by column(s)
                 should be used to create an initial set of aggregation groups. All other columns are ignored. This is
                 useful in combination with preserve_empty=True to ensure that particular groups appear in the result
                 table, or with preserve_empty=False to control the encounter order for a collection of groups and
@@ -2556,7 +2556,7 @@ class Table(JObjectWrapper):
 
         Args:
             agg (Aggregation): the aggregation
-            by (Union[str, Sequence[str]], optional): the group-by column name(s), default is None
+            by (Optional[Union[str, Sequence[str]]]): the group-by column name(s), default is None
 
         Returns:
             a new table
@@ -2647,18 +2647,18 @@ class Table(JObjectWrapper):
         """Sets layout hints on the Table
 
         Args:
-            front (Union[str, Sequence[str]]): the columns to show at the front.
-            back (Union[str, Sequence[str]]): the columns to show at the back.
-            freeze (Union[str, Sequence[str]]): the columns to freeze to the front.
+            front (Optional[Union[str, Sequence[str]]]): the columns to show at the front.
+            back (Optional[Union[str, Sequence[str]]]): the columns to show at the back.
+            freeze (Optional[Union[str, Sequence[str]]]): the columns to freeze to the front.
                 These will not be affected by horizontal scrolling.
-            hide (Union[str, Sequence[str]]): the columns to hide.
-            column_groups (Sequence[Dict]): A list of dicts specifying which columns should be grouped in the UI.
+            hide (Optional[Union[str, Sequence[str]]]): the columns to hide.
+            column_groups (Optional[Sequence[Dict]]): A list of dicts specifying which columns should be grouped in the UI.
                 The dicts can specify the following:
 
                 * name (str): The group name
                 * children (Sequence[str]): The column names in the group
                 * color (Optional[str]): The hex color string or Deephaven color name
-            search_display_mode (SearchDisplayMode): set the search bar to explicitly be accessible or inaccessible,
+            search_display_mode (Optional[SearchDisplayMode]): set the search bar to explicitly be accessible or inaccessible,
                 or use the system default. :attr:`SearchDisplayMode.SHOW` will show the search bar,
                 :attr:`SearchDisplayMode.HIDE` will hide the search bar, and :attr:`SearchDisplayMode.DEFAULT` will
                 use the default value configured by the user and system settings.
@@ -2743,7 +2743,7 @@ class Table(JObjectWrapper):
 
         Args:
             ops (Union[UpdateByOperation, Sequence[UpdateByOperation]]): the update-by operation definition(s)
-            by (Union[str, Sequence[str]]): the key column name(s) to group the rows of the table
+            by (Optional[Union[str, Sequence[str]]]): the key column name(s) to group the rows of the table
 
         Returns:
             a new Table
@@ -2841,7 +2841,7 @@ class Table(JObjectWrapper):
 
         Args:
             aggs (Union[Aggregation, Sequence[Aggregation]]): the aggregation(s)
-            by (Union[str, Sequence[str]]): the group-by column name(s), default is None
+            by (Optional[Union[str, Sequence[str]]]): the group-by column name(s), default is None
             include_constituents (bool): whether to include the constituent rows at the leaf level, default is False
 
         Returns:
@@ -3000,11 +3000,11 @@ class PartitionedTable(JObjectWrapper):
 
         Args:
             table (Table): the underlying partitioned table
-            key_cols (Union[str, Sequence[str]]): the key column name(s) of 'table'
-            unique_keys (bool): whether the keys in 'table' are guaranteed to be unique
-            constituent_column (str): the constituent column name in 'table'
+            key_cols (Optional[Union[str, Sequence[str]]]): the key column name(s) of 'table'
+            unique_keys (Optional[bool]): whether the keys in 'table' are guaranteed to be unique
+            constituent_column (Optional[str]): the constituent column name in 'table'
             constituent_table_columns (Optional[TableDefinitionLike]): the table definitions of the constituent table
-            constituent_changes_permitted (bool): whether the values of the constituent column can change
+            constituent_changes_permitted (Optional[bool]): whether the values of the constituent column can change
 
         Returns:
             a PartitionedTable
@@ -3218,7 +3218,7 @@ class PartitionedTable(JObjectWrapper):
 
         Args:
             order_by (Union[str, Sequence[str]]): the column(s) to be sorted on.  Can't include the constituent column.
-            order (Union[SortDirection, Sequence[SortDirection], optional): the corresponding sort directions for
+            order (Optional[Union[SortDirection, Sequence[SortDirection]]): the corresponding sort directions for
                 each sort column, default is None, meaning ascending order for all the sort columns.
 
         Returns:
@@ -3580,7 +3580,7 @@ class PartitionedTableProxy(JObjectWrapper):
 
         Args:
             order_by (Union[str, Sequence[str]]): the column(s) to be sorted on
-            order (Union[SortDirection, Sequence[SortDirection], optional): the corresponding sort directions for
+            order (Optional[Union[SortDirection, Sequence[SortDirection]]): the corresponding sort directions for
                 each sort column, default is None, meaning ascending order for all the sort columns.
 
         Returns:
@@ -3655,7 +3655,7 @@ class PartitionedTableProxy(JObjectWrapper):
         partitioned table.
 
         Args:
-            filters (Union[str, Filter, Sequence[str], Sequence[Filter]], optional): the filter condition
+            filters (Union[str, Filter, Sequence[str], Sequence[Filter]]): the filter condition
                 expression(s) or Filter object(s), default is None
 
         Returns:
@@ -3822,7 +3822,7 @@ class PartitionedTableProxy(JObjectWrapper):
         partitioned table.
 
         Args:
-            formulas (Union[str, Sequence[str], Selectable, Sequence[Selectable]], optional): the column formula(s) or
+            formulas (Union[str, Sequence[str], Selectable, Sequence[Selectable]]): the column formula(s) or
                 Selectable(s), default is None
 
         Returns:
@@ -3855,7 +3855,7 @@ class PartitionedTableProxy(JObjectWrapper):
         underlying partitioned table.
 
         Args:
-            formulas (Union[str, Sequence[str]], optional): the column formula(s), default is None
+            formulas (Optional[Union[str, Sequence[str]]]): the column formula(s), default is None
 
         Returns:
             A new PartitionedTableProxy
@@ -3891,7 +3891,7 @@ class PartitionedTableProxy(JObjectWrapper):
             table (Union[Table, PartitionedTableProxy]): the right table or PartitionedTableProxy of the join
             on (Union[str, Sequence[str]]): the column(s) to match, can be a common name or an equal expression,
                 i.e. "col_a = col_b" for different column names
-            joins (Union[str, Sequence[str]], optional): the column(s) to be added from the right table to the result
+            joins (Optional[Union[str, Sequence[str]]]): the column(s) to be added from the right table to the result
                 table, can be renaming expressions, i.e. "new_col = col"; default is None
 
         Returns:
@@ -3937,7 +3937,7 @@ class PartitionedTableProxy(JObjectWrapper):
             table (Union[Table, PartitionedTableProxy]): the right table or PartitionedTableProxy of the join
             on (Union[str, Sequence[str]]): the column(s) to match, can be a common name or an equal expression,
                 i.e. "col_a = col_b" for different column names
-            joins (Union[str, Sequence[str]], optional): the column(s) to be added from the right table to the result
+            joins (Optional[Union[str, Sequence[str]]]): the column(s) to be added from the right table to the result
                 table, can be renaming expressions, i.e. "new_col = col"; default is None
 
         Returns:
@@ -3981,9 +3981,9 @@ class PartitionedTableProxy(JObjectWrapper):
 
         Args:
             table (Union[Table, PartitionedTableProxy]): the right table or PartitionedTableProxy of the join
-            on (Union[str, Sequence[str]]): the column(s) to match, can be a common name or an equal expression,
+            on (Optional[Union[str, Sequence[str]]]): the column(s) to match, can be a common name or an equal expression,
                 i.e. "col_a = col_b" for different column names; default is None
-            joins (Union[str, Sequence[str]], optional): the column(s) to be added from the right table to the result
+            joins (Optional[Union[str, Sequence[str]]]): the column(s) to be added from the right table to the result
                 table, can be renaming expressions, i.e. "new_col = col"; default is None
 
         Returns:
@@ -4031,7 +4031,7 @@ class PartitionedTableProxy(JObjectWrapper):
                 columns, e.g. 'col_a = col_b'. The first 'N-1' matches are exact matches.  The final match is an inexact
                 match.  The inexact match can use either '>' or '>='.  If a common name is used for the inexact match,
                 '>=' is used for the comparison.
-            joins (Union[str, Sequence[str]], optional): the column(s) to be added from the right table to the result
+            joins (Optional[Union[str, Sequence[str]]]): the column(s) to be added from the right table to the result
                 table, can be renaming expressions, i.e. "new_col = col"; default is None
         Returns:
             a new PartitionedTableProxy
@@ -4073,7 +4073,7 @@ class PartitionedTableProxy(JObjectWrapper):
                 columns, e.g. 'col_a = col_b'. The first 'N-1' matches are exact matches.  The final match is an inexact
                 match.  The inexact match can use either '<' or '<='.  If a common name is used for the inexact match,
                 '<=' is used for the comparison.
-            joins (Union[str, Sequence[str]], optional): the column(s) to be added from the right table to the result
+            joins (Optional[Union[str, Sequence[str]]]): the column(s) to be added from the right table to the result
                 table, can be renaming expressions, i.e. "new_col = col"; default is None
         Returns:
             a new PartitionedTableProxy
@@ -4104,7 +4104,7 @@ class PartitionedTableProxy(JObjectWrapper):
         underlying partitioned table.
 
         Args:
-            by (Union[str, Sequence[str]], optional): the group-by column name(s), default is None
+            by (Optional[Union[str, Sequence[str]]]): the group-by column name(s), default is None
 
         Returns:
             a new PartitionedTableProxy
@@ -4137,7 +4137,7 @@ class PartitionedTableProxy(JObjectWrapper):
 
         Args:
             aggs (Union[Aggregation, Sequence[Aggregation]]): the aggregation(s)
-            by (Union[str, Sequence[str]]): the group-by column name(s), default is None
+            by (Optional[Union[str, Sequence[str]]]): the group-by column name(s), default is None
 
         Returns:
             a new PartitionedTableProxy
@@ -4173,7 +4173,7 @@ class PartitionedTableProxy(JObjectWrapper):
 
         Args:
             agg (Aggregation): the aggregation
-            by (Union[str, Sequence[str]], optional): the group-by column name(s), default is None
+            by (Optional[Union[str, Sequence[str]]]): the group-by column name(s), default is None
 
         Returns:
             a new PartitionedTableProxy
@@ -4204,7 +4204,7 @@ class PartitionedTableProxy(JObjectWrapper):
 
         Args:
             col (str): the name of the column to store the counts
-            by (Union[str, Sequence[str]], optional): the group-by column name(s), default is None
+            by (Optional[Union[str, Sequence[str]]]): the group-by column name(s), default is None
 
         Returns:
             a new PartitionedTableProxy
@@ -4236,7 +4236,7 @@ class PartitionedTableProxy(JObjectWrapper):
         underlying partitioned table.
 
         Args:
-            by (Union[str, Sequence[str]], optional): the group-by column name(s), default is None
+            by (Optional[Union[str, Sequence[str]]]): the group-by column name(s), default is None
 
         Returns:
             a new PartitionedTableProxy
@@ -4266,7 +4266,7 @@ class PartitionedTableProxy(JObjectWrapper):
         partitioned table.
 
         Args:
-            by (Union[str, Sequence[str]], optional): the group-by column name(s), default is None
+            by (Optional[Union[str, Sequence[str]]]): the group-by column name(s), default is None
 
         Returns:
             a new PartitionedTableProxy
@@ -4294,7 +4294,7 @@ class PartitionedTableProxy(JObjectWrapper):
         partitioned table.
 
         Args:
-            by (Union[str, Sequence[str]], optional): the group-by column name(s), default is None
+            by (Optional[Union[str, Sequence[str]]]): the group-by column name(s), default is None
 
         Returns:
             a new PartitionedTableProxy
@@ -4322,7 +4322,7 @@ class PartitionedTableProxy(JObjectWrapper):
         partitioned table.
 
         Args:
-            by (Union[str, Sequence[str]], optional): the group-by column name(s), default is None
+            by (Optional[Union[str, Sequence[str]]]): the group-by column name(s), default is None
 
         Returns:
             a new PartitionedTableProxy
@@ -4350,7 +4350,7 @@ class PartitionedTableProxy(JObjectWrapper):
         partitioned table.
 
         Args:
-            by (Union[str, Sequence[str]], optional): the group-by column name(s), default is None
+            by (Optional[Union[str, Sequence[str]]]): the group-by column name(s), default is None
 
         Returns:
             a new PartitionedTableProxy
@@ -4378,7 +4378,7 @@ class PartitionedTableProxy(JObjectWrapper):
         partitioned table.
 
         Args:
-            by (Union[str, Sequence[str]], optional): the group-by column name(s), default is None
+            by (Optional[Union[str, Sequence[str]]]): the group-by column name(s), default is None
 
         Returns:
             a new PartitionedTableProxy
@@ -4409,7 +4409,7 @@ class PartitionedTableProxy(JObjectWrapper):
 
         Args:
             wcol (str): the name of the weight column
-            by (Union[str, Sequence[str]], optional): the group-by column name(s), default is None
+            by (Optional[Union[str, Sequence[str]]]): the group-by column name(s), default is None
 
         Returns:
             a new PartitionedTableProxy
@@ -4441,7 +4441,7 @@ class PartitionedTableProxy(JObjectWrapper):
         partitioned table.
 
         Args:
-            by (Union[str, Sequence[str]], optional): the group-by column name(s), default is None
+            by (Optional[Union[str, Sequence[str]]]): the group-by column name(s), default is None
 
         Returns:
             a new PartitionedTableProxy
@@ -4470,7 +4470,7 @@ class PartitionedTableProxy(JObjectWrapper):
 
         Args:
             wcol (str): the name of the weight column
-            by (Union[str, Sequence[str]], optional): the group-by column name(s), default is None
+            by (Optional[Union[str, Sequence[str]]]): the group-by column name(s), default is None
 
         Returns:
             a new PartitionedTableProxy
@@ -4500,7 +4500,7 @@ class PartitionedTableProxy(JObjectWrapper):
         underlying partitioned table.
 
         Args:
-            by (Union[str, Sequence[str]], optional): the group-by column name(s), default is None
+            by (Optional[Union[str, Sequence[str]]]): the group-by column name(s), default is None
 
         Returns:
             a new PartitionedTableProxy
@@ -4530,7 +4530,7 @@ class PartitionedTableProxy(JObjectWrapper):
         partitioned table.
 
         Args:
-            by (Union[str, Sequence[str]], optional): the group-by column name(s), default is None
+            by (Optional[Union[str, Sequence[str]]]): the group-by column name(s), default is None
 
         Returns:
             a new PartitionedTableProxy
@@ -4558,7 +4558,7 @@ class PartitionedTableProxy(JObjectWrapper):
         partitioned table.
 
         Args:
-            by (Union[str, Sequence[str]], optional): the group-by column name(s), default is None
+            by (Optional[Union[str, Sequence[str]]]): the group-by column name(s), default is None
 
         Returns:
             a new PartitionedTableProxy
@@ -4589,7 +4589,7 @@ class PartitionedTableProxy(JObjectWrapper):
 
         Args:
             ops (Union[UpdateByOperation, Sequence[UpdateByOperation]]): the update-by operation definition(s)
-            by (Union[str, Sequence[str]]): the key column name(s) to group the rows of the table
+            by (Optional[Union[str, Sequence[str]]]): the key column name(s) to group the rows of the table
 
         Returns:
             a new PartitionedTableProxy
@@ -4635,7 +4635,7 @@ class MultiJoinInput(JObjectWrapper):
             table (Table): the right table to include in the join
             on (Union[str, Sequence[str]]): the column(s) to match, can be a common name or an equal expression,
                 i.e. "col_a = col_b" for different column names
-            joins (Union[str, Sequence[str]], optional): the column(s) to be added from the table to the result
+            joins (Optional[Union[str, Sequence[str]]]): the column(s) to be added from the table to the result
                 table, can be renaming expressions, i.e. "new_col = col"; default is None
 
         Raises:
@@ -4675,7 +4675,7 @@ class MultiJoinTable(JObjectWrapper):
         Args:
             input (Union[Table, Sequence[Table], MultiJoinInput, Sequence[MultiJoinInput]]): the input objects
                 specifying the tables and columns to include in the join.
-            on (Union[str, Sequence[str]], optional): the column(s) to match, can be a common name or an equality
+            on (Optional[Union[str, Sequence[str]]]): the column(s) to match, can be a common name or an equality
                 expression that matches every input table, i.e. "col_a = col_b" to rename output column names. Note:
                 When MultiJoinInput objects are supplied, this parameter must be omitted.
 
@@ -4723,7 +4723,7 @@ def multi_join(
     Args:
         input (Union[Table, Sequence[Table], MultiJoinInput, Sequence[MultiJoinInput]]): the input objects specifying the
             tables and columns to include in the join.
-        on (Union[str, Sequence[str]], optional): the column(s) to match, can be a common name or an equality expression
+        on (Optional[Union[str, Sequence[str]]]): the column(s) to match, can be a common name or an equality expression
             that matches every input table, i.e. "col_a = col_b" to rename output column names. Note: When
             MultiJoinInput objects are supplied, this parameter must be omitted.
 
@@ -4870,9 +4870,9 @@ def keyed_transpose(
         aggs (Union[Aggregation, Sequence[Aggregation]]): The aggregation(s) to apply to the source table.
         row_by_cols (Union[str, Sequence[str]]): The column(s) to use as row keys in the transposed table.
         col_by_cols (Union[str, Sequence[str]]): The columns whose values become the new aggregated columns.
-        initial_groups (Table, optional): An optional initial set of groups to ensure all columns are present in the
+        initial_groups (Optional[Table]): An optional initial set of groups to ensure all columns are present in the
             output, defaults to None.
-        new_column_behavior (NewColumnBehaviorType, optional): The behavior when a new column would be added to the
+        new_column_behavior (NewColumnBehaviorType): The behavior when a new column would be added to the
             table, default is NewColumnBehaviorType.FAIL.
 
     Returns:

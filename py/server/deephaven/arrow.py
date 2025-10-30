@@ -100,7 +100,7 @@ def to_table(pa_table: pa.Table, cols: Optional[list[str]] = None) -> Table:
 
     Args:
         pa_table(pa.Table): the pyarrow table
-        cols (list[str]): the pyarrow table column names, default is None which means including all columns
+        cols (Optional[list[str]]): the pyarrow table column names, default is None which means including all columns
 
     Returns:
         a new table
@@ -141,7 +141,7 @@ def to_arrow(table: Table, cols: Optional[list[str]] = None) -> pa.Table:
 
     Args:
         table (Table): the source table
-        cols (list[str]): the source column names, default is None which means including all columns
+        cols (Optional[list[str]]): the source column names, default is None which means including all columns
 
     Returns:
         a pyarrow table

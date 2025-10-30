@@ -67,7 +67,7 @@ def is_java_type(obj: Any) -> bool:
     return isinstance(obj, jpy.JType)
 
 
-def j_array_list(values: Optional[Iterable] = None) -> jpy.JType:
+def j_array_list(values: Optional[Iterable] = None) -> Optional[jpy.JType]:
     """Creates a Java ArrayList instance from an iterable."""
     if values is None:
         return None
@@ -77,7 +77,7 @@ def j_array_list(values: Optional[Iterable] = None) -> jpy.JType:
     return r
 
 
-def j_hashmap(d: Optional[dict] = None) -> jpy.JType:
+def j_hashmap(d: Optional[dict] = None) -> Optional[jpy.JType]:
     """Creates a Java HashMap from a dict."""
     if d is None:
         return None
@@ -90,7 +90,7 @@ def j_hashmap(d: Optional[dict] = None) -> jpy.JType:
     return r
 
 
-def j_hashset(s: Optional[Union[set, Sequence]] = None) -> jpy.JType:
+def j_hashset(s: Optional[Union[set, Sequence]] = None) -> Optional[jpy.JType]:
     """Creates a Java HashSet from a set."""
     if s is None:
         return None
@@ -101,7 +101,7 @@ def j_hashset(s: Optional[Union[set, Sequence]] = None) -> jpy.JType:
     return r
 
 
-def j_properties(d: Optional[dict] = None) -> jpy.JType:
+def j_properties(d: Optional[dict] = None) -> Optional[jpy.JType]:
     """Creates a Java Properties from a dict."""
     if d is None:
         return None
@@ -218,7 +218,7 @@ def j_lambda(
         func (Callable): Any Python Callable or object with an 'apply' method that accepts the same arguments
             (number and type) the target Java lambda type
         lambda_jtype (jpy.JType): The Java lambda interface to wrap the provided callable in
-        return_dtype (DType): The expected return type if conversion should be applied.  None (the default) does not
+        return_dtype (Optional[DType]): The expected return type if conversion should be applied.  None (the default) does not
             attempt to convert the return value and returns a Java Object.
     """
     coerce_to_type = return_dtype.qst_type.clazz() if return_dtype is not None else None
@@ -235,8 +235,8 @@ def to_sequence(v: Optional[Any] = None, wrapped: bool = False) -> Sequence[Any]
     for the convenience of the users, e.g. both x= "abc" and x = ["abc"] are valid arguments.
 
     Args:
-        v (Any, optional): the input value(s) to be converted to a sequence
-        wrapped (bool, optional): if True, the input value(s) will remain wrapped in a JPy object; otherwise, the input
+        v (Optional[Any]): the input value(s) to be converted to a sequence
+        wrapped (Optional[bool]): if True, the input value(s) will remain wrapped in a JPy object; otherwise, the input
             value(s) will be unwrapped. Defaults to False.
 
     Returns:

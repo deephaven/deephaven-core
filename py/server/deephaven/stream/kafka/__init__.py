@@ -27,8 +27,8 @@ def topics(kafka_config: dict) -> list[str]:
         DHError
     """
     try:
-        kafka_config = j_properties(kafka_config)
-        jtopics = _JKafkaTools.listTopics(kafka_config)
+        j_kafka_config = j_properties(kafka_config)
+        jtopics = _JKafkaTools.listTopics(j_kafka_config)
         return list(jtopics)
     except Exception as e:
         raise DHError(e, "failed to list Kafka topics") from e

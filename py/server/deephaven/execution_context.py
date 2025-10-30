@@ -62,7 +62,7 @@ def make_user_exec_ctx(
     changes to the values of these names will not be visible in the new ExecutionContext.
 
     Args:
-        freeze_vars(Union[str, Sequence[str]]): the names of the vars in the current query scope to be frozen in
+        freeze_vars(Optional[Union[str, Sequence[str]]]): the names of the vars in the current query scope to be frozen in
             the new one
 
     Returns:

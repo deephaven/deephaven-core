@@ -94,7 +94,11 @@ class RowGroupInfo(JObjectWrapper):
         each other. If the input table size is not evenly divisible by the number of RowGroups requested, then a
         number of RowGroups will contain 1 fewer row than the others.
 
-        :param num_row_groups: The number of RowGroups to write
+        Args:
+            num_row_groups (int): The number of RowGroups to write
+
+        Returns:
+            RowGroupInfo: The RowGroupInfo object
         """
         return cls(_JRowGroupInfo.maxGroups(num_row_groups))
 
@@ -103,7 +107,11 @@ class RowGroupInfo(JObjectWrapper):
         """
         Splits into a number of RowGroups, each of which has no more than the requested number of rows.
 
-        :param max_rows: The maximum number of rows in each RowGroup
+        Args:
+            max_rows (int): The maximum number of rows in each RowGroup
+
+        Returns:
+            RowGroupInfo: The RowGroupInfo object
         """
         return cls(_JRowGroupInfo.maxRows(max_rows))
 
@@ -116,8 +124,12 @@ class RowGroupInfo(JObjectWrapper):
         contiguously, then an error will be raised. If max_rows is set and a given RowGroup yields a row count greater
         than the requested number of rows, then it will be split further using `max_rows(...)`
 
-        :param groups: Grouping column name(s)
-        :param max_rows: (Optional) The maximum number of rows in each RowGroup
+        Args:
+            groups (list[str]): Grouping column name(s)
+            max_rows: (Optional[int]) The maximum number of rows in each RowGroup
+
+        Returns:
+            RowGroupInfo: The RowGroupInfo object
         """
         if max_rows:
             return cls(_JRowGroupInfo.byGroups(max_rows, _j_string_array(groups)))

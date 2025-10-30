@@ -186,7 +186,7 @@ def dh_today(tz: Optional[TimeZone] = None) -> str:
     because fewer Java/Python boundary crossings will be needed.
 
     Args:
-        tz (TimeZone): Time zone to use when determining the date.
+        tz (Optional[TimeZone]): Time zone to use when determining the date.
             If None is provided, the Deephaven system default time zone is used.
 
     Returns:
@@ -277,7 +277,7 @@ def _tzinfo_to_j_time_zone(tzi: Optional[datetime.tzinfo] = None) -> TimeZone:
     Converts a Python time zone to a Java TimeZone.
 
     Args:
-        tzi: time zone info
+        tzi (Optional[datetime.tzinfo]): time zone info
 
     Returns:
         Java TimeZone

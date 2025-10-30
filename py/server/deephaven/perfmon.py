@@ -351,7 +351,7 @@ def ancestor_svg(
         ids (Union[list[int], int]): the Performance entry identifier or identifiers (EntryId) to generate the graph for
         update_perf_log (Table): the UpdatePerformanceLog Table
         ancestors_log (Table): the UpdatePerformanceAncestorsLog Table
-        filename (str): the name of the output SVG file or None to not write the file, default is None
+        filename (Optional[str]): the name of the output SVG file or None to not write the file, default is None
 
     Returns
         the contents of an SVG image

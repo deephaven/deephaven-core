@@ -56,7 +56,7 @@ class TableUpdate(JObjectWrapper):
         all the added rows in the columns.
 
         Args:
-             cols (Union[str, list[str]): the column(s) for which to return the added rows
+             cols (Optional[Union[str, list[str]]]): the column(s) for which to return the added rows
 
         Returns:
             a dict
@@ -80,7 +80,7 @@ class TableUpdate(JObjectWrapper):
 
         Args:
             chunk_size (int): the size of the chunk
-            cols (Union[str, list[str]]): the columns(s) for which to return the added rows
+            cols (Optional[Union[str, list[str]]]): the columns(s) for which to return the added rows
 
         Returns:
             a generator
@@ -103,7 +103,7 @@ class TableUpdate(JObjectWrapper):
         all the removed rows in the columns.
 
         Args:
-             cols (Union[str, list[str]): the column(s) for which to return the added rows
+             cols (Optional[Union[str, list[str]]]): the column(s) for which to return the added rows
 
         Returns:
             a dict
@@ -123,7 +123,7 @@ class TableUpdate(JObjectWrapper):
 
         Args:
             chunk_size (int): the size of the chunk
-            cols (Union[str, list[str]]): the columns(s) for which to return the added rows
+            cols (Optional[Union[str, list[str]]]): the columns(s) for which to return the added rows
 
         Returns:
             a generator
@@ -146,7 +146,7 @@ class TableUpdate(JObjectWrapper):
         all the modified rows in the columns.
 
         Args:
-             cols (Union[str, list[str]): the column(s) for which to return the added rows
+             cols (Optional[Union[str, list[str]]]): the column(s) for which to return the added rows
 
         Returns:
             a dict
@@ -170,7 +170,7 @@ class TableUpdate(JObjectWrapper):
 
         Args:
             chunk_size (int): the size of the chunk
-            cols (Union[str, list[str]]): the columns(s) for which to return the added rows
+            cols (Optional[Union[str, list[str]]]): the columns(s) for which to return the added rows
 
         Returns:
             a generator
@@ -193,7 +193,7 @@ class TableUpdate(JObjectWrapper):
         all the modified rows in the columns.
 
         Args:
-             cols (Union[str, list[str]): the column(s) for which to return the added rows
+             cols (Optional[Union[str, list[str]]]): the column(s) for which to return the added rows
 
         Returns:
             a dict
@@ -217,7 +217,7 @@ class TableUpdate(JObjectWrapper):
 
         Args:
             chunk_size (int): the size of the chunk
-            cols (Union[str, list[str]]): the columns(s) for which to return the added rows
+            cols (Optional[Union[str, list[str]]]): the columns(s) for which to return the added rows
 
         Returns:
             a generator
@@ -331,9 +331,9 @@ class TableListenerHandle(JObjectWrapper):
         Args:
             t (Table): table to listen to
             listener (Union[Callable[[TableUpdate, bool], None], TableListener]): listener for table changes
-            description (str, optional): description for the UpdatePerformanceTracker to append to the listener's entry
+            description (Optional[str]): description for the UpdatePerformanceTracker to append to the listener's entry
                 description, default is None
-            dependencies (Union[Table, Sequence[Table]]): tables that must be satisfied before the listener's execution.
+            dependencies (Optional[Union[Table, Sequence[Table]]]): tables that must be satisfied before the listener's execution.
                 A refreshing table is considered to be satisfied if all possible updates to the table have been processed
                 in the current update graph cycle. A static table is always considered to be satisfied. If a specified
                 table is refreshing, it must belong to the same update graph as the table being listened to. Default is
@@ -344,7 +344,7 @@ class TableListenerHandle(JObjectWrapper):
                 the listener is safe, it is not recommended because reading or operating on the result tables of those
                 operations may not be safe. It is best to perform the operations on the dependent tables beforehand,
                 and then add the result tables as dependencies to the listener so that they can be safely read in it.
-            on_error (Callable[[Exception], None]): a callback function to be invoked when an error occurs during the
+            on_error (Optional[Callable[[Exception], None]]): a callback function to be invoked when an error occurs during the
                 listener's execution. It should only be set when the listener is a function, not when it is an instance
                 of TableListener. When the listener is a TableListener, TableListener.on_error will be used.
                 Defaults to None. When None, a default callback function will be provided that simply
@@ -447,10 +447,10 @@ def listen(
     Args:
         t (Table): table to listen to
         listener (Union[Callable[[TableUpdate, bool], None], TableListener]): listener for table changes
-        description (str, optional): description for the UpdatePerformanceTracker to append to the listener's entry
+        description (Optional[str]): description for the UpdatePerformanceTracker to append to the listener's entry
             description, default is None
         do_replay (bool): whether to replay the initial snapshot of the table, default is False
-        dependencies (Union[Table, Sequence[Table]]): tables that must be satisfied before the listener's execution.
+        dependencies (Optional[Union[Table, Sequence[Table]]]): tables that must be satisfied before the listener's execution.
             A refreshing table is considered to be satisfied if all possible updates to the table have been processed
             in the current update graph cycle. A static table is always considered to be satisfied. If a specified
             table is refreshing, it must belong to the same update graph as the table being listened to. Default is
@@ -461,7 +461,7 @@ def listen(
             the listener is safe, it is not recommended because reading or operating on the result tables of those
             operations may not be safe. It is best to perform the operations on the dependent tables beforehand,
             and then add the result tables as dependencies to the listener so that they can be safely read in it.
-        on_error (Callable[[Exception], None]): a callback function to be invoked when an error occurs during the
+        on_error (Optional[Callable[[Exception], None]]): a callback function to be invoked when an error occurs during the
             listener's execution. It should only be set when the listener is a function, not when it is an instance
             of TableListener. When the listener is a TableListener, TableListener.on_error will be used.
             Defaults to None. When None, a default callback function will be provided that simply

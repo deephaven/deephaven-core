@@ -175,25 +175,25 @@ def consume(
             Once the table-specific properties are stripped, the remaining one is used to call the constructor of
             org.apache.kafka.clients.consumer.KafkaConsumer; pass any KafkaConsumer specific desired configuration here
         topic (str): the Kafka topic name
-        partitions (Sequence[int]) : a list of integer partition numbers, default is None which means all partitions
-        offsets (dict[int, int]) : a mapping between partition numbers and offset numbers, and can be one of the
+        partitions (Optional[Sequence[int]]) : a list of integer partition numbers, default is None which means all partitions
+        offsets (Optional[dict[int, int]]) : a mapping between partition numbers and offset numbers, and can be one of the
             predefined ALL_PARTITIONS_SEEK_TO_BEGINNING, ALL_PARTITIONS_SEEK_TO_END or ALL_PARTITIONS_DONT_SEEK.
             The default is None which works the same as  ALL_PARTITIONS_DONT_SEEK. The offset numbers may be one
             of the predefined SEEK_TO_BEGINNING, SEEK_TO_END, or DONT_SEEK.
-        key_spec (KeyValueSpec): specifies how to map the Key field in Kafka messages to Deephaven column(s).
+        key_spec (Optional[KeyValueSpec]): specifies how to map the Key field in Kafka messages to Deephaven column(s).
             It can be the result of calling one of the functions: simple_spec(),avro_spec() or json_spec() in this
             module, or the predefined KeyValueSpec.IGNORE or KeyValueSpec.FROM_PROPERTIES. The default is None which
             works the same as KeyValueSpec.FROM_PROPERTIES, in which case, the kafka_config param should include values
             for dictionary keys 'deephaven.key.column.name' and 'deephaven.key.column.type', for the single resulting
             column name and type
-        value_spec (KeyValueSpec): specifies how to map the Value field in Kafka messages to Deephaven column(s).
+        value_spec (Optional[KeyValueSpec]): specifies how to map the Value field in Kafka messages to Deephaven column(s).
             It can be the result of calling one of the functions: simple_spec(),avro_spec() or json_spec() in this
             module, or the predefined KeyValueSpec.IGNORE or KeyValueSpec.FROM_PROPERTIES. The default is None which
             works the same as KeyValueSpec.FROM_PROPERTIES, in which case, the kafka_config param should include values
             for dictionary keys 'deephaven.value.column.name' and 'deephaven.value.column.type', for the single
             resulting
             column name and type
-        table_type (TableType): a TableType, default is None, meaning to use TableType.blink()
+        table_type (Optional[TableType]): a TableType, default is None, meaning to use TableType.blink()
 
     Returns:
         a Deephaven live table that will update based on Kafka messages consumed for the given topic
@@ -234,25 +234,25 @@ def consume_to_partitioned_table(
             Once the table-specific properties are stripped, the remaining one is used to call the constructor of
             org.apache.kafka.clients.consumer.KafkaConsumer; pass any KafkaConsumer specific desired configuration here
         topic (str): the Kafka topic name
-        partitions (Sequence[int]) : a list of integer partition numbers, default is None which means all partitions
-        offsets (dict[int, int]) : a mapping between partition numbers and offset numbers, and can be one of the
+        partitions (Optional[Sequence[int]]): a list of integer partition numbers, default is None which means all partitions
+        offsets (Optional[dict[int, int]]): a mapping between partition numbers and offset numbers, and can be one of the
             predefined ALL_PARTITIONS_SEEK_TO_BEGINNING, ALL_PARTITIONS_SEEK_TO_END or ALL_PARTITIONS_DONT_SEEK.
             The default is None which works the same as  ALL_PARTITIONS_DONT_SEEK. The offset numbers may be one
             of the predefined SEEK_TO_BEGINNING, SEEK_TO_END, or DONT_SEEK.
-        key_spec (KeyValueSpec): specifies how to map the Key field in Kafka messages to Deephaven column(s).
+        key_spec (Optional[KeyValueSpec]): specifies how to map the Key field in Kafka messages to Deephaven column(s).
             It can be the result of calling one of the functions: simple_spec(),avro_spec() or json_spec() in this
             module, or the predefined KeyValueSpec.IGNORE or KeyValueSpec.FROM_PROPERTIES. The default is None which
             works the same as KeyValueSpec.FROM_PROPERTIES, in which case, the kafka_config param should include values
             for dictionary keys 'deephaven.key.column.name' and 'deephaven.key.column.type', for the single resulting
             column name and type
-        value_spec (KeyValueSpec): specifies how to map the Value field in Kafka messages to Deephaven column(s).
+        value_spec (Optional[KeyValueSpec]): specifies how to map the Value field in Kafka messages to Deephaven column(s).
             It can be the result of calling one of the functions: simple_spec(),avro_spec() or json_spec() in this
             module, or the predefined KeyValueSpec.IGNORE or KeyValueSpec.FROM_PROPERTIES. The default is None which
             works the same as KeyValueSpec.FROM_PROPERTIES, in which case, the kafka_config param should include values
             for dictionary keys 'deephaven.value.column.name' and 'deephaven.value.column.type', for the single
             resulting
             column name and type
-        table_type (TableType): a TableType, specifying the type of the expected result's constituent tables,
+        table_type (Optional[TableType]): a TableType, specifying the type of the expected result's constituent tables,
             default is None, meaning to use TableType.blink()
 
     Returns:
@@ -314,11 +314,11 @@ def _consume(
                 "at least one argument for 'key' or 'value' must be different from KeyValueSpec.IGNORE"
             )
 
-        kafka_config = j_properties(kafka_config)
+        j_kafka_config = j_properties(kafka_config)
         if not to_partitioned:
             return Table(
                 j_table=_JKafkaTools.consumeToTable(
-                    kafka_config,
+                    j_kafka_config,
                     topic,
                     partitions,
                     offsets,
@@ -330,7 +330,7 @@ def _consume(
         else:
             return PartitionedTable(
                 j_partitioned_table=_JKafkaTools.consumeToPartitionedTable(
-                    kafka_config,
+                    j_kafka_config,
                     topic,
                     partitions,
                     offsets,

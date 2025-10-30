@@ -165,35 +165,35 @@ class S3Instructions(JObjectWrapper):
         Initializes the instructions.
 
         Args:
-            region_name (str): the region name for reading parquet files. If not provided, the default region will be
+            region_name (Optional[str]): the region name for reading parquet files. If not provided, the default region will be
                 picked by the AWS SDK from 'aws.region' system property, "AWS_REGION" environment variable, the
                 {user.home}/.aws/credentials or {user.home}/.aws/config files, or from EC2 metadata service, if running
                 in EC2. If no region name is derived from the above chain or the derived region name is incorrect for
                 the bucket accessed, the correct region name will be derived internally, at the cost of one additional
                 request.
-            credentials (Credentials): the credentials object for authenticating to the S3 server, defaults to
+            credentials (Optional[Credentials]): the credentials object for authenticating to the S3 server, defaults to
                 Credentials.resolving().
-            max_concurrent_requests (int): the maximum number of concurrent requests for reading files, default is 256.
-            read_ahead_count (int): the number of fragments to send asynchronous read requests for while reading the
+            max_concurrent_requests (Optional[int]): the maximum number of concurrent requests for reading files, default is 256.
+            read_ahead_count (Optional[int]): the number of fragments to send asynchronous read requests for while reading the
                 current fragment. Defaults to 32, which means fetch the next 32 fragments in advance when reading the
                 current fragment.
-            fragment_size (int): the maximum size of each fragment to read in bytes, defaults to 65536. If
+            fragment_size (Optional[int]): the maximum size of each fragment to read in bytes, defaults to 65536. If
                 there are fewer bytes remaining in the file, the fetched fragment can be smaller.
-            connection_timeout (DurationLike): the amount of time to wait when initially establishing a connection
+            connection_timeout (Optional[DurationLike]): the amount of time to wait when initially establishing a connection
                 before giving up and timing out. Can be expressed as an integer in nanoseconds, a time interval string,
                 e.g. "PT00:00:00.001" or "PT1s", or other time duration types. Default to 2 seconds.
-            read_timeout (DurationLike): the amount of time to wait when reading a fragment before giving up and timing
+            read_timeout (Optional[DurationLike]): the amount of time to wait when reading a fragment before giving up and timing
                 out. Can be expressed as an integer in nanoseconds, a time interval string, e.g. "PT00:00:00.001" or
                 "PT1s", or other time duration types. Default to 2 seconds.
-            write_timeout (DurationLike): the amount of time to wait when writing a fragment before giving up and timing
+            write_timeout (Optional[DurationLike]): the amount of time to wait when writing a fragment before giving up and timing
                 out. Can be expressed as an integer in nanoseconds, a time interval string, e.g. "PT00:00:00.001" or
                 "PT1s", or other time duration types. Default to 2 seconds.
-            access_key_id (str):  (Deprecated) the access key for reading files. Both access key and secret access key
+            access_key_id (Optional[str]):  (Deprecated) the access key for reading files. Both access key and secret access key
                 must be provided to use static credentials. If you specify both access key and secret key, then you
                 cannot provide other credentials like setting anonymous_access or credentials argument.
                 This option is deprecated and should be replaced by setting credentials as
                 Credentials.basic(access_key_id, secret_access_key).
-            secret_access_key (str): (Deprecated) the secret access key for reading files. Both access key and secret
+            secret_access_key (Optional[str]): (Deprecated) the secret access key for reading files. Both access key and secret
                 key must be provided to use static credentials.  If you specify both access key and secret key, then you
                 cannot provide other credentials like setting anonymous_access or credentials argument.
                 This option is deprecated and should be replaced by setting credentials as
@@ -202,21 +202,21 @@ class S3Instructions(JObjectWrapper):
                 set to allow anonymous access. By default, is False. If you set this to True, you cannot provide other
                 credentials like setting access_key_id or credentials argument.
                 This option is deprecated and should be replaced by setting credentials as Credentials.anonymous().
-            endpoint_override (str): the endpoint to connect to. Callers connecting to AWS do not typically need to set
+            endpoint_override (Optional[str]): the endpoint to connect to. Callers connecting to AWS do not typically need to set
                 this; it is most useful when connecting to non-AWS, S3-compatible APIs.
-            write_part_size (int): The part or chunk size when writing to S3. The default is 10 MiB. The minimum allowed
+            write_part_size (Optional[int]): The part or chunk size when writing to S3. The default is 10 MiB. The minimum allowed
                 part size is 5242880. Higher part size may increase throughput but also increase memory usage. Writing
                 a single file to S3 can be done in a maximum of 10,000 parts, so the maximum size of a single file that
                 can be written is about 98 GiB for the default part size.
-            num_concurrent_write_parts (int): the maximum number of parts or chunks that can be uploaded concurrently
+            num_concurrent_write_parts (Optional[int]): the maximum number of parts or chunks that can be uploaded concurrently
                 when writing to S3 without blocking, defaults to 64. Setting a higher value may increase throughput, but
                 may also increase memory usage.
-            profile_name (str): the profile name used for configuring the default region, credentials, etc., when
+            profile_name (Optional[str]): the profile name used for configuring the default region, credentials, etc., when
                 reading or writing to S3. If not provided, the AWS SDK picks the profile name from the 'aws.profile'
                 system property, the "AWS_PROFILE" environment variable, or defaults to the string "default".
                 Setting a profile name assumes that the credentials are provided via this profile; if that is not the
                 case, you must explicitly set credentials using the access_key_id and secret_access_key.
-            config_file_path (str): the path to the configuration file to use for configuring the default region,
+            config_file_path (Optional[str]): the path to the configuration file to use for configuring the default region,
                 role_arn, output etc. when reading or writing to S3. If not provided, the AWS SDK picks the configuration
                 file from the 'aws.configFile' system property, the "AWS_CONFIG_FILE" environment variable, or defaults
                 to "{user.home}/.aws/config".
@@ -225,7 +225,7 @@ class S3Instructions(JObjectWrapper):
                 and secret_access_key.
                 For reference on the configuration file format, check
                 https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html
-            credentials_file_path (str): the path to the credentials file to use for configuring the credentials,
+            credentials_file_path (Optional[str]): the path to the credentials file to use for configuring the credentials,
                 region, etc. when reading or writing to S3. If not provided, the AWS SDK picks the credentials file from
                 the 'aws.credentialsFile' system property, the "AWS_CREDENTIALS_FILE" environment variable, or defaults
                 to "{user.home}/.aws/credentials".

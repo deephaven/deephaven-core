@@ -33,9 +33,9 @@ def full_outer_join(
     Args:
         l_table (Table): the left table
         r_table (Table): the right table
-        on (Union[str, Sequence[str]]): the column(s) to match, can be a common name or an equal expression,
+        on (Optional[Union[str, Sequence[str]]]): the column(s) to match, can be a common name or an equal expression,
             i.e. "col_a = col_b" for different column names; default is None
-        joins (Union[str, Sequence[str]], optional): the column(s) to be added from right table to the result
+        joins (Optional[Union[str, Sequence[str]]]): the column(s) to be added from right table to the result
             table, can be renaming expressions, i.e. "new_col = col"; default is None, meaning all the columns from
             the right table
 
@@ -79,9 +79,9 @@ def left_outer_join(
     Args:
         l_table (Table): the left table
         r_table (Table): the right table
-        on (Union[str, Sequence[str]]): the column(s) to match, can be a common name or an equal expression,
+        on (Optional[Union[str, Sequence[str]]]): the column(s) to match, can be a common name or an equal expression,
             i.e. "col_a = col_b" for different column names
-        joins (Union[str, Sequence[str]], optional): the column(s) to be added from right table to the result
+        joins (Optional[Union[str, Sequence[str]]]): the column(s) to be added from right table to the result
             table, can be renaming expressions, i.e. "new_col = col"; default is None, default is None, meaning all
             the columns from the right table
 
