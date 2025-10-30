@@ -271,8 +271,13 @@
                 "path": "how-to-guides/sort.md"
               },
               {
-                "label": "Keyed transpose",
-                "path": "how-to-guides/keyed-transpose.md"
+                "label": "Transpose",
+                "items": [
+                  {
+                    "label": "Keyed transpose",
+                    "path": "how-to-guides/keyed-transpose.md"
+                  }
+                ]
               },
               {
                 "label": "Merge",
@@ -1555,10 +1560,6 @@
                 "label": "Format",
                 "items": [
                   {
-                    "label": "columnsToRows",
-                    "path": "reference/table-operations/format/columnsToRows.md"
-                  },
-                  {
                     "label": "formatColumns",
                     "path": "reference/table-operations/format/format-columns.md"
                   },
@@ -1597,10 +1598,15 @@
                   {
                     "label": "hide",
                     "path": "reference/table-operations/format/hide.md"
-                  },
+                  }
+                ]
+              },
+              {
+                "label": "Transpose",
+                "items": [
                   {
-                    "label": "renameColumns",
-                    "path": "reference/table-operations/format/renameColumns.md"
+                    "label": "columnsToRows",
+                    "path": "reference/table-operations/format/columnsToRows.md"
                   },
                   {
                     "label": "keyedTranspose",
