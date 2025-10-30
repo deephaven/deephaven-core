@@ -471,6 +471,109 @@ public class Numeric {
         return sum / count;
     }
 
+
+    <#if pt.valueType.isFloat >
+    /**
+     * Returns the sum of the absolute values of values.  Null values are excluded but NaN values will poison the result.
+     *
+     * @param values values.
+     * @return sum of the absolute value of non-null values. If any value is NaN, returns NaN.
+     */
+    public static double absSum(${pt.vector} values) {
+        if (values == null) {
+            return NULL_DOUBLE;
+        }
+
+        double sum = 0;
+        long nullCount = 0;
+
+        try ( final ${pt.vectorIterator} vi = values.iterator() ) {
+            while ( vi.hasNext() ) {
+                final ${pt.primitive} c = vi.${pt.iteratorNext}();
+
+                if (isNaN(c) || isNaN(sum)) {
+                    return Double.NaN;
+                }
+
+                if (!isNull(c)) {
+                    sum += Math.abs(c);
+                } else {
+                    nullCount++;
+                }
+            }
+        }
+
+        if (nullCount == values.size()) {
+            return NULL_DOUBLE;
+        }
+
+        return sum;
+    }
+    <#else>
+    /**
+     * Returns the sum of the absolute values of values.  Null values are excluded.
+     *
+     * @param values values.
+     * @return sum of the absolute value of non-null values.
+     */
+    public static long absSum(${pt.vector} values) {
+        if (values == null) {
+            return NULL_LONG;
+        }
+
+        long sum = 0;
+        long nullCount = 0;
+
+        try ( final ${pt.vectorIterator} vi = values.iterator() ) {
+            while ( vi.hasNext() ) {
+                final ${pt.primitive} c = vi.${pt.iteratorNext}();
+
+                if (!isNull(c)) {
+                    sum += Math.abs(c);
+                } else {
+                    nullCount++;
+                }
+            }
+        }
+
+        if (nullCount == values.size()) {
+            return NULL_LONG;
+        }
+
+        return sum;
+    }
+    </#if>
+
+    <#if pt.valueType.isFloat >
+    /**
+     * Returns the sum of the absolute values of values.  Null values are excluded but NaN values will poison the result.
+     *
+     * @param values values.
+     * @return sum of the absolute value of non-null values. If any value is NaN, returns NaN.
+     */
+    public static double absSum(${pt.primitive}... values) {
+        if (values == null) {
+            return NULL_DOUBLE;
+        }
+
+        return absSum(new ${pt.vectorDirect}(values));
+    }
+    <#else>
+    /**
+     * Returns the sum of the absolute values of values.  Null values are excluded.
+     *
+     * @param values values.
+     * @return sum of the absolute value of non-null values.
+     */
+    public static long absSum(${pt.primitive}... values) {
+        if (values == null) {
+            return NULL_LONG;
+        }
+
+        return absSum(new ${pt.vectorDirect}(values));
+    }
+    </#if>
+
     /**
      * Returns the sample variance.  Null values are excluded.
      *
@@ -1071,6 +1174,37 @@ public class Numeric {
     </#list>
 
 
+<#if pt.valueType.isFloat >
+    /**
+     * Returns the maximum.  Null values are excluded but NaN values will poison the result.
+     *
+     * @param values values.
+     * @return maximum of non-null values, or null if there are no non-null values. If any value is NaN, returns NaN.
+     */
+    public static ${pt.primitive} max(${pt.vector} values) {
+        if (values == null) {
+            return ${pt.null};
+        }
+
+        ${pt.primitive} val = ${pt.minValue};
+        long count = 0;
+
+        try ( final ${pt.vectorIterator} vi = values.iterator() ) {
+            while ( vi.hasNext() ) {
+                final ${pt.primitive} c = vi.${pt.iteratorNext}();
+                if (isNaN(c)) {
+                    return ${pt.boxed}.NaN;
+                }
+                if (!isNull(c) && (c > val || (c == val && count == 0) )) {
+                    val = c;
+                    count++;
+                }
+            }
+        }
+
+        return count == 0 ? ${pt.null} : val;
+    }
+<#else>
     /**
      * Returns the maximum.  Null values are excluded.
      *
@@ -1081,13 +1215,23 @@ public class Numeric {
         final long idx = indexOfMax(values);
         return idx == NULL_LONG ? ${pt.null} : values.get(idx);
     }
+</#if>
 
+<#if pt.valueType.isFloat >
     /**
-     * Returns the maximum.  Null values are excluded.
+     * Returns the maximum.  Null values are excluded but NaN values will poison the result.
      *
      * @param values values.
-     * @return maximum of non-null values, or null if there are no non-null values.
+     * @return maximum of non-null values, or null if there are no non-null values. If any value is NaN, returns NaN.
      */
+<#else>
+    /**
+     * Returns the minimum.  Null values are excluded.
+     *
+     * @param values values.
+     * @return minimum of non-null values, or null if there are no non-null values.
+     */
+</#if>
     public static ${pt.primitive} max(${pt.primitive}... values) {
         if (values == null) {
             return ${pt.null};
@@ -1096,17 +1240,57 @@ public class Numeric {
         return max(new ${pt.vectorDirect}(values));
     }
 
+<#if pt.valueType.isFloat >
     /**
-     * Returns the maximum.  Null values are excluded.
+     * Returns the maximum.  Null values are excluded but NaN values will poison the result.
      *
      * @param values values.
-     * @return maximum of non-null values, or null if there are no non-null values.
+     * @return maximum of non-null values, or null if there are no non-null values. If any value is NaN, returns NaN.
      */
+<#else>
+    /**
+     * Returns the minimum.  Null values are excluded.
+     *
+     * @param values values.
+     * @return minimum of non-null values, or null if there are no non-null values.
+     */
+</#if>
     public static ${pt.primitive} max(${pt.boxed}[] values) {
-        final long idx = indexOfMax(values);
-        return idx == NULL_LONG ? ${pt.null} : values[LongSizedDataStructure.intSize("max",idx)];
+        return max(unbox(values));
     }
 
+
+<#if pt.valueType.isFloat >
+    /**
+     * Returns the minimum.  Null values are excluded but NaN values will poison the result.
+     *
+     * @param values values.
+     * @return minimum of non-null values, or null if there are no non-null values. If any value is NaN, returns NaN.
+     */
+    public static ${pt.primitive} min(${pt.vector} values) {
+        if (values == null) {
+            return ${pt.null};
+        }
+
+        ${pt.primitive} val = ${pt.maxValue};
+        long count = 0;
+
+        try ( final ${pt.vectorIterator} vi = values.iterator() ) {
+            while ( vi.hasNext() ) {
+                final ${pt.primitive} c = vi.${pt.iteratorNext}();
+                if (isNaN(c)) {
+                    return ${pt.boxed}.NaN;
+                }
+                if (!isNull(c) && (c < val || (c == val && count == 0) )) {
+                    val = c;
+                    count++;
+                }
+            }
+        }
+
+        return count == 0 ? ${pt.null} : val;
+    }
+<#else>
     /**
      * Returns the minimum.  Null values are excluded.
      *
@@ -1117,13 +1301,24 @@ public class Numeric {
         final long idx = indexOfMin(values);
         return idx == NULL_LONG ? ${pt.null} : values.get(idx);
     }
+</#if>
 
+
+<#if pt.valueType.isFloat >
+    /**
+     * Returns the minimum.  Null values are excluded but NaN values will poison the result.
+     *
+     * @param values values.
+     * @return minimum of non-null values, or null if there are no non-null values. If any value is NaN, returns NaN.
+     */
+<#else>
     /**
      * Returns the minimum.  Null values are excluded.
      *
      * @param values values.
      * @return minimum of non-null values, or null if there are no non-null values.
      */
+</#if>
     public static ${pt.primitive} min(${pt.primitive}... values) {
         if (values == null) {
             return ${pt.null};
@@ -1132,22 +1327,34 @@ public class Numeric {
         return min(new ${pt.vectorDirect}(values));
     }
 
+<#if pt.valueType.isFloat >
+    /**
+     * Returns the minimum.  Null values are excluded but NaN values will poison the result.
+     *
+     * @param values values.
+     * @return minimum of non-null values, or null if there are no non-null values. If any value is NaN, returns NaN.
+     */
+<#else>
     /**
      * Returns the minimum.  Null values are excluded.
      *
      * @param values values.
      * @return minimum of non-null values, or null if there are no non-null values.
      */
+</#if>
     public static ${pt.primitive} min(${pt.boxed}[] values) {
-        final long idx = indexOfMin(values);
-        return idx == NULL_LONG ? ${pt.null} : values[LongSizedDataStructure.intSize("min",idx)];
+        return min(unbox(values));
     }
 
     /**
      * Returns the index of the maximum value.
      *
      * @param values values.
-     * @return index of the maximum value.
+<#if pt.valueType.isFloat >
+    * @return index of the maximum value, or null if there are no non-null values or if any value is NaN.
+<#else>
+    * @return index of the maximum value, or null if there are no non-null values.
+</#if>
      */
     public static long indexOfMax(${pt.boxed}[] values) {
         return indexOfMax(unbox(values));
@@ -1157,7 +1364,11 @@ public class Numeric {
      * Returns the index of the maximum value.
      *
      * @param values values.
-     * @return index of the maximum value.
+<#if pt.valueType.isFloat >
+    * @return index of the maximum value, or null if there are no non-null values or if any value is NaN.
+<#else>
+    * @return index of the maximum value, or null if there are no non-null values.
+</#if>
      */
     public static long indexOfMax(${pt.primitive}... values) {
         if (values == null) {
@@ -1171,7 +1382,11 @@ public class Numeric {
      * Returns the index of the maximum value.
      *
      * @param values values.
-     * @return index of the maximum value.
+<#if pt.valueType.isFloat >
+    * @return index of the maximum value, or null if there are no non-null values or if any value is NaN.
+<#else>
+    * @return index of the maximum value, or null if there are no non-null values.
+</#if>
      */
     public static long indexOfMax(${pt.vector} values) {
         if (values == null) {
@@ -1186,6 +1401,11 @@ public class Numeric {
         try ( final ${pt.vectorIterator} vi = values.iterator() ) {
             while ( vi.hasNext() ) {
                 final ${pt.primitive} c = vi.${pt.iteratorNext}();
+            <#if pt.valueType.isFloat >
+                if (isNaN(c)) {
+                    return NULL_LONG;
+                }
+            </#if>
                 if (!isNull(c) && (c > val || (c == val && count == 0))) {
                     val = c;
                     index = i;
@@ -1203,7 +1423,11 @@ public class Numeric {
      * Returns the index of the minimum value.
      *
      * @param values values.
-     * @return index of the minimum value.
+<#if pt.valueType.isFloat >
+    * @return index of the minimum value, or null if there are no non-null values or if any value is NaN.
+<#else>
+    * @return index of the minimum value, or null if there are no non-null values.
+</#if>
      */
     public static long indexOfMin(${pt.boxed}[] values) {
         return indexOfMin(unbox(values));
@@ -1213,7 +1437,11 @@ public class Numeric {
      * Returns the index of the minimum value.
      *
      * @param values values.
-     * @return index of the minimum value.
+<#if pt.valueType.isFloat >
+    * @return index of the minimum value, or null if there are no non-null values or if any value is NaN.
+<#else>
+    * @return index of the minimum value, or null if there are no non-null values.
+</#if>
      */
     public static long indexOfMin(${pt.primitive}... values) {
         if (values == null) {
@@ -1227,7 +1455,11 @@ public class Numeric {
      * Returns the index of the minimum value.
      *
      * @param values values.
-     * @return index of the minimum value.
+<#if pt.valueType.isFloat >
+    * @return index of the minimum value, or null if there are no non-null values or if any value is NaN.
+<#else>
+    * @return index of the minimum value, or null if there are no non-null values.
+</#if>
      */
     public static long indexOfMin(${pt.vector} values) {
         if (values == null) {
@@ -1242,6 +1474,11 @@ public class Numeric {
         try ( final ${pt.vectorIterator} vi = values.iterator() ) {
             while ( vi.hasNext() ) {
                 final ${pt.primitive} c = vi.${pt.iteratorNext}();
+            <#if pt.valueType.isFloat >
+                if (isNaN(c)) {
+                    return NULL_LONG;
+                }
+            </#if>
                 if (!isNull(c) && (c < val || (c == val && count == 0) )) {
                     val = c;
                     index = i;
