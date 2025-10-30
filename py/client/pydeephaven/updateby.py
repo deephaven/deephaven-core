@@ -200,7 +200,7 @@ def cum_count_where(col: str, filters: Union[str, list[str]]) -> UpdateByOperati
 
     Args:
         col (str): the column to hold the counts of rows that pass the filter condition columns.
-        filters (Union[str, Filter, Sequence[str], Sequence[Filter]], optional): the filter condition
+        filters (Union[str, Filter, Sequence[str], Sequence[Filter]]): the filter condition
             expression(s) or Filter object(s)
 
     Returns:
@@ -285,7 +285,7 @@ def ema_tick(
         decay_ticks (float): the decay rate in ticks
         cols (Union[str, list[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by performs the operation on all applicable columns.
-        op_control (OperationControl): defines how special cases should behave; when None, the default OperationControl
+        op_control (Optional[OperationControl]): defines how special cases should behave; when None, the default OperationControl
             settings as specified in :meth:`~OperationControl.__init__` will be used
 
     Returns:
@@ -328,7 +328,7 @@ def ema_time(
             interval string, e.g. "PT00:00:.001" or "PT5M"
         cols (Union[str, list[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by performs the operation on all applicable columns.
-        op_control (OperationControl): defines how special cases should behave; when None, the default OperationControl
+        op_control (Optional[OperationControl]): defines how special cases should behave; when None, the default OperationControl
             settings as specified in :meth:`~OperationControl.__init__` will be used
 
     Returns:
@@ -374,7 +374,7 @@ def ems_tick(
         decay_ticks (float): the decay rate in ticks
         cols (Union[str, list[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by performs the operation on all applicable columns.
-        op_control (OperationControl): defines how special cases should behave; when None, the default OperationControl
+        op_control (Optional[OperationControl]): defines how special cases should behave; when None, the default OperationControl
             settings as specified in :meth:`~OperationControl.__init__` will be used
 
     Returns:
@@ -417,7 +417,7 @@ def ems_time(
             interval string, e.g. "PT00:00:.001" or "PT5M"
         cols (Union[str, list[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by performs the operation on all applicable columns.
-        op_control (OperationControl): defines how special cases should behave; when None, the default OperationControl
+        op_control (Optional[OperationControl]): defines how special cases should behave; when None, the default OperationControl
             settings as specified in :meth:`~OperationControl.__init__` will be used
 
     Returns:
@@ -463,7 +463,7 @@ def emmin_tick(
         decay_ticks (float): the decay rate in ticks
         cols (Union[str, list[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by performs the operation on all applicable columns.
-        op_control (OperationControl): defines how special cases should behave; when None, the default OperationControl
+        op_control (Optional[OperationControl]): defines how special cases should behave; when None, the default OperationControl
             settings as specified in :meth:`~OperationControl.__init__` will be used
 
     Returns:
@@ -506,7 +506,7 @@ def emmin_time(
             interval string, e.g. "PT00:00:.001" or "PT5M"
         cols (Union[str, list[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by performs the operation on all applicable columns.
-        op_control (OperationControl): defines how special cases should behave; when None, the default OperationControl
+        op_control (Optional[OperationControl]): defines how special cases should behave; when None, the default OperationControl
             settings as specified in :meth:`~OperationControl.__init__` will be used
 
     Returns:
@@ -552,7 +552,7 @@ def emmax_tick(
         decay_ticks (float): the decay rate in ticks
         cols (Union[str, list[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by performs the operation on all applicable columns.
-        op_control (OperationControl): defines how special cases should behave; when None, the default OperationControl
+        op_control (Optional[OperationControl]): defines how special cases should behave; when None, the default OperationControl
             settings as specified in :meth:`~OperationControl.__init__` will be used
 
     Returns:
@@ -595,7 +595,7 @@ def emmax_time(
             interval string, e.g. "PT00:00:.001" or "PT5M"
         cols (Union[str, list[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by performs the operation on all applicable columns.
-        op_control (OperationControl): defines how special cases should behave; when None, the default OperationControl
+        op_control (Optional[OperationControl]): defines how special cases should behave; when None, the default OperationControl
             settings as specified in :meth:`~OperationControl.__init__` will be used
 
     Returns:
@@ -643,7 +643,7 @@ def emstd_tick(
         decay_ticks (float): the decay rate in ticks
         cols (Union[str, list[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by performs the operation on all applicable columns.
-        op_control (OperationControl): defines how special cases should behave; when None, the default OperationControl
+        op_control (Optional[OperationControl]): defines how special cases should behave; when None, the default OperationControl
             settings as specified in :meth:`~OperationControl.__init__` will be used
 
     Returns:
@@ -688,7 +688,7 @@ def emstd_time(
             interval string, e.g. "PT00:00:.001" or "PT5M"
         cols (Union[str, list[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by performs the operation on all applicable columns.
-        op_control (OperationControl): defines how special cases should behave; when None, the default OperationControl
+        op_control (Optional[OperationControl]): defines how special cases should behave; when None, the default OperationControl
             settings as specified in :meth:`~OperationControl.__init__` will be used
 
     Returns:
@@ -1998,7 +1998,7 @@ def rolling_count_where_tick(
 
     Args:
         col (str): the column to hold the counts of rows that pass the filter condition columns.
-        filters (Union[str, Filter, Sequence[str], Sequence[Filter]], optional): the filter condition
+        filters (Union[str, Filter, Sequence[str], Sequence[Filter]]): the filter condition
             expression(s) or Filter object(s)
         rev_ticks (int): the look-behind window size (in rows/ticks)
         fwd_ticks (int): the look-forward window size (int rows/ticks), default is 0
@@ -2066,7 +2066,7 @@ def rolling_count_where_time(
     Args:
         ts_col (str): the timestamp column for determining the window
         col (str): the column to hold the counts of rows that pass the filter condition columns.
-        filters (Union[str, Filter, Sequence[str], Sequence[Filter]], optional): the filter condition
+        filters (Union[str, Filter, Sequence[str], Sequence[Filter]]): the filter condition
             expression(s) or Filter object(s)
         rev_time (int): the look-behind window size, can be expressed as an integer in nanoseconds or a time
             interval string, e.g. "PT00:00:00.001" or "PT5M"

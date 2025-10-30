@@ -4,11 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [tool.mypy]
 namespace_packages = true
-exclude = '(deephaven_core|tests|docs|examples)'
+exclude = ["deephaven_core", "tests", "docs", "examples", "build"]
 
-[[tool.mypy.overrides]]
-module = "pyarrow"
-ignore_missing_imports = true
 [[tool.mypy.overrides]]
 module = "pyarrow.*"
 ignore_missing_imports = true

@@ -4,43 +4,23 @@ build-backend = "setuptools.build_meta"
 
 [tool.mypy]
 namespace_packages = true
-exclude = ["tests", "test_helper", "deephaven/plot"]
+exclude = ["tests", "test_helper", "deephaven/plot", "build"]
 
 [[tool.mypy.overrides]]
-module = "jpy.*"
-ignore_missing_imports = true
-[[tool.mypy.overrides]]
-module = "jpyutil.*"
-ignore_missing_imports = true
-[[tool.mypy.overrides]]
-module = "pyarrow"
-ignore_missing_imports = true
-[[tool.mypy.overrides]]
-module = "pyarrow.*"
-ignore_missing_imports = true
-[[tool.mypy.overrides]]
-module = "deephaven.ui.*"
-ignore_missing_imports = true
-[[tool.mypy.overrides]]
-module = "deephaven.plugin.*"
-ignore_missing_imports = true
-[[tool.mypy.overrides]]
-module = "connectorx"
-ignore_missing_imports = true
-[[tool.mypy.overrides]]
-module = "turbodbc.*"
-ignore_missing_imports = true
-[[tool.mypy.overrides]]
-module = "adbc_driver_manager.*"
-ignore_missing_imports = true
-[[tool.mypy.overrides]]
-module = "adbc_driver_sqlite.*"
-ignore_missing_imports = true
-[[tool.mypy.overrides]]
-module = "adbc_driver_postgresql.*"
-ignore_missing_imports = true
-[[tool.mypy.overrides]]
-module = "jedi.*"
+module = [
+  "jpy.*",
+  "jpyutil.*",
+  "pyarrow",
+  "pyarrow.*",
+  "deephaven.ui.*",
+  "deephaven.plugin.*",
+  "connectorx",
+  "turbodbc.*",
+  "adbc_driver_manager.*",
+  "adbc_driver_sqlite.*",
+  "adbc_driver_postgresql.*",
+  "jedi.*"
+]
 ignore_missing_imports = true
 
 [tool.ruff]

@@ -4,19 +4,14 @@ build-backend = "setuptools.build_meta"
 
 [tool.mypy]
 namespace_packages = true
-exclude = '(tests|demos)'
+exclude = ["tests", "demos", "build"]
 
 [[tool.mypy.overrides]]
-module = "pyarrow"
-ignore_missing_imports = true
-[[tool.mypy.overrides]]
-module = "pyarrow.*"
-ignore_missing_imports = true
-[[tool.mypy.overrides]]
-module = "pydeephaven_ticking._core"
-ignore_missing_imports = true
-[[tool.mypy.overrides]]
-module = "Cython.*"
+module = [
+  "pyarrow.*",
+  "pydeephaven_ticking._core",
+  "Cython.*"
+]
 ignore_missing_imports = true
 
 [tool.ruff]

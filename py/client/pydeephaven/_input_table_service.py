@@ -1,13 +1,20 @@
 #
 # Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 #
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from deephaven_core.proto import inputtable_pb2, inputtable_pb2_grpc
 from pydeephaven.dherror import DHError
 from pydeephaven.table import InputTable, Table
 
+if TYPE_CHECKING:
+    from pydeephaven.session import Session
+
 
 class InputTableService:
-    def __init__(self, session):
+    def __init__(self, session: Session) -> None:
         self.session = session
         self._grpc_input_table_stub = inputtable_pb2_grpc.InputTableServiceStub(
             session.grpc_channel

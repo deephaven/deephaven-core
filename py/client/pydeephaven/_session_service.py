@@ -1,6 +1,9 @@
 #
 # Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 #
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 import grpc
 
@@ -8,11 +11,14 @@ from deephaven_core.proto import session_pb2, session_pb2_grpc
 from pydeephaven.dherror import DHError
 from pydeephaven.ticket import ExportTicket, Ticket
 
+if TYPE_CHECKING:
+    from pydeephaven.session import Session
+
 
 class SessionService:
     _grpc_session_stub: session_pb2_grpc.SessionServiceStub
 
-    def __init__(self, session):
+    def __init__(self, session: Session):
         self.session = session
 
     def connect(self) -> grpc.Channel:

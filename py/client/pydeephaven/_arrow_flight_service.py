@@ -1,6 +1,9 @@
 #
 # Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 #
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 import pyarrow as pa
 import pyarrow.flight as paflight
@@ -10,9 +13,12 @@ from pydeephaven._arrow import map_arrow_type
 from pydeephaven.dherror import DHError
 from pydeephaven.table import Table
 
+if TYPE_CHECKING:
+    from pydeephaven.session import Session
+
 
 class ArrowFlightService:
-    def __init__(self, session, flight_client):
+    def __init__(self, session: Session, flight_client: paflight.FlightClient):
         self.session = session
         self._flight_client = flight_client
 

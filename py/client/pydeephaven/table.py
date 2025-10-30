@@ -188,7 +188,7 @@ class Table(TableInterface["Table"], ServerObject):
         is specified, all columns will be included.
 
         Args:
-            formulas (Union[str, list[str]], optional): the column formula(s), default is None
+            formulas (Optional[Union[str, list[str]]]): the column formula(s), default is None
 
         Returns:
             a Table object
@@ -204,7 +204,7 @@ class Table(TableInterface["Table"], ServerObject):
         selected columns.
 
         Args:
-            cols (Union[str, list[str]], optional): the column name(s), default is None
+            cols (Optional[Union[str, list[str]]]): the column name(s), default is None
 
         Returns:
             a Table object
@@ -224,7 +224,7 @@ class Table(TableInterface["Table"], ServerObject):
 
         Args:
             order_by (Union[str, list[str]]): the column(s) to be sorted on
-            order (Union[SortDirection, list[SortDirection]], optional): the corresponding sort direction(s) for each
+            order (Optional[Union[SortDirection, list[SortDirection]]]): the corresponding sort direction(s) for each
                 sort column, default is None. In the absence of explicit sort directions, data will be sorted in the
                 ascending order.
 
@@ -312,10 +312,10 @@ class Table(TableInterface["Table"], ServerObject):
             table (Table): the right-table of the join
             on (Union[str, list[str]]): the column(s) to match, can be a common name or an equal expression,
                 i.e. "col_a = col_b" for different column names
-            joins (Union[str, list[str]], optional): the column(s) to be added from the right table to the result
+            joins (Optional[Union[str, list[str]]]): the column(s) to be added from the right table to the result
                 table, can be renaming expressions, i.e. "new_col = col"; default is None, which means all the columns
                 from the right table, excluding those specified in 'on'
-            type (NaturalJoinType, optional): the action to be taken when duplicate right hand rows are
+            type (NaturalJoinType): the action to be taken when duplicate right hand rows are
                 encountered; default is ERROR_ON_DUPLICATE
 
         Returns:
@@ -341,7 +341,7 @@ class Table(TableInterface["Table"], ServerObject):
             table (Table): the right-table of the join
             on (Union[str, list[str]]): the column(s) to match, can be a common name or an equal expression,
                 i.e. "col_a = col_b" for different column names
-            joins (Union[str, list[str]], optional): the column(s) to be added from the right table to the result
+            joins (Optional[Union[str, list[str]]]): the column(s) to be added from the right table to the result
                 table, can be renaming expressions, i.e. "new_col = col"; default is None, which means all the columns
                 from the right table, excluding those specified in 'on'
 
@@ -367,12 +367,12 @@ class Table(TableInterface["Table"], ServerObject):
 
         Args:
             table (Table): the right-table of the join
-            on (Union[str, list[str]]): the column(s) to match, can be a common name or an equal expression,
+            on (Optional[Union[str, list[str]]]): the column(s) to match, can be a common name or an equal expression,
                 i.e. "col_a = col_b" for different column names, default is None
-            joins (Union[str, list[str]], optional): the column(s) to be added from the right table to the result
+            joins (Optional[Union[str, list[str]]]): the column(s) to be added from the right table to the result
                 table, can be renaming expressions, i.e. "new_col = col"; default is None, which means all the columns
                 from the right table, excluding those specified in 'on'
-            reserve_bits(int, optional): the number of bits of key-space to initially reserve per group; default is 10
+            reserve_bits(int): the number of bits of key-space to initially reserve per group; default is 10
 
         Returns:
             a Table object
@@ -400,7 +400,7 @@ class Table(TableInterface["Table"], ServerObject):
                 columns, e.g. 'col_a = col_b'. The first 'N-1' matches are exact matches.  The final match is an inexact
                 match.  The inexact match can use either '>' or '>='.  If a common name is used for the inexact match,
                 '>=' is used for the comparison.
-            joins (Union[str, list[str]], optional): the column(s) to be added from the right table to the result
+            joins (Optional[Union[str, list[str]]]): the column(s) to be added from the right table to the result
                 table, can be renaming expressions, i.e. "new_col = col"; default is None, which means all the columns
                 from the right table, excluding those specified in 'on'
 
@@ -430,7 +430,7 @@ class Table(TableInterface["Table"], ServerObject):
                 columns, e.g. 'col_a = col_b'. The first 'N-1' matches are exact matches.  The final match is an inexact
                 match.  The inexact match can use either '<' or '<='.  If a common name is used for the inexact match,
                 '<=' is used for the comparison.
-            joins (Union[str, list[str]], optional): the column(s) to be added from the right table to the result
+            joins (Optional[Union[str, list[str]]]): the column(s) to be added from the right table to the result
                 table, can be renaming expressions, i.e. "new_col = col"; default is None, which means all the columns
                 from the right table, excluding those specified in 'on'
 
@@ -479,7 +479,7 @@ class Table(TableInterface["Table"], ServerObject):
         If no group-by column is given, the content of each column is grouped into its own array.
 
         Args:
-            by (Union[str, list[str]], optional): the group-by column name(s), default is None, meaning grouping
+            by (Optional[Union[str, list[str]]]): the group-by column name(s), default is None, meaning grouping
                 all the rows into one group
 
         Returns:
@@ -497,9 +497,9 @@ class Table(TableInterface["Table"], ServerObject):
         separate rows. The ungroup columns should be of array types.
 
         Args:
-            cols (Union[str, list[str]], optional): the array column(s), default is None, meaning all array columns will
+            cols (Optional[Union[str, list[str]]]): the array column(s), default is None, meaning all array columns will
                 be ungrouped, default is None, meaning all array columns will be ungrouped
-            null_fill (bool, optional): indicates whether null should be used to fill missing cells, default is True
+            null_fill (bool): indicates whether null should be used to fill missing cells, default is True
 
         Returns:
             a Table object
@@ -513,7 +513,7 @@ class Table(TableInterface["Table"], ServerObject):
         """The first_by method creates a new table which contains the first row of each distinct group.
 
         Args:
-            by (Union[str, list[str]], optional): the group-by column name(s), default is None, meaning grouping
+            by (Optional[Union[str, list[str]]]): the group-by column name(s), default is None, meaning grouping
                 all the rows into one group
 
         Returns:
@@ -528,7 +528,7 @@ class Table(TableInterface["Table"], ServerObject):
         """The last_by method creates a new table which contains the last row of each distinct group.
 
         Args:
-            by (Union[str, list[str]], optional): the group-by column name(s), default is None, meaning grouping
+            by (Optional[Union[str, list[str]]]): the group-by column name(s), default is None, meaning grouping
                 all the rows into one group
 
         Returns:
@@ -544,7 +544,7 @@ class Table(TableInterface["Table"], ServerObject):
         must be of numeric types.
 
         Args:
-            by (Union[str, list[str]]): the group-by column name(s), default is None, meaning grouping
+            by (Optional[Union[str, list[str]]]): the group-by column name(s), default is None, meaning grouping
                 all the rows into one group
 
         Returns:
@@ -560,7 +560,7 @@ class Table(TableInterface["Table"], ServerObject):
         grouping must be of numeric types.
 
         Args:
-            by (Union[str, list[str]], optional): the group-by column name(s), default is None, meaning grouping
+            by (Optional[Union[str, list[str]]]): the group-by column name(s), default is None, meaning grouping
                 all the rows into one group
 
         Returns:
@@ -579,7 +579,7 @@ class Table(TableInterface["Table"], ServerObject):
         which ensures that the sample variance will be an unbiased estimator of population variance.
 
         Args:
-            by (Union[str, list[str]]): the group-by column names(s), default is None, meaning grouping
+            by (Optional[Union[str, list[str]]]): the group-by column names(s), default is None, meaning grouping
                 all the rows into one group
 
         Returns:
@@ -598,7 +598,7 @@ class Table(TableInterface["Table"], ServerObject):
         which ensures that the sample variance will be an unbiased estimator of population variance.
 
         Args:
-            by (Union[str, list[str]], optional): the group-by column name(s), default is None, meaning grouping
+            by (Optional[Union[str, list[str]]]): the group-by column name(s), default is None, meaning grouping
                 all the rows into one group
 
         Returns:
@@ -614,7 +614,7 @@ class Table(TableInterface["Table"], ServerObject):
         grouping must be of numeric types.
 
         Args:
-            by (Union[str, list[str]], optional): the group-by column name(s), default is None, meaning grouping
+            by (Optional[Union[str, list[str]]]): the group-by column name(s), default is None, meaning grouping
                 all the rows into one group
 
         Returns:
@@ -630,7 +630,7 @@ class Table(TableInterface["Table"], ServerObject):
         grouping must be of numeric types.
 
         Args:
-            by (Union[str, list[str]], optional): the group-by column name(s), default is None, meaning grouping
+            by (Optional[Union[str, list[str]]]): the group-by column name(s), default is None, meaning grouping
                 all the rows into one group
 
         Returns:
@@ -646,7 +646,7 @@ class Table(TableInterface["Table"], ServerObject):
         grouping must be of numeric types.
 
         Args:
-            by (Union[str, list[str]], optional): the group-by column name(s), default is None, meaning grouping
+            by (Optional[Union[str, list[str]]]): the group-by column name(s), default is None, meaning grouping
                 all the rows into one group
 
         Returns:
@@ -663,7 +663,7 @@ class Table(TableInterface["Table"], ServerObject):
 
         Args:
             col (str): the name of the column to store the counts
-            by (Union[str, list[str]], optional): the group-by column name(s), default is None, meaning grouping
+            by (Optional[Union[str, list[str]]]): the group-by column name(s), default is None, meaning grouping
                 all the rows into one group
 
         Returns:
@@ -724,7 +724,7 @@ class Table(TableInterface["Table"], ServerObject):
 
         Args:
             ops (Union[UpdateByOperation, list[UpdateByOperation]]): the UpdateByOperation(s) to be applied
-            by (Union[str, list[str]], optional): the group-by column name(s), defaults to None, meaning all calculations are
+            by (Union[str, list[str]]): the group-by column name(s), defaults to None, meaning all calculations are
                 performed over the entire table
 
         Returns:
@@ -949,7 +949,7 @@ class MultiJoinInput:
             table (Table): the right table to include in the join
             on (Union[str, Sequence[str]]): the column(s) to match, can be a common name or an equality expression that
                 matches every input table, i.e. "col_a = col_b" to rename output column names.
-            joins (Union[str, Sequence[str]], optional): the column(s) to be added from the table to the result
+            joins (Union[str, Sequence[str]]): the column(s) to be added from the table to the result
                 table, can be renaming expressions, i.e. "new_col = col"; default is None
         """
         self.table = table
@@ -968,7 +968,7 @@ def multi_join(
     Args:
         input (Union[Table, Sequence[Table], MultiJoinInput, Sequence[MultiJoinInput]]): the input objects specifying the
             tables and columns to include in the join.
-        on (Union[str, Sequence[str]], optional): the column(s) to match, can be a common name or an equality expression
+        on (Union[str, Sequence[str]]): the column(s) to match, can be a common name or an equality expression
             that matches every input table, i.e. "col_a = col_b" to rename output column names. Note: When
             MultiJoinInput objects are supplied, this parameter must be omitted.
 

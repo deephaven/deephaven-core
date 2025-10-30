@@ -4,6 +4,7 @@ java-utilities
 click
 packaging
 setuptools
+pip
 wheel
 unittest-xml-reporting
 mypy

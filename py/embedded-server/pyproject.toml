@@ -4,16 +4,14 @@ build-backend = "setuptools.build_meta"
 
 [tool.mypy]
 namespace_packages = true
-exclude = ["tests"]
+exclude = ["tests", "build"]
 
 [[tool.mypy.overrides]]
-module = "jpy.*"
-ignore_missing_imports = true
-[[tool.mypy.overrides]]
-module = "jpyutil.*"
-ignore_missing_imports = true
-[[tool.mypy.overrides]]
-module = "deephaven_internal.*"
+module = [
+  "jpy.*",
+  "jpyutil.*",
+  "deephaven_internal.*"
+]
 ignore_missing_imports = true
 
 [tool.ruff]

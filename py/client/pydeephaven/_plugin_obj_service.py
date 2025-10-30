@@ -1,13 +1,18 @@
 #
 # Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 #
-from typing import Any
+"""This module provides internal tools to communicate with plugins on the server."""
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any
 
 from deephaven_core.proto import object_pb2_grpc
 from pydeephaven.dherror import DHError
 from pydeephaven.experimental.plugin_client import PluginRequestStream
 
-"""This module provides internal tools to communicate with plugins on the server."""
+if TYPE_CHECKING:
+    from pydeephaven.session import Session
 
 
 class PluginObjService:
@@ -15,7 +20,7 @@ class PluginObjService:
     PluginObjectService defines utility methods to make gRPC calls to the ObjectService.
     """
 
-    def __init__(self, session):
+    def __init__(self, session: Session) -> None:
         self.session = session
         self._grpc_app_stub = object_pb2_grpc.ObjectServiceStub(session.grpc_channel)
 

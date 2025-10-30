@@ -113,6 +113,9 @@ class Session:
         is_alive (bool): check if the session is still alive (may refresh the session)
     """
 
+    host: str
+    port: int
+
     def __init__(
         self,
         host: Optional[str] = None,
@@ -131,8 +134,8 @@ class Session:
         """Initializes a Session object that connects to the Deephaven server
 
         Args:
-            host (str): the host name or IP address of the remote machine, default is 'localhost'
-            port (int): the port number that Deephaven server is listening on, default is 10000
+            host (Optional[str]): the host name or IP address of the remote machine, if None, 'localhost' is used.
+            port (Optional[int]): the port number that Deephaven server is listening on, if None, 10000 is used.
             auth_type (str): the authentication type string, can be "Anonymous', 'Basic", or any custom-built
                 authenticator in the server, such as "io.deephaven.authentication.psk.PskAuthenticationHandler",
                 default is 'Anonymous'.
@@ -142,21 +145,21 @@ class Session:
             never_timeout (bool): never allow the session to timeout, default is True
             session_type (str): the Deephaven session type. Defaults to 'python'
             use_tls (bool): if True, use a TLS connection.  Defaults to False
-            tls_root_certs (bytes): PEM encoded root certificates to use for TLS connection, or None to use system defaults.
+            tls_root_certs (Optional[bytes]): PEM encoded root certificates to use for TLS connection, or None to use system defaults.
                  If not None implies use a TLS connection and the use_tls argument should have been passed
                  as True. Defaults to None
-            client_cert_chain (bytes): PEM encoded client certificate if using mutual TLS.  Defaults to None,
+            client_cert_chain (Optional[bytes]): PEM encoded client certificate if using mutual TLS.  Defaults to None,
                  which implies not using mutual TLS.
-            client_private_key (bytes): PEM encoded client private key for client_cert_chain if using mutual TLS.
+            client_private_key (Optional[bytes]): PEM encoded client private key for client_cert_chain if using mutual TLS.
                  Defaults to None, which implies not using mutual TLS.
-            client_opts (list[Tuple[str,Union[int,str]]): list of tuples for name and value of options to
+            client_opts (Optional[list[Tuple[str,Union[int,str]]]): list of tuples for name and value of options to
                 the underlying grpc channel creation.  Defaults to None, which implies not using any channel
                 options.
                 See https://grpc.github.io/grpc/cpp/group__grpc__arg__keys.html for a list of valid options.
                 Example options:
                   [ ('grpc.target_name_override', 'idonthaveadnsforthishost'),
                     ('grpc.min_reconnect_backoff_ms', 2000) ]
-            extra_headers (dict[bytes, bytes]): additional headers (and values) to add to server requests.
+            extra_headers (Optional[dict[bytes, bytes]]): additional headers (and values) to add to server requests.
                 Defaults to None, which implies not using any extra headers.
 
         Raises:
@@ -170,13 +173,15 @@ class Session:
         self._last_export_ticket_number: int = 0
         self._ticket_bitarray = BitArray(1024)
 
-        self.host = host
         if not host:
             self.host = os.environ.get("DH_HOST", "localhost")
+        else:
+            self.host = host
 
-        self.port = port
         if not port:
             self.port = int(os.environ.get("DH_PORT", 10000))
+        else:
+            self.port = port
 
         self._logpfx = f"pydh.Session {id(self)} {host}:port: "
         self._use_tls = use_tls
@@ -195,16 +200,16 @@ class Session:
         # on, the value of _auth_header_value will be similar to b'Bearer X'
         # where X is the bearer token provided by the server.
         if auth_type == "Anonymous":
-            self._auth_header_value: Union[str, bytes] = auth_type
+            auth_header_value: str = auth_type
         elif auth_type == "Basic":
             auth_token_base64 = base64.b64encode(auth_token.encode("ascii")).decode(
                 "ascii"
             )
-            self._auth_header_value = "Basic " + auth_token_base64
+            auth_header_value = "Basic " + auth_token_base64
         else:
-            self._auth_header_value = str(auth_type) + " " + auth_token
+            auth_header_value = str(auth_type) + " " + auth_token
 
-        self._auth_header_value = bytes(self._auth_header_value, "ascii")
+        self._auth_header_value: bytes = bytes(auth_header_value, "ascii")
         # Counter for consecutive failures to refresh auth token, used to calculate retry backoff
         self._refresh_failures = 0
         self.grpc_channel: Optional[grpc.Channel] = None
@@ -684,7 +689,7 @@ class Session:
                 or a time interval string, e.g. "PT00:00:.001" or "PT1S"
             start_time (Union[int, str]): the start time for the time table in nanoseconds or as a date time
                 formatted string; default is None (meaning now)
-            blink_table (bool, optional): if the time table should be a blink table, defaults to False
+            blink_table (bool): if the time table should be a blink table, defaults to False
 
         Returns:
             a Table object

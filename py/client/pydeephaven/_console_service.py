@@ -1,15 +1,20 @@
 #
 # Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 #
-from typing import Any, Optional
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any, Optional
 
 from deephaven_core.proto import console_pb2, console_pb2_grpc
 from pydeephaven.dherror import DHError
 from pydeephaven.table import Table
 
+if TYPE_CHECKING:
+    from pydeephaven.session import Session
+
 
 class ConsoleService:
-    def __init__(self, session):
+    def __init__(self, session: Session) -> None:
         self.session = session
         self._grpc_console_stub = console_pb2_grpc.ConsoleServiceStub(
             session.grpc_channel
@@ -39,7 +44,7 @@ class ConsoleService:
         """Runs a Python script in the console.
         Args:
             server_script (str): The script code to run
-            systemic (bool): Whether to treat the code as systemically important. Defaults to None which uses the
+            systemic (Optional[bool]): Whether to treat the code as systemically important. Defaults to None which uses the
                 default system behavior
         """
         self.start_console()

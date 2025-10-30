@@ -47,6 +47,6 @@ except ImportError:
 
 
 # Note: this is the _distribution_ name, not the _package_ name. Until 3.10, there is not an easy way to get the
-# distribution name from the package name.c
+# distribution name from the package name.
 # https://docs.python.org/3/library/importlib.metadata.html#package-distributions
 __version__ = importlib.metadata.version("pydeephaven")

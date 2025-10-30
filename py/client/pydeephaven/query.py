@@ -109,7 +109,7 @@ class Query(TableInterface["Query"]):
         """Adds a select operation to the query.
 
         Args:
-            formulas (Union[str, list[str]], optional): the column formula(s), default is None
+            formulas (Optional[Union[str, list[str]]]): the column formula(s), default is None
 
         Returns:
             self
@@ -120,7 +120,7 @@ class Query(TableInterface["Query"]):
         """Adds a select-distinct operation to the query.
 
         Args:
-            cols (Union[str, list[str]], optional): the column name(s), default is None
+            cols (Optional[Union[str, list[str]]]): the column name(s), default is None
 
         Returns:
             self
@@ -136,7 +136,7 @@ class Query(TableInterface["Query"]):
 
         Args:
             order_by (Union[str, list[str]]): the names of the columns to be sorted on
-            order (Union[SortDirection, list[SortDirection]], optional): the corresponding sort direction(s) for each
+            order (Optional[Union[SortDirection, list[SortDirection]]]): the corresponding sort direction(s) for each
                 sort column, default is None. In the absence of explicit sort directions, data will be sorted in
                 the ascending order.
 
@@ -191,9 +191,9 @@ class Query(TableInterface["Query"]):
             table (Table): the right-table of the join
             on (Union[str, list[str]]): the column(s) to match, can be a common name or an equal expression,
                 i.e. "col_a = col_b" for different column names
-            joins (Union[str, list[str]], optional): the column(s) to be added from the right table to the result
+            joins (Optional[Union[str, list[str]]]): the column(s) to be added from the right table to the result
                 table, can be renaming expressions, i.e. "new_col = col"; default is None
-            type (NaturalJoinType, optional): the action to be taken when duplicate right hand rows are
+            type (NaturalJoinType): the action to be taken when duplicate right hand rows are
                 encountered; default is ERROR_ON_DUPLICATE
 
         Returns:
@@ -213,7 +213,7 @@ class Query(TableInterface["Query"]):
             table (Table): the right-table of the join
             on (Union[str, list[str]]): the column(s) to match, can be a common name or an equal expression,
                 i.e. "col_a = col_b" for different column names
-            joins (Union[str, list[str]], optional): the column(s) to be added from the right table to the result
+            joins (Optional[Union[str, list[str]]]): the column(s) to be added from the right table to the result
                 table, can be renaming expressions, i.e. "new_col = col"; default is None
 
         Returns:
@@ -232,11 +232,11 @@ class Query(TableInterface["Query"]):
 
         Args:
             table (Table): the right-table of the join
-            on (Union[str, list[str]]): the column(s) to match, can be a common name or an equal expression,
+            on (Optional[Union[str, list[str]]]): the column(s) to match, can be a common name or an equal expression,
                 i.e. "col_a = col_b" for different column names
-            joins (Union[str, list[str]], optional): the column(s) to be added from the right table to the result
+            joins (Optional[Union[str, list[str]]]): the column(s) to be added from the right table to the result
                 table, can be renaming expressions, i.e. "new_col = col"; default is None
-            reserve_bits(int, optional): the number of bits of key-space to initially reserve per group; default is 10
+            reserve_bits(int): the number of bits of key-space to initially reserve per group; default is 10
 
         Returns:
             self
@@ -257,7 +257,7 @@ class Query(TableInterface["Query"]):
                 columns, e.g. 'col_a = col_b'. The first 'N-1' matches are exact matches.  The final match is an inexact
                 match.  The inexact match can use either '>' or '>='.  If a common name is used for the inexact match,
                 '>=' is used for the comparison.
-            joins (Union[str, list[str]], optional): the column(s) to be added from the right table to the result
+            joins (Optional[Union[str, list[str]]]): the column(s) to be added from the right table to the result
                 table, can be renaming expressions, i.e. "new_col = col"; default is None
 
         Returns:
@@ -279,7 +279,7 @@ class Query(TableInterface["Query"]):
                 columns, e.g. 'col_a = col_b'. The first 'N-1' matches are exact matches.  The final match is an inexact
                 match.  The inexact match can use either '<' or '<='.  If a common name is used for the inexact match,
                 '<=' is used for the comparison.
-            joins (Union[str, list[str]], optional): the column(s) to be added from the right table to the result
+            joins (Optional[Union[str, list[str]]]): the column(s) to be added from the right table to the result
                 table, can be renaming expressions, i.e. "new_col = col"; default is None
 
         Returns:
@@ -315,7 +315,7 @@ class Query(TableInterface["Query"]):
         """Adds a group-by aggregation to the query.
 
         Args:
-            by (Union[str, list[str]], optional): the group-by column name(s); default is None
+            by (Optional[Union[str, list[str]]]): the group-by column name(s); default is None
 
         Returns:
             self
@@ -328,9 +328,9 @@ class Query(TableInterface["Query"]):
         """Adds an ungroup operation to the query.
 
         Args:
-            cols (Union[str, list[str]], optional): the array column(s), default is None, meaning all array columns will
+            cols (Optional[Union[str, list[str]]]): the array column(s), default is None, meaning all array columns will
                 be ungrouped
-            null_fill (bool, optional): indicates whether null should be used to fill missing cells, default is True
+            null_fill (bool): indicates whether null should be used to fill missing cells, default is True
 
         Returns:
             self
@@ -341,7 +341,7 @@ class Query(TableInterface["Query"]):
         """Adds a first-by aggregation to the query.
 
         Args:
-            by (Union[str, list[str]], optional): the group-by column name(s), default is None
+            by (Optional[Union[str, list[str]]]): the group-by column name(s), default is None
 
         Returns:
             self
@@ -352,7 +352,7 @@ class Query(TableInterface["Query"]):
         """Adds a last-by aggregation to the query.
 
         Args:
-            by (Union[str, list[str]], optional): the group-by column name(s), default is None
+            by (Optional[Union[str, list[str]]]): the group-by column name(s), default is None
 
         Returns:
             self
@@ -363,7 +363,7 @@ class Query(TableInterface["Query"]):
         """Adds a sum-by aggregation to the query.
 
         Args:
-            by (Union[str, list[str]]): the group-by column name(s)
+            by (Optional[Union[str, list[str]]]): the group-by column name(s)
 
         Returns:
             self
@@ -374,7 +374,7 @@ class Query(TableInterface["Query"]):
         """Adds an avg-by aggregation to the query.
 
         Args:
-            by (Union[str, list[str]], optional): the group-by column name(s), default is None
+            by (Optional[Union[str, list[str]]]): the group-by column name(s), default is None
 
         Returns:
             self
@@ -396,7 +396,7 @@ class Query(TableInterface["Query"]):
         """Adds a var-by aggregation to the query.
 
         Args:
-            by (Union[str, list[str]], optional): the group-by column name(s), default is None
+            by (Union[str, list[str]]): the group-by column name(s), default is None
 
         Returns:
             self
@@ -407,7 +407,7 @@ class Query(TableInterface["Query"]):
         """Adds a median-by aggregation to the query.
 
         Args:
-            by (Union[str, list[str]], optional): the group-by column name(s), default is None
+            by (Union[str, list[str]]): the group-by column name(s), default is None
 
         Returns:
             self
@@ -418,7 +418,7 @@ class Query(TableInterface["Query"]):
         """Adds a min-by aggregation to the query.
 
         Args:
-            by (Union[str, list[str]], optional): the group-by column name(s), default is None
+            by (Union[str, list[str]]): the group-by column name(s), default is None
 
         Returns:
             self
@@ -429,7 +429,7 @@ class Query(TableInterface["Query"]):
         """Adds a max-by aggregation to the query.
 
         Args:
-            by (Union[str, list[str]], optional): the group-by column name(s), default is None
+            by (Union[str, list[str]]): the group-by column name(s), default is None
 
         Returns:
             self
@@ -441,7 +441,7 @@ class Query(TableInterface["Query"]):
 
         Args:
             col (str): the name of the column to store the counts
-            by (Union[str, list[str]], optional): the group-by column name(s), default is None
+            by (Union[str, list[str]]): the group-by column name(s), default is None
 
         Returns:
             self
@@ -483,7 +483,7 @@ class Query(TableInterface["Query"]):
 
         Args:
             ops (Union[UpdateByOperation, list[UpdateByOperation]]): the UpdateByOperation(s) to be applied
-            by (Union[str, list[str]], optional): the group-by column name(s)
+            by (Union[str, list[str]]): the group-by column name(s)
 
         Returns:
             self

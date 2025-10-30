@@ -1,7 +1,9 @@
 #
 # Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 #
-from typing import Optional, Union
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Optional, Union
 
 from deephaven_core.proto import table_pb2, table_pb2_grpc
 from pydeephaven._batch_assembler import BatchOpAssembler
@@ -10,9 +12,12 @@ from pydeephaven.dherror import DHError
 from pydeephaven.table import InputTable, Table
 from pydeephaven.ticket import ExportTicket, _ticket_from_proto
 
+if TYPE_CHECKING:
+    from pydeephaven.session import Session
+
 
 class TableService:
-    def __init__(self, session):
+    def __init__(self, session: Session):
         self.session = session
         self._grpc_table_stub = table_pb2_grpc.TableServiceStub(session.grpc_channel)
 

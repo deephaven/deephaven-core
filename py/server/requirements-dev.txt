@@ -7,6 +7,7 @@ docstring-parser
 setuptools
 wheel
 packaging
+pip
 unittest-xml-reporting
 mypy
 ruff
