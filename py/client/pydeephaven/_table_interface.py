@@ -31,6 +31,7 @@ from pydeephaven._table_ops import (
     SnapshotWhenTableOp,
     SortDirection,
     SortOp,
+    TableOp,
     TailByOp,
     TailOp,
     UngroupOp,
@@ -56,7 +57,7 @@ class TableInterface(ABC, Generic[T]):
     """
 
     @abstractmethod
-    def table_op_handler(self, table_op) -> T: ...
+    def table_op_handler(self, table_op: TableOp) -> T: ...
 
     def drop_columns(self, cols: Union[str, list[str]]) -> T:
         """The drop_column method creates a new table with the same size as this table but omits any of the specified
