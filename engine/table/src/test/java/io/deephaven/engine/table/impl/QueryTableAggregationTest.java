@@ -4077,7 +4077,7 @@ public class QueryTableAggregationTest {
         ThreadPoolExecutor executor = (ThreadPoolExecutor) Executors.newFixedThreadPool(1);
         executor.submit(() -> {
             try (final SafeCloseable ignored = executionContext.open()) {
-                // This might triggered an infinite loop in DoubleSegmentedSortedMultiSet
+                // This might trigger an infinite loop in DoubleSegmentedSortedMultiSet
                 return merged.aggBy(AggCountDistinct(true, "CountDistinctWithNulls=X"));
             }
         }).get(10, TimeUnit.SECONDS);
