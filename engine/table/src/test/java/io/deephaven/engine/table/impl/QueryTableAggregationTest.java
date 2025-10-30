@@ -4069,7 +4069,7 @@ public class QueryTableAggregationTest {
         final Table x = newTable(
                 doubleCol("X", -0.0, 0.0, Double.NaN, Double.POSITIVE_INFINITY, Double.NEGATIVE_INFINITY, NULL_DOUBLE))
                 .updateView("XStr=Double.toString(X)");
-        final Table[] x_arr = new Table[1_000]; // need a lot of rows ot trigger the issue
+        final Table[] x_arr = new Table[1_000]; // need a lot of rows to trigger the issue
         Arrays.fill(x_arr, x);
         final Table merged = merge(x_arr).select();
 
