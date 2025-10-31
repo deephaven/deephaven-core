@@ -1845,14 +1845,24 @@ public class QueryTableTest extends QueryTableTestBase {
             TestCase.assertFalse(
                     snappedOfSnap.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
 
-            // This should flush the TUV and the select
+            // This should flush the TUV and the select (which will produce a "onComplete" notification)
             flushed = updateGraph.flushOneNotificationForUnitTests();
             TestCase.assertTrue(flushed);
             flushed = updateGraph.flushOneNotificationForUnitTests();
             TestCase.assertTrue(flushed);
             TestCase.assertTrue(
                     snappedFirst.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
+            TestCase.assertFalse(
+                    snappedDep.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
+            TestCase.assertFalse(
+                    snappedOfSnap.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
+
+            // now flush select complete notification
+            flushed = updateGraph.flushOneNotificationForUnitTests();
+            TestCase.assertTrue(flushed);
             TestCase.assertTrue(
+                    snappedFirst.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
+            TestCase.assertFalse(
                     snappedDep.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
             TestCase.assertFalse(
                     snappedOfSnap.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
@@ -2011,7 +2021,17 @@ public class QueryTableTest extends QueryTableTestBase {
             TestCase.assertFalse(
                     snappedOfSnap.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
 
-            // now we should flush the select
+            // now we should flush the select, will produce a "onComplete" notification
+            flushed2 = updateGraph.flushOneNotificationForUnitTests();
+            TestCase.assertTrue(flushed2);
+            TestCase.assertTrue(
+                    snappedFirst.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
+            TestCase.assertFalse(
+                    snappedDep.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
+            TestCase.assertFalse(
+                    snappedOfSnap.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
+
+            // now flush select complete notification
             flushed2 = updateGraph.flushOneNotificationForUnitTests();
             TestCase.assertTrue(flushed2);
             TestCase.assertTrue(
@@ -2167,7 +2187,17 @@ public class QueryTableTest extends QueryTableTestBase {
             TestCase.assertFalse(
                     snappedOfSnap.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
 
-            // now we should flush the select
+            // now we should flush the select, will produce a "onComplete" notification
+            flushed = updateGraph.flushOneNotificationForUnitTests();
+            TestCase.assertTrue(flushed);
+            TestCase.assertTrue(
+                    snappedFirst.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
+            TestCase.assertFalse(
+                    snappedDep.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
+            TestCase.assertFalse(
+                    snappedOfSnap.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
+
+            // now flush select complete notification
             flushed = updateGraph.flushOneNotificationForUnitTests();
             TestCase.assertTrue(flushed);
             TestCase.assertTrue(
