@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Optional, Union
 
-from deephaven_core.proto import table_pb2, table_pb2_grpc
+from deephaven_core.proto import table_pb2, table_pb2_grpc, ticket_pb2
 from pydeephaven._batch_assembler import BatchOpAssembler
 from pydeephaven._table_ops import TableOp
 from pydeephaven.dherror import DHError
@@ -82,17 +82,17 @@ class TableService:
         except Exception as e:
             raise DHError(f"failed to finish {op.__class__.__name__} operation") from e
 
-    def fetch_etcr(self, ticket) -> Table:
+    def fetch_etcr(self, ticket: ticket_pb2.Ticket) -> Table:
         """Given a ticket, constructs a table around it, by fetching metadata from the server."""
         response = self.session.wrap_rpc(
             self._grpc_table_stub.GetExportedTableCreationResponse, ticket
         )
 
-        ticket = _ticket_from_proto(response.result_id.ticket)
+        wrapped_ticket = _ticket_from_proto(response.result_id.ticket)
         if response.success:
             return Table(
                 self.session,
-                ticket=ticket,
+                ticket=wrapped_ticket,
                 schema_header=response.schema_header,
                 size=response.size,
                 is_static=response.is_static,

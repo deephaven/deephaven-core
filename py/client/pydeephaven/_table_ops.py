@@ -1,9 +1,11 @@
 #
 # Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 #
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
 from enum import Enum
-from typing import Any, Optional, Union
+from typing import TYPE_CHECKING, Any, Optional, Union
 
 import pyarrow as pa
 
@@ -11,6 +13,9 @@ from deephaven_core.proto import table_pb2, table_pb2_grpc, ticket_pb2
 from pydeephaven._arrow import map_arrow_type
 from pydeephaven.agg import Aggregation
 from pydeephaven.updateby import UpdateByOperation
+
+if TYPE_CHECKING:
+    from pydeephaven.table import MultiJoinInput
 
 
 class SortDirection(Enum):
@@ -877,7 +882,7 @@ class MetaTableOp(TableOp):
 
 
 class MultijoinTablesOp(TableOp):
-    def __init__(self, multi_join_inputs):
+    def __init__(self, multi_join_inputs: list[MultiJoinInput]):
         self.multi_join_inputs = multi_join_inputs
 
     @classmethod
