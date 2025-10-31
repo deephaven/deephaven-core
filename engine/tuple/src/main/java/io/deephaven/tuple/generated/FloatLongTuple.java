@@ -75,7 +75,7 @@ public class FloatLongTuple implements Comparable<FloatLongTuple>, Externalizabl
         }
         final FloatLongTuple typedOther = (FloatLongTuple) other;
         // @formatter:off
-        return element1 == typedOther.element1 &&
+        return FloatComparisons.eq(element1, typedOther.element1) &&
                element2 == typedOther.element2;
         // @formatter:on
     }

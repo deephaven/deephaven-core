@@ -87,7 +87,7 @@ public class FloatObjectShortTuple implements Comparable<FloatObjectShortTuple>,
         }
         final FloatObjectShortTuple typedOther = (FloatObjectShortTuple) other;
         // @formatter:off
-        return element1 == typedOther.element1 &&
+        return FloatComparisons.eq(element1, typedOther.element1) &&
                ObjectComparisons.eq(element2, typedOther.element2) &&
                element3 == typedOther.element3;
         // @formatter:on

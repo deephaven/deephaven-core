@@ -92,16 +92,14 @@ public interface WritableChunk<ATTR extends Any> extends Chunk<ATTR>, PoolableCh
     int internalCapacity(long password);
 
     /**
-     * Sort this chunk in-place using Java's primitive defined ordering.
-     * <p>
-     * Of note is that nulls or NaNs are not sorted according to Deephaven ordering rules.
+     * Sort this chunk in-place using Deephaven defined ordering where {@code null} is lt all other values and
+     * Double.NaN / Float.NaN are gt all other values.
      */
     void sort();
 
     /**
-     * Sort this chunk in-place using Java's primitive defined ordering.
-     * <p>
-     * Of note is that nulls or NaNs are not sorted according to Deephaven ordering rules.
+     * Sort this chunk in-place using Deephaven defined ordering where {@code null} is lt all other values and
+     * Double.NaN / Float.NaN are gt all other values.
      */
     default void sort(int start, int length) {
         throw new UnsupportedOperationException();

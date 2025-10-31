@@ -1341,7 +1341,7 @@ public final class DoubleSegmentedSortedMultiset implements SegmentedSortedMulti
 
     private static boolean eq(double lhs, double rhs) {
         // region equality function
-        return lhs == rhs;
+        return doComparison(lhs, rhs) == 0;
         // endregion equality function
     }
     // endregion

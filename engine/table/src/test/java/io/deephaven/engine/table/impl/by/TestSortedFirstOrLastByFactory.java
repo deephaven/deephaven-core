@@ -18,10 +18,12 @@ import io.deephaven.engine.table.impl.*;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.test.types.OutOfBandTest;
+import io.deephaven.tuple.ArrayTuple;
 import junit.framework.TestCase;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.Random;
 
 import org.junit.experimental.categories.Category;
@@ -30,14 +32,12 @@ import static io.deephaven.api.agg.Aggregation.AggSortedLast;
 import static io.deephaven.engine.util.TableTools.*;
 import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.engine.testutil.TstUtils.addToTable;
+import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
+import static io.deephaven.util.QueryConstants.NULL_FLOAT;
 
 @Category(OutOfBandTest.class)
 public class TestSortedFirstOrLastByFactory extends RefreshingTableTestCase {
 
-    private static final String[] colNames = new String[] {"Sym", "intCol", "doubleCol", "Indices"};
-
-    private static final boolean printTableUpdates = Configuration.getInstance()
-            .getBooleanForClassWithDefault(RefreshingTableTestCase.class, "printTableUpdates", false);
 
     public void testSortedFirstOrLastBy() {
         final int[] sizes = {10, 50, 200};
@@ -54,11 +54,14 @@ public class TestSortedFirstOrLastByFactory extends RefreshingTableTestCase {
     private void incrementalTest(int seed, int size, final String... sortColumns) {
         final Random random = new Random(seed);
         final ColumnInfo<?, ?>[] columnInfo;
+
+        final String[] colNames = new String[] {"Sym", "intCol", "doubleCol", "Indices"};
+
         final QueryTable queryTable = getTable(size, random, columnInfo = initColumnInfos(
                 colNames,
-                new SetGenerator<>("a", "b", "c", "d"),
+                new SetGenerator<>("a", "b", "c", "d", "e", "f"),
                 new IntGenerator(10, 100, 0.1),
-                new SetGenerator<>(10.1, 20.1, 30.1),
+                new SetGenerator<>(10.1, 20.1, 30.1, NULL_DOUBLE, Double.NaN),
                 new SortedLongGenerator(0, Integer.MAX_VALUE)));
         if (printTableUpdates) {
             showWithRowSet(queryTable);
@@ -85,7 +88,60 @@ public class TestSortedFirstOrLastByFactory extends RefreshingTableTestCase {
                                 .sort("Sym"))
         };
         for (int step = 0; step < 100; step++) {
-            if (RefreshingTableTestCase.printTableUpdates) {
+            if (printTableUpdates) {
+                System.out.println("Size = " + size + ", Seed = " + seed + ", Step = " + step + ", sortColumns="
+                        + Arrays.toString(sortColumns));
+            }
+            simulateShiftAwareStep(size, random, queryTable, columnInfo, en);
+        }
+    }
+
+    public void testSortedFirstOrLastByArrayTuples() {
+        final int seed = 0;
+        final int size = 200;
+        final Random random = new Random(seed);
+
+        final String[] colNames =
+                new String[] {"Sym", "intCol", "floatCol1", "floatCol2", "doubleCol1", "doubleCol2", "Indices"};
+
+        // Length 5 to trigger ArrayTuple usage
+        final String[] sortColumns = new String[] {"intCol", "floatCol1", "floatCol2", "doubleCol1", "doubleCol2"};
+
+        final ColumnInfo<?, ?>[] columnInfo;
+        final QueryTable queryTable = getTable(size, random, columnInfo = initColumnInfos(
+                colNames,
+                new SetGenerator<>("a", "b", "c", "d", "e", "f"),
+                new IntGenerator(10, 100, 0.1),
+                new SetGenerator<>(10.1f, 20.1f, 30.1f, NULL_FLOAT, Float.NaN),
+                new SetGenerator<>(10.1f, 20.1f, 30.1f, NULL_FLOAT, Float.NaN),
+                new SetGenerator<>(10.1, 20.1, 30.1, NULL_DOUBLE, Double.NaN),
+                new SetGenerator<>(10.1, 20.1, 30.1, NULL_DOUBLE, Double.NaN),
+                new SortedLongGenerator(0, Integer.MAX_VALUE)));
+        if (printTableUpdates) {
+            showWithRowSet(queryTable);
+        }
+        final EvalNuggetInterface[] en = new EvalNuggetInterface[] {
+                EvalNugget.from(() -> SortedBy.sortedFirstBy(queryTable.update("x=Indices"), sortColumns)),
+                EvalNugget.from(() -> SortedBy.sortedLastBy(queryTable.update("x=Indices"), sortColumns)),
+                new QueryTableTest.TableComparator(
+                        queryTable.sort(sortColumns).head(1),
+                        SortedBy.sortedFirstBy(queryTable, sortColumns)),
+                new QueryTableTest.TableComparator(
+                        SortedBy.sortedLastBy(queryTable, sortColumns),
+                        queryTable.sort(sortColumns).tail(1)),
+                EvalNugget.Sorted.from(() -> SortedBy.sortedFirstBy(queryTable.update("x=Indices"), sortColumns, "Sym"),
+                        "Sym"),
+                EvalNugget.Sorted.from(() -> SortedBy.sortedLastBy(queryTable.update("x=Indices"), sortColumns, "Sym"),
+                        "Sym"),
+                new QueryTableTest.TableComparator(
+                        queryTable.sort(sortColumns).firstBy("Sym").sort("Sym"),
+                        SortedBy.sortedFirstBy(queryTable, sortColumns, "Sym").sort("Sym")),
+                new QueryTableTest.TableComparator(queryTable.sort(sortColumns).lastBy("Sym").sort("Sym"),
+                        queryTable.aggBy(AggSortedLast(List.of(sortColumns), "intCol", "floatCol1", "floatCol2",
+                                "doubleCol1", "doubleCol2", "Indices"), "Sym").sort("Sym"))
+        };
+        for (int step = 0; step < 100; step++) {
+            if (printTableUpdates) {
                 System.out.println("Size = " + size + ", Seed = " + seed + ", Step = " + step + ", sortColumns="
                         + Arrays.toString(sortColumns));
             }

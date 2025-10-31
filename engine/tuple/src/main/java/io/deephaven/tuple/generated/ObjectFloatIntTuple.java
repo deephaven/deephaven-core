@@ -88,7 +88,7 @@ public class ObjectFloatIntTuple implements Comparable<ObjectFloatIntTuple>, Ext
         final ObjectFloatIntTuple typedOther = (ObjectFloatIntTuple) other;
         // @formatter:off
         return ObjectComparisons.eq(element1, typedOther.element1) &&
-               element2 == typedOther.element2 &&
+               FloatComparisons.eq(element2, typedOther.element2) &&
                element3 == typedOther.element3;
         // @formatter:on
     }

@@ -86,8 +86,8 @@ public class DoubleFloatShortTuple implements Comparable<DoubleFloatShortTuple>,
         }
         final DoubleFloatShortTuple typedOther = (DoubleFloatShortTuple) other;
         // @formatter:off
-        return element1 == typedOther.element1 &&
-               element2 == typedOther.element2 &&
+        return DoubleComparisons.eq(element1, typedOther.element1) &&
+               FloatComparisons.eq(element2, typedOther.element2) &&
                element3 == typedOther.element3;
         // @formatter:on
     }

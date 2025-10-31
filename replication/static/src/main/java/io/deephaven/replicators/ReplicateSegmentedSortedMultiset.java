@@ -23,8 +23,17 @@ public class ReplicateSegmentedSortedMultiset {
     private static final String TASK = "replicateSegmentedSortedMultiset";
 
     public static void main(String[] args) throws IOException {
-        charToAllButBooleanAndLong(TASK,
+        final List<String> files = charToAllButBooleanAndLong(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/ssms/CharSegmentedSortedMultiset.java");
+        for (String file : files) {
+            if (file.contains("Double") || file.contains("Float")) {
+                final File objectFile = new File(file);
+                List<String> lines = FileUtils.readLines(objectFile, Charset.defaultCharset());
+                lines = simpleFixup(lines, "equality function", "lhs == rhs", "doComparison(lhs, rhs) == 0");
+                FileUtils.writeLines(objectFile, lines);
+            }
+        }
+
         insertInstantExtensions(charToLong(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/ssms/CharSegmentedSortedMultiset.java"));
 

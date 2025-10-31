@@ -85,8 +85,8 @@ public class FloatFloatLongTuple implements Comparable<FloatFloatLongTuple>, Ext
         }
         final FloatFloatLongTuple typedOther = (FloatFloatLongTuple) other;
         // @formatter:off
-        return element1 == typedOther.element1 &&
-               element2 == typedOther.element2 &&
+        return FloatComparisons.eq(element1, typedOther.element1) &&
+               FloatComparisons.eq(element2, typedOther.element2) &&
                element3 == typedOther.element3;
         // @formatter:on
     }

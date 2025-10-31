@@ -87,7 +87,7 @@ public class DoubleShortObjectTuple implements Comparable<DoubleShortObjectTuple
         }
         final DoubleShortObjectTuple typedOther = (DoubleShortObjectTuple) other;
         // @formatter:off
-        return element1 == typedOther.element1 &&
+        return DoubleComparisons.eq(element1, typedOther.element1) &&
                element2 == typedOther.element2 &&
                ObjectComparisons.eq(element3, typedOther.element3);
         // @formatter:on

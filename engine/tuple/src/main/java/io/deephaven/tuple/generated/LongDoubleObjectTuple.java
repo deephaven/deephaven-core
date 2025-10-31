@@ -88,7 +88,7 @@ public class LongDoubleObjectTuple implements Comparable<LongDoubleObjectTuple>,
         final LongDoubleObjectTuple typedOther = (LongDoubleObjectTuple) other;
         // @formatter:off
         return element1 == typedOther.element1 &&
-               element2 == typedOther.element2 &&
+               DoubleComparisons.eq(element2, typedOther.element2) &&
                ObjectComparisons.eq(element3, typedOther.element3);
         // @formatter:on
     }

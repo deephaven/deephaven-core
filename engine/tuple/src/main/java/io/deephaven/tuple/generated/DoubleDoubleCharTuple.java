@@ -85,8 +85,8 @@ public class DoubleDoubleCharTuple implements Comparable<DoubleDoubleCharTuple>,
         }
         final DoubleDoubleCharTuple typedOther = (DoubleDoubleCharTuple) other;
         // @formatter:off
-        return element1 == typedOther.element1 &&
-               element2 == typedOther.element2 &&
+        return DoubleComparisons.eq(element1, typedOther.element1) &&
+               DoubleComparisons.eq(element2, typedOther.element2) &&
                element3 == typedOther.element3;
         // @formatter:on
     }

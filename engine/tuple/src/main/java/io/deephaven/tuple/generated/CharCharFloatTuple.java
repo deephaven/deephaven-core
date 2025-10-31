@@ -87,7 +87,7 @@ public class CharCharFloatTuple implements Comparable<CharCharFloatTuple>, Exter
         // @formatter:off
         return element1 == typedOther.element1 &&
                element2 == typedOther.element2 &&
-               element3 == typedOther.element3;
+               FloatComparisons.eq(element3, typedOther.element3);
         // @formatter:on
     }
 

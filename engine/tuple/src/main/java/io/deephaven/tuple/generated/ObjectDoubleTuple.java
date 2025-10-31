@@ -77,7 +77,7 @@ public class ObjectDoubleTuple implements Comparable<ObjectDoubleTuple>, Externa
         final ObjectDoubleTuple typedOther = (ObjectDoubleTuple) other;
         // @formatter:off
         return ObjectComparisons.eq(element1, typedOther.element1) &&
-               element2 == typedOther.element2;
+               DoubleComparisons.eq(element2, typedOther.element2);
         // @formatter:on
     }
 

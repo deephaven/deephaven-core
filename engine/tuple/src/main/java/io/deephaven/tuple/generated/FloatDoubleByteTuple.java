@@ -86,8 +86,8 @@ public class FloatDoubleByteTuple implements Comparable<FloatDoubleByteTuple>, E
         }
         final FloatDoubleByteTuple typedOther = (FloatDoubleByteTuple) other;
         // @formatter:off
-        return element1 == typedOther.element1 &&
-               element2 == typedOther.element2 &&
+        return FloatComparisons.eq(element1, typedOther.element1) &&
+               DoubleComparisons.eq(element2, typedOther.element2) &&
                element3 == typedOther.element3;
         // @formatter:on
     }

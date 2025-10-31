@@ -76,7 +76,7 @@ public class ByteDoubleTuple implements Comparable<ByteDoubleTuple>, Externaliza
         final ByteDoubleTuple typedOther = (ByteDoubleTuple) other;
         // @formatter:off
         return element1 == typedOther.element1 &&
-               element2 == typedOther.element2;
+               DoubleComparisons.eq(element2, typedOther.element2);
         // @formatter:on
     }
 

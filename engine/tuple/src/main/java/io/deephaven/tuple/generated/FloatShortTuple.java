@@ -75,7 +75,7 @@ public class FloatShortTuple implements Comparable<FloatShortTuple>, Externaliza
         }
         final FloatShortTuple typedOther = (FloatShortTuple) other;
         // @formatter:off
-        return element1 == typedOther.element1 &&
+        return FloatComparisons.eq(element1, typedOther.element1) &&
                element2 == typedOther.element2;
         // @formatter:on
     }

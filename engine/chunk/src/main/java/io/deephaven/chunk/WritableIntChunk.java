@@ -210,10 +210,7 @@ public class WritableIntChunk<ATTR extends Any> extends IntChunk<ATTR> implement
     // region sort
     @Override
     public final void sort(int start, int length) {
-        Arrays.sort(data, offset + start, offset + start + length);
-
-        // region SortFixup
-        // endregion SortFixup
+        WritableChunkUtils.sort(data, offset + start, offset + start + length);
     }
     // endregion sort
 
