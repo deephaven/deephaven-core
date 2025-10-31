@@ -8,6 +8,7 @@ import com.google.rpc.Code;
 import io.deephaven.proto.util.Exceptions;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.util.function.ThrowingRunnable;
+import io.grpc.StatusException;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.ClientCallStreamObserver;
 import io.grpc.stub.StreamObserver;
@@ -92,6 +93,18 @@ public class GrpcUtil {
     public static void safelyError(
             @NotNull final StreamObserver<?> observer,
             @NotNull final StatusRuntimeException exception) {
+        safelyExecuteLocked(observer, () -> observer.onError(exception));
+    }
+
+    /**
+     * Writes an error to the observer in a try/catch block to minimize damage caused by failing observer call.
+     * <p>
+     * This will always synchronize on the observer to ensure thread safety when interacting with the grpc response
+     * stream.
+     */
+    public static void safelyError(
+            @NotNull final StreamObserver<?> observer,
+            @NotNull final StatusException exception) {
         safelyExecuteLocked(observer, () -> observer.onError(exception));
     }
 
