@@ -51,9 +51,11 @@ RUN set -eux; \
     /includes/deephaven_core/proto/config.proto \
     /includes/deephaven_core/proto/hierarchicaltable.proto \
     /includes/deephaven_core/proto/storage.proto; \
+  pip3 install -qq mypy-protobuf; \
   python3 -m grpc_tools.protoc \
     --grpc_python_out=/generated/python \
     --python_out=/generated/python \
+    --mypy_out=/generated/python \
     -I/includes \
     /includes/deephaven_core/proto/ticket.proto \
     /includes/deephaven_core/proto/console.proto \

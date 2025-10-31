@@ -2,24 +2,24 @@
 # Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 #
 
-""" This module defines the SelectableDateSet which is used to provides a view of a selectable subset of a table.
-For example, in some selectable data sets, a GUI click can be used to select a portion of a table. """
+"""This module defines the SelectableDateSet which is used to provides a view of a selectable subset of a table.
+For example, in some selectable data sets, a GUI click can be used to select a portion of a table."""
 
-from typing import List
+from typing import Optional
 
 import jpy
 
 from deephaven import DHError
 from deephaven._wrapper import JObjectWrapper
-from deephaven.table import Table, PartitionedTable
+from deephaven.table import PartitionedTable, Table
 
 _JSelectableDataSet = jpy.get_type("io.deephaven.plot.filters.SelectableDataSet")
 _JSelectables = jpy.get_type("io.deephaven.plot.filters.Selectables")
 
 
 class SelectableDataSet(JObjectWrapper):
-    """ A SelectableDataSet provides a view of a selectable subset of a table.  For example, in some selectable data
-    sets, a GUI click can be used to select a portion of a table. """
+    """A SelectableDataSet provides a view of a selectable subset of a table.  For example, in some selectable data
+    sets, a GUI click can be used to select a portion of a table."""
 
     j_object_type = _JSelectableDataSet
 
@@ -31,12 +31,14 @@ class SelectableDataSet(JObjectWrapper):
         return self.j_sds
 
 
-def one_click(t: Table, by: List[str] = None, require_all_filters: bool = False) -> SelectableDataSet:
-    """ Creates a SelectableDataSet with the specified columns from a table.
+def one_click(
+    t: Table, by: Optional[list[str]] = None, require_all_filters: bool = False
+) -> SelectableDataSet:
+    """Creates a SelectableDataSet with the specified columns from a table.
 
     Args:
         t (Table): the source table
-        by (List[str]): the selected columns
+        by (Optional[list[str]]): the selected columns, defaults to None
         require_all_filters (bool): false to display data when not all oneclicks are selected; true to only
             display data when appropriate oneclicks are selected
 
@@ -49,13 +51,17 @@ def one_click(t: Table, by: List[str] = None, require_all_filters: bool = False)
     if not by:
         by = []
     try:
-        return SelectableDataSet(j_sds=_JSelectables.oneClick(t.j_table, require_all_filters, *by))
+        return SelectableDataSet(
+            j_sds=_JSelectables.oneClick(t.j_table, require_all_filters, *by)
+        )
     except Exception as e:
         raise DHError(e, "failed in one_click.") from e
 
 
-def one_click_partitioned_table(pt: PartitionedTable, require_all_filters: bool = False) -> SelectableDataSet:
-    """ Creates a SelectableDataSet with the specified columns from the table map.
+def one_click_partitioned_table(
+    pt: PartitionedTable, require_all_filters: bool = False
+) -> SelectableDataSet:
+    """Creates a SelectableDataSet with the specified columns from the table map.
 
     Args:
         pt (PartitionedTable): the source partitioned table
@@ -69,6 +75,8 @@ def one_click_partitioned_table(pt: PartitionedTable, require_all_filters: bool 
         DHError
     """
     try:
-        return SelectableDataSet(j_sds=_JSelectables.oneClick(pt.j_partitioned_table, require_all_filters))
+        return SelectableDataSet(
+            j_sds=_JSelectables.oneClick(pt.j_partitioned_table, require_all_filters)
+        )
     except Exception as e:
         raise DHError(e, "failed in one_click.") from e

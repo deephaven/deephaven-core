@@ -2,17 +2,23 @@
 # Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 #
 
-import jpy
+from typing import TYPE_CHECKING, Union, cast
+
 import deephaven.plugin
-
-from typing import Union, Type
-from deephaven.plugin import Plugin, Registration, Callback
-from deephaven.plugin.object_type import ObjectType
+import jpy
+from deephaven.plugin import Callback, Plugin
 from deephaven.plugin.js import JsPlugin
-from .object import ObjectTypeAdapter
-from .js import to_j_js_plugin
+from deephaven.plugin.object_type import ObjectType
 
-_JCallbackAdapter = jpy.get_type("io.deephaven.server.plugin.python.CallbackAdapter")
+from .js import to_j_js_plugin
+from .object import ObjectTypeAdapter
+
+if TYPE_CHECKING:
+    from typing_extensions import TypeAlias  # novermin  # noqa
+
+_JCallbackAdapter = cast(
+    type, jpy.get_type("io.deephaven.server.plugin.python.CallbackAdapter")
+)  # type: TypeAlias
 
 
 def initialize_all_and_register_into(callback: _JCallbackAdapter):
@@ -26,7 +32,7 @@ class RegistrationAdapter(Callback):
     def __init__(self, callback: _JCallbackAdapter):
         self._callback = callback
 
-    def register(self, plugin: Union[Plugin, Type[Plugin]]):
+    def register(self, plugin: Union[Plugin, type[Plugin]]):
         if isinstance(plugin, type):
             # If registering a class, instantiate it before adapting it and passing to java
             plugin = plugin()

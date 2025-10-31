@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools >= 64"]
+build-backend = "setuptools.build_meta"
+
+[tool.mypy]
+namespace_packages = true
+exclude = ["deephaven_core", "tests", "docs", "examples", "build"]
+
+[[tool.mypy.overrides]]
+module = "pyarrow.*"
+ignore_missing_imports = true
+
+[tool.ruff]
+lint.select = ["F", "I"]
+exclude = ["deephaven_core/proto"]
+
+[tool.ruff.lint.per-file-ignores]
+"pydeephaven/proto/**" = ["ALL"]
+"deephaven_core/proto/**" = ["ALL"]
+"docs/**" = ["ALL"]
+
+[tool.ruff.format]
+exclude = ["deephaven_core/proto"]

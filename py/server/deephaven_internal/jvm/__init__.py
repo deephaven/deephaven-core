@@ -23,8 +23,10 @@ def check_ready():
     # `import jpy` has potential side effects, and may improperly start the JVM.
     global _is_ready
     if not _is_ready:
-        raise RuntimeError("The Deephaven Server has not been initialized. "
-                        "Please ensure that deephaven_server.Server has been constructed before importing deephaven.")
+        raise RuntimeError(
+            "The Deephaven Server has not been initialized. "
+            "Please ensure that deephaven_server.Server has been constructed before importing deephaven."
+        )
 
 
 def check_py_env():
@@ -34,21 +36,25 @@ def check_py_env():
         RuntimeError
     """
     import importlib.metadata
+
     try:
         importlib.metadata.version("deephaven")
-    except:
+    except Exception:
         pass
     else:
         # DH Enterprise deephaven package is installed by mistake
-        raise RuntimeError("The Deephaven Enterprise Python Package (name 'deephaven' on pypi) is installed in "
-                           "the current Python environment. It conflicts with the Deephaven Community Python "
-                           "Package (name 'deephaven-core' on pypi). Please uninstall the 'deephaven' package and "
-                           "reinstall the 'deephaven-core' package.")
+        raise RuntimeError(
+            "The Deephaven Enterprise Python Package (name 'deephaven' on pypi) is installed in "
+            "the current Python environment. It conflicts with the Deephaven Community Python "
+            "Package (name 'deephaven-core' on pypi). Please uninstall the 'deephaven' package and "
+            "reinstall the 'deephaven-core' package."
+        )
 
 
 def preload_jvm_dll(*args, **kwargs):
     """A wrapper around jpyutil.preload_jvm_dll(...)."""
     import jpyutil
+
     result = jpyutil.preload_jvm_dll(*args, **kwargs)
     return result
 
@@ -62,22 +68,27 @@ def init_jvm(*args, **kwargs):
     """
     # Note: we might be able to use our own logic instead of jpyutil here in the future
     import jpyutil
+
     try:
         result = jpyutil.init_jvm(*args, **kwargs)
     except ImportError as e:
         raise ImportError(
-            "Unable to initialize JVM, try setting the environment variable JAVA_HOME (JDK 11+ required)") from e
+            "Unable to initialize JVM, try setting the environment variable JAVA_HOME (JDK 11+ required)"
+        ) from e
     ready()
     return result
+
 
 def init_py():
     """Finishes starting Python to be usable from inside of a Java process. Not intended to be called in cases
     where the process was started as Python, and Java was started from inside Python.
     """
 
-    import jpy
     import os
     import sys
+
+    import jpy
+
     from deephaven_internal.stream import TeeStream
 
     # Set stdin to /dev/null to prevent functions (like help()) that attempt to read from stdin from hanging python
@@ -88,6 +99,6 @@ def init_py():
     # If you want jpy to tell you about all that it is doing, change this
     # jpy.diag.flags = jpy.diag.F_ALL
 
-    j_sys = jpy.get_type('java.lang.System')
+    j_sys = jpy.get_type("java.lang.System")
     sys.stdout = TeeStream.redirect(sys.stdout, j_sys.out)
     sys.stderr = TeeStream.redirect(sys.stderr, j_sys.err)
