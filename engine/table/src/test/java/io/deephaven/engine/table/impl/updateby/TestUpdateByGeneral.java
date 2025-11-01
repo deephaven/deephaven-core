@@ -8,7 +8,10 @@ import io.deephaven.api.updateby.BadDataBehavior;
 import io.deephaven.api.updateby.OperationControl;
 import io.deephaven.api.updateby.UpdateByOperation;
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.table.ColumnDefinition;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.NoSuchColumnException;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.UpdateErrorReporter;
@@ -46,6 +49,7 @@ import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.engine.testutil.testcase.RefreshingTableTestCase.simulateShiftAwareStep;
 import static io.deephaven.engine.util.TableTools.*;
 import static io.deephaven.time.DateTimeUtils.MINUTE;
+import static org.junit.Assert.assertTrue;
 
 @Category(OutOfBandTest.class)
 public class TestUpdateByGeneral extends BaseUpdateByTest implements UpdateErrorReporter {
@@ -520,5 +524,63 @@ public class TestUpdateByGeneral extends BaseUpdateByTest implements UpdateError
                 .reverse();
 
         assertTableEquals(expected, actual);
+    }
+
+    @Test
+    public void testUpdateByValidateColumnDefinition() {
+        final Map<String, ColumnSource<?>> columnSourceMap = Map.of(
+                "String", TableTools.objColSource("c", "e", "g"),
+                "Int", colSource(2, 4, 6),
+                "Double", colSource(1.0, 2.0, 3.0));
+
+        final TableDefinition partitioningDef = TableDefinition.of(
+                ColumnDefinition.ofString("String").withPartitioning(),
+                ColumnDefinition.ofInt("Int"),
+                ColumnDefinition.ofDouble("Double").withNormal());
+        final Table sourceTable = new QueryTable(partitioningDef, i(0, 1, 2).toTracking(), columnSourceMap);
+
+        Table result;
+
+        result = sourceTable.updateBy(CumSum("SumInt=Int"));
+        assertTrue(result.getDefinition().getColumn("String").isPartitioning());
+        assertTrue(result.getDefinition().getColumn("Int").isDirect());
+        assertTrue(result.getDefinition().getColumn("Double").isDirect());
+
+        final Table refreshingTable = new QueryTable(partitioningDef, i(0, 2).toTracking(), columnSourceMap);
+        refreshingTable.setRefreshing(true);
+
+        result = refreshingTable.updateBy(CumSum("SumInt=Int"));
+        assertTrue(result.getDefinition().getColumn("String").isPartitioning());
+        assertTrue(result.getDefinition().getColumn("Int").isDirect());
+        assertTrue(result.getDefinition().getColumn("Double").isDirect());
+    }
+
+    @Test
+    public void testUpdateByBucketedValidateColumnDefinition() {
+        final Map<String, ColumnSource<?>> columnSourceMap = Map.of(
+                "String", TableTools.objColSource("c", "e", "g"),
+                "Int", colSource(2, 4, 6),
+                "Double", colSource(1.0, 2.0, 3.0));
+
+        final TableDefinition partitioningDef = TableDefinition.of(
+                ColumnDefinition.ofString("String").withPartitioning(),
+                ColumnDefinition.ofInt("Int"),
+                ColumnDefinition.ofDouble("Double").withNormal());
+        final Table sourceTable = new QueryTable(partitioningDef, i(0, 1, 2).toTracking(), columnSourceMap);
+
+        Table result;
+
+        result = sourceTable.updateBy(CumSum("SumInt=Int"), "String");
+        assertTrue(result.getDefinition().getColumn("String").isPartitioning());
+        assertTrue(result.getDefinition().getColumn("Int").isDirect());
+        assertTrue(result.getDefinition().getColumn("Double").isDirect());
+
+        final Table refreshingTable = new QueryTable(partitioningDef, i(0, 2).toTracking(), columnSourceMap);
+        refreshingTable.setRefreshing(true);
+
+        result = refreshingTable.updateBy(CumSum("SumInt=Int"), "String");
+        assertTrue(result.getDefinition().getColumn("String").isPartitioning());
+        assertTrue(result.getDefinition().getColumn("Int").isDirect());
+        assertTrue(result.getDefinition().getColumn("Double").isDirect());
     }
 }

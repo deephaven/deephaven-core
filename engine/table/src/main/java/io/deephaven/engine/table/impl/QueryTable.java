@@ -1732,7 +1732,9 @@ public class QueryTable extends BaseTable<QueryTable> {
                         final TrackingRowSet resultRowSet = analyzer.flatResult() && !rowSet.isFlat()
                                 ? RowSetFactory.flat(rowSet.size()).toTracking()
                                 : rowSet;
-                        resultTable = new QueryTable(resultRowSet, analyzerContext.getPublishedColumnSources());
+                        final Map<String, ColumnSource<?>> newMap = analyzerContext.getPublishedColumnSources();
+                        final TableDefinition resultDef = TableDefinition.inferFrom(this, newMap);
+                        resultTable = new QueryTable(resultDef, resultRowSet, newMap);
                         if (liveResultCapture != null) {
                             analyzer.startTrackingPrev();
                             final Map<String, String[]> effects = analyzerContext.calcEffects();
@@ -1924,8 +1926,11 @@ public class QueryTable extends BaseTable<QueryTable> {
                                                 publishTheseSources, true, viewColumns);
                                 final SelectColumn[] processedViewColumns = analyzerContext.getProcessedColumns()
                                         .toArray(SelectColumn[]::new);
-                                QueryTable queryTable = new QueryTable(
-                                        rowSet, analyzerContext.getPublishedColumnSources());
+                                final Map<String, ColumnSource<?>> resultMap =
+                                        analyzerContext.getPublishedColumnSources();
+                                final TableDefinition tableDef = TableDefinition.inferFrom(this,
+                                        analyzerContext.getPublishedColumnSources());
+                                QueryTable queryTable = new QueryTable(tableDef, rowSet, resultMap);
                                 if (sc != null) {
                                     final Map<String, String[]> effects = analyzerContext.calcEffects();
                                     final TableUpdateListener listener =
@@ -2014,8 +2019,10 @@ public class QueryTable extends BaseTable<QueryTable> {
                                         this, SelectAndViewAnalyzer.Mode.VIEW_LAZY, true, true, selectColumns);
                         final SelectColumn[] processedColumns = analyzerContext.getProcessedColumns()
                                 .toArray(SelectColumn[]::new);
-                        final QueryTable result = new QueryTable(
-                                rowSet, analyzerContext.getPublishedColumnSources());
+
+                        final Map<String, ColumnSource<?>> newMap = analyzerContext.getPublishedColumnSources();
+                        final TableDefinition resultDef = TableDefinition.inferFrom(this, newMap);
+                        final QueryTable result = new QueryTable(resultDef, rowSet, newMap);
                         if (isRefreshing()) {
                             addUpdateListener(new ListenerImpl(
                                     "lazyUpdate(" + Arrays.deepToString(processedColumns) + ')', this, result));
@@ -2051,7 +2058,8 @@ public class QueryTable extends BaseTable<QueryTable> {
                                 createSnapshotControlIfRefreshing(OperationSnapshotControl::new);
 
                         initializeWithSnapshot("dropColumns", snapshotControl, (usePrev, beforeClockValue) -> {
-                            final QueryTable resultTable = new QueryTable(rowSet, newColumns);
+                            final TableDefinition resultDef = TableDefinition.inferFrom(this, newColumns);
+                            final QueryTable resultTable = new QueryTable(resultDef, rowSet, newColumns);
                             propagateFlatness(resultTable);
 
                             copyAttributes(resultTable, CopyAttributeOperation.DropColumns);
@@ -2173,7 +2181,8 @@ public class QueryTable extends BaseTable<QueryTable> {
                     final OperationSnapshotControl snapshotControl =
                             createSnapshotControlIfRefreshing(OperationSnapshotControl::new);
                     initializeWithSnapshot("renameColumns", snapshotControl, (usePrev, beforeClockValue) -> {
-                        final QueryTable resultTable = new QueryTable(rowSet, newColumns);
+                        final TableDefinition resultDef = TableDefinition.inferFrom(this, newColumns);
+                        final QueryTable resultTable = new QueryTable(resultDef, rowSet, newColumns);
                         propagateFlatness(resultTable);
 
                         copyAttributes(resultTable, CopyAttributeOperation.RenameColumns);
@@ -2556,7 +2565,7 @@ public class QueryTable extends BaseTable<QueryTable> {
     }
 
     public Table silent() {
-        return new QueryTable(getRowSet(), getColumnSourceMap());
+        return new QueryTable(getDefinition(), getRowSet(), getColumnSourceMap());
     }
 
     private Table snapshot(String nuggetName, Table baseTable, boolean doInitialSnapshot,
@@ -2974,7 +2983,7 @@ public class QueryTable extends BaseTable<QueryTable> {
         try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(updateGraph).open()) {
             final LinkedHashMap<String, ColumnSource<?>> columns = new LinkedHashMap<>(this.columns);
             columns.putAll(additionalSources);
-            final TableDefinition definition = TableDefinition.inferFrom(columns);
+            final TableDefinition definition = TableDefinition.inferFrom(this, columns);
             return new QueryTable(definition, rowSet, columns, null, null);
         }
     }

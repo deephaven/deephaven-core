@@ -88,7 +88,8 @@ class UpdateByBucketHelper extends IntrusiveDoublyLinkedNode.Impl<UpdateByBucket
         this.failureNotifier = failureNotifier;
         this.bucketKeyValues = bucketKeyValues;
 
-        result = new QueryTable(source.getRowSet(), resultSources);
+        final TableDefinition resultDef = TableDefinition.inferFrom(source, resultSources);
+        result = new QueryTable(resultDef, source.getRowSet(), resultSources);
 
         // do we need a timestamp SSA?
         this.timestampColumnName = timestampColumnName;
