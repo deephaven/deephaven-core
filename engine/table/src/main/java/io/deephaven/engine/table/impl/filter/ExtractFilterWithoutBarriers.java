@@ -9,8 +9,8 @@ import io.deephaven.engine.table.impl.select.*;
 /**
  * Extract a simple filter from a {@link WhereFilter}, walking the tree and removing all barrier and serial wrappers.
  */
-public class ExtractFilterWithoutBarriers implements WhereFilter.Visitor<WhereFilter> {
-    public static final ExtractFilterWithoutBarriers INSTANCE = new ExtractFilterWithoutBarriers();
+public enum ExtractFilterWithoutBarriers implements WhereFilter.Visitor<WhereFilter> {
+    INSTANCE;
 
     public static WhereFilter of(final WhereFilter filter) {
         return filter.walkWhereFilter(INSTANCE);
@@ -27,7 +27,7 @@ public class ExtractFilterWithoutBarriers implements WhereFilter.Visitor<WhereFi
 
     @Override
     public WhereFilter visitWhereFilter(final WhereFilterInvertedImpl filter) {
-        return filter; // do not unwrap
+        return WhereFilterInvertedImpl.of(of(filter.getWrappedFilter())); // must unwrap, then re-wrap inverted
     }
 
     @Override
@@ -53,7 +53,7 @@ public class ExtractFilterWithoutBarriers implements WhereFilter.Visitor<WhereFi
 
         // Verify we have exactly the same number of filters after unwrapping.
         Assert.eq(innerUnwrapped.length, "innerUnwrapped.length", filter.getFilters().size(),
-                "filter.getFilters()..size()");
+                "filter.getFilters().size()");
 
         // return a single DisjunctiveFilter containing all the unwrapped inner filters.
         return DisjunctiveFilter.of(innerUnwrapped);
@@ -67,7 +67,7 @@ public class ExtractFilterWithoutBarriers implements WhereFilter.Visitor<WhereFi
 
         // Verify we have exactly the same number of filters after unwrapping.
         Assert.eq(innerUnwrapped.length, "innerUnwrapped.length", filter.getFilters().size(),
-                "filter.getFilters()..size()");
+                "filter.getFilters().size()");
 
         // return a single ConjunctiveFilter containing all the unwrapped inner filters.
         return ConjunctiveFilter.of(innerUnwrapped);
