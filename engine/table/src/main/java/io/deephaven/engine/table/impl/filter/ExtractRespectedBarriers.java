@@ -12,66 +12,58 @@ import io.deephaven.engine.table.impl.select.WhereFilterSerialImpl;
 import io.deephaven.engine.table.impl.select.WhereFilterWithDeclaredBarriersImpl;
 import io.deephaven.engine.table.impl.select.WhereFilterWithRespectedBarriersImpl;
 
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Performs a recursive "respected-barrier-extraction" against {@code filter}. If {@code filter}, or any sub-filter, is
  * a {@link FilterWithRespectedBarriers}, {@link FilterWithRespectedBarriers#respectedBarriers()} will be included in
  * the returned collection. Otherwise, an empty collection will be returned.
  */
-public enum ExtractRespectedBarriers implements WhereFilter.Visitor<Collection<Object>> {
+public enum ExtractRespectedBarriers implements WhereFilter.Visitor<Stream<Object>> {
     EXTRACT_RESPECTED_BARRIERS;
 
     public static Collection<Object> of(WhereFilter filter) {
+        return stream(filter).collect(Collectors.toSet());
+    }
+
+    public static Stream<Object> stream(WhereFilter filter) {
         return filter.walkWhereFilter(EXTRACT_RESPECTED_BARRIERS);
     }
 
     @Override
-    public Collection<Object> visitWhereFilterOther(WhereFilter filter) {
-        return Collections.emptyList();
+    public Stream<Object> visitWhereFilterOther(WhereFilter filter) {
+        return Stream.empty();
     }
 
     @Override
-    public Collection<Object> visitWhereFilter(WhereFilterInvertedImpl filter) {
-        return of(filter.getWrappedFilter());
+    public Stream<Object> visitWhereFilter(WhereFilterInvertedImpl filter) {
+        return stream(filter.getWrappedFilter());
     }
 
     @Override
-    public Collection<Object> visitWhereFilter(WhereFilterSerialImpl filter) {
-        return of(filter.getWrappedFilter());
+    public Stream<Object> visitWhereFilter(WhereFilterSerialImpl filter) {
+        return stream(filter.getWrappedFilter());
     }
 
     @Override
-    public Collection<Object> visitWhereFilter(WhereFilterWithDeclaredBarriersImpl filter) {
-        return of(filter.getWrappedFilter());
+    public Stream<Object> visitWhereFilter(WhereFilterWithDeclaredBarriersImpl filter) {
+        return stream(filter.getWrappedFilter());
     }
 
     @Override
-    public Collection<Object> visitWhereFilter(WhereFilterWithRespectedBarriersImpl filter) {
-        final Set<Object> barriers = new HashSet<>(Arrays.asList(filter.respectedBarriers()));
-        barriers.addAll(of(filter.getWrappedFilter()));
-        return barriers;
+    public Stream<Object> visitWhereFilter(WhereFilterWithRespectedBarriersImpl filter) {
+        return Stream.concat(Stream.of(filter.respectedBarriers()), stream(filter.getWrappedFilter()));
     }
 
     @Override
-    public Collection<Object> visitWhereFilter(DisjunctiveFilter filter) {
-        final Set<Object> barriers = new HashSet<>();
-        for (final WhereFilter subFilter : filter.getFilters()) {
-            barriers.addAll(of(subFilter));
-        }
-        return barriers;
+    public Stream<Object> visitWhereFilter(DisjunctiveFilter filter) {
+        return filter.getFilters().stream().flatMap(ExtractRespectedBarriers::stream);
     }
 
     @Override
-    public Collection<Object> visitWhereFilter(ConjunctiveFilter filter) {
-        final Set<Object> barriers = new HashSet<>();
-        for (final WhereFilter subFilter : filter.getFilters()) {
-            barriers.addAll(of(subFilter));
-        }
-        return barriers;
+    public Stream<Object> visitWhereFilter(ConjunctiveFilter filter) {
+        return filter.getFilters().stream().flatMap(ExtractRespectedBarriers::stream);
     }
 }

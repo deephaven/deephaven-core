@@ -204,7 +204,7 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
                     .anyMatch(postViewColumns::contains);
 
             final boolean hasPostViewBarrier =
-                    ExtractRespectedBarriers.of(filter).stream().anyMatch(postViewBarriers::contains);
+                    ExtractRespectedBarriers.stream(filter).anyMatch(postViewBarriers::contains);
             if (isPostView || serialFilterFound || hasPostViewBarrier) {
                 // if this filter is serial, all subsequent filters must be postViewFilters
                 if (!filter.permitParallelization()) {
@@ -321,7 +321,7 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
 
         // we must declare any preFilter barriers in the postFilter at the front of the list
         final Set<Object> preViewBarriers = preViewFilters.stream()
-                .flatMap(wf -> ExtractBarriers.of(wf).stream())
+                .flatMap(ExtractBarriers::stream)
                 .collect(Collectors.toSet());
         if (!preViewBarriers.isEmpty() && !postViewFilters.isEmpty()) {
             postViewFilters.add(0,

@@ -31,6 +31,12 @@ public enum ExtractShiftedColumnDefinitions
         return filter.walkWhereFilter(EXTRACT_SHIFTED_COLUMN_DEFINITIONS);
     }
 
+    public static boolean hasAny(final WhereFilter filter) {
+        try (final Stream<ShiftedColumnDefinition> stream = stream(filter)) {
+            return stream.findAny().isPresent();
+        }
+    }
+
     @Override
     public Stream<ShiftedColumnDefinition> visitWhereFilterOther(WhereFilter filter) {
         if (filter instanceof AbstractConditionFilter
