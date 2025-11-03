@@ -540,8 +540,8 @@ class Session:
             if self._flight_client:
                 self._flight_client.close()
 
-    def release(self, ticket: ExportTicket) -> None:
-        """Releases an export ticket.
+    def release(self, ticket: Ticket) -> None:
+        """Releases a ticket.
 
         Args:
             ticket (Ticket): the ticket to release
@@ -590,7 +590,7 @@ class Session:
             raise e
         finally:
             # Explicitly close the table without releasing it (because it isn't ours)
-            fake_table.is_closed = True
+            fake_table._closed = True
             fake_table.schema = None
 
     def bind_table(self, name: str, table: Table) -> None:

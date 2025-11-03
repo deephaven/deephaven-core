@@ -43,16 +43,16 @@ def consume(
     database table to a Deephaven table.
 
     Args:
-        kafka_config (Dict): configuration for the associated kafka consumer and also the resulting table. Passed
+        kafka_config (dict): configuration for the associated kafka consumer and also the resulting table. Passed
             to the org.apache.kafka.clients.consumer.KafkaConsumer constructor; pass any KafkaConsumer specific desired
             configuration here. Note this should include the relevant property for a schema server URL where the key
             and/or value Avro necessary schemas are stored.
         cdc_spec (CDCSpec): a CDCSpec obtained from calling either the cdc_long_spec or the cdc_short_spec function
-        partitions (list[int]): a list of integer partition numbers, default is None indicating all partitions
+        partitions (Optional[list[int]]): a list of integer partition numbers, default is None indicating all partitions
         stream_table (bool):  if true, produce a streaming table of changed rows keeping the CDC 'op' column
             indicating the type of column change; if false, return a Deephaven ticking table that tracks the underlying
             database table through the CDC Stream.
-        cols_to_drop (list[str]): a list of column names to omit from the resulting DHC table. Note that only columns
+        cols_to_drop (Optional[list[str]]): a list of column names to omit from the resulting DHC table. Note that only columns
             not included in the primary key for the table can be dropped at this stage; you can chain a drop column
             operation after this call if you need to do this.
 
@@ -81,18 +81,18 @@ def consume(
 def consume_raw(
     kafka_config: dict,
     cdc_spec: CDCSpec,
-    partitions=None,
+    partitions: Optional[list[int]] = None,
     table_type: TableType = TableType.Stream,
 ) -> Table:
     """Consume the raw events from a Change Data Capture (CDC) Kafka stream to a Deephaven table.
 
     Args:
-        kafka_config (Dict): configuration for the associated kafka consumer and also the resulting table. Passed
+        kafka_config (dict): configuration for the associated kafka consumer and also the resulting table. Passed
             to the org.apache.kafka.clients.consumer.KafkaConsumer constructor; pass any KafkaConsumer specific desired
             configuration here. Note this should include the relevant property for a schema server URL where the key
             and/or value Avro necessary schemas are stored.
         cdc_spec (CDCSpec): a CDCSpec obtained from calling either the cdc_long_spec or the cdc_short_spec function
-        partitions (list[int]): a list of integer partition numbers, default is None indicating all partitions
+        partitions (Optional[list[int]]): a list of integer partition numbers, default is None indicating all partitions
         table_type (TableType): a TableType, default is TableType.Stream
 
     Returns:

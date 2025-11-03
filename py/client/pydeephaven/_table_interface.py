@@ -742,7 +742,7 @@ class TableInterface(ABC, Generic[T]):
 
         Args:
             trigger_table (Table): the trigger table
-            stamp_cols (Union[str, list[str]]): The column(s) from trigger_table that form the "stamp key", may be
+            stamp_cols (Optional[Union[str, list[str]]]): The column(s) from trigger_table that form the "stamp key", may be
                 renames, default is None, meaning that all columns from trigger_table form the "stamp key".
             initial (bool): Whether to take an initial snapshot upon construction, default is False. When False, the
                 resulting table will remain empty until trigger_table first updates.

@@ -453,7 +453,7 @@ def avro_spec(
             'kafka_config' parameter in the call to consume() should include the key 'schema.registry.url' with
             the value of the Schema Server URL for fetching the schema definition
         schema_version (str): the schema version to fetch from schema service, default is 'latest'
-        mapping (dict[str, str]): a mapping from Avro field name to Deephaven table column name; the fields specified in
+        mapping (Optional[dict[str, str]]): a mapping from Avro field name to Deephaven table column name; the fields specified in
             the mapping will have their column names defined by it; if 'mapped_only' parameter is False,
             any other fields
             not mentioned in the mapping will use the same Avro field name for Deephaven table column; otherwise, these
@@ -505,7 +505,7 @@ def json_spec(
         col_defs (Union[TableDefinitionLike, Sequence[tuple[str, DType]]): the table definition, preferably specified as
             TableDefinitionLike. A list of tuples with two elements, a string for column name and a Deephaven type for
             column data type also works, but is deprecated for removal.
-        mapping (Dict): a dict mapping JSON fields to column names defined in the col_defs
+        mapping (Optional[dict]): a dict mapping JSON fields to column names defined in the col_defs
             argument.  Fields starting with a '/' character are interpreted as a JSON Pointer (see RFC 6901,
             ISSN: 2070-1721 for details, essentially nested fields are represented like "/parent/nested").
             Fields not starting with a '/' character are interpreted as toplevel field names.
@@ -549,7 +549,7 @@ def simple_spec(col_name: str, data_type: Optional[DType] = None) -> KeyValueSpe
 
     Args:
         col_name (str): the Deephaven column name
-        data_type (DType): the column data type
+        data_type (Optional[DType]): the column data type
 
     Returns:
         a KeyValueSpec

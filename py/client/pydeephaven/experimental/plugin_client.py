@@ -6,14 +6,19 @@
 Experimental module to communicate with server-side plugins from the client.
 """
 
+from __future__ import annotations
+
 import threading
 from queue import SimpleQueue
-from typing import Any, Tuple, Union
+from typing import TYPE_CHECKING, Any, Tuple, Union
 
 from deephaven_core.proto import object_pb2, ticket_pb2
 from pydeephaven.dherror import DHError
 from pydeephaven.table import Table
 from pydeephaven.ticket import ExportTicket, ServerObject
+
+if TYPE_CHECKING:
+    from pydeephaven.session import Session
 
 
 class PluginClient(ServerObject):
@@ -23,7 +28,7 @@ class PluginClient(ServerObject):
     supported.
     """
 
-    def __init__(self, session, server_obj: ServerObject):
+    def __init__(self, session: Session, server_obj: ServerObject):
         self.export_ticket = None
         # make sure we have an ExportTicket on the server object so that it will remain alive for
         # the lifespan of this PluginClient
@@ -56,7 +61,7 @@ class Fetchable(ServerObject):
     Represents an object on the server that could be fetched and used or communicated with from the client.
     """
 
-    def __init__(self, session, typed_ticket: ticket_pb2.TypedTicket):
+    def __init__(self, session: Session, typed_ticket: ticket_pb2.TypedTicket):
         export_ticket = ExportTicket(typed_ticket.ticket.ticket)
         super().__init__(type=typed_ticket.type, ticket=export_ticket)
         self.session = session
@@ -79,7 +84,7 @@ class Fetchable(ServerObject):
         return PluginClient(self.session, self)
 
     def close(self) -> None:
-        self.session.release(self.pb_typed_ticket)
+        self.session.release(self.ticket)
 
 
 class PluginRequestStream:
@@ -124,7 +129,7 @@ class PluginResponseStream:
     to, depending on the server implementation.
     """
 
-    def __init__(self, stream_resp, session):
+    def __init__(self, stream_resp: Any, session: Session):
         self.stream_resp = stream_resp
         self.session = session
         self._rlock = threading.RLock()

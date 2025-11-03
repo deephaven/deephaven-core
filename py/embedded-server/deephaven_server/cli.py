@@ -3,6 +3,7 @@
 #
 import sys
 import webbrowser
+from typing import Optional
 
 import click
 
@@ -33,22 +34,29 @@ def cli():
     default=True,
     help="Whether to open the browser when the server starts.",
 )
-def server(host, port, jvm_args, extra_classpath, default_jvm_args, browser):
+def server(
+    host: Optional[str] = None,
+    port: Optional[int] = None,
+    jvm_args: Optional[str] = None,
+    extra_classpath: Optional[str] = None,
+    default_jvm_args: Optional[str] = None,
+    browser: bool = True,
+):
     """
     Start the Deephaven server.
     """
     click.echo("Starting Deephaven server...")
 
-    jvm_args = jvm_args.split() if jvm_args else None
-    default_jvm_args = default_jvm_args.split() if default_jvm_args else None
-    extra_classpath = extra_classpath.split() if extra_classpath else None
+    jvm_args_l = jvm_args.split() if jvm_args else None
+    default_jvm_args_l = default_jvm_args.split() if default_jvm_args else None
+    extra_classpath_l = extra_classpath.split() if extra_classpath else None
 
     s = Server(
         host=host,
         port=port,
-        jvm_args=jvm_args,
-        extra_classpath=extra_classpath,
-        default_jvm_args=default_jvm_args,
+        jvm_args=jvm_args_l,
+        extra_classpath=extra_classpath_l,
+        default_jvm_args=default_jvm_args_l,
     )
     s.start()
 

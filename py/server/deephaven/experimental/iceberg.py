@@ -18,7 +18,7 @@ from deephaven.jcompat import j_hashmap
 from deephaven.table import Table, TableDefinition, TableDefinitionLike
 
 if TYPE_CHECKING:
-    from typing_extensions import TypeAlias  # novermin  # noqa
+    from typing_extensions import TypeAlias, overload  # novermin  # noqa
 
 _JBuildCatalogOptions = jpy.get_type("io.deephaven.iceberg.util.BuildCatalogOptions")
 _JIcebergUpdateMode = cast(
@@ -837,7 +837,7 @@ class IcebergCatalogAdapter(JObjectWrapper):
 
         Args:
             table_identifier (str): the table to read.
-            resolver (Union[InferenceResolver, UnboundResolver]): the resolver, defaults to None, meaning to use a
+            resolver (Optional[Union[InferenceResolver, UnboundResolver]]): the resolver, defaults to None, meaning to use a
                 InferenceResolver with all the default options.
 
         Returns:
@@ -1049,7 +1049,7 @@ def adapter(
         s3_instructions (Optional[s3.S3Instructions]): the S3 instructions to use for configuring the Deephaven managed
             AWS clients. If not provided, the catalog will internally use the Iceberg-managed AWS clients configured
             using the provided `properties`.
-        enable_property_injection (bool): whether to enable Deephaven’s automatic injection of additional properties
+        enable_property_injection (Optional[bool]): whether to enable Deephaven’s automatic injection of additional properties
             that work around upstream issues and supply defaults needed for Deephaven’s Iceberg usage. The injection is
             strictly additive—any keys already present in `properties` are left unchanged. When set to `False` (not
             recommended), the property map is forwarded exactly as supplied, with no automatic additions. Defaults to

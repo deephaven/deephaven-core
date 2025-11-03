@@ -1481,7 +1481,7 @@ class Table(JObjectWrapper):
         the table.
 
         Args:
-            filters (Union[str, Filter, Sequence[str], Sequence[Filter]]): the filter condition
+            filters (Optional[Union[str, Filter, Sequence[str], Sequence[Filter]]]): the filter condition
                 expression(s) or Filter object(s), default is None
 
         Returns:
@@ -1551,7 +1551,7 @@ class Table(JObjectWrapper):
         least one filter.
 
         Args:
-            filters (Union[str, Filter, Sequence[str], Sequence[Filter]]): the filter condition expression(s), default is None
+            filters (Optional[Union[str, Filter, Sequence[str], Sequence[Filter]]]): the filter condition expression(s), default is None
 
         Returns:
             a new table
@@ -2927,7 +2927,7 @@ class Table(JObjectWrapper):
         """Waits until either this refreshing Table is updated or the timeout elapses if provided.
 
         Args:
-            timeout (int): the maximum time to wait in milliseconds, default is None, meaning no timeout
+            timeout (Optional[int]): the maximum time to wait in milliseconds, default is None, meaning no timeout
 
         Returns:
             True when the table is updated or False when the timeout has been reached.
@@ -3198,8 +3198,7 @@ class PartitionedTable(JObjectWrapper):
         """
         filters = to_sequence(filters)
         if isinstance(filters[0], str):
-            filters = Filter.from_(filters)  # type: ignore[arg-type]
-            filters = to_sequence(filters)
+            filters = to_sequence(Filter.from_(filters))  # type: ignore[arg-type]
 
         try:
             return PartitionedTable(
@@ -3539,7 +3538,7 @@ class PartitionedTableProxy(JObjectWrapper):
 
         Args:
             trigger_table (Union[Table, PartitionedTableProxy]): the trigger Table or PartitionedTableProxy
-            stamp_cols (Union[str, Sequence[str]): The columns from trigger_table that form the "stamp key", may be
+            stamp_cols (Optional[Union[str, Sequence[str]]): The columns from trigger_table that form the "stamp key", may be
                 renames. None, or empty, means that all columns from trigger_table form the "stamp key".
             initial (bool): Whether to take an initial snapshot upon construction, default is False. When False, the
                 resulting table will remain empty until trigger_table first updates.
@@ -3657,7 +3656,7 @@ class PartitionedTableProxy(JObjectWrapper):
         partitioned table.
 
         Args:
-            filters (Union[str, Filter, Sequence[str], Sequence[Filter]]): the filter condition
+            filters (Optional[Union[str, Filter, Sequence[str], Sequence[Filter]]]): the filter condition
                 expression(s) or Filter object(s), default is None
 
         Returns:
@@ -3824,7 +3823,7 @@ class PartitionedTableProxy(JObjectWrapper):
         partitioned table.
 
         Args:
-            formulas (Union[str, Sequence[str], Selectable, Sequence[Selectable]]): the column formula(s) or
+            formulas (Optional[Union[str, Sequence[str], Selectable, Sequence[Selectable]]]): the column formula(s) or
                 Selectable(s), default is None
 
         Returns:

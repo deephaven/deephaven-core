@@ -60,7 +60,7 @@ def _get_data_index(table: Table, key_cols: list[str]) -> Optional[DataIndex]:
 
     Args:
         table (Table): the table to get the DataIndex from
-        key_cols (Optional[list[str]]): the names of the key columns indexed
+        key_cols (list[str]): the names of the key columns indexed
 
     Returns:
         a DataIndex or None

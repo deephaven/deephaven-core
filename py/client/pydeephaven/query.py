@@ -412,7 +412,7 @@ class Query(TableInterface["Query"]):
         Returns:
             self
         """
-        return super().median_by(by)  # type: ignore[return-value]
+        return super().median_by(by)
 
     def min_by(self, by: Optional[Union[str, list[str]]] = None) -> Query:
         """Adds a min-by aggregation to the query.

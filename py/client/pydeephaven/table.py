@@ -7,7 +7,7 @@ data."""
 from __future__ import annotations
 
 from collections.abc import Sequence
-from typing import Optional, Union
+from typing import TYPE_CHECKING, Optional, Union
 
 import pyarrow as pa
 
@@ -23,6 +23,9 @@ from pydeephaven.agg import Aggregation
 from pydeephaven.dherror import DHError
 from pydeephaven.ticket import ServerObject, Ticket
 from pydeephaven.updateby import UpdateByOperation
+
+if TYPE_CHECKING:
+    from pydeephaven.session import Session
 
 
 class Table(TableInterface["Table"], ServerObject):
@@ -42,7 +45,7 @@ class Table(TableInterface["Table"], ServerObject):
 
     def __init__(
         self,
-        session,
+        session: Session,
         ticket: Ticket,
         schema_header: bytes = b"",
         size: Optional[int] = None,
@@ -59,7 +62,7 @@ class Table(TableInterface["Table"], ServerObject):
         if not schema:
             self._parse_schema(schema_header)
         self._meta_table: Optional[Table] = None
-        self.is_closed: bool = False
+        self._closed: bool = False
 
     def __del__(self):
         try:
@@ -77,14 +80,19 @@ class Table(TableInterface["Table"], ServerObject):
         """Whether this table is refreshing."""
         return not self.is_static
 
+    @property
+    def is_closed(self) -> bool:
+        """Whether this table is closed."""
+        return self._closed
+
     def close(self) -> None:
         """Close the table reference on the server.
 
         Raises:
             DHError
         """
-        self.session.release(self)
-        self.is_closed = True
+        self.session.release(self.ticket)
+        self._closed = True
 
     def _parse_schema(self, schema_header):
         if not schema_header:
@@ -724,7 +732,7 @@ class Table(TableInterface["Table"], ServerObject):
 
         Args:
             ops (Union[UpdateByOperation, list[UpdateByOperation]]): the UpdateByOperation(s) to be applied
-            by (Union[str, list[str]]): the group-by column name(s), defaults to None, meaning all calculations are
+            by (Optional[Union[str, list[str]]]): the group-by column name(s), defaults to None, meaning all calculations are
                 performed over the entire table
 
         Returns:
@@ -762,7 +770,7 @@ class Table(TableInterface["Table"], ServerObject):
 
         Args:
             trigger_table (Table): the trigger table
-            stamp_cols (Union[str, list[str]]): The column(s) from trigger_table that form the "stamp key", may be
+            stamp_cols (Optional[Union[str, list[str]]]): The column(s) from trigger_table that form the "stamp key", may be
                 renames, default is None, meaning that all columns from trigger_table form the "stamp key".
             initial (bool): Whether to take an initial snapshot upon construction, default is False. When False, the
                 resulting table will remain empty until trigger_table first updates.
@@ -869,7 +877,13 @@ class InputTable(Table):
     key_cols: Optional[list[str]]
 
     def __init__(
-        self, session, ticket, schema_header=b"", size=None, is_static=None, schema=None
+        self,
+        session: Session,
+        ticket: Ticket,
+        schema_header: bytes = b"",
+        size: Optional[int] = None,
+        is_static: Optional[bool] = None,
+        schema: Optional[pa.Schema] = None,
     ):
         super().__init__(
             session=session,
@@ -949,7 +963,7 @@ class MultiJoinInput:
             table (Table): the right table to include in the join
             on (Union[str, Sequence[str]]): the column(s) to match, can be a common name or an equality expression that
                 matches every input table, i.e. "col_a = col_b" to rename output column names.
-            joins (Union[str, Sequence[str]]): the column(s) to be added from the table to the result
+            joins (Optional[Union[str, Sequence[str]]]): the column(s) to be added from the table to the result
                 table, can be renaming expressions, i.e. "new_col = col"; default is None
         """
         self.table = table
