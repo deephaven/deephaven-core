@@ -10,19 +10,15 @@ import io.deephaven.engine.table.impl.select.*;
  * Extract a simple filter from a {@link WhereFilter}, walking the tree and removing all barrier and serial wrappers.
  */
 public enum ExtractFilterWithoutBarriers implements WhereFilter.Visitor<WhereFilter> {
-    INSTANCE;
+    EXTRACT_FILTER_WITHOUT_BARRIERS;
 
     public static WhereFilter of(final WhereFilter filter) {
-        return filter.walkWhereFilter(INSTANCE);
+        return filter.walkWhereFilter(EXTRACT_FILTER_WITHOUT_BARRIERS);
     }
 
     @Override
-    public WhereFilter visitWhereFilter(final WhereFilter filter) {
-        final WhereFilter retValue = WhereFilter.Visitor.super.visitWhereFilter(filter);
-        if (retValue == null) {
-            return filter;
-        }
-        return retValue;
+    public WhereFilter visitWhereFilterOther(final WhereFilter filter) {
+        return filter;
     }
 
     @Override
@@ -48,7 +44,7 @@ public enum ExtractFilterWithoutBarriers implements WhereFilter.Visitor<WhereFil
     @Override
     public WhereFilter visitWhereFilter(final DisjunctiveFilter filter) {
         final WhereFilter[] innerUnwrapped = filter.getFilters().stream()
-                .map(this::visitWhereFilter)
+                .map(ExtractFilterWithoutBarriers::of)
                 .toArray(WhereFilter[]::new);
 
         // Verify we have exactly the same number of filters after unwrapping.
@@ -62,7 +58,7 @@ public enum ExtractFilterWithoutBarriers implements WhereFilter.Visitor<WhereFil
     @Override
     public WhereFilter visitWhereFilter(final ConjunctiveFilter filter) {
         final WhereFilter[] innerUnwrapped = filter.getFilters().stream()
-                .map(this::visitWhereFilter)
+                .map(ExtractFilterWithoutBarriers::of)
                 .toArray(WhereFilter[]::new);
 
         // Verify we have exactly the same number of filters after unwrapping.
