@@ -27,7 +27,7 @@ public class ExtractFilterWithoutBarriers implements WhereFilter.Visitor<WhereFi
 
     @Override
     public WhereFilter visitWhereFilter(final WhereFilterInvertedImpl filter) {
-        return filter; // do not unwrap
+        return WhereFilterInvertedImpl.of(of(filter.getWrappedFilter())); // must unwrap, then re-wrap inverted
     }
 
     @Override
