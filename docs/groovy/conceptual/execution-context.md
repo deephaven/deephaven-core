@@ -212,6 +212,61 @@ userCtx = ExecutionContext.newBuilder()
     .build()
 ```
 
+### Creating execution contexts from scratch
+
+In some scenarios, you may need to create an `ExecutionContext` completely from scratch rather than capturing components from an existing context. This is particularly useful when:
+
+- Working with the Java client where no default execution context exists.
+- Creating isolated environments with custom update graphs.
+- Using an [`EventDrivenUpdateGraph`](/core/javadoc/io/deephaven/engine/updategraph/impl/EventDrivenUpdateGraph.html) for specific use cases.
+- Building completely independent execution environments.
+
+The following example demonstrates how to build an `ExecutionContext` from scratch using the builder pattern:
+
+```groovy skip-test
+import io.deephaven.engine.context.ExecutionContext
+import io.deephaven.engine.context.QueryCompilerImpl
+import io.deephaven.engine.updategraph.impl.PeriodicUpdateGraph
+import io.deephaven.engine.updategraph.OperationInitializer
+import java.nio.file.Files
+
+executionContext = ExecutionContext.newBuilder()
+    .newQueryLibrary()
+    .newQueryScope()
+    .setOperationInitializer(OperationInitializer.NON_PARALLELIZABLE)
+    .setUpdateGraph(PeriodicUpdateGraph.newBuilder("MyCustomGraph").build())
+    .setQueryCompiler(QueryCompilerImpl.create(Files.createTempDirectory("qc_").toFile(), ClassLoader.getSystemClassLoader()))
+    .build()
+```
+
+:::note
+When creating a new update graph, you must provide a unique name. If you're running this in a Deephaven server where a "DEFAULT" update graph already exists, use a different name like "MyCustomGraph" to avoid conflicts.
+:::
+
+This approach allows you to specify:
+
+- **Query library**: A new, empty query library via `newQueryLibrary()`.
+- **Query scope**: A new, empty query scope via `newQueryScope()`.
+- **Operation initializer**: Controls parallelization behavior of operations.
+- **Update graph**: A custom update graph (e.g., `PeriodicUpdateGraph` or `EventDrivenUpdateGraph`).
+- **Query compiler**: A compiler instance with a specified working directory and class loader.
+
+For use cases requiring event-driven updates instead of periodic updates, you can substitute an `EventDrivenUpdateGraph`:
+
+```groovy skip-test
+import io.deephaven.engine.updategraph.impl.EventDrivenUpdateGraph
+
+eventDrivenGraph = EventDrivenUpdateGraph.newBuilder("EventDriven").build()
+
+executionContext = ExecutionContext.newBuilder()
+    .newQueryLibrary()
+    .newQueryScope()
+    .setOperationInitializer(OperationInitializer.NON_PARALLELIZABLE)
+    .setUpdateGraph(eventDrivenGraph)
+    .setQueryCompiler(QueryCompilerImpl.create(Files.createTempDirectory("qc_").toFile(), ClassLoader.getSystemClassLoader()))
+    .build()
+```
+
 ## Related documentation
 
 - [Create an empty table](../how-to-guides/new-and-empty-table.md#emptytable)

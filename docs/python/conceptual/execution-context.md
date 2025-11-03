@@ -227,6 +227,88 @@ from deephaven.execution_context import make_user_exec_ctx
 user_ctx = make_user_exec_ctx(freeze_vars=["value1", "value2", "value3"])
 ```
 
+### Creating execution contexts from scratch
+
+In some scenarios, you may need to create an `ExecutionContext` completely from scratch rather than using the systemic context or `make_user_exec_ctx`. This is particularly useful when:
+
+- Working with the Java client where no default execution context exists.
+- Creating isolated environments with custom update graphs.
+- Using an `EventDrivenUpdateGraph` for specific use cases.
+- Building completely independent execution environments.
+
+The following example demonstrates how to build an `ExecutionContext` from scratch using Java interop:
+
+```python skip-test
+import jpy
+from deephaven.jcompat import j_hashmap
+import tempfile
+
+ExecutionContext = jpy.get_type("io.deephaven.engine.context.ExecutionContext")
+QueryCompilerImpl = jpy.get_type("io.deephaven.engine.context.QueryCompilerImpl")
+PeriodicUpdateGraph = jpy.get_type("io.deephaven.engine.updategraph.impl.PeriodicUpdateGraph")
+OperationInitializer = jpy.get_type("io.deephaven.engine.updategraph.OperationInitializer")
+
+temp_dir = tempfile.mkdtemp(prefix="qc_")
+
+execution_context = (
+    ExecutionContext.newBuilder()
+    .newQueryLibrary()
+    .newQueryScope()
+    .setOperationInitializer(OperationInitializer.NON_PARALLELIZABLE)
+    .setUpdateGraph(PeriodicUpdateGraph.newBuilder("MyCustomGraph").build())
+    .setQueryCompiler(
+        QueryCompilerImpl.create(
+            jpy.get_type("java.io.File")(temp_dir),
+            jpy.get_type("java.lang.ClassLoader").getSystemClassLoader()
+        )
+    )
+    .build()
+)
+```
+
+:::note
+When creating a new update graph, you must provide a unique name. If you're running this in a Deephaven server where a "DEFAULT" update graph already exists, use a different name like "MyCustomGraph" to avoid conflicts.
+:::
+
+This approach allows you to specify:
+
+- **Query library**: A new, empty query library via `newQueryLibrary()`.
+- **Query scope**: A new, empty query scope via `newQueryScope()`.
+- **Operation initializer**: Controls parallelization behavior of operations.
+- **Update graph**: A custom update graph (e.g., `PeriodicUpdateGraph` or `EventDrivenUpdateGraph`).
+- **Query compiler**: A compiler instance with a specified working directory and class loader.
+
+For use cases requiring event-driven updates instead of periodic updates, you can substitute an `EventDrivenUpdateGraph`:
+
+```python skip-test
+import jpy
+import tempfile
+
+ExecutionContext = jpy.get_type("io.deephaven.engine.context.ExecutionContext")
+QueryCompilerImpl = jpy.get_type("io.deephaven.engine.context.QueryCompilerImpl")
+EventDrivenUpdateGraph = jpy.get_type("io.deephaven.engine.updategraph.impl.EventDrivenUpdateGraph")
+OperationInitializer = jpy.get_type("io.deephaven.engine.updategraph.OperationInitializer")
+
+temp_dir = tempfile.mkdtemp(prefix="qc_")
+
+event_driven_graph = EventDrivenUpdateGraph.newBuilder("EventDriven").build()
+
+execution_context = (
+    ExecutionContext.newBuilder()
+    .newQueryLibrary()
+    .newQueryScope()
+    .setOperationInitializer(OperationInitializer.NON_PARALLELIZABLE)
+    .setUpdateGraph(event_driven_graph)
+    .setQueryCompiler(
+        QueryCompilerImpl.create(
+            jpy.get_type("java.io.File")(temp_dir),
+            jpy.get_type("java.lang.ClassLoader").getSystemClassLoader()
+        )
+    )
+    .build()
+)
+```
+
 ## Related documentation
 
 - [Create an empty table](../how-to-guides/new-and-empty-table.md#empty_table)
