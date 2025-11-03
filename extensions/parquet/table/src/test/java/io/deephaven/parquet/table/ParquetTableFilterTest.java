@@ -12,11 +12,7 @@ import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.table.impl.PushdownFilterContext;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
-import io.deephaven.engine.table.impl.select.ConditionFilter;
-import io.deephaven.engine.table.impl.select.DoubleRangeFilter;
-import io.deephaven.engine.table.impl.select.FloatRangeFilter;
-import io.deephaven.engine.table.impl.select.MatchFilter;
-import io.deephaven.engine.table.impl.select.WhereFilter;
+import io.deephaven.engine.table.impl.select.*;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
 import io.deephaven.engine.table.impl.util.ImmediateJobScheduler;
 import io.deephaven.engine.testutil.filters.ParallelizedRowSetCapturingFilter;
@@ -1929,5 +1925,68 @@ public final class ParquetTableFilterTest {
                 ConditionFilter.createStateless("StringCol = null"));
         filterAndVerifyResults(diskTable, memTable,
                 ConditionFilter.createStateless("StringCol = null || StringCol != null"));
+    }
+
+    @Test
+    public void testLocationDataIndexWithFilterBarriers() {
+        final Table memTable = TableTools.emptyTable(100_000).update("A = ii % 97", "B = ii % 11", "C = ii");
+        final String destPath = Path.of(rootFile.getPath(), "locationDataIndexWithFilterBarriers") + ".parquet";
+        final ParquetInstructions writeInstructions = new ParquetInstructions.Builder()
+                .addIndexColumns("A")
+                .build();
+        writeTable(memTable, destPath, writeInstructions);
+
+        final Table diskTable = ParquetTools.readTable(destPath);
+        assertTableEquals(memTable, diskTable);
+
+        // Create some capturing filters to verify the row sets being passed through the filter chain.
+        final RowSetCapturingFilter filterA = new ParallelizedRowSetCapturingFilter(RawString.of("A < 50"));
+        final RowSetCapturingFilter filterB = new ParallelizedRowSetCapturingFilter(RawString.of("B < 5"));
+
+        final List<RowSetCapturingFilter> allFilters = List.of(filterA, filterB);
+
+        Table result;
+
+        // Test with no barrier, expect A then B
+        result = diskTable.where(Filter.and(filterA, filterB));
+        assertEquals(97, filterA.numRowsProcessed()); // only indexA rows
+        assertEquals(51550, filterB.numRowsProcessed());
+
+        assertEquals(23435, result.size());
+        allFilters.forEach(RowSetCapturingFilter::reset);
+
+        // Test with no barrier, expect A then B despite user ordering
+        result = diskTable.where(Filter.and(filterB, filterA));
+        assertEquals(97, filterA.numRowsProcessed()); // only indexA rows
+        assertEquals(51550, filterB.numRowsProcessed());
+
+        assertEquals(23435, result.size());
+        allFilters.forEach(RowSetCapturingFilter::reset);
+
+        // Barrier to force B then A
+        result = diskTable.where(Filter.and(filterB.withDeclaredBarriers("b1"), filterA.withRespectedBarriers("b1")));
+        assertEquals(97, filterA.numRowsProcessed()); // only indexA rows
+        assertEquals(100_000, filterB.numRowsProcessed());
+
+        assertEquals(23435, result.size());
+        allFilters.forEach(RowSetCapturingFilter::reset);
+
+        // Barrier to force B then A
+        result = diskTable.where(Filter.and(filterB.withSerial(), filterA));
+        assertEquals(97, filterA.numRowsProcessed()); // only indexA rows
+        assertEquals(100_000, filterB.numRowsProcessed());
+
+        assertEquals(23435, result.size());
+        allFilters.forEach(RowSetCapturingFilter::reset);
+
+        // Inverted - Barrier to force B then A
+        result = diskTable.where(Filter.and(
+                WhereFilterInvertedImpl.of(filterB.withDeclaredBarriers("b1")),
+                WhereFilterInvertedImpl.of(filterA.withRespectedBarriers("b1"))));
+        assertEquals(97, filterA.numRowsProcessed()); // only indexA rows
+        assertEquals(100_000, filterB.numRowsProcessed());
+
+        assertEquals(26430, result.size());
+        allFilters.forEach(RowSetCapturingFilter::reset);
     }
 }
