@@ -98,4 +98,9 @@ public class DisjunctiveFilter extends ComposedFilter {
     public String toString() {
         return "DisjunctiveFilter(" + Arrays.toString(componentFilters) + ')';
     }
+
+    @Override
+    public final <T> T walkWhereFilter(Visitor<T> visitor) {
+        return visitor.visitWhereFilter(this);
+    }
 }

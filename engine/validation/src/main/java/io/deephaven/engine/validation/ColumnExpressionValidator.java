@@ -8,6 +8,7 @@ import io.deephaven.engine.table.impl.select.*;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Stream;
 
 public interface ColumnExpressionValidator {
     WhereFilter[] validateSelectFilters(final String[] conditionalExpressions, final TableDefinition definition);
@@ -23,56 +24,11 @@ public interface ColumnExpressionValidator {
 
     private static List<ConditionFilter> extractConditionFilters(List<WhereFilter> whereFilters) {
         final List<ConditionFilter> conditionFilters = new ArrayList<>();
-
-        final WhereFilter.Visitor<Void> visitor = new WhereFilter.Visitor<>() {
-            @Override
-            public Void visitWhereFilter(WhereFilter filter) {
-                if (filter instanceof ConditionFilter) {
-                    conditionFilters.add((ConditionFilter) filter);
-                    return null;
-                }
-                return WhereFilter.Visitor.super.visitWhereFilter(filter);
+        for (final WhereFilter whereFilter : whereFilters) {
+            try (final Stream<ConditionFilter> stream = ExtractConditionFilters.of(whereFilter)) {
+                stream.forEachOrdered(conditionFilters::add);
             }
-
-            @Override
-            public Void visitWhereFilter(WhereFilterInvertedImpl filter) {
-                visitWhereFilter(filter.getWrappedFilter());
-                return null;
-            }
-
-            @Override
-            public Void visitWhereFilter(WhereFilterSerialImpl filter) {
-                visitWhereFilter(filter.getWrappedFilter());
-                return null;
-            }
-
-            @Override
-            public Void visitWhereFilter(WhereFilterWithDeclaredBarriersImpl filter) {
-                visitWhereFilter(filter.getWrappedFilter());
-                return null;
-            }
-
-            @Override
-            public Void visitWhereFilter(WhereFilterWithRespectedBarriersImpl filter) {
-                visitWhereFilter(filter.getWrappedFilter());
-                return null;
-            }
-
-            @Override
-            public Void visitWhereFilter(DisjunctiveFilter filter) {
-                filter.getFilters().forEach(this::visitWhereFilter);
-                return null;
-            }
-
-            @Override
-            public Void visitWhereFilter(ConjunctiveFilter filter) {
-                filter.getFilters().forEach(this::visitWhereFilter);
-                return null;
-            }
-        };
-
-        whereFilters.forEach(visitor::visitWhereFilter);
-
+        }
         return conditionFilters;
     }
 }

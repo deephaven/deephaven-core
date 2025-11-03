@@ -39,4 +39,9 @@ public class WhereFilterSerialImpl extends WhereFilterDelegatingBase {
     public String toString() {
         return "serial{" + filter + "}";
     }
+
+    @Override
+    public final <T> T walkWhereFilter(Visitor<T> visitor) {
+        return visitor.visitWhereFilter(this);
+    }
 }

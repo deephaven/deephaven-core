@@ -47,4 +47,9 @@ public class WhereFilterInvertedImpl extends WhereFilterDelegatingBase {
     WhereFilter filter() {
         return filter;
     }
+
+    @Override
+    public final <T> T walkWhereFilter(Visitor<T> visitor) {
+        return visitor.visitWhereFilter(this);
+    }
 }

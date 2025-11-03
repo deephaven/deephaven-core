@@ -13,49 +13,48 @@ import io.deephaven.engine.table.impl.select.WhereFilterInvertedImpl;
 import io.deephaven.engine.table.impl.select.WhereFilterWithRespectedBarriersImpl;
 import io.deephaven.engine.table.impl.select.WhereFilterSerialImpl;
 
-public class TransformToFinalFormula implements WhereFilter.Visitor<WhereFilter> {
-    public static final TransformToFinalFormula INSTANCE = new TransformToFinalFormula();
+public enum TransformToFinalFormula implements WhereFilter.Visitor<WhereFilter> {
+    TRANSFORM_TO_FINAL_FORMULA;
 
     public static WhereFilter of(final WhereFilter filter) {
-        return filter.walkWhereFilter(INSTANCE);
+        return filter.walkWhereFilter(TRANSFORM_TO_FINAL_FORMULA);
     }
 
     @Override
-    public WhereFilter visitWhereFilter(final WhereFilter filter) {
+    public WhereFilter visitWhereFilterOther(WhereFilter filter) {
         if (filter instanceof AbstractConditionFilter
                 && ((AbstractConditionFilter) filter).hasConstantArrayAccess()) {
             return WhereFilterFactory
                     .getExpression(((AbstractConditionFilter) filter).getFormulaShiftedColumnDefinitions().getFirst());
         }
-        WhereFilter other = WhereFilter.Visitor.super.visitWhereFilter(filter);
-        return other == null ? filter : other;
+        return filter;
     }
 
     @Override
     public WhereFilter visitWhereFilter(final WhereFilterInvertedImpl filter) {
-        return WhereFilterInvertedImpl.of(visitWhereFilter(filter.getWrappedFilter()));
+        return WhereFilterInvertedImpl.of(of(filter.getWrappedFilter()));
     }
 
     @Override
     public WhereFilter visitWhereFilter(final WhereFilterSerialImpl filter) {
-        return visitWhereFilter(filter.getWrappedFilter()).withSerial();
+        return of(filter.getWrappedFilter()).withSerial();
     }
 
     @Override
     public WhereFilter visitWhereFilter(final WhereFilterWithDeclaredBarriersImpl filter) {
-        return visitWhereFilter(filter.getWrappedFilter()).withDeclaredBarriers(filter.declaredBarriers());
+        return of(filter.getWrappedFilter()).withDeclaredBarriers(filter.declaredBarriers());
     }
 
     @Override
     public WhereFilter visitWhereFilter(final WhereFilterWithRespectedBarriersImpl filter) {
-        return visitWhereFilter(filter.getWrappedFilter()).withRespectedBarriers(filter.respectedBarriers());
+        return of(filter.getWrappedFilter()).withRespectedBarriers(filter.respectedBarriers());
     }
 
     @Override
     public WhereFilter visitWhereFilter(final DisjunctiveFilter filter) {
         return DisjunctiveFilter.of(
                 filter.getFilters().stream()
-                        .map(f -> f.walkWhereFilter(this))
+                        .map(TransformToFinalFormula::of)
                         .toArray(WhereFilter[]::new));
     }
 
@@ -63,7 +62,7 @@ public class TransformToFinalFormula implements WhereFilter.Visitor<WhereFilter>
     public WhereFilter visitWhereFilter(final ConjunctiveFilter filter) {
         return ConjunctiveFilter.of(
                 filter.getFilters().stream()
-                        .map(f -> f.walkWhereFilter(this))
+                        .map(TransformToFinalFormula::of)
                         .toArray(WhereFilter[]::new));
     }
 }

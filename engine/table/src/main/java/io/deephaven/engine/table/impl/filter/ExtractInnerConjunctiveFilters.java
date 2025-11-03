@@ -13,54 +13,54 @@ import io.deephaven.engine.table.impl.select.WhereFilterSerialImpl;
 
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
-public class ExtractInnerConjunctiveFilters implements WhereFilter.Visitor<List<WhereFilter>> {
-    public static final ExtractInnerConjunctiveFilters INSTANCE = new ExtractInnerConjunctiveFilters();
+public enum ExtractInnerConjunctiveFilters implements WhereFilter.Visitor<Stream<WhereFilter>> {
+    EXTRACT_INNER_CONJUNCTIVE_FILTERS;
 
     public static List<WhereFilter> of(final WhereFilter filter) {
-        return filter.walkWhereFilter(INSTANCE);
-    }
-
-    @Override
-    public List<WhereFilter> visitWhereFilter(final WhereFilter filter) {
-        final List<WhereFilter> retValue = WhereFilter.Visitor.super.visitWhereFilter(filter);
-        if (retValue == null) {
-            return List.of(filter);
+        try (final Stream<WhereFilter> stream = stream(filter)) {
+            return stream.collect(Collectors.toList());
         }
-        return retValue;
+    }
+
+    public static Stream<WhereFilter> stream(final WhereFilter filter) {
+        return filter.walkWhereFilter(EXTRACT_INNER_CONJUNCTIVE_FILTERS);
     }
 
     @Override
-    public List<WhereFilter> visitWhereFilter(final WhereFilterInvertedImpl filter) {
-        return List.of(filter);
+    public Stream<WhereFilter> visitWhereFilterOther(final WhereFilter filter) {
+        return Stream.of(filter);
     }
 
     @Override
-    public List<WhereFilter> visitWhereFilter(final WhereFilterSerialImpl filter) {
-        return List.of(filter);
+    public Stream<WhereFilter> visitWhereFilter(final WhereFilterInvertedImpl filter) {
+        return Stream.of(filter);
     }
 
     @Override
-    public List<WhereFilter> visitWhereFilter(final WhereFilterWithDeclaredBarriersImpl filter) {
-        return List.of(filter);
+    public Stream<WhereFilter> visitWhereFilter(final WhereFilterSerialImpl filter) {
+        return Stream.of(filter);
     }
 
     @Override
-    public List<WhereFilter> visitWhereFilter(final WhereFilterWithRespectedBarriersImpl filter) {
-        return visitWhereFilter(filter.getWrappedFilter()).stream()
-                .map(wf -> WhereFilterWithRespectedBarriersImpl.of(wf, filter.respectedBarriers()))
-                .collect(Collectors.toList());
+    public Stream<WhereFilter> visitWhereFilter(final WhereFilterWithDeclaredBarriersImpl filter) {
+        return Stream.of(filter);
     }
 
     @Override
-    public List<WhereFilter> visitWhereFilter(final DisjunctiveFilter filter) {
-        return List.of(filter);
+    public Stream<WhereFilter> visitWhereFilter(final WhereFilterWithRespectedBarriersImpl filter) {
+        return stream(filter.getWrappedFilter())
+                .map(wf -> WhereFilterWithRespectedBarriersImpl.of(wf, filter.respectedBarriers()));
     }
 
     @Override
-    public List<WhereFilter> visitWhereFilter(final ConjunctiveFilter filter) {
-        return filter.getFilters().stream()
-                .flatMap(f -> visitWhereFilter(f).stream())
-                .collect(Collectors.toList());
+    public Stream<WhereFilter> visitWhereFilter(final DisjunctiveFilter filter) {
+        return Stream.of(filter);
+    }
+
+    @Override
+    public Stream<WhereFilter> visitWhereFilter(final ConjunctiveFilter filter) {
+        return filter.getFilters().stream().flatMap(ExtractInnerConjunctiveFilters::stream);
     }
 }

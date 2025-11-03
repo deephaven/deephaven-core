@@ -100,7 +100,7 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
         final WhereFilter[] allFilters = Stream.concat(
                 Arrays.stream(deferredFilters).map(WhereFilter::copy),
                 Arrays.stream(whereFilters))
-                .flatMap(wf -> ExtractInnerConjunctiveFilters.of(wf).stream())
+                .flatMap(ExtractInnerConjunctiveFilters::stream)
                 .toArray(WhereFilter[]::new);
 
         if (allFilters.length == 0) {
@@ -227,13 +227,14 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
 
             final WhereFilter preFilter = filter.walkWhereFilter(new WhereFilter.Visitor<>() {
                 @Override
-                public WhereFilter visitWhereFilter(WhereFilter filter) {
+                public WhereFilter visitWhereFilterOther(WhereFilter filter) {
                     if (filter instanceof MatchFilter) {
                         return ((MatchFilter) filter).renameFilter(myRenames);
-                    } else if (filter instanceof ConditionFilter) {
+                    }
+                    if (filter instanceof ConditionFilter) {
                         return ((ConditionFilter) filter).renameFilter(myRenames);
                     }
-                    return WhereFilter.Visitor.super.visitWhereFilter(filter);
+                    return null;
                 }
 
                 @Override

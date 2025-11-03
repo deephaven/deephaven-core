@@ -46,4 +46,9 @@ public class WhereFilterWithRespectedBarriersImpl extends WhereFilterDelegatingB
                 ", filter=" + filter +
                 '}';
     }
+
+    @Override
+    public final <T> T walkWhereFilter(Visitor<T> visitor) {
+        return visitor.visitWhereFilter(this);
+    }
 }

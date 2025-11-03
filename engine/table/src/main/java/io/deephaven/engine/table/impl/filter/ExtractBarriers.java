@@ -28,15 +28,17 @@ import java.util.Set;
  * returned collection. Otherwise, an empty collection will be returned.
  */
 public enum ExtractBarriers implements Visitor<Collection<Object>>, WhereFilter.Visitor<Collection<Object>> {
-    INSTANCE;
+    EXTRACT_BARRIERS;
 
     public static Collection<Object> of(Filter filter) {
-        if (filter instanceof WhereFilter) {
-            final Collection<Object> retVal =
-                    ((WhereFilter) filter).walkWhereFilter(INSTANCE);
-            return retVal == null ? Collections.emptyList() : retVal;
-        }
-        return filter.walk(INSTANCE);
+        return filter instanceof WhereFilter
+                ? ((WhereFilter) filter).walkWhereFilter(EXTRACT_BARRIERS)
+                : filter.walk(EXTRACT_BARRIERS);
+    }
+
+    @Override
+    public Collection<Object> visitWhereFilterOther(WhereFilter filter) {
+        return Collections.emptyList();
     }
 
     @Override
