@@ -21,7 +21,7 @@ class ConsoleService:
         )
         self.console_id = None
 
-    def start_console(self):
+    def start_console(self) -> None:
         """Starts a console session if one isn't already started."""
         if self.console_id:
             return
@@ -70,7 +70,7 @@ class ConsoleService:
         except Exception as e:
             raise DHError("failed to execute a command in the console.") from e
 
-    def bind_table(self, table: Table, variable_name: str):
+    def bind_table(self, table: Table, variable_name: str) -> None:
         """Binds a name to an opened Table."""
         if not table or not variable_name:
             raise DHError("invalid table and/or variable_name values.")

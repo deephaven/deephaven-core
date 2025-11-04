@@ -32,7 +32,7 @@ class Aggregation(ABC):
     agg_spec: _GrpcAggSpec
 
     @abstractmethod
-    def make_grpc_message(self):
+    def make_grpc_message(self) -> _GrpcAggregation:
         pass
 
 

@@ -127,7 +127,7 @@ class OperationControl(_UpdateByBase):
 class UpdateByOperation(_UpdateByBase):
     """A UpdateByOperation represents an operator for the Table update-by operation."""
 
-    def __init__(self, ub_column):
+    def __init__(self, ub_column: _GrpcUpdateByColumn) -> None:
         self.ub_column = ub_column
 
     def make_grpc_message(self) -> Any:

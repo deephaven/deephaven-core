@@ -110,13 +110,13 @@ class PluginRequestStream:
         stream_req = object_pb2.StreamRequest(data=data_message)
         self.req_queue.put(stream_req)
 
-    def __next__(self):
+    def __next__(self) -> Any:
         if (req := self.req_queue.get()) != self._sentinel:
             return req
         else:
             raise StopIteration
 
-    def __iter__(self):
+    def __iter__(self) -> PluginRequestStream:
         return self
 
     def close(self) -> None:
@@ -148,7 +148,7 @@ class PluginResponseStream:
                     for ticket in resp.data.exported_references
                 ]
 
-    def __iter__(self):
+    def __iter__(self) -> PluginResponseStream:
         return self
 
     def close(self) -> None:

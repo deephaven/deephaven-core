@@ -190,7 +190,7 @@ def bool_col(name: str, data: Sequence) -> InputColumn:
 
     Args:
         name (str): the column name
-        data (Any): a sequence of compatible data, e.g. list, tuple, numpy array, Pandas series, etc.
+        data (Sequence): a sequence of compatible data, e.g. list, tuple, numpy array, Pandas series, etc.
 
     Returns:
         a new input column
@@ -203,7 +203,7 @@ def byte_col(name: str, data: Sequence) -> InputColumn:
 
     Args:
         name (str): the column name
-        data (Any): a sequence of compatible data, e.g. list, tuple, numpy array, Pandas series, etc.
+        data (Sequence): a sequence of compatible data, e.g. list, tuple, numpy array, Pandas series, etc.
 
     Returns:
         a new input column
@@ -216,7 +216,7 @@ def char_col(name: str, data: Sequence) -> InputColumn:
 
     Args:
         name (str): the column name
-        data (Any): a sequence of compatible data, e.g. list, tuple, numpy array, Pandas series, etc.
+        data (Sequence): a sequence of compatible data, e.g. list, tuple, numpy array, Pandas series, etc.
 
     Returns:
         a new input column
@@ -229,7 +229,7 @@ def short_col(name: str, data: Sequence) -> InputColumn:
 
     Args:
         name (str): the column name
-        data (Any): a sequence of compatible data, e.g. list, tuple, numpy array, Pandas series, etc.
+        data (Sequence): a sequence of compatible data, e.g. list, tuple, numpy array, Pandas series, etc.
 
     Returns:
         a new input column
@@ -242,7 +242,7 @@ def int_col(name: str, data: Sequence) -> InputColumn:
 
     Args:
         name (str): the column name
-        data (Any): a sequence of compatible data, e.g. list, tuple, numpy array, Pandas series, etc.
+        data (Sequence): a sequence of compatible data, e.g. list, tuple, numpy array, Pandas series, etc.
 
     Returns:
         a new input column
@@ -255,7 +255,7 @@ def long_col(name: str, data: Sequence) -> InputColumn:
 
     Args:
         name (str): the column name
-        data (Any): a python sequence of compatible data, could be numpy array or Pandas series
+        data (Sequence): a python sequence of compatible data, could be numpy array or Pandas series
 
     Returns:
         a new input column
@@ -268,7 +268,7 @@ def float_col(name: str, data: Sequence) -> InputColumn:
 
     Args:
         name (str): the column name
-        data (Any): a sequence of compatible data, e.g. list, tuple, numpy array, Pandas series, etc.
+        data (Sequence): a sequence of compatible data, e.g. list, tuple, numpy array, Pandas series, etc.
 
     Returns:
         a new input column
@@ -281,7 +281,7 @@ def double_col(name: str, data: Sequence) -> InputColumn:
 
     Args:
         name (str): the column name
-        data (Any): a sequence of compatible data, e.g. list, tuple, numpy array, Pandas series, etc.
+        data (Sequence): a sequence of compatible data, e.g. list, tuple, numpy array, Pandas series, etc.
 
     Returns:
         a new input column
@@ -294,7 +294,7 @@ def string_col(name: str, data: Sequence) -> InputColumn:
 
     Args:
         name (str): the column name
-        data (Any): a sequence of compatible data, e.g. list, tuple, numpy array, Pandas series, etc.
+        data (Sequence): a sequence of compatible data, e.g. list, tuple, numpy array, Pandas series, etc.
 
     Returns:
         a new input column
@@ -307,7 +307,7 @@ def datetime_col(name: str, data: Sequence) -> InputColumn:
 
     Args:
         name (str): the column name
-        data (Any): a sequence of Datetime instances or values that can be converted to Datetime instances
+        data (Sequence): a sequence of Datetime instances or values that can be converted to Datetime instances
             (e.g. Instant, int nanoseconds since the Epoch, str, datetime.datetime, numpy.datetime64, pandas.Timestamp).
 
     Returns:
@@ -322,7 +322,7 @@ def pyobj_col(name: str, data: Sequence) -> InputColumn:
 
     Args:
         name (str): the column name
-        data (Any): a sequence of Python objects
+        data (Sequence): a sequence of Python objects
 
     Returns:
         a new input column
@@ -335,7 +335,7 @@ def jobj_col(name: str, data: Sequence) -> InputColumn:
 
     Args:
         name (str): the column name
-        data (Any): a sequence of Java objects
+        data (Sequence): a sequence of Java objects
 
     Returns:
         a new input column

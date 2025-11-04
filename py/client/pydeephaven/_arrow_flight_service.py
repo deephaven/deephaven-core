@@ -64,7 +64,9 @@ class ArrowFlightService:
         except Exception as e:
             raise DHError("failed to perform a flight DoGet on the table.") from e
 
-    def do_exchange(self):
+    def do_exchange(
+        self,
+    ) -> tuple[paflight.FlightStreamWriter, paflight.FlightStreamReader]:
         """Starts an Arrow do_exchange operation.
 
         Returns:

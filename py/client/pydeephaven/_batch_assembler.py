@@ -2,14 +2,17 @@
 # Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 #
 
-from typing import Any, Optional
+from typing import TYPE_CHECKING, Any, Optional
 
 from deephaven_core.proto import table_pb2
 from pydeephaven._table_ops import TableOp
 
+if TYPE_CHECKING:
+    from pydeephaven.session import Session
+
 
 class BatchOpAssembler:
-    def __init__(self, session, table_ops: list[TableOp]):
+    def __init__(self, session: Session, table_ops: list[TableOp]):
         self.session = session
         self.table_ops = table_ops
         self.grpc_table_ops: list[Any] = []

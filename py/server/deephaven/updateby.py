@@ -135,7 +135,7 @@ def ema_tick(
 
     Args:
         decay_ticks (float): the decay rate in ticks
-        cols (Union[str, list[str]]): the column(s) to be operated on, can include expressions to rename the output,
+        cols (Union[str, Sequence[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by performs the operation on all applicable columns.
         op_control (Optional[OperationControl]): defines how special cases should behave; when None, the default OperationControl
             settings as specified in :meth:`~OperationControl.__init__` will be used
@@ -182,7 +182,7 @@ def ema_time(
         ts_col (str): the column in the source table to use for timestamps
         decay_time (Union[int, str]): the decay rate, can be expressed as an integer in nanoseconds or a time
             interval string, e.g. "PT00:00:00.001" or "PT5M"
-        cols (Union[str, list[str]]): the column(s) to be operated on, can include expressions to rename the output,
+        cols (Union[str, Sequence[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by performs the operation on all applicable columns.
         op_control (Optional[OperationControl]): defines how special cases should behave; when None, the default OperationControl
             settings as specified in :meth:`~OperationControl.__init__` will be used
@@ -612,7 +612,7 @@ def cum_sum(cols: Union[str, Sequence[str]]) -> UpdateByOperation:
 
     Args:
 
-        cols (Union[str, list[str]]): the column(s) to be operated on, can include expressions to rename the output,
+        cols (Union[str, Sequence[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by performs the cumulative sum operation on all the applicable
             columns.
 
@@ -633,7 +633,7 @@ def cum_prod(cols: Union[str, Sequence[str]]) -> UpdateByOperation:
     """Creates a cumulative product UpdateByOperation for the supplied column names.
 
     Args:
-        cols (Union[str, list[str]]): the column(s) to be operated on, can include expressions to rename the output,
+        cols (Union[str, Sequence[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by performing the cumulative product operation on all the
             applicable columns.
 
@@ -656,7 +656,7 @@ def cum_min(cols: Union[str, Sequence[str]]) -> UpdateByOperation:
     """Creates a cumulative minimum UpdateByOperation for the supplied column names.
 
     Args:
-        cols (Union[str, list[str]]): the column(s) to be operated on, can include expressions to rename the output,
+        cols (Union[str, Sequence[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by performs the cumulative minimum operation on all the applicable
             columns.
 
@@ -679,7 +679,7 @@ def cum_max(cols: Union[str, Sequence[str]]) -> UpdateByOperation:
     """Creates a cumulative maximum UpdateByOperation for the supplied column names.
 
     Args:
-        cols (Union[str, list[str]]): the column(s) to be operated on, can include expressions to rename the output,
+        cols (Union[str, Sequence[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by performs the cumulative maximum operation on all the applicable
             columns.
 
@@ -736,7 +736,7 @@ def forward_fill(cols: Union[str, Sequence[str]]) -> UpdateByOperation:
     replaced by the last known non-null values. This operation is forward only.
 
     Args:
-        cols (Union[str, list[str]]): the column(s) to be operated on, can include expressions to rename the output,
+        cols (Union[str, Sequence[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by performs the forward fill operation on all columns.
 
     Returns:
@@ -766,7 +766,7 @@ def delta(
 
     Args:
 
-        cols (Union[str, list[str]]): the column(s) to be operated on, can include expressions to rename the output,
+        cols (Union[str, Sequence[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by performs the delta operation on all the applicable
             columns.
         delta_control (DeltaControl): defines how special cases should behave; when None, the default DeltaControl
@@ -809,7 +809,7 @@ def rolling_sum_tick(
             current row (inclusive)
 
     Args:
-        cols (Union[str, list[str]]): the column(s) to be operated on, can include expressions to rename the output,
+        cols (Union[str, Sequence[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by performs the rolling sum operation on all columns.
         rev_ticks (int): the look-behind window size (in rows/ticks)
         fwd_ticks (int): the look-forward window size (int rows/ticks), default is 0
@@ -915,7 +915,7 @@ def rolling_group_tick(
             current row (inclusive)
 
     Args:
-        cols (Union[str, list[str]]): the column(s) to be operated on, can include expressions to rename the output,
+        cols (Union[str, Sequence[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by performs the rolling group operation on all columns.
         rev_ticks (int): the look-behind window size (in rows/ticks)
         fwd_ticks (int): the look-forward window size (int rows/ticks), default is 0

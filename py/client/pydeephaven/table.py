@@ -17,6 +17,7 @@ from pydeephaven._table_ops import (
     MultijoinTablesOp,
     NaturalJoinType,
     SortDirection,
+    TableOp,
 )
 from pydeephaven._utils import to_list
 from pydeephaven.agg import Aggregation
@@ -40,7 +41,7 @@ class Table(TableInterface["Table"], ServerObject):
         is_closed (bool): check if the table has been closed on the server
     """
 
-    def table_op_handler(self, table_op) -> Table:
+    def table_op_handler(self, table_op: TableOp) -> Table:
         return self.session.table_service.grpc_table_op(self, table_op)
 
     def __init__(
@@ -64,7 +65,7 @@ class Table(TableInterface["Table"], ServerObject):
         self._meta_table: Optional[Table] = None
         self._closed: bool = False
 
-    def __del__(self):
+    def __del__(self) -> None:
         try:
             # only table objects that are explicitly exported have schema info and only the tickets associated with
             # such tables should be released.
@@ -94,7 +95,7 @@ class Table(TableInterface["Table"], ServerObject):
         self.session.release(self.ticket)
         self._closed = True
 
-    def _parse_schema(self, schema_header: bytes):
+    def _parse_schema(self, schema_header: bytes) -> None:
         if not schema_header:
             return
 

@@ -20,7 +20,7 @@ class InputTableService:
             session.grpc_channel
         )
 
-    def add(self, input_table: InputTable, table: Table):
+    def add(self, input_table: InputTable, table: Table) -> None:
         """Adds a table to the InputTable."""
         try:
             self.session.wrap_rpc(
@@ -32,7 +32,7 @@ class InputTableService:
         except Exception as e:
             raise DHError("failed to add to InputTable") from e
 
-    def delete(self, input_table: InputTable, table: Table):
+    def delete(self, input_table: InputTable, table: Table) -> None:
         """Deletes a table from an InputTable."""
         try:
             self.session.wrap_rpc(

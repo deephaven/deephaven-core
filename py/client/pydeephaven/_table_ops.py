@@ -528,7 +528,7 @@ class UngroupOp(TableOp):
 
 
 class MergeTablesOp(TableOp):
-    def __init__(self, tables: list[Any], key_column: str = ""):
+    def __init__(self, tables: list[Table], key_column: str = ""):
         self.tables = tables
         self.key_column = key_column
 
@@ -562,7 +562,7 @@ class MergeTablesOp(TableOp):
 class NaturalJoinOp(TableOp):
     def __init__(
         self,
-        table: Any,
+        table: Table,
         keys: list[str],
         columns_to_add: list[str],
         type: NaturalJoinType,
@@ -605,7 +605,7 @@ class NaturalJoinOp(TableOp):
 
 
 class ExactJoinOp(TableOp):
-    def __init__(self, table: Any, keys: list[str], columns_to_add: list[str]):
+    def __init__(self, table: Table, keys: list[str], columns_to_add: list[str]):
         self.table = table
         self.keys = keys
         self.columns_to_add = columns_to_add
@@ -642,7 +642,7 @@ class ExactJoinOp(TableOp):
 class CrossJoinOp(TableOp):
     def __init__(
         self,
-        table: Any,
+        table: Table,
         keys: list[str] = [],
         columns_to_add: list[str] = [],
         reserve_bits: int = 10,
@@ -684,7 +684,7 @@ class CrossJoinOp(TableOp):
 
 class AjOp(TableOp):
     def __init__(
-        self, table: Any, keys: list[str] = [], columns_to_add: list[str] = []
+        self, table: Table, keys: list[str] = [], columns_to_add: list[str] = []
     ):
         self.table = table
         self.keys = keys
@@ -722,7 +722,7 @@ class AjOp(TableOp):
 
 class RajOp(TableOp):
     def __init__(
-        self, table: Any, keys: list[str] = [], columns_to_add: list[str] = []
+        self, table: Table, keys: list[str] = [], columns_to_add: list[str] = []
     ):
         self.table = table
         self.keys = keys
@@ -861,7 +861,7 @@ class SnapshotTableOp(TableOp):
 class SnapshotWhenTableOp(TableOp):
     def __init__(
         self,
-        trigger_table: Any,
+        trigger_table: Table,
         stamp_cols: Optional[list[str]] = None,
         initial: bool = False,
         incremental: bool = False,
@@ -974,8 +974,8 @@ class AggregateAllOp(TableOp):
 class CreateInputTableOp(TableOp):
     def __init__(
         self,
-        schema: pa.Schema,
-        init_table: Any,
+        schema: Optional[pa.Schema] = None,
+        init_table: Optional[Table] = None,
         key_cols: Optional[list[str]] = None,
         blink: bool = False,
     ):
@@ -1030,13 +1030,15 @@ class CreateInputTableOp(TableOp):
             return table_pb2.CreateInputTableRequest(
                 result_id=result_id, schema=schema, kind=input_table_kind
             )
-        else:
+        elif self.init_table:
             source_table_id = table_pb2.TableReference(ticket=self.init_table.pb_ticket)
             return table_pb2.CreateInputTableRequest(
                 result_id=result_id,
                 source_table_id=source_table_id,
                 kind=input_table_kind,
             )
+        else:
+            raise ValueError("either schema or init_table must be provided")
 
     def make_grpc_request_for_batch(
         self,
@@ -1051,7 +1053,7 @@ class CreateInputTableOp(TableOp):
 
 
 class WhereInTableOp(TableOp):
-    def __init__(self, filter_table: Any, cols: list[str], inverted: bool):
+    def __init__(self, filter_table: Table, cols: list[str], inverted: bool):
         self.filter_table = filter_table
         self.cols = cols
         self.inverted = inverted

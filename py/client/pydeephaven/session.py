@@ -58,7 +58,7 @@ class _DhClientAuthMiddlewareFactory(ClientMiddlewareFactory):
         self._session = session
         self._middleware = _DhClientAuthMiddleware(session)
 
-    def start_call(self, info):
+    def start_call(self, info: Any) -> _DhClientAuthMiddleware:
         return self._middleware
 
 
@@ -67,10 +67,10 @@ class _DhClientAuthMiddleware(ClientMiddleware):
         super().__init__()
         self._session = session
 
-    def call_completed(self, exception):
+    def call_completed(self, exception: Optional[Exception]) -> None:
         super().call_completed(exception)
 
-    def received_headers(self, headers):
+    def received_headers(self, headers: Any) -> None:
         super().received_headers(headers)
         header_key = "authorization"
         try:
@@ -85,7 +85,7 @@ class _DhClientAuthMiddleware(ClientMiddleware):
             )
             return
 
-    def sending_headers(self):
+    def sending_headers(self) -> None:
         return None
 
 
@@ -222,7 +222,7 @@ class Session:
         self._input_table_service: Optional[InputTableService] = None
         self._plugin_obj_service: Optional[PluginObjService] = None
         self._never_timeout = never_timeout
-        self._keep_alive_timer = None
+        self._keep_alive_timer: Optional[threading.Timer] = None
         self._session_type = session_type
         self._flight_client: Optional[paflight.FlightClient] = None
         self._auth_handler = None
@@ -230,17 +230,17 @@ class Session:
 
         self._connect()
 
-    def __enter__(self):
+    def __enter__(self) -> Session:
         if not self.is_connected:
             # double-checked locking, is_connected is checked inside _connect again, which
             # may not end up connecting.
             self._connect()
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
         self.close()
 
-    def __del__(self):
+    def __del__(self) -> None:
         self.close()
 
     def update_metadata(
@@ -278,7 +278,7 @@ class Session:
         return response
 
     @property
-    def tables(self):
+    def tables(self) -> list[str]:
         with self._r_lock:
             fields = self._fetch_fields()
             return [
@@ -298,7 +298,7 @@ class Session:
             }
 
     @property
-    def grpc_metadata(self):
+    def grpc_metadata(self) -> list[tuple[bytes, bytes]]:
         header_value_snap = (
             self._auth_header_value
         )  # ensure it doesn't change while doing multiple reads
@@ -390,7 +390,7 @@ class Session:
 
             return self._last_export_ticket_number
 
-    def _fetch_fields(self):
+    def _fetch_fields(self) -> list[Any]:
         """Returns a list of available fields on the server.
 
         Raises:
@@ -403,7 +403,7 @@ class Session:
                 raise DHError("could not cancel ListFields subscription")
             return resp.created if resp.created else []
 
-    def _connect(self):
+    def _connect(self) -> None:
         _trace(f"_connect id={id(self)}")
         with self._r_lock:
             if self.is_connected:
@@ -466,7 +466,7 @@ class Session:
             if self._never_timeout:
                 self._keep_alive()
 
-    def _keep_alive(self):
+    def _keep_alive(self) -> None:
         _trace("_keep_alive")
         if not self.is_connected:
             return
@@ -687,7 +687,7 @@ class Session:
         Args:
             period (Union[int, str]): the interval at which the time table ticks (adds a row); units are nanoseconds
                 or a time interval string, e.g. "PT00:00:.001" or "PT1S"
-            start_time (Union[int, str]): the start time for the time table in nanoseconds or as a date time
+            start_time (Optional[Union[int, str]]): the start time for the time table in nanoseconds or as a date time
                 formatted string; default is None (meaning now)
             blink_table (bool): if the time table should be a blink table, defaults to False
 
@@ -776,9 +776,9 @@ class Session:
         keyed if key columns are provided, otherwise it will be append-only.
 
         Args:
-            schema (pa.Schema): the schema for the InputTable
-            init_table (Table): the initial table
-            key_cols (Union[str, Sequence[str]): the name(s) of the key column(s)
+            schema (Optional[pa.Schema]): the schema for the InputTable
+            init_table (Optional[Table]): the initial table
+            key_cols (Optional[Union[str, list[str]]]): the name(s) of the key column(s)
             blink_table (bool): whether the InputTable should be a blink table, default is False
 
         Returns:
