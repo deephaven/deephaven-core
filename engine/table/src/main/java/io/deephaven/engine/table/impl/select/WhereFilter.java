@@ -362,20 +362,26 @@ public interface WhereFilter extends Filter {
     }
 
     /**
-     * This method calls the appropriate {@code visitor} method based on the specific type of {@code this}
-     * {@link WhereFilter}. Unlike other visitor patterns whose hierarchy is fully specified in the visitor, only a
-     * subset of specific filter types are present in {@link Visitor}, with all non-specific cases being delegated to
-     * {@link Visitor#visitOther(WhereFilter)}.
+     * This method calls the appropriate {@code visitor} method based on the type of {@code this} {@link WhereFilter}.
+     * This will invoke the most specific {@link Visitor} method available.
      *
      * @param visitor the visitor
      * @return the value
      * @param <T> the return value type
      */
-    <T> T walk(Visitor<T> visitor);
+    default <T> T walk(Visitor<T> visitor) {
+        return visitor.visitOther(this);
+    }
 
     // endregion Filter impl
 
-    // rather than allowing for customization on every type of filter, we focus on structured and attribute filters
+    /**
+     * The visitor. Unlike other visitor patterns whose hierarchy is fully specified, only a subset of specific filter
+     * types are present in {@link Visitor}, with all non-specific cases being delegated to
+     * {@link Visitor#visitOther(WhereFilter)}.
+     * 
+     * @param <T> the return type
+     */
     interface Visitor<T> {
         T visit(WhereFilterInvertedImpl filter);
 
@@ -392,6 +398,13 @@ public interface WhereFilter extends Filter {
         // Can consider adding other common types here in the future. ConditionFilter, MatchFilter, etc. This should be
         // based on how often we end up needing code in visitOther to handle these types.
 
+        /**
+         * Handling for all cases not covered by more specific {@link Visitor} methods. This should never be invoked
+         * with the a {@link WhereFilter} type that matches a more specific {@link Visitor} method.
+         *
+         * @param filter the filter
+         * @return the return value
+         */
         T visitOther(WhereFilter filter);
     }
 }

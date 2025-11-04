@@ -377,9 +377,4 @@ public class TimeSeriesFilter
         // the only thing we hold is our listener, which in turn holds the windowed table
         return null;
     }
-
-    @Override
-    public final <T> T walk(Visitor<T> visitor) {
-        return visitor.visitOther(this);
-    }
 }

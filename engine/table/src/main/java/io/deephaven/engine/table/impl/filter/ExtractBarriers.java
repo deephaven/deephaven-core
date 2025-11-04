@@ -3,7 +3,6 @@
 //
 package io.deephaven.engine.table.impl.filter;
 
-import io.deephaven.api.filter.*;
 import io.deephaven.engine.table.impl.select.ConjunctiveFilter;
 import io.deephaven.engine.table.impl.select.DisjunctiveFilter;
 import io.deephaven.engine.table.impl.select.WhereFilter;
@@ -18,14 +17,16 @@ import java.util.stream.Stream;
 
 /**
  * Performs a recursive "barrier-extraction" against {@code filter}. If {@code filter}, or any sub-filter, is a
- * {@link FilterWithDeclaredBarriers}, {@link FilterWithDeclaredBarriers#declaredBarriers()} will be included in the
- * returned collection. Otherwise, an empty collection will be returned.
+ * {@link WhereFilterWithDeclaredBarriersImpl}, {@link WhereFilterWithDeclaredBarriersImpl#declaredBarriers()} will be
+ * included in the returned collection. Otherwise, an empty collection will be returned.
  */
 public enum ExtractBarriers implements WhereFilter.Visitor<Stream<Object>> {
     EXTRACT_BARRIERS;
 
     public static Collection<Object> of(WhereFilter filter) {
-        return stream(filter).collect(Collectors.toSet());
+        try (final Stream<Object> stream = stream(filter)) {
+            return stream.collect(Collectors.toSet());
+        }
     }
 
     public static Stream<Object> stream(WhereFilter filter) {

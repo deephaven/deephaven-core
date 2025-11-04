@@ -3,15 +3,14 @@
 //
 package io.deephaven.engine.table.impl.filter;
 
-import io.deephaven.api.filter.*;
 import io.deephaven.engine.table.impl.select.*;
 
 import java.util.stream.Stream;
 
 /**
  * Performs a recursive filter extraction against {@code filter}. If {@code filter}, or any sub-filter, is a
- * {@link FilterSerial} or {@link WhereFilterSerialImpl}, the filter will be included in the returned collection.
- * Otherwise, an empty collection will be returned.
+ * {@link WhereFilterSerialImpl}, the filter will be included in the returned stream. Otherwise, an empty stream will be
+ * returned.
  */
 public enum ExtractSerialFilters implements WhereFilter.Visitor<Stream<WhereFilterSerialImpl>> {
     EXTRACT_SERIAL_FILTERS;

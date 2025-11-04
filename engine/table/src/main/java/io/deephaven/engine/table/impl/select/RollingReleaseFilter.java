@@ -129,9 +129,4 @@ public class RollingReleaseFilter
     public boolean permitParallelization() {
         return false;
     }
-
-    @Override
-    public final <T> T walk(Visitor<T> visitor) {
-        return visitor.visitOther(this);
-    }
 }

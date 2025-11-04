@@ -18,9 +18,4 @@ public abstract class WhereFilterImpl implements WhereFilter, Serializable {
     public void setAutomatedFilter(boolean value) {
         isAutomatedFilter = value;
     }
-
-    @Override
-    public final <T> T walk(Visitor<T> visitor) {
-        return visitor.visitOther(this);
-    }
 }
