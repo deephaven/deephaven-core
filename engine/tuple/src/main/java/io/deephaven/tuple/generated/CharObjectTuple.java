@@ -49,8 +49,8 @@ public class CharObjectTuple implements Comparable<CharObjectTuple>, Externaliza
         this.element1 = element1;
         this.element2 = element2;
         cachedHashCode = (31 +
-                Character.hashCode(element1)) * 31 +
-                Objects.hashCode(element2);
+                CharComparisons.hashCode(element1)) * 31 +
+                ObjectComparisons.hashCode(element2);
     }
 
     public final char getFirstElement() {
@@ -76,7 +76,7 @@ public class CharObjectTuple implements Comparable<CharObjectTuple>, Externaliza
         }
         final CharObjectTuple typedOther = (CharObjectTuple) other;
         // @formatter:off
-        return element1 == typedOther.element1 &&
+        return CharComparisons.eq(element1, typedOther.element1) &&
                ObjectComparisons.eq(element2, typedOther.element2);
         // @formatter:on
     }

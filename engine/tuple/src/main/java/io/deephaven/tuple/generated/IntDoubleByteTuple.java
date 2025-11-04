@@ -54,9 +54,9 @@ public class IntDoubleByteTuple implements Comparable<IntDoubleByteTuple>, Exter
         this.element2 = element2;
         this.element3 = element3;
         cachedHashCode = ((31 +
-                Integer.hashCode(element1)) * 31 +
-                Double.hashCode(element2)) * 31 +
-                Byte.hashCode(element3);
+                IntComparisons.hashCode(element1)) * 31 +
+                DoubleComparisons.hashCode(element2)) * 31 +
+                ByteComparisons.hashCode(element3);
     }
 
     public final int getFirstElement() {
@@ -86,9 +86,9 @@ public class IntDoubleByteTuple implements Comparable<IntDoubleByteTuple>, Exter
         }
         final IntDoubleByteTuple typedOther = (IntDoubleByteTuple) other;
         // @formatter:off
-        return element1 == typedOther.element1 &&
+        return IntComparisons.eq(element1, typedOther.element1) &&
                DoubleComparisons.eq(element2, typedOther.element2) &&
-               element3 == typedOther.element3;
+               ByteComparisons.eq(element3, typedOther.element3);
         // @formatter:on
     }
 

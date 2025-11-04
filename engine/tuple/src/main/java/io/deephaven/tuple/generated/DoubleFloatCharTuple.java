@@ -54,9 +54,9 @@ public class DoubleFloatCharTuple implements Comparable<DoubleFloatCharTuple>, E
         this.element2 = element2;
         this.element3 = element3;
         cachedHashCode = ((31 +
-                Double.hashCode(element1)) * 31 +
-                Float.hashCode(element2)) * 31 +
-                Character.hashCode(element3);
+                DoubleComparisons.hashCode(element1)) * 31 +
+                FloatComparisons.hashCode(element2)) * 31 +
+                CharComparisons.hashCode(element3);
     }
 
     public final double getFirstElement() {
@@ -88,7 +88,7 @@ public class DoubleFloatCharTuple implements Comparable<DoubleFloatCharTuple>, E
         // @formatter:off
         return DoubleComparisons.eq(element1, typedOther.element1) &&
                FloatComparisons.eq(element2, typedOther.element2) &&
-               element3 == typedOther.element3;
+               CharComparisons.eq(element3, typedOther.element3);
         // @formatter:on
     }
 

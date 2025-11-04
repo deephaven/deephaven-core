@@ -48,8 +48,8 @@ public class CharDoubleTuple implements Comparable<CharDoubleTuple>, Externaliza
         this.element1 = element1;
         this.element2 = element2;
         cachedHashCode = (31 +
-                Character.hashCode(element1)) * 31 +
-                Double.hashCode(element2);
+                CharComparisons.hashCode(element1)) * 31 +
+                DoubleComparisons.hashCode(element2);
     }
 
     public final char getFirstElement() {
@@ -75,7 +75,7 @@ public class CharDoubleTuple implements Comparable<CharDoubleTuple>, Externaliza
         }
         final CharDoubleTuple typedOther = (CharDoubleTuple) other;
         // @formatter:off
-        return element1 == typedOther.element1 &&
+        return CharComparisons.eq(element1, typedOther.element1) &&
                DoubleComparisons.eq(element2, typedOther.element2);
         // @formatter:on
     }

@@ -54,9 +54,9 @@ public class ObjectDoubleObjectTuple implements Comparable<ObjectDoubleObjectTup
         this.element2 = element2;
         this.element3 = element3;
         cachedHashCode = ((31 +
-                Objects.hashCode(element1)) * 31 +
-                Double.hashCode(element2)) * 31 +
-                Objects.hashCode(element3);
+                ObjectComparisons.hashCode(element1)) * 31 +
+                DoubleComparisons.hashCode(element2)) * 31 +
+                ObjectComparisons.hashCode(element3);
     }
 
     public final Object getFirstElement() {

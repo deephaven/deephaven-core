@@ -47,8 +47,8 @@ public class DoubleDoubleTuple implements Comparable<DoubleDoubleTuple>, Externa
         this.element1 = element1;
         this.element2 = element2;
         cachedHashCode = (31 +
-                Double.hashCode(element1)) * 31 +
-                Double.hashCode(element2);
+                DoubleComparisons.hashCode(element1)) * 31 +
+                DoubleComparisons.hashCode(element2);
     }
 
     public final double getFirstElement() {

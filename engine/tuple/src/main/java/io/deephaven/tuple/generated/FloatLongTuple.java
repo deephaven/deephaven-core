@@ -48,8 +48,8 @@ public class FloatLongTuple implements Comparable<FloatLongTuple>, Externalizabl
         this.element1 = element1;
         this.element2 = element2;
         cachedHashCode = (31 +
-                Float.hashCode(element1)) * 31 +
-                Long.hashCode(element2);
+                FloatComparisons.hashCode(element1)) * 31 +
+                LongComparisons.hashCode(element2);
     }
 
     public final float getFirstElement() {
@@ -76,7 +76,7 @@ public class FloatLongTuple implements Comparable<FloatLongTuple>, Externalizabl
         final FloatLongTuple typedOther = (FloatLongTuple) other;
         // @formatter:off
         return FloatComparisons.eq(element1, typedOther.element1) &&
-               element2 == typedOther.element2;
+               LongComparisons.eq(element2, typedOther.element2);
         // @formatter:on
     }
 

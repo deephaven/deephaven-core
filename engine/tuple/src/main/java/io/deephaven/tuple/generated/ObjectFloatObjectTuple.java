@@ -54,9 +54,9 @@ public class ObjectFloatObjectTuple implements Comparable<ObjectFloatObjectTuple
         this.element2 = element2;
         this.element3 = element3;
         cachedHashCode = ((31 +
-                Objects.hashCode(element1)) * 31 +
-                Float.hashCode(element2)) * 31 +
-                Objects.hashCode(element3);
+                ObjectComparisons.hashCode(element1)) * 31 +
+                FloatComparisons.hashCode(element2)) * 31 +
+                ObjectComparisons.hashCode(element3);
     }
 
     public final Object getFirstElement() {

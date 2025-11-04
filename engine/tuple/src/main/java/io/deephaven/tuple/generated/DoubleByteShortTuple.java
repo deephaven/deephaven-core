@@ -54,9 +54,9 @@ public class DoubleByteShortTuple implements Comparable<DoubleByteShortTuple>, E
         this.element2 = element2;
         this.element3 = element3;
         cachedHashCode = ((31 +
-                Double.hashCode(element1)) * 31 +
-                Byte.hashCode(element2)) * 31 +
-                Short.hashCode(element3);
+                DoubleComparisons.hashCode(element1)) * 31 +
+                ByteComparisons.hashCode(element2)) * 31 +
+                ShortComparisons.hashCode(element3);
     }
 
     public final double getFirstElement() {
@@ -87,8 +87,8 @@ public class DoubleByteShortTuple implements Comparable<DoubleByteShortTuple>, E
         final DoubleByteShortTuple typedOther = (DoubleByteShortTuple) other;
         // @formatter:off
         return DoubleComparisons.eq(element1, typedOther.element1) &&
-               element2 == typedOther.element2 &&
-               element3 == typedOther.element3;
+               ByteComparisons.eq(element2, typedOther.element2) &&
+               ShortComparisons.eq(element3, typedOther.element3);
         // @formatter:on
     }
 

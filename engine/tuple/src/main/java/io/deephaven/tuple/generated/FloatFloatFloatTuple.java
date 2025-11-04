@@ -52,9 +52,9 @@ public class FloatFloatFloatTuple implements Comparable<FloatFloatFloatTuple>, E
         this.element2 = element2;
         this.element3 = element3;
         cachedHashCode = ((31 +
-                Float.hashCode(element1)) * 31 +
-                Float.hashCode(element2)) * 31 +
-                Float.hashCode(element3);
+                FloatComparisons.hashCode(element1)) * 31 +
+                FloatComparisons.hashCode(element2)) * 31 +
+                FloatComparisons.hashCode(element3);
     }
 
     public final float getFirstElement() {

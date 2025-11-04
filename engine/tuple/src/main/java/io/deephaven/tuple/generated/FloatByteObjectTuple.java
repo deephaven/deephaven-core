@@ -55,9 +55,9 @@ public class FloatByteObjectTuple implements Comparable<FloatByteObjectTuple>, E
         this.element2 = element2;
         this.element3 = element3;
         cachedHashCode = ((31 +
-                Float.hashCode(element1)) * 31 +
-                Byte.hashCode(element2)) * 31 +
-                Objects.hashCode(element3);
+                FloatComparisons.hashCode(element1)) * 31 +
+                ByteComparisons.hashCode(element2)) * 31 +
+                ObjectComparisons.hashCode(element3);
     }
 
     public final float getFirstElement() {
@@ -88,7 +88,7 @@ public class FloatByteObjectTuple implements Comparable<FloatByteObjectTuple>, E
         final FloatByteObjectTuple typedOther = (FloatByteObjectTuple) other;
         // @formatter:off
         return FloatComparisons.eq(element1, typedOther.element1) &&
-               element2 == typedOther.element2 &&
+               ByteComparisons.eq(element2, typedOther.element2) &&
                ObjectComparisons.eq(element3, typedOther.element3);
         // @formatter:on
     }

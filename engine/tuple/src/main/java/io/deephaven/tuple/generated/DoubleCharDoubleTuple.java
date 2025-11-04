@@ -53,9 +53,9 @@ public class DoubleCharDoubleTuple implements Comparable<DoubleCharDoubleTuple>,
         this.element2 = element2;
         this.element3 = element3;
         cachedHashCode = ((31 +
-                Double.hashCode(element1)) * 31 +
-                Character.hashCode(element2)) * 31 +
-                Double.hashCode(element3);
+                DoubleComparisons.hashCode(element1)) * 31 +
+                CharComparisons.hashCode(element2)) * 31 +
+                DoubleComparisons.hashCode(element3);
     }
 
     public final double getFirstElement() {
@@ -86,7 +86,7 @@ public class DoubleCharDoubleTuple implements Comparable<DoubleCharDoubleTuple>,
         final DoubleCharDoubleTuple typedOther = (DoubleCharDoubleTuple) other;
         // @formatter:off
         return DoubleComparisons.eq(element1, typedOther.element1) &&
-               element2 == typedOther.element2 &&
+               CharComparisons.eq(element2, typedOther.element2) &&
                DoubleComparisons.eq(element3, typedOther.element3);
         // @formatter:on
     }

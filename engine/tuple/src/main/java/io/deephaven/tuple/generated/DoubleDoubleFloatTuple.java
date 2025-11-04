@@ -53,9 +53,9 @@ public class DoubleDoubleFloatTuple implements Comparable<DoubleDoubleFloatTuple
         this.element2 = element2;
         this.element3 = element3;
         cachedHashCode = ((31 +
-                Double.hashCode(element1)) * 31 +
-                Double.hashCode(element2)) * 31 +
-                Float.hashCode(element3);
+                DoubleComparisons.hashCode(element1)) * 31 +
+                DoubleComparisons.hashCode(element2)) * 31 +
+                FloatComparisons.hashCode(element3);
     }
 
     public final double getFirstElement() {
