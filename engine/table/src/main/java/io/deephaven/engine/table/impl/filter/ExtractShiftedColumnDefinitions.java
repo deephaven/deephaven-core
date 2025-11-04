@@ -28,7 +28,7 @@ public enum ExtractShiftedColumnDefinitions
     }
 
     public static Stream<ShiftedColumnDefinition> stream(final WhereFilter filter) {
-        return filter.walkWhereFilter(EXTRACT_SHIFTED_COLUMN_DEFINITIONS);
+        return filter.walk(EXTRACT_SHIFTED_COLUMN_DEFINITIONS);
     }
 
     public static boolean hasAny(final WhereFilter filter) {
@@ -38,7 +38,7 @@ public enum ExtractShiftedColumnDefinitions
     }
 
     @Override
-    public Stream<ShiftedColumnDefinition> visitWhereFilterOther(WhereFilter filter) {
+    public Stream<ShiftedColumnDefinition> visitOther(WhereFilter filter) {
         if (filter instanceof AbstractConditionFilter
                 && ((AbstractConditionFilter) filter).hasConstantArrayAccess()) {
             return ((AbstractConditionFilter) filter).getFormulaShiftedColumnDefinitions().getSecond().stream();
@@ -47,32 +47,32 @@ public enum ExtractShiftedColumnDefinitions
     }
 
     @Override
-    public Stream<ShiftedColumnDefinition> visitWhereFilter(final WhereFilterInvertedImpl filter) {
+    public Stream<ShiftedColumnDefinition> visit(final WhereFilterInvertedImpl filter) {
         return stream(filter.getWrappedFilter());
     }
 
     @Override
-    public Stream<ShiftedColumnDefinition> visitWhereFilter(final WhereFilterSerialImpl filter) {
+    public Stream<ShiftedColumnDefinition> visit(final WhereFilterSerialImpl filter) {
         return stream(filter.getWrappedFilter());
     }
 
     @Override
-    public Stream<ShiftedColumnDefinition> visitWhereFilter(final WhereFilterWithDeclaredBarriersImpl filter) {
+    public Stream<ShiftedColumnDefinition> visit(final WhereFilterWithDeclaredBarriersImpl filter) {
         return stream(filter.getWrappedFilter());
     }
 
     @Override
-    public Stream<ShiftedColumnDefinition> visitWhereFilter(final WhereFilterWithRespectedBarriersImpl filter) {
+    public Stream<ShiftedColumnDefinition> visit(final WhereFilterWithRespectedBarriersImpl filter) {
         return stream(filter.getWrappedFilter());
     }
 
     @Override
-    public Stream<ShiftedColumnDefinition> visitWhereFilter(final DisjunctiveFilter filter) {
+    public Stream<ShiftedColumnDefinition> visit(final DisjunctiveFilter filter) {
         return filter.getFilters().stream().flatMap(ExtractShiftedColumnDefinitions::stream);
     }
 
     @Override
-    public Stream<ShiftedColumnDefinition> visitWhereFilter(final ConjunctiveFilter filter) {
+    public Stream<ShiftedColumnDefinition> visit(final ConjunctiveFilter filter) {
         return filter.getFilters().stream().flatMap(ExtractShiftedColumnDefinitions::stream);
     }
 }

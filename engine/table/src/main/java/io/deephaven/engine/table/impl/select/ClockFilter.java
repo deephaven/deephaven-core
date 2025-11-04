@@ -171,4 +171,9 @@ public abstract class ClockFilter extends WhereFilterLivenessArtifactImpl
             return addedBuilder;
         }
     }
+
+    @Override
+    public final <T> T walk(Visitor<T> visitor) {
+        return visitor.visitOther(this);
+    }
 }

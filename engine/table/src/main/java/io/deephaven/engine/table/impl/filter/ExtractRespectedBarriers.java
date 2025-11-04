@@ -29,41 +29,41 @@ public enum ExtractRespectedBarriers implements WhereFilter.Visitor<Stream<Objec
     }
 
     public static Stream<Object> stream(WhereFilter filter) {
-        return filter.walkWhereFilter(EXTRACT_RESPECTED_BARRIERS);
+        return filter.walk(EXTRACT_RESPECTED_BARRIERS);
     }
 
     @Override
-    public Stream<Object> visitWhereFilterOther(WhereFilter filter) {
+    public Stream<Object> visitOther(WhereFilter filter) {
         return Stream.empty();
     }
 
     @Override
-    public Stream<Object> visitWhereFilter(WhereFilterInvertedImpl filter) {
+    public Stream<Object> visit(WhereFilterInvertedImpl filter) {
         return stream(filter.getWrappedFilter());
     }
 
     @Override
-    public Stream<Object> visitWhereFilter(WhereFilterSerialImpl filter) {
+    public Stream<Object> visit(WhereFilterSerialImpl filter) {
         return stream(filter.getWrappedFilter());
     }
 
     @Override
-    public Stream<Object> visitWhereFilter(WhereFilterWithDeclaredBarriersImpl filter) {
+    public Stream<Object> visit(WhereFilterWithDeclaredBarriersImpl filter) {
         return stream(filter.getWrappedFilter());
     }
 
     @Override
-    public Stream<Object> visitWhereFilter(WhereFilterWithRespectedBarriersImpl filter) {
+    public Stream<Object> visit(WhereFilterWithRespectedBarriersImpl filter) {
         return Stream.concat(Stream.of(filter.respectedBarriers()), stream(filter.getWrappedFilter()));
     }
 
     @Override
-    public Stream<Object> visitWhereFilter(DisjunctiveFilter filter) {
+    public Stream<Object> visit(DisjunctiveFilter filter) {
         return filter.getFilters().stream().flatMap(ExtractRespectedBarriers::stream);
     }
 
     @Override
-    public Stream<Object> visitWhereFilter(ConjunctiveFilter filter) {
+    public Stream<Object> visit(ConjunctiveFilter filter) {
         return filter.getFilters().stream().flatMap(ExtractRespectedBarriers::stream);
     }
 }

@@ -17,11 +17,11 @@ public enum TransformToFinalFormula implements WhereFilter.Visitor<WhereFilter> 
     TRANSFORM_TO_FINAL_FORMULA;
 
     public static WhereFilter of(final WhereFilter filter) {
-        return filter.walkWhereFilter(TRANSFORM_TO_FINAL_FORMULA);
+        return filter.walk(TRANSFORM_TO_FINAL_FORMULA);
     }
 
     @Override
-    public WhereFilter visitWhereFilterOther(WhereFilter filter) {
+    public WhereFilter visitOther(WhereFilter filter) {
         if (filter instanceof AbstractConditionFilter
                 && ((AbstractConditionFilter) filter).hasConstantArrayAccess()) {
             return WhereFilterFactory
@@ -31,27 +31,27 @@ public enum TransformToFinalFormula implements WhereFilter.Visitor<WhereFilter> 
     }
 
     @Override
-    public WhereFilter visitWhereFilter(final WhereFilterInvertedImpl filter) {
+    public WhereFilter visit(final WhereFilterInvertedImpl filter) {
         return WhereFilterInvertedImpl.of(of(filter.getWrappedFilter()));
     }
 
     @Override
-    public WhereFilter visitWhereFilter(final WhereFilterSerialImpl filter) {
+    public WhereFilter visit(final WhereFilterSerialImpl filter) {
         return of(filter.getWrappedFilter()).withSerial();
     }
 
     @Override
-    public WhereFilter visitWhereFilter(final WhereFilterWithDeclaredBarriersImpl filter) {
+    public WhereFilter visit(final WhereFilterWithDeclaredBarriersImpl filter) {
         return of(filter.getWrappedFilter()).withDeclaredBarriers(filter.declaredBarriers());
     }
 
     @Override
-    public WhereFilter visitWhereFilter(final WhereFilterWithRespectedBarriersImpl filter) {
+    public WhereFilter visit(final WhereFilterWithRespectedBarriersImpl filter) {
         return of(filter.getWrappedFilter()).withRespectedBarriers(filter.respectedBarriers());
     }
 
     @Override
-    public WhereFilter visitWhereFilter(final DisjunctiveFilter filter) {
+    public WhereFilter visit(final DisjunctiveFilter filter) {
         return DisjunctiveFilter.of(
                 filter.getFilters().stream()
                         .map(TransformToFinalFormula::of)
@@ -59,7 +59,7 @@ public enum TransformToFinalFormula implements WhereFilter.Visitor<WhereFilter> 
     }
 
     @Override
-    public WhereFilter visitWhereFilter(final ConjunctiveFilter filter) {
+    public WhereFilter visit(final ConjunctiveFilter filter) {
         return ConjunctiveFilter.of(
                 filter.getFilters().stream()
                         .map(TransformToFinalFormula::of)

@@ -17,7 +17,7 @@ public enum ExtractSerialFilters implements WhereFilter.Visitor<Stream<WhereFilt
     EXTRACT_SERIAL_FILTERS;
 
     public static Stream<WhereFilterSerialImpl> stream(WhereFilter filter) {
-        return filter.walkWhereFilter(EXTRACT_SERIAL_FILTERS);
+        return filter.walk(EXTRACT_SERIAL_FILTERS);
     }
 
     public static boolean hasAny(WhereFilter filter) {
@@ -27,37 +27,37 @@ public enum ExtractSerialFilters implements WhereFilter.Visitor<Stream<WhereFilt
     }
 
     @Override
-    public Stream<WhereFilterSerialImpl> visitWhereFilterOther(WhereFilter filter) {
+    public Stream<WhereFilterSerialImpl> visitOther(WhereFilter filter) {
         return Stream.empty();
     }
 
     @Override
-    public Stream<WhereFilterSerialImpl> visitWhereFilter(WhereFilterInvertedImpl filter) {
+    public Stream<WhereFilterSerialImpl> visit(WhereFilterInvertedImpl filter) {
         return stream(filter.getWrappedFilter());
     }
 
     @Override
-    public Stream<WhereFilterSerialImpl> visitWhereFilter(WhereFilterSerialImpl filter) {
+    public Stream<WhereFilterSerialImpl> visit(WhereFilterSerialImpl filter) {
         return Stream.of(filter); // return this filter
     }
 
     @Override
-    public Stream<WhereFilterSerialImpl> visitWhereFilter(WhereFilterWithDeclaredBarriersImpl filter) {
+    public Stream<WhereFilterSerialImpl> visit(WhereFilterWithDeclaredBarriersImpl filter) {
         return stream(filter.getWrappedFilter());
     }
 
     @Override
-    public Stream<WhereFilterSerialImpl> visitWhereFilter(WhereFilterWithRespectedBarriersImpl filter) {
+    public Stream<WhereFilterSerialImpl> visit(WhereFilterWithRespectedBarriersImpl filter) {
         return stream(filter.getWrappedFilter());
     }
 
     @Override
-    public Stream<WhereFilterSerialImpl> visitWhereFilter(DisjunctiveFilter disjunctiveFilters) {
+    public Stream<WhereFilterSerialImpl> visit(DisjunctiveFilter disjunctiveFilters) {
         return disjunctiveFilters.getFilters().stream().flatMap(ExtractSerialFilters::stream);
     }
 
     @Override
-    public Stream<WhereFilterSerialImpl> visitWhereFilter(ConjunctiveFilter conjunctiveFilters) {
+    public Stream<WhereFilterSerialImpl> visit(ConjunctiveFilter conjunctiveFilters) {
         return conjunctiveFilters.getFilters().stream().flatMap(ExtractSerialFilters::stream);
     }
 }

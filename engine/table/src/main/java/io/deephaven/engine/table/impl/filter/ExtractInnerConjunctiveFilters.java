@@ -25,42 +25,42 @@ public enum ExtractInnerConjunctiveFilters implements WhereFilter.Visitor<Stream
     }
 
     public static Stream<WhereFilter> stream(final WhereFilter filter) {
-        return filter.walkWhereFilter(EXTRACT_INNER_CONJUNCTIVE_FILTERS);
+        return filter.walk(EXTRACT_INNER_CONJUNCTIVE_FILTERS);
     }
 
     @Override
-    public Stream<WhereFilter> visitWhereFilterOther(final WhereFilter filter) {
+    public Stream<WhereFilter> visitOther(final WhereFilter filter) {
         return Stream.of(filter);
     }
 
     @Override
-    public Stream<WhereFilter> visitWhereFilter(final WhereFilterInvertedImpl filter) {
+    public Stream<WhereFilter> visit(final WhereFilterInvertedImpl filter) {
         return Stream.of(filter);
     }
 
     @Override
-    public Stream<WhereFilter> visitWhereFilter(final WhereFilterSerialImpl filter) {
+    public Stream<WhereFilter> visit(final WhereFilterSerialImpl filter) {
         return Stream.of(filter);
     }
 
     @Override
-    public Stream<WhereFilter> visitWhereFilter(final WhereFilterWithDeclaredBarriersImpl filter) {
+    public Stream<WhereFilter> visit(final WhereFilterWithDeclaredBarriersImpl filter) {
         return Stream.of(filter);
     }
 
     @Override
-    public Stream<WhereFilter> visitWhereFilter(final WhereFilterWithRespectedBarriersImpl filter) {
+    public Stream<WhereFilter> visit(final WhereFilterWithRespectedBarriersImpl filter) {
         return stream(filter.getWrappedFilter())
                 .map(wf -> WhereFilterWithRespectedBarriersImpl.of(wf, filter.respectedBarriers()));
     }
 
     @Override
-    public Stream<WhereFilter> visitWhereFilter(final DisjunctiveFilter filter) {
+    public Stream<WhereFilter> visit(final DisjunctiveFilter filter) {
         return Stream.of(filter);
     }
 
     @Override
-    public Stream<WhereFilter> visitWhereFilter(final ConjunctiveFilter filter) {
+    public Stream<WhereFilter> visit(final ConjunctiveFilter filter) {
         return filter.getFilters().stream().flatMap(ExtractInnerConjunctiveFilters::stream);
     }
 }

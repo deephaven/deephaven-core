@@ -225,9 +225,9 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
                 continue;
             }
 
-            final WhereFilter preFilter = filter.walkWhereFilter(new WhereFilter.Visitor<>() {
+            final WhereFilter preFilter = filter.walk(new WhereFilter.Visitor<>() {
                 @Override
-                public WhereFilter visitWhereFilterOther(WhereFilter filter) {
+                public WhereFilter visitOther(WhereFilter filter) {
                     if (filter instanceof MatchFilter) {
                         return ((MatchFilter) filter).renameFilter(myRenames);
                     }
@@ -238,42 +238,42 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
                 }
 
                 @Override
-                public WhereFilter visitWhereFilter(WhereFilterInvertedImpl filter) {
-                    final WhereFilter innerPreFilter = filter.getWrappedFilter().walkWhereFilter(this);
+                public WhereFilter visit(WhereFilterInvertedImpl filter) {
+                    final WhereFilter innerPreFilter = filter.getWrappedFilter().walk(this);
                     return innerPreFilter == null
                             ? null
                             : WhereFilterInvertedImpl.of(innerPreFilter);
                 }
 
                 @Override
-                public WhereFilter visitWhereFilter(WhereFilterSerialImpl filter) {
+                public WhereFilter visit(WhereFilterSerialImpl filter) {
                     // serial filters cannot be run out of order w.r.t. the set of filters that come before and the
                     // set of filters that come after.
                     return null;
                 }
 
                 @Override
-                public WhereFilter visitWhereFilter(WhereFilterWithDeclaredBarriersImpl filter) {
-                    final WhereFilter innerPreFilter = filter.getWrappedFilter().walkWhereFilter(this);
+                public WhereFilter visit(WhereFilterWithDeclaredBarriersImpl filter) {
+                    final WhereFilter innerPreFilter = filter.getWrappedFilter().walk(this);
                     return innerPreFilter == null
                             ? null
                             : WhereFilterWithDeclaredBarriersImpl.of(innerPreFilter, filter.declaredBarriers());
                 }
 
                 @Override
-                public WhereFilter visitWhereFilter(WhereFilterWithRespectedBarriersImpl filter) {
-                    final WhereFilter innerPreFilter = filter.getWrappedFilter().walkWhereFilter(this);
+                public WhereFilter visit(WhereFilterWithRespectedBarriersImpl filter) {
+                    final WhereFilter innerPreFilter = filter.getWrappedFilter().walk(this);
                     return innerPreFilter == null
                             ? null
                             : WhereFilterWithRespectedBarriersImpl.of(innerPreFilter, filter.respectedBarriers());
                 }
 
                 @Override
-                public WhereFilter visitWhereFilter(DisjunctiveFilter filter) {
+                public WhereFilter visit(DisjunctiveFilter filter) {
                     final List<WhereFilter> subFilters = filter.getFilters();
                     final WhereFilter[] wrappedFilters = new WhereFilter[subFilters.size()];
                     for (int ii = 0; ii < wrappedFilters.length; ++ii) {
-                        final WhereFilter subWrap = subFilters.get(ii).walkWhereFilter(this);
+                        final WhereFilter subWrap = subFilters.get(ii).walk(this);
                         if (subWrap == null) {
                             return null;
                         }
@@ -283,11 +283,11 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
                 }
 
                 @Override
-                public WhereFilter visitWhereFilter(ConjunctiveFilter filter) {
+                public WhereFilter visit(ConjunctiveFilter filter) {
                     final List<WhereFilter> subFilters = filter.getFilters();
                     final WhereFilter[] wrappedFilters = new WhereFilter[subFilters.size()];
                     for (int ii = 0; ii < wrappedFilters.length; ++ii) {
-                        final WhereFilter subWrap = subFilters.get(ii).walkWhereFilter(this);
+                        final WhereFilter subWrap = subFilters.get(ii).walk(this);
                         if (subWrap == null) {
                             return null;
                         }

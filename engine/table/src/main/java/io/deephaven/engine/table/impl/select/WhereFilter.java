@@ -361,26 +361,24 @@ public interface WhereFilter extends Filter {
         throw new UnsupportedOperationException("WhereFilters do not implement walk");
     }
 
-    default <T> T walkWhereFilter(Visitor<T> visitor) {
-        return visitor.visitWhereFilterOther(this);
-    }
+    <T> T walk(Visitor<T> visitor);
 
     // endregion Filter impl
 
     // rather than allowing for customization on every type of filter, we focus on structured and attribute filters
     interface Visitor<T> {
-        T visitWhereFilter(WhereFilterInvertedImpl filter);
+        T visit(WhereFilterInvertedImpl filter);
 
-        T visitWhereFilter(WhereFilterSerialImpl filter);
+        T visit(WhereFilterSerialImpl filter);
 
-        T visitWhereFilter(WhereFilterWithDeclaredBarriersImpl filter);
+        T visit(WhereFilterWithDeclaredBarriersImpl filter);
 
-        T visitWhereFilter(WhereFilterWithRespectedBarriersImpl filter);
+        T visit(WhereFilterWithRespectedBarriersImpl filter);
 
-        T visitWhereFilter(DisjunctiveFilter filter);
+        T visit(DisjunctiveFilter filter);
 
-        T visitWhereFilter(ConjunctiveFilter filter);
+        T visit(ConjunctiveFilter filter);
 
-        T visitWhereFilterOther(WhereFilter filter);
+        T visitOther(WhereFilter filter);
     }
 }

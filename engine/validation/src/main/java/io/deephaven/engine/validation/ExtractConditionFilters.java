@@ -18,41 +18,41 @@ enum ExtractConditionFilters implements WhereFilter.Visitor<Stream<ConditionFilt
     EXTRACT_CONDITION_FILTERS;
 
     public static Stream<ConditionFilter> of(final WhereFilter filter) {
-        return filter.walkWhereFilter(EXTRACT_CONDITION_FILTERS);
+        return filter.walk(EXTRACT_CONDITION_FILTERS);
     }
 
     @Override
-    public Stream<ConditionFilter> visitWhereFilterOther(WhereFilter filter) {
+    public Stream<ConditionFilter> visitOther(WhereFilter filter) {
         return filter instanceof ConditionFilter ? Stream.of((ConditionFilter) filter) : Stream.empty();
     }
 
     @Override
-    public Stream<ConditionFilter> visitWhereFilter(WhereFilterInvertedImpl filter) {
+    public Stream<ConditionFilter> visit(WhereFilterInvertedImpl filter) {
         return of(filter.getWrappedFilter());
     }
 
     @Override
-    public Stream<ConditionFilter> visitWhereFilter(WhereFilterSerialImpl filter) {
+    public Stream<ConditionFilter> visit(WhereFilterSerialImpl filter) {
         return of(filter.getWrappedFilter());
     }
 
     @Override
-    public Stream<ConditionFilter> visitWhereFilter(WhereFilterWithDeclaredBarriersImpl filter) {
+    public Stream<ConditionFilter> visit(WhereFilterWithDeclaredBarriersImpl filter) {
         return of(filter.getWrappedFilter());
     }
 
     @Override
-    public Stream<ConditionFilter> visitWhereFilter(WhereFilterWithRespectedBarriersImpl filter) {
+    public Stream<ConditionFilter> visit(WhereFilterWithRespectedBarriersImpl filter) {
         return of(filter.getWrappedFilter());
     }
 
     @Override
-    public Stream<ConditionFilter> visitWhereFilter(DisjunctiveFilter filter) {
+    public Stream<ConditionFilter> visit(DisjunctiveFilter filter) {
         return filter.getFilters().stream().flatMap(ExtractConditionFilters::of);
     }
 
     @Override
-    public Stream<ConditionFilter> visitWhereFilter(ConjunctiveFilter filter) {
+    public Stream<ConditionFilter> visit(ConjunctiveFilter filter) {
         return filter.getFilters().stream().flatMap(ExtractConditionFilters::of);
     }
 }

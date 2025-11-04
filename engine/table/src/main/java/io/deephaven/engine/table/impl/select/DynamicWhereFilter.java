@@ -608,4 +608,9 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
         final PerformanceEntry entry = setUpdateListener.getEntry();
         return entry == null ? LongStream.empty() : LongStream.of(entry.getId());
     }
+
+    @Override
+    public final <T> T walk(Visitor<T> visitor) {
+        return visitor.visitOther(this);
+    }
 }

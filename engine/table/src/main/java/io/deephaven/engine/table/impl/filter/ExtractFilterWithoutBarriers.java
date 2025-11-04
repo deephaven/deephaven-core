@@ -13,36 +13,36 @@ public enum ExtractFilterWithoutBarriers implements WhereFilter.Visitor<WhereFil
     EXTRACT_FILTER_WITHOUT_BARRIERS;
 
     public static WhereFilter of(final WhereFilter filter) {
-        return filter.walkWhereFilter(EXTRACT_FILTER_WITHOUT_BARRIERS);
+        return filter.walk(EXTRACT_FILTER_WITHOUT_BARRIERS);
     }
 
     @Override
-    public WhereFilter visitWhereFilterOther(final WhereFilter filter) {
+    public WhereFilter visitOther(final WhereFilter filter) {
         return filter;
     }
 
     @Override
-    public WhereFilter visitWhereFilter(final WhereFilterInvertedImpl filter) {
+    public WhereFilter visit(final WhereFilterInvertedImpl filter) {
         return WhereFilterInvertedImpl.of(of(filter.getWrappedFilter())); // must unwrap, then re-wrap inverted
     }
 
     @Override
-    public WhereFilter visitWhereFilter(final WhereFilterSerialImpl filter) {
+    public WhereFilter visit(final WhereFilterSerialImpl filter) {
         return of(filter.getWrappedFilter()); // must unwrap
     }
 
     @Override
-    public WhereFilter visitWhereFilter(final WhereFilterWithDeclaredBarriersImpl filter) {
+    public WhereFilter visit(final WhereFilterWithDeclaredBarriersImpl filter) {
         return of(filter.getWrappedFilter()); // must unwrap
     }
 
     @Override
-    public WhereFilter visitWhereFilter(final WhereFilterWithRespectedBarriersImpl filter) {
+    public WhereFilter visit(final WhereFilterWithRespectedBarriersImpl filter) {
         return of(filter.getWrappedFilter()); // must unwrap
     }
 
     @Override
-    public WhereFilter visitWhereFilter(final DisjunctiveFilter filter) {
+    public WhereFilter visit(final DisjunctiveFilter filter) {
         final WhereFilter[] innerUnwrapped = filter.getFilters().stream()
                 .map(ExtractFilterWithoutBarriers::of)
                 .toArray(WhereFilter[]::new);
@@ -56,7 +56,7 @@ public enum ExtractFilterWithoutBarriers implements WhereFilter.Visitor<WhereFil
     }
 
     @Override
-    public WhereFilter visitWhereFilter(final ConjunctiveFilter filter) {
+    public WhereFilter visit(final ConjunctiveFilter filter) {
         final WhereFilter[] innerUnwrapped = filter.getFilters().stream()
                 .map(ExtractFilterWithoutBarriers::of)
                 .toArray(WhereFilter[]::new);
