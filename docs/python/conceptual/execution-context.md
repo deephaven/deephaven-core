@@ -245,8 +245,12 @@ import tempfile
 
 ExecutionContext = jpy.get_type("io.deephaven.engine.context.ExecutionContext")
 QueryCompilerImpl = jpy.get_type("io.deephaven.engine.context.QueryCompilerImpl")
-PeriodicUpdateGraph = jpy.get_type("io.deephaven.engine.updategraph.impl.PeriodicUpdateGraph")
-OperationInitializer = jpy.get_type("io.deephaven.engine.updategraph.OperationInitializer")
+PeriodicUpdateGraph = jpy.get_type(
+    "io.deephaven.engine.updategraph.impl.PeriodicUpdateGraph"
+)
+OperationInitializer = jpy.get_type(
+    "io.deephaven.engine.updategraph.OperationInitializer"
+)
 
 temp_dir = tempfile.mkdtemp(prefix="qc_")
 
@@ -259,7 +263,7 @@ execution_context = (
     .setQueryCompiler(
         QueryCompilerImpl.create(
             jpy.get_type("java.io.File")(temp_dir),
-            jpy.get_type("java.lang.ClassLoader").getSystemClassLoader()
+            jpy.get_type("java.lang.ClassLoader").getSystemClassLoader(),
         )
     )
     .build()
@@ -286,8 +290,12 @@ import tempfile
 
 ExecutionContext = jpy.get_type("io.deephaven.engine.context.ExecutionContext")
 QueryCompilerImpl = jpy.get_type("io.deephaven.engine.context.QueryCompilerImpl")
-EventDrivenUpdateGraph = jpy.get_type("io.deephaven.engine.updategraph.impl.EventDrivenUpdateGraph")
-OperationInitializer = jpy.get_type("io.deephaven.engine.updategraph.OperationInitializer")
+EventDrivenUpdateGraph = jpy.get_type(
+    "io.deephaven.engine.updategraph.impl.EventDrivenUpdateGraph"
+)
+OperationInitializer = jpy.get_type(
+    "io.deephaven.engine.updategraph.OperationInitializer"
+)
 
 temp_dir = tempfile.mkdtemp(prefix="qc_")
 
@@ -302,7 +310,7 @@ execution_context = (
     .setQueryCompiler(
         QueryCompilerImpl.create(
             jpy.get_type("java.io.File")(temp_dir),
-            jpy.get_type("java.lang.ClassLoader").getSystemClassLoader()
+            jpy.get_type("java.lang.ClassLoader").getSystemClassLoader(),
         )
     )
     .build()
