@@ -100,6 +100,22 @@ public class TestChunkSort {
     }
     // endregion PermutationIterator
 
+    // These assertions reflect sorting assumptions made by chunk sorting code. If these assertions
+    // change, this code will need to be carefully audited.
+    @Test
+    public void testValueTypeAssertions() {
+        TestCase.assertEquals(NULL_CHAR, Character.MAX_VALUE);
+        TestCase.assertEquals(NULL_BYTE, Byte.MIN_VALUE);
+        TestCase.assertEquals(NULL_SHORT, Short.MIN_VALUE);
+        TestCase.assertEquals(NULL_INT, Integer.MIN_VALUE);
+        TestCase.assertEquals(NULL_LONG, Long.MIN_VALUE);
+        TestCase.assertEquals(NULL_FLOAT, -Float.MAX_VALUE);
+        TestCase.assertEquals(NULL_DOUBLE, -Double.MAX_VALUE);
+
+        TestCase.assertTrue(Float.NEGATIVE_INFINITY < NULL_FLOAT);
+        TestCase.assertTrue(Double.NEGATIVE_INFINITY < NULL_DOUBLE);
+    }
+
     @Test
     public void testCharChunkSort() {
         final List<Character> expected = new ArrayList<>();

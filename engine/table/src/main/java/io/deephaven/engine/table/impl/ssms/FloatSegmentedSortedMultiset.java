@@ -84,8 +84,8 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
         int rlpos = 0;
         float nextValue;
         while (rlpos < leafSize && ripos < valuesToInsert.size()
-                && (leq(nextValue = valuesToInsert.get(ripos), maxInsert) || lastLeaf)) {
-            if (gt(leafValues[rlpos], nextValue)) {
+                && (FloatComparisons.leq(nextValue = valuesToInsert.get(ripos), maxInsert) || lastLeaf)) {
+            if (FloatComparisons.gt(leafValues[rlpos], nextValue)) {
                 // we're not going to find nextValue in this leaf, so we skip over it
                 valuesToInsert.set(wipos.get(), nextValue);
                 counts.set(wipos.get(), counts.get(ripos));
@@ -94,7 +94,7 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
             } else {
                 rlpos = upperBound(leafValues, rlpos, leafSize, nextValue);
                 if (rlpos < leafSize) {
-                    if (eq(leafValues[rlpos], nextValue)) {
+                    if (FloatComparisons.eq(leafValues[rlpos], nextValue)) {
                         leafCounts[rlpos] += counts.get(ripos);
                         ripos++;
                     }
@@ -146,7 +146,7 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
         while (remaining-- > 0) {
             final float insertValue = valuesToInsert.get(ripos);
             final float leafValue = leafValues[firstLeaf][rlpos];
-            final boolean useInsertValue = gt(insertValue, leafValue);
+            final boolean useInsertValue = FloatComparisons.gt(insertValue, leafValue);
 
             if (useInsertValue) {
                 leafValues[wleaf][wpos] = insertValue;
@@ -292,7 +292,7 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
             final float insertValue = valuesToInsert.get(ripos);
             final float leafValue = leafValues[rlpos];
 
-            if (gt(insertValue, leafValue)) {
+            if (FloatComparisons.gt(insertValue, leafValue)) {
                 leafValues[wpos] = insertValue;
                 leafCounts[wpos] = counts.get(ripos);
                 if (ripos == 0) {
@@ -445,7 +445,7 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
 
         maybeAccumulateAdditions(valuesToInsert);
 
-        if (leafCount > 1 && gt(valuesToInsert.get(0), getMaxFloat())) {
+        if (leafCount > 1 && FloatComparisons.gt(valuesToInsert.get(0), getMaxFloat())) {
             doAppend(valuesToInsert, counts);
             return;
         }
@@ -691,7 +691,7 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
         while (lo < hi) {
             final int mid = (lo + hi) >>> 1;
             final float testValue = valuesToSearch[mid];
-            final boolean moveLo = leq(testValue, searchValue);
+            final boolean moveLo = FloatComparisons.leq(testValue, searchValue);
             if (moveLo) {
                 lo = mid;
                 if (lo == hi - 1) {
@@ -718,7 +718,7 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
         while (lo < hi) {
             final int mid = (lo + hi) >>> 1;
             final float testValue = valuesToSearch.get(mid);
-            final boolean moveLo = leq(testValue, searchValue);
+            final boolean moveLo = FloatComparisons.leq(testValue, searchValue);
             if (moveLo) {
                 if (mid == lo) {
                     return mid + 1;
@@ -745,7 +745,7 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
         while (lo < hi) {
             final int mid = (lo + hi) >>> 1;
             final float testValue = valuesToSearch[mid];
-            final boolean moveLo = leq(testValue, searchValue);
+            final boolean moveLo = FloatComparisons.leq(testValue, searchValue);
             if (moveLo) {
                 if (mid == lo) {
                     return mid + 1;
@@ -772,7 +772,7 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
         while (lo < hi) {
             final int mid = (lo + hi) >>> 1;
             final float testValue = valuesToSearch[mid];
-            final boolean moveHi = geq(testValue, searchValue);
+            final boolean moveHi = FloatComparisons.geq(testValue, searchValue);
             if (moveHi) {
                 hi = mid;
             } else {
@@ -796,7 +796,7 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
         while (lo < hi) {
             final int mid = (lo + hi) >>> 1;
             final float testValue = valuesToSearch.get(mid);
-            final boolean moveHi = gt(testValue, searchValue);
+            final boolean moveHi = FloatComparisons.gt(testValue, searchValue);
             if (moveHi) {
                 hi = mid;
             } else {
@@ -820,7 +820,7 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
         while (lo < hi) {
             final int mid = (lo + hi) >>> 1;
             final float testValue = valuesToSearch[mid];
-            final boolean moveLo = lt(testValue, searchValue);
+            final boolean moveLo = FloatComparisons.lt(testValue, searchValue);
             if (moveLo) {
                 lo = mid + 1;
                 if (lo == hi) {
@@ -1233,18 +1233,20 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
                 final float lastValue = leafValues[ii][leafSizes[ii] - 1];
                 if (ii < leafCount - 1) {
                     final float directoryValue = directoryValues[ii];
-                    Assert.assertion(leq(lastValue, directoryValue), "lt(lastValue, directoryValue)", lastValue,
+                    Assert.assertion(FloatComparisons.leq(lastValue, directoryValue), "lt(lastValue, directoryValue)",
+                            lastValue,
                             "leafValues[ii][leafSizes[ii] - 1]", directoryValue, "directoryValue");
 
                     if (ii < leafCount - 2) {
                         final float nextDirectoryValue = directoryValues[ii + 1];
-                        Assert.assertion(lt(directoryValue, nextDirectoryValue),
+                        Assert.assertion(FloatComparisons.lt(directoryValue, nextDirectoryValue),
                                 "lt(directoryValue, nextDirectoryValue)", directoryValue, "directoryValue",
                                 nextDirectoryValue, "nextDirectoryValue");
                     }
 
                     final float nextFirstValue = leafValues[ii + 1][0];
-                    Assert.assertion(lt(directoryValue, nextFirstValue), "lt(directoryValue, nextFirstValue)",
+                    Assert.assertion(FloatComparisons.lt(directoryValue, nextFirstValue),
+                            "lt(directoryValue, nextFirstValue)",
                             directoryValue, "directoryValue", nextFirstValue, "nextFirstValue");
                 }
                 // It would be nice to enable an assertion to make sure we are dense after removals, but the other
@@ -1266,7 +1268,7 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
         for (int leaf = 0; leaf < leafCount - 1; ++leaf) {
             final float lastValue = leafValues[leaf][leafSizes[leaf] - 1];
             final float nextValue = leafValues[leaf + 1][0];
-            Assert.assertion(lt(lastValue, nextValue), lastValue + " < " + nextValue);
+            Assert.assertion(FloatComparisons.lt(lastValue, nextValue), lastValue + " < " + nextValue);
         }
     }
 
@@ -1282,7 +1284,8 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
             Assert.gtZero(counts[ii], "counts[ii]");
             final float thisValue = values[ii];
             final float nextValue = values[ii + 1];
-            Assert.assertion(lt(values[ii], values[ii + 1]), "lt(values[ii], values[ii + 1])", (Float) thisValue,
+            Assert.assertion(FloatComparisons.lt(values[ii], values[ii + 1]), "lt(values[ii], values[ii + 1])",
+                    (Float) thisValue,
                     "values[ii]", (Float) nextValue, "values[ii + 1]", ii, "ii");
         }
         if (size > 0) {
@@ -1310,7 +1313,6 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
 
     // endregion
 
-    // region Comparisons
     private int getDesiredLeafCount(int newSize) {
         return (newSize + leafSize - 1) / leafSize;
     }
@@ -1318,33 +1320,6 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
     private static int valuesPerLeaf(int values, int leafCount) {
         return (values + leafCount - 1) / leafCount;
     }
-
-    private static int doComparison(float lhs, float rhs) {
-        return FloatComparisons.compare(lhs, rhs);
-    }
-
-    private static boolean gt(float lhs, float rhs) {
-        return doComparison(lhs, rhs) > 0;
-    }
-
-    private static boolean lt(float lhs, float rhs) {
-        return doComparison(lhs, rhs) < 0;
-    }
-
-    private static boolean leq(float lhs, float rhs) {
-        return doComparison(lhs, rhs) <= 0;
-    }
-
-    private static boolean geq(float lhs, float rhs) {
-        return doComparison(lhs, rhs) >= 0;
-    }
-
-    private static boolean eq(float lhs, float rhs) {
-        // region equality function
-        return doComparison(lhs, rhs) == 0;
-        // endregion equality function
-    }
-    // endregion
 
     @Override
     public long totalSize() {
@@ -1489,12 +1464,12 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
 
         if (SEGMENTED_SORTED_MULTISET_VALIDATION) {
             if (destination.size > 0) {
-                Assert.assertion(geq(getMinFloat(), destination.getMaxFloat()),
+                Assert.assertion(FloatComparisons.geq(getMinFloat(), destination.getMaxFloat()),
                         "geq(getMinFloat(), destination.getMaxFloat())");
             }
         }
 
-        if (destination.size > 0 && eq(getMinFloat(), destination.getMaxFloat())) {
+        if (destination.size > 0 && FloatComparisons.eq(getMinFloat(), destination.getMaxFloat())) {
             final long minCount = getMinCount();
             final long toAdd;
             if (minCount > count) {
@@ -1762,7 +1737,7 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
 
         if (SEGMENTED_SORTED_MULTISET_VALIDATION) {
             if (size > 0 && destination.size > 0) {
-                Assert.assertion(geq(getMinFloat(), destination.getMaxFloat()),
+                Assert.assertion(FloatComparisons.geq(getMinFloat(), destination.getMaxFloat()),
                         "geq(getMinFloat(), destination.getMaxFloat())");
             }
         }
@@ -1924,12 +1899,12 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
 
         if (SEGMENTED_SORTED_MULTISET_VALIDATION) {
             if (destination.size > 0) {
-                Assert.assertion(leq(getMaxFloat(), destination.getMinFloat()),
+                Assert.assertion(FloatComparisons.leq(getMaxFloat(), destination.getMinFloat()),
                         "leq(getMaxFloat(), destination.getMinFloat())");
             }
         }
 
-        if (destination.size > 0 && eq(getMaxFloat(), destination.getMinFloat())) {
+        if (destination.size > 0 && FloatComparisons.eq(getMaxFloat(), destination.getMinFloat())) {
             final long maxCount = getMaxCount();
             final long toAdd;
             if (maxCount > count) {
@@ -2129,7 +2104,7 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
 
         if (SEGMENTED_SORTED_MULTISET_VALIDATION) {
             if (size > 0 && destination.size > 0) {
-                Assert.assertion(leq(getMaxFloat(), destination.getMinFloat()),
+                Assert.assertion(FloatComparisons.leq(getMaxFloat(), destination.getMinFloat()),
                         "leq(getMaxFloat(), destination.getMinFloat())");
             }
         }
