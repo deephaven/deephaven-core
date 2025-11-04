@@ -119,10 +119,10 @@ final class WritableChunkUtils {
         final int negInfCount = beginNullIdx - fromIndexInclusive;
         final int nullCount = endNullIdx - beginNullIdx;
 
-        // Only some of the -Inf and some of the NULL_FLOATS are wrong. For example (with m = 3 and n = 5)
-        // [ -Inf, -Inf, -Inf, NULL_FLOAT, NULL_FLOAT, NULL_FLOAT, NULL_FLOAT, NULL_FLOAT, ...]
+        // Only some of the -Inf and some of the NULL_DOUBLE are wrong. For example (with m = 3 and n = 5)
+        // [ -Inf, -Inf, -Inf, NULL_DOUBLE, NULL_DOUBLE, NULL_DOUBLE, NULL_DOUBLE, NULL_DOUBLE, ...]
         // ->
-        // [ NULL_FLOAT, NULL_FLOAT, NULL_FLOAT, unchanged, unchanged, -Inf, -Inf, -Inf, ...]
+        // [ NULL_DOUBLE, NULL_DOUBLE, NULL_DOUBLE, unchanged, unchanged, -Inf, -Inf, -Inf, ...]
 
         final int numWrong = Math.min(nullCount, negInfCount);
         Arrays.fill(data, fromIndexInclusive, fromIndexInclusive + numWrong, NULL_DOUBLE);

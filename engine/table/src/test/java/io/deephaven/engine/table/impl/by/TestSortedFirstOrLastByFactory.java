@@ -4,7 +4,6 @@
 package io.deephaven.engine.table.impl.by;
 
 import io.deephaven.api.agg.spec.AggSpec;
-import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.table.vectors.ColumnVectors;
@@ -18,12 +17,10 @@ import io.deephaven.engine.table.impl.*;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.test.types.OutOfBandTest;
-import io.deephaven.tuple.ArrayTuple;
 import junit.framework.TestCase;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.Objects;
 import java.util.Random;
 
 import org.junit.experimental.categories.Category;
