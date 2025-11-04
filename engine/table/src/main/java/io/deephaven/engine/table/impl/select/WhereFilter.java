@@ -361,6 +361,16 @@ public interface WhereFilter extends Filter {
         throw new UnsupportedOperationException("WhereFilters do not implement walk");
     }
 
+    /**
+     * This method calls the appropriate {@code visitor} method based on the specific type of {@code this}
+     * {@link WhereFilter}. Unlike other visitor patterns whose hierarchy is fully specified in the visitor, only a
+     * subset of specific filter types are present in {@link Visitor}, with all non-specific cases being delegated to
+     * {@link Visitor#visitOther(WhereFilter)}.
+     *
+     * @param visitor the visitor
+     * @return the value
+     * @param <T> the return value type
+     */
     <T> T walk(Visitor<T> visitor);
 
     // endregion Filter impl
@@ -378,6 +388,9 @@ public interface WhereFilter extends Filter {
         T visit(DisjunctiveFilter filter);
 
         T visit(ConjunctiveFilter filter);
+
+        // Can consider adding other common types here in the future. ConditionFilter, MatchFilter, etc. This should be
+        // based on how often we end up needing code in visitOther to handle these types.
 
         T visitOther(WhereFilter filter);
     }
