@@ -31,7 +31,7 @@ T = TypeVar("T")
 def _make_generator(
     table: dhc.ClientTable,
     rows: dhc.RowSequence,
-    col_names: Union[str, Sequence[str], None],
+    col_names: Optional[Union[str, Sequence[str]]],
     chunk_size: int,
 ) -> DictGeneratorType:
     """Repeatedly pulls up to chunk_size elements from the indicated columns of the ClientTable, collects them
@@ -40,7 +40,7 @@ def _make_generator(
     Args:
         table (dhc.ClientTable) : the client table
         rows (dhc.RowSequence) : the desired rows to return
-        col_names (Union[str, list[str], None]) : the desired columns
+        col_names (Optional[Union[str, Sequence[str]]]) : the desired columns
         chunk_size (int) : how many rows to return at a time
 
     Returns:
@@ -94,11 +94,11 @@ class TableUpdate:
 
         self.update = update
 
-    def removed(self, cols: Optional[Union[str, list[str]]] = None) -> ColDictType:
+    def removed(self, cols: Optional[Union[str, Sequence[str]]] = None) -> ColDictType:
         """Gets all the data that was removed in this TableUpdate.
 
         Args:
-            cols (Optional[Union[str, list[str]]]): the specified columns. None means "all columns in the table".
+            cols (Optional[Union[str, Sequence[str]]]): the specified columns. None means "all columns in the table".
 
         Returns:
             A dictionary mapping column name to an Arrow Array of the removed data.
@@ -109,13 +109,13 @@ class TableUpdate:
         )
 
     def removed_chunks(
-        self, chunk_size: int, cols: Optional[Union[str, list[str]]] = None
+        self, chunk_size: int, cols: Optional[Union[str, Sequence[str]]] = None
     ) -> DictGeneratorType:
         """Creates a generator yielding chunks of the data that was removed in this TableUpdate.
 
         Args:
             chunk_size (int) : The maximum number of rows yielded by each iteration of the generator.
-            cols (Optional[Union[str, list[str]]]): the specified columns, defaults to None, meaning "all columns in the table".
+            cols (Optional[Union[str, Sequence[str]]]): the specified columns, defaults to None, meaning "all columns in the table".
 
         Returns:
             A Generator yielding dictionaries mapping column name to an Arrow Array of the removed data. The
@@ -126,11 +126,11 @@ class TableUpdate:
             self.update.before_removes, self.update.removed_rows, cols, chunk_size
         )
 
-    def added(self, cols: Optional[Union[str, list[str]]] = None) -> ColDictType:
+    def added(self, cols: Optional[Union[str, Sequence[str]]] = None) -> ColDictType:
         """Gets all the data that was added in this TableUpdate.
 
         Args:
-            cols (Optional[Union[str, list[str]]]) : the specified columns, defaults to None, meaning "all columns in the table".
+            cols (Optional[Union[str, Sequence[str]]]) : the specified columns, defaults to None, meaning "all columns in the table".
 
         Returns:
             A dictionary mapping column name to an Arrow Array of the added data.
@@ -139,13 +139,13 @@ class TableUpdate:
         return _first_or_default(self.added_chunks(self.update.added_rows.size, cols))
 
     def added_chunks(
-        self, chunk_size: int, cols: Optional[Union[str, list[str]]] = None
+        self, chunk_size: int, cols: Optional[Union[str, Sequence[str]]] = None
     ) -> DictGeneratorType:
         """Creates a generator yielding chunks of the data that was added in this TableUpdate.
 
         Args:
             chunk_size (int) : The maximum number of rows yielded by each iteration of the generator.
-            cols (Optional[Union[str, list[str]]]): the specified columns, defaults to None, meaning "all columns in the table".
+            cols (Optional[Union[str, Sequence[str]]]): the specified columns, defaults to None, meaning "all columns in the table".
 
         Returns:
             A Generator yielding dictionaries mapping column name to an Arrow Array of the added data. The
@@ -157,12 +157,12 @@ class TableUpdate:
         )
 
     def modified_prev(
-        self, cols: Optional[Union[str, list[str]]] = None
+        self, cols: Optional[Union[str, Sequence[str]]] = None
     ) -> ColDictType:
         """Gets all the data as it existed *before* the modify operation in this TableUpdate.
 
         Args:
-            cols (Optional[Union[str, list[str]]]): the specified columns, defaults to None,  meaning "all columns in the table".
+            cols (Optional[Union[str, Sequence[str]]]): the specified columns, defaults to None,  meaning "all columns in the table".
 
         Returns:
             A Generator yielding dictionaries mapping column name to an Arrow Array of the modified_prev data. The
@@ -174,14 +174,14 @@ class TableUpdate:
         )
 
     def modified_prev_chunks(
-        self, chunk_size: int, cols: Optional[Union[str, list[str]]] = None
+        self, chunk_size: int, cols: Optional[Union[str, Sequence[str]]] = None
     ) -> DictGeneratorType:
         """Creates a generator yielding chunks of the data as it existed *before* the modify operation in this
         TableUpdate.
 
         Args:
             chunk_size (int) : The maximum number of rows yielded by each iteration of the generator.
-            cols (Optional[Union[str, list[str]]]): the specified columns, defaults to None,  meaning "all columns in the table".
+            cols (Optional[Union[str, Sequence[str]]]): the specified columns, defaults to None,  meaning "all columns in the table".
 
         Returns:
             A Generator yielding dictionaries mapping column name to an Arrow Array of the data before
@@ -192,11 +192,11 @@ class TableUpdate:
             self.update.before_modifies, self.update.all_modified_rows, cols, chunk_size
         )
 
-    def modified(self, cols: Optional[Union[str, list[str]]] = None) -> ColDictType:
+    def modified(self, cols: Optional[Union[str, Sequence[str]]] = None) -> ColDictType:
         """Gets all the modified data *after* the modify operation in this TableUpdate.
 
         Args:
-            cols (Optional[Union[str, list[str]]]): the specified columns, defaults to None,  meaning "all columns in the table".
+            cols (Optional[Union[str, Sequence[str]]]): the specified columns, defaults to None,  meaning "all columns in the table".
 
         Returns:
             A dictionary mapping column name to an Arrow Array of the data after the modify operation.
@@ -207,13 +207,13 @@ class TableUpdate:
         )
 
     def modified_chunks(
-        self, chunk_size: int, cols: Optional[Union[str, list[str]]] = None
+        self, chunk_size: int, cols: Optional[Union[str, Sequence[str]]] = None
     ) -> DictGeneratorType:
         """Creates a generator yielding chunks of the modified data *after* the modify operation in this TableUpdate.
 
         Args:
             chunk_size (int) : The maximum number of rows yielded by each iteration of the generator.
-            cols (Optional[Union[str, list[str]]]): the specified columns. None means "all columns in the table".
+            cols (Optional[Union[str, Sequence[str]]]): the specified columns. None means "all columns in the table".
 
         Returns:
             A Generator yielding dictionaries mapping column name to an Arrow Array of the data after
@@ -394,9 +394,9 @@ class _CallableAsListener(TableListener):
     """A TableListener implementation that delegates on_update to a supplied Callback. This class does not
     override on_error."""
 
-    _on_update_callback: Callable
+    _on_update_callback: Callable[[TableUpdate], None]
 
-    def __init__(self, on_update_callback: Callable):
+    def __init__(self, on_update_callback: Callable[[TableUpdate], None]):
         self._on_update_callback = on_update_callback
 
     def on_update(self, update: TableUpdate) -> None:
@@ -406,9 +406,13 @@ class _CallableAsListener(TableListener):
 class _CallableAsListenerWithErrorCallback(_CallableAsListener):
     """A TableListener implementation that delegates both on_update and on_error to supplied Callbacks."""
 
-    _on_error_callback: Callable
+    _on_error_callback: Callable[[Exception], None]
 
-    def __init__(self, on_update_callback: Callable, on_error_callback: Callable):
+    def __init__(
+        self,
+        on_update_callback: Callable[[TableUpdate], None],
+        on_error_callback: Callable[[Exception], None],
+    ):
         super().__init__(on_update_callback)
         self._on_error_callback = on_error_callback
 

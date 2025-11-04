@@ -53,7 +53,7 @@ logger = logging.getLogger(__name__)
 
 
 class _DhClientAuthMiddlewareFactory(ClientMiddlewareFactory):
-    def __init__(self, session):
+    def __init__(self, session: Session):
         super().__init__()
         self._session = session
         self._middleware = _DhClientAuthMiddleware(session)
@@ -63,7 +63,7 @@ class _DhClientAuthMiddlewareFactory(ClientMiddlewareFactory):
 
 
 class _DhClientAuthMiddleware(ClientMiddleware):
-    def __init__(self, session):
+    def __init__(self, session: Session):
         super().__init__()
         self._session = session
 
@@ -554,7 +554,7 @@ class Session:
 
         Args:
             script (str): the Python script code
-            systemic (bool): Whether to treat the code as systemically important. Defaults to None which uses the
+            systemic (Optional[bool]): Whether to treat the code as systemically important. Defaults to None which uses the
                     default system behavior
 
         Raises:

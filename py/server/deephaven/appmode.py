@@ -22,7 +22,7 @@ class ApplicationState(JObjectWrapper):
     def j_object(self) -> jpy.JType:
         return self.j_app_state
 
-    def __init__(self, j_app_state):
+    def __init__(self, j_app_state: jpy.JType):
         self.j_app_state = j_app_state
 
     def __repr__(self):

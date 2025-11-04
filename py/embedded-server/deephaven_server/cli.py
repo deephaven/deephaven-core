@@ -3,7 +3,7 @@
 #
 import sys
 import webbrowser
-from typing import Optional
+from typing import List, Optional
 
 import click
 
@@ -47,9 +47,13 @@ def server(
     """
     click.echo("Starting Deephaven server...")
 
-    jvm_args_l = jvm_args.split() if jvm_args else None
-    default_jvm_args_l = default_jvm_args.split() if default_jvm_args else None
-    extra_classpath_l = extra_classpath.split() if extra_classpath else None
+    jvm_args_l: Optional[List[str]] = jvm_args.split() if jvm_args else None
+    default_jvm_args_l: Optional[List[str]] = (
+        default_jvm_args.split() if default_jvm_args else None
+    )
+    extra_classpath_l: Optional[List[str]] = (
+        extra_classpath.split() if extra_classpath else None
+    )
 
     s = Server(
         host=host,

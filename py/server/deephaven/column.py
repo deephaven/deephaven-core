@@ -109,7 +109,7 @@ class InputColumn:
             data_type (DType): the column data type
             component_type (Optional[DType]): the column component type, None by default
             column_type (ColumnType): the column type, NORMAL by default
-            input_data: Any: the input data, by default is None
+            input_data (Optional[Any]): the input data, by default is None
 
         Returns:
             a new InputColumn

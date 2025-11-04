@@ -29,7 +29,7 @@ _JPythonMergedListenerAdapter = jpy.get_type(
 )
 
 
-def _DEFAULT_ON_ERROR_CALLBACK(e):
+def _DEFAULT_ON_ERROR_CALLBACK(e: Exception):
     return print(f"An error occurred during table update processing: {e}")
 
 
@@ -80,7 +80,7 @@ class TableUpdate(JObjectWrapper):
 
         Args:
             chunk_size (int): the size of the chunk
-            cols (Optional[Union[str, list[str]]]): the columns(s) for which to return the added rows
+            cols (Optional[Union[str, list[str]]]): the column(s) for which to return the added rows
 
         Returns:
             a generator
@@ -103,7 +103,7 @@ class TableUpdate(JObjectWrapper):
         all the removed rows in the columns.
 
         Args:
-             cols (Optional[Union[str, list[str]]]): the column(s) for which to return the added rows
+             cols (Optional[Union[str, list[str]]]): the column(s) for which to return the removed rows
 
         Returns:
             a dict
@@ -123,7 +123,7 @@ class TableUpdate(JObjectWrapper):
 
         Args:
             chunk_size (int): the size of the chunk
-            cols (Optional[Union[str, list[str]]]): the columns(s) for which to return the added rows
+            cols (Optional[Union[str, list[str]]]): the column(s) for which to return the removed rows
 
         Returns:
             a generator
@@ -146,7 +146,7 @@ class TableUpdate(JObjectWrapper):
         all the modified rows in the columns.
 
         Args:
-             cols (Optional[Union[str, list[str]]]): the column(s) for which to return the added rows
+             cols (Optional[Union[str, list[str]]]): the column(s) for which to return the modified rows
 
         Returns:
             a dict
@@ -170,7 +170,7 @@ class TableUpdate(JObjectWrapper):
 
         Args:
             chunk_size (int): the size of the chunk
-            cols (Optional[Union[str, list[str]]]): the columns(s) for which to return the added rows
+            cols (Optional[Union[str, list[str]]]): the column(s) for which to return the modified rows
 
         Returns:
             a generator
@@ -193,7 +193,7 @@ class TableUpdate(JObjectWrapper):
         all the modified rows in the columns.
 
         Args:
-             cols (Optional[Union[str, list[str]]]): the column(s) for which to return the added rows
+             cols (Optional[Union[str, list[str]]]): the column(s) for which to return the modified rows
 
         Returns:
             a dict
@@ -217,7 +217,7 @@ class TableUpdate(JObjectWrapper):
 
         Args:
             chunk_size (int): the size of the chunk
-            cols (Optional[Union[str, list[str]]]): the columns(s) for which to return the added rows
+            cols (Optional[Union[str, list[str]]]): the column(s) for which to return the modified rows
 
         Returns:
             a generator
@@ -566,7 +566,7 @@ class MergedListenerHandle(JObjectWrapper):
         override the default "on_error" method.
 
         The callable or the on_update method must have the following signature.
-        *(updates: dict[Table, TableUpdate], is_replay: bool): support replaying the initial table snapshots and normal table updates
+        * (updates: dict[Table, Optional[TableUpdate]], is_replay: bool): support replaying the initial table snapshots and normal table updates
         The 'updates' parameter is a dictionary of Table to TableUpdate;
         The 'is_replay' parameter is used only by replay listeners, it is set to 'True' when replaying the initial
         snapshots and 'False' during normal updates.
@@ -578,8 +578,9 @@ class MergedListenerHandle(JObjectWrapper):
             tables (Sequence[Table]): tables to listen to
             listener (Union[Callable[[dict[Table, Optional[TableUpdate]], bool], None], MergedListener]): listener to process table updates
                 from the tables.
-            description (str, optional): description for the UpdatePerformanceTracker to append to the listener's entry
-            dependencies (Union[Table, Sequence[Table]]): tables that must be satisfied before the listener's execution.
+            description (Optional[str]): description for the UpdatePerformanceTracker to append to the listener's entry
+                description, default is None
+            dependencies (Optional[Union[Table, Sequence[Table]]]): tables that must be satisfied before the listener's execution.
                 A refreshing table is considered to be satisfied if all possible updates to the table have been processed
                 in the current update graph cycle. A static table is always considered to be satisfied. If a specified
                 table is refreshing, it must belong to the same update graph as the table being listened to. Default is
@@ -590,7 +591,7 @@ class MergedListenerHandle(JObjectWrapper):
                 the listener is safe, it is not recommended because reading or operating on the result tables of those
                 operations may not be safe. It is best to perform the operations on the dependent tables beforehand,
                 and then add the result tables as dependencies to the listener so that they can be safely read in it.
-            on_error (Callable[[Exception], None]): a callback function to be invoked when an error occurs during the
+            on_error (Optional[Callable[[Exception], None]]): a callback function to be invoked when an error occurs during the
                 listener's execution. It should only be set when the listener is a function, not when it is an instance
                 of MergedListener. When the listener is a MergedListener, MergedListener.on_error will be used.
                 Defaults to None. When None, a default callback function will be provided that simply
@@ -727,10 +728,10 @@ def merged_listen(
         tables (Sequence[Table]): tables to listen to.
         listener (Union[Callable[[dict[Table, Optional[TableUpdate]], bool], None], MergedListener]): listener to process table updates
             from the tables.
-        description (str, optional): description for the UpdatePerformanceTracker to append to the listener's entry
-            description, default is None
         do_replay (bool): whether to replay the initial snapshots of the tables, default is False
-        dependencies (Union[Table, Sequence[Table]]): tables that must be satisfied before the listener's execution.
+        description (Optional[str]): description for the UpdatePerformanceTracker to append to the listener's entry
+            description, default is None
+        dependencies (Optional[Union[Table, Sequence[Table]]]): tables that must be satisfied before the listener's execution.
             A refreshing table is considered to be satisfied if all possible updates to the table have been processed
             in the current update graph cycle. A static table is always considered to be satisfied. If a specified
             table is refreshing, it must belong to the same update graph as the table being listened to. Default is
@@ -741,12 +742,18 @@ def merged_listen(
             the listener is safe, it is not recommended because reading or operating on the result tables of those
             operations may not be safe. It is best to perform the operations on the dependent tables beforehand,
             and then add the result tables as dependencies to the listener so that they can be safely read in it.
-        on_error (Callable[[Exception], None]): a callback function to be invoked when an error occurs during the
+        on_error (Optional[Callable[[Exception], None]]): a callback function to be invoked when an error occurs during the
             listener's execution. It should only be set when the listener is a function, not when it is an instance
             of MergedListener. When the listener is a MergedListener, MergedListener.on_error will be used.
             Defaults to None. When None, a default callback function will be provided that simply
             prints out the received exception. If the callback function itself raises an exception, the new exception
             will be logged in the Deephaven server log and will not be further processed by the server.
+
+    Returns:
+        a MergedListenerHandle
+
+    Raises:
+        DHError
     """
     merged_listener_handle = MergedListenerHandle(
         tables=tables,

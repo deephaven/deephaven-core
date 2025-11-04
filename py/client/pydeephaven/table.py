@@ -94,7 +94,7 @@ class Table(TableInterface["Table"], ServerObject):
         self.session.release(self.ticket)
         self._closed = True
 
-    def _parse_schema(self, schema_header):
+    def _parse_schema(self, schema_header: bytes):
         if not schema_header:
             return
 

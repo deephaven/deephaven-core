@@ -6,7 +6,7 @@ batch."""
 
 from __future__ import annotations
 
-from typing import Any, Optional, Union
+from typing import TYPE_CHECKING, Any, Optional, Union
 
 from pydeephaven._table_interface import TableInterface
 from pydeephaven._table_ops import NaturalJoinType, NoneOp, SortDirection, TableOp
@@ -14,6 +14,9 @@ from pydeephaven.agg import Aggregation
 from pydeephaven.dherror import DHError
 from pydeephaven.table import Table
 from pydeephaven.updateby import UpdateByOperation
+
+if TYPE_CHECKING:
+    from pydeephaven.session import Session
 
 
 class Query(TableInterface["Query"]):
@@ -33,7 +36,7 @@ class Query(TableInterface["Query"]):
         self._ops.append(table_op)
         return self
 
-    def __init__(self, session: Any, table: Table):
+    def __init__(self, session: Session, table: Table):
         self.session = session
         if not self.session or not table:
             raise DHError("invalid session or table value.")
@@ -236,7 +239,7 @@ class Query(TableInterface["Query"]):
                 i.e. "col_a = col_b" for different column names
             joins (Optional[Union[str, list[str]]]): the column(s) to be added from the right table to the result
                 table, can be renaming expressions, i.e. "new_col = col"; default is None
-            reserve_bits(int): the number of bits of key-space to initially reserve per group; default is 10
+            reserve_bits (int): the number of bits of key-space to initially reserve per group; default is 10
 
         Returns:
             self
@@ -363,7 +366,7 @@ class Query(TableInterface["Query"]):
         """Adds a sum-by aggregation to the query.
 
         Args:
-            by (Optional[Union[str, list[str]]]): the group-by column name(s)
+            by (Optional[Union[str, list[str]]]): the group-by column name(s), default is None
 
         Returns:
             self
@@ -385,7 +388,7 @@ class Query(TableInterface["Query"]):
         """Adds a std-by aggregation to the query.
 
         Args:
-            by (Union[str, list[str]]): the group-by column name(s)
+            by (Optional[Union[str, list[str]]]): the group-by column name(s), default is None
 
         Returns:
             self
@@ -396,7 +399,7 @@ class Query(TableInterface["Query"]):
         """Adds a var-by aggregation to the query.
 
         Args:
-            by (Union[str, list[str]]): the group-by column name(s), default is None
+            by (Optional[Union[str, list[str]]]): the group-by column name(s), default is None
 
         Returns:
             self
@@ -407,7 +410,7 @@ class Query(TableInterface["Query"]):
         """Adds a median-by aggregation to the query.
 
         Args:
-            by (Union[str, list[str]]): the group-by column name(s), default is None
+            by (Optional[Union[str, list[str]]]): the group-by column name(s), default is None
 
         Returns:
             self
@@ -418,7 +421,7 @@ class Query(TableInterface["Query"]):
         """Adds a min-by aggregation to the query.
 
         Args:
-            by (Union[str, list[str]]): the group-by column name(s), default is None
+            by (Optional[Union[str, list[str]]]): the group-by column name(s), default is None
 
         Returns:
             self
@@ -429,7 +432,7 @@ class Query(TableInterface["Query"]):
         """Adds a max-by aggregation to the query.
 
         Args:
-            by (Union[str, list[str]]): the group-by column name(s), default is None
+            by (Optional[Union[str, list[str]]]): the group-by column name(s), default is None
 
         Returns:
             self
@@ -441,7 +444,7 @@ class Query(TableInterface["Query"]):
 
         Args:
             col (str): the name of the column to store the counts
-            by (Union[str, list[str]]): the group-by column name(s), default is None
+            by (Optional[Union[str, list[str]]]): the group-by column name(s), default is None
 
         Returns:
             self
@@ -483,7 +486,7 @@ class Query(TableInterface["Query"]):
 
         Args:
             ops (Union[UpdateByOperation, list[UpdateByOperation]]): the UpdateByOperation(s) to be applied
-            by (Union[str, list[str]]): the group-by column name(s)
+            by (Optional[Union[str, list[str]]]): the group-by column name(s), default is None
 
         Returns:
             self
@@ -510,7 +513,7 @@ class Query(TableInterface["Query"]):
 
         Args:
             trigger_table (Table): the trigger table
-            stamp_cols (Union[str, list[str]]): The column(s) from trigger_table that form the "stamp key", may be
+            stamp_cols (Optional[Union[str, list[str]]]): The column(s) from trigger_table that form the "stamp key", may be
                 renames, default is None, meaning that all columns from trigger_table form the "stamp key".
             initial (bool): Whether to take an initial snapshot upon construction, default is False. When False, the
                 resulting table will remain empty until trigger_table first updates.

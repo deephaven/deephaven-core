@@ -39,7 +39,7 @@ def read(
 
     Args:
         path (str): a file path or a URL string
-        header (dict[str, DType]): a dict to define the table columns with key being the name, value being the data type
+        header (Optional[dict[str, DType]]): a dict to define the table columns with key being the name, value being the data type
         headless (bool): whether the csv file doesn't have a header row, default is False
         header_row (int): the header row number, all the rows before it will be skipped, default is 0. Must be 0 if
             headless is True, otherwise an exception will be raised

@@ -15,7 +15,7 @@ from pydeephaven.agg import Aggregation
 from pydeephaven.updateby import UpdateByOperation
 
 if TYPE_CHECKING:
-    from pydeephaven.table import MultiJoinInput
+    from pydeephaven.table import MultiJoinInput, Table
 
 
 class SortDirection(Enum):
@@ -84,7 +84,7 @@ class NoneOp(TableOp):
     ) -> Any:
         raise AssertionError("should never be called.")
 
-    def __init__(self, table):
+    def __init__(self, table: Table):
         self.table = table
 
 
@@ -974,7 +974,7 @@ class AggregateAllOp(TableOp):
 class CreateInputTableOp(TableOp):
     def __init__(
         self,
-        schema: pa.schema,
+        schema: pa.Schema,
         init_table: Any,
         key_cols: Optional[list[str]] = None,
         blink: bool = False,
