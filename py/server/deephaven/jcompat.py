@@ -15,6 +15,7 @@ from typing import (
     Optional,
     TypeVar,
     Union,
+    overload,
 )
 from warnings import warn
 
@@ -227,7 +228,15 @@ def j_lambda(
     )
 
 
-def to_sequence(v: Optional[Any] = None, wrapped: bool = False) -> Sequence[Any]:
+@overload
+def to_sequence(v: None = None, wrapped: bool = False) -> tuple[()]: ...
+@overload
+def to_sequence(v: str, wrapped: bool = False) -> tuple[str]: ...
+@overload
+def to_sequence(v: T, wrapped: bool = False) -> Sequence[Any]: ...
+
+
+def to_sequence(v: Union[None, str, T] = None, wrapped: bool = False) -> Sequence[Any]:
     """A convenience function to create a sequence of wrapped or unwrapped object from either one or a sequence of
     input values to help JPY find the matching Java overloaded method to call.
 
@@ -235,7 +244,7 @@ def to_sequence(v: Optional[Any] = None, wrapped: bool = False) -> Sequence[Any]
     for the convenience of the users, e.g. both x= "abc" and x = ["abc"] are valid arguments.
 
     Args:
-        v (Optional[Any]): the input value(s) to be converted to a sequence
+        v (Optional[None, str, T]): the input value(s) to be converted to a sequence
         wrapped (Optional[bool]): if True, the input value(s) will remain wrapped in a JPy object; otherwise, the input
             value(s) will be unwrapped. Defaults to False.
 
@@ -244,13 +253,17 @@ def to_sequence(v: Optional[Any] = None, wrapped: bool = False) -> Sequence[Any]
     """
     if v is None or isinstance(v, Sequence) and not v:
         return ()
+
+    if isinstance(v, str):
+        return (v,)
+
     if wrapped:
-        if not isinstance(v, Sequence) or isinstance(v, str):
+        if not isinstance(v, Sequence):
             return (v,)
         else:
             return tuple(v)
 
-    if not isinstance(v, Sequence) or isinstance(v, str):
+    if not isinstance(v, Sequence):
         return (unwrap(v),)
     else:
         return tuple(unwrap(o) for o in v)

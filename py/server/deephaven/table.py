@@ -549,7 +549,8 @@ class TreeTable(JObjectWrapper):
     """A TreeTable is generated as a result of applying the :meth:`~Table.tree` method on a
     :class:`~deephaven.table.Table`.
 
-    A TreeTable presents a hierarchically structured  "tree" view of a table where parent-child relationships are expressed
+    A TreeTable presents a hierarchically structured  "tree" view of a table where parent-child relationships are
+    expressed
     by an "id" and a "parent" column. The id column should represent a unique identifier for a given row, and the parent
     column indicates which row is the parent for a given row.
 
@@ -677,7 +678,7 @@ def _query_scope_agg_ctx(
 ) -> contextlib.AbstractContextManager:
     has_agg_formula = any([agg.is_formula for agg in aggs])
     if has_agg_formula:
-        cm: Any = _query_scope_ctx()
+        cm: contextlib.AbstractContextManager = _query_scope_ctx()
     else:
         cm = contextlib.nullcontext()
     return cm
@@ -740,18 +741,20 @@ class TableDefinition(JObjectWrapper, Mapping):
             for data_type in table_definition.values():
                 if not isinstance(data_type, dtypes.DType):
                     raise DHError(
-                        f"Expected TableDefinitionLike Mapping to contain DType values, found type {type(data_type)}"
+                        f"Expected TableDefinitionLike Mapping to contain DType values, found type "
+                        f"{type(data_type)}"
                     )
-            column_definitions: Iterable[ColumnDefinition] = [
+            column_definitions: Iterable = [
                 col_def(name, data_type) for name, data_type in table_definition.items()
             ]
         elif isinstance(table_definition, Iterable):
             for column_definition in table_definition:
                 if not isinstance(column_definition, ColumnDefinition):
                     raise DHError(
-                        f"Expected TableDefinitionLike Iterable to contain ColumnDefinition values, found type {type(column_definition)}"
+                        f"Expected TableDefinitionLike Iterable to contain ColumnDefinition values, found type "
+                        f"{type(column_definition)}"
                     )
-            column_definitions = table_definition  # type: ignore[assignment]
+            column_definitions = table_definition
         else:
             raise DHError(
                 f"Unexpected TableDefinitionLike type: {type(table_definition)}"
@@ -849,7 +852,8 @@ class Table(JObjectWrapper):
         default_repr = super().__repr__()
         # default_repr is in a format like so:
         # deephaven.table.Table(io.deephaven.engine.table.Table(objectRef=0x7f07e4890518))
-        # We take the last two brackets off, add a few more details about the table, then add the necessary brackets back
+        # We take the last two brackets off, add a few more details about the table, then add the necessary brackets
+        # back
         column_dict = {col.name: col.data_type for col in self.columns[:10]}
         repr_str = (
             f"{default_repr[:-2]}, num_rows = {self.size}, columns = {column_dict}"
@@ -929,12 +933,15 @@ class Table(JObjectWrapper):
         The side effect of this is that the table will not be able to refresh while the table is being iterated on.
         Additionally, the generator internally maintains a fill context. The auto acquired shared lock and the fill
         context will be released after the generator is destroyed. That can happen implicitly when the generator
-        is used in a for-loop. When the generator is not used in a for-loop, to prevent resource leaks, it must be closed
-        after use by either (1) setting it to None, (2) using the del statement, or (3) calling the close() method on it.
+        is used in a for-loop. When the generator is not used in a for-loop, to prevent resource leaks, it must be
+        closed
+        after use by either (1) setting it to None, (2) using the del statement, or (3) calling the close() method on
+        it.
 
         Args:
             cols (Optional[Union[str, Sequence[str]]]): The columns to read. If None, all columns are read.
-            chunk_size (int): The number of rows to read at a time internally to reduce the number of Java/Python boundary
+            chunk_size (int): The number of rows to read at a time internally to reduce the number of Java/Python
+            boundary
                 crossings. Default is 2048.
 
         Returns:
@@ -964,13 +971,17 @@ class Table(JObjectWrapper):
         The side effect of this is that the table will not be able to refresh while the table is being iterated on.
         Additionally, the generator internally maintains a fill context. The auto acquired shared lock and the fill
         context will be released after the generator is destroyed. That can happen implicitly when the generator
-        is used in a for-loop. When the generator is not used in a for-loop, to prevent resource leaks, it must be closed
-        after use by either (1) setting it to None, (2) using the del statement, or (3) calling the close() method on it.
+        is used in a for-loop. When the generator is not used in a for-loop, to prevent resource leaks, it must be
+        closed
+        after use by either (1) setting it to None, (2) using the del statement, or (3) calling the close() method on
+        it.
 
         Args:
-            cols (Optional[Union[str, Sequence[str]]]): The columns to read. If None, all columns are read. Default is None.
+            cols (Optional[Union[str, Sequence[str]]]): The columns to read. If None, all columns are read. Default
+            is None.
             tuple_name (str): The name of the named tuple. Default is 'Deephaven'.
-            chunk_size (int): The number of rows to read at a time internally to reduce the number of Java/Python boundary
+            chunk_size (int): The number of rows to read at a time internally to reduce the number of Java/Python
+            boundary
                 crossings. Default is 2048.
 
         Returns:
@@ -998,8 +1009,10 @@ class Table(JObjectWrapper):
         The side effect of this is that the table will not be able to refresh while the table is being iterated on.
         Additionally, the generator internally maintains a fill context. The auto acquired shared lock and the fill
         context will be released after the generator is destroyed. That can happen implicitly when the generator
-        is used in a for-loop. When the generator is not used in a for-loop, to prevent resource leaks, it must be closed
-        after use by either (1) setting it to None, (2) using the del statement, or (3) calling the close() method on it.
+        is used in a for-loop. When the generator is not used in a for-loop, to prevent resource leaks, it must be
+        closed
+        after use by either (1) setting it to None, (2) using the del statement, or (3) calling the close() method on
+        it.
 
         Args:
             cols (Optional[Union[str, Sequence[str]]]): The columns to read. If None, all columns are read.
@@ -1038,8 +1051,10 @@ class Table(JObjectWrapper):
         The side effect of this is that the table will not be able to refresh while the table is being iterated on.
         Additionally, the generator internally maintains a fill context. The auto acquired shared lock and the fill
         context will be released after the generator is destroyed. That can happen implicitly when the generator
-        is used in a for-loop. When the generator is not used in a for-loop, to prevent resource leaks, it must be closed
-        after use by either (1) setting it to None, (2) using the del statement, or (3) calling the close() method on it.
+        is used in a for-loop. When the generator is not used in a for-loop, to prevent resource leaks, it must be
+        closed
+        after use by either (1) setting it to None, (2) using the del statement, or (3) calling the close() method on
+        it.
 
         Args:
             cols (Optional[Union[str, Sequence[str]]]): The columns to read. If None, all columns are read.
@@ -1336,7 +1351,8 @@ class Table(JObjectWrapper):
         """The update method creates a new table containing a new, in-memory column for each formula.
 
         Args:
-            formulas (Union[str, Sequence[str], Selectable, Sequence[Selectable]]): the column formula(s) or Selectable(s)
+            formulas (Union[str, Sequence[str], Selectable, Sequence[Selectable]]): the column formula(s) or
+            Selectable(s)
 
         Returns:
             A new table
@@ -1551,7 +1567,8 @@ class Table(JObjectWrapper):
         least one filter.
 
         Args:
-            filters (Optional[Union[str, Filter, Sequence[str], Sequence[Filter]]]): the filter condition expression(s), default is None
+            filters (Optional[Union[str, Filter, Sequence[str], Sequence[Filter]]]): the filter condition expression(
+            s), default is None
 
         Returns:
             a new table
@@ -1847,7 +1864,8 @@ class Table(JObjectWrapper):
 
         Args:
             table (Table): the right-table of the join
-            on (Optional[Union[str, Sequence[str]]]): the column(s) to match, can be a common name or an equal expression,
+            on (Optional[Union[str, Sequence[str]]]): the column(s) to match, can be a common name or an equal
+            expression,
                 i.e. "col_a = col_b" for different column names; default is None
             joins (Optional[Union[str, Sequence[str]]]): the column(s) to be added from the right table to the result
                 table, can be renaming expressions, i.e. "new_col = col"; default is None
@@ -2033,9 +2051,11 @@ class Table(JObjectWrapper):
 
         Args:
             table (Table): the right table of the join
-            on (Union[str, Sequence[str]]): the match expression(s) that must include zero-or-more exact match expression,
+            on (Union[str, Sequence[str]]): the match expression(s) that must include zero-or-more exact match
+            expression,
                 and exactly one range match expression as described above
-            aggs (Optional[Union[Aggregation, Sequence[Aggregation]]]): the aggregation(s) to perform over the responsive ranges from
+            aggs (Optional[Union[Aggregation, Sequence[Aggregation]]]): the aggregation(s) to perform over the
+            responsive ranges from
                 the right table for each row from this Table
 
         Returns:
@@ -2308,7 +2328,8 @@ class Table(JObjectWrapper):
     def std_by(self, by: Optional[Union[str, Sequence[str]]] = None) -> Table:
         """The std_by method creates a new table containing the sample standard deviation for each group.
 
-        Sample standard deviation is computed using `Bessel's correction <https://en.wikipedia.org/wiki/Bessel%27s_correction>`_,
+        Sample standard deviation is computed using `Bessel's correction
+        <https://en.wikipedia.org/wiki/Bessel%27s_correction>`_,
         which ensures that the sample variance will be an unbiased estimator of population variance.
 
         Args:
@@ -2452,7 +2473,8 @@ class Table(JObjectWrapper):
 
         Args:
             aggs (Union[Aggregation, Sequence[Aggregation]]): the aggregation(s)
-            by (Optional[Union[str, Sequence[str]]]): the group-by column name(s), if not provided, all rows from this table are
+            by (Optional[Union[str, Sequence[str]]]): the group-by column name(s), if not provided, all rows from
+            this table are
                 grouped into a single group of rows before the aggregations are applied to the result, default is None.
             preserve_empty (bool): whether to keep result rows for groups that are initially empty or become empty as
                 a result of updates. Each aggregation operator defines its own value for empty groups. Default is False.
@@ -2654,13 +2676,15 @@ class Table(JObjectWrapper):
             freeze (Optional[Union[str, Sequence[str]]]): the columns to freeze to the front.
                 These will not be affected by horizontal scrolling.
             hide (Optional[Union[str, Sequence[str]]]): the columns to hide.
-            column_groups (Optional[Sequence[Dict]]): A list of dicts specifying which columns should be grouped in the UI.
+            column_groups (Optional[Sequence[Dict]]): A list of dicts specifying which columns should be grouped in
+            the UI.
                 The dicts can specify the following:
 
                 * name (str): The group name
                 * children (Sequence[str]): The column names in the group
                 * color (Optional[str]): The hex color string or Deephaven color name
-            search_display_mode (Optional[SearchDisplayMode]): set the search bar to explicitly be accessible or inaccessible,
+            search_display_mode (Optional[SearchDisplayMode]): set the search bar to explicitly be accessible or
+            inaccessible,
                 or use the system default. :attr:`SearchDisplayMode.SHOW` will show the search bar,
                 :attr:`SearchDisplayMode.HIDE` will hide the search bar, and :attr:`SearchDisplayMode.DEFAULT` will
                 use the default value configured by the user and system settings.
@@ -2995,7 +3019,8 @@ class PartitionedTable(JObjectWrapper):
         |    * key_cols: the names of all columns with a non-Table data type
         |    * unique_keys: False
         |    * constituent_column: the name of the first column with a Table data type
-        |    * constituent_table_definition: the table definitions of the first cell (constituent table) in the constituent
+        |    * constituent_table_definition: the table definitions of the first cell (constituent table) in the
+        constituent
             column. Consequently, the constituent column can't be empty.
         |    * constituent_changes_permitted: the value of table.is_refreshing
 
@@ -3392,7 +3417,8 @@ class PartitionedTable(JObjectWrapper):
                 present when an operation uses this PartitionedTable and another PartitionedTable as inputs for a
                 :meth:`~PartitionedTable.partitioned_transform`, default is True
             sanity_check_joins (bool): whether to check that for proxied join operations, a given join key only occurs
-                in exactly one constituent table of the underlying partitioned table. If the other table argument is also a
+                in exactly one constituent table of the underlying partitioned table. If the other table argument is
+                also a
                 PartitionedTableProxy, its constituents will also be subjected to this constraint.
         """
         return PartitionedTableProxy(
@@ -3538,7 +3564,8 @@ class PartitionedTableProxy(JObjectWrapper):
 
         Args:
             trigger_table (Union[Table, PartitionedTableProxy]): the trigger Table or PartitionedTableProxy
-            stamp_cols (Optional[Union[str, Sequence[str]]): The columns from trigger_table that form the "stamp key", may be
+            stamp_cols (Optional[Union[str, Sequence[str]]): The columns from trigger_table that form the "stamp
+            key", may be
                 renames. None, or empty, means that all columns from trigger_table form the "stamp key".
             initial (bool): Whether to take an initial snapshot upon construction, default is False. When False, the
                 resulting table will remain empty until trigger_table first updates.
@@ -3788,7 +3815,8 @@ class PartitionedTableProxy(JObjectWrapper):
         partitioned table.
 
         Args:
-            formulas (Union[str, Sequence[str], Selectable, Sequence[Selectable]]): the column formula(s) or Selectable(s)
+            formulas (Union[str, Sequence[str], Selectable, Sequence[Selectable]]): the column formula(s) or
+            Selectable(s)
 
         Returns:
             A new PartitionedTableProxy
@@ -3835,7 +3863,9 @@ class PartitionedTableProxy(JObjectWrapper):
         try:
             formulas = to_sequence(formulas)
             with _query_scope_ctx(), auto_locking_ctx(self):
-                if isinstance(formulas[0], Selectable.j_object_type):
+                if not formulas:
+                    return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.select())
+                elif isinstance(formulas[0], Selectable.j_object_type):
                     return PartitionedTableProxy(
                         j_pt_proxy=self.j_pt_proxy.select(j_array_list(formulas))
                     )
@@ -3982,7 +4012,8 @@ class PartitionedTableProxy(JObjectWrapper):
 
         Args:
             table (Union[Table, PartitionedTableProxy]): the right table or PartitionedTableProxy of the join
-            on (Optional[Union[str, Sequence[str]]]): the column(s) to match, can be a common name or an equal expression,
+            on (Optional[Union[str, Sequence[str]]]): the column(s) to match, can be a common name or an equal
+            expression,
                 i.e. "col_a = col_b" for different column names; default is None
             joins (Optional[Union[str, Sequence[str]]]): the column(s) to be added from the right table to the result
                 table, can be renaming expressions, i.e. "new_col = col"; default is None
@@ -4404,7 +4435,8 @@ class PartitionedTableProxy(JObjectWrapper):
     def weighted_sum_by(
         self, wcol: str, by: Optional[Union[str, Sequence[str]]] = None
     ) -> PartitionedTableProxy:
-        """Applies the :meth:`~Table.weighted_sum_by` table operation to all constituent tables of the underlying partitioned
+        """Applies the :meth:`~Table.weighted_sum_by` table operation to all constituent tables of the underlying
+        partitioned
         table, and produces a new PartitionedTableProxy with the result tables as the constituents of its underlying
         partitioned table.
 
@@ -4465,7 +4497,8 @@ class PartitionedTableProxy(JObjectWrapper):
     def weighted_avg_by(
         self, wcol: str, by: Optional[Union[str, Sequence[str]]] = None
     ) -> PartitionedTableProxy:
-        """Applies the :meth:`~Table.weighted_avg_by` table operation to all constituent tables of the underlying partitioned
+        """Applies the :meth:`~Table.weighted_avg_by` table operation to all constituent tables of the underlying
+        partitioned
         table, and produces a new PartitionedTableProxy with the result tables as the constituents of its underlying
         partitioned table.
 
@@ -4687,7 +4720,7 @@ class MultiJoinTable(JObjectWrapper):
             if isinstance(input, Table) or (
                 isinstance(input, Sequence) and all(isinstance(t, Table) for t in input)
             ):
-                tables = to_sequence(input, wrapped=True)
+                tables: Sequence = to_sequence(input, wrapped=True)
                 with auto_locking_ctx(*tables):
                     j_tables = to_sequence(input)
                     self.j_multijointable = _JMultiJoinFactory.of(on, *j_tables)
@@ -4706,7 +4739,8 @@ class MultiJoinTable(JObjectWrapper):
                     self.j_multijointable = _JMultiJoinFactory.of(*input)
             else:
                 raise DHError(
-                    message="input must be a Table, a sequence of Tables, a MultiJoinInput, or a sequence of MultiJoinInputs."
+                    message="input must be a Table, a sequence of Tables, a MultiJoinInput, or a sequence of "
+                    "MultiJoinInputs."
                 )
 
         except Exception as e:
@@ -4717,12 +4751,14 @@ def multi_join(
     input: Union[Table, Sequence[Table], MultiJoinInput, Sequence[MultiJoinInput]],
     on: Optional[Union[str, Sequence[str]]] = None,
 ) -> MultiJoinTable:
-    """The multi_join method creates a new table by performing a multi-table natural join on the input tables.  The result
+    """The multi_join method creates a new table by performing a multi-table natural join on the input tables.  The
+    result
     consists of the set of distinct keys from the input tables natural joined to each input table. Input tables need not
     have a matching row for each key, but they may not have multiple matching rows for a given key.
 
     Args:
-        input (Union[Table, Sequence[Table], MultiJoinInput, Sequence[MultiJoinInput]]): the input objects specifying the
+        input (Union[Table, Sequence[Table], MultiJoinInput, Sequence[MultiJoinInput]]): the input objects specifying
+        the
             tables and columns to include in the join.
         on (Optional[Union[str, Sequence[str]]]): the column(s) to match, can be a common name or an equality expression
             that matches every input table, i.e. "col_a = col_b" to rename output column names. Note: When
@@ -4766,7 +4802,8 @@ def table_diff(
         t1 (Table): the table to compare
         t2 (Table): the table to compare against
         max_diffs (int): the maximum number of differences to return, default is 1
-        floating_comparison (Literal['exact', 'absolute', 'relative']): the type of comparison to use for floating numbers,
+        floating_comparison (Literal['exact', 'absolute', 'relative']): the type of comparison to use for floating
+        numbers,
             default is 'exact'
         ignore_column_order (bool): whether columns that exist in both tables but in different orders are
             treated as differences.  False indicates that column order matters (default), and True indicates that
@@ -4855,10 +4892,13 @@ def keyed_transpose(
 
     To avoid conflicts, the column naming works according to the following contract:
 
-    - If ``aggs = 1`` and ``col_by_cols = 1``: Column names are the value of the ``col_by_cols`` column. (ex. INFO, WARN)
+    - If ``aggs = 1`` and ``col_by_cols = 1``: Column names are the value of the ``col_by_cols`` column. (ex. INFO,
+    WARN)
     - If ``aggs > 1``: Column names are prefixed with the aggregation column name. (ex. Count_INFO, MySum_INFO)
-    - If ``col_by_cols > 1``: Values for the original columns are separated by an underscore (ex. INFO_OTHER1, WARN_OTHER2)
-    - If Illegal Characters: Purge characters that are invalid for Deephaven column names. (ex. "1-2.3/4" becomes "1234")
+    - If ``col_by_cols > 1``: Values for the original columns are separated by an underscore (ex. INFO_OTHER1,
+    WARN_OTHER2)
+    - If Illegal Characters: Purge characters that are invalid for Deephaven column names. (ex. "1-2.3/4" becomes
+    "1234")
     - If Starts with Number: Add the prefix "column_" to the column name. (ex. column_123)
     - If Duplicate Column Name: Add a suffix to differentiate the columns. (ex. INFO, INFO2)
 
