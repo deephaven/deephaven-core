@@ -46,13 +46,16 @@ _JPythonInputTableStatusListenerAdapter = jpy.get_type(
 )
 
 
-def _DEFAULT_INPUT_TABLE_ON_ERROR_CALLBACK(e):
-    return print(f"An error occurred during InputTable async operation: {e}")
+def _DEFAULT_INPUT_TABLE_ON_ERROR_CALLBACK(e: Exception) -> None:
+    print(f"An error occurred during InputTable async operation: {e}")
+    return
 
 
-def _error_callback_wrapper(callback: Callable[[Exception], None]):
+def _error_callback_wrapper(
+    callback: Callable[[Exception], None],
+) -> Callable[[Exception], None]:
     @wraps(callback)
-    def wrapper(e):
+    def wrapper(e: Exception) -> None:
         callback(RuntimeError(e))
 
     return wrapper
@@ -117,7 +120,7 @@ def time_table(
         raise DHError(e, "failed to create a time table.") from e
 
 
-def new_table(cols: Union[list[InputColumn], Mapping[str, Sequence]]) -> Table:
+def new_table(cols: Union[Sequence[InputColumn], Mapping[str, Sequence]]) -> Table:
     """Creates an in-memory table from a list of input columns or a Dict (mapping) of column names and column data.
     Each column must have an equal number of elements.
 
@@ -126,7 +129,7 @@ def new_table(cols: Union[list[InputColumn], Mapping[str, Sequence]]) -> Table:
     determined by Pandas' type inference logic.
 
     Args:
-        cols (Union[list[InputColumn], Mapping[str, Sequence]]): a list of InputColumns or a mapping of columns
+        cols (Union[Sequence[InputColumn], Mapping[str, Sequence]]): a list of InputColumns or a mapping of columns
             names and column data.
 
     Returns:
@@ -136,25 +139,25 @@ def new_table(cols: Union[list[InputColumn], Mapping[str, Sequence]]) -> Table:
         DHError
     """
     try:
-        if isinstance(cols, list):
-            return Table(
-                j_table=_JTableFactory.newTable(*[col.j_column for col in cols])
-            )
-        else:
+        if isinstance(cols, Mapping):
             from deephaven.pandas import to_table
 
             df = pd.DataFrame(cols).convert_dtypes()
             return to_table(df)
+        else:
+            return Table(
+                j_table=_JTableFactory.newTable(*[col.j_column for col in cols])
+            )
     except Exception as e:
         raise DHError(e, "failed to create a new time table.") from e
 
 
-def merge(tables: list[Table]):
+def merge(tables: Sequence[Table]) -> Table:
     """Combines two or more tables into one aggregate table. This essentially appends the tables one on top of the
     other. Null tables are ignored.
 
     Args:
-        tables (list[Table]): the source tables
+        tables (Sequence[Table]): the source tables
 
     Returns:
         a Table
@@ -169,13 +172,13 @@ def merge(tables: list[Table]):
         raise DHError(e, "merge tables operation failed.") from e
 
 
-def merge_sorted(tables: list[Table], order_by: str) -> Table:
+def merge_sorted(tables: Sequence[Table], order_by: str) -> Table:
     """Combines two or more tables into one sorted, aggregate table. This essentially stacks the tables one on top
     of the other and sorts the result. Null tables are ignored. mergeSorted is more efficient than using merge
     followed by sort.
 
     Args:
-        tables (list[Table]): the source tables
+        tables (Sequence[Table]): the source tables
         order_by (str): the name of the key column
 
     Returns:
@@ -484,7 +487,7 @@ def ring_table(parent: Table, capacity: int, initialize: bool = True) -> Table:
 
 def function_generated_table(
     table_generator: Callable[..., Table],
-    source_tables: Optional[Union[Table, list[Table]]] = None,
+    source_tables: Optional[Union[Table, Sequence[Table]]] = None,
     refresh_interval_ms: Optional[int] = None,
     exec_ctx: Optional[ExecutionContext] = None,
     args: tuple = (),
@@ -513,7 +516,7 @@ def function_generated_table(
 
     Args:
         table_generator (Callable[..., Table]): The table generator function. This function must return a Table.
-        source_tables (Optional[Union[Table, list[Table]]]): Source tables used by the 'table_generator' function. The
+        source_tables (Optional[Union[Table, Sequence[Table]]]): Source tables used by the 'table_generator' function. The
             'table_generator' is rerun when any of these tables tick.
         refresh_interval_ms (Optional[int]): Interval (in milliseconds) at which the 'table_generator' function is rerun.
         exec_ctx (Optional[ExecutionContext]): A custom execution context. If 'None', the current

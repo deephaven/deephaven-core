@@ -6,6 +6,7 @@
 Deephaven table out as a CSV file.
 """
 
+from collections.abc import Sequence
 from typing import Optional
 
 import jpy
@@ -108,13 +109,13 @@ def read(
         raise DHError(e, "read csv failed") from e
 
 
-def write(table: Table, path: str, cols: list[str] = []) -> None:
+def write(table: Table, path: str, cols: Sequence[str] = []) -> None:
     """Write a table to a standard CSV file.
 
     Args:
         table (Table): the source table
         path (str): the path of the CSV file
-        cols (list[str]): the names of the columns to be written out
+        cols (Sequence[str]): the names of the columns to be written out
 
     Raises:
         DHError

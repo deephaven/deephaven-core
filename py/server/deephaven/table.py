@@ -645,7 +645,7 @@ def _j_py_script_session() -> _JPythonScriptSession:
 
 
 @contextlib.contextmanager
-def _query_scope_ctx():
+def _query_scope_ctx() -> Generator[None, None, None]:
     """A context manager to set/unset query scope based on the scope of the most immediate caller code that invokes
     Table operations."""
 
@@ -692,7 +692,7 @@ class SortDirection(Enum):
     """"""
 
 
-def _sort_column(col, dir_):
+def _sort_column(col: str, dir_: SortDirection) -> jpy.JType:
     return (
         _JSortColumn.desc(_JColumnName.of(col))
         if dir_ == SortDirection.DESCENDING
@@ -813,19 +813,19 @@ class TableDefinition(JObjectWrapper, Mapping):
     def __iter__(self):
         return iter(self._dict)
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self._dict)
 
-    def __contains__(self, item):
+    def __contains__(self, item: Any) -> bool:
         return item in self._dict
 
-    def __eq__(self, other):
+    def __eq__(self, other: Any) -> bool:
         return JObjectWrapper.__eq__(self, other)
 
-    def __ne__(self, other):
+    def __ne__(self, other: Any) -> bool:
         return JObjectWrapper.__ne__(self, other)
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return JObjectWrapper.__hash__(self)
 
 

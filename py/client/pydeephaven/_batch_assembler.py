@@ -1,6 +1,7 @@
 #
 # Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 #
+from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Optional
 

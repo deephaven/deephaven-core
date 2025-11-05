@@ -143,7 +143,7 @@ table."""
 TableType.Blink = TableType.blink()
 
 
-def j_partitions(partitions):
+def j_partitions(partitions: Optional[Sequence[int]]) -> jpy.JType:
     if partitions is None:
         partitions = ALL_PARTITIONS
     else:

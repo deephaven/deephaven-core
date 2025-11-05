@@ -295,11 +295,11 @@ def read(
         raise DHError(e, "failed to read parquet data.") from e
 
 
-def _j_string_array(str_seq: Sequence[str]):
+def _j_string_array(str_seq: Sequence[str]) -> jpy.JType:
     return jpy.array("java.lang.String", str_seq)
 
 
-def _j_list_of_list_of_string(str_seq_seq: Sequence[Sequence[str]]):
+def _j_list_of_list_of_string(str_seq_seq: Sequence[Sequence[str]]) -> jpy.JType:
     return j_array_list([j_array_list(str_seq) for str_seq in str_seq_seq])
 
 

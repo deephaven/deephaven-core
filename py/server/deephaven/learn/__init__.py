@@ -55,7 +55,7 @@ class Output:
         return self.output.toString()
 
 
-def _validate(inputs: list[Input], outputs: list[Output], table: Table):
+def _validate(inputs: list[Input], outputs: list[Output], table: Table) -> None:
     """Ensures that all input columns exist in the table, and that no output column names already exist in the table.
 
     Args:

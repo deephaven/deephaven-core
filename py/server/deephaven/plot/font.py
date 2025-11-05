@@ -16,7 +16,7 @@ _JFontStyle = jpy.get_type("io.deephaven.plot.Font$FontStyle")
 _JPlottingConvenience = jpy.get_type("io.deephaven.plot.PlottingConvenience")
 
 
-def font_family_names():
+def font_family_names() -> list[str]:
     """A list of supported font family names."""
     return list(_JPlottingConvenience.fontFamilyNames())
 

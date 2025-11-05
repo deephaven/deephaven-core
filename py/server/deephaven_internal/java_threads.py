@@ -2,9 +2,10 @@
 # Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 #
 import threading
+from typing import Callable
 
 
-def create_thread_entry(thread_name):
+def create_thread_entry(thread_name: str) -> Callable:
     """
     Helper to call from the JVM into python to set up py thread state exactly once per jvm thread, and support debugging
     """

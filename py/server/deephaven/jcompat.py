@@ -113,7 +113,7 @@ def j_properties(d: Optional[dict] = None) -> Optional[jpy.JType]:
     return r
 
 
-def j_map_to_dict(m) -> dict[Any, Any]:
+def j_map_to_dict(m: Optional[jpy.JType]) -> dict[Any, Any]:
     """Converts a java map to a python dictionary."""
     if not m:
         return {}
@@ -121,7 +121,7 @@ def j_map_to_dict(m) -> dict[Any, Any]:
     return {e.getKey(): wrap_j_object(e.getValue()) for e in m.entrySet().toArray()}
 
 
-def j_list_to_list(jlist) -> list[Any]:
+def j_list_to_list(jlist: Optional[jpy.JType]) -> list[Any]:
     """Converts a java list to a python list."""
     if not jlist:
         return []
@@ -129,7 +129,7 @@ def j_list_to_list(jlist) -> list[Any]:
     return [wrap_j_object(jlist.get(i)) for i in range(jlist.size())]
 
 
-def j_collection_to_list(jcollection) -> list[Any]:
+def j_collection_to_list(jcollection: Optional[jpy.JType]) -> list[Any]:
     """Converts a java Collection to a python list."""
     if not jcollection:
         return []

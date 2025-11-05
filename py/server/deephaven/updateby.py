@@ -230,7 +230,7 @@ def ems_tick(
 
     Args:
         decay_ticks (float): the decay rate in ticks
-        cols (Union[str, list[str]]): the column(s) to be operated on, can include expressions to rename the output,
+        cols (Union[str, Sequence[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by performs the operation on all applicable columns.
         op_control (Optional[OperationControl]): defines how special cases should behave; when None, the default OperationControl
             settings as specified in :meth:`~OperationControl.__init__` will be used
@@ -277,7 +277,7 @@ def ems_time(
         ts_col (str): the column in the source table to use for timestamps
         decay_time (Union[int, str]): the decay rate, can be expressed as an integer in nanoseconds or a time
             interval string, e.g. "PT00:00:00.001" or "PT5M"
-        cols (Union[str, list[str]]): the column(s) to be operated on, can include expressions to rename the output,
+        cols (Union[str, Sequence[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by performs the operation on all columns.
         op_control (Optional[OperationControl]): defines how special cases should behave; when None, the default OperationControl
             settings as specified in :meth:`~OperationControl.__init__` will be used
@@ -325,7 +325,7 @@ def emmin_tick(
 
     Args:
         decay_ticks (float): the decay rate in ticks
-        cols (Union[str, list[str]]): the column(s) to be operated on, can include expressions to rename the output,
+        cols (Union[str, Sequence[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by performs the operation on all columns.
         op_control (Optional[OperationControl]): defines how special cases should behave; when None, the default OperationControl
             settings as specified in :meth:`~OperationControl.__init__` will be used
@@ -374,7 +374,7 @@ def emmin_time(
         ts_col (str): the column in the source table to use for timestamps
         decay_time (Union[int, str]): the decay rate, can be expressed as an integer in nanoseconds or a time
             interval string, e.g. "PT00:00:00.001" or "PT5M"
-        cols (Union[str, list[str]]): the column(s) to be operated on, can include expressions to rename the output,
+        cols (Union[str, Sequence[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by performs the operation on all columns.
         op_control (Optional[OperationControl]): defines how special cases should behave; when None, the default OperationControl
             settings as specified in :meth:`~OperationControl.__init__` will be used
@@ -424,7 +424,7 @@ def emmax_tick(
 
     Args:
         decay_ticks (float): the decay rate in ticks
-        cols (Union[str, list[str]]): the column(s) to be operated on, can include expressions to rename the output,
+        cols (Union[str, Sequence[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by performs the operation on all columns.
         op_control (Optional[OperationControl]): defines how special cases should behave; when None, the default OperationControl
             settings as specified in :meth:`~OperationControl.__init__` will be used
@@ -473,7 +473,7 @@ def emmax_time(
         ts_col (str): the column in the source table to use for timestamps
         decay_time (Union[int, str]): the decay rate, can be expressed as an integer in nanoseconds or a time
             interval string, e.g. "PT00:00:00.001" or "PT5M"
-        cols (Union[str, list[str]]): the column(s) to be operated on, can include expressions to rename the output,
+        cols (Union[str, Sequence[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by performs the operation on all columns.
         op_control (Optional[OperationControl]): defines how special cases should behave; when None, the default OperationControl
             settings as specified in :meth:`~OperationControl.__init__` will be used
@@ -523,7 +523,7 @@ def emstd_tick(
 
     Args:
         decay_ticks (float): the decay rate in ticks
-        cols (Union[str, list[str]]): the column(s) to be operated on, can include expressions to rename the output,
+        cols (Union[str, Sequence[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by performs the ems operation on all columns.
         op_control (Optional[OperationControl]): defines how special cases should behave; when None, the default OperationControl
             settings as specified in :meth:`~OperationControl.__init__` will be used
@@ -573,7 +573,7 @@ def emstd_time(
         ts_col (str): the column in the source table to use for timestamps
         decay_time (Union[int, str]): the decay rate, can be expressed as an integer in nanoseconds or a time
             interval string, e.g. "PT00:00:00.001" or "PT5M"
-        cols (Union[str, list[str]]): the column(s) to be operated on, can include expressions to rename the output,
+        cols (Union[str, Sequence[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by performs the ems operation on all columns.
         op_control (Optional[OperationControl]): defines how special cases should behave; when None, the default OperationControl
             settings as specified in :meth:`~OperationControl.__init__` will be used
@@ -706,7 +706,7 @@ def cum_count_where(
 
     Args:
         col (str): the column to hold the counts of rows that pass the filter condition columns.
-        filters (Union[str, Filter, list[str], list[Filter]], optional): the filter condition
+        filters (Union[str, Filter, Sequence[str], Sequence[Filter]], optional): the filter condition
             expression(s) or Filter object(s)
 
     Returns:
@@ -858,7 +858,7 @@ def rolling_sum_time(
 
     Args:
         ts_col (str): the timestamp column for determining the window
-        cols (Union[str, list[str]]): the column(s) to be operated on, can include expressions to rename the output,
+        cols (Union[str, Sequence[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by performs the rolling sum operation on all columns.
         rev_time (int): the look-behind window size, can be expressed as an integer in nanoseconds or a time
             interval string, e.g. "PT00:00:00.001" or "PT5M"
@@ -964,7 +964,7 @@ def rolling_group_time(
 
     Args:
         ts_col (str): the timestamp column for determining the window
-        cols (Union[str, list[str]]): the column(s) to be operated on, can include expressions to rename the output,
+        cols (Union[str, Sequence[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by performs the rolling group operation on all columns.
         rev_time (int): the look-behind window size, can be expressed as an integer in nanoseconds or a time
             interval string, e.g. "PT00:00:00.001" or "PT5M"
@@ -1021,7 +1021,7 @@ def rolling_avg_tick(
             current row (inclusive)
 
     Args:
-        cols (Union[str, list[str]]): the column(s) to be operated on, can include expressions to rename the output,
+        cols (Union[str, Sequence[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by performs the rolling average operation on all columns.
         rev_ticks (int): the look-behind window size (in rows/ticks)
         fwd_ticks (int): the look-forward window size (int rows/ticks), default is 0
@@ -1070,7 +1070,7 @@ def rolling_avg_time(
 
     Args:
         ts_col (str): the timestamp column for determining the window
-        cols (Union[str, list[str]]): the column(s) to be operated on, can include expressions to rename the output,
+        cols (Union[str, Sequence[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by performs the rolling average operation on all columns.
         rev_time (int): the look-behind window size, can be expressed as an integer in nanoseconds or a time
             interval string, e.g. "PT00:00:00.001" or "PT5M"
@@ -1127,7 +1127,7 @@ def rolling_min_tick(
             current row (inclusive)
 
     Args:
-        cols (Union[str, list[str]]): the column(s) to be operated on, can include expressions to rename the output,
+        cols (Union[str, Sequence[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by performs the rolling minimum operation on all columns.
         rev_ticks (int): the look-behind window size (in rows/ticks)
         fwd_ticks (int): the look-forward window size (int rows/ticks), default is 0
@@ -1176,7 +1176,7 @@ def rolling_min_time(
 
     Args:
         ts_col (str): the timestamp column for determining the window
-        cols (Union[str, list[str]]): the column(s) to be operated on, can include expressions to rename the output,
+        cols (Union[str, Sequence[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by performs the rolling minimum operation on all columns.
         rev_time (int): the look-behind window size, can be expressed as an integer in nanoseconds or a time
             interval string, e.g. "PT00:00:00.001" or "PT5M"
@@ -1233,7 +1233,7 @@ def rolling_max_tick(
             current row (inclusive)
 
     Args:
-        cols (Union[str, list[str]]): the column(s) to be operated on, can include expressions to rename the output,
+        cols (Union[str, Sequence[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by performs the rolling maximum operation on all columns.
         rev_ticks (int): the look-behind window size (in rows/ticks)
         fwd_ticks (int): the look-forward window size (int rows/ticks), default is 0
@@ -1282,7 +1282,7 @@ def rolling_max_time(
 
     Args:
         ts_col (str): the timestamp column for determining the window
-        cols (Union[str, list[str]]): the column(s) to be operated on, can include expressions to rename the output,
+        cols (Union[str, Sequence[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by performs the rolling maximum operation on all columns.
         rev_time (int): the look-behind window size, can be expressed as an integer in nanoseconds or a time
             interval string, e.g. "PT00:00:00.001" or "PT5M"
@@ -1339,7 +1339,7 @@ def rolling_prod_tick(
             current row (inclusive)
 
     Args:
-        cols (Union[str, list[str]]): the column(s) to be operated on, can include expressions to rename the output,
+        cols (Union[str, Sequence[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by performs the rolling product operation on all columns.
         rev_ticks (int): the look-behind window size (in rows/ticks)
         fwd_ticks (int): the look-forward window size (int rows/ticks), default is 0
@@ -1390,7 +1390,7 @@ def rolling_prod_time(
 
     Args:
         ts_col (str): the timestamp column for determining the window
-        cols (Union[str, list[str]]): the column(s) to be operated on, can include expressions to rename the output,
+        cols (Union[str, Sequence[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by performs the rolling product operation on all columns.
         rev_time (int): the look-behind window size, can be expressed as an integer in nanoseconds or a time
             interval string, e.g. "PT00:00:00.001" or "PT5M"
@@ -1447,7 +1447,7 @@ def rolling_count_tick(
             current row (inclusive)
 
     Args:
-        cols (Union[str, list[str]]): the column(s) to be operated on, can include expressions to rename the output,
+        cols (Union[str, Sequence[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by performs the rolling count operation on all columns.
         rev_ticks (int): the look-behind window size (in rows/ticks)
         fwd_ticks (int): the look-forward window size (int rows/ticks), default is 0
@@ -1496,7 +1496,7 @@ def rolling_count_time(
 
     Args:
         ts_col (str): the timestamp column for determining the window
-        cols (Union[str, list[str]]): the column(s) to be operated on, can include expressions to rename the output,
+        cols (Union[str, Sequence[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by performs the rolling count operation on all columns.
         rev_time (int): the look-behind window size, can be expressed as an integer in nanoseconds or a time
             interval string, e.g. "PT00:00:00.001" or "PT5M"
@@ -1556,7 +1556,7 @@ def rolling_std_tick(
             current row (inclusive)
 
     Args:
-        cols (Union[str, list[str]]): the column(s) to be operated on, can include expressions to rename the output,
+        cols (Union[str, Sequence[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by performs the rolling sample standard deviation operation on all columns.
         rev_ticks (int): the look-behind window size (in rows/ticks)
         fwd_ticks (int): the look-forward window size (int rows/ticks), default is 0
@@ -1608,7 +1608,7 @@ def rolling_std_time(
 
     Args:
         ts_col (str): the timestamp column for determining the window
-        cols (Union[str, list[str]]): the column(s) to be operated on, can include expressions to rename the output,
+        cols (Union[str, Sequence[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by performs the rolling sample standard deviation operation on all columns.
         rev_time (int): the look-behind window size, can be expressed as an integer in nanoseconds or a time
             interval string, e.g. "PT00:00:00.001" or "PT5M"
@@ -1666,7 +1666,7 @@ def rolling_wavg_tick(
 
     Args:
         wcol (str):  the column containing the weight values
-        cols (Union[str, list[str]]): the column(s) to be operated on, can include expressions to rename the output,
+        cols (Union[str, Sequence[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by performs the rolling weighted average operation on all columns.
         rev_ticks (int): the look-behind window size (in rows/ticks)
         fwd_ticks (int): the look-forward window size (int rows/ticks), default is 0
@@ -1719,7 +1719,7 @@ def rolling_wavg_time(
     Args:
         ts_col (str): the timestamp column for determining the window
         wcol (str):  the column containing the weight values
-        cols (Union[str, list[str]]): the column(s) to be operated on, can include expressions to rename the output,
+        cols (Union[str, Sequence[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by performs the rolling weighted average operation on all columns.
         rev_time (int): the look-behind window size, can be expressed as an integer in nanoseconds or a time
             interval string, e.g. "PT00:00:00.001" or "PT5M"
@@ -1802,7 +1802,7 @@ def rolling_formula_tick(
         formula_param (Optional[str]): If provided, supplies the parameter name for the input column's vector within the formula.
             If formula is `max(each)`, then `each` is the formula_param. Default is None, implying the `formula`
             argument specifies the input and output columns.
-        cols (Optional[Union[str, list[str]]]): If provided, supplies the column(s) to operate on, can include expressions to
+        cols (Optional[Union[str, Sequence[str]]]): If provided, supplies the column(s) to operate on, can include expressions to
             rename the output, i.e. "new_col = col". If omitted and the `formula_param` is provided, update_by performs
             the rolling formula operation on all columns
         rev_ticks (int): the look-behind window size (in rows/ticks)
@@ -1885,7 +1885,7 @@ def rolling_formula_time(
         formula_param (Optional[str]): If provided, supplies the parameter name for the input column's vector within the formula.
             If formula is `max(each)`, then `each` is the formula_param. Default is None, implying the `formula`
             argument specifies the input and output columns.
-        cols (Optional[Union[str, list[str]]]): If provided, supplies the column(s) to operate on, can include expressions to
+        cols (Optional[Union[str, Sequence[str]]]): If provided, supplies the column(s) to operate on, can include expressions to
             rename the output, i.e. "new_col = col". If omitted and the `formula_param` is provided, update_by performs
             the rolling formula operation on all columns
         rev_time (int): the look-behind window size, can be expressed as an integer in nanoseconds or a time
@@ -1956,7 +1956,7 @@ def rolling_count_where_tick(
 
     Args:
         col (str): the column to hold the counts of rows that pass the filter condition columns.
-        filters (Union[str, Filter, list[str], list[Filter]], optional): the filter condition
+        filters (Union[str, Filter, Sequence[str], Sequence[Filter]], optional): the filter condition
             expression(s) or Filter object(s)
         rev_ticks (int): the look-behind window size (in rows/ticks)
         fwd_ticks (int): the look-forward window size (int rows/ticks), default is 0
@@ -2014,7 +2014,7 @@ def rolling_count_where_time(
     Args:
         ts_col (str): the timestamp column for determining the window
         col (str): the column to hold the counts of rows that pass the filter condition columns.
-        filters (Union[str, Filter, list[str], list[Filter]], optional): the filter condition
+        filters (Union[str, Filter, Sequence[str], Sequence[Filter]], optional): the filter condition
             expression(s) or Filter object(s)
         rev_time (int): the look-behind window size, can be expressed as an integer in nanoseconds or a time
             interval string, e.g. "PT00:00:00.001" or "PT5M"

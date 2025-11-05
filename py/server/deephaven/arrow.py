@@ -3,6 +3,7 @@
 #
 """This module supports conversions between pyarrow tables and Deephaven tables."""
 
+from collections.abc import Sequence
 from typing import Optional
 
 import jpy
@@ -78,7 +79,7 @@ _SUPPORTED_ARROW_PARAMETERIZABLE_TYPES = {
 SUPPORTED_ARROW_TYPES = [k for k, v in _ARROW_DH_DATA_TYPE_MAPPING.items() if v]
 
 
-def _map_arrow_type(arrow_type) -> dict[str, str]:
+def _map_arrow_type(arrow_type: pa.DataType) -> dict[str, str]:
     """Maps a pyarrow type to the corresponding Deephaven column data type."""
     dh_type = _ARROW_DH_DATA_TYPE_MAPPING.get(arrow_type)
 
@@ -95,12 +96,12 @@ def _map_arrow_type(arrow_type) -> dict[str, str]:
     return {"deephaven:type": dh_type}
 
 
-def to_table(pa_table: pa.Table, cols: Optional[list[str]] = None) -> Table:
+def to_table(pa_table: pa.Table, cols: Optional[Sequence[str]] = None) -> Table:
     """Creates a Deephaven table from a pyarrow table.
 
     Args:
         pa_table(pa.Table): the pyarrow table
-        cols (Optional[list[str]]): the pyarrow table column names, default is None which means including all columns
+        cols (Optional[Sequence[str]]): the pyarrow table column names, default is None which means including all columns
 
     Returns:
         a new table
@@ -136,12 +137,12 @@ def to_table(pa_table: pa.Table, cols: Optional[list[str]] = None) -> Table:
         ) from e
 
 
-def to_arrow(table: Table, cols: Optional[list[str]] = None) -> pa.Table:
-    """Produces a pyarrow table from a Deephaven table
+def to_arrow(table: Table, cols: Optional[Sequence[str]] = None) -> pa.Table:
+    """Creates a pyarrow table from a Deephaven table.
 
     Args:
-        table (Table): the source table
-        cols (Optional[list[str]]): the source column names, default is None which means including all columns
+        table (Table): the Deephaven table
+        cols (Optional[Sequence[str]]): the table column names, default is None which means including all columns
 
     Returns:
         a pyarrow table

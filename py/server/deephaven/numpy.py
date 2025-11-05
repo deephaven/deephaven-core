@@ -5,6 +5,7 @@
 """This module supports the conversion between Deephaven tables and numpy arrays."""
 
 import re
+from collections.abc import Sequence
 from typing import Optional
 
 import jpy
@@ -85,7 +86,7 @@ def _make_input_column(col: str, np_array: np.ndarray, dtype: DType) -> InputCol
     return InputColumn(name=_to_column_name(col), data_type=dtype, input_data=np_array)
 
 
-def to_numpy(table: Table, cols: Optional[list[str]] = None) -> np.ndarray:
+def to_numpy(table: Table, cols: Optional[Sequence[str]] = None) -> np.ndarray:
     """Produces a numpy array from a table.
 
     Note that the **entire table** is going to be cloned into memory, so the total number of entries in the table
@@ -94,8 +95,8 @@ def to_numpy(table: Table, cols: Optional[list[str]] = None) -> np.ndarray:
 
     Args:
         table (Table): the source table
-        cols (Optional[list[str]]): the source column names, default is None which means include all columns
-
+        cols (Optional[Sequence[str]]): the names of the columns; if None, all columns are included, default is
+            None
     Returns:
         a numpy ndarray
 
@@ -131,12 +132,12 @@ def to_numpy(table: Table, cols: Optional[list[str]] = None) -> np.ndarray:
         raise DHError(e, "failed to create a numpy array from the table column.") from e
 
 
-def to_table(np_array: np.ndarray, cols: list[str]) -> Table:
-    """Creates a new table from a numpy array.
+def to_table(np_array: np.ndarray, cols: Sequence[str]) -> Table:
+    """Produces a Deephaven table from a numpy array.
 
     Args:
-        np_array (np.ndarray): the numpy array
-        cols (list[str]): the table column names that will be assigned to each column in the numpy array
+        np_array (np.ndarray): a numpy array
+        cols (Sequence[str]): a list of column names
 
     Returns:
         a Deephaven table

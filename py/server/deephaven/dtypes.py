@@ -41,7 +41,7 @@ _JPrimitiveArrayConversionUtility = jpy.get_type(
 _j_name_type_map: dict[str, DType] = {}
 
 
-def _qst_custom_type(cls_name: str):
+def _qst_custom_type(cls_name: str) -> Optional[jpy.JType]:
     try:
         return _JQstType.find(_JTableTools.typeFromName(cls_name))
     except Exception:
@@ -70,7 +70,7 @@ class DType:
         """
         self.j_name = j_name
         self.j_type = j_type if j_type else jpy.get_type(j_name)
-        self.qst_type = qst_type if qst_type else _qst_custom_type(j_name)
+        self.qst_type: jpy.JType = qst_type if qst_type else _qst_custom_type(j_name)
         self.is_primitive = is_primitive
         self.np_type = np_type
 
