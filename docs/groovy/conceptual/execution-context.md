@@ -239,15 +239,14 @@ executionContext = ExecutionContext.newBuilder()
     .build()
 ```
 
-:::note
-When creating a new update graph, you must provide a unique name. If you're running this in a Deephaven server where a "DEFAULT" update graph already exists, use a different name like "MyCustomGraph" to avoid conflicts.
-:::
+> [!NOTE]
+> When creating a new update graph, you must provide a unique name. If you're running this in a Deephaven server where a "DEFAULT" update graph already exists, use a different name like "MyCustomGraph" to avoid conflicts.
 
 This approach allows you to specify:
 
 - **Query library**: A new, empty query library via `newQueryLibrary()`.
 - **Query scope**: A new, empty query scope via `newQueryScope()`.
-- **Operation initializer**: Controls parallelization behavior of operations.
+- **Operation initializer**: Parallelization behavior of operations.
 - **Update graph**: A custom update graph (e.g., `PeriodicUpdateGraph` or `EventDrivenUpdateGraph`).
 - **Query compiler**: A compiler instance with a specified working directory and class loader.
 
