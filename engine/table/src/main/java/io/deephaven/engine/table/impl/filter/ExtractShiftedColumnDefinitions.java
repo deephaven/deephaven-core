@@ -13,65 +13,66 @@ import io.deephaven.engine.table.impl.select.WhereFilterInvertedImpl;
 import io.deephaven.engine.table.impl.select.WhereFilterWithRespectedBarriersImpl;
 import io.deephaven.engine.table.impl.select.WhereFilterSerialImpl;
 
-import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class ExtractShiftedColumnDefinitions
-        implements WhereFilter.Visitor<Set<ShiftedColumnDefinition>> {
-    public static final ExtractShiftedColumnDefinitions INSTANCE = new ExtractShiftedColumnDefinitions();
+public enum ExtractShiftedColumnDefinitions
+        implements WhereFilter.Visitor<Stream<ShiftedColumnDefinition>> {
+    EXTRACT_SHIFTED_COLUMN_DEFINITIONS;
 
     public static Set<ShiftedColumnDefinition> of(final WhereFilter filter) {
-        return filter.walkWhereFilter(INSTANCE);
+        try (final Stream<ShiftedColumnDefinition> stream = stream(filter)) {
+            return stream.collect(Collectors.toSet());
+        }
+    }
+
+    public static Stream<ShiftedColumnDefinition> stream(final WhereFilter filter) {
+        return filter.walk(EXTRACT_SHIFTED_COLUMN_DEFINITIONS);
+    }
+
+    public static boolean hasAny(final WhereFilter filter) {
+        try (final Stream<ShiftedColumnDefinition> stream = stream(filter)) {
+            return stream.findAny().isPresent();
+        }
     }
 
     @Override
-    public Set<ShiftedColumnDefinition> visitWhereFilter(final WhereFilter filter) {
+    public Stream<ShiftedColumnDefinition> visitOther(WhereFilter filter) {
         if (filter instanceof AbstractConditionFilter
                 && ((AbstractConditionFilter) filter).hasConstantArrayAccess()) {
-            return new HashSet<>(((AbstractConditionFilter) filter).getFormulaShiftedColumnDefinitions().getSecond());
+            return ((AbstractConditionFilter) filter).getFormulaShiftedColumnDefinitions().getSecond().stream();
         }
-        return WhereFilter.Visitor.super.visitWhereFilter(filter);
+        return Stream.empty();
     }
 
     @Override
-    public Set<ShiftedColumnDefinition> visitWhereFilter(final WhereFilterInvertedImpl filter) {
-        return visitWhereFilter(filter.getWrappedFilter());
+    public Stream<ShiftedColumnDefinition> visit(final WhereFilterInvertedImpl filter) {
+        return stream(filter.getWrappedFilter());
     }
 
     @Override
-    public Set<ShiftedColumnDefinition> visitWhereFilter(final WhereFilterSerialImpl filter) {
-        return visitWhereFilter(filter.getWrappedFilter());
+    public Stream<ShiftedColumnDefinition> visit(final WhereFilterSerialImpl filter) {
+        return stream(filter.getWrappedFilter());
     }
 
     @Override
-    public Set<ShiftedColumnDefinition> visitWhereFilter(final WhereFilterWithDeclaredBarriersImpl filter) {
-        return visitWhereFilter(filter.getWrappedFilter());
+    public Stream<ShiftedColumnDefinition> visit(final WhereFilterWithDeclaredBarriersImpl filter) {
+        return stream(filter.getWrappedFilter());
     }
 
     @Override
-    public Set<ShiftedColumnDefinition> visitWhereFilter(final WhereFilterWithRespectedBarriersImpl filter) {
-        return visitWhereFilter(filter.getWrappedFilter());
+    public Stream<ShiftedColumnDefinition> visit(final WhereFilterWithRespectedBarriersImpl filter) {
+        return stream(filter.getWrappedFilter());
     }
 
     @Override
-    public Set<ShiftedColumnDefinition> visitWhereFilter(final DisjunctiveFilter filter) {
-        return filter.getFilters().stream()
-                .flatMap(f -> {
-                    Set<ShiftedColumnDefinition> res = f.walkWhereFilter(this);
-                    return res == null ? Stream.empty() : res.stream();
-                })
-                .collect(Collectors.toSet());
+    public Stream<ShiftedColumnDefinition> visit(final DisjunctiveFilter filter) {
+        return filter.getFilters().stream().flatMap(ExtractShiftedColumnDefinitions::stream);
     }
 
     @Override
-    public Set<ShiftedColumnDefinition> visitWhereFilter(final ConjunctiveFilter filter) {
-        return filter.getFilters().stream()
-                .flatMap(f -> {
-                    Set<ShiftedColumnDefinition> res = f.walkWhereFilter(this);
-                    return res == null ? Stream.empty() : res.stream();
-                })
-                .collect(Collectors.toSet());
+    public Stream<ShiftedColumnDefinition> visit(final ConjunctiveFilter filter) {
+        return filter.getFilters().stream().flatMap(ExtractShiftedColumnDefinitions::stream);
     }
 }
