@@ -2764,6 +2764,10 @@
                     "path": "reference/community-questions/import-python-script.md"
                   },
                   {
+                    "label": "Why am I getting a \"Java class not found\" error when starting deephaven-server?",
+                    "path": "reference/community-questions/java-class-not-found-error.md"
+                  },
+                  {
                     "label": "Why am I getting an UpdateGraphConflictException?",
                     "path": "reference/community-questions/update-graph-conflict-exception.md"
                   }
