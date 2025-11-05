@@ -7,26 +7,26 @@ import itertools
 import os
 import pathlib
 import types
-from typing import Dict, List, Optional
+from typing import Dict, Generator, List, Optional
 
 from deephaven_internal import jvm
 
 # TODO(deephaven-core#2592): Generalize start_jvm to work with importlib.resources
 
 
-def _jars_path():
+def _jars_path() -> pathlib.Path:
     return pathlib.Path(__file__).parent / "jars"
 
 
-def _compiler_directives():
+def _compiler_directives() -> pathlib.Path:
     return _jars_path() / "dh-compiler-directives.txt"
 
 
-def _default_vmoptions():
+def _default_vmoptions() -> pathlib.Path:
     return _jars_path() / "dh-default.vmoptions"
 
 
-def _jars():
+def _jars() -> Generator[pathlib.Path, None, None]:
     return _jars_path().glob("*.jar")
 
 

@@ -180,7 +180,7 @@ class Server:
         # On halt, prevent the JVM from writing to sys.out and sys.err
         atexit.register(self.j_server.prepareForShutdown)
 
-    def start(self):
+    def start(self) -> None:
         """
         Starts the server. Presently once the server is started, it cannot be stopped until the
         python process halts.

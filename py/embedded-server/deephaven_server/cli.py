@@ -11,7 +11,7 @@ from .server import Server
 
 
 @click.group()
-def cli():
+def cli() -> None:
     """
     Command-line interface entry point for the Deephaven embedded server application.
     Accepts a command to start the application and the arguments to use.
@@ -41,7 +41,7 @@ def server(
     extra_classpath: Optional[str] = None,
     default_jvm_args: Optional[str] = None,
     browser: bool = True,
-):
+) -> None:
     """
     Start the Deephaven server.
     """

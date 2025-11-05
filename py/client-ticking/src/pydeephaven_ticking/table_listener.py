@@ -101,7 +101,7 @@ class TableUpdate:
             cols (Optional[Union[str, Sequence[str]]]): the specified columns. None means "all columns in the table".
 
         Returns:
-            A dictionary mapping column name to an Arrow Array of the removed data.
+            A dictionary mapping column name to an Arrow Array of the removed data, or an empty dictionary if no data was removed.
         """
 
         return _first_or_default(
@@ -130,10 +130,10 @@ class TableUpdate:
         """Gets all the data that was added in this TableUpdate.
 
         Args:
-            cols (Optional[Union[str, Sequence[str]]]) : the specified columns, defaults to None, meaning "all columns in the table".
+            cols (Optional[Union[str, Sequence[str]]]): the specified columns, defaults to None, meaning "all columns in the table".
 
         Returns:
-            A dictionary mapping column name to an Arrow Array of the added data.
+            A dictionary mapping column name to an Arrow Array of the added data, or an empty dictionary if no data was added.
         """
 
         return _first_or_default(self.added_chunks(self.update.added_rows.size, cols))
@@ -162,11 +162,10 @@ class TableUpdate:
         """Gets all the data as it existed *before* the modify operation in this TableUpdate.
 
         Args:
-            cols (Optional[Union[str, Sequence[str]]]): the specified columns, defaults to None,  meaning "all columns in the table".
+            cols (Optional[Union[str, Sequence[str]]]): the specified columns, defaults to None, meaning "all columns in the table".
 
         Returns:
-            A Generator yielding dictionaries mapping column name to an Arrow Array of the modified_prev data. The
-            Arrow Arrays will have length less than or equal to chunk_size.
+            A dictionary mapping column name to an Arrow Array of the data before the modify operation, or an empty dictionary if no data was modified.
         """
 
         return _first_or_default(
@@ -181,7 +180,7 @@ class TableUpdate:
 
         Args:
             chunk_size (int) : The maximum number of rows yielded by each iteration of the generator.
-            cols (Optional[Union[str, Sequence[str]]]): the specified columns, defaults to None,  meaning "all columns in the table".
+            cols (Optional[Union[str, Sequence[str]]]): the specified columns, defaults to None, meaning "all columns in the table".
 
         Returns:
             A Generator yielding dictionaries mapping column name to an Arrow Array of the data before
@@ -196,10 +195,10 @@ class TableUpdate:
         """Gets all the modified data *after* the modify operation in this TableUpdate.
 
         Args:
-            cols (Optional[Union[str, Sequence[str]]]): the specified columns, defaults to None,  meaning "all columns in the table".
+            cols (Optional[Union[str, Sequence[str]]]): the specified columns, defaults to None, meaning "all columns in the table".
 
         Returns:
-            A dictionary mapping column name to an Arrow Array of the data after the modify operation.
+            A dictionary mapping column name to an Arrow Array of the data after the modify operation, or an empty dictionary if no data was modified.
         """
 
         return _first_or_default(
@@ -314,7 +313,7 @@ class TableListenerHandle:
         self._reader.cancel()
         self._thread.join()
 
-    def _process_data(self):
+    def _process_data(self) -> None:
         """This method continuously runs on a separate thread. It processes incoming Barrage messages, feeds them to
         the BarrageProcessor library, and, when the BarrageProcessor library produces a TableUpdate, calls the
         user-supplied callback with that TableUpdate."""
