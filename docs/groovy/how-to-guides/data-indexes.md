@@ -10,7 +10,7 @@ Data indexes can improve the speed of filtering operations. Additionally, data i
 
 Data indexes are inherited by derived tables unless one of the following conditions is true:
 
-1. The rowset has changed.
+1. The row set has changed.
 2. Any of the indexed data changed.
 3. It's a shared table from another worker (though you can still take advantage of the index if you apply pre-filtering before subscription).
 
