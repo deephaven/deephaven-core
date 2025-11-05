@@ -2753,6 +2753,10 @@
                     "path": "reference/community-questions/can-i-perform-rolling-ops-without-fixed-window-size.md"
                   },
                   {
+                    "label": "How do I extract a list of distinct dates from a table?",
+                    "path": "reference/community-questions/extract-distinct-dates-list.md"
+                  },
+                  {
                     "label": "Why do queries run faster the second time they are run?",
                     "path": "reference/community-questions/query-memoization.md"
                   },
@@ -2767,6 +2771,10 @@
                   {
                     "label": "When should I use `whereIn` or `naturalJoin`?",
                     "path": "reference/community-questions/wherein-vs-naturaljoin.md"
+                  },
+                  {
+                    "label": "How do I filter by time of day across all dates?",
+                    "path": "reference/community-questions/filter-time-window-all-dates.md"
                   }
                 ]
               },
