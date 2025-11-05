@@ -22,6 +22,7 @@ This cryptic error message typically indicates that you're using an incompatible
 **You must use Java 17 or later** when running `deephaven-server` version 0.36.0 and above.
 
 The Deephaven server wheel requires Java 17+ because:
+
 - Jetty 12 (used by Deephaven) requires Java 17 or later
 - Jetty 11 reached end-of-life, prompting the upgrade
 
