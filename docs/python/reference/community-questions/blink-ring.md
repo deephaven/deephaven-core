@@ -5,13 +5,13 @@ sidebar_label: "How can I store the first row of the last N blinks of a table?"
 
 _I have a blink table, from which I want to extract the first row of the last N blinks into a separate ring table. How can I do that?_
 
-The short summary of the answer to this question is:
+To achieve this:
 
 - Use a [Table listener](../../how-to-guides/table-listeners-python.md) to listen to the source blink table.
 - Use a [Table publisher](../../how-to-guides/table-publisher.md) to publish the first row each update cycle.
 - Convert the result to a ring table.
 
-The following example shows how to do this:
+Here's a complete example:
 
 ```python skip-test
 from deephaven.stream.table_publisher import table_publisher
@@ -28,18 +28,9 @@ ctx = get_exec_ctx()
 
 source = time_table("PT0.2s", blink_table=True).update("X = (double)ii")
 
-
-def on_shutdown():
-    print("Table publisher has been shut down.")
-
-
 result_blink, my_publisher = table_publisher(
     name="Example", col_defs={"Timestamp": dht.Instant, "X": dht.double}
 )
-
-
-def when_done():
-    my_publisher.publish_failure(RuntimeError("Publisher shut down by user."))
 
 
 def add_table(ts, x_val):
@@ -62,7 +53,7 @@ result_ring = ring_table(result, 10)
 
 ![First row of last 10 blinks](../../assets/reference/faq/blink-ring.gif)
 
-This example shows that the solution works, since the `X` column contains only the value `0`, which is the first row on every update cycle.
+This example shows that the solution works, since the `X` column contains only the value `0`, which is the value from the first row on every update cycle.
 
 > [!NOTE]
 > These FAQ pages contain answers to questions about Deephaven Community Core that our users have asked in our [Community Slack](/slack). If you have a question that is not in our documentation, [join our Community](/slack) and we'll be happy to help!
