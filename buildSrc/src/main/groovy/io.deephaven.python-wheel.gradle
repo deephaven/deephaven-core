@@ -11,7 +11,7 @@ project.extensions.create('wheel', PythonWheelExtension, project.objects)
 spotless {
     python {
         target '**/*.py'
-        targetExclude '**/proto/*_pb2*', '**/setup.py', 'docs/**'
+        targetExclude '**/proto/*_pb2*', '**/setup.py', 'docs/**', "*venv/**"
         licenseHeader '#\n' +
                 '# Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending\n' +
                 '#', '[^#]'

@@ -11,8 +11,10 @@ module = "pyarrow.*"
 ignore_missing_imports = true
 
 [tool.ruff]
-lint.select = ["F", "I"]
 include = ["pydeephaven/**", "tests/**", "setup.py"]
+
+[tool.ruff.lint]
+select = ["F", "I"]
 
 [tool.ruff.lint.per-file-ignores]
 "pydeephaven/proto/**" = ["ALL"]
