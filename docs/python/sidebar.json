@@ -312,8 +312,13 @@
                 "path": "how-to-guides/sort.md"
               },
               {
-                "label": "Keyed transpose",
-                "path": "how-to-guides/keyed-transpose.md"
+                "label": "Transpose",
+                "items": [
+                  {
+                    "label": "Keyed transpose",
+                    "path": "how-to-guides/keyed-transpose.md"
+                  }
+                ]
               },
               {
                 "label": "Merge",
@@ -961,8 +966,29 @@
                     "path": "how-to-guides/python-errors.md"
                   },
                   {
-                    "label": "Debugging with PyCharm",
-                    "path": "how-to-guides/debugging/pycharm-debugging.md"
+                    "label": "Debugging",
+                    "items": [
+                      {
+                        "label": "Overview",
+                        "path": "how-to-guides/debugging/debugging-landing.md"
+                      },
+                      {
+                        "label": "Docker setup",
+                        "path": "how-to-guides/debugging/docker-setup.md"
+                      },
+                      {
+                        "label": "pip setup",
+                        "path": "how-to-guides/debugging/pip-setup.md"
+                      },
+                      {
+                        "label": "Source setup",
+                        "path": "how-to-guides/debugging/source-setup.md"
+                      },
+                      {
+                        "label": "Common problems",
+                        "path": "how-to-guides/debugging/common-problems.md"
+                      }
+                    ]
                   },
                   {
                     "label": "Retrieve logs",
@@ -1766,7 +1792,12 @@
                   {
                     "label": "layout_hints",
                     "path": "reference/table-operations/format/layout-hints.md"
-                  },
+                  }
+                ]
+              },
+              {
+                "label": "Transpose",
+                "items": [
                   {
                     "label": "keyed_transpose",
                     "path": "reference/table-operations/format/keyed-transpose.md"

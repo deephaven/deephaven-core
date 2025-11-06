@@ -271,8 +271,13 @@
                 "path": "how-to-guides/sort.md"
               },
               {
-                "label": "Keyed transpose",
-                "path": "how-to-guides/keyed-transpose.md"
+                "label": "Transpose",
+                "items": [
+                  {
+                    "label": "Keyed transpose",
+                    "path": "how-to-guides/keyed-transpose.md"
+                  }
+                ]
               },
               {
                 "label": "Merge",
@@ -549,10 +554,6 @@
                       {
                         "label": "Use IFrames",
                         "path": "how-to-guides/user-interface/use-iframes.md"
-                      },
-                      {
-                        "label": "JS API",
-                        "path": "how-to-guides/use-jsapi.md"
                       }
                     ]
                   }
@@ -573,10 +574,171 @@
                 ]
               },
               {
+                "label": "JS API",
+                "path": "how-to-guides/use-jsapi.md"
+              },
+              {
+                "label": "Python",
+                "items": [
+                  {
+                    "label": "Overview",
+                    "href": "https://deephaven.io/core/client-api/python/index.html"
+                  },
+                  {
+                    "label": "Initialize",
+                    "href": "https://deephaven.io/core/client-api/python/examples.html#initialize"
+                  },
+                  {
+                    "label": "Binding to a table",
+                    "href": "https://deephaven.io/core/client-api/python/examples.html#binding-to-a-table"
+                  },
+                  {
+                    "label": "Execute a query on a table",
+                    "href": "https://deephaven.io/core/client-api/python/examples.html#execute-a-query-on-a-table"
+                  },
+                  {
+                    "label": "Sort a table",
+                    "href": "https://deephaven.io/core/client-api/python/examples.html#sort-a-table"
+                  },
+                  {
+                    "label": "Filter a table",
+                    "href": "https://deephaven.io/core/client-api/python/examples.html#filter-a-table"
+                  },
+                  {
+                    "label": "Query objects",
+                    "href": "https://deephaven.io/core/client-api/python/examples.html#query-objects"
+                  },
+                  {
+                    "label": "Join two tables",
+                    "href": "https://deephaven.io/core/client-api/python/examples.html#join-2-tables"
+                  },
+                  {
+                    "label": "Perform aggregations on table",
+                    "href": "https://deephaven.io/core/client-api/python/examples.html#perform-aggregations-on-a-table"
+                  },
+                  {
+                    "label": "Convert a PyArrow table to a Deephaven table",
+                    "href": "https://deephaven.io/core/client-api/python/examples.html#convert-a-pyarrow-table-to-a-deephaven-table"
+                  },
+                  {
+                    "label": "Execute a script server side",
+                    "href": "https://deephaven.io/core/client-api/python/examples.html#execute-a-script-server-side"
+                  },
+                  {
+                    "label": "Subscribe to a ticking table",
+                    "href": "https://deephaven.io/core/client-api/python/examples.html#subscribe-to-a-ticking-table"
+                  },
+                  {
+                    "label": "Error handling",
+                    "href": "https://deephaven.io/core/client-api/python/examples.html#error-handling"
+                  },
+                  {
+                    "label": "Capture Python client tables",
+                    "path": "how-to-guides/capture-tables.md"
+                  }
+                ]
+              },
+              {
+                "label": "C++",
+                "items": [
+                  {
+                    "label": "Overview",
+                    "href": "https://deephaven.io/core/client-api/cpp-examples/index.html"
+                  },
+                  {
+                    "label": "Getting started",
+                    "href": "https://deephaven.io/core/client-api/cpp-examples/getting_started.html"
+                  },
+                  {
+                    "label": "Resource management",
+                    "href": "https://deephaven.io/core/client-api/cpp-examples/resource_mgmt.html"
+                  },
+                  {
+                    "label": "Data I/O",
+                    "href": "https://deephaven.io/core/client-api/cpp-examples/input_output.html"
+                  },
+                  {
+                    "label": "Fluent interface",
+                    "href": "https://deephaven.io/core/client-api/cpp-examples/fluent.html"
+                  }
+                ]
+              },
+              {
+                "label": "Go",
+                "items": [
+                  {
+                    "label": "Overview",
+                    "href": "https://pkg.go.dev/github.com/deephaven/deephaven-core/go#section-readme"
+                  },
+                  {
+                    "label": "Fetch tables",
+                    "href": "https://pkg.go.dev/github.com/deephaven/deephaven-core/go@v0.35.0/pkg/client#example-package-FetchTable"
+                  },
+                  {
+                    "label": "Import tables",
+                    "href": "https://pkg.go.dev/github.com/deephaven/deephaven-core/go@v0.35.0/pkg/client#example-package-ImportTable"
+                  },
+                  {
+                    "label": "Create input tables",
+                    "href": "https://pkg.go.dev/github.com/deephaven/deephaven-core/go@v0.35.0/pkg/client#example-package-InputTable"
+                  },
+                  {
+                    "label": "Run scripts",
+                    "href": "https://pkg.go.dev/github.com/deephaven/deephaven-core/go@v0.35.0/pkg/client#example-package-RunScript"
+                  },
+                  {
+                    "label": "Table operations",
+                    "href": "https://pkg.go.dev/github.com/deephaven/deephaven-core/go@v0.35.0/pkg/client#example-package-TableOps"
+                  }
+                ]
+              },
+              {
+                "label": "R",
+                "items": [
+                  {
+                    "label": "Overview",
+                    "href": "https://deephaven.io/core/client-api/r/index.html"
+                  },
+                  {
+                    "label": "Building blocks of the Deephaven R client",
+                    "href": "https://deephaven.io/core/client-api/r/articles/rdeephaven.html#building-blocks-of-the-deephaven-r-client"
+                  },
+                  {
+                    "label": "Real-time data analysis",
+                    "href": "https://deephaven.io/core/client-api/r/articles/rdeephaven.html#real-time-data-analysis"
+                  },
+                  {
+                    "label": "Powerful table operations",
+                    "href": "https://deephaven.io/core/client-api/r/articles/rdeephaven.html#powerful-table-operations"
+                  },
+                  {
+                    "label": "Aggregations",
+                    "href": "https://deephaven.io/core/client-api/r/articles/agg_by.html"
+                  },
+                  {
+                    "label": "Moving operations",
+                    "href": "https://deephaven.io/core/client-api/r/articles/update_by.html"
+                  }
+                ]
+              },
+              {
+                "label": "Flight SQL",
+                "path": "how-to-guides/flight-sql.md"
+              },
+              {
+                "label": "Excel",
+                "items": [
+                  {
+                    "label": "Excel Client",
+                    "path": "how-to-guides/excel/excel-client.md"
+                  }
+                ]
+              },
+              {
                 "label": "Protobuf",
                 "items": [
                   {
-                    "label": "Protocol Buffers",
+                    "label": "Protobuf and RPC",
                     "path": "how-to-guides/protobuf.md"
                   }
                 ]
@@ -1051,11 +1213,7 @@
                 "label": "Advanced table constructors",
                 "items": [
                   {
-                    "label": "blinkToAppendOnly",
-                    "path": "reference/table-operations/create/blink-to-append-only.md"
-                  },
-                  {
-                    "label": "create",
+                    "label": "FunctionGeneratedTableFactory",
                     "path": "reference/table-operations/create/create.md"
                   },
                   {
@@ -1063,28 +1221,36 @@
                     "path": "reference/table-operations/create/DynamicTableWriter.md"
                   },
                   {
-                    "label": "removeBlink",
-                    "path": "reference/table-operations/create/remove-blink.md"
-                  },
-                  {
-                    "label": "assertBlink",
-                    "path": "reference/table-operations/create/assert-blink.md"
-                  },
-                  {
-                    "label": "assertAppendOnly",
-                    "path": "reference/table-operations/create/assert-append-only.md"
-                  },
-                  {
-                    "label": "assertAddOnly",
-                    "path": "reference/table-operations/create/assert-add-only.md"
+                    "label": "Replayer",
+                    "path": "reference/table-operations/create/Replayer.md"
                   },
                   {
                     "label": "TablePublisher",
                     "path": "reference/table-operations/create/TablePublisher.md"
                   },
                   {
+                    "label": "blinkToAppendOnly",
+                    "path": "reference/table-operations/create/blink-to-append-only.md"
+                  },
+                  {
                     "label": "toBlink",
                     "path": "reference/table-operations/create/toBlink.md"
+                  },
+                  {
+                    "label": "removeBlink",
+                    "path": "reference/table-operations/create/remove-blink.md"
+                  },
+                  {
+                    "label": "assertAddOnly",
+                    "path": "reference/table-operations/create/assert-add-only.md"
+                  },
+                  {
+                    "label": "assertAppendOnly",
+                    "path": "reference/table-operations/create/assert-append-only.md"
+                  },
+                  {
+                    "label": "assertBlink",
+                    "path": "reference/table-operations/create/assert-blink.md"
                   }
                 ]
               },
@@ -1200,10 +1366,6 @@
               {
                 "label": "URI",
                 "path": "reference/data-import-export/uri.md"
-              },
-              {
-                "label": "Replayer",
-                "path": "reference/table-operations/create/Replayer.md"
               }
             ]
           },
@@ -1398,10 +1560,6 @@
                 "label": "Format",
                 "items": [
                   {
-                    "label": "columnsToRows",
-                    "path": "reference/table-operations/format/columnsToRows.md"
-                  },
-                  {
                     "label": "formatColumns",
                     "path": "reference/table-operations/format/format-columns.md"
                   },
@@ -1440,10 +1598,15 @@
                   {
                     "label": "hide",
                     "path": "reference/table-operations/format/hide.md"
-                  },
+                  }
+                ]
+              },
+              {
+                "label": "Transpose",
+                "items": [
                   {
-                    "label": "renameColumns",
-                    "path": "reference/table-operations/format/renameColumns.md"
+                    "label": "columnsToRows",
+                    "path": "reference/table-operations/format/columnsToRows.md"
                   },
                   {
                     "label": "keyedTranspose",

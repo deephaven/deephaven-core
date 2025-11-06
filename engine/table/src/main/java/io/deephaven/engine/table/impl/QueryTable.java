@@ -220,6 +220,13 @@ public class QueryTable extends BaseTable<QueryTable> {
     public static boolean USE_DATA_INDEX_FOR_JOINS =
             Configuration.getInstance().getBooleanWithDefault("QueryTable.useDataIndexForJoins", true);
 
+    /**
+     * Before using a data index for a where filter, ensure that the index table size is at most this fraction of the
+     * size of the rows remaining to be filtered. If the fraction is greater than this threshold, then the engine will
+     * ignore the index table and filter the rows directly.
+     */
+    public static double DATA_INDEX_FOR_WHERE_THRESHOLD =
+            Configuration.getInstance().getDoubleWithDefault("QueryTable.dataIndexForWhereThreshold", 0.25);
 
     /**
      * For a static select(), we would prefer to flatten the table to avoid using memory unnecessarily (because the data
@@ -1410,8 +1417,7 @@ public class QueryTable extends BaseTable<QueryTable> {
 
                     boolean hasConstArrayOffsetFilter = false;
                     for (final WhereFilter filter : filters) {
-                        final Set<ShiftedColumnDefinition> shifted = ExtractShiftedColumnDefinitions.of(filter);
-                        if (shifted != null && !shifted.isEmpty()) {
+                        if (ExtractShiftedColumnDefinitions.hasAny(filter)) {
                             hasConstArrayOffsetFilter = true;
                             break;
                         }
