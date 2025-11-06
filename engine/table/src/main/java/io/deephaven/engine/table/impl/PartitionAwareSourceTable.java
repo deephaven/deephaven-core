@@ -273,9 +273,11 @@ public class PartitionAwareSourceTable extends SourceTable<PartitionAwareSourceT
                 LiveSupplier.class,
                 null));
 
+        // Must make copies of the partitioning filters (since they may be re-used multiple times).
+        final WhereFilter[] copiedPartitioningColumnFilters = WhereFilter.copyFrom(partitioningColumnFilters);
         final Table filteredColumnPartitionTable = TableTools
                 .newTable(foundLocationKeys.size(), partitionTableColumnNames, partitionTableColumnSources)
-                .where(Filter.and(partitioningColumnFilters));
+                .where(Filter.and(copiedPartitioningColumnFilters));
         if (filteredColumnPartitionTable.size() == foundLocationKeys.size()) {
             return foundLocationKeys;
         }

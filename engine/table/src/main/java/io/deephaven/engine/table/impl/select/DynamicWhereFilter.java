@@ -16,6 +16,7 @@ import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.*;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.perf.PerformanceEntry;
+import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
 import io.deephaven.engine.table.impl.select.setinclusion.SetInclusionKernel;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.iterators.ChunkedColumnIterator;
@@ -23,6 +24,8 @@ import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.ReferentialIntegrity;
+import org.apache.commons.lang3.mutable.Mutable;
+import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -68,10 +71,6 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
 
     /**
      * Construct a DynamicWhereFilter with key values from given set table. The set table may be static or refreshing.
-     * <p>
-     * NOTE: If the set table is refreshing, it must not contain duplicate keys for the given
-     * {@code sourceToSetColumnNamePairs}. A table update that adds or removes a duplicate key tuple will result in the
-     * filtered table containing incorrect results.
      *
      * @param setTable the table containing the inclusion or exclusion keys
      * @param inclusion when true, rows matching the values in the set table are included in the results. When false,
@@ -79,125 +78,171 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
      * @param sourceToSetColumnNamePairs the mapping of source table column names to set table column names for the keys
      */
     public DynamicWhereFilter(
-            @NotNull final QueryTable setTable,
+            @NotNull final Table setTable,
             final boolean inclusion,
             final MatchPair... sourceToSetColumnNamePairs) {
         this.sourceToSetColumnNamePairs = sourceToSetColumnNamePairs;
         this.inclusion = inclusion;
 
+        // Ensure that only distinct values are passed to the setKernel
+        final QueryTable distinctValues;
+        final boolean setRefreshing = setTable.isRefreshing();
+
+        final String[] rightColumnNames = MatchPair.getRightColumns(sourceToSetColumnNamePairs);
+        final DataIndex rightIndex = DataIndexer.getDataIndex(setTable, rightColumnNames);
+        if (rightIndex != null) {
+            // We have a distinct index table, let's use it.
+            distinctValues = (QueryTable) rightIndex.table();
+        } else if (setRefreshing) {
+            distinctValues = (QueryTable) setTable.selectDistinct(rightColumnNames);
+        } else {
+            final TableDefinition rightDef = setTable.getDefinition();
+            final boolean allPartitioning =
+                    Arrays.stream(rightColumnNames).allMatch(cn -> rightDef.getColumn(cn).isPartitioning());
+            if (allPartitioning) {
+                distinctValues = (QueryTable) setTable.selectDistinct(rightColumnNames);
+            } else {
+                distinctValues = (QueryTable) setTable.coalesce();
+            }
+        }
+
         // Use reinterpreted column sources for the set table tuple source.
         final ColumnSource<?>[] setColumns = Arrays.stream(this.sourceToSetColumnNamePairs)
-                .map(mp -> setTable.getColumnSource(mp.rightColumn()))
+                .map(mp -> distinctValues.getColumnSource(mp.rightColumn()))
                 .map(ReinterpretUtils::maybeConvertToPrimitive)
                 .toArray(ColumnSource[]::new);
         setKeyTypes = Arrays.stream(setColumns).map(ColumnSource::getType).toArray(Class[]::new);
         final TupleSource<?> setKeySource = TupleSourceFactory.makeTupleSource(setColumns);
-        setKernel = SetInclusionKernel.makeKernel(setKeySource.getChunkType(), inclusion);
 
-        // Fill liveValues and the set kernel with the initial keys from the set table.
-        if (setTable.getRowSet().isNonempty()) {
-            try (final CloseableIterator<?> initialKeysIterator = ChunkedColumnIterator.make(
-                    setKeySource, setTable.getRowSet(), getChunkSize(setTable.getRowSet()))) {
-                initialKeysIterator.forEachRemaining(this::addKeyUnchecked);
-            }
-        }
+        final String humanReadablePrefix = "DynamicWhereFilter(" + Arrays.toString(sourceToSetColumnNamePairs) + ")";
 
-        if (setTable.isRefreshing()) {
-            this.setTable = setTable;
+        final Mutable<QueryTable> resultSetTable = new MutableObject<>();
+        final Mutable<InstrumentedTableUpdateListener> resultListener = new MutableObject<>();
+        final Mutable<SetInclusionKernel> resultKernel = new MutableObject<>();
 
-            final String[] setColumnNames =
-                    Arrays.stream(this.sourceToSetColumnNamePairs).map(MatchPair::rightColumn).toArray(String[]::new);
-            final ModifiedColumnSet setColumnsMCS = setTable.newModifiedColumnSet(setColumnNames);
-            setUpdateListener = new InstrumentedTableUpdateListenerAdapter(
-                    "DynamicWhereFilter(" + Arrays.toString(sourceToSetColumnNamePairs) + ")", setTable, false) {
+        // if we are making a static copy of the table, we must ensure that it does not change out from under us
+        ConstructSnapshot.callDataSnapshotFunction("snapshotInternal",
+                ConstructSnapshot.makeSnapshotControl(false, setRefreshing, distinctValues),
+                (usePrev, beforeClockUnused) -> {
+                    final SetInclusionKernel localKernel =
+                            SetInclusionKernel.makeKernel(setKeySource.getChunkType(), inclusion);
+                    resultKernel.setValue(localKernel);
 
-                @Override
-                public void onUpdate(final TableUpdate upstream) {
-                    final boolean hasAdds = upstream.added().isNonempty();
-                    final boolean hasRemoves = upstream.removed().isNonempty();
-                    final boolean hasModifies = upstream.modified().isNonempty()
-                            && upstream.modifiedColumnSet().containsAny(setColumnsMCS);
-                    if (!hasAdds && !hasRemoves && !hasModifies) {
-                        return;
-                    }
-
-                    // Remove removed keys
-                    if (hasRemoves) {
-                        try (final CloseableIterator<?> removedKeysIterator = ChunkedColumnIterator.make(
-                                setKeySource.getPrevSource(), upstream.removed(), getChunkSize(upstream.removed()))) {
-                            removedKeysIterator.forEachRemaining(DynamicWhereFilter.this::removeKey);
+                    // Fill liveValues and the set kernel with the initial keys from the set table.
+                    final RowSet rsToUse = usePrev ? distinctValues.getRowSet().prev() : distinctValues.getRowSet();
+                    final ChunkSource<?> sourceToUse = usePrev ? setKeySource.getPrevSource() : setKeySource;
+                    if (rsToUse.isNonempty()) {
+                        try (final CloseableIterator<?> initialKeysIterator = ChunkedColumnIterator.make(
+                                sourceToUse, rsToUse, getChunkSize(rsToUse))) {
+                            initialKeysIterator.forEachRemaining(localKernel::add);
                         }
                     }
 
-                    // Update modified keys
-                    boolean trueModification = false;
-                    if (hasModifies) {
-                        // @formatter:off
-                        try (final CloseableIterator<?> preModifiedKeysIterator = ChunkedColumnIterator.make(
-                                     setKeySource.getPrevSource(), upstream.getModifiedPreShift(),
-                                     getChunkSize(upstream.getModifiedPreShift()));
-                             final CloseableIterator<?> postModifiedKeysIterator = ChunkedColumnIterator.make(
-                                     setKeySource, upstream.modified(),
-                                     getChunkSize(upstream.modified()))) {
-                            // @formatter:on
-                            while (preModifiedKeysIterator.hasNext()) {
-                                Assert.assertion(postModifiedKeysIterator.hasNext(),
-                                        "Pre and post modified row sets must be the same size; post is exhausted, but pre is not");
-                                final Object oldKey = preModifiedKeysIterator.next();
-                                final Object newKey = postModifiedKeysIterator.next();
-                                if (!Objects.equals(oldKey, newKey)) {
-                                    trueModification = true;
-                                    removeKey(oldKey);
-                                    addKey(newKey);
+                    if (!setRefreshing) {
+                        resultSetTable.setValue(null);
+                        resultListener.setValue(null);
+                        return true;
+                    }
+
+                    resultSetTable.setValue(distinctValues);
+
+                    final String[] setColumnNames =
+                            Arrays.stream(this.sourceToSetColumnNamePairs).map(MatchPair::rightColumn)
+                                    .toArray(String[]::new);
+                    final ModifiedColumnSet setColumnsMCS = distinctValues.newModifiedColumnSet(setColumnNames);
+
+                    final InstrumentedTableUpdateListener localListener = new InstrumentedTableUpdateListenerAdapter(
+                            humanReadablePrefix, distinctValues, false) {
+                        @Override
+                        public void onUpdate(final TableUpdate upstream) {
+                            final boolean hasAdds = upstream.added().isNonempty();
+                            final boolean hasRemoves = upstream.removed().isNonempty();
+                            final boolean hasModifies = upstream.modified().isNonempty()
+                                    && upstream.modifiedColumnSet().containsAny(setColumnsMCS);
+                            if (!hasAdds && !hasRemoves && !hasModifies) {
+                                return;
+                            }
+
+                            // Remove removed keys
+                            if (hasRemoves) {
+                                try (final CloseableIterator<?> removedKeysIterator = ChunkedColumnIterator.make(
+                                        setKeySource.getPrevSource(), upstream.removed(),
+                                        getChunkSize(upstream.removed()))) {
+                                    removedKeysIterator.forEachRemaining(DynamicWhereFilter.this::removeKey);
                                 }
                             }
-                            Assert.assertion(!postModifiedKeysIterator.hasNext(),
-                                    "Pre and post modified row sets must be the same size; pre is exhausted, but post is not");
-                        }
-                    }
 
-                    // Add added keys
-                    if (hasAdds) {
-                        try (final CloseableIterator<?> addedKeysIterator = ChunkedColumnIterator.make(
-                                setKeySource, upstream.added(), getChunkSize(upstream.added()))) {
-                            addedKeysIterator.forEachRemaining(DynamicWhereFilter.this::addKey);
-                        }
-                    }
+                            // Update modified keys
+                            boolean trueModification = false;
+                            if (hasModifies) {
+                                try (final CloseableIterator<?> preModifiedKeysIterator = ChunkedColumnIterator.make(
+                                        setKeySource.getPrevSource(), upstream.getModifiedPreShift(),
+                                        getChunkSize(upstream.getModifiedPreShift()));
+                                        final CloseableIterator<?> postModifiedKeysIterator =
+                                                ChunkedColumnIterator.make(
+                                                        setKeySource, upstream.modified(),
+                                                        getChunkSize(upstream.modified()))) {
+                                    // @formatter:on
+                                    while (preModifiedKeysIterator.hasNext()) {
+                                        Assert.assertion(postModifiedKeysIterator.hasNext(),
+                                                "Pre and post modified row sets must be the same size; post is exhausted, but pre is not");
+                                        final Object oldKey = preModifiedKeysIterator.next();
+                                        final Object newKey = postModifiedKeysIterator.next();
+                                        if (!Objects.equals(oldKey, newKey)) {
+                                            trueModification = true;
+                                            removeKey(oldKey);
+                                            addKey(newKey);
+                                        }
+                                    }
+                                    Assert.assertion(!postModifiedKeysIterator.hasNext(),
+                                            "Pre and post modified row sets must be the same size; pre is exhausted, but post is not");
+                                }
+                            }
 
-                    // Pretend every row of the original table was modified, this is essential so that the where clause
-                    // can be re-evaluated based on the updated live set.
-                    if (listener != null) {
-                        if (hasAdds || trueModification) {
-                            if (inclusion) {
-                                listener.requestRecomputeUnmatched();
-                            } else {
-                                listener.requestRecomputeMatched();
+                            // Add added keys
+                            if (hasAdds) {
+                                try (final CloseableIterator<?> addedKeysIterator = ChunkedColumnIterator.make(
+                                        setKeySource, upstream.added(), getChunkSize(upstream.added()))) {
+                                    addedKeysIterator.forEachRemaining(DynamicWhereFilter.this::addKey);
+                                }
+                            }
+
+                            // Pretend every row of the original table was modified, this is essential so that the where
+                            // clause can be re-evaluated based on the updated live set.
+                            if (listener != null) {
+                                if (hasAdds || trueModification) {
+                                    if (inclusion) {
+                                        listener.requestRecomputeUnmatched();
+                                    } else {
+                                        listener.requestRecomputeMatched();
+                                    }
+                                }
+                                if (hasRemoves || trueModification) {
+                                    if (inclusion) {
+                                        listener.requestRecomputeMatched();
+                                    } else {
+                                        listener.requestRecomputeUnmatched();
+                                    }
+                                }
                             }
                         }
-                        if (hasRemoves || trueModification) {
-                            if (inclusion) {
-                                listener.requestRecomputeMatched();
-                            } else {
-                                listener.requestRecomputeUnmatched();
+
+                        @Override
+                        public void onFailureInternal(Throwable originalException, Entry sourceEntry) {
+                            if (listener != null) {
+                                resultTable.notifyListenersOnError(originalException, sourceEntry);
                             }
                         }
-                    }
-                }
+                    };
+                    distinctValues.addUpdateListener(localListener);
+                    manage(localListener);
+                    resultListener.setValue(localListener);
+                    return true;
+                });
 
-                @Override
-                public void onFailureInternal(Throwable originalException, Entry sourceEntry) {
-                    if (listener != null) {
-                        resultTable.notifyListenersOnError(originalException, sourceEntry);
-                    }
-                }
-            };
-            setTable.addUpdateListener(setUpdateListener);
-
-            manage(setUpdateListener);
-        } else {
-            this.setTable = null;
-            setUpdateListener = null;
-        }
+        this.setKernel = resultKernel.get();
+        this.setTable = resultSetTable.get();
+        this.setUpdateListener = resultListener.get();
     }
 
     /**
@@ -231,10 +276,6 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
         if (!setKernel.add(key)) {
             throw new RuntimeException("Inconsistent state, key already in set:" + key);
         }
-    }
-
-    private void addKeyUnchecked(Object key) {
-        setKernel.add(key);
     }
 
     /**
@@ -445,10 +486,13 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
             final boolean usePrev) {
         if (sourceDataIndex != null) {
             // Does our index contain every key column?
+            final long indexTableSize = usePrev
+                    ? sourceDataIndex.table().getRowSet().sizePrev()
+                    : sourceDataIndex.table().getRowSet().size();
 
             if (sourceDataIndex.keyColumnNames().size() == sourceKeyColumns.length) {
                 // Even if we have an index, we may be better off with a linear search.
-                if (selection.size() > (sourceDataIndex.table().size() * 2L)) {
+                if (selection.size() > (indexTableSize * 2L)) {
                     return filterFullIndex(selection, usePrev);
                 } else {
                     return filterLinear(selection, inclusion, usePrev);
@@ -456,7 +500,7 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
             }
 
             // We have a partial index, should we use it?
-            if (selection.size() > (sourceDataIndex.table().size() * 4L)) {
+            if (selection.size() > (indexTableSize * 4L)) {
                 return filterPartialIndex(selection, usePrev);
             }
         }

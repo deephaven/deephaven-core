@@ -10,7 +10,6 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.dataindex.DataIndexUtils;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
-import io.deephaven.engine.table.impl.locations.TableLocationProvider;
 import io.deephaven.engine.table.impl.select.MatchFilter.MatchType;
 import io.deephaven.engine.table.iterators.ChunkedColumnIterator;
 import io.deephaven.engine.testutil.TstUtils;
@@ -25,7 +24,6 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -122,10 +120,12 @@ public class TestPartitioningColumns {
 
         TstUtils.assertTableEquals(expected, result);
 
-        final List<WhereFilter> filters = input.getDefinition().getColumnStream()
+        final WhereFilter[] filters = input.getDefinition().getColumnStream()
                 .map(cd -> new MatchFilter(MatchType.Regular, cd.getName(), (Object) null))
-                .collect(Collectors.toList());
-        TstUtils.assertTableEquals(expected.where(Filter.and(filters)), result.where(Filter.and(filters)));
+                .toArray(WhereFilter[]::new);
+        final WhereFilter[] filtersCopy = WhereFilter.copyFrom(filters);
+
+        TstUtils.assertTableEquals(expected.where(Filter.and(filters)), result.where(Filter.and(filtersCopy)));
 
         TstUtils.assertTableEquals(expected.selectDistinct(), result.selectDistinct());
     }

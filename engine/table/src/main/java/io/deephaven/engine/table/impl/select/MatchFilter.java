@@ -77,10 +77,6 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
      */
     private DataIndex dataIndex;
     /**
-     * Whether the {@link DataIndex} to accelerate filtering has already been determined.
-     */
-    private boolean dataIndexGathered;
-    /**
      * Whether our dependencies have been gathered at least once. We expect dependencies to be gathered one time after
      * {@link #beginOperation(Table)} (when we know if we're using a {@link DataIndex}), and then again after for every
      * instantiation attempt when initializing the listener. Since we only use the DataIndex during instantiation, we
@@ -265,12 +261,10 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
 
     @Override
     public SafeCloseable beginOperation(@NotNull final Table sourceTable) {
-        if (dataIndexGathered) {
-            return dataIndex != null ? this::completeOperation : () -> {
-            };
+        if (initialDependenciesGathered || dataIndex != null) {
+            throw new IllegalStateException("Inputs already initialized, use copy() instead of re-using a WhereFilter");
         }
         if (!QueryTable.USE_DATA_INDEX_FOR_WHERE) {
-            dataIndexGathered = true;
             return () -> {
             };
         }
@@ -279,7 +273,6 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
             if (dataIndex != null && dataIndex.isRefreshing()) {
                 dataIndex.retainReference();
             }
-            dataIndexGathered = true;
         }
         return dataIndex != null ? this::completeOperation : () -> {
         };
