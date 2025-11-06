@@ -177,7 +177,7 @@ from deephaven import empty_table
 t7 = empty_table(5).update(["Index = i", "Letter = (char)('A' + i)"])
 ```
 
-> [!NOTE] 
+> [!NOTE]
 > `char` is distinct from `String`. A `char` column holds single characters, while a `String` column holds character sequences.
 
 ## Time and dates
