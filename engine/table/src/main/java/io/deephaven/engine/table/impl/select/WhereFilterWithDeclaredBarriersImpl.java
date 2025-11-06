@@ -42,4 +42,9 @@ public class WhereFilterWithDeclaredBarriersImpl extends WhereFilterDelegatingBa
     public String toString() {
         return "withDeclaredBarriers{" + Arrays.toString(declaredBarriers) + ", filter=" + filter + "}";
     }
+
+    @Override
+    public final <T> T walk(Visitor<T> visitor) {
+        return visitor.visit(this);
+    }
 }

@@ -137,6 +137,10 @@
               {
                 "label": "Core API design",
                 "path": "conceptual/deephaven-core-api.md"
+              },
+              {
+                "label": "Servers & clients",
+                "path": "conceptual/client-server-model.md"
               }
             ]
           },
@@ -306,6 +310,15 @@
               {
                 "label": "Sort",
                 "path": "how-to-guides/sort.md"
+              },
+              {
+                "label": "Transpose",
+                "items": [
+                  {
+                    "label": "Keyed transpose",
+                    "path": "how-to-guides/keyed-transpose.md"
+                  }
+                ]
               },
               {
                 "label": "Merge",
@@ -876,6 +889,10 @@
             "label": "Development tools",
             "items": [
               {
+                "label": "MCP",
+                "path": "how-to-guides/mcp.md"
+              },
+              {
                 "label": "Copilot extension",
                 "path": "how-to-guides/copilot-extension.md"
               }
@@ -949,8 +966,29 @@
                     "path": "how-to-guides/python-errors.md"
                   },
                   {
-                    "label": "Debugging with PyCharm",
-                    "path": "how-to-guides/debugging/pycharm-debugging.md"
+                    "label": "Debugging",
+                    "items": [
+                      {
+                        "label": "Overview",
+                        "path": "how-to-guides/debugging/debugging-landing.md"
+                      },
+                      {
+                        "label": "Docker setup",
+                        "path": "how-to-guides/debugging/docker-setup.md"
+                      },
+                      {
+                        "label": "pip setup",
+                        "path": "how-to-guides/debugging/pip-setup.md"
+                      },
+                      {
+                        "label": "Source setup",
+                        "path": "how-to-guides/debugging/source-setup.md"
+                      },
+                      {
+                        "label": "Common problems",
+                        "path": "how-to-guides/debugging/common-problems.md"
+                      }
+                    ]
                   },
                   {
                     "label": "Retrieve logs",
@@ -1751,6 +1789,15 @@
                     "label": "format_row_where",
                     "path": "reference/table-operations/format/format-row-where.md"
                   },
+                  {
+                    "label": "layout_hints",
+                    "path": "reference/table-operations/format/layout-hints.md"
+                  }
+                ]
+              },
+              {
+                "label": "Transpose",
+                "items": [
                   {
                     "label": "keyed_transpose",
                     "path": "reference/table-operations/format/keyed-transpose.md"
@@ -2660,8 +2707,16 @@
                     "path": "reference/community-questions/extract-values-from-tables.md"
                   },
                   {
+                    "label": "How do I extract a list of distinct dates from a table?",
+                    "path": "reference/community-questions/extract-distinct-dates-list.md"
+                  },
+                  {
                     "label": "How do I get the ISO week number from a datetime?",
                     "path": "reference/community-questions/iso-week-number.md"
+                  },
+                  {
+                    "label": "How do row keys and positional indices behave during table operations?",
+                    "path": "reference/community-questions/shifts.md"
                   },
                   {
                     "label": "Why do queries run faster the second time they are run?",
@@ -2682,6 +2737,10 @@
                   {
                     "label": "How can I capture the first row of the last N updates?",
                     "path": "reference/community-questions/blink-ring.md"
+                     }
+                ]
+                    "label": "How do I filter by time of day across all dates?",
+                    "path": "reference/community-questions/filter-time-window-all-dates.md"
                   }
                 ]
               },

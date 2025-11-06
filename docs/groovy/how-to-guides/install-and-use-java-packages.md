@@ -2,139 +2,114 @@
 title: Install and use Java packages
 ---
 
-This guide discusses how to install Java packages and use them in Deephaven queries.
+You can add JARs to the classpath in Deephaven Community workers to make Java packages available to your queries. All of Deephaven's deployment options support this, and this guide covers them all.
 
-Java packages are installed for use with Deephaven by adding them to the Deephaven Docker images. This way, they are available every time Deephaven is launched.
-
-Once a package is installed, it can be imported and used like any other Java package.
+Once installed, a package can be imported and used like any other Java package.
 
 > [!CAUTION]
-> If a Java package has dependencies that Deephaven does not have, those packages will not work unless the required dependencies are installed as well. Java packages can also have dependencies that conflict with Deephaven's, so it's important to be careful when adding Java packages.
+> Care should be taken when adding JARs to Deephaven workers. Java packages may be missing dependencies or have dependencies that conflict with Deephaven's.
 
-## Add packages to a custom Docker image
+The examples in this guide add the [Plexus Common Utilities](https://codehaus-plexus.github.io/plexus-utils/) library to a Deephaven Community instance.
 
-In order to use Java packages within Deephaven, you must put the associated `.jar` files in the `/apps/libs` directory of your `server` image. (The `/apps/libs` directory is the default `EXTRA_CLASSPATH` location in the [Docker images](./configuration/docker-application.md).)
+## Docker
 
-In this section, we add the [Java CryptoCompare API client](https://mvnrepository.com/artifact/com.github.jeffreytai/cryptocompare-api-wrapper) to a custom Dockerfile and reference it from Deephaven so that we can use it in more than one session.
+If you [Run Deephaven with Docker](../tutorials/docker-install.md), you can either build a custom Docker image or mount a volume containing the JAR into the container.
 
-In order to use packages more than once, you can create a custom Docker image, and then use that image in Deephaven. The steps for accomplishing this differ slightly depending on how you launch Deephaven. Let's start with the steps that are common between both.
+### Build a custom Docker image
 
-### Prerequisites
+To build a custom Docker image, create a Dockerfile that downloads the JAR and adds it to the image. The following `Dockerfile` adds `plexus-utils-4.0.2.jar` to `/apps/libs` in the image. The Deephaven Docker images automatically include `/apps/libs/*` in the JVM classpath at startup:
 
-Before a custom Docker image can be built, you must acquire the necessary base images. This process differs based upon how you launch Deephaven:
-
-- If you [launch from pre-built images](../tutorials/docker-install.md), ensure you have run the following command to download the necessary base images:
-
-```shell
-docker compose pull
+```dockerfile
+FROM ghcr.io/deephaven/server:latest
+ADD https://repo1.maven.org/maven2/org/codehaus/plexus/plexus-utils/4.0.2/plexus-utils-4.0.2.jar /apps/libs/plexus-utils-4.0.2.jar
 ```
 
-- If you [launch from source code](./launch-build.md), ensure you have built the project so that you have the necessary base images.
-
-### Create a custom Dockerfile
-
-To begin, create a new directory. This directory should not be in a Deephaven deployment directory. You can name it whatever you'd like. For this guide, we'll name ours `deephaven-custom`.
-
-```shell
-mkdir deephaven-custom
-cd deephaven-custom
-```
-
-Now, in this directory, create a file called `Dockerfile`. `Dockerfile` should use `ghcr.io/deephaven/server` as the base image and should contain a recipe for installing the new package. When adding the [Java CryptoCompare API client](https://mvnrepository.com/artifact/com.github.jeffreytai/cryptocompare-api-wrapper), it looks like this:
-
-```
-FROM ghcr.io/deephaven/server
-RUN curl --output /apps/libs https://repo1.maven.org/maven2/com/github/jeffreytai/cryptocompare-api-wrapper/1.0.0/cryptocompare-api-wrapper-1.0.0.jar
-```
-
-### Create a custom Docker image
-
-Now that we have the `Dockerfile` in place, we need to create the custom Docker image. To do so, run a command from the directory with `Dockerfile` that looks like:
-
-```shell
-docker build --tag <user>/server-<custom> .
-```
-
-This creates a new Docker image named `<user>/server-<custom>`. For this guide, we will call the image `guide/server-cryptocompare`:
-
-```shell
-docker build --tag guide/server-cryptocompare .
-```
-
-When the command finishes running, you can see the new image in your system:
-
-```shell
-docker image ls
-```
-
-### Reference the new image
-
-To put it all together, we now need to reference this new image in the `docker-compose` file we use to launch Deephaven. The particular file depends on how you build and launch Deephaven:
-
-- If you [launch from pre-built images](../tutorials/docker-install.md), the file is `docker-compose.yml` and can be found in your `deephaven-deployment` directory.
-
-- If you [launch from source code](./launch-build.md), the file is `docker-compose-common.yml` and can be found in your `deephaven-core` directory.
-
-In the Docker Compose file, there are three lines of text that look like:
-
-```
-services:
-  server:
-    image: <IMAGE_NAME>
-```
-
-The image used by default depends on how you build and launch Deephaven. Regardless, this line is where you need to insert your custom image name. Modify the `image` line to use your new image:
-
-```
-services:
-  server:
-    image: guide/server-cryptocompare:latest
-```
-
-Now, when you launch Deephaven again, you can use the package!
-
-```groovy skip-test
-import com.google.gson.JsonObject
-import com.crypto.cryptocompare.api.CryptoCompareApi
-
-CryptoCompareApi api = new CryptoCompareApi()
-
-JsonObject response = api.priceMulti(
-    "BTC",
-    "USD",
-    new LinkedHashMap<String, Object>() {{
-        put("extraParams", "TestProject");
-    }}
-);
-
-bitcoin_price = response.get("BTC").get("USD").getAsFloat()
-
-println bitcoin_price
-```
-
-> [!CAUTION]
-> When base images are updated by rebuilding source code or redownloading pre-built images, custom images must be rebuilt to incorporate the base image changes.
-
-## List all available Java packages
-
-You can check what Java packages are available to Deephaven by running the following command from your Deephaven installation while Deephaven is running.
+You then need to build your image. If you use Docker without Compose, run `docker build` and `docker run`:
 
 ```bash
-docker-compose exec server ls /apps/libs
+docker build --tag deephaven-plexus-utils .
+docker run --rm --name deephaven-with-plexus-utils -p 10000:10000 deephaven-plexus-utils
+```
+
+Alternatively, if you use Docker Compose, you can have Compose build the image for you. The following YAML assumes that the Dockerfile lives in the same directory:
+
+```yaml
+services:
+  deephaven:
+    build: .
+    ports:
+      - "${DEEPHAVEN_PORT:-10000}:10000"
+    volumes:
+      - ./data:/data
+    environment:
+      - START_OPTS=-Xmx4g
+```
+
+### Mount the JAR into the container manually
+
+Adding JARs to a Docker container does not require building a custom image. Instead, you can simply mount a folder into the container that contains whatever JARs you wish to use. Since the Deephaven Docker images automatically include `/apps/libs/*` in the JVM classpath, mounting your local JAR directory to `/apps/libs` makes them immediately available.
+
+The following command assumes you've placed the JAR file into a folder called `/home/user/java/libs`:
+
+```bash
+docker run --rm -v /home/user/java/libs:/apps/libs -p 10000:10000 ghcr.io/deephaven/server:latest
+```
+
+## Production application
+
+The [Production application](../tutorials/production-application.md) uses the environment variable `EXTRA_CLASSPATH` to include additional JARs in the classpath. See [Configure the production application](./configuration/configure-production-application.md#environment-variables) for more details, including other configuration options.
+
+## Build from source
+
+Adding Java packages to [Deephaven built from source code](./launch-build.md) is similar to the [production application](#production-application). It does, however, change how you launch Deephaven built from source.
+
+Rather than run `./gradlew server-jetty-app:run`, run this instead:
+
+```bash
+./gradlew server-jetty-app:installDist
+```
+
+This creates the directory `./server/jetty-app/build/install/server-jetty/bin`, which contains a `start` script that you can pass additional parameters to, such as an `EXTRA_CLASSPATH` environment variable.
+
+> [!CAUTION]
+> Use quotes around the classpath value to prevent shell expansion of asterisks. The JVM needs to receive the literal `*` character to include all JARs in the directory.
+
+You can pass it directly to the command:
+
+```bash
+EXTRA_CLASSPATH="/path/to/libs/*:/apps/libs/*" ./server/jetty-app/build/install/server-jetty/bin/start
+```
+
+Or you can export the environment variable before running the script:
+
+```bash
+export EXTRA_CLASSPATH="/path/to/libs/*:/apps/libs/*"
+./server/jetty-app/build/install/server-jetty/bin/start
 ```
 
 ## Use Java packages in query strings
 
-Installed Java packages can be used in query strings. We'll use the [Apache Commons Lang](https://commons.apache.org/proper/commons-lang/) [`RandomUtils`](https://commons.apache.org/proper/commons-lang/apidocs/org/apache/commons/lang3/RandomUtils.html) class to create a table with ten rows of random integers in a range.
+Not only can you import and use the extra Java packages in normal Python code, but you can also call them in query strings. You'll need to provide the full package name unless you construct an instance of the class beforehand. The following code calls [`org.codehaus.plexus.util.StringUtils.abbreviate`](https://codehaus-plexus.github.io/plexus-utils/apidocs/org/codehaus/plexus/util/StringUtils.html#abbreviate(java.lang.String,int)) from the [Plexus Common Utilities](https://codehaus-plexus.github.io/plexus-utils/) library to abbreviate a string.
 
-```groovy
-t = emptyTable(10).update("X = org.apache.commons.lang3.RandomUtils.nextInt(1, 99)")
+<!-- This test is skipped because it requires installing the Plexus Common Utilities JAR. -->
+
+```python skip-test
+from deephaven import empty_table
+
+source = empty_table(1).update(
+    [
+        "StringColumn = `Hello world`",
+        "Abbreviated = org.codehaus.plexus.util.StringUtils.abbreviate(StringColumn, 9)",
+    ]
+)
 ```
 
 ## Related documentation
 
+- [Create an empty table](./new-and-empty-table.md#emptytable)
 - [How to install packages](./install-packages.md)
 - [How to configure the Deephaven Docker application](./configuration/docker-application.md)
 - [Launch Deephaven from pre-built images](../tutorials/docker-install.md)
 - [Build and launch Deephaven from source code](./launch-build.md)
+- [How to use Java packages in query strings](./install-and-use-java-packages.md#use-java-packages-in-query-strings)
 - [Access your file system with Docker data volumes](../conceptual/docker-data-volumes.md)

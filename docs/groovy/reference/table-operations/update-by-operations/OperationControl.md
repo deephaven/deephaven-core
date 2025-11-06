@@ -98,7 +98,7 @@ result = source.updateBy(Ema(ctrl, 5, "EmaX = X"), "Letter")
 
 ## Related documentation
 
-- [How to use `updateBy`](../../../how-to-guides/use-update-by.md)
+- [How to use `updateBy`](../../../how-to-guides/rolling-aggregations.md)
 - [How to create an empty table](../../../how-to-guides/new-and-empty-table.md#emptytable)
 - [How to handle handle null, infinity, and not-a-number values](../../../how-to-guides/null-inf-nan.md)
 - [ternary conditional operator](../../../how-to-guides/ternary-if-how-to.md)
