@@ -479,12 +479,9 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         if (sourceIndexed) {
             DataIndexer.getOrCreateDataIndex(source, "z");
         }
-        final QueryTable setTableRaw = TstUtils.testRefreshingTable(i(0).toTracking(), col("z", true));
-        final QueryTable setTable;
+        final QueryTable setTable = TstUtils.testRefreshingTable(i(0).toTracking(), col("z", true));
         if (setIndexed) {
-            setTable = (QueryTable) DataIndexer.getOrCreateDataIndex(setTableRaw, "z").table();
-        } else {
-            setTable = (QueryTable) setTableRaw.selectDistinct("z");
+            DataIndexer.getOrCreateDataIndex(setTable, "z").table();
         }
 
         // Expected result of the filters before any mods to the tables.
@@ -501,34 +498,31 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         final Table prevFiltered1 =
                 largePool.submit(() -> source.where(filter)).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
         final Table prevFiltered2 =
-                largePool.submit(() -> source.whereIn(setTableRaw, "z")).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
+                largePool.submit(() -> source.whereIn(setTable, "z")).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
         assertTableEquals(tableStart, prevFiltered1);
         assertTableEquals(tableStart, prevFiltered2);
 
         // Make changes to the source and set tables.
-        TstUtils.addToTable(setTableRaw, i(1), col("z", false));
+        TstUtils.addToTable(setTable, i(1), col("z", false));
         TstUtils.addToTable(source, i(2, 3), col("x", 1, 4), col("y", "a", "d"), col("z", false, true));
 
         // MOTE: source notified first! This changes the downstream notifications significantly.
         source.notifyListeners(i(3), i(), i(2));
-        setTableRaw.notifyListeners(i(1), i(), i());
+        setTable.notifyListeners(i(1), i(), i());
 
         updateGraph.markSourcesRefreshedForUnitTests();
 
         assertTrue(source.satisfied(updateGraph.clock().currentStep()));
-        assertTrue(setTableRaw.satisfied(updateGraph.clock().currentStep()));
-
-        assertFalse(setTable.satisfied(updateGraph.clock().currentStep()));
+        assertTrue(setTable.satisfied(updateGraph.clock().currentStep()));
 
         try {
             largePool.submit(() -> source.where(filter.copy())).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
-            largePool.submit(() -> source.whereIn(setTableRaw, "z")).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
+            largePool.submit(() -> source.whereIn(setTable, "z")).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
             fail("Expected timeout waiting for dependencies");
         } catch (TimeoutException ignored) {
         }
 
-        // The distinct setTable and filter are still not satisfied.
-        assertFalse(setTable.satisfied(updateGraph.clock().currentStep()));
+        // The filter is still not satisfied.
         assertFalse(filter.satisfied(updateGraph.clock().currentStep()));
 
         // If the source has an index, let it catch up
@@ -538,7 +532,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
 
             try {
                 largePool.submit(() -> source.where(filter.copy())).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
-                largePool.submit(() -> source.whereIn(setTableRaw, "z")).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
+                largePool.submit(() -> source.whereIn(setTable, "z")).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
                 fail("Expected timeout waiting for dependencies");
             } catch (TimeoutException ignored) {
             }
@@ -547,15 +541,13 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
                 assertTrue(updateGraph.flushOneNotificationForUnitTests());
             }
 
-            // Allow setTable to get to current.
-            while (!setTable.satisfied(updateGraph.clock().currentStep())) {
+            // Allow the filter to get to current.
+            while (!filter.satisfied(updateGraph.clock().currentStep())) {
                 assertTrue(updateGraph.flushOneNotificationForUnitTests());
             }
-
         } else {
-            // Allow setTable to get to current.
-            assertFalse(setTable.satisfied(updateGraph.clock().currentStep()));
-            while (!setTable.satisfied(updateGraph.clock().currentStep())) {
+            // Allow the filter to get to current.
+            while (!filter.satisfied(updateGraph.clock().currentStep())) {
                 assertTrue(updateGraph.flushOneNotificationForUnitTests());
             }
         }
@@ -563,11 +555,8 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         // This succeeds because source and setTable are now both satisfied
         final Table finalFiltered1 =
                 largePool.submit(() -> source.where(filter.copy())).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
-
-        // This succeeds despite creating a new intermediate setTable because of memoization
-        // (or re-use of an index table).
         final Table finalFiltered2 =
-                largePool.submit(() -> source.whereIn(setTableRaw, "z")).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
+                largePool.submit(() -> source.whereIn(setTable, "z")).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
 
         assertTrue(finalFiltered1.satisfied(updateGraph.clock().currentStep()));
         assertTrue(finalFiltered2.satisfied(updateGraph.clock().currentStep()));
@@ -591,12 +580,9 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         if (sourceIndexed) {
             DataIndexer.getOrCreateDataIndex(source, "z");
         }
-        final QueryTable setTableRaw = TstUtils.testRefreshingTable(i(0).toTracking(), col("z", true));
-        final QueryTable setTable;
+        final QueryTable setTable = TstUtils.testRefreshingTable(i(0).toTracking(), col("z", true));
         if (setIndexed) {
-            setTable = (QueryTable) DataIndexer.getOrCreateDataIndex(setTableRaw, "z").table();
-        } else {
-            setTable = (QueryTable) setTableRaw.selectDistinct("z");
+            DataIndexer.getOrCreateDataIndex(setTable, "z").table();
         }
 
         // Expected result of the filters before any mods to the tables.
@@ -613,40 +599,29 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         final Table prevFiltered1 =
                 largePool.submit(() -> source.where(filter)).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
         final Table prevFiltered2 =
-                largePool.submit(() -> source.whereIn(setTableRaw, "z")).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
+                largePool.submit(() -> source.whereIn(setTable, "z")).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
         assertTableEquals(tableStart, prevFiltered1);
         assertTableEquals(tableStart, prevFiltered2);
 
         // Make changes to the source and set tables.
-        TstUtils.addToTable(setTableRaw, i(1), col("z", false));
+        TstUtils.addToTable(setTable, i(1), col("z", false));
         TstUtils.addToTable(source, i(2, 3), col("x", 1, 4), col("y", "a", "d"), col("z", false, true));
 
-        // MOTE: setTableRaw notified first! This changes the downstream notifications significantly.
-        setTableRaw.notifyListeners(i(1), i(), i());
+        // MOTE: setTable notified first! This changes the downstream notifications significantly.
+        setTable.notifyListeners(i(1), i(), i());
         source.notifyListeners(i(3), i(), i(2));
 
         updateGraph.markSourcesRefreshedForUnitTests();
 
         assertTrue(source.satisfied(updateGraph.clock().currentStep()));
-        assertTrue(setTableRaw.satisfied(updateGraph.clock().currentStep()));
-
-        assertFalse(setTable.satisfied(updateGraph.clock().currentStep()));
+        assertTrue(setTable.satisfied(updateGraph.clock().currentStep()));
+        assertFalse(filter.satisfied(updateGraph.clock().currentStep()));
 
         try {
             largePool.submit(() -> source.where(filter.copy())).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
-            largePool.submit(() -> source.whereIn(setTableRaw, "z")).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
+            largePool.submit(() -> source.whereIn(setTable, "z")).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
             fail("Expected timeout waiting for dependencies");
         } catch (TimeoutException ignored) {
-        }
-
-        // The distinct setTable and filter are still not satisfied.
-        assertFalse(setTable.satisfied(updateGraph.clock().currentStep()));
-        assertFalse(filter.satisfied(updateGraph.clock().currentStep()));
-
-        // Allow setTable to get to current.
-        assertFalse(setTable.satisfied(updateGraph.clock().currentStep()));
-        while (!setTable.satisfied(updateGraph.clock().currentStep())) {
-            assertTrue(updateGraph.flushOneNotificationForUnitTests());
         }
 
         // If the source has an index, let it catch up
@@ -656,7 +631,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
 
             try {
                 largePool.submit(() -> source.where(filter.copy())).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
-                largePool.submit(() -> source.whereIn(setTableRaw, "z")).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
+                largePool.submit(() -> source.whereIn(setTable, "z")).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
                 fail("Expected timeout waiting for dependencies");
             } catch (TimeoutException ignored) {
             }
@@ -664,16 +639,23 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
             while (!indexTable.satisfied(updateGraph.clock().currentStep())) {
                 assertTrue(updateGraph.flushOneNotificationForUnitTests());
             }
+
+            // Allow the filter to get to current.
+            while (!filter.satisfied(updateGraph.clock().currentStep())) {
+                assertTrue(updateGraph.flushOneNotificationForUnitTests());
+            }
+        } else {
+            // Allow the filter to get to current.
+            while (!filter.satisfied(updateGraph.clock().currentStep())) {
+                assertTrue(updateGraph.flushOneNotificationForUnitTests());
+            }
         }
 
         // This succeeds because source and setTable are now both satisfied
         final Table finalFiltered1 =
                 largePool.submit(() -> source.where(filter.copy())).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
-
-        // This succeeds despite creating a new intermediate setTable because of memoization
-        // (or re-use of an index table).
         final Table finalFiltered2 =
-                largePool.submit(() -> source.whereIn(setTableRaw, "z")).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
+                largePool.submit(() -> source.whereIn(setTable, "z")).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
 
         assertTrue(finalFiltered1.satisfied(updateGraph.clock().currentStep()));
         assertTrue(finalFiltered2.satisfied(updateGraph.clock().currentStep()));
@@ -698,12 +680,9 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         if (sourceIndexed) {
             DataIndexer.getOrCreateDataIndex(source, "z");
         }
-        final QueryTable setTableRaw = TstUtils.testRefreshingTable(i(0).toTracking(), col("z", true));
-        final QueryTable setTable;
+        final QueryTable setTable = TstUtils.testRefreshingTable(i(0).toTracking(), col("z", true));
         if (setIndexed) {
-            setTable = (QueryTable) DataIndexer.getOrCreateDataIndex(setTableRaw, "z").table();
-        } else {
-            setTable = (QueryTable) setTableRaw.selectDistinct("z");
+            DataIndexer.getOrCreateDataIndex(setTable, "z").table();
         }
 
         // Expected result of the filters before any mods to the tables.
@@ -720,49 +699,34 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         assertTrue(source.satisfied(updateGraph.clock().currentStep()));
 
         // Fails because setTable is not yet satisfied
-        // try {
-        // largePool.submit(() -> source.where(filter.copy())).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
-        // largePool.submit(() -> source.whereIn(setTableRaw, "z")).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
-        // fail("Expected timeout waiting for dependencies");
-        // } catch (TimeoutException ignored) {
-        // }
+        try {
+            largePool.submit(() -> source.where(filter.copy())).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
+            largePool.submit(() -> source.whereIn(setTable, "z")).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
+            fail("Expected timeout waiting for dependencies");
+        } catch (TimeoutException ignored) {
+        }
 
         // Make changes to the set tables.
-        TstUtils.addToTable(setTableRaw, i(1), col("z", false));
-        setTableRaw.notifyListeners(i(1), i(), i());
+        TstUtils.addToTable(setTable, i(1), col("z", false));
+        setTable.notifyListeners(i(1), i(), i());
 
         updateGraph.markSourcesRefreshedForUnitTests();
 
         assertTrue(source.satisfied(updateGraph.clock().currentStep()));
-        assertTrue(setTableRaw.satisfied(updateGraph.clock().currentStep()));
-
-        assertFalse(setTable.satisfied(updateGraph.clock().currentStep()));
-
-        // try {
-        // largePool.submit(() -> source.where(filter.copy())).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
-        // largePool.submit(() -> source.whereIn(setTableRaw, "z")).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
-        // fail("Expected timeout waiting for dependencies");
-        // } catch (TimeoutException ignored) {
-        // }
-
-        // The distinct setTable and filter are still not satisfied.
-        assertFalse(setTable.satisfied(updateGraph.clock().currentStep()));
+        assertTrue(setTable.satisfied(updateGraph.clock().currentStep()));
         assertFalse(filter.satisfied(updateGraph.clock().currentStep()));
 
-        // Allow setTable to get to current.
-        assertFalse(setTable.satisfied(updateGraph.clock().currentStep()));
-        while (!setTable.satisfied(updateGraph.clock().currentStep())) {
+        // Allow filter to get to current.
+        assertFalse(filter.satisfied(updateGraph.clock().currentStep()));
+        while (!filter.satisfied(updateGraph.clock().currentStep())) {
             assertTrue(updateGraph.flushOneNotificationForUnitTests());
         }
 
         // This succeeds because source and setTable are now both satisfied
         final Table filtered1 =
                 largePool.submit(() -> source.where(filter.copy())).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
-
-        // This succeeds despite creating a new intermediate setTable because of memoization
-        // (or re-use of an index table).
         final Table filtered2 =
-                largePool.submit(() -> source.whereIn(setTableRaw, "z")).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
+                largePool.submit(() -> source.whereIn(setTable, "z")).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
 
         assertTrue(filtered1.satisfied(updateGraph.clock().currentStep()));
         assertTrue(filtered2.satisfied(updateGraph.clock().currentStep()));

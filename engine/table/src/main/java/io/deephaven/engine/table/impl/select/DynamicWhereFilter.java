@@ -85,74 +85,100 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
         this.inclusion = inclusion;
 
         // Ensure that only distinct values are passed to the setKernel
-        final QueryTable distinctValues;
+        final QueryTable distinctSetTable;
         final boolean setRefreshing = setTable.isRefreshing();
 
         final String[] rightColumnNames = MatchPair.getRightColumns(sourceToSetColumnNamePairs);
         final DataIndex rightIndex = DataIndexer.getDataIndex(setTable, rightColumnNames);
         if (rightIndex != null) {
             // We have a distinct index table, let's use it.
-            distinctValues = (QueryTable) rightIndex.table();
+            distinctSetTable = (QueryTable) rightIndex.table();
         } else if (setRefreshing) {
-            distinctValues = (QueryTable) setTable.selectDistinct(rightColumnNames);
+            distinctSetTable = (QueryTable) setTable.selectDistinct(rightColumnNames);
         } else {
             final TableDefinition rightDef = setTable.getDefinition();
             final boolean allPartitioning =
                     Arrays.stream(rightColumnNames).allMatch(cn -> rightDef.getColumn(cn).isPartitioning());
             if (allPartitioning) {
-                distinctValues = (QueryTable) setTable.selectDistinct(rightColumnNames);
+                distinctSetTable = (QueryTable) setTable.selectDistinct(rightColumnNames);
             } else {
-                distinctValues = (QueryTable) setTable.coalesce();
+                distinctSetTable = (QueryTable) setTable.coalesce();
             }
         }
 
         // Use reinterpreted column sources for the set table tuple source.
         final ColumnSource<?>[] setColumns = Arrays.stream(this.sourceToSetColumnNamePairs)
-                .map(mp -> distinctValues.getColumnSource(mp.rightColumn()))
+                .map(mp -> distinctSetTable.getColumnSource(mp.rightColumn()))
                 .map(ReinterpretUtils::maybeConvertToPrimitive)
                 .toArray(ColumnSource[]::new);
         setKeyTypes = Arrays.stream(setColumns).map(ColumnSource::getType).toArray(Class[]::new);
         final TupleSource<?> setKeySource = TupleSourceFactory.makeTupleSource(setColumns);
 
-        final String humanReadablePrefix = "DynamicWhereFilter(" + Arrays.toString(sourceToSetColumnNamePairs) + ")";
+        if (!setRefreshing) {
+            this.setTable = null;
+            setUpdateListener = null;
+            setKernel = createKernel(distinctSetTable, setKeySource, inclusion, false);
+            return;
+        }
 
-        final Mutable<QueryTable> resultSetTable = new MutableObject<>();
-        final Mutable<InstrumentedTableUpdateListener> resultListener = new MutableObject<>();
+        this.setTable = distinctSetTable;
+
         final Mutable<SetInclusionKernel> resultKernel = new MutableObject<>();
+        final Mutable<InstrumentedTableUpdateListener> resultListener = new MutableObject<>();
 
-        // if we are making a static copy of the table, we must ensure that it does not change out from under us
-        ConstructSnapshot.callDataSnapshotFunction("snapshotInternal",
-                ConstructSnapshot.makeSnapshotControl(false, setRefreshing, distinctValues),
+        snapshotAndCreate(distinctSetTable, setKeySource, inclusion, resultKernel, resultListener);
+
+        this.setKernel = resultKernel.get();
+        this.setUpdateListener = resultListener.get();
+    }
+
+    /**
+     * Create and populate the set inclusion kernel from the set table and set key source.
+     */
+    private static @NotNull SetInclusionKernel createKernel(
+            @NotNull QueryTable setTable,
+            @NotNull final TupleSource<?> setKeySource,
+            final boolean inclusion,
+            final boolean usePrev) {
+        final SetInclusionKernel localKernel =
+                SetInclusionKernel.makeKernel(setKeySource.getChunkType(), inclusion);
+
+        // Fill liveValues and the set kernel with the initial keys from the set table.
+        final RowSet rsToUse = usePrev ? setTable.getRowSet().prev() : setTable.getRowSet();
+        final ChunkSource<?> sourceToUse = usePrev ? setKeySource.getPrevSource() : setKeySource;
+        if (rsToUse.isNonempty()) {
+            try (final CloseableIterator<?> initialKeysIterator = ChunkedColumnIterator.make(
+                    sourceToUse, rsToUse, getChunkSize(rsToUse))) {
+                initialKeysIterator.forEachRemaining(localKernel::add);
+            }
+        }
+        return localKernel;
+    }
+
+    /**
+     * Create and populate the kernel and install the update listener on the same edge of the cycle.
+     */
+    private void snapshotAndCreate(
+            @NotNull final QueryTable distinctSetTable,
+            @NotNull final TupleSource<?> setKeySource,
+            final boolean inclusion,
+            final Mutable<SetInclusionKernel> resultKernel,
+            final Mutable<InstrumentedTableUpdateListener> resultListener) {
+
+        ConstructSnapshot.callDataSnapshotFunction("DynamicWhereFilter-snapshotAndCreate",
+                ConstructSnapshot.makeSnapshotControl(false, true, distinctSetTable),
                 (usePrev, beforeClockUnused) -> {
                     final SetInclusionKernel localKernel =
-                            SetInclusionKernel.makeKernel(setKeySource.getChunkType(), inclusion);
-                    resultKernel.setValue(localKernel);
+                            createKernel(distinctSetTable, setKeySource, inclusion, usePrev);
 
-                    // Fill liveValues and the set kernel with the initial keys from the set table.
-                    final RowSet rsToUse = usePrev ? distinctValues.getRowSet().prev() : distinctValues.getRowSet();
-                    final ChunkSource<?> sourceToUse = usePrev ? setKeySource.getPrevSource() : setKeySource;
-                    if (rsToUse.isNonempty()) {
-                        try (final CloseableIterator<?> initialKeysIterator = ChunkedColumnIterator.make(
-                                sourceToUse, rsToUse, getChunkSize(rsToUse))) {
-                            initialKeysIterator.forEachRemaining(localKernel::add);
-                        }
-                    }
+                    final String[] setColumnNames = Arrays.stream(this.sourceToSetColumnNamePairs)
+                            .map(MatchPair::rightColumn).toArray(String[]::new);
+                    final ModifiedColumnSet setColumnsMCS = distinctSetTable.newModifiedColumnSet(setColumnNames);
 
-                    if (!setRefreshing) {
-                        resultSetTable.setValue(null);
-                        resultListener.setValue(null);
-                        return true;
-                    }
-
-                    resultSetTable.setValue(distinctValues);
-
-                    final String[] setColumnNames =
-                            Arrays.stream(this.sourceToSetColumnNamePairs).map(MatchPair::rightColumn)
-                                    .toArray(String[]::new);
-                    final ModifiedColumnSet setColumnsMCS = distinctValues.newModifiedColumnSet(setColumnNames);
-
+                    final String humanReadablePrefix =
+                            "DynamicWhereFilter(" + Arrays.toString(sourceToSetColumnNamePairs) + ")";
                     final InstrumentedTableUpdateListener localListener = new InstrumentedTableUpdateListenerAdapter(
-                            humanReadablePrefix, distinctValues, false) {
+                            humanReadablePrefix, distinctSetTable, false) {
                         @Override
                         public void onUpdate(final TableUpdate upstream) {
                             final boolean hasAdds = upstream.added().isNonempty();
@@ -234,14 +260,41 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
                             }
                         }
                     };
-                    distinctValues.addUpdateListener(localListener);
+                    distinctSetTable.addUpdateListener(localListener);
                     manage(localListener);
+
+                    resultKernel.setValue(localKernel);
                     resultListener.setValue(localListener);
                     return true;
                 });
+    }
 
+    /**
+     * "Copy constructor" for DynamicWhereFilter's with refreshing set tables.
+     */
+    private DynamicWhereFilter(
+            @NotNull final QueryTable setTable,
+            @NotNull final Class<?> @NotNull [] setKeyTypes,
+            final boolean inclusion,
+            final MatchPair... sourceToSetColumnNamePairs) {
+        this.setKeyTypes = setKeyTypes;
+        this.inclusion = inclusion;
+        this.sourceToSetColumnNamePairs = sourceToSetColumnNamePairs;
+
+        // Create the set kernel and update listener from the existing set table.
+        final Mutable<SetInclusionKernel> resultKernel = new MutableObject<>();
+        final Mutable<InstrumentedTableUpdateListener> resultListener = new MutableObject<>();
+
+        final ColumnSource<?>[] setColumns = Arrays.stream(this.sourceToSetColumnNamePairs)
+                .map(mp -> setTable.getColumnSource(mp.rightColumn()))
+                .map(ReinterpretUtils::maybeConvertToPrimitive)
+                .toArray(ColumnSource[]::new);
+        final TupleSource<?> setKeySource = TupleSourceFactory.makeTupleSource(setColumns);
+
+        snapshotAndCreate(setTable, setKeySource, inclusion, resultKernel, resultListener);
+
+        this.setTable = setTable;
         this.setKernel = resultKernel.get();
-        this.setTable = resultSetTable.get();
         this.setUpdateListener = resultListener.get();
     }
 
@@ -655,7 +708,7 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
         if (setTable == null) {
             return new DynamicWhereFilter(setKeyTypes, setKernel, inclusion, sourceToSetColumnNamePairs);
         }
-        return new DynamicWhereFilter(setTable, inclusion, sourceToSetColumnNamePairs);
+        return new DynamicWhereFilter(setTable, setKeyTypes, inclusion, sourceToSetColumnNamePairs);
     }
 
     @Override
