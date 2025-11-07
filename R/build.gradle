@@ -180,7 +180,7 @@ def rClientSite = Docker.registerDockerTask(project, 'rClientSite') {
         runCommand("mkdir -p ${prefix}/src/rdeephaven/docs")
         runCommand('''echo "status = tryCatch(" \
                            "   {" \
-                           "      install.packages('pkgdown'); " \
+                           "      install.packages('https://cran.r-project.org/src/contrib/Archive/pkgdown/pkgdown_2.1.3.tar.gz', repos=NULL, type='source'); " \
                            "      0" \
                            "   }," \
                            "  error=function(e) 1," \
