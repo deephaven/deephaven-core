@@ -2,7 +2,7 @@
 title: "Aggregations with agg_by"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{agg_by}
+  %\VignetteIndexEntry{Aggregations with agg_by}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
