@@ -1,15 +1,14 @@
 ---
 title: Why am I getting a "Java class not found" error when starting deephaven-server?
-sidebar_label: Why am I getting a "Java class not found" error when starting deephaven-server?
 ---
 
 <em>I'm getting a cryptic `ValueError: Java class 'io.deephaven.python.server.EmbeddedServer' not found` error when trying to start the Deephaven server using the `deephaven-server` wheel. What's causing this?</em>
 
 <p></p>
 
-## The Problem
+## The problem
 
-If you see an error like this when running `deephaven server`:
+You see an error like this when running `deephaven server`:
 
 ```python
 ValueError: Java class 'io.deephaven.python.server.EmbeddedServer' not found
@@ -17,14 +16,14 @@ ValueError: Java class 'io.deephaven.python.server.EmbeddedServer' not found
 
 This cryptic error message typically indicates that you're using an incompatible Java version.
 
-## The Solution
+## The solution
 
 **You must use Java 17 or later** when running `deephaven-server` version 0.36.0 and above.
 
 The Deephaven server wheel requires Java 17+ because:
 
-- Jetty 12 (used by Deephaven) requires Java 17 or later
-- Jetty 11 reached end-of-life, prompting the upgrade
+- Jetty 12 (used by Deephaven) requires Java 17 or later.
+- Jetty 11 reached end-of-life, prompting the upgrade.
 
 ### How to Fix
 
@@ -45,7 +44,40 @@ The Deephaven server wheel requires Java 17+ because:
    brew install openjdk@17
    ```
 
-3. **Ensure Java 17 is being used** by your environment before starting the server.
+3. **Ensure Java 17 is being used** by your environment before starting the server:
+
+   Verify the active Java version:
+   ```bash
+   java -version
+   ```
+
+   If you have multiple Java versions installed, set `JAVA_HOME` to point to Java 17:
+
+   On Linux/macOS:
+   ```bash
+   export JAVA_HOME=/path/to/java17
+   export PATH=$JAVA_HOME/bin:$PATH
+   ```
+
+   On macOS with Homebrew:
+   ```bash
+   export JAVA_HOME=/usr/local/opt/openjdk@17
+   export PATH=$JAVA_HOME/bin:$PATH
+   ```
+
+   On Windows (Command Prompt):
+   ```cmd
+   set JAVA_HOME=C:\Path\To\Java17
+   set PATH=%JAVA_HOME%\bin;%PATH%
+   ```
+
+   On Windows (PowerShell):
+   ```powershell
+   $env:JAVA_HOME = "C:\Path\To\Java17"
+   $env:PATH = "$env:JAVA_HOME\bin;$env:PATH"
+   ```
+
+   To make these changes permanent, add them to your shell configuration file (e.g., `~/.bashrc`, `~/.zshrc`, or `~/.bash_profile`).
 
 ### Example Dockerfile
 
