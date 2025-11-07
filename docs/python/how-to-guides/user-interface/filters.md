@@ -100,12 +100,14 @@ After you've linked tables, your selections are saved and will reopen to allow y
 
 The Quick Filters features adds a filter row above the header of a table. Type a value in the filter field above any column and it will filter accordingly.
 
-Quick filters can be added in a table's option menu, or by right-clicking a column header:
+Quick Filters can be added in a table's option menu, or by right-clicking a column header:
 
 ![Access Quick Filters by right-clicking a column header](../../assets/how-to/quick-filter.gif)
 
 > [!TIP]
 > You can also open or close the Quick Filters bar using the keyboard shortcut <kbd>Ctrl+F</kbd> or <kbd>⌘F</kbd>.
+
+Quick Filters support all standard column types, including Vector and Array columns. When filtering Vector or Array columns, the filter searches for matching elements within the arrays.
 
 ## Advanced Filters
 
