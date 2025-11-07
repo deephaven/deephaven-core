@@ -13,9 +13,12 @@ cd $DH_PREFIX/src/rdeephaven
 
 R --no-save --no-restore <<EOF
 library('pkgdown')
+# Set pandoc markdown variant to avoid gfm issues with definition_lists
+options(cli.num_colors = 1)
+Sys.setenv(PKGDOWN_PANDOC_ARGS = "--from=markdown-definition_lists --to=html")
 status = tryCatch(
   {
-     pkgdown::build_site(preview=FALSE)
+     pkgdown::build_site(preview=FALSE, new_process=FALSE)
      0
   },
   error=function(e) { print(paste0('ERROR: ', e)); 1 }
