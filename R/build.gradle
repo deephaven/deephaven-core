@@ -142,8 +142,8 @@ def rClientDoc = Docker.registerDockerTask(project, 'rClientDoc') {
                            "      install.packages('roxygen2'); " \
                            "      0" \
                            "   }," \
-                           "  error=function(e) 1," \
-                           "  warning=function(w) 2" \
+                           "  error=function(e) { print(paste0('ERROR: ', e)); 1 }," \
+                           "  warning=function(w) { print(paste0('WARNING: ', w)); 2 }" \
                            ");" \
                            "print(paste0('status=', status));" \
                            "quit(save='no', status=status)" | \
@@ -183,8 +183,8 @@ def rClientSite = Docker.registerDockerTask(project, 'rClientSite') {
                            "      install.packages('pkgdown'); " \
                            "      0" \
                            "   }," \
-                           "  error=function(e) 1," \
-                           "  warning=function(w) 2" \
+                           "  error=function(e) { print(paste0('ERROR: ', e)); 1 }," \
+                           "  warning=function(w) { print(paste0('WARNING: ', w)); 2 }" \
                            ");" \
                            "print(paste0('status=', status));" \
                            "quit(save='no', status=status)" | \
