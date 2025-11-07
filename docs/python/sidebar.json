@@ -2660,6 +2660,10 @@
                     "path": "reference/community-questions/extract-values-from-tables.md"
                   },
                   {
+                    "label": "How do I delete historical data?",
+                    "path": "reference/community-questions/how-to-delete-historical-data.md"
+                  },
+                  {
                     "label": "How do I get the ISO week number from a datetime?",
                     "path": "reference/community-questions/iso-week-number.md"
                   },
