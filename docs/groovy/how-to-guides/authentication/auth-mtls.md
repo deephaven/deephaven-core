@@ -38,7 +38,7 @@ services:
 
 There's a lot of text in the `environment`. Here's what it all means:
 
-- `-Xmx4g`: Give Deephaven 4GB of memory
+- `-Xmx4g`: Give Deephaven 4GB of memory.
 - `-DAuthHandlers=io.deephaven.authentication.mtls.MTlsAuthenticationHandler`: Tell Deephaven that it will use mTLS to authenticate users.
 - `-Dssl.identity.type=privatekey`: A private key will be used to verify identity.
 - `-Dssl.identity.certChainPath=/data/certs/server.chain.crt`: The cert chain path can be found in `/data/certs`.

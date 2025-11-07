@@ -24,7 +24,7 @@ Deephaven is a query engine that excels at handling real-time data, both on its 
 
 A query engine sits above your data sources, and is used to execute queries and produce results from your data that can then be used by users, applications, or emitted as a materialized view. Deephaven is also a suite of technologies around that engine. These integrations, experiences, and APIs provide a turnkey framework that enable people to be immediately productive. Open APIs, source and sink hookups, interactive web-UIs, and collaborative utilities are part of that suite. These components enable people to use Deephaven as either a tool within their established kit, or as a central system that powers their stack.
 
-Deephaven is new to the open community, but it is not new. The engine has evolved and been battle-hardened under the care of a series of capital markets players -- bulge bracket hedge funds, bank trading desks, exchanges -- in service of a large range of use cases, many in the critical path of quantitative finance. The framework has breadth because hundreds of developers and quants have demanded features. It’s fast, because they’d have it no other way.
+Deephaven is new to the open community, but it is not new. The engine has evolved and been battle-hardened under the care of a series of capital markets players - bulge bracket hedge funds, bank trading desks, exchanges - in service of a large range of use cases, many in the critical path of quantitative finance. The framework has breadth because hundreds of developers and quants have demanded features. It’s fast, because they’d have it no other way.
 
 <div className="text--danger padding-top--xl">
 
@@ -77,7 +77,7 @@ Many other data sources can be integrated to deliver data in-memory. From there,
 
 Many use cases, however, are best served by connecting upstream applications directly. Deephaven has APIs in Java, Python, and C++ for this, and flexible engine features allow for custom binaries to be pushed to Deephaven’s memory or to be polled.
 
-Unstructured data are stored as blobs within Deephaven tables. Users can use modern ML tools to pull structured values and analytics from this data -- all within Deephaven services.
+Unstructured data are stored as blobs within Deephaven tables. Users can use modern ML tools to pull structured values and analytics from this data - all within Deephaven services.
 
 <div className="text--success padding-top--xl">
 
@@ -87,7 +87,7 @@ Unstructured data are stored as blobs within Deephaven tables. Users can use mod
 
 “Yes.” Probably yes. There are a lot of elephants in this room.
 
-It is natural to place the new on a map framed by the familiar. Deephaven enters an arena defined by Kafka, Spark, Influx, Redshift, BigQuery, Snowflake, Postgres, and dozens of other players -- open-source, commercial, large and small.
+It is natural to place the new on a map framed by the familiar. Deephaven enters an arena defined by Kafka, Spark, Influx, Redshift, BigQuery, Snowflake, Postgres, and dozens of other players - open-source, commercial, large and small.
 
 A Venn diagram of industry capabilities would likely be multi-dimensional and would certainly be messy. Like others, Deephaven overlaps with the aforementioned technologies to varying degrees.
 
