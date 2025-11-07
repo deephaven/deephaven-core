@@ -25,7 +25,10 @@ public static class GrpcUtil {
       throw new Exception("GrpcUtil.MakeChannelOptions: UseTls is false but pem provided");
     }
 
-    if (clientOptions.TlsRootCerts.IsEmpty() || clientOptions.OverrideAuthority == null) {
+    if (clientOptions.TlsRootCerts.IsEmpty()) {
+      if (clientOptions.OverrideAuthority != null) {
+        throw new Exception("GrpcUtil.MakeChannelOptions: TlsRootCerts empty but OverrideAuthority exists");
+      }
       return channelOptions;
     }
 
@@ -39,9 +42,11 @@ public static class GrpcUtil {
         return false;
       }
 
-      var subjectName = cert.GetNameInfo(X509NameType.SimpleName, false);
-      if (subjectName != clientOptions.OverrideAuthority) {
-        return false;
+      if (clientOptions.OverrideAuthority != null) {
+        var subjectName = cert.GetNameInfo(X509NameType.SimpleName, false);
+        if (subjectName != clientOptions.OverrideAuthority) {
+          return false;
+        }
       }
 
       var certColl = new X509Certificate2Collection();
