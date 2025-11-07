@@ -19,7 +19,6 @@ import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.thread.ThreadInitializationFactory;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -42,6 +41,13 @@ public class QueryTableSelectBarrierTest {
     // If you would like to convince yourself that we are reliably producing out-of-order conditions as appropriate,
     // then you can increase this amount to run the tests many times.
     private static final int REPEATS_FOR_CONFIDENCE = 1;
+
+    @Test
+    public void testPropertyDefaults() {
+        assertFalse(QueryTable.STATELESS_FILTERS_BY_DEFAULT);
+        assertFalse(QueryTable.STATELESS_SELECT_BY_DEFAULT);
+        assertTrue(QueryTable.SERIAL_SELECT_IMPLICIT_BARRIERS);
+    }
 
     @Test
     public void testRepeatedBarrierSelectColumn() {
@@ -73,6 +79,7 @@ public class QueryTableSelectBarrierTest {
                 final SafeCloseable ignored3 = threadPool::shutdown) {
             QueryTable.FORCE_PARALLEL_SELECT_AND_UPDATE = true;
             QueryTable.STATELESS_SELECT_BY_DEFAULT = false;
+            QueryTable.SERIAL_SELECT_IMPLICIT_BARRIERS = false;
 
             final SelectColumn sa =
                     SelectColumnFactory.getExpression("A=slow_a.getAndIncrementSlow(0, new int[]{ 0, 1 })");
@@ -156,6 +163,7 @@ public class QueryTableSelectBarrierTest {
                 final SafeCloseable ignored3 = threadPool::shutdown) {
             QueryTable.FORCE_PARALLEL_SELECT_AND_UPDATE = true;
             QueryTable.STATELESS_SELECT_BY_DEFAULT = true;
+            QueryTable.SERIAL_SELECT_IMPLICIT_BARRIERS = false;
 
             final Selectable sa =
                     Selectable.of(ColumnName.of("A"), Method.of(ColumnName.of("AtomicInt"), "getAndIncrementSlow",
@@ -229,6 +237,79 @@ public class QueryTableSelectBarrierTest {
 
     // if you would like to convince yourself that we are reliably producing out-of-order conditions as appropriate
     @Test
+    public void testRepeatedImplicitBarriers() {
+        for (int ii = 0; ii < REPEATS_FOR_CONFIDENCE; ++ii) {
+            System.out.println("Repetition " + ii);
+            try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+                testImplicitBarriers();
+            }
+        }
+    }
+
+    private void testImplicitBarriers() {
+        final int segments = 10;
+        final int size = Math.toIntExact(QueryTable.MINIMUM_PARALLEL_SELECT_ROWS * segments);
+        final SlowedAtomicInteger slow_a = new SlowedAtomicInteger(0, 2);
+        QueryScope.addParam("slow_a", slow_a);
+        QueryScope.addParam("size", size);
+        final Table x = TableTools.emptyTable(size)
+                .updateView("AtomicInt=slow_a")
+                .updateView("SecondChecks=new int[]{0}")
+                .updateView("FirstChecks=new int[]{1}");
+
+        // use segments times the number of columns we are evaluating threads, so we can start off each of the
+        // individual blocks of data at once to maximize "chaos" in
+        // terms of the atomic integers being mixed up
+        final OperationInitializationThreadPool threadPool =
+                new OperationInitializationThreadPool(ThreadInitializationFactory.NO_OP, segments * 4);
+        final ExecutionContext executionContext = ExecutionContext.getContext().withOperationInitializer(threadPool);
+        try (final SafeCloseable ignored = executionContext.open();
+                final SafeCloseable ignored2 = new SaveQueryTableOptions();
+                final SafeCloseable ignored3 = threadPool::shutdown) {
+            QueryTable.FORCE_PARALLEL_SELECT_AND_UPDATE = true;
+            QueryTable.STATELESS_SELECT_BY_DEFAULT = true;
+            QueryTable.SERIAL_SELECT_IMPLICIT_BARRIERS = true;
+
+            final Selectable sa =
+                    Selectable.of(ColumnName.of("A"), Method.of(ColumnName.of("AtomicInt"), "getAndIncrementSlow",
+                            Literal.of(0), ColumnName.of("FirstChecks")));
+            final Selectable sb =
+                    Selectable.of(ColumnName.of("B"), Method.of(ColumnName.of("AtomicInt"), "getAndIncrementSlow",
+                            Literal.of(1), ColumnName.of("SecondChecks")));
+
+            final Selectable sc = Selectable.of(ColumnName.of("C"), Literal.of(1));
+
+            slow_a.reset(0, -1);
+            System.out.println(Instant.now() + ": serial");
+            final Table y = x.update(List.of(sa.withSerial(), sb.withSerial()));
+
+            final Table expected =
+                    x.updateView(List.of(SelectColumn.ofStateless(SelectColumnFactory.getExpression("A=i"),
+                            SelectColumnFactory.getExpression("B=size + i"))));
+            assertTableEquals(expected, y);
+
+            // now do the same thing with an extra column that is not stateless (so we certainly parallelize)
+            slow_a.reset(0, -1);
+            System.out.println(Instant.now() + ": serial + const");
+            final Table y2 = x.update(List.of(sa.withSerial(), sb.withSerial(), sc));
+            assertTableEquals(expected.update("C=1"), y2);
+
+            // now turn off the implicit barriers
+            QueryTable.SERIAL_SELECT_IMPLICIT_BARRIERS = false;
+            ((QueryTable) x).clearMemoizedResults();
+            slow_a.reset(0, 1);
+            slow_a.setMinThreads(1);
+            final Table y3 = x.update(List.of(sa.withSerial(), sb.withSerial(), sc));
+            checkTotalSum(size, y3);
+            checkMixedColumns(y3, true);
+            assertFalse(isOutOfOrder(y3, "A"));
+            assertFalse(isOutOfOrder(y3, "B"));
+            System.out.println(Instant.now() + ": no barrier");
+        }
+    }
+
+    // if you would like to convince yourself that we are reliably producing out-of-order conditions as appropriate
+    @Test
     public void testRepeatedBarrierAcrossShift() {
         for (int ii = 0; ii < REPEATS_FOR_CONFIDENCE; ++ii) {
             System.out.println("Repetition " + ii);
@@ -254,6 +335,7 @@ public class QueryTableSelectBarrierTest {
                 final SafeCloseable ignored3 = threadPool::shutdown) {
             QueryTable.FORCE_PARALLEL_SELECT_AND_UPDATE = true;
             QueryTable.STATELESS_SELECT_BY_DEFAULT = false;
+            QueryTable.SERIAL_SELECT_IMPLICIT_BARRIERS = false;
 
             final SelectColumn sa =
                     SelectColumnFactory.getExpression("A=slow_a.getAndIncrementSlow(0, new int[] { 0, 1, 0, 1 })");
@@ -363,6 +445,7 @@ public class QueryTableSelectBarrierTest {
                 final SafeCloseable ignored3 = threadPool::shutdown) {
             QueryTable.FORCE_PARALLEL_SELECT_AND_UPDATE = true;
             QueryTable.STATELESS_SELECT_BY_DEFAULT = false;
+            QueryTable.SERIAL_SELECT_IMPLICIT_BARRIERS = false;
 
             final SelectColumn sa = SelectColumnFactory
                     .getExpression("A=slow_a.getAndIncrementSlow(0, new int[] { 0, 1 })");
@@ -565,6 +648,74 @@ public class QueryTableSelectBarrierTest {
         assertEquals(ss2.respectedBarriers().length, ss2.withRespectedBarriers(c, c).respectedBarriers().length);
     }
 
+    @Test
+    public void testDH20625() {
+        final Table source = TableTools.emptyTable(1_000)
+                .update("a = ii % 5", "b = ii % 11", "c = ii % 17", "d = ii");
+
+        final Object b1 = new Object();
+        final Object b2 = new Object();
+
+        Table result;
+
+        // update with a, c passed as real columns
+        result = source.update(List.of(
+                Selectable.parse("a").withDeclaredBarriers(b1, b2),
+                Selectable.parse("c").withRespectedBarriers(b2).withSerial(),
+                Selectable.parse("Sum = a + b + c").withRespectedBarriers(b1)));
+        // simple test, verify we have the same number of rows
+        assertEquals(source.size(), result.size());
+
+        // select with a, c passed as real columns
+        result = source.select(List.of(
+                Selectable.parse("a").withDeclaredBarriers(b1, b2),
+                Selectable.parse("c").withRespectedBarriers(b2).withSerial(),
+                Selectable.parse("Sum = a + b + c").withRespectedBarriers(b1)));
+        // simple test, verify we have the same number of rows
+        assertEquals(source.size(), result.size());
+    }
+
+    @Test
+    public void testDH20625_proxy() {
+        // Create a partitioned table with 4 partitions
+        final Table source = TableTools.emptyTable(1_000)
+                .update("a = ii % 5", "b = ii % 11", "c = ii % 17", "d = ii");
+        final PartitionedTable pt = source.partitionBy("a");
+
+        final Object b1 = new Object();
+        final Object b2 = new Object();
+
+        PartitionedTable.Proxy result_proxy;
+        // update test
+        result_proxy = pt.proxy().update(List.of(
+                Selectable.parse("a").withDeclaredBarriers(b1, b2),
+                Selectable.parse("c").withRespectedBarriers(b2).withSerial(),
+                Selectable.parse("Sum = a + b + c").withRespectedBarriers(b1)));
+        assertEquals(pt.constituents().length, result_proxy.target().constituents().length);
+        for (int i = 0; i < pt.constituents().length; i++) {
+            final Table ct = pt.constituents()[i];
+            final Table rct = result_proxy.target().constituents()[i];
+
+            // simple test, verify we have the same number of rows
+            assertEquals(ct.size(), rct.size());
+        }
+
+        // select test
+        result_proxy = pt.proxy().select(List.of(
+                Selectable.parse("a").withDeclaredBarriers(b1, b2),
+                Selectable.parse("c").withRespectedBarriers(b2).withSerial(),
+                Selectable.parse("Sum = a + b + c").withRespectedBarriers(b1)));
+        assertEquals(pt.constituents().length, result_proxy.target().constituents().length);
+        for (int i = 0; i < pt.constituents().length; i++) {
+            final Table ct = pt.constituents()[i];
+            final Table rct = result_proxy.target().constituents()[i];
+
+            // simple test, verify we have the same number of rows
+            assertEquals(ct.size(), rct.size());
+        }
+    }
+
+
     private static void checkIndividualSums(int size, Table u) {
         final long expectedSumA = (((long) size - 1) * size) / 2;
         final Table us = u.aggBy(AggSum("A", "B"));
@@ -654,11 +805,13 @@ public class QueryTableSelectBarrierTest {
     private static class SaveQueryTableOptions implements SafeCloseable {
         final boolean oldForceParallel = QueryTable.FORCE_PARALLEL_SELECT_AND_UPDATE;
         final boolean oldStateless = QueryTable.STATELESS_SELECT_BY_DEFAULT;
+        final boolean oldSerialBarriers = QueryTable.SERIAL_SELECT_IMPLICIT_BARRIERS;
 
         @Override
         public void close() {
             QueryTable.FORCE_PARALLEL_SELECT_AND_UPDATE = oldForceParallel;
             QueryTable.STATELESS_SELECT_BY_DEFAULT = oldStateless;
+            QueryTable.SERIAL_SELECT_IMPLICIT_BARRIERS = oldSerialBarriers;
         }
     }
 
@@ -680,6 +833,7 @@ public class QueryTableSelectBarrierTest {
         private final List<Set<Thread>> columnThreads;
         int minChecks;
         int maxChecks;
+        int minThreads = 2;
 
         /**
          *
@@ -702,7 +856,7 @@ public class QueryTableSelectBarrierTest {
         /**
          * Do the get and increment on the underlying atomic integer, possibly sleeping to cause data to be interspersed
          * if there are not declared barriers.
-         * 
+         *
          * @param columnNumber the column number we are updating
          * @param checkThreads an array of column numbers that we should verify had at least two threads access them. -1
          *        indicates that we are not checking this position. The {@link #reset(int, int)} call enables us to
@@ -733,7 +887,7 @@ public class QueryTableSelectBarrierTest {
                 if (checkThreads[ii] < 0) {
                     continue;
                 }
-                sleepRequired = sleepRequired || columnThreads.get(checkThread).size() < 2;
+                sleepRequired = sleepRequired || columnThreads.get(checkThread).size() < minThreads;
             }
 
             if (sleepRequired) {
@@ -750,6 +904,10 @@ public class QueryTableSelectBarrierTest {
             this.minChecks = minChecks;
             this.maxChecks = maxChecks;
             columnThreads.forEach(Set::clear);
+        }
+
+        void setMinThreads(int minThreads) {
+            this.minThreads = minThreads;
         }
     }
 }

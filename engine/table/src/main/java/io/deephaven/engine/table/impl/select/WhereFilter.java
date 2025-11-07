@@ -361,42 +361,50 @@ public interface WhereFilter extends Filter {
         throw new UnsupportedOperationException("WhereFilters do not implement walk");
     }
 
-    @FinalDefault
-    default <T> T walkWhereFilter(Visitor<T> visitor) {
-        return visitor.visitWhereFilter(this);
+    /**
+     * This method calls the appropriate {@code visitor} method based on the type of {@code this} {@link WhereFilter}.
+     * This will invoke the most specific {@link Visitor} method available.
+     *
+     * @param visitor the visitor
+     * @return the value
+     * @param <T> the return value type
+     */
+    default <T> T walk(Visitor<T> visitor) {
+        return visitor.visitOther(this);
     }
 
     // endregion Filter impl
 
-    // rather than allowing for customization on every type of filter, we focus on structured and attribute filters
+    /**
+     * The visitor. Unlike other visitor patterns whose hierarchy is fully specified, only a subset of specific filter
+     * types are present in {@link Visitor}, with all non-specific cases being delegated to
+     * {@link Visitor#visitOther(WhereFilter)}.
+     * 
+     * @param <T> the return type
+     */
     interface Visitor<T> {
-        default T visitWhereFilter(WhereFilter filter) {
-            if (filter instanceof WhereFilterInvertedImpl) {
-                return visitWhereFilter((WhereFilterInvertedImpl) filter);
-            } else if (filter instanceof WhereFilterSerialImpl) {
-                return visitWhereFilter((WhereFilterSerialImpl) filter);
-            } else if (filter instanceof WhereFilterWithDeclaredBarriersImpl) {
-                return visitWhereFilter((WhereFilterWithDeclaredBarriersImpl) filter);
-            } else if (filter instanceof WhereFilterWithRespectedBarriersImpl) {
-                return visitWhereFilter((WhereFilterWithRespectedBarriersImpl) filter);
-            } else if (filter instanceof DisjunctiveFilter) {
-                return visitWhereFilter((DisjunctiveFilter) filter);
-            } else if (filter instanceof ConjunctiveFilter) {
-                return visitWhereFilter((ConjunctiveFilter) filter);
-            }
-            return null;
-        }
+        T visit(WhereFilterInvertedImpl filter);
 
-        T visitWhereFilter(WhereFilterInvertedImpl filter);
+        T visit(WhereFilterSerialImpl filter);
 
-        T visitWhereFilter(WhereFilterSerialImpl filter);
+        T visit(WhereFilterWithDeclaredBarriersImpl filter);
 
-        T visitWhereFilter(WhereFilterWithDeclaredBarriersImpl filter);
+        T visit(WhereFilterWithRespectedBarriersImpl filter);
 
-        T visitWhereFilter(WhereFilterWithRespectedBarriersImpl filter);
+        T visit(DisjunctiveFilter filter);
 
-        T visitWhereFilter(DisjunctiveFilter filter);
+        T visit(ConjunctiveFilter filter);
 
-        T visitWhereFilter(ConjunctiveFilter filter);
+        // Can consider adding other common types here in the future. ConditionFilter, MatchFilter, etc. This should be
+        // based on how often we end up needing code in visitOther to handle these types.
+
+        /**
+         * Handling for all cases not covered by more specific {@link Visitor} methods. This should never be invoked
+         * with the a {@link WhereFilter} type that matches a more specific {@link Visitor} method.
+         *
+         * @param filter the filter
+         * @return the return value
+         */
+        T visitOther(WhereFilter filter);
     }
 }

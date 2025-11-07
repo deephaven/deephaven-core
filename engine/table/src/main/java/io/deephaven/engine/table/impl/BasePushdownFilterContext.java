@@ -54,8 +54,7 @@ public class BasePushdownFilterContext implements PushdownFilterContext {
 
     private final boolean isRangeFilter;
     private final boolean isMatchFilter;
-    private final boolean supportsChunkFilter;
-    private final boolean filterSupportsPushdown;
+    private final boolean supportsDictionaryFiltering;
 
     private long executedFilterCost;
 
@@ -82,6 +81,10 @@ public class BasePushdownFilterContext implements PushdownFilterContext {
     public BasePushdownFilterContext(
             final WhereFilter filter,
             final List<ColumnSource<?>> columnSources) {
+        if (!filter.permitParallelization()) {
+            throw new IllegalArgumentException(
+                    "filter must be stateless, but does not permit parallelization: " + filter);
+        }
         this.filter = filter;
         this.columnSources = columnSources;
 
@@ -94,13 +97,11 @@ public class BasePushdownFilterContext implements PushdownFilterContext {
         final boolean isConditionFilter = filter instanceof ConditionFilter;
 
         // TODO (DH-19666): Multi column filters are not supported yet
-        filterSupportsPushdown = isRangeFilter || isMatchFilter ||
-                (isConditionFilter && ((ConditionFilter) filter).getNumInputsUsed() == 1);
         // Do not use columnSources.size(), multiple logical columns may alias (rename) the same physical column,
         // yielding a single entry.
-
-        supportsChunkFilter = filterSupportsPushdown &&
-                ((filter instanceof ExposesChunkFilter && ((ExposesChunkFilter) filter).chunkFilter().isPresent())
+        supportsDictionaryFiltering = (isRangeFilter || isMatchFilter
+                || (isConditionFilter && ((ConditionFilter) filter).getNumInputsUsed() == 1))
+                && ((filter instanceof ExposesChunkFilter && ((ExposesChunkFilter) filter).chunkFilter().isPresent())
                         || isConditionFilter);
 
         filterNullBehavior = null; // lazily initialized
@@ -124,34 +125,45 @@ public class BasePushdownFilterContext implements PushdownFilterContext {
     }
 
     /**
-     * Whether this is a simple range filter, not implemented by a ConditionFilter.
+     * Whether this filter supports parquet dictionary filtering, which necessitates direct chunk filtering, i.e., it
+     * can be applied to a chunk of data rather than a table. This includes any filter that implements {#@link
+     * ExposesChunkFilter} or {@link ConditionFilter} with exactly one column.
      */
-    public boolean isRangeFilter() {
-        return isRangeFilter;
+    public final boolean supportsDictionaryFiltering() {
+        return supportsDictionaryFiltering;
     }
 
     /**
-     * Whether this is a MatchFilter.
+     * Whether this filter supports filtering based on parquet metadata.
      */
-    public boolean isMatchFilter() {
-        return isMatchFilter;
+    public final boolean supportsMetadataFiltering() {
+        return isRangeFilter || isMatchFilter;
+    }
+
+    public final boolean supportsInMemoryDataIndexFiltering() {
+        // Note: if there is a cheap way to check if the filter will never be applicable for an in-memory data index, we
+        // would like to add that check here.
+        return true;
+    }
+
+    public final boolean supportsDeferredDataIndexFiltering() {
+        // Note: if there is a cheap way to check if the filter will never be applicable for a deferred data index, we
+        // would like to add that check here.
+        return true;
     }
 
     /**
-     * Whether this filter supports pushdown-based filtering. This includes simple range filters, match filters, and
-     * ConditionFilters with exactly one column.
+     * The filter to use for parquet metadata filtering. Can only call when {@link #supportsMetadataFiltering()} is
+     * {@code true}.
      */
-    public boolean filterSupportsPushdown() {
-        return filterSupportsPushdown;
-    }
-
-    /**
-     * Whether this filter supports direct chunk filtering, i.e., it can be applied to a chunk of data rather than a
-     * table. This includes any filter that implements {#@link ExposesChunkFilter} or {@link ConditionFilter} with
-     * exactly one column.
-     */
-    public boolean supportsChunkFilter() {
-        return supportsChunkFilter;
+    public final WhereFilter filterForMetadataFiltering() {
+        if (isRangeFilter) {
+            return ((RangeFilter) filter).getRealFilter();
+        }
+        if (isMatchFilter) {
+            return filter;
+        }
+        throw new IllegalStateException("Should only use when supportsMetadataFiltering is true");
     }
 
     /**
@@ -192,14 +204,15 @@ public class BasePushdownFilterContext implements PushdownFilterContext {
 
     /**
      * Create a {@link UnifiedChunkFilter} for the {@link WhereFilter} that efficiently filters chunks of data. Every
-     * thread that uses this should create its own instance and must close it after use.
+     * thread that uses this should create its own instance and must close it after use. Can only call when
+     * {@link #supportsDictionaryFiltering()} is {@code true}
      *
      * @param maxChunkSize the maximum size of the chunk that will be filtered
      * @return the initialized {@link UnifiedChunkFilter}
      */
     public final UnifiedChunkFilter createChunkFilter(final int maxChunkSize) {
-        if (!supportsChunkFilter) {
-            throw new UnsupportedOperationException("Filter does not support chunk filtering: " + Strings.of(filter));
+        if (!supportsDictionaryFiltering) {
+            throw new IllegalStateException("Filter does not support chunk filtering: " + Strings.of(filter));
         }
         if (filter instanceof ExposesChunkFilter) {
             final ChunkFilter chunkFilter = ((ExposesChunkFilter) filter).chunkFilter()

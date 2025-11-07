@@ -13,6 +13,7 @@ import inspect
 import pkgutil
 import sys
 import threading
+import warnings
 from abc import ABC, abstractmethod
 from typing import Set, Union, Optional, Any, List
 
@@ -29,7 +30,9 @@ _recursive_import_lock = threading.Lock()
 def _recursive_import(package_path: str) -> None:
     """ Recursively import every module in a package. """
     try:
-        pkg = importlib.import_module(package_path)
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            pkg = importlib.import_module(package_path)
     except ModuleNotFoundError:
         return
 
@@ -37,7 +40,9 @@ def _recursive_import(package_path: str) -> None:
     for mod in mods:
         if mod.name not in sys.modules:
             try:
-                importlib.import_module(mod.name)
+                with warnings.catch_warnings():
+                    warnings.simplefilter("ignore")
+                    importlib.import_module(mod.name)
             except:
                 ...
 
@@ -46,6 +51,9 @@ class JObjectWrapper(ABC):
     j_object_type: type
 
     def __init_subclass__(cls, *args, **kwargs):
+        if inspect.isabstract(cls):
+            return
+
         required_cls_attr = "j_object_type"
         if not hasattr(cls, required_cls_attr):
             raise NotImplementedError(f"Class {cls} lacks required `{required_cls_attr}` class attribute")

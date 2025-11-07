@@ -25,7 +25,7 @@ This guide is your springboard into deeper exploration and utilization of Deepha
 - [Filter table data](../../how-to-guides/filters.md)
 - [Multiple aggregations](../../how-to-guides/combined-aggregations.md)
 - [Group and ungroup data](../../how-to-guides/grouping-data.md)
-- [updateBy](../../how-to-guides/use-update-by.md)
+- [updateBy](../../how-to-guides/rolling-aggregations.md)
 - [Exact and relational joins](../../how-to-guides/joins-exact-relational.md)
 - [Inexact, time-series, and range joins](../../how-to-guides/joins-timeseries-range.md)
 - [Create and use partitioned tables](../../how-to-guides/partitioned-tables.md)

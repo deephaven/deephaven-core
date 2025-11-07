@@ -9,6 +9,9 @@ format information instead of regular data.
 Since `format_columns` is implemented using `update_view`, the new columns are not stored in memory, and instead a
 formula is stored that is used to determine the format for each cell/row when necessary.
 
+> [!NOTE]
+> [Formatting columns](/core/ui/docs/components/table/#formatting-rows-and-columns) can also be accomplished using the [`deephaven.ui`](/core/ui/docs/) Python package.
+
 ## Syntax
 
 ```python syntax

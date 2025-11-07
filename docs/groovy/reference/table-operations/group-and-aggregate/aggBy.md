@@ -4,6 +4,9 @@ title: aggBy
 
 `aggBy` applies a list of aggregations to table data.
 
+> [!WARNING]
+> Aggregation keys consume memory that persists for the lifetime of the worker, even after the keys are removed from the table. Avoid including unnecessary columns in grouping keys, especially if they contain a high number of unique values.
+
 ## Syntax
 
 ```
@@ -16,23 +19,26 @@ aggBy(aggregations, preserveEmpty, initialGroups, groupByColumns)
 
 ## Parameters
 
-<!--TODO: add full list of aggregations available-->
 <ParamTable>
 <Param name="aggregation" type="Aggregation">
 
 The aggregation to apply. The following aggregations are available:
 
+- [`AggAbsSum`](./AggAbsSum.md)
+- [`AggApproxPct`](./AggApproxPct.md)
 - [`AggAvg`](./AggAvg.md)
 - [`AggCount`](./AggCount.md)
 - [`AggCountDistinct`](./AggCountDistinct.md)
 - [`AggCountWhere`](./AggCountWhere.md)
 - [`AggDistinct`](./AggDistinct.md)
 - [`AggFirst`](./AggFirst.md)
+- [`AggFormula`](./AggFormula.md)
 - [`AggGroup`](./AggGroup.md)
 - [`AggLast`](./AggLast.md)
 - [`AggMax`](./AggMax.md)
 - [`AggMed`](./AggMed.md)
 - [`AggMin`](./AggMin.md)
+- [`AggPartition`](./AggPartition.md)
 - [`AggPct`](./AggPct.md)
 - [`AggSortedFirst`](./AggSortedFirst.md)
 - [`AggSortedLast`](./AggSortedLast.md)
@@ -48,26 +54,30 @@ The aggregation to apply. The following aggregations are available:
 
 A list of aggregations to compute. The following aggregations are available:
 
+- [`AggAbsSum`](./AggAbsSum.md)
+- [`AggApproxPct`](./AggApproxPct.md)
 - [`AggAvg`](./AggAvg.md)
-- [`AggWAvg`](./AggWAvg.md)
 - [`AggCount`](./AggCount.md)
 - [`AggCountDistinct`](./AggCountDistinct.md)
 - [`AggCountWhere`](./AggCountWhere.md)
 - [`AggDistinct`](./AggDistinct.md)
 - [`AggFirst`](./AggFirst.md)
+- [`AggFormula`](./AggFormula.md)
 - [`AggGroup`](./AggGroup.md)
 - [`AggLast`](./AggLast.md)
 - [`AggMax`](./AggMax.md)
 - [`AggMed`](./AggMed.md)
 - [`AggMin`](./AggMin.md)
+- [`AggPartition`](./AggPartition.md)
 - [`AggPct`](./AggPct.md)
 - [`AggSortedFirst`](./AggSortedFirst.md)
 - [`AggSortedLast`](./AggSortedLast.md)
 - [`AggStd`](./AggStd.md)
 - [`AggSum`](./AggSum.md)
 - [`AggUnique`](./AggUnique.md)
-- [`AggWSum`](./AggWSum.md)
 - [`AggVar`](./AggVar.md)
+- [`AggWAvg`](./AggWAvg.md)
+- [`AggWSum`](./AggWSum.md)
 
 </Param>
 <Param name="groupByColumns" type="String...">

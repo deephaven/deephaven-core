@@ -11,6 +11,7 @@ import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.filter.ExtractBarriers;
 import io.deephaven.engine.table.impl.filter.ExtractInnerConjunctiveFilters;
 import io.deephaven.engine.table.impl.filter.ExtractRespectedBarriers;
+import io.deephaven.engine.table.impl.filter.ExtractSerialFilters;
 import io.deephaven.engine.table.impl.select.analyzers.SelectAndViewAnalyzer;
 import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
@@ -305,7 +306,8 @@ public class PartitionAwareSourceTable extends SourceTable<PartitionAwareSourceT
         for (WhereFilter whereFilter : whereFilters) {
             whereFilter.init(definition, compilationProcessor);
 
-            if (!whereFilter.permitParallelization()) {
+            // Test for user-mandated serial filters (e.g. FilterSerial.of() or Filter.serial())
+            if (ExtractSerialFilters.hasAny(whereFilter)) {
                 serialFilterFound = true;
             }
 
@@ -319,7 +321,7 @@ public class PartitionAwareSourceTable extends SourceTable<PartitionAwareSourceT
 
             // similarly, anytime we prioritize a partitioning filter, we record the barriers that it declares. A filter
             // that respects no barriers, or only those prioritized barriers may also be prioritized. A filter that
-            // respects any barrier which was not in partition filters (meaning it must be in in otherFilters - because
+            // respects any barrier which was not in partition filters (meaning it must be in otherFilters - because
             // otherwise you would be respecting an undeclared barrier); cannot be prioritized because that would jump
             // the barrier.
             if (serialFilterFound || missingBarrier) {

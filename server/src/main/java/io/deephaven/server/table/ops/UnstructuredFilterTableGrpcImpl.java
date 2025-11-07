@@ -39,7 +39,8 @@ public class UnstructuredFilterTableGrpcImpl extends GrpcTableOperation<Unstruct
 
         final Table parent = sourceTables.get(0).get();
         final String[] filters = request.getFiltersList().toArray(String[]::new);
-        final WhereFilter[] whereFilters = columnExpressionValidator.validateSelectFilters(filters, parent);
+        final WhereFilter[] whereFilters =
+                columnExpressionValidator.validateSelectFilters(filters, parent.getDefinition());
         return parent.where(Filter.and(whereFilters));
     }
 }

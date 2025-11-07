@@ -17,9 +17,9 @@ apples = newTable(
 )
 ```
 
-## Group data with `groupBy`
+## `groupBy`
 
-[`groupBy`](../reference/table-operations/group-and-aggregate/groupBy.md) groups columnar data into [arrays](../reference/query-language/types/arrays.md). A list of grouping column names defines grouping keys. All rows from the input table with the same key values are grouped together.
+The [`groupBy`](../reference/table-operations/group-and-aggregate/groupBy.md) method groups columnar data into [arrays](../reference/query-language/types/arrays.md). A list of grouping column names defines grouping keys. All rows from the input table with the same key values are grouped together. The values in the arrays for each group in the output table maintain their order from the input table.
 
 If no input is supplied to [`groupBy`](../reference/table-operations/group-and-aggregate/groupBy.md), then there will be one group, which contains all of the data. The resultant table will contain a single row, where column data is grouped into a single [array](../reference/query-language/types/arrays.md). This is shown in the example below:
 
@@ -48,9 +48,28 @@ applesByClassAndDiet = apples.updateView(
     .groupBy("Class", "Diet")
 ```
 
+## `AggGroup`
+
+The [`AggGroup`](../reference/table-operations/group-and-aggregate/AggGroup.md) method returns an aggregator that computes an array of all values within an aggregation group, for each column. Like the other aggregation methods, it is used in conjunction with the [`aggBy`](../reference/table-operations/group-and-aggregate/aggBy.md) method.
+
+> [!NOTE]
+> Unlike [`groupBy`](../reference/table-operations/group-and-aggregate/groupBy.md), [`AggGroup`](../reference/table-operations/group-and-aggregate/AggGroup.md) throws an error if you don't supply any column names.
+
+In this example, we will group `Color`, `WeightGrams`, and `Calories` by `Type`:
+
+```groovy test-set=1 order=applesByType
+applesByType = apples.aggBy(AggGroup("WeightGrams", "Calories", "Color"), "Type")
+```
+
+If the `by` parameter is not supplied, the `AggGroup` method will group all the values from each column:
+
+```groovy test-set=1 order=applesByNoColumn2
+applesByNoColumn2 = apples.aggBy(AggGroup("Type", "Color", "WeightGrams", "Calories"))
+```
+
 ## Ungroup data with `ungroup`
 
-The [`ungroup`](../reference/table-operations/group-and-aggregate/ungroup.md) method is the reverse of [`groupBy`](../reference/table-operations/group-and-aggregate/groupBy.md). It expands content from [arrays](../reference/query-language/types/arrays.md) or vectors and builds a new set of rows from it. The method takes optional columns as input. If no inputs are supplied, all [array](../reference/query-language/types/arrays.md) or vector columns are expanded. If one or more columns are given as input, only those columns will have their [array](../reference/query-language/types/arrays.md) values expanded into new rows.
+The [`ungroup`](../reference/table-operations/group-and-aggregate/ungroup.md) method is the opposite of [`groupBy`](../reference/table-operations/group-and-aggregate/groupBy.md). It expands content from [arrays](../reference/query-language/types/arrays.md) or vectors into columns of singular values and builds a new set of rows from it. The method takes optional columns as input. If no inputs are supplied, all [array](../reference/query-language/types/arrays.md) or vector columns are expanded. If one or more columns are given as input, only those columns will have their [array](../reference/query-language/types/arrays.md) values expanded into new rows.
 
 The example below shows how [`ungroup`](../reference/table-operations/group-and-aggregate/ungroup.md) reverses the [`groupBy`](../reference/table-operations/group-and-aggregate/groupBy.md) operation used to create `applesByClassAndDiet` when no columns are given as input. Notice how all [array](../reference/query-language/types/arrays.md) columns have been expanded, leaving a single element in each row of the resultant table:
 
@@ -85,19 +104,23 @@ t = newTable(
 t_ungrouped = t.ungroup()
 ```
 
-## Different array lengths
+## Handling different array lengths
 
 The [`ungroup`](../reference/table-operations/group-and-aggregate/ungroup.md) method cannot unpack a row that contains [arrays](../reference/query-language/types/arrays.md) of different length.
 
-The example below uses the [`emptyTable`](../reference/table-operations/create/emptyTable.md) method to create a table with two columns and one row. Each column contains a Java array, but one has three elements and the other has two. Calling [`ungroup`](../reference/table-operations/group-and-aggregate/ungroup.md) without an input column will result in an error.
+To demonstrate this, we'll start by creating a table with two columns and one row.
 
-```groovy skip-test
+```groovy test-set=2 order=t
 t = emptyTable(1).update("X = new int[]{1, 2, 3}", "Z = new int[]{4, 5}")
-t_ungrouped = t.ungroup() // This results in an error
 ```
 
-![The above table with a different array length in each column](../assets/how-to/t_diffArrayLengths.png)
-![The error message generated by Deephaven upon running the above `t_ungrouped`](../assets/how-to/t_ungrouped_Error.png)
+Each column in the above table contains a Java array, but one has three elements and the other has two. Since the arrays are not the same size, calling [`ungroup`](../reference/table-operations/group-and-aggregate/ungroup.md) without an input column will result in an error.
+
+```groovy test-set=2 should-fail
+t_ungrouped = t.ungroup()  // This results in an error
+```
+
+![A collapsed error message highlighted in the Deephaven IDE](../assets/how-to/t_ungrouped_Error.png)
 
 It is only possible to ungroup columns of the same length. [Arrays](../reference/query-language/types/arrays.md) of different lengths must be ungrouped separately.
 
@@ -109,7 +132,7 @@ t_ungroupedByZ = t.ungroup("Z")
 
 ## Null values
 
-Using [`groupBy`](../reference/table-operations/group-and-aggregate/groupBy.md) on a table with null values will work properly. Null values will appear as empty [array](../reference/query-language/types/arrays.md) elements when grouped with [`groupBy`](../reference/table-operations/group-and-aggregate/groupBy.md). Null [array](../reference/query-language/types/arrays.md) elements unwrapped using [`ungroup`](../reference/table-operations/group-and-aggregate/ungroup.md) will appear as null (empty) row entries in the corresponding column.
+Using [`groupBy`](../reference/table-operations/group-and-aggregate/groupBy.md) on a table with null values will work properly. Null values will appear as empty [array](../reference/query-language/types/arrays.md) elements when grouped with [`groupBy`](../reference/table-operations/group-and-aggregate/groupBy.md). Null [array](../reference/query-language/types/arrays.md) elements expanded using [`ungroup`](../reference/table-operations/group-and-aggregate/ungroup.md) will appear as null (empty) row entries in the corresponding column.
 
 The example below uses the [`emptyTable`](../reference/table-operations/create/emptyTable.md) method and the [ternary operator](../how-to-guides/ternary-if-how-to.md) to create a table with two columns of 5 rows. The first and second rows contain null values. Null values behave as expected during grouping and ungrouping.
 
@@ -126,13 +149,21 @@ t = emptyTable(1).update("X = (int[])(null)")
 t_ungrouped = t.ungroup()
 ```
 
+## Use of grouping in table operations
+
+Many Deephaven table operations use grouping internally. For example, [`aggBy`](../reference/table-operations/group-and-aggregate/aggBy.md) creates groups specified by the key column(s) given in the `by` parameter. The grouping is done automatically, and the resultant table shows summary statistics calculated for each group.
+
+Table operations that require grouping do the grouping internally. It is always more performant to use these table operations than to group data first and then apply some calculations over the groups.
+
 ## Related documentation
 
-- [Create new and empty tables](./new-and-empty-table.md)
-- [Choose the right selection method](../how-to-guides/use-select-view-update.md#choose-the-right-column-selection-method)
+- [Create a new table](./new-and-empty-table.md#newtable)
+- [Choose the right selection method](./use-select-view-update.md#choose-the-right-column-selection-method)
+- [Formulas in query strings](./formulas.md)
+- [Filters in query strings](./filters.md)
+- [Operators in query strings](./operators.md)
 - [Arrays](../reference/query-language/types/arrays.md)
 - [`emptyTable`](../reference/table-operations/create/emptyTable.md)
 - [`groupBy`](../reference/table-operations/group-and-aggregate/groupBy.md)
 - [`newTable`](../reference/table-operations/create/newTable.md)
-- [ternary-if](../how-to-guides/ternary-if-how-to.md)
 - [`ungroup`](../reference/table-operations/group-and-aggregate/ungroup.md)

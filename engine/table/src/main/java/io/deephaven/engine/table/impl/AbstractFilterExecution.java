@@ -228,7 +228,7 @@ abstract class AbstractFilterExecution {
             this.pushdownMatcher = pushdownMatcher;
             this.context = context;
             this.declaredBarriers = ExtractBarriers.of(filter);
-            this.respectedBarriers = ExtractRespectedBarriers.of(filter).stream()
+            this.respectedBarriers = ExtractRespectedBarriers.stream(filter)
                     .flatMap(barrier -> {
                         final Collection<Object> dependencies = barrierDependencies.get(barrier);
                         if (dependencies == null) {
