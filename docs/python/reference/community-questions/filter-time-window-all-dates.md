@@ -5,7 +5,7 @@ sidebar_label: How do I filter by time of day across all dates?
 
 _I have a table with a timestamp column that spans multiple dates. I want to filter rows to only include times between 2:00 PM and 4:00 PM ET, regardless of the date._
 
-Use the [`hourOfDay`](https://docs.deephaven.io/core/javadoc/io/deephaven/time/DateTimeUtils.html#hourOfDay(java.time.Instant,java.time.ZoneId)) function to extract the hour component from your timestamp, then filter based on the hour value:
+Use the [`hourOfDay`](https://docs.deephaven.io/core/javadoc/io/deephaven/time/DateTimeUtils.html#hourOfDay(java.time.Instant,java.time.ZoneId,boolean)) function to extract the hour component from your timestamp, then filter based on the hour value:
 
 ```python test-set=time-filter order=t,result
 from deephaven import empty_table
@@ -35,7 +35,7 @@ This approach works by:
 
 ## Filtering with minutes
 
-If you need more precise time filtering (e.g., 2:30 PM to 4:15 PM), combine [`hourOfDay`](https://docs.deephaven.io/core/javadoc/io/deephaven/time/DateTimeUtils.html#hourOfDay(java.time.Instant,java.time.ZoneId)) and [`minuteOfHour`](https://docs.deephaven.io/core/javadoc/io/deephaven/time/DateTimeUtils.html#minuteOfHour(java.time.Instant,java.time.ZoneId)):
+If you need more precise time filtering (e.g., 2:30 PM to 4:15 PM), combine [`hourOfDay`](https://docs.deephaven.io/core/javadoc/io/deephaven/time/DateTimeUtils.html#hourOfDay(java.time.Instant,java.time.ZoneId,boolean)) and [`minuteOfHour`](https://docs.deephaven.io/core/javadoc/io/deephaven/time/DateTimeUtils.html#minuteOfHour(java.time.Instant,java.time.ZoneId)):
 
 ```python test-set=time-filter order=t2,result2
 start_time2 = to_j_instant("2024-01-15T14:15:00 ET")
