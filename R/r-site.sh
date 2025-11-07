@@ -19,9 +19,9 @@ status = tryCatch(
      0
   },
   error=function(e) { 
-    cat("ERROR occurred during pkgdown::build_site()\\n")
-    cat("Error message:", conditionMessage(e), "\\n")
-    cat("Error class:", class(e), "\\n")
+    cat("ERROR occurred during pkgdown::build_site()\n")
+    cat("Error message:", conditionMessage(e), "\n")
+    cat("Error class:", class(e), "\n")
     print(e)
     1 
   }
