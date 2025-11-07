@@ -10,7 +10,7 @@ title: Why am I getting a "Java class not found" error when starting deephaven-s
 
 You see an error like this when running `deephaven server`:
 
-```python
+```text
 ValueError: Java class 'io.deephaven.python.server.EmbeddedServer' not found
 ```
 
