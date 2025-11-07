@@ -8,7 +8,7 @@ create a thin wrapper around the Deephaven native C++ library.
 ## Prerequisites
 
 Before installing this library, you will need to install the Deephaven Core C++ library and the
-pydeephaven python package. All four packages (Deephaven Core C++, pydeephaven, Deephaven Core,
+pydeephaven python package. All three packages (Deephaven Core C++, pydeephaven, 
 and pydeephaven-ticking) are present in the Deephaven Core GitHub repository. We assume you
 have checked out this repository at the location specified by `${DHROOT}`.
 
