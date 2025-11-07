@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.extensions.barrage.util;
 
 import io.deephaven.io.logger.Logger;
@@ -14,25 +14,8 @@ import io.grpc.stub.StreamObserver;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.UUID;
-
 public class GrpcUtil {
     private static final Logger log = LoggerFactory.getLogger(GrpcUtil.class);
-
-    public static StatusRuntimeException securelyWrapError(final Logger log, final Throwable err) {
-        return securelyWrapError(log, err, Code.INVALID_ARGUMENT);
-    }
-
-    public static StatusRuntimeException securelyWrapError(final Logger log, final Throwable err,
-            final Code statusCode) {
-        if (err instanceof StatusRuntimeException) {
-            return (StatusRuntimeException) err;
-        }
-
-        final UUID errorId = UUID.randomUUID();
-        log.error().append("Internal Error '").append(errorId.toString()).append("' ").append(err).endl();
-        return Exceptions.statusRuntimeException(statusCode, "Details Logged w/ID '" + errorId + "'");
-    }
 
     /**
      * Wraps the provided runner in a try/catch block to minimize damage caused by a failing externally supplied helper.
@@ -71,7 +54,7 @@ public class GrpcUtil {
      * @param message the last message to send on this stream before completing
      * @param <T> the type of message that the stream handles
      */
-    public static <T> void safelyComplete(StreamObserver<T> observer, T message) {
+    public static <T> void safelyOnNextAndComplete(StreamObserver<T> observer, T message) {
         safelyExecuteLocked(observer, () -> {
             observer.onNext(message);
             observer.onCompleted();

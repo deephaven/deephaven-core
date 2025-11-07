@@ -9,12 +9,14 @@ configurations {
 
 dependencies {
     implementation project(':server-jetty')
-    Classpaths.inheritDagger(project)
+    implementation project(":util-thread")
+    implementation libs.dagger
+    annotationProcessor libs.dagger.compiler
 
     runtimeOnly project(':log-to-slf4j')
     runtimeOnly project(':logback-print-stream-globals')
     runtimeOnly project(':logback-logbuffer')
-    Classpaths.inheritLogbackClassic(project)
+    runtimeOnly libs.logback.classic
 }
 
 distributions {
@@ -44,6 +46,19 @@ if (!hasProperty('excludeClockImpl')) {
         runtimeOnly project(':clock-impl')
     }
     extraJvmArgs += ['--add-exports', 'java.base/jdk.internal.misc=ALL-UNNAMED']
+}
+
+if (!hasProperty('excludeSql')) {
+    dependencies {
+        runtimeOnly project(':engine-sql')
+    }
+}
+
+if (!hasProperty('excludeS3')) {
+    dependencies {
+        runtimeOnly project(':extensions-s3')
+        runtimeOnly project(':extensions-iceberg-s3')
+    }
 }
 
 if (hasProperty('devCerts') || hasProperty('devMTLS')) {
@@ -87,8 +102,10 @@ tasks.withType(CreateStartScripts).configureEach {
     defaultJvmOpts += extraJvmArgs
 }
 
-applicationName = 'start'
-mainClassName = 'io.deephaven.server.custom.CustomMain'
+application {
+    applicationName = 'start'
+    mainClass = 'io.deephaven.server.custom.CustomMain'
+}
 
 artifacts {
     applicationDist project.tasks.findByName('distTar')

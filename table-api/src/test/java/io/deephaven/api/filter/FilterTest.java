@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.api.filter;
 
 import io.deephaven.api.ColumnName;
@@ -154,6 +154,11 @@ public class FilterTest {
     }
 
     @Test
+    void filterSerial() {
+        stringsOf(Function.of("MySerialFunction").withSerial(), "invokeSerially(MySerialFunction())");
+    }
+
+    @Test
     void filterIn() {
         stringsOf(FilterIn.of(FOO, Literal.of(40), Literal.of(42)),
                 "FilterIn{expression=ColumnName(Foo), values=[LiteralInt{value=40}, LiteralInt{value=42}]}");
@@ -182,6 +187,10 @@ public class FilterTest {
                 assertThat(results).isEqualTo(((FilterAnd) filter).filters());
             } else if (Filter.ofTrue().equals(filter)) {
                 assertThat(results).isEmpty();
+            } else if (filter instanceof FilterWithDeclaredBarriers) {
+                assertThat(results).containsExactly(((FilterWithDeclaredBarriers) filter).filter());
+            } else if (filter instanceof FilterWithRespectedBarriers) {
+                assertThat(results).containsExactly(((FilterWithRespectedBarriers) filter).filter());
             } else {
                 assertThat(results).containsExactly(filter);
             }
@@ -206,6 +215,9 @@ public class FilterTest {
         visitor.visit((FilterOr) null);
         visitor.visit((FilterAnd) null);
         visitor.visit((FilterPattern) null);
+        visitor.visit((FilterSerial) null);
+        visitor.visit((FilterWithDeclaredBarriers) null);
+        visitor.visit((FilterWithRespectedBarriers) null);
         visitor.visit((Function) null);
         visitor.visit((Method) null);
         visitor.visit(false);
@@ -252,6 +264,21 @@ public class FilterTest {
         }
 
         @Override
+        public String visit(FilterSerial serial) {
+            return of(serial);
+        }
+
+        @Override
+        public String visit(FilterWithDeclaredBarriers declaredBarrier) {
+            return of(declaredBarrier);
+        }
+
+        @Override
+        public String visit(FilterWithRespectedBarriers respectedBarrier) {
+            return of(respectedBarrier);
+        }
+
+        @Override
         public String visit(Function function) {
             return of(function);
         }
@@ -285,6 +312,24 @@ public class FilterTest {
         public CountingVisitor visit(FilterComparison comparison) {
             ++count;
             return this;
+        }
+
+        @Override
+        public CountingVisitor visit(FilterSerial serial) {
+            ++count;
+            return null;
+        }
+
+        @Override
+        public CountingVisitor visit(FilterWithDeclaredBarriers declaredBarrier) {
+            ++count;
+            return null;
+        }
+
+        @Override
+        public CountingVisitor visit(FilterWithRespectedBarriers respectedBarrier) {
+            ++count;
+            return null;
         }
 
         @Override
@@ -421,6 +466,24 @@ public class FilterTest {
         public Void visit(boolean literal) {
             out.add(Filter.ofFalse());
             out.add(Filter.ofTrue());
+            return null;
+        }
+
+        @Override
+        public Void visit(FilterSerial serial) {
+            out.add(Function.of("my_serial_function", FOO).withSerial());
+            return null;
+        }
+
+        @Override
+        public Void visit(FilterWithDeclaredBarriers declaredBarrier) {
+            out.add(Function.of("my_serial_function", FOO).withDeclaredBarriers("TEST_BARRIER"));
+            return null;
+        }
+
+        @Override
+        public Void visit(FilterWithRespectedBarriers respectedBarrier) {
+            out.add(Function.of("my_serial_function", FOO).withRespectedBarriers("TEST_BARRIER"));
             return null;
         }
 

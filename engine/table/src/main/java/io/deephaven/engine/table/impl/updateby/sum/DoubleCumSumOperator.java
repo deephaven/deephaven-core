@@ -1,8 +1,10 @@
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit FloatCumSumOperator and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit FloatCumSumOperator and run "./gradlew replicateUpdateBy" to regenerate
+//
+// @formatter:off
 package io.deephaven.engine.table.impl.updateby.sum;
 
 import io.deephaven.base.verify.Assert;
@@ -12,15 +14,12 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
 import io.deephaven.engine.table.impl.updateby.internal.BaseDoubleUpdateByOperator;
-import io.deephaven.engine.table.impl.util.RowRedirection;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
+import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
 import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
 
 public class DoubleCumSumOperator extends BaseDoubleUpdateByOperator {
-    // region extra-fields
-    // endregion extra-fields
 
     protected class Context extends BaseDoubleUpdateByOperator.Context {
         public DoubleChunk<? extends Values> doubleValueChunk;
@@ -39,24 +38,21 @@ public class DoubleCumSumOperator extends BaseDoubleUpdateByOperator {
             Assert.eq(count, "push count", 1);
 
             // read the value from the values chunk
-            final double currentVal = doubleValueChunk.get(pos);
+            final double val = doubleValueChunk.get(pos);
 
-            if (curVal == NULL_DOUBLE) {
-                curVal = currentVal;
-            } else if (currentVal != NULL_DOUBLE) {
-                curVal += currentVal;
+            if (val != NULL_DOUBLE) {
+                curVal = curVal == NULL_DOUBLE ? val : curVal + val;
             }
         }
     }
 
-    public DoubleCumSumOperator(@NotNull final MatchPair pair,
-                               @Nullable final RowRedirection rowRedirection
-                               // region extra-constructor-args
-                               // endregion extra-constructor-args
-    ) {
-        super(pair, new String[] { pair.rightColumn }, rowRedirection);
-        // region constructor
-        // endregion constructor
+    public DoubleCumSumOperator(@NotNull final MatchPair pair) {
+        super(pair, new String[] {pair.rightColumn});
+    }
+
+    @Override
+    public UpdateByOperator copy() {
+        return new DoubleCumSumOperator(pair);
     }
 
     @NotNull

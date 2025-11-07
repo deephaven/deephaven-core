@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.sources.ring;
 
 import io.deephaven.chunk.ChunkType;
@@ -21,7 +21,7 @@ final class CharacterRingChunkSource extends AbstractRingChunkSource<Character, 
     }
 
     public CharacterRingChunkSource(int capacity) {
-        super(char.class, capacity);
+        super(new char[capacity]);
     }
 
     @Override
@@ -40,7 +40,8 @@ final class CharacterRingChunkSource extends AbstractRingChunkSource<Character, 
             return NULL_CHAR;
         }
         if (STRICT_KEYS && !containsKey(key)) {
-            throw new IllegalArgumentException(String.format("Invalid key %d. available=[%d, %d]", key, firstKey(), lastKey()));
+            throw new IllegalArgumentException(
+                    String.format("Invalid key %d. available=[%d, %d]", key, firstKey(), lastKey()));
         }
         return ring[keyToRingIndex(key)];
     }

@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.server.runner;
 
 import io.deephaven.base.system.PrintStreamGlobals;
@@ -106,6 +106,9 @@ public class MainHelper {
 
         // Capture the original System.out and System.err early
         PrintStreamGlobals.init();
+
+        // Safety checks
+        SafetyChecks.check();
 
         // Since our dagger injection happens later, we need to provider a static way to get the LogBuffer (for example,
         // logback configuration may reference LogBufferAppender).

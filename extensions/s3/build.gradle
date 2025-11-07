@@ -1,0 +1,69 @@
+plugins {
+    id 'java-library'
+    id 'io.deephaven.project.register'
+}
+
+evaluationDependsOn Docker.registryProject('localstack')
+evaluationDependsOn Docker.registryProject('minio')
+
+description 'Used to create a channel provider plugin for reading and writing files stored in S3.'
+
+dependencies {
+    api project(':util-channel')
+
+    implementation project(':Base')
+    implementation project(':Util')
+    implementation project(':Configuration')
+    implementation project(':log-factory')
+    implementation project(':util-thread')
+
+    implementation platform(libs.awssdk.bom)
+    implementation libs.awssdk.s3
+    implementation libs.awssdk.crt.client
+
+    compileOnly libs.jetbrains.annotations
+
+    // For OSUtil
+    testImplementation project(':Stats')
+
+    compileOnly libs.autoservice
+    annotationProcessor libs.autoservice.compiler
+
+    compileOnly project(':util-immutables')
+    annotationProcessor libs.immutables.value
+
+    testImplementation libs.assertj
+    testImplementation platform(libs.junit.bom)
+    testImplementation libs.junit.jupiter
+    testRuntimeOnly libs.junit.jupiter.engine
+    testRuntimeOnly libs.junit.platform.launcher
+
+    testImplementation libs.awssdk.s3.transfer.manager
+    testImplementation libs.testcontainers
+    testImplementation libs.testcontainers.junit.jupiter
+    testImplementation libs.testcontainers.localstack
+    testImplementation libs.testcontainers.minio
+
+    testRuntimeOnly project(':test-configs')
+    testRuntimeOnly project(':log-to-slf4j')
+    testRuntimeOnly libs.slf4j.simple
+}
+
+test {
+    useJUnitPlatform {
+        excludeTags("testcontainers")
+    }
+}
+
+tasks.register('testOutOfBand', Test) {
+    useJUnitPlatform {
+        includeTags("testcontainers")
+    }
+
+    dependsOn Docker.registryTask(project, 'localstack')
+    systemProperty 'testcontainers.localstack.image', Docker.localImageName('localstack')
+
+    dependsOn Docker.registryTask(project, 'minio')
+    systemProperty 'testcontainers.minio.image', Docker.localImageName('minio')
+}
+

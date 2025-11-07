@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.modelfarm;
 
 import io.deephaven.base.verify.Require;
@@ -9,7 +9,7 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.table.ColumnSource;
-import org.apache.commons.lang3.mutable.MutableLong;
+import io.deephaven.util.mutable.MutableLong;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.concurrent.CountDownLatch;
@@ -192,7 +192,7 @@ public class TestModelFarm extends RefreshingTableTestCase {
                     @Override
                     public void loadData(MutableLong data, long index, boolean usePrev) {
                         final ColumnSource<Long> columnSource = table().getColumnSource("Value", long.class);
-                        data.setValue(usePrev ? columnSource.getPrevLong(index) : columnSource.getLong(index));
+                        data.set(usePrev ? columnSource.getPrevLong(index) : columnSource.getLong(index));
                     }
                 },
                 nKeys);

@@ -1,10 +1,12 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.perf;
 
 import io.deephaven.auth.AuthContext;
 import io.deephaven.base.log.LogOutput;
+import io.deephaven.base.verify.Require;
+import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetShiftData;
@@ -19,6 +21,14 @@ import org.jetbrains.annotations.NotNull;
  * Entry class for tracking the performance characteristics of a single recurring update event.
  */
 public class PerformanceEntry extends BasePerformanceEntry implements TableListener.Entry {
+    /**
+     * If your system requires authentication contexts for performance logging, then set this property to true.
+     * Otherwise, errors can be delayed until the entry is logged; which makes them much harder to track down. The
+     * Community Core product does not require authentication contexts, so this defaults to false.
+     */
+    private final static boolean REQUIRE_AUTH_CONTEXT =
+            Configuration.getInstance().getBooleanWithDefault("PerformanceEntry.requireAuthContext", false);
+
     private final long id;
     private final long evaluationNumber;
     private final int operationNumber;
@@ -40,6 +50,7 @@ public class PerformanceEntry extends BasePerformanceEntry implements TableListe
     private long collections;
     private long collectionTimeMs;
 
+    private boolean loggedOnce;
     private final RuntimeMemory.Sample startSample;
     private final RuntimeMemory.Sample endSample;
 
@@ -50,7 +61,7 @@ public class PerformanceEntry extends BasePerformanceEntry implements TableListe
         this.operationNumber = operationNumber;
         this.description = description;
         this.callerLine = callerLine;
-        authContext = id == QueryConstants.NULL_INT ? null : ExecutionContext.getContext().getAuthContext();
+        authContext = id == QueryConstants.NULL_LONG ? null : getContext();
         this.updateGraphName = updateGraphName;
         startSample = new RuntimeMemory.Sample();
         endSample = new RuntimeMemory.Sample();
@@ -58,6 +69,12 @@ public class PerformanceEntry extends BasePerformanceEntry implements TableListe
         minFreeMemory = Long.MAX_VALUE;
         collections = 0;
         collectionTimeMs = 0;
+        loggedOnce = false;
+    }
+
+    private static AuthContext getContext() {
+        final AuthContext currentAuthContext = ExecutionContext.getContext().getAuthContext();
+        return REQUIRE_AUTH_CONTEXT ? Require.neqNull(currentAuthContext, "authContext") : currentAuthContext;
     }
 
     public final void onUpdateStart() {
@@ -217,6 +234,10 @@ public class PerformanceEntry extends BasePerformanceEntry implements TableListe
      * @return if this nugget is significant enough to be logged, otherwise it is aggregated into the small update entry
      */
     boolean shouldLogEntryInterval() {
+        if (UpdatePerformanceTracker.LOG_ALL_ENTRIES_ONCE && !loggedOnce) {
+            loggedOnce = true;
+            return true;
+        }
         return invocationCount > 0 && UpdatePerformanceTracker.LOG_THRESHOLD.shouldLog(getUsageNanos());
     }
 

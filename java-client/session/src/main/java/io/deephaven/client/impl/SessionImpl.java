@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.client.impl;
 
 import io.deephaven.client.impl.script.Changes;
@@ -42,6 +42,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
@@ -60,6 +61,13 @@ import java.util.function.Function;
 public final class SessionImpl extends SessionBase {
     private static final Logger log = LoggerFactory.getLogger(SessionImpl.class);
 
+    /**
+     * Creates a session. Closing the session does <b>not</b> close the underlying channel.
+     *
+     * @param config the config
+     * @return the session
+     * @throws InterruptedException if the thread is interrupted
+     */
     public static SessionImpl create(SessionImplConfig config) throws InterruptedException {
         final Authentication authentication =
                 Authentication.authenticate(config.channel(), config.authenticationTypeAndValue());
@@ -110,6 +118,9 @@ public final class SessionImpl extends SessionBase {
     private final BearerHandler bearerHandler;
     private final ExportTicketCreator exportTicketCreator;
     private final ScheduledFuture<?> pingJob;
+
+    /** Cache the close future, so we only close once. */
+    private CompletableFuture<Void> closeFuture;
 
     private SessionImpl(SessionImplConfig config, DeephavenChannel bearerChannel, Duration pingFrequency,
             BearerHandler bearerHandler) {
@@ -300,14 +311,19 @@ public final class SessionImpl extends SessionBase {
             log.warn("Timed out waiting for session close");
         } catch (ExecutionException e) {
             log.error("Exception waiting for session close", e);
+        } catch (CancellationException e) {
+            log.warn("Close cancelled", e);
         }
     }
 
     @Override
-    public CompletableFuture<Void> closeFuture() {
-        pingJob.cancel(false);
-        HandshakeRequest handshakeRequest = HandshakeRequest.getDefaultInstance();
-        return UnaryGrpcFuture.ignoreResponse(handshakeRequest, channel().session()::closeSession);
+    public synchronized CompletableFuture<Void> closeFuture() {
+        if (closeFuture == null) {
+            pingJob.cancel(false);
+            HandshakeRequest handshakeRequest = HandshakeRequest.getDefaultInstance();
+            closeFuture = UnaryGrpcFuture.ignoreResponse(handshakeRequest, channel().session()::closeSession);
+        }
+        return closeFuture;
     }
 
     @Override
@@ -402,21 +418,30 @@ public final class SessionImpl extends SessionBase {
         }
 
         @Override
-        public Changes executeCode(String code) throws InterruptedException, ExecutionException, TimeoutException {
-            return executeCodeFuture(code).get(config.executeTimeout().toNanos(), TimeUnit.NANOSECONDS);
+        public Changes executeCode(String code, ExecuteCodeOptions options)
+                throws InterruptedException, ExecutionException, TimeoutException {
+            return executeCodeFuture(code, options).get(config.executeTimeout().toNanos(), TimeUnit.NANOSECONDS);
         }
 
         @Override
-        public Changes executeScript(Path path)
+        public Changes executeScript(Path path, ExecuteCodeOptions options)
                 throws IOException, InterruptedException, ExecutionException, TimeoutException {
-            return executeScriptFuture(path).get(config.executeTimeout().toNanos(), TimeUnit.NANOSECONDS);
+            return executeScriptFuture(path, options).get(config.executeTimeout().toNanos(), TimeUnit.NANOSECONDS);
         }
 
         @Override
-        public CompletableFuture<Changes> executeCodeFuture(String code) {
-            final ExecuteCommandRequest request =
-                    ExecuteCommandRequest.newBuilder().setConsoleId(ticket()).setCode(code).build();
-            return UnaryGrpcFuture.of(request, channel().console()::executeCommand,
+        public CompletableFuture<Changes> executeCodeFuture(String code, ExecuteCodeOptions options) {
+            final ExecuteCommandRequest.Builder requestBuilder =
+                    ExecuteCommandRequest.newBuilder().setConsoleId(ticket()).setCode(code);
+
+            final ExecuteCodeOptions.SystemicType systemicOption = options.executeSystemic();
+            if (systemicOption != ExecuteCodeOptions.SystemicType.ServerDefault) {
+                requestBuilder.setSystemic(systemicOption == ExecuteCodeOptions.SystemicType.Systemic
+                        ? ExecuteCommandRequest.SystemicType.EXECUTE_SYSTEMIC
+                        : ExecuteCommandRequest.SystemicType.EXECUTE_NOT_SYSTEMIC);
+            }
+
+            return UnaryGrpcFuture.of(requestBuilder.build(), channel().console()::executeCommand,
                     response -> {
                         Changes.Builder builder = Changes.builder().changes(new FieldChanges(response.getChanges()));
                         if (!response.getErrorMessage().isEmpty()) {
@@ -427,9 +452,10 @@ public final class SessionImpl extends SessionBase {
         }
 
         @Override
-        public CompletableFuture<Changes> executeScriptFuture(Path path) throws IOException {
+        public CompletableFuture<Changes> executeScriptFuture(Path path, ExecuteCodeOptions options)
+                throws IOException {
             final String code = String.join(System.lineSeparator(), Files.readAllLines(path, StandardCharsets.UTF_8));
-            return executeCodeFuture(code);
+            return executeCodeFuture(code, options);
         }
 
         @Override

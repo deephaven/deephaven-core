@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.server.log;
 
 import io.deephaven.base.system.StandardStreamState;
@@ -12,9 +12,11 @@ import io.deephaven.io.logger.LogBuffer;
 import io.deephaven.io.logger.Logger;
 
 import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.io.UnsupportedEncodingException;
 import java.util.Set;
 
+@Singleton
 public class LogInit {
 
     private static final Logger log = LoggerFactory.getLogger(LogInit.class);
@@ -33,7 +35,8 @@ public class LogInit {
         this.sinkInits = sinkInits;
     }
 
-    public void run() throws UnsupportedEncodingException {
+    @Inject
+    public void run() {
         checkLogSinkIsSingleton();
         standardStreamState.setupRedirection();
         configureLoggerSink();

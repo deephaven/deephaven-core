@@ -1,14 +1,11 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit WritableCharChunk and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
-package io.deephaven.chunk;
-
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit WritableCharChunk and run "./gradlew replicateSourcesAndChunks" to regenerate
+//
 // @formatter:off
+package io.deephaven.chunk;
 
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.chunk.util.pools.MultiChunkPool;
@@ -25,8 +22,6 @@ import java.util.Arrays;
 
 import static io.deephaven.chunk.util.pools.ChunkPoolConstants.POOL_WRITABLE_CHUNKS;
 
-// @formatter:on
-
 /**
  * {@link WritableChunk} implementation for boolean data.
  */
@@ -36,25 +31,22 @@ public class WritableBooleanChunk<ATTR extends Any> extends BooleanChunk<ATTR> i
     private static final WritableBooleanChunk[] EMPTY_WRITABLE_BOOLEAN_CHUNK_ARRAY = new WritableBooleanChunk[0];
 
     static <ATTR extends Any> WritableBooleanChunk<ATTR>[] getEmptyChunkArray() {
-        //noinspection unchecked
+        // noinspection unchecked
         return EMPTY_WRITABLE_BOOLEAN_CHUNK_ARRAY;
     }
 
+    /**
+     * Get a {@link WritableBooleanChunk} with {@link #size()} of {@code size} for use by the caller until it is
+     * {@link #close() closed}.
+     *
+     * @param size The {@link #size()} and minimum capacity of the returned chunk
+     * @return The chunk
+     */
     public static <ATTR extends Any> WritableBooleanChunk<ATTR> makeWritableChunk(int size) {
         if (POOL_WRITABLE_CHUNKS) {
-            return MultiChunkPool.forThisThread().getBooleanChunkPool().takeWritableBooleanChunk(size);
+            return MultiChunkPool.forThisThread().takeWritableBooleanChunk(size);
         }
         return new WritableBooleanChunk<>(makeArray(size), 0, size);
-    }
-
-    @SuppressWarnings("rawtypes")
-    public static WritableBooleanChunk makeWritableChunkForPool(int size) {
-        return new WritableBooleanChunk(makeArray(size), 0, size) {
-            @Override
-            public void close() {
-                MultiChunkPool.forThisThread().getBooleanChunkPool().giveWritableBooleanChunk(this);
-            }
-        };
     }
 
     public static <ATTR extends Any> WritableBooleanChunk<ATTR> writableChunkWrap(boolean[] data) {
@@ -73,7 +65,9 @@ public class WritableBooleanChunk<ATTR extends Any> extends BooleanChunk<ATTR> i
         data[offset + index] = value;
     }
 
-    public final void add(boolean value) { data[offset + size++] = value; }
+    public final void add(boolean value) {
+        data[offset + size++] = value;
+    }
 
     @Override
     public WritableBooleanChunk<ATTR> slice(int offset, int capacity) {
@@ -112,7 +106,7 @@ public class WritableBooleanChunk<ATTR extends Any> extends BooleanChunk<ATTR> i
     // region fillWithBoxedValue
     @Override
     public final void fillWithBoxedValue(int offset, int size, Object value) {
-        fillWithValue(offset,size, TypeUtils.unbox((Boolean) value));
+        fillWithValue(offset, size, TypeUtils.unbox((Boolean) value));
     }
     // endregion fillWithBoxedValue
 
@@ -144,7 +138,7 @@ public class WritableBooleanChunk<ATTR extends Any> extends BooleanChunk<ATTR> i
 
     @Override
     public final void copyFromArray(Object srcArray, int srcOffset, int destOffset, int length) {
-        final boolean[] typedArray = (boolean[])srcArray;
+        final boolean[] typedArray = (boolean[]) srcArray;
         copyFromTypedArray(typedArray, srcOffset, destOffset, length);
     }
 
@@ -156,13 +150,13 @@ public class WritableBooleanChunk<ATTR extends Any> extends BooleanChunk<ATTR> i
             return;
         }
         if (ChunkHelpers.canCopyForward(src, srcOffset, data, destOffset, length)) {
-            //noinspection ManualArrayCopy
+            // noinspection ManualArrayCopy
             for (int ii = 0; ii < length; ++ii) {
                 data[netDestOffset + ii] = src[srcOffset + ii];
             }
             return;
         }
-        //noinspection ManualArrayCopy
+        // noinspection ManualArrayCopy
         for (int ii = length - 1; ii >= 0; --ii) {
             data[netDestOffset + ii] = src[srcOffset + ii];
         }
@@ -180,12 +174,12 @@ public class WritableBooleanChunk<ATTR extends Any> extends BooleanChunk<ATTR> i
     // endregion sort
 
     @Override
-    public void close() {
-    }
+    public void close() {}
 
     // region downcast
-    public static <ATTR extends Any, ATTR_DERIV extends ATTR> WritableBooleanChunk<ATTR> upcast(WritableBooleanChunk<ATTR_DERIV> self) {
-        //noinspection unchecked
+    public static <ATTR extends Any, ATTR_DERIV extends ATTR> WritableBooleanChunk<ATTR> upcast(
+            WritableBooleanChunk<ATTR_DERIV> self) {
+        // noinspection unchecked
         return (WritableBooleanChunk<ATTR>) self;
     }
     // endregion downcast

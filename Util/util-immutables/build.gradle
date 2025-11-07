@@ -1,8 +1,0 @@
-plugins {
-    id 'java-library'
-    id 'io.deephaven.project.register'
-}
-
-dependencies {
-    compileOnlyApi 'org.immutables:value-annotations:2.9.2'
-}

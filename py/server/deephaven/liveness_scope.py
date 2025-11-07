@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 #
 
 """This module gives the users a finer degree of control over when to clean up unreferenced nodes in the query update
@@ -56,7 +56,7 @@ import contextlib
 import jpy
 
 from typing import Union, Iterator
-from warnings import warn
+
 
 from deephaven import DHError
 from deephaven._wrapper import JObjectWrapper

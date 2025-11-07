@@ -1,3 +1,6 @@
+/*
+ * Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+ */
 #include "deephaven/dhcore/column/column_source_helpers.h"
 
 namespace deephaven::dhcore::column::internal {
@@ -11,4 +14,6 @@ const char HumanReadableTypeNames::kDoubleName[] = "double";
 const char HumanReadableTypeNames::kBoolName[] = "bool";
 const char HumanReadableTypeNames::kStringName[] = "string";
 const char HumanReadableTypeNames::kDateTimeName[] = "DateTime";
+const char HumanReadableTypeNames::kLocalDateName[] = "LocalDate";
+const char HumanReadableTypeNames::kLocalTimeName[] = "LocalTime";
 }  // namespace deephaven::dhcore::column::internal

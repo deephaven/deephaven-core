@@ -1,8 +1,9 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.time.calendar;
 
+import io.deephaven.base.clock.Clock;
 import io.deephaven.base.testing.BaseArrayTestCase;
 import io.deephaven.time.DateTimeUtils;
 
@@ -21,7 +22,6 @@ import java.util.*;
  * See also {@code StaticCalendarMethodsGenerator}.
  */
 public class TestStaticCalendarMethods extends BaseArrayTestCase {
-
     private final Map<Class<?>, Object[]> data = new HashMap<>();
 
     {
@@ -93,6 +93,12 @@ public class TestStaticCalendarMethods extends BaseArrayTestCase {
         }
     }
 
+    @Override
+    public void setUp() throws Exception {
+        super.setUp();
+        CalendarInit.init();
+    }
+
     // test to make sure these methods work inside the query strings
     public void testAll() {
         final Set<String> excludes = new HashSet<>();
@@ -101,6 +107,13 @@ public class TestStaticCalendarMethods extends BaseArrayTestCase {
         excludes.add("description");
         excludes.add("firstValidDate");
         excludes.add("lastValidDate");
+        excludes.add("clearCache");
+
+        // Occasionally tests fail because of invalid clocks on the test system
+        final LocalDate startDate = LocalDate.of(1990, 1, 1);
+        final LocalDate currentDate = DateTimeUtils.todayLocalDate();
+        assertTrue("Checking for a valid date on the test system: currentDate=" + currentDate,
+                currentDate.isAfter(startDate));
 
         for (Method m1 : BusinessCalendar.class.getMethods()) {
             if (m1.getDeclaringClass() == Object.class ||

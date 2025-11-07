@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.util;
 
 import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
@@ -19,6 +19,16 @@ public class TableLoggers {
     @ScriptApi
     public static QueryTable updatePerformanceLog() {
         return UpdatePerformanceTracker.getQueryTable();
+    }
+
+    /**
+     * Return a table with update performance ancestor data.
+     *
+     * @return A table with update performance ancestor data.
+     */
+    @ScriptApi
+    public static QueryTable updatePerformanceAncestorsLog() {
+        return UpdatePerformanceTracker.getAncestorTable();
     }
 
     /**

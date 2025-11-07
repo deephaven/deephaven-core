@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.parquet.base;
 
 import org.apache.parquet.column.statistics.Statistics;
@@ -16,7 +16,7 @@ import java.nio.IntBuffer;
  * Provides the option to write values of specific type in bulk The concrete type of the bulkValue object depends on the
  * specific implementation
  */
-public interface BulkWriter<BUFFER_TYPE> {
+interface BulkWriter<BUFFER_TYPE> {
     class WriteResult {
         final int valueCount;
         final IntBuffer nullOffsets;

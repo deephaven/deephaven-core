@@ -1,16 +1,18 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+/*
+ * Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
  */
 #pragma once
 
-#include <map>
+#include <cstddef>
 #include <memory>
 #include <optional>
+#include <ostream>
+#include <string>
+#include <string_view>
+#include <utility>
 #include <vector>
 #include "deephaven/dhcore/column/column_source.h"
 #include "deephaven/dhcore/container/row_sequence.h"
-#include "deephaven/third_party/fmt/format.h"
-#include "deephaven/third_party/fmt/ostream.h"
 
 namespace deephaven::dhcore::clienttable {
 /**
@@ -75,14 +77,14 @@ public:
   [[nodiscard]]
   virtual std::shared_ptr<RowSequence> GetRowSequence() const = 0;
   /**
-   * Gets a ColumnSource from the clienttable by index.
+   * Gets a ColumnSource from the ClientTable by index.
    * @param column_index Must be in the half-open interval [0, NumColumns).
    */
   [[nodiscard]]
   virtual std::shared_ptr<ColumnSource> GetColumn(size_t column_index) const = 0;
 
   /**
-   * Gets a ColumnSource from the clienttable by name. 'strict' controls whether the method
+   * Gets a ColumnSource from the ClientTable by name. 'strict' controls whether the method
    * must succeed.
    * @param name The name of the column.
    * @param strict Whether the method must succeed.
@@ -92,7 +94,7 @@ public:
   [[nodiscard]]
   std::shared_ptr<ColumnSource> GetColumn(std::string_view name, bool strict) const;
   /**
-   * Gets the index of a ColumnSource from the clienttable by name. 'strict' controls whether the method
+   * Gets the index of a ColumnSource from the ClientTable by name. 'strict' controls whether the method
    * must succeed.
    * @param name The name of the column.
    * @param strict Whether the method must succeed.

@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.chunk;
 
 import io.deephaven.chunk.attributes.Any;
@@ -14,7 +14,7 @@ import java.nio.Buffer;
  *
  * @param <ATTR> Descriptive attribute that applies to the elements stored within this WritableChunk
  */
-public interface WritableChunk<ATTR extends Any> extends Chunk<ATTR>, PoolableChunk {
+public interface WritableChunk<ATTR extends Any> extends Chunk<ATTR>, PoolableChunk<ATTR> {
     @Override
     WritableChunk<ATTR> slice(int offset, int capacity);
 

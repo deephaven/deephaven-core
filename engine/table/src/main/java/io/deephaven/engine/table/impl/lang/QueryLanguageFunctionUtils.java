@@ -1,10 +1,11 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.lang;
 
 import io.deephaven.configuration.Configuration;
 import io.deephaven.util.QueryConstants;
+import io.deephaven.util.annotations.UserInvocationPermitted;
 import org.jpy.PyObject;
 
 import java.math.BigDecimal;
@@ -14,6 +15,7 @@ import java.math.RoundingMode;
 import static java.lang.Math.*;
 
 @SuppressWarnings({"unused", "WeakerAccess", "SimplifiableIfStatement"})
+@UserInvocationPermitted(value = "function_library")
 public final class QueryLanguageFunctionUtils {
 
     private static final String DEFAULT_SCALE_PROPERTY = "defaultScale";

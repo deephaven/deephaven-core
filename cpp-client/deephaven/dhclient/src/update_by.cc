@@ -1,10 +1,10 @@
 /*
- * Copyright (c) 2016-2023 Deephaven Data Labs and Patent Pending
+ * Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
  */
 #include "deephaven/client/client.h"
 
-#include "deephaven/proto/table.pb.h"
-#include "deephaven/proto/table.grpc.pb.h"
+#include "deephaven_core/proto/table.pb.h"
+#include "deephaven_core/proto/table.grpc.pb.h"
 #include "deephaven/client/impl/update_by_operation_impl.h"
 #include "deephaven/client/impl/util.h"
 #include "deephaven/client/update_by.h"

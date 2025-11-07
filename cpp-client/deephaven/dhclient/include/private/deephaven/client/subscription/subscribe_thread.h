@@ -1,5 +1,5 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+/*
+ * Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
  */
 #pragma once
 
@@ -8,7 +8,7 @@
 #include "deephaven/client/subscription/subscription_handle.h"
 #include "deephaven/dhcore/clienttable/client_table.h"
 #include "deephaven/dhcore/ticking/ticking.h"
-#include "deephaven/proto/ticket.pb.h"
+#include "deephaven_core/proto/ticket.pb.h"
 
 namespace deephaven::client::subscription {
 class SubscriptionThread {

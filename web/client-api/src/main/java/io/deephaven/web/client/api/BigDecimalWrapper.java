@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.web.client.api;
 
 import jsinterop.annotations.JsIgnore;
@@ -42,5 +42,20 @@ public class BigDecimalWrapper {
     @Override
     public String toString() {
         return value.toString();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+
+        BigDecimalWrapper that = (BigDecimalWrapper) o;
+        return value.equals(that.value);
+    }
+
+    @Override
+    public int hashCode() {
+        return value.hashCode();
     }
 }

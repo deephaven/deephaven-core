@@ -1,11 +1,10 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharBlinkSortedFirstOrLastChunkedOperator and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit CharBlinkSortedFirstOrLastChunkedOperator and run "./gradlew replicateOperators" to regenerate
+//
+// @formatter:off
 package io.deephaven.engine.table.impl.by;
 
 import io.deephaven.base.verify.Assert;
@@ -67,12 +66,12 @@ public class FloatBlinkSortedFirstOrLastChunkedOperator extends CopyingPermutedB
 
     @Override
     public void addChunk(final BucketedContext bucketedContext, // Unused
-                         @NotNull final Chunk<? extends Values> values,
-                         @NotNull final LongChunk<? extends RowKeys> inputRowKeys,
-                         @NotNull final IntChunk<RowKeys> destinations,
-                         @NotNull final IntChunk<ChunkPositions> startPositions,
-                         @NotNull final IntChunk<ChunkLengths> length,
-                         @NotNull final WritableBooleanChunk<Values> stateModified) {
+            @NotNull final Chunk<? extends Values> values,
+            @NotNull final LongChunk<? extends RowKeys> inputRowKeys,
+            @NotNull final IntChunk<RowKeys> destinations,
+            @NotNull final IntChunk<ChunkPositions> startPositions,
+            @NotNull final IntChunk<ChunkLengths> length,
+            @NotNull final WritableBooleanChunk<Values> stateModified) {
         final FloatChunk<? extends Values> typedValues = values.asFloatChunk();
         for (int ii = 0; ii < startPositions.size(); ++ii) {
             final int startPosition = startPositions.get(ii);
@@ -84,18 +83,18 @@ public class FloatBlinkSortedFirstOrLastChunkedOperator extends CopyingPermutedB
 
     @Override
     public boolean addChunk(final SingletonContext singletonContext, // Unused
-                            final int chunkSize,
-                            @NotNull final Chunk<? extends Values> values,
-                            @NotNull final LongChunk<? extends RowKeys> inputRowKeys,
-                            final long destination) {
+            final int chunkSize,
+            @NotNull final Chunk<? extends Values> values,
+            @NotNull final LongChunk<? extends RowKeys> inputRowKeys,
+            final long destination) {
         return addChunk(values.asFloatChunk(), inputRowKeys, 0, inputRowKeys.size(), destination);
     }
 
     private boolean addChunk(@NotNull final FloatChunk<? extends Values> values,
-                             @NotNull final LongChunk<? extends RowKeys> indices,
-                             final int start,
-                             final int length,
-                             final long destination) {
+            @NotNull final LongChunk<? extends RowKeys> indices,
+            final int start,
+            final int length,
+            final long destination) {
         if (length == 0) {
             return false;
         }
@@ -114,13 +113,10 @@ public class FloatBlinkSortedFirstOrLastChunkedOperator extends CopyingPermutedB
         for (int ii = newDestination ? 1 : 0; ii < length; ++ii) {
             final int chunkPos = start + ii;
             final float value = values.get(chunkPos);
-            final int comparison = FloatComparisons.compare(value, bestValue);
-            // @formatter:off
             // No need to compare relative row keys. A stream's logical row set is always monotonically increasing.
-            final boolean better =
-                    ( isFirst && comparison <  0) ||
-                    (!isFirst && comparison >= 0)  ;
-            // @formatter:on
+            final boolean better = isFirst
+                    ? FloatComparisons.lt(value, bestValue)
+                    : FloatComparisons.geq(value, bestValue);
             if (better) {
                 bestChunkPos = chunkPos;
                 bestValue = value;
@@ -149,7 +145,8 @@ public class FloatBlinkSortedFirstOrLastChunkedOperator extends CopyingPermutedB
                 "downstream.removed.empty() && downstream.shifted.empty()");
         // In a combo-agg, we may get modifications from other operators that we didn't record as modifications in
         // our redirections, so we separately track updated destinations.
-        try (final RowSequence changedDestinations = isCombo ? changedDestinationsBuilder.build() : downstream.modified().union(downstream.added())) {
+        try (final RowSequence changedDestinations =
+                isCombo ? changedDestinationsBuilder.build() : downstream.modified().union(downstream.added())) {
             copyStreamToResult(changedDestinations);
         }
         redirections = null;

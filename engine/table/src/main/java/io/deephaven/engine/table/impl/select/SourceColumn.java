@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.select;
 
 import io.deephaven.api.JoinAddition;
@@ -15,10 +15,7 @@ import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.rowset.TrackingRowSet;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class SourceColumn implements SelectColumn {
 
@@ -46,7 +43,7 @@ public class SourceColumn implements SelectColumn {
         this(NameValidator.validateColumnName(sourceName), NameValidator.validateColumnName(destName), true);
     }
 
-    private SourceColumn(String sourceName, String destName, boolean unused) {
+    private SourceColumn(@NotNull final String sourceName, @NotNull final String destName, boolean unused) {
         this.sourceName = sourceName;
         this.destName = destName;
     }
@@ -61,7 +58,7 @@ public class SourceColumn implements SelectColumn {
     }
 
     @Override
-    public List<String> initDef(Map<String, ColumnDefinition<?>> columnDefinitionMap) {
+    public List<String> initDef(@NotNull final Map<String, ColumnDefinition<?>> columnDefinitionMap) {
         sourceDefinition = columnDefinitionMap.get(sourceName);
         if (sourceDefinition == null) {
             throw new NoSuchColumnException(columnDefinitionMap.keySet(), sourceName);
@@ -76,6 +73,15 @@ public class SourceColumn implements SelectColumn {
             return sourceDefinition.getDataType();
         }
         return sourceColumn.getType();
+    }
+
+    @Override
+    public Class<?> getReturnedComponentType() {
+        // Try to be a little flexible, depending on whether initInputs or initDef was called.
+        if (sourceDefinition != null) {
+            return sourceDefinition.getComponentType();
+        }
+        return sourceColumn.getComponentType();
     }
 
     @Override
@@ -162,6 +168,11 @@ public class SourceColumn implements SelectColumn {
     @Override
     public boolean isStateless() {
         return sourceColumn.isStateless();
+    }
+
+    @Override
+    public Optional<SourceColumn> maybeGetSourceColumn() {
+        return Optional.of(this);
     }
 
     @Override

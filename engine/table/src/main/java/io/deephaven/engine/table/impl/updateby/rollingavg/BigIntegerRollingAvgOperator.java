@@ -1,3 +1,6 @@
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.updateby.rollingavg;
 
 import io.deephaven.base.RingBuffer;
@@ -7,7 +10,6 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
 import io.deephaven.engine.table.impl.updateby.internal.BaseObjectUpdateByOperator;
-import io.deephaven.engine.table.impl.util.RowRedirection;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -28,6 +30,7 @@ public final class BigIntegerRollingAvgOperator extends BaseObjectUpdateByOperat
         protected ObjectChunk<BigInteger, ? extends Values> objectInfluencerValuesChunk;
         protected RingBuffer<BigInteger> objectWindowValues;
 
+        @SuppressWarnings("unused")
         protected Context(final int affectedChunkSize, final int influencerChunkSize) {
             super(affectedChunkSize);
             objectWindowValues = new RingBuffer<>(RING_BUFFER_INITIAL_CAPACITY);
@@ -104,19 +107,26 @@ public final class BigIntegerRollingAvgOperator extends BaseObjectUpdateByOperat
         return new Context(affectedChunkSize, influencerChunkSize);
     }
 
-    public BigIntegerRollingAvgOperator(@NotNull final MatchPair pair,
-                                        @NotNull final String[] affectingColumns,
-                                        @Nullable final RowRedirection rowRedirection,
-                                        @Nullable final String timestampColumnName,
-                                        final long reverseWindowScaleUnits,
-                                        final long forwardWindowScaleUnits,
-                                        @NotNull final MathContext mathContext
-                                        // region extra-constructor-args
-                                        // endregion extra-constructor-args
-                                        ) {
-        super(pair, affectingColumns, rowRedirection, timestampColumnName, reverseWindowScaleUnits, forwardWindowScaleUnits, true, BigDecimal.class);
+    public BigIntegerRollingAvgOperator(
+            @NotNull final MatchPair pair,
+            @NotNull final String[] affectingColumns,
+            @Nullable final String timestampColumnName,
+            final long reverseWindowScaleUnits,
+            final long forwardWindowScaleUnits,
+            @NotNull final MathContext mathContext) {
+        super(pair, affectingColumns, timestampColumnName, reverseWindowScaleUnits, forwardWindowScaleUnits, true,
+                BigDecimal.class);
         this.mathContext = mathContext;
-        // region constructor
-        // endregion constructor        
+    }
+
+    @Override
+    public UpdateByOperator copy() {
+        return new BigIntegerRollingAvgOperator(
+                pair,
+                affectingColumns,
+                timestampColumnName,
+                reverseWindowScaleUnits,
+                forwardWindowScaleUnits,
+                mathContext);
     }
 }

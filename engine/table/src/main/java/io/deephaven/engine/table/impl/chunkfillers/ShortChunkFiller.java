@@ -1,11 +1,10 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharChunkFiller and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit CharChunkFiller and run "./gradlew replicateSourcesAndChunks" to regenerate
+//
+// @formatter:off
 package io.deephaven.engine.table.impl.chunkfillers;
 
 import io.deephaven.engine.table.ElementSource;
@@ -18,37 +17,40 @@ import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.WritableShortChunk;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.engine.rowset.RowSequence;
-import org.apache.commons.lang3.mutable.MutableInt;
+import io.deephaven.util.mutable.MutableInt;
 
 public final class ShortChunkFiller implements ChunkFiller {
     public static final ShortChunkFiller INSTANCE = new ShortChunkFiller();
 
     @Override
-    public final void fillByRanges(final ElementSource src, final RowSequence keys, final WritableChunk<? super Values> dest) {
+    public final void fillByRanges(final ElementSource src, final RowSequence keys,
+            final WritableChunk<? super Values> dest) {
         final WritableShortChunk<? super Values> typedDest = dest.asWritableShortChunk();
         final MutableInt destPos = new MutableInt(0);
         keys.forAllRowKeyRanges((start, end) -> {
             for (long v = start; v <= end; ++v) {
-                typedDest.set(destPos.intValue(), src.getShort(v));
+                typedDest.set(destPos.get(), src.getShort(v));
                 destPos.increment();
             }
         });
-        typedDest.setSize(destPos.intValue());
+        typedDest.setSize(destPos.get());
     }
 
     @Override
-    public final void fillByIndices(final ElementSource src, final RowSequence keys, final WritableChunk<? super Values> dest) {
+    public final void fillByIndices(final ElementSource src, final RowSequence keys,
+            final WritableChunk<? super Values> dest) {
         final WritableShortChunk<? super Values> typedDest = dest.asWritableShortChunk();
         final MutableInt destPos = new MutableInt(0);
         keys.forAllRowKeys(v -> {
-            typedDest.set(destPos.intValue(), src.getShort(v));
+            typedDest.set(destPos.get(), src.getShort(v));
             destPos.increment();
         });
-        typedDest.setSize(destPos.intValue());
+        typedDest.setSize(destPos.get());
     }
 
     @Override
-    public final void fillByIndices(final ElementSource src, final LongChunk<? extends RowKeys> chunk, final WritableChunk<? super Values> dest) {
+    public final void fillByIndices(final ElementSource src, final LongChunk<? extends RowKeys> chunk,
+            final WritableChunk<? super Values> dest) {
         final WritableShortChunk<? super Values> typedDest = dest.asWritableShortChunk();
         final int sz = chunk.size();
         // Calling setSize early provides a more informative exception if the destination chunk
@@ -60,31 +62,34 @@ public final class ShortChunkFiller implements ChunkFiller {
     }
 
     @Override
-    public final void fillPrevByRanges(final ElementSource src, final RowSequence keys, final WritableChunk<? super Values> dest) {
+    public final void fillPrevByRanges(final ElementSource src, final RowSequence keys,
+            final WritableChunk<? super Values> dest) {
         final WritableShortChunk<? super Values> typedDest = dest.asWritableShortChunk();
         final MutableInt destPos = new MutableInt(0);
         keys.forAllRowKeyRanges((start, end) -> {
             for (long v = start; v <= end; ++v) {
-                typedDest.set(destPos.intValue(), src.getPrevShort(v));
+                typedDest.set(destPos.get(), src.getPrevShort(v));
                 destPos.increment();
             }
         });
-        typedDest.setSize(destPos.intValue());
+        typedDest.setSize(destPos.get());
     }
 
     @Override
-    public final void fillPrevByIndices(final ElementSource src, final RowSequence keys, final WritableChunk<? super Values> dest) {
+    public final void fillPrevByIndices(final ElementSource src, final RowSequence keys,
+            final WritableChunk<? super Values> dest) {
         final WritableShortChunk<? super Values> typedDest = dest.asWritableShortChunk();
         final MutableInt destPos = new MutableInt(0);
         keys.forAllRowKeys(v -> {
-            typedDest.set(destPos.intValue(), src.getPrevShort(v));
+            typedDest.set(destPos.get(), src.getPrevShort(v));
             destPos.increment();
         });
-        typedDest.setSize(destPos.intValue());
+        typedDest.setSize(destPos.get());
     }
 
     @Override
-    public final void fillPrevByIndices(final ElementSource src, final LongChunk<? extends RowKeys> chunk, final WritableChunk<? super Values> dest) {
+    public final void fillPrevByIndices(final ElementSource src, final LongChunk<? extends RowKeys> chunk,
+            final WritableChunk<? super Values> dest) {
         final WritableShortChunk<? super Values> typedDest = dest.asWritableShortChunk();
         final int sz = chunk.size();
         // Calling setSize early provides a more informative exception if the destination chunk

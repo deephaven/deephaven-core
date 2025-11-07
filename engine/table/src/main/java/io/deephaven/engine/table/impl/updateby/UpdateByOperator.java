@@ -1,3 +1,6 @@
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.updateby;
 
 import io.deephaven.chunk.Chunk;
@@ -7,7 +10,10 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
-import io.deephaven.engine.table.*;
+import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.ModifiedColumnSet;
+import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.util.RowRedirection;
@@ -27,7 +33,7 @@ import java.util.Map;
  * {@link UpdateByOperator#initializeRolling(Context, RowSet)} (Context)} for windowed operators</li>
  * <li>{@link UpdateByOperator.Context#accumulateCumulative(RowSequence, Chunk[], LongChunk, int)} for cumulative
  * operators or
- * {@link UpdateByOperator.Context#accumulateRolling(RowSequence, Chunk[], LongChunk, LongChunk, IntChunk, IntChunk, int)}
+ * {@link UpdateByOperator.Context#accumulateRolling(RowSequence, Chunk[], LongChunk, LongChunk, IntChunk, IntChunk, int, int)}
  * for windowed operators</li>
  * <li>{@link #finishUpdate(UpdateByOperator.Context)}</li>
  * </ol>
@@ -35,13 +41,13 @@ import java.util.Map;
 public abstract class UpdateByOperator {
     protected final MatchPair pair;
     protected final String[] affectingColumns;
-    protected final RowRedirection rowRedirection;
 
     protected final long reverseWindowScaleUnits;
     protected final long forwardWindowScaleUnits;
     protected final String timestampColumnName;
+    protected final boolean isWindowed;
 
-    final boolean isWindowed;
+    protected RowRedirection rowRedirection;
 
     /**
      * The input modifiedColumnSet for this operator
@@ -93,18 +99,48 @@ public abstract class UpdateByOperator {
             throw new UnsupportedOperationException("pop() must be overriden by rolling operators");
         }
 
-        public abstract void accumulateCumulative(RowSequence inputKeys,
+        /**
+         * For cumulative operators only, this method will be called to pass the input chunk data to the operator and
+         * produce the output data values.
+         *
+         * @param inputKeys the keys for the input data rows (also matches the output keys)
+         * @param valueChunkArr the input data chunks needed by the operator for internal calculations
+         * @param tsChunk the timestamp chunk for the input data (if applicable)
+         * @param len the number of items in the input data chunks
+         */
+        public abstract void accumulateCumulative(
+                RowSequence inputKeys,
                 Chunk<? extends Values>[] valueChunkArr,
                 LongChunk<? extends Values> tsChunk,
                 int len);
 
-        public abstract void accumulateRolling(RowSequence inputKeys,
+        /**
+         * For windowed operators only, this method will be called to pass the input chunk data to the operator and
+         * produce the output data values. It is important to note that the size of the influencer (input) and affected
+         * (output) chunks are not likely be the same. We pass these sizes explicitly to the operators for the sake of
+         * the operators (such as {@link io.deephaven.engine.table.impl.updateby.countwhere.CountWhereOperator} with
+         * zero input columns) where no input chunks are provided but we must still process the exact number of input
+         * rows.
+         *
+         * @param inputKeys the keys for the input data rows (also matches the output keys)
+         * @param influencerValueChunkArr the input data chunks needed by the operator for internal calculations, these
+         *        values will be pushed and popped into the current window
+         * @param affectedPosChunk the row positions of the affected rows
+         * @param influencerPosChunk the row positions of the influencer rows
+         * @param pushChunk a chunk containing the push instructions for each output row to be calculated
+         * @param popChunk a chunk containing the pop instructions for each output row to be calculated
+         * @param affectedCount how many affected (output) rows are being computed
+         * @param influencerCount how many influencer (input) rows are needed for the computation
+         */
+        public abstract void accumulateRolling(
+                RowSequence inputKeys,
                 Chunk<? extends Values>[] influencerValueChunkArr,
                 LongChunk<OrderedRowKeys> affectedPosChunk,
                 LongChunk<OrderedRowKeys> influencerPosChunk,
                 IntChunk<? extends Values> pushChunk,
                 IntChunk<? extends Values> popChunk,
-                int len);
+                int affectedCount,
+                int influencerCount);
 
         /**
          * Write the current value for this row to the output chunk
@@ -124,16 +160,15 @@ public abstract class UpdateByOperator {
         protected abstract void reset();
     }
 
-    protected UpdateByOperator(@NotNull final MatchPair pair,
+    protected UpdateByOperator(
+            @NotNull final MatchPair pair,
             @NotNull final String[] affectingColumns,
-            @Nullable final RowRedirection rowRedirection,
             @Nullable final String timestampColumnName,
             final long reverseWindowScaleUnits,
             final long forwardWindowScaleUnits,
             final boolean isWindowed) {
         this.pair = pair;
         this.affectingColumns = affectingColumns;
-        this.rowRedirection = rowRedirection;
         this.timestampColumnName = timestampColumnName;
         this.reverseWindowScaleUnits = reverseWindowScaleUnits;
         this.forwardWindowScaleUnits = forwardWindowScaleUnits;
@@ -141,18 +176,59 @@ public abstract class UpdateByOperator {
     }
 
     /**
+     * Create an uninitialized copy of this operator. {@link #initializeSources(Table, RowRedirection)} must be called
+     * before this operator can be used.
+     *
+     * @return a copy of this operator
+     */
+    public abstract UpdateByOperator copy();
+
+    /**
+     * Initialize this operator with a specific source table (and row redirection if needed). This will be called
+     * exactly once per operator.
+     */
+    public abstract void initializeSources(@NotNull Table source, @Nullable RowRedirection rowRedirection);
+
+    /**
+     * Initialize the bucket context for a cumulative operator and pass in the bucket key values. Most operators will
+     * not need the key values, but those that do can override this method.
+     */
+    public void initializeCumulativeWithKeyValues(
+            @NotNull final Context context,
+            final long firstUnmodifiedKey,
+            final long firstUnmodifiedTimestamp,
+            @NotNull final RowSet bucketRowSet,
+            @NotNull Object[] bucketKeyValues) {
+        initializeCumulative(context, firstUnmodifiedKey, firstUnmodifiedTimestamp, bucketRowSet);
+    }
+
+    /**
      * Initialize the bucket context for a cumulative operator
      */
-    public void initializeCumulative(@NotNull final Context context, final long firstUnmodifiedKey,
+    public void initializeCumulative(
+            @NotNull final Context context,
+            final long firstUnmodifiedKey,
             final long firstUnmodifiedTimestamp,
             @NotNull final RowSet bucketRowSet) {
         context.reset();
     }
 
     /**
+     * Initialize the bucket context for a windowed operator and pass in the bucket key values. Most operators will not
+     * need the key values, but those that do can override this method.
+     */
+    public void initializeRollingWithKeyValues(
+            @NotNull final Context context,
+            @NotNull final RowSet bucketRowSet,
+            @NotNull Object[] bucketKeyValues) {
+        initializeRolling(context, bucketRowSet);
+    }
+
+    /**
      * Initialize the bucket context for a windowed operator
      */
-    public void initializeRolling(@NotNull final Context context,
+    public void initializeRolling(
+            @NotNull final Context context,
             @NotNull final RowSet bucketRowSet) {
         context.reset();
     }
@@ -240,6 +316,7 @@ public abstract class UpdateByOperator {
      *
      * @param context the context object
      */
+    @SuppressWarnings("unused")
     protected void finishUpdate(@NotNull final Context context) {}
 
     /**

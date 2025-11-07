@@ -1,16 +1,18 @@
-/**
- * Copyright (c) 2016-2023 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.util;
 
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.impl.DataAccessHelpers;
+import io.deephaven.engine.table.vectors.ColumnVectors;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.time.DateTimeUtils;
+import io.deephaven.time.calendar.CalendarInit;
 import io.deephaven.time.calendar.StaticCalendarMethods;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -61,8 +63,7 @@ public class TestCalendarMethodsFromTable {
 
     @SuppressWarnings("SameParameterValue")
     private Object getVal(final Table t, final String column) {
-        // noinspection deprecation
-        return DataAccessHelpers.getColumn(t, column).get(0);
+        return t.getColumnSource(column).get(t.getRowSet().firstRowKey());
     }
 
     @SuppressWarnings("StringConcatenationInLoop")
@@ -112,6 +113,11 @@ public class TestCalendarMethodsFromTable {
         } else {
             assertEquals(query, target, getVal(emptyTable(1).update(query), "X"));
         }
+    }
+
+    @Before
+    public void setUp() throws Exception {
+        CalendarInit.init();
     }
 
     @Test

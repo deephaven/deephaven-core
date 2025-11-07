@@ -2,8 +2,8 @@ plugins {
   id 'java'
 }
 
-def runtimeVersion = Integer.parseInt((String)project.findProperty('runtimeVersion') ?: '11')
-def testRuntimeVersion = Integer.parseInt((String)project.findProperty('testRuntimeVersion') ?: '11')
+def runtimeVersion = Integer.parseInt((String)project.findProperty('runtimeVersion') ?: '21')
+def testRuntimeVersion = Integer.parseInt((String)project.findProperty('testRuntimeVersion') ?: '21')
 
 //    Caused by: java.lang.reflect.InaccessibleObjectException: Unable to make field long java.nio.Buffer.address accessible: module java.base does not "opens java.nio" to unnamed module @5a42bbf4
 //     at java.base/java.lang.reflect.AccessibleObject.checkCanSetAccessible(AccessibleObject.java:354)

@@ -1,0 +1,91 @@
+{
+  "format-version" : 2,
+  "table-uuid" : "f1d2074d-58b0-4087-8edb-8d85f1472553",
+  "location" : "s3://warehouse/sales/sales_single",
+  "last-sequence-number" : 1,
+  "last-updated-ms" : 1716234544074,
+  "last-column-id" : 5,
+  "current-schema-id" : 0,
+  "schemas" : [ {
+    "type" : "struct",
+    "schema-id" : 0,
+    "fields" : [ {
+      "id" : 1,
+      "name" : "Region",
+      "required" : false,
+      "type" : "string"
+    }, {
+      "id" : 2,
+      "name" : "Item_Type",
+      "required" : false,
+      "type" : "string"
+    }, {
+      "id" : 3,
+      "name" : "Units_Sold",
+      "required" : false,
+      "type" : "int"
+    }, {
+      "id" : 4,
+      "name" : "Unit_Price",
+      "required" : false,
+      "type" : "double"
+    }, {
+      "id" : 5,
+      "name" : "Order_Date",
+      "required" : false,
+      "type" : "timestamptz"
+    } ]
+  } ],
+  "default-spec-id" : 0,
+  "partition-specs" : [ {
+    "spec-id" : 0,
+    "fields" : [ ]
+  } ],
+  "last-partition-id" : 999,
+  "default-sort-order-id" : 0,
+  "sort-orders" : [ {
+    "order-id" : 0,
+    "fields" : [ ]
+  } ],
+  "properties" : {
+    "owner" : "root",
+    "created-at" : "2024-05-20T19:49:02.681248048Z",
+    "write.format.default" : "parquet",
+    "write.parquet.compression-codec" : "zstd"
+  },
+  "current-snapshot-id" : 5481576066981634597,
+  "refs" : {
+    "main" : {
+      "snapshot-id" : 5481576066981634597,
+      "type" : "branch"
+    }
+  },
+  "snapshots" : [ {
+    "sequence-number" : 1,
+    "snapshot-id" : 5481576066981634597,
+    "timestamp-ms" : 1716234544074,
+    "summary" : {
+      "operation" : "append",
+      "spark.app.id" : "local-1716234462547",
+      "added-data-files" : "1",
+      "added-records" : "100000",
+      "added-files-size" : "729342",
+      "changed-partition-count" : "1",
+      "total-records" : "100000",
+      "total-files-size" : "729342",
+      "total-data-files" : "1",
+      "total-delete-files" : "0",
+      "total-position-deletes" : "0",
+      "total-equality-deletes" : "0"
+    },
+    "manifest-list" : "s3://warehouse/sales/sales_single/metadata/snap-5481576066981634597-1-3395af41-65d8-41f0-8674-13624d6129c6.avro",
+    "schema-id" : 0
+  } ],
+  "statistics" : [ ],
+  "partition-statistics" : [ ],
+  "snapshot-log" : [ {
+    "timestamp-ms" : 1716234544074,
+    "snapshot-id" : 5481576066981634597
+  } ],
+  "metadata-log" : [ ]
+}

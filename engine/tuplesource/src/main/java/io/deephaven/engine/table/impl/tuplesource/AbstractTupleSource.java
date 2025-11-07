@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.tuplesource;
 
 import io.deephaven.chunk.Chunk;
@@ -15,23 +15,15 @@ import io.deephaven.engine.table.TupleSource;
 import io.deephaven.engine.table.impl.DefaultChunkSource;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.List;
 import java.util.stream.Stream;
 
 public abstract class AbstractTupleSource<TUPLE_TYPE>
         implements TupleSource<TUPLE_TYPE>, DefaultChunkSource.WithPrev<Values> {
 
     private final ColumnSource<?>[] columnSources;
-    private final List<ColumnSource<?>> listColumnSources;
 
     public AbstractTupleSource(ColumnSource<?>... columnSources) {
         this.columnSources = columnSources;
-        this.listColumnSources = List.of(columnSources);
-    }
-
-    @Override
-    public final List<ColumnSource<?>> getColumnSources() {
-        return listColumnSources;
     }
 
     @Override

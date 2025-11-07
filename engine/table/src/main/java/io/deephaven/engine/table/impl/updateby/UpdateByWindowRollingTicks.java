@@ -1,3 +1,6 @@
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.updateby;
 
 import io.deephaven.base.ArrayUtil;
@@ -11,7 +14,7 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.impl.ssa.LongSegmentedSortedArray;
 import io.deephaven.util.SafeCloseable;
-import org.apache.commons.lang3.mutable.MutableLong;
+import io.deephaven.util.mutable.MutableLong;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.BitSet;
@@ -27,9 +30,12 @@ class UpdateByWindowRollingTicks extends UpdateByWindowRollingBase {
         private RowSet affectedRowPositions;
         private RowSet influencerPositions;
 
-        UpdateByWindowTicksBucketContext(final TrackingRowSet sourceRowSet,
-                final int chunkSize, final boolean initialStep) {
-            super(sourceRowSet, null, null, null, false, chunkSize, initialStep);
+        UpdateByWindowTicksBucketContext(
+                final TrackingRowSet sourceRowSet,
+                final int chunkSize,
+                final boolean initialStep,
+                final Object[] bucketKeyValues) {
+            super(sourceRowSet, null, null, null, false, chunkSize, initialStep, bucketKeyValues);
         }
 
         @Override
@@ -51,6 +57,15 @@ class UpdateByWindowRollingTicks extends UpdateByWindowRollingBase {
         }
     }
 
+    @Override
+    UpdateByWindow copy() {
+        final UpdateByOperator[] copiedOperators = new UpdateByOperator[this.operators.length];
+        for (int ii = 0; ii < copiedOperators.length; ii++) {
+            copiedOperators[ii] = this.operators[ii].copy();
+        }
+
+        return new UpdateByWindowRollingTicks(copiedOperators, operatorInputSourceSlots, prevUnits, fwdUnits);
+    }
 
     @Override
     void finalizeWindowBucket(UpdateByWindowBucketContext context) {
@@ -65,14 +80,16 @@ class UpdateByWindowRollingTicks extends UpdateByWindowRollingBase {
     }
 
     @Override
-    UpdateByWindowBucketContext makeWindowContext(final TrackingRowSet sourceRowSet,
+    UpdateByWindowBucketContext makeWindowContext(
+            final TrackingRowSet sourceRowSet,
             final ColumnSource<?> timestampColumnSource,
             final LongSegmentedSortedArray timestampSsa,
             final TrackingRowSet timestampValidRowSet,
             final boolean timestampsModified,
             final int chunkSize,
-            final boolean isInitializeStep) {
-        return new UpdateByWindowTicksBucketContext(sourceRowSet, chunkSize, isInitializeStep);
+            final boolean isInitializeStep,
+            final Object[] bucketKeyValues) {
+        return new UpdateByWindowTicksBucketContext(sourceRowSet, chunkSize, isInitializeStep, bucketKeyValues);
     }
 
     private static WritableRowSet computeAffectedRowsTicks(final RowSet sourceSet, final RowSet invertedSubSet,
@@ -101,14 +118,14 @@ class UpdateByWindowRollingTicks extends UpdateByWindowRollingBase {
             long head = s - revTicks + 1;
             long tail = e + fwdTicks;
 
-            if (tail < minPos.longValue() || head > maxPos) {
+            if (tail < minPos.get() || head > maxPos) {
                 // ignore this range
                 return;
             }
-            head = Math.max(head, minPos.longValue());
+            head = Math.max(head, minPos.get());
             tail = Math.min(tail, maxPos);
             builder.appendRange(head, tail);
-            minPos.setValue(tail + 1);
+            minPos.set(tail + 1);
         });
 
         try (final RowSet positions = builder.build()) {

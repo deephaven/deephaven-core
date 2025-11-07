@@ -1,10 +1,12 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.qst.table;
 
 import io.deephaven.api.TableOperations;
 import io.deephaven.qst.TableCreator;
+
+import java.util.List;
 
 /**
  * A "no-op" table creator impl, based on the QST structure itself. Mainly useful for testing the equivalence for the
@@ -43,7 +45,12 @@ public enum TableCreatorImpl implements TableCreator<TableSpec> {
     }
 
     @Override
+    public final MultiJoinTable multiJoin(List<MultiJoinInput<TableSpec>> multiJoinInputs) {
+        return MultiJoinTable.builder().addAllInputs(multiJoinInputs).build();
+    }
+
+    @Override
     public final MergeTable merge(Iterable<TableSpec> tables) {
-        return ImmutableMergeTable.builder().addAllTables(tables).build();
+        return MergeTable.builder().addAllTables(tables).build();
     }
 }

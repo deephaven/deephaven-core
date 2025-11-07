@@ -1,9 +1,8 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.rowset;
 
-import gnu.trove.list.array.TLongArrayList;
 import io.deephaven.base.log.LogOutputAppendable;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.datastructures.LongAbortableConsumer;
@@ -18,7 +17,15 @@ import java.util.function.LongConsumer;
  */
 public interface RowSet extends RowSequence, LongSizedDataStructure, SafeCloseable, LogOutputAppendable {
 
-    void close();
+    /**
+     * <p>
+     * Free any resources associated with this object.
+     * <p>
+     * Using any {@code RowSet} methods after {@code close()} is an error and may produce exceptions or undefined
+     * results.
+     */
+    @Override
+    default void close() {}
 
     /**
      * Make a new {@link WritableRowSet} with the same row keys as {@code this} that is safe for further mutation. As in
@@ -109,15 +116,6 @@ public interface RowSet extends RowSequence, LongSizedDataStructure, SafeCloseab
     WritableRowSet invert(RowSet keys, long maximumPosition);
 
     /**
-     * For the given keys RowSet, under the assertion that none of them are present in the current RowSet, return the
-     * tentative insertion points in the current RowSet with the count for each of them
-     *
-     * @param keys the keys to identify insertion locations
-     * @return two TLongArrayLists; [0] contains the positions, [1] contains the counts.
-     */
-    TLongArrayList[] findMissing(RowSet keys);
-
-    /**
      * Returns a new RowSet representing the intersection of the current RowSet with the input RowSet
      */
     @NotNull
@@ -126,9 +124,7 @@ public interface RowSet extends RowSequence, LongSizedDataStructure, SafeCloseab
     /**
      * Returns true if a RowSet has any overlap.
      */
-    default boolean overlaps(@NotNull RowSet rowSet) {
-        return intersect(rowSet).isNonempty();
-    }
+    boolean overlaps(@NotNull RowSet rowSet);
 
     /**
      * Returns true if this RowSet has any overlap with the provided range.

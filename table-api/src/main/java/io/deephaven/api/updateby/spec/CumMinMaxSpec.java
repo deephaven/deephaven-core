@@ -1,3 +1,6 @@
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.api.updateby.spec;
 
 import io.deephaven.annotations.SimpleStyle;
@@ -22,7 +25,7 @@ public abstract class CumMinMaxSpec extends UpdateBySpecBase {
         return
         // is primitive or boxed numeric?
         applicableToNumeric(inputType)
-
+                || inputType == char.class || inputType == Character.class
                 // is comparable?
                 || (Comparable.class.isAssignableFrom(inputType) && inputType != Boolean.class);
     }

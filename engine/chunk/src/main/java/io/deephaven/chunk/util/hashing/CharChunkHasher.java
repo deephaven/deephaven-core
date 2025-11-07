@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.chunk.util.hashing;
 
 import io.deephaven.chunk.CharChunk;
@@ -8,6 +8,7 @@ import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.WritableIntChunk;
 import io.deephaven.chunk.attributes.HashCodes;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.util.compare.CharComparisons;
 import io.deephaven.util.type.TypeUtils;
 
 import static io.deephaven.chunk.util.hashing.ChunkHasher.scrambleHash;
@@ -31,7 +32,7 @@ public class CharChunkHasher implements ChunkHasher {
     }
 
     public static int hashInitialSingle(char value) {
-        return scrambleHash(Character.hashCode(value));
+        return scrambleHash(CharComparisons.hashCode(value));
     }
 
     public static int hashUpdateSingle(int existing, char newValue) {
@@ -40,12 +41,12 @@ public class CharChunkHasher implements ChunkHasher {
 
     @Override
     public int hashInitial(Object value) {
-        return hashInitialSingle(TypeUtils.unbox((Character)value));
+        return hashInitialSingle(TypeUtils.unbox((Character) value));
     }
 
     @Override
     public int hashUpdate(int existing, Object value) {
-        return hashUpdateSingle(existing, TypeUtils.unbox((Character)value));
+        return hashUpdateSingle(existing, TypeUtils.unbox((Character) value));
     }
 
     @Override

@@ -1,14 +1,16 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.rowset;
 
-import gnu.trove.list.TLongList;
 import io.deephaven.engine.rowset.impl.AdaptiveRowSetBuilderRandom;
 import io.deephaven.engine.rowset.impl.BasicRowSetBuilderSequential;
 import io.deephaven.engine.rowset.impl.WritableRowSetImpl;
 import io.deephaven.engine.rowset.impl.singlerange.SingleRange;
-import org.jetbrains.annotations.NotNull;
+
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.stream.Stream;
 
 /**
  * Repository of factory methods for constructing {@link WritableRowSet row sets}.
@@ -57,21 +59,6 @@ public abstract class RowSetFactory {
     }
 
     /**
-     * Get a {@link WritableRowSet} containing the specified row keys.
-     * <p>
-     * The provided {@link TLongList} is sorted and then passed to a {@link RowSetBuilderSequential}.
-     *
-     * @param rowKeys A {@link TLongList}. Note that this list is mutated within the method!
-     * @return A new {@link WritableRowSet} containing the values from {@code rowKeys}
-     */
-    public static RowSet fromKeys(@NotNull final TLongList rowKeys) {
-        rowKeys.sort();
-        final RowSetBuilderSequential builder = builderSequential();
-        rowKeys.forEach(builder);
-        return builder.build();
-    }
-
-    /**
      * Create a {@link WritableRowSet} containing the continuous range [firstRowKey, lastRowKey].
      *
      * @param firstRowKey The first row key in the continuous range
@@ -106,5 +93,39 @@ public abstract class RowSetFactory {
      */
     public static RowSetBuilderSequential builderSequential() {
         return new BasicRowSetBuilderSequential();
+    }
+
+    /**
+     * Constructs a new combined {@link WritableRowSet} from the union of {@code rowSets}.
+     *
+     * <p>
+     * When considering the {@link RowSet#isNonempty()} elements, if none exist, {@link RowSetFactory#empty()} will be
+     * returned; if only one exist, {@link RowSet#copy()} will be returned; otherwise, a new row set will be returned
+     * based on the {@link WritableRowSet#insert(RowSet) insertion} of all the row sets.
+     *
+     * <p>
+     * This method may perform best when the {@code rowSets} are ordered and non-overlapping.
+     *
+     * @param rowSets the input row sets
+     * @return the new row set
+     */
+    public static WritableRowSet unionInsert(final Collection<RowSet> rowSets) {
+        try (final Stream<RowSet> stream = rowSets.stream().filter(RowSet::isNonempty)) {
+            final Iterator<RowSet> it = stream.iterator();
+            if (!it.hasNext()) {
+                return RowSetFactory.empty();
+            }
+            final WritableRowSet union = it.next().copy();
+            try {
+                while (it.hasNext()) {
+                    union.insert(it.next());
+                }
+            } catch (final RuntimeException e) {
+                try (union) {
+                    throw e;
+                }
+            }
+            return union;
+        }
     }
 }

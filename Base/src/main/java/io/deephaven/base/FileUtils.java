@@ -1,30 +1,37 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.base;
 
-import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.*;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.nio.file.Files;
+import java.nio.file.LinkOption;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
+import java.util.regex.Pattern;
 
 public class FileUtils {
-    private final static FileFilter DIRECTORY_FILE_FILTER = new FileFilter() {
-        @Override
-        public boolean accept(File pathname) {
-            return pathname.isDirectory();
-        }
-    };
+    private final static FileFilter DIRECTORY_FILE_FILTER = File::isDirectory;
     private final static File[] EMPTY_DIRECTORY_ARRAY = new File[0];
-    private final static FilenameFilter DIRECTORY_FILENAME_FILTER = new FilenameFilter() {
-        @Override
-        public boolean accept(File dir, String name) {
-            return new File(dir, name).isDirectory();
-        }
-    };
+    private final static FilenameFilter DIRECTORY_FILENAME_FILTER = (dir, name) -> new File(dir, name).isDirectory();
     private final static String[] EMPTY_STRING_ARRAY = new String[0];
+
+    public static final char URI_SEPARATOR_CHAR = '/';
+
+    public static final String URI_SEPARATOR = "" + URI_SEPARATOR_CHAR;
+
+    public static final String REPEATED_URI_SEPARATOR = URI_SEPARATOR + URI_SEPARATOR;
+
+    public static final Pattern REPEATED_URI_SEPARATOR_PATTERN = Pattern.compile("//+");
+
+    public static final String FILE_URI_SCHEME = "file";
 
     /**
      * Cleans the specified path. All files and subdirectories in the path will be deleted. (ie you'll be left with an
@@ -47,25 +54,29 @@ public class FileUtils {
     }
 
     public static void deleteRecursively(File file) {
-        if (!file.exists()) {
+        if (!Files.exists(file.toPath(), LinkOption.NOFOLLOW_LINKS)) {
             return;
         }
         if (file.isDirectory()) {
-            File f[] = file.listFiles();
+            final File[] files = file.listFiles();
 
-            if (f != null) {
-                for (File file1 : f) {
-                    deleteRecursively(file1);
+            if (files != null) {
+                for (final File child : files) {
+                    deleteRecursively(child);
                 }
             }
         }
-        Assert.assertion(file.delete(), "file.delete()", file.getAbsolutePath(), "file");
+        try {
+            Files.deleteIfExists(file.toPath());
+        } catch (IOException e) {
+            throw new UncheckedIOException("Could not delete file: " + file.getAbsolutePath(), e);
+        }
     }
 
     /**
      * Move files accepted by a filter from their relative path under source to the same relative path under
      * destination. Creates missing destination subdirectories as needed.
-     * 
+     *
      * @param source Must be a directory.
      * @param destination Must be a directory if it exists.
      * @param filter Applied to normal files, only. We recurse on directories automatically.
@@ -112,47 +123,65 @@ public class FileUtils {
 
     /**
      * Recursive delete method that copes with .nfs files. Uses the file's parent as the trash directory.
-     * 
-     * @param file
+     *
+     * @param file File or directory at which to begin recursive deletion.
      */
-    public static void deleteRecursivelyOnNFS(File file) {
+    public static void deleteRecursivelyOnNFS(final File file) {
         deleteRecursivelyOnNFS(new File(file.getParentFile(), '.' + file.getName() + ".trash"), file);
     }
 
     /**
      * Recursive delete method that copes with .nfs files.
-     * 
+     *
      * @param trashFile Filename to move regular files to before deletion. .nfs files may be created in its parent
      *        directory.
      * @param fileToBeDeleted File or directory at which to begin recursive deletion.
      */
     public static void deleteRecursivelyOnNFS(final File trashFile, final File fileToBeDeleted) {
-        if (fileToBeDeleted.isDirectory()) {
-            File contents[] = fileToBeDeleted.listFiles();
+        final Path pathToBeDeleted = fileToBeDeleted.toPath();
+        final BasicFileAttributes attr;
+        try {
+            // `NOFOLLOW_LINKS` lets us treat soft-links as basic files. We will delete the link, but not the link's
+            // target (unless it also happens to be in the path we are recursively deleting ...)
+            attr = Files.readAttributes(pathToBeDeleted, BasicFileAttributes.class, LinkOption.NOFOLLOW_LINKS);
+        } catch (IOException e) {
+            return;
+        }
+
+        if (attr.isDirectory()) {
+            final File[] contents = fileToBeDeleted.listFiles();
             if (contents != null) {
                 for (File childFile : contents) {
                     deleteRecursivelyOnNFS(trashFile, childFile);
                 }
             }
-            if (!fileToBeDeleted.delete()) {
-                throw new RuntimeException(
-                        "Failed to delete expected empty directory " + fileToBeDeleted.getAbsolutePath());
+            try {
+                Files.delete(pathToBeDeleted);
+            } catch (final IOException ioe) {
+                throw new UncheckedIOException(
+                        "Failed to delete expected empty directory " + fileToBeDeleted.getAbsolutePath(), ioe);
             }
-        } else if (fileToBeDeleted.exists()) {
-            if (!fileToBeDeleted.renameTo(trashFile)) {
-                throw new RuntimeException("Failed to move file " + fileToBeDeleted.getAbsolutePath()
-                        + " to temporary location " + trashFile.getAbsolutePath());
+        } else {
+            // if the file does not exist, we would have gotten IOException, which we caught and returned
+            try {
+                Files.move(pathToBeDeleted, trashFile.toPath(), StandardCopyOption.ATOMIC_MOVE);
+            } catch (final IOException ioe) {
+                throw new UncheckedIOException("Failed to move file " + fileToBeDeleted.getAbsolutePath()
+                        + " to temporary location " + trashFile.getAbsolutePath(), ioe);
             }
-            if (!trashFile.delete()) {
-                throw new RuntimeException("Failed to delete temporary location " + trashFile.getAbsolutePath()
-                        + " for file " + fileToBeDeleted.getAbsolutePath());
+
+            try {
+                Files.delete(trashFile.toPath());
+            } catch (final IOException ioe) {
+                throw new UncheckedIOException("Failed to delete temporary location " + trashFile.getAbsolutePath()
+                        + " for file " + fileToBeDeleted.getAbsolutePath(), ioe);
             }
         }
     }
 
     /**
      * Scan directory recursively to find all files
-     * 
+     *
      * @param dir
      * @return
      */
@@ -248,5 +277,120 @@ public class FileUtils {
             return pathname.isDirectory()
                     || (pathname.isFile() && (normalFileFilter == null || normalFileFilter.accept(pathname)));
         }
+    }
+
+    /**
+     * Take the file source path or URI string and convert it to a URI object. Any unnecessary path separators will be
+     * removed. The URI object will always be {@link URI#isAbsolute() absolute}, i.e., will always have a scheme. Any
+     * {@code source} that is parsable via {@link URI#URI(String)} with the scheme "file" must also be a valid
+     * {@link File#File(URI) file via URI}. A {@code source} that results in a {@link URISyntaxException} will be
+     * assumed to be a {@link File#File(String) file via pathname}, unless the {@code source} appears to have a scheme.
+     *
+     * @param source The file source path or URI
+     * @param isDirectory Whether the source is a directory
+     * @return The URI object
+     */
+    public static URI convertToURI(final String source, final boolean isDirectory) {
+        if (source.isEmpty()) {
+            throw new IllegalArgumentException("Cannot convert empty source to URI");
+        }
+        final URI uri;
+        try {
+            uri = new URI(source);
+        } catch (final URISyntaxException e) {
+            // If it looks it's a URI, we should _not_ try to parse it as a file
+            if (startsWithScheme(source)) {
+                throw new IllegalArgumentException(String.format("Failed to convert to URI: '%s'", source), e);
+            }
+            // Otherwise, assume it's a file URI
+            return convertToURI(new File(source), isDirectory);
+        }
+        if (uri.getScheme() == null) {
+            // Convert to a "file" URI. Note, this is using `source`
+            return convertToURI(new File(source), isDirectory);
+        }
+        if (uri.getScheme().equals(FILE_URI_SCHEME)) {
+            // We don't want to be more lenient than new File(uri) would be. Note, this is using `uri`
+            return convertToURI(new File(uri), isDirectory);
+        }
+        String path = uri.getPath();
+        final boolean endsWithSlash = !path.isEmpty() && path.charAt(path.length() - 1) == URI_SEPARATOR_CHAR;
+        if (!isDirectory && endsWithSlash) {
+            throw new IllegalArgumentException("Non-directory URI should not end with a slash: " + uri);
+        }
+        boolean isUpdated = false;
+        if (isDirectory && !endsWithSlash) {
+            path = path + URI_SEPARATOR_CHAR;
+            isUpdated = true;
+        }
+        // Replace two or more consecutive slashes in the path with a single slash
+        if (path.contains(REPEATED_URI_SEPARATOR)) {
+            path = REPEATED_URI_SEPARATOR_PATTERN.matcher(path).replaceAll(URI_SEPARATOR);
+            isUpdated = true;
+        }
+        if (!isUpdated) {
+            return uri;
+        }
+        try {
+            return new URI(uri.getScheme(), uri.getUserInfo(), uri.getHost(), uri.getPort(), path, uri.getQuery(),
+                    uri.getFragment());
+        } catch (URISyntaxException e) {
+            throw new IllegalStateException(String.format("Failed to update URI: '%s', source: '%s'", uri, source), e);
+        }
+    }
+
+    private static final Pattern URI_SCHEME_START = Pattern.compile("^\\p{Alpha}[\\p{Alnum}+\\-.]*:");
+
+    /**
+     * URI scheme start looks like alpha, followed by (alphanum, plus, minus, or period) repeated, followed by colon.
+     *
+     * @param source the source
+     * @return true if the source starts with a scheme
+     */
+    static boolean startsWithScheme(final String source) {
+        // Note: using find() as it may be a bit more efficient than adding .* to end of regex + matches()
+        return URI_SCHEME_START.matcher(source).find();
+    }
+
+    /**
+     * Takes a file and convert it to a URI object with {@code "file"} scheme. This method is preferred instead of
+     * {@link File#toURI()} because {@link File#toURI()} internally calls {@link File#isDirectory()}, which typically
+     * invokes the {@code stat} system call, resulting in filesystem metadata access.
+     *
+     * @param file The file
+     * @param isDirectory Whether the source file is a directory
+     * @return The URI object
+     */
+    public static URI convertToURI(final File file, final boolean isDirectory) {
+        String absPath = file.getAbsolutePath();
+        if (File.separatorChar != URI_SEPARATOR_CHAR) {
+            absPath = absPath.replace(File.separatorChar, URI_SEPARATOR_CHAR);
+        }
+        if (isDirectory && absPath.charAt(absPath.length() - 1) != URI_SEPARATOR_CHAR) {
+            absPath = absPath + URI_SEPARATOR_CHAR;
+        }
+        if (absPath.charAt(0) != URI_SEPARATOR_CHAR) {
+            absPath = URI_SEPARATOR_CHAR + absPath;
+            // ^This is especially useful for Windows where the absolute path does not start with a slash.
+            // For example, for absolute path "C:\path\to\file", the URI would be "file:/C:/path/to/file".
+        }
+        try {
+            return new URI(FILE_URI_SCHEME, null, absPath, null);
+        } catch (final URISyntaxException e) {
+            throw new IllegalStateException("Failed to convert file to URI: " + file, e);
+        }
+    }
+
+    /**
+     * Takes a path and convert it to a URI object with {@code "file"} scheme. This method is preferred instead of
+     * {@link Path#toUri()} because {@link Path#toUri()} internally invokes the {@code stat} system call, resulting in
+     * filesystem metadata access.
+     *
+     * @param path The path
+     * @param isDirectory Whether the file is a directory
+     * @return The URI object
+     */
+    public static URI convertToURI(final Path path, final boolean isDirectory) {
+        return convertToURI(path.toFile(), isDirectory);
     }
 }

@@ -1,12 +1,12 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.sources.regioned;
 
 import io.deephaven.engine.table.ColumnDefinition;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.locations.ColumnLocation;
-import io.deephaven.engine.table.impl.sources.DeferredGroupingColumnSource;
 import io.deephaven.engine.table.impl.ImmutableColumnSource;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.util.annotations.VisibleForTesting;
@@ -39,7 +39,7 @@ import org.jetbrains.annotations.NotNull;
  */
 @VisibleForTesting // This could be package-private, but for mock-based unit testing purposes it must be public
 public interface RegionedColumnSource<DATA_TYPE>
-        extends DeferredGroupingColumnSource<DATA_TYPE>, ImmutableColumnSource<DATA_TYPE> {
+        extends ColumnSource<DATA_TYPE>, ImmutableColumnSource<DATA_TYPE> {
 
     /**
      * Address bits allocated to the region index.
@@ -95,6 +95,16 @@ public interface RegionedColumnSource<DATA_TYPE>
      */
     static long getRowKey(final int regionIndex, final long regionOffset) {
         return (long) regionIndex << SUB_REGION_ROW_INDEX_ADDRESS_BITS | regionOffset;
+    }
+
+    /**
+     * Get the region index for a row key.
+     *
+     * @param rowKey The row key to get the region index for
+     * @return The region index for the row key
+     */
+    static int getRegionIndex(final long rowKey) {
+        return Math.toIntExact(rowKey >> SUB_REGION_ROW_INDEX_ADDRESS_BITS);
     }
 
     /**

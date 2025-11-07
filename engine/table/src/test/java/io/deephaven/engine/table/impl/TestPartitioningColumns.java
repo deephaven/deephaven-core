@@ -1,28 +1,26 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.api.filter.Filter;
-import io.deephaven.chunk.attributes.Values;
-import io.deephaven.engine.table.ColumnDefinition;
-import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.primitive.iterator.CloseableIterator;
+import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.table.*;
+import io.deephaven.engine.table.impl.dataindex.DataIndexUtils;
+import io.deephaven.engine.table.impl.indexer.DataIndexer;
+import io.deephaven.engine.table.impl.locations.TableLocationProvider;
+import io.deephaven.engine.table.impl.select.MatchFilter.MatchType;
+import io.deephaven.engine.table.iterators.ChunkedColumnIterator;
 import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.time.DateTimeUtils;
-import io.deephaven.engine.table.impl.locations.ColumnLocation;
-import io.deephaven.engine.table.impl.locations.TableKey;
-import io.deephaven.engine.table.impl.locations.TableLocation;
-import io.deephaven.engine.table.impl.locations.TableLocationKey;
 import io.deephaven.engine.table.impl.locations.impl.*;
 import io.deephaven.engine.table.impl.select.MatchFilter;
 import io.deephaven.engine.table.impl.select.WhereFilter;
-import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.sources.regioned.*;
 import io.deephaven.engine.rowset.RowSetFactory;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -83,108 +81,52 @@ public class TestPartitioningColumns {
                             tl.handleUpdate(RowSetFactory.flat(1), 1L);
                             return tl;
                         },
-                        null),
+                        null,
+                        TableUpdateMode.STATIC,
+                        TableUpdateMode.STATIC),
                 null);
+
+        for (String colName : partitionKeys) {
+            final DataIndex fullIndex = DataIndexer.getDataIndex(result, colName);
+            Assert.neqNull(fullIndex, "fullIndex");
+
+            final ColumnSource<?>[] columns = new ColumnSource<?>[] {result.getColumnSource(colName)};
+
+            final DataIndex.RowKeyLookup fullIndexRowKeyLookup = fullIndex.rowKeyLookup(columns);
+            final ColumnSource<RowSet> fullIndexRowSetColumn = fullIndex.rowSetColumn();
+
+            ChunkSource.WithPrev<?> tableKeys = DataIndexUtils.makeBoxedKeySource(columns);
+
+            // Iterate through the entire source table and verify the lookup row set is valid and contains this row.
+            try (final RowSet.Iterator rsIt = result.getRowSet().iterator();
+                    final CloseableIterator<Object> keyIt =
+                            ChunkedColumnIterator.make(tableKeys, result.getRowSet())) {
+
+                while (rsIt.hasNext() && keyIt.hasNext()) {
+                    final long rowKey = rsIt.nextLong();
+                    final Object key = keyIt.next();
+
+                    // Verify the row sets at the lookup keys match.
+                    final long fullRowKey = fullIndexRowKeyLookup.apply(key, false);
+                    Assert.geqZero(fullRowKey, "fullRowKey");
+
+                    final RowSet fullRowSet = fullIndexRowSetColumn.get(fullRowKey);
+                    Assert.neqNull(fullRowSet, "fullRowSet");
+
+                    Assert.eqTrue(fullRowSet.containsRange(rowKey, rowKey), "fullRowSet.containsRange(rowKey, rowKey)");
+                }
+            }
+        }
 
         final Table expected = input.sort(input.getDefinition().getColumnNamesArray());
 
         TstUtils.assertTableEquals(expected, result);
 
         final List<WhereFilter> filters = input.getDefinition().getColumnStream()
-                .map(cd -> new MatchFilter(cd.getName(), (Object) null)).collect(Collectors.toList());
+                .map(cd -> new MatchFilter(MatchType.Regular, cd.getName(), (Object) null))
+                .collect(Collectors.toList());
         TstUtils.assertTableEquals(expected.where(Filter.and(filters)), result.where(Filter.and(filters)));
 
         TstUtils.assertTableEquals(expected.selectDistinct(), result.selectDistinct());
-    }
-
-    private static final class DummyTableLocation extends AbstractTableLocation {
-
-        protected DummyTableLocation(@NotNull final TableKey tableKey,
-                @NotNull final TableLocationKey tableLocationKey) {
-            super(tableKey, tableLocationKey, false);
-        }
-
-        @Override
-        public void refresh() {
-
-        }
-
-        @NotNull
-        @Override
-        protected ColumnLocation makeColumnLocation(@NotNull String name) {
-            return new ColumnLocation() {
-                @NotNull
-                @Override
-                public TableLocation getTableLocation() {
-                    return DummyTableLocation.this;
-                }
-
-                @NotNull
-                @Override
-                public String getName() {
-                    return name;
-                }
-
-                @Override
-                public boolean exists() {
-                    throw new UnsupportedOperationException();
-                }
-
-                @Nullable
-                @Override
-                public <METADATA_TYPE> METADATA_TYPE getMetadata(@NotNull ColumnDefinition<?> columnDefinition) {
-                    throw new UnsupportedOperationException();
-                }
-
-                @Override
-                public ColumnRegionChar<Values> makeColumnRegionChar(
-                        @NotNull ColumnDefinition<?> columnDefinition) {
-                    throw new UnsupportedOperationException();
-                }
-
-                @Override
-                public ColumnRegionByte<Values> makeColumnRegionByte(
-                        @NotNull ColumnDefinition<?> columnDefinition) {
-                    throw new UnsupportedOperationException();
-                }
-
-                @Override
-                public ColumnRegionShort<Values> makeColumnRegionShort(
-                        @NotNull ColumnDefinition<?> columnDefinition) {
-                    throw new UnsupportedOperationException();
-                }
-
-                @Override
-                public ColumnRegionInt<Values> makeColumnRegionInt(
-                        @NotNull ColumnDefinition<?> columnDefinition) {
-                    throw new UnsupportedOperationException();
-                }
-
-                @Override
-                public ColumnRegionLong<Values> makeColumnRegionLong(
-                        @NotNull ColumnDefinition<?> columnDefinition) {
-                    throw new UnsupportedOperationException();
-                }
-
-                @Override
-                public ColumnRegionFloat<Values> makeColumnRegionFloat(
-                        @NotNull ColumnDefinition<?> columnDefinition) {
-                    throw new UnsupportedOperationException();
-                }
-
-                @Override
-                public ColumnRegionDouble<Values> makeColumnRegionDouble(
-                        @NotNull ColumnDefinition<?> columnDefinition) {
-                    throw new UnsupportedOperationException();
-                }
-
-                @Override
-                public <TYPE> ColumnRegionObject<TYPE, Values> makeColumnRegionObject(
-                        @NotNull ColumnDefinition<TYPE> columnDefinition) {
-                    throw new UnsupportedOperationException();
-                }
-
-            };
-        }
     }
 }

@@ -1,8 +1,9 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.sources;
 
+import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.table.impl.DefaultGetContext;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
@@ -13,7 +14,6 @@ import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSequenceFactory;
-import io.deephaven.engine.table.impl.util.ShiftData;
 import io.deephaven.qst.array.Array;
 import io.deephaven.qst.array.BooleanArray;
 import io.deephaven.qst.array.ByteArray;
@@ -37,10 +37,6 @@ import org.jetbrains.annotations.Nullable;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Objects;
-import java.util.concurrent.TimeUnit;
-
-import static io.deephaven.util.QueryConstants.NULL_LONG;
 
 /**
  * A ColumnSource backed by in-memory arrays of data.
@@ -49,8 +45,8 @@ import static io.deephaven.util.QueryConstants.NULL_LONG;
  * that the column source can be incrementally expanded without copying data from one array to another.
  */
 public abstract class ArrayBackedColumnSource<T>
-        extends AbstractDeferredGroupingColumnSource<T>
-        implements FillUnordered<Values>, ShiftData.ShiftCallback, WritableColumnSource<T>, InMemoryColumnSource,
+        extends AbstractColumnSource<T>
+        implements FillUnordered<Values>, WritableColumnSource<T>, InMemoryColumnSource,
         ChunkedBackingStoreExposedWritableSource {
 
     static final int DEFAULT_RECYCLER_CAPACITY = 1024;
@@ -428,20 +424,6 @@ public abstract class ArrayBackedColumnSource<T>
 
     @Override
     public abstract void ensureCapacity(long size, boolean nullFill);
-
-    @Override
-    public void shift(final long start, final long end, final long offset) {
-        if (offset > 0) {
-            for (long i = end; i >= start; i--) {
-                set((i + offset), get(i));
-            }
-        } else {
-            for (long i = start; i <= end; i++) {
-                set((i + offset), get(i));
-            }
-        }
-
-    }
 
     /**
      * Creates an in-memory ColumnSource from the supplied dataArray, using instanceof checks to determine the

@@ -1,12 +1,12 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.base.verify.Require;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.exceptions.UncheckedTableException;
+import io.deephaven.engine.liveness.LivenessReferent;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.*;
@@ -15,6 +15,7 @@ import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableObjectChunk;
+import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.SafeCloseableList;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.jetbrains.annotations.NotNull;
@@ -29,43 +30,50 @@ import java.util.stream.Collectors;
  * cell values if any of the underlying filters are dynamic, and change.
  */
 public class WouldMatchOperation implements QueryTable.MemoizableOperation<QueryTable> {
+
     private static final RowSet EMPTY_INDEX = RowSetFactory.empty();
-    private final List<ColumnHolder> matchColumns;
+
     private final QueryTable parent;
+    private final List<ColumnHolder> matchColumns;
+    private final WhereFilter[] whereFilters;
+
     private QueryTable resultTable;
     private ModifiedColumnSet.Transformer transformer;
 
     /**
      * Just a little helper to keep column stuff together.
      */
-    private class ColumnHolder {
-        final WouldMatchPair wouldMatchPair;
-        IndexWrapperColumnSource column;
+    private static class ColumnHolder {
 
-        ColumnHolder(WouldMatchPair pair) {
+        private final WouldMatchPair wouldMatchPair;
+        private final WhereFilter filter;
+
+        private IndexWrapperColumnSource column;
+
+        private ColumnHolder(WouldMatchPair pair) {
             this.wouldMatchPair = pair;
+            filter = WhereFilter.of(wouldMatchPair.getFilter());
         }
 
-        String getColumnName() {
+        private String getColumnName() {
             return wouldMatchPair.getColumnName();
         }
 
-        WhereFilter getFilter() {
-            return WhereFilter.of(wouldMatchPair.getFilter());
+        private WhereFilter getFilter() {
+            return filter;
         }
     }
 
     WouldMatchOperation(QueryTable parent, WouldMatchPair... filters) {
         this.parent = parent;
         matchColumns = Arrays.stream(filters).map(ColumnHolder::new).collect(Collectors.toList());
+        whereFilters = matchColumns.stream().map(ColumnHolder::getFilter).toArray(WhereFilter[]::new);
 
         final List<String> parentColumns = parent.getDefinition().getColumnNames();
-
         final List<String> collidingColumns = matchColumns.stream()
                 .map(ColumnHolder::getColumnName)
                 .filter(parentColumns::contains)
                 .collect(Collectors.toList());
-
         if (!collidingColumns.isEmpty()) {
             throw new UncheckedTableException(
                     "The table already contains the following columns: " + String.join(", ", collidingColumns));
@@ -83,17 +91,65 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
     }
 
     @Override
+    public SafeCloseable beginOperation(@NotNull final QueryTable parent) {
+        return Arrays.stream(whereFilters)
+                .map((final WhereFilter filter) -> {
+                    // Ensure we gather the correct dependencies when building a snapshot control.
+                    return filter.beginOperation(parent);
+                }).collect(SafeCloseableList.COLLECTOR);
+    }
+
+    /**
+     * Initialize the filters.
+     *
+     * <p>
+     * We must initialize our filters before the wouldMatch operation's call to QueryTable's getResult method, so that
+     * memoization processing can correctly compare them. MatchFilters do not properly implement memoization before
+     * initialization, and they are the most common filter to memoize.
+     * </p>
+     *
+     * @param parent the parent table to have wouldMatch applied
+     */
+    void initializeFilters(@NotNull QueryTable parent) {
+        final QueryCompilerRequestProcessor.BatchProcessor compilationProcessor = QueryCompilerRequestProcessor.batch();
+        Arrays.stream(whereFilters).forEach(filter -> filter.init(parent.getDefinition(), compilationProcessor));
+
+        final List<WhereFilter> disallowedRowVariables =
+                Arrays.stream(whereFilters).filter(WhereFilter::hasVirtualRowVariables).collect(Collectors.toList());
+        if (!disallowedRowVariables.isEmpty()) {
+            throw new UncheckedTableException(
+                    "wouldMatch filters cannot use virtual row variables (i, ii, and k): " + disallowedRowVariables);
+        }
+
+        final List<WhereFilter> disallowedColumnVectors =
+                Arrays.stream(whereFilters).filter(wf -> !wf.getColumnArrays().isEmpty()).collect(Collectors.toList());
+        if (!disallowedColumnVectors.isEmpty()) {
+            throw new UncheckedTableException(
+                    "wouldMatch filters cannot use column Vectors (_ syntax): " + disallowedColumnVectors);
+        }
+
+        compilationProcessor.compile();
+    }
+
+    @Override
+    public OperationSnapshotControl newSnapshotControl(@NotNull final QueryTable queryTable) {
+        final List<NotificationQueue.Dependency> dependencies = WhereListener.extractDependencies(whereFilters);
+        if (dependencies.isEmpty()) {
+            return QueryTable.MemoizableOperation.super.newSnapshotControl(queryTable);
+        }
+        return new OperationSnapshotControlEx(queryTable, dependencies.toArray(NotificationQueue.Dependency[]::new));
+    }
+
+    @Override
     public Result<QueryTable> initialize(boolean usePrev, long beforeClock) {
         MutableBoolean anyRefreshing = new MutableBoolean(false);
 
         try (final SafeCloseableList closer = new SafeCloseableList()) {
             final RowSet fullRowSet = usePrev ? closer.add(parent.getRowSet().copyPrev()) : parent.getRowSet();
-
-            final List<NotificationQueue.Dependency> dependencies = new ArrayList<>();
             final Map<String, ColumnSource<?>> newColumns = new LinkedHashMap<>(parent.getColumnSourceMap());
+
             matchColumns.forEach(holder -> {
                 final WhereFilter filter = holder.getFilter();
-                filter.init(parent.getDefinition());
                 final WritableRowSet result = filter.filter(fullRowSet, fullRowSet, parent, usePrev);
                 holder.column = new IndexWrapperColumnSource(
                         holder.getColumnName(), parent, result.toTracking(), filter);
@@ -104,26 +160,18 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
                             "In match(), column " + holder.getColumnName() + " already exists in the table.");
                 }
 
-                // Accumulate dependencies
-                if (filter instanceof NotificationQueue.Dependency) {
-                    dependencies.add((NotificationQueue.Dependency) filter);
-                } else if (filter instanceof DependencyStreamProvider) {
-                    ((DependencyStreamProvider) filter).getDependencyStream().forEach(dependencies::add);
-                }
-
                 if (filter.isRefreshing()) {
                     anyRefreshing.setTrue();
                 }
             });
 
-            this.resultTable = new QueryTable(parent.getRowSet(), newColumns);
-
+            resultTable = new QueryTable(parent.getRowSet(), newColumns);
             transformer =
                     parent.newModifiedColumnSetTransformer(resultTable, parent.getDefinition().getColumnNamesArray());
 
             // Set up the column to be a listener for recomputes
             matchColumns.forEach(mc -> {
-                if (mc.getFilter() instanceof LivenessArtifact) {
+                if (mc.getFilter() instanceof LivenessReferent) {
                     resultTable.manage((LivenessArtifact) mc.getFilter());
                 }
                 mc.column.setResultTable(resultTable);
@@ -136,7 +184,7 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
                 // If we're refreshing, our final listener needs to handle upstream updates from a recorder.
                 final ListenerRecorder recorder =
                         new ListenerRecorder("where(" + makeDescription() + ")", parent, resultTable);
-                final Listener listener = new Listener(recorder, dependencies);
+                final Listener listener = new Listener(recorder, WhereListener.extractDependencies(whereFilters));
                 recorder.setMergedListener(listener);
 
                 eventualMergedListener = listener;
@@ -145,7 +193,7 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
                 // If not, then we still need to update if any of our filters request updates. We'll use the
                 // merge listener to handle that. Note that the filters themselves should set the table to
                 // refreshing.
-                eventualMergedListener = new StaticListener(dependencies);
+                eventualMergedListener = new StaticListener(WhereListener.extractDependencies(whereFilters));
             }
 
             if (eventualMergedListener != null) {
@@ -160,7 +208,8 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
 
     @Override
     public MemoizedOperationKey getMemoizedOperationKey() {
-        return MemoizedOperationKey.wouldMatch();
+        return MemoizedOperationKey.wouldMatch(
+                matchColumns.stream().map(ColumnHolder::getColumnName).toArray(String[]::new), whereFilters);
     }
 
     /**
@@ -280,7 +329,7 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
             this.filter = filter;
             this.name = name;
             this.possibleUpstreamModified =
-                    parent.newModifiedColumnSet(filter.getColumns().toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
+                    parent.newModifiedColumnSet(filter.getColumns().toArray(String[]::new));
         }
 
         @Override
@@ -317,11 +366,11 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
                 final boolean invertMatch,
                 final boolean usePrev,
                 final boolean caseInsensitive,
+                @Nullable final DataIndex dataIndex,
                 @NotNull final RowSet mapper,
                 final Object... keys) {
             boolean hasFalse = false;
             boolean hasTrue = false;
-            boolean hasOther = false;
 
             for (Object key : keys) {
                 if (key instanceof Boolean) {
@@ -330,8 +379,6 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
                     } else {
                         hasFalse = true;
                     }
-                } else {
-                    hasOther = true;
                 }
             }
 
@@ -414,14 +461,21 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
 
         @Override
         public void requestRecomputeUnmatched() {
-            // TODO: No need to recompute matched rows
+            // TODO: No need to recompute matched rows (https://github.com/deephaven/deephaven-core/issues/6083)
             doRecompute = true;
             Require.neqNull(mergedListener, "mergedListener").notifyChanges();
         }
 
         @Override
         public void requestRecomputeMatched() {
-            // TODO: No need to recompute unmatched rows
+            // TODO: No need to recompute unmatched rows (https://github.com/deephaven/deephaven-core/issues/6083)
+            doRecompute = true;
+            Require.neqNull(mergedListener, "mergedListener").notifyChanges();
+        }
+
+        @Override
+        public void requestRecompute(RowSet rowSet) {
+            // TODO: No need to recompute the remaining rows (https://github.com/deephaven/deephaven-core/issues/6083)
             doRecompute = true;
             Require.neqNull(mergedListener, "mergedListener").notifyChanges();
         }
@@ -478,13 +532,14 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
 
             try (final SafeCloseableList toClose = new SafeCloseableList()) {
                 // Filter and add addeds
-                final WritableRowSet filteredAdded = toClose.add(filter.filter(added, source, table, false));
+                final WritableRowSet filteredAdded = toClose.add(filter.filter(added, table.getRowSet(), table, false));
                 RowSet keysToRemove = EMPTY_INDEX;
 
                 // If we were affected, recompute mods and re-add the ones that pass.
                 if (affected) {
                     downstreamModified.setAll(name);
-                    final RowSet filteredModified = toClose.add(filter.filter(modified, source, table, false));
+                    final RowSet filteredModified =
+                            toClose.add(filter.filter(modified, table.getRowSet(), table, false));
 
                     // Now apply the additions and remove any non-matching modifieds
                     filteredAdded.insert(filteredModified);

@@ -1,13 +1,15 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.util.datastructures;
 
+import io.deephaven.util.annotations.UserInvocationPermitted;
 import org.jetbrains.annotations.NotNull;
 
 /**
  * Common interface for Deephaven data structures with a long (64-bit signed integer) size.
  */
+@UserInvocationPermitted("base")
 public interface LongSizedDataStructure {
 
     /**

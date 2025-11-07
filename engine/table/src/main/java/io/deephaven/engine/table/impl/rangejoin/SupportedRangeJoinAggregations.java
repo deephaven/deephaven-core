@@ -1,3 +1,6 @@
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.rangejoin;
 
 import io.deephaven.api.Strings;
@@ -37,11 +40,11 @@ public class SupportedRangeJoinAggregations implements Aggregation.Visitor {
         }
     }
 
-    private boolean lastSupported;
+    private boolean hasUnsupportedAggs;
 
     private boolean isSupported(@NotNull final Aggregation aggregation) {
         aggregation.walk(this);
-        return lastSupported;
+        return !hasUnsupportedAggs;
     }
 
     @Override
@@ -51,31 +54,41 @@ public class SupportedRangeJoinAggregations implements Aggregation.Visitor {
 
     @Override
     public void visit(@NotNull final ColumnAggregation columnAgg) {
-        lastSupported = columnAgg.spec() instanceof AggSpecGroup;
+        hasUnsupportedAggs |= !(columnAgg.spec() instanceof AggSpecGroup);
     }
 
     @Override
     public void visit(@NotNull final ColumnAggregations columnAggs) {
-        lastSupported = columnAggs.spec() instanceof AggSpecGroup;
+        hasUnsupportedAggs |= !(columnAggs.spec() instanceof AggSpecGroup);
     }
 
     @Override
     public void visit(@NotNull final Count count) {
-        lastSupported = false;
+        hasUnsupportedAggs = true;
+    }
+
+    @Override
+    public void visit(@NotNull final CountWhere countWhere) {
+        hasUnsupportedAggs = true;
     }
 
     @Override
     public void visit(@NotNull final FirstRowKey firstRowKey) {
-        lastSupported = false;
+        hasUnsupportedAggs = true;
     }
 
     @Override
     public void visit(@NotNull final LastRowKey lastRowKey) {
-        lastSupported = false;
+        hasUnsupportedAggs = true;
     }
 
     @Override
     public void visit(@NotNull final Partition partition) {
-        lastSupported = false;
+        hasUnsupportedAggs = true;
+    }
+
+    @Override
+    public void visit(@NotNull final Formula formula) {
+        hasUnsupportedAggs = true;
     }
 }

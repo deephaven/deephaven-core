@@ -20,7 +20,7 @@
 #
 # == Common to all:
 #
-#  * Start the redpanda-apicurio compose: (cd redpanda-apicurio && docker-compose up --build)
+#  * Start the redpanda-apicurio compose: (cd redpanda-apicurio && docker compose up --build)
 #  * From web UI do:
 #
 #    > from deephaven import kafka_consumer as kc

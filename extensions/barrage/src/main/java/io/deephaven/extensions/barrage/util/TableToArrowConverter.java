@@ -1,12 +1,12 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.extensions.barrage.util;
 
 import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.extensions.barrage.BarragePerformanceLog;
-import io.deephaven.extensions.barrage.BarrageStreamGeneratorImpl;
-import io.grpc.Drainable;
+import io.deephaven.extensions.barrage.BarrageMessageWriter;
+import io.deephaven.extensions.barrage.BarrageMessageWriterImpl;
 import io.grpc.stub.StreamObserver;
 
 import java.io.IOException;
@@ -14,7 +14,6 @@ import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.NoSuchElementException;
 
-import static io.deephaven.extensions.barrage.util.BarrageUtil.DEFAULT_SNAPSHOT_DESER_OPTIONS;
 import static io.deephaven.extensions.barrage.util.BarrageUtil.schemaBytesFromTable;
 
 /**
@@ -22,10 +21,10 @@ import static io.deephaven.extensions.barrage.util.BarrageUtil.schemaBytesFromTa
  * split into chunks and returned as multiple Arrow RecordBatch messages.
  */
 public class TableToArrowConverter {
-    private final BaseTable table;
+    private final BaseTable<?> table;
     private ArrowBuilderObserver listener = null;
 
-    public TableToArrowConverter(BaseTable table) {
+    public TableToArrowConverter(BaseTable<?> table) {
         this.table = table;
     }
 
@@ -37,8 +36,8 @@ public class TableToArrowConverter {
         final BarragePerformanceLog.SnapshotMetricsHelper metrics =
                 new BarragePerformanceLog.SnapshotMetricsHelper();
         listener = new ArrowBuilderObserver();
-        BarrageUtil.createAndSendSnapshot(new BarrageStreamGeneratorImpl.ArrowFactory(), table, null, null,
-                false, DEFAULT_SNAPSHOT_DESER_OPTIONS, listener, metrics);
+        BarrageUtil.createAndSendSnapshot(new BarrageMessageWriterImpl.ArrowFactory(), table, null, null,
+                false, BarrageUtil.DEFAULT_SNAPSHOT_OPTIONS, listener, metrics);
     }
 
     public byte[] getSchema() {
@@ -58,16 +57,15 @@ public class TableToArrowConverter {
         return listener.batchMessages.pop();
     }
 
-    private static class ArrowBuilderObserver implements StreamObserver<BarrageStreamGeneratorImpl.View> {
+    private static class ArrowBuilderObserver implements StreamObserver<BarrageMessageWriter.MessageView> {
         final Deque<byte[]> batchMessages = new ArrayDeque<>();
 
         @Override
-        public void onNext(final BarrageStreamGeneratorImpl.View messageView) {
+        public void onNext(final BarrageMessageWriter.MessageView messageView) {
             try {
                 messageView.forEachStream(inputStream -> {
-                    try (final BarrageProtoUtil.ExposedByteArrayOutputStream baos =
-                            new BarrageProtoUtil.ExposedByteArrayOutputStream()) {
-                        ((Drainable) inputStream).drainTo(baos);
+                    try (final ExposedByteArrayOutputStream baos = new ExposedByteArrayOutputStream()) {
+                        inputStream.drainTo(baos);
                         batchMessages.add(baos.toByteArray());
                         inputStream.close();
                     } catch (final IOException e) {

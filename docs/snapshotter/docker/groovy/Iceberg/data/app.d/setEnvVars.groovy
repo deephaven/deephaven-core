@@ -1,0 +1,6 @@
+awsRegion = System.getenv("AWS_REGION")
+awsAccessKeyId = System.getenv("AWS_ACCESS_KEY_ID")
+awsSecretAccessKey = System.getenv("AWS_SECRET_ACCESS_KEY")
+s3Endpoint = System.getenv("S3_ENDPOINT")
+catalogUri = System.getenv("CATALOG_URI")
+warehouseLocation = System.getenv("WAREHOUSE_LOCATION")

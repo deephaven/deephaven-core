@@ -1,16 +1,19 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharVectorTest and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit CharVectorTest and run "./gradlew replicateVectorTests" to regenerate
+//
+// @formatter:off
 package io.deephaven.vector;
+
+import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
 
 // region IteratorTypeImport
 import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfFloat;
 // endregion IteratorTypeImport
+import io.deephaven.util.QueryConstants;
+import io.deephaven.util.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 
@@ -19,6 +22,7 @@ import java.util.stream.IntStream;
 
 import static io.deephaven.util.QueryConstants.NULL_FLOAT;
 // endregion NullConstantImport
+import static io.deephaven.util.QueryConstants.NULL_INT;
 import static junit.framework.TestCase.*;
 
 /**
@@ -195,6 +199,46 @@ public abstract class FloatVectorTest {
         assertEquals(FloatVector.type().clazz(), FloatVector.class);
         // endregion TestType
     }
+
+    @Test
+    public void testForBoxedNulls() {
+        final float[] data = new float[10_000];
+        for (int ei = 0; ei < data.length; ++ei) {
+            data[ei] = ei % 4 == 0 ? NULL_FLOAT : (float) ei;
+        }
+        final FloatVector vector = makeTestVector(data);
+        assertEquals(vector, new FloatVectorDirect(vector.toArray()));
+        final MutableInt numNulls = new MutableInt(0);
+        vector.iterator().stream().forEach(c -> {
+            if (c == null) {
+                numNulls.add(1);
+            } else if (c == NULL_FLOAT) {
+                throw new IllegalStateException("Expected null, but got boxed NULL_FLOAT");
+            }
+        });
+        assertEquals("numNulls.get() == (data.length + 3) / 4", (data.length + 3) / 4, numNulls.get());
+    }
+
+    // region streamAsDoubleTest
+    @Test
+    public void testForStreamAsIntNulls() {
+        final float[] data = new float[10_000];
+        for (int ei = 0; ei < data.length; ++ei) {
+            data[ei] = ei % 4 == 0 ? NULL_FLOAT : (float) ei;
+        }
+        final FloatVector vector = makeTestVector(data);
+        assertEquals(vector, new FloatVectorDirect(vector.toArray()));
+        final MutableInt numNulls = new MutableInt(0);
+        vector.iterator().streamAsDouble().forEach(c -> {
+            if (c == NULL_DOUBLE) {
+                numNulls.add(1);
+            } else if (c == NULL_FLOAT) {
+                throw new IllegalStateException("Expected NULL_DOUBLE, but got NULL_FLOAT");
+            }
+        });
+        assertEquals("numNulls.get() == (data.length + 3) / 4", (data.length + 3) / 4, numNulls.get());
+    }
+    // endregion streamAsIntTest
 
     private static void checkSubVector(
             final FloatVector vector,

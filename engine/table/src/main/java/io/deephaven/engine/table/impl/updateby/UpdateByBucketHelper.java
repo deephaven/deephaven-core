@@ -1,3 +1,6 @@
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.updateby;
 
 import io.deephaven.api.updateby.UpdateByControl;
@@ -16,7 +19,7 @@ import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.impl.ssa.LongSegmentedSortedArray;
 import io.deephaven.util.SafeCloseableArray;
 import io.deephaven.util.datastructures.linked.IntrusiveDoublyLinkedNode;
-import org.apache.commons.lang3.mutable.MutableLong;
+import io.deephaven.util.mutable.MutableLong;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -47,6 +50,9 @@ class UpdateByBucketHelper extends IntrusiveDoublyLinkedNode.Impl<UpdateByBucket
     private final ColumnSource<?> timestampColumnSource;
     private final ModifiedColumnSet timestampColumnSet;
 
+    /** Store boxed key values for this bucket */
+    private final Object[] bucketKeyValues;
+
     /** Indicates this bucket needs to be processed (at least one window and operator are dirty) */
     private boolean isDirty;
     /** This rowset will store row keys where the timestamp is not null (will mirror the SSA contents) */
@@ -62,8 +68,9 @@ class UpdateByBucketHelper extends IntrusiveDoublyLinkedNode.Impl<UpdateByBucket
      * @param resultSources the result sources
      * @param timestampColumnName the timestamp column used for time-based operations
      * @param control the control object.
+     * @param failureNotifier a consumer to notify of any failures
+     * @param bucketKeyValues the key values for this bucket (empty for zero-key)
      */
-
     protected UpdateByBucketHelper(
             @NotNull final String description,
             @NotNull final QueryTable source,
@@ -71,13 +78,15 @@ class UpdateByBucketHelper extends IntrusiveDoublyLinkedNode.Impl<UpdateByBucket
             @NotNull final Map<String, ? extends ColumnSource<?>> resultSources,
             @Nullable final String timestampColumnName,
             @NotNull final UpdateByControl control,
-            @NotNull final BiConsumer<Throwable, TableListener.Entry> failureNotifier) {
+            @NotNull final BiConsumer<Throwable, TableListener.Entry> failureNotifier,
+            @NotNull final Object[] bucketKeyValues) {
         this.description = description;
         this.source = source;
         // some columns will have multiple inputs, such as time-based and Weighted computations
         this.windows = windows;
         this.control = control;
         this.failureNotifier = failureNotifier;
+        this.bucketKeyValues = bucketKeyValues;
 
         result = new QueryTable(source.getRowSet(), resultSources);
 
@@ -280,16 +289,16 @@ class UpdateByBucketHelper extends IntrusiveDoublyLinkedNode.Impl<UpdateByBucket
                 nullCount++;
                 continue;
             }
-            if (ts < lastTimestamp.longValue()) {
+            if (ts < lastTimestamp.get()) {
                 throw (new TableDataException(
-                        "updateBy time-based operators require non-descending timestamp values"));
+                        "Timestamp values in UpdateBy operators must not decrease"));
             }
 
             ssaValues.add(ts);
             ssaKeys.add(keysChunk.get(i));
 
             // store the current ts for comparison
-            lastTimestamp.setValue(ts);
+            lastTimestamp.set(ts);
         }
         return nullCount;
     }
@@ -328,7 +337,8 @@ class UpdateByBucketHelper extends IntrusiveDoublyLinkedNode.Impl<UpdateByBucket
                     timestampValidRowSet,
                     timestampsModified,
                     control.chunkCapacityOrDefault(),
-                    initialStep);
+                    initialStep,
+                    bucketKeyValues);
 
             // compute the affected/influenced operators and rowsets within this window
             windows[winIdx].computeAffectedRowsAndOperators(windowContexts[winIdx], upstream);

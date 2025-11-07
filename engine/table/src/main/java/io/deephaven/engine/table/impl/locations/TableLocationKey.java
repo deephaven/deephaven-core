@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.locations;
 
 import io.deephaven.base.log.LogOutputAppendable;
@@ -56,4 +56,22 @@ public interface TableLocationKey extends Comparable<TableLocationKey>, NamedImp
      * @return An immutable version of this key
      */
     ImmutableTableLocationKey makeImmutable();
+
+    /**
+     * Release any cached data associated with this key. Should only be called when this key is no longer associated
+     * with any live TableLocation.
+     */
+    default void clear() {}
+
+    /**
+     * By default, compare fully qualified class names of the implementing classes. This method is a fallback where the
+     * implementing classes are not directly comparable, and should help establish a consistent ordering between
+     * distinct implementations.
+     * <p>
+     * {@inheritDoc}
+     */
+    @Override
+    default int compareTo(@NotNull final TableLocationKey other) {
+        return this.getClass().getName().compareTo(other.getClass().getName());
+    }
 }

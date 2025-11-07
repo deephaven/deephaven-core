@@ -1,17 +1,17 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharChunkColumnSource and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit CharChunkColumnSource and run "./gradlew replicateSourcesAndChunks" to regenerate
+//
+// @formatter:off
 package io.deephaven.engine.table.impl.sources.chunkcolumnsource;
 
 import gnu.trove.list.array.TLongArrayList;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.chunk.util.pools.PoolableChunk;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.impl.DefaultGetContext;
 import io.deephaven.engine.table.SharedContext;
@@ -20,8 +20,7 @@ import io.deephaven.engine.table.impl.ImmutableColumnSourceGetDefaults;
 import io.deephaven.chunk.*;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.util.QueryConstants;
-import io.deephaven.util.SafeCloseable;
-import org.apache.commons.lang3.mutable.MutableInt;
+import io.deephaven.util.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
@@ -29,12 +28,13 @@ import java.util.ArrayList;
 /**
  * A column source backed by {@link LongChunk LongChunks}.
  * <p>
- * The address space of the column source is dense, with each chunk backing a contiguous set of indices.  The
- * {@link #getChunk(GetContext, RowSequence)}
- * call will return the backing chunk or a slice of the backing chunk if possible.
+ * The address space of the column source is dense, with each chunk backing a contiguous set of indices. The
+ * {@link #getChunk(GetContext, RowSequence)} call will return the backing chunk or a slice of the backing chunk if
+ * possible.
  */
-public class LongChunkColumnSource extends AbstractColumnSource<Long> implements ImmutableColumnSourceGetDefaults.ForLong, ChunkColumnSource<Long> {
-    private final ArrayList<WritableLongChunk<? extends Values>> data = new ArrayList<>();
+public class LongChunkColumnSource extends AbstractColumnSource<Long>
+        implements ImmutableColumnSourceGetDefaults.ForLong, ChunkColumnSource<Long> {
+    private final ArrayList<LongChunk<? extends Values>> data = new ArrayList<>();
     private final TLongArrayList firstOffsetForData;
     private long totalSize = 0;
 
@@ -63,7 +63,8 @@ public class LongChunkColumnSource extends AbstractColumnSource<Long> implements
     private final static class ChunkGetContext<ATTR extends Any> extends DefaultGetContext<ATTR> {
         private final ResettableLongChunk resettableLongChunk = ResettableLongChunk.makeResettableChunk();
 
-        public ChunkGetContext(final ChunkSource<ATTR> chunkSource, final int chunkCapacity, final SharedContext sharedContext) {
+        public ChunkGetContext(final ChunkSource<ATTR> chunkSource, final int chunkCapacity,
+                final SharedContext sharedContext) {
             super(chunkSource, chunkCapacity, sharedContext);
         }
 
@@ -103,12 +104,13 @@ public class LongChunkColumnSource extends AbstractColumnSource<Long> implements
     }
 
     @Override
-    public void fillChunk(@NotNull final FillContext context, @NotNull final WritableChunk<? super Values> destination, @NotNull final RowSequence rowSequence) {
+    public void fillChunk(@NotNull final FillContext context, @NotNull final WritableChunk<? super Values> destination,
+            @NotNull final RowSequence rowSequence) {
         final MutableInt searchStartChunkIndex = new MutableInt(0);
         destination.setSize(0);
         rowSequence.forAllRowKeyRanges((s, e) -> {
             while (s <= e) {
-                final int chunkIndex = getChunkIndex(s, searchStartChunkIndex.intValue());
+                final int chunkIndex = getChunkIndex(s, searchStartChunkIndex.get());
                 final int offsetWithinChunk = (int) (s - firstOffsetForData.get(chunkIndex));
                 Assert.geqZero(offsetWithinChunk, "offsetWithinChunk");
                 final LongChunk<? extends Values> longChunk = data.get(chunkIndex);
@@ -123,14 +125,15 @@ public class LongChunkColumnSource extends AbstractColumnSource<Long> implements
                 s += length;
                 if (s <= e) {
                     // We have more of this range to gather from a subsequent chunk.
-                    searchStartChunkIndex.setValue(chunkIndex + 1);
+                    searchStartChunkIndex.set(chunkIndex + 1);
                 }
             }
         });
     }
 
     @Override
-    public void fillPrevChunk(@NotNull final FillContext context, @NotNull final WritableChunk<? super Values> destination, @NotNull final RowSequence rowSequence) {
+    public void fillPrevChunk(@NotNull final FillContext context,
+            @NotNull final WritableChunk<? super Values> destination, @NotNull final RowSequence rowSequence) {
         // immutable, so we can delegate to fill
         fillChunk(context, destination, rowSequence);
     }
@@ -148,7 +151,7 @@ public class LongChunkColumnSource extends AbstractColumnSource<Long> implements
     /**
      * Given a row key within this column's address space; return the chunk index that contains the row key.
      *
-     * @param start      the data row key to find the corresponding chunk for
+     * @param start the data row key to find the corresponding chunk for
      * @param startChunk the first chunk that may possibly contain start
      * @return the chunk index within data and offsets
      */
@@ -171,7 +174,7 @@ public class LongChunkColumnSource extends AbstractColumnSource<Long> implements
      *
      * @param chunk the chunk of data to add
      */
-    public void addChunk(@NotNull final WritableLongChunk<? extends Values> chunk) {
+    public void addChunk(@NotNull final LongChunk<? extends Values> chunk) {
         Assert.gtZero(chunk.size(), "chunk.size()");
         data.add(chunk);
         if (data.size() > firstOffsetForData.size()) {
@@ -181,14 +184,16 @@ public class LongChunkColumnSource extends AbstractColumnSource<Long> implements
     }
 
     @Override
-    public void addChunk(@NotNull final WritableChunk<? extends Values> chunk) {
-        addChunk(chunk.asWritableLongChunk());
+    public void addChunk(@NotNull final Chunk<? extends Values> chunk) {
+        addChunk(chunk.asLongChunk());
     }
 
     @Override
-    public void clear() {
+    public synchronized void clear(final boolean closeChunks) {
         totalSize = 0;
-        data.forEach(SafeCloseable::close);
+        if (closeChunks) {
+            data.forEach(PoolableChunk::closeIfPoolable);
+        }
         data.clear();
         firstOffsetForData.resetQuick();
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ * Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
  */
 #include "deephaven/client/client_options.h"
 #include "deephaven/dhcore/utility/utility.h"
@@ -57,8 +57,8 @@ ClientOptions &ClientOptions::SetClientCertChain(std::string client_cert_chain) 
   return *this;
 }
 
-ClientOptions &ClientOptions::SetClientPrivateKey(std::string clientCertChain) {
-  clientPrivateKey_ = std::move(clientCertChain);
+ClientOptions &ClientOptions::SetClientPrivateKey(std::string client_private_key) {
+  clientPrivateKey_ = std::move(client_private_key);
   return *this;
 }
 

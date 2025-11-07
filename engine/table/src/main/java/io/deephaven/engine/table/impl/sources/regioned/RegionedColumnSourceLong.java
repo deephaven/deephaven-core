@@ -1,11 +1,10 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit RegionedColumnSourceChar and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit RegionedColumnSourceChar and run "./gradlew replicateRegionsAndRegionedSources" to regenerate
+//
+// @formatter:off
 package io.deephaven.engine.table.impl.sources.regioned;
 
 import java.time.Instant;
@@ -37,9 +36,11 @@ abstract class RegionedColumnSourceLong<ATTR extends Values>
         extends RegionedColumnSourceArray<Long, ATTR, ColumnRegionLong<ATTR>>
         implements ColumnSourceGetDefaults.ForLong , ConvertibleTimeSource {
 
-    RegionedColumnSourceLong(@NotNull final ColumnRegionLong<ATTR> nullRegion,
-                             @NotNull final MakeDeferred<ATTR, ColumnRegionLong<ATTR>> makeDeferred) {
-        super(nullRegion, long.class, makeDeferred);
+    RegionedColumnSourceLong(
+            @NotNull final RegionedColumnSourceManager manager,
+            @NotNull final ColumnRegionLong<ATTR> nullRegion,
+            @NotNull final MakeDeferred<ATTR, ColumnRegionLong<ATTR>> makeDeferred) {
+        super(manager, nullRegion, long.class, makeDeferred);
     }
 
     @Override
@@ -50,8 +51,8 @@ abstract class RegionedColumnSourceLong<ATTR extends Values>
     interface MakeRegionDefault extends MakeRegion<Values, ColumnRegionLong<Values>> {
         @Override
         default ColumnRegionLong<Values> makeRegion(@NotNull final ColumnDefinition<?> columnDefinition,
-                                                    @NotNull final ColumnLocation columnLocation,
-                                                    final int regionIndex) {
+                @NotNull final ColumnLocation columnLocation,
+                final int regionIndex) {
             if (columnLocation.exists()) {
                 return columnLocation.makeColumnRegionLong(columnDefinition);
             }
@@ -86,13 +87,13 @@ abstract class RegionedColumnSourceLong<ATTR extends Values>
 
     public ColumnSource<Instant> toInstant() {
         //noinspection unchecked
-        return new RegionedColumnSourceInstant((RegionedColumnSourceLong<Values>) this);
+        return new RegionedColumnSourceInstant(manager, (RegionedColumnSourceLong<Values>) this);
     }
 
     @Override
     public ColumnSource<ZonedDateTime> toZonedDateTime(ZoneId zone) {
         //noinspection unchecked
-        return new RegionedColumnSourceZonedDateTime(zone, (RegionedColumnSourceLong<Values>) this);
+        return new RegionedColumnSourceZonedDateTime(manager, zone, (RegionedColumnSourceLong<Values>) this);
     }
 
     @Override
@@ -112,28 +113,30 @@ abstract class RegionedColumnSourceLong<ATTR extends Values>
     // endregion reinterpretation
 
     static final class AsValues extends RegionedColumnSourceLong<Values> implements MakeRegionDefault {
-        AsValues() {
-            super(ColumnRegionLong.createNull(PARAMETERS.regionMask), DeferredColumnRegionLong::new);
+        AsValues(final RegionedColumnSourceManager manager) {
+            super(manager, ColumnRegionLong.createNull(PARAMETERS.regionMask), DeferredColumnRegionLong::new);
         }
     }
 
     static final class Partitioning extends RegionedColumnSourceLong<Values> {
-
-        Partitioning() {
-            super(ColumnRegionLong.createNull(PARAMETERS.regionMask),
+        Partitioning(final RegionedColumnSourceManager manager) {
+            super(manager,
+                    ColumnRegionLong.createNull(PARAMETERS.regionMask),
                     (pm, rs) -> rs.get() // No need to interpose a deferred region in this case
             );
         }
 
         @Override
         public ColumnRegionLong<Values> makeRegion(@NotNull final ColumnDefinition<?> columnDefinition,
-                                                   @NotNull final ColumnLocation columnLocation,
-                                                   final int regionIndex) {
+                @NotNull final ColumnLocation columnLocation,
+                final int regionIndex) {
             final TableLocationKey locationKey = columnLocation.getTableLocation().getKey();
             final Object partitioningColumnValue = locationKey.getPartitionValue(columnDefinition.getName());
-            if (partitioningColumnValue != null && !Long.class.isAssignableFrom(partitioningColumnValue.getClass())) {
-                throw new TableDataException("Unexpected partitioning column value type for " + columnDefinition.getName()
-                        + ": " + partitioningColumnValue + " is not a Long at location " + locationKey);
+            if (partitioningColumnValue != null
+                    && !Long.class.isAssignableFrom(partitioningColumnValue.getClass())) {
+                throw new TableDataException(
+                        "Unexpected partitioning column value type for " + columnDefinition.getName()
+                                + ": " + partitioningColumnValue + " is not a Long at location " + locationKey);
             }
             return new ColumnRegionLong.Constant<>(regionMask(), unbox((Long) partitioningColumnValue));
         }

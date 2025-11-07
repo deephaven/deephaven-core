@@ -1,9 +1,9 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.sources;
 
-import io.deephaven.engine.context.ExecutionContext;
+// ColumnSource is used in the long class when replicated
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.DefaultGetContext;
 import io.deephaven.chunk.*;
@@ -19,6 +19,7 @@ import io.deephaven.engine.table.impl.sources.sparse.LongOneOrN;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.util.SoftRecycler;
 import gnu.trove.list.array.TLongArrayList;
+import io.deephaven.util.annotations.TestUseOnly;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
 
@@ -67,9 +68,9 @@ public class CharacterSparseArraySource extends SparseArrayColumnSource<Characte
 
     /**
      * Our previous page table could be very sparse, and we do not want to read through millions of nulls to find out
-     * what blocks to recycle.  Instead we maintain a list of blocks that we have allocated (as the key shifted by
-     * BLOCK0_SHIFT).  We recycle those blocks in the PrevFlusher; and accumulate the set of blocks that must be
-     * recycled from the next level array, and so on until we recycle the top-level prevBlocks and prevInUse arrays.
+     * what blocks to recycle. Instead we maintain a list of blocks that we have allocated (as the key shifted by
+     * BLOCK0_SHIFT). We recycle those blocks in the PrevFlusher; and accumulate the set of blocks that must be recycled
+     * from the next level array, and so on until we recycle the top-level prevBlocks and prevInUse arrays.
      */
     private transient final TLongArrayList blocksToFlush = new TLongArrayList();
 
@@ -91,7 +92,7 @@ public class CharacterSparseArraySource extends SparseArrayColumnSource<Characte
     // region setNull
     @Override
     public void setNull(long key) {
-        final char [] blocks2 = blocks.getInnermostBlockByKeyOrNull(key);
+        final char[] blocks2 = blocks.getInnermostBlockByKeyOrNull(key);
         if (blocks2 == null) {
             return;
         }
@@ -100,7 +101,7 @@ public class CharacterSparseArraySource extends SparseArrayColumnSource<Characte
             return;
         }
 
-        final char [] prevBlocksInner = shouldRecordPrevious(key);
+        final char[] prevBlocksInner = shouldRecordPrevious(key);
         if (prevBlocksInner != null) {
             prevBlocksInner[indexWithinBlock] = blocks2[indexWithinBlock];
         }
@@ -115,8 +116,8 @@ public class CharacterSparseArraySource extends SparseArrayColumnSource<Characte
         final int block2 = (int) (key >> BLOCK2_SHIFT) & BLOCK2_MASK;
         final int indexWithinBlock = (int) (key & INDEX_MASK);
 
-        final char [] blocksInner = ensureBlock(block0, block1, block2);
-        final char [] prevBlocksInner = shouldRecordPrevious(key);
+        final char[] blocksInner = ensureBlock(block0, block1, block2);
+        final char[] prevBlocksInner = shouldRecordPrevious(key);
         if (prevBlocksInner != null) {
             prevBlocksInner[indexWithinBlock] = blocksInner[indexWithinBlock];
         }
@@ -125,7 +126,8 @@ public class CharacterSparseArraySource extends SparseArrayColumnSource<Characte
 
     @Override
     public void shift(final RowSet keysToShift, final long shiftDelta) {
-        final RowSet.SearchIterator it = (shiftDelta > 0) ? keysToShift.reverseIterator() : keysToShift.searchIterator();
+        final RowSet.SearchIterator it =
+                (shiftDelta > 0) ? keysToShift.reverseIterator() : keysToShift.searchIterator();
         it.forEachLong((i) -> {
             set(i + shiftDelta, getChar(i));
             setNull(i);
@@ -173,18 +175,18 @@ public class CharacterSparseArraySource extends SparseArrayColumnSource<Characte
     }
 
     private char getCharFromBlock(CharOneOrN.Block0 blocks, long key) {
-        final char [] blocks2 = blocks.getInnermostBlockByKeyOrNull(key);
+        final char[] blocks2 = blocks.getInnermostBlockByKeyOrNull(key);
         if (blocks2 == null) {
             return NULL_CHAR;
         }
-        return blocks2[(int)(key & INDEX_MASK)];
+        return blocks2[(int) (key & INDEX_MASK)];
     }
     // endregion primitive get
 
     // region allocateNullFilledBlock
     @SuppressWarnings("SameParameterValue")
-    final char [] allocateNullFilledBlock(int size) {
-        final char [] newBlock = new char[size];
+    final char[] allocateNullFilledBlock(int size) {
+        final char[] newBlock = new char[size];
         Arrays.fill(newBlock, NULL_CHAR);
         return newBlock;
     }
@@ -192,9 +194,10 @@ public class CharacterSparseArraySource extends SparseArrayColumnSource<Characte
 
     /**
      * Make sure that we have an allocated block at the given point, allocating all of the required parents.
+     * 
      * @return {@code blocks.get(block0).get(block1).get(block2)}, which is non-null.
      */
-    char [] ensureBlock(final int block0, final int block1, final int block2) {
+    char[] ensureBlock(final int block0, final int block1, final int block2) {
         blocks.ensureIndex(block0, null);
         CharOneOrN.Block1 blocks0 = blocks.get(block0);
         if (blocks0 == null) {
@@ -206,7 +209,7 @@ public class CharacterSparseArraySource extends SparseArrayColumnSource<Characte
             blocks0.set(block1, blocks1 = new CharOneOrN.Block2());
         }
 
-        char [] result = blocks1.get(block2);
+        char[] result = blocks1.get(block2);
         if (result == null) {
             blocks1.ensureIndex(block2, null);
             // we do not use the recycler here, because the recycler need not sanitize the block (the inUse recycling
@@ -220,9 +223,10 @@ public class CharacterSparseArraySource extends SparseArrayColumnSource<Characte
     /**
      * Make sure that we have an allocated previous and inuse block at the given point, allocating all of the required
      * parents.
+     * 
      * @return {@code prevBlocks.get(block0).get(block1).get(block2)}, which is non-null.
      */
-    private char [] ensurePrevBlock(final long key, final int block0, final int block1, final int block2) {
+    private char[] ensurePrevBlock(final long key, final int block0, final int block1, final int block2) {
         if (prevBlocks == null) {
             prevBlocks = new CharOneOrN.Block0();
             prevInUse = new LongOneOrN.Block0();
@@ -277,6 +281,7 @@ public class CharacterSparseArraySource extends SparseArrayColumnSource<Characte
     }
 
     private void commitUpdates() {
+        maybeClearBlocks();
         blocksToFlush.sort();
 
         int destinationOffset = 0;
@@ -313,7 +318,7 @@ public class CharacterSparseArraySource extends SparseArrayColumnSource<Characte
 
             final CharOneOrN.Block2 blocks1 = localPrevBlocks.get(block0).get(block1);
             final LongOneOrN.Block2 inUse1 = localPrevInUse.get(block0).get(block1);
-            final char [] pb = blocks1.get(block2);
+            final char[] pb = blocks1.get(block2);
             final long[] inuse = inUse1.get(block2);
 
             inUse1.set(block2, null);
@@ -377,14 +382,35 @@ public class CharacterSparseArraySource extends SparseArrayColumnSource<Characte
         localPrevInUse.maybeRecycle(inUse0Recycler);
     }
 
+    private void maybeClearBlocks() {
+        if (blocksToClear == null) {
+            return;
+        }
+        blocks.clearLowestLevelBlocks(blocksToClear, recycler);
+        blocks.clearBlocks2(blocks2ToClear, recycler2);
+        blocks.clearBlocks1(blocks1ToClear, recycler1);
+        if (emptyResult) {
+            blocks.onEmptyResult(recycler0);
+        }
+
+        blocksToClear.close();
+        blocks2ToClear.close();
+        blocks1ToClear.close();
+        blocksToClear = null;
+        blocks2ToClear = null;
+        blocks1ToClear = null;
+        emptyResult = null;
+    }
+
     /**
-    * Decides whether to record the previous value.
-    * @param key the row key to record
-    * @return If the caller should record the previous value, returns prev inner block, the value
-    * {@code prevBlocks.get(block0).get(block1).get(block2)}, which is non-null. Otherwise (if the caller should not
-     * record values), returns null.
-    */
-    final char [] shouldRecordPrevious(final long key) {
+     * Decides whether to record the previous value.
+     * 
+     * @param key the row key to record
+     * @return If the caller should record the previous value, returns prev inner block, the value
+     *         {@code prevBlocks.get(block0).get(block1).get(block2)}, which is non-null. Otherwise (if the caller
+     *         should not record values), returns null.
+     */
+    final char[] shouldRecordPrevious(final long key) {
         if (!shouldTrackPrevious()) {
             return null;
         }
@@ -460,8 +486,9 @@ public class CharacterSparseArraySource extends SparseArrayColumnSource<Characte
     /**
      * This method supports the 'getPrev' method for its inheritors, doing some of the 'inUse' housekeeping that is
      * common to all inheritors.
+     * 
      * @return true if the inheritor should return a value from its "prev" data structure; false if it should return a
-     * value from its "current" data structure.
+     *         value from its "current" data structure.
      */
     private boolean shouldUsePrevious(final long rowKey) {
         if (prevFlusher == null) {
@@ -472,7 +499,7 @@ public class CharacterSparseArraySource extends SparseArrayColumnSource<Characte
             return false;
         }
 
-        final long [] inUse = prevInUse.getInnermostBlockByKeyOrNull(rowKey);
+        final long[] inUse = prevInUse.getInnermostBlockByKeyOrNull(rowKey);
         if (inUse == null) {
             return false;
         }
@@ -489,7 +516,7 @@ public class CharacterSparseArraySource extends SparseArrayColumnSource<Characte
     /* TYPE_MIXIN */ void fillByRanges(
             @NotNull final WritableChunk<? super Values> dest,
             @NotNull final RowSequence rowSequence
-            /* CONVERTER */) {
+    /* CONVERTER */) {
         // region chunkDecl
         final WritableCharChunk<? super Values> chunk = dest.asWritableCharChunk();
         // endregion chunkDecl
@@ -505,7 +532,7 @@ public class CharacterSparseArraySource extends SparseArrayColumnSource<Characte
                 if (ctx.block == null) {
                     chunk.fillWithNullValue(ctx.offset, length);
                 } else {
-                    final int sIndexWithinBlock = (int)(firstKey & INDEX_MASK);
+                    final int sIndexWithinBlock = (int) (firstKey & INDEX_MASK);
                     // for the benefit of code generation.
                     final int offset = ctx.offset;
                     final char[] block = ctx.block;
@@ -531,7 +558,7 @@ public class CharacterSparseArraySource extends SparseArrayColumnSource<Characte
     /* TYPE_MIXIN */ void fillByKeys(
             @NotNull final WritableChunk<? super Values> dest,
             @NotNull final RowSequence rowSequence
-            /* CONVERTER */) {
+    /* CONVERTER */) {
         // region chunkDecl
         final WritableCharChunk<? super Values> chunk = dest.asWritableCharChunk();
         // endregion chunkDecl
@@ -560,11 +587,11 @@ public class CharacterSparseArraySource extends SparseArrayColumnSource<Characte
     /* TYPE_MIXIN */ void fillByUnRowSequence(
             @NotNull final WritableChunk<? super Values> dest,
             @NotNull final LongChunk<? extends RowKeys> keys
-            /* CONVERTER */) {
+    /* CONVERTER */) {
         // region chunkDecl
         final WritableCharChunk<? super Values> chunk = dest.asWritableCharChunk();
         // endregion chunkDecl
-        for (int ii = 0; ii < keys.size(); ) {
+        for (int ii = 0; ii < keys.size();) {
             final long firstKey = keys.get(ii);
             if (firstKey == RowSequence.NULL_ROW_KEY) {
                 chunk.set(ii++, NULL_CHAR);
@@ -581,7 +608,7 @@ public class CharacterSparseArraySource extends SparseArrayColumnSource<Characte
                 }
                 lastII = nextII;
             }
-            final char [] block = blocks.getInnermostBlockByKeyOrNull(firstKey);
+            final char[] block = blocks.getInnermostBlockByKeyOrNull(firstKey);
             if (block == null) {
                 chunk.fillWithNullValue(ii, lastII - ii + 1);
                 ii = lastII + 1;
@@ -601,11 +628,11 @@ public class CharacterSparseArraySource extends SparseArrayColumnSource<Characte
     /* TYPE_MIXIN */ void fillPrevByUnRowSequence(
             @NotNull final WritableChunk<? super Values> dest,
             @NotNull final LongChunk<? extends RowKeys> keys
-            /* CONVERTER */) {
+    /* CONVERTER */) {
         // region chunkDecl
         final WritableCharChunk<? super Values> chunk = dest.asWritableCharChunk();
         // endregion chunkDecl
-        for (int ii = 0; ii < keys.size(); ) {
+        for (int ii = 0; ii < keys.size();) {
             final long firstKey = keys.get(ii);
             if (firstKey == RowSequence.NULL_ROW_KEY) {
                 chunk.set(ii++, NULL_CHAR);
@@ -623,21 +650,23 @@ public class CharacterSparseArraySource extends SparseArrayColumnSource<Characte
                 lastII = nextII;
             }
 
-            final char [] block = blocks.getInnermostBlockByKeyOrNull(firstKey);
+            final char[] block = blocks.getInnermostBlockByKeyOrNull(firstKey);
             if (block == null) {
                 chunk.fillWithNullValue(ii, lastII - ii + 1);
                 ii = lastII + 1;
                 continue;
             }
 
-            final long [] prevInUse = (prevFlusher == null || this.prevInUse == null) ? null : this.prevInUse.getInnermostBlockByKeyOrNull(firstKey);
-            final char [] prevBlock = prevInUse == null ? null : prevBlocks.getInnermostBlockByKeyOrNull(firstKey);
+            final long[] prevInUse = (prevFlusher == null || this.prevInUse == null) ? null
+                    : this.prevInUse.getInnermostBlockByKeyOrNull(firstKey);
+            final char[] prevBlock = prevInUse == null ? null : prevBlocks.getInnermostBlockByKeyOrNull(firstKey);
             while (ii <= lastII) {
                 final int indexWithinBlock = (int) (keys.get(ii) & INDEX_MASK);
                 final int indexWithinInUse = indexWithinBlock >> LOG_INUSE_BITSET_SIZE;
                 final long maskWithinInUse = 1L << (indexWithinBlock & IN_USE_MASK);
 
-                final char[] blockToUse = (prevInUse != null && (prevInUse[indexWithinInUse] & maskWithinInUse) != 0) ? prevBlock : block;
+                final char[] blockToUse =
+                        (prevInUse != null && (prevInUse[indexWithinInUse] & maskWithinInUse) != 0) ? prevBlock : block;
                 // region conversion
                 chunk.set(ii++, blockToUse == null ? NULL_CHAR : blockToUse[indexWithinBlock]);
                 // endregion conversion
@@ -652,7 +681,7 @@ public class CharacterSparseArraySource extends SparseArrayColumnSource<Characte
     /* TYPE_MIXIN */ void fillFromChunkByRanges(
             @NotNull final RowSequence rowSequence,
             @NotNull final Chunk<? extends Values> src
-            /* CONVERTER */) {
+    /* CONVERTER */) {
         if (rowSequence.isEmpty()) {
             return;
         }
@@ -682,7 +711,7 @@ public class CharacterSparseArraySource extends SparseArrayColumnSource<Characte
                 final int block0 = (int) (firstKey >> BLOCK0_SHIFT) & BLOCK0_MASK;
                 final int block1 = (int) (firstKey >> BLOCK1_SHIFT) & BLOCK1_MASK;
                 final int block2 = (int) (firstKey >> BLOCK2_SHIFT) & BLOCK2_MASK;
-                final char [] block = ensureBlock(block0, block1, block2);
+                final char[] block = ensureBlock(block0, block1, block2);
 
                 if (block != knownUnaliasedBlock && chunk.isAlias(block)) {
                     throw new UnsupportedOperationException("Source chunk is an alias for target data");
@@ -726,7 +755,7 @@ public class CharacterSparseArraySource extends SparseArrayColumnSource<Characte
     /* TYPE_MIXIN */ void fillFromChunkByKeys(
             @NotNull final RowSequence rowSequence,
             @NotNull final Chunk<? extends Values> src
-            /* CONVERTER */) {
+    /* CONVERTER */) {
         if (rowSequence.isEmpty()) {
             return;
         }
@@ -741,7 +770,7 @@ public class CharacterSparseArraySource extends SparseArrayColumnSource<Characte
             prevFlusher.maybeActivate();
         }
 
-        for (int ii = 0; ii < keys.size(); ) {
+        for (int ii = 0; ii < keys.size();) {
             final long firstKey = keys.get(ii);
             final long maxKeyInCurrentBlock = firstKey | INDEX_MASK;
             int lastII = ii;
@@ -752,7 +781,7 @@ public class CharacterSparseArraySource extends SparseArrayColumnSource<Characte
             final int block0 = (int) (firstKey >> BLOCK0_SHIFT) & BLOCK0_MASK;
             final int block1 = (int) (firstKey >> BLOCK1_SHIFT) & BLOCK1_MASK;
             final int block2 = (int) (firstKey >> BLOCK2_SHIFT) & BLOCK2_MASK;
-            final char [] block = ensureBlock(block0, block1, block2);
+            final char[] block = ensureBlock(block0, block1, block2);
 
             if (chunk.isAlias(block)) {
                 throw new UnsupportedOperationException("Source chunk is an alias for target data");
@@ -808,14 +837,14 @@ public class CharacterSparseArraySource extends SparseArrayColumnSource<Characte
                 final int block0 = (int) (firstKey >> BLOCK0_SHIFT) & BLOCK0_MASK;
                 final int block1 = (int) (firstKey >> BLOCK1_SHIFT) & BLOCK1_MASK;
                 final int block2 = (int) (firstKey >> BLOCK2_SHIFT) & BLOCK2_MASK;
-                final char [] block = blocks.getInnermostBlockByKeyOrNull(firstKey);
+                final char[] block = blocks.getInnermostBlockByKeyOrNull(firstKey);
 
                 if (block == null) {
                     continue;
                 }
 
                 blockOk.forAllRowKeyRanges((s, e) -> {
-                    final int length = (int)((e - s) + 1);
+                    final int length = (int) ((e - s) + 1);
 
                     final int sIndexWithinBlock = (int) (s & INDEX_MASK);
                     // This 'if' with its constant condition should be very friendly to the branch predictor.
@@ -923,7 +952,7 @@ public class CharacterSparseArraySource extends SparseArrayColumnSource<Characte
             @NotNull final FillFromContext context,
             @NotNull final Chunk<? extends Values> src,
             @NotNull final LongChunk<RowKeys> keys
-            /* CONVERTER */) {
+    /* CONVERTER */) {
         if (keys.size() == 0) {
             return;
         }
@@ -937,7 +966,7 @@ public class CharacterSparseArraySource extends SparseArrayColumnSource<Characte
             prevFlusher.maybeActivate();
         }
 
-        for (int ii = 0; ii < keys.size(); ) {
+        for (int ii = 0; ii < keys.size();) {
             final long firstKey = keys.get(ii);
             final long minKeyInCurrentBlock = firstKey & ~INDEX_MASK;
             final long maxKeyInCurrentBlock = firstKey | INDEX_MASK;
@@ -945,7 +974,7 @@ public class CharacterSparseArraySource extends SparseArrayColumnSource<Characte
             final int block0 = (int) (firstKey >> BLOCK0_SHIFT) & BLOCK0_MASK;
             final int block1 = (int) (firstKey >> BLOCK1_SHIFT) & BLOCK1_MASK;
             final int block2 = (int) (firstKey >> BLOCK2_SHIFT) & BLOCK2_MASK;
-            final char [] block = ensureBlock(block0, block1, block2);
+            final char[] block = ensureBlock(block0, block1, block2);
 
             if (chunk.isAlias(block)) {
                 throw new UnsupportedOperationException("Source chunk is an alias for target data");
@@ -1022,4 +1051,21 @@ public class CharacterSparseArraySource extends SparseArrayColumnSource<Characte
 
     // region reinterpretation
     // endregion reinterpretation
+
+
+    @Override
+    public void clearBlocks(final RowSet blocksToClear, final RowSet removeBlocks2, final RowSet removeBlocks1,
+            final boolean empty) {
+        if (prevFlusher == null) {
+            return;
+        }
+        super.clearBlocks(blocksToClear, removeBlocks2, removeBlocks1, empty);
+        prevFlusher.maybeActivate();
+    }
+
+    @TestUseOnly
+    @Override
+    public long estimateSize() {
+        return blocks.estimateSize();
+    }
 }

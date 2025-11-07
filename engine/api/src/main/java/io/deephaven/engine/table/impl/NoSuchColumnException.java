@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl;
 
 import java.util.Collection;
@@ -117,5 +117,19 @@ public class NoSuchColumnException extends IllegalArgumentException {
      */
     public NoSuchColumnException(Collection<String> presentColumns, String missingColumn) {
         this(presentColumns, Collections.singleton(missingColumn));
+    }
+
+    /**
+     * Thrown when an operation can not find a required column.
+     *
+     * @param messagePrefix a prefix for the error message, to indicate what operation/column type is not found
+     * @param presentColumns the column names present in the table
+     * @param missingColumn the request column name that was not found
+     */
+    public NoSuchColumnException(final String messagePrefix, final List<String> presentColumns,
+            final String missingColumn) {
+        this(messagePrefix + String.format(DEFAULT_FORMAT_STR,
+                missingColumn,
+                String.join(DELIMITER, presentColumns)));
     }
 }

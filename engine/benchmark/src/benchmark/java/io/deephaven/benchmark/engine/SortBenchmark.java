@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.benchmark.engine;
 
 import io.deephaven.base.verify.Assert;
@@ -19,7 +19,7 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.benchmarking.*;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
-import org.apache.commons.lang3.mutable.MutableInt;
+import io.deephaven.util.mutable.MutableInt;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.infra.BenchmarkParams;
 
@@ -110,10 +110,10 @@ public class SortBenchmark {
 
         switch (symTab) {
             case "symtab":
-                SortHelpers.sortBySymbolTable = true;
+                SortHelpers.SORT_BY_SYMBOL_TABLE = true;
                 break;
             case "nosymtab":
-                SortHelpers.sortBySymbolTable = false;
+                SortHelpers.SORT_BY_SYMBOL_TABLE = false;
                 break;
             default:
                 throw new IllegalStateException("bad sort type: " + symTab);
@@ -141,7 +141,7 @@ public class SortBenchmark {
 
         inputTable.getDefinition().getColumnNameSet().forEach(columnName -> {
             if (!columnName.equals(sortCol)) {
-                sortColumns[ci.intValue()] = columnName;
+                sortColumns[ci.get()] = columnName;
                 ci.increment();
             }
         });

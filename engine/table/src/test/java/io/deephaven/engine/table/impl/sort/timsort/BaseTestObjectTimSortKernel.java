@@ -1,14 +1,14 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit BaseTestCharTimSortKernel and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit BaseTestCharTimSortKernel and run "./gradlew replicateSortKernelTests" to regenerate
+//
+// @formatter:off
 package io.deephaven.engine.table.impl.sort.timsort;
 
 import java.util.Objects;
+import io.deephaven.util.compare.ObjectComparisons;
 
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.chunk.attributes.ChunkPositions;
@@ -517,19 +517,8 @@ public abstract class BaseTestObjectTimSortKernel extends TestTimSortKernel {
     // region comparison functions
     // ascending comparison
     private static int doComparison(Object lhs, Object rhs) {
-       if (lhs == rhs) {
-            return 0;
-        }
-        if (lhs == null) {
-            return -1;
-        }
-        if (rhs == null) {
-            return 1;
-        }
-        //noinspection unchecked,rawtypes
-        return ((Comparable)lhs).compareTo(rhs);
+        return ObjectComparisons.compare(lhs, rhs);
     }
-
     // endregion comparison functions
 
     private static boolean gt(Object lhs, Object rhs) {

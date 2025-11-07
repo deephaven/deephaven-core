@@ -1,10 +1,9 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.testutil;
 
 import io.deephaven.base.verify.Assert;
-import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.ModifiedColumnSet;
@@ -15,7 +14,7 @@ import io.deephaven.engine.table.impl.util.ColumnHolder;
 import io.deephaven.engine.testutil.sources.TestColumnSource;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.util.TableTools;
-import org.apache.commons.lang3.mutable.MutableLong;
+import io.deephaven.util.mutable.MutableLong;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -144,10 +143,21 @@ public class GenerateTableUpdates {
 
     public static final SimulationProfile DEFAULT_PROFILE = new SimulationProfile();
 
+    public static final SimulationProfile NO_SHIFT_PROFILE =
+            new SimulationProfile() {
+                {
+                    SHIFT_10_PERCENT_KEY_SPACE = 0;
+                    SHIFT_10_PERCENT_POS_SPACE = 0;
+                    SHIFT_AGGRESSIVELY = 0;
+                }
+            };
+
     public static void generateShiftAwareTableUpdates(final SimulationProfile profile, final int targetUpdateSize,
             final Random random, final QueryTable table,
             final ColumnInfo<?, ?>[] columnInfo) {
         profile.validate();
+
+        final boolean isBlink = table.isBlink();
 
         try (final WritableRowSet rowSet = table.getRowSet().copy()) {
             final ColumnInfo<?, ?>[] mutableColumns =
@@ -158,9 +168,13 @@ public class GenerateTableUpdates {
 
             // Removes in pre-shift keyspace.
             if (rowSet.isNonempty()) {
-                update.removed =
-                        TstUtils.selectSubIndexSet(Math.min(rowSet.intSize(), random.nextInt(targetUpdateSize)),
-                                rowSet, random);
+                if (isBlink) {
+                    update.removed = rowSet.copy();
+                } else {
+                    update.removed =
+                            TstUtils.selectSubIndexSet(Math.min(rowSet.intSize(), random.nextInt(targetUpdateSize)),
+                                    rowSet, random);
+                }
                 rowSet.remove(update.removed()); // remove blatted and explicit removals
             } else {
                 update.removed = TstUtils.i();
@@ -168,10 +182,10 @@ public class GenerateTableUpdates {
 
             // Generate Shifts.
             final RowSetShiftData.Builder shiftBuilder = new RowSetShiftData.Builder();
-            if (!hasImmutableColumns) {
-                MutableLong lastDest = new MutableLong();
+            if (!hasImmutableColumns && !isBlink) {
+                final MutableLong lastDest = new MutableLong();
 
-                BiConsumer<Long, Long> shiftConsumer = (first, last) -> {
+                final BiConsumer<Long, Long> shiftConsumer = (first, last) -> {
                     if (first < 0 || last < 0 || last < first)
                         return;
 
@@ -180,7 +194,7 @@ public class GenerateTableUpdates {
                     final long minShift;
                     final long maxShift;
                     if (shiftBuilder.nonempty()) {
-                        minShift = lastDest.longValue() + 1 - first;
+                        minShift = lastDest.get() + 1 - first;
                         maxShift = Math.max(minShift,
                                 random.nextInt(100) < profile.SHIFT_LIMIT_50_PERCENT ? (len + 1) / 2 : 2 * len);
                     } else {
@@ -193,7 +207,7 @@ public class GenerateTableUpdates {
                         shiftDelta = Math.max(-first, minShift + nextLong(random, maxShift - minShift + 1));
                     }
 
-                    lastDest.setValue(last + shiftDelta);
+                    lastDest.set(last + shiftDelta);
                     shiftBuilder.shiftRange(first, last, shiftDelta);
                 };
 
@@ -267,7 +281,7 @@ public class GenerateTableUpdates {
                         modifiedColumns.add(ci.name);
                     }
                 }
-                update.modifiedColumnSet().setAll(modifiedColumns.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
+                update.modifiedColumnSet().setAll(modifiedColumns.toArray(String[]::new));
             }
 
             update.added = TstUtils.newIndex(numRowsBlattedByShift + random.nextInt(targetUpdateSize), rowSet, random);

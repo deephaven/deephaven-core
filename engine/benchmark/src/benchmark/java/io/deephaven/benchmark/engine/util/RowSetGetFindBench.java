@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.benchmark.engine.util;
 
 import io.deephaven.benchmarking.BenchUtil;
@@ -11,7 +11,7 @@ import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.impl.rsp.RspBitmap;
 import io.deephaven.util.metrics.MetricsManager;
-import org.apache.commons.lang3.mutable.MutableInt;
+import io.deephaven.util.mutable.MutableInt;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.infra.Blackhole;
 import org.openjdk.jmh.runner.RunnerException;

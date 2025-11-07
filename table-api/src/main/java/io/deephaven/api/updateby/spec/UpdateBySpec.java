@@ -1,3 +1,6 @@
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.api.updateby.spec;
 
 import io.deephaven.api.Pair;
@@ -58,6 +61,13 @@ public interface UpdateBySpec {
      */
     ColumnUpdateOperation clause(Collection<? extends Pair> pairs);
 
+    /**
+     * Build a {@link ColumnUpdateOperation} clause for this UpdateBySpec with no input/output column name specified.
+     *
+     * @return The aggregation
+     */
+    ColumnUpdateOperation clause();
+
     // region Visitor
     <T> T walk(Visitor<T> visitor);
 
@@ -78,6 +88,8 @@ public interface UpdateBySpec {
 
         T visit(CumProdSpec spec);
 
+        T visit(CumCountWhereSpec spec);
+
         T visit(DeltaSpec spec);
 
         T visit(RollingSumSpec spec);
@@ -92,9 +104,13 @@ public interface UpdateBySpec {
 
         T visit(RollingCountSpec spec);
 
+        T visit(RollingCountWhereSpec spec);
+
         T visit(RollingStdSpec spec);
 
-        T visit(RollingWAvgSpec w);
+        T visit(RollingWAvgSpec spec);
+
+        T visit(RollingFormulaSpec spec);
     }
     // endregion
 }

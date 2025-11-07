@@ -1,8 +1,9 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl;
 
+import gnu.trove.list.array.TLongArrayList;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.context.ExecutionContext;
@@ -24,6 +25,7 @@ import io.deephaven.util.annotations.ReferentialIntegrity;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import javax.annotation.OverridingMethodsMustInvokeSuper;
 import java.io.IOException;
 import java.lang.ref.WeakReference;
 import java.util.Collection;
@@ -48,6 +50,7 @@ public abstract class MergedListener extends LivenessArtifact implements Notific
             AtomicLongFieldUpdater.newUpdater(MergedListener.class, "lastCompletedStep");
 
     private final UpdateGraph updateGraph;
+
     private final Iterable<? extends ListenerRecorder> recorders;
     private final Iterable<NotificationQueue.Dependency> dependencies;
     private final String listenerDescription;
@@ -55,6 +58,9 @@ public abstract class MergedListener extends LivenessArtifact implements Notific
     @Nullable
     protected final PerformanceEntry entry;
     private final String logPrefix;
+
+    private boolean failed;
+
 
     @SuppressWarnings("FieldMayBeFinal")
     private volatile long lastCompletedStep = NotificationStepReceiver.NULL_NOTIFICATION_STEP;
@@ -78,8 +84,33 @@ public abstract class MergedListener extends LivenessArtifact implements Notific
         this.dependencies = dependencies;
         this.listenerDescription = listenerDescription;
         this.result = result;
-        this.entry = PeriodicUpdateGraph.createUpdatePerformanceEntry(this.updateGraph, listenerDescription);
+        this.entry = PeriodicUpdateGraph.createUpdatePerformanceEntry(this.updateGraph, listenerDescription,
+                () -> getParentIdentifiers(recorders, dependencies));
         this.logPrefix = System.identityHashCode(this) + " " + listenerDescription + " Merged Listener: ";
+    }
+
+    protected void logNewAncestors(Iterable<? extends ListenerRecorder> recorders) {
+        PeriodicUpdateGraph.logPerformanceEntryAncestors(this.updateGraph, this.entry,
+                () -> getParentIdentifiers(recorders, null));
+    }
+
+    private static long[] getParentIdentifiers(@NotNull Iterable<? extends ListenerRecorder> recorders,
+            @Nullable Iterable<NotificationQueue.Dependency> dependencies) {
+        final TLongArrayList parentList = new TLongArrayList();
+        recorders.forEach(rec -> {
+            if (rec.getParent() instanceof HasParentPerformanceIds) {
+                final HasParentPerformanceIds parentBase = (HasParentPerformanceIds) (rec.getParent());
+                parentBase.parentPerformanceEntryIds().forEach(parentList::add);
+            }
+        });
+        if (dependencies != null) {
+            dependencies.forEach(dep -> {
+                if (dep instanceof HasParentPerformanceIds) {
+                    ((HasParentPerformanceIds) dep).parentPerformanceEntryIds().forEach(parentList::add);
+                }
+            });
+        }
+        return parentList.toArray();
     }
 
     private void releaseFromRecorders() {
@@ -89,6 +120,19 @@ public abstract class MergedListener extends LivenessArtifact implements Notific
     @Override
     public UpdateGraph getUpdateGraph() {
         return updateGraph;
+    }
+
+    @Nullable
+    public PerformanceEntry getEntry() {
+        return entry;
+    }
+
+    protected Iterable<? extends ListenerRecorder> getRecorders() {
+        return recorders;
+    }
+
+    public boolean isFailed() {
+        return failed;
     }
 
     public final void notifyOnUpstreamError(
@@ -102,6 +146,10 @@ public abstract class MergedListener extends LivenessArtifact implements Notific
 
     private void notifyInternal(@Nullable final Throwable upstreamError,
             @Nullable final TableListener.Entry errorSourceEntry) {
+        if (failed) {
+            return;
+        }
+
         final long currentStep = getUpdateGraph().clock().currentStep();
 
         synchronized (this) {
@@ -145,6 +193,7 @@ public abstract class MergedListener extends LivenessArtifact implements Notific
             final boolean uncaughtExceptionFromProcess,
             @NotNull final Throwable error,
             @Nullable final TableListener.Entry entry) {
+        failed = true;
         forceReferenceCountToZero();
         propagateErrorDownstream(uncaughtExceptionFromProcess, error, entry);
         try {
@@ -157,16 +206,21 @@ public abstract class MergedListener extends LivenessArtifact implements Notific
     }
 
     protected boolean systemicResult() {
-        return SystemicObjectTracker.isSystemic(result);
+        return result != null && SystemicObjectTracker.isSystemic(result);
     }
 
+    @OverridingMethodsMustInvokeSuper
     @Override
     protected void destroy() {
+        super.destroy();
         recorders.forEach(ListenerRecorder::forceReferenceCountToZero);
     }
 
     protected void propagateErrorDownstream(
             final boolean fromProcess, @NotNull final Throwable error, @Nullable final TableListener.Entry entry) {
+        if (result == null) {
+            return;
+        }
         if (fromProcess && result.satisfied(getUpdateGraph().clock().currentStep())) {
             // If the result is already satisfied (because it managed to send its notification, or was otherwise
             // satisfied) we should not send our error notification on this cycle.

@@ -1,39 +1,40 @@
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.updateby.rollingsum;
 
-import io.deephaven.base.ringbuffer.AggregatingFloatRingBuffer;
+import io.deephaven.base.ringbuffer.AggregatingDoubleRingBuffer;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.FloatChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
-import io.deephaven.engine.table.impl.updateby.internal.BaseFloatUpdateByOperator;
-import io.deephaven.engine.table.impl.util.RowRedirection;
+import io.deephaven.engine.table.impl.updateby.internal.BaseDoubleUpdateByOperator;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
 import static io.deephaven.util.QueryConstants.NULL_FLOAT;
 
-public class FloatRollingSumOperator extends BaseFloatUpdateByOperator {
+public class FloatRollingSumOperator extends BaseDoubleUpdateByOperator {
     private static final int BUFFER_INITIAL_SIZE = 64;
-    // region extra-fields
-    // endregion extra-fields
 
-    protected class Context extends BaseFloatUpdateByOperator.Context {
+    protected class Context extends BaseDoubleUpdateByOperator.Context {
         protected FloatChunk<? extends Values> floatInfluencerValuesChunk;
-        protected AggregatingFloatRingBuffer aggSum;
+        protected AggregatingDoubleRingBuffer aggSum;
 
         protected Context(final int chunkSize) {
             super(chunkSize);
-            aggSum = new AggregatingFloatRingBuffer(BUFFER_INITIAL_SIZE,
+            aggSum = new AggregatingDoubleRingBuffer(BUFFER_INITIAL_SIZE,
                     0,
-                    Float::sum, // tree function
+                    Double::sum, // tree function
                     (a, b) -> { // value function
-                        if (a == NULL_FLOAT && b == NULL_FLOAT) {
+                        if (a == NULL_DOUBLE && b == NULL_DOUBLE) {
                             return 0; // identity val
-                        } else if (a == NULL_FLOAT) {
+                        } else if (a == NULL_DOUBLE) {
                             return b;
-                        } else if (b == NULL_FLOAT) {
+                        } else if (b == NULL_DOUBLE) {
                             return a;
                         }
                         return a + b;
@@ -56,11 +57,13 @@ public class FloatRollingSumOperator extends BaseFloatUpdateByOperator {
             aggSum.ensureRemaining(count);
 
             for (int ii = 0; ii < count; ii++) {
-                float val = floatInfluencerValuesChunk.get(pos + ii);
-                aggSum.addUnsafe(val);
+                final float val = floatInfluencerValuesChunk.get(pos + ii);
 
                 if (val == NULL_FLOAT) {
                     nullCount++;
+                    aggSum.addUnsafe(NULL_DOUBLE);
+                } else {
+                    aggSum.addUnsafe(val);
                 }
             }
         }
@@ -70,9 +73,9 @@ public class FloatRollingSumOperator extends BaseFloatUpdateByOperator {
             Assert.geq(aggSum.size(), "aggSum.size()", count);
 
             for (int ii = 0; ii < count; ii++) {
-                float val = aggSum.removeUnsafe();
+                double val = aggSum.removeUnsafe();
 
-                if (val == NULL_FLOAT) {
+                if (val == NULL_DOUBLE) {
                     nullCount--;
                 }
             }
@@ -81,7 +84,7 @@ public class FloatRollingSumOperator extends BaseFloatUpdateByOperator {
         @Override
         public void writeToOutputChunk(int outIdx) {
             if (aggSum.size() == nullCount) {
-                outputValues.set(outIdx, NULL_FLOAT);
+                outputValues.set(outIdx, NULL_DOUBLE);
             } else {
                 outputValues.set(outIdx, aggSum.evaluate());
             }
@@ -100,17 +103,22 @@ public class FloatRollingSumOperator extends BaseFloatUpdateByOperator {
         return new Context(affectedChunkSize);
     }
 
-    public FloatRollingSumOperator(@NotNull final MatchPair pair,
-                                   @NotNull final String[] affectingColumns,
-                                   @Nullable final RowRedirection rowRedirection,
-                                   @Nullable final String timestampColumnName,
-                                   final long reverseWindowScaleUnits,
-                                   final long forwardWindowScaleUnits
-                                   // region extra-constructor-args
-                                   // endregion extra-constructor-args
-    ) {
-        super(pair, affectingColumns, rowRedirection, timestampColumnName, reverseWindowScaleUnits, forwardWindowScaleUnits, true);
-        // region constructor
-        // endregion constructor
+    public FloatRollingSumOperator(
+            @NotNull final MatchPair pair,
+            @NotNull final String[] affectingColumns,
+            @Nullable final String timestampColumnName,
+            final long reverseWindowScaleUnits,
+            final long forwardWindowScaleUnits) {
+        super(pair, affectingColumns, timestampColumnName, reverseWindowScaleUnits, forwardWindowScaleUnits, true);
+    }
+
+    @Override
+    public UpdateByOperator copy() {
+        return new FloatRollingSumOperator(
+                pair,
+                affectingColumns,
+                timestampColumnName,
+                reverseWindowScaleUnits,
+                forwardWindowScaleUnits);
     }
 }

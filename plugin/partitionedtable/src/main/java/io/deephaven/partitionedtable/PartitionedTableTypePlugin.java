@@ -1,3 +1,6 @@
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.partitionedtable;
 
 import com.google.auto.service.AutoService;
@@ -38,7 +41,8 @@ public class PartitionedTableTypePlugin extends ObjectTypeBase.FetchOnly {
         // Send Schema wrapped in Message
         ByteString schemaWrappedInMessage = BarrageUtil.schemaBytesFromTableDefinition(
                 partitionedTable.constituentDefinition(),
-                Collections.emptyMap());
+                Collections.emptyMap(),
+                false);
 
         PartitionedTableDescriptor result = PartitionedTableDescriptor.newBuilder()
                 .addAllKeyColumnNames(partitionedTable.keyColumnNames())

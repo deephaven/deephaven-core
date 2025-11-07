@@ -1,9 +1,10 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.sources;
 
 import io.deephaven.chunk.ChunkType;
+import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.WritableColumnSource;
 import org.jetbrains.annotations.NotNull;
@@ -198,6 +199,42 @@ public class ReinterpretUtils {
     }
 
     /**
+     * Convert each source in {@code sources} to a primitive if possible.
+     *
+     * @param sources An array of the sources to potentially convert
+     * @return The primitive sources for each source in {@code sources}
+     */
+    @NotNull
+    public static ColumnSource<?>[] maybeConvertToPrimitive(@NotNull final ColumnSource<?>[] sources) {
+        final ColumnSource<?>[] result = new ColumnSource<?>[sources.length];
+        for (int ii = 0; ii < sources.length; ++ii) {
+            result[ii] = maybeConvertToPrimitive(sources[ii]);
+        }
+        return result;
+    }
+
+    /**
+     * If {@code columnDefinition.getDataType()} or {@code columnDefinition.getComponentType} are something that we
+     * prefer to handle as a primitive, do the appropriate conversion.
+     *
+     * @param columnDefinition The column definition to convert
+     * @return if possible, {@code columnDefinition} converted to a primitive, otherewise {@code columnDefinition}
+     */
+    @NotNull
+    public static ColumnDefinition<?> maybeConvertToPrimitive(@NotNull final ColumnDefinition<?> columnDefinition) {
+        final Class<?> dataType = ReinterpretUtils.maybeConvertToPrimitiveDataType(columnDefinition.getDataType());
+        Class<?> componentType = columnDefinition.getComponentType();
+        if (componentType != null) {
+            componentType = ReinterpretUtils.maybeConvertToPrimitiveDataType(componentType);
+        }
+        if (columnDefinition.getDataType() == dataType
+                && columnDefinition.getComponentType() == componentType) {
+            return columnDefinition;
+        }
+        return columnDefinition.withDataType(dataType, componentType);
+    }
+
+    /**
      * If {@code source} is something that we prefer to handle as a primitive, do the appropriate conversion.
      *
      * @param source the source to convert
@@ -250,6 +287,7 @@ public class ReinterpretUtils {
         }
         if (dataType == Instant.class) {
             // Note that storing ZonedDateTime as a primitive is lossy on the time zone.
+            // TODO (https://github.com/deephaven/deephaven-core/issues/5241): Inconsistent handling of ZonedDateTime
             return ChunkType.Long;
         }
         return ChunkType.fromElementType(dataType);
@@ -268,6 +306,8 @@ public class ReinterpretUtils {
             return byte.class;
         }
         if (dataType == Instant.class || dataType == ZonedDateTime.class) {
+            // Note: not all ZonedDateTime sources are convertible to long, so this doesn't match column source behavior
+            // TODO (https://github.com/deephaven/deephaven-core/issues/5241): Inconsistent handling of ZonedDateTime
             return long.class;
         }
         return dataType;

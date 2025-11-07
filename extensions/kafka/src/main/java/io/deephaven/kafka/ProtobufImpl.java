@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2023 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.kafka;
 
 import com.google.protobuf.Descriptors.Descriptor;
@@ -17,9 +17,7 @@ import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.api.ColumnName;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.TableDefinition;
-import io.deephaven.functions.ToObjectFunction;
-import io.deephaven.functions.ToPrimitiveFunction;
-import io.deephaven.functions.TypedFunction;
+import io.deephaven.function.*;
 import io.deephaven.kafka.KafkaTools.Consume;
 import io.deephaven.kafka.KafkaTools.KeyOrValue;
 import io.deephaven.kafka.KafkaTools.KeyOrValueIngestData;
@@ -38,9 +36,10 @@ import io.deephaven.protobuf.ProtobufDescriptorParserOptions;
 import io.deephaven.protobuf.ProtobufFunction;
 import io.deephaven.protobuf.ProtobufFunctions;
 import io.deephaven.protobuf.ProtobufFunctions.Builder;
+import io.deephaven.function.ToChunkTypeTransform;
 import io.deephaven.qst.type.Type;
 import io.deephaven.util.annotations.VisibleForTesting;
-import org.apache.commons.lang3.mutable.MutableInt;
+import io.deephaven.util.mutable.MutableInt;
 import org.apache.kafka.common.serialization.Deserializer;
 
 import java.io.IOException;

@@ -1,14 +1,14 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.web.client.api.console;
 
 import com.vertispan.tsdefs.annotations.TsInterface;
 import com.vertispan.tsdefs.annotations.TsName;
 import elemental2.core.JsArray;
 import elemental2.core.JsObject;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.application_pb.FieldInfo;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.application_pb.FieldsChangeUpdate;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.application_pb.FieldInfo;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.application_pb.FieldsChangeUpdate;
 import jsinterop.annotations.JsProperty;
 import jsinterop.base.Js;
 

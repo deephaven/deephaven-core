@@ -1,9 +1,10 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.client;
 
 import io.deephaven.api.TableOperations;
+import io.deephaven.api.agg.Aggregation;
 import io.deephaven.api.updateby.UpdateByOperation;
 import io.deephaven.client.impl.TableHandle;
 import io.deephaven.extensions.barrage.util.BarrageUtil;
@@ -12,6 +13,7 @@ import io.deephaven.qst.column.header.ColumnHeader;
 import io.deephaven.qst.table.NewTable;
 import io.deephaven.qst.table.TableCreatorImpl;
 import io.deephaven.qst.table.TableSpec;
+import io.deephaven.server.runner.RecordingErrorTransformer;
 import org.apache.arrow.flight.FlightStream;
 import org.apache.arrow.vector.BigIntVector;
 import org.apache.arrow.vector.VectorSchemaRoot;
@@ -24,7 +26,9 @@ import org.junit.Test;
 
 import java.time.Instant;
 import java.util.Collections;
+import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -82,6 +86,248 @@ public class DeephavenFlightSessionTest extends DeephavenFlightSessionTestBase {
                 }
             }
             assertThat(i).isEqualTo(size);
+        }
+    }
+
+    @Test
+    public void updateByCountWhere() throws Exception {
+        final int size = 100;
+        final TableSpec spec = TableSpec.empty(size)
+                .view("I=i")
+                .updateBy(List.of(UpdateByOperation.CumCountWhere("IS", "I%2==0"),
+                        UpdateByOperation.RollingCountWhere(2, "RC", "I%2==0")));
+        try (
+                final TableHandle handle = flightSession.session().batch().execute(spec);
+                final FlightStream stream = flightSession.stream(handle)) {
+            int i = 0;
+            long sum = 0;
+            while (stream.next()) {
+                final VectorSchemaRoot root = stream.getRoot();
+                final BigIntVector cumVector = (BigIntVector) root.getVector("IS");
+                final BigIntVector rollingVector = (BigIntVector) root.getVector("RC");
+                final int rowCount = root.getRowCount();
+                for (int r = 0; r < rowCount; ++r, ++i) {
+                    if (r % 2 == 0) {
+                        sum++;
+                    }
+                    assertThat(cumVector.get(r)).isEqualTo(sum);
+                    assertThat(rollingVector.get(r)).isEqualTo(1);
+                }
+            }
+            assertThat(i).isEqualTo(size);
+        }
+    }
+
+    @Test
+    public void updateByCountWhereNotPermitted() throws Exception {
+        ((RecordingErrorTransformer) errorTransformer).clear();
+
+        final int size = 100;
+        final TableSpec spec = TableSpec.empty(size)
+                .view("I=i")
+                .updateBy(UpdateByOperation.CumCountWhere("IS",
+                        getClass().getCanonicalName() + ".disallowedFunction(I)"));
+        try {
+            flightSession.session().batch().execute(spec);
+            Assert.fail("Expected exception");
+        } catch (TableHandle.TableHandleException e) {
+            assertThat(e.getMessage()).contains("INVALID_ARGUMENT");
+            final List<Throwable> errors = ((RecordingErrorTransformer) errorTransformer).getErrors();
+            assertThat(errors.size()).isEqualTo(1);
+            assertThat(errors.get(0).getMessage()).contains(
+                    "User expressions are not permitted to use static method disallowedFunction(int) on class io.deephaven.client.DeephavenFlightSessionTest");
+        }
+
+        ((RecordingErrorTransformer) errorTransformer).clear();
+        final TableSpec spec2 = TableSpec.empty(size)
+                .view("I=i")
+                .updateBy(UpdateByOperation.RollingCountWhere(2, "RC",
+                        getClass().getCanonicalName() + ".disallowedFunction(I)"));
+        try {
+            flightSession.session().batch().execute(spec2);
+            Assert.fail("Expected exception");
+        } catch (TableHandle.TableHandleException e) {
+            assertThat(e.getMessage()).contains("INVALID_ARGUMENT");
+            final List<Throwable> errors = ((RecordingErrorTransformer) errorTransformer).getErrors();
+            assertThat(errors.size()).isEqualTo(1);
+            assertThat(errors.get(0).getMessage()).contains(
+                    "User expressions are not permitted to use static method disallowedFunction(int) on class io.deephaven.client.DeephavenFlightSessionTest");
+        }
+    }
+
+    @Test
+    public void updateByFormula() throws Exception {
+        final int size = 100;
+        final TableSpec spec = TableSpec.empty(size)
+                .view("I=i", "I2=100 + i")
+                .updateBy(List.of(UpdateByOperation.RollingFormula(2, "sum(each)", "each"),
+                        UpdateByOperation.RollingFormula(2, "RC=sum(I) + sum(I2)")));
+        try (
+                final TableHandle handle = flightSession.session().batch().execute(spec);
+                final FlightStream stream = flightSession.stream(handle)) {
+            int i = 0;
+            while (stream.next()) {
+                final VectorSchemaRoot root = stream.getRoot();
+                final BigIntVector iVector = (BigIntVector) root.getVector("I");
+                final BigIntVector i2Vector = (BigIntVector) root.getVector("I2");
+                final BigIntVector rcVector = (BigIntVector) root.getVector("RC");
+                final int rowCount = root.getRowCount();
+                assertThat(iVector.get(0)).isEqualTo(0);
+                assertThat(i2Vector.get(0)).isEqualTo(100);
+                assertThat(rcVector.get(0)).isEqualTo(100);
+                for (int r = 1; r < rowCount; ++r) {
+                    int isum = (i + r) + (i + r) - 1;
+                    assertThat(iVector.get(r)).isEqualTo(isum);
+                    int i2sum = 200 + (i + r) + (i + r) - 1;
+                    assertThat(i2Vector.get(r)).isEqualTo(i2sum);
+                    assertThat(rcVector.get(r)).isEqualTo(isum + i2sum);
+                }
+                i += rowCount;
+            }
+            assertThat(i).isEqualTo(size);
+        }
+    }
+
+    @Test
+    public void updateByFormulaEachNotPermitted() throws Exception {
+        final int size = 100;
+        final TableSpec spec = TableSpec.empty(size)
+                .view("I=i", "I2=100 + i")
+                .updateBy(List.of(UpdateByOperation.RollingFormula(2, "each.toArray()", "each")));
+        try {
+            flightSession.session().batch().execute(spec);
+            Assert.fail("Expected exception");
+        } catch (TableHandle.TableHandleException e) {
+            assertThat(e.getMessage()).contains("INVALID_ARGUMENT");
+            final List<Throwable> errors = ((RecordingErrorTransformer) errorTransformer).getErrors();
+            assertThat(errors.size()).isEqualTo(1);
+            assertThat(errors.get(0).getMessage()).contains(
+                    "User expressions are not permitted to use method toArray() on interface io.deephaven.vector.IntVector");
+        }
+    }
+
+    @Test
+    public void updateByFormulaNoParamNotPermitted() throws Exception {
+        final int size = 100;
+        final TableSpec spec = TableSpec.empty(size)
+                .view("I=i", "I2=100 + i")
+                .updateBy(List.of(UpdateByOperation.RollingFormula(2, "RC=I.toArray()")));
+        try {
+            flightSession.session().batch().execute(spec);
+            Assert.fail("Expected exception");
+        } catch (TableHandle.TableHandleException e) {
+            assertThat(e.getMessage()).contains("INVALID_ARGUMENT");
+            final List<Throwable> errors = ((RecordingErrorTransformer) errorTransformer).getErrors();
+            assertThat(errors.size()).isEqualTo(1);
+            assertThat(errors.get(0).getMessage()).contains(
+                    "User expressions are not permitted to use method toArray() on interface io.deephaven.vector.IntVector");
+        }
+    }
+
+    @Test
+    public void updateByFormulaNotPermitted() throws Exception {
+        final int size = 100;
+        final TableSpec spec = TableSpec.empty(size)
+                .view("I=i", "I2=100 + i")
+                .updateBy(List.of(UpdateByOperation.RollingFormula(2, "RC=I2.toArray()")));
+        try {
+            flightSession.session().batch().execute(spec);
+            Assert.fail("Expected exception");
+        } catch (TableHandle.TableHandleException e) {
+            assertThat(e.getMessage()).contains("INVALID_ARGUMENT");
+            final List<Throwable> errors = ((RecordingErrorTransformer) errorTransformer).getErrors();
+            assertThat(errors.size()).isEqualTo(1);
+            assertThat(errors.get(0).getMessage()).contains(
+                    "User expressions are not permitted to use method toArray() on interface io.deephaven.vector.IntVector");
+        }
+    }
+
+    @Test
+    public void aggFormula() throws Exception {
+        final int size = 10;
+        final TableSpec spec = TableSpec.empty(size)
+                .view("I=i")
+                .aggBy(Aggregation.AggFormula("Result", "sum(I)"));
+        final long expected = IntStream.range(0, 10).sum();
+        try (
+                final TableHandle handle = flightSession.session().batch().execute(spec);
+                final FlightStream stream = flightSession.stream(handle)) {
+            assertThat(stream.next()).isTrue();
+            final VectorSchemaRoot root = stream.getRoot();
+            final BigIntVector longVector = (BigIntVector) root.getVector("Result");
+            final int rowCount = root.getRowCount();
+            assertThat(rowCount).isEqualTo(1);
+            final long actual = longVector.get(0);
+            assertThat(actual).isEqualTo(expected);
+            assertThat(stream.next()).isFalse();
+        }
+    }
+
+    @Test
+    public void aggFormulaNotPermitted() throws Exception {
+        ((RecordingErrorTransformer) errorTransformer).clear();
+
+        final int size = 10;
+        final TableSpec spec = TableSpec.empty(size)
+                .view("I=i")
+                .aggBy(Aggregation.AggFormula("Result", "I.toArray()"));
+        try {
+            flightSession.session().batch().execute(spec);
+            Assert.fail("Expected exception");
+        } catch (TableHandle.TableHandleException e) {
+            assertThat(e.getMessage()).contains("INVALID_ARGUMENT");
+            final List<Throwable> errors = ((RecordingErrorTransformer) errorTransformer).getErrors();
+            assertThat(errors.size()).isEqualTo(1);
+            assertThat(errors.get(0).getMessage()).contains(
+                    "User expressions are not permitted to use method toArray() on interface io.deephaven.vector.IntVector");
+        }
+    }
+
+    @Test
+    public void aggCountWhere() throws Exception {
+        final int size = 10;
+        final TableSpec spec = TableSpec.empty(size)
+                .view("I=i")
+                .aggBy(Aggregation.AggCountWhere("Result", "I % 2 == 0"));
+        final long expected = IntStream.range(0, 10).filter(x -> x % 2 == 0).count();
+        try (
+                final TableHandle handle = flightSession.session().batch().execute(spec);
+                final FlightStream stream = flightSession.stream(handle)) {
+            assertThat(stream.next()).isTrue();
+            final VectorSchemaRoot root = stream.getRoot();
+            final BigIntVector longVector = (BigIntVector) root.getVector("Result");
+            final int rowCount = root.getRowCount();
+            assertThat(rowCount).isEqualTo(1);
+            final long actual = longVector.get(0);
+            assertThat(actual).isEqualTo(expected);
+            assertThat(stream.next()).isFalse();
+        }
+    }
+
+    /**
+     * Test function for not permitted tests.
+     */
+    public static boolean disallowedFunction(int i) {
+        return true;
+    }
+
+    @Test
+    public void aggCountWhereFormulaNotPermitted() throws Exception {
+        ((RecordingErrorTransformer) errorTransformer).clear();
+
+        final int size = 10;
+        final TableSpec spec = TableSpec.empty(size)
+                .view("I=i")
+                .aggBy(Aggregation.AggCountWhere("Result", getClass().getCanonicalName() + ".disallowedFunction(I)"));
+        try {
+            flightSession.session().batch().execute(spec);
+            Assert.fail("Expected exception");
+        } catch (TableHandle.TableHandleException e) {
+            assertThat(e.getMessage()).contains("INVALID_ARGUMENT");
+            final List<Throwable> errors = ((RecordingErrorTransformer) errorTransformer).getErrors();
+            assertThat(errors.size()).isEqualTo(1);
+            assertThat(errors.get(0).getMessage()).contains(
+                    "User expressions are not permitted to use static method disallowedFunction(int) on class io.deephaven.client.DeephavenFlightSessionTest");
         }
     }
 

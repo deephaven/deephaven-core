@@ -1,21 +1,23 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.server.console;
 
 import com.google.common.base.Throwables;
 import com.google.rpc.Code;
 import io.deephaven.base.LockFreeArrayQueue;
+import io.deephaven.base.clock.Clock;
 import io.deephaven.configuration.Configuration;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.impl.util.RuntimeMemory;
 import io.deephaven.engine.table.impl.util.RuntimeMemory.Sample;
-import io.deephaven.engine.updategraph.DynamicNode;
 import io.deephaven.engine.util.DelegatingScriptSession;
 import io.deephaven.engine.util.ScriptSession;
+import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
 import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.integrations.python.PythonDeephavenSession;
 import io.deephaven.internal.log.LoggerFactory;
@@ -52,8 +54,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static io.deephaven.extensions.barrage.util.GrpcUtil.safelyComplete;
-import static io.deephaven.extensions.barrage.util.GrpcUtil.safelyOnNext;
+import static io.deephaven.extensions.barrage.util.GrpcUtil.*;
 
 @Singleton
 public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImplBase {
@@ -139,11 +140,9 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
                 .onError(responseObserver)
                 .submit(() -> {
                     final ScriptSession scriptSession = new DelegatingScriptSession(scriptSessionProvider.get());
-
-                    safelyComplete(responseObserver, StartConsoleResponse.newBuilder()
+                    safelyOnNextAndComplete(responseObserver, StartConsoleResponse.newBuilder()
                             .setResultId(request.getResultId())
                             .build());
-
                     return scriptSession;
                 });
     }
@@ -154,9 +153,11 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
             @NotNull final StreamObserver<LogSubscriptionData> responseObserver) {
         sessionService.getCurrentSession();
         if (REMOTE_CONSOLE_DISABLED) {
-            GrpcUtil.safelyError(responseObserver, Code.FAILED_PRECONDITION, "Remote console disabled");
+            safelyError(responseObserver, Code.FAILED_PRECONDITION, "Remote console disabled");
             return;
         }
+        // Session close logic implicitly handled in
+        // io.deephaven.server.session.SessionServiceGrpcImpl.SessionServiceInterceptor
         final LogsClient client =
                 new LogsClient(request, (ServerCallStreamObserver<LogSubscriptionData>) responseObserver);
         client.start();
@@ -181,16 +182,43 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
             final SessionState.ExportObject<ScriptSession> exportedConsole =
                     ticketRouter.resolve(session, consoleId, "consoleId");
 
-            session.nonExport()
+            session.<ExecuteCommandResponse>nonExport()
                     .queryPerformanceRecorder(queryPerformanceRecorder)
                     .requiresSerialQueue()
                     .require(exportedConsole)
                     .onError(responseObserver)
+                    .onSuccess((final ExecuteCommandResponse response) -> safelyOnNextAndComplete(responseObserver,
+                            response))
                     .submit(() -> {
-                        ScriptSession scriptSession = exportedConsole.get();
-                        ScriptSession.Changes changes = scriptSession.evaluateScript(request.getCode());
-                        ExecuteCommandResponse.Builder diff = ExecuteCommandResponse.newBuilder();
-                        FieldsChangeUpdate.Builder fieldChanges = FieldsChangeUpdate.newBuilder();
+                        final ScriptSession scriptSession = exportedConsole.get();
+                        final ExecuteCommandRequest.SystemicType systemicOption =
+                                request.hasSystemic()
+                                        ? request.getSystemic()
+                                        : ExecuteCommandRequest.SystemicType.NOT_SET_SYSTEMIC;
+
+                        // If not set, we'll use defaults, otherwise we will explicitly set the systemicness.
+                        final ScriptSession.Changes changes;
+                        long startTimestamp = Clock.system().currentTimeNanos();
+                        switch (systemicOption) {
+                            case NOT_SET_SYSTEMIC:
+                                changes = scriptSession.evaluateScript(request.getCode());
+                                break;
+                            case EXECUTE_NOT_SYSTEMIC:
+                                changes = SystemicObjectTracker.executeSystemically(false,
+                                        () -> scriptSession.evaluateScript(request.getCode()));
+                                break;
+                            case EXECUTE_SYSTEMIC:
+                                changes = SystemicObjectTracker.executeSystemically(true,
+                                        () -> scriptSession.evaluateScript(request.getCode()));
+                                break;
+                            default:
+                                throw new UnsupportedOperationException(
+                                        "Unrecognized systemic option: " + systemicOption);
+                        }
+                        long endTimestamp = Clock.system().currentTimeNanos();
+
+                        final ExecuteCommandResponse.Builder diff = ExecuteCommandResponse.newBuilder();
+                        final FieldsChangeUpdate.Builder fieldChanges = FieldsChangeUpdate.newBuilder();
                         changes.created.entrySet()
                                 .forEach(entry -> fieldChanges.addCreated(makeVariableDefinition(entry)));
                         changes.updated.entrySet()
@@ -201,7 +229,11 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
                             diff.setErrorMessage(Throwables.getStackTraceAsString(changes.error));
                             log.error().append("Error running script: ").append(changes.error).endl();
                         }
-                        safelyComplete(responseObserver, diff.setChanges(fieldChanges).build());
+
+                        return diff.setChanges(fieldChanges)
+                                .setStartTimestamp(startTimestamp)
+                                .setEndTimestamp(endTimestamp)
+                                .build();
                     });
         }
     }
@@ -210,6 +242,7 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
     public void getHeapInfo(
             @NotNull final GetHeapInfoRequest request,
             @NotNull final StreamObserver<GetHeapInfoResponse> responseObserver) {
+        sessionService.getCurrentSession();
         final RuntimeMemory runtimeMemory = RuntimeMemory.getInstance();
         final Sample sample = new Sample();
         runtimeMemory.read(sample);
@@ -273,7 +306,9 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
             ExportBuilder<?> exportBuilder = session.nonExport()
                     .queryPerformanceRecorder(queryPerformanceRecorder)
                     .requiresSerialQueue()
-                    .onError(responseObserver);
+                    .onError(responseObserver)
+                    .onSuccess(() -> safelyOnNextAndComplete(responseObserver,
+                            BindTableToVariableResponse.getDefaultInstance()));
 
             if (request.hasConsoleId()) {
                 exportedConsole = ticketRouter.resolve(session, request.getConsoleId(), "consoleId");
@@ -284,15 +319,11 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
             }
 
             exportBuilder.submit(() -> {
-                ScriptSession scriptSession =
-                        exportedConsole != null ? exportedConsole.get() : scriptSessionProvider.get();
+                QueryScope queryScope = exportedConsole != null ? exportedConsole.get().getQueryScope()
+                        : ExecutionContext.getContext().getQueryScope();
+
                 Table table = exportedTable.get();
-                scriptSession.setVariable(request.getVariableName(), table);
-                if (DynamicNode.notDynamicOrIsRefreshing(table)) {
-                    scriptSession.manage(table);
-                }
-                responseObserver.onNext(BindTableToVariableResponse.getDefaultInstance());
-                responseObserver.onCompleted();
+                queryScope.putParam(request.getVariableName(), table);
             });
         }
     }
@@ -310,7 +341,7 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
                 final ScriptSession scriptSession = scriptSessionProvider.get();
                 scriptSession.evaluateScript(
                         "from deephaven_internal.auto_completer import jedi_settings ; jedi_settings.set_scope(globals())");
-                settings[0] = (PyObject) scriptSession.getVariable("jedi_settings");
+                settings[0] = scriptSession.getQueryScope().readParamValue("jedi_settings");
             } catch (Exception err) {
                 if (!ALREADY_WARNED_ABOUT_NO_AUTOCOMPLETE.getAndSet(true)) {
                     log.error().append("Autocomplete package not found; disabling autocomplete.").endl();
@@ -404,7 +435,7 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
         }
 
         public void stop() {
-            GrpcUtil.safelyComplete(client);
+            safelyComplete(client);
         }
 
         // ------------------------------------------------------------------------------------------------------------
@@ -458,7 +489,7 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
                             return;
                         }
                         if (tooSlow) {
-                            GrpcUtil.safelyError(client, Code.RESOURCE_EXHAUSTED, String.format(
+                            safelyError(client, Code.RESOURCE_EXHAUSTED, String.format(
                                     "Too slow: the client or network may be too slow to keep up with the logging rates, or there may be logging bursts that exceed the available buffer size. The buffer size can be configured through the server property '%s'.",
                                     SUBSCRIBE_TO_LOGS_BUFFER_SIZE_PROP));
                             return;
@@ -471,7 +502,7 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
                             bufferIsKnownEmpty = true;
                             break;
                         }
-                        GrpcUtil.safelyOnNext(client, payload);
+                        safelyOnNext(client, payload);
                     }
                 } finally {
                     guard.set(false);

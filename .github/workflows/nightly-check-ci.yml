@@ -7,46 +7,86 @@ on:
     # 2AM EST == 6AM UTC
     - cron:  '0 6 * * *'
   push:
-    branches: [ 'nightly/**', 'release/v*' ]
+    branches: [ 'nightly/**', 'release/v*', 'dependabot/**', 'coverage/**', 'rc/v*']
 
 jobs:
   nightly:
+    name: nightly (${{ matrix.gradle-task }}, Java ${{ matrix.test-jvm-version }}, Jetty ${{ matrix.jetty-version }})
     strategy:
       fail-fast: false
       matrix:
         gradle-task: ['check', 'testSerial', 'testParallel', 'testOutOfBand']
-        test-jvm-version: ['11', '17', '21']
+        test-jvm-version: ['11', '17', '21', '24']
+        jetty-version: ['12']
+        # Exclude Java 11 checks for Jetty 12, they will run as Java 17.
+        exclude:
+          - gradle-task: 'check'
+            test-jvm-version: '11'
+        # While the defaults above only run client integration tests on Jetty 12, the following extra rules restore
+        # those tests for Jetty 11. Additionally, restores the Java 11 test version, but only when using Jetty 11, to
+        # avoid duplication. Does not run Jetty 11 tests for all JDKs.
+        include:
+          - gradle-task: 'check'
+            test-jvm-version: '11'
+            jetty-version: '11'
+          - gradle-task: 'check'
+            test-jvm-version: '17'
+            jetty-version: '11'
+
     if: ${{ github.repository_owner == 'deephaven' || github.event_name != 'schedule' }}
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     concurrency:
-      group: ${{ matrix.gradle-task }}-${{ matrix.test-jvm-version }}-${{ github.workflow }}-${{ github.ref }}
+      group: ${{ matrix.gradle-task }}-${{ matrix.test-jvm-version }}-${{ matrix.jetty-version }}-${{ github.workflow }}-${{ github.ref }}
       cancel-in-progress: true
+    env:
+      COVER: ${{ (github.event_name == 'schedule' || startsWith(github.ref_name, 'coverage/')) && matrix.test-jvm-version == '21' && matrix.jetty-version == '12' }}
+      JETTY_FLAG: ${{ matrix.jetty-version == '11' && '-Pjetty11' || '' }}
     steps:
+      - name: Free Disk Space
+        uses: endersonmenezes/free-disk-space@v2
+        with:
+          remove_haskell: true
+          remove_folders: "/usr/share/swift /usr/share/miniconda /usr/share/az* /usr/local/share/chromium /usr/local/share/powershell /usr/local/julia /usr/local/aws-cli /usr/share/gradle"
+          testing: false
+
+      - name: Starting available disk space
+        run: df -h
+
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           lfs: true
 
       - name: Setup JDK 11
         id: setup-java-11
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
           java-version: '11'
 
       - name: Setup JDK 17
         id: setup-java-17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
           java-version: '17'
 
       - name: Setup JDK 21
         id: setup-java-21
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
           java-version: '21'
+
+      - name: Setup JDK 24
+        id: setup-java-24
+        uses: actions/setup-java@v5
+        with:
+          distribution: 'temurin'
+          java-version: '24'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v5
 
       - name: Set JAVA_HOME
         run: echo "JAVA_HOME=${{ steps.setup-java-11.outputs.path }}" >> $GITHUB_ENV
@@ -56,18 +96,34 @@ jobs:
           .github/scripts/gradle-properties.sh >> gradle.properties
           cat gradle.properties
 
-      - name: Run gradle ${{ matrix.gradle-task }} on java ${{ matrix.test-jvm-version }}
-        uses: burrunan/gradle-cache-action@v1
+      - name: Run gradle ${{ matrix.gradle-task }} on java ${{ matrix.test-jvm-version }} with coverage=${{ env.COVER }}
+        run: ./gradlew --scan --continue --rerun-tasks ${{ matrix.gradle-task }} -PtestRuntimeVersion=${{ matrix.test-jvm-version }} -Pcoverage.enabled=$COVER $JETTY_FLAG
+        
+      - name: Run df -h after build
+        run: |
+          df -h
+
+      - name: Run du on build directories
+        run: find . -name build |xargs du -hs |sort -h | tail -n 20
+
+      - name: List docker images
+        run: docker image ls -a
+
+      - name: Upload Coverage Results
+        if: ${{ env.COVER == 'true' }}
+        uses: actions/upload-artifact@v4
         with:
-          job-id: gradle-run
-          arguments: --scan --continue --rerun-tasks ${{ matrix.gradle-task }} -PtestRuntimeVersion=${{ matrix.test-jvm-version }}
-          gradle-version: wrapper
+          name: coverage-${{ matrix.gradle-task }}-results
+          path: |
+            **/build/jacoco/*.exec
+            **/build/test-results/**/coverage/*.tsv
+            **/build/test-results/**/coverage/*.html
 
       - name: Upload Test Results
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: nightly-${{ matrix.gradle-task }}-java${{ matrix.test-jvm-version }}-ci-results
+          name: nightly-${{ matrix.gradle-task }}-java${{ matrix.test-jvm-version }}-jetty${{ matrix.jetty-version}}-ci-results
           path: |
             **/build/test-results/**
             **/build/reports/tests/**
@@ -76,7 +132,7 @@ jobs:
         uses: actions/upload-artifact@v4
         if: failure()
         with:
-          name: nightly-${{ matrix.gradle-task }}-java${{ matrix.test-jvm-version }}-ci-jvm-err
+          name: nightly-${{ matrix.gradle-task }}-java${{ matrix.test-jvm-version }}-jetty${{ matrix.jetty-version}}-ci-jvm-err
           path: |
             **/*_pid*.log
             **/core.*
@@ -84,23 +140,79 @@ jobs:
 
       - name: Publish Test Results
         uses: scacap/action-surefire-report@v1
-        if: ${{ github.repository_owner == 'deephaven' }}
+        if: ${{ github.repository_owner == 'deephaven' && github.ref == 'refs/heads/main' }}
         env:
           NODE_OPTIONS: '--max_old_space_size=4096'
         with:
           # We have to make a unique report per run https://github.com/ScaCap/action-surefire-report/issues/70
-          check_name: check report ${{ matrix.gradle-task }} java${{ matrix.test-jvm-version }}
+          check_name: check report ${{ matrix.gradle-task }} java${{ matrix.test-jvm-version }} jetty${{ matrix.jetty-version}}
           github_token: ${{ secrets.GITHUB_TOKEN }}
           report_paths: '**/build/test-results/*/TEST-*.xml'
 
       - name: Slack Nightly Failure
-        uses: slackapi/slack-github-action@v1.24.0
+        uses: slackapi/slack-github-action@v2.1.0
         id: slack-nightly-failure
-        if: ${{ failure() && github.repository_owner == 'deephaven' }}
+        if: ${{ failure() && github.repository_owner == 'deephaven' && github.ref == 'refs/heads/main' }}
         with:
+          webhook-type: webhook-trigger
           payload: |
             {
-              "slack_message": "Nightly build failure in ${{ matrix.gradle-task }} on Java ${{ matrix.test-jvm-version }} @ ${{ github.head_ref }} ${{ github.sha }}"
+              "slack_message": "Nightly build failure in ${{ matrix.gradle-task }} on Java ${{ matrix.test-jvm-version }} Jetty ${{ matrix.jetty-version}} @ ${{ github.head_ref }} ${{ github.sha }} ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
             }
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_NIGHTLY_FAILURE }}
+          
+  combined-coverage-report:
+    if: ${{ github.event_name == 'schedule' || startsWith(github.ref_name, 'coverage/') }}
+    needs: nightly
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          lfs: true
+
+      - name: Download Coverage Results
+        uses: actions/download-artifact@v4
+        with:
+          pattern: coverage-*-results
+          merge-multiple: true
+
+      - name: Setup JDK 21
+        id: setup-java-21
+        uses: actions/setup-java@v5
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Setup JDK 11
+        id: setup-java-11
+        uses: actions/setup-java@v5
+        with:
+          distribution: 'temurin'
+          java-version: '11'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v5
+
+      - name: Set JAVA_HOME
+        run: echo "JAVA_HOME=${{ steps.setup-java-11.outputs.path }}" >> $GITHUB_ENV
+
+      - name: Setup gradle properties
+        run: |
+          .github/scripts/gradle-properties.sh >> gradle.properties
+          cat gradle.properties
+          
+      - name: Run gradle ${{ matrix.gradle-task }}
+        run: |
+          ./gradlew -Pcoverage.enabled=true jacocoTestReport
+          ./gradlew -Pcoverage.enabled=true coverage:coverage-merge
+          
+      - name: Upload Combined Coverage Results
+        uses: actions/upload-artifact@v4
+        with:
+          name: combined-coverage-results
+          path: |
+            coverage/build/reports/java/**
+            coverage/build/reports/python/**
+            coverage/build/reports/coverage/**

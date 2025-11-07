@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.iterators;
 
 import io.deephaven.base.verify.Require;
@@ -13,6 +13,8 @@ import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.NoSuchElementException;
+
+import static io.deephaven.chunk.util.pools.ChunkPoolConstants.SMALLEST_POOLED_CHUNK_CAPACITY;
 
 /**
  * Iteration support for values supplied by a {@link ChunkSource}. Implementations retrieve {@link Chunk chunks} of
@@ -167,7 +169,8 @@ public abstract class ChunkedColumnIterator<DATA_TYPE, CHUNK_TYPE extends Chunk<
     public static <DATA_TYPE> ColumnIterator<DATA_TYPE> make(
             @NotNull final ChunkSource<? extends Any> chunkSource,
             @NotNull final RowSequence rowSequence,
-            final int chunkSize) {
+            int chunkSize) {
+        chunkSize = Math.max((int) Math.min(chunkSize, rowSequence.size()), SMALLEST_POOLED_CHUNK_CAPACITY);
         final ColumnIterator<?> result;
         switch (chunkSource.getChunkType()) {
             case Char:

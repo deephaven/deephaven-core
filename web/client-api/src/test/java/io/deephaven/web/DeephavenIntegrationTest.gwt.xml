@@ -1,0 +1,9 @@
+<module>
+    <inherits name="io.deephaven.web.DeephavenApi" />
+
+    <!-- restore the default linker that the test tooling expects -->
+    <add-linker name="xsiframe" />
+
+    <!-- define url to load dh-internal from, grpc server to connect to -->
+    <define-configuration-property name="dh.server" is-multi-valued="false"/>
+</module>

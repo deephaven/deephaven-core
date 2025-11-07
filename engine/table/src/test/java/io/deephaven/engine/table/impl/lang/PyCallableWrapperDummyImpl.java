@@ -1,8 +1,12 @@
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.lang;
 
 import io.deephaven.engine.util.PyCallableWrapper;
 import org.jpy.PyObject;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -41,7 +45,6 @@ public class PyCallableWrapperDummyImpl implements PyCallableWrapper {
         throw new UnsupportedOperationException();
     }
 
-    @Override
     public List<Class<?>> getParamTypes() {
         return parameterTypes;
     }
@@ -68,8 +71,13 @@ public class PyCallableWrapperDummyImpl implements PyCallableWrapper {
     public void addChunkArgument(ChunkArgument ignored) {}
 
     @Override
-    public Class<?> getReturnType() {
-        return Object.class;
+    public Signature getSignature() {
+        return new Signature(new ArrayList<>(), Void.class);
+    }
+
+    @Override
+    public void verifyArguments(Class<?>[] argTypes) {
+
     }
 
     @Override

@@ -17,7 +17,7 @@ repositories {
 }
 
 dependencies {
-    implementation('de.esoco.gwt:gwt-gradle-plugin:1.1.1') {
+    implementation('de.esoco.gwt:gwt-gradle-plugin:1.2.0') {
         exclude group: 'org.codehaus.groovy'
         because('needed for GwtTools')
     }
@@ -26,18 +26,17 @@ dependencies {
         because('needed by plugin com.bmuschko.docker-remote-api')
     }
 
-    implementation('com.avast.gradle:gradle-docker-compose-plugin:0.16.11') {
+    implementation('com.avast.gradle:gradle-docker-compose-plugin:0.17.12') {
         because('needed by plugin com.avast.gradle.docker-compose')
     }
 
-    implementation('com.diffplug.spotless:spotless-plugin-gradle:6.18.0') {
+    implementation('com.diffplug.spotless:spotless-plugin-gradle:7.2.0') {
         because('needed by plugin java-coding-conventions')
     }
 
-    // TODO(deephaven-core#1997): Remove license-gradle-plugin
-    implementation('gradle.plugin.com.hierynomus.gradle.plugins:license-gradle-plugin:0.16.1') {
-        because('needed by plugin java-header-conventions')
-    }
+    implementation "com.gradleup.shadow:shadow-gradle-plugin:8.3.8"
 
-    implementation "gradle.plugin.com.github.johnrengelman:shadow:7.1.2"
+    implementation('com.vanniktech.maven.publish:com.vanniktech.maven.publish.gradle.plugin:0.34.0') {
+        because('needed by plugin java-publishing-conventions')
+    }
 }

@@ -2,7 +2,7 @@ plugins {
     id 'io.deephaven.project.register'
 
     // TODO (deephaven-core#3133): invoke protoc during the build via docker; maybe convert to a replicate task
-    id 'com.github.johnrengelman.shadow'
+    id 'com.gradleup.shadow'
 }
 
 description 'Deephaven Authorization Code Generator'
@@ -10,8 +10,10 @@ description 'Deephaven Authorization Code Generator'
 dependencies {
     implementation project(':engine-api')
 
-    Classpaths.inheritGrpcPlatform(project, 'implementation')
-    implementation 'io.grpc:grpc-services'
+    implementation platform(libs.grpc.bom)
+    implementation libs.grpc.services
 
-    implementation 'com.squareup:javapoet:1.13.0'
+    implementation libs.squareup.javapoet
+
+    implementation libs.protobuf.java
 }

@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.server.table.ops.filter;
 
 import io.deephaven.api.ColumnName;
@@ -11,7 +11,7 @@ import io.deephaven.engine.table.impl.select.ConjunctiveFilter;
 import io.deephaven.engine.table.impl.select.DisjunctiveFilter;
 import io.deephaven.engine.table.impl.select.FormulaParserConfiguration;
 import io.deephaven.engine.table.impl.select.MatchFilter;
-import io.deephaven.engine.table.impl.select.RangeConditionFilter;
+import io.deephaven.engine.table.impl.select.RangeFilter;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.select.WhereFilterFactory;
 import io.deephaven.engine.table.impl.select.WhereNoneFilter;
@@ -25,8 +25,8 @@ import io.deephaven.proto.backplane.grpc.MatchType;
 import io.deephaven.proto.backplane.grpc.NotCondition;
 import io.deephaven.proto.backplane.grpc.Reference;
 import io.deephaven.proto.backplane.grpc.Value;
-import io.deephaven.time.DateTimeUtils;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.text.DecimalFormat;
 import java.util.List;
@@ -139,13 +139,13 @@ public class FilterFactory implements FilterVisitor<WhereFilter> {
                 valueString = Long.toString(value.getLongValue());
                 break;
             case NANO_TIME_VALUE:
-                valueString = Long.toString(value.getNanoTimeValue());
+                valueString = String.format("'%d'", value.getNanoTimeValue());
                 break;
             case VALUE_NOT_SET:
             default:
                 throw new IllegalStateException("Range filter can't handle literal type " + value.getValueCase());
         }
-        return new RangeConditionFilter(columName, rangeCondition(operation, invert), valueString, null,
+        return new RangeFilter(columName, rangeCondition(operation, invert), valueString, null,
                 FormulaParserConfiguration.parser);
     }
 
@@ -184,8 +184,7 @@ public class FilterFactory implements FilterVisitor<WhereFilter> {
             Literal literal = d.getLiteral();
             // all other literals get created from a toString except DateTime
             if (literal.getValueCase() == Literal.ValueCase.NANO_TIME_VALUE) {
-                values[i] = "'" + DateTimeUtils.formatDateTime(
-                        DateTimeUtils.epochNanosToInstant(literal.getNanoTimeValue()), DateTimeUtils.timeZone()) + "'";
+                values[i] = String.format("'%d'", literal.getNanoTimeValue());
             } else {
                 values[i] = FilterPrinter.printNoEscape(literal);
             }
@@ -226,12 +225,14 @@ public class FilterFactory implements FilterVisitor<WhereFilter> {
     }
 
     @Override
-    public WhereFilter onInvoke(String method, Value target, List<Value> argumentsList) {
-        return generateConditionFilter(Condition.newBuilder().setInvoke(InvokeCondition.newBuilder()
+    public WhereFilter onInvoke(String method, @Nullable Value target, List<Value> argumentsList) {
+        InvokeCondition.Builder partialInvoke = InvokeCondition.newBuilder()
                 .setMethod(method)
-                .setTarget(target)
-                .addAllArguments(argumentsList)
-                .build()).build());
+                .addAllArguments(argumentsList);
+        if (target != null) {
+            partialInvoke.setTarget(target);
+        }
+        return generateConditionFilter(Condition.newBuilder().setInvoke(partialInvoke).build());
     }
 
     @Override

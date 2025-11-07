@@ -1,16 +1,16 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.base.ringbuffer.LongRingBuffer;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
-import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.RowSequenceFactory;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.*;
+import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.util.datastructures.hash.HashMapK4V4;
 import io.deephaven.engine.table.impl.sort.LongSortKernel;
@@ -21,12 +21,14 @@ import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.engine.table.impl.util.*;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.SafeCloseableList;
+import io.deephaven.util.mutable.MutableInt;
 import gnu.trove.list.array.TLongArrayList;
-import io.deephaven.internal.log.LoggerFactory;
-import org.apache.commons.lang3.mutable.MutableInt;
+import io.deephaven.util.type.ArrayTypeUtils;
 
 import java.util.*;
 import java.util.function.LongUnaryOperator;
+
+import static io.deephaven.engine.table.impl.SortHelpers.AllowSymbolTable.DISALLOW_SYMBOL_TABLE;
 
 public class SortListener extends BaseTable.ListenerImpl {
     // Do I get my own logger?
@@ -45,9 +47,13 @@ public class SortListener extends BaseTable.ListenerImpl {
     private final Table parent;
     private final QueryTable result;
     private final HashMapK4V4 reverseLookup;
+    private final ColumnSource<Comparable<?>>[] originalColumnsToSortBy;
     private final ColumnSource<Comparable<?>>[] columnsToSortBy;
     private final WritableRowSet resultRowSet;
     private final SortingOrder[] order;
+    // optioanl comparators for Objects
+    private final Comparator[] comparators;
+    private final boolean[] comparatorsRespectEquality;
     private final WritableRowRedirection sortMapping;
     private final ColumnSource<Comparable<?>>[] sortedColumnsToSortBy;
     private final EffortTracker effortTracker;
@@ -57,22 +63,34 @@ public class SortListener extends BaseTable.ListenerImpl {
     private final ModifiedColumnSet.Transformer mcsTransformer;
     private final ModifiedColumnSet sortColumnSet;
 
-    public SortListener(Table parent, QueryTable result, HashMapK4V4 reverseLookup,
-            ColumnSource<Comparable<?>>[] columnsToSortBy, SortingOrder[] order,
-            WritableRowRedirection sortMapping, ColumnSource<Comparable<?>>[] sortedColumnsToSortBy,
-            ModifiedColumnSet.Transformer mcsTransformer, ModifiedColumnSet sortColumnSet) {
+    public SortListener(
+            final Table parent,
+            final QueryTable result,
+            final HashMapK4V4 reverseLookup,
+            final ColumnSource<Comparable<?>>[] originalColumnsToSortBy,
+            final ColumnSource<Comparable<?>>[] columnsToSortBy,
+            final SortingOrder[] order,
+            final Comparator[] comparators,
+            final boolean[] comparatorsRespectEquality,
+            final WritableRowRedirection sortMapping,
+            final ColumnSource<Comparable<?>>[] sortedColumnsToSortBy,
+            final ModifiedColumnSet.Transformer mcsTransformer,
+            final ModifiedColumnSet sortColumnSet) {
         super("sortInternal", parent, result);
         this.parent = parent;
         this.result = result;
         this.reverseLookup = reverseLookup;
+        this.originalColumnsToSortBy = originalColumnsToSortBy;
         this.columnsToSortBy = columnsToSortBy;
         this.resultRowSet = result.getRowSet().writableCast();
         this.order = order;
+        this.comparators = comparators;
+        this.comparatorsRespectEquality = comparatorsRespectEquality;
         this.sortMapping = sortMapping;
         this.sortedColumnsToSortBy = sortedColumnsToSortBy;
         this.effortTracker = REBALANCE_EFFORT_TRACKER_ENABLED ? new EffortTracker(100) : null;
 
-        // We create these comparators here so as to avoid building new ones on every call to doUpdate().
+        // We create these comparators here to avoid building new ones on every call to doUpdate().
         this.targetComparator = new TargetComparator();
 
         this.mcsTransformer = mcsTransformer;
@@ -223,11 +241,12 @@ public class SortListener extends BaseTable.ListenerImpl {
             int numPropagatedModdedKeys = 0;
             final RowSet addedAndModified =
                     modifiedNeedsSorting ? closer.add(upstream.added().union(upstream.modified())) : upstream.added();
-            final long[] addedInputKeys =
-                    SortHelpers.getSortedKeys(order, columnsToSortBy, addedAndModified, false, false).getArrayMapping();
+            final long[] addedInputKeys = SortHelpers.getSortedKeys(order, originalColumnsToSortBy, columnsToSortBy,
+                    comparators, comparatorsRespectEquality, null, addedAndModified, false, DISALLOW_SYMBOL_TABLE)
+                    .getArrayMapping();
             final long[] addedOutputKeys = new long[addedInputKeys.length];
             final long[] propagatedModOutputKeys = modifiedNeedsSorting ? new long[upstream.modified().intSize()]
-                    : CollectionUtil.ZERO_LENGTH_LONG_ARRAY;
+                    : ArrayTypeUtils.EMPTY_LONG_ARRAY;
 
             final RowSet.SearchIterator ait = resultRowSet.searchIterator();
             for (int ii = 0; ii < addedInputKeys.length; ++ii) {
@@ -363,9 +382,8 @@ public class SortListener extends BaseTable.ListenerImpl {
      * @param qs Queue state -- containing the view on the various keys arrays, directions, etc.
      */
     private void performUpdatesInDirection(final RowSetBuilderSequential added, final RowSetShiftData.Builder shifted,
-            final long start,
-            final QueueState qs, final SortMappingAggregator mappingChanges) {
-        final long numRequestedAdds = (qs.addedEnd - qs.addedCurrent) * qs.direction;
+            final long start, final QueueState qs, final SortMappingAggregator mappingChanges) {
+        final long numRequestedAdds = (qs.addedEnd - qs.addedCurrent) * (long) qs.direction;
 
         if (numRequestedAdds == 0) {
             return;
@@ -428,7 +446,7 @@ public class SortListener extends BaseTable.ListenerImpl {
             }
 
             // determine if we must be in spreading mode
-            final long maxRunKey = desiredOutputKey + maximumRunLength * qs.direction;
+            final long maxRunKey = desiredOutputKey + maximumRunLength * (long) qs.direction;
 
             // note: this is an (over) approximation of cardinality since binarySearch will give any index if exists
             long addedMaxIdx;
@@ -535,7 +553,7 @@ public class SortListener extends BaseTable.ListenerImpl {
             final DirectionalResettableBuilderSequential modRemoved,
             final SortMappingAggregator mappingChanges,
             final RowSet.SearchIterator gapEvictionIter) {
-        final long gapEnd = destinationSlot + REBALANCE_GAP_SIZE * qs.direction; // exclusive
+        final long gapEnd = destinationSlot + REBALANCE_GAP_SIZE * (long) qs.direction; // exclusive
 
         checkDestinationSlotOk(gapEnd);
         modRemoved.appendRange(destinationSlot, gapEnd - qs.direction);
@@ -569,7 +587,8 @@ public class SortListener extends BaseTable.ListenerImpl {
             this.comparators = new ColumnComparatorFactory.IComparator[columnsToSortBy.length];
             for (int ii = 0; ii < columnsToSortBy.length; ii++) {
                 comparators[ii] = ColumnComparatorFactory.createComparatorLeftCurrRightPrev(columnsToSortBy[ii],
-                        sortedColumnsToSortBy[ii]);
+                        sortedColumnsToSortBy[ii],
+                        SortListener.this.comparators[ii]);
             }
             setTarget(-1);
         }
@@ -603,9 +622,11 @@ public class SortListener extends BaseTable.ListenerImpl {
         private final int chunkSize;
         private final ExposedTLongArrayList keys;
         private final ExposedTLongArrayList values;
+        @SuppressWarnings("rawtypes")
         private final WritableLongChunk valuesChunk;
         private final WritableLongChunk<OrderedRowKeys> keysChunk;
         private final ChunkSink.FillFromContext fillFromContext;
+        @SuppressWarnings("rawtypes")
         private final LongSortKernel sortKernel;
 
         SortMappingAggregator() {
@@ -627,7 +648,7 @@ public class SortListener extends BaseTable.ListenerImpl {
         }
 
         public void flush() {
-            if (keys.size() == 0) {
+            if (keys.isEmpty()) {
                 return;
             }
 
@@ -912,7 +933,7 @@ public class SortListener extends BaseTable.ListenerImpl {
             final LongUnaryOperator transformer) {
         final MutableInt pos = new MutableInt(destIndex);
         src.forAllRowKeys((final long v) -> {
-            dest[pos.intValue()] = transformer.applyAsLong(v);
+            dest[pos.get()] = transformer.applyAsLong(v);
             pos.increment();
         });
     }

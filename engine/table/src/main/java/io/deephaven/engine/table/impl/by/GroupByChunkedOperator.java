@@ -1,13 +1,12 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.by;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.rowset.*;
@@ -27,7 +26,6 @@ import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.function.UnaryOperator;
-import java.util.stream.Collectors;
 
 import static io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource.BLOCK_SIZE;
 
@@ -47,6 +45,7 @@ public final class GroupByChunkedOperator implements IterativeChunkedAggregation
     private final ObjectArraySource<Object> removedBuilders;
 
     private final String[] inputColumnNames;
+    private final Map<String, AggregateColumnSource<?, ?>> inputAggregatedColumns;
     private final Map<String, AggregateColumnSource<?, ?>> resultAggregatedColumns;
     private final ModifiedColumnSet aggregationInputsModifiedColumnSet;
 
@@ -69,10 +68,16 @@ public final class GroupByChunkedOperator implements IterativeChunkedAggregation
         live = inputTable.isRefreshing();
         rowSets = new ObjectArraySource<>(WritableRowSet.class);
         addedBuilders = new ObjectArraySource<>(Object.class);
-        resultAggregatedColumns = Arrays.stream(aggregatedColumnPairs).collect(Collectors.toMap(MatchPair::leftColumn,
-                matchPair -> AggregateColumnSource
-                        .make(inputTable.getColumnSource(matchPair.rightColumn()), rowSets),
-                Assert::neverInvoked, LinkedHashMap::new));
+
+        inputAggregatedColumns = new LinkedHashMap<>(aggregatedColumnPairs.length);
+        resultAggregatedColumns = new LinkedHashMap<>(aggregatedColumnPairs.length);
+        Arrays.stream(aggregatedColumnPairs).forEach(pair -> {
+            final AggregateColumnSource<?, ?> aggregateColumnSource =
+                    AggregateColumnSource.make(inputTable.getColumnSource(pair.rightColumn()), rowSets);
+            inputAggregatedColumns.put(pair.rightColumn(), aggregateColumnSource);
+            resultAggregatedColumns.put(pair.leftColumn(), aggregateColumnSource);
+        });
+
         if (exposeRowSetsAs != null && resultAggregatedColumns.containsKey(exposeRowSetsAs)) {
             throw new IllegalArgumentException(String.format(
                     "Exposing group RowSets as %s, but this conflicts with a requested grouped output column name",
@@ -387,6 +392,13 @@ public final class GroupByChunkedOperator implements IterativeChunkedAggregation
         return resultAggregatedColumns;
     }
 
+    /**
+     * Get a map from input column names to the corresponding output {@link ColumnSource}.
+     */
+    public Map<String, ? extends ColumnSource<?>> getInputResultColumns() {
+        return inputAggregatedColumns;
+    }
+
     @Override
     public void startTrackingPrevValues() {
         // NB: We don't need previous tracking on the rowSets ColumnSource, even if it's exposed. It's in destination
@@ -404,7 +416,7 @@ public final class GroupByChunkedOperator implements IterativeChunkedAggregation
         initializeNewRowSetPreviousValues(resultTable.getRowSet());
         return registeredWithHelper
                 ? new InputToResultModifiedColumnSetFactory(resultTable,
-                        resultAggregatedColumns.keySet().toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY))
+                        resultAggregatedColumns.keySet().toArray(String[]::new))
                 : null;
     }
 
@@ -431,9 +443,13 @@ public final class GroupByChunkedOperator implements IterativeChunkedAggregation
                 @NotNull final QueryTable resultTable,
                 @NotNull final String[] resultAggregatedColumnNames) {
             updateModifiedColumnSet = new ModifiedColumnSet(resultTable.getModifiedColumnSetForUpdates());
-            allResultColumns = resultTable.newModifiedColumnSet(resultAggregatedColumnNames);
+
             if (exposeRowSetsAs != null) {
-                allResultColumns.setAll(exposeRowSetsAs);
+                // resultAggregatedColumnNames may be empty (e.g. when the row set is the only result column)
+                allResultColumns = resultTable.newModifiedColumnSet(exposeRowSetsAs);
+                allResultColumns.setAll(resultAggregatedColumnNames);
+            } else {
+                allResultColumns = resultTable.newModifiedColumnSet(resultAggregatedColumnNames);
             }
             aggregatedColumnsTransformer = inputTable.newModifiedColumnSetTransformer(
                     inputColumnNames,
@@ -610,5 +626,13 @@ public final class GroupByChunkedOperator implements IterativeChunkedAggregation
     @Override
     public boolean unchunkedRowSet() {
         return true;
+    }
+
+    boolean getSomeKeyHasAddsOrRemoves() {
+        return someKeyHasAddsOrRemoves;
+    }
+
+    boolean getSomeKeyHasModifies() {
+        return someKeyHasModifies;
     }
 }

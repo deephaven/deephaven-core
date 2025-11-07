@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.kafka.ingest;
 
 import io.deephaven.chunk.ObjectChunk;
@@ -15,12 +15,14 @@ import org.apache.avro.generic.GenericArray;
 import org.apache.avro.generic.GenericRecord;
 
 import java.lang.reflect.Array;
+import java.util.function.Function;
 import java.util.regex.Pattern;
 
 import static io.deephaven.util.QueryConstants.*;
 
 public class GenericRecordArrayFieldCopier extends GenericRecordFieldCopier {
     private final ArrayConverter arrayConverter;
+
     public GenericRecordArrayFieldCopier(
             final String fieldPathStr,
             final Pattern separator,
@@ -30,15 +32,22 @@ public class GenericRecordArrayFieldCopier extends GenericRecordFieldCopier {
         arrayConverter = ArrayConverter.makeFor(componentType);
     }
 
-    private static <T> T[] convertObjectArray(final GenericArray<?> ga, final T[] emptyArray, final Class<T> componentType) {
+    private static <T> T[] convertObjectArray(final GenericArray<?> ga, final T[] emptyArray,
+            final Class<T> componentType) {
+        return convertObjectArray(ga, emptyArray, componentType, componentType::cast);
+    }
+
+    private static <X, T> T[] convertObjectArray(final GenericArray<X> ga, final T[] emptyArray,
+            final Class<T> componentType, final Function<X, T> f) {
         final int gaSize = ga.size();
         if (gaSize == 0) {
             return emptyArray;
         }
+        // noinspection unchecked
         final T[] out = (T[]) Array.newInstance(componentType, ga.size());
         int i = 0;
-        for (Object o : ga) {
-            out[i] = componentType.cast(o);
+        for (X o : ga) {
+            out[i] = f.apply(o);
             ++i;
         }
         return out;
@@ -46,6 +55,7 @@ public class GenericRecordArrayFieldCopier extends GenericRecordFieldCopier {
 
     private interface ArrayConverter {
         Object convert(final GenericArray<?> genericArray);
+
         static ArrayConverter makeFor(Class<?> componentType) {
             if (componentType.equals(byte.class)) {
                 return (GenericArray<?> ga) -> {
@@ -128,7 +138,12 @@ public class GenericRecordArrayFieldCopier extends GenericRecordFieldCopier {
                 return (GenericArray<?> ga) -> convertObjectArray(ga, EMPTY_BOOLEANBOXED_ARRAY, boolean.class);
             }
             if (componentType.equals(String.class)) {
-                return (GenericArray<?> ga) -> convertObjectArray(ga, EMPTY_STRING_ARRAY, String.class);
+                // org.apache.avro.generic.GenericData.StringType
+                // org.apache.avro.util.Utf8 implements CharSequence so from a reading perspective, we should be able
+                // to safely cast to a CharSequence. In the case where it's already a String, CharSequence::toString
+                // will be a no-op.
+                return ga -> convertObjectArray((GenericArray<CharSequence>) ga, EMPTY_STRING_ARRAY, String.class,
+                        CharSequence::toString);
             }
             return (GenericArray<?> ga) -> convertObjectArray(ga, EMPTY_OBJECT_ARRAY, Object.class);
         }

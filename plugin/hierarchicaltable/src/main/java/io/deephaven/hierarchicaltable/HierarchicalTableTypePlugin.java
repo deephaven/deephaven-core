@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.hierarchicaltable;
 
 import com.google.auto.service.AutoService;
@@ -44,6 +44,7 @@ public class HierarchicalTableTypePlugin extends ObjectTypeBase.FetchOnly {
         final HierarchicalTableDescriptor result = HierarchicalTableDescriptor.newBuilder()
                 .setSnapshotSchema(BarrageUtil.schemaBytes(
                         fbb -> HierarchicalTableSchemaUtil.makeSchemaPayload(fbb, hierarchicalTable)))
+                .setIsStatic(!hierarchicalTable.getSource().isRefreshing())
                 .build();
 
         result.writeTo(out);

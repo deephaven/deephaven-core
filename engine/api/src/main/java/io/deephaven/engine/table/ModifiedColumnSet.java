@@ -1,13 +1,12 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table;
 
 import com.google.common.collect.Iterators;
 import gnu.trove.impl.Constants;
 import gnu.trove.map.hash.TObjectIntHashMap;
 import io.deephaven.base.verify.Assert;
-import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.util.type.ArrayTypeUtils;
 
 import java.util.BitSet;
@@ -103,7 +102,7 @@ public class ModifiedColumnSet {
 
         @Override
         public boolean containsAll(ModifiedColumnSet columnSet) {
-            return columnSet.equals(this);
+            return true;
         }
 
         @Override
@@ -264,7 +263,7 @@ public class ModifiedColumnSet {
      */
     public ModifiedColumnSet(final Map<String, ColumnSource<?>> columns) {
         this.columns = columns;
-        columnNames = columns.keySet().toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
+        columnNames = columns.keySet().toArray(String[]::new);
         idMap = new TObjectIntHashMap<>(columnNames.length, Constants.DEFAULT_LOAD_FACTOR, -1);
         for (int i = 0; i < columnNames.length; ++i) {
             idMap.put(columnNames[i], i);

@@ -1,8 +1,10 @@
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit FloatRollingAvgOperator and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit FloatRollingAvgOperator and run "./gradlew replicateUpdateBy" to regenerate
+//
+// @formatter:off
 package io.deephaven.engine.table.impl.updateby.rollingavg;
 
 import io.deephaven.base.ringbuffer.AggregatingDoubleRingBuffer;
@@ -13,11 +15,11 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
 import io.deephaven.engine.table.impl.updateby.internal.BaseDoubleUpdateByOperator;
-import io.deephaven.engine.table.impl.util.RowRedirection;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import static io.deephaven.util.QueryConstants.*;
+import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
+import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
 
 public class DoubleRollingAvgOperator extends BaseDoubleUpdateByOperator {
     private static final int PAIRWISE_BUFFER_INITIAL_SIZE = 64;
@@ -34,7 +36,7 @@ public class DoubleRollingAvgOperator extends BaseDoubleUpdateByOperator {
                 if (a == NULL_DOUBLE) {
                     return b;
                 } else if (b == NULL_DOUBLE) {
-                    return  a;
+                    return a;
                 }
                 return a + b;
             });
@@ -85,9 +87,9 @@ public class DoubleRollingAvgOperator extends BaseDoubleUpdateByOperator {
             } else {
                 final int count = aggSum.size() - nullCount;
                 if (count == 0) {
-                    outputValues.set(outIdx, Double.NaN);
+                    outputValues.set(outIdx, NULL_DOUBLE);
                 } else {
-                    outputValues.set(outIdx, aggSum.evaluate() / (double)count);
+                    outputValues.set(outIdx, aggSum.evaluate() / (double) count);
                 }
             }
         }
@@ -105,17 +107,30 @@ public class DoubleRollingAvgOperator extends BaseDoubleUpdateByOperator {
         return new Context(affectedChunkSize, influencerChunkSize);
     }
 
-    public DoubleRollingAvgOperator(@NotNull final MatchPair pair,
-                                  @NotNull final String[] affectingColumns,
-                                  @Nullable final RowRedirection rowRedirection,
-                                  @Nullable final String timestampColumnName,
-                                  final long reverseWindowScaleUnits,
-                                  final long forwardWindowScaleUnits
-                                  // region extra-constructor-args
-                                  // endregion extra-constructor-args
+    public DoubleRollingAvgOperator(
+            @NotNull final MatchPair pair,
+            @NotNull final String[] affectingColumns,
+            @Nullable final String timestampColumnName,
+            final long reverseWindowScaleUnits,
+            final long forwardWindowScaleUnits
+    // region extra-constructor-args
+    // endregion extra-constructor-args
     ) {
-        super(pair, affectingColumns, rowRedirection, timestampColumnName, reverseWindowScaleUnits, forwardWindowScaleUnits, true);
+        super(pair, affectingColumns, timestampColumnName, reverseWindowScaleUnits, forwardWindowScaleUnits, true);
         // region constructor
         // endregion constructor
+    }
+
+    @Override
+    public UpdateByOperator copy() {
+        return new DoubleRollingAvgOperator(
+                pair,
+                affectingColumns,
+                timestampColumnName,
+                reverseWindowScaleUnits,
+                forwardWindowScaleUnits
+        // region extra-copy-args
+        // endregion extra-copy-args
+        );
     }
 }

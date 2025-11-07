@@ -1,18 +1,18 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.extensions.barrage;
 
 import com.google.flatbuffers.FlatBufferBuilder;
 import io.deephaven.annotations.BuildableStyle;
 import io.deephaven.barrage.flatbuf.BarrageSnapshotRequest;
-import io.deephaven.extensions.barrage.util.StreamReaderOptions;
+import io.deephaven.util.annotations.FinalDefault;
 import org.immutables.value.Value.Default;
 import org.immutables.value.Value.Immutable;
 
 @Immutable
 @BuildableStyle
-public abstract class BarrageSnapshotOptions implements StreamReaderOptions {
+public abstract class BarrageSnapshotOptions implements BarrageOptions {
     public static Builder builder() {
         return ImmutableBarrageSnapshotOptions.builder();
     }
@@ -21,12 +21,11 @@ public abstract class BarrageSnapshotOptions implements StreamReaderOptions {
         if (options == null) {
             return builder().build();
         }
-        final byte mode = options.columnConversionMode();
         return builder()
                 .useDeephavenNulls(options.useDeephavenNulls())
-                .columnConversionMode(ColumnConversionMode.conversionModeFbToEnum(mode))
                 .batchSize(options.batchSize())
                 .maxMessageSize(options.maxMessageSize())
+                .previewListLengthLimit(options.previewListLengthLimit())
                 .build();
     }
 
@@ -34,29 +33,18 @@ public abstract class BarrageSnapshotOptions implements StreamReaderOptions {
         return of(snapshotRequest.snapshotOptions());
     }
 
-    /**
-     * By default, prefer to communicate null values using the arrow-compatible validity structure.
-     *
-     * @return whether to use deephaven nulls
-     */
     @Override
     @Default
     public boolean useDeephavenNulls() {
         return false;
     }
 
-    /**
-     * @return the preferred batch size if specified
-     */
     @Override
     @Default
     public int batchSize() {
         return 0;
     }
 
-    /**
-     * @return the maximum GRPC message size if specified
-     */
     @Override
     @Default
     public int maxMessageSize() {
@@ -65,27 +53,68 @@ public abstract class BarrageSnapshotOptions implements StreamReaderOptions {
 
     @Override
     @Default
-    public ColumnConversionMode columnConversionMode() {
-        return ColumnConversionMode.Stringify;
+    public long previewListLengthLimit() {
+        return 0;
     }
 
     public int appendTo(FlatBufferBuilder builder) {
-        return io.deephaven.barrage.flatbuf.BarrageSnapshotOptions.createBarrageSnapshotOptions(
-                builder, ColumnConversionMode.conversionModeEnumToFb(columnConversionMode()), useDeephavenNulls(),
+        return io.deephaven.barrage.flatbuf.BarrageSnapshotOptions.createBarrageSnapshotOptions(builder,
+                useDeephavenNulls(),
                 batchSize(),
-                maxMessageSize());
+                maxMessageSize(),
+                previewListLengthLimit());
     }
 
     public interface Builder {
 
+        /**
+         * See {@link BarrageOptions#useDeephavenNulls()} for details.
+         *
+         * @param useDeephavenNulls whether to use deephaven nulls
+         * @return this builder
+         */
         Builder useDeephavenNulls(boolean useDeephavenNulls);
 
-        Builder columnConversionMode(ColumnConversionMode columnConversionMode);
+        /**
+         * The default conversion mode is to Stringify all objects that do not have a registered encoding. Column
+         * conversion modes are no longer supported.
+         *
+         * @deprecated Since 0.37.0 and is marked for removal. (Note, GWT does not support encoding this context via
+         *             annotation values.)
+         */
+        @FinalDefault
+        @Deprecated
+        default Builder columnConversionMode(ColumnConversionMode columnConversionMode) {
+            return this;
+        }
 
+        /**
+         * See {@link BarrageOptions#batchSize()} for details.
+         *
+         * @param batchSize the ideal number of records to send per record batch
+         * @return this builder
+         */
         Builder batchSize(int batchSize);
 
+        /**
+         * See {@link BarrageOptions#maxMessageSize()} for details.
+         *
+         * @param messageSize the maximum size of a GRPC message in bytes
+         * @return this builder
+         */
         Builder maxMessageSize(int messageSize);
 
+        /**
+         * See {@link BarrageOptions#previewListLengthLimit()} for details.
+         *
+         * @param previewListLengthLimit the magnitude of the number of elements to include in a preview list
+         * @return this builder
+         */
+        Builder previewListLengthLimit(long previewListLengthLimit);
+
+        /**
+         * @return a new BarrageSnapshotOptions instance
+         */
         BarrageSnapshotOptions build();
     }
 }

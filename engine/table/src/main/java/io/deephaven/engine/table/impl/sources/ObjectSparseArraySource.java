@@ -1,14 +1,13 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharacterSparseArraySource and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit CharacterSparseArraySource and run "./gradlew replicateSourcesAndChunks" to regenerate
+//
+// @formatter:off
 package io.deephaven.engine.table.impl.sources;
 
-import io.deephaven.engine.context.ExecutionContext;
+// ColumnSource is used in the long class when replicated
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.DefaultGetContext;
 import io.deephaven.chunk.*;
@@ -24,6 +23,7 @@ import io.deephaven.engine.table.impl.sources.sparse.LongOneOrN;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.util.SoftRecycler;
 import gnu.trove.list.array.TLongArrayList;
+import io.deephaven.util.annotations.TestUseOnly;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
 
@@ -69,9 +69,9 @@ public class ObjectSparseArraySource<T> extends SparseArrayColumnSource<T>
 
     /**
      * Our previous page table could be very sparse, and we do not want to read through millions of nulls to find out
-     * what blocks to recycle.  Instead we maintain a list of blocks that we have allocated (as the key shifted by
-     * BLOCK0_SHIFT).  We recycle those blocks in the PrevFlusher; and accumulate the set of blocks that must be
-     * recycled from the next level array, and so on until we recycle the top-level prevBlocks and prevInUse arrays.
+     * what blocks to recycle. Instead we maintain a list of blocks that we have allocated (as the key shifted by
+     * BLOCK0_SHIFT). We recycle those blocks in the PrevFlusher; and accumulate the set of blocks that must be recycled
+     * from the next level array, and so on until we recycle the top-level prevBlocks and prevInUse arrays.
      */
     private transient final TLongArrayList blocksToFlush = new TLongArrayList();
 
@@ -133,7 +133,8 @@ public class ObjectSparseArraySource<T> extends SparseArrayColumnSource<T>
 
     @Override
     public void shift(final RowSet keysToShift, final long shiftDelta) {
-        final RowSet.SearchIterator it = (shiftDelta > 0) ? keysToShift.reverseIterator() : keysToShift.searchIterator();
+        final RowSet.SearchIterator it =
+                (shiftDelta > 0) ? keysToShift.reverseIterator() : keysToShift.searchIterator();
         it.forEachLong((i) -> {
             set(i + shiftDelta, get(i));
             setNull(i);
@@ -171,7 +172,7 @@ public class ObjectSparseArraySource<T> extends SparseArrayColumnSource<T>
         if (blocks2 == null) {
             return null;
         }
-        return blocks2[(int)(key & INDEX_MASK)];
+        return blocks2[(int) (key & INDEX_MASK)];
     }
     // endregion primitive get
 
@@ -184,6 +185,7 @@ public class ObjectSparseArraySource<T> extends SparseArrayColumnSource<T>
 
     /**
      * Make sure that we have an allocated block at the given point, allocating all of the required parents.
+     * 
      * @return {@code blocks.get(block0).get(block1).get(block2)}, which is non-null.
      */
     T [] ensureBlock(final int block0, final int block1, final int block2) {
@@ -212,6 +214,7 @@ public class ObjectSparseArraySource<T> extends SparseArrayColumnSource<T>
     /**
      * Make sure that we have an allocated previous and inuse block at the given point, allocating all of the required
      * parents.
+     * 
      * @return {@code prevBlocks.get(block0).get(block1).get(block2)}, which is non-null.
      */
     private T [] ensurePrevBlock(final long key, final int block0, final int block1, final int block2) {
@@ -269,6 +272,7 @@ public class ObjectSparseArraySource<T> extends SparseArrayColumnSource<T>
     }
 
     private void commitUpdates() {
+        maybeClearBlocks();
         blocksToFlush.sort();
 
         int destinationOffset = 0;
@@ -369,13 +373,34 @@ public class ObjectSparseArraySource<T> extends SparseArrayColumnSource<T>
         localPrevInUse.maybeRecycle(inUse0Recycler);
     }
 
+    private void maybeClearBlocks() {
+        if (blocksToClear == null) {
+            return;
+        }
+        blocks.clearLowestLevelBlocks(blocksToClear, recycler);
+        blocks.clearBlocks2(blocks2ToClear, recycler2);
+        blocks.clearBlocks1(blocks1ToClear, recycler1);
+        if (emptyResult) {
+            blocks.onEmptyResult(recycler0);
+        }
+
+        blocksToClear.close();
+        blocks2ToClear.close();
+        blocks1ToClear.close();
+        blocksToClear = null;
+        blocks2ToClear = null;
+        blocks1ToClear = null;
+        emptyResult = null;
+    }
+
     /**
-    * Decides whether to record the previous value.
-    * @param key the row key to record
-    * @return If the caller should record the previous value, returns prev inner block, the value
-    * {@code prevBlocks.get(block0).get(block1).get(block2)}, which is non-null. Otherwise (if the caller should not
-     * record values), returns null.
-    */
+     * Decides whether to record the previous value.
+     * 
+     * @param key the row key to record
+     * @return If the caller should record the previous value, returns prev inner block, the value
+     *         {@code prevBlocks.get(block0).get(block1).get(block2)}, which is non-null. Otherwise (if the caller
+     *         should not record values), returns null.
+     */
     final T [] shouldRecordPrevious(final long key) {
         if (!shouldTrackPrevious()) {
             return null;
@@ -452,8 +477,9 @@ public class ObjectSparseArraySource<T> extends SparseArrayColumnSource<T>
     /**
      * This method supports the 'getPrev' method for its inheritors, doing some of the 'inUse' housekeeping that is
      * common to all inheritors.
+     * 
      * @return true if the inheritor should return a value from its "prev" data structure; false if it should return a
-     * value from its "current" data structure.
+     *         value from its "current" data structure.
      */
     private boolean shouldUsePrevious(final long rowKey) {
         if (prevFlusher == null) {
@@ -464,7 +490,7 @@ public class ObjectSparseArraySource<T> extends SparseArrayColumnSource<T>
             return false;
         }
 
-        final long [] inUse = prevInUse.getInnermostBlockByKeyOrNull(rowKey);
+        final long[] inUse = prevInUse.getInnermostBlockByKeyOrNull(rowKey);
         if (inUse == null) {
             return false;
         }
@@ -481,7 +507,7 @@ public class ObjectSparseArraySource<T> extends SparseArrayColumnSource<T>
     /* TYPE_MIXIN */ void fillByRanges(
             @NotNull final WritableChunk<? super Values> dest,
             @NotNull final RowSequence rowSequence
-            /* CONVERTER */) {
+    /* CONVERTER */) {
         // region chunkDecl
         final WritableObjectChunk<T, ? super Values> chunk = dest.asWritableObjectChunk();
         // endregion chunkDecl
@@ -497,7 +523,7 @@ public class ObjectSparseArraySource<T> extends SparseArrayColumnSource<T>
                 if (ctx.block == null) {
                     chunk.fillWithNullValue(ctx.offset, length);
                 } else {
-                    final int sIndexWithinBlock = (int)(firstKey & INDEX_MASK);
+                    final int sIndexWithinBlock = (int) (firstKey & INDEX_MASK);
                     // for the benefit of code generation.
                     final int offset = ctx.offset;
                     final T [] block = ctx.block;
@@ -523,7 +549,7 @@ public class ObjectSparseArraySource<T> extends SparseArrayColumnSource<T>
     /* TYPE_MIXIN */ void fillByKeys(
             @NotNull final WritableChunk<? super Values> dest,
             @NotNull final RowSequence rowSequence
-            /* CONVERTER */) {
+    /* CONVERTER */) {
         // region chunkDecl
         final WritableObjectChunk<T, ? super Values> chunk = dest.asWritableObjectChunk();
         // endregion chunkDecl
@@ -552,11 +578,11 @@ public class ObjectSparseArraySource<T> extends SparseArrayColumnSource<T>
     /* TYPE_MIXIN */ void fillByUnRowSequence(
             @NotNull final WritableChunk<? super Values> dest,
             @NotNull final LongChunk<? extends RowKeys> keys
-            /* CONVERTER */) {
+    /* CONVERTER */) {
         // region chunkDecl
         final WritableObjectChunk<T, ? super Values> chunk = dest.asWritableObjectChunk();
         // endregion chunkDecl
-        for (int ii = 0; ii < keys.size(); ) {
+        for (int ii = 0; ii < keys.size();) {
             final long firstKey = keys.get(ii);
             if (firstKey == RowSequence.NULL_ROW_KEY) {
                 chunk.set(ii++, null);
@@ -593,11 +619,11 @@ public class ObjectSparseArraySource<T> extends SparseArrayColumnSource<T>
     /* TYPE_MIXIN */ void fillPrevByUnRowSequence(
             @NotNull final WritableChunk<? super Values> dest,
             @NotNull final LongChunk<? extends RowKeys> keys
-            /* CONVERTER */) {
+    /* CONVERTER */) {
         // region chunkDecl
         final WritableObjectChunk<T, ? super Values> chunk = dest.asWritableObjectChunk();
         // endregion chunkDecl
-        for (int ii = 0; ii < keys.size(); ) {
+        for (int ii = 0; ii < keys.size();) {
             final long firstKey = keys.get(ii);
             if (firstKey == RowSequence.NULL_ROW_KEY) {
                 chunk.set(ii++, null);
@@ -622,14 +648,16 @@ public class ObjectSparseArraySource<T> extends SparseArrayColumnSource<T>
                 continue;
             }
 
-            final long [] prevInUse = (prevFlusher == null || this.prevInUse == null) ? null : this.prevInUse.getInnermostBlockByKeyOrNull(firstKey);
+            final long[] prevInUse = (prevFlusher == null || this.prevInUse == null) ? null
+                    : this.prevInUse.getInnermostBlockByKeyOrNull(firstKey);
             final T [] prevBlock = prevInUse == null ? null : prevBlocks.getInnermostBlockByKeyOrNull(firstKey);
             while (ii <= lastII) {
                 final int indexWithinBlock = (int) (keys.get(ii) & INDEX_MASK);
                 final int indexWithinInUse = indexWithinBlock >> LOG_INUSE_BITSET_SIZE;
                 final long maskWithinInUse = 1L << (indexWithinBlock & IN_USE_MASK);
 
-                final T [] blockToUse = (prevInUse != null && (prevInUse[indexWithinInUse] & maskWithinInUse) != 0) ? prevBlock : block;
+                final T [] blockToUse =
+                        (prevInUse != null && (prevInUse[indexWithinInUse] & maskWithinInUse) != 0) ? prevBlock : block;
                 // region conversion
                 chunk.set(ii++, blockToUse == null ? null : blockToUse[indexWithinBlock]);
                 // endregion conversion
@@ -644,7 +672,7 @@ public class ObjectSparseArraySource<T> extends SparseArrayColumnSource<T>
     /* TYPE_MIXIN */ void fillFromChunkByRanges(
             @NotNull final RowSequence rowSequence,
             @NotNull final Chunk<? extends Values> src
-            /* CONVERTER */) {
+    /* CONVERTER */) {
         if (rowSequence.isEmpty()) {
             return;
         }
@@ -718,7 +746,7 @@ public class ObjectSparseArraySource<T> extends SparseArrayColumnSource<T>
     /* TYPE_MIXIN */ void fillFromChunkByKeys(
             @NotNull final RowSequence rowSequence,
             @NotNull final Chunk<? extends Values> src
-            /* CONVERTER */) {
+    /* CONVERTER */) {
         if (rowSequence.isEmpty()) {
             return;
         }
@@ -733,7 +761,7 @@ public class ObjectSparseArraySource<T> extends SparseArrayColumnSource<T>
             prevFlusher.maybeActivate();
         }
 
-        for (int ii = 0; ii < keys.size(); ) {
+        for (int ii = 0; ii < keys.size();) {
             final long firstKey = keys.get(ii);
             final long maxKeyInCurrentBlock = firstKey | INDEX_MASK;
             int lastII = ii;
@@ -807,7 +835,7 @@ public class ObjectSparseArraySource<T> extends SparseArrayColumnSource<T>
                 }
 
                 blockOk.forAllRowKeyRanges((s, e) -> {
-                    final int length = (int)((e - s) + 1);
+                    final int length = (int) ((e - s) + 1);
 
                     final int sIndexWithinBlock = (int) (s & INDEX_MASK);
                     // This 'if' with its constant condition should be very friendly to the branch predictor.
@@ -915,7 +943,7 @@ public class ObjectSparseArraySource<T> extends SparseArrayColumnSource<T>
             @NotNull final FillFromContext context,
             @NotNull final Chunk<? extends Values> src,
             @NotNull final LongChunk<RowKeys> keys
-            /* CONVERTER */) {
+    /* CONVERTER */) {
         if (keys.size() == 0) {
             return;
         }
@@ -929,7 +957,7 @@ public class ObjectSparseArraySource<T> extends SparseArrayColumnSource<T>
             prevFlusher.maybeActivate();
         }
 
-        for (int ii = 0; ii < keys.size(); ) {
+        for (int ii = 0; ii < keys.size();) {
             final long firstKey = keys.get(ii);
             final long minKeyInCurrentBlock = firstKey & ~INDEX_MASK;
             final long maxKeyInCurrentBlock = firstKey | INDEX_MASK;
@@ -1014,4 +1042,21 @@ public class ObjectSparseArraySource<T> extends SparseArrayColumnSource<T>
 
     // region reinterpretation
     // endregion reinterpretation
+
+
+    @Override
+    public void clearBlocks(final RowSet blocksToClear, final RowSet removeBlocks2, final RowSet removeBlocks1,
+            final boolean empty) {
+        if (prevFlusher == null) {
+            return;
+        }
+        super.clearBlocks(blocksToClear, removeBlocks2, removeBlocks1, empty);
+        prevFlusher.maybeActivate();
+    }
+
+    @TestUseOnly
+    @Override
+    public long estimateSize() {
+        return blocks.estimateSize();
+    }
 }

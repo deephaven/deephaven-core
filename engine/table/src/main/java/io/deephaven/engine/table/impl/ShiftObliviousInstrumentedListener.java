@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.engine.rowset.RowSet;
@@ -16,11 +16,11 @@ public abstract class ShiftObliviousInstrumentedListener extends InstrumentedTab
     private RowSet initialImageClone;
 
     public ShiftObliviousInstrumentedListener(@Nullable final String description) {
-        super(description, false);
+        super(description, false, null);
     }
 
     public ShiftObliviousInstrumentedListener(@Nullable final String description, final boolean terminalListener) {
-        super(description, terminalListener);
+        super(description, terminalListener, null);
     }
 
     @Override

@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.rowset;
 
 import io.deephaven.util.datastructures.LongAbortableConsumer;
@@ -191,6 +191,7 @@ public interface RowSequence extends SafeCloseable, LongSizedDataStructure {
      * Using any {@code RowSequence} methods after {@code close()} is an error and may produce exceptions or undefined
      * results.
      */
+    @Override
     default void close() {}
 
     /**

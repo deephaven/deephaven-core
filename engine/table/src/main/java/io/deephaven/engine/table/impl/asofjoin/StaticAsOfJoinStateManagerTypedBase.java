@@ -1,8 +1,9 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.asofjoin;
 
+import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.ChunkType;
@@ -12,12 +13,11 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.sources.IntegerArraySource;
 import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
-import io.deephaven.engine.table.impl.sources.ObjectArraySource;
 import io.deephaven.engine.table.impl.sources.immutable.ImmutableObjectArraySource;
 import io.deephaven.engine.table.impl.util.TypedHasherUtil;
 import io.deephaven.engine.table.impl.util.TypedHasherUtil.BuildOrProbeContext.BuildContext;
 import io.deephaven.engine.table.impl.util.TypedHasherUtil.BuildOrProbeContext.ProbeContext;
-import org.apache.commons.lang3.mutable.MutableLong;
+import io.deephaven.util.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 
 import static io.deephaven.engine.table.impl.JoinControl.CHUNK_SIZE;
@@ -101,7 +101,8 @@ public abstract class StaticAsOfJoinStateManagerTypedBase extends StaticHashedAs
         return new ProbeContext(buildSources, (int) Math.min(CHUNK_SIZE, maxSize));
     }
 
-    static boolean addIndex(ImmutableObjectArraySource<RowSetBuilderSequential> source, int location, long keyToAdd) {
+    static boolean addKeyToSlot(ImmutableObjectArraySource<RowSetBuilderSequential> source, int location,
+            long keyToAdd) {
         boolean addedSlot = false;
         RowSetBuilderSequential builder = source.getUnsafe(location);
         if (builder == null) {
@@ -115,13 +116,13 @@ public abstract class StaticAsOfJoinStateManagerTypedBase extends StaticHashedAs
     /**
      * Returns true if this is the first left row key added to this slot.
      */
-    protected boolean addLeftIndex(int tableLocation, long keyToAdd) {
-        return addIndex(leftRowSetSource, tableLocation, keyToAdd);
+    protected boolean addLeftKey(int tableLocation, long keyToAdd) {
+        return addKeyToSlot(leftRowSetSource, tableLocation, keyToAdd);
     }
 
-    protected void addRightIndex(int tableLocation, long keyToAdd) {
+    protected void addRightKey(int tableLocation, long keyToAdd) {
         // noinspection unchecked
-        addIndex((ImmutableObjectArraySource) rightRowSetSource, tableLocation, keyToAdd);
+        addKeyToSlot((ImmutableObjectArraySource) rightRowSetSource, tableLocation, keyToAdd);
     }
 
     protected void buildTable(
@@ -224,7 +225,7 @@ public abstract class StaticAsOfJoinStateManagerTypedBase extends StaticHashedAs
 
     private class LeftProbeHandler implements TypedHasherUtil.ProbeHandler {
         final IntegerArraySource hashSlots;
-        final MutableLong hashOffset;
+        final MutableInt hashOffset;
         final RowSetBuilderRandom foundBuilder;
 
         private LeftProbeHandler() {
@@ -233,7 +234,7 @@ public abstract class StaticAsOfJoinStateManagerTypedBase extends StaticHashedAs
             this.foundBuilder = null;
         }
 
-        private LeftProbeHandler(final IntegerArraySource hashSlots, final MutableLong hashOffset,
+        private LeftProbeHandler(final IntegerArraySource hashSlots, final MutableInt hashOffset,
                 RowSetBuilderRandom foundBuilder) {
             this.hashSlots = hashSlots;
             this.hashOffset = hashOffset;
@@ -270,9 +271,9 @@ public abstract class StaticAsOfJoinStateManagerTypedBase extends StaticHashedAs
             return 0;
         }
         try (final ProbeContext pc = makeProbeContext(leftSources, leftRowSet.size())) {
-            final MutableLong slotCount = new MutableLong();
+            final MutableInt slotCount = new MutableInt();
             probeTable(pc, leftRowSet, false, leftSources, new LeftProbeHandler(slots, slotCount, foundBuilder));
-            return slotCount.intValue();
+            return slotCount.get();
         }
     }
 
@@ -302,7 +303,7 @@ public abstract class StaticAsOfJoinStateManagerTypedBase extends StaticHashedAs
      * @return the RowSet for this slot
      */
     @Override
-    public RowSet getLeftIndex(int slot) {
+    public RowSet getLeftRowSet(int slot) {
         RowSetBuilderSequential builder = (RowSetBuilderSequential) leftRowSetSource.getAndSetUnsafe(slot, null);
         if (builder == null) {
             return null;
@@ -311,60 +312,64 @@ public abstract class StaticAsOfJoinStateManagerTypedBase extends StaticHashedAs
     }
 
     @Override
-    public RowSet getRightIndex(int slot) {
+    public RowSet getRightRowset(int slot) {
         if (rightBuildersConverted) {
             return (RowSet) rightRowSetSource.getUnsafe(slot);
         }
         throw new IllegalStateException(
-                "getRightIndex() may not be called before convertRightBuildersToIndex() or convertRightGrouping()");
+                "getRightRowset() may not be called before convertRightBuildersToRowSet() or populateRightRowSetsFromIndex()");
     }
 
     @Override
-    public void convertRightBuildersToIndex(IntegerArraySource slots, int slotCount) {
+    public void convertRightBuildersToRowSet(@NotNull final IntegerArraySource slots, final int slotCount) {
+        Assert.eqFalse(rightBuildersConverted, "rightBuildersConverted");
+        rightBuildersConverted = true;
+
         for (int slotIndex = 0; slotIndex < slotCount; ++slotIndex) {
             final int slot = slots.getInt(slotIndex);
-            // this might be empty, if so then set null
             final RowSetBuilderSequential sequentialBuilder =
                     (RowSetBuilderSequential) rightRowSetSource.getUnsafe(slot);
-            if (sequentialBuilder != null) {
-                WritableRowSet rs = sequentialBuilder.build();
-                if (rs.isEmpty()) {
-                    rightRowSetSource.set(slot, EMPTY_RIGHT_STATE);
-                    rs.close();
-                } else {
-                    rightRowSetSource.set(slot, rs);
-                }
+            if (sequentialBuilder == null) {
+                continue;
+            }
+            final WritableRowSet rs = sequentialBuilder.build();
+            if (rs.isEmpty()) {
+                rightRowSetSource.set(slot, EMPTY_RIGHT_STATE);
+                rs.close();
+            } else {
+                rightRowSetSource.set(slot, rs);
             }
         }
-        rightBuildersConverted = true;
     }
 
     @Override
-    public void convertRightGrouping(IntegerArraySource slots, int slotCount, ObjectArraySource<RowSet> rowSetSource) {
+    public void populateRightRowSetsFromIndexTable(
+            @NotNull final IntegerArraySource slots,
+            final int slotCount,
+            @NotNull final ColumnSource<RowSet> rowSetSource) {
+        Assert.eqFalse(rightBuildersConverted, "rightBuildersConverted");
+        rightBuildersConverted = true;
+
         for (int slotIndex = 0; slotIndex < slotCount; ++slotIndex) {
             final int slot = slots.getInt(slotIndex);
 
             final RowSetBuilderSequential sequentialBuilder =
                     (RowSetBuilderSequential) rightRowSetSource.getUnsafe(slot);
-            if (sequentialBuilder != null) {
-                WritableRowSet rs = sequentialBuilder.build();
+            if (sequentialBuilder == null) {
+                continue;
+            }
+            try (final RowSet rs = sequentialBuilder.build()) {
                 if (rs.isEmpty()) {
                     rightRowSetSource.set(slot, EMPTY_RIGHT_STATE);
-                    rs.close();
+                } else if (rs.size() == 1) {
+                    // The index cannot be modified, since the right table must be static, but make a defensive copy
+                    // anyway in case the index is cleaned up aggressively in the future.
+                    rightRowSetSource.set(slot, rowSetSource.get(rs.firstRowKey()).copy());
                 } else {
-                    rightRowSetSource.set(slot, getGroupedIndex(rowSetSource, sequentialBuilder));
+                    throw new IllegalStateException("Index-built row set should have exactly one value: " + rs);
                 }
             }
         }
-        rightBuildersConverted = true;
-    }
-
-    private RowSet getGroupedIndex(ObjectArraySource<RowSet> rowSetSource, RowSetBuilderSequential sequentialBuilder) {
-        final RowSet groupedRowSet = sequentialBuilder.build();
-        if (groupedRowSet.size() != 1) {
-            throw new IllegalStateException("Grouped rowSet should have exactly one value: " + groupedRowSet);
-        }
-        return rowSetSource.getUnsafe(groupedRowSet.get(0));
     }
 
     abstract protected void buildFromLeftSide(RowSequence rowSequence, Chunk[] sourceKeyChunks);
@@ -372,7 +377,7 @@ public abstract class StaticAsOfJoinStateManagerTypedBase extends StaticHashedAs
     abstract protected void buildFromRightSide(RowSequence rowSequence, Chunk[] sourceKeyChunks);
 
     abstract protected void decorateLeftSide(RowSequence rowSequence, Chunk[] sourceKeyChunks,
-            IntegerArraySource hashSlots, MutableLong hashSlotOffset, RowSetBuilderRandom foundBuilder);
+            IntegerArraySource hashSlots, MutableInt hashSlotOffset, RowSetBuilderRandom foundBuilder);
 
     abstract protected void decorateWithRightSide(RowSequence rowSequence, Chunk[] sourceKeyChunks);
 

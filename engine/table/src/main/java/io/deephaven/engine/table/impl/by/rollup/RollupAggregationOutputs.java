@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.by.rollup;
 
 import io.deephaven.api.ColumnName;
@@ -26,6 +26,6 @@ public class RollupAggregationOutputs extends AggregationOutputs implements Roll
 
     @Override
     public void visit(NullColumns nullColumns) {
-        out = nullColumns.resultColumns().keySet().stream().map(ColumnName::of);
+        out = nullColumns.resultColumns().stream().map(cd -> ColumnName.of(cd.getName()));
     }
 }

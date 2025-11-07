@@ -1,12 +1,12 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.sources.regioned;
 
 import io.deephaven.base.string.EncodingInfo;
 import io.deephaven.util.codec.ObjectCodec;
+import io.deephaven.util.mutable.MutableLong;
 import junit.framework.TestCase;
-import org.apache.commons.lang3.mutable.MutableLong;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -57,10 +57,13 @@ public class TestRegionedColumnSourceObjectVariable extends TstRegionedColumnSou
     private static final Value<String>[] REUSABLE_VALUES;
     static {
         final MutableLong length = new MutableLong(0);
-        //noinspection unchecked
-        REUSABLE_VALUES = Stream.of("12345", "000", "abcdefg", "ABC", "love", "hate", "nineteen", "ninety", "tuvwxyz", "Z").map(
-                s -> { length.add(s.length()); return new Value<>(s, objectToBytes(s), length.longValue()); }
-        ).toArray(Value[]::new);
+        // noinspection unchecked
+        REUSABLE_VALUES =
+                Stream.of("12345", "000", "abcdefg", "ABC", "love", "hate", "nineteen", "ninety", "tuvwxyz", "Z").map(
+                        s -> {
+                            length.add(s.length());
+                            return new Value<>(s, objectToBytes(s), length.get());
+                        }).toArray(Value[]::new);
     }
 
     public TestRegionedColumnSourceObjectVariable() {
@@ -70,19 +73,19 @@ public class TestRegionedColumnSourceObjectVariable extends TstRegionedColumnSou
     @Override
     public void setUp() throws Exception {
         super.setUp();
-        SUT = new RegionedColumnSourceObject.AsValues<>(String.class);
+        SUT = new RegionedColumnSourceObject.AsValues<>(manager, String.class);
         TestCase.assertEquals(String.class, SUT.getType());
     }
 
     private static byte[] objectToBytes(String inObject) {
         try {
             ByteArrayOutputStream byteOutStream = new ByteArrayOutputStream();
-            for(int ci = 0; ci < inObject.length(); ++ci) {
-                byteOutStream.write((byte)inObject.charAt(ci));
+            for (int ci = 0; ci < inObject.length(); ++ci) {
+                byteOutStream.write((byte) inObject.charAt(ci));
             }
             byteOutStream.flush();
             return byteOutStream.toByteArray();
-        } catch(IOException e) {
+        } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }

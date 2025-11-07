@@ -1,7 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
-
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.updategraph.impl;
 
 import io.deephaven.base.log.LogOutput;
@@ -58,16 +57,37 @@ public abstract class BaseUpdateGraph implements UpdateGraph, LogOutputAppendabl
     @Nullable
     public static PerformanceEntry createUpdatePerformanceEntry(
             @Nullable final UpdateGraph updateGraph,
-            @Nullable final String description) {
+            @Nullable final String description,
+            @Nullable final Supplier<long[]> ancestors) {
         if (updateGraph instanceof BaseUpdateGraph) {
             final BaseUpdateGraph bug = (BaseUpdateGraph) updateGraph;
             if (bug.updatePerformanceTracker != null) {
-                return bug.updatePerformanceTracker.getEntry(description);
+                final PerformanceEntry entry = bug.updatePerformanceTracker.getEntry(description);
+                if (ancestors != null && entry != null) {
+                    bug.updatePerformanceTracker.logAncestors(updateGraph.getName(), entry, ancestors);
+                }
+                return entry;
             }
             throw new IllegalStateException("Cannot create a performance entry for a BaseUpdateGraph that has "
                     + "not been completely constructed.");
         }
         return null;
+    }
+
+    public static void logPerformanceEntryAncestors(
+            @Nullable final UpdateGraph updateGraph,
+            @Nullable final PerformanceEntry performanceEntry,
+            @Nullable final Supplier<long[]> ancestors) {
+        if (performanceEntry == null || ancestors == null) {
+            return;
+        }
+        final BaseUpdateGraph bug = (BaseUpdateGraph) updateGraph;
+        if (bug.updatePerformanceTracker == null) {
+            throw new IllegalStateException("Cannot create a performance entry for a BaseUpdateGraph that has "
+                    + "not been completely constructed.");
+        }
+
+        bug.updatePerformanceTracker.logAncestors(updateGraph.getName(), performanceEntry, ancestors);
     }
 
     private static final KeyedObjectHashMap<String, UpdateGraph> INSTANCES = new KeyedObjectHashMap<>(
@@ -576,11 +596,12 @@ public abstract class BaseUpdateGraph implements UpdateGraph, LogOutputAppendabl
             if (outstandingCountAtStart == 0 && nothingBecameSatisfied) {
                 if (!printDependencyInformation) {
                     // Let's drop some breadcrumbs here, because this is a very bad state to be in and hard to debug.
-                    log.error().append(Thread.currentThread().getName())
+                    log.error().append(getName()).append(" ").append(Thread.currentThread().getName())
                             .append(": No outstanding notifications, yet notification queue size=")
                             .append(pendingToEvaluate.size()).endl();
                     for (final Notification notification : pendingToEvaluate) {
-                        log.error().append(Thread.currentThread().getName()).append(": Unmet dependencies for ")
+                        log.error().append(getName()).append(" ").append(Thread.currentThread().getName())
+                                .append(": Unmet dependencies for ")
                                 .append(notification).endl();
                     }
                 }
@@ -630,7 +651,7 @@ public abstract class BaseUpdateGraph implements UpdateGraph, LogOutputAppendabl
             runNotification(notificationForThisThread);
         }
 
-        // We can not proceed until all of the terminal notifications have executed.
+        // We can not proceed until all the terminal notifications have executed.
         notificationProcessor.doAllWork();
     }
 
@@ -713,11 +734,11 @@ public abstract class BaseUpdateGraph implements UpdateGraph, LogOutputAppendabl
             logDependencies().append(Thread.currentThread().getName()).append(": Completed ").append(notification)
                     .endl();
         } catch (final Exception e) {
-            log.error().append(Thread.currentThread().getName())
+            log.error().append(getName()).append(" ").append(Thread.currentThread().getName())
                     .append(": Exception while executing UpdateGraph notification: ").append(notification)
                     .append(": ").append(e).endl();
             ProcessEnvironment.getGlobalFatalErrorReporter()
-                    .report("Exception while processing UpdateGraph notification", e);
+                    .report("Exception while processing UpdateGraph (" + getName() + ") notification", e);
         }
     }
 
@@ -837,6 +858,10 @@ public abstract class BaseUpdateGraph implements UpdateGraph, LogOutputAppendabl
         }
     }
 
+    void reportLockWaitNanos(final long lockWaitNanos) {
+        currentCycleLockWaitTotalNanos += lockWaitNanos;
+    }
+
     /**
      * Is the provided cycle time on budget?
      *
@@ -850,7 +875,8 @@ public abstract class BaseUpdateGraph implements UpdateGraph, LogOutputAppendabl
 
     private void logSuppressedCycles() {
         LogEntry entry = log.info()
-                .append("Minimal Update Graph Processor cycle times: ")
+                .append(getName())
+                .append(": Minimal Update Graph Processor cycle times: ")
                 .appendDouble((double) (suppressedCyclesTotalNanos) / 1_000_000.0, 3).append("ms / ")
                 .append(suppressedCycles).append(" cycles = ")
                 .appendDouble(
@@ -875,7 +901,7 @@ public abstract class BaseUpdateGraph implements UpdateGraph, LogOutputAppendabl
             try {
                 updatePerformanceTracker.flush();
             } catch (Exception err) {
-                log.error().append("Error flushing UpdatePerformanceTracker: ").append(err).endl();
+                log.error().append(getName()).append(": Error flushing UpdatePerformanceTracker: ").append(err).endl();
             }
         }
     }
@@ -908,7 +934,7 @@ public abstract class BaseUpdateGraph implements UpdateGraph, LogOutputAppendabl
     private void doRefresh(@NotNull final Runnable refreshFunction) {
         final long lockStartTimeNanos = System.nanoTime();
         exclusiveLock().doLocked(() -> {
-            currentCycleLockWaitTotalNanos += System.nanoTime() - lockStartTimeNanos;
+            reportLockWaitNanos(System.nanoTime() - lockStartTimeNanos);
             if (!running) {
                 return;
             }

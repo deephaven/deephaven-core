@@ -1,11 +1,14 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.replicators;
 
 import io.deephaven.replication.ReplicatePrimitiveCode;
 import io.deephaven.replication.ReplicationUtils;
+import io.deephaven.util.compare.DoubleComparisons;
+import io.deephaven.util.compare.FloatComparisons;
 import org.apache.commons.io.FileUtils;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
 import java.io.IOException;
@@ -13,8 +16,10 @@ import java.nio.charset.Charset;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 
 public class ReplicateVectors {
+    private static final String TASK = "replicateVectors";
 
     @SuppressWarnings("AutoBoxing")
     public static void main(String[] args) throws IOException {
@@ -22,32 +27,62 @@ public class ReplicateVectors {
 
         final String charVectorJavaPath = "engine/vector/src/main/java/io/deephaven/vector/CharVector.java";
 
-        ReplicatePrimitiveCode.charToAllButBooleanAndFloats(charVectorJavaPath, serialVersionUIDs);
+        ReplicatePrimitiveCode.charToByte(TASK, charVectorJavaPath, serialVersionUIDs);
+        ReplicatePrimitiveCode.charToShort(TASK, charVectorJavaPath, serialVersionUIDs);
 
-        final String floatPath = ReplicatePrimitiveCode.charToFloat(charVectorJavaPath, serialVersionUIDs);
-        final File floatFile = new File(floatPath);
-        List<String> floatLines = FileUtils.readLines(floatFile, Charset.defaultCharset());
-        floatLines = ReplicationUtils.simpleFixup(floatLines, "ElementEquals",
-                "aIterator\\.nextFloat\\(\\) != bIterator\\.nextFloat\\(\\)",
-                "Float.floatToIntBits(aIterator.nextFloat()) != Float.floatToIntBits(bIterator.nextFloat())");
-        FileUtils.writeLines(floatFile, floatLines);
+        ReplicatePrimitiveCode.charToInteger(TASK, charVectorJavaPath, serialVersionUIDs);
+        ReplicatePrimitiveCode.charToLong(TASK, charVectorJavaPath, serialVersionUIDs);
+        fixupCharToFloat(ReplicatePrimitiveCode.charToFloat(TASK, charVectorJavaPath, serialVersionUIDs));
+        fixupCharToDouble(ReplicatePrimitiveCode.charToDouble(TASK, charVectorJavaPath, serialVersionUIDs));
 
-        final String doublePath = ReplicatePrimitiveCode.charToDouble(charVectorJavaPath, serialVersionUIDs);
-        final File doubleFile = new File(doublePath);
-        List<String> doubleLines = FileUtils.readLines(doubleFile, Charset.defaultCharset());
-        doubleLines = ReplicationUtils.simpleFixup(doubleLines, "ElementEquals",
-                "aIterator\\.nextDouble\\(\\) != bIterator\\.nextDouble\\(\\)",
-                "Double.doubleToLongBits(aIterator.nextDouble()) != Double.doubleToLongBits(bIterator.nextDouble())");
-        FileUtils.writeLines(doubleFile, doubleLines);
-
-        ReplicatePrimitiveCode.charToAllButBoolean(
+        final List<String> directVectors = ReplicatePrimitiveCode.charToAllButBoolean(TASK,
                 "engine/vector/src/main/java/io/deephaven/vector/CharVectorDirect.java",
                 serialVersionUIDs);
-        ReplicatePrimitiveCode.charToAllButBoolean(
+        for (final String directVectorPath : directVectors) {
+            if (Stream.of("Byte", "Int", "Short", "Long").anyMatch(directVectorPath::contains)) {
+                fixupNumber(directVectorPath);
+            }
+        }
+        ReplicatePrimitiveCode.charToAllButBoolean(TASK,
                 "engine/vector/src/main/java/io/deephaven/vector/CharVectorSlice.java",
                 serialVersionUIDs);
-        ReplicatePrimitiveCode.charToAllButBoolean(
+        ReplicatePrimitiveCode.charToAllButBoolean(TASK,
                 "engine/vector/src/main/java/io/deephaven/vector/CharSubVector.java",
                 serialVersionUIDs);
+    }
+
+    public static void fixupCharToDouble(@NotNull final String path) throws IOException {
+        final File file = new File(path);
+        List<String> lines = FileUtils.readLines(file, Charset.defaultCharset());
+        lines = ReplicationUtils.addImport(lines, DoubleComparisons.class);
+        lines = ReplicationUtils.simpleFixup(lines, "ElementEquals",
+                "aIterator\\.nextDouble\\(\\) != bIterator\\.nextDouble\\(\\)",
+                "!DoubleComparisons.eq(aIterator.nextDouble(), bIterator.nextDouble())");
+        lines = ReplicationUtils.simpleFixup(lines, "ElementHash",
+                "Double.hashCode\\(iterator.nextDouble\\(\\)\\)",
+                "DoubleComparisons.hashCode(iterator.nextDouble())");
+        FileUtils.writeLines(file, lines);
+    }
+
+    public static void fixupCharToFloat(@NotNull final String path) throws IOException {
+        final File file = new File(path);
+        List<String> lines = FileUtils.readLines(file, Charset.defaultCharset());
+        lines = ReplicationUtils.addImport(lines, FloatComparisons.class);
+        lines = ReplicationUtils.simpleFixup(lines, "ElementEquals",
+                "aIterator\\.nextFloat\\(\\) != bIterator\\.nextFloat\\(\\)",
+                "!FloatComparisons.eq(aIterator.nextFloat(), bIterator.nextFloat())");
+        lines = ReplicationUtils.simpleFixup(lines, "ElementHash",
+                "Float.hashCode\\(iterator.nextFloat\\(\\)\\)",
+                "FloatComparisons.hashCode(iterator.nextFloat())");
+        FileUtils.writeLines(file, lines);
+    }
+
+    public static void fixupNumber(@NotNull final String path) throws IOException {
+        final File file = new File(path);
+        List<String> lines = FileUtils.readLines(file, Charset.defaultCharset());
+        lines = ReplicationUtils.simpleFixup(lines, "compareTo",
+                "// UNCOMMENT FOR INTEGRALS: ",
+                "");
+        FileUtils.writeLines(file, lines);
     }
 }

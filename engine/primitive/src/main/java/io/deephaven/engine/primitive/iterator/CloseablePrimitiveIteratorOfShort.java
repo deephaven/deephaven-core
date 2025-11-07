@@ -1,8 +1,10 @@
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CloseablePrimitiveIteratorOfChar and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit CloseablePrimitiveIteratorOfChar and run "./gradlew replicatePrimitiveInterfaces" to regenerate
+//
+// @formatter:off
 package io.deephaven.engine.primitive.iterator;
 
 import io.deephaven.engine.primitive.function.ShortConsumer;
@@ -69,7 +71,7 @@ public interface CloseablePrimitiveIteratorOfShort extends CloseablePrimitiveIte
 
             @Override
             public int nextInt() {
-                return adapter.applyAsInt(CloseablePrimitiveIteratorOfShort.this.next());
+                return adapter.applyAsInt(CloseablePrimitiveIteratorOfShort.this.nextShort());
             }
 
             @Override

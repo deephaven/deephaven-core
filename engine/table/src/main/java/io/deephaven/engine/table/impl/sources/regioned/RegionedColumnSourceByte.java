@@ -1,11 +1,10 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit RegionedColumnSourceChar and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit RegionedColumnSourceChar and run "./gradlew replicateRegionsAndRegionedSources" to regenerate
+//
+// @formatter:off
 package io.deephaven.engine.table.impl.sources.regioned;
 
 import io.deephaven.engine.table.ColumnSource;
@@ -28,9 +27,11 @@ abstract class RegionedColumnSourceByte<ATTR extends Values>
         extends RegionedColumnSourceArray<Byte, ATTR, ColumnRegionByte<ATTR>>
         implements ColumnSourceGetDefaults.ForByte /* MIXIN_INTERFACES */ {
 
-    RegionedColumnSourceByte(@NotNull final ColumnRegionByte<ATTR> nullRegion,
-                             @NotNull final MakeDeferred<ATTR, ColumnRegionByte<ATTR>> makeDeferred) {
-        super(nullRegion, byte.class, makeDeferred);
+    RegionedColumnSourceByte(
+            @NotNull final RegionedColumnSourceManager manager,
+            @NotNull final ColumnRegionByte<ATTR> nullRegion,
+            @NotNull final MakeDeferred<ATTR, ColumnRegionByte<ATTR>> makeDeferred) {
+        super(manager, nullRegion, byte.class, makeDeferred);
     }
 
     @Override
@@ -41,8 +42,8 @@ abstract class RegionedColumnSourceByte<ATTR extends Values>
     interface MakeRegionDefault extends MakeRegion<Values, ColumnRegionByte<Values>> {
         @Override
         default ColumnRegionByte<Values> makeRegion(@NotNull final ColumnDefinition<?> columnDefinition,
-                                                    @NotNull final ColumnLocation columnLocation,
-                                                    final int regionIndex) {
+                @NotNull final ColumnLocation columnLocation,
+                final int regionIndex) {
             if (columnLocation.exists()) {
                 return columnLocation.makeColumnRegionByte(columnDefinition);
             }
@@ -59,33 +60,35 @@ abstract class RegionedColumnSourceByte<ATTR extends Values>
     @Override
     protected <ALTERNATE_DATA_TYPE> ColumnSource<ALTERNATE_DATA_TYPE> doReinterpret(@NotNull Class<ALTERNATE_DATA_TYPE> alternateDataType) {
         //noinspection unchecked
-        return (ColumnSource<ALTERNATE_DATA_TYPE>) new RegionedColumnSourceBoolean((RegionedColumnSourceByte<Values>)this);
+        return (ColumnSource<ALTERNATE_DATA_TYPE>) new RegionedColumnSourceBoolean(manager, (RegionedColumnSourceByte<Values>)this);
     }
     // endregion reinterpretation
 
     static final class AsValues extends RegionedColumnSourceByte<Values> implements MakeRegionDefault {
-        AsValues() {
-            super(ColumnRegionByte.createNull(PARAMETERS.regionMask), DeferredColumnRegionByte::new);
+        AsValues(final RegionedColumnSourceManager manager) {
+            super(manager, ColumnRegionByte.createNull(PARAMETERS.regionMask), DeferredColumnRegionByte::new);
         }
     }
 
     static final class Partitioning extends RegionedColumnSourceByte<Values> {
-
-        Partitioning() {
-            super(ColumnRegionByte.createNull(PARAMETERS.regionMask),
+        Partitioning(final RegionedColumnSourceManager manager) {
+            super(manager,
+                    ColumnRegionByte.createNull(PARAMETERS.regionMask),
                     (pm, rs) -> rs.get() // No need to interpose a deferred region in this case
             );
         }
 
         @Override
         public ColumnRegionByte<Values> makeRegion(@NotNull final ColumnDefinition<?> columnDefinition,
-                                                   @NotNull final ColumnLocation columnLocation,
-                                                   final int regionIndex) {
+                @NotNull final ColumnLocation columnLocation,
+                final int regionIndex) {
             final TableLocationKey locationKey = columnLocation.getTableLocation().getKey();
             final Object partitioningColumnValue = locationKey.getPartitionValue(columnDefinition.getName());
-            if (partitioningColumnValue != null && !Byte.class.isAssignableFrom(partitioningColumnValue.getClass())) {
-                throw new TableDataException("Unexpected partitioning column value type for " + columnDefinition.getName()
-                        + ": " + partitioningColumnValue + " is not a Byte at location " + locationKey);
+            if (partitioningColumnValue != null
+                    && !Byte.class.isAssignableFrom(partitioningColumnValue.getClass())) {
+                throw new TableDataException(
+                        "Unexpected partitioning column value type for " + columnDefinition.getName()
+                                + ": " + partitioningColumnValue + " is not a Byte at location " + locationKey);
             }
             return new ColumnRegionByte.Constant<>(regionMask(), unbox((Byte) partitioningColumnValue));
         }

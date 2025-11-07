@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.by;
 
 import io.deephaven.base.verify.Assert;
@@ -216,7 +216,7 @@ public class BlinkFirstChunkedOperator extends BaseBlinkFirstOrLastChunkedOperat
 
                 try (final RowSequence sliceSources = RowSequenceFactory.wrapRowKeysChunkAsRowSequence(sourceIndices)) {
                     for (int ci = 0; ci < numResultColumns; ++ci) {
-                        final Chunk<? extends Values> inputChunk =
+                        final Chunk inputChunk =
                                 inputColumns[ci].getChunk(inputContexts[ci], sliceSources);
                         outputColumns[ci].fillFromChunk(outputContexts[ci], inputChunk, sliceDestinations);
                     }

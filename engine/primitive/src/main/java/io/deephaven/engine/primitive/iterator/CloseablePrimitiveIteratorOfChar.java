@@ -1,3 +1,6 @@
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.primitive.iterator;
 
 import io.deephaven.engine.primitive.function.CharConsumer;
@@ -64,7 +67,7 @@ public interface CloseablePrimitiveIteratorOfChar extends CloseablePrimitiveIter
 
             @Override
             public int nextInt() {
-                return adapter.applyAsInt(CloseablePrimitiveIteratorOfChar.this.next());
+                return adapter.applyAsInt(CloseablePrimitiveIteratorOfChar.this.nextChar());
             }
 
             @Override

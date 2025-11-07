@@ -1,8 +1,9 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl;
 
+import io.deephaven.api.SortSpec;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Comparator;
@@ -35,6 +36,10 @@ public enum SortingOrder {
 
     public boolean isDescending() {
         return direction == -1;
+    }
+
+    public static SortingOrder from(SortSpec sc) {
+        return sc.isAscending() ? Ascending : Descending;
     }
 
     @NotNull

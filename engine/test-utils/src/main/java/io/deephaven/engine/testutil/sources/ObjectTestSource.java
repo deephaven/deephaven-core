@@ -1,11 +1,10 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharTestSource and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit CharTestSource and run "./gradlew replicateSourceAndChunkTests" to regenerate
+//
+// @formatter:off
 package io.deephaven.engine.testutil.sources;
 
 import io.deephaven.base.verify.Assert;
@@ -14,7 +13,6 @@ import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderRandom;
 import io.deephaven.engine.rowset.RowSetFactory;
@@ -22,9 +20,9 @@ import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.table.impl.MutableColumnSourceGetDefaults;
 import io.deephaven.engine.updategraph.TerminalNotification;
 import io.deephaven.engine.updategraph.UpdateCommitter;
+import io.deephaven.util.mutable.MutableInt;
 import io.deephaven.util.type.TypeUtils;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
-import org.apache.commons.lang3.mutable.MutableInt;
 
 import java.util.function.LongConsumer;
 
@@ -77,8 +75,6 @@ public class ObjectTestSource<T> extends AbstractColumnSource<T>
 
     // region chunk add
     public synchronized void add(final RowSet rowSet, Chunk<Values> vs) {
-        setGroupToRange(null);
-
         if (rowSet.size() != vs.size()) {
             throw new IllegalArgumentException("rowSet=" + rowSet + ", data size=" + vs.size());
         }
@@ -91,7 +87,7 @@ public class ObjectTestSource<T> extends AbstractColumnSource<T>
 
             @Override
             public void accept(final long v) {
-                data.put(v, vcs.get(ii.intValue()));
+                data.put(v, vcs.get(ii.get()));
                 ii.increment();
             }
         });
@@ -111,8 +107,6 @@ public class ObjectTestSource<T> extends AbstractColumnSource<T>
 
     @Override
     public synchronized void remove(RowSet rowSet) {
-        setGroupToRange(null);
-
         maybeInitializePrevForStep();
         rowSet.forAllRowKeys(data::remove);
     }
@@ -120,7 +114,6 @@ public class ObjectTestSource<T> extends AbstractColumnSource<T>
     @Override
     public synchronized void shift(long startKeyInclusive, long endKeyInclusive, long shiftDelta) {
         maybeInitializePrevForStep();
-        setGroupToRange(null);
 
         // Note: moving to the right, we need to start with rightmost data first.
         final long dir = shiftDelta > 0 ? -1 : 1;

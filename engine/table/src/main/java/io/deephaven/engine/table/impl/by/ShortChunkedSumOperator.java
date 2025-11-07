@@ -1,11 +1,10 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharChunkedSumOperator and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit CharChunkedSumOperator and run "./gradlew replicateOperators" to regenerate
+//
+// @formatter:off
 package io.deephaven.engine.table.impl.by;
 
 import io.deephaven.chunk.attributes.ChunkLengths;
@@ -19,7 +18,7 @@ import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.sources.LongArraySource;
 import io.deephaven.chunk.*;
-import org.apache.commons.lang3.mutable.MutableInt;
+import io.deephaven.util.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Collections;
@@ -42,7 +41,10 @@ public class ShortChunkedSumOperator implements IterativeChunkedAggregationOpera
     }
 
     @Override
-    public void addChunk(BucketedContext context, Chunk<? extends Values> values, LongChunk<? extends RowKeys> inputRowKeys, IntChunk<RowKeys> destinations, IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length, WritableBooleanChunk<Values> stateModified) {
+    public void addChunk(BucketedContext context, Chunk<? extends Values> values,
+            LongChunk<? extends RowKeys> inputRowKeys, IntChunk<RowKeys> destinations,
+            IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
+            WritableBooleanChunk<Values> stateModified) {
         final ShortChunk<? extends Values> asShortChunk = values.asShortChunk();
         for (int ii = 0; ii < startPositions.size(); ++ii) {
             final int startPosition = startPositions.get(ii);
@@ -52,7 +54,10 @@ public class ShortChunkedSumOperator implements IterativeChunkedAggregationOpera
     }
 
     @Override
-    public void removeChunk(BucketedContext context, Chunk<? extends Values> values, LongChunk<? extends RowKeys> inputRowKeys, IntChunk<RowKeys> destinations, IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length, WritableBooleanChunk<Values> stateModified) {
+    public void removeChunk(BucketedContext context, Chunk<? extends Values> values,
+            LongChunk<? extends RowKeys> inputRowKeys, IntChunk<RowKeys> destinations,
+            IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
+            WritableBooleanChunk<Values> stateModified) {
         final ShortChunk<? extends Values> asShortChunk = values.asShortChunk();
         for (int ii = 0; ii < startPositions.size(); ++ii) {
             final int startPosition = startPositions.get(ii);
@@ -62,52 +67,61 @@ public class ShortChunkedSumOperator implements IterativeChunkedAggregationOpera
     }
 
     @Override
-    public boolean addChunk(SingletonContext context, int chunkSize, Chunk<? extends Values> values, LongChunk<? extends RowKeys> inputRowKeys, long destination) {
+    public boolean addChunk(SingletonContext context, int chunkSize, Chunk<? extends Values> values,
+            LongChunk<? extends RowKeys> inputRowKeys, long destination) {
         return addChunk(values.asShortChunk(), destination, 0, values.size());
     }
 
     @Override
-    public boolean removeChunk(SingletonContext context, int chunkSize, Chunk<? extends Values> values, LongChunk<? extends RowKeys> inputRowKeys, long destination) {
+    public boolean removeChunk(SingletonContext context, int chunkSize, Chunk<? extends Values> values,
+            LongChunk<? extends RowKeys> inputRowKeys, long destination) {
         return removeChunk(values.asShortChunk(), destination, 0, values.size());
     }
 
     private boolean addChunk(ShortChunk<? extends Values> values, long destination, int chunkStart, int chunkSize) {
         final MutableInt nonNullCount = new MutableInt(0);
         final long sum = doSum(chunkStart, chunkSize, nonNullCount, values);
-        return updateInternal(destination, sum, nonNullCount.intValue());
+        return updateInternal(destination, sum, nonNullCount.get());
     }
 
     @Override
-    public void modifyChunk(BucketedContext context, Chunk<? extends Values> previousValues, Chunk<? extends Values> newValues, LongChunk<? extends RowKeys> postShiftRowKeys, IntChunk<RowKeys> destinations, IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length, WritableBooleanChunk<Values> stateModified) {
+    public void modifyChunk(BucketedContext context, Chunk<? extends Values> previousValues,
+            Chunk<? extends Values> newValues, LongChunk<? extends RowKeys> postShiftRowKeys,
+            IntChunk<RowKeys> destinations, IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
+            WritableBooleanChunk<Values> stateModified) {
         final ShortChunk<? extends Values> newAsShortChunk = newValues.asShortChunk();
         final ShortChunk<? extends Values> oldAsShortChunk = previousValues.asShortChunk();
         for (int ii = 0; ii < startPositions.size(); ++ii) {
             final int startPosition = startPositions.get(ii);
             final long destination = destinations.get(startPosition);
-            stateModified.set(ii, modifyChunk(oldAsShortChunk, newAsShortChunk, destination, startPosition, length.get(ii)));
+            stateModified.set(ii,
+                    modifyChunk(oldAsShortChunk, newAsShortChunk, destination, startPosition, length.get(ii)));
         }
     }
 
     @Override
-    public boolean modifyChunk(SingletonContext context, int chunkSize, Chunk<? extends Values> previousValues, Chunk<? extends Values> newValues, LongChunk<? extends RowKeys> postShiftRowKeys, long destination) {
+    public boolean modifyChunk(SingletonContext context, int chunkSize, Chunk<? extends Values> previousValues,
+            Chunk<? extends Values> newValues, LongChunk<? extends RowKeys> postShiftRowKeys, long destination) {
         return modifyChunk(previousValues.asShortChunk(), newValues.asShortChunk(), destination, 0, newValues.size());
     }
 
-    private boolean modifyChunk(ShortChunk<? extends Values> oldValues, ShortChunk<? extends Values> newValues, long destination, int chunkStart, int chunkSize) {
+    private boolean modifyChunk(ShortChunk<? extends Values> oldValues, ShortChunk<? extends Values> newValues,
+            long destination, int chunkStart, int chunkSize) {
         final MutableInt oldNonNullCount = new MutableInt(0);
         final MutableInt newNonNullCount = new MutableInt(0);
         final long oldSum = doSum(chunkStart, chunkSize, oldNonNullCount, oldValues);
         final long newSum = doSum(chunkStart, chunkSize, newNonNullCount, newValues);
-        return updateInternal(destination, newSum - oldSum, oldNonNullCount.intValue(), newNonNullCount.intValue());
+        return updateInternal(destination, newSum - oldSum, oldNonNullCount.get(), newNonNullCount.get());
     }
 
     private boolean removeChunk(ShortChunk<? extends Values> values, long destination, int chunkStart, int chunkSize) {
         final MutableInt nonNullCount = new MutableInt(0);
         final long sum = doSum(chunkStart, chunkSize, nonNullCount, values);
-        return updateInternal(destination, -sum, -nonNullCount.intValue());
+        return updateInternal(destination, -sum, -nonNullCount.get());
     }
 
-    private long doSum(int chunkStart, int chunkSize, MutableInt nonNullCount, ShortChunk<? extends Values> asShortChunk) {
+    private long doSum(int chunkStart, int chunkSize, MutableInt nonNullCount,
+            ShortChunk<? extends Values> asShortChunk) {
         if (absolute) {
             return SumShortChunk.sumShortChunkAbs(asShortChunk, chunkStart, chunkSize, nonNullCount);
         } else {
@@ -192,7 +206,8 @@ public class ShortChunkedSumOperator implements IterativeChunkedAggregationOpera
     }
 
     @Override
-    public void fillChunk(@NotNull FillContext context, @NotNull WritableChunk<? super Values> destination, @NotNull RowSequence rowSequence) {
+    public void fillChunk(@NotNull FillContext context, @NotNull WritableChunk<? super Values> destination,
+            @NotNull RowSequence rowSequence) {
         resultColumn.fillChunk(context, destination, rowSequence);
     }
 

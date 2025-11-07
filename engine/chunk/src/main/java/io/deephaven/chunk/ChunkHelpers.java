@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.chunk;
 
 /**
@@ -11,16 +11,14 @@ public class ChunkHelpers {
     static void checkSliceArgs(int size, int offset, int capacity) {
         if (offset < 0 || offset > size || capacity < 0 || capacity > size - offset) {
             throw new IllegalArgumentException(
-                    String.format("New slice offset %d, capacity %d is incompatible with size %d",
-                            offset, capacity, size));
+                    "New slice offset " + offset + ", capacity " + capacity + " is incompatible with size " + size);
         }
     }
 
     static void checkArrayArgs(int arrayLength, int offset, int capacity) {
         if (offset < 0 || capacity < 0 || capacity > arrayLength - offset) {
-            throw new IllegalArgumentException(
-                    String.format("offset %d, capacity %d is incompatible with array of length %d",
-                            offset, capacity, arrayLength));
+            throw new IllegalArgumentException("offset " + offset + ", capacity " + capacity
+                    + " is incompatible with array of length " + arrayLength);
         }
     }
 

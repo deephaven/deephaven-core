@@ -1,3 +1,6 @@
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.server.grpc;
 
 import com.google.protobuf.Descriptors.Descriptor;
@@ -20,6 +23,16 @@ public class GrpcErrorHelper {
         if (!message.hasField(fieldDescriptor)) {
             throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, String.format("%s must have field %s (%d)",
                     descriptor.getFullName(), fieldDescriptor.getName(), fieldNumber));
+        }
+    }
+
+    public static void checkDoesNotHaveField(Message message, int fieldNumber) throws StatusRuntimeException {
+        final Descriptor descriptor = message.getDescriptorForType();
+        final FieldDescriptor fieldDescriptor = descriptor.findFieldByNumber(fieldNumber);
+        if (message.hasField(fieldDescriptor)) {
+            throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
+                    String.format("%s must not have field %s (%d)",
+                            descriptor.getFullName(), fieldDescriptor.getName(), fieldNumber));
         }
     }
 

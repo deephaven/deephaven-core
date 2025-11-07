@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.hierarchical;
 
 import io.deephaven.api.ColumnName;
@@ -25,7 +25,7 @@ import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.SafeCloseableList;
 import io.deephaven.util.annotations.ReferentialIntegrity;
 import io.deephaven.util.annotations.VisibleForTesting;
-import org.apache.commons.lang3.mutable.MutableInt;
+import io.deephaven.util.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -105,12 +105,12 @@ public class TreeTableFilter {
     /**
      * The row identifier source from {@link #source}.
      */
-    private final ColumnSource idSource;
+    private final ColumnSource<?> idSource;
 
     /**
      * The parent identifier source from {@link #source}.
      */
-    private final ColumnSource parentIdSource;
+    private final ColumnSource<?> parentIdSource;
 
     /**
      * The eventual listener that maintains {@link #result}.
@@ -151,7 +151,10 @@ public class TreeTableFilter {
         parentIdColumnName = tree.getParentIdentifierColumn();
         sourceRowLookup = tree.getSourceRowLookup();
         this.filters = filters;
-        Arrays.stream(filters).forEach((final WhereFilter filter) -> filter.init(source.getDefinition()));
+        final QueryCompilerRequestProcessor.BatchProcessor compilationProcessor = QueryCompilerRequestProcessor.batch();
+        Arrays.stream(filters)
+                .forEach((final WhereFilter filter) -> filter.init(source.getDefinition(), compilationProcessor));
+        compilationProcessor.compile();
 
         idSource = source.getColumnSource(tree.getIdentifierColumn().name());
         parentIdSource = source.getColumnSource(tree.getParentIdentifierColumn().name());
@@ -174,16 +177,15 @@ public class TreeTableFilter {
     }
 
     private void doInitialFilter(@Nullable final OperationSnapshotControl snapshotControl, final boolean usePrev) {
-        try (final RowSet sourcePrevRows = usePrev ? source.getRowSet().copyPrev() : null) {
-            final RowSet sourceRows = usePrev ? sourcePrevRows : source.getRowSet();
+        final RowSet sourceRows = usePrev
+                ? source.getRowSet().prev()
+                : source.getRowSet();
+        matchedSourceRows = filterValues(usePrev, sourceRows, sourceRows);
+        parentIdToChildRows = new HashMap<>(matchedSourceRows.intSize("parentReferences"));
+        ancestorSourceRows = computeParents(usePrev, matchedSourceRows);
+        resultRows = matchedSourceRows.union(ancestorSourceRows).toTracking();
 
-            matchedSourceRows = filterValues(usePrev, sourceRows, sourceRows);
-            parentIdToChildRows = new HashMap<>(matchedSourceRows.intSize("parentReferences"));
-            ancestorSourceRows = computeParents(usePrev, matchedSourceRows);
-            resultRows = matchedSourceRows.union(ancestorSourceRows).toTracking();
-
-            validateState(usePrev, sourceRows);
-        }
+        validateState(usePrev, sourceRows);
 
         result = source.getSubTable(resultRows);
         if (snapshotControl != null) {
@@ -240,7 +242,7 @@ public class TreeTableFilter {
                                     childRowsToProcessIter.getNextRowSequenceWithLength(CHUNK_SIZE);
                             final ObjectChunk<?, ? extends Values> parentIds =
                                     getIds(usePrev, parentIdSource, parentIdGetContext, boxer, chunkChildRows);
-                            chunkOffset.setValue(0);
+                            chunkOffset.set(0);
                             chunkChildRows.forAllRowKeys((final long childRow) -> {
                                 final Object parentId = parentIds.get(chunkOffset.getAndIncrement());
                                 expectedParents.computeIfAbsent(parentId, pid -> RowSetFactory.builderRandom())
@@ -259,6 +261,7 @@ public class TreeTableFilter {
                             });
                         }
                     }
+                    // noinspection resource
                     childRowsToProcess = newParentKeys.build();
                 }
             }
@@ -369,7 +372,7 @@ public class TreeTableFilter {
                 final RowSequence chunkRowsToCheck = rowsToCheckIter.getNextRowSequenceWithLength(CHUNK_SIZE);
                 final ObjectChunk<?, ? extends Values> ids =
                         getIds(false, idSource, idGetContext, boxer, chunkRowsToCheck);
-                chunkOffset.setValue(0);
+                chunkOffset.set(0);
                 chunkRowsToCheck.forAllRowKeys((final long rowKeyToCheck) -> {
                     final Object id = ids.get(chunkOffset.getAndIncrement());
                     if (id != null && parentIdToChildRows.containsKey(id)) {
@@ -430,7 +433,7 @@ public class TreeTableFilter {
                 final RowSequence chunkChildRows = childRowsIter.getNextRowSequenceWithLength(CHUNK_SIZE);
                 final ObjectChunk<?, ? extends Values> parentIds =
                         getIds(usePrev, parentIdSource, parentIdGetContext, boxer, chunkChildRows);
-                chunkOffset.setValue(0);
+                chunkOffset.set(0);
                 chunkChildRows.forAllRowKeys((final long childRowKey) -> {
                     final Object parentId = parentIds.get(chunkOffset.getAndIncrement());
                     if (parentId != null) {

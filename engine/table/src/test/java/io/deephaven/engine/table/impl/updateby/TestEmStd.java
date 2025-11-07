@@ -1,22 +1,27 @@
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.updateby;
 
 import io.deephaven.api.updateby.BadDataBehavior;
 import io.deephaven.api.updateby.OperationControl;
 import io.deephaven.api.updateby.UpdateByControl;
 import io.deephaven.api.updateby.UpdateByOperation;
+import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.exceptions.TableInitializationException;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.impl.DataAccessHelpers;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.TableDefaults;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
+import io.deephaven.engine.table.vectors.ColumnVectors;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.EvalNugget;
 import io.deephaven.engine.testutil.TstUtils;
@@ -47,7 +52,7 @@ import static io.deephaven.time.DateTimeUtils.*;
 import static io.deephaven.util.QueryConstants.*;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.fail;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.Assert.assertThrows;
 
 @Category(OutOfBandTest.class)
 public class TestEmStd extends BaseUpdateByTest {
@@ -206,8 +211,8 @@ public class TestEmStd extends BaseUpdateByTest {
                 UpdateByOperation.EmStd(10, "emstd10=value"),
                 UpdateByOperation.EmStd(50, "emstd50=value")));
 
-        assertBDArrayEquals(bdStd10, (BigDecimal[]) DataAccessHelpers.getColumn(bdResult, "emstd10").getDirect());
-        assertBDArrayEquals(bdStd50, (BigDecimal[]) DataAccessHelpers.getColumn(bdResult, "emstd50").getDirect());
+        assertBDArrayEquals(bdStd10, ColumnVectors.ofObject(bdResult, "emstd10", BigDecimal.class).toArray());
+        assertBDArrayEquals(bdStd50, ColumnVectors.ofObject(bdResult, "emstd50", BigDecimal.class).toArray());
     }
 
     // region Zero Key Tests
@@ -234,31 +239,31 @@ public class TestEmStd extends BaseUpdateByTest {
         final Table actualReset = t.updateBy(UpdateByOperation.EmStd(resetControl, ticks, columns));
 
         for (String col : columns) {
-            final Class colType = DataAccessHelpers.getColumn(t, col).getType();
-            assertWithEmStdTicks(skipControl, ticks, DataAccessHelpers.getColumn(t, col).getDirect(),
-                    DataAccessHelpers.getColumn(actualSkip, col).getDirect(),
+            final Class<?> colType = t.getDefinition().getColumn(col).getDataType();
+            assertWithEmStdTicks(skipControl, ticks, ColumnVectors.of(t, col).toArray(),
+                    ColumnVectors.of(actualSkip, col).toArray(),
                     colType);
-            assertWithEmStdTicks(resetControl, ticks, DataAccessHelpers.getColumn(t, col).getDirect(),
-                    DataAccessHelpers.getColumn(actualReset, col).getDirect(),
+            assertWithEmStdTicks(resetControl, ticks, ColumnVectors.of(t, col).toArray(),
+                    ColumnVectors.of(actualReset, col).toArray(),
                     colType);
         }
 
         final Table actualSkipTime = t.updateBy(UpdateByOperation.EmStd(skipControl, "ts", 10 * MINUTE, columns));
         final Table actualResetTime = t.updateBy(UpdateByOperation.EmStd(resetControl, "ts", 10 * MINUTE, columns));
 
-        final Instant[] ts = (Instant[]) DataAccessHelpers.getColumn(t, "ts").getDirect();
+        final Instant[] ts = ColumnVectors.ofObject(t, "ts", Instant.class).toArray();
         final long[] timestamps = new long[t.intSize()];
         for (int i = 0; i < t.intSize(); i++) {
             timestamps[i] = epochNanos(ts[i]);
         }
 
         for (String col : columns) {
-            final Class colType = DataAccessHelpers.getColumn(t, col).getType();
-            assertWithEmStdTime(skipControl, 10 * MINUTE, timestamps, DataAccessHelpers.getColumn(t, col).getDirect(),
-                    DataAccessHelpers.getColumn(actualSkipTime, col).getDirect(),
+            final Class<?> colType = t.getDefinition().getColumn(col).getDataType();
+            assertWithEmStdTime(skipControl, 10 * MINUTE, timestamps, ColumnVectors.of(t, col).toArray(),
+                    ColumnVectors.of(actualSkipTime, col).toArray(),
                     colType);
-            assertWithEmStdTime(resetControl, 10 * MINUTE, timestamps, DataAccessHelpers.getColumn(t, col).getDirect(),
-                    DataAccessHelpers.getColumn(actualResetTime, col).getDirect(),
+            assertWithEmStdTime(resetControl, 10 * MINUTE, timestamps, ColumnVectors.of(t, col).toArray(),
+                    ColumnVectors.of(actualResetTime, col).toArray(),
                     colType);
         }
     }
@@ -300,9 +305,9 @@ public class TestEmStd extends BaseUpdateByTest {
 
         preOp.partitionedTransform(postOpSkip, (source, actual) -> {
             Arrays.stream(columns).forEach(col -> {
-                final Class colType = DataAccessHelpers.getColumn(source, col).getType();
-                assertWithEmStdTicks(skipControl, 100, DataAccessHelpers.getColumn(source, col).getDirect(),
-                        DataAccessHelpers.getColumn(actual, col).getDirect(),
+                final Class<?> colType = source.getDefinition().getColumn(col).getDataType();
+                assertWithEmStdTicks(skipControl, 100, ColumnVectors.of(source, col).toArray(),
+                        ColumnVectors.of(actual, col).toArray(),
                         colType);
             });
             return source;
@@ -310,9 +315,9 @@ public class TestEmStd extends BaseUpdateByTest {
 
         preOp.partitionedTransform(postOpReset, (source, actual) -> {
             Arrays.stream(columns).forEach(col -> {
-                final Class colType = DataAccessHelpers.getColumn(source, col).getType();
-                assertWithEmStdTicks(resetControl, 100, DataAccessHelpers.getColumn(source, col).getDirect(),
-                        DataAccessHelpers.getColumn(actual, col).getDirect(),
+                final Class<?> colType = source.getDefinition().getColumn(col).getDataType();
+                assertWithEmStdTicks(resetControl, 100, ColumnVectors.of(source, col).toArray(),
+                        ColumnVectors.of(actual, col).toArray(),
                         colType);
             });
             return source;
@@ -328,16 +333,16 @@ public class TestEmStd extends BaseUpdateByTest {
 
         preOp.partitionedTransform(postOpSkipTime, (source, actual) -> {
             final int sourceSize = source.intSize();
-            final Instant[] ts = (Instant[]) DataAccessHelpers.getColumn(source, "ts").getDirect();
+            final Instant[] ts = ColumnVectors.ofObject(source, "ts", Instant.class).toArray();
             final long[] timestamps = new long[sourceSize];
             for (int i = 0; i < sourceSize; i++) {
                 timestamps[i] = epochNanos(ts[i]);
             }
             Arrays.stream(columns).forEach(col -> {
-                final Class colType = DataAccessHelpers.getColumn(source, col).getType();
+                final Class<?> colType = source.getDefinition().getColumn(col).getDataType();
                 assertWithEmStdTime(skipControl, 10 * MINUTE, timestamps,
-                        DataAccessHelpers.getColumn(source, col).getDirect(),
-                        DataAccessHelpers.getColumn(actual, col).getDirect(),
+                        ColumnVectors.of(source, col).toArray(),
+                        ColumnVectors.of(actual, col).toArray(),
                         colType);
             });
             return source;
@@ -345,16 +350,16 @@ public class TestEmStd extends BaseUpdateByTest {
 
         preOp.partitionedTransform(postOpResetTime, (source, actual) -> {
             final int sourceSize = source.intSize();
-            final Instant[] ts = (Instant[]) DataAccessHelpers.getColumn(source, "ts").getDirect();
+            final Instant[] ts = ColumnVectors.ofObject(source, "ts", Instant.class).toArray();
             final long[] timestamps = new long[sourceSize];
             for (int i = 0; i < sourceSize; i++) {
                 timestamps[i] = epochNanos(ts[i]);
             }
             Arrays.stream(columns).forEach(col -> {
-                final Class colType = DataAccessHelpers.getColumn(source, col).getType();
+                final Class<?> colType = source.getDefinition().getColumn(col).getDataType();
                 assertWithEmStdTime(resetControl, 10 * MINUTE, timestamps,
-                        DataAccessHelpers.getColumn(source, col).getDirect(),
-                        DataAccessHelpers.getColumn(actual, col).getDirect(),
+                        ColumnVectors.of(source, col).toArray(),
+                        ColumnVectors.of(actual, col).toArray(),
                         colType);
             });
             return source;
@@ -370,73 +375,103 @@ public class TestEmStd extends BaseUpdateByTest {
         final TableDefaults bytes = testTable(RowSetFactory.flat(4).toTracking(),
                 byteCol("col", (byte) 0, (byte) 1, NULL_BYTE, (byte) 3));
 
-        assertThrows(TableDataException.class,
+        Throwable err = assertThrows(TableInitializationException.class,
                 () -> bytes.updateBy(UpdateByOperation.EmStd(throwControl, 10)));
+        Assert.eqTrue(err.getCause().getClass() == TableDataException.class,
+                "err.getCause().getClass() == TableDataException.class");
 
 
-        assertThrows(TableDataException.class,
+        err = assertThrows(TableInitializationException.class,
                 () -> bytes.updateBy(UpdateByOperation.EmStd(throwControl, 10)));
+        Assert.eqTrue(err.getCause().getClass() == TableDataException.class,
+                "err.getCause().getClass() == TableDataException.class");
 
         TableDefaults shorts = testTable(RowSetFactory.flat(4).toTracking(),
                 shortCol("col", (short) 0, (short) 1, NULL_SHORT, (short) 3));
 
-        assertThrows(TableDataException.class,
+        err = assertThrows(TableInitializationException.class,
                 () -> shorts.updateBy(UpdateByOperation.EmStd(throwControl, 10)));
+        Assert.eqTrue(err.getCause().getClass() == TableDataException.class,
+                "err.getCause().getClass() == TableDataException.class");
 
         TableDefaults ints = testTable(RowSetFactory.flat(4).toTracking(),
                 intCol("col", 0, 1, NULL_INT, 3));
 
-        assertThrows(TableDataException.class,
+        err = assertThrows(TableInitializationException.class,
                 () -> ints.updateBy(UpdateByOperation.EmStd(throwControl, 10)));
+        Assert.eqTrue(err.getCause().getClass() == TableDataException.class,
+                "err.getCause().getClass() == TableDataException.class");
 
         TableDefaults longs = testTable(RowSetFactory.flat(4).toTracking(),
                 longCol("col", 0, 1, NULL_LONG, 3));
 
-        assertThrows(TableDataException.class,
+        err = assertThrows(TableInitializationException.class,
                 () -> longs.updateBy(UpdateByOperation.EmStd(throwControl, 10)));
+        Assert.eqTrue(err.getCause().getClass() == TableDataException.class,
+                "err.getCause().getClass() == TableDataException.class");
 
         TableDefaults floats = testTable(RowSetFactory.flat(4).toTracking(),
                 floatCol("col", 0, 1, NULL_FLOAT, Float.NaN));
 
-        assertThrows(TableDataException.class,
+        err = assertThrows(TableInitializationException.class,
                 () -> floats.updateBy(
                         UpdateByOperation.EmStd(OperationControl.builder().onNullValue(BadDataBehavior.THROW).build(),
-                                10)),
-                "Encountered null value during EMS processing");
+                                10)));
+        err = err.getCause();
+        Assert.eqTrue(err.getClass() == TableDataException.class,
+                "err.getClass() == TableDataException.class");
+        Assert.eqTrue(err.getMessage().contains("Encountered null value during Exponential Moving output processing"),
+                "err.getMessage().contains(\"Encountered null value during Exponential Moving output processing\")");
 
-        assertThrows(TableDataException.class,
+        err = assertThrows(TableInitializationException.class,
                 () -> floats.updateBy(
                         UpdateByOperation.EmStd(OperationControl.builder().onNanValue(BadDataBehavior.THROW).build(),
-                                10)),
-                "Encountered NaN value during EMS processing");
+                                10)));
+        err = err.getCause();
+        Assert.eqTrue(err.getClass() == TableDataException.class,
+                "err.getClass() == TableDataException.class");
+        Assert.eqTrue(err.getMessage().contains("Encountered NaN value during Exponential Moving output processing"),
+                "err.getMessage().contains(\"Encountered NaN value during Exponential Moving output processing\")");
 
         TableDefaults doubles = testTable(RowSetFactory.flat(4).toTracking(),
                 doubleCol("col", 0, 1, NULL_DOUBLE, Double.NaN));
 
-        assertThrows(TableDataException.class,
+        err = assertThrows(TableInitializationException.class,
                 () -> doubles.updateBy(
                         UpdateByOperation.EmStd(OperationControl.builder().onNullValue(BadDataBehavior.THROW).build(),
-                                10)),
-                "Encountered null value during EMS processing");
+                                10)));
+        err = err.getCause();
+        Assert.eqTrue(err.getClass() == TableDataException.class,
+                "err.getClass() == TableDataException.class");
+        Assert.eqTrue(err.getMessage().contains("Encountered null value during Exponential Moving output processing"),
+                "err.getMessage().contains(\"Encountered null value during Exponential Moving output processing\")");
 
-        assertThrows(TableDataException.class,
+        err = assertThrows(TableInitializationException.class,
                 () -> doubles.updateBy(
                         UpdateByOperation.EmStd(OperationControl.builder().onNanValue(BadDataBehavior.THROW).build(),
-                                10)),
-                "Encountered NaN value during EMS processing");
+                                10)));
+        err = err.getCause();
+        Assert.eqTrue(err.getClass() == TableDataException.class,
+                "err.getClass() == TableDataException.class");
+        Assert.eqTrue(err.getMessage().contains("Encountered NaN value during Exponential Moving output processing"),
+                "err.getMessage().contains(\"Encountered NaN value during Exponential Moving output processing\")");
 
 
         TableDefaults bi = testTable(RowSetFactory.flat(4).toTracking(),
                 col("col", BigInteger.valueOf(0), BigInteger.valueOf(1), null, BigInteger.valueOf(3)));
 
-        assertThrows(TableDataException.class,
+        err = assertThrows(TableInitializationException.class,
                 () -> bi.updateBy(UpdateByOperation.EmStd(throwControl, 10)));
+        Assert.eqTrue(err.getCause().getClass() == TableDataException.class,
+                "err.getCause().getClass() == TableDataException.class");
 
         TableDefaults bd = testTable(RowSetFactory.flat(4).toTracking(),
                 col("col", BigDecimal.valueOf(0), BigDecimal.valueOf(1), null, BigDecimal.valueOf(3)));
 
-        assertThrows(TableDataException.class,
+        err = assertThrows(TableInitializationException.class,
                 () -> bd.updateBy(UpdateByOperation.EmStd(throwControl, 10)));
+        Assert.eqTrue(err.getCause().getClass() == TableDataException.class,
+                "err.getCause().getClass() == TableDataException.class");
     }
 
     @Test
@@ -490,10 +525,11 @@ public class TestEmStd extends BaseUpdateByTest {
     }
 
     private void testThrowsInternal(TableDefaults table) {
-        assertThrows(TableDataException.class,
+        assertThrows(
+                "Encountered negative delta time during EMS processing",
+                TableDataException.class,
                 () -> table.updateBy(UpdateByOperation.EmStd(
-                        OperationControl.builder().build(), "ts", 100)),
-                "Encountered negative delta time during EMS processing");
+                        OperationControl.builder().build(), "ts", 100)));
     }
 
     @Test
@@ -575,13 +611,13 @@ public class TestEmStd extends BaseUpdateByTest {
         result = input.updateBy(UpdateByOperation.EmStd(dataResetControl, 10));
 
         // Extract the BD result and fuzzy-validate against expectations
-        BigDecimal[] actualBD = (BigDecimal[]) DataAccessHelpers.getColumn(result, "col").getDirect();
+        BigDecimal[] actualBD = ColumnVectors.ofObject(result, "col", BigDecimal.class).toArray();
         assertBDArrayEquals(actualBD, expectedBD);
 
         input = testTable(RowSetFactory.flat(6).toTracking(),
                 col("col", inputBD));
         result = input.updateBy(UpdateByOperation.EmStd(dataResetControl, 10));
-        actualBD = (BigDecimal[]) DataAccessHelpers.getColumn(result, "col").getDirect();
+        actualBD = ColumnVectors.ofObject(result, "col", BigDecimal.class).toArray();
         assertBDArrayEquals(actualBD, expectedBD);
 
         // Test reset for NaN values
@@ -1319,7 +1355,7 @@ public class TestEmStd extends BaseUpdateByTest {
             final long ticks,
             @NotNull final Object expected,
             @NotNull final Object actual,
-            final Class type) {
+            final Class<?> type) {
         if (expected instanceof double[]) {
             assertArrayEquals(compute_emstd_ticks(control, ticks, (double[]) expected), (double[]) actual, .001d);
         }
@@ -1361,7 +1397,7 @@ public class TestEmStd extends BaseUpdateByTest {
             @NotNull final long[] timestamps,
             @NotNull final Object expected,
             @NotNull final Object actual,
-            final Class type) {
+            final Class<?> type) {
         if (expected instanceof double[]) {
             assertArrayEquals(compute_emstd_time(control, nanos, timestamps, (double[]) expected), (double[]) actual,
                     .001d);

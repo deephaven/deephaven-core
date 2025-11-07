@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.replicators;
 
 import io.deephaven.base.verify.Assert;
@@ -19,40 +19,39 @@ import static io.deephaven.replication.ReplicatePrimitiveCode.*;
 import static io.deephaven.replication.ReplicationUtils.*;
 
 public class ReplicateHashing {
+    private static final String TASK = "replicateHashing";
+
     public static void main(String[] args) throws IOException {
-        charToAll("engine/chunk/src/main/java/io/deephaven/chunk/util/hashing/CharChunkHasher.java");
+        charToAll(TASK, "engine/chunk/src/main/java/io/deephaven/chunk/util/hashing/CharChunkHasher.java");
         final String objectHasher =
-                charToObject("engine/chunk/src/main/java/io/deephaven/chunk/util/hashing/CharChunkHasher.java");
+                charToObject(TASK, "engine/chunk/src/main/java/io/deephaven/chunk/util/hashing/CharChunkHasher.java");
         fixupObjectChunkHasher(objectHasher);
 
-        charToIntegers("engine/chunk/src/main/java/io/deephaven/chunk/util/hashing/CharToIntegerCast.java");
-        charToIntegers("engine/chunk/src/main/java/io/deephaven/chunk/util/hashing/CharToLongCast.java");
-        charToIntegers(
+        charToIntegers(TASK, "engine/chunk/src/main/java/io/deephaven/chunk/util/hashing/CharToIntegerCast.java");
+        charToIntegers(TASK, "engine/chunk/src/main/java/io/deephaven/chunk/util/hashing/CharToLongCast.java");
+        charToIntegers(TASK,
                 "engine/chunk/src/main/java/io/deephaven/chunk/util/hashing/CharToIntegerCastWithOffset.java");
-        charToIntegers(
+        charToIntegers(TASK,
                 "engine/chunk/src/main/java/io/deephaven/chunk/util/hashing/CharToLongCastWithOffset.java");
 
-        final List<String> paths = charToAll(
+        charToAll(TASK,
                 "engine/chunk/src/main/java/io/deephaven/chunk/util/hashing/CharChunkEquals.java");
-        final String floatPath =
-                paths.stream().filter(p -> p.contains("Float")).findFirst().orElseThrow(FileNotFoundException::new);
-        final String doublePath =
-                paths.stream().filter(p -> p.contains("Double")).findFirst().orElseThrow(FileNotFoundException::new);
-
-        fixupFloatChunkEquals(floatPath);
-        fixupDoubleChunkEquals(doublePath);
 
         final String objectIdentityEquals =
-                charToObject("engine/chunk/src/main/java/io/deephaven/chunk/util/hashing/CharChunkEquals.java");
+                charToObject(TASK, "engine/chunk/src/main/java/io/deephaven/chunk/util/hashing/CharChunkEquals.java");
         fixupObjectChunkIdentityEquals(objectIdentityEquals);
 
+        final String objectDeepEquals =
+                charToObject(TASK, "engine/chunk/src/main/java/io/deephaven/chunk/util/hashing/CharChunkEquals.java");
+        fixupObjectChunkDeepEquals(objectDeepEquals);
+
         final String objectEquals =
-                charToObject("engine/chunk/src/main/java/io/deephaven/chunk/util/hashing/CharChunkEquals.java");
+                charToObject(TASK, "engine/chunk/src/main/java/io/deephaven/chunk/util/hashing/CharChunkEquals.java");
         fixupObjectChunkEquals(objectEquals);
 
-        final List<String> compactKernels = charToAll(
+        final List<String> compactKernels = charToAll(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/util/compact/CharCompactKernel.java");
-        final String objectCompact = charToObject(
+        final String objectCompact = charToObject(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/util/compact/CharCompactKernel.java");
         fixupObjectCompact(objectCompact);
         // noinspection OptionalGetWithoutIsPresent
@@ -65,16 +64,15 @@ public class ReplicateHashing {
         final File objectFile = new File(objectPath);
         List<String> lines = FileUtils.readLines(objectFile, Charset.defaultCharset());
         lines = addImport(lines, Objects.class);
-        FileUtils.writeLines(objectFile, globalReplacements(fixupChunkAttributes(lines), "Object.hashCode",
-                "Objects.hashCode", "TypeUtils.unbox\\(\\(Object\\)value\\)", "value"));
+        FileUtils.writeLines(objectFile,
+                globalReplacements(fixupChunkAttributes(lines), "TypeUtils.unbox\\(\\(Object\\) value\\)", "value"));
     }
 
     private static void fixupObjectChunkEquals(String objectPath) throws IOException {
         final File objectFile = new File(objectPath);
         List<String> lines = FileUtils.readLines(objectFile, Charset.defaultCharset());
         lines = addImport(lines, Objects.class);
-        FileUtils.writeLines(objectFile, simpleFixup(fixupChunkAttributes(lines),
-                "eq", "lhs == rhs", "Objects.equals(lhs, rhs)"));
+        FileUtils.writeLines(objectFile, fixupChunkAttributes(lines));
     }
 
     private static void fixupBooleanCompact(String booleanPath) throws IOException {
@@ -139,23 +137,32 @@ public class ReplicateHashing {
         Assert.eqTrue(objectChunkEqualsFileName.renameTo(objectChunkIdentifyEqualsFileName),
                 "objectChunkEqualsFileName.renameTo(objectChunkIdentifyEqualsFileName)");
 
-        final List<String> lines = FileUtils.readLines(objectChunkIdentifyEqualsFileName, Charset.defaultCharset());
-        FileUtils.writeLines(objectChunkIdentifyEqualsFileName, simpleFixup(fixupChunkAttributes(lines),
-                "name", "ObjectChunkEquals", "ObjectChunkIdentityEquals"));
+        List<String> lines = FileUtils.readLines(objectChunkIdentifyEqualsFileName, Charset.defaultCharset());
+        lines = fixupChunkAttributes(lines);
+        lines = simpleFixup(lines,
+                "name", "ObjectChunkEquals", "ObjectChunkIdentityEquals");
+        lines = simpleFixup(lines,
+                "eq", "ObjectComparisons\\.eq\\(lhs, rhs\\)", "lhs == rhs");
+        FileUtils.writeLines(objectChunkIdentifyEqualsFileName, lines);
     }
 
-    private static void fixupDoubleChunkEquals(String doublePath) throws IOException {
-        final File objectFile = new File(doublePath);
-        final List<String> lines = FileUtils.readLines(objectFile, Charset.defaultCharset());
-        FileUtils.writeLines(objectFile,
-                simpleFixup(lines, "eq", "lhs == rhs", "((Double.isNaN(lhs) && Double.isNaN(rhs)) || lhs == rhs)"));
-    }
+    private static void fixupObjectChunkDeepEquals(String objectPath) throws IOException {
+        final File objectChunkEqualsFileName = new File(objectPath);
+        final File objectChunkDeepEqualsFileName =
+                new File(objectChunkEqualsFileName.getParent(), "ObjectChunkDeepEquals.java");
+        Assert.eqTrue(objectChunkEqualsFileName.renameTo(objectChunkDeepEqualsFileName),
+                "objectChunkEqualsFileName.renameTo(objectChunkDeepEqualsFileName)");
 
-    private static void fixupFloatChunkEquals(String floatPath) throws IOException {
-        final File objectFile = new File(floatPath);
-        final List<String> lines = FileUtils.readLines(objectFile, Charset.defaultCharset());
-        FileUtils.writeLines(objectFile,
-                simpleFixup(lines, "eq", "lhs == rhs", "((Float.isNaN(lhs) && Float.isNaN(rhs)) || lhs == rhs)"));
+        {
+            List<String> lines = FileUtils.readLines(objectChunkDeepEqualsFileName, Charset.defaultCharset());
+            lines = addImport(lines, Objects.class);
+            FileUtils.writeLines(objectChunkDeepEqualsFileName, simpleFixup(fixupChunkAttributes(lines),
+                    "name", "ObjectChunkEquals", "ObjectChunkDeepEquals"));
+        }
+        {
+            final List<String> lines = FileUtils.readLines(objectChunkDeepEqualsFileName, Charset.defaultCharset());
+            FileUtils.writeLines(objectChunkDeepEqualsFileName, simpleFixup(lines,
+                    "eq", "ObjectComparisons\\.eq\\(lhs, rhs\\)", "Objects.deepEquals(lhs, rhs)"));
+        }
     }
-
 }

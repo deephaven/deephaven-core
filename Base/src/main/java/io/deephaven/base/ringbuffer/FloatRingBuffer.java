@@ -1,15 +1,15 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharRingBuffer and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit CharRingBuffer and run "./gradlew replicateRingBuffers" to regenerate
+//
+// @formatter:off
 package io.deephaven.base.ringbuffer;
 
-import io.deephaven.base.ArrayUtil;
+import io.deephaven.base.MathUtil;
 import io.deephaven.base.verify.Assert;
+import org.jetbrains.annotations.TestOnly;
 
 import java.io.Serializable;
 import java.util.NoSuchElementException;
@@ -20,9 +20,7 @@ import java.util.NoSuchElementException;
  * {@code long} values. Head and tail will not wrap around; instead we use storage arrays sized to 2^N to allow fast
  * determination of storage indices through a mask operation.
  */
-public class FloatRingBuffer implements Serializable {
-    /** Maximum capacity is the highest power of two that can be allocated (i.e. <= than ArrayUtil.MAX_ARRAY_SIZE). */
-    static final int RING_BUFFER_MAX_CAPACITY = Integer.highestOneBit(ArrayUtil.MAX_ARRAY_SIZE);
+public class FloatRingBuffer implements RingBuffer, Serializable {
     static final long FIXUP_THRESHOLD = 1L << 62;
     final boolean growable;
     float[] storage;
@@ -35,7 +33,7 @@ public class FloatRingBuffer implements Serializable {
      *
      * @param capacity minimum capacity of the ring buffer
      */
-    public FloatRingBuffer(int capacity) {
+    public FloatRingBuffer(final int capacity) {
         this(capacity, true);
     }
 
@@ -45,22 +43,14 @@ public class FloatRingBuffer implements Serializable {
      * @param capacity minimum capacity of ring buffer
      * @param growable whether to allow growth when the buffer is full.
      */
-    public FloatRingBuffer(int capacity, boolean growable) {
-        Assert.leq(capacity, "FloatRingBuffer capacity", RING_BUFFER_MAX_CAPACITY);
+    public FloatRingBuffer(final int capacity, final boolean growable) {
+        Assert.leq(capacity, "FloatRingBuffer capacity", MathUtil.MAX_POWER_OF_2);
 
         this.growable = growable;
 
         // use next larger power of 2 for our storage
-        final int newCapacity;
-        if (capacity < 2) {
-            // sensibly handle the size=0 and size=1 cases
-            newCapacity = 1;
-        } else {
-            newCapacity = Integer.highestOneBit(capacity - 1) << 1;
-        }
-
         // reset the data structure members
-        storage = new float[newCapacity];
+        storage = new float[MathUtil.roundUpPowerOf2(capacity)];
         mask = storage.length - 1;
         tail = head = 0;
     }
@@ -70,13 +60,13 @@ public class FloatRingBuffer implements Serializable {
      * 
      * @param increase Increase amount. The ring buffer's capacity will be increased by at least this amount.
      */
-    protected void grow(int increase) {
+    protected void grow(final int increase) {
         final int size = size();
         final long newCapacity = (long) storage.length + increase;
         // assert that we are not asking for the impossible
-        Assert.leq(newCapacity, "FloatRingBuffer capacity", RING_BUFFER_MAX_CAPACITY);
+        Assert.leq(newCapacity, "FloatRingBuffer capacity", MathUtil.MAX_POWER_OF_2);
 
-        final float[] newStorage = new float[Integer.highestOneBit((int) newCapacity - 1) << 1];
+        final float[] newStorage = new float[MathUtil.roundUpPowerOf2((int) newCapacity)];
 
         // move the current data to the new buffer
         copyRingBufferToArray(newStorage);
@@ -94,7 +84,7 @@ public class FloatRingBuffer implements Serializable {
      * 
      * @param dest The destination buffer.
      */
-    protected void copyRingBufferToArray(float[] dest) {
+    protected void copyRingBufferToArray(final float[] dest) {
         final int size = size();
         final int storageHead = (int) (head & mask);
 
@@ -110,27 +100,35 @@ public class FloatRingBuffer implements Serializable {
         System.arraycopy(storage, 0, dest, firstCopyLen, secondCopyLen);
     }
 
+    @Override
     public boolean isFull() {
         return size() == storage.length;
     }
 
+    @Override
     public boolean isEmpty() {
         return tail == head;
     }
 
+    @Override
     public int size() {
         return Math.toIntExact(tail - head);
     }
 
+    @Override
     public int capacity() {
         return storage.length;
     }
 
+    @Override
     public int remaining() {
         return storage.length - size();
     }
 
+    @Override
     public void clear() {
+        // region object-bulk-clear
+        // endregion object-bulk-clear
         tail = head = 0;
     }
 
@@ -142,7 +140,7 @@ public class FloatRingBuffer implements Serializable {
      * @throws UnsupportedOperationException when {@code growable} is {@code false} and buffer is full
      * @return {@code true} if the float was added successfully
      */
-    public boolean add(float e) {
+    public boolean add(final float e) {
         if (isFull()) {
             if (!growable) {
                 throw new UnsupportedOperationException("Ring buffer is full and growth is disabled");
@@ -162,7 +160,8 @@ public class FloatRingBuffer implements Serializable {
      * @param count the minimum number of empty entries in the buffer after this call
      * @throws UnsupportedOperationException when {@code growable} is {@code false} and buffer is full
      */
-    public void ensureRemaining(int count) {
+    @Override
+    public void ensureRemaining(final int count) {
         if (remaining() < count) {
             if (!growable) {
                 throw new UnsupportedOperationException("Ring buffer is full and growth is disabled");
@@ -179,7 +178,7 @@ public class FloatRingBuffer implements Serializable {
      *
      * @param e the value to add to the buffer
      */
-    public void addUnsafe(float e) {
+    public void addUnsafe(final float e) {
         // This is an extremely paranoid wrap check that in all likelihood will never run. With FIXUP_THRESHOLD at
         // 1 << 62, and the user pushing 2^32 values per second(!), it will take 68 years to wrap this counter .
         if (tail >= FIXUP_THRESHOLD) {
@@ -199,7 +198,7 @@ public class FloatRingBuffer implements Serializable {
      * @param notFullResult value to return is the buffer is not full
      * @return the overwritten entry if the buffer is full, the provided value otherwise
      */
-    public float addOverwrite(float e, float notFullResult) {
+    public float addOverwrite(final float e, final float notFullResult) {
         float val = notFullResult;
         if (isFull()) {
             val = remove();
@@ -215,7 +214,7 @@ public class FloatRingBuffer implements Serializable {
      * @param e the float to be added to the buffer
      * @return true if the value was added successfully, false otherwise
      */
-    public boolean offer(float e) {
+    public boolean offer(final float e) {
         if (isFull()) {
             return false;
         }
@@ -229,7 +228,7 @@ public class FloatRingBuffer implements Serializable {
      * @param count The number of elements to remove.
      * @throws NoSuchElementException if the buffer is empty
      */
-    public float[] remove(int count) {
+    public float[] remove(final int count) {
         final int size = size();
         if (size < count) {
             throw new NoSuchElementException();
@@ -275,7 +274,7 @@ public class FloatRingBuffer implements Serializable {
      * @param onEmpty the value to return if the ring buffer is empty
      * @return The removed element if the ring buffer was non-empty, otherwise the value of 'onEmpty'
      */
-    public float poll(float onEmpty) {
+    public float poll(final float onEmpty) {
         if (isEmpty()) {
             return onEmpty;
         }
@@ -302,7 +301,7 @@ public class FloatRingBuffer implements Serializable {
      * @param onEmpty the value to return if the ring buffer is empty
      * @return The head element if the ring buffer is non-empty, otherwise the value of 'onEmpty'
      */
-    public float peek(float onEmpty) {
+    public float peek(final float onEmpty) {
         if (isEmpty()) {
             return onEmpty;
         }
@@ -325,7 +324,7 @@ public class FloatRingBuffer implements Serializable {
      * @throws NoSuchElementException if the buffer is empty
      * @return The element at the specified offset
      */
-    public float front(int offset) {
+    public float front(final int offset) {
         if (offset < 0 || offset >= size()) {
             throw new NoSuchElementException();
         }
@@ -352,7 +351,7 @@ public class FloatRingBuffer implements Serializable {
      * @param onEmpty the value to return if the ring buffer is empty
      * @return The tail element if the ring buffer is non-empty, otherwise the value of 'onEmpty'
      */
-    public float peekBack(float onEmpty) {
+    public float peekBack(final float onEmpty) {
         if (isEmpty()) {
             return onEmpty;
         }
@@ -395,5 +394,15 @@ public class FloatRingBuffer implements Serializable {
         public void remove() {
             throw new UnsupportedOperationException();
         }
+    }
+
+    /**
+     * Get the storage array for this ring buffer. This is intended for testing and debugging purposes only.
+     *
+     * @return The storage array for this ring buffer.
+     */
+    @TestOnly
+    public float[] getStorage() {
+        return storage;
     }
 }

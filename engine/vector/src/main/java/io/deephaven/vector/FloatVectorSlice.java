@@ -1,16 +1,15 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharVectorSlice and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit CharVectorSlice and run "./gradlew replicateVectors" to regenerate
+//
+// @formatter:off
 package io.deephaven.vector;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
-import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfFloat;
+import io.deephaven.engine.primitive.value.iterator.ValueIteratorOfFloat;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
@@ -96,7 +95,7 @@ public class FloatVectorSlice extends FloatVector.Indirect {
     }
 
     @Override
-    public CloseablePrimitiveIteratorOfFloat iterator(final long fromIndexInclusive, final long toIndexExclusive) {
+    public ValueIteratorOfFloat iterator(final long fromIndexInclusive, final long toIndexExclusive) {
         Require.leq(fromIndexInclusive, "fromIndexInclusive", toIndexExclusive, "toIndexExclusive");
         final long totalWanted = toIndexExclusive - fromIndexInclusive;
         long nextIndexWanted = fromIndexInclusive + offsetIndex;
@@ -120,16 +119,10 @@ public class FloatVectorSlice extends FloatVector.Indirect {
             includedInnerLength = 0;
         }
 
-        final CloseablePrimitiveIteratorOfFloat initialNullsIterator = includedInitialNulls > 0
-                ? CloseablePrimitiveIteratorOfFloat.repeat(NULL_FLOAT, includedInitialNulls)
-                : null;
-        final CloseablePrimitiveIteratorOfFloat innerIterator = includedInnerLength > 0
+        final ValueIteratorOfFloat innerIterator = includedInnerLength > 0
                 ? innerVector.iterator(firstIncludedInnerOffset, firstIncludedInnerOffset + includedInnerLength)
                 : null;
-        final CloseablePrimitiveIteratorOfFloat finalNullsIterator = remaining > 0
-                ? CloseablePrimitiveIteratorOfFloat.repeat(NULL_FLOAT, remaining)
-                : null;
-        return CloseablePrimitiveIteratorOfFloat.maybeConcat(initialNullsIterator, innerIterator, finalNullsIterator);
+        return ValueIteratorOfFloat.wrapWithNulls(innerIterator, includedInitialNulls, remaining);
     }
 
     @Override

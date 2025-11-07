@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.qst.table;
 
 import io.deephaven.api.TableOperations;
@@ -11,12 +11,7 @@ import io.deephaven.qst.TableCreator.OperationsToTable;
 import io.deephaven.qst.TableCreator.TableToOperations;
 import org.immutables.value.Value.Derived;
 
-import java.io.BufferedInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.ObjectInputStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
+import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 
 /**
@@ -57,10 +52,24 @@ public interface TableSpec extends TableOperationsDefaults<TableSpec, TableSpec>
         return logic.create(TableCreatorImpl.INSTANCE);
     }
 
+    /**
+     * Create a ticket table with the UTF-8 bytes from the {@code ticket} string.
+     *
+     * @param ticket the ticket
+     * @return the ticket table
+     * @deprecated prefer {@link #ticket(byte[])}
+     */
+    @Deprecated
     static TicketTable ticket(String ticket) {
-        return TicketTable.of(ticket);
+        return TicketTable.of(ticket.getBytes(StandardCharsets.UTF_8));
     }
 
+    /**
+     * Create a ticket table with the {@code ticket} bytes.
+     *
+     * @param ticket the ticket
+     * @return the ticket table
+     */
     static TicketTable ticket(byte[] ticket) {
         return TicketTable.of(ticket);
     }
@@ -92,6 +101,8 @@ public interface TableSpec extends TableOperationsDefaults<TableSpec, TableSpec>
         T visit(HeadTable headTable);
 
         T visit(TailTable tailTable);
+
+        T visit(SliceTable sliceTable);
 
         T visit(ReverseTable reverseTable);
 
@@ -140,5 +151,7 @@ public interface TableSpec extends TableOperationsDefaults<TableSpec, TableSpec>
         T visit(UngroupTable ungroupTable);
 
         T visit(DropColumnsTable dropColumnsTable);
+
+        T visit(MultiJoinTable multiJoinTable);
     }
 }

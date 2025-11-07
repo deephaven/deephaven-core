@@ -1,15 +1,42 @@
-
 # Deephaven Python Client 
 
 Deephaven Python Client is a Python package created by Deephaven Data Labs. It is a client API that allows Python applications to remotely access Deephaven data servers.
 
+## Building on Windows 10/11.
+
+To build on Windows, please see the file cpp-client/README-windows.md in
+this repository.
+
+## `venv`
+
+It's recommended to install in a Python virtual environment (venv). Use a command like the
+below to create a venv. Then, activate the venv.
+
+``` shell
+python3 -m venv ~/py/dhenv
+source ~/py/dhenv/bin/activate
+```
+
 ## Source Directory
 
-### From the deephaven-core repository root 
+### From the deephaven-core repository root
 (clone from https://github.com/deephaven/deephaven-core)
-``` shell
-$ cd py/client
+
+It is assumed that you have the repository checked out at the location specified by
+`${DHROOT}`
+
 ```
+$ cd ~/dhsrc  # or another directory you choose
+$ git clone https://github.com/deephaven/deephaven-core.git
+$ cd deephaven-core
+$ export DHROOT=`pwd`
+```
+
+## Change to the py/client directory inside the deephaven-core repository
+``` shell
+$ cd $DHROOT/py/client
+```
+
 ## Dev environment setup
 ``` shell
 $ pip3 install -r requirements-dev.txt
@@ -17,8 +44,9 @@ $ pip3 install -r requirements-dev.txt
 
 ## Build
 ``` shell
-$ python3 setup.py bdist_wheel
+$ DEEPHAVEN_VERSION=$(../../gradlew :printVersion -q) python3 setup.py bdist_wheel
 ```
+
 ## Run tests
 ``` shell
 $ python3 -m unittest discover tests

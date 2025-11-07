@@ -1,3 +1,6 @@
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.server.plugin.python;
 
 import io.deephaven.engine.liveness.LivenessScopeStack;
@@ -5,6 +8,8 @@ import io.deephaven.engine.liveness.ReferenceCountedLivenessReferent;
 import io.deephaven.util.annotations.ScriptApi;
 import org.jetbrains.annotations.NotNull;
 import org.jpy.PyObject;
+
+import javax.annotation.OverridingMethodsMustInvokeSuper;
 
 /**
  * Provides a mapping between Python refcount and Deephaven's liveness mechanism, allowing liveness scopes to manage the
@@ -30,6 +35,7 @@ public final class LivePyObjectWrapper extends ReferenceCountedLivenessReferent 
         LivenessScopeStack.peek().manage(this);
     }
 
+    @OverridingMethodsMustInvokeSuper
     @Override
     protected void destroy() {
         super.destroy();

@@ -1,8 +1,6 @@
 # docker compose file to run the debezium-kafka ecommerce demo
 # with DHC ticking tables and dashboard
 
-version: '3.4'
-
 services:
   redpanda:
     image: docker.redpanda.com/vectorized/redpanda:${REDPANDA_VERSION}

@@ -1,9 +1,12 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.server.session;
 
 import com.github.f4b6a3.uuid.UuidCreator;
+import com.github.f4b6a3.uuid.exception.InvalidUuidException;
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 import com.google.protobuf.ByteString;
 import com.google.rpc.Code;
 import io.deephaven.auth.AuthenticationException;
@@ -13,6 +16,7 @@ import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.proto.backplane.grpc.TerminationNotificationResponse;
+import io.deephaven.proto.util.Exceptions;
 import io.deephaven.server.util.Scheduler;
 import io.deephaven.auth.AuthContext;
 import io.deephaven.util.process.ProcessEnvironment;
@@ -22,15 +26,18 @@ import io.grpc.stub.StreamObserver;
 import org.apache.arrow.flight.auth2.Auth2Constants;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.VisibleForTesting;
 
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Deque;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -54,8 +61,21 @@ public class SessionService {
 
     @Singleton
     public static class ObfuscatingErrorTransformer implements ErrorTransformer {
+        @VisibleForTesting
+        static final int MAX_STACK_TRACE_CAUSAL_DEPTH = 25;
+        private static final int MAX_CACHE_BUILDER_SIZE = 1009;
+        private static final int MAX_CACHE_DURATION_MIN = 1;
+
+        private final Cache<Throwable, UUID> idCache;
+
         @Inject
-        public ObfuscatingErrorTransformer() {}
+        public ObfuscatingErrorTransformer() {
+            idCache = CacheBuilder.newBuilder()
+                    .expireAfterAccess(MAX_CACHE_DURATION_MIN, TimeUnit.MINUTES)
+                    .maximumSize(MAX_CACHE_BUILDER_SIZE)
+                    .weakKeys()
+                    .build();
+        }
 
         @Override
         public StatusRuntimeException transform(final Throwable err) {
@@ -66,14 +86,55 @@ public class SessionService {
                 } else if (sre.getStatus().getCode().equals(Status.CANCELLED.getCode())) {
                     log.debug().append("ignoring cancelled request").endl();
                 } else {
-                    log.error().append(sre).endl();
+                    log.debug().append(sre).endl();
                 }
                 return sre;
             } else if (err instanceof InterruptedException) {
-                return GrpcUtil.securelyWrapError(log, err, Code.UNAVAILABLE);
+                return securelyWrapError(err, Code.UNAVAILABLE);
             } else {
-                return GrpcUtil.securelyWrapError(log, err);
+                return securelyWrapError(err, Code.INVALID_ARGUMENT);
             }
+        }
+
+        private StatusRuntimeException securelyWrapError(@NotNull final Throwable err, final Code statusCode) {
+            UUID errorId;
+            final boolean shouldLog;
+
+            synchronized (idCache) {
+                errorId = idCache.getIfPresent(err);
+                shouldLog = errorId == null;
+
+                int currDepth = 0;
+                // @formatter:off
+                for (Throwable causeToCheck = err.getCause();
+                     errorId == null && ++currDepth < MAX_STACK_TRACE_CAUSAL_DEPTH && causeToCheck != null;
+                     causeToCheck = causeToCheck.getCause()) {
+                    // @formatter:on
+                    errorId = idCache.getIfPresent(causeToCheck);
+                }
+
+                if (errorId == null) {
+                    errorId = UuidCreator.getRandomBased();
+                }
+
+                // @formatter:off
+                for (Throwable throwableToAdd = err;
+                     currDepth > 0;
+                     throwableToAdd = throwableToAdd.getCause(), --currDepth) {
+                    // @formatter:on
+                    if (throwableToAdd.getStackTrace().length > 0) {
+                        // Note that stackless exceptions are singletons, so it would be a bad idea to cache them
+                        idCache.put(throwableToAdd, errorId);
+                    }
+                }
+            }
+
+            if (shouldLog) {
+                // this is a new top-level error; log it, possibly using an existing errorId
+                log.error().append("Internal Error '").append(errorId.toString()).append("' ").append(err).endl();
+            }
+
+            return Exceptions.statusRuntimeException(statusCode, "Details Logged w/ID '" + errorId + "'");
         }
     }
 
@@ -267,6 +328,9 @@ public class SessionService {
      * @return the session or null if the session is invalid
      */
     public SessionState getSessionForAuthToken(final String token) throws AuthenticationException {
+        String bearerKey = null;
+        String bearerPayload = null;
+
         if (token.startsWith(Auth2Constants.BEARER_PREFIX)) {
             final String authToken = token.substring(Auth2Constants.BEARER_PREFIX.length());
             try {
@@ -275,21 +339,41 @@ public class SessionService {
                 if (session != null) {
                     return session;
                 }
-            } catch (IllegalArgumentException ignored) {
+            } catch (InvalidUuidException ignored) {
             }
+
+            // In case we don't have another handler for Bearer, look for nested tokens to try later
+            int offset = authToken.indexOf(' ');
+            bearerKey = authToken.substring(0, offset < 0 ? authToken.length() : offset);
+            bearerPayload = offset < 0 ? "" : authToken.substring(offset + 1);
         }
 
         int offset = token.indexOf(' ');
         final String key = token.substring(0, offset < 0 ? token.length() : offset);
         final String payload = offset < 0 ? "" : token.substring(offset + 1);
+        // Use the auth type to look up a handler. If this happens to be Bearer, this gives a chance for an auth handler
+        // to claim that type
         AuthenticationRequestHandler handler = authRequestHandlers.get(key);
-        if (handler == null) {
-            log.info().append("No AuthenticationRequestHandler registered for type ").append(key).endl();
-            throw new AuthenticationException();
+        if (handler != null) {
+            Optional<AuthContext> s = handler.login(payload, SessionServiceGrpcImpl::insertCallHeader);
+            if (s.isPresent()) {
+                return newSession(s.get());
+            }
         }
-        return handler.login(payload, SessionServiceGrpcImpl::insertCallHeader)
-                .map(this::newSession)
-                .orElseThrow(AuthenticationException::new);
+        // If nothing succeeded or errored yet, and we found a key in the bearer value, try that next
+        if (bearerKey != null) {
+            handler = authRequestHandlers.get(bearerKey);
+            if (handler != null) {
+                Optional<AuthContext> s = handler.login(bearerPayload, SessionServiceGrpcImpl::insertCallHeader);
+                if (s.isPresent()) {
+                    return newSession(s.get());
+                }
+            }
+        }
+
+        // No more options, log an error and return
+        log.info().append("No AuthenticationRequestHandler registered for type ").append(key).endl();
+        throw new AuthenticationException();
     }
 
     /**
@@ -428,7 +512,7 @@ public class SessionService {
         }
 
         void sendMessage(final TerminationNotificationResponse response) {
-            GrpcUtil.safelyComplete(responseObserver, response);
+            GrpcUtil.safelyOnNextAndComplete(responseObserver, response);
         }
     }
 }

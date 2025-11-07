@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.sources.regioned;
 
 import io.deephaven.base.string.cache.StringCache;
@@ -86,7 +86,10 @@ public class ColumnRegionChunkDictionary<DICT_TYPE, DATA_TYPE, ATTR extends Any>
             @NotNull final RowSequence.Iterator knownKeys,
             @NotNull final RowSetBuilderSequential sequentialBuilder) {
         final long dictSize = getDictionaryChunk().size();
-
+        if (dictSize == 0) {
+            advanceToNextPage(knownKeys);
+            return advanceToNextPage(keysToVisit);
+        }
         final long pageFirstKey = firstRow(keysToVisit.currentValue());
         final long pageLastKey = pageFirstKey + dictSize - 1;
 

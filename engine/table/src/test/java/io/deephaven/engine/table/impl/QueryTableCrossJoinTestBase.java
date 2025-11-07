@@ -1,16 +1,19 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl;
 
 import com.google.common.collect.Maps;
 import gnu.trove.list.array.TLongArrayList;
+import io.deephaven.api.ColumnName;
+import io.deephaven.api.JoinAddition;
 import io.deephaven.api.JoinMatch;
+import io.deephaven.api.NaturalJoinType;
+import io.deephaven.api.Selectable;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.ResettableWritableIntChunk;
 import io.deephaven.chunk.WritableIntChunk;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
@@ -24,12 +27,14 @@ import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.util.PrintListener;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.test.types.OutOfBandTest;
-import org.apache.commons.lang3.mutable.MutableInt;
-import org.apache.commons.lang3.mutable.MutableLong;
+import io.deephaven.util.mutable.MutableInt;
+import io.deephaven.util.mutable.MutableLong;
 import org.apache.commons.lang3.mutable.MutableObject;
+import org.jetbrains.annotations.NotNull;
 import org.junit.experimental.categories.Category;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.engine.util.TableTools.*;
@@ -259,7 +264,7 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
             final MutableInt numSteps) {
         final int leftSize = (int) Math.ceil(Math.sqrt(size));
 
-        final int maxSteps = numSteps.intValue();
+        final int maxSteps = numSteps.get();
         final Random random = new Random(seed);
 
         final int numGroups = (int) Math.max(4, Math.ceil(Math.sqrt(leftSize)));
@@ -279,7 +284,7 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
                 EvalNugget.from(() -> leftTicking.join(rightStatic, emptyList(), emptyList(), numRightBitsToReserve)),
         };
 
-        for (numSteps.setValue(0); numSteps.intValue() < maxSteps; numSteps.increment()) {
+        for (numSteps.set(0); numSteps.get() < maxSteps; numSteps.increment()) {
             // left size is sqrt right table size; which is a good update size for the right table
             ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
                 final int stepInstructions = random.nextInt();
@@ -293,7 +298,7 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
                             random, rightTicking, rightColumns);
                 }
             });
-            TstUtils.validate(ctxt + " step == " + numSteps.getValue(), en);
+            TstUtils.validate(ctxt + " step == " + numSteps.get(), en);
         }
     }
 
@@ -386,14 +391,14 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
         }
 
         final QueryTable left = (QueryTable) TableTools.newTable(
-                stringCol("sharedKey", leftKeys.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY)),
+                stringCol("sharedKey", leftKeys.toArray(String[]::new)),
                 longCol("leftData", leftData.toArray()));
         if (leftTicking) {
             left.setRefreshing(true);
         }
 
         final QueryTable right = (QueryTable) TableTools.newTable(stringCol("sharedKey",
-                rightKeys.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY)),
+                rightKeys.toArray(String[]::new)),
                 longCol("rightData", rightData.toArray()));
         if (rightTicking) {
             right.setRefreshing(true);
@@ -410,10 +415,8 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
             TableTools.showWithRowSet(chunkedCrossJoin, 100);
         }
 
-        QueryTable.USE_CHUNKED_CROSS_JOIN = false;
-        final Table nonChunkedCrossJoin =
-                left.join(right, List.of(JoinMatch.parse("sharedKey")), emptyList(), numRightBitsToReserve);
-        QueryTable.USE_CHUNKED_CROSS_JOIN = true;
+        final Table nonChunkedCrossJoin = simulatedCrossJoin(
+                left, right, List.of(JoinMatch.parse("sharedKey")), emptyList(), numRightBitsToReserve);
         TstUtils.assertTableEquals(nonChunkedCrossJoin, chunkedCrossJoin);
 
         Assert.eq(expectedSize, "expectedSize", chunkedCrossJoin.size(), "chunkedCrossJoin.size()");
@@ -431,25 +434,87 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
             final long leftId = leftColumn.getLong(ii);
             final long rightId = rightColumn.getLong(ii);
             if (lastSharedKey.getValue() != null && lastSharedKey.getValue().equals(sharedKey)) {
-                Assert.leq(lastLeftId.longValue(), "lastLeftId.longValue()", leftId, "leftId");
-                if (lastLeftId.longValue() == leftId) {
-                    Assert.lt(lastRightId.longValue(), "lastRightId.longValue()", rightId, "rightId");
+                Assert.leq(lastLeftId.get(), "lastLeftId.longValue()", leftId, "leftId");
+                if (lastLeftId.get() == leftId) {
+                    Assert.lt(lastRightId.get(), "lastRightId.longValue()", rightId, "rightId");
                 }
             } else {
                 lastSharedKey.setValue(sharedKey);
-                lastLeftId.setValue(leftId);
+                lastLeftId.set(leftId);
             }
-            lastRightId.setValue(rightId);
+            lastRightId.set(rightId);
 
             final MutableLong remainingCount = expectedByKey.get(sharedKey);
             Assert.neqNull(remainingCount, "remainingCount");
-            Assert.gtZero(remainingCount.longValue(), "remainingCount.longValue()");
+            Assert.gtZero(remainingCount.get(), "remainingCount.longValue()");
             remainingCount.decrement();
         });
 
         for (final Map.Entry<String, MutableLong> entry : expectedByKey.entrySet()) {
-            Assert.eqZero(entry.getValue().longValue(), "entry.getValue().longValue");
+            Assert.eqZero(entry.getValue().get(), "entry.getValue().longValue");
         }
+    }
+
+    private static Table simulatedCrossJoin(
+            @NotNull final Table leftTable,
+            @NotNull Table rightTableCandidate,
+            @NotNull final Collection<? extends JoinMatch> columnsToMatchIn,
+            @NotNull final Collection<? extends JoinAddition> columnsToAdd,
+            int numRightBitsToReserve) {
+        final JoinMatch[] columnsToMatch = columnsToMatchIn.toArray(JoinMatch[]::new);
+        final Set<String> columnsToMatchSet =
+                columnsToMatchIn.stream().map(m -> m.right().name())
+                        .collect(Collectors.toCollection(HashSet::new));
+
+        final Map<String, Selectable> columnsToAddSelectColumns = new LinkedHashMap<>();
+        final List<String> columnsToUngroupBy = new ArrayList<>();
+        final String[] rightColumnsToMatch = new String[columnsToMatch.length];
+        for (int i = 0; i < rightColumnsToMatch.length; i++) {
+            rightColumnsToMatch[i] = columnsToMatch[i].right().name();
+            columnsToAddSelectColumns.put(columnsToMatch[i].right().name(), columnsToMatch[i].right());
+        }
+
+        final MatchPair[] columnMatchPairs = MatchPair.fromMatches(columnsToMatchIn);
+        final MatchPair[] realColumnsToAdd =
+                QueryTable.createColumnsToAddIfMissing(rightTableCandidate,
+                        columnMatchPairs,
+                        MatchPair.fromAddition(columnsToAdd));
+
+        final ArrayList<MatchPair> columnsToAddAfterRename = new ArrayList<>(realColumnsToAdd.length);
+        for (MatchPair matchPair : realColumnsToAdd) {
+            columnsToAddAfterRename.add(new MatchPair(matchPair.leftColumn, matchPair.leftColumn));
+            if (!columnsToMatchSet.contains(matchPair.leftColumn)) {
+                columnsToUngroupBy.add(matchPair.leftColumn);
+            }
+            columnsToAddSelectColumns.put(matchPair.leftColumn,
+                    Selectable.of(ColumnName.of(matchPair.leftColumn), ColumnName.of(matchPair.rightColumn)));
+        }
+
+        boolean sentinelAdded = false;
+        final Table rightTable;
+        if (columnsToUngroupBy.isEmpty()) {
+            rightTable = rightTableCandidate.updateView("__sentinel__=null");
+            columnsToUngroupBy.add("__sentinel__");
+            columnsToAddSelectColumns.put("__sentinel__", ColumnName.of("__sentinel__"));
+            columnsToAddAfterRename.add(new MatchPair("__sentinel__", "__sentinel__"));
+            sentinelAdded = true;
+        } else {
+            rightTable = rightTableCandidate;
+        }
+
+        final Table rightGrouped = rightTable.groupBy(rightColumnsToMatch)
+                .view(columnsToAddSelectColumns.values());
+        final Table naturalJoinResult = ((QueryTable) leftTable).naturalJoinImpl(rightGrouped,
+                columnMatchPairs,
+                columnsToAddAfterRename.toArray(MatchPair.ZERO_LENGTH_MATCH_PAIR_ARRAY),
+                NaturalJoinType.ERROR_ON_DUPLICATE);
+        final QueryTable ungroupedResult = (QueryTable) naturalJoinResult
+                .ungroup(columnsToUngroupBy.toArray(String[]::new));
+
+        ((QueryTable) leftTable).maybeCopyColumnDescriptions(
+                ungroupedResult, rightTable, columnMatchPairs, realColumnsToAdd);
+
+        return sentinelAdded ? ungroupedResult.dropColumns("__sentinel__") : ungroupedResult;
     }
 
     public void testStaticVsNaturalJoin() {
@@ -503,7 +568,7 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
 
     private void testIncrementalOverflow(final String ctxt, final int numGroups, final int seed,
             final MutableInt numSteps) {
-        final int maxSteps = numSteps.intValue();
+        final int maxSteps = numSteps.get();
         final Random random = new Random(seed);
 
         // Note: make our join helper think this left table might tick
@@ -565,7 +630,7 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
         };
 
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
-        for (numSteps.setValue(0); numSteps.intValue() < maxSteps; numSteps.increment()) {
+        for (numSteps.set(0); numSteps.get() < maxSteps; numSteps.increment()) {
             updateGraph.runWithinUnitTestCycle(() -> {
                 final int stepInstructions = random.nextInt();
                 if (stepInstructions % 4 != 1) {
@@ -580,7 +645,7 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
                 }
             });
 
-            TstUtils.validate(ctxt + " step == " + numSteps.getValue(), en);
+            TstUtils.validate(ctxt + " step == " + numSteps.get(), en);
         }
     }
 
@@ -594,7 +659,7 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
 
     protected void testIncrementalWithKeyColumns(final String ctxt, final int initialSize, final int seed,
             final MutableInt numSteps) {
-        final int maxSteps = numSteps.intValue();
+        final int maxSteps = numSteps.get();
         final Random random = new Random(seed);
 
         final int numGroups = (int) Math.max(4, Math.ceil(Math.sqrt(initialSize)));
@@ -630,7 +695,7 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
         }
 
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
-        for (numSteps.setValue(0); numSteps.intValue() < maxSteps; numSteps.increment()) {
+        for (numSteps.set(0); numSteps.get() < maxSteps; numSteps.increment()) {
             updateGraph.runWithinUnitTestCycle(() -> {
                 final int stepInstructions = random.nextInt();
                 if (stepInstructions % 4 != 1) {
@@ -643,7 +708,7 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
                 }
             });
 
-            TstUtils.validate(ctxt + " step == " + numSteps.getValue(), en);
+            TstUtils.validate(ctxt + " step == " + numSteps.get(), en);
         }
     }
 
@@ -706,43 +771,43 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
         }
 
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
-        for (numSteps.setValue(0); numSteps.intValue() < maxSteps; numSteps.increment()) {
-            final long rightOffset = numSteps.getValue();
+        for (numSteps.set(0); numSteps.get() < maxSteps; numSteps.increment()) {
+            final long rightOffset = numSteps.get();
 
             updateGraph.runWithinUnitTestCycle(() -> {
-                addToTable(leftTicking, i(numSteps.getValue()), longCol("intCol", numSteps.getValue()));
+                addToTable(leftTicking, i(numSteps.get()), longCol("intCol", numSteps.get()));
                 TableUpdateImpl up = new TableUpdateImpl();
                 up.shifted = RowSetShiftData.EMPTY;
-                up.added = i(numSteps.getValue());
+                up.added = i(numSteps.get());
                 up.removed = i();
                 up.modified = i();
                 up.modifiedColumnSet = ModifiedColumnSet.ALL;
                 leftTicking.notifyListeners(up);
 
-                final long[] data = new long[numSteps.getValue() + 1];
-                for (int i = 0; i <= numSteps.getValue(); ++i) {
+                final long[] data = new long[numSteps.get() + 1];
+                for (int i = 0; i <= numSteps.get(); ++i) {
                     data[i] = i;
                 }
-                addToTable(rightTicking, RowSetFactory.fromRange(rightOffset, rightOffset + numSteps.getValue()),
+                addToTable(rightTicking, RowSetFactory.fromRange(rightOffset, rightOffset + numSteps.get()),
                         longCol("intCol", data));
                 TstUtils.removeRows(rightTicking, i(rightOffset - 1));
 
                 up = new TableUpdateImpl();
                 final RowSetShiftData.Builder shifted = new RowSetShiftData.Builder();
-                shifted.shiftRange(0, numSteps.getValue() + rightOffset, 1);
+                shifted.shiftRange(0, numSteps.get() + rightOffset, 1);
                 up.shifted = shifted.build();
-                up.added = i(rightOffset + numSteps.getValue());
+                up.added = i(rightOffset + numSteps.get());
                 up.removed = i();
-                if (numSteps.getValue() == 0) {
+                if (numSteps.get() == 0) {
                     up.modified = RowSetFactory.empty();
                 } else {
-                    up.modified = RowSetFactory.fromRange(rightOffset, rightOffset + numSteps.getValue() - 1);
+                    up.modified = RowSetFactory.fromRange(rightOffset, rightOffset + numSteps.get() - 1);
                 }
                 up.modifiedColumnSet = ModifiedColumnSet.ALL;
                 rightTicking.notifyListeners(up);
             });
 
-            TstUtils.validate(" step == " + numSteps.getValue(), en);
+            TstUtils.validate(" step == " + numSteps.get(), en);
         }
     }
 }

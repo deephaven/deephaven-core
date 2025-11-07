@@ -1,11 +1,10 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.plot;
 
 import io.deephaven.api.Selectable;
 import io.deephaven.configuration.Configuration;
-import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.plot.errors.*;
 import io.deephaven.plot.util.functions.FigureImplFunction;
@@ -491,7 +490,7 @@ public class BaseFigureImpl implements BaseFigure, PlotExceptionCause {
             final Map<Set<String>, PartitionedTable> byColMap = new HashMap<>();
             for (final PartitionedTableHandle h : hs) {
                 final Set<String> keyColumns = h.getKeyColumns();
-                final String[] keyColumnsArray = keyColumns.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
+                final String[] keyColumnsArray = keyColumns.toArray(String[]::new);
 
                 final PartitionedTable partitionedTable = byColMap.computeIfAbsent(keyColumns,
                         x -> {

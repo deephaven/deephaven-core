@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.api;
 
 import io.deephaven.api.expression.Expression;
@@ -18,7 +18,7 @@ import java.util.stream.Collectors;
  * @see TableOperations#updateView(Collection)
  * @see TableOperations#select(Collection)
  */
-public interface Selectable {
+public interface Selectable extends ConcurrencyControl<Selectable> {
 
     static Selectable of(ColumnName newColumn, Expression expression) {
         if (newColumn.equals(expression)) {
@@ -65,4 +65,45 @@ public interface Selectable {
      * @return the expression
      */
     Expression expression();
+
+    /**
+     * @return the barriers this selectable respects
+     */
+    default Object[] respectedBarriers() {
+        return null;
+    }
+
+    /**
+     * @return the barriers this selectable declares
+     */
+    default Object[] declaredBarriers() {
+        return null;
+    }
+
+    /**
+     * @return null if this Selectable has no opinion on whether it is serial (so the system default should be used),
+     *         false if this Selectable can be reordered within a column, or true if this Selectable must be evaluated
+     *         in order
+     */
+    default Boolean isSerial() {
+        return null;
+    }
+
+    @Override
+    default Selectable withSerial() {
+        if (isSerial() != null && isSerial()) {
+            return this;
+        }
+        return new SelectableWithSerial(this);
+    }
+
+    @Override
+    default Selectable withDeclaredBarriers(Object... declaredBarriers) {
+        return new SelectableWithDeclaredBarriers(this, Arrays.stream(declaredBarriers));
+    }
+
+    @Override
+    default Selectable withRespectedBarriers(Object... respectedBarriers) {
+        return new SelectableWithRespectedBarriers(this, Arrays.stream(respectedBarriers));
+    }
 }

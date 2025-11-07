@@ -1,8 +1,13 @@
 /*
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ * Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
  */
 #include "deephaven/dhcore/container/row_sequence.h"
 #include "deephaven/dhcore/ticking/ticking.h"
+
+#include <memory>
+#include <mutex>
+#include <utility>
+#include <vector>
 
 namespace deephaven::dhcore::ticking {
 using deephaven::dhcore::container::RowSequence;

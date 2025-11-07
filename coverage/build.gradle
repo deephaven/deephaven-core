@@ -1,0 +1,58 @@
+plugins {
+    id 'io.deephaven.project.register'
+    id 'java'
+    id 'jacoco'
+}
+
+jacoco {
+    toolVersion = '0.8.13'
+}
+
+
+
+tasks.register("jacoco-merge", JacocoReport) {
+    def jprojects = rootProject.allprojects.findAll { p ->
+        p.plugins.hasPlugin('java') && !p.name.matches('server-jetty.*-11')
+    }
+    additionalSourceDirs = files(jprojects.sourceSets.main.allSource.srcDirs)
+    sourceDirectories = files(jprojects.sourceSets.main.allSource.srcDirs)
+    classDirectories = files(jprojects.sourceSets.main.output)
+    reports {
+        html.required = true
+        html.outputLocation = layout.buildDirectory.dir('./reports/java/java-coverage.html')
+        csv.required = true
+        csv.destination = file("$buildDir/reports/java/java-coverage.csv")
+        xml.required = false
+    }
+    def projRootDir = rootProject.rootDir.absolutePath
+    executionData fileTree(projRootDir).include("**/build/jacoco/*.exec")
+}
+
+tasks.register("python-merge") {
+    def projRootDir = rootProject.rootDir.absolutePath
+    def outputDir = file("$buildDir/reports/python/")
+    def outputFile = new File(outputDir, "python-coverage.tsv")
+    doLast {
+        outputDir.mkdirs()
+        outputFile.text = ''
+        fileTree(projRootDir).include("**/build/test-results/**/coverage/python-coverage-*.tsv").each { f ->
+            outputFile << f.text + '\n'
+        }
+        fileTree(projRootDir).include("**/build/test-results/**/coverage/python-coverage-*.html/index.html").each { f ->
+            copy {
+                from f.parentFile
+                into new File(outputDir, f.parentFile.name)
+            }
+	}
+    }
+}
+
+tasks.register("coverage-merge", Exec) {
+    dependsOn("jacoco-merge")
+    dependsOn("python-merge")
+    def projDir = projectDir.absolutePath
+    def script = projDir + '/gather-coverage.py'
+    commandLine 'python', script, projDir
+    standardOutput = System.out
+}
+

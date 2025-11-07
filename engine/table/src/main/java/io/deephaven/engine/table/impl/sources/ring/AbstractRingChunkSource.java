@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.sources.ring;
 
 import io.deephaven.chunk.Chunk;
@@ -21,6 +21,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.io.Closeable;
 import java.lang.reflect.Array;
+import java.util.Objects;
 import java.util.function.LongConsumer;
 
 import static io.deephaven.engine.table.impl.AbstractColumnSource.USE_RANGES_AVERAGE_RUN_LENGTH;
@@ -67,13 +68,12 @@ abstract class AbstractRingChunkSource<T, ARRAY, SELF extends AbstractRingChunkS
     protected final int capacity;
     long nextRingIx;
 
-    public AbstractRingChunkSource(@NotNull Class<T> type, int capacity) {
+    public AbstractRingChunkSource(ARRAY ring) {
+        this.ring = Objects.requireNonNull(ring);
+        this.capacity = Array.getLength(ring);
         if (capacity <= 0) {
             throw new IllegalArgumentException("Capacity must be positive");
         }
-        this.capacity = capacity;
-        // noinspection unchecked
-        ring = (ARRAY) Array.newInstance(type, capacity);
     }
 
     /**

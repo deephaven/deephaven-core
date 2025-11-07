@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl;
 
 import java.time.Instant;
@@ -664,7 +664,7 @@ public class QueryFactory {
         switch (columnTypes[colNum].getSimpleName()) {
 
             case "Instant":
-                filter.append(colName).append(" > ").append(random.nextInt(1000) * 1_000_000_000L);
+                filter.append(colName).append(" > '").append(random.nextInt(1000) * 1_000_000_000L).append("'");
                 break;
 
             case "String":

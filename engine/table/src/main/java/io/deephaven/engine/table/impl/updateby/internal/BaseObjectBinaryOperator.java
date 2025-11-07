@@ -1,3 +1,6 @@
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.updateby.internal;
 
 import io.deephaven.chunk.Chunk;
@@ -5,9 +8,7 @@ import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
-import io.deephaven.engine.table.impl.util.RowRedirection;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 public abstract class BaseObjectBinaryOperator<T> extends BaseObjectUpdateByOperator<T> {
     protected class Context extends BaseObjectUpdateByOperator<T>.Context {
@@ -42,10 +43,9 @@ public abstract class BaseObjectBinaryOperator<T> extends BaseObjectUpdateByOper
     }
 
     public BaseObjectBinaryOperator(@NotNull final MatchPair pair,
-                                    @NotNull final String[] affectingColumns,
-                                    @Nullable final RowRedirection rowRedirection,
-                                    @NotNull final Class<T> type) {
-        super(pair, affectingColumns, rowRedirection, type);
+            @NotNull final String[] affectingColumns,
+            @NotNull final Class<T> type) {
+        super(pair, affectingColumns, type);
     }
 
     protected abstract T doOperation(T bucketCurVal, T chunkCurVal);

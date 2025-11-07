@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.sources;
 
 import io.deephaven.base.verify.Assert;
@@ -8,6 +8,7 @@ import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.SharedContext;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.table.impl.util.RowRedirection;
 import io.deephaven.util.BooleanUtils;
 import io.deephaven.engine.table.impl.join.dupexpand.DupExpandKernel;
@@ -40,7 +41,7 @@ import static io.deephaven.util.QueryConstants.*;
  *
  * @param <T>
  */
-public class RedirectedColumnSource<T> extends AbstractDeferredGroupingColumnSource<T>
+public class RedirectedColumnSource<T> extends AbstractColumnSource<T>
         implements UngroupableColumnSource, ConvertibleTimeSource {
     /**
      * Redirect the innerSource if it is not agnostic to redirection. Otherwise, return the innerSource.
@@ -91,6 +92,10 @@ public class RedirectedColumnSource<T> extends AbstractDeferredGroupingColumnSou
 
     public RowRedirection getRowRedirection() {
         return rowRedirection;
+    }
+
+    public final ColumnSource<T> getInnerSource() {
+        return innerSource;
     }
 
     @Override
@@ -247,8 +252,7 @@ public class RedirectedColumnSource<T> extends AbstractDeferredGroupingColumnSou
 
     @Override
     public boolean isUngroupable() {
-        return innerSource instanceof UngroupableColumnSource
-                && ((UngroupableColumnSource) innerSource).isUngroupable();
+        return UngroupableColumnSource.isUngroupable(innerSource);
     }
 
     @Override
@@ -488,7 +492,7 @@ public class RedirectedColumnSource<T> extends AbstractDeferredGroupingColumnSou
     }
 
     @Override
-    public FillContext makeFillContext(final int chunkCapacity, final SharedContext sharedContext) {
+    public ChunkSource.FillContext makeFillContext(final int chunkCapacity, final SharedContext sharedContext) {
         return new FillContext(this, chunkCapacity, sharedContext, false, ascendingMapping);
     }
 
@@ -518,7 +522,7 @@ public class RedirectedColumnSource<T> extends AbstractDeferredGroupingColumnSou
 
         if (ascendingMapping) {
             effectiveContext.doOrderedFillAscending(innerSource, usePrev, destination);
-        } else if (innerSource instanceof FillUnordered) {
+        } else if (FillUnordered.providesFillUnordered(innerSource)) {
             // noinspection unchecked
             effectiveContext.doUnorderedFill((FillUnordered<Values>) innerSource, usePrev, destination);
         } else {

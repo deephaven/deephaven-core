@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.web.shared.data;
 
 import java.io.Serializable;
@@ -30,5 +30,17 @@ public class ShiftedRange implements Serializable {
 
     public void setDelta(final long delta) {
         this.delta = delta;
+    }
+
+    public Range getResultRange() {
+        return range.shift(delta);
+    }
+
+    @Override
+    public String toString() {
+        return "ShiftedRange{" +
+                "range=" + range +
+                ", delta=" + delta +
+                '}';
     }
 }

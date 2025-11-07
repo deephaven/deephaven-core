@@ -1,16 +1,15 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharVectorSlice and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit CharVectorSlice and run "./gradlew replicateVectors" to regenerate
+//
+// @formatter:off
 package io.deephaven.vector;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
-import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfDouble;
+import io.deephaven.engine.primitive.value.iterator.ValueIteratorOfDouble;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
@@ -96,7 +95,7 @@ public class DoubleVectorSlice extends DoubleVector.Indirect {
     }
 
     @Override
-    public CloseablePrimitiveIteratorOfDouble iterator(final long fromIndexInclusive, final long toIndexExclusive) {
+    public ValueIteratorOfDouble iterator(final long fromIndexInclusive, final long toIndexExclusive) {
         Require.leq(fromIndexInclusive, "fromIndexInclusive", toIndexExclusive, "toIndexExclusive");
         final long totalWanted = toIndexExclusive - fromIndexInclusive;
         long nextIndexWanted = fromIndexInclusive + offsetIndex;
@@ -120,16 +119,10 @@ public class DoubleVectorSlice extends DoubleVector.Indirect {
             includedInnerLength = 0;
         }
 
-        final CloseablePrimitiveIteratorOfDouble initialNullsIterator = includedInitialNulls > 0
-                ? CloseablePrimitiveIteratorOfDouble.repeat(NULL_DOUBLE, includedInitialNulls)
-                : null;
-        final CloseablePrimitiveIteratorOfDouble innerIterator = includedInnerLength > 0
+        final ValueIteratorOfDouble innerIterator = includedInnerLength > 0
                 ? innerVector.iterator(firstIncludedInnerOffset, firstIncludedInnerOffset + includedInnerLength)
                 : null;
-        final CloseablePrimitiveIteratorOfDouble finalNullsIterator = remaining > 0
-                ? CloseablePrimitiveIteratorOfDouble.repeat(NULL_DOUBLE, remaining)
-                : null;
-        return CloseablePrimitiveIteratorOfDouble.maybeConcat(initialNullsIterator, innerIterator, finalNullsIterator);
+        return ValueIteratorOfDouble.wrapWithNulls(innerIterator, includedInitialNulls, remaining);
     }
 
     @Override

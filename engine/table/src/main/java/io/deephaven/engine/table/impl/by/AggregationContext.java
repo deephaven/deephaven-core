@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.by;
 
 import io.deephaven.base.verify.Assert;
@@ -29,7 +29,7 @@ import java.util.function.UnaryOperator;
  * Provides utility methods for the ChunkedOperationAggregationHelper to manipulate and interrogate the operators,
  * inputs and outputs.
  */
-class AggregationContext {
+public class AggregationContext {
     /**
      * Our operators.
      */

@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.server.session;
 
 import dagger.Binds;
@@ -34,6 +34,10 @@ public interface SessionModule {
     @Binds
     @IntoSet
     TicketResolver bindSessionTicketResolverServerSideExports(ExportTicketResolver resolver);
+
+    @Binds
+    @IntoSet
+    TicketResolver bindSharedTicketResolver(SharedTicketResolver resolver);
 
     @Provides
     @ElementsIntoSet

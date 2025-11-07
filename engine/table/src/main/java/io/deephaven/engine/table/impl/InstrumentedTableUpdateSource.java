@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.engine.table.impl.util.DelayedErrorNotifier;
@@ -32,7 +32,7 @@ public abstract class InstrumentedTableUpdateSource extends InstrumentedUpdateSo
     }
 
     @Override
-    protected final void onRefreshError(@NotNull final Exception error) {
+    protected void onRefreshError(@NotNull final Exception error) {
         final BaseTable<?> table = tableReference.get();
         if (table == null) {
             return;

@@ -1,12 +1,16 @@
-/**
- * Copyright (c) 2016-2023 Deephaven Data Labs and Patent Pending
+/*
+ * Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
  */
 #pragma once
 
+#include <cstdint>
 #include <memory>
+#include <string>
 #include <string_view>
+#include <vector>
 #include "deephaven/client/client_options.h"
 #include "deephaven/client/utility/misc_types.h"
+#include "deephaven/dhcore/clienttable/client_table.h"
 #include "deephaven/dhcore/clienttable/schema.h"
 #include "deephaven/dhcore/ticking/ticking.h"
 
@@ -29,6 +33,13 @@ class ClientImpl;
 class TableHandleImpl;
 class TableHandleManagerImpl;
 }  // namespace deephaven::client::impl
+
+/**
+ * Forward reference to arrow's Table
+ */
+namespace arrow {
+class Table;
+}  // namespace arrow
 
 /**
  * Forward reference to arrow's FlightStreamReader
@@ -133,6 +144,7 @@ public:
    *   int64_t nanoseconds, or a string containing an ISO 8601 duration representation.
    * @param start_time When the table should start ticking, specified as a std::chrono::time_point,
    *   int64_t nanoseconds since the epoch, or a string containing an ISO 8601 time point specifier.
+   * @param blink_table Whether the table is a blink table
    * @return The TableHandle of the new table.
    */
   [[nodiscard]]
@@ -142,6 +154,7 @@ public:
   /**
    * Creates an input table from an initial table. When key columns are provided, the InputTable
    * will be keyed, otherwise it will be append-only.
+   * @param initial_table The initial table
    * @param columns The set of key columns
    * @return A TableHandle referencing the new table
    */
@@ -181,6 +194,7 @@ public:
   /**
    * Execute a script on the server. This assumes that the Client was created with a sessionType corresponding to
    * the language of the script (typically either "python" or "groovy") and that the code matches that language.
+   * @param code The script to be run on the server
    */
   void RunScript(std::string code) const;
 
@@ -291,7 +305,7 @@ public:
    * Factory method to Connect to a Deephaven server using the specified options.
    * @param target A connection string in the format host:port. For example "localhost:10000".
    * @param options An options object for setting options like authentication and script language.
-   * @return A Client object conneted to the Deephaven server.
+   * @return A Client object connected to the Deephaven server.
    */
   [[nodiscard]]
   static Client Connect(const std::string &target, const ClientOptions &options = {});
@@ -353,7 +367,7 @@ private:
 };
 
 /**
- * Defines an aggregator class that represents one of a variet of aggregation operations.
+ * Defines an aggregator class that represents one of a variety of aggregation operations.
  */
 class Aggregate {
 public:
@@ -364,7 +378,7 @@ public:
   /**
    * Copy constructor
    */
-  Aggregate(const Aggregate &other) noexcept;
+  Aggregate(const Aggregate &other);
   /**
    * Move constructor
    */
@@ -372,7 +386,7 @@ public:
   /**
    * Copy assigment operator.
    */
-  Aggregate &operator=(const Aggregate &other) noexcept;
+  Aggregate &operator=(const Aggregate &other);
   /**
    * Move assigment operator.
    */
@@ -646,11 +660,12 @@ public:
    * @param args The arguments to WAvg
    * @return An Aggregate object representing the aggregation
    */
-  template<typename ...Args>
+  template<typename WeightArg, typename ...Args>
   [[nodiscard]]
-  static Aggregate WAvg(Args &&...args) {
+  static Aggregate WAvg(WeightArg &&weight_column, Args &&...args) {
+    auto weight = internal::ConvertToString::ToString(std::forward<WeightArg>(weight_column));
     std::vector<std::string> vec{internal::ConvertToString::ToString(std::forward<Args>(args))...};
-    return WAvg(std::move(vec));
+    return WAvg(std::move(weight), std::move(vec));
   }
 
   /**
@@ -685,11 +700,19 @@ public:
   static AggregateCombo Create(std::vector<Aggregate> vec);
 
   /**
-   * Move constructor.
+   * Copy constructor
+   */
+  AggregateCombo(const AggregateCombo &other);
+  /**
+   * Move constructor
    */
   AggregateCombo(AggregateCombo &&other) noexcept;
   /**
-   * Move assignment operator.
+   * Copy assigment operator.
+   */
+  AggregateCombo &operator=(const AggregateCombo &other);
+  /**
+   * Move assigment operator.
    */
   AggregateCombo &operator=(AggregateCombo &&other) noexcept;
 
@@ -866,6 +889,7 @@ inline AggregateCombo aggCombo(std::initializer_list<Aggregate> args) {
  * server resource is destructed, the resource will be released.
  */
 class TableHandle {
+  using ClientTable = deephaven::dhcore::clienttable::ClientTable;
   using SchemaType = deephaven::dhcore::clienttable::Schema;
   using TickingCallback = deephaven::dhcore::ticking::TickingCallback;
   using TickingUpdate = deephaven::dhcore::ticking::TickingUpdate;
@@ -1048,7 +1072,7 @@ public:
   TableHandle Where(std::string condition) const;
 
   /**
-   * Creates a new table from this table, sorted By sortPairs.
+   * Creates a new table from this table, sorted by sortPairs.
    * @param sortPairs A vector of SortPair objects describing the sort. Each SortPair refers to
    *   a column, a sort direction, and whether the sort should consider to the value's regular or
    *   absolute value when doing comparisons.
@@ -1081,7 +1105,7 @@ public:
    * A variadic form of By(std::vector<std::string>) const that takes a combination of
    * argument types.
    * @tparam Args Any combination of `std::string`, `std::string_view`, or `const char *`
-   * @param args The columns to UpdateView
+   * @param args Columns to group by
    * @return A TableHandle referencing the new table
    */
   template<typename ...Args>
@@ -1098,7 +1122,7 @@ public:
    * A variadic form of By(AggregateCombo, std::vector<std::string>) const that takes a combination of
    * argument types.
    * @tparam Args Any combination of `std::string`, `std::string_view`, or `const char *`
-   * @param args The columns to UpdateView
+   * @param columnSpecs Columns to group by.
    * @return A TableHandle referencing the new table
    */
   template<typename ...Args>
@@ -1120,7 +1144,7 @@ public:
    * A variadic form of MinBy(std::vector<std::string>) const that takes a combination of
    * argument types.
    * @tparam Args Any combination of `std::string`, `std::string_view`, or `const char *`
-   * @param args The columns to UpdateView
+   * @param columnSpecs Columns to group by.
    * @return A TableHandle referencing the new table
    */
   template<typename ...Args>
@@ -1142,7 +1166,7 @@ public:
    * A variadic form of MaxBy(std::vector<std::string>) const that takes a combination of
    * argument types.
    * @tparam Args Any combination of `std::string`, `std::string_view`, or `const char *`
-   * @param args The columns
+   * @param args Columns to group by
    * @return A TableHandle referencing the new table
    */
   template<typename ...Args>
@@ -1164,7 +1188,7 @@ public:
    * A variadic form of SumBy(std::vector<std::string>) const that takes a combination of
    * argument types.
    * @tparam Args Any combination of `std::string`, `std::string_view`, or `const char *`
-   * @param args The columns
+   * @param columnSpecs Columns to group by.
    * @return A TableHandle referencing the new table
    */
   template<typename ...Args>
@@ -1186,7 +1210,7 @@ public:
    * A variadic form of AbsSumBy(std::vector<std::string>) const that takes a combination of
    * argument types.
    * @tparam Args Any combination of `std::string`, `std::string_view`, or `const char *`
-   * @param args The columns
+   * @param args Columns to group by.
    * @return A TableHandle referencing the new table
    */
   template<typename ...Args>
@@ -1208,7 +1232,7 @@ public:
    * A variadic form of VarBy(std::vector<std::string>) const that takes a combination of
    * argument types.
    * @tparam Args Any combination of `std::string`, `std::string_view`, or `const char *`
-   * @param args The columns
+   * @param args The columns to group by
    * @return A TableHandle referencing the new table
    */
   template<typename ...Args>
@@ -1361,7 +1385,9 @@ public:
    * @return A TableHandle referencing the new table
    */
   [[nodiscard]]
-  TableHandle PercentileBy(double percentile, std::vector<std::string> column_specs) const;
+  TableHandle PercentileBy(double percentile, std::vector<std::string> column_specs) const {
+    return PercentileBy(percentile, false, std::move(column_specs));
+  }
   /**
    * A variadic form of PercentileBy(double, std::vector<std::string>) const that takes a combination of
    * argument types.
@@ -1373,11 +1399,11 @@ public:
   [[nodiscard]]
   TableHandle PercentileBy(double percentile, Args &&...args) const {
     std::vector<std::string> vec{internal::ConvertToString::ToString(std::forward<Args>(args))...};
-    return PercentileBy(percentile, std::move(vec));
+    return PercentileBy(percentile, false, std::forward<Args...>(args...));
   }
 
   /**
-   * Creates a new table from this table, grouped by columnSpecs, having a new column named By
+   * Creates a new table from this table, grouped by columnSpecs, having a new column named by
    * `countByColumn` containing the size of each group.
    * @param countByColumn Name of the output column.
    * @param columnSpecs Columns to group by.
@@ -1400,7 +1426,7 @@ public:
   }
 
   /**
-   * Creates a new table from this table, grouped by columnSpecs, having a new column named By
+   * Creates a new table from this table, grouped by columnSpecs, having a new column named by
    * `weightColumn` containing the weighted average of each group.
    * @param countByColumn Name of the output column.
    * @param columnSpecs Columns to group by.
@@ -1532,7 +1558,7 @@ public:
 
   //TODO(kosak): document keyColumn
   /**
-   * Creates a new table By merging `sources` together. The tables are essentially stacked on top
+   * Creates a new table by merging `sources` together. The tables are essentially stacked on top
    * of each other.
    * @param sources The tables to Merge.
    * @return A TableHandle referencing the new table
@@ -1558,7 +1584,7 @@ public:
   }
 
   /**
-   * Creates a new table By merging `sources` together. The tables are essentially stacked on top
+   * Creates a new table by merging `sources` together. The tables are essentially stacked on top
    * of each other.
    * @param sources The tables to Merge.
    * @return A TableHandle referencing the new table
@@ -1586,9 +1612,9 @@ public:
   }
 
   /**
-   * Creates a new table By cross joining this table with `rightSide`. The tables are joined By
+   * Creates a new table by cross joining this table with `rightSide`. The tables are joined by
    * the columns in `columnsToMatch`, and columns from `rightSide` are brought in and optionally
-   * renamed By `columnsToAdd`. Example:
+   * renamed by `columnsToAdd`. Example:
    * @code
    * t1.CrossJoin({"Col1", "Col2"}, {"Col3", "NewCol=Col4"})
    * @endcode
@@ -1602,9 +1628,9 @@ public:
       std::vector<std::string> columns_to_add) const;
 
   /**
-   * Creates a new table By natural joining this table with `rightSide`. The tables are joined By
+   * Creates a new table by natural joining this table with `rightSide`. The tables are joined by
    * the columns in `columnsToMatch`, and columns from `rightSide` are brought in and optionally
-   * renamed By `columnsToAdd`. Example:
+   * renamed by `columnsToAdd`. Example:
    * @code
    * t1.NaturalJoin({"Col1", "Col2"}, {"Col3", "NewCol=Col4"})
    * @endcode
@@ -1618,9 +1644,9 @@ public:
       std::vector<std::string> columns_to_add) const;
 
   /**
-   * Creates a new table By exact joining this table with `rightSide`. The tables are joined By
+   * Creates a new table by exact joining this table with `rightSide`. The tables are joined by
    * the columns in `columnsToMatch`, and columns from `rightSide` are brought in and optionally
-   * renamed By `columnsToAdd`. Example:
+   * renamed by `columnsToAdd`. Example:
    * @code
    * t1.ExactJoin({"Col1", "Col2"}, {"Col3", "NewCol=Col4"})
    * @endcode
@@ -1796,7 +1822,7 @@ public:
   std::string ToString(bool want_headers) const;
 
   /**
-   * A specialized operation to Release the state of this TableHandle. This operation is normally done By the
+   * A specialized operation to Release the state of this TableHandle. This operation is normally done by the
    * destructor, so most programs will never need to call this method.. If there are no other copies of this
    * TableHandle, and if there are no "child" TableHandles dependent on this TableHandle, then the corresponding server
    * resources will be released.
@@ -1837,6 +1863,20 @@ public:
   std::shared_ptr<arrow::flight::FlightStreamReader> GetFlightStreamReader() const;
 
   /**
+   * Read in the entire table as an Arrow table.
+   * @return the Arrow table
+   */
+  [[nodiscard]]
+  std::shared_ptr<arrow::Table> ToArrowTable() const;
+
+  /**
+   * Read in the entire table as a ClientTable.
+   * @return the ClientTable
+  */
+  [[nodiscard]]
+  std::shared_ptr<ClientTable> ToClientTable() const;
+
+  /**
    * Subscribe to a ticking table.
    */
   [[nodiscard]]
@@ -1853,7 +1893,7 @@ public:
   /**
    * Unsubscribe from the table.
    */
-  void Unsubscribe(std::shared_ptr<SubscriptionHandle> callback);
+  void Unsubscribe(const std::shared_ptr<SubscriptionHandle> &handle);
 
   /**
    * Get access to the bytes of the Deephaven "Ticket" type (without having to reference the

@@ -4,15 +4,16 @@ plugins {
 }
 
 dependencies {
-    implementation project(':java-client-barrage-dagger')
+    implementation project(':java-client-barrage')
     implementation project(':java-client-example-utilities')
 
-    Classpaths.inheritJUnitPlatform(project)
-    Classpaths.inheritAssertJ(project)
-    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testImplementation libs.assertj
+    testImplementation platform(libs.junit.bom)
+    testImplementation libs.junit.jupiter
+    testRuntimeOnly libs.junit.platform.launcher
 
     runtimeOnly project(':log-to-slf4j')
-    Classpaths.inheritLogbackClassic(project)
+    runtimeOnly libs.logback.classic
 }
 
 test {
@@ -34,7 +35,7 @@ def createApplication = { String name, String mainClass ->
     }
 }
 
-applicationDistribution.into('bin') {
+application.applicationDistribution.into('bin') {
     from(createApplication('subscribe-table', 'io.deephaven.client.examples.SubscribeTable'))
     from(createApplication('snapshot-table', 'io.deephaven.client.examples.SnapshotTable'))
     fileMode = 0755

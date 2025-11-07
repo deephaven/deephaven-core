@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.base.clock;
 
 import java.lang.reflect.InvocationTargetException;
@@ -62,7 +62,7 @@ public interface SystemClock extends Clock {
             case DEFAULT:
                 return serviceLoader().orElse(systemUTC());
             case SERVICE_LOADER:
-                return serviceLoader().orElseThrow();
+                return serviceLoader().orElseThrow(() -> new IllegalStateException("Unable to load clock"));
             case SYSTEM_UTC:
                 return systemUTC();
             case SYSTEM_MILLIS:

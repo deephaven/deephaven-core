@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.server.console.python;
 
 import dagger.Module;
@@ -14,13 +14,14 @@ import io.deephaven.engine.util.PythonEvaluatorJpy;
 import io.deephaven.engine.util.ScriptSession;
 import io.deephaven.integrations.python.PythonDeephavenSession;
 import io.deephaven.plugin.type.ObjectTypeLookup;
+import io.deephaven.server.console.ScriptSessionCacheInit;
 import io.deephaven.util.thread.ThreadInitializationFactory;
 
 import javax.inject.Named;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 
-@Module
+@Module(includes = PythonDebuggingModule.class)
 public class PythonConsoleSessionModule {
     @Provides
     @IntoMap
@@ -36,7 +37,8 @@ public class PythonConsoleSessionModule {
             final OperationInitializer operationInitializer,
             final ObjectTypeLookup lookup,
             final ScriptSession.Listener listener,
-            final PythonEvaluatorJpy pythonEvaluator) {
+            final PythonEvaluatorJpy pythonEvaluator,
+            final ScriptSessionCacheInit ignored) {
         try {
             return new PythonDeephavenSession(
                     updateGraph, operationInitializer, threadInitializationFactory, lookup, listener,

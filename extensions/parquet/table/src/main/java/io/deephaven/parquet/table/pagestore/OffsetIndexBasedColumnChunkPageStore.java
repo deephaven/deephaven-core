@@ -1,15 +1,19 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.parquet.table.pagestore;
 
+import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.engine.page.ChunkPage;
+import io.deephaven.parquet.table.pagestore.PageCache.IntrusivePage;
 import io.deephaven.parquet.table.pagestore.topage.ToPage;
 import io.deephaven.parquet.base.ColumnChunkReader;
 import io.deephaven.parquet.base.ColumnPageReader;
+import io.deephaven.util.channel.SeekableChannelContext;
+import io.deephaven.util.channel.SeekableChannelContext.ContextHolder;
 import org.apache.parquet.internal.column.columnindex.OffsetIndex;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -25,6 +29,7 @@ import java.util.concurrent.atomic.AtomicReferenceArray;
  */
 final class OffsetIndexBasedColumnChunkPageStore<ATTR extends Any> extends ColumnChunkPageStore<ATTR> {
     private static final long PAGE_SIZE_NOT_FIXED = -1;
+    private static final int NUM_PAGES_NOT_INITIALIZED = -1;
 
     private static final class PageState<ATTR extends Any> {
         private volatile WeakReference<PageCache.IntrusivePage<ATTR>> pageRef;
@@ -34,8 +39,9 @@ final class OffsetIndexBasedColumnChunkPageStore<ATTR extends Any> extends Colum
         }
     }
 
-    private final OffsetIndex offsetIndex;
-    private final int numPages;
+    private volatile boolean isInitialized; // This class is initialized when reading the first page
+    private OffsetIndex offsetIndex;
+    private int numPages;
     /**
      * Fixed number of rows per page. Set as positive value if first ({@link #numPages}-1) pages have equal number of
      * rows, else equal to {@value #PAGE_SIZE_NOT_FIXED}. We cannot find the number of rows in the last page size from
@@ -44,9 +50,9 @@ final class OffsetIndexBasedColumnChunkPageStore<ATTR extends Any> extends Colum
      * the same size and calculate the page number as {@code row_index / fixed_page_size -> page_number}. If it is
      * greater than {@link #numPages}, we will infer that the row is coming from last page.
      */
-    private final long fixedPageSize;
-    private final AtomicReferenceArray<PageState<ATTR>> pageStates;
-    private final ColumnChunkReader.ColumnPageDirectAccessor columnPageDirectAccessor;
+    private long fixedPageSize;
+    private AtomicReferenceArray<PageState<ATTR>> pageStates;
+    private ColumnChunkReader.ColumnPageDirectAccessor columnPageDirectAccessor;
 
     OffsetIndexBasedColumnChunkPageStore(
             @NotNull final PageCache<ATTR> pageCache,
@@ -54,26 +60,44 @@ final class OffsetIndexBasedColumnChunkPageStore<ATTR extends Any> extends Colum
             final long mask,
             @NotNull final ToPage<ATTR, ?> toPage) throws IOException {
         super(pageCache, columnChunkReader, mask, toPage);
-        offsetIndex = columnChunkReader.getOffsetIndex();
-        Assert.neqNull(offsetIndex, "offsetIndex");
-        numPages = offsetIndex.getPageCount();
-        Assert.gtZero(numPages, "numPages");
-        pageStates = new AtomicReferenceArray<>(numPages);
-        columnPageDirectAccessor = columnChunkReader.getPageAccessor();
+        numPages = NUM_PAGES_NOT_INITIALIZED;
+        fixedPageSize = PAGE_SIZE_NOT_FIXED;
+    }
 
-        if (numPages == 1) {
-            fixedPageSize = numRows();
+    private void ensureInitialized(@Nullable final FillContext fillContext) {
+        if (isInitialized) {
             return;
         }
-        boolean isPageSizeFixed = true;
-        final long firstPageSize = offsetIndex.getFirstRowIndex(1) - offsetIndex.getFirstRowIndex(0);
-        for (int i = 2; i < numPages; ++i) {
-            if (offsetIndex.getFirstRowIndex(i) - offsetIndex.getFirstRowIndex(i - 1) != firstPageSize) {
-                isPageSizeFixed = false;
-                break;
+        synchronized (this) {
+            if (isInitialized) {
+                return;
             }
+            try (final ContextHolder holder = SeekableChannelContext.ensureContext(
+                    columnChunkReader.getChannelsProvider(), innerFillContext(fillContext))) {
+                offsetIndex = columnChunkReader.getOffsetIndex(holder.get());
+            }
+            Assert.neqNull(offsetIndex, "offsetIndex");
+            numPages = offsetIndex.getPageCount();
+            Assert.gtZero(numPages, "numPages");
+            pageStates = new AtomicReferenceArray<>(numPages);
+            columnPageDirectAccessor =
+                    columnChunkReader.getPageAccessor(offsetIndex, toPage.getPageMaterializerFactory());
+
+            if (numPages == 1) {
+                fixedPageSize = numRows();
+            } else {
+                boolean isPageSizeFixed = true;
+                final long firstPageSize = offsetIndex.getFirstRowIndex(1) - offsetIndex.getFirstRowIndex(0);
+                for (int i = 2; i < numPages; ++i) {
+                    if (offsetIndex.getFirstRowIndex(i) - offsetIndex.getFirstRowIndex(i - 1) != firstPageSize) {
+                        isPageSizeFixed = false;
+                        break;
+                    }
+                }
+                fixedPageSize = isPageSizeFixed ? firstPageSize : PAGE_SIZE_NOT_FIXED;
+            }
+            isInitialized = true;
         }
-        fixedPageSize = isPageSizeFixed ? firstPageSize : PAGE_SIZE_NOT_FIXED;
     }
 
     /**
@@ -98,7 +122,7 @@ final class OffsetIndexBasedColumnChunkPageStore<ATTR extends Any> extends Colum
         return (low - 1); // 'row' is somewhere in the middle of page
     }
 
-    private ChunkPage<ATTR> getPage(final int pageNum) {
+    private ChunkPage<ATTR> getPage(@Nullable final FillContext fillContext, final int pageNum) {
         if (pageNum < 0 || pageNum >= numPages) {
             throw new IllegalArgumentException("pageNum " + pageNum + " is out of range [0, " + numPages + ")");
         }
@@ -115,14 +139,7 @@ final class OffsetIndexBasedColumnChunkPageStore<ATTR extends Any> extends Colum
             synchronized (pageState) {
                 // Make sure no one materialized this page as we waited for the lock
                 if ((localRef = pageState.pageRef) == null || (page = localRef.get()) == null) {
-                    // TODO(deephaven-core#4836): getPage() should accept the outer fill context, and get an inner fill
-                    // context from this.ColumnChunkReader to pass into getPageReader.
-                    final ColumnPageReader reader = columnPageDirectAccessor.getPageReader(pageNum);
-                    try {
-                        page = new PageCache.IntrusivePage<>(toPage(offsetIndex.getFirstRowIndex(pageNum), reader));
-                    } catch (final IOException except) {
-                        throw new UncheckedIOException(except);
-                    }
+                    page = new IntrusivePage<>(getPageImpl(fillContext, pageNum));
                     pageState.pageRef = new WeakReference<>(page);
                 }
             }
@@ -131,11 +148,35 @@ final class OffsetIndexBasedColumnChunkPageStore<ATTR extends Any> extends Colum
         return page.getPage();
     }
 
+    private ChunkPage<ATTR> getPageImpl(@Nullable FillContext fillContext, int pageNum) {
+        // Use the latest context while reading the page, or create (and close) new one
+        try (final ContextHolder holder = ensureContext(fillContext)) {
+            final ColumnPageReader reader = columnPageDirectAccessor.getPageReader(pageNum, holder.get());
+            return toPage(offsetIndex.getFirstRowIndex(pageNum), reader, holder.get());
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
     @Override
     @NotNull
-    public ChunkPage<ATTR> getPageContaining(@Nullable final FillContext fillContext, long rowKey) {
+    public ChunkPage<ATTR> getPageContaining(@Nullable final FillContext fillContext, final long rowKey) {
+        // We don't really use chunk capacity in our FillContext. In practice, however, this method is only invoked with
+        // a null FillContext for single-element "get" methods.
+        try (final FillContext allocatedFillContext = fillContext != null ? null : makeFillContext(1, null)) {
+            final FillContext fillContextToUse = fillContext != null ? fillContext : allocatedFillContext;
+            ensureInitialized(fillContextToUse);
+            return getPageContainingImpl(fillContextToUse, rowKey);
+        } catch (final RuntimeException e) {
+            throw new UncheckedDeephavenException("Failed to read parquet page data for row: " + rowKey + ", column: " +
+                    columnChunkReader.columnName() + ", uri: " + columnChunkReader.getURI(), e);
+        }
+    }
+
+    @NotNull
+    private ChunkPage<ATTR> getPageContainingImpl(@Nullable final FillContext fillContext, long rowKey) {
         rowKey &= mask();
-        Require.inRange(rowKey, "row", numRows(), "numRows");
+        Require.inRange(rowKey, "rowKey", numRows(), "numRows");
 
         int pageNum;
         if (fixedPageSize == PAGE_SIZE_NOT_FIXED) {
@@ -150,6 +191,7 @@ final class OffsetIndexBasedColumnChunkPageStore<ATTR extends Any> extends Colum
                 pageNum = (numPages - 1);
             }
         }
-        return getPage(pageNum);
+
+        return getPage(fillContext, pageNum);
     }
 }

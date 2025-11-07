@@ -1,17 +1,18 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit CharRangeComparator and run "./gradlew replicateChunkFilters" to regenerate
+//
+// @formatter:off
 package io.deephaven.engine.table.impl.chunkfilter;
 
 import io.deephaven.util.compare.FloatComparisons;
-import io.deephaven.chunk.*;
-import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
-import io.deephaven.chunk.attributes.Values;
 
 public class FloatRangeComparator {
     private FloatRangeComparator() {} // static use only
 
-    private abstract static class FloatFloatFilter implements ChunkFilter.FloatChunkFilter {
+    private abstract static class FloatFloatFilter extends FloatChunkFilter {
         final float lower;
         final float upper;
 
@@ -19,86 +20,65 @@ public class FloatRangeComparator {
             this.lower = lower;
             this.upper = upper;
         }
-
-        abstract public void filter(FloatChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys, WritableLongChunk<OrderedRowKeys> results);
     }
 
-    static class FloatDoubleInclusiveInclusiveFilter extends FloatFloatFilter {
-        private FloatDoubleInclusiveInclusiveFilter(float lower, float upper) {
+    private final static class FloatFloatInclusiveInclusiveFilter extends FloatFloatFilter {
+        private FloatFloatInclusiveInclusiveFilter(float lower, float upper) {
             super(lower, upper);
         }
 
-        public void filter(FloatChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys, WritableLongChunk<OrderedRowKeys> results) {
-            results.setSize(0);
-            for (int ii = 0; ii < values.size(); ++ii) {
-                final float value = values.get(ii);
-                if (FloatComparisons.geq(value, lower) && FloatComparisons.leq(value, upper)) {
-                    results.add(keys.get(ii));
-                }
-            }
+        @Override
+        public boolean matches(float value) {
+            return FloatComparisons.geq(value, lower) && FloatComparisons.leq(value, upper);
         }
     }
 
-    static class FloatDoubleInclusiveExclusiveFilter extends FloatFloatFilter {
-        private FloatDoubleInclusiveExclusiveFilter(float lower, float upper) {
+    private final static class FloatFloatInclusiveExclusiveFilter extends FloatFloatFilter {
+        private FloatFloatInclusiveExclusiveFilter(float lower, float upper) {
             super(lower, upper);
         }
 
-        public void filter(FloatChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys, WritableLongChunk<OrderedRowKeys> results) {
-            results.setSize(0);
-            for (int ii = 0; ii < values.size(); ++ii) {
-                final float value = values.get(ii);
-                if (FloatComparisons.geq(value, lower) && FloatComparisons.lt(value, upper)) {
-                    results.add(keys.get(ii));
-                }
-            }
+        @Override
+        public boolean matches(float value) {
+            return FloatComparisons.geq(value, lower) && FloatComparisons.lt(value, upper);
         }
     }
 
-    static class FloatDoubleExclusiveInclusiveFilter extends FloatFloatFilter {
-        private FloatDoubleExclusiveInclusiveFilter(float lower, float upper) {
+    private final static class FloatFloatExclusiveInclusiveFilter extends FloatFloatFilter {
+        private FloatFloatExclusiveInclusiveFilter(float lower, float upper) {
             super(lower, upper);
         }
 
-        public void filter(FloatChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys, WritableLongChunk<OrderedRowKeys> results) {
-            results.setSize(0);
-            for (int ii = 0; ii < values.size(); ++ii) {
-                final float value = values.get(ii);
-                if (FloatComparisons.gt(value, lower) && FloatComparisons.leq(value, upper)) {
-                    results.add(keys.get(ii));
-                }
-            }
+        @Override
+        public boolean matches(float value) {
+            return FloatComparisons.gt(value, lower) && FloatComparisons.leq(value, upper);
         }
     }
 
-    static class FloatDoubleExclusiveExclusiveFilter extends FloatFloatFilter {
-        private FloatDoubleExclusiveExclusiveFilter(float lower, float upper) {
+    private final static class FloatFloatExclusiveExclusiveFilter extends FloatFloatFilter {
+        private FloatFloatExclusiveExclusiveFilter(float lower, float upper) {
             super(lower, upper);
         }
 
-        public void filter(FloatChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys, WritableLongChunk<OrderedRowKeys> results) {
-            results.setSize(0);
-            for (int ii = 0; ii < values.size(); ++ii) {
-                final float value = values.get(ii);
-                if (FloatComparisons.gt(value, lower) && FloatComparisons.lt(value, upper)) {
-                    results.add(keys.get(ii));
-                }
-            }
+        @Override
+        public boolean matches(float value) {
+            return FloatComparisons.gt(value, lower) && FloatComparisons.lt(value, upper);
         }
     }
 
-    public static ChunkFilter.FloatChunkFilter makeFloatFilter(float lower, float upper, boolean lowerInclusive, boolean upperInclusive) {
+    public static FloatChunkFilter makeFloatFilter(float lower, float upper, boolean lowerInclusive,
+            boolean upperInclusive) {
         if (lowerInclusive) {
             if (upperInclusive) {
-                return new FloatDoubleInclusiveInclusiveFilter(lower, upper);
+                return new FloatFloatInclusiveInclusiveFilter(lower, upper);
             } else {
-                return new FloatDoubleInclusiveExclusiveFilter(lower, upper);
+                return new FloatFloatInclusiveExclusiveFilter(lower, upper);
             }
         } else {
             if (upperInclusive) {
-                return new FloatDoubleExclusiveInclusiveFilter(lower, upper);
+                return new FloatFloatExclusiveInclusiveFilter(lower, upper);
             } else {
-                return new FloatDoubleExclusiveExclusiveFilter(lower, upper);
+                return new FloatFloatExclusiveExclusiveFilter(lower, upper);
             }
         }
     }

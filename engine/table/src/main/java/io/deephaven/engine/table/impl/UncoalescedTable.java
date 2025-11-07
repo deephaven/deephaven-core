@@ -1,17 +1,18 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.api.AsOfJoinMatch;
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.JoinAddition;
 import io.deephaven.api.JoinMatch;
+import io.deephaven.api.NaturalJoinType;
+import io.deephaven.api.Pair;
 import io.deephaven.api.RangeJoinMatch;
 import io.deephaven.api.Selectable;
 import io.deephaven.api.SortColumn;
 import io.deephaven.api.agg.Aggregation;
-import io.deephaven.api.Pair;
 import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.api.snapshot.SnapshotWhenOptions;
@@ -204,6 +205,12 @@ public abstract class UncoalescedTable<IMPL_TYPE extends UncoalescedTable<IMPL_T
     }
 
     @Override
+    public <DATA_TYPE> CloseableIterator<DATA_TYPE> objectColumnIterator(@NotNull String columnName,
+            @NotNull Class<? extends DATA_TYPE> clazz) {
+        return coalesce().objectColumnIterator(columnName, clazz);
+    }
+
+    @Override
     @ConcurrentMethod
     public Table where(Filter filter) {
         return coalesce().where(filter);
@@ -271,8 +278,8 @@ public abstract class UncoalescedTable<IMPL_TYPE extends UncoalescedTable<IMPL_T
 
     @Override
     @ConcurrentMethod
-    public Table moveColumns(int index, boolean moveToEnd, String... columnsToMove) {
-        return coalesce().moveColumns(index, moveToEnd, columnsToMove);
+    public Table moveColumns(int index, String... columnsToMove) {
+        return coalesce().moveColumns(index, columnsToMove);
     }
 
     @Override
@@ -329,8 +336,9 @@ public abstract class UncoalescedTable<IMPL_TYPE extends UncoalescedTable<IMPL_T
     public Table naturalJoin(
             Table rightTable,
             Collection<? extends JoinMatch> columnsToMatch,
-            Collection<? extends JoinAddition> columnsToAdd) {
-        return coalesce().naturalJoin(rightTable, columnsToMatch, columnsToAdd);
+            Collection<? extends JoinAddition> columnsToAdd,
+            NaturalJoinType joinType) {
+        return coalesce().naturalJoin(rightTable, columnsToMatch, columnsToAdd, joinType);
     }
 
     @Override

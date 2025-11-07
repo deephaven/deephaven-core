@@ -1,32 +1,37 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.base.Pair;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.context.ExecutionContext;
-import io.deephaven.engine.table.ColumnDefinition;
-import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.liveness.LiveSupplier;
+import io.deephaven.engine.table.*;
+import io.deephaven.engine.table.impl.locations.ImmutableTableLocationKey;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.locations.TableLocation;
 import io.deephaven.engine.table.impl.locations.TableLocationProvider;
 import io.deephaven.engine.table.impl.locations.impl.StandaloneTableLocationKey;
-import io.deephaven.engine.table.impl.sources.DeferredGroupingColumnSource;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
+import org.jmock.api.Invocation;
+import org.jmock.lib.action.CustomAction;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.lang.ref.WeakReference;
 import java.util.*;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static io.deephaven.engine.testutil.TstUtils.assertRowSetEquals;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown;
 
 /**
  * Tests for {@link SimpleSourceTable}.
@@ -36,8 +41,7 @@ public class TestSimpleSourceTable extends RefreshingTableTestCase {
 
     private static final int NUM_COLUMNS = 4;
     private static final ColumnDefinition<Boolean> BOOLEAN_COLUMN_DEFINITION = ColumnDefinition.ofBoolean("Active");
-    private static final ColumnDefinition<Character> CHARACTER_COLUMN_DEFINITION =
-            ColumnDefinition.ofChar("Type").withGrouping();
+    private static final ColumnDefinition<Character> CHARACTER_COLUMN_DEFINITION = ColumnDefinition.ofChar("Type");
     private static final ColumnDefinition<Integer> INTEGER_COLUMN_DEFINITION = ColumnDefinition.ofInt("Size");
     private static final ColumnDefinition<Double> DOUBLE_COLUMN_DEFINITION = ColumnDefinition.ofDouble("Price");
 
@@ -52,10 +56,11 @@ public class TestSimpleSourceTable extends RefreshingTableTestCase {
     private SourceTableComponentFactory componentFactory;
     private ColumnSourceManager columnSourceManager;
 
-    private DeferredGroupingColumnSource<?>[] columnSources;
+    private ColumnSource<?>[] columnSources;
 
     private TableLocationProvider locationProvider;
     private TableLocation tableLocation;
+    private LiveSupplier<ImmutableTableLocationKey> keySupplier;
 
     private WritableRowSet expectedRowSet;
 
@@ -68,8 +73,18 @@ public class TestSimpleSourceTable extends RefreshingTableTestCase {
 
         componentFactory = mock(SourceTableComponentFactory.class);
         columnSourceManager = mock(ColumnSourceManager.class);
+        checking(new Expectations() {
+            {
+                allowing(columnSourceManager).allLocations();
+                will(returnValue(Collections.EMPTY_MAP));
+                allowing(columnSourceManager).getTableAttributes(with(any(TableUpdateMode.class)),
+                        with(any(TableUpdateMode.class)));
+                will(returnValue(Collections.EMPTY_MAP));
+            }
+        });
+
         columnSources = TABLE_DEFINITION.getColumnStream().map(cd -> {
-            final DeferredGroupingColumnSource<?> mocked = mock(DeferredGroupingColumnSource.class, cd.getName());
+            final ColumnSource<?> mocked = mock(ColumnSource.class, cd.getName());
             checking(new Expectations() {
                 {
                     allowing(mocked).getType();
@@ -81,15 +96,39 @@ public class TestSimpleSourceTable extends RefreshingTableTestCase {
                 }
             });
             return mocked;
-        }).toArray(DeferredGroupingColumnSource[]::new);
+        }).toArray(ColumnSource[]::new);
+        keySupplier = mock(LiveSupplier.class);
         locationProvider = mock(TableLocationProvider.class);
         tableLocation = mock(TableLocation.class);
         checking(new Expectations() {
             {
+                allowing(keySupplier).get();
+                will(returnValue(StandaloneTableLocationKey.getInstance()));
+                allowing(keySupplier).tryRetainReference();
+                will(returnValue(true));
+                allowing(keySupplier).getWeakReference();
+                will(returnValue(new WeakReference<>(keySupplier)));
+                allowing(keySupplier).retainReference();
+                allowing(keySupplier).dropReference();
+
                 allowing(locationProvider).getTableLocationKeys();
                 will(returnValue(Collections.singleton(StandaloneTableLocationKey.getInstance())));
+                allowing(locationProvider).getTableLocationKeys(with(any(Consumer.class)));
+                will(new CustomAction("check added") {
+                    @Override
+                    public Object invoke(Invocation invocation) {
+                        final Consumer<LiveSupplier<ImmutableTableLocationKey>> consumer =
+                                (Consumer<LiveSupplier<ImmutableTableLocationKey>>) invocation.getParameter(0);
+                        consumer.accept(keySupplier);
+                        return null;
+                    }
+                });
                 allowing(locationProvider).getTableLocation(with(StandaloneTableLocationKey.getInstance()));
                 will(returnValue(tableLocation));
+                allowing(locationProvider).getUpdateMode();
+                will(returnValue(TableUpdateMode.STATIC));
+                allowing(locationProvider).getLocationUpdateMode();
+                will(returnValue(TableUpdateMode.STATIC));
                 allowing(tableLocation).supportsSubscriptions();
                 will(returnValue(true));
                 allowing(tableLocation).getKey();
@@ -102,6 +141,7 @@ public class TestSimpleSourceTable extends RefreshingTableTestCase {
         checking(new Expectations() {
             {
                 oneOf(componentFactory).createColumnSourceManager(
+                        with(false),
                         with(false),
                         with(ColumnToCodecMappings.EMPTY),
                         with(equal(TABLE_DEFINITION.getColumns())));
@@ -139,7 +179,7 @@ public class TestSimpleSourceTable extends RefreshingTableTestCase {
                 .toArray(String[]::new);
     }
 
-    private Map<String, ? extends DeferredGroupingColumnSource<?>> getIncludedColumnsMap(final int... indices) {
+    private Map<String, ? extends ColumnSource<?>> getIncludedColumnsMap(final int... indices) {
         return IntStream.of(indices)
                 .mapToObj(ci -> new Pair<>(TABLE_DEFINITION.getColumns().get(ci).getName(), columnSources[ci]))
                 .collect(Collectors.toMap(Pair::getFirst, Pair::getSecond, Assert::neverInvoked, LinkedHashMap::new));
@@ -155,19 +195,20 @@ public class TestSimpleSourceTable extends RefreshingTableTestCase {
         doSingleLocationInitializeCheck(true, true);
     }
 
-    private void doSingleLocationInitializeCheck(final boolean throwException,
+    private void doSingleLocationInitializeCheck(
+            final boolean throwException,
             @SuppressWarnings("SameParameterValue") final boolean coalesce) {
         Assert.assertion(!(throwException && !coalesce), "!(throwException && !listen)");
         final TableDataException exception = new TableDataException("test");
-        final RowSet toAdd =
-                RowSetFactory.fromRange(expectedRowSet.lastRowKey() + 1,
-                        expectedRowSet.lastRowKey() + INDEX_INCREMENT);
+        final RowSet toAdd = RowSetFactory.fromRange(
+                expectedRowSet.lastRowKey() + 1,
+                expectedRowSet.lastRowKey() + INDEX_INCREMENT).toTracking();
 
         checking(new Expectations() {
             {
                 oneOf(locationProvider).refresh();
                 oneOf(columnSourceManager).addLocation(tableLocation);
-                oneOf(columnSourceManager).refresh();
+                oneOf(columnSourceManager).initialize();
                 if (throwException) {
                     will(throwException(exception));
                 } else {
@@ -189,7 +230,7 @@ public class TestSimpleSourceTable extends RefreshingTableTestCase {
                 if (throwException) {
                     return;
                 } else {
-                    throw exception;
+                    throw e;
                 }
             }
             assertRowSetEquals(expectedRowSet, rowSet);
@@ -213,6 +254,7 @@ public class TestSimpleSourceTable extends RefreshingTableTestCase {
             {
                 oneOf(componentFactory).createColumnSourceManager(
                         with(false),
+                        with(false),
                         with(ColumnToCodecMappings.EMPTY),
                         with(equal(getIncludedColumnDefs(includedColumnIndices1))));
                 will(returnValue(columnSourceManager));
@@ -227,8 +269,8 @@ public class TestSimpleSourceTable extends RefreshingTableTestCase {
             {
                 oneOf(locationProvider).refresh();
                 oneOf(columnSourceManager).addLocation(tableLocation);
-                oneOf(columnSourceManager).refresh();
-                will(returnValue(RowSetFactory.empty()));
+                oneOf(columnSourceManager).initialize();
+                will(returnValue(RowSetFactory.empty().toTracking()));
                 oneOf(columnSourceManager).getColumnSources();
                 will(returnValue(getIncludedColumnsMap(includedColumnIndices1)));
             }
@@ -246,6 +288,7 @@ public class TestSimpleSourceTable extends RefreshingTableTestCase {
             {
                 oneOf(componentFactory).createColumnSourceManager(
                         with(false),
+                        with(false),
                         with(ColumnToCodecMappings.EMPTY),
                         with(equal(getIncludedColumnDefs(includedColumnIndices2))));
                 will(returnValue(columnSourceManager));
@@ -260,8 +303,8 @@ public class TestSimpleSourceTable extends RefreshingTableTestCase {
             {
                 oneOf(locationProvider).refresh();
                 oneOf(columnSourceManager).addLocation(tableLocation);
-                oneOf(columnSourceManager).refresh();
-                will(returnValue(RowSetFactory.empty()));
+                oneOf(columnSourceManager).initialize();
+                will(returnValue(RowSetFactory.empty().toTracking()));
                 oneOf(columnSourceManager).getColumnSources();
                 will(returnValue(getIncludedColumnsMap(includedColumnIndices2)));
             }
@@ -289,6 +332,7 @@ public class TestSimpleSourceTable extends RefreshingTableTestCase {
             {
                 oneOf(componentFactory).createColumnSourceManager(
                         with(false),
+                        with(false),
                         with(ColumnToCodecMappings.EMPTY),
                         with(equal(getIncludedColumnDefs(includedColumnIndices3))));
                 will(returnValue(columnSourceManager));
@@ -302,8 +346,8 @@ public class TestSimpleSourceTable extends RefreshingTableTestCase {
             {
                 oneOf(locationProvider).refresh();
                 oneOf(columnSourceManager).addLocation(tableLocation);
-                oneOf(columnSourceManager).refresh();
-                will(returnValue(RowSetFactory.empty()));
+                oneOf(columnSourceManager).initialize();
+                will(returnValue(RowSetFactory.empty().toTracking()));
                 oneOf(columnSourceManager).getColumnSources();
                 will(returnValue(getIncludedColumnsMap(includedColumnIndices3)));
             }
@@ -333,5 +377,21 @@ public class TestSimpleSourceTable extends RefreshingTableTestCase {
         assertEquals(NUM_COLUMNS - 3, viewResult4.getColumnSources().size());
         assertNotNull(viewResult4.getColumnSource("SizeSquared"));
         assertIsSatisfied();
+    }
+
+    @Test
+    public void testNonDirectColumnTypes() {
+        final TableDefinition td = TableDefinition.of(
+                ColumnDefinition.ofString("P1").withPartitioning(),
+                ColumnDefinition.ofInt("P2").withPartitioning(),
+                ColumnDefinition.ofInt("X1"),
+                ColumnDefinition.ofInt("X2"));
+        try {
+            new SimpleSourceTable(td, "", componentFactory, locationProvider, null);
+            failBecauseExceptionWasNotThrown(IllegalArgumentException.class);
+        } catch (final IllegalArgumentException e) {
+            assertThat(e).hasMessageContaining(
+                    "Can't construct SimpleSourceTable with column type(s) [ColumnDefinition {name=P1, dataType=class java.lang.String, componentType=null, columnType=Partitioning}, ColumnDefinition {name=P2, dataType=int, componentType=null, columnType=Partitioning}]");
+        }
     }
 }

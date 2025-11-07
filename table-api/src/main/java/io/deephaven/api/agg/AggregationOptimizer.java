@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.api.agg;
 
 import io.deephaven.api.ColumnName;
@@ -97,6 +97,12 @@ public final class AggregationOptimizer implements Aggregation.Visitor {
     }
 
     @Override
+    public void visit(CountWhere countWhere) {
+        // Supplying a `null` entry value indicates that the key is already an aggregation.
+        visitOrder.putIfAbsent(countWhere, null);
+    }
+
+    @Override
     public void visit(FirstRowKey firstRowKey) {
         visitOrder.computeIfAbsent(FIRST_ROW_KEY_OBJ, k -> new ArrayList<>()).add(firstRowKey.column());
     }
@@ -110,5 +116,11 @@ public final class AggregationOptimizer implements Aggregation.Visitor {
     public void visit(Partition partition) {
         visitOrder.computeIfAbsent(partition.includeGroupByColumns() ? PARTITION_KEEPING_OBJ : PARTITION_DROPPING_OBJ,
                 k -> new ArrayList<>()).add(partition.column());
+    }
+
+    @Override
+    public void visit(Formula formula) {
+        // Supplying a `null` entry value indicates that the key is already an aggregation.
+        visitOrder.putIfAbsent(formula, null);
     }
 }

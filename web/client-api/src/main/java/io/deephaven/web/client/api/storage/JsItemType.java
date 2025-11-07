@@ -1,3 +1,6 @@
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.web.client.api.storage;
 
 import com.vertispan.tsdefs.annotations.TsTypeDef;

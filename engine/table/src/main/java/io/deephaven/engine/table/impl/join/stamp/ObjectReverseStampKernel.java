@@ -1,16 +1,18 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharStampKernel and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit ObjectReverseStampKernel and run "./gradlew replicateStampKernel" to regenerate
+//
+// @formatter:off
+
 package io.deephaven.engine.table.impl.join.stamp;
 
 import java.util.Objects;
+import io.deephaven.util.compare.ObjectComparisons;
 
 import java.util.Objects;
+import io.deephaven.util.compare.ObjectComparisons;
 
 import io.deephaven.chunk.*;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
@@ -20,14 +22,17 @@ import io.deephaven.engine.rowset.RowSequence;
 
 public class ObjectReverseStampKernel implements StampKernel {
     static final ObjectReverseStampKernel INSTANCE = new ObjectReverseStampKernel();
+
     private ObjectReverseStampKernel() {} // static use only
 
     @Override
-    public void computeRedirections(Chunk<Values> leftStamps, Chunk<Values> rightStamps, LongChunk<RowKeys> rightKeyIndices, WritableLongChunk<RowKeys> leftRedirections) {
+    public void computeRedirections(Chunk<Values> leftStamps, Chunk<Values> rightStamps,
+            LongChunk<RowKeys> rightKeyIndices, WritableLongChunk<RowKeys> leftRedirections) {
         computeRedirections(leftStamps.asObjectChunk(), rightStamps.asObjectChunk(), rightKeyIndices, leftRedirections);
     }
 
-    static private void computeRedirections(ObjectChunk<Object, Values> leftStamps, ObjectChunk<Object, Values> rightStamps, LongChunk<RowKeys> rightKeyIndices, WritableLongChunk<RowKeys> leftRedirections) {
+    static private void computeRedirections(ObjectChunk<Object, Values> leftStamps, ObjectChunk<Object, Values> rightStamps,
+            LongChunk<RowKeys> rightKeyIndices, WritableLongChunk<RowKeys> leftRedirections) {
         final int leftSize = leftStamps.size();
         final int rightSize = rightStamps.size();
         if (rightSize == 0) {
@@ -41,13 +46,12 @@ public class ObjectReverseStampKernel implements StampKernel {
 
         final int maxRightIdx = rightSize - 1;
 
-        for (int li = 0; li < leftSize; ) {
+        for (int li = 0; li < leftSize;) {
             final Object leftValue = leftStamps.get(li);
             if (lt(leftValue, rightLowValue)) {
                 leftRedirections.set(li++, RowSequence.NULL_ROW_KEY);
                 continue;
-            }
-            else if (eq(leftValue, rightLowValue)) {
+            } else if (eq(leftValue, rightLowValue)) {
                 leftRedirections.set(li++, rightKeyIndices.get(rightLowIdx));
                 continue;
             }
@@ -81,20 +85,11 @@ public class ObjectReverseStampKernel implements StampKernel {
             }
         }
     }
+
     // region comparison functions
     // descending comparison
     private static int doComparison(Object lhs, Object rhs) {
-        if (lhs == rhs) {
-            return 0;
-        }
-        if (lhs == null) {
-            return 1;
-        }
-        if (rhs == null) {
-            return -1;
-        }
-        //noinspection unchecked,rawtypes
-        return ((Comparable)rhs).compareTo(lhs);
+        return ObjectComparisons.compare(rhs, lhs);
     }
     // endregion comparison functions
 

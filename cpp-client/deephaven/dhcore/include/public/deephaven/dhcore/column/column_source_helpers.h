@@ -1,8 +1,13 @@
+/*
+ * Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+ */
 #pragma once
 
-#include <type_traits>
-
+#include <cstdint>
+#include <memory>
+#include <string>
 #include "deephaven/dhcore/column/column_source.h"
+#include "deephaven/dhcore/types.h"
 
 namespace deephaven::dhcore::column {
 namespace internal {
@@ -18,6 +23,9 @@ public:
   static const char kBoolName[];
   static const char kStringName[];
   static const char kDateTimeName[];
+  static const char kLocalDateName[];
+  static const char kLocalTimeName[];
+  static const char kContainerBaseName[];
 };
 
 struct ElementTypeVisitor : public ColumnSourceVisitor {
@@ -60,7 +68,19 @@ struct ElementTypeVisitor : public ColumnSourceVisitor {
   void Visit(const DateTimeColumnSource & /*source*/) final {
     value_ = HumanReadableTypeNames::kDateTimeName;
   }
-  
+
+  void Visit(const LocalDateColumnSource & /*source*/) final {
+    value_ = HumanReadableTypeNames::kLocalDateName;
+  }
+
+  void Visit(const LocalTimeColumnSource & /*source*/) final {
+    value_ = HumanReadableTypeNames::kLocalTimeName;
+  }
+
+  void Visit(const ContainerBaseColumnSource & /*source*/) final {
+    value_ = HumanReadableTypeNames::kContainerBaseName;
+  }
+
   const char *value_ = nullptr;
 };
 }  // namespace internal
@@ -120,5 +140,25 @@ struct HumanReadableStaticTypeName<bool> {
 template<>
 struct HumanReadableStaticTypeName<std::string> {
   static const char *GetName() { return internal::HumanReadableTypeNames::kStringName; }
+};
+
+template<>
+struct HumanReadableStaticTypeName<deephaven::dhcore::DateTime> {
+  static const char *GetName() { return internal::HumanReadableTypeNames::kDateTimeName; }
+};
+
+template<>
+struct HumanReadableStaticTypeName<deephaven::dhcore::LocalDate> {
+  static const char *GetName() { return internal::HumanReadableTypeNames::kLocalDateName; }
+};
+
+template<>
+struct HumanReadableStaticTypeName<deephaven::dhcore::LocalTime> {
+  static const char *GetName() { return internal::HumanReadableTypeNames::kLocalTimeName; }
+};
+
+template<>
+struct HumanReadableStaticTypeName<std::shared_ptr<deephaven::dhcore::container::ContainerBase>> {
+  static const char *GetName() { return internal::HumanReadableTypeNames::kContainerBaseName; }
 };
 }  // namespace deephaven::client::column

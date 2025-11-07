@@ -1,7 +1,7 @@
 plugins {
     id 'java-library'
     id 'io.deephaven.project.register'
-    id 'me.champeau.jmh' version '0.6.7'
+    id 'me.champeau.jmh' version '0.7.3'
 }
 
 description 'Engine Table: Implementation and closely-coupled utilities'
@@ -21,42 +21,53 @@ dependencies {
     api project(':deephaven-jpy-ext')
     api project(':hotspot')
     api project(':IO')
+    api project(':codec-api')
 
+    compileOnly project(':util-immutables')
+    annotationProcessor libs.immutables.value
+
+    implementation project(':util-processenvironment')
+    implementation project(':util-thread')
     implementation project(':DHProcess')
     implementation project(':engine-function')
     implementation project(':engine-tuple')
     implementation project(':Configuration')
     implementation project(':log-factory')
     implementation project(':Stats')
+    implementation project(':codec-builtin')
+    implementation project(':codec-cache')
 
-    implementation 'com.github.f4b6a3:uuid-creator:5.2.0'
+    implementation libs.f4b6a3.uuid.creator
     // TODO(deephaven-core#3204): t-digest 3.3 appears to have higher errors than 3.2
-    implementation 'com.tdunning:t-digest:3.2'
-    implementation 'com.squareup:javapoet:1.13.0'
-    implementation 'io.github.classgraph:classgraph:4.8.154'
+    implementation libs.tdunning.t.digest
+    implementation libs.squareup.javapoet
+    implementation libs.classgraph
+    implementation libs.dsi.fastutil
 
     implementation project(':plugin')
-    implementation depCommonsLang3
-    Classpaths.inheritCommonsText(project, 'implementation')
+    implementation libs.commons.lang3
+    implementation libs.commons.text
+    implementation libs.commons.compress
 
-    Classpaths.inheritGroovy(project, 'groovy', 'implementation')
-    Classpaths.inheritGroovy(project, 'groovy-json', 'implementation')
-    Classpaths.inheritJavaParser(project, 'implementation')
-    Classpaths.inheritAutoService(project)
+    implementation libs.groovy
+    implementation libs.groovy.json
+    implementation libs.javaparser.core
+    compileOnly libs.autoservice
+    annotationProcessor libs.autoservice.compiler
 
-    Classpaths.inheritImmutables(project)
+    compileOnly project(':util-immutables')
+    annotationProcessor libs.immutables.value
 
-    compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
+    compileOnly libs.google.findbugs.jsr305
 
     runtimeOnly project(':engine-tuplesource')
 
-    Classpaths.inheritGuava(project)
+    implementation libs.guava
 
-    testImplementation TestTools.projectDependency(project, 'Util')
     testImplementation TestTools.projectDependency(project, 'engine-chunk')
     testImplementation TestTools.projectDependency(project, 'engine-vector')
     testImplementation TestTools.projectDependency(project, 'Numerics')
-    testImplementation TestTools.projectDependency(project, 'engine-context')
+    testImplementation TestTools.projectDependency(project, 'engine-time')
     testImplementation project(':base-test-utils')
     testImplementation project(':engine-rowset-test-utils')
     testImplementation project(':engine-test-utils')
@@ -64,51 +75,26 @@ dependencies {
     testImplementation project(':BenchmarkSupport')
     testImplementation project(':extensions-csv')
     testImplementation project(':extensions-parquet-table')
+    testImplementation project(':extensions-parquet-base')
     testImplementation project(':extensions-source-support')
     testImplementation project(':Numerics')
     testImplementation project(':extensions-suanshu')
 
-    Classpaths.inheritJUnitClassic(project, 'testImplementation')
+    testImplementation libs.junit4
 
-    Classpaths.inheritJUnitPlatform(project)
-    Classpaths.inheritAssertJ(project)
+    testImplementation platform(libs.junit.bom)
+    testImplementation libs.assertj
 
-    testRuntimeOnly project(':log-to-slf4j'),
-            project(path: ':configs'),
-            project(path: ':test-configs')
-    Classpaths.inheritSlf4j(project, 'slf4j-simple', 'testRuntimeOnly')
+    testRuntimeOnly project(':log-to-slf4j')
+    testRuntimeOnly project(':configs')
+    testRuntimeOnly project(':test-configs')
+    testRuntimeOnly libs.slf4j.simple
 }
 
 spotless {
     java {
-        targetExclude(
-                '**/generated/**',
-                '**/*Boolean*.java',
-                '**/*Byte*.java',
-                '**/*Char*.java',
-                '**/*Short*.java',
-                '**/*Int*.java',
-                '**/*Long*.java',
-                '**/*Float*.java',
-                '**/*Double*.java',
-                '**/*Object*.java',
-                '**/*StateManager.java',
-                '**/incagg/gen/*.java',
-                '**/incopenagg/gen/*.java',
-                '**/staticagg/gen/*.java',
-                '**/staticopenagg/gen/*.java',
-                '**/naturaljoin/typed/staticopen/gen/*.java',
-                '**/naturaljoin/typed/incopen/gen/*.java',
-                '**/naturaljoin/typed/rightincopen/gen/*.java',
-                '**/asofjoin/typed/rightincopen/gen/*.java',
-                '**/asofjoin/typed/staticopen/gen/*.java',
-                '**/updateby/hashing/typed/open/gen/*.java',
-                '**/multijoin/typed/staticopen/gen/*.java',
-                '**/multijoin/typed/incopen/gen/*.java',
-                'src/main/java/io/deephaven/engine/table/impl/SymbolTableCombiner.java',
-                'src/main/java/io/deephaven/libs/GroovyStaticImports.java',
-                'src/test/java/**/*Sample.java'
-        )
+        // Exclude these codegen sample files from here so we don't even need a comment to disable formatting
+        targetExclude 'src/test/java/io/deephaven/engine/table/impl/select/sample*/**/*.java'
     }
 }
 
@@ -139,7 +125,11 @@ tasks.testOutOfBand.maxHeapSize = maxHeapSize
 tasks.test.maxHeapSize = maxHeapSize
 
 jmh {
-    jmhVersion = '1.35'
+    jmhVersion = libs.versions.jmh.get()
+}
+
+jmhJar {
+    zip64 = true
 }
 
 // No need to assemble the jar by default on build

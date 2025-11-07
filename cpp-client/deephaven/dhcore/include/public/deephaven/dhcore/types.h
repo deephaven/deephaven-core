@@ -1,79 +1,154 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+/*
+ * Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
  */
 #pragma once
 
 #include <limits>
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
+#include <memory>
 #include <ostream>
-#include "deephaven/dhcore/utility/utility.h"
+#include <string>
+#include <string_view>
+#include <type_traits>
+#include "deephaven/third_party/fmt/core.h"
+#include "deephaven/third_party/fmt/format.h"
 #include "deephaven/third_party/fmt/ostream.h"
 
+namespace deephaven::dhcore::container {
+class ContainerBase;
+}  // namespace deephaven::dhcore::container
+
 namespace deephaven::dhcore {
-struct ElementTypeId {
-  // We don't use "enum class" here because we can't figure out how to get it to work right with Cython.
-  // TODO(kosak): we are going to have to expand LIST to be a true nested type.
+/**
+ * A static class (not instantiable) used to create a scope for
+ * the ElementTypeId::Enum
+ */
+class ElementTypeId {
+public:
+  ElementTypeId() = delete;
+
+  // TODO(kosak): switch to "enum class" if you can get it to work with Cython
+  /**
+   * The Deephaven server types that are known to the C++ client.
+   */
   enum Enum {
     kChar,
     kInt8, kInt16, kInt32, kInt64,
     kFloat, kDouble,
     kBool, kString, kTimestamp,
-    kList
+    kLocalDate, kLocalTime
   };
+
+  static constexpr size_t kEnumSize = 12;
+
+  static const char *ToString(Enum id);
+
+private:
+  static const char *kHumanReadableConstants[kEnumSize];
+};
+
+
+/**
+ * Represents the element type of the column source. This data structure
+ * is able to represent any of the simple types, as well as lists and nested
+ * lists of the simple types. If 'list_depth_' == 0, this object represents
+ * a scalar element of type 'element_type_id_'.  If 'list_depth_' == 1, then
+ * this object represents a list of elements of type 'element_type_id_'.
+ * If 'list_depth_' == 2, then this object represents a list of lists
+ * of elements of type 'element_type_id_', and so on. Note that even though
+ * this object can represent multidimensional lists, the rest of the system
+ * currently only supports scalars and one-dimensional lists.
+ */
+class ElementType {
+public:
+  /**
+   * Create an ElementType representing the specified scalar type.
+   */
+  static ElementType Of(ElementTypeId::Enum element_type_id) {
+    return {0, element_type_id};
+  }
+
+  /**
+   * Default Constructor.
+   */
+  ElementType() = default;
+
+  /**
+   * Constructs an ElementType with the given list_depth and scalar type.
+   * See class documentation for the interpretation of list_depth.
+   */
+  ElementType(uint32_t list_depth, ElementTypeId::Enum element_type_id) :
+    list_depth_(list_depth), element_type_id_(element_type_id) {}
+
+  /**
+   * The list depth of this ElementType. Scalar types have a list depth of 0.
+   * One-dimensional list types (e.g. list<int>) have a list depth of 1.
+   * Higher-dimensional list types (e.g. list<list<int>>) have a list depth
+   * greater than 1.
+   * @return The list depth.
+   */
+  [[nodiscard]]
+  uint32_t ListDepth() const { return list_depth_; }
+  /**
+   * If this object represents a scalar, returns the scalar's type.
+   * Otherwise, if this object represents a list (of any dimension),
+   * returns the element type of the innermost list.
+   * @return The enumeration representing this scalar or the elemenet
+   * type of the innermost list.
+   */
+  [[nodiscard]]
+  ElementTypeId::Enum Id() const { return element_type_id_; }
+
+  /**
+   * Assuming this object represents the type T, returns a new object
+   * representing the type list<T>
+   * @return The wrapped type.
+   */
+  [[nodiscard]]
+  ElementType WrapList() const {
+    return {list_depth_ + 1, element_type_id_};
+  }
+
+  /**
+   * If this object represents the type list<T>, returns a new object
+   * representing the type T. If this object is not a list type, throws
+   * an exception.
+   * @return The unwrapped type.
+   */
+  [[nodiscard]]
+  ElementType UnwrapList() const;
+
+  /**
+   * Makes a string representation of this type object. For example
+   * "list<int32_t>"
+   * @return This object's string representation.
+   */
+  [[nodiscard]]
+  std::string ToString() const {
+    return fmt::to_string(*this);
+  }
+
+private:
+  uint32_t list_depth_ = 0;
+  ElementTypeId::Enum element_type_id_ = ElementTypeId::kInt8;  // arbitrary default
+
+  friend bool operator==(const ElementType &lhs, const ElementType &rhs) {
+    return lhs.list_depth_ == rhs.list_depth_ &&
+        lhs.element_type_id_ == rhs.element_type_id_;
+  }
+
+
+  /**
+   * Ostream operator.
+   */
+  friend std::ostream &operator<<(std::ostream &s, const ElementType &o);
 };
 
 class DateTime;
-
-template<typename T>
-void VisitElementTypeId(ElementTypeId::Enum type_id, T *visitor) {
-  switch (type_id) {
-    case ElementTypeId::kChar: {
-      visitor->template operator()<char16_t>();
-      break;
-    }
-    case ElementTypeId::kInt8: {
-      visitor->template operator()<int8_t>();
-      break;
-    }
-    case ElementTypeId::kInt16: {
-      visitor->template operator()<int16_t>();
-      break;
-    }
-    case ElementTypeId::kInt32: {
-      visitor->template operator()<int32_t>();
-      break;
-    }
-    case ElementTypeId::kInt64: {
-      visitor->template operator()<int64_t>();
-      break;
-    }
-    case ElementTypeId::kFloat: {
-      visitor->template operator()<float>();
-      break;
-    }
-    case ElementTypeId::kDouble: {
-      visitor->template operator()<double>();
-      break;
-    }
-    case ElementTypeId::kBool: {
-      visitor->template operator()<bool>();
-      break;
-    }
-    case ElementTypeId::kString: {
-      visitor->template operator()<std::string>();
-      break;
-    }
-    case ElementTypeId::kTimestamp: {
-      visitor->template operator()<deephaven::dhcore::DateTime>();
-      break;
-    }
-    default: {
-      auto message = fmt::format("Unrecognized ElementTypeId {}", static_cast<int>(type_id));
-      throw std::runtime_error(message);
-    }
-  }
-}
+class LocalDate;
+class LocalTime;
 
 class DeephavenConstants {
 public:
@@ -313,12 +388,45 @@ struct DeephavenTraits<DateTime> {
   static constexpr bool kIsNumeric = false;
 };
 
+template<>
+struct DeephavenTraits<LocalDate> {
+  static constexpr bool kIsNumeric = false;
+};
+
+template<>
+struct DeephavenTraits<LocalTime> {
+  static constexpr bool kIsNumeric = false;
+};
+
+template<>
+struct DeephavenTraits<std::shared_ptr<deephaven::dhcore::container::ContainerBase>> {
+  static constexpr bool kIsNumeric = false;
+};
+
 /**
  * The Deephaven DateTime type. Records nanoseconds relative to the epoch (January 1, 1970) UTC.
  * Times before the epoch can be represented with negative nanosecond values.
  */
 class DateTime {
 public:
+  /**
+   * Convenience using.
+   */
+  using rep_t = int64_t;
+
+  /**
+   * This method exists to document and enforce an assumption in Cython, namely that this
+   * class has the same representation as an int64_t. This constexpr method always returns
+   * true (or fails to compile).
+   */
+  static constexpr bool IsBlittableToInt64() {
+    static_assert(
+        std::is_trivially_copyable_v<DateTime> &&
+        std::has_unique_object_representations_v<DateTime> &&
+        std::is_same_v<rep_t, std::int64_t>);
+    return true;
+  }
+
   /**
    * Converts nanoseconds-since-UTC-epoch to DateTime. The Deephaven null value sentinel is
    * turned into DateTime(0).
@@ -389,8 +497,184 @@ public:
 private:
   int64_t nanos_ = 0;
 
+  /**
+   * Ostream operator.
+   */
   friend std::ostream &operator<<(std::ostream &s, const DateTime &o);
+
+  /**
+   * Equality operator.
+   */
+  friend bool operator==(const DateTime &lhs, const DateTime &rhs) {
+    return lhs.nanos_ == rhs.nanos_;
+  }
+
+  /**
+   * Inequality operator.
+   */
+  friend bool operator!=(const DateTime &lhs, const DateTime &rhs) {
+    return !(lhs == rhs);
+  }
+};
+
+/**
+ * The Deephaven LocalDate type which corresponds to java.time.LocalDate.
+ * For consistency with the Arrow type we use, stores its value in units of milliseconds.
+ * However we do not allow fractional days, so only millisecond values that are an even
+ * number of days are permitted.
+ */
+class LocalDate {
+public:
+  /**
+   * Convenience using.
+   */
+  using rep_t = int64_t;
+
+  /**
+   * This method exists to document and enforce an assumption in Cython, namely that this
+   * class has the same representation as an int64_t. This constexpr method always returns
+   * true (or fails to compile).
+   */
+  static constexpr bool IsBlittableToInt64() {
+    static_assert(
+        std::is_trivially_copyable_v<LocalDate> &&
+            std::has_unique_object_representations_v<LocalDate> &&
+            std::is_same_v<rep_t, std::int64_t>);
+    return true;
+  }
+
+  /**
+   * Creates an instance of LocalDate from the specified year, month, and day.
+   */
+  static LocalDate Of(int32_t year, int32_t month, int32_t day_of_month);
+
+  /**
+   * Creates an instance of LocalDate from milliseconds-since-UTC-epoch.
+   * The Deephaven null value sentinel is turned into LocalDate(0).
+   * @param millis Milliseconds since the epoch (January 1, 1970 UTC).
+   * An exception is thrown if millis is not an even number of days.
+   * @return The corresponding LocalDate
+   */
+  static LocalDate FromMillis(int64_t millis) {
+    if (millis == DeephavenConstants::kNullLong) {
+      return LocalDate(0);
+    }
+    return LocalDate(millis);
+  }
+
+  /**
+   * Default constructor. Sets the LocalDate equal to the null value.
+   */
+  LocalDate() = default;
+
+  /**
+   * Sets the DateTime to the specified number of milliseconds relative to the epoch.
+   * Currently we will throw an exception if millis is not an even number of days.
+   * @param millis Milliseconds since the epoch (January 1, 1970 UTC).
+   */
+  explicit LocalDate(int64_t millis);
+
+  /**
+   * The LocalDate as expressed in milliseconds since the epoch. Can be negative.
+   */
+  [[nodiscard]]
+  int64_t Millis() const { return millis_; }
+
+private:
+  int64_t millis_ = 0;
+
+  /**
+   * Ostream operator.
+   */
+  friend std::ostream &operator<<(std::ostream &s, const LocalDate &o);
+
+  /**
+   * Equality operator.
+   */
+  friend bool operator==(const LocalDate &lhs, const LocalDate &rhs) {
+    return lhs.millis_ == rhs.millis_;
+  }
+
+  /**
+   * Inequality operator.
+   */
+  friend bool operator!=(const LocalDate &lhs, const LocalDate &rhs) {
+    return !(lhs == rhs);
+  }
+};
+
+/**
+ * The Deephaven LocalTime type which corresponds to java.time.LocalTime. Records
+ * nanoseconds since midnight (of some unspecified reference day).
+ */
+class LocalTime {
+public:
+  /**
+   * Convenience using.
+   */
+  using rep_t = int64_t;
+
+  /**
+   * This method exists to document and enforce an assumption in Cython, namely that this
+   * class has the same representation as an int64_t. This constexpr method always returns
+   * true (or fails to compile).
+   */
+  static constexpr bool IsBlittableToInt64() {
+    static_assert(
+        std::is_trivially_copyable_v<LocalTime> &&
+            std::has_unique_object_representations_v<LocalTime> &&
+            std::is_same_v<rep_t, std::int64_t>);
+    return true;
+  }
+
+  /**
+   * Creates an instance of LocalTime from the specified hour, minute, and second.
+   */
+  static LocalTime Of(int32_t hour, int32_t minute, int32_t second);
+
+  /**
+   * Converts nanoseconds-since-start-of-day to LocalTime. The Deephaven null value sentinel is
+   * turned into LocalTime(0).
+   * @param nanos Nanoseconds since the start of the day.
+   * @return The corresponding LocalTime.
+   */
+  static LocalTime FromNanos(int64_t nanos) {
+    if (nanos == DeephavenConstants::kNullLong) {
+      return LocalTime(0);
+    }
+    return LocalTime(nanos);
+  }
+
+  /**
+   * Default constructor. Sets the DateTime equal to the epoch.
+   */
+  LocalTime() = default;
+
+  /**
+   * Sets the LocalTime to the specified number of nanoseconds relative to the start of the day.
+   * @param nanos Nanoseconds since the start of the day.
+   */
+  explicit LocalTime(int64_t nanos);
+
+  [[nodiscard]]
+  int64_t Nanos() const { return nanos_; }
+
+private:
+  int64_t nanos_ = 0;
+
+  friend std::ostream &operator<<(std::ostream &s, const LocalTime &o);
+
+  friend bool operator==(const LocalTime &lhs, const LocalTime &rhs) {
+    return lhs.nanos_ == rhs.nanos_;
+  }
+
+  friend bool operator!=(const LocalTime &lhs, const LocalTime &rhs) {
+    return !(lhs == rhs);
+  }
 };
 }  // namespace deephaven::dhcore
 
 template<> struct fmt::formatter<deephaven::dhcore::DateTime> : ostream_formatter {};
+template<> struct fmt::formatter<deephaven::dhcore::LocalDate> : ostream_formatter {};
+template<> struct fmt::formatter<deephaven::dhcore::LocalTime> : ostream_formatter {};
+template<> struct fmt::formatter<deephaven::dhcore::ElementType> : ostream_formatter {};

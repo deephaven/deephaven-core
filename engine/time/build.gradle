@@ -5,31 +5,22 @@ plugins {
 
 description 'Engine Time: Types and libraries for working with instants, periods, and calendars'
 
-configurations {
-    testImplementation.extendsFrom junit
-}
-
 dependencies {
     api project(':Base')
     api project(':Util')
 
+    implementation project(':table-api')
     implementation project(':engine-function')
     implementation project(':Configuration')
     implementation project(':log-factory')
-    implementation depJdom2
+    implementation libs.jdom2
+    implementation libs.dagger
+    annotationProcessor libs.dagger.compiler
 
-    testImplementation TestTools.projectDependency(project, 'Base')
+    testImplementation project(':base-test-utils')
 
     testRuntimeOnly project(':log-to-slf4j'),
-            project(path: ':configs'),
-            project(path: ':test-configs')
-    Classpaths.inheritSlf4j(project, 'slf4j-simple', 'testRuntimeOnly')
-}
-
-spotless {
-    java {
-        targetExclude(
-                'src/main/java/io/deephaven/time/calendar/StaticCalendarMethods.java',
-        )
-    }
+            project(':configs'),
+            project(':test-configs')
+    testRuntimeOnly libs.slf4j.simple
 }

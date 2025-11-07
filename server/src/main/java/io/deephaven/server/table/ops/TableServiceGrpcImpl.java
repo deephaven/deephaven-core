@@ -1,12 +1,13 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.server.table.ops;
 
 import com.google.rpc.Code;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.clientsupport.gotorow.SeekRow;
 import io.deephaven.auth.codegen.impl.TableServiceContextualAuthWiring;
+import io.deephaven.csv.util.MutableObject;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
@@ -14,51 +15,9 @@ import io.deephaven.engine.table.impl.util.EngineMetrics;
 import io.deephaven.extensions.barrage.util.ExportUtil;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
-import io.deephaven.proto.backplane.grpc.AggregateAllRequest;
-import io.deephaven.proto.backplane.grpc.AggregateRequest;
-import io.deephaven.proto.backplane.grpc.ApplyPreviewColumnsRequest;
-import io.deephaven.proto.backplane.grpc.AsOfJoinTablesRequest;
-import io.deephaven.proto.backplane.grpc.AjRajTablesRequest;
-import io.deephaven.proto.backplane.grpc.BatchTableRequest;
+import io.deephaven.proto.backplane.grpc.*;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.OpCase;
-import io.deephaven.proto.backplane.grpc.ColumnStatisticsRequest;
-import io.deephaven.proto.backplane.grpc.ComboAggregateRequest;
-import io.deephaven.proto.backplane.grpc.CreateInputTableRequest;
-import io.deephaven.proto.backplane.grpc.CrossJoinTablesRequest;
-import io.deephaven.proto.backplane.grpc.DropColumnsRequest;
-import io.deephaven.proto.backplane.grpc.EmptyTableRequest;
-import io.deephaven.proto.backplane.grpc.ExactJoinTablesRequest;
-import io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse;
-import io.deephaven.proto.backplane.grpc.ExportedTableUpdateMessage;
-import io.deephaven.proto.backplane.grpc.ExportedTableUpdatesRequest;
-import io.deephaven.proto.backplane.grpc.FetchTableRequest;
-import io.deephaven.proto.backplane.grpc.FilterTableRequest;
-import io.deephaven.proto.backplane.grpc.FlattenRequest;
-import io.deephaven.proto.backplane.grpc.HeadOrTailByRequest;
-import io.deephaven.proto.backplane.grpc.HeadOrTailRequest;
-import io.deephaven.proto.backplane.grpc.LeftJoinTablesRequest;
-import io.deephaven.proto.backplane.grpc.Literal;
-import io.deephaven.proto.backplane.grpc.MergeTablesRequest;
-import io.deephaven.proto.backplane.grpc.MetaTableRequest;
-import io.deephaven.proto.backplane.grpc.NaturalJoinTablesRequest;
-import io.deephaven.proto.backplane.grpc.RangeJoinTablesRequest;
-import io.deephaven.proto.backplane.grpc.RunChartDownsampleRequest;
-import io.deephaven.proto.backplane.grpc.SeekRowRequest;
-import io.deephaven.proto.backplane.grpc.SeekRowResponse;
-import io.deephaven.proto.backplane.grpc.SelectDistinctRequest;
-import io.deephaven.proto.backplane.grpc.SelectOrUpdateRequest;
-import io.deephaven.proto.backplane.grpc.SnapshotTableRequest;
-import io.deephaven.proto.backplane.grpc.SnapshotWhenTableRequest;
-import io.deephaven.proto.backplane.grpc.SortTableRequest;
-import io.deephaven.proto.backplane.grpc.TableReference;
-import io.deephaven.proto.backplane.grpc.TableServiceGrpc;
-import io.deephaven.proto.backplane.grpc.Ticket;
-import io.deephaven.proto.backplane.grpc.TimeTableRequest;
-import io.deephaven.proto.backplane.grpc.UngroupRequest;
-import io.deephaven.proto.backplane.grpc.UnstructuredFilterTableRequest;
-import io.deephaven.proto.backplane.grpc.UpdateByRequest;
-import io.deephaven.proto.backplane.grpc.WhereInRequest;
 import io.deephaven.proto.util.Exceptions;
 import io.deephaven.proto.util.ExportTicketHelper;
 import io.deephaven.server.grpc.GrpcErrorHelper;
@@ -69,13 +28,14 @@ import io.deephaven.server.session.TicketRouter;
 import io.deephaven.server.table.ExportedTableUpdateListener;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.SafeCloseable;
+import io.deephaven.util.mutable.MutableInt;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.ServerCallStreamObserver;
 import io.grpc.stub.StreamObserver;
-import org.apache.commons.lang3.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 
 import javax.inject.Inject;
+import java.lang.Object;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.Instant;
@@ -87,9 +47,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
-import static io.deephaven.extensions.barrage.util.GrpcUtil.safelyComplete;
-import static io.deephaven.extensions.barrage.util.GrpcUtil.safelyError;
-import static io.deephaven.extensions.barrage.util.GrpcUtil.safelyOnNext;
+import static io.deephaven.extensions.barrage.util.GrpcUtil.*;
 
 public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase {
 
@@ -100,15 +58,20 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
     private final TableServiceContextualAuthWiring authWiring;
     private final Map<BatchTableRequest.Operation.OpCase, GrpcTableOperation<?>> operationMap;
 
+    private final ExportedTableUpdateListener.Factory exportedTableUpdateListenerFactory;
+
     @Inject
-    public TableServiceGrpcImpl(final TicketRouter ticketRouter,
+    public TableServiceGrpcImpl(
+            final TicketRouter ticketRouter,
             final SessionService sessionService,
             final TableServiceContextualAuthWiring authWiring,
-            final Map<BatchTableRequest.Operation.OpCase, GrpcTableOperation<?>> operationMap) {
+            final Map<BatchTableRequest.Operation.OpCase, GrpcTableOperation<?>> operationMap,
+            final ExportedTableUpdateListener.Factory exportedTableUpdateListenerFactory) {
         this.ticketRouter = ticketRouter;
         this.sessionService = sessionService;
         this.authWiring = authWiring;
         this.operationMap = operationMap;
+        this.exportedTableUpdateListenerFactory = exportedTableUpdateListenerFactory;
     }
 
     private <T> GrpcTableOperation<T> getOp(final BatchTableRequest.Operation.OpCase op) {
@@ -347,6 +310,12 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
     }
 
     @Override
+    public void multiJoinTables(MultiJoinTablesRequest request,
+            StreamObserver<ExportedTableCreationResponse> responseObserver) {
+        oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.MULTI_JOIN, request, responseObserver);
+    }
+
+    @Override
     public void rangeJoinTables(
             @NotNull final RangeJoinTablesRequest request,
             @NotNull final StreamObserver<ExportedTableCreationResponse> responseObserver) {
@@ -386,6 +355,13 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
             @NotNull final UpdateByRequest request,
             @NotNull final StreamObserver<ExportedTableCreationResponse> responseObserver) {
         oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.UPDATE_BY, request, responseObserver);
+    }
+
+    @Override
+    public void slice(
+            @NotNull final SliceRequest request,
+            @NotNull final StreamObserver<ExportedTableCreationResponse> responseObserver) {
+        oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.SLICE, request, responseObserver);
     }
 
     private Object getSeekValue(@NotNull final Literal literal, @NotNull final Class<?> dataType) {
@@ -478,10 +454,12 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
             final SessionState.ExportObject<Table> exportedTable =
                     ticketRouter.resolve(session, sourceId, "sourceId");
 
-            session.nonExport()
+            session.<SeekRowResponse>nonExport()
                     .queryPerformanceRecorder(queryPerformanceRecorder)
                     .require(exportedTable)
                     .onError(responseObserver)
+                    .onSuccess((final SeekRowResponse response) -> safelyOnNextAndComplete(responseObserver,
+                            response))
                     .submit(() -> {
                         final Table table = exportedTable.get();
                         authWiring.checkPermissionSeekRow(session.getAuthContext(), request,
@@ -489,15 +467,14 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
                         final String columnName = request.getColumnName();
                         final Class<?> dataType = table.getDefinition().getColumn(columnName).getDataType();
                         final Object seekValue = getSeekValue(request.getSeekValue(), dataType);
-                        final Long result = table.apply(new SeekRow(
+                        final long result = new SeekRow(
                                 request.getStartingRow(),
                                 columnName,
                                 seekValue,
                                 request.getInsensitive(),
                                 request.getContains(),
-                                request.getIsBackward()));
-                        SeekRowResponse.Builder rowResponse = SeekRowResponse.newBuilder();
-                        safelyComplete(responseObserver, rowResponse.setResultRow(result).build());
+                                request.getIsBackward()).seek(table);
+                        return SeekRowResponse.newBuilder().setResultRow(result).build();
                     });
         }
     }
@@ -548,17 +525,16 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
                 if (numRemaining > 0) {
                     return;
                 }
-
+                final StatusRuntimeException failure = firstFailure.get();
                 try (final SafeCloseable ignored2 = queryPerformanceRecorder.resumeQuery()) {
-                    final StatusRuntimeException failure = firstFailure.get();
-                    if (failure != null) {
-                        safelyError(responseObserver, failure);
-                    } else {
-                        safelyComplete(responseObserver);
-                    }
                     if (queryPerformanceRecorder.endQuery()) {
                         EngineMetrics.getInstance().logQueryProcessingResults(queryPerformanceRecorder, failure);
                     }
+                }
+                if (failure != null) {
+                    safelyError(responseObserver, failure);
+                } else {
+                    safelyComplete(responseObserver);
                 }
             };
 
@@ -572,6 +548,8 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
                 } else {
                     resultId = ExportTicketHelper.tableReference(exportId);
                 }
+
+                final MutableObject<ExportedTableCreationResponse> successResponse = new MutableObject<>();
 
                 exportBuilder.exportBuilder.onError((result, errorContext, cause, dependentId) -> {
                     String errorInfo = errorContext;
@@ -590,11 +568,15 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
                     safelyOnNext(responseObserver, response);
                     onOneResolved.run();
                 }).onSuccess(table -> {
-                    final ExportedTableCreationResponse response =
-                            ExportUtil.buildTableCreationResponse(resultId, table);
-                    safelyOnNext(responseObserver, response);
+                    safelyOnNext(responseObserver, successResponse.getValue());
                     onOneResolved.run();
-                }).submit(exportBuilder::doExport);
+                }).submit(() -> {
+                    final Table result = exportBuilder.doExport();
+                    // If the response building has any possibility of failing, then we cannot run it in the onSuccess
+                    // method, which has no possibility of returning an error to the client.
+                    successResponse.setValue(ExportUtil.buildTableCreationResponse(resultId, result));
+                    return result;
+                });
             }
 
             // now that we've submitted everything we'll suspend the query and release our refcount
@@ -609,7 +591,8 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
             @NotNull final StreamObserver<ExportedTableUpdateMessage> responseObserver) {
         final SessionState session = sessionService.getCurrentSession();
         authWiring.checkPermissionExportedTableUpdates(session.getAuthContext(), request, Collections.emptyList());
-        final ExportedTableUpdateListener listener = new ExportedTableUpdateListener(session, responseObserver);
+        final ExportedTableUpdateListener listener =
+                exportedTableUpdateListenerFactory.create(session, responseObserver);
         session.addExportListener(listener);
         ((ServerCallStreamObserver<ExportedTableUpdateMessage>) responseObserver).setOnCancelHandler(
                 () -> session.removeExportListener(listener));
@@ -633,23 +616,21 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
         try (final SafeCloseable ignored = queryPerformanceRecorder.startQuery()) {
             final SessionState.ExportObject<Object> export = ticketRouter.resolve(session, request, "request");
 
-            session.nonExport()
+            session.<ExportedTableCreationResponse>nonExport()
                     .queryPerformanceRecorder(queryPerformanceRecorder)
                     .require(export)
                     .onError(responseObserver)
+                    .onSuccess((final ExportedTableCreationResponse response) -> safelyOnNextAndComplete(
+                            responseObserver,
+                            response))
                     .submit(() -> {
                         final Object obj = export.get();
                         if (!(obj instanceof Table)) {
-                            responseObserver.onError(
-                                    Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
-                                            "Ticket is not a table"));
-                            return;
+                            throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION, "Ticket is not a table");
                         }
                         authWiring.checkPermissionGetExportedTableCreationResponse(
                                 session.getAuthContext(), request, Collections.singletonList((Table) obj));
-                        final ExportedTableCreationResponse response =
-                                ExportUtil.buildTableCreationResponse(request, (Table) obj);
-                        safelyComplete(responseObserver, response);
+                        return ExportUtil.buildTableCreationResponse(request, (Table) obj);
                     });
         }
     }
@@ -687,16 +668,21 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
                     .map(ref -> resolveOneShotReference(session, ref))
                     .collect(Collectors.toList());
 
-            session.newExport(resultId, "resultId")
+            final MutableObject<ExportedTableCreationResponse> response = new MutableObject<>();
+
+            session.<Table>newExport(resultId, "resultId")
                     .require(dependencies)
-                    .onError(responseObserver)
                     .queryPerformanceRecorder(queryPerformanceRecorder)
+                    .onError(responseObserver)
+                    .onSuccess((final Table result) -> {
+                        safelyOnNextAndComplete(responseObserver, response.getValue());
+                    })
                     .submit(() -> {
                         operation.checkPermission(request, dependencies);
                         final Table result = operation.create(request, dependencies);
-                        final ExportedTableCreationResponse response =
-                                ExportUtil.buildTableCreationResponse(resultId, result);
-                        safelyComplete(responseObserver, response);
+                        // If the response building has any possibility of failing, then we cannot run it in the
+                        // onSuccess method, which has no possibility of returning an error to the client.
+                        response.setValue(ExportUtil.buildTableCreationResponse(resultId, result));
                         return result;
                     });
         }

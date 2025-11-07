@@ -1,3 +1,6 @@
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.hierarchical;
 
 import io.deephaven.api.ColumnName;
@@ -103,7 +106,7 @@ public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImp
             @NotNull final Table source,
             @NotNull final ColumnName column,
             final long size) {
-        final ColumnDefinition columnDefinition = source.getDefinition().getColumn(column.name());
+        final ColumnDefinition<?> columnDefinition = source.getDefinition().getColumn(column.name());
         final TableDefinition columnOnlyTableDefinition = TableDefinition.of(columnDefinition);
         // noinspection resource
         return new QueryTable(columnOnlyTableDefinition, RowSetFactory.flat(size).toTracking(),
@@ -146,18 +149,21 @@ public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImp
     }
 
     @Override
-    public TreeTable withFilter(@NotNull Filter filter) {
+    public TreeTable withFilter(@NotNull final Filter filter) {
         final WhereFilter[] whereFilters = WhereFilter.fromInternal(filter);
         if (whereFilters.length == 0) {
             return noopResult();
         }
+        final QueryCompilerRequestProcessor.BatchProcessor compilationProcessor = QueryCompilerRequestProcessor.batch();
         final Map<Boolean, List<WhereFilter>> nodeSuitabilityToFilters = Stream.of(whereFilters)
-                .peek(wf -> wf.init(source.getDefinition()))
+                .peek(wf -> wf.init(source.getDefinition(), compilationProcessor))
                 .collect(Collectors.partitioningBy(wf -> {
                     // Node-level filters have only node-filter columns and use no column arrays
                     return wf.getColumns().stream().map(ColumnName::of).allMatch(nodeFilterColumns::contains)
                             && wf.getColumnArrays().isEmpty();
                 }));
+        compilationProcessor.compile();
+
         final List<WhereFilter> nodeFilters = nodeSuitabilityToFilters.get(true);
         final List<WhereFilter> sourceFilters = nodeSuitabilityToFilters.get(false);
 
@@ -169,7 +175,7 @@ public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImp
         }
 
         final QueryTable filteredSource = (QueryTable) source.apply(
-                new TreeTableFilter.Operator(this, sourceFilters.toArray(WhereFilter.ZERO_LENGTH_SELECT_FILTER_ARRAY)));
+                new TreeTableFilter.Operator(this, sourceFilters.toArray(WhereFilter.ZERO_LENGTH_WHERE_FILTER_ARRAY)));
         final QueryTable filteredTree = computeTree(filteredSource, parentIdentifierColumn);
         return new TreeTableImpl(getAttributes(), filteredSource, filteredTree, sourceRowLookup, identifierColumn,
                 parentIdentifierColumn, nodeFilterColumns, accumulateOperations(nodeOperations, nodeFiltersRecorder),
@@ -216,16 +222,56 @@ public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImp
                 parentIdentifierColumn, nodeFilterColumns, nodeOperations, availableColumnDefinitions);
     }
 
+    @Override
+    public TreeTable rebase(@NotNull final Table newSource) {
+        checkRebaseDefinition("TreeTable", source, newSource);
+
+        final QueryTable newSourceQueryTable = (QueryTable) newSource.coalesce();
+
+        return makeTreeInternal(newSourceQueryTable, identifierColumn, parentIdentifierColumn, getAttributes(),
+                nodeFilterColumns, nodeOperations, availableColumnDefinitions);
+    }
+
     public static TreeTable makeTree(
             @NotNull final QueryTable source,
             @NotNull final ColumnName identifierColumn,
             @NotNull final ColumnName parentIdentifierColumn) {
+        return makeTreeInternal(source, identifierColumn, parentIdentifierColumn,
+                source.getAttributes(ak -> shouldCopyAttribute(ak, BaseTable.CopyAttributeOperation.Tree)), Set.of(),
+                null, null);
+    }
+
+    private static @NotNull TreeTableImpl makeTreeInternal(
+            @NotNull final QueryTable source,
+            @NotNull final ColumnName identifierColumn,
+            @NotNull final ColumnName parentIdentifierColumn,
+            @NotNull final Map<String, Object> attributes,
+            final Set<ColumnName> nodeFilterColumns,
+            @Nullable final TreeNodeOperationsRecorder nodeOperations,
+            @Nullable final List<ColumnDefinition<?>> availableColumnDefinitions) {
+        final ColumnDefinition<?> idDef = source.getDefinition().getColumn(identifierColumn.name());
+        if (idDef == null) {
+            throw new NoSuchColumnException("tree identifier column: ", source.getDefinition().getColumnNames(),
+                    identifierColumn.name());
+        }
+        final ColumnDefinition<?> parentDef = source.getDefinition().getColumn(parentIdentifierColumn.name());
+        if (parentDef == null) {
+            throw new NoSuchColumnException("tree parent column: ", source.getDefinition().getColumnNames(),
+                    parentIdentifierColumn.name());
+        }
+        if (!idDef.hasCompatibleDataType(parentDef)) {
+            throw new InvalidColumnException(
+                    "tree parent and identifier columns must have the same data type, but parent is "
+                            + parentDef.describeForCompatibility() + " and identifier is "
+                            + idDef.describeForCompatibility());
+        }
         final QueryTable tree = computeTree(source, parentIdentifierColumn);
         final QueryTable sourceRowLookupTable = computeSourceRowLookupTable(source, identifierColumn);
         final TreeSourceRowLookup sourceRowLookup = new TreeSourceRowLookup(source, sourceRowLookupTable);
         final TreeTableImpl result = new TreeTableImpl(
-                source.getAttributes(ak -> shouldCopyAttribute(ak, BaseTable.CopyAttributeOperation.Tree)),
-                source, tree, sourceRowLookup, identifierColumn, parentIdentifierColumn, Set.of(), null, null);
+                attributes,
+                source, tree, sourceRowLookup, identifierColumn, parentIdentifierColumn, nodeFilterColumns,
+                nodeOperations, availableColumnDefinitions);
         source.copySortableColumns(result, (final String columnName) -> true);
         return result;
     }
@@ -292,13 +338,11 @@ public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImp
         if (sourceRowKey == sourceRowLookup.noEntryValue()) {
             return NULL_ROW_KEY;
         }
-        if (filtered) {
-            final long sourceRowPosition = usePrev
-                    ? getSource().getRowSet().findPrev(sourceRowKey)
-                    : getSource().getRowSet().find(sourceRowKey);
-            if (sourceRowPosition == NULL_ROW_KEY) {
-                return NULL_ROW_KEY;
-            }
+        final long sourceRowPosition = usePrev
+                ? getSource().getRowSet().findPrev(sourceRowKey)
+                : getSource().getRowSet().find(sourceRowKey);
+        if (sourceRowPosition == NULL_ROW_KEY) {
+            return NULL_ROW_KEY;
         }
         return sourceRowKey;
     }
@@ -331,7 +375,7 @@ public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImp
     }
 
     @Override
-    boolean hasNodeFiltersToApply(long nodeId) {
+    boolean hasNodeFiltersToApply(final long nodeId) {
         return nodeOperations != null && !nodeOperations.getRecordedFilters().isEmpty();
     }
 
@@ -408,7 +452,7 @@ public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImp
 
     @Override
     NotificationStepSource[] getSourceDependencies() {
-        // NB: The reverse lookup may be derived from an unfiltered parent of our source, hence we need to treat it as a
+        // The reverse lookup may be derived from an unfiltered parent of our source, hence we need to treat it as a
         // separate dependency if we're filtered.
         return filtered
                 ? new NotificationStepSource[] {source, sourceRowLookup}
@@ -417,9 +461,12 @@ public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImp
 
     @Override
     void maybeWaitForStructuralSatisfaction() {
-        // NB: Our root is just a node in the tree (which is a partitioned table of constituent nodes), so waiting for
+        // Our root is just a node in the tree (which is a partitioned table of constituent nodes), so waiting for
         // satisfaction of the root would be insufficient (and unnecessary if we're waiting for the tree).
         maybeWaitForSatisfaction(tree);
+        if (!filtered) {
+            // The row lookup aggregation must also be satisfied if we aren't using it as a source dependency.
+            maybeWaitForSatisfaction(sourceRowLookup);
+        }
     }
-
 }

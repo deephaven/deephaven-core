@@ -1,30 +1,51 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.select;
 
 import io.deephaven.api.literal.Literal;
 import io.deephaven.base.string.cache.CompressedString;
-import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.liveness.LivenessScopeStack;
+import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.ColumnDefinition;
+import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.DataIndex;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.impl.QueryCompilerRequestProcessor;
+import io.deephaven.engine.table.impl.QueryTable;
+import io.deephaven.engine.table.impl.chunkfilter.ChunkFilter;
+import io.deephaven.engine.table.impl.chunkfilter.ChunkMatchFilterFactory;
+import io.deephaven.engine.table.impl.lang.QueryLanguageFunctionUtils;
 import io.deephaven.engine.table.impl.preview.DisplayWrapper;
-import io.deephaven.engine.context.QueryScope;
+import io.deephaven.engine.table.impl.DependencyStreamProvider;
+import io.deephaven.engine.table.impl.indexer.DataIndexer;
+import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.time.DateTimeUtils;
+import io.deephaven.util.QueryConstants;
+import io.deephaven.util.SafeCloseable;
+import io.deephaven.util.annotations.InternalUseOnly;
+import io.deephaven.util.datastructures.CachingSupplier;
 import io.deephaven.util.type.ArrayTypeUtils;
-import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.util.type.TypeUtils;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.jpy.PyObject;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.ZonedDateTime;
 import java.util.*;
+import java.util.function.Consumer;
+import java.util.stream.Stream;
 
-public class MatchFilter extends WhereFilterImpl {
+public class MatchFilter extends WhereFilterImpl implements DependencyStreamProvider, ExposesChunkFilter {
 
     private static final long serialVersionUID = 1L;
 
@@ -38,13 +59,30 @@ public class MatchFilter extends WhereFilterImpl {
                 literals.stream().map(AsObject::of).toArray());
     }
 
+    /** A fail-over WhereFilter supplier should the match filter initialization fail. */
+    private final CachingSupplier<ConditionFilter> failoverFilter;
+
     @NotNull
-    private final String columnName;
-    private Object[] values; // TODO: Does values need to be declared volatile (if we go back to the double-check)?
+    private String columnName;
+    private Class<?> columnType;
+    private Object[] values;
     private final String[] strValues;
     private final boolean invertMatch;
     private final boolean caseInsensitive;
-    private boolean initialized = false;
+
+    private boolean initialized;
+
+    /**
+     * The {@link DataIndex} for this filter, if any. Only ever non-{@code null} during operation initialization.
+     */
+    private DataIndex dataIndex;
+    /**
+     * Whether our dependencies have been gathered at least once. We expect dependencies to be gathered one time after
+     * {@link #beginOperation(Table)} (when we know if we're using a {@link DataIndex}), and then again after for every
+     * instantiation attempt when initializing the listener. Since we only use the DataIndex during instantiation, we
+     * don't need the listener to depend on it.
+     */
+    private boolean initialDependenciesGathered;
 
     public enum MatchType {
         Regular, Inverted,
@@ -54,43 +92,75 @@ public class MatchFilter extends WhereFilterImpl {
         MatchCase, IgnoreCase
     }
 
-    public MatchFilter(MatchType matchType, String columnName, Object... values) {
-        this.columnName = columnName;
-        this.values = values;
-        this.strValues = null;
+    public MatchFilter(
+            @NotNull final MatchType matchType,
+            @NotNull final String columnName,
+            @NotNull final Object... values) {
+        this(null, CaseSensitivity.MatchCase, matchType, columnName, null, values);
+    }
+
+    /**
+     * @deprecated this method is non-obvious in using IgnoreCase by default. Use
+     *             {@link MatchFilter#MatchFilter(MatchType, String, Object...)} instead.
+     */
+    @Deprecated(forRemoval = true)
+    public MatchFilter(
+            @NotNull final String columnName,
+            @NotNull final Object... values) {
+        this(null, CaseSensitivity.IgnoreCase, MatchType.Regular, columnName, null, values);
+    }
+
+    public MatchFilter(
+            @NotNull final CaseSensitivity sensitivity,
+            @NotNull final MatchType matchType,
+            @NotNull final String columnName,
+            @NotNull final String... strValues) {
+        this(null, sensitivity, matchType, columnName, strValues, null);
+    }
+
+    public MatchFilter(
+            @Nullable final CachingSupplier<ConditionFilter> failoverFilter,
+            @NotNull final CaseSensitivity sensitivity,
+            @NotNull final MatchType matchType,
+            @NotNull final String columnName,
+            @NotNull final String... strValues) {
+        this(failoverFilter, sensitivity, matchType, columnName, strValues, null);
+    }
+
+    private MatchFilter(
+            @Nullable final CachingSupplier<ConditionFilter> failoverFilter,
+            @NotNull final CaseSensitivity sensitivity,
+            @NotNull final MatchType matchType,
+            @NotNull final String columnName,
+            @Nullable String[] strValues,
+            @Nullable final Object[] values) {
+        this.failoverFilter = failoverFilter;
+        this.caseInsensitive = sensitivity == CaseSensitivity.IgnoreCase;
         this.invertMatch = (matchType == MatchType.Inverted);
-        this.caseInsensitive = false;
-    }
-
-    public MatchFilter(String columnName, Object... values) {
-        this(MatchType.Regular, columnName, values);
-    }
-
-    public MatchFilter(CaseSensitivity sensitivity, String columnName, String... strValues) {
-        this(sensitivity, MatchType.Regular, columnName, strValues);
-    }
-
-    public MatchFilter(CaseSensitivity sensitivity, MatchType matchType, String columnName, String... strValues) {
         this.columnName = columnName;
         this.strValues = strValues;
-        this.caseInsensitive = (sensitivity == CaseSensitivity.IgnoreCase);
-        this.invertMatch = (matchType == MatchType.Inverted);
+        this.values = values;
     }
 
-    public MatchFilter renameFilter(String newName) {
-        io.deephaven.engine.table.impl.select.MatchFilter.MatchType matchType =
-                invertMatch ? io.deephaven.engine.table.impl.select.MatchFilter.MatchType.Inverted
-                        : io.deephaven.engine.table.impl.select.MatchFilter.MatchType.Regular;
-        CaseSensitivity sensitivity = (caseInsensitive) ? CaseSensitivity.IgnoreCase : CaseSensitivity.MatchCase;
+    @InternalUseOnly
+    @Nullable
+    public ConditionFilter getFailoverFilterIfCached() {
+        return failoverFilter != null ? failoverFilter.getIfCached() : null;
+    }
+
+    public WhereFilter renameFilter(Map<String, String> renames) {
+        final String newName = renames.get(columnName);
+        Assert.neqNull(newName, "newName");
         if (strValues == null) {
-            return new MatchFilter(matchType, newName, values);
+            // when we're constructed with values then there is no failover filter
+            return new MatchFilter(getMatchType(), newName, values);
         } else {
-            return new MatchFilter(sensitivity, matchType, newName, strValues);
+            return new MatchFilter(
+                    failoverFilter != null ? new CachingSupplier<>(
+                            () -> failoverFilter.get().renameFilter(renames)) : null,
+                    caseInsensitive ? CaseSensitivity.IgnoreCase : CaseSensitivity.MatchCase,
+                    getMatchType(), newName, strValues, null);
         }
-    }
-
-    public String getColumnName() {
-        return columnName;
     }
 
     public Object[] getValues() {
@@ -105,83 +175,171 @@ public class MatchFilter extends WhereFilterImpl {
         return invertMatch ? MatchType.Inverted : MatchType.Regular;
     }
 
+    public Class<?> getColumnType() {
+        return columnType;
+    }
+
+    public boolean isCaseInsensitive() {
+        return caseInsensitive;
+    }
+
     @Override
     public List<String> getColumns() {
+        if (!initialized) {
+            throw new IllegalStateException("Filter must be initialized to invoke getColumnName");
+        }
+        final WhereFilter failover = getFailoverFilterIfCached();
+        if (failover != null) {
+            return failover.getColumns();
+        }
         return Collections.singletonList(columnName);
     }
 
     @Override
     public List<String> getColumnArrays() {
+        if (!initialized) {
+            throw new IllegalStateException("Filter must be initialized to invoke getColumnArrays");
+        }
+        final WhereFilter failover = getFailoverFilterIfCached();
+        if (failover != null) {
+            return failover.getColumnArrays();
+        }
         return Collections.emptyList();
     }
 
     @Override
-    public synchronized void init(TableDefinition tableDefinition) {
+    public void init(@NotNull TableDefinition tableDefinition) {
+        init(tableDefinition, QueryCompilerRequestProcessor.immediate());
+    }
+
+    @Override
+    public synchronized void init(
+            @NotNull final TableDefinition tableDefinition,
+            @NotNull final QueryCompilerRequestProcessor compilationProcessor) {
         if (initialized) {
             return;
         }
-        ColumnDefinition<?> column = tableDefinition.getColumn(columnName);
-        if (column == null) {
-            throw new RuntimeException("Column \"" + columnName
-                    + "\" doesn't exist in this table, available columns: " + tableDefinition.getColumnNames());
-        }
-        if (strValues == null) {
-            initialized = true;
-            return;
-        }
-        final List<Object> valueList = new ArrayList<>();
-        final QueryScope queryScope = ExecutionContext.getContext().getQueryScope();
-        final ColumnTypeConvertor convertor =
-                ColumnTypeConvertorFactory.getConvertor(column.getDataType(), column.getName());
-        for (String strValue : strValues) {
-            if (queryScope != null && queryScope.hasParamName(strValue)) {
-                Object paramValue = queryScope.readParamValue(strValue);
-                if (paramValue != null && paramValue.getClass().isArray()) {
-                    ArrayTypeUtils.ArrayAccessor<?> accessor = ArrayTypeUtils.getArrayAccessor(paramValue);
-                    for (int ai = 0; ai < accessor.length(); ++ai) {
-                        valueList.add(convertor.convertParamValue(accessor.get(ai)));
-                    }
-                } else if (paramValue != null && Collection.class.isAssignableFrom(paramValue.getClass())) {
-                    for (final Object paramValueMember : (Collection<?>) paramValue) {
-                        valueList.add(convertor.convertParamValue(paramValueMember));
-                    }
+        try {
+            ColumnDefinition<?> column = tableDefinition.getColumn(columnName);
+            if (column == null) {
+                if (strValues != null && strValues.length == 1
+                        && (column = tableDefinition.getColumn(strValues[0])) != null) {
+                    // fix up for the case where column name and variable name were swapped
+                    String tmp = columnName;
+                    columnName = strValues[0];
+                    strValues[0] = tmp;
                 } else {
-                    valueList.add(convertor.convertParamValue(paramValue));
+                    throw new RuntimeException("Column \"" + columnName
+                            + "\" doesn't exist in this table, available columns: " + tableDefinition.getColumnNames());
                 }
-            } else {
-                Object convertedValue;
-                try {
-                    convertedValue = convertor.convertStringLiteral(strValue);
-                } catch (Throwable t) {
-                    throw new IllegalArgumentException("Failed to convert literal value <" + strValue +
-                            "> for column \"" + columnName + "\" of type " + column.getDataType().getName(), t);
-                }
-                valueList.add(convertedValue);
+            }
+            columnType = column.getDataType();
+            if (strValues == null) {
+                initialized = true;
+                return;
+            }
+            final List<Object> valueList = new ArrayList<>();
+            final Map<String, Object> queryScopeVariables =
+                    compilationProcessor.getFormulaImports().getQueryScopeVariables();
+            final ColumnTypeConvertor convertor = ColumnTypeConvertorFactory.getConvertor(column.getDataType());
+            for (String strValue : strValues) {
+                convertor.convertValue(column, tableDefinition, strValue, queryScopeVariables, valueList::add);
+            }
+            values = valueList.toArray();
+        } catch (final RuntimeException err) {
+            if (failoverFilter == null) {
+                throw err;
+            }
+            try {
+                failoverFilter.get().init(tableDefinition, compilationProcessor);
+            } catch (final RuntimeException ignored) {
+                throw err;
             }
         }
-        // values = (Object[])ArrayTypeUtils.toArray(valueList, TypeUtils.getBoxedType(theColumn.getDataType()));
-        values = valueList.toArray();
         initialized = true;
+    }
+
+    @Override
+    public SafeCloseable beginOperation(@NotNull final Table sourceTable) {
+        if (initialDependenciesGathered || dataIndex != null) {
+            throw new IllegalStateException("Inputs already initialized, use copy() instead of re-using a WhereFilter");
+        }
+        if (!QueryTable.USE_DATA_INDEX_FOR_WHERE) {
+            return () -> {
+            };
+        }
+        try (final SafeCloseable ignored = sourceTable.isRefreshing() ? LivenessScopeStack.open() : null) {
+            dataIndex = DataIndexer.getDataIndex(sourceTable, columnName);
+            if (dataIndex != null && dataIndex.isRefreshing()) {
+                dataIndex.retainReference();
+            }
+        }
+        return dataIndex != null ? this::completeOperation : () -> {
+        };
+    }
+
+    private void completeOperation() {
+        if (dataIndex.isRefreshing()) {
+            dataIndex.dropReference();
+        }
+        dataIndex = null;
+    }
+
+    @Override
+    public Stream<NotificationQueue.Dependency> getDependencyStream() {
+        if (initialDependenciesGathered) {
+            return Stream.empty();
+        }
+        initialDependenciesGathered = true;
+        if (dataIndex == null || !dataIndex.isRefreshing()) {
+            return Stream.empty();
+        }
+        return Stream.of(dataIndex.table());
     }
 
     @NotNull
     @Override
     public WritableRowSet filter(
             @NotNull RowSet selection, @NotNull RowSet fullSet, @NotNull Table table, boolean usePrev) {
+        final WhereFilter failover = getFailoverFilterIfCached();
+        if (failover != null) {
+            return failover.filter(selection, fullSet, table, usePrev);
+        }
+
         final ColumnSource<?> columnSource = table.getColumnSource(columnName);
-        return columnSource.match(invertMatch, usePrev, caseInsensitive, selection, values);
+        return columnSource.match(invertMatch, usePrev, caseInsensitive, dataIndex, selection, values);
     }
 
     @NotNull
     @Override
     public WritableRowSet filterInverse(
             @NotNull RowSet selection, @NotNull RowSet fullSet, @NotNull Table table, boolean usePrev) {
+        final WhereFilter failover = getFailoverFilterIfCached();
+        if (failover != null) {
+            return failover.filterInverse(selection, fullSet, table, usePrev);
+        }
+
         final ColumnSource<?> columnSource = table.getColumnSource(columnName);
-        return columnSource.match(!invertMatch, usePrev, caseInsensitive, selection, values);
+        return columnSource.match(!invertMatch, usePrev, caseInsensitive, dataIndex, selection, values);
+    }
+
+    private ChunkFilter chunkFilter;
+
+    @Override
+    public Optional<ChunkFilter> chunkFilter() {
+        if (chunkFilter == null) {
+            chunkFilter = ChunkMatchFilterFactory.getChunkFilter(columnType, caseInsensitive, invertMatch, values);
+        }
+        return Optional.of(chunkFilter);
     }
 
     @Override
     public boolean isSimpleFilter() {
+        final WhereFilter failover = getFailoverFilterIfCached();
+        if (failover != null) {
+            return failover.isSimpleFilter();
+        }
+
         return true;
     }
 
@@ -200,15 +358,89 @@ public class MatchFilter extends WhereFilterImpl {
             }
             return paramValue;
         }
+
+        /**
+         * Convert the string value to the appropriate type for the column.
+         *
+         * @param column the column definition
+         * @param strValue the string value to convert
+         * @param queryScopeVariables the query scope variables
+         * @param valueConsumer the consumer for the converted value
+         * @return whether the value was an array or collection
+         */
+        final boolean convertValue(
+                @NotNull final ColumnDefinition<?> column,
+                @NotNull final TableDefinition tableDefinition,
+                @NotNull final String strValue,
+                @NotNull final Map<String, Object> queryScopeVariables,
+                @NotNull final Consumer<Object> valueConsumer) {
+            if (tableDefinition.getColumn(strValue) != null) {
+                // this is also a column name which needs to take precedence, and we can't convert it
+                throw new IllegalArgumentException(String.format(
+                        "Failed to convert value <%s> for column \"%s\" of type %s; it is a column name",
+                        strValue, column.getName(), column.getDataType().getName()));
+            }
+            if (strValue.endsWith("_")
+                    && tableDefinition.getColumn(strValue.substring(0, strValue.length() - 1)) != null) {
+                // this also a column array name which needs to take precedence, and we can't convert it
+                throw new IllegalArgumentException(String.format(
+                        "Failed to convert value <%s> for column \"%s\" of type %s; it is a column array access name",
+                        strValue, column.getName(), column.getDataType().getName()));
+            }
+
+            if (queryScopeVariables.containsKey(strValue)) {
+                Object paramValue = queryScopeVariables.get(strValue);
+                if (paramValue != null && paramValue.getClass().isArray()) {
+                    ArrayTypeUtils.ArrayAccessor<?> accessor = ArrayTypeUtils.getArrayAccessor(paramValue);
+                    for (int ai = 0; ai < accessor.length(); ++ai) {
+                        valueConsumer.accept(convertParamValue(accessor.get(ai)));
+                    }
+                    return true;
+                }
+                if (paramValue != null && Collection.class.isAssignableFrom(paramValue.getClass())) {
+                    for (final Object paramValueMember : (Collection<?>) paramValue) {
+                        valueConsumer.accept(convertParamValue(paramValueMember));
+                    }
+                    return true;
+                }
+                valueConsumer.accept(convertParamValue(paramValue));
+                return false;
+            }
+
+            try {
+                valueConsumer.accept(convertStringLiteral(strValue));
+            } catch (Throwable t) {
+                throw new IllegalArgumentException(String.format(
+                        "Failed to convert literal value <%s> for column \"%s\" of type %s",
+                        strValue, column.getName(), column.getDataType().getName()), t);
+            }
+
+            return false;
+        }
     }
 
     public static class ColumnTypeConvertorFactory {
-        public static ColumnTypeConvertor getConvertor(final Class<?> cls, final String name) {
+        public static ColumnTypeConvertor getConvertor(final Class<?> cls) {
             if (cls == byte.class) {
                 return new ColumnTypeConvertor() {
                     @Override
                     Object convertStringLiteral(String str) {
+                        if ("null".equals(str) || "NULL_BYTE".equals(str)) {
+                            return QueryConstants.NULL_BYTE_BOXED;
+                        }
                         return Byte.parseByte(str);
+                    }
+
+                    @Override
+                    Object convertParamValue(Object paramValue) {
+                        paramValue = super.convertParamValue(paramValue);
+                        if (paramValue instanceof Byte || paramValue == null) {
+                            return paramValue;
+                        }
+                        // noinspection unchecked
+                        final TypeUtils.TypeBoxer<Object> boxer =
+                                (TypeUtils.TypeBoxer<Object>) TypeUtils.getTypeBoxer(paramValue.getClass());
+                        return QueryLanguageFunctionUtils.byteCast(boxer.get(paramValue));
                     }
                 };
             }
@@ -216,7 +448,22 @@ public class MatchFilter extends WhereFilterImpl {
                 return new ColumnTypeConvertor() {
                     @Override
                     Object convertStringLiteral(String str) {
+                        if ("null".equals(str) || "NULL_SHORT".equals(str)) {
+                            return QueryConstants.NULL_SHORT_BOXED;
+                        }
                         return Short.parseShort(str);
+                    }
+
+                    @Override
+                    Object convertParamValue(Object paramValue) {
+                        paramValue = super.convertParamValue(paramValue);
+                        if (paramValue instanceof Short || paramValue == null) {
+                            return paramValue;
+                        }
+                        // noinspection unchecked
+                        final TypeUtils.TypeBoxer<Object> boxer =
+                                (TypeUtils.TypeBoxer<Object>) TypeUtils.getTypeBoxer(paramValue.getClass());
+                        return QueryLanguageFunctionUtils.shortCast(boxer.get(paramValue));
                     }
                 };
             }
@@ -224,7 +471,22 @@ public class MatchFilter extends WhereFilterImpl {
                 return new ColumnTypeConvertor() {
                     @Override
                     Object convertStringLiteral(String str) {
+                        if ("null".equals(str) || "NULL_INT".equals(str)) {
+                            return QueryConstants.NULL_INT_BOXED;
+                        }
                         return Integer.parseInt(str);
+                    }
+
+                    @Override
+                    Object convertParamValue(Object paramValue) {
+                        paramValue = super.convertParamValue(paramValue);
+                        if (paramValue instanceof Integer || paramValue == null) {
+                            return paramValue;
+                        }
+                        // noinspection unchecked
+                        final TypeUtils.TypeBoxer<Object> boxer =
+                                (TypeUtils.TypeBoxer<Object>) TypeUtils.getTypeBoxer(paramValue.getClass());
+                        return QueryLanguageFunctionUtils.intCast(boxer.get(paramValue));
                     }
                 };
             }
@@ -232,7 +494,22 @@ public class MatchFilter extends WhereFilterImpl {
                 return new ColumnTypeConvertor() {
                     @Override
                     Object convertStringLiteral(String str) {
+                        if ("null".equals(str) || "NULL_LONG".equals(str)) {
+                            return QueryConstants.NULL_LONG_BOXED;
+                        }
                         return Long.parseLong(str);
+                    }
+
+                    @Override
+                    Object convertParamValue(Object paramValue) {
+                        paramValue = super.convertParamValue(paramValue);
+                        if (paramValue instanceof Long || paramValue == null) {
+                            return paramValue;
+                        }
+                        // noinspection unchecked
+                        final TypeUtils.TypeBoxer<Object> boxer =
+                                (TypeUtils.TypeBoxer<Object>) TypeUtils.getTypeBoxer(paramValue.getClass());
+                        return QueryLanguageFunctionUtils.longCast(boxer.get(paramValue));
                     }
                 };
             }
@@ -240,7 +517,22 @@ public class MatchFilter extends WhereFilterImpl {
                 return new ColumnTypeConvertor() {
                     @Override
                     Object convertStringLiteral(String str) {
+                        if ("null".equals(str) || "NULL_FLOAT".equals(str)) {
+                            return QueryConstants.NULL_FLOAT_BOXED;
+                        }
                         return Float.parseFloat(str);
+                    }
+
+                    @Override
+                    Object convertParamValue(Object paramValue) {
+                        paramValue = super.convertParamValue(paramValue);
+                        if (paramValue instanceof Float || paramValue == null) {
+                            return paramValue;
+                        }
+                        // noinspection unchecked
+                        final TypeUtils.TypeBoxer<Object> boxer =
+                                (TypeUtils.TypeBoxer<Object>) TypeUtils.getTypeBoxer(paramValue.getClass());
+                        return QueryLanguageFunctionUtils.floatCast(boxer.get(paramValue));
                     }
                 };
             }
@@ -248,7 +540,22 @@ public class MatchFilter extends WhereFilterImpl {
                 return new ColumnTypeConvertor() {
                     @Override
                     Object convertStringLiteral(String str) {
+                        if ("null".equals(str) || "NULL_DOUBLE".equals(str)) {
+                            return QueryConstants.NULL_DOUBLE_BOXED;
+                        }
                         return Double.parseDouble(str);
+                    }
+
+                    @Override
+                    Object convertParamValue(Object paramValue) {
+                        paramValue = super.convertParamValue(paramValue);
+                        if (paramValue instanceof Double || paramValue == null) {
+                            return paramValue;
+                        }
+                        // noinspection unchecked
+                        final TypeUtils.TypeBoxer<Object> boxer =
+                                (TypeUtils.TypeBoxer<Object>) TypeUtils.getTypeBoxer(paramValue.getClass());
+                        return QueryLanguageFunctionUtils.doubleCast(boxer.get(paramValue));
                     }
                 };
             }
@@ -257,6 +564,9 @@ public class MatchFilter extends WhereFilterImpl {
                     @Override
                     Object convertStringLiteral(String str) {
                         // NB: Boolean.parseBoolean(str) doesn't do what we want here - anything not true is false.
+                        if ("null".equals(str) || "NULL_BOOLEAN".equals(str)) {
+                            return QueryConstants.NULL_BOOLEAN;
+                        }
                         if (str.equalsIgnoreCase("true")) {
                             return Boolean.TRUE;
                         }
@@ -272,6 +582,9 @@ public class MatchFilter extends WhereFilterImpl {
                 return new ColumnTypeConvertor() {
                     @Override
                     Object convertStringLiteral(String str) {
+                        if ("null".equals(str) || "NULL_CHAR".equals(str)) {
+                            return QueryConstants.NULL_CHAR_BOXED;
+                        }
                         if (str.length() > 1) {
                             // TODO: #1517 Allow escaping of chars
                             if (str.length() == 3 && ((str.charAt(0) == '\'' && str.charAt(2) == '\'')
@@ -284,13 +597,50 @@ public class MatchFilter extends WhereFilterImpl {
                         }
                         return str.charAt(0);
                     }
+
+                    @Override
+                    Object convertParamValue(Object paramValue) {
+                        paramValue = super.convertParamValue(paramValue);
+                        if (paramValue instanceof Character || paramValue == null) {
+                            return paramValue;
+                        }
+                        // noinspection unchecked
+                        final TypeUtils.TypeBoxer<Object> boxer =
+                                (TypeUtils.TypeBoxer<Object>) TypeUtils.getTypeBoxer(paramValue.getClass());
+                        return QueryLanguageFunctionUtils.charCast(boxer.get(paramValue));
+                    }
                 };
             }
             if (cls == BigDecimal.class) {
                 return new ColumnTypeConvertor() {
                     @Override
                     Object convertStringLiteral(String str) {
+                        if ("null".equals(str)) {
+                            return null;
+                        }
                         return new BigDecimal(str);
+                    }
+
+                    @Override
+                    Object convertParamValue(Object paramValue) {
+                        paramValue = super.convertParamValue(paramValue);
+                        if (paramValue instanceof BigDecimal || paramValue == null) {
+                            return paramValue;
+                        }
+                        if (paramValue instanceof BigInteger) {
+                            return new BigDecimal((BigInteger) paramValue);
+                        }
+                        // noinspection unchecked
+                        final TypeUtils.TypeBoxer<Object> boxer =
+                                (TypeUtils.TypeBoxer<Object>) TypeUtils.getTypeBoxer(paramValue.getClass());
+                        final Object boxedValue = boxer.get(paramValue);
+                        if (boxedValue == null) {
+                            return null;
+                        }
+                        if (boxedValue instanceof Number) {
+                            return BigDecimal.valueOf(((Number) boxedValue).doubleValue());
+                        }
+                        return paramValue;
                     }
                 };
             }
@@ -298,7 +648,32 @@ public class MatchFilter extends WhereFilterImpl {
                 return new ColumnTypeConvertor() {
                     @Override
                     Object convertStringLiteral(String str) {
+                        if ("null".equals(str)) {
+                            return null;
+                        }
                         return new BigInteger(str);
+                    }
+
+                    @Override
+                    Object convertParamValue(Object paramValue) {
+                        paramValue = super.convertParamValue(paramValue);
+                        if (paramValue instanceof BigInteger || paramValue == null) {
+                            return paramValue;
+                        }
+                        if (paramValue instanceof BigDecimal) {
+                            return ((BigDecimal) paramValue).toBigInteger();
+                        }
+                        // noinspection unchecked
+                        final TypeUtils.TypeBoxer<Object> boxer =
+                                (TypeUtils.TypeBoxer<Object>) TypeUtils.getTypeBoxer(paramValue.getClass());
+                        final Object boxedValue = boxer.get(paramValue);
+                        if (boxedValue == null) {
+                            return null;
+                        }
+                        if (boxedValue instanceof Number) {
+                            return BigInteger.valueOf(((Number) boxedValue).longValue());
+                        }
+                        return paramValue;
                     }
                 };
             }
@@ -369,6 +744,9 @@ public class MatchFilter extends WhereFilterImpl {
                 return new ColumnTypeConvertor() {
                     @Override
                     Object convertStringLiteral(String str) {
+                        if ("null".equals(str)) {
+                            return null;
+                        }
                         if (str.charAt(0) != '\'' || str.charAt(str.length() - 1) != '\'') {
                             throw new IllegalArgumentException(
                                     "Instant literal not enclosed in single-quotes (\"" + str + "\")");
@@ -377,10 +755,73 @@ public class MatchFilter extends WhereFilterImpl {
                     }
                 };
             }
+            if (cls == LocalDate.class) {
+                return new ColumnTypeConvertor() {
+                    @Override
+                    Object convertStringLiteral(String str) {
+                        if ("null".equals(str)) {
+                            return null;
+                        }
+                        if (str.charAt(0) != '\'' || str.charAt(str.length() - 1) != '\'') {
+                            throw new IllegalArgumentException(
+                                    "LocalDate literal not enclosed in single-quotes (\"" + str + "\")");
+                        }
+                        return DateTimeUtils.parseLocalDate(str.substring(1, str.length() - 1));
+                    }
+                };
+            }
+            if (cls == LocalTime.class) {
+                return new ColumnTypeConvertor() {
+                    @Override
+                    Object convertStringLiteral(String str) {
+                        if ("null".equals(str)) {
+                            return null;
+                        }
+                        if (str.charAt(0) != '\'' || str.charAt(str.length() - 1) != '\'') {
+                            throw new IllegalArgumentException(
+                                    "LocalTime literal not enclosed in single-quotes (\"" + str + "\")");
+                        }
+                        return DateTimeUtils.parseLocalTime(str.substring(1, str.length() - 1));
+                    }
+                };
+            }
+            if (cls == LocalDateTime.class) {
+                return new ColumnTypeConvertor() {
+                    @Override
+                    Object convertStringLiteral(String str) {
+                        if ("null".equals(str)) {
+                            return null;
+                        }
+                        if (str.charAt(0) != '\'' || str.charAt(str.length() - 1) != '\'') {
+                            throw new IllegalArgumentException(
+                                    "LocalDateTime literal not enclosed in single-quotes (\"" + str + "\")");
+                        }
+                        return DateTimeUtils.parseLocalDateTime(str.substring(1, str.length() - 1));
+                    }
+                };
+            }
+            if (cls == ZonedDateTime.class) {
+                return new ColumnTypeConvertor() {
+                    @Override
+                    Object convertStringLiteral(String str) {
+                        if ("null".equals(str)) {
+                            return null;
+                        }
+                        if (str.charAt(0) != '\'' || str.charAt(str.length() - 1) != '\'') {
+                            throw new IllegalArgumentException(
+                                    "ZoneDateTime literal not enclosed in single-quotes (\"" + str + "\")");
+                        }
+                        return DateTimeUtils.parseZonedDateTime(str.substring(1, str.length() - 1));
+                    }
+                };
+            }
             if (cls == Object.class) {
                 return new ColumnTypeConvertor() {
                     @Override
                     Object convertStringLiteral(String str) {
+                        if ("null".equals(str)) {
+                            return null;
+                        }
                         if (str.startsWith("\"") || str.startsWith("`")) {
                             return str.substring(1, str.length() - 1);
                         } else if (str.contains(".")) {
@@ -398,6 +839,7 @@ public class MatchFilter extends WhereFilterImpl {
                 return new ColumnTypeConvertor() {
                     @Override
                     Object convertStringLiteral(String str) {
+                        // noinspection unchecked,rawtypes
                         return Enum.valueOf((Class) cls, str);
                     }
                 };
@@ -406,6 +848,9 @@ public class MatchFilter extends WhereFilterImpl {
                 return new ColumnTypeConvertor() {
                     @Override
                     Object convertStringLiteral(String str) {
+                        if ("null".equals(str)) {
+                            return null;
+                        }
                         if (str.startsWith("\"") || str.startsWith("`")) {
                             return DisplayWrapper.make(str.substring(1, str.length() - 1));
                         } else {
@@ -414,59 +859,94 @@ public class MatchFilter extends WhereFilterImpl {
                     }
                 };
             }
-            throw new IllegalArgumentException(
-                    "Unknown type " + cls.getName() + " for MatchFilter value auto-conversion");
+            return new ColumnTypeConvertor() {
+                @Override
+                Object convertStringLiteral(String str) {
+                    if ("null".equals(str)) {
+                        return null;
+                    }
+                    throw new IllegalArgumentException(
+                            "Can't create " + cls.getName() + " from String Literal for value auto-conversion");
+                }
+            };
         }
     }
 
     @Override
     public String toString() {
-        if (strValues == null) {
-            return columnName + (invertMatch ? " not" : "") + " in " + Arrays.toString(values);
-        }
-        return columnName + (invertMatch ? " not" : "") + " in " + Arrays.toString(strValues);
+        return strValues == null ? toString(values) : toString(strValues);
+    }
+
+    private String toString(Object[] x) {
+        return columnName + (caseInsensitive ? " icase" : "") + (invertMatch ? " not" : "") + " in "
+                + Arrays.toString(x);
     }
 
     @Override
     public boolean equals(Object o) {
-        if (this == o)
+        if (this == o) {
             return true;
-        if (o == null || getClass() != o.getClass())
+        }
+        if (o == null || getClass() != o.getClass()) {
             return false;
+        }
+
         final MatchFilter that = (MatchFilter) o;
-        return invertMatch == that.invertMatch &&
-                caseInsensitive == that.caseInsensitive &&
-                Objects.equals(columnName, that.columnName) &&
-                Arrays.equals(values, that.values) &&
-                Arrays.equals(strValues, that.strValues);
+
+        // The equality check is used for memoization, and we cannot actually determine equality of an uninitialized
+        // filter, because there is too much state that has not been realized.
+        if (!initialized && !that.initialized) {
+            throw new UnsupportedOperationException("MatchFilter has not been initialized");
+        }
+
+        // start off with the simple things
+        if (invertMatch != that.invertMatch ||
+                caseInsensitive != that.caseInsensitive ||
+                !Objects.equals(columnName, that.columnName)) {
+            return false;
+        }
+
+        if (!Arrays.equals(values, that.values)) {
+            return false;
+        }
+
+        return Objects.equals(getFailoverFilterIfCached(), that.getFailoverFilterIfCached());
     }
 
     @Override
     public int hashCode() {
+        if (!initialized) {
+            throw new UnsupportedOperationException("MatchFilter has not been initialized");
+        }
         int result = Objects.hash(columnName, invertMatch, caseInsensitive);
+        // we can use values because we know the filter has been initialized; the hash code should be stable and it
+        // cannot be stable before we convert the values
         result = 31 * result + Arrays.hashCode(values);
-        result = 31 * result + Arrays.hashCode(strValues);
         return result;
     }
 
     @Override
     public boolean canMemoize() {
         // we can be memoized once our values have been initialized; but not before
-        return initialized;
+        return initialized && (getFailoverFilterIfCached() == null || getFailoverFilterIfCached().canMemoize());
     }
 
     @Override
     public WhereFilter copy() {
         final MatchFilter copy;
         if (strValues != null) {
-            copy = new MatchFilter(caseInsensitive ? CaseSensitivity.IgnoreCase : CaseSensitivity.MatchCase,
-                    getMatchType(), columnName, strValues);
+            copy = new MatchFilter(
+                    failoverFilter == null ? null : new CachingSupplier<>(() -> failoverFilter.get().copy()),
+                    caseInsensitive ? CaseSensitivity.IgnoreCase : CaseSensitivity.MatchCase,
+                    getMatchType(), columnName, strValues, null);
         } else {
+            // when we're constructed with values then there is no failover filter
             copy = new MatchFilter(getMatchType(), columnName, values);
         }
         if (initialized) {
             copy.initialized = true;
             copy.values = values;
+            copy.columnType = columnType;
         }
         return copy;
     }

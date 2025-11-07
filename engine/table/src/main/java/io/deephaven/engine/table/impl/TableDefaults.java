@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.api.*;
@@ -9,7 +9,6 @@ import io.deephaven.api.Pair;
 import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.api.snapshot.SnapshotWhenOptions;
 import io.deephaven.api.snapshot.SnapshotWhenOptions.Flag;
-import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.hierarchical.RollupTable;
 import io.deephaven.engine.table.impl.select.SelectColumn;
@@ -18,6 +17,7 @@ import io.deephaven.engine.table.impl.select.WouldMatchPairFactory;
 import io.deephaven.api.util.ConcurrentMethod;
 import io.deephaven.engine.util.ColumnFormatting;
 import io.deephaven.engine.liveness.LivenessScopeStack;
+import io.deephaven.engine.util.TableTools;
 import io.deephaven.util.annotations.FinalDefault;
 
 import javax.annotation.Nullable;
@@ -48,30 +48,7 @@ public interface TableDefaults extends Table, TableOperationsDefaults<Table, Tab
     @ConcurrentMethod
     @FinalDefault
     default Table meta() {
-        List<String> columnNames = new ArrayList<>();
-        List<String> columnDataTypes = new ArrayList<>();
-        List<String> columnTypes = new ArrayList<>();
-        List<Boolean> columnPartitioning = new ArrayList<>();
-        List<Boolean> columnGrouping = new ArrayList<>();
-        for (ColumnDefinition<?> cDef : getDefinition().getColumns()) {
-            columnNames.add(cDef.getName());
-            final Class<?> dataType = cDef.getDataType();
-            final String dataTypeName = dataType.getCanonicalName();
-            columnDataTypes.add(dataTypeName == null ? dataType.getName() : dataTypeName);
-            columnTypes.add(cDef.getColumnType().name());
-            columnPartitioning.add(cDef.isPartitioning());
-            columnGrouping.add(cDef.isGrouping());
-        }
-        final String[] resultColumnNames = {"Name", "DataType", "ColumnType", "IsPartitioning", "IsGrouping"};
-        final Object[] resultValues = {
-                columnNames.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY),
-                columnDataTypes.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY),
-                columnTypes.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY),
-                columnPartitioning.toArray(new Boolean[0]),
-                columnGrouping.toArray(new Boolean[0]),
-        };
-
-        return new InMemoryTable(resultColumnNames, resultValues);
+        return TableTools.metaTable(getDefinition());
     }
 
     @Override
@@ -122,7 +99,7 @@ public interface TableDefaults extends Table, TableOperationsDefaults<Table, Tab
         @SuppressWarnings("rawtypes")
         ColumnSource rawColumnSource = getColumnSource(sourceName);
         // noinspection unchecked
-        return rawColumnSource.cast(clazz);
+        return rawColumnSource.cast(clazz, sourceName);
     }
 
     @Override
@@ -132,7 +109,7 @@ public interface TableDefaults extends Table, TableOperationsDefaults<Table, Tab
         @SuppressWarnings("rawtypes")
         ColumnSource rawColumnSource = getColumnSource(sourceName);
         // noinspection unchecked
-        return rawColumnSource.cast(clazz, componentType);
+        return rawColumnSource.cast(clazz, componentType, sourceName);
     }
 
     // -----------------------------------------------------------------------------------------------------------------
@@ -243,14 +220,7 @@ public interface TableDefaults extends Table, TableOperationsDefaults<Table, Tab
     @ConcurrentMethod
     @FinalDefault
     default Table moveColumnsDown(String... columnsToMove) {
-        return moveColumns(numColumns() - columnsToMove.length, true, columnsToMove);
-    }
-
-    @Override
-    @ConcurrentMethod
-    @FinalDefault
-    default Table moveColumns(int index, String... columnsToMove) {
-        return moveColumns(index, false, columnsToMove);
+        return moveColumns(numColumns() - columnsToMove.length, columnsToMove);
     }
 
     // -----------------------------------------------------------------------------------------------------------------
@@ -275,13 +245,13 @@ public interface TableDefaults extends Table, TableOperationsDefaults<Table, Tab
     @Override
     @FinalDefault
     default Table headBy(long nRows, Collection<String> groupByColumnNames) {
-        return headBy(nRows, groupByColumnNames.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
+        return headBy(nRows, groupByColumnNames.toArray(String[]::new));
     }
 
     @Override
     @FinalDefault
     default Table tailBy(long nRows, Collection<String> groupByColumnNames) {
-        return tailBy(nRows, groupByColumnNames.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
+        return tailBy(nRows, groupByColumnNames.toArray(String[]::new));
     }
 
     @Override

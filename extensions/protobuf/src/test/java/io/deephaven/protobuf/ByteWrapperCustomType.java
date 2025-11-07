@@ -1,11 +1,14 @@
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.protobuf;
 
 import com.google.auto.service.AutoService;
 import com.google.protobuf.Descriptors.Descriptor;
 import com.google.protobuf.Message;
-import io.deephaven.functions.ToByteFunction;
-import io.deephaven.functions.ToObjectFunction;
-import io.deephaven.functions.TypedFunction;
+import io.deephaven.function.ToByteFunction;
+import io.deephaven.function.ToObjectFunction;
+import io.deephaven.function.TypedFunction;
 import io.deephaven.protobuf.test.ByteWrapper;
 import io.deephaven.qst.type.Type;
 

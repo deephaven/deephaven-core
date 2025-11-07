@@ -1,3 +1,6 @@
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.updateby;
 
 import io.deephaven.base.verify.Assert;
@@ -30,14 +33,19 @@ class UpdateByWindowCumulative extends UpdateByWindow {
     }
 
     @Override
-    void prepareWindowBucket(UpdateByWindowBucketContext context) {
-        // working chunk size need not be larger than affectedRows.size()
-        context.workingChunkSize = Math.toIntExact(Math.min(context.workingChunkSize, context.affectedRows.size()));
+    UpdateByWindow copy() {
+        final UpdateByOperator[] copiedOperators = new UpdateByOperator[this.operators.length];
+        for (int ii = 0; ii < copiedOperators.length; ii++) {
+            copiedOperators[ii] = this.operators[ii].copy();
+        }
+
+        return new UpdateByWindowCumulative(copiedOperators, operatorInputSourceSlots, timestampColumnName);
     }
 
     @Override
-    void finalizeWindowBucket(UpdateByWindowBucketContext context) {
-        super.finalizeWindowBucket(context);
+    void prepareWindowBucket(UpdateByWindowBucketContext context) {
+        // working chunk size need not be larger than affectedRows.size()
+        context.workingChunkSize = Math.toIntExact(Math.min(context.workingChunkSize, context.affectedRows.size()));
     }
 
     @Override
@@ -47,9 +55,17 @@ class UpdateByWindowCumulative extends UpdateByWindow {
             final TrackingRowSet timestampValidRowSet,
             final boolean timestampsModified,
             final int chunkSize,
-            final boolean isInitializeStep) {
-        return new UpdateByWindowBucketContext(sourceRowSet, timestampColumnSource, timestampSsa, timestampValidRowSet,
-                timestampsModified, chunkSize, isInitializeStep);
+            final boolean isInitializeStep,
+            final Object[] bucketKeyValues) {
+        return new UpdateByWindowBucketContext(
+                sourceRowSet,
+                timestampColumnSource,
+                timestampSsa,
+                timestampValidRowSet,
+                timestampsModified,
+                chunkSize,
+                isInitializeStep,
+                bucketKeyValues);
     }
 
     @Override
@@ -184,7 +200,8 @@ class UpdateByWindowCumulative extends UpdateByWindow {
                     continue;
                 }
                 UpdateByOperator cumOp = operators[opIdx];
-                cumOp.initializeCumulative(winOpContexts[ii], rowKey, timestamp, context.sourceRowSet);
+                cumOp.initializeCumulativeWithKeyValues(winOpContexts[ii], rowKey, timestamp, context.sourceRowSet,
+                        context.bucketKeyValues);
             }
 
             while (affectedIt.hasMore()) {

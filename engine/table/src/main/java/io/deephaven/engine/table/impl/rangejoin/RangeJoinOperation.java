@@ -1,3 +1,6 @@
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.rangejoin;
 
 import io.deephaven.api.ColumnName;
@@ -255,7 +258,7 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
         if (ExecutionContext.getContext().getOperationInitializer().canParallelize()) {
             jobScheduler = new OperationInitializerJobScheduler();
         } else {
-            jobScheduler = ImmediateJobScheduler.INSTANCE;
+            jobScheduler = new ImmediateJobScheduler();
         }
 
         final ExecutionContext executionContext = ExecutionContext.newBuilder()
@@ -479,6 +482,8 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
                             outputSlotsExposed,
                             outputStartPositionsInclusiveExposed,
                             outputEndPositionsExclusiveExposed),
+                    () -> {
+                    },
                     resultFuture::completeExceptionally);
         }
 

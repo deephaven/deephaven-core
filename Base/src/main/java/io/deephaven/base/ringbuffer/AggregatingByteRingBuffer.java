@@ -1,11 +1,10 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit AggregatingCharRingBuffer and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit AggregatingCharRingBuffer and run "./gradlew replicateRingBuffers" to regenerate
+//
+// @formatter:off
 package io.deephaven.base.ringbuffer;
 
 import org.jetbrains.annotations.NotNull;
@@ -435,11 +434,16 @@ public class AggregatingByteRingBuffer {
         final long prevHead = internalBuffer.head;
         final int prevSize = size();
 
-        internalBuffer.clear();
+        // Reset the pointers in the ring buffer without clearing the storage array. This leaves existing `identityVal`
+        // entries in place for the next `evaluate()` call.
+        internalBuffer.head = internalBuffer.tail = 0;
 
         calcHead = calcTail = 0;
-        // Reset the cleared storage entries to the identity value
+
+        // Reset the previously populated storage entries to the identity value. After this call, all entries in the
+        // storage buffer are `identityVal`
         fillWithIdentityVal(prevHead, prevSize);
+
         // Reset the tree buffer with the identity value
         Arrays.fill(treeStorage, identityVal);
     }

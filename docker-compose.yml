@@ -9,8 +9,6 @@
 #
 # Please see README.md with more details on how to get started.
 
-version: "3.4"
-
 services:
   server:
     extends:

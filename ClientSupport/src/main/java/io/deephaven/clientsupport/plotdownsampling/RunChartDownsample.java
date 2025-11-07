@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.clientsupport.plotdownsampling;
 
 import io.deephaven.chunk.attributes.Values;
@@ -315,12 +315,6 @@ public class RunChartDownsample implements Function<Table, Table> {
                 rangeMode = RangeMode.AUTO;
             }
             allYColumnIndexes = IntStream.range(0, key.yColumnNames.length).toArray();
-        }
-
-        @Override
-        protected void destroy() {
-            super.destroy();
-            states.values().forEach(BucketState::close);
         }
 
         @Override
@@ -684,7 +678,6 @@ public class RunChartDownsample implements Function<Table, Table> {
                     // if it has no keys at all, remove it so we quit checking it
                     iterator.remove();
                     releasePosition(bucket.getOffset());
-                    bucket.close();
                 } else {
                     bucket.rescanIfNeeded(context);
                 }

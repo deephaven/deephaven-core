@@ -1,20 +1,18 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
-/* ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharRangeComparator and regenerate
- * ------------------------------------------------------------------------------------------------------------------ */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit CharRangeComparator and run "./gradlew replicateChunkFilters" to regenerate
+//
+// @formatter:off
 package io.deephaven.engine.table.impl.chunkfilter;
 
 import io.deephaven.util.compare.LongComparisons;
-import io.deephaven.chunk.*;
-import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
-import io.deephaven.chunk.attributes.Values;
 
 public class LongRangeComparator {
     private LongRangeComparator() {} // static use only
 
-    private abstract static class LongLongFilter implements ChunkFilter.LongChunkFilter {
+    private abstract static class LongLongFilter extends LongChunkFilter {
         final long lower;
         final long upper;
 
@@ -22,75 +20,54 @@ public class LongRangeComparator {
             this.lower = lower;
             this.upper = upper;
         }
-
-        abstract public void filter(LongChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys, WritableLongChunk<OrderedRowKeys> results);
     }
 
-    static class LongLongInclusiveInclusiveFilter extends LongLongFilter {
+    private final static class LongLongInclusiveInclusiveFilter extends LongLongFilter {
         private LongLongInclusiveInclusiveFilter(long lower, long upper) {
             super(lower, upper);
         }
 
-        public void filter(LongChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys, WritableLongChunk<OrderedRowKeys> results) {
-            results.setSize(0);
-            for (int ii = 0; ii < values.size(); ++ii) {
-                final long value = values.get(ii);
-                if (LongComparisons.geq(value, lower) && LongComparisons.leq(value, upper)) {
-                    results.add(keys.get(ii));
-                }
-            }
+        @Override
+        public boolean matches(long value) {
+            return LongComparisons.geq(value, lower) && LongComparisons.leq(value, upper);
         }
     }
 
-    static class LongLongInclusiveExclusiveFilter extends LongLongFilter {
+    private final static class LongLongInclusiveExclusiveFilter extends LongLongFilter {
         private LongLongInclusiveExclusiveFilter(long lower, long upper) {
             super(lower, upper);
         }
 
-        public void filter(LongChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys, WritableLongChunk<OrderedRowKeys> results) {
-            results.setSize(0);
-            for (int ii = 0; ii < values.size(); ++ii) {
-                final long value = values.get(ii);
-                if (LongComparisons.geq(value, lower) && LongComparisons.lt(value, upper)) {
-                    results.add(keys.get(ii));
-                }
-            }
+        @Override
+        public boolean matches(long value) {
+            return LongComparisons.geq(value, lower) && LongComparisons.lt(value, upper);
         }
     }
 
-    static class LongLongExclusiveInclusiveFilter extends LongLongFilter {
+    private final static class LongLongExclusiveInclusiveFilter extends LongLongFilter {
         private LongLongExclusiveInclusiveFilter(long lower, long upper) {
             super(lower, upper);
         }
 
-        public void filter(LongChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys, WritableLongChunk<OrderedRowKeys> results) {
-            results.setSize(0);
-            for (int ii = 0; ii < values.size(); ++ii) {
-                final long value = values.get(ii);
-                if (LongComparisons.gt(value, lower) && LongComparisons.leq(value, upper)) {
-                    results.add(keys.get(ii));
-                }
-            }
+        @Override
+        public boolean matches(long value) {
+            return LongComparisons.gt(value, lower) && LongComparisons.leq(value, upper);
         }
     }
 
-    static class LongLongExclusiveExclusiveFilter extends LongLongFilter {
+    private final static class LongLongExclusiveExclusiveFilter extends LongLongFilter {
         private LongLongExclusiveExclusiveFilter(long lower, long upper) {
             super(lower, upper);
         }
 
-        public void filter(LongChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys, WritableLongChunk<OrderedRowKeys> results) {
-            results.setSize(0);
-            for (int ii = 0; ii < values.size(); ++ii) {
-                final long value = values.get(ii);
-                if (LongComparisons.gt(value, lower) && LongComparisons.lt(value, upper)) {
-                    results.add(keys.get(ii));
-                }
-            }
+        @Override
+        public boolean matches(long value) {
+            return LongComparisons.gt(value, lower) && LongComparisons.lt(value, upper);
         }
     }
 
-    public static ChunkFilter.LongChunkFilter makeLongFilter(long lower, long upper, boolean lowerInclusive, boolean upperInclusive) {
+    public static LongChunkFilter makeLongFilter(long lower, long upper, boolean lowerInclusive,
+            boolean upperInclusive) {
         if (lowerInclusive) {
             if (upperInclusive) {
                 return new LongLongInclusiveInclusiveFilter(lower, upper);

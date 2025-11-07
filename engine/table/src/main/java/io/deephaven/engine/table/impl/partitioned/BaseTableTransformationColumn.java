@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.partitioned;
 
 import io.deephaven.engine.table.*;
@@ -26,6 +26,11 @@ abstract class BaseTableTransformationColumn implements SelectColumn {
     @Override
     public final Class<?> getReturnedType() {
         return Table.class;
+    }
+
+    @Override
+    public Class<?> getReturnedComponentType() {
+        return null;
     }
 
     @Override

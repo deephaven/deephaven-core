@@ -1,16 +1,15 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharAggregateColumnSource and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit CharAggregateColumnSource and run "./gradlew replicateSourcesAndChunks" to regenerate
+//
+// @formatter:off
 package io.deephaven.engine.table.impl.sources.aggregate;
 
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.vector.ShortVector;
-import io.deephaven.engine.table.impl.vector.ShortVectorColumnWrapper;
+import io.deephaven.engine.table.vectors.ShortVectorColumnWrapper;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.ObjectChunk;

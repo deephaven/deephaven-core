@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.sources;
 
 import io.deephaven.base.Pair;
@@ -8,6 +8,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.ColumnDefinition;
@@ -15,14 +16,19 @@ import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.AbstractColumnSource;
+import io.deephaven.engine.table.impl.PushdownFilterContext;
+import io.deephaven.engine.table.impl.PushdownResult;
+import io.deephaven.engine.table.impl.select.WhereFilter;
+import io.deephaven.engine.table.impl.util.JobScheduler;
 import io.deephaven.hash.KeyedObjectHashMap;
 import io.deephaven.hash.KeyedObjectKey;
 import io.deephaven.chunk.WritableChunk;
-import io.deephaven.engine.table.impl.util.ShiftData;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.LinkedHashMap;
+import java.util.function.Consumer;
+import java.util.function.LongConsumer;
 import java.util.stream.Collectors;
 
 import static io.deephaven.util.QueryConstants.NULL_BYTE;
@@ -37,7 +43,7 @@ import static io.deephaven.util.QueryConstants.NULL_SHORT;
  * A column source that returns null for all keys. Trivially "writable" since it can only contain null values.
  */
 public final class NullValueColumnSource<T> extends AbstractColumnSource<T>
-        implements ShiftData.ShiftCallback, InMemoryColumnSource, RowKeyAgnosticChunkSource<Values>,
+        implements InMemoryColumnSource, RowKeyAgnosticChunkSource<Values>,
         WritableColumnSource<T> {
 
     private static final KeyedObjectKey.Basic<Pair<Class<?>, Class<?>>, NullValueColumnSource<?>> KEY_TYPE =
@@ -166,9 +172,6 @@ public final class NullValueColumnSource<T> extends AbstractColumnSource<T>
     public short getPrevShort(long rowKey) {
         return NULL_SHORT;
     }
-
-    @Override
-    public void shift(long start, long end, long offset) {}
 
     @Override
     public boolean isImmutable() {
@@ -313,5 +316,34 @@ public final class NullValueColumnSource<T> extends AbstractColumnSource<T>
             @NotNull final Chunk<? extends Values> src,
             @NotNull final LongChunk<RowKeys> keys) {
         // Assume all values in src are null, which will be true for any correct usage.
+    }
+
+    @Override
+    public void estimatePushdownFilterCost(
+            final WhereFilter filter,
+            final RowSet selection,
+            final boolean usePrev,
+            final PushdownFilterContext context,
+            final JobScheduler jobScheduler,
+            final LongConsumer onComplete,
+            final Consumer<Exception> onError) {
+        // Delegate to the shared code for RowKeyAgnosticChunkSource
+        RowKeyAgnosticChunkSource.estimatePushdownFilterCostHelper(
+                filter, selection, usePrev, context, jobScheduler, onComplete, onError);
+    }
+
+    @Override
+    public void pushdownFilter(
+            final WhereFilter filter,
+            final RowSet selection,
+            final boolean usePrev,
+            final PushdownFilterContext context,
+            final long costCeiling,
+            final JobScheduler jobScheduler,
+            final Consumer<PushdownResult> onComplete,
+            final Consumer<Exception> onError) {
+        // Delegate to the shared code for RowKeyAgnosticChunkSource
+        RowKeyAgnosticChunkSource.pushdownFilterHelper(this, filter, selection, usePrev, context, costCeiling,
+                jobScheduler, onComplete, onError);
     }
 }

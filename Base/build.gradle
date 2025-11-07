@@ -7,33 +7,22 @@ dependencies {
 
     api project(':clock')
 
-    implementation depTrove3
-    compileOnlyApi depAnnotations
-    implementation depCommonsLang3
+    implementation libs.trove
+    compileOnlyApi libs.jetbrains.annotations
+    implementation libs.commons.lang3
 
-    api 'io.deephaven:hash:0.1.0'
+    api libs.deephaven.hash
 
-    Classpaths.inheritJUnitClassic(project, 'testImplementation')
-    Classpaths.inheritJMock(project, 'testImplementation')
+    testImplementation libs.junit4
+    testImplementation libs.jmock.junit4
+    testImplementation libs.jmock.imposters
     testImplementation project(":base-test-utils")
-}
-
-sourceSets {
-    main {
-        resources {
-            srcDir 'src/main/java' exclude '**/*.java'
-        }
-    }
-    test {
-        resources {
-            srcDir 'src/test/java' exclude '**/*.java'
-        }
-    }
+    testImplementation libs.assertj
 }
 
 // TODO (core#116): Gradle test fixtures
 task jarTests(type: Jar, dependsOn: testClasses) {
-    classifier = 'tests'
+    archiveClassifier = 'tests'
     from sourceSets.test.output
 }
 configurations {
@@ -43,12 +32,4 @@ configurations {
 }
 artifacts {
     tests jarTests
-}
-
-spotless {
-    java {
-        targetExclude(
-                '**/ringbuffer/Aggregating*RingBuffer*.java'
-        )
-    }
 }

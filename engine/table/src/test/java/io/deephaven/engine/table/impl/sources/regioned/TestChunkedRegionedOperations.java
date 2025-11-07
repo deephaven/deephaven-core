@@ -1,10 +1,9 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.sources.regioned;
 
 import io.deephaven.base.FileUtils;
-import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.*;
 import io.deephaven.stringset.ArrayStringSet;
@@ -226,36 +225,34 @@ public class TestChunkedRegionedOperations {
         final String tableName = "TestTable";
 
         final PartitionedTable partitionedInputData = inputData.partitionBy("PC");
-        final File[] partitionedInputDestinations;
+        final String[] partitionedInputDestinations;
         try (final Stream<String> partitionNames = partitionedInputData.table()
-                .<String>objectColumnIterator("PC").stream()) {
+                .objectColumnIterator("PC", String.class).stream()) {
             partitionedInputDestinations = partitionNames.map(pcv -> new File(dataDirectory,
                     "IP" + File.separator + "P" + pcv + File.separator + tableName + File.separator
-                            + PARQUET_FILE_NAME))
-                    .toArray(File[]::new);
+                            + PARQUET_FILE_NAME)
+                    .getPath())
+                    .toArray(String[]::new);
         }
-        ParquetTools.writeParquetTables(
+        ParquetTools.writeTables(
                 partitionedInputData.constituents(),
-                partitionedDataDefinition.getWritable(),
-                parquetInstructions,
                 partitionedInputDestinations,
-                CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
+                parquetInstructions.withTableDefinition(partitionedDataDefinition.getWritable()));
 
         final PartitionedTable partitionedInputMissingData = inputMissingData.view("PC", "II").partitionBy("PC");
-        final File[] partitionedInputMissingDestinations;
+        final String[] partitionedInputMissingDestinations;
         try (final Stream<String> partitionNames = partitionedInputMissingData.table()
-                .<String>objectColumnIterator("PC").stream()) {
+                .objectColumnIterator("PC", String.class).stream()) {
             partitionedInputMissingDestinations = partitionNames.map(pcv -> new File(dataDirectory,
                     "IP" + File.separator + "P" + pcv + File.separator + tableName + File.separator
-                            + PARQUET_FILE_NAME))
-                    .toArray(File[]::new);
+                            + PARQUET_FILE_NAME)
+                    .getPath())
+                    .toArray(String[]::new);
         }
-        ParquetTools.writeParquetTables(
+        ParquetTools.writeTables(
                 partitionedInputMissingData.constituents(),
-                partitionedMissingDataDefinition.getWritable(),
-                parquetInstructions,
                 partitionedInputMissingDestinations,
-                CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
+                parquetInstructions.withTableDefinition(partitionedMissingDataDefinition.getWritable()));
 
         expected = TableTools
                 .merge(
@@ -265,10 +262,10 @@ public class TestChunkedRegionedOperations {
                         "Bl_R = booleanAsByte(Bl)",
                         "DT_R = epochNanos(DT)");
 
-        actual = ParquetTools.readPartitionedTable(
-                DeephavenNestedPartitionLayout.forParquet(dataDirectory, tableName, "PC", null),
-                ParquetInstructions.EMPTY,
-                partitionedDataDefinition).updateView(
+        actual = ParquetTools.readTable(
+                DeephavenNestedPartitionLayout.forParquet(dataDirectory, tableName, "PC", null,
+                        ParquetInstructions.EMPTY),
+                ParquetInstructions.EMPTY.withTableDefinition(partitionedDataDefinition)).updateView(
                         List.of(
                                 new ReinterpretedColumn<>("Bl", Boolean.class, "Bl_R", byte.class),
                                 new ReinterpretedColumn<>("DT", Instant.class, "DT_R", long.class)))

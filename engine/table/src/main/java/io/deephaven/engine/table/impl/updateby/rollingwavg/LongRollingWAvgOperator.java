@@ -1,17 +1,17 @@
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharRollingWAvgOperator and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit CharRollingWAvgOperator and run "./gradlew replicateUpdateBy" to regenerate
+//
+// @formatter:off
 package io.deephaven.engine.table.impl.updateby.rollingwavg;
 
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
-import io.deephaven.engine.table.impl.util.RowRedirection;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -64,30 +64,33 @@ public class LongRollingWAvgOperator extends BasePrimitiveRollingWAvgOperator {
         return new Context(affectedChunkSize, influencerChunkSize);
     }
 
-    public LongRollingWAvgOperator(@NotNull final MatchPair pair,
-                                   @NotNull final String[] affectingColumns,
-                                   @Nullable final RowRedirection rowRedirection,
-                                   @Nullable final String timestampColumnName,
-                                   final long reverseWindowScaleUnits,
-                                   final long forwardWindowScaleUnits,
-                                   @NotNull final String weightColumnName,
-                                   @NotNull final ColumnSource weightColumnSource
-                                   // region extra-constructor-args
-                                   // endregion extra-constructor-args
+    public LongRollingWAvgOperator(
+            @NotNull final MatchPair pair,
+            @NotNull final String[] affectingColumns,
+            @Nullable final String timestampColumnName,
+            final long reverseWindowScaleUnits,
+            final long forwardWindowScaleUnits,
+            @NotNull final String weightColumnName
+    // region extra-constructor-args
+    // endregion extra-constructor-args
     ) {
-        super(pair, affectingColumns, rowRedirection, timestampColumnName, reverseWindowScaleUnits, forwardWindowScaleUnits, weightColumnName, weightColumnSource);
+        super(pair, affectingColumns, timestampColumnName, reverseWindowScaleUnits, forwardWindowScaleUnits,
+                weightColumnName);
         // region constructor
         // endregion constructor
     }
 
-    /**
-     * Get the names of the input column(s) for this operator.
-     *
-     * @return the names of the input column
-     */
-    @NotNull
     @Override
-    protected String[] getInputColumnNames() {
-        return new String[] {pair.rightColumn, weightColumnName};
+    public UpdateByOperator copy() {
+        return new LongRollingWAvgOperator(
+                pair,
+                affectingColumns,
+                timestampColumnName,
+                reverseWindowScaleUnits,
+                forwardWindowScaleUnits,
+                weightColumnName
+        // region extra-copy-args
+        // endregion extra-copy-args
+        );
     }
 }

@@ -1,14 +1,12 @@
-/**
- * Copyright (c) 2016-2023 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.time;
 
 import java.time.*;
 import java.util.HashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import static io.deephaven.util.QueryConstants.NULL_LONG;
 
 // TODO: Move?
 

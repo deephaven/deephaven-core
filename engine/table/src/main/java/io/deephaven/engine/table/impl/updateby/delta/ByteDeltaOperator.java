@@ -1,8 +1,10 @@
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharDeltaOperator and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit CharDeltaOperator and run "./gradlew replicateUpdateBy" to regenerate
+//
+// @formatter:off
 package io.deephaven.engine.table.impl.updateby.delta;
 
 import io.deephaven.api.updateby.DeltaControl;
@@ -13,7 +15,9 @@ import io.deephaven.chunk.ByteChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.MatchPair;
+import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
 import io.deephaven.engine.table.impl.updateby.internal.BaseByteUpdateByOperator;
 import io.deephaven.engine.table.impl.util.RowRedirection;
@@ -25,7 +29,7 @@ import static io.deephaven.util.QueryConstants.NULL_BYTE;
 
 public class ByteDeltaOperator extends BaseByteUpdateByOperator {
     private final DeltaControl control;
-    private final ColumnSource<?> inputSource;
+    private ColumnSource<?> inputSource;
     // region extra-fields
     // endregion extra-fields
 
@@ -33,6 +37,7 @@ public class ByteDeltaOperator extends BaseByteUpdateByOperator {
         public ByteChunk<? extends Values> byteValueChunk;
         private byte lastVal = NULL_BYTE;
 
+        @SuppressWarnings("unused")
         protected Context(final int affectedChunkSize, final int influencerChunkSize) {
             super(affectedChunkSize);
         }
@@ -55,35 +60,46 @@ public class ByteDeltaOperator extends BaseByteUpdateByOperator {
                 curVal = control.nullBehavior() == NullBehavior.NullDominates
                         ? NULL_BYTE
                         : (control.nullBehavior() == NullBehavior.ZeroDominates
-                            ? (byte)0
-                            : currentVal);
+                                ? (byte) 0
+                                : currentVal);
             } else {
-                curVal = (byte)(currentVal - lastVal);
+                curVal = (byte) (currentVal - lastVal);
             }
 
             lastVal = currentVal;
         }
     }
 
-    public ByteDeltaOperator(@NotNull final MatchPair pair,
-                             @Nullable final RowRedirection rowRedirection,
-                             @NotNull final DeltaControl control,
-                             @NotNull final ColumnSource<?> inputSource
-                             // region extra-constructor-args
-                             // endregion extra-constructor-args
+    public ByteDeltaOperator(
+            @NotNull final MatchPair pair,
+            @NotNull final DeltaControl control
+    // region extra-constructor-args
+    // endregion extra-constructor-args
     ) {
-        super(pair, new String[] { pair.rightColumn }, rowRedirection);
+        super(pair, new String[] {pair.rightColumn});
         this.control = control;
-        this.inputSource = inputSource;
         // region constructor
         // endregion constructor
     }
 
     @Override
-    public void initializeCumulative(@NotNull final UpdateByOperator.Context context,
-                                     final long firstUnmodifiedKey,
-                                     final long firstUnmodifiedTimestamp,
-                                     @NotNull final RowSet bucketRowSet) {
+    public UpdateByOperator copy() {
+        return new ByteDeltaOperator(pair, control);
+    }
+
+    @Override
+    public void initializeSources(@NotNull final Table source, @Nullable final RowRedirection rowRedirection) {
+        super.initializeSources(source, rowRedirection);
+
+        inputSource = ReinterpretUtils.maybeConvertToPrimitive(source.getColumnSource(pair.rightColumn));
+    }
+
+    @Override
+    public void initializeCumulative(
+            @NotNull final UpdateByOperator.Context context,
+            final long firstUnmodifiedKey,
+            final long firstUnmodifiedTimestamp,
+            @NotNull final RowSet bucketRowSet) {
         Context ctx = (Context) context;
         ctx.reset();
         if (firstUnmodifiedKey != NULL_ROW_KEY) {

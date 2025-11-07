@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.client.examples;
 
 import io.deephaven.client.impl.HasPathId;
@@ -16,6 +16,9 @@ public class Ticket implements HasTicketId {
     ApplicationField applicationField;
 
     @ArgGroup(exclusive = false)
+    SharedField sharedField;
+
+    @ArgGroup(exclusive = false)
     RawTicket rawTicket;
 
     @Override
@@ -25,6 +28,9 @@ public class Ticket implements HasTicketId {
         }
         if (applicationField != null) {
             return applicationField.ticketId();
+        }
+        if (sharedField != null) {
+            return sharedField.ticketId();
         }
         if (rawTicket != null) {
             return rawTicket.ticketId();
@@ -39,6 +45,9 @@ public class Ticket implements HasTicketId {
             }
             if (applicationField != null) {
                 return applicationField.pathId();
+            }
+            if (sharedField != null) {
+                return sharedField.pathId();
             }
             if (rawTicket != null) {
                 throw new IllegalArgumentException("Unable to get a path from a raw ticket");

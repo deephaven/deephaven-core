@@ -1,0 +1,18 @@
+<module>
+    <inherits name="io.deephaven.chunk.Chunk" />
+    <inherits name="io.deephaven.engine.primitive.function.Function" />
+    <inherits name="io.grpc.Grpc" />
+    <source path="" includes="BarrageOptions.java,BarrageSnapshotOptions.java,BarrageSubscriptionOptions.java,BarrageTypeInfo.java,ColumnConversionMode.java,ImmutableBarrageSnapshotOptions.java,ImmutableBarrageSubscriptionOptions.java,DrainableByteArrayInputStream.java" />
+    <source path="util" includes="Float16.java,FlatBufferIteratorAdapter.java,DefensiveDrainable.java,DefensiveCapture.java,ExposedByteArrayOutputStream.java" />
+    <source path="chunk">
+        <exclude name="vector/*" />
+        <exclude name="DefaultChunkReaderFactory.java" />
+        <exclude name="DefaultChunkWriterFactory.java" />
+        <exclude name="MapChunkReader.java" />
+        <exclude name="MapChunkWriter.java" />
+        <exclude name="UnionChunkWriter.java" />
+        <exclude name="UnionChunkReader.java" />
+        <exclude name="BigDecimalChunkWriter.java" />
+        <exclude name="FactoryHelper.java" />
+    </source>
+</module>

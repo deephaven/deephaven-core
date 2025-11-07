@@ -1,3 +1,6 @@
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.replicators;
 
 import com.squareup.javapoet.AnnotationSpec;
@@ -118,15 +121,6 @@ public class GenerateArrowColumnSources {
                         preparePrivateExtractMethod(LocalTime.class, TimeMilliVector.class)
                                 .addStatement("$T localDateTime = vector.getObject(posInBlock)", LocalDateTime.class)
                                 .addStatement("return localDateTime != null ? localDateTime.toLocalTime() : null")
-                                .build()));
-
-        final ClassName instant = ClassName.get("java.time", "Instant");
-        generateArrowColumnSource("ArrowInstantColumnSource", instant, instant, TimeStampVector.class,
-                "get", "ForObject", WritableObjectChunk.class, List.of(
-                        preparePrivateExtractMethod(instant, TimeStampVector.class)
-                                .addStatement(
-                                        "return vector.isSet(posInBlock) == 0 ? null : io.deephaven.time.DateTimeUtils.epochNanosToInstant(vector.get(posInBlock))",
-                                        instant)
                                 .build()));
     }
 
@@ -308,17 +302,18 @@ public class GenerateArrowColumnSources {
 
         String path = "extensions/arrow/src/main/java/io/deephaven/extensions/arrow/sources/" + className + ".java";
         try {
-            final String header = Stream.of(
-                    "/*",
-                    " * Copyright (c) 2016-2023 Deephaven Data Labs and Patent Pending",
-                    " */",
-                    "/*",
-                    " * ---------------------------------------------------------------------------------------------------------------------",
-                    " * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit "
-                            + MethodHandles.lookup().lookupClass().getSimpleName() + " and regenerate",
-                    " * ---------------------------------------------------------------------------------------------------------------------",
-                    " */",
-                    "").collect(Collectors.joining(System.lineSeparator()));
+            String gradleTask = "generateArrowColumnSources";
+            Class<?> generatorClass = GenerateArrowColumnSources.class;
+            final String header = String.join("\n",
+                    "//",
+                    "// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending",
+                    "//",
+                    "// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY",
+                    "// ****** Run " + generatorClass.getSimpleName() + " or \"./gradlew " + gradleTask
+                            + "\" to regenerate",
+                    "//",
+                    "// @formatter:off",
+                    "");
 
             Files.write(Paths.get(path), (header + javaFile).getBytes(StandardCharsets.UTF_8));
         } catch (IOException e) {

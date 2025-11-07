@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table;
 
 import io.deephaven.base.log.LogOutput;
@@ -54,12 +54,6 @@ public class ColumnDefinition<TYPE> implements LogOutputAppendable {
          * A normal column, with no special considerations.
          */
         Normal,
-
-        /**
-         * A column that has "grouping" metadata associated with it, possibly allowing for indexed filters, joins, and
-         * aggregations.
-         */
-        Grouping,
 
         /**
          * A column that helps define underlying partitions in the storage of the data, which consequently may also be
@@ -393,10 +387,6 @@ public class ColumnDefinition<TYPE> implements LogOutputAppendable {
         return isPartitioning() ? this : new ColumnDefinition<>(name, dataType, componentType, ColumnType.Partitioning);
     }
 
-    public ColumnDefinition<TYPE> withGrouping() {
-        return isGrouping() ? this : new ColumnDefinition<>(name, dataType, componentType, ColumnType.Grouping);
-    }
-
     public ColumnDefinition<TYPE> withNormal() {
         return columnType == ColumnType.Normal
                 ? this
@@ -410,12 +400,17 @@ public class ColumnDefinition<TYPE> implements LogOutputAppendable {
                 : fromGenericType(name, newDataType, componentType, columnType);
     }
 
-    public ColumnDefinition<?> withName(@NotNull final String newName) {
-        return newName.equals(name) ? this : new ColumnDefinition<>(newName, dataType, componentType, columnType);
+    public <Other> ColumnDefinition<Other> withDataType(
+            @NotNull final Class<Other> newDataType,
+            @Nullable final Class<?> newComponentType) {
+        // noinspection unchecked
+        return dataType == newDataType && componentType == newComponentType
+                ? (ColumnDefinition<Other>) this
+                : fromGenericType(name, newDataType, newComponentType, columnType);
     }
 
-    public boolean isGrouping() {
-        return (columnType == ColumnType.Grouping);
+    public ColumnDefinition<?> withName(@NotNull final String newName) {
+        return newName.equals(name) ? this : new ColumnDefinition<>(newName, dataType, componentType, columnType);
     }
 
     public boolean isPartitioning() {
@@ -423,7 +418,7 @@ public class ColumnDefinition<TYPE> implements LogOutputAppendable {
     }
 
     public boolean isDirect() {
-        return (columnType == ColumnType.Normal || columnType == ColumnType.Grouping);
+        return (columnType == ColumnType.Normal);
     }
 
     /**

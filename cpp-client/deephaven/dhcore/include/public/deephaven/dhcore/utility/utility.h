@@ -1,19 +1,29 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+/*
+ * Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
  */
 #pragma once
 
 #include <chrono>
 #include <cstring>
+#include <cstdint>
 #include <cstdio>
+#include <exception>
+#include <stdexcept>
 #include <iostream>
 #include <memory>
+#include <optional>
 #include <string>
-#include <thread>
+#include <string_view>
 #include <typeinfo>
+#include <type_traits>
 #include <vector>
-#include "deephaven/third_party/fmt/format.h"
+#include "deephaven/third_party/fmt/core.h"
 #include "deephaven/third_party/fmt/ostream.h"
+
+// Forward declaration
+namespace deephaven::dhcore::container {
+class ContainerBase;
+} // namespace deephaven::dhcore::container
 
 namespace deephaven::dhcore::utility {
 template<typename Dest, typename Src>
@@ -91,7 +101,7 @@ std::ostream &operator<<(std::ostream &s, const SeparatedListAdaptor<Iterator, C
 }
 
 template<typename T>
-void defaultCallback(std::ostream &s, const T &item) {
+void DefaultCallback(std::ostream &s, const T &item) {
   s << item;
 }
 }  // namespace internal
@@ -100,7 +110,7 @@ template<typename Iterator>
 auto separatedList(Iterator begin, Iterator end, const char *separator = ", ") {
   return internal::SeparatedListAdaptor<Iterator, void (*)(std::ostream &s,
       const std::remove_reference_t<decltype(*std::declval<Iterator>())> &)>(
-      begin, end, separator, &internal::defaultCallback);
+      begin, end, separator, &internal::DefaultCallback);
 }
 
 template<typename Iterator, typename Callback>
@@ -147,7 +157,7 @@ std::string FormatDebugString(const char *func, const char *file, size_t line,
   ::deephaven::dhcore::utility::FormatDebugString( \
     DEEPHAVEN_PRETTY_FUNCTION, __FILE__, __LINE__, MESSAGE)
 
-[[nodiscard]] std::string demangle(const char* name);
+[[nodiscard]] std::string demangle(const char *name);
 
 template<typename DESTP, typename SRCP>
 DESTP VerboseCast(const DebugInfo &debug_info, SRCP ptr) {
@@ -156,6 +166,20 @@ DESTP VerboseCast(const DebugInfo &debug_info, SRCP ptr) {
     return typed_ptr;
   }
   typedef decltype(*std::declval<DESTP>()) destType_t;
+  auto message = fmt::format("{}: Expected type {}. Got type {}",
+      debug_info,
+      demangle(typeid(destType_t).name()),
+      demangle(typeid(*ptr).name()));
+  throw std::runtime_error(message);
+}
+
+template<typename DEST, typename SRC>
+std::shared_ptr<DEST> VerboseSharedPtrCast(const DebugInfo &debug_info, std::shared_ptr<SRC> ptr) {
+  auto typed_ptr = std::dynamic_pointer_cast<DEST>(ptr);
+  if (typed_ptr != nullptr) {
+    return typed_ptr;
+  }
+  typedef decltype(std::declval<DEST>()) destType_t;
   auto message = fmt::format("{}: Expected type {}. Got type {}",
       debug_info,
       demangle(typeid(destType_t).name()),
@@ -187,6 +211,60 @@ TimePointToEpochMillis(
 TimePointToStr(
     std::chrono::time_point<std::chrono::system_clock> time_point);
 
+/**
+ * This is a method that simply invokes std::filesystem::path(path).filename().string().
+ * We put it here because it is sometimes useful, to provide functionality
+ * similar to the POSIX basename() call. We deliberately do not inline it
+ * because is generates a surprising amount of code.
+ * @param path The path
+ * @return The basename of the path, as returned by std::filesystem::path(path).filename().string()
+ */
+std::string Basename(std::string_view path);
+
+/**
+ * Returns the current thread ID as a string.
+ * @return The current thread ID as a string.
+ */
+[[nodiscard]] std::string GetTidAsString();
+
+/**
+ * Gets the hostname.
+ * @return The hostname.
+ */
+[[nodiscard]] std::string GetHostname();
+
+/**
+ * Gets a value from the environment.
+ * @param envname the key
+ * @return If found, an optional set to the value. Otherwise (if not found), an empty optional.
+ */
+[[nodiscard]] std::optional<std::string> GetEnv(const std::string& envname);
+
+/**
+ * Sets a value in the environment.
+ * @param envname the key
+ * @param value the value to set in the environment
+ */
+void SetEnv(const std::string& envname, const std::string& value);
+
+/**
+ * Unsets a value in the environment.
+ * @param envname the key to unset
+ */
+void UnsetEnv(const std::string& envname);
+
+/**
+ * Enables or disables echo for stdin.
+ * @param enable true to enable, false to disable
+ */
+void SetStdinEcho(bool enable);
+
+/**
+ * Reads a password from stdin up to pressing 'Enter', without echoing the characters typed.
+ * @return the password read
+ */
+std::string ReadPasswordFromStdinNoEcho();
+
 template <class T> [[nodiscard]] std::string
 TypeName(const T& t) {
   return demangle(typeid(t).name());
@@ -194,7 +272,25 @@ TypeName(const T& t) {
 
 [[nodiscard]] std::string
 ObjectId(const std::string &class_short_name, void* this_ptr);
+
+class ElementRenderer {
+public:
+  template<typename T>
+  void Render(std::ostream &s, const T &item) const {
+    s << item;
+  }
+
+  void Render(std::ostream &s,
+      const std::shared_ptr<deephaven::dhcore::container::ContainerBase> &item) const;
+
+  void Render(std::ostream &s, const bool &item) const {
+    s << (item ? "true" : "false");
+  }
+};
 }  // namespace deephaven::dhcore::utility
 
 // Add the specialization for the DebugInfo formatter
 template<> struct fmt::formatter<deephaven::dhcore::utility::DebugInfo> : fmt::ostream_formatter {};
+
+template<typename Iterator, typename Callback>
+struct fmt::formatter<deephaven::dhcore::utility::internal::SeparatedListAdaptor<Iterator, Callback>> : fmt::ostream_formatter {};

@@ -1,18 +1,19 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.plot.axistransformations;
 
-import io.deephaven.base.testing.BaseArrayTestCase;
 import io.deephaven.time.DateTimeUtils;
+import io.deephaven.time.calendar.CalendarInit;
 import io.deephaven.time.calendar.Calendars;
+import junit.framework.TestCase;
 
 import java.nio.file.Paths;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.util.Objects;
 
-public class TestAxisTransformBusinessCalendar extends BaseArrayTestCase {
+public class TestAxisTransformBusinessCalendar extends TestCase {
 
     private static final ZoneId TZ_JP = ZoneId.of("Asia/Tokyo");
 
@@ -41,6 +42,7 @@ public class TestAxisTransformBusinessCalendar extends BaseArrayTestCase {
 
     @Override
     public void setUp() throws Exception {
+        CalendarInit.init();
         final String path = Paths
                 .get(Objects.requireNonNull(TestAxisTransformBusinessCalendar.class.getResource("/JPOSE.calendar"))
                         .toURI())

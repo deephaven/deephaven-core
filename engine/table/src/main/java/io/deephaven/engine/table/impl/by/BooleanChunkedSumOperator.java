@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.by;
 
 import io.deephaven.base.verify.Assert;
@@ -11,7 +11,7 @@ import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.sources.LongArraySource;
 import io.deephaven.chunk.*;
-import org.apache.commons.lang3.mutable.MutableInt;
+import io.deephaven.util.mutable.MutableInt;
 
 import java.util.Collections;
 import java.util.Map;
@@ -21,7 +21,7 @@ import static io.deephaven.util.QueryConstants.NULL_LONG;
 
 /**
  * Iterative Boolean Sum. Result is the number of {@code true} values, or {@code null} if all values are {@code null}.
-*/
+ */
 public final class BooleanChunkedSumOperator implements IterativeChunkedAggregationOperator {
 
     private static final long INVALID_COUNT = -1;
@@ -84,7 +84,7 @@ public final class BooleanChunkedSumOperator implements IterativeChunkedAggregat
      */
     private static boolean hasValue(LongArraySource source, long destPos) {
         final long value = source.getUnsafe(destPos);
-        //noinspection ConditionCoveredByFurtherCondition
+        // noinspection ConditionCoveredByFurtherCondition
         return value != NULL_LONG && value > 0;
     }
 
@@ -93,7 +93,8 @@ public final class BooleanChunkedSumOperator implements IterativeChunkedAggregat
         return hasValue(resultColumn, destPos);
     }
 
-    private static void sumChunk(ObjectChunk<Boolean, ? extends Values> values, int chunkStart, int chunkSize, MutableInt chunkTrue, MutableInt chunkFalse) {
+    private static void sumChunk(ObjectChunk<Boolean, ? extends Values> values, int chunkStart, int chunkSize,
+            MutableInt chunkTrue, MutableInt chunkFalse) {
         final int chunkEnd = chunkStart + chunkSize;
         for (int ii = chunkStart; ii < chunkEnd; ++ii) {
             final Boolean aBoolean = values.get(ii);
@@ -108,7 +109,10 @@ public final class BooleanChunkedSumOperator implements IterativeChunkedAggregat
     }
 
     @Override
-    public void addChunk(BucketedContext context, Chunk<? extends Values> values, LongChunk<? extends RowKeys> inputRowKeys, IntChunk<RowKeys> destinations, IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length, WritableBooleanChunk<Values> stateModified) {
+    public void addChunk(BucketedContext context, Chunk<? extends Values> values,
+            LongChunk<? extends RowKeys> inputRowKeys, IntChunk<RowKeys> destinations,
+            IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
+            WritableBooleanChunk<Values> stateModified) {
         final ObjectChunk<Boolean, ? extends Values> asObjectChunk = values.asObjectChunk();
         for (int ii = 0; ii < startPositions.size(); ++ii) {
             final int startPosition = startPositions.get(ii);
@@ -118,7 +122,10 @@ public final class BooleanChunkedSumOperator implements IterativeChunkedAggregat
     }
 
     @Override
-    public void removeChunk(BucketedContext context, Chunk<? extends Values> values, LongChunk<? extends RowKeys> inputRowKeys, IntChunk<RowKeys> destinations, IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length, WritableBooleanChunk<Values> stateModified) {
+    public void removeChunk(BucketedContext context, Chunk<? extends Values> values,
+            LongChunk<? extends RowKeys> inputRowKeys, IntChunk<RowKeys> destinations,
+            IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
+            WritableBooleanChunk<Values> stateModified) {
         final ObjectChunk<Boolean, ? extends Values> asObjectChunk = values.asObjectChunk();
         for (int ii = 0; ii < startPositions.size(); ++ii) {
             final int startPosition = startPositions.get(ii);
@@ -128,44 +135,52 @@ public final class BooleanChunkedSumOperator implements IterativeChunkedAggregat
     }
 
     @Override
-    public void modifyChunk(BucketedContext context, Chunk<? extends Values> previousValues, Chunk<? extends Values> newValues, LongChunk<? extends RowKeys> postShiftRowKeys, IntChunk<RowKeys> destinations, IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length, WritableBooleanChunk<Values> stateModified) {
+    public void modifyChunk(BucketedContext context, Chunk<? extends Values> previousValues,
+            Chunk<? extends Values> newValues, LongChunk<? extends RowKeys> postShiftRowKeys,
+            IntChunk<RowKeys> destinations, IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
+            WritableBooleanChunk<Values> stateModified) {
         final ObjectChunk<Boolean, ? extends Values> preAsObjectChunk = previousValues.asObjectChunk();
         final ObjectChunk<Boolean, ? extends Values> postAsObjectChunk = newValues.asObjectChunk();
         for (int ii = 0; ii < startPositions.size(); ++ii) {
             final int startPosition = startPositions.get(ii);
             final long destination = destinations.get(startPosition);
-            stateModified.set(ii, modifyChunk(preAsObjectChunk, postAsObjectChunk, destination, startPosition, length.get(ii)));
+            stateModified.set(ii,
+                    modifyChunk(preAsObjectChunk, postAsObjectChunk, destination, startPosition, length.get(ii)));
         }
     }
 
     @Override
-    public boolean addChunk(SingletonContext context, int chunkSize, Chunk<? extends Values> values, LongChunk<? extends RowKeys> inputRowKeys, long destination) {
+    public boolean addChunk(SingletonContext context, int chunkSize, Chunk<? extends Values> values,
+            LongChunk<? extends RowKeys> inputRowKeys, long destination) {
         return addChunk(values.asObjectChunk(), destination, 0, values.size());
     }
 
     @Override
-    public boolean removeChunk(SingletonContext context, int chunkSize, Chunk<? extends Values> values, LongChunk<? extends RowKeys> inputRowKeys, long destination) {
+    public boolean removeChunk(SingletonContext context, int chunkSize, Chunk<? extends Values> values,
+            LongChunk<? extends RowKeys> inputRowKeys, long destination) {
         return removeChunk(values.asObjectChunk(), destination, 0, values.size());
     }
 
     @Override
-    public boolean modifyChunk(SingletonContext context, int chunkSize, Chunk<? extends Values> previousValues, Chunk<? extends Values> newValues, LongChunk<? extends RowKeys> postShiftRowKeys, long destination) {
+    public boolean modifyChunk(SingletonContext context, int chunkSize, Chunk<? extends Values> previousValues,
+            Chunk<? extends Values> newValues, LongChunk<? extends RowKeys> postShiftRowKeys, long destination) {
         return modifyChunk(previousValues.asObjectChunk(), newValues.asObjectChunk(), destination, 0, newValues.size());
     }
 
-    private boolean addChunk(ObjectChunk<Boolean, ? extends Values> values, long destination, int chunkStart, int chunkSize) {
+    private boolean addChunk(ObjectChunk<Boolean, ? extends Values> values, long destination, int chunkStart,
+            int chunkSize) {
         final MutableInt chunkTrue = new MutableInt(0);
         final MutableInt chunkFalse = new MutableInt(0);
         sumChunk(values, chunkStart, chunkSize, chunkTrue, chunkFalse);
 
         boolean modified = false;
-        if (chunkTrue.intValue() > 0) {
-            getAndAdd(resultColumn, destination, chunkTrue.intValue());
+        if (chunkTrue.get() > 0) {
+            getAndAdd(resultColumn, destination, chunkTrue.get());
             modified = true;
         }
-        if (chunkFalse.intValue() > 0) {
-            final long oldFalseCount = getAndAdd(falseCount, destination, chunkFalse.intValue());
-            if (oldFalseCount == 0 && chunkTrue.intValue() == 0 && !hasTrue(destination)) {
+        if (chunkFalse.get() > 0) {
+            final long oldFalseCount = getAndAdd(falseCount, destination, chunkFalse.get());
+            if (oldFalseCount == 0 && chunkTrue.get() == 0 && !hasTrue(destination)) {
                 resultColumn.set(destination, 0L);
                 modified = true;
             }
@@ -175,20 +190,21 @@ public final class BooleanChunkedSumOperator implements IterativeChunkedAggregat
         return modified;
     }
 
-    private boolean removeChunk(ObjectChunk<Boolean, ? extends Values> values, long destination, int chunkStart, int chunkSize) {
+    private boolean removeChunk(ObjectChunk<Boolean, ? extends Values> values, long destination, int chunkStart,
+            int chunkSize) {
         final MutableInt chunkTrue = new MutableInt(0);
         final MutableInt chunkFalse = new MutableInt(0);
         sumChunk(values, chunkStart, chunkSize, chunkTrue, chunkFalse);
 
         long newFalseCount = INVALID_COUNT;
-        if (chunkFalse.intValue() > 0) {
-            newFalseCount = addAndGet(falseCount, destination, -chunkFalse.intValue());
+        if (chunkFalse.get() > 0) {
+            newFalseCount = addAndGet(falseCount, destination, -chunkFalse.get());
         }
 
-        if (chunkTrue.intValue() > 0) {
+        if (chunkTrue.get() > 0) {
             final long oldTrueCount = resultColumn.getUnsafe(destination);
             Assert.gtZero(oldTrueCount, "oldTrueCount");
-            long newTrue = oldTrueCount - chunkTrue.intValue();
+            long newTrue = oldTrueCount - chunkTrue.get();
             if (newTrue == 0) {
                 if (newFalseCount == INVALID_COUNT) {
                     newFalseCount = falseCount.getUnsafe(destination);
@@ -209,7 +225,8 @@ public final class BooleanChunkedSumOperator implements IterativeChunkedAggregat
         return false;
     }
 
-    private boolean modifyChunk(ObjectChunk<Boolean, ? extends Values> preValues, ObjectChunk<Boolean, ? extends Values> postValues, long destination, int chunkStart, int chunkSize) {
+    private boolean modifyChunk(ObjectChunk<Boolean, ? extends Values> preValues,
+            ObjectChunk<Boolean, ? extends Values> postValues, long destination, int chunkStart, int chunkSize) {
         final MutableInt preChunkTrue = new MutableInt(0);
         final MutableInt preChunkFalse = new MutableInt(0);
         sumChunk(preValues, chunkStart, chunkSize, preChunkTrue, preChunkFalse);
@@ -218,8 +235,8 @@ public final class BooleanChunkedSumOperator implements IterativeChunkedAggregat
         final MutableInt postChunkFalse = new MutableInt(0);
         sumChunk(postValues, chunkStart, chunkSize, postChunkTrue, postChunkFalse);
 
-        final boolean trueModified = preChunkTrue.intValue() != postChunkTrue.intValue();
-        final boolean falseModified = preChunkFalse.intValue() != postChunkFalse.intValue();
+        final boolean trueModified = preChunkTrue.get() != postChunkTrue.get();
+        final boolean falseModified = preChunkFalse.get() != postChunkFalse.get();
 
         if (!trueModified && !falseModified) {
             return false;
@@ -227,12 +244,12 @@ public final class BooleanChunkedSumOperator implements IterativeChunkedAggregat
 
         long newFalseCount = INVALID_COUNT;
         if (falseModified) {
-            newFalseCount = addAndGet(falseCount, destination, postChunkFalse.intValue() - preChunkFalse.intValue());
+            newFalseCount = addAndGet(falseCount, destination, postChunkFalse.get() - preChunkFalse.get());
         }
 
         if (trueModified) {
             final long oldTrueCount = resultColumn.getUnsafe(destination);
-            long newTrueCount = plusLong(oldTrueCount, postChunkTrue.intValue() - preChunkTrue.intValue());
+            long newTrueCount = plusLong(oldTrueCount, postChunkTrue.get() - preChunkTrue.get());
             if (newTrueCount == 0) {
                 if (newFalseCount == INVALID_COUNT) {
                     newFalseCount = falseCount.getUnsafe(destination);

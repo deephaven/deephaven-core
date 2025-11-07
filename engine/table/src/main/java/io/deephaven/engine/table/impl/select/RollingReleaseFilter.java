@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.select;
 
 import io.deephaven.base.verify.Assert;
@@ -13,6 +13,7 @@ import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import org.jetbrains.annotations.NotNull;
 
+import javax.annotation.OverridingMethodsMustInvokeSuper;
 import java.util.Collections;
 import java.util.List;
 
@@ -45,7 +46,7 @@ public class RollingReleaseFilter
     }
 
     @Override
-    public void init(TableDefinition tableDefinition) {}
+    public void init(@NotNull final TableDefinition tableDefinition) {}
 
     @NotNull
     @Override
@@ -117,6 +118,7 @@ public class RollingReleaseFilter
         listener.requestRecompute();
     }
 
+    @OverridingMethodsMustInvokeSuper
     @Override
     protected void destroy() {
         super.destroy();

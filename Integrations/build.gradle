@@ -1,3 +1,6 @@
+import java.nio.charset.StandardCharsets
+import java.security.MessageDigest
+
 plugins {
     id 'com.bmuschko.docker-remote-api'
     id 'io.deephaven.project.register'
@@ -6,20 +9,21 @@ plugins {
 
 evaluationDependsOn ':docker-server-jetty'
 
-configurations {
-    implementation.extendsFrom dhIntegrations
-    testImplementation.extendsFrom fishBaseTest
-}
-
 dependencies {
 
     implementation project(':engine-table')
     implementation project(':plugin')
     implementation project(':Configuration')
     implementation project(':log-factory')
+    implementation project(":util-thread")
+    implementation libs.commons.lang3
+    implementation libs.google.findbugs.jsr305
 
     testImplementation project(':engine-test-utils')
+    testImplementation project(path: ':Base', configuration: 'tests')
 
+    // Needed for CalendarInit
+    testRuntimeOnly TestTools.projectDependency(project, 'engine-time')
     testRuntimeOnly project(':log-to-slf4j')
     // add configs, and some runtime dependencies to test classpaths
     testRuntimeOnly project(':configs')
@@ -31,6 +35,8 @@ dependencies {
     testRuntimeOnly project(':extensions-parquet-table')
     testRuntimeOnly project(':log-to-slf4j')
     testRuntimeOnly project(':engine-time')
+    // needed for graphviz JS engine as dot is not present in the container
+    testRuntimeOnly libs.graal.js
 }
 
 sourceSets {
@@ -41,17 +47,31 @@ sourceSets {
     }
 }
 
-JavaPluginConvention java = project.convention.plugins.get('java') as JavaPluginConvention
-SourceSet test = java.sourceSets.maybeCreate('test')
+SourceSet test = extensions.findByType(JavaPluginExtension).sourceSets.maybeCreate('test')
 
 def runInDocker = { String name, String sourcePath, List<String> command, Closure addConfig = {} ->
     Docker.registerDockerTask(project, name) {
         copyIn {
             from(sourcePath) {
+                include 'deephaven/**'
+                include 'deephaven_internal/**'
+                include 'test_helper/**'
+                include 'tests/**'
+                include 'setup.py'
                 into 'python'
             }
             from(test.runtimeClasspath) {
                 into 'classpath'
+            }
+            from("${sourcePath}/../client") {
+                include 'setup.py'
+                include 'pydeephaven/**'
+                include 'deephaven_core/**'
+                include 'README.md'
+                into 'python/client'
+            }
+            from('run-tests.sh') {
+            	into 'python'
             }
 
             // Unpack the config contents for now, since we don't seem to read the configs from inside a jar.
@@ -63,15 +83,15 @@ def runInDocker = { String name, String sourcePath, List<String> command, Closur
         }
         parentContainers = [project(':docker-server-jetty').tasks.findByName('buildDocker-server-jetty')] // deephaven/server-jetty
 
-        imageName = 'deephaven/py-integrations:local-build'
+        imageName = Docker.localImageName('py-integrations')
 
         addConfig(it)
 
         dockerfile {
             // set up the container, env vars - things that aren't likely to change
-            from 'deephaven/server-jetty:local-build'
+            from Docker.localImageName('server-jetty')
             runCommand '''set -eux; \\
-                      pip3 install unittest-xml-reporting==3.0.4; \\
+                      pip3 install unittest-xml-reporting==3.2.0; \\
                       mkdir -p /out/report; \\
 					  echo "[PostgreSQL]" > /etc/odbcinst.ini; \\
 					  echo "Driver      = /usr/lib/x86_64-linux-gnu/odbc/psqlodbcw.so" >> /etc/odbcinst.ini; \\
@@ -89,6 +109,8 @@ def runInDocker = { String name, String sourcePath, List<String> command, Closur
             // copy in the contents that we do expect to change as the project updates
             copyFile 'python', '/python'
             copyFile 'classpath', '/classpath'
+            runCommand '''pip3 install /python/client'''
+            runCommand '''pip3 install coverage'''
         }
         entrypoint = command
 
@@ -98,8 +120,17 @@ def runInDocker = { String name, String sourcePath, List<String> command, Closur
     }
 }
 
-// Using Integrations/docker-compose.yml, this will start redpanda and wait until it is running before letting tests proceed.
+// Using Integrations/docker-compose.yml, this will start all the containers and wait until the exposed ports are ready
 dockerCompose {
+    // To workaround errors encountered when dockerCompose auto-inherits the projectName (it uses "-" and "_" next to
+    // each other, which violates docker naming conventions), we can explicitly set a projectName.
+    // https://github.com/avast/gradle-docker-compose-plugin/issues/393
+    // https://github.com/avast/gradle-docker-compose-plugin/issues/372#issuecomment-1403264410
+    // Additionally, this preserves the prefix logic that dockerCompose chooses to use based on the absolutePath of the
+    // project. This may be beneficial in workflows where the user has checked out multiple repositories and wants to
+    // ensure docker names do not collide.
+    def projectSafePrefix = MessageDigest.getInstance("MD5").digest(project.projectDir.absolutePath.toString().getBytes(StandardCharsets.UTF_8)).encodeHex().toString()
+    projectName = "${projectSafePrefix}_${project.name.replace('.', '_')}"
     waitForTcpPortsTimeout = Duration.ofMinutes(2)
 }
 
@@ -109,7 +140,9 @@ Closure composeConfig = { task ->
     task.containerDependencies.finalizedBy = dockerCompose.tasksConfigurator.downTask
 }
 
-def pyTest = runInDocker('test-py-deephaven', '../py/server', ['python3', '-m', 'xmlrunner', 'discover', '-s', 'tests', '-t', '.', '-v', '-o', '/out/report'], composeConfig)
+def pyTest = runInDocker('test-py-deephaven', '../py/server', 
+    ['./run-tests.sh', project.hasProperty("coverage.enabled")?project.property("coverage.enabled"):'false'], 
+    composeConfig)
 
 pyTest.configure({
     onlyIf { TestTools.shouldRunTests(project) }

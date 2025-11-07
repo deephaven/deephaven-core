@@ -1,11 +1,13 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.parquet.table.pagestore.topage;
 
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.engine.page.ChunkPageFactory;
 import io.deephaven.engine.table.impl.chunkattributes.DictionaryKeys;
+import io.deephaven.parquet.base.PageMaterializerFactory;
+import io.deephaven.util.channel.SeekableChannelContext;
 import io.deephaven.vector.Vector;
 import io.deephaven.engine.page.ChunkPage;
 import io.deephaven.vector.VectorFactory;
@@ -53,8 +55,9 @@ public interface ToPage<ATTR extends Any, RESULT> {
     /**
      * @return Gets the result from the columnPageReader.
      */
-    default Object getResult(ColumnPageReader columnPageReader) throws IOException {
-        return columnPageReader.materialize(nullValue());
+    default Object getResult(ColumnPageReader columnPageReader,
+            SeekableChannelContext channelContext) throws IOException {
+        return columnPageReader.materialize(nullValue(), channelContext);
     }
 
     /**
@@ -78,10 +81,11 @@ public interface ToPage<ATTR extends Any, RESULT> {
      */
     @NotNull
     @FinalDefault
-    default ChunkPage<ATTR> toPage(long offset, ColumnPageReader columnPageReader, long mask)
+    default ChunkPage<ATTR> toPage(long offset, ColumnPageReader columnPageReader,
+            @NotNull final SeekableChannelContext channelContext, long mask)
             throws IOException {
         return ChunkPageFactory.forChunkType(getChunkType())
-                .pageWrap(offset, convertResult(getResult(columnPageReader)), mask);
+                .pageWrap(offset, convertResult(getResult(columnPageReader, channelContext)), mask);
     }
 
     /**
@@ -102,12 +106,17 @@ public interface ToPage<ATTR extends Any, RESULT> {
     }
 
     /**
-     * @return an reverse lookup map of the dictionary.
+     * @return a reverse lookup map of the dictionary.
      * @apiNote null iff {@link #getDictionaryChunk()} is null.
      */
     default LongBitmapStringSet.ReversibleLookup getReversibleLookup() {
         return null;
     }
+
+    /**
+     * @return the factory to create the materializers for this column.
+     */
+    PageMaterializerFactory getPageMaterializerFactory();
 
     abstract class Wrap<ATTR extends Any, INNER_RESULT, OUTER_RESULT>
             implements ToPage<ATTR, OUTER_RESULT> {
@@ -124,8 +133,9 @@ public interface ToPage<ATTR extends Any, RESULT> {
 
         @NotNull
         @Override
-        public Object getResult(ColumnPageReader columnPageReader) throws IOException {
-            return toPage.getResult(columnPageReader);
+        public Object getResult(ColumnPageReader columnPageReader,
+                SeekableChannelContext channelContext) throws IOException {
+            return toPage.getResult(columnPageReader, channelContext);
         }
 
         @Override
@@ -145,6 +155,11 @@ public interface ToPage<ATTR extends Any, RESULT> {
         @Override
         public LongBitmapStringSet.ReversibleLookup getReversibleLookup() {
             return toPage.getReversibleLookup();
+        }
+
+        @Override
+        public PageMaterializerFactory getPageMaterializerFactory() {
+            return toPage.getPageMaterializerFactory();
         }
     }
 }

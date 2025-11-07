@@ -1,5 +1,9 @@
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.parquet.table;
 
+import io.deephaven.parquet.base.BigDecimalParquetBytesCodec;
 import org.junit.Test;
 
 import java.math.BigDecimal;
@@ -65,14 +69,16 @@ public class BigDecimalParquetBytesCodecTest {
     }
 
     private static BigDecimalParquetBytesCodec codec(int precision, int scale) {
-        return new BigDecimalParquetBytesCodec(precision, scale, -1);
+        return new BigDecimalParquetBytesCodec(precision, scale);
     }
 
-    private static void checkNoRounding(BigDecimalParquetBytesCodec codec, BigDecimal input, BigInteger expectedEncoding) {
+    private static void checkNoRounding(BigDecimalParquetBytesCodec codec, BigDecimal input,
+            BigInteger expectedEncoding) {
         check(codec, input, expectedEncoding, input);
     }
 
-    private static void check(BigDecimalParquetBytesCodec codec, BigDecimal input, BigInteger expectedEncoding, BigDecimal expectedDecoding) {
+    private static void check(BigDecimalParquetBytesCodec codec, BigDecimal input, BigInteger expectedEncoding,
+            BigDecimal expectedDecoding) {
         checkEncoding(codec, input, expectedEncoding);
         checkDecoding(codec, expectedEncoding, expectedDecoding);
         // Check negative
@@ -80,12 +86,14 @@ public class BigDecimalParquetBytesCodecTest {
         checkDecoding(codec, expectedEncoding.negate(), expectedDecoding.negate());
     }
 
-    private static void checkEncoding(BigDecimalParquetBytesCodec codec, BigDecimal input, BigInteger expectedEncoding) {
+    private static void checkEncoding(BigDecimalParquetBytesCodec codec, BigDecimal input,
+            BigInteger expectedEncoding) {
         final byte[] inputEncoded = codec.encode(input);
         assertArrayEquals(expectedEncoding.toByteArray(), inputEncoded);
     }
 
-    private static void checkDecoding(BigDecimalParquetBytesCodec codec, BigInteger encoding, BigDecimal expectedDecoding) {
+    private static void checkDecoding(BigDecimalParquetBytesCodec codec, BigInteger encoding,
+            BigDecimal expectedDecoding) {
         if (expectedDecoding.precision() > codec.getPrecision()) {
             throw new IllegalStateException();
         }

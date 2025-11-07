@@ -7,10 +7,6 @@ plugins {
     id 'java-library'
 }
 
-configurations {
-    testImplementation.extendsFrom fishBaseTest
-}
-
 dependencies {
     api project(':engine-table')
     api project(':engine-time')
@@ -20,11 +16,12 @@ dependencies {
 
     runtimeOnly project(':configs')
 
-    testImplementation TestTools.projectDependency(project, 'engine-table')
+    testImplementation project(':engine-test-utils')
+    testImplementation project(path: ':Base', configuration: 'tests')
     testRuntimeOnly project(':Numerics')
 
     testRuntimeOnly project(':log-to-slf4j')
-    testRuntimeOnly project(path: ':configs')
-    testRuntimeOnly project(path: ':test-configs')
-    Classpaths.inheritSlf4j(project, 'slf4j-simple', 'testRuntimeOnly')
+    testRuntimeOnly project(':configs')
+    testRuntimeOnly project(':test-configs')
+    testRuntimeOnly libs.slf4j.simple
 }

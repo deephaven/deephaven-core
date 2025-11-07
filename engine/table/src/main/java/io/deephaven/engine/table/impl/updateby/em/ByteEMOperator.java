@@ -1,8 +1,10 @@
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharEMOperator and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit CharEMOperator and run "./gradlew replicateUpdateBy" to regenerate
+//
+// @formatter:off
 package io.deephaven.engine.table.impl.updateby.em;
 
 import io.deephaven.api.updateby.OperationControl;
@@ -11,17 +13,15 @@ import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.MatchPair;
+import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
-import io.deephaven.engine.table.impl.util.RowRedirection;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static io.deephaven.util.QueryConstants.*;
 
 public class ByteEMOperator extends BasePrimitiveEMOperator {
-    public final ColumnSource<?> valueSource;
     // region extra-fields
     final byte nullValue;
     // endregion extra-fields
@@ -29,6 +29,7 @@ public class ByteEMOperator extends BasePrimitiveEMOperator {
     protected class Context extends BasePrimitiveEMOperator.Context {
         public ByteChunk<? extends Values> byteValueChunk;
 
+        @SuppressWarnings("unused")
         protected Context(final int affectedChunkSize, final int influencerChunkSize) {
             super(affectedChunkSize);
         }
@@ -40,9 +41,9 @@ public class ByteEMOperator extends BasePrimitiveEMOperator {
 
         @Override
         public void accumulateCumulative(@NotNull RowSequence inputKeys,
-                                         Chunk<? extends Values>[] valueChunkArr,
-                                         LongChunk<? extends Values> tsChunk,
-                                         int len) {
+                Chunk<? extends Values>[] valueChunkArr,
+                LongChunk<? extends Values> tsChunk,
+                int len) {
             setValueChunks(valueChunkArr);
 
             // chunk processing
@@ -69,7 +70,7 @@ public class ByteEMOperator extends BasePrimitiveEMOperator {
                     // read the value from the values chunk
                     final byte input = byteValueChunk.get(ii);
                     final long timestamp = tsChunk.get(ii);
-                    //noinspection ConstantConditions
+                    // noinspection ConstantConditions
                     final boolean isNull = input == nullValue;
                     final boolean isNullTime = timestamp == NULL_LONG;
                     if (isNull) {
@@ -77,10 +78,15 @@ public class ByteEMOperator extends BasePrimitiveEMOperator {
                     } else if (isNullTime) {
                         // no change to curVal and lastStamp
                     } else if (curVal == NULL_DOUBLE) {
+                        // We have a valid input value, we can initialize the output value with it.
                         curVal = input;
                         lastStamp = timestamp;
                     } else {
                         final long dt = timestamp - lastStamp;
+                        if (dt < 0) {
+                            // negative time deltas are not allowed, throw an exception
+                            throw new TableDataException("Timestamp values in UpdateBy operators must not decrease");
+                        }
                         if (dt != lastDt) {
                             // Alpha is dynamic based on time, but only recalculated when needed
                             alpha = Math.exp(-dt / reverseWindowScaleUnits);
@@ -112,31 +118,43 @@ public class ByteEMOperator extends BasePrimitiveEMOperator {
     /**
      * An operator that computes an EMA from a byte column using an exponential decay function.
      *
-     * @param pair                the {@link MatchPair} that defines the input/output for this operation
-     * @param affectingColumns    the names of the columns that affect this ema
-     * @param rowRedirection      the {@link RowRedirection} to use for dense output sources
-     * @param control             defines how to handle {@code null} input values.
+     * @param pair the {@link MatchPair} that defines the input/output for this operation
+     * @param affectingColumns the names of the columns that affect this ema
+     * @param control defines how to handle {@code null} input values.
      * @param timestampColumnName the name of the column containing timestamps for time-based calcuations
-     * @param windowScaleUnits      the smoothing window for the EMA. If no {@code timestampColumnName} is provided, this is measured in ticks, otherwise it is measured in nanoseconds
-     * @param valueSource         a reference to the input column source for this operation
+     * @param windowScaleUnits the smoothing window for the EMA. If no {@code timestampColumnName} is provided, this is
+     *        measured in ticks, otherwise it is measured in nanoseconds
      */
-    public ByteEMOperator(@NotNull final MatchPair pair,
-                          @NotNull final String[] affectingColumns,
-                          @Nullable final RowRedirection rowRedirection,
-                          @NotNull final OperationControl control,
-                          @Nullable final String timestampColumnName,
-                          final double windowScaleUnits,
-                          final ColumnSource<?> valueSource,
-                          @NotNull final EmFunction aggFunction
-                          // region extra-constructor-args
-                               ,final byte nullValue
-                          // endregion extra-constructor-args
+    public ByteEMOperator(
+            @NotNull final MatchPair pair,
+            @NotNull final String[] affectingColumns,
+            @NotNull final OperationControl control,
+            @Nullable final String timestampColumnName,
+            final double windowScaleUnits,
+            @NotNull final EmFunction aggFunction
+    // region extra-constructor-args
+            ,final byte nullValue
+    // endregion extra-constructor-args
     ) {
-        super(pair, affectingColumns, rowRedirection, control, timestampColumnName, windowScaleUnits, aggFunction);
-        this.valueSource = valueSource;
+        super(pair, affectingColumns, control, timestampColumnName, windowScaleUnits, aggFunction);
         // region constructor
         this.nullValue = nullValue;
         // endregion constructor
+    }
+
+    @Override
+    public UpdateByOperator copy() {
+        return new ByteEMOperator(
+                pair,
+                affectingColumns,
+                control,
+                timestampColumnName,
+                reverseWindowScaleUnits,
+                aggFunction
+        // region extra-copy-args
+                , nullValue
+        // endregion extra-copy-args
+        );
     }
 
     @NotNull

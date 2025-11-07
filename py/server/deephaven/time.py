@@ -1,12 +1,12 @@
 #
-# Copyright (c) 2016-2023 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 #
 
 """ This module defines functions for handling Deephaven date/time data. """
 
-from __future__ import annotations
-
 import datetime
+import sys
+import pytz
 from typing import Union, Optional, Literal
 
 import jpy
@@ -24,10 +24,55 @@ _JInstant = jpy.get_type("java.time.Instant")
 _JZonedDateTime = jpy.get_type("java.time.ZonedDateTime")
 _JDuration = jpy.get_type("java.time.Duration")
 _JPeriod = jpy.get_type("java.time.Period")
+_JSimpleDateFormat = jpy.get_type("java.text.SimpleDateFormat")
 
 _NANOS_PER_SECOND = 1000000000
 _NANOS_PER_MICRO = 1000
 
+if sys.version_info >= (3, 10):
+    from typing import TypeAlias # novermin
+
+    TimeZoneLike : TypeAlias = Union[TimeZone, str, datetime.tzinfo, datetime.datetime, pandas.Timestamp]
+    """A Union representing objects that can be coerced into a TimeZone."""
+
+    LocalDateLike : TypeAlias = Union[LocalDate, str, datetime.date, datetime.datetime, numpy.datetime64, pandas.Timestamp]
+    """A Union representing objects that can be coerced into a LocalDate."""
+
+    LocalTimeLike : TypeAlias = Union[LocalTime, int, str, datetime.time, datetime.datetime, numpy.datetime64, pandas.Timestamp]
+    """A Union representing objects that can be coerced into a LocalTime."""
+
+    InstantLike : TypeAlias = Union[Instant, int, str, datetime.datetime, numpy.datetime64, pandas.Timestamp]
+    """A Union representing objects that can be coerced into an Instant."""
+
+    ZonedDateTimeLike : TypeAlias = Union[ZonedDateTime, str, datetime.datetime, numpy.datetime64, pandas.Timestamp]
+    """A Union representing objects that can be coerced into a ZonedDateTime."""
+
+    DurationLike : TypeAlias = Union[Duration, int, str, datetime.timedelta, numpy.timedelta64, pandas.Timedelta]
+    """A Union representing objects that can be coerced into a Duration."""
+
+    PeriodLike : TypeAlias = Union[Period, str, datetime.timedelta, numpy.timedelta64, pandas.Timedelta]
+    """A Union representing objects that can be coerced into a Period."""
+else:
+    TimeZoneLike = Union[TimeZone, str, datetime.tzinfo, datetime.datetime, pandas.Timestamp]
+    """A Union representing objects that can be coerced into a TimeZone."""
+
+    LocalDateLike = Union[LocalDate, str, datetime.date, datetime.datetime, numpy.datetime64, pandas.Timestamp]
+    """A Union representing objects that can be coerced into a LocalDate."""
+
+    LocalTimeLike = Union[LocalTime, int, str, datetime.time, datetime.datetime, numpy.datetime64, pandas.Timestamp]
+    """A Union representing objects that can be coerced into a LocalTime."""
+
+    InstantLike = Union[Instant, int, str, datetime.datetime, numpy.datetime64, pandas.Timestamp]
+    """A Union representing objects that can be coerced into an Instant."""
+
+    ZonedDateTimeLike = Union[ZonedDateTime, str, datetime.datetime, numpy.datetime64, pandas.Timestamp]
+    """A Union representing objects that can be coerced into a ZonedDateTime."""
+
+    DurationLike = Union[Duration, int, str, datetime.timedelta, numpy.timedelta64, pandas.Timedelta]
+    """A Union representing objects that can be coerced into a Duration."""
+
+    PeriodLike = Union[Period, str, datetime.timedelta, numpy.timedelta64, pandas.Timedelta]
+    """A Union representing objects that can be coerced into a Period."""
 
 # region Clock
 
@@ -165,16 +210,71 @@ def time_zone_alias_rm(alias: str) -> bool:
 
 # region Conversions: Python To Java
 
+def _tzinfo_to_j_time_zone(tzi: datetime.tzinfo) -> TimeZone:
+    """
+    Converts a Python time zone to a Java TimeZone.
 
-def to_j_time_zone(tz: Union[None, TimeZone, str, datetime.tzinfo, datetime.datetime, pandas.Timestamp]) -> \
-        Optional[TimeZone]:
+    Args:
+        tzi: time zone info
+
+    Returns:
+        Java TimeZone
+    """
+
+    if not tzi:
+        return None
+
+    # Handle pytz time zones
+
+    if isinstance(tzi, pytz.tzinfo.BaseTzInfo):
+        return _JDateTimeUtils.parseTimeZone(tzi.zone)
+
+    # Handle zoneinfo time zones
+    if sys.version_info >= (3, 9):
+        # novermin
+        import zoneinfo
+        if isinstance(tzi, zoneinfo.ZoneInfo):
+            return _JDateTimeUtils.parseTimeZone(tzi.key)
+
+    # Handle constant UTC offset time zones (datetime.timezone)
+
+    if isinstance(tzi, datetime.timezone):
+        offset = tzi.utcoffset(None)
+
+        if offset is None:
+            raise ValueError("Unable to determine the time zone UTC offset")
+
+        if not offset:
+            return _JDateTimeUtils.parseTimeZone("UTC")
+
+        if offset.microseconds != 0 or offset.seconds%60 != 0:
+            raise ValueError(f"Unsupported time zone offset contains fractions of a minute: {offset}")
+
+        ts = offset.total_seconds()
+
+        if ts >= 0:
+            sign = "+"
+        else:
+            sign = "-"
+            ts = -ts
+
+        hours = int(ts / 3600)
+        minutes = int((ts % 3600) / 60)
+        return _JDateTimeUtils.parseTimeZone(f"UTC{sign}{hours:02d}:{minutes:02d}")
+
+    details = "\n\t".join([f"type={type(tzi).mro()}"] +
+                                [f"obj.{attr}={getattr(tzi, attr)}" for attr in dir(tzi) if not attr.startswith("_")])
+    raise TypeError(f"Unsupported conversion: {str(type(tzi))} -> TimeZone\n\tDetails:\n\t{details}")
+
+
+def to_j_time_zone(tz: Optional[TimeZoneLike]) -> Optional[TimeZone]:
     """
     Converts a time zone value to a Java TimeZone.
     Time zone values can be None, a Java TimeZone, a string, a datetime.tzinfo, a datetime.datetime,
     or a pandas.Timestamp.
 
     Args:
-        tz (Union[None, TimeZone, str, datetime.tzinfo, datetime.datetime, pandas.Timestamp]): A time zone value.
+        tz (Optional[TimeZoneLike]): A time zone value.
             If None is provided, None is returned.
             If a string is provided, it is parsed as a time zone name.
 
@@ -192,12 +292,15 @@ def to_j_time_zone(tz: Union[None, TimeZone, str, datetime.tzinfo, datetime.date
         elif isinstance(tz, str):
             return _JDateTimeUtils.parseTimeZone(tz)
         elif isinstance(tz, datetime.tzinfo):
-            return _JDateTimeUtils.parseTimeZone(str(tz))
+            return _tzinfo_to_j_time_zone(tz)
         elif isinstance(tz, datetime.datetime):
-            if not tz.tzname():
-                return _JDateTimeUtils.parseTimeZone(tz.astimezone().tzname())
+            tzi = tz.tzinfo
+            rst = _tzinfo_to_j_time_zone(tzi)
 
-            return _JDateTimeUtils.parseTimeZone(tz.tzname())
+            if not rst:
+                raise ValueError("datetime is not time zone aware")
+
+            return rst
         else:
             raise TypeError("Unsupported conversion: " + str(type(tz)) + " -> TimeZone")
     except TypeError as e:
@@ -206,8 +309,7 @@ def to_j_time_zone(tz: Union[None, TimeZone, str, datetime.tzinfo, datetime.date
         raise DHError(e) from e
 
 
-def to_j_local_date(dt: Union[None, LocalDate, str, datetime.date, datetime.datetime,
-                              numpy.datetime64, pandas.Timestamp]) -> Optional[LocalDate]:
+def to_j_local_date(dt: Optional[LocalDateLike]) -> Optional[LocalDate]:
     """
     Converts a date time value to a Java LocalDate.
     Date time values can be None, a Java LocalDate, a string, a datetime.date, a datetime.datetime,
@@ -216,8 +318,7 @@ def to_j_local_date(dt: Union[None, LocalDate, str, datetime.date, datetime.date
     Date strings can be formatted according to the ISO 8601 date time format as 'YYYY-MM-DD'.
 
     Args:
-        dt (Union[None, LocalDate, str, datetime.date, datetime.datetime, numpy.datetime64, pandas.Timestamp]): 
-            A date time value. If None is provided, None is returned.
+        dt (Optional[LocalDateLike]): A date time value. If None is provided, None is returned.
 
     Returns:
         LocalDate
@@ -245,8 +346,7 @@ def to_j_local_date(dt: Union[None, LocalDate, str, datetime.date, datetime.date
         raise DHError(e) from e
 
 
-def to_j_local_time(dt: Union[None, LocalTime, int, str, datetime.time, datetime.datetime,
-                              numpy.datetime64, pandas.Timestamp]) -> Optional[LocalTime]:
+def to_j_local_time(dt: Optional[LocalTimeLike]) -> Optional[LocalTime]:
     """
     Converts a date time value to a Java LocalTime.
     Date time values can be None, a Java LocalTime, an int, a string, a datetime.time, a datetime.datetime,
@@ -257,8 +357,7 @@ def to_j_local_time(dt: Union[None, LocalTime, int, str, datetime.time, datetime
     Time strings can be formatted as 'hh:mm:ss[.nnnnnnnnn]'.
 
     Args:
-        dt (Union[None, LocalTime, int, str, datetime.time, datetime.datetime, numpy.datetime64, pandas.Timestamp]):
-            A date time value.  If None is provided, None is returned.
+        dt (Optional[LocalTimeLike]): A date time value.  If None is provided, None is returned.
 
     Returns:
         LocalTime
@@ -291,8 +390,7 @@ def to_j_local_time(dt: Union[None, LocalTime, int, str, datetime.time, datetime
         raise DHError(e) from e
 
 
-def to_j_instant(dt: Union[None, Instant, int, str, datetime.datetime, numpy.datetime64, pandas.Timestamp]) -> \
-        Optional[Instant]:
+def to_j_instant(dt: Optional[InstantLike]) -> Optional[Instant]:
     """
     Converts a date time value to a Java Instant.
     Date time values can be None, a Java Instant, an int, a string, a datetime.datetime,
@@ -306,8 +404,7 @@ def to_j_instant(dt: Union[None, Instant, int, str, datetime.datetime, numpy.dat
     from the Epoch.  Expected date ranges are used to infer the units.
 
     Args:
-        dt (Union[None, Instant, int, str, datetime.datetime, numpy.datetime64, pandas.Timestamp]): A date time value.
-            If None is provided, None is returned.
+        dt (Optional[InstantLike]): A date time value. If None is provided, None is returned.
 
     Returns:
         Instant, TypeError
@@ -343,8 +440,7 @@ def to_j_instant(dt: Union[None, Instant, int, str, datetime.datetime, numpy.dat
         raise DHError(e) from e
 
 
-def to_j_zdt(dt: Union[None, ZonedDateTime, str, datetime.datetime, numpy.datetime64, pandas.Timestamp]) -> \
-        Optional[ZonedDateTime]:
+def to_j_zdt(dt: Optional[ZonedDateTimeLike]) -> Optional[ZonedDateTime]:
     """
     Converts a date time value to a Java ZonedDateTime.
     Date time values can be None, a Java ZonedDateTime, a string, a datetime.datetime,
@@ -359,8 +455,7 @@ def to_j_zdt(dt: Union[None, ZonedDateTime, str, datetime.datetime, numpy.dateti
     Converting a numpy.datetime64 to a ZonedDateTime will use the Deephaven default time zone.
 
     Args:
-        dt (Union[None, ZonedDateTime, str, datetime.datetime, numpy.datetime64, pandas.Timestamp]):
-            A date time value.  If None is provided, None is returned.
+        dt (Optional[ZonedDateTimeLike]): A date time value. If None is provided, None is returned.
 
     Returns:
         ZonedDateTime
@@ -395,8 +490,7 @@ def to_j_zdt(dt: Union[None, ZonedDateTime, str, datetime.datetime, numpy.dateti
         raise DHError(e) from e
 
 
-def to_j_duration(dt: Union[None, Duration, int, str, datetime.timedelta, numpy.timedelta64, pandas.Timedelta]) -> \
-        Optional[Duration]:
+def to_j_duration(dt: Optional[DurationLike]) -> Optional[Duration]:
     """
     Converts a time duration value to a Java Duration,
     which is a unit of time in terms of clock time (24-hour days, hours, minutes, seconds, and nanoseconds).
@@ -420,8 +514,7 @@ def to_j_duration(dt: Union[None, Duration, int, str, datetime.timedelta, numpy.
         |    "-PT-6H+3M"  -- parses as "+6 hours and -3 minutes"
 
     Args:
-        dt (Union[None, Duration, int, str, datetime.timedelta, numpy.timedelta64, pandas.Timedelta]):
-            A time duration value.  If None is provided, None is returned.
+        dt (Optional[DurationLike]): A time duration value. If None is provided, None is returned.
 
     Returns:
         Duration
@@ -455,8 +548,7 @@ def to_j_duration(dt: Union[None, Duration, int, str, datetime.timedelta, numpy.
         raise DHError(e) from e
 
 
-def to_j_period(dt: Union[None, Period, str, datetime.timedelta, numpy.timedelta64, pandas.Timedelta]) -> \
-        Optional[Period]:
+def to_j_period(dt: Optional[PeriodLike]) -> Optional[Period]:
     """
     Converts a time duration value to a Java Period,
     which is a unit of time in terms of calendar time (days, weeks, months, years, etc.).
@@ -477,8 +569,7 @@ def to_j_period(dt: Union[None, Period, str, datetime.timedelta, numpy.timedelta
         |    "-P1Y2M"          -- -1 Year, -2 Months
 
     Args:
-        dt (Union[None, Period, str, datetime.timedelta, numpy.timedelta64, pandas.Timedelta]):
-            A Python period or period string.  If None is provided, None is returned.
+        dt (Optional[PeriodLike]): A Python period or period string. If None is provided, None is returned.
 
     Returns:
         Period
@@ -814,6 +905,33 @@ def to_np_timedelta64(dt: Union[None, Duration, Period]) -> Optional[numpy.timed
         raise e
     except TypeError as e:
         raise e
+    except Exception as e:
+        raise DHError(e) from e
+
+# endregion
+
+# region Utility
+
+def simple_date_format(pattern: str) -> jpy.JType:
+    """ Creates a Java SimpleDateFormat from a date-time format pattern.
+
+    This method is intended for use in Python code when a SimpleDateFormat is needed.
+    It should not be used directly in query strings.
+    The most common use case will use this function to construct a SimpleDateFormat
+    in Python and then use the result in query strings.
+
+    Args:
+        pattern (str): A date-time format pattern string.
+
+    Returns:
+        JObject
+
+    Raises:
+        DHError
+    """
+    try:
+        # Returning a Java object directly to avoid Python/Java boundary crossings in query strings
+        return _JSimpleDateFormat(pattern)
     except Exception as e:
         raise DHError(e) from e
 

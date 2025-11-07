@@ -1,9 +1,11 @@
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.testutil.generator;
 
 import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.datastructures.util.CollectionUtil;
 
 import java.util.Arrays;
 import java.util.List;
@@ -40,7 +42,7 @@ public class UniqueStringArrayGenerator extends AbstractAdaptableUniqueGenerator
 
     @Override
     String[] adapt(List<String> value) {
-        return value.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
+        return value.toArray(String[]::new);
     }
 
     @Override

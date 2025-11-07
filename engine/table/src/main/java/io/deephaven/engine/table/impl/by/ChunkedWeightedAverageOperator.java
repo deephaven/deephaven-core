@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.by;
 
 import io.deephaven.base.verify.Assert;
@@ -14,16 +14,20 @@ import io.deephaven.engine.util.NullSafeAddition;
 import io.deephaven.engine.table.impl.sources.*;
 import io.deephaven.chunk.*;
 import io.deephaven.engine.table.impl.util.cast.ToDoubleCast;
+import io.deephaven.util.mutable.MutableInt;
 import org.apache.commons.lang3.mutable.MutableDouble;
-import org.apache.commons.lang3.mutable.MutableInt;
 
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
+import static io.deephaven.engine.table.impl.by.RollupConstants.*;
+
 class ChunkedWeightedAverageOperator implements IterativeChunkedAggregationOperator {
+    private final ChunkType chunkType;
     private final DoubleWeightRecordingInternalOperator weightOperator;
     private final String resultName;
-    private final ChunkType chunkType;
+    private final boolean exposeInternalColumns;
 
     private long tableSize;
     private final LongArraySource normalCount;
@@ -32,11 +36,15 @@ class ChunkedWeightedAverageOperator implements IterativeChunkedAggregationOpera
     private final DoubleArraySource weightedSum;
     private final DoubleArraySource resultColumn;
 
-    ChunkedWeightedAverageOperator(ChunkType chunkType, DoubleWeightRecordingInternalOperator weightOperator,
-            String name) {
+    ChunkedWeightedAverageOperator(
+            ChunkType chunkType,
+            DoubleWeightRecordingInternalOperator weightOperator,
+            String name,
+            boolean exposeInternalColumns) {
         this.chunkType = chunkType;
         this.weightOperator = weightOperator;
         this.resultName = name;
+        this.exposeInternalColumns = exposeInternalColumns;
 
         tableSize = 0;
         normalCount = new LongArraySource();
@@ -134,8 +142,8 @@ class ChunkedWeightedAverageOperator implements IterativeChunkedAggregationOpera
             MutableInt normalOut,
             MutableDouble sumOfWeightsOut,
             MutableDouble weightedSumOut) {
-        long nans = 0;
-        long normal = 0;
+        int nans = 0;
+        int normal = 0;
         double sumOfWeights = 0.0;
         double weightedSum = 0.0;
 
@@ -162,8 +170,8 @@ class ChunkedWeightedAverageOperator implements IterativeChunkedAggregationOpera
             weightedSum += weight * component;
         }
 
-        nansOut.setValue(nans);
-        normalOut.setValue(normal);
+        nansOut.set(nans);
+        normalOut.set(normal);
         sumOfWeightsOut.setValue(sumOfWeights);
         weightedSumOut.setValue(weightedSum);
     }
@@ -177,8 +185,8 @@ class ChunkedWeightedAverageOperator implements IterativeChunkedAggregationOpera
 
         sumChunks(doubleValues, weightValues, start, length, nanOut, normalOut, sumOfWeightsOut, weightedSumOut);
 
-        final long newNans = nanOut.intValue();
-        final long newNormal = normalOut.intValue();
+        final int newNans = nanOut.get();
+        final int newNormal = normalOut.get();
         final double newSumOfWeights = sumOfWeightsOut.doubleValue();
         final double newWeightedSum = weightedSumOut.doubleValue();
 
@@ -251,8 +259,8 @@ class ChunkedWeightedAverageOperator implements IterativeChunkedAggregationOpera
 
         sumChunks(doubleValues, weightValues, start, length, nanOut, normalOut, sumOfWeightsOut, weightedSumOut);
 
-        final int newNans = nanOut.intValue();
-        final int newNormal = normalOut.intValue();
+        final int newNans = nanOut.get();
+        final int newNormal = normalOut.get();
         final double newSumOfWeights = sumOfWeightsOut.doubleValue();
         final double newWeightedSum = weightedSumOut.doubleValue();
 
@@ -323,15 +331,15 @@ class ChunkedWeightedAverageOperator implements IterativeChunkedAggregationOpera
         sumChunks(prevDoubleValues, prevWeightValues, start, length, nanOut, normalOut, sumOfWeightsOut,
                 weightedSumOut);
 
-        final int prevNans = nanOut.intValue();
-        final int prevNormal = normalOut.intValue();
+        final int prevNans = nanOut.get();
+        final int prevNormal = normalOut.get();
         final double prevSumOfWeights = sumOfWeightsOut.doubleValue();
         final double prevWeightedSum = weightedSumOut.doubleValue();
 
         sumChunks(newDoubleValues, newWeightValues, start, length, nanOut, normalOut, sumOfWeightsOut, weightedSumOut);
 
-        final int newNans = nanOut.intValue();
-        final int newNormal = normalOut.intValue();
+        final int newNans = nanOut.get();
+        final int newNormal = normalOut.get();
         final double newSumOfWeights = sumOfWeightsOut.doubleValue();
         final double newWeightedSum = weightedSumOut.doubleValue();
 
@@ -416,12 +424,22 @@ class ChunkedWeightedAverageOperator implements IterativeChunkedAggregationOpera
 
     @Override
     public Map<String, ? extends ColumnSource<?>> getResultColumns() {
-        return Collections.singletonMap(resultName, resultColumn);
+        if (exposeInternalColumns) {
+            final Map<String, ColumnSource<?>> results = new LinkedHashMap<>(2);
+            results.put(resultName, resultColumn);
+            results.put(resultName + ROLLUP_SUM_WEIGHTS_COLUMN_ID + ROLLUP_COLUMN_SUFFIX, sumOfWeights);
+            return results;
+        } else {
+            return Collections.singletonMap(resultName, resultColumn);
+        }
     }
 
     @Override
     public void startTrackingPrevValues() {
         resultColumn.startTrackingPrevValues();
+        if (exposeInternalColumns) {
+            sumOfWeights.startTrackingPrevValues();
+        }
     }
 
     private class Context implements BucketedContext, SingletonContext {

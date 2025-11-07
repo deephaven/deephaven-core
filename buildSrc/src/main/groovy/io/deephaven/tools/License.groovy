@@ -2,14 +2,12 @@ package io.deephaven.tools
 
 import groovy.transform.CompileStatic
 import org.gradle.api.Project
-import org.gradle.api.plugins.BasePluginConvention
-import org.gradle.api.plugins.JavaPluginConvention
+import org.gradle.api.plugins.BasePluginExtension
+import org.gradle.api.plugins.JavaPluginExtension
 import org.gradle.api.tasks.SourceSet
 import org.gradle.api.tasks.Sync
 import org.gradle.api.tasks.TaskProvider
 import org.gradle.jvm.tasks.Jar
-
-import java.security.MessageDigest
 
 @CompileStatic
 class License {
@@ -22,8 +20,8 @@ class License {
     private static final String LICENSE_SOURCE_SET_NAME = 'license'
 
     private static final String APACHE_LICENSE_SHA256 = 'cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30'
-    private static final String APACHE_LICENSE_NAME = 'The Apache License, Version 2.0'
-    private static final String APACHE_LICENSE_URL = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+    static final String APACHE_LICENSE_NAME = 'The Apache License, Version 2.0'
+    static final String APACHE_LICENSE_URL = 'https://www.apache.org/licenses/LICENSE-2.0.txt'
 
     static License deephavenCommunityLicense(Project project) {
         return new License(
@@ -97,7 +95,8 @@ class License {
         }*/
 
         // Create a "license" source set from build/license-source-set
-        JavaPluginConvention java = project.convention.plugins.get('java') as JavaPluginConvention
+        JavaPluginExtension java = project.extensions.findByType(JavaPluginExtension)
+
         SourceSet licenseSourceSet = java.sourceSets.create(LICENSE_SOURCE_SET_NAME)
         licenseSourceSet.resources.srcDir(licenseSourceSetDir)
 
@@ -113,7 +112,7 @@ class License {
 
     TaskProvider<Sync> syncSourceSetLicense(String licenseSourceSetDir) {
         def copyrightYear = '2021'
-        def archivesBaseName = (project.convention.plugins.get('base') as BasePluginConvention).archivesBaseName
+        def archivesBaseName = (project.extensions.findByType(BasePluginExtension)).archivesName.get()
         syncLicensesProvider(
                 project,
                 'syncSourceSetLicense',
@@ -126,7 +125,7 @@ class License {
 
     TaskProvider<Sync> syncDockerLicense() {
         def copyrightYear = '2021'
-        def archivesBaseName = (project.convention.plugins.get('base') as BasePluginConvention).archivesBaseName
+        def archivesBaseName = project.extensions.findByType(BasePluginExtension).archivesName.get()
         syncLicensesProvider(
                 project,
                 'syncDockerLicense',

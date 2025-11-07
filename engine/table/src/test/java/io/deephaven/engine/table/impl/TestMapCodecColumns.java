@@ -1,10 +1,9 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.base.FileUtils;
-import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
@@ -14,7 +13,7 @@ import io.deephaven.parquet.table.ParquetTools;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.parquet.table.ParquetInstructions;
 import io.deephaven.util.codec.*;
-import junit.framework.TestCase;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -24,6 +23,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
@@ -77,26 +77,26 @@ public class TestMapCodecColumns {
     public void setUp() {
         table = TableTools.newTable(TABLE_DEFINITION,
                 TableTools.col("StrStrMap",
-                        CollectionUtil.mapFromArray(String.class, String.class, "AK", "AV", "BK", "BV"),
+                        mapFromArray("AK", "AV", "BK", "BV"),
                         null, Collections.singletonMap("Key", "Value")),
                 TableTools.col("StrBoolMap",
-                        CollectionUtil.mapFromArray(String.class, Boolean.class, "True", true, "False", false, "Null",
+                        mapFromArray("True", true, "False", false, "Null",
                                 null),
                         null, Collections.singletonMap("Truthiness", true)),
                 TableTools.col("StrDoubleMap",
-                        CollectionUtil.mapFromArray(String.class, Double.class, "One", 1.0, "Two", 2.0, "Null", null),
+                        mapFromArray("One", 1.0, "Two", 2.0, "Null", null),
                         null,
                         Collections.singletonMap("Pi", Math.PI)),
                 TableTools.col("StrFloatMap",
-                        CollectionUtil.mapFromArray(String.class, Float.class, "Ten", 10.0f, "Twenty", 20.0f, "Null",
+                        mapFromArray("Ten", 10.0f, "Twenty", 20.0f, "Null",
                                 null),
                         null, Collections.singletonMap("e", (float) Math.E)),
                 TableTools.col("StrIntMap",
-                        CollectionUtil.mapFromArray(String.class, Integer.class, "Million", 1_000_000, "Billion",
+                        mapFromArray("Million", 1_000_000, "Billion",
                                 1_000_000_000, "Null", null),
                         null, Collections.singletonMap("Negative", -1)),
                 TableTools.col("StrLongMap",
-                        CollectionUtil.mapFromArray(String.class, Long.class, "Trillion", 1_000_000_000_000L,
+                        mapFromArray("Trillion", 1_000_000_000_000L,
                                 "Billion", 1_000_000_000L, "Null", null),
                         null, Collections.singletonMap("Negative", -1L)));
     }
@@ -104,15 +104,36 @@ public class TestMapCodecColumns {
     @Test
     public void doColumnsTest() throws IOException {
         final File dir = Files.createTempDirectory(Paths.get(""), "CODEC_TEST").toFile();
-        final File dest = new File(dir, "Table.parquet");
+        final String dest = new File(dir, "Table.parquet").getPath();
         try {
-            ParquetTools.writeTable(table, dest, table.getDefinition(), writeInstructions);
-            final Table result = ParquetTools.readTable(dest);
-            TableTools.show(result);
-            TestCase.assertEquals(TABLE_DEFINITION, result.getDefinition());
-            TstUtils.assertTableEquals(table, result);
+            ParquetTools.writeTable(table, dest, writeInstructions);
+            doColumnsTestHelper(dest);
         } finally {
             FileUtils.deleteRecursively(dir);
         }
+    }
+
+    @Test
+    public void doLegacyColumnsTest() {
+        // Make sure that we can read legacy data encoded with the old codec implementations.
+        final String dest =
+                TestMapCodecColumns.class.getResource("/ReferenceParquetWithMapCodecData.parquet").getFile();
+        doColumnsTestHelper(dest);
+    }
+
+    private void doColumnsTestHelper(final String dest) {
+        final Table result = ParquetTools.readTable(dest);
+        TableTools.show(result);
+        Assert.assertEquals(TABLE_DEFINITION, result.getDefinition());
+        TstUtils.assertTableEquals(table, result);
+    }
+
+    @SuppressWarnings({"unchecked"})
+    public static <K, V> Map<K, V> mapFromArray(Object... data) {
+        Map<K, V> map = new LinkedHashMap<K, V>();
+        for (int nIndex = 0; nIndex < data.length; nIndex += 2) {
+            map.put((K) data[nIndex], (V) data[nIndex + 1]);
+        }
+        return map;
     }
 }

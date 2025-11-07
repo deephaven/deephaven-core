@@ -9,5 +9,6 @@ dependencies {
 	// access to the internal logger.
 	implementation project(':log-factory')
 
-	Classpaths.inheritAutoService(project)
+	compileOnly libs.autoservice
+	annotationProcessor libs.autoservice.compiler
 }

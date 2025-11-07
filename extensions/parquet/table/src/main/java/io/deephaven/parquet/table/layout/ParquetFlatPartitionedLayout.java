@@ -1,40 +1,48 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.parquet.table.layout;
 
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.locations.impl.TableLocationKeyFinder;
+import io.deephaven.parquet.base.ParquetUtils;
+import io.deephaven.parquet.table.ParquetInstructions;
 import io.deephaven.parquet.table.location.ParquetTableLocationKey;
+import io.deephaven.util.channel.SeekableChannelsProvider;
+import io.deephaven.util.channel.SeekableChannelsProviderLoader;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.DirectoryStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
+import java.net.URI;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
+import java.util.stream.Stream;
+
+import static io.deephaven.parquet.base.ParquetFileReader.FILE_URI_SCHEME;
 
 /**
  * Parquet {@link TableLocationKeyFinder location finder} that will discover multiple files in a single directory.
  */
 public final class ParquetFlatPartitionedLayout implements TableLocationKeyFinder<ParquetTableLocationKey> {
 
-    private static ParquetTableLocationKey locationKey(Path path) {
-        return new ParquetTableLocationKey(path.toFile(), 0, null);
-    }
-
-    private final File tableRootDirectory;
-    private final Map<Path, ParquetTableLocationKey> cache;
+    private final URI tableRootDirectory;
+    private final Map<URI, ParquetTableLocationKey> cache;
+    private final SeekableChannelsProvider channelsProvider;
 
     /**
-     * @param tableRootDirectory The directory to search for .parquet files.
+     * @param tableRootDirectoryURI The directory URI to search for .parquet files.
+     * @param readInstructions the instructions for customizations while reading
      */
-    public ParquetFlatPartitionedLayout(@NotNull final File tableRootDirectory) {
-        this.tableRootDirectory = tableRootDirectory;
-        cache = new HashMap<>();
+    public ParquetFlatPartitionedLayout(@NotNull final URI tableRootDirectoryURI,
+            @NotNull final ParquetInstructions readInstructions) {
+        this.tableRootDirectory = tableRootDirectoryURI;
+        this.cache = Collections.synchronizedMap(new HashMap<>());
+        this.channelsProvider = SeekableChannelsProviderLoader.getInstance()
+                .load(tableRootDirectory.getScheme(), readInstructions.getSpecialInstructions());
     }
 
     public String toString() {
@@ -42,22 +50,34 @@ public final class ParquetFlatPartitionedLayout implements TableLocationKeyFinde
     }
 
     @Override
-    public synchronized void findKeys(@NotNull final Consumer<ParquetTableLocationKey> locationKeyObserver) {
-        try (final DirectoryStream<Path> parquetFileStream =
-                Files.newDirectoryStream(tableRootDirectory.toPath(), ParquetFileHelper::fileNameMatches)) {
-            for (final Path parquetFilePath : parquetFileStream) {
-                ParquetTableLocationKey locationKey = cache.get(parquetFilePath);
-                if (locationKey == null) {
-                    locationKey = locationKey(parquetFilePath);
-                    if (!locationKey.verifyFileReader()) {
-                        continue;
+    public void findKeys(@NotNull final Consumer<ParquetTableLocationKey> locationKeyObserver) {
+        final Predicate<URI> uriFilter;
+        if (FILE_URI_SCHEME.equals(tableRootDirectory.getScheme())) {
+            uriFilter = uri -> {
+                final String filename = new File(uri).getName();
+                return filename.endsWith(ParquetUtils.PARQUET_FILE_EXTENSION) && filename.charAt(0) != '.';
+            };
+        } else {
+            uriFilter = uri -> uri.getPath().endsWith(ParquetUtils.PARQUET_FILE_EXTENSION);
+        }
+        try (final Stream<URI> stream = channelsProvider.list(tableRootDirectory)) {
+            stream.filter(uriFilter).forEach(uri -> {
+                cache.compute(uri, (key, existingLocationKey) -> {
+                    if (existingLocationKey != null) {
+                        locationKeyObserver.accept(existingLocationKey);
+                        return existingLocationKey;
                     }
-                    cache.put(parquetFilePath, locationKey);
-                }
-                locationKeyObserver.accept(locationKey);
-            }
+                    final ParquetTableLocationKey newLocationKey = locationKey(uri);
+                    locationKeyObserver.accept(newLocationKey);
+                    return newLocationKey;
+                });
+            });
         } catch (final IOException e) {
             throw new TableDataException("Error finding parquet locations under " + tableRootDirectory, e);
         }
+    }
+
+    private ParquetTableLocationKey locationKey(@NotNull final URI uri) {
+        return new ParquetTableLocationKey(uri, 0, null, channelsProvider);
     }
 }

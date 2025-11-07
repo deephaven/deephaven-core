@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.base.verify.Assert;
@@ -13,6 +13,8 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableUpdate;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import javax.annotation.OverridingMethodsMustInvokeSuper;
 
 /**
  * A listener recorder stores references to added, removed, modified, and shifted indices; and then notifies a
@@ -90,6 +92,7 @@ public class ListenerRecorder extends InstrumentedTableUpdateListener {
         return parent.satisfied(step);
     }
 
+    @OverridingMethodsMustInvokeSuper
     @Override
     protected void destroy() {
         super.destroy();

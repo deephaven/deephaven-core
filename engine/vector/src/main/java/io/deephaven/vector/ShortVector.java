@@ -1,19 +1,21 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharVector and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit CharVector and run "./gradlew replicateVectors" to regenerate
+//
+// @formatter:off
 package io.deephaven.vector;
 
 import io.deephaven.base.verify.Require;
+import io.deephaven.util.annotations.UserInvocationPermitted;
 import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfShort;
+import io.deephaven.engine.primitive.value.iterator.ValueIteratorOfShort;
 import io.deephaven.qst.type.ShortType;
 import io.deephaven.qst.type.PrimitiveVectorType;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.annotations.FinalDefault;
+import io.deephaven.util.compare.ShortComparisons;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -37,6 +39,7 @@ public interface ShortVector extends Vector<ShortVector>, Iterable<Short> {
      * @param index An offset into this ShortVector
      * @return The element at the specified offset, or the {@link QueryConstants#NULL_SHORT null short}
      */
+    @UserInvocationPermitted({"vector"})
     short get(long index);
 
     @Override
@@ -54,9 +57,10 @@ public interface ShortVector extends Vector<ShortVector>, Iterable<Short> {
     @Override
     ShortVector getDirect();
 
+    @UserInvocationPermitted({"vector"})
     @Override
     @FinalDefault
-    default CloseablePrimitiveIteratorOfShort iterator() {
+    default ValueIteratorOfShort iterator() {
         return iterator(0, size());
     }
 
@@ -68,9 +72,9 @@ public interface ShortVector extends Vector<ShortVector>, Iterable<Short> {
      * @param toIndexExclusive The first position after {@code fromIndexInclusive} to not include
      * @return An iterator over the requested slice
      */
-    default CloseablePrimitiveIteratorOfShort iterator(final long fromIndexInclusive, final long toIndexExclusive) {
+    default ValueIteratorOfShort iterator(final long fromIndexInclusive, final long toIndexExclusive) {
         Require.leq(fromIndexInclusive, "fromIndexInclusive", toIndexExclusive, "toIndexExclusive");
-        return new CloseablePrimitiveIteratorOfShort() {
+        return new ValueIteratorOfShort() {
 
             long nextIndex = fromIndexInclusive;
 
@@ -82,6 +86,11 @@ public interface ShortVector extends Vector<ShortVector>, Iterable<Short> {
             @Override
             public boolean hasNext() {
                 return nextIndex < toIndexExclusive;
+            }
+
+            @Override
+            public long remaining() {
+                return toIndexExclusive - nextIndex;
             }
         };
     }
@@ -96,6 +105,22 @@ public interface ShortVector extends Vector<ShortVector>, Iterable<Short> {
     @FinalDefault
     default String toString(final int prefixLength) {
         return toString(this, prefixLength);
+    }
+
+    /**
+     * <p>
+     * Compare this vector with another vector.
+     * </p>
+     *
+     * <p>
+     * The vectors are ordered lexicographically using Deephaven sorting rules.
+     * </p>
+     *
+     * {@see Comparable#compareTo}
+     */
+    @Override
+    default int compareTo(final ShortVector o) {
+        return compareTo(this, o);
     }
 
     static String shortValToString(final Object val) {
@@ -154,10 +179,8 @@ public interface ShortVector extends Vector<ShortVector>, Iterable<Short> {
         if (size == 0) {
             return true;
         }
-        // @formatter:off
         try (final CloseablePrimitiveIteratorOfShort aIterator = aVector.iterator();
-             final CloseablePrimitiveIteratorOfShort bIterator = bVector.iterator()) {
-            // @formatter:on
+                final CloseablePrimitiveIteratorOfShort bIterator = bVector.iterator()) {
             while (aIterator.hasNext()) {
                 // region ElementEquals
                 if (aIterator.nextShort() != bIterator.nextShort()) {
@@ -167,6 +190,37 @@ public interface ShortVector extends Vector<ShortVector>, Iterable<Short> {
             }
         }
         return true;
+    }
+
+    /**
+     * Helper method for {@link Comparable#compareTo(Object)} for a generic ShortVector.
+     * 
+     * @param aVector the first vector (this in compareTo)
+     * @param bVector the second vector ("o" or other in compareTo)
+     * @return -1, 0, or 1 if aVector is less than, equal to, or greater than bVector (respectively)
+     */
+    static int compareTo(final ShortVector aVector, final ShortVector bVector) {
+        if (aVector == bVector) {
+            return 0;
+        }
+        try (final CloseablePrimitiveIteratorOfShort aIterator = aVector.iterator();
+                final CloseablePrimitiveIteratorOfShort bIterator = bVector.iterator()) {
+            while (aIterator.hasNext()) {
+                if (!bIterator.hasNext()) {
+                    return 1;
+                }
+                final short aValue = aIterator.nextShort();
+                final short bValue = bIterator.nextShort();
+                final int compare = ShortComparisons.compare(aValue, bValue);
+                if (compare != 0) {
+                    return compare;
+                }
+            }
+            if (bIterator.hasNext()) {
+                return -1;
+            }
+        }
+        return 0;
     }
 
     /**
@@ -182,7 +236,9 @@ public interface ShortVector extends Vector<ShortVector>, Iterable<Short> {
         }
         try (final CloseablePrimitiveIteratorOfShort iterator = vector.iterator()) {
             while (iterator.hasNext()) {
+                // region ElementHash
                 result = 31 * result + Short.hashCode(iterator.nextShort());
+                // endregion ElementHash
             }
         }
         return result;
@@ -193,6 +249,7 @@ public interface ShortVector extends Vector<ShortVector>, Iterable<Short> {
      */
     abstract class Indirect implements ShortVector {
 
+        @UserInvocationPermitted({"vector"})
         @Override
         public short[] toArray() {
             final int size = intSize("ShortVector.toArray");

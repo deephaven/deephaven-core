@@ -1,35 +1,34 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl;
 
+import io.deephaven.api.NaturalJoinType;
 import io.deephaven.base.FileUtils;
 import io.deephaven.chunk.ObjectChunk;
-import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.context.ExecutionContext;
-import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.RowSetBuilderSequential;
-import io.deephaven.engine.rowset.RowSetFactory;
-import io.deephaven.engine.rowset.TrackingRowSet;
-import io.deephaven.engine.table.ChunkSource;
-import io.deephaven.engine.table.ColumnDefinition;
-import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.DataColumn;
-import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.TableDefinition;
-import io.deephaven.engine.table.impl.indexer.RowSetIndexer;
+import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfLong;
+import io.deephaven.engine.rowset.*;
+import io.deephaven.engine.table.*;
+import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.select.MatchPairFactory;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
+import io.deephaven.engine.table.impl.util.RuntimeMemory;
+import io.deephaven.engine.table.vectors.ColumnVectors;
 import io.deephaven.engine.testutil.*;
 import io.deephaven.engine.testutil.generator.*;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.util.TableTools;
+import io.deephaven.parquet.table.ParquetInstructions;
 import io.deephaven.parquet.table.ParquetTools;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.QueryConstants;
+import io.deephaven.util.mutable.MutableInt;
+import io.deephaven.util.type.ArrayTypeUtils;
+import io.deephaven.vector.IntVector;
+import io.deephaven.vector.ObjectVector;
 import junit.framework.TestCase;
-import org.apache.commons.lang3.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 import org.junit.experimental.categories.Category;
 
@@ -37,18 +36,19 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.Random;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
+import java.util.stream.IntStream;
 
 import static io.deephaven.engine.testutil.GenerateTableUpdates.generateAppends;
 import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.engine.util.TableTools.*;
 import static io.deephaven.util.QueryConstants.NULL_INT;
-import static java.util.Arrays.asList;
+import static org.junit.Assert.assertArrayEquals;
 
 @Category(OutOfBandTest.class)
 public class QueryTableNaturalJoinTest extends QueryTableTestBase {
@@ -84,7 +84,6 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
                 en[ii].showResult("Original " + ii, en[ii].originalValue);
             }
         }
-
 
         for (int step = 0; step < 40; step++) {
             System.out
@@ -124,12 +123,12 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
                     final int ii = (int) ll;
                     if (ii % 2 == 0) {
                         // make something that exists go away
-                        rightModifications[position.intValue()] = Integer.toString(ii * 10 + 2);
+                        rightModifications[position.get()] = Integer.toString(ii * 10 + 2);
                     } else {
                         // make something that did not exist come back
-                        rightModifications[position.intValue()] = Integer.toString(ii * 10);
+                        rightModifications[position.get()] = Integer.toString(ii * 10);
                     }
-                    rightModifySentinel[position.intValue()] = ii * 100 + 25;
+                    rightModifySentinel[position.get()] = ii * 100 + 25;
                     position.increment();
                 });
 
@@ -165,7 +164,10 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         final int sz = 5;
         final int maxSteps = 10;
         for (JoinIncrement joinIncrement : joinIncrementorsShift) {
-            testNaturalJoinIncremental(false, false, sz, sz, joinIncrement, 0, maxSteps);
+            testNaturalJoinIncremental(false, false, sz, sz, false, false, joinIncrement, 0, maxSteps);
+            testNaturalJoinIncremental(false, false, sz, sz, true, false, joinIncrement, 0, maxSteps);
+            testNaturalJoinIncremental(false, false, sz, sz, false, true, joinIncrement, 0, maxSteps);
+            testNaturalJoinIncremental(false, false, sz, sz, true, true, joinIncrement, 0, maxSteps);
         }
 
         final int[] leftSizes = new int[] {10, 50, 100};
@@ -175,7 +177,14 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
                 for (long seed = 0; seed < 5; seed++) {
                     System.out.println("leftSize=" + leftSize + ", rightSize=" + rightSize + ", seed=" + seed);
                     for (JoinIncrement joinIncrement : joinIncrementorsShift) {
-                        testNaturalJoinIncremental(false, false, leftSize, rightSize, joinIncrement, seed, maxSteps);
+                        testNaturalJoinIncremental(false, false, leftSize, rightSize, false, false, joinIncrement, seed,
+                                maxSteps);
+                        testNaturalJoinIncremental(false, false, leftSize, rightSize, true, false, joinIncrement, seed,
+                                maxSteps);
+                        testNaturalJoinIncremental(false, false, leftSize, rightSize, false, true, joinIncrement, seed,
+                                maxSteps);
+                        testNaturalJoinIncremental(false, false, leftSize, rightSize, true, true, joinIncrement, seed,
+                                maxSteps);
                     }
                 }
             }
@@ -186,14 +195,24 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         for (JoinIncrement joinIncrement : new JoinIncrement[] {leftStepShift, leftStep}) {
             final int sz = 5;
             final int maxSteps = 20;
-            testNaturalJoinIncremental(false, true, sz, sz, joinIncrement, 0, maxSteps);
+            testNaturalJoinIncremental(false, true, sz, sz, false, false, joinIncrement, 0, maxSteps);
+            testNaturalJoinIncremental(false, true, sz, sz, true, false, joinIncrement, 0, maxSteps);
+            testNaturalJoinIncremental(false, true, sz, sz, false, true, joinIncrement, 0, maxSteps);
+            testNaturalJoinIncremental(false, true, sz, sz, true, true, joinIncrement, 0, maxSteps);
 
             final int[] leftSizes = new int[] {50, 100};
             final int[] rightSizes = new int[] {50, 100};
             for (long seed = 0; seed < 1; seed++) {
                 for (int leftSize : leftSizes) {
                     for (int rightSize : rightSizes) {
-                        testNaturalJoinIncremental(false, true, leftSize, rightSize, joinIncrement, seed, maxSteps);
+                        testNaturalJoinIncremental(false, true, leftSize, rightSize, false, false, joinIncrement, seed,
+                                maxSteps);
+                        testNaturalJoinIncremental(false, true, leftSize, rightSize, true, false, joinIncrement, seed,
+                                maxSteps);
+                        testNaturalJoinIncremental(false, true, leftSize, rightSize, false, true, joinIncrement, seed,
+                                maxSteps);
+                        testNaturalJoinIncremental(false, true, leftSize, rightSize, true, true, joinIncrement, seed,
+                                maxSteps);
                     }
                 }
             }
@@ -204,14 +223,24 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         for (JoinIncrement joinIncrement : new JoinIncrement[] {rightStepShift, rightStep}) {
             final int sz = 5;
             final int maxSteps = 20;
-            testNaturalJoinIncremental(true, false, sz, sz, joinIncrement, 0, maxSteps);
+            testNaturalJoinIncremental(true, false, sz, sz, false, false, joinIncrement, 0, maxSteps);
+            testNaturalJoinIncremental(true, false, sz, sz, true, false, joinIncrement, 0, maxSteps);
+            testNaturalJoinIncremental(true, false, sz, sz, false, true, joinIncrement, 0, maxSteps);
+            testNaturalJoinIncremental(true, false, sz, sz, true, true, joinIncrement, 0, maxSteps);
 
             final int[] leftSizes = new int[] {50, 100};
             final int[] rightSizes = new int[] {50, 100};
             for (long seed = 0; seed < 5; seed++) {
                 for (int leftSize : leftSizes) {
                     for (int rightSize : rightSizes) {
-                        testNaturalJoinIncremental(true, false, leftSize, rightSize, joinIncrement, seed, maxSteps);
+                        testNaturalJoinIncremental(true, false, leftSize, rightSize, false, false, joinIncrement, seed,
+                                maxSteps);
+                        testNaturalJoinIncremental(true, false, leftSize, rightSize, true, false, joinIncrement, seed,
+                                maxSteps);
+                        testNaturalJoinIncremental(true, false, leftSize, rightSize, false, true, joinIncrement, seed,
+                                maxSteps);
+                        testNaturalJoinIncremental(true, false, leftSize, rightSize, true, true, joinIncrement, seed,
+                                maxSteps);
                     }
                 }
             }
@@ -219,27 +248,31 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
     }
 
     private void testNaturalJoinIncremental(boolean leftStatic, boolean rightStatic, int leftSize, int rightSize,
-            JoinIncrement joinIncrement, long seed, long maxSteps) {
-        testNaturalJoinIncremental(leftStatic, rightStatic, leftSize, rightSize, joinIncrement, seed,
-                new MutableInt((int) maxSteps));
+            boolean leftIndexed, boolean rightIndexed,
+            JoinIncrement joinIncrement, long seed, int maxSteps) {
+        testNaturalJoinIncremental(leftStatic, rightStatic, leftSize, rightSize, leftIndexed, rightIndexed,
+                joinIncrement, seed, new MutableInt(maxSteps));
     }
 
     private void testNaturalJoinIncremental(boolean leftStatic, boolean rightStatic, int leftSize, int rightSize,
+            boolean leftIndexed, boolean rightIndexed,
             JoinIncrement joinIncrement, long seed, MutableInt numSteps) {
-        testNaturalJoinIncremental(leftStatic, rightStatic, leftSize, rightSize, joinIncrement, seed, numSteps,
-                new JoinControl());
+        testNaturalJoinIncremental(leftStatic, rightStatic, leftSize, rightSize, leftIndexed, rightIndexed,
+                joinIncrement, seed, numSteps, new JoinControl());
     }
 
     private static void testNaturalJoinIncremental(boolean leftStatic, boolean rightStatic, int leftSize, int rightSize,
-            JoinIncrement joinIncrement, long seed, long maxSteps, JoinControl control) {
-        testNaturalJoinIncremental(leftStatic, rightStatic, leftSize, rightSize, joinIncrement, seed,
-                new MutableInt((int) maxSteps), control);
+            boolean leftIndexed, boolean rightIndexed, JoinIncrement joinIncrement, long seed, int maxSteps,
+            JoinControl control) {
+        testNaturalJoinIncremental(leftStatic, rightStatic, leftSize, rightSize, leftIndexed, rightIndexed,
+                joinIncrement, seed, new MutableInt(maxSteps), control);
     }
 
     private static void testNaturalJoinIncremental(boolean leftStatic, boolean rightStatic, int leftSize, int rightSize,
-            JoinIncrement joinIncrement, long seed, MutableInt numSteps, JoinControl control) {
+            boolean leftIndexed, boolean rightIndexed, JoinIncrement joinIncrement, long seed, MutableInt numSteps,
+            JoinControl control) {
         final Random random = new Random(seed);
-        final int maxSteps = numSteps.intValue();
+        final int maxSteps = numSteps.get();
 
         final ColumnInfo<?, ?>[] rightColumnInfo;
         final UniqueIntGenerator rightIntGenerator =
@@ -259,6 +292,11 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
                         compositeGenerator,
                         new SetGenerator<>("a", "b"),
                         rightInt2Generator));
+        if (rightIndexed) {
+            DataIndexer.getOrCreateDataIndex(rightTable, "I1");
+            DataIndexer.getOrCreateDataIndex(rightTable, "I1", "C1");
+            DataIndexer.getOrCreateDataIndex(rightTable, "I1", "C1", "C2");
+        }
 
         final ColumnInfo<?, ?>[] leftColumnInfo;
         final QueryTable leftTable = getTable(!leftStatic, leftSize, random,
@@ -266,27 +304,33 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
                         new FromUniqueIntGenerator(rightIntGenerator, new IntGenerator(20, 10000), 0.75),
                         new SetGenerator<>("a", "b", "c"),
                         new FromUniqueIntGenerator(rightInt2Generator, new IntGenerator(20, 10000), 0.75)));
+        if (leftIndexed) {
+            DataIndexer.getOrCreateDataIndex(leftTable, "I1");
+            DataIndexer.getOrCreateDataIndex(leftTable, "I1", "C1");
+            DataIndexer.getOrCreateDataIndex(leftTable, "I1", "C1", "C2");
+        }
 
         final EvalNugget[] en = new EvalNugget[] {
                 new EvalNugget() {
                     public Table e() {
                         return NaturalJoinHelper.naturalJoin(leftTable, rightTable,
                                 MatchPairFactory.getExpressions("I1"),
-                                MatchPairFactory.getExpressions("LI1=I1", "LC1=C1", "LC2=C2"), false, control);
+                                MatchPairFactory.getExpressions("RI1=I1", "RC1=C1", "RC2=C2"),
+                                NaturalJoinType.ERROR_ON_DUPLICATE, control);
                     }
                 },
                 new EvalNugget() {
                     public Table e() {
                         return NaturalJoinHelper.naturalJoin(leftTable, rightTable,
-                                MatchPairFactory.getExpressions("C1", "I1"), MatchPairFactory.getExpressions("LC2=C2"),
-                                false, control);
+                                MatchPairFactory.getExpressions("C1", "I1"), MatchPairFactory.getExpressions("RC2=C2"),
+                                NaturalJoinType.ERROR_ON_DUPLICATE, control);
                     }
                 },
                 new EvalNugget() {
                     public Table e() {
                         return NaturalJoinHelper.naturalJoin(leftTable, (QueryTable) rightTable.update("Exists=true"),
                                 MatchPairFactory.getExpressions("C1", "C2", "I1"),
-                                MatchPairFactory.getExpressions("Exists"), false, control);
+                                MatchPairFactory.getExpressions("Exists"), NaturalJoinType.ERROR_ON_DUPLICATE, control);
                     }
                 },
         };
@@ -300,9 +344,9 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         final int leftStepSize = (int) Math.ceil(Math.sqrt(leftSize));
         final int rightStepSize = (int) Math.ceil(Math.sqrt(rightSize));
 
-        for (numSteps.setValue(0); numSteps.intValue() < maxSteps; numSteps.increment()) {
+        for (numSteps.set(0); numSteps.get() < maxSteps; numSteps.increment()) {
             if (printTableUpdates) {
-                System.out.println("Step = " + numSteps.intValue() + ", leftSize=" + leftSize + ", rightSize="
+                System.out.println("Step = " + numSteps.get() + ", leftSize=" + leftSize + ", rightSize="
                         + rightSize + ", seed = " + seed + ", joinIncrement=" + joinIncrement);
                 System.out.println("Left Table:" + leftTable.size());
                 TableTools.showWithRowSet(leftTable, 100);
@@ -324,7 +368,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         final Random random = new Random(seed);
 
         final QueryTable leftTable = getTable(false, leftSize, random, initColumnInfos(new String[] {"I1", "C1", "C2"},
-                new ColumnInfo.ColAttributes[] {ColumnInfo.ColAttributes.Grouped},
+                new ColumnInfo.ColAttributes[] {ColumnInfo.ColAttributes.Indexed},
                 new IntGenerator(1, rightSize * 10),
                 new SetGenerator<>("a", "b", "c", "d", "e", "f"),
                 new IntGenerator(1, 10)));
@@ -362,11 +406,9 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         assertTableEquals(noGroupingResult, result);
 
         final Table leftFlat = leftTable.flatten();
-        final ColumnSource<?> flatGrouped = leftFlat.getColumnSource("I1");
-        final TrackingRowSet flatRowSet = leftFlat.getRowSet();
-        final Map<Object, RowSet> grouping = RowSetIndexer.of(flatRowSet).getGrouping(flatGrouped);
-        // noinspection unchecked
-        ((AbstractColumnSource<Object>) flatGrouped).setGroupToRange(grouping);
+
+        // Create the data index for this table and column.
+        DataIndexer.getOrCreateDataIndex(leftFlat, "I1");
 
         final Table resultFlat = leftFlat.naturalJoin(rightTable, "I1", "LC1=C1,LC2=C2");
         assertTableEquals(noGroupingResult, resultFlat);
@@ -400,8 +442,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
     }
 
     public void testNaturalJoinGroupedStatic() {
-        // noinspection unchecked
-        testNaturalJoinSimpleStatic(TstUtils::colGrouped);
+        testNaturalJoinSimpleStatic(TstUtils::colIndexed);
     }
 
     private interface MakeLeftColumn {
@@ -470,7 +511,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         assertEquals(new int[] {NULL_INT, NULL_INT, NULL_INT}, intColumn(cj6, "RightSentinel"));
 
         final Table left7 = newTable(
-                lC.make("String", CollectionUtil.ZERO_LENGTH_STRING_ARRAY),
+                lC.make("String", ArrayTypeUtils.EMPTY_STRING_ARRAY),
                 intCol("LeftSentinel"));
         final Table right7 = newTable(intCol("RightSentinel", 10, 11));
         final Table cj7 = left7.naturalJoin(right7, "");
@@ -705,7 +746,6 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         assertEquals(new int[] {12, NULL_INT, 11, 10}, intColumn(cj2, "RightSentinel"));
     }
 
-
     public void testNaturalJoinZeroKeys() {
         setExpectError(false);
 
@@ -848,10 +888,10 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         assertEquals("String", result.getDefinition().getColumns().get(0).getName());
         assertEquals("Int", result.getDefinition().getColumns().get(1).getName());
         assertEquals("Int2", result.getDefinition().getColumns().get(2).getName());
-        assertEquals(Arrays.asList("a", "b", "c"),
-                Arrays.asList(DataAccessHelpers.getColumn(result, "String").get(0, 3)));
-        assertEquals(Arrays.asList(1, 2, 3), Arrays.asList(DataAccessHelpers.getColumn(result, "Int").get(0, 3)));
-        assertEquals(Arrays.asList(10, 20, 30), Arrays.asList(DataAccessHelpers.getColumn(result, "Int2").get(0, 3)));
+        assertArrayEquals(new String[] {"a", "b", "c"},
+                ColumnVectors.ofObject(result, "String", String.class).toArray());
+        assertArrayEquals(new int[] {1, 2, 3}, ColumnVectors.ofInt(result, "Int").toArray());
+        assertArrayEquals(new int[] {10, 20, 30}, ColumnVectors.ofInt(result, "Int2").toArray());
 
 
         Table table1 = TstUtils.testRefreshingTable(
@@ -865,8 +905,9 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         assertEquals("v", pairMatch.getDefinition().getColumns().get(1).getName());
         assertEquals(String.class, pairMatch.getDefinition().getColumns().get(0).getDataType());
         assertEquals(int.class, pairMatch.getDefinition().getColumns().get(1).getDataType());
-        assertEquals(asList("c", "e", "g"), asList((Object[]) DataAccessHelpers.getColumn(pairMatch, 0).getDirect()));
-        assertEquals(asList(1, 2, null), asList(DataAccessHelpers.getColumn(pairMatch, "v").get(0, 3)));
+        assertArrayEquals(new String[] {"c", "e", "g"}, ColumnVectors
+                .ofObject(pairMatch, pairMatch.getDefinition().getColumns().get(0).getName(), String.class).toArray());
+        assertArrayEquals(new int[] {1, 2, NULL_INT}, ColumnVectors.ofInt(pairMatch, "v").toArray());
 
 
         table2 = TstUtils.testRefreshingTable(
@@ -879,8 +920,9 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         assertEquals("v", pairMatch.getDefinition().getColumns().get(1).getName());
         assertEquals(String.class, pairMatch.getDefinition().getColumns().get(0).getDataType());
         assertEquals(int.class, pairMatch.getDefinition().getColumns().get(1).getDataType());
-        assertEquals(asList("c", "e", "g"), asList((Object[]) DataAccessHelpers.getColumn(pairMatch, 0).getDirect()));
-        assertEquals(asList(1, 2, 3), asList(DataAccessHelpers.getColumn(pairMatch, "v").get(0, 3)));
+        assertArrayEquals(new String[] {"c", "e", "g"}, ColumnVectors
+                .ofObject(pairMatch, pairMatch.getDefinition().getColumns().get(0).getName(), String.class).toArray());
+        assertArrayEquals(new int[] {1, 2, 3}, ColumnVectors.ofInt(pairMatch, "v").toArray());
 
         pairMatch = table2.naturalJoin(table1, "String", "");
         assertEquals(3, pairMatch.size());
@@ -889,8 +931,9 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         assertEquals("v", pairMatch.getDefinition().getColumns().get(1).getName());
         assertEquals(String.class, pairMatch.getDefinition().getColumns().get(0).getDataType());
         assertEquals(int.class, pairMatch.getDefinition().getColumns().get(1).getDataType());
-        assertEquals(asList("c", "e", "g"), asList((Object[]) DataAccessHelpers.getColumn(pairMatch, 0).getDirect()));
-        assertEquals(asList(1, 2, 3), asList(DataAccessHelpers.getColumn(pairMatch, "v").get(0, 3)));
+        assertArrayEquals(new String[] {"c", "e", "g"}, ColumnVectors
+                .ofObject(pairMatch, pairMatch.getDefinition().getColumns().get(0).getName(), String.class).toArray());
+        assertArrayEquals(new int[] {1, 2, 3}, ColumnVectors.ofInt(pairMatch, "v").toArray());
 
         pairMatch = table1.naturalJoin(table2, "String=String", "v");
         assertEquals(3, pairMatch.size());
@@ -899,8 +942,9 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         assertEquals("v", pairMatch.getDefinition().getColumns().get(1).getName());
         assertEquals(String.class, pairMatch.getDefinition().getColumns().get(0).getDataType());
         assertEquals(int.class, pairMatch.getDefinition().getColumns().get(1).getDataType());
-        assertEquals(asList("c", "e", "g"), asList((Object[]) DataAccessHelpers.getColumn(pairMatch, 0).getDirect()));
-        assertEquals(asList(1, 2, 3), asList(DataAccessHelpers.getColumn(pairMatch, "v").get(0, 3)));
+        assertArrayEquals(new String[] {"c", "e", "g"}, ColumnVectors
+                .ofObject(pairMatch, pairMatch.getDefinition().getColumns().get(0).getName(), String.class).toArray());
+        assertArrayEquals(new int[] {1, 2, 3}, ColumnVectors.ofInt(pairMatch, "v").toArray());
 
         pairMatch = table2.naturalJoin(table1, "String=String", "");
 
@@ -910,10 +954,12 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         assertEquals("v", pairMatch.getDefinition().getColumns().get(1).getName());
         assertEquals(String.class, pairMatch.getDefinition().getColumns().get(0).getDataType());
         assertEquals(int.class, pairMatch.getDefinition().getColumns().get(1).getDataType());
-        assertEquals(asList("c", "e", "g"), asList((Object[]) DataAccessHelpers.getColumn(pairMatch, 0).getDirect()));
-        assertEquals(1, DataAccessHelpers.getColumn(pairMatch, "v").getInt(0));
-        assertEquals(2, DataAccessHelpers.getColumn(pairMatch, "v").getInt(1));
-        assertEquals(3, DataAccessHelpers.getColumn(pairMatch, "v").getInt(2));
+        assertArrayEquals(new String[] {"c", "e", "g"}, ColumnVectors
+                .ofObject(pairMatch, pairMatch.getDefinition().getColumns().get(0).getName(), String.class).toArray());
+        IntVector vValues = ColumnVectors.ofInt(pairMatch, "v");
+        assertEquals(1, vValues.get(0));
+        assertEquals(2, vValues.get(1));
+        assertEquals(3, vValues.get(2));
 
 
         table1 = TstUtils.testRefreshingTable(
@@ -933,9 +979,12 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         assertEquals(String.class, pairMatch.getDefinition().getColumns().get(0).getDataType());
         assertEquals(String.class, pairMatch.getDefinition().getColumns().get(1).getDataType());
         assertEquals(int.class, pairMatch.getDefinition().getColumns().get(2).getDataType());
-        assertEquals(asList("c", "e", "g"), asList((Object[]) DataAccessHelpers.getColumn(pairMatch, 0).getDirect()));
-        assertEquals(asList("c", "e", "g"), asList((Object[]) DataAccessHelpers.getColumn(pairMatch, 1).getDirect()));
-        assertEquals(asList(1, 2, 3), asList(DataAccessHelpers.getColumn(pairMatch, 2).get(0, 3)));
+        assertArrayEquals(new String[] {"c", "e", "g"}, ColumnVectors
+                .ofObject(pairMatch, pairMatch.getDefinition().getColumns().get(0).getName(), String.class).toArray());
+        assertArrayEquals(new String[] {"c", "e", "g"}, ColumnVectors
+                .ofObject(pairMatch, pairMatch.getDefinition().getColumns().get(1).getName(), String.class).toArray());
+        assertArrayEquals(new int[] {1, 2, 3},
+                ColumnVectors.ofInt(pairMatch, pairMatch.getDefinition().getColumns().get(2).getName()).toArray());
 
 
         pairMatch = table2.naturalJoin(table1, "String2=String1", "String1");
@@ -948,11 +997,11 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         assertEquals(String.class, pairMatch.getDefinition().getColumn("String1").getDataType());
         assertEquals(String.class, pairMatch.getDefinition().getColumn("String2").getDataType());
         assertEquals(int.class, pairMatch.getDefinition().getColumn("v").getDataType());
-        assertEquals(asList("c", "e", "g"),
-                asList((Object[]) DataAccessHelpers.getColumn(pairMatch, "String1").getDirect()));
-        assertEquals(asList("c", "e", "g"),
-                asList((Object[]) DataAccessHelpers.getColumn(pairMatch, "String2").getDirect()));
-        assertEquals(asList(1, 2, 3), asList(DataAccessHelpers.getColumn(pairMatch, "v").get(0, 3)));
+        assertArrayEquals(new String[] {"c", "e", "g"},
+                ColumnVectors.ofObject(pairMatch, "String1", String.class).toArray());
+        assertArrayEquals(new String[] {"c", "e", "g"},
+                ColumnVectors.ofObject(pairMatch, "String2", String.class).toArray());
+        assertArrayEquals(new int[] {1, 2, 3}, ColumnVectors.ofInt(pairMatch, "v").toArray());
     }
 
     public void testNaturalJoinNull() {
@@ -963,10 +1012,12 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
 
         TableTools.show(cj);
 
-        assertEquals(1, DataAccessHelpers.getColumn(cj, "X").get(0));
-        assertEquals(2, DataAccessHelpers.getColumn(cj, "X").get(1));
-        assertEquals(3, DataAccessHelpers.getColumn(cj, "Y").get(0));
-        assertEquals(4, DataAccessHelpers.getColumn(cj, "Y").get(1));
+        final IntVector xValues = ColumnVectors.ofInt(cj, "X");
+        assertEquals(1, xValues.get(0));
+        assertEquals(2, xValues.get(1));
+        final IntVector yValues = ColumnVectors.ofInt(cj, "Y");
+        assertEquals(3, yValues.get(0));
+        assertEquals(4, yValues.get(1));
     }
 
     public void testNaturalJoinInactive() {
@@ -980,10 +1031,12 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         System.out.println("Result:");
         TableTools.showWithRowSet(cj);
 
-        assertEquals(1, DataAccessHelpers.getColumn(cj, "X").get(0));
-        assertEquals(2, DataAccessHelpers.getColumn(cj, "X").get(1));
-        assertEquals(3, DataAccessHelpers.getColumn(cj, "Y").get(0));
-        assertNull(DataAccessHelpers.getColumn(cj, "Y").get(1));
+        IntVector xValues = ColumnVectors.ofInt(cj, "X");
+        assertEquals(1, xValues.get(0));
+        assertEquals(2, xValues.get(1));
+        IntVector yValues = ColumnVectors.ofInt(cj, "Y");
+        assertEquals(3, yValues.get(0));
+        assertEquals(NULL_INT, yValues.get(1));
 
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         updateGraph.runWithinUnitTestCycle(() -> {
@@ -993,10 +1046,12 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         System.out.println("Right:");
         TableTools.showWithRowSet(c1);
 
-        assertEquals(1, DataAccessHelpers.getColumn(cj, "X").get(0));
-        assertEquals(2, DataAccessHelpers.getColumn(cj, "X").get(1));
-        assertEquals(3, DataAccessHelpers.getColumn(cj, "Y").get(0));
-        assertNull(DataAccessHelpers.getColumn(cj, "Y").get(1));
+        xValues = ColumnVectors.ofInt(cj, "X");
+        assertEquals(1, xValues.get(0));
+        assertEquals(2, xValues.get(1));
+        yValues = ColumnVectors.ofInt(cj, "Y");
+        assertEquals(3, yValues.get(0));
+        assertEquals(NULL_INT, yValues.get(1));
 
         updateGraph.runWithinUnitTestCycle(() -> {
             addToTable(c0, i(2), col("USym0", "B"), col("X", 6));
@@ -1009,12 +1064,14 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         System.out.println("Result:");
         TableTools.showWithRowSet(cj);
 
-        assertEquals(1, DataAccessHelpers.getColumn(cj, "X").get(0));
-        assertEquals(2, DataAccessHelpers.getColumn(cj, "X").get(1));
-        assertEquals(6, DataAccessHelpers.getColumn(cj, "X").get(2));
-        assertEquals(3, DataAccessHelpers.getColumn(cj, "Y").get(0));
-        assertNull(DataAccessHelpers.getColumn(cj, "Y").get(1));
-        assertEquals(4, DataAccessHelpers.getColumn(cj, "Y").get(2));
+        xValues = ColumnVectors.ofInt(cj, "X");
+        assertEquals(1, xValues.get(0));
+        assertEquals(2, xValues.get(1));
+        assertEquals(6, xValues.get(2));
+        yValues = ColumnVectors.ofInt(cj, "Y");
+        assertEquals(3, yValues.get(0));
+        assertEquals(NULL_INT, yValues.get(1));
+        assertEquals(4, yValues.get(2));
     }
 
     public void testNaturalJoinLeftIncrementalRightStaticSimple() {
@@ -1457,8 +1514,13 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         assertEquals("v", pairMatch.getDefinition().getColumns().get(1).getName());
         assertEquals(String.class, pairMatch.getDefinition().getColumns().get(0).getDataType());
         assertEquals(int.class, pairMatch.getDefinition().getColumns().get(1).getDataType());
-        assertEquals(asList("c", "e", "g"), asList((Object[]) DataAccessHelpers.getColumn(pairMatch, 0).getDirect()));
-        assertEquals(asList(1, 2, 3), asList(DataAccessHelpers.getColumn(pairMatch, "v").get(0, 3)));
+        assertArrayEquals(new String[] {"c", "e", "g"}, ColumnVectors
+                .ofObject(pairMatch, pairMatch.getDefinition().getColumns().get(0).getName(), String.class).toArray());
+        assertArrayEquals(new int[] {1, 2, 3}, ColumnVectors.ofInt(pairMatch, "v").toArray());
+
+        // Verify naturalJoin with NaturalJoinType.EXACTLY_ONE_MATCH is equivalent to exactJoin
+        Table njTable = table1.naturalJoin(table2, "String", NaturalJoinType.EXACTLY_ONE_MATCH);
+        assertTableEquals(pairMatch, njTable);
 
         pairMatch = table2.exactJoin(table1, "String");
         assertEquals(3, pairMatch.size());
@@ -1467,8 +1529,13 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         assertEquals("v", pairMatch.getDefinition().getColumns().get(1).getName());
         assertEquals(String.class, pairMatch.getDefinition().getColumns().get(0).getDataType());
         assertEquals(int.class, pairMatch.getDefinition().getColumns().get(1).getDataType());
-        assertEquals(asList("c", "e", "g"), asList((Object[]) DataAccessHelpers.getColumn(pairMatch, 0).getDirect()));
-        assertEquals(asList(1, 2, 3), asList(DataAccessHelpers.getColumn(pairMatch, "v").get(0, 3)));
+        assertArrayEquals(new String[] {"c", "e", "g"}, ColumnVectors
+                .ofObject(pairMatch, pairMatch.getDefinition().getColumns().get(0).getName(), String.class).toArray());
+        assertArrayEquals(new int[] {1, 2, 3}, ColumnVectors.ofInt(pairMatch, "v").toArray());
+
+        // Verify naturalJoin with NaturalJoinType.EXACTLY_ONE_MATCH is equivalent to exactJoin
+        njTable = table2.naturalJoin(table1, "String", NaturalJoinType.EXACTLY_ONE_MATCH);
+        assertTableEquals(pairMatch, njTable);
 
         pairMatch = table1.exactJoin(table2, "String=String");
         assertEquals(3, pairMatch.size());
@@ -1477,22 +1544,28 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         assertEquals("v", pairMatch.getDefinition().getColumns().get(1).getName());
         assertEquals(String.class, pairMatch.getDefinition().getColumns().get(0).getDataType());
         assertEquals(int.class, pairMatch.getDefinition().getColumns().get(1).getDataType());
-        assertEquals(asList("c", "e", "g"), asList((Object[]) DataAccessHelpers.getColumn(pairMatch, 0).getDirect()));
-        assertEquals(asList(1, 2, 3), asList(DataAccessHelpers.getColumn(pairMatch, "v").get(0, 3)));
+        assertArrayEquals(new String[] {"c", "e", "g"}, ColumnVectors
+                .ofObject(pairMatch, pairMatch.getDefinition().getColumns().get(0).getName(), String.class).toArray());
+        assertArrayEquals(new int[] {1, 2, 3}, ColumnVectors.ofInt(pairMatch, "v").toArray());
+
+        // Verify naturalJoin with NaturalJoinType.EXACTLY_ONE_MATCH is equivalent to exactJoin
+        njTable = table1.naturalJoin(table2, "String=String", NaturalJoinType.EXACTLY_ONE_MATCH);
+        assertTableEquals(pairMatch, njTable);
 
         pairMatch = table2.exactJoin(table1, "String=String");
-
         assertEquals(3, pairMatch.size());
         assertEquals(2, pairMatch.numColumns());
         assertEquals("String", pairMatch.getDefinition().getColumns().get(0).getName());
         assertEquals("v", pairMatch.getDefinition().getColumns().get(1).getName());
         assertEquals(String.class, pairMatch.getDefinition().getColumns().get(0).getDataType());
         assertEquals(int.class, pairMatch.getDefinition().getColumns().get(1).getDataType());
-        assertEquals(asList("c", "e", "g"), asList((Object[]) DataAccessHelpers.getColumn(pairMatch, 0).getDirect()));
-        assertEquals(1, DataAccessHelpers.getColumn(pairMatch, "v").getInt(0));
-        assertEquals(2, DataAccessHelpers.getColumn(pairMatch, "v").getInt(1));
-        assertEquals(3, DataAccessHelpers.getColumn(pairMatch, "v").getInt(2));
+        assertArrayEquals(new String[] {"c", "e", "g"}, ColumnVectors
+                .ofObject(pairMatch, pairMatch.getDefinition().getColumns().get(0).getName(), String.class).toArray());
+        assertArrayEquals(new int[] {1, 2, 3}, ColumnVectors.ofInt(pairMatch, "v").toArray());
 
+        // Verify naturalJoin with NaturalJoinType.EXACTLY_ONE_MATCH is equivalent to exactJoin
+        njTable = table2.naturalJoin(table1, "String=String", NaturalJoinType.EXACTLY_ONE_MATCH);
+        assertTableEquals(pairMatch, njTable);
 
         table1 = testRefreshingTable(col("String1", "c", "e", "g"));
 
@@ -1507,13 +1580,18 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         assertEquals(String.class, pairMatch.getDefinition().getColumns().get(0).getDataType());
         assertEquals(String.class, pairMatch.getDefinition().getColumns().get(1).getDataType());
         assertEquals(int.class, pairMatch.getDefinition().getColumns().get(2).getDataType());
-        assertEquals(asList("c", "e", "g"), asList((Object[]) DataAccessHelpers.getColumn(pairMatch, 0).getDirect()));
-        assertEquals(asList("c", "e", "g"), asList((Object[]) DataAccessHelpers.getColumn(pairMatch, 1).getDirect()));
-        assertEquals(asList(1, 2, 3), asList(DataAccessHelpers.getColumn(pairMatch, 2).get(0, 3)));
+        assertArrayEquals(new String[] {"c", "e", "g"}, ColumnVectors
+                .ofObject(pairMatch, pairMatch.getDefinition().getColumns().get(0).getName(), String.class).toArray());
+        assertArrayEquals(new String[] {"c", "e", "g"}, ColumnVectors
+                .ofObject(pairMatch, pairMatch.getDefinition().getColumns().get(1).getName(), String.class).toArray());
+        assertArrayEquals(new int[] {1, 2, 3},
+                ColumnVectors.ofInt(pairMatch, pairMatch.getDefinition().getColumns().get(2).getName()).toArray());
 
+        // Verify naturalJoin with NaturalJoinType.EXACTLY_ONE_MATCH is equivalent to exactJoin
+        njTable = table1.naturalJoin(table2, "String1=String2", NaturalJoinType.EXACTLY_ONE_MATCH);
+        assertTableEquals(pairMatch, njTable);
 
         pairMatch = table2.exactJoin(table1, "String2=String1");
-
         assertEquals(3, pairMatch.size());
         assertEquals(3, pairMatch.numColumns());
         assertEquals("String2", pairMatch.getDefinition().getColumns().get(0).getName());
@@ -1522,11 +1600,580 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         assertEquals(String.class, pairMatch.getDefinition().getColumn("String1").getDataType());
         assertEquals(String.class, pairMatch.getDefinition().getColumn("String2").getDataType());
         assertEquals(int.class, pairMatch.getDefinition().getColumn("v").getDataType());
-        assertEquals(asList("c", "e", "g"),
-                asList((Object[]) DataAccessHelpers.getColumn(pairMatch, "String1").getDirect()));
-        assertEquals(asList("c", "e", "g"),
-                asList((Object[]) DataAccessHelpers.getColumn(pairMatch, "String2").getDirect()));
-        assertEquals(asList(1, 2, 3), asList(DataAccessHelpers.getColumn(pairMatch, "v").get(0, 3)));
+        assertArrayEquals(new String[] {"c", "e", "g"},
+                ColumnVectors.ofObject(pairMatch, "String1", String.class).toArray());
+        assertArrayEquals(new String[] {"c", "e", "g"},
+                ColumnVectors.ofObject(pairMatch, "String2", String.class).toArray());
+        assertArrayEquals(new int[] {1, 2, 3}, ColumnVectors.ofInt(pairMatch, "v").toArray());
+
+        // Verify naturalJoin with NaturalJoinType.EXACTLY_ONE_MATCH is equivalent to exactJoin
+        njTable = table2.naturalJoin(table1, "String2=String1", NaturalJoinType.EXACTLY_ONE_MATCH);
+        assertTableEquals(pairMatch, njTable);
+    }
+
+    private ColumnInfo[] createTestColumnInfos(final float nullFraction, final int maxValue) {
+        final List<String> colsList = new ArrayList<>();
+        final List<TestDataGenerator> generators = new ArrayList<>();
+        colsList.addAll(Arrays.asList("intCol", "longCol", "doubleCol"));
+        generators.addAll(Arrays.asList(
+                new IntGenerator(10, maxValue, nullFraction),
+                new LongGenerator(10, maxValue, nullFraction),
+                new DoubleGenerator(10.1, 20.1, nullFraction)));
+
+        final ColumnInfo[] columnInfos = initColumnInfos(colsList.toArray(ArrayTypeUtils.EMPTY_STRING_ARRAY),
+                generators.toArray(new TestDataGenerator[0]));
+        return columnInfos;
+    }
+
+    final int[] sizes = new int[] {10, 100, 1_000, 10_000};
+    final int NUM_STEPS = 10;
+
+    public void testNaturalJoinTypeSimpleStatic() {
+        final Table lhs = testTable(col("JBool", true, false, null, true), col("LeftSentinel", 1, 2, 3, 4));
+        final Table rhsRaw =
+                newTable(col("JBool", true, false, null, true, false), col("RightSentinel", 10, 11, 12, 13, 14));
+
+        Table expected;
+        Table actual;
+
+        final Table rhsFirstBy = rhsRaw.firstBy("JBool");
+        expected = lhs.naturalJoin(rhsFirstBy, "JBool");
+        actual = lhs.naturalJoin(rhsRaw, "JBool", NaturalJoinType.FIRST_MATCH);
+
+        assertTableEquals(expected, actual);
+
+        final Table rhsLastBy = rhsRaw.lastBy("JBool");
+        expected = lhs.naturalJoin(rhsLastBy, "JBool");
+        actual = lhs.naturalJoin(rhsRaw, "JBool", NaturalJoinType.LAST_MATCH);
+
+        assertTableEquals(expected, actual);
+    }
+
+    public void testNaturalJoinTypeStatic(
+            final int leftSize,
+            final int rightSize,
+            final NaturalJoinType joinType,
+            final JoinControl.RedirectionType redirectionType) {
+        final Random lhs_random = new Random(12345678);
+        final Random rhs_random = new Random(87654321);
+
+        final JoinControl control = new JoinControl() {
+            @Override
+            RedirectionType getRedirectionType(Table leftTable) {
+                return redirectionType;
+            }
+        };
+
+        // Compare naturalJoin with NaturalJoinType.LAST_BY to the distinct operations
+        final ColumnInfo[] columnInfos = createTestColumnInfos(0.0f, leftSize + rightSize);
+
+        final QueryTable lhsRaw = getTable(false, leftSize, lhs_random, columnInfos);
+        final QueryTable lhs = redirectionType == JoinControl.RedirectionType.Contiguous
+                ? (QueryTable) lhsRaw.flatten()
+                : lhsRaw;
+        final QueryTable rhsRaw = getTable(false, rightSize, rhs_random, columnInfos);
+        final Table rhs = joinType == NaturalJoinType.FIRST_MATCH
+                ? rhsRaw.firstBy("intCol")
+                : rhsRaw.lastBy("intCol");
+
+        final Table expected = lhs.naturalJoin(rhs, "intCol", "rhs_longCol=longCol, rhs_doubleCol=doubleCol");
+        final Table actual = NaturalJoinHelper.naturalJoin(lhs, rhsRaw,
+                MatchPairFactory.getExpressions("intCol"),
+                MatchPairFactory.getExpressions("rhs_longCol=longCol", "rhs_doubleCol=doubleCol"),
+                joinType, control);
+
+        assertTableEquals(expected, actual);
+    }
+
+    public void testNaturalJoinFirstByStatic() {
+        for (final int leftSize : sizes) {
+            for (final int rightSize : sizes) {
+                System.out.println("  leftSize = " + leftSize + ", rightSize = " + rightSize);
+                testNaturalJoinTypeStatic(leftSize, rightSize, NaturalJoinType.FIRST_MATCH,
+                        JoinControl.RedirectionType.Contiguous);
+                testNaturalJoinTypeStatic(leftSize, rightSize, NaturalJoinType.FIRST_MATCH,
+                        JoinControl.RedirectionType.Sparse);
+                testNaturalJoinTypeStatic(leftSize, rightSize, NaturalJoinType.FIRST_MATCH,
+                        JoinControl.RedirectionType.Hash);
+            }
+        }
+    }
+
+    public void testNaturalJoinLastByStatic() {
+        for (final int leftSize : sizes) {
+            for (final int rightSize : sizes) {
+                System.out.println("  leftSize = " + leftSize + ", rightSize = " + rightSize);
+                testNaturalJoinTypeStatic(leftSize, rightSize, NaturalJoinType.LAST_MATCH,
+                        JoinControl.RedirectionType.Contiguous);
+                testNaturalJoinTypeStatic(leftSize, rightSize, NaturalJoinType.LAST_MATCH,
+                        JoinControl.RedirectionType.Sparse);
+                testNaturalJoinTypeStatic(leftSize, rightSize, NaturalJoinType.LAST_MATCH,
+                        JoinControl.RedirectionType.Hash);
+            }
+        }
+    }
+
+    private void testNaturalJoinType(
+            final int leftSize,
+            final boolean leftRefreshing,
+            final boolean leftIndexed,
+            final int rightSize,
+            final boolean rightRefreshing,
+            final int steps,
+            final JoinIncrement incrementor,
+            final JoinControl.RedirectionType redirectionType) {
+        final Random lhs_random = new Random(12345678);
+        final Random rhs_random = new Random(87654321);
+
+        final JoinControl control = new JoinControl() {
+            @Override
+            RedirectionType getRedirectionType(Table leftTable) {
+                return redirectionType;
+            }
+        };
+
+        final ColumnInfo[] columnInfos = createTestColumnInfos(0.0f, leftSize + rightSize);
+
+        final QueryTable lhsRaw = getTable(leftRefreshing, leftSize, lhs_random, columnInfos);
+        final QueryTable lhs = redirectionType == JoinControl.RedirectionType.Contiguous
+                ? (QueryTable) lhsRaw.flatten()
+                : lhsRaw;
+        if (leftIndexed) {
+            DataIndexer.getOrCreateDataIndex(lhs, "intCol");
+        }
+
+        final QueryTable rhsRaw = getTable(rightRefreshing, rightSize, rhs_random, columnInfos);
+        final Table rhsFirstByIntCol = rhsRaw.firstBy("intCol");
+        final Table rhsLastByIntCol = rhsRaw.lastBy("intCol");
+        final Table rhsFirstByZeroKey = rhsRaw.firstBy();
+        final Table rhsLastByZeroKey = rhsRaw.lastBy();
+
+        final TableComparator[] tc = new TableComparator[] {
+                new TableComparator(
+                        lhsRaw.naturalJoin(rhsFirstByIntCol, "intCol", "rhs_longCol=longCol, rhs_doubleCol=doubleCol"),
+                        "firstBy + naturalJoin",
+                        NaturalJoinHelper.naturalJoin(lhs, rhsRaw,
+                                MatchPairFactory.getExpressions("intCol"),
+                                MatchPairFactory.getExpressions("rhs_longCol=longCol", "rhs_doubleCol=doubleCol"),
+                                NaturalJoinType.FIRST_MATCH, control),
+                        "nj + FIRST_MATCH"),
+                new TableComparator(
+                        lhsRaw.naturalJoin(rhsLastByIntCol, "intCol", "rhs_longCol=longCol, rhs_doubleCol=doubleCol"),
+                        "lastBy + naturalJoin",
+                        NaturalJoinHelper.naturalJoin(lhs, rhsRaw,
+                                MatchPairFactory.getExpressions("intCol"),
+                                MatchPairFactory.getExpressions("rhs_longCol=longCol", "rhs_doubleCol=doubleCol"),
+                                NaturalJoinType.LAST_MATCH, control),
+                        "nj + LAST_MATCH"),
+                new TableComparator(
+                        lhsRaw.naturalJoin(rhsFirstByZeroKey, "", "rhs_longCol=longCol, rhs_doubleCol=doubleCol"),
+                        "firstBy + naturalJoin",
+                        NaturalJoinHelper.naturalJoin(lhs, rhsRaw,
+                                MatchPair.ZERO_LENGTH_MATCH_PAIR_ARRAY,
+                                MatchPairFactory.getExpressions("rhs_longCol=longCol", "rhs_doubleCol=doubleCol"),
+                                NaturalJoinType.FIRST_MATCH, control),
+                        "nj + FIRST_MATCH"),
+                new TableComparator(
+                        lhsRaw.naturalJoin(rhsLastByZeroKey, "", "rhs_longCol=longCol, rhs_doubleCol=doubleCol"),
+                        "lastBy + naturalJoin",
+                        NaturalJoinHelper.naturalJoin(lhs, rhsRaw,
+                                MatchPair.ZERO_LENGTH_MATCH_PAIR_ARRAY,
+                                MatchPairFactory.getExpressions("rhs_longCol=longCol", "rhs_doubleCol=doubleCol"),
+                                NaturalJoinType.LAST_MATCH, control),
+                        "nj + LAST_MATCH"),
+        };
+
+        final int leftStepSize = leftRefreshing ? leftSize / 2 : 0;
+        final int rightStepSize = rightRefreshing ? rightSize / 2 : 0;
+
+        for (int i = 0; i < steps; i++) {
+            if (RefreshingTableTestCase.printTableUpdates) {
+                System.out.println("Step " + i);
+            }
+            incrementor.step(leftStepSize, rightStepSize, lhsRaw, rhsRaw, columnInfos, columnInfos, tc, rhs_random);
+        }
+    }
+
+    public void testNaturalJoinTypeIncremental() {
+        for (final int leftSize : sizes) {
+            for (final int rightSize : sizes) {
+                System.out.println("  leftSize = " + leftSize + ", rightSize = " + rightSize);
+                testNaturalJoinType(leftSize, true, false, rightSize, true, NUM_STEPS, leftRightStep,
+                        JoinControl.RedirectionType.Sparse);
+                testNaturalJoinType(leftSize, true, false, rightSize, true, NUM_STEPS, leftRightStep,
+                        JoinControl.RedirectionType.Hash);
+                // With LHS data index
+                testNaturalJoinType(leftSize, true, true, rightSize, true, NUM_STEPS, leftRightStep,
+                        JoinControl.RedirectionType.Sparse);
+                testNaturalJoinType(leftSize, true, true, rightSize, true, NUM_STEPS, leftRightStep,
+                        JoinControl.RedirectionType.Hash);
+            }
+        }
+    }
+
+    public void testNaturalJoinTypeShiftIncremental() {
+        for (final int leftSize : sizes) {
+            for (final int rightSize : sizes) {
+                System.out.println("  leftSize = " + leftSize + ", rightSize = " + rightSize);
+                testNaturalJoinType(leftSize, true, false, rightSize, true, NUM_STEPS, leftRightStepShift,
+                        JoinControl.RedirectionType.Sparse);
+                testNaturalJoinType(leftSize, true, false, rightSize, true, NUM_STEPS, leftRightStepShift,
+                        JoinControl.RedirectionType.Hash);
+                // With LHS data index
+                testNaturalJoinType(leftSize, true, true, rightSize, true, NUM_STEPS, leftRightStepShift,
+                        JoinControl.RedirectionType.Sparse);
+                testNaturalJoinType(leftSize, true, true, rightSize, true, NUM_STEPS, leftRightStepShift,
+                        JoinControl.RedirectionType.Hash);
+            }
+        }
+    }
+
+    public void testNaturalJoinTypeRightIncremental() {
+        for (final int leftSize : sizes) {
+            for (final int rightSize : sizes) {
+                System.out.println("  leftSize = " + leftSize + ", rightSize = " + rightSize);
+                testNaturalJoinType(leftSize, false, false, rightSize, true, NUM_STEPS, rightStep,
+                        JoinControl.RedirectionType.Sparse);
+                testNaturalJoinType(leftSize, false, false, rightSize, true, NUM_STEPS, rightStep,
+                        JoinControl.RedirectionType.Hash);
+                // With LHS data index
+                testNaturalJoinType(leftSize, false, true, rightSize, true, NUM_STEPS, rightStep,
+                        JoinControl.RedirectionType.Sparse);
+                testNaturalJoinType(leftSize, false, true, rightSize, true, NUM_STEPS, rightStep,
+                        JoinControl.RedirectionType.Hash);
+            }
+        }
+    }
+
+    public void testNaturalJoinTypeRightShiftIncremental() {
+        for (final int leftSize : sizes) {
+            for (final int rightSize : sizes) {
+                System.out.println("  leftSize = " + leftSize + ", rightSize = " + rightSize);
+                testNaturalJoinType(leftSize, false, false, rightSize, true, NUM_STEPS, rightStepShift,
+                        JoinControl.RedirectionType.Sparse);
+                testNaturalJoinType(leftSize, false, false, rightSize, true, NUM_STEPS, rightStepShift,
+                        JoinControl.RedirectionType.Hash);
+                // With LHS data index
+                testNaturalJoinType(leftSize, false, true, rightSize, true, NUM_STEPS, rightStepShift,
+                        JoinControl.RedirectionType.Sparse);
+                testNaturalJoinType(leftSize, false, true, rightSize, true, NUM_STEPS, rightStepShift,
+                        JoinControl.RedirectionType.Hash);
+            }
+        }
+    }
+
+    private void testNaturalJoinTypeAppendOnly(
+            final int leftSize,
+            final boolean leftRefreshing,
+            final boolean leftIndexed,
+            final int rightSize,
+            final boolean rightRefreshing,
+            final int steps,
+            final JoinControl.RedirectionType redirectionType) {
+        final Random lhs_random = new Random(12345678);
+        final Random rhs_random = new Random(87654321);
+
+        final JoinControl control = new JoinControl() {
+            @Override
+            RedirectionType getRedirectionType(Table leftTable) {
+                return redirectionType;
+            }
+        };
+
+        final ColumnInfo[] columnInfos = createTestColumnInfos(0.0f, leftSize + rightSize);
+
+        final QueryTable lhsRaw = getTable(leftRefreshing, leftSize, lhs_random, columnInfos);
+        if (leftRefreshing) {
+            lhsRaw.setAttribute(Table.APPEND_ONLY_TABLE_ATTRIBUTE, Boolean.TRUE);
+        }
+        final QueryTable lhs = redirectionType == JoinControl.RedirectionType.Contiguous
+                ? (QueryTable) lhsRaw.flatten()
+                : lhsRaw;
+        if (leftIndexed) {
+            DataIndexer.getOrCreateDataIndex(lhs, "intCol");
+        }
+
+        final QueryTable rhsRaw = getTable(rightRefreshing, rightSize, rhs_random, columnInfos);
+        if (rightRefreshing) {
+            rhsRaw.setAttribute(Table.APPEND_ONLY_TABLE_ATTRIBUTE, Boolean.TRUE);
+        }
+        final Table rhsFirstByIntCol = rhsRaw.firstBy("intCol");
+        final Table rhsLastByIntCol = rhsRaw.lastBy("intCol");
+        final Table rhsFirstByZeroKey = rhsRaw.firstBy();
+        final Table rhsLastByZeroKey = rhsRaw.lastBy();
+
+        final TableComparator[] tc = new TableComparator[] {
+                new TableComparator(
+                        lhsRaw.naturalJoin(rhsFirstByIntCol, "intCol", "rhs_longCol=longCol, rhs_doubleCol=doubleCol"),
+                        "firstBy + naturalJoin",
+                        NaturalJoinHelper.naturalJoin(lhs, rhsRaw,
+                                MatchPairFactory.getExpressions("intCol"),
+                                MatchPairFactory.getExpressions("rhs_longCol=longCol", "rhs_doubleCol=doubleCol"),
+                                NaturalJoinType.FIRST_MATCH, control),
+                        "nj + FIRST_MATCH"),
+                new TableComparator(
+                        lhsRaw.naturalJoin(rhsLastByIntCol, "intCol", "rhs_longCol=longCol, rhs_doubleCol=doubleCol"),
+                        "lastBy + naturalJoin",
+                        NaturalJoinHelper.naturalJoin(lhs, rhsRaw,
+                                MatchPairFactory.getExpressions("intCol"),
+                                MatchPairFactory.getExpressions("rhs_longCol=longCol", "rhs_doubleCol=doubleCol"),
+                                NaturalJoinType.LAST_MATCH, control),
+                        "nj + LAST_MATCH"),
+                new TableComparator(
+                        lhsRaw.naturalJoin(rhsFirstByZeroKey, "", "rhs_longCol=longCol, rhs_doubleCol=doubleCol"),
+                        "firstBy + naturalJoin",
+                        NaturalJoinHelper.naturalJoin(lhs, rhsRaw,
+                                MatchPair.ZERO_LENGTH_MATCH_PAIR_ARRAY,
+                                MatchPairFactory.getExpressions("rhs_longCol=longCol", "rhs_doubleCol=doubleCol"),
+                                NaturalJoinType.FIRST_MATCH, control),
+                        "nj + FIRST_MATCH"),
+                new TableComparator(
+                        lhsRaw.naturalJoin(rhsLastByZeroKey, "", "rhs_longCol=longCol, rhs_doubleCol=doubleCol"),
+                        "lastBy + naturalJoin",
+                        NaturalJoinHelper.naturalJoin(lhs, rhsRaw,
+                                MatchPair.ZERO_LENGTH_MATCH_PAIR_ARRAY,
+                                MatchPairFactory.getExpressions("rhs_longCol=longCol", "rhs_doubleCol=doubleCol"),
+                                NaturalJoinType.LAST_MATCH, control),
+                        "nj + LAST_MATCH"),
+        };
+
+        final int leftStepSize = leftRefreshing ? leftSize / 2 : 0;
+        final int rightStepSize = rightRefreshing ? rightSize / 2 : 0;
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+
+        for (int i = 0; i < steps; i++) {
+            if (RefreshingTableTestCase.printTableUpdates) {
+                System.out.println("Step " + i);
+            }
+            updateGraph.runWithinUnitTestCycle(() -> {
+                if (leftRefreshing) {
+                    generateAppends(leftStepSize, lhs_random, lhsRaw, columnInfos);
+                }
+                if (rightRefreshing) {
+                    generateAppends(rightStepSize, rhs_random, rhsRaw, columnInfos);
+                }
+                TstUtils.validate(toString(), tc);
+            });
+        }
+    }
+
+    public void testNaturalJoinTypeAppend() {
+        for (final int leftSize : sizes) {
+            for (final int rightSize : sizes) {
+                System.out.println("  leftSize = " + leftSize + ", rightSize = " + rightSize);
+                testNaturalJoinTypeAppendOnly(leftSize, true, false, rightSize, true, NUM_STEPS,
+                        JoinControl.RedirectionType.Sparse);
+                testNaturalJoinTypeAppendOnly(leftSize, true, false, rightSize, true, NUM_STEPS,
+                        JoinControl.RedirectionType.Hash);
+                // With LHS data index
+                testNaturalJoinTypeAppendOnly(leftSize, true, true, rightSize, true, NUM_STEPS,
+                        JoinControl.RedirectionType.Sparse);
+                testNaturalJoinTypeAppendOnly(leftSize, true, true, rightSize, true, NUM_STEPS,
+                        JoinControl.RedirectionType.Hash);
+
+            }
+        }
+    }
+
+    public void testNaturalJoinTypeRightAppend() {
+        for (final int leftSize : sizes) {
+            for (final int rightSize : sizes) {
+                System.out.println("  leftSize = " + leftSize + ", rightSize = " + rightSize);
+                testNaturalJoinTypeAppendOnly(leftSize, false, false, rightSize, true, NUM_STEPS,
+                        JoinControl.RedirectionType.Sparse);
+                testNaturalJoinTypeAppendOnly(leftSize, false, false, rightSize, true, NUM_STEPS,
+                        JoinControl.RedirectionType.Hash);
+                // With LHS data index
+                testNaturalJoinTypeAppendOnly(leftSize, false, true, rightSize, true, NUM_STEPS,
+                        JoinControl.RedirectionType.Sparse);
+                testNaturalJoinTypeAppendOnly(leftSize, false, true, rightSize, true, NUM_STEPS,
+                        JoinControl.RedirectionType.Hash);
+            }
+        }
+    }
+
+    public void testAddOnlyFirstMatchIncremental() {
+        final QueryTable lhsRaw = TstUtils.testRefreshingTable(intCol("Key"), intCol("S1"));
+        lhsRaw.setAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE, Boolean.TRUE);
+        final QueryTable rhsRaw = TstUtils.testRefreshingTable(intCol("Key"), intCol("S2"));
+        rhsRaw.setAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE, Boolean.TRUE);
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+
+        final Table expected = lhsRaw.naturalJoin(rhsRaw.firstBy("Key"), "Key");
+        final Table actual = lhsRaw.naturalJoin(rhsRaw, "Key", "S2", NaturalJoinType.FIRST_MATCH);
+
+        assertTableEquals(expected, actual);
+
+        updateGraph.runWithinUnitTestCycle(() -> {
+            int start, end;
+            RowSet additions;
+
+            // keep these small enough to not trigger a rehash
+            start = 0;
+            end = 1_500;
+
+            additions = RowSetFactory.fromRange(start, end);
+            TstUtils.addToTable(lhsRaw, additions,
+                    intCol("Key", IntStream.rangeClosed(start, end).toArray()),
+                    intCol("S1", IntStream.rangeClosed(start, end).toArray()));
+            lhsRaw.notifyListeners(additions, RowSetFactory.empty(), RowSetFactory.empty());
+
+            start = 40_000;
+            end = 41_500;
+
+            additions = RowSetFactory.fromRange(start, end);
+            TstUtils.addToTable(rhsRaw, additions,
+                    intCol("Key", IntStream.rangeClosed(start, end).map(v -> v % 4_000).toArray()),
+                    intCol("S2", IntStream.rangeClosed(start, end).toArray()));
+            rhsRaw.notifyListeners(additions, RowSetFactory.empty(), RowSetFactory.empty());
+        });
+        assertTableEquals(expected, actual);
+
+        updateGraph.runWithinUnitTestCycle(() -> {
+            int start, end;
+            RowSet additions;
+
+            // force a rehash, but delay some collisions until after the rehash starts. These need to come before the
+            // existing rows to trigger the redirection change
+            start = 1_000;
+            end = 17_000;
+
+            additions = RowSetFactory.fromRange(start, end);
+            TstUtils.addToTable(rhsRaw, additions,
+                    intCol("Key", IntStream.rangeClosed(start, end).map(v -> v % 16_000).toArray()),
+                    intCol("S2", IntStream.rangeClosed(start, end).toArray()));
+            rhsRaw.notifyListeners(additions, RowSetFactory.empty(), RowSetFactory.empty());
+        });
+        assertTableEquals(expected, actual);
+    }
+
+    public void testAddOnlyFirstMatchRight() {
+        final QueryTable lhsRaw = TstUtils.testRefreshingTable(intCol("Key"), intCol("S1"));
+        lhsRaw.setAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE, Boolean.TRUE);
+        final QueryTable rhsRaw = TstUtils.testRefreshingTable(intCol("Key"), intCol("S2"));
+        rhsRaw.setAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE, Boolean.TRUE);
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+
+        updateGraph.runWithinUnitTestCycle(() -> {
+            int start, end;
+            RowSet additions;
+
+            start = 0;
+            end = 1_500;
+
+            additions = RowSetFactory.fromRange(start, end);
+            TstUtils.addToTable(lhsRaw, additions,
+                    intCol("Key", IntStream.rangeClosed(start, end).toArray()),
+                    intCol("S1", IntStream.rangeClosed(start, end).toArray()));
+            lhsRaw.notifyListeners(additions, RowSetFactory.empty(), RowSetFactory.empty());
+        });
+
+        // We pushed data in the table, now declare it static
+        lhsRaw.setRefreshing(false);
+
+        final Table expected = lhsRaw.naturalJoin(rhsRaw.firstBy("Key"), "Key");
+        final Table actual = lhsRaw.naturalJoin(rhsRaw, "Key", "S2", NaturalJoinType.FIRST_MATCH);
+
+        assertTableEquals(expected, actual);
+
+        updateGraph.runWithinUnitTestCycle(() -> {
+            int start, end;
+            RowSet additions;
+
+            start = 40_000;
+            end = 41_500;
+
+            additions = RowSetFactory.fromRange(start, end);
+            TstUtils.addToTable(rhsRaw, additions,
+                    intCol("Key", IntStream.rangeClosed(start, end).map(v -> v % 4_000).toArray()),
+                    intCol("S2", IntStream.rangeClosed(start, end).toArray()));
+            rhsRaw.notifyListeners(additions, RowSetFactory.empty(), RowSetFactory.empty());
+        });
+        assertTableEquals(expected, actual);
+
+        updateGraph.runWithinUnitTestCycle(() -> {
+            int start, end;
+            RowSet additions;
+
+            // These need to come before the existing rows to trigger the redirection change
+            start = 0;
+            end = 17_000;
+
+            additions = RowSetFactory.fromRange(start, end);
+            TstUtils.addToTable(rhsRaw, additions,
+                    intCol("Key", IntStream.rangeClosed(start, end).map(v -> v % 16_000).toArray()),
+                    intCol("S2", IntStream.rangeClosed(start, end).toArray()));
+            rhsRaw.notifyListeners(additions, RowSetFactory.empty(), RowSetFactory.empty());
+        });
+        assertTableEquals(expected, actual);
+    }
+
+    /**
+     * Force testing of the RedirectionType.Contiguous type.
+     */
+    public void testContiguousHashing() {
+        final Random lhs_random = new Random(12345678);
+        final Random rhs_random = new Random(87654321);
+
+        // forcing the use of contiguous hashing
+        final JoinControl control = new JoinControl() {
+            @Override
+            RedirectionType getRedirectionType(Table leftTable) {
+                return RedirectionType.Contiguous;
+            }
+        };
+
+        final int leftSize = 10_000;
+        final int rightSize = 10_000;
+
+        final ColumnInfo[] columnInfos = createTestColumnInfos(0.0f, leftSize + rightSize);
+
+        final QueryTable lhsRefreshing = (QueryTable) getTable(true, leftSize, lhs_random, columnInfos).flatten();
+        final QueryTable lhsStatic = (QueryTable) getTable(false, rightSize, lhs_random, columnInfos).flatten();
+        final QueryTable rhsRaw = getTable(true, 10_000, rhs_random, columnInfos);
+        final QueryTable rhs = (QueryTable) rhsRaw.firstBy("intCol");
+
+        Table expected;
+        Table actual;
+
+        expected = lhsRefreshing.naturalJoin(rhs, "intCol", "rhs_longCol=longCol, rhs_doubleCol=doubleCol");
+        actual = NaturalJoinHelper.naturalJoin(lhsRefreshing, rhsRaw,
+                MatchPairFactory.getExpressions("intCol"),
+                MatchPairFactory.getExpressions("rhs_longCol=longCol", "rhs_doubleCol=doubleCol"),
+                NaturalJoinType.FIRST_MATCH, control);
+
+        assertTableEquals(expected, actual);
+
+        expected = lhsStatic.naturalJoin(rhs, "intCol", "rhs_longCol=longCol, rhs_doubleCol=doubleCol");
+        actual = NaturalJoinHelper.naturalJoin(lhsStatic, rhsRaw,
+                MatchPairFactory.getExpressions("intCol"),
+                MatchPairFactory.getExpressions("rhs_longCol=longCol", "rhs_doubleCol=doubleCol"),
+                NaturalJoinType.FIRST_MATCH, control);
+
+        assertTableEquals(expected, actual);
+
+        // try again after creating indexes
+        DataIndexer.getOrCreateDataIndex(lhsRefreshing, "intCol");
+        DataIndexer.getOrCreateDataIndex(lhsStatic, "intCol");
+
+        expected = lhsRefreshing.naturalJoin(rhs, "intCol", "rhs_longCol=longCol, rhs_doubleCol=doubleCol");
+        actual = NaturalJoinHelper.naturalJoin(lhsRefreshing, rhsRaw,
+                MatchPairFactory.getExpressions("intCol"),
+                MatchPairFactory.getExpressions("rhs_longCol=longCol", "rhs_doubleCol=doubleCol"),
+                NaturalJoinType.FIRST_MATCH, control);
+
+        assertTableEquals(expected, actual);
+
+        expected = lhsStatic.naturalJoin(rhs, "intCol", "rhs_longCol=longCol, rhs_doubleCol=doubleCol");
+        actual = NaturalJoinHelper.naturalJoin(lhsStatic, rhsRaw,
+                MatchPairFactory.getExpressions("intCol"),
+                MatchPairFactory.getExpressions("rhs_longCol=longCol", "rhs_doubleCol=doubleCol"),
+                NaturalJoinType.FIRST_MATCH, control);
+
+        assertTableEquals(expected, actual);
     }
 
     public void testSymbolTableJoin() throws IOException {
@@ -1597,6 +2244,59 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         }
     }
 
+    public void testCyclingBuckets() {
+        final QueryTable cells = TstUtils.testRefreshingTable(RowSetFactory.fromRange(0, 999).toTracking());
+
+        final Table left = cells.updateView("Bucket=k", "SentinelL=1_000_000_000 + k").flatten();
+        final Table right = cells.updateView("Bucket=k", "SentinelR=2_000_000_000 + k").flatten();
+
+        final Table joined = left.naturalJoin(right, "Bucket");
+
+        // create 100,000,000 buckets
+        final RuntimeMemory.Sample sample = new RuntimeMemory.Sample();
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        for (long step = 0; step <= 100_000; ++step) {
+            final long fstep = step;
+            if (fstep % 10000 == 0) {
+                System.out.println("Step = " + fstep);
+                System.gc();
+                RuntimeMemory.getInstance().read(sample);
+                System.out.println(sample);
+            }
+            updateGraph.runWithinUnitTestCycle(() -> {
+                final WritableRowSet removed;
+                if (fstep > 0) {
+                    removed = RowSetFactory.fromRange(fstep * 1000 - 100, fstep * 1000 + 899);
+                } else {
+                    removed = RowSetFactory.fromRange(0, 899);
+                }
+                removeRows(cells, removed);
+                final WritableRowSet added = RowSetFactory.fromRange((fstep + 1) * 1000, (fstep + 1) * 1000 + 999);
+                addToTable(cells, added);
+                cells.notifyListeners(added, removed, RowSetFactory.empty());
+            });
+            TestCase.assertEquals(1100, joined.size());
+
+            long currentBucket = (step + 1) * 1000 - 100;
+            try (final CloseablePrimitiveIteratorOfLong bucketIt = joined.longColumnIterator("Bucket");
+                    final CloseablePrimitiveIteratorOfLong leftIt = joined.longColumnIterator("SentinelL");
+                    final CloseablePrimitiveIteratorOfLong rightIt = joined.longColumnIterator("SentinelR")) {
+                while (bucketIt.hasNext()) {
+                    final long bucket = bucketIt.nextLong();
+                    final long lsentinel = leftIt.nextLong();
+                    final long rsentinel = rightIt.nextLong();
+                    TestCase.assertEquals(currentBucket++, bucket);
+                    TestCase.assertEquals(bucket + 1_000_000_000L, lsentinel);
+                    TestCase.assertEquals(bucket + 2_000_000_000L, rsentinel);
+                }
+            }
+        }
+        System.out.println("Done.");
+        System.gc();
+        RuntimeMemory.getInstance().read(sample);
+        System.out.println(sample);
+    }
+
     public void testGetDirectAfterNaturalJoin() {
         final Table sodiumLeft = emptyTable(3).updateView("Value=(i%5==0? null : i*2)", "ColLeft=`LeftOnlyContents`");
         final Table peppermintRight =
@@ -1611,7 +2311,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
             assertEquals(rightValue, ck.get(1));
             assertNull(ck.get(2));
         }
-        final DataColumn<?> colRight = DataAccessHelpers.getColumn(vanillaVanilla, "ColRight");
+        final ObjectVector<String> colRight = ColumnVectors.ofObject(vanillaVanilla, "ColRight", String.class);
         assertEquals(rightValue, colRight.get(0));
         assertEquals(rightValue, colRight.get(1));
         assertNull(colRight.get(2));
@@ -1643,8 +2343,9 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         final String[] leftSyms = new String[] {"Apple", "Banana", "Cantaloupe", "DragonFruit",
                 "Apple", "Cantaloupe", "Banana", "Banana", "Cantaloupe"};
         final Table leftTable = newTable(stringCol("Symbol", leftSyms)).update("LeftSentinel=i");
-        ParquetTools.writeTable(leftTable, leftLocation, leftDefinition);
-        return ParquetTools.readTable(leftLocation);
+        ParquetTools.writeTable(leftTable, leftLocation.getPath(),
+                ParquetInstructions.EMPTY.withTableDefinition(leftDefinition));
+        return ParquetTools.readTable(leftLocation.getPath());
     }
 
     @NotNull
@@ -1654,7 +2355,8 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
                 ColumnDefinition.ofInt("RightSentinel"));
         final String[] rightSyms = new String[] {"Elderberry", "Apple", "Banana", "Cantaloupe"};
         final Table rightTable = newTable(stringCol("Symbol", rightSyms)).update("RightSentinel=100+i");
-        ParquetTools.writeTable(rightTable, rightLocation, rightDefinition);
-        return ParquetTools.readTable(rightLocation);
+        ParquetTools.writeTable(rightTable, rightLocation.getPath(),
+                ParquetInstructions.EMPTY.withTableDefinition(rightDefinition));
+        return ParquetTools.readTable(rightLocation.getPath());
     }
 }

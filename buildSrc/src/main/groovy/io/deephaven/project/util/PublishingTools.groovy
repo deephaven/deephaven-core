@@ -1,19 +1,19 @@
 package io.deephaven.project.util
 
+import com.github.jengelman.gradle.plugins.shadow.ShadowJavaPlugin
+import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
+import com.vanniktech.maven.publish.MavenPublishBaseExtension
 import groovy.transform.CompileStatic
 import io.deephaven.tools.License
-import org.gradle.api.Action
 import org.gradle.api.Project
 import org.gradle.api.Task
-import org.gradle.api.artifacts.repositories.MavenArtifactRepository
-import org.gradle.api.artifacts.repositories.PasswordCredentials
-import org.gradle.api.plugins.BasePluginConvention
-import org.gradle.api.publish.Publication
+import org.gradle.api.plugins.BasePluginExtension
 import org.gradle.api.publish.PublishingExtension
+import org.gradle.api.publish.maven.MavenPom
 import org.gradle.api.publish.maven.MavenPublication
+import org.gradle.api.publish.maven.tasks.PublishToMavenRepository
 import org.gradle.api.tasks.TaskProvider
 import org.gradle.plugins.signing.SigningExtension
-import org.gradle.util.ConfigureUtil
 
 @CompileStatic
 class PublishingTools {
@@ -32,98 +32,96 @@ class PublishingTools {
     static final String SCM_CONNECTION = 'scm:git:git://github.com/deephaven/deephaven-core.git'
     static final String SCM_DEV_CONNECTION = 'scm:git:ssh://github.com/deephaven/deephaven-core.git'
 
-    static final String REPO_NAME = 'ossrh'
-    static final String SNAPSHOT_REPO = 'https://s01.oss.sonatype.org/content/repositories/snapshots/'
-    static final String RELEASE_REPO = 'https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/'
+    static final String SHADOW_PUBLICATION_NAME = 'shadow'
 
-    static void setupPublications(Project project, Closure closure) {
-        setupPublications(project, ConfigureUtil.configureUsing(closure))
+    static boolean isSnapshot(Project project) {
+        return ((String)project.version).endsWith('-SNAPSHOT')
     }
 
-    static void setupPublications(Project project, Action<MavenPublication> action) {
-        def projectLicense = project.extensions.extraProperties.get('license') as License
+    static void setupPublishing(Project project) {
+        setupPublishingImpl project, false
+        setupSigning project
+    }
 
-        project.extensions.findByType(PublishingExtension).publications { container ->
-            container.create('mavenJava', MavenPublication) { publication ->
-                action.execute(publication)
-                publication.pom {pom ->
-                    pom.licenses { licenses ->
-                        licenses.license { license ->
-                            license.name.set projectLicense.name
-                            license.url.set projectLicense.url
-                        }
-                    }
+    static void setupBomPublishing(Project project) {
+        // Note: setting up bom as separate entrypoint than setupPublishing because we can't use
+        // io.deephaven.java-license-conventions to provide License since a the bom ('java-platform') can't use 'java'
+        // nor 'java-library' plugin
+        setupPublishingImpl project, true
+        setupSigning project
+    }
 
-                }
+    private static void setupPublishingImpl(Project project, boolean isBom) {
+        MavenPublishBaseExtension mpb = project.extensions.getByType(MavenPublishBaseExtension)
+        BasePluginExtension base = project.extensions.getByType(BasePluginExtension)
+        mpb.publishToMavenCentral()
+        mpb.signAllPublications()
+        mpb.pom { pom ->
+            setPomConstants pom
+            if (!isBom) {
+                // Bom sets the license at the top level
+                setPomLicense project, pom
+            }
+        }
+        project.afterEvaluate {
+            mpb.coordinates(null, base.archivesName.get(), null)
+            mpb.pom { pom ->
+                pom.name.set base.archivesName.get()
+                pom.description.set project.description
+            }
+        }
+        def assertIsRelease = assertIsReleaseTask(project)
+        // Note: this is the same way that com.vanniktech.maven.publish.MavenPublishBaseExtension hooks into the
+        // lower-level publish tasks to establish its own dependencies on the maven-publish tasks.
+        // It uses `repo.name = "mavenCentral"` and the pattern as documented
+        // https://docs.gradle.org/current/userguide/publishing_maven.html#publishing_maven:tasks,
+        // publish[PubName]PublicationTo[RepoName]Repository
+        project.tasks.withType(PublishToMavenRepository).configureEach { publishTask ->
+            if (publishTask.name.endsWith("ToMavenCentralRepository")) {
+                publishTask.dependsOn assertIsRelease
             }
         }
     }
 
-    static void setupRepositories(Project project) {
-        PublishingExtension publishingExtension = project.extensions.getByType(PublishingExtension)
-        publishingExtension.repositories { repoHandler ->
-            repoHandler.maven { MavenArtifactRepository repo ->
-                repo.name = REPO_NAME
-                repo.url = ((String)project.version).endsWith('SNAPSHOT') ? SNAPSHOT_REPO : RELEASE_REPO
-                // ossrhUsername, ossrhPassword
-                repo.credentials(PasswordCredentials)
+    private static void setPomLicense(Project project, MavenPom pom) {
+        License theLicense = project.extensions.extraProperties.get('license') as License
+        pom.licenses { licenses ->
+            licenses.license { license ->
+                license.name.set theLicense.name
+                license.url.set theLicense.url
             }
         }
     }
 
-    static void setupMavenPublication(Project project, MavenPublication mavenPublication) {
-        mavenPublication.pom {pom ->
-            pom.url.set PROJECT_URL
-            pom.organization {org ->
-                org.name.set ORG_NAME
-                org.url.set ORG_URL
-            }
-            pom.scm { scm ->
-                scm.url.set SCM_URL
-                scm.connection.set SCM_CONNECTION
-                scm.developerConnection.set SCM_DEV_CONNECTION
-            }
-            pom.issueManagement { im ->
-                im.system.set ISSUES_SYSTEM
-                im.url.set ISSUES_URL
-            }
-            pom.developers { devs ->
-                devs.developer { dev ->
-                    dev.id.set DEVELOPER_ID
-                    dev.name.set DEVELOPER_NAME
-                    dev.email.set DEVELOPER_EMAIL
-                    dev.organization.set ORG_NAME
-                    dev.organizationUrl.set ORG_URL
-                }
-            }
+    private static void setPomConstants(MavenPom pom) {
+        pom.url.set PROJECT_URL
+        pom.organization { org ->
+            org.name.set ORG_NAME
+            org.url.set ORG_URL
         }
-
-        def publishToOssrhTask = project.tasks.getByName("publish${mavenPublication.getName().capitalize()}PublicationToOssrhRepository")
-
-        publishToOssrhTask.dependsOn assertIsReleaseTask(project)
-
-        project.afterEvaluate { Project p ->
-            // https://central.sonatype.org/publish/requirements/
-            if (p.description == null) {
-                throw new IllegalStateException("Project '${project.name}' is missing a description, which is required for publishing to maven central")
-            }
-            BasePluginConvention base = p.convention.getPlugin(BasePluginConvention)
-            // The common-conventions plugin should take care of this, but we'll double-check here
-            if (!base.archivesBaseName.contains('deephaven')) {
-                throw new IllegalStateException("Project '${project.name}' archiveBaseName '${base.archivesBaseName}' does not contain 'deephaven'")
-            }
-            mavenPublication.artifactId = base.archivesBaseName
-            mavenPublication.pom { pom ->
-                pom.name.set base.archivesBaseName
-                pom.description.set p.description
+        pom.scm { scm ->
+            scm.url.set SCM_URL
+            scm.connection.set SCM_CONNECTION
+            scm.developerConnection.set SCM_DEV_CONNECTION
+        }
+        pom.issueManagement { im ->
+            im.system.set ISSUES_SYSTEM
+            im.url.set ISSUES_URL
+        }
+        pom.developers { devs ->
+            devs.developer { dev ->
+                dev.id.set DEVELOPER_ID
+                dev.name.set DEVELOPER_NAME
+                dev.email.set DEVELOPER_EMAIL
+                dev.organization.set ORG_NAME
+                dev.organizationUrl.set ORG_URL
             }
         }
     }
 
-    static void setupSigning(Project project, Publication publication) {
+    static void setupSigning(Project project) {
         SigningExtension signingExtension = project.extensions.getByType(SigningExtension)
         signingExtension.required = "true" == project.findProperty('signingRequired')
-        signingExtension.sign(publication)
         String signingKey = project.findProperty('signingKey')
         String signingPassword = project.findProperty('signingPassword')
         if (signingKey != null && signingPassword != null) {
@@ -140,11 +138,23 @@ class PublishingTools {
                     throw new IllegalStateException('Release error: env CI must be true')
                 }
                 def actualGithubRef = System.getenv('GITHUB_REF')
-                def expectedGithubRef = "refs/heads/release/v${p.version}"
+                def expectedGithubRef = isSnapshot(p)
+                        ? 'refs/heads/main'
+                        : "refs/heads/release/v${p.version}".toString()
                 if (actualGithubRef != expectedGithubRef) {
                     throw new IllegalStateException("Release error: env GITHUB_REF '${actualGithubRef}' does not match expected '${expectedGithubRef}'. Bad tag? Bump version?")
                 }
             }
         }
+    }
+
+    static void setupShadowName(Project project, String name) {
+        project.tasks.named(ShadowJavaPlugin.SHADOW_JAR_TASK_NAME, ShadowJar) {
+            it.archiveBaseName.set(name)
+        }
+        project.extensions.getByType(PublishingExtension).publications.named(SHADOW_PUBLICATION_NAME, MavenPublication) {
+            it.artifactId = name
+        }
+        project.extensions.getByType(BasePluginExtension).archivesName.set(name)
     }
 }

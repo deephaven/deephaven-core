@@ -1,0 +1,1 @@
+{"file":"core/docs/reference/numpy/to-table.md","objects":{"result":{"type":"Table","data":{"columns":[{"name":"col1","type":"long"},{"name":"col2","type":"long"},{"name":"col3","type":"long"}],"rows":[[{"value":"0"},{"value":"1"},{"value":"2"}],[{"value":"3"},{"value":"4"},{"value":"5"}]]}}}}

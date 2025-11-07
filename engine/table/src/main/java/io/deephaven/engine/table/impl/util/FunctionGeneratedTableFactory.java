@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.util;
 
 import io.deephaven.engine.context.ExecutionContext;
@@ -15,7 +15,9 @@ import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.ReferentialIntegrity;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
+import javax.annotation.OverridingMethodsMustInvokeSuper;
 import java.util.*;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -43,6 +45,7 @@ public class FunctionGeneratedTableFactory {
     private final Map<String, WritableColumnSource<?>> writableSources = new LinkedHashMap<>();
     private final Map<String, ColumnSource<?>> columns = new LinkedHashMap<>();
     private final TrackingWritableRowSet rowSet;
+    private final ExecutionContext executionContextForUpdates;
 
     private long nextRefresh;
 
@@ -128,9 +131,13 @@ public class FunctionGeneratedTableFactory {
     private FunctionGeneratedTableFactory(@NotNull final Supplier<Table> tableGenerator, final int refreshIntervalMs) {
         this.tableGenerator = tableGenerator;
         this.refreshIntervalMs = refreshIntervalMs;
+        this.executionContextForUpdates = makeExecutionContextForUpdates();
         nextRefresh = System.currentTimeMillis() + this.refreshIntervalMs;
 
-        Table initialTable = tableGenerator.get();
+        final Table initialTable;
+        try (final SafeCloseable ignored = executionContextForUpdates.open()) {
+            initialTable = tableGenerator.get();
+        }
         if (initialTable.isRefreshing()) {
             if (ExecutionContext.getContext().getUpdateGraph() != initialTable.getUpdateGraph()) {
                 throw new IllegalStateException(
@@ -155,12 +162,30 @@ public class FunctionGeneratedTableFactory {
         rowSet = RowSetFactory.flat(initialTable.size()).toTracking();
     }
 
+    /**
+     * If we have a systemic context we need to capture the authentication context. If we have a user-supplied context
+     * we should keep that so that any query scope, query library, etc. is available to produce the table.
+     *
+     * @return the execution context to use for updates
+     */
+    private static @NotNull ExecutionContext makeExecutionContextForUpdates() {
+        final ExecutionContext contextToRecord = ExecutionContext.getContextToRecord();
+        if (contextToRecord != null) {
+            return contextToRecord;
+        } else {
+            return ExecutionContext.newBuilder().build();
+        }
+    }
+
     private FunctionBackedTable getTable() {
         return new FunctionBackedTable(rowSet, columns);
     }
 
     private long updateTable() {
-        Table newTable = tableGenerator.get();
+        final Table newTable;
+        try (final SafeCloseable ignored = executionContextForUpdates.open()) {
+            newTable = tableGenerator.get();
+        }
         if (newTable.isRefreshing()) {
             if (ExecutionContext.getContext().getUpdateGraph() != newTable.getUpdateGraph()) {
                 throw new IllegalStateException(
@@ -279,6 +304,7 @@ public class FunctionGeneratedTableFactory {
             }
         }
 
+        @OverridingMethodsMustInvokeSuper
         @Override
         public void destroy() {
             super.destroy();

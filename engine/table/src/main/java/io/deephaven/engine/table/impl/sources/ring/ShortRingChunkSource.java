@@ -1,11 +1,10 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharacterRingChunkSource and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit CharacterRingChunkSource and run "./gradlew replicateRingChunkSources" to regenerate
+//
+// @formatter:off
 package io.deephaven.engine.table.impl.sources.ring;
 
 import io.deephaven.chunk.ChunkType;
@@ -26,7 +25,7 @@ final class ShortRingChunkSource extends AbstractRingChunkSource<Short, short[],
     }
 
     public ShortRingChunkSource(int capacity) {
-        super(short.class, capacity);
+        super(new short[capacity]);
     }
 
     @Override
@@ -45,7 +44,8 @@ final class ShortRingChunkSource extends AbstractRingChunkSource<Short, short[],
             return NULL_SHORT;
         }
         if (STRICT_KEYS && !containsKey(key)) {
-            throw new IllegalArgumentException(String.format("Invalid key %d. available=[%d, %d]", key, firstKey(), lastKey()));
+            throw new IllegalArgumentException(
+                    String.format("Invalid key %d. available=[%d, %d]", key, firstKey(), lastKey()));
         }
         return ring[keyToRingIndex(key)];
     }

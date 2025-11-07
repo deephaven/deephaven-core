@@ -1,0 +1,1 @@
+{"file":"core_versioned_docs/version-groovy/docs/reference/table-operations/create/longCol.md","objects":{"result":{"type":"Table","data":{"columns":[{"name":"Longs","type":"long"}],"rows":[[{"value":"10,000,000"}],[{"value":"987,654,321"}],[{"value":"-314,159,265"}]]}}}}

@@ -1,3 +1,6 @@
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.api.agg;
 
 import io.deephaven.api.agg.Aggregation.Visitor;
@@ -54,6 +57,11 @@ public class AggregationTest {
         }
 
         @Override
+        public void visit(CountWhere countWhere) {
+            ++count;
+        }
+
+        @Override
         public void visit(FirstRowKey firstRowKey) {
             ++count;
         }
@@ -65,6 +73,11 @@ public class AggregationTest {
 
         @Override
         public void visit(Partition partition) {
+            ++count;
+        }
+
+        @Override
+        public void visit(Formula formula) {
             ++count;
         }
     }

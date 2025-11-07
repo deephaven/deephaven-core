@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.server.session;
 
 import com.github.f4b6a3.uuid.UuidCreator;
@@ -43,6 +43,7 @@ import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.Nullable;
+import javax.annotation.OverridingMethodsMustInvokeSuper;
 import javax.inject.Provider;
 import java.io.Closeable;
 import java.io.IOException;
@@ -104,7 +105,7 @@ public class SessionState {
      * @return a sessionless export object
      */
     public static <T> ExportObject<T> wrapAsExport(final T export) {
-        return new ExportObject<>(export);
+        return new ExportObject<>(export, null);
     }
 
     /**
@@ -116,8 +117,7 @@ public class SessionState {
      * @return a sessionless export object
      */
     public static <T> ExportObject<T> wrapAsFailedExport(final Exception caughtException) {
-        ExportObject<T> exportObject = new ExportObject<>(null);
-        exportObject.caughtException = caughtException;
+        ExportObject<T> exportObject = new ExportObject<>(null, caughtException);
         return exportObject;
     }
 
@@ -417,7 +417,6 @@ public class SessionState {
      * the close() method be idempotent, but when combined with {@link #removeOnCloseCallback(Closeable)}, close() will
      * only be called once from this class.
      * <p>
-     * </p>
      * If called after the session has expired, this will throw, and the close() method on the provided instance will
      * not be called.
      *
@@ -436,7 +435,7 @@ public class SessionState {
 
     /**
      * Remove an on-close callback bound to the life of the session.
-     * <p />
+     * <p>
      * A common pattern to use this will be for an object to try to remove itself, and if it succeeds, to call its own
      * {@link Closeable#close()}. If it fails, it can expect to have close() be called automatically.
      *
@@ -525,7 +524,6 @@ public class SessionState {
      * Note: we reuse ExportObject for non-exporting tasks that have export dependencies.
      *
      * @param <T> Is context-sensitive depending on the export.
-     *
      * @apiNote ExportId may be 0, if this is a task that has exported dependencies, but does not export anything
      *          itself. Non-exports do not publish state changes.
      */
@@ -604,7 +602,7 @@ public class SessionState {
          *
          * @param result the object to wrap in an export
          */
-        private ExportObject(final T result) {
+        private ExportObject(final T result, final Exception caughtException) {
             super(true);
             this.errorTransformer = null;
             this.session = null;
@@ -615,7 +613,7 @@ public class SessionState {
             this.logIdentity = Integer.toHexString(System.identityHashCode(this)) + "-sessionless";
 
             if (result == null) {
-                maybeAssignErrorId();
+                maybeAssignErrorId(caughtException, null);
                 state = ExportNotification.State.FAILED;
             } else {
                 state = ExportNotification.State.EXPORTED;
@@ -626,7 +624,10 @@ public class SessionState {
             }
         }
 
-        private boolean isNonExport() {
+        /**
+         * @return if this export is a session-less non-export
+         */
+        public boolean isNonExport() {
             return exportId == NON_EXPORT_ID;
         }
 
@@ -709,13 +710,13 @@ public class SessionState {
 
                 // since this is the first we know of the errorHandler, it could not have been invoked yet
                 if (errorHandler != null) {
-                    maybeAssignErrorId();
+                    maybeAssignErrorId(caughtException, null);
                     errorHandler.onError(state, errorId, caughtException, failedDependencyLogIdentity);
                 }
                 return;
             }
 
-            this.exportMain = exportMain;
+            this.exportMain = Objects.requireNonNull(exportMain);
             this.errorHandler = errorHandler;
             this.successHandler = successHandler;
 
@@ -798,6 +799,13 @@ public class SessionState {
         }
 
         /**
+         * @return the export id for this export
+         */
+        public int getExportIdInt() {
+            return exportId;
+        }
+
+        /**
          * Add dependency if object export has not yet completed.
          *
          * @param child the dependent task
@@ -851,7 +859,7 @@ public class SessionState {
             }
 
             if (isExportStateFailure(state) && errorHandler != null) {
-                maybeAssignErrorId();
+                maybeAssignErrorId(caughtException, null);
                 try {
                     final Exception toReport;
                     if (caughtException != null && errorTransformer != null) {
@@ -1004,11 +1012,7 @@ public class SessionState {
                 if (caughtException != null) {
                     synchronized (this) {
                         if (!isExportStateTerminal(state)) {
-                            maybeAssignErrorId();
-                            if (!(caughtException instanceof StatusRuntimeException)) {
-                                log.error().append("Internal Error '").append(errorId).append("' ")
-                                        .append(caughtException).endl();
-                            }
+                            maybeAssignErrorId(caughtException, null);
                             setState(ExportNotification.State.FAILED);
                         }
                     }
@@ -1023,9 +1027,35 @@ public class SessionState {
             }
         }
 
-        private void maybeAssignErrorId() {
+        private void maybeAssignErrorId(final Exception caughtException, final String errorDetails) {
             if (errorId == null) {
                 errorId = UuidCreator.toString(UuidCreator.getRandomBased());
+
+                if (caughtException == null && errorDetails == null) {
+                    // We log the assigned error ID, even though we have no details. If we do not assign the error ID,
+                    // then we may not correctly propagate than an error occurred.
+                    log.error().append("Internal Error '").append(errorId).append("' for ").append(logIdentity)
+                            .append(" and no error details are available.").endl();
+                    return;
+                }
+
+                this.caughtException = caughtException;
+                if (!(caughtException instanceof StatusRuntimeException)) {
+                    if (errorDetails != null) {
+                        log.error().append("Internal Error '").append(errorId).append("' ").append(errorDetails).endl();
+                    } else {
+                        log.error().append("Internal Error '").append(errorId).append("' ").append(caughtException)
+                                .endl();
+                    }
+                } else {
+                    if (errorDetails != null) {
+                        log.info().append("Export failed with Status Runtime Exception '").append(errorId).append("' ")
+                                .append(errorDetails).endl();
+                    } else {
+                        log.info().append("Export failed with Status Runtime Exception '").append(errorId).append("' ")
+                                .append(caughtException).endl();
+                    }
+                }
             }
         }
 
@@ -1054,12 +1084,8 @@ public class SessionState {
                         break;
                 }
 
-                maybeAssignErrorId();
+                maybeAssignErrorId(caughtException, errorDetails);
                 failedDependencyLogIdentity = parent.logIdentity;
-                if (!(caughtException instanceof StatusRuntimeException)) {
-                    log.error().append("Internal Error '").append(errorId).append("' ").append(errorDetails)
-                            .endl();
-                }
             }
 
             setState(terminalState);
@@ -1130,6 +1156,7 @@ public class SessionState {
             }
         }
 
+        @OverridingMethodsMustInvokeSuper
         @Override
         protected synchronized void destroy() {
             super.destroy();
@@ -1138,6 +1165,7 @@ public class SessionState {
             if (!(caughtException instanceof StatusRuntimeException)) {
                 caughtException = null;
             }
+            queryPerformanceRecorder = null;
         }
 
         /**
@@ -1309,6 +1337,7 @@ public class SessionState {
                 @Nullable final Exception cause,
                 @Nullable final String dependentExportId);
     }
+
     @FunctionalInterface
     public interface ExportErrorGrpcHandler {
         /**
@@ -1318,6 +1347,40 @@ public class SessionState {
          * @param notification the notification to forward to the grpc client
          */
         void onError(final StatusRuntimeException notification);
+    }
+
+    /**
+     * Convert an {@link ExportErrorGrpcHandler} to an {@link ExportErrorHandler}.
+     * <p>
+     * gRPC's error handlers are designed to consume {@link StatusRuntimeException} objects. Exports can fail for a
+     * variety of reasons, and the {@link ExportErrorHandler} is designed to richly communicate export failures. This
+     * method is the glue between the two error handling APIs; enabling export error propagation to gRPC clients.
+     *
+     * @param errorHandler the gRPC specific error handler
+     * @return the generalized error handler
+     */
+    public static SessionState.ExportErrorHandler toErrorHandler(final ExportErrorGrpcHandler errorHandler) {
+        return (resultState, errorContext, cause, dependentExportId) -> {
+            if (cause instanceof StatusRuntimeException) {
+                errorHandler.onError((StatusRuntimeException) cause);
+                return;
+            }
+
+            final String dependentStr = dependentExportId == null ? ""
+                    : (" (related parent export id: " + dependentExportId + ")");
+            if (cause == null) {
+                if (resultState == ExportNotification.State.CANCELLED) {
+                    errorHandler.onError(Exceptions.statusRuntimeException(Code.CANCELLED,
+                            "Export is cancelled" + dependentStr));
+                } else {
+                    errorHandler.onError(Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
+                            "Export in state " + resultState + dependentStr));
+                }
+            } else {
+                errorHandler.onError(Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
+                        "Details Logged w/ID '" + errorContext + "'" + dependentStr));
+            }
+        };
     }
 
     public class ExportBuilder<T> {
@@ -1330,7 +1393,6 @@ public class SessionState {
 
         ExportBuilder(final int exportId) {
             this.exportId = exportId;
-
             if (exportId == NON_EXPORT_ID) {
                 this.export = new ExportObject<>(SessionState.this.errorTransformer, SessionState.this, NON_EXPORT_ID);
             } else {
@@ -1415,27 +1477,7 @@ public class SessionState {
          * @return this builder
          */
         public ExportBuilder<T> onErrorHandler(final ExportErrorGrpcHandler errorHandler) {
-            return onError(((resultState, errorContext, cause, dependentExportId) -> {
-                if (cause instanceof StatusRuntimeException) {
-                    errorHandler.onError((StatusRuntimeException) cause);
-                    return;
-                }
-
-                final String dependentStr = dependentExportId == null ? ""
-                        : (" (related parent export id: " + dependentExportId + ")");
-                if (cause == null) {
-                    if (resultState == ExportNotification.State.CANCELLED) {
-                        errorHandler.onError(Exceptions.statusRuntimeException(Code.CANCELLED,
-                                "Export is cancelled" + dependentStr));
-                    } else {
-                        errorHandler.onError(Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
-                                "Export in state " + resultState + dependentStr));
-                    }
-                } else {
-                    errorHandler.onError(Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
-                            "Details Logged w/ID '" + errorContext + "'" + dependentStr));
-                }
-            }));
+            return onError(toErrorHandler(errorHandler));
         }
 
         /**
@@ -1449,7 +1491,7 @@ public class SessionState {
          * @param streamObserver the streamObserver to be notified of any error
          * @return this builder
          */
-        public ExportBuilder<T> onError(StreamObserver<?> streamObserver) {
+        public ExportBuilder<T> onError(final StreamObserver<?> streamObserver) {
             return onErrorHandler(statusRuntimeException -> {
                 safelyError(streamObserver, statusRuntimeException);
             });
@@ -1488,6 +1530,21 @@ public class SessionState {
         }
 
         /**
+         * Invoke this method to set the {@link StreamObserver} to be
+         * {@link io.deephaven.extensions.barrage.util.GrpcUtil#safelyComplete(StreamObserver) safely completed} if this
+         * export succeeds. Only one success handler may be set. Exactly one of the onError and onSuccess handlers will
+         * be invoked.
+         * <p>
+         * Not synchronized, it is expected that the provided callback handles thread safety itself.
+         *
+         * @param streamObserver the streamObserver to be notified
+         * @return this builder
+         */
+        public ExportBuilder<T> onSuccess(final StreamObserver<?> streamObserver) {
+            return onSuccess(() -> safelyComplete(streamObserver));
+        }
+
+        /**
          * This method is the final method for submitting an export to the session. The provided callable is enqueued on
          * the scheduler when all dependencies have been satisfied. Only the dependencies supplied to the builder are
          * guaranteed to be resolved when the exportMain is executing.
@@ -1497,6 +1554,9 @@ public class SessionState {
          *
          * @param exportMain the callable that generates the export
          * @return the submitted export object
+         * @apiNote For exports used in RPC handling, it is recommended to use {@link #onSuccess onSuccess} for result
+         *          message (unary) and completion (unary or streaming) delivery, rather than from {@code exportMain}.
+         *          This allows clients to observe performance results more predictably.
          */
         public ExportObject<T> submit(final Callable<T> exportMain) {
             export.setWork(exportMain, errorHandler, successHandler, requiresSerialQueue);
@@ -1513,6 +1573,9 @@ public class SessionState {
          *
          * @param exportMain the runnable to execute once dependencies have resolved
          * @return the submitted export object
+         * @apiNote For exports used in RPC handling, it is recommended to use {@link #onSuccess onSuccess} for result
+         *          message (unary) and completion (unary or streaming) delivery, rather than from {@code exportMain}.
+         *          This allows clients to observe performance results more predictably.
          */
         public ExportObject<T> submit(final Runnable exportMain) {
             return submit(() -> {
@@ -1537,7 +1600,7 @@ public class SessionState {
     }
 
     private static final KeyedIntObjectKey<ExportObject<?>> EXPORT_OBJECT_ID_KEY =
-            new KeyedIntObjectKey.BasicStrict<ExportObject<?>>() {
+            new KeyedIntObjectKey.BasicStrict<>() {
                 @Override
                 public int getIntKey(final ExportObject<?> exportObject) {
                     return exportObject.exportId;
@@ -1545,7 +1608,7 @@ public class SessionState {
             };
 
     private final KeyedIntObjectHash.ValueFactory<ExportObject<?>> EXPORT_OBJECT_VALUE_FACTORY =
-            new KeyedIntObjectHash.ValueFactory.Strict<ExportObject<?>>() {
+            new KeyedIntObjectHash.ValueFactory.Strict<>() {
                 @Override
                 public ExportObject<?> newValue(final int key) {
                     if (isExpired()) {

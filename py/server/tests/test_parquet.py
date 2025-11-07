@@ -1,21 +1,25 @@
 #
-# Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 #
 
 import os
 import shutil
 import tempfile
 import unittest
+import fnmatch
 
+import numpy as np
 import pandas
 import pyarrow.parquet
 
 from deephaven import DHError, empty_table, dtypes, new_table
 from deephaven import arrow as dharrow
-from deephaven.column import InputColumn, Column, ColumnType
+from deephaven.column import InputColumn, ColumnType, col_def, string_col, int_col, char_col, long_col, short_col
 from deephaven.pandas import to_pandas, to_table
-from deephaven.parquet import write, batch_write, read, delete, ColumnInstruction, ParquetFileLayout
+from deephaven.parquet import (write, batch_write, read, delete, ColumnInstruction, ParquetFileLayout, RowGroupInfo,
+                               write_partitioned)
 from tests.testbase import BaseTestCase
+from deephaven.experimental import s3
 
 
 class ParquetTestCase(BaseTestCase):
@@ -34,7 +38,11 @@ class ParquetTestCase(BaseTestCase):
         """ Test suite for reading, writing, and deleting a table to disk """
 
         table = empty_table(3).update(formulas=["x=i", "y=(double)(i/10.0)", "z=(double)(i*i)"])
-        definition = table.columns
+        table_definition = {
+            "x": dtypes.int32,
+            "y": dtypes.double,
+            "z": dtypes.double,
+        }
         base_dir = os.path.join(self.temp_dir.name, "testCreation")
         file_location = os.path.join(base_dir, 'table1.parquet')
         file_location2 = os.path.join(base_dir, 'table2.parquet')
@@ -53,8 +61,8 @@ class ParquetTestCase(BaseTestCase):
             self.assert_table_equals(table, table2)
             shutil.rmtree(base_dir)
 
-        with self.subTest(msg="write_tables(Table[], destinations, col_definitions"):
-            batch_write([table, table], [file_location, file_location2], definition)
+        with self.subTest(msg="write_tables(Table[], destinations, table_definition"):
+            batch_write([table, table], [file_location, file_location2], table_definition)
             self.assertTrue(os.path.exists(file_location))
             self.assertTrue(os.path.exists(file_location2))
             table2 = read(file_location, file_layout=ParquetFileLayout.SINGLE_FILE)
@@ -74,7 +82,11 @@ class ParquetTestCase(BaseTestCase):
         """ Test suite for reading, writing, and deleting a table to disk """
 
         table = empty_table(3).update(formulas=["x=i", "y=String.valueOf((double)(i/10.0))", "z=(double)(i*i)"])
-        col_definitions = table.columns
+        table_definition = {
+            "x": dtypes.int32,
+            "y": dtypes.string,
+            "z": dtypes.double,
+        }
         base_dir = os.path.join(self.temp_dir.name, "testCreation")
         file_location = os.path.join(base_dir, 'table1.parquet')
         file_location2 = os.path.join(base_dir, 'table2.parquet')
@@ -99,20 +111,31 @@ class ParquetTestCase(BaseTestCase):
             self.assertTrue(os.path.exists(file_location))
             shutil.rmtree(base_dir)
 
-        with self.subTest(msg="write_tables(Table[], destinations, col_definitions, "):
-            batch_write([table, table], [file_location, file_location2], col_definitions,
+        with self.subTest(msg="write_tables(Table[], destinations, table_definition, col_instructions"):
+            batch_write([table, table], [file_location, file_location2], table_definition,
                         col_instructions=[col_inst, col_inst1])
             self.assertTrue(os.path.exists(file_location))
             self.assertTrue(os.path.exists(file_location2))
             shutil.rmtree(base_dir)
 
-        with self.subTest(msg="write_table(Table, destination, col_definitions, "):
+        with self.subTest(msg="write_table(Table, str, row_group_info)"):
+            write(table, file_location, row_group_info=RowGroupInfo.max_rows(1))
+            self.assertTrue(os.path.exists(file_location))
+            # 3 rows in `table`, so there should be 3 RowGroups, each with 1 row
+            md = pyarrow.parquet.read_metadata(file_location)
+            self.assertEqual(3, md.num_row_groups)
+            for ii in range(md.num_row_groups):
+                self.assertEqual(1, md.row_group(ii).num_rows)
+            shutil.rmtree(base_dir)
+
+        with self.subTest(msg="write_table(table, destination, col_instructions"):
             write(table, file_location, col_instructions=[col_inst, col_inst1])
             # self.assertTrue(os.path.exists(file_location))
 
         # Reading
         with self.subTest(msg="read_table(str)"):
-            table2 = read(path=file_location, col_instructions=[col_inst, col_inst1], file_layout=ParquetFileLayout.SINGLE_FILE)
+            table2 = read(path=file_location, col_instructions=[col_inst, col_inst1],
+                          file_layout=ParquetFileLayout.SINGLE_FILE)
             self.assert_table_equals(table, table2)
 
         # Delete
@@ -217,6 +240,8 @@ class ParquetTestCase(BaseTestCase):
             "someCharArrayColumn = new char[] {i % 10 == 0 ? null : (char)i}",
             "someTimeArrayColumn = new Instant[] {i % 10 == 0 ? null : (Instant)DateTimeUtils.now() + i}",
             "someBiColumn = new java.math.BigInteger[] {i % 10 == 0 ? null : java.math.BigInteger.valueOf(i)}",
+            "someBdColumn = new java.math.BigDecimal[] {i % 10 == 0 ? null : " +
+                "java.math.BigDecimal.valueOf(ii).stripTrailingZeros()}",
             "nullStringArrayColumn = new String[] {(String)null}",
             "nullIntArrayColumn = new int[] {(int)null}",
             "nullLongArrayColumn = new long[] {(long)null}",
@@ -227,7 +252,8 @@ class ParquetTestCase(BaseTestCase):
             "nullByteArrayColumn = new byte[] {(byte)null}",
             "nullCharArrayColumn = new char[] {(char)null}",
             "nullTimeArrayColumn = new Instant[] {(Instant)null}",
-            "nullBiColumn = new java.math.BigInteger[] {(java.math.BigInteger)null}"
+            "nullBiColumn = new java.math.BigInteger[] {(java.math.BigInteger)null}",
+            "nullBdColumn = new java.math.BigDecimal[] {(java.math.BigDecimal)null}"
         ])
         return dh_table
 
@@ -321,7 +347,9 @@ class ParquetTestCase(BaseTestCase):
             "someIntColumn = i"
         ])
         # Force "longStringColumn" to use non-dictionary encoding
-        write(dh_table, "data_from_dh.parquet", max_dictionary_size=100)
+        write(dh_table, "data_from_dh.parquet", max_dictionary_size=100, generate_metadata_files=True)
+        self.verify_metadata_files(".")
+
         from_disk = read('data_from_dh.parquet', file_layout=ParquetFileLayout.SINGLE_FILE)
         self.assert_table_equals(dh_table, from_disk)
 
@@ -332,6 +360,12 @@ class ParquetTestCase(BaseTestCase):
                         ('RLE_DICTIONARY' not in str(metadata.row_group(0).column(2).encodings)))
         self.assertTrue((metadata.row_group(0).column(2).path_in_schema == 'someIntColumn') &
                         ('RLE_DICTIONARY' not in str(metadata.row_group(0).column(2).encodings)))
+
+    def verify_metadata_files(self, root_dir):
+        metadata_file_path = os.path.join(root_dir, '_metadata')
+        self.assertTrue(os.path.exists(metadata_file_path))
+        common_metadata_file_path = os.path.join(root_dir, '_common_metadata')
+        self.assertTrue(os.path.exists(common_metadata_file_path))
 
     def test_dates_and_time(self):
         dh_table = empty_table(10000).update(formulas=[
@@ -434,6 +468,58 @@ class ParquetTestCase(BaseTestCase):
         schema_msec = table.schema.set(0, pyarrow.field('f', pyarrow.timestamp('ms')))
         timestamp_test_helper(table, schema_msec, 'timestamp_test_msec.parquet')
 
+    def test_timestamp_with_different_units(self):
+        # Create a DataFrame with a Timestamp column
+        df = pandas.DataFrame({
+            "time_ms": pandas.date_range("11:00:00", "11:00:01", freq="1ms"),
+            "time_us": pandas.date_range("11:00:01", "11:00:02", freq="1ms"),
+            "time_ns": pandas.date_range("11:00:02", "11:00:03", freq="1ms")
+        })
+
+        # Sprinkle some nulls
+        df["time_ms"][0] = df["time_ms"][5] = None
+        df["time_us"][0] = df["time_us"][5] = None
+        df["time_ns"][0] = df["time_ns"][5] = None
+
+        # Set the appropriate unit and timezone
+        df['time_ms'] = df["time_ms"].astype("datetime64[ms]").dt.tz_localize('UTC')
+        df['time_us'] = df["time_us"].astype("datetime64[us]").dt.tz_localize('UTC')
+        df['time_ns'] = df["time_ns"].astype("datetime64[ns]").dt.tz_localize('UTC')
+
+        dest = "timestamp_data_from_pd.parquet"
+        df.to_parquet(dest)
+
+        metadata = pyarrow.parquet.read_metadata(dest)
+        ms_col_metadata = str(metadata.row_group(0).column(0))
+        if "isAdjustedToUTC=true" not in ms_col_metadata:
+            self.fail("isAdjustedToUTC is not set to true")
+        if "timeUnit=milliseconds" not in ms_col_metadata:
+            self.fail("timeUnit is not milliseconds")
+        us_col_metadata = str(metadata.row_group(0).column(1))
+        if "isAdjustedToUTC=true" not in us_col_metadata:
+            self.fail("isAdjustedToUTC is not set to true")
+        if "timeUnit=microseconds" not in us_col_metadata:
+            self.fail("timeUnit is not microseconds")
+        ns_col_metadata = str(metadata.row_group(0).column(2))
+        if "isAdjustedToUTC=true" not in ns_col_metadata:
+            self.fail("isAdjustedToUTC is not set to true")
+        if "timeUnit=nanoseconds" not in ns_col_metadata:
+            self.fail("timeUnit is not nanoseconds")
+
+        # Read the parquet file back using deephaven and write it back
+        dh_table_from_disk = read(dest).select()
+        dh_dest = "dh_" + dest
+        write(dh_table_from_disk, dh_dest)
+
+        # Read the new parquet file using pyarrow and compare against original table
+        df_from_disk = pyarrow.parquet.read_table(dh_dest).to_pandas()
+
+        # Deephaven writes timestamps as nsec, so need to convert them back
+        df_from_disk['time_ms'] = df_from_disk["time_ms"].dt.tz_localize(None).astype("datetime64[ms]").dt.tz_localize('UTC')
+        df_from_disk['time_us'] = df_from_disk["time_us"].dt.tz_localize(None).astype("datetime64[us]").dt.tz_localize('UTC')
+        self.assertTrue(df_from_disk.equals(df))
+
+
     def test_read_single_file(self):
         table = empty_table(3).update(
             formulas=["x=i", "y=(double)(i/10.0)", "z=(double)(i*i)"]
@@ -524,34 +610,252 @@ class ParquetTestCase(BaseTestCase):
             actual = read(
                 kv_dir,
                 table_definition=[
-                    Column(
-                        "Partition", dtypes.int32, column_type=ColumnType.PARTITIONING
-                    ),
-                    Column("x", dtypes.int32),
-                    Column("y", dtypes.double),
-                    Column("z", dtypes.double),
+                    col_def("Partition", dtypes.int32, column_type=ColumnType.PARTITIONING),
+                    col_def("x", dtypes.int32),
+                    col_def("y", dtypes.double),
+                    col_def("z", dtypes.double),
                 ],
                 file_layout=ParquetFileLayout.KV_PARTITIONED,
             )
             self.assert_table_equals(actual, table)
 
-    def test_read_with_table_definition_no_type(self):
-        # no need to write actual file, shouldn't be reading it
-        fake_parquet = os.path.join(self.temp_dir.name, "fake.parquet")
-        with self.subTest(msg="read definition no type"):
-            with self.assertRaises(DHError) as cm:
-                read(
-                    fake_parquet,
-                    table_definition={
-                        "x": dtypes.int32,
-                        "y": dtypes.double,
-                        "z": dtypes.double,
-                    },
-                )
-            self.assertIn(
-                "Must provide file_layout when table_definition is set", str(cm.exception)
-            )
+    def test_read_with_table_definition_no_layout(self):
+        table = empty_table(3).update(
+            formulas=["x=i", "y=(double)(i/10.0)", "z=(double)(i*i)"]
+        )
+        single_parquet = os.path.join(self.temp_dir.name, "single.parquet")
+        write(table, single_parquet)
+        from_disk = read(single_parquet, table_definition={"x": dtypes.int32, "y": dtypes.double})
+        self.assert_table_equals(from_disk, table.select(["x", "y"]))
 
+    def test_read_parquet_from_s3(self):
+        """ Test that we can read parquet files from s3 """
+
+        # Fails since we have a negative read_ahead_count
+        with self.assertRaises(DHError):
+            s3.S3Instructions(read_ahead_count=-1)
+
+        # Fails since we provide the key without the secret key
+        with self.assertRaises(DHError):
+            s3.S3Instructions(region_name="us-east-1",
+                              access_key_id="Some key without secret",
+                              )
+
+        s3_instructions = s3.S3Instructions()
+
+        # Fails because we don't have the right credentials
+        with self.assertRaises(Exception):
+            read("s3://dh-s3-parquet-test1/multiColFile.parquet", special_instructions=s3_instructions).select()
+
+    def verify_index_files(self, index_dir_path, expected_num_index_files=1):
+        self.assertTrue(os.path.exists(index_dir_path))
+        self.assertTrue(len(os.listdir(index_dir_path)) == expected_num_index_files)
+
+    def test_write_partitioned_data(self):
+        source = new_table([
+            string_col("X", ["Aa", "Bb", "Aa", "Cc", "Bb", "Aa", "Bb", "Bb", "Cc"]),
+            string_col("Y", ["M", "N", "O", "N", "P", "M", "O", "P", "M"]),
+            int_col("Number", [55, 76, 20, 130, 230, 50, 73, 137, 214]),
+        ])
+        partitioned_table = source.partition_by(by="X")
+        base_name = "test-{uuid}"
+        max_dictionary_keys = 1024
+
+        root_dir = os.path.join(self.temp_dir.name, "test_partitioned_writing")
+        if os.path.exists(root_dir):
+            shutil.rmtree(root_dir)
+
+        def verify_table_from_disk(table):
+            self.assertTrue(len(table.definition))
+            self.assertTrue(table.columns[0].name == "X")
+            self.assertTrue(table.columns[0].column_type == ColumnType.PARTITIONING)
+            self.assert_table_equals(table.select().sort(["X", "Y"]), source.sort(["X", "Y"]))
+
+        def verify_file_names():
+            partition_dir_path = os.path.join(root_dir, 'X=Aa')
+            self.assertTrue(os.path.exists(partition_dir_path))
+            self.assertTrue(len(os.listdir(partition_dir_path)) == 1)
+            parquet_file = os.listdir(partition_dir_path)[0]
+            self.assertTrue(fnmatch.fnmatch(parquet_file, 'test-*.parquet'))
+
+        # Test all different APIs
+        write_partitioned(partitioned_table, destination_dir=root_dir, base_name=base_name,
+                          max_dictionary_keys=max_dictionary_keys)
+        verify_table_from_disk(read(root_dir))
+        verify_file_names()
+
+        shutil.rmtree(root_dir)
+        write_partitioned(partitioned_table, destination_dir=root_dir,
+                          max_dictionary_keys=max_dictionary_keys, generate_metadata_files=True)
+        verify_table_from_disk(read(root_dir))
+        self.verify_metadata_files(root_dir)
+
+        shutil.rmtree(root_dir)
+        write_partitioned(partitioned_table, destination_dir=root_dir, base_name=base_name)
+        verify_table_from_disk(read(root_dir))
+        verify_file_names()
+
+        shutil.rmtree(root_dir)
+        write_partitioned(partitioned_table, destination_dir=root_dir)
+        verify_table_from_disk(read(root_dir))
+
+        shutil.rmtree(root_dir)
+        write_partitioned(partitioned_table, destination_dir=root_dir, index_columns=[["Y"], ["Y", "Number"]])
+        verify_table_from_disk(read(root_dir))
+        self.verify_index_files(os.path.join(root_dir, "X=Aa/.dh_metadata/indexes/Y"))
+        self.verify_index_files(os.path.join(root_dir, "X=Aa/.dh_metadata/indexes/Y,Number"))
+
+        shutil.rmtree(root_dir)
+        table_definition = [
+            col_def("X", dtypes.string, column_type=ColumnType.PARTITIONING),
+            col_def("Y", dtypes.string),
+            col_def("Number", dtypes.int32)
+        ]
+        write_partitioned(source, table_definition=table_definition, destination_dir=root_dir,
+                          base_name=base_name, max_dictionary_keys=max_dictionary_keys)
+        verify_table_from_disk(read(root_dir))
+        verify_file_names()
+
+        shutil.rmtree(root_dir)
+        write_partitioned(source, table_definition=table_definition, destination_dir=root_dir,
+                          max_dictionary_keys=max_dictionary_keys, generate_metadata_files=True)
+        verify_table_from_disk(read(root_dir))
+        self.verify_metadata_files(root_dir)
+
+        shutil.rmtree(root_dir)
+        write_partitioned(source, table_definition=table_definition, destination_dir=root_dir, base_name=base_name)
+        verify_table_from_disk(read(root_dir))
+        verify_file_names()
+
+        shutil.rmtree(root_dir)
+        write_partitioned(source, table_definition=table_definition, destination_dir=root_dir)
+        verify_table_from_disk(read(root_dir))
+
+        shutil.rmtree(root_dir)
+        write_partitioned(source, table_definition=table_definition, destination_dir=root_dir,
+                          index_columns=[["Y"], ["Y", "Number"]])
+        verify_table_from_disk(read(root_dir))
+        self.verify_index_files(os.path.join(root_dir, "X=Aa/.dh_metadata/indexes/Y"))
+        self.verify_index_files(os.path.join(root_dir, "X=Aa/.dh_metadata/indexes/Y,Number"))
+
+    def test_write_with_index_columns(self):
+        first_table = empty_table(10).update(formulas=["x=i", "y=(double)(i/10.0)", "z=(double)(i*i)"])
+        write(first_table, "data_from_dh.parquet", index_columns=[["x"], ["y", "z"]])
+        from_disk = read("data_from_dh.parquet")
+        self.assert_table_equals(first_table, from_disk)
+        self.verify_index_files(".dh_metadata/indexes/x")
+        self.verify_index_files(".dh_metadata/indexes/y,z")
+        shutil.rmtree(".dh_metadata")
+
+        second_table = empty_table(10).update(formulas=["x=i*5", "y=(double)(i/5.0)", "z=(double)(i*i*i)"])
+        batch_write([first_table, second_table], ["X.parquet", "Y.parquet"], index_columns=[["x"], ["y", "z"]])
+        from_disk_first_table = read("X.parquet")
+        self.assert_table_equals(first_table, from_disk_first_table)
+        from_disk_second_table = read("Y.parquet")
+        self.assert_table_equals(second_table, from_disk_second_table)
+        self.verify_index_files(".dh_metadata/indexes/x", expected_num_index_files=2)
+        self.verify_index_files(".dh_metadata/indexes/y,z", expected_num_index_files=2)
+
+    def test_write_with_definition(self):
+        table = empty_table(3).update(
+            formulas=["a=i", "b=(double)(i/10.0)", "c=(double)(i*i)", "d=ii"]
+        )
+        table_definition = {
+            "a": dtypes.int32,
+            "b": dtypes.double,
+            "c": dtypes.double,
+        }
+        write(table, "data_from_dh.parquet", table_definition=table_definition)
+        from_disk = read("data_from_dh.parquet")
+        self.assert_table_equals(from_disk, table.select(["a", "b", "c"]))
+
+
+    def test_unsigned_ints(self):
+        df = pandas.DataFrame.from_records(
+            data=[(-1, -1, -1), (2, 2, 2), (0, 0, 0)],
+            columns=['uint8Col', 'uint16Col',  'uint32Col']
+        )
+        df['uint8Col'] = df['uint8Col'].astype(np.uint8)
+        df['uint16Col'] = df['uint16Col'].astype(np.uint16)
+        df['uint32Col'] = df['uint32Col'].astype(np.uint32)
+
+        pyarrow.parquet.write_table(pyarrow.Table.from_pandas(df), 'data_from_pyarrow.parquet')
+        schema_from_disk = pyarrow.parquet.read_metadata("data_from_pyarrow.parquet").schema.to_arrow_schema()
+        self.assertTrue(schema_from_disk.field('uint8Col').type.equals(pyarrow.uint8()))
+        self.assertTrue(schema_from_disk.field('uint16Col').type.equals(pyarrow.uint16()))
+        self.assertTrue(schema_from_disk.field('uint32Col').type.equals(pyarrow.uint32()))
+
+        table_from_disk = read("data_from_pyarrow.parquet")
+        expected = new_table([
+            char_col("uint8Col", [255, 2, 0]),
+            char_col("uint16Col", [65535, 2, 0]),
+            long_col("uint32Col", [4294967295, 2, 0]),
+        ])
+        self.assert_table_equals(table_from_disk, expected)
+
+    def test_unsigned_byte_cast(self):
+        data = {'uint8Col': [255, 2, 0]}
+        df = pandas.DataFrame(data)
+        df['uint8Col'] = df['uint8Col'].astype(np.uint8)
+        pyarrow.parquet.write_table(pyarrow.Table.from_pandas(df), 'data_from_pyarrow.parquet')
+
+        # UByte -> Char
+        table_from_disk = read("data_from_pyarrow.parquet", table_definition={"uint8Col": dtypes.char})
+        expected = new_table([char_col("uint8Col", [255, 2, 0])])
+        self.assert_table_equals(table_from_disk, expected)
+
+        # UByte -> Short
+        table_from_disk = read("data_from_pyarrow.parquet", table_definition={"uint8Col": dtypes.short})
+        expected = new_table([short_col("uint8Col", [255, 2, 0])])
+        self.assert_table_equals(table_from_disk, expected)
+
+        # UByte -> Int
+        table_from_disk = read("data_from_pyarrow.parquet", table_definition={"uint8Col": dtypes.int32})
+        expected = new_table([int_col("uint8Col", [255, 2, 0])])
+        self.assert_table_equals(table_from_disk, expected)
+
+        # UByte -> Long
+        table_from_disk = read("data_from_pyarrow.parquet", table_definition={"uint8Col": dtypes.long})
+        expected = new_table([long_col("uint8Col", [255, 2, 0])])
+        self.assert_table_equals(table_from_disk, expected)
+
+    @unittest.skip("DH-19432: Parquet v2 page reading does not check is_compressed")
+    def test_v2_pages(self):
+        def test_v2_pages_helper(dh_table):
+            write(dh_table, "data_from_dh.parquet")
+            pa_table = pyarrow.parquet.read_table("data_from_dh.parquet")
+            pyarrow.parquet.write_table(pa_table, "data_from_pq_v2.parquet", data_page_version='2.0')
+            from_disk = read("data_from_pq_v2.parquet")
+            self.assert_table_equals(dh_table, from_disk)
+
+        dh_table1 = self.get_table_data()
+        test_v2_pages_helper(dh_table1)
+        dh_table2 = self.get_table_with_array_data()
+        test_v2_pages_helper(dh_table2)
+
+    def test_batch_write_definition_handling(self):
+        table = empty_table(3).update(
+            formulas=["x=i", "y=(double)(i/10.0)", "z=(double)(i*i)"]
+        )
+        table2 = empty_table(3).update(
+            formulas=["x=i*2", "y=(double)(i/5.0)", "z=(double)(i*i*i)"]
+        )
+        # Should succeed because both tables have the same definition
+        batch_write([table, table2], ["X.parquet", "Y.parquet"])
+        self.assert_table_equals(read("X.parquet"), table)
+        self.assert_table_equals(read("Y.parquet"), table2)
+
+        table_definition = {
+            "x": dtypes.int32,
+            "y": dtypes.double,
+        }
+        batch_write([table, table2], ["X.parquet", "Y.parquet"], table_definition=table_definition)
+        self.assert_table_equals(read("X.parquet"), table.view(["x", "y"]))
+        self.assert_table_equals(read("Y.parquet"), table2.view(["x", "y"]))
+
+        # Fails because we don't provide a table definition and the tables have different definition
+        with self.assertRaises(DHError):
+            batch_write([table, table2.view(["x", "y"])],["X.parquet", "Y.parquet"])
 
 if __name__ == '__main__':
     unittest.main()

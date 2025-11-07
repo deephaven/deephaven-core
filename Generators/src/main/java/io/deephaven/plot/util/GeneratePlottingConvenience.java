@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.plot.util;
 
 import io.deephaven.gen.GenUtils;
@@ -110,7 +110,7 @@ public class GeneratePlottingConvenience {
         boolean skip = skip(f, ignoreSkips);
 
         if (skip) {
-            log.warning("*** Skipping function: " + f);
+            log.info("*** Skipping function: " + f);
             return;
         }
 
@@ -167,7 +167,7 @@ public class GeneratePlottingConvenience {
             final boolean skip = skip(f, true);
 
             if (skip) {
-                log.warning("*** Skipping static function: " + f);
+                log.info("*** Skipping static function: " + f);
                 continue;
             }
 
@@ -183,7 +183,7 @@ public class GeneratePlottingConvenience {
             final boolean skip = skip(f, false);
 
             if (skip) {
-                log.warning("*** Skipping function: " + f);
+                log.info("*** Skipping function: " + f);
                 continue;
             }
 

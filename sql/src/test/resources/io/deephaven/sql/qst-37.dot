@@ -1,0 +1,9 @@
+digraph {
+"op_0" ["label"="ticketTable(scan/custom)"]
+"op_1" ["label"="view(__p_0_0=Foo,__p_0_1=Bar)"]
+"op_2" ["label"="where(!isNull(__p_0_1))"]
+"op_3" ["label"="view(Foo=__p_0_0,Bar=__p_0_1)"]
+"op_1" -> "op_0"
+"op_2" -> "op_1"
+"op_3" -> "op_2"
+}

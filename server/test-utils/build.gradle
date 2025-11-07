@@ -1,0 +1,37 @@
+// Utility project for testing server implementations with vanilla flight client
+plugins {
+    id 'java-library'
+    id 'io.deephaven.project.register'
+}
+
+dependencies {
+    implementation project(':util-thread')
+    compileOnlyApi(project(':util-thread')) {
+        because 'downstream dagger compile'
+    }
+
+    implementation project(':Base')
+    implementation project(':authentication')
+    implementation project(':authorization')
+    implementation project(':engine-table')//Table, LTM, TableDiff, TableTools, ScriptSession
+    implementation project(':server')
+    implementation project(':proto:proto-backplane-grpc-flight')
+    implementation project(':extensions-barrage')
+    implementation project(':test-configs')
+    implementation libs.commons.lang3
+    api project(':engine-test-utils')
+
+    api platform(libs.grpc.bom)
+    api libs.grpc.testing
+    api libs.grpc.inprocess
+
+    compileOnly project(':util-immutables')
+    annotationProcessor libs.immutables.value
+
+    implementation libs.arrow.flight.core
+
+    implementation libs.dagger
+    annotationProcessor libs.dagger.compiler
+
+    api libs.junit4
+}

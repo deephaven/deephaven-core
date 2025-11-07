@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 #
 
 import unittest
@@ -48,7 +48,7 @@ demo_table = (empty_table(table_size)
         self.assertIn('demo_table', self.session.tables)
         pa_table = self.session.open_table('demo_table').to_arrow()
         df = pa_table.to_pandas()
-        self.assertEquals(1000, len(df.index))
+        self.assertEqual(1000, len(df.index))
 
     def test_open_invalid_table(self):
         with self.assertRaises(DHError):

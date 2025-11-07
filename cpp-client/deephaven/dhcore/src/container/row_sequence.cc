@@ -1,5 +1,5 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+/*
+ * Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
  */
 #include "deephaven/dhcore/container/row_sequence.h"
 
@@ -48,13 +48,12 @@ RowSequenceIterator RowSequence::GetRowSequenceIterator() const {
 
 std::ostream &operator<<(std::ostream &s, const RowSequence &o) {
   s << '[';
-  auto iter = o.GetRowSequenceIterator();
   const char *sep = "";
-  uint64_t item;
-  while (iter.TryGetNext(&item)) {
-    s << sep << item;
+  o.ForEachInterval([&](uint64_t start, uint64_t end) {
+    s << sep;
     sep = ", ";
-  }
+    s << '[' << start << ',' << end << ')';
+  });
   s << ']';
   return s;
 }

@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.client.impl;
 
 import io.deephaven.qst.table.NewTable;
@@ -59,7 +59,7 @@ public class FlightClientHelper {
         return new Ticket(ticket.ticketId().bytes());
     }
 
-    private static FlightDescriptor descriptor(HasPathId pathId) {
+    static FlightDescriptor descriptor(final HasPathId pathId) {
         return FlightDescriptor.path(pathId.pathId().path());
     }
 }

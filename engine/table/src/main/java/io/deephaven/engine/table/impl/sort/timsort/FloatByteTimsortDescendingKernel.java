@@ -1,16 +1,11 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharByteTimsortDescendingKernel and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit FloatLongTimsortDescendingKernel and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit FloatByteTimsortDescendingKernel and run "./gradlew replicateSortKernel" to regenerate
+//
+// @formatter:off
+
 package io.deephaven.engine.table.impl.sort.timsort;
 
 import io.deephaven.util.compare.FloatComparisons;
@@ -28,13 +23,13 @@ import io.deephaven.util.annotations.VisibleForTesting;
  * <a href="https://bugs.python.org/file4451/timsort.txt">bugs.python.org</a> and
  * <a href="https://en.wikipedia.org/wiki/Timsort">Wikipedia</a> do a decent job of describing the algorithm.
  */
-public class FloatByteTimsortDescendingKernel {
-    private FloatByteTimsortDescendingKernel() {
-        throw new UnsupportedOperationException();
-    }
+public final class FloatByteTimsortDescendingKernel {
+    // region constructor
+    private FloatByteTimsortDescendingKernel() {}
+    // endregion constructor
 
     // region Context
-    public static class FloatByteSortKernelContext<SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any>
+    public class FloatByteSortKernelContext<SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any>
             implements ByteSortKernel<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> {
 
         int minGallop;
@@ -56,7 +51,7 @@ public class FloatByteTimsortDescendingKernel {
         public void sort(
                 WritableByteChunk<PERMUTE_VALUES_ATTR> valuesToPermute,
                 WritableChunk<SORT_VALUES_ATTR> valuesToSort) {
-            FloatByteTimsortDescendingKernel.sort(this, valuesToPermute, valuesToSort.asWritableFloatChunk());
+            FloatByteTimsortDescendingKernel.this.sort(this, valuesToPermute, valuesToSort.asWritableFloatChunk());
         }
 
         @Override
@@ -65,7 +60,8 @@ public class FloatByteTimsortDescendingKernel {
                 WritableChunk<SORT_VALUES_ATTR> valuesToSort,
                 IntChunk<? extends ChunkPositions> offsetsIn,
                 IntChunk<? extends ChunkLengths> lengthsIn) {
-            FloatByteTimsortDescendingKernel.sort(this, valuesToPermute, valuesToSort.asWritableFloatChunk(), offsetsIn, lengthsIn);
+            FloatByteTimsortDescendingKernel.this.sort(this, valuesToPermute, valuesToSort.asWritableFloatChunk(), offsetsIn,
+                    lengthsIn);
         }
 
         @Override
@@ -73,13 +69,28 @@ public class FloatByteTimsortDescendingKernel {
             temporaryKeys.close();
             temporaryValues.close();
         }
+
+        private FloatByteTimsortDescendingKernel kernel() {
+            return FloatByteTimsortDescendingKernel.this;
+        }
     }
     // endregion Context
 
-    public static <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any>
-    FloatByteSortKernelContext<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> createContext(int size) {
+    // region createContextInstance
+    public <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> FloatByteSortKernelContext<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> createContextInstance(
+            int size) {
         return new FloatByteSortKernelContext<>(size);
     }
+    // endregion createContextInstance
+
+    // region createContextStatic
+
+    public static <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> FloatByteSortKernelContext<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> createContext(
+            final int size) {
+        return new FloatByteTimsortDescendingKernel().createContextInstance(size);
+    }
+
+    // endregion createContextStatic
 
     /**
      * Sort the values in valuesToSort permuting the valuesToPermute chunk in the same way.
@@ -99,7 +110,7 @@ public class FloatByteTimsortDescendingKernel {
             final int offset = offsetsIn.get(run);
             final int length = lengthsIn.get(run);
 
-            timSort(context, valuesToPermute, valuesToSort, offset, length);
+            context.kernel().timSort(context, valuesToPermute, valuesToSort, offset, length);
         }
     }
 
@@ -114,10 +125,10 @@ public class FloatByteTimsortDescendingKernel {
             FloatByteSortKernelContext<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> context,
             WritableByteChunk<PERMUTE_VALUES_ATTR> valuesToPermute,
             WritableFloatChunk<SORT_VALUES_ATTR> valuesToSort) {
-        timSort(context, valuesToPermute, valuesToSort, 0, valuesToPermute.size());
+        context.kernel().timSort(context, valuesToPermute, valuesToSort, 0, valuesToPermute.size());
     }
 
-    static private <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> void timSort(
+    private <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> void timSort(
             FloatByteSortKernelContext<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> context,
             WritableByteChunk<PERMUTE_VALUES_ATTR> valuesToPermute,
             WritableFloatChunk<SORT_VALUES_ATTR> valuesToSort,
@@ -213,6 +224,7 @@ public class FloatByteTimsortDescendingKernel {
     }
     // endregion comparison functions
 
+    // region compare ops
     @VisibleForTesting
     static boolean gt(float lhs, float rhs) {
         return doComparison(lhs, rhs) > 0;
@@ -232,6 +244,7 @@ public class FloatByteTimsortDescendingKernel {
     static boolean leq(float lhs, float rhs) {
         return doComparison(lhs, rhs) <= 0;
     }
+    // endregion compare ops
 
     /**
      * <p>
@@ -256,7 +269,7 @@ public class FloatByteTimsortDescendingKernel {
      * as being approximately balanced while maintaining a compromise between delaying merging for balance, exploiting
      * fresh occurrence of runs in cache memory and making merge decisions relatively simple.
      */
-    private static <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> void ensureMergeInvariants(
+    private <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> void ensureMergeInvariants(
             FloatByteSortKernelContext<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> context,
             WritableByteChunk<PERMUTE_VALUES_ATTR> valuesToPermute,
             WritableFloatChunk<SORT_VALUES_ATTR> valuesToSort) {
@@ -304,7 +317,7 @@ public class FloatByteTimsortDescendingKernel {
         }
     }
 
-    private static <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> void merge(
+    private <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> void merge(
             FloatByteSortKernelContext<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> context,
             WritableByteChunk<PERMUTE_VALUES_ATTR> valuesToPermute,
             WritableFloatChunk<SORT_VALUES_ATTR> valuesToSort,
@@ -354,7 +367,7 @@ public class FloatByteTimsortDescendingKernel {
      * <p>
      * We eventually need to do galloping here, but are skipping that for now
      */
-    private static <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> void frontMerge(
+    private <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> void frontMerge(
             FloatByteSortKernelContext<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> context,
             WritableByteChunk<PERMUTE_VALUES_ATTR> valuesToPermute,
             WritableFloatChunk<SORT_VALUES_ATTR> valuesToSort,
@@ -373,8 +386,7 @@ public class FloatByteTimsortDescendingKernel {
 
         ii = mergeStartPosition;
 
-        nodataleft:
-        while (ii < mergeEndExclusive) {
+        nodataleft: while (ii < mergeEndExclusive) {
             int run1wins = 0;
             int run2wins = 0;
 
@@ -465,7 +477,7 @@ public class FloatByteTimsortDescendingKernel {
      * <p>
      * We eventually need to do galloping here, but are skipping that for now
      */
-    private static <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> void backMerge(
+    private <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> void backMerge(
             FloatByteSortKernelContext<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> context,
             WritableByteChunk<PERMUTE_VALUES_ATTR> valuesToPermute,
             WritableFloatChunk<SORT_VALUES_ATTR> valuesToSort,
@@ -485,8 +497,7 @@ public class FloatByteTimsortDescendingKernel {
         final int mergeEnd = mergeStartPosition + mergeLength;
         ii = mergeEnd - 1;
 
-        nodataleft:
-        while (ii >= mergeStartPosition) {
+        nodataleft: while (ii >= mergeStartPosition) {
             int run1wins = 0;
             int run2wins = 0;
 
@@ -605,17 +616,17 @@ public class FloatByteTimsortDescendingKernel {
     // lo is inclusive, hi is exclusive
     //
     // returns the position of the first element that is > searchValue or hi if there is no such element
-    private static int upperBound(FloatChunk<?> valuesToSort, int lo, int hi, float searchValue) {
+    private int upperBound(FloatChunk<?> valuesToSort, int lo, int hi, float searchValue) {
         return bound(valuesToSort, lo, hi, searchValue, false);
     }
 
     // when we binary search in 2, we must identify a position for search value that is *before* our test values;
     // because the values from run 1 may never be inserted after an equal value from run 2
-    private static int lowerBound(FloatChunk<?> valuesToSort, int lo, int hi, float searchValue) {
+    private int lowerBound(FloatChunk<?> valuesToSort, int lo, int hi, float searchValue) {
         return bound(valuesToSort, lo, hi, searchValue, true);
     }
 
-    private static int bound(FloatChunk<?> valuesToSort, int lo, int hi, float searchValue, final boolean lower) {
+    private int bound(FloatChunk<?> valuesToSort, int lo, int hi, float searchValue, final boolean lower) {
         final int compareLimit = lower ? -1 : 0; // lt or leq
 
         while (lo < hi) {
@@ -633,7 +644,7 @@ public class FloatByteTimsortDescendingKernel {
         return lo;
     }
 
-    private static void insertionSort(
+    private void insertionSort(
             WritableByteChunk<?> valuesToPermute,
             WritableFloatChunk<?> valuesToSort,
             int offset,
@@ -658,111 +669,114 @@ public class FloatByteTimsortDescendingKernel {
         valuesToSort.set(b, tempFloat);
     }
 
-//    private static void doCheck(Chunk.ByteChunk valuesToPermute, Chunk.FloatChunk valuesToSort, int startCheck, int mergeEnd) {
-//        float lastCheck;
-//        lastCheck = valuesToSort.get(startCheck);
-//        for (int jj = startCheck + 1; jj < mergeEnd; ++jj) {
-//            final float newCheck = valuesToSort.get(jj);
-//            if (newCheck < lastCheck) {
-//                dumpValues(valuesToSort, startCheck, mergeEnd - startCheck, "Bad loop at " + jj);
-//                throw new IllegalStateException();
-//            }
-//            else if (newCheck == lastCheck) {
-//                if (valuesToPermute.get(jj) < valuesToPermute.get(jj - 1)) {
-//                    dumpValues(valuesToSort, startCheck, mergeEnd - startCheck, "Bad index loop at " + jj);
-//                    dumpKeys(valuesToPermute, startCheck, mergeEnd - startCheck, "Bad index loop at " + jj);
-//                    throw new IllegalStateException();
-//                }
-//            }
-//            lastCheck = newCheck;
-//        }
-//        final StackTraceElement [] calls = new Exception().getStackTrace();
-//        System.out.println("CHECK OK at " + calls[1]);
-//        System.out.println();
-//    }
+    // private static void doCheck(Chunk.ByteChunk valuesToPermute, Chunk.FloatChunk valuesToSort, int startCheck, int
+    // mergeEnd) {
+    // float lastCheck;
+    // lastCheck = valuesToSort.get(startCheck);
+    // for (int jj = startCheck + 1; jj < mergeEnd; ++jj) {
+    // final float newCheck = valuesToSort.get(jj);
+    // if (newCheck < lastCheck) {
+    // dumpValues(valuesToSort, startCheck, mergeEnd - startCheck, "Bad loop at " + jj);
+    // throw new IllegalStateException();
+    // }
+    // else if (newCheck == lastCheck) {
+    // if (valuesToPermute.get(jj) < valuesToPermute.get(jj - 1)) {
+    // dumpValues(valuesToSort, startCheck, mergeEnd - startCheck, "Bad index loop at " + jj);
+    // dumpKeys(valuesToPermute, startCheck, mergeEnd - startCheck, "Bad index loop at " + jj);
+    // throw new IllegalStateException();
+    // }
+    // }
+    // lastCheck = newCheck;
+    // }
+    // final StackTraceElement [] calls = new Exception().getStackTrace();
+    // System.out.println("CHECK OK at " + calls[1]);
+    // System.out.println();
+    // }
 
-//    private static void dumpValues(Chunk.FloatChunk valuesToSort, int start1, int length1, int start2, int length2, String msg) {
-//        System.out.println(msg + " merge (" + start1 + ", " + length1 + ") -> (" + start2 + ", " + length2 + ")");
-//        float last = valuesToSort.get(start1);
-//        System.out.print("[" + format(last));
-//        for (int ii = start1 + 1; ii < start2 + length2; ++ii) {
-//            final float current = valuesToSort.get(ii);
-//            if (current < last) {
-//                System.out.println("****");
-//            }
-//            last = current;
-//            System.out.print(", " + last);
-//        }
-//        System.out.println("]");
-//    }
+    // private static void dumpValues(Chunk.FloatChunk valuesToSort, int start1, int length1, int start2, int length2,
+    // String msg) {
+    // System.out.println(msg + " merge (" + start1 + ", " + length1 + ") -> (" + start2 + ", " + length2 + ")");
+    // float last = valuesToSort.get(start1);
+    // System.out.print("[" + format(last));
+    // for (int ii = start1 + 1; ii < start2 + length2; ++ii) {
+    // final float current = valuesToSort.get(ii);
+    // if (current < last) {
+    // System.out.println("****");
+    // }
+    // last = current;
+    // System.out.print(", " + last);
+    // }
+    // System.out.println("]");
+    // }
 
-//    private static void dumpValues(Chunk.FloatChunk valuesToSort, int start1, int length1, String msg) {
-//        dumpValues(valuesToSort, start1, length1, msg, -1);
-//    }
-//
-//    private static void dumpValues(Chunk.FloatChunk valuesToSort, int start1, int length1, String msg, int highlight) {
-//        System.out.println(msg + " (" + start1 + ", " + length1 + ")");
-//        float last = valuesToSort.get(start1);
-//        System.out.print(String.format("%04d", start1) + "   ");
-//
-//        System.out.print(format(last, highlight == start1));
-//        boolean doComma = true;
-//        for (int ii = start1 + 1; ii < start1 + length1; ) {
-//            final float current = valuesToSort.get(ii);
-//            if (current < last) {
-//                System.out.println("****");
-//            }
-//            last = current;
-//            System.out.print((doComma ? ", " : "") + format(last, highlight == ii));
-//            doComma = true;
-//            ++ii;
-//            if ((ii - start1) % 20 == 0) {
-//                System.out.println();
-//                System.out.print(String.format("%04d", ii) + "   ");
-//                doComma = false;
-//            } else if ((ii - start1) % 10 == 0) {
-//                System.out.print("   " + String.format("%04d", ii) + "   ");
-//                doComma = false;
-//            }
-//        }
-//        System.out.println();
-//    }
-//    private static void dumpKeys(Chunk.ByteChunk keysToSort, int start1, int length1, String msg) {
-//        System.out.println(msg + " (" + start1 + ", " + length1 + ")");
-//        byte last = keysToSort.get(start1);
-//        System.out.print(String.format("%04d", start1) + "   ");
-//
-//        System.out.print(format(last));
-//        boolean doComma = true;
-//        for (int ii = start1 + 1; ii < start1 + length1; ) {
-//            last = keysToSort.get(ii);
-//            System.out.print((doComma ? ", " : "") + format(last));
-//            doComma = true;
-//            ++ii;
-//            if ((ii - start1) % 20 == 0) {
-//                System.out.println();
-//                System.out.print(String.format("%04d", ii) + "   ");
-//                doComma = false;
-//            } else if ((ii - start1) % 10 == 0) {
-//                System.out.print("   " + String.format("%04d", ii) + "   ");
-//                doComma = false;
-//            }
-//        }
-//        System.out.println();
-//    }
-//
-//    private static String format(float last) {
-//        if (last >= 'A' && last <= 'Z') {
-//            return Float.toString(last);
-//        }
-//        return String.format("0x%04x", (int) last);
-//    }
-//
-//    private static String format(float last, boolean highlight) {
-//        return highlight ? "/" + format(last) + "/" : format(last);
-//    }
-//
-//    private static String format(byte last) {
-//        return String.format("0x%04d", last);
-//    }
+    // private static void dumpValues(Chunk.FloatChunk valuesToSort, int start1, int length1, String msg) {
+    // dumpValues(valuesToSort, start1, length1, msg, -1);
+    // }
+    //
+    // private static void dumpValues(Chunk.FloatChunk valuesToSort, int start1, int length1, String msg, int highlight)
+    // {
+    // System.out.println(msg + " (" + start1 + ", " + length1 + ")");
+    // float last = valuesToSort.get(start1);
+    // System.out.print(String.format("%04d", start1) + " ");
+    //
+    // System.out.print(format(last, highlight == start1));
+    // boolean doComma = true;
+    // for (int ii = start1 + 1; ii < start1 + length1; ) {
+    // final float current = valuesToSort.get(ii);
+    // if (current < last) {
+    // System.out.println("****");
+    // }
+    // last = current;
+    // System.out.print((doComma ? ", " : "") + format(last, highlight == ii));
+    // doComma = true;
+    // ++ii;
+    // if ((ii - start1) % 20 == 0) {
+    // System.out.println();
+    // System.out.print(String.format("%04d", ii) + " ");
+    // doComma = false;
+    // } else if ((ii - start1) % 10 == 0) {
+    // System.out.print(" " + String.format("%04d", ii) + " ");
+    // doComma = false;
+    // }
+    // }
+    // System.out.println();
+    // }
+    // private static void dumpKeys(Chunk.ByteChunk keysToSort, int start1, int length1, String msg) {
+    // System.out.println(msg + " (" + start1 + ", " + length1 + ")");
+    // byte last = keysToSort.get(start1);
+    // System.out.print(String.format("%04d", start1) + " ");
+    //
+    // System.out.print(format(last));
+    // boolean doComma = true;
+    // for (int ii = start1 + 1; ii < start1 + length1; ) {
+    // last = keysToSort.get(ii);
+    // System.out.print((doComma ? ", " : "") + format(last));
+    // doComma = true;
+    // ++ii;
+    // if ((ii - start1) % 20 == 0) {
+    // System.out.println();
+    // System.out.print(String.format("%04d", ii) + " ");
+    // doComma = false;
+    // } else if ((ii - start1) % 10 == 0) {
+    // System.out.print(" " + String.format("%04d", ii) + " ");
+    // doComma = false;
+    // }
+    // }
+    // System.out.println();
+    // }
+    //
+    // private static String format(float last) {
+    // if (last >= 'A' && last <= 'Z') {
+    // return Float.toString(last);
+    // }
+    // return String.format("0x%04x", (int) last);
+    // }
+    //
+    // private static String format(float last, boolean highlight) {
+    // return highlight ? "/" + format(last) + "/" : format(last);
+    // }
+    //
+    // private static String format(byte last) {
+    // return String.format("0x%04d", last);
+    // }
 }

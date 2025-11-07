@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.hierarchical;
 
 import gnu.trove.map.TIntObjectMap;
@@ -37,6 +37,7 @@ import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import javax.annotation.OverridingMethodsMustInvokeSuper;
 import java.util.*;
 import java.util.function.Function;
 import java.util.function.LongUnaryOperator;
@@ -54,7 +55,7 @@ import static io.deephaven.util.QueryConstants.*;
  * Base result class for operations that produce hierarchical tables, for example {@link Table#rollup rollup} and
  * {@link Table#tree(String, String) tree}.
  */
-abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_TYPE>, IMPL_TYPE extends HierarchicalTableImpl<IFACE_TYPE, IMPL_TYPE>>
+public abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_TYPE>, IMPL_TYPE extends HierarchicalTableImpl<IFACE_TYPE, IMPL_TYPE>>
         extends BaseGridAttributes<IFACE_TYPE, IMPL_TYPE>
         implements HierarchicalTable<IFACE_TYPE> {
 
@@ -95,6 +96,29 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
         super(initialAttributes);
         this.source = source;
         this.root = root;
+    }
+
+    /**
+     * Check that the table we are rebasing to has the same definition as the current table, producing a helpful error
+     * message.
+     *
+     * @param type the type of engine object that is being rebased
+     * @param existingTable the existing source table
+     * @param newSource the new source table
+     */
+    public static void checkRebaseDefinition(final String type, @NotNull final Table existingTable,
+            @NotNull final Table newSource) {
+        if (newSource.getDefinition().equals(existingTable.getDefinition())) {
+            return;
+        }
+        if (newSource.getDefinition().equalsIgnoreOrder(existingTable.getDefinition())) {
+            throw new IllegalArgumentException(
+                    "Cannot rebase a " + type + " with a new source definition, column order is not identical");
+        }
+        final String differenceDescription = newSource.getDefinition()
+                .getDifferenceDescription(existingTable.getDefinition(), "new source", "existing source", ",");
+        throw new IllegalArgumentException(
+                "Cannot rebase a " + type + " with a new source definition: " + differenceDescription);
     }
 
     @Override
@@ -388,6 +412,7 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
             perLevelSharedContexts.clear();
         }
 
+        @OverridingMethodsMustInvokeSuper
         @Override
         protected void destroy() {
             super.destroy();
@@ -1008,11 +1033,14 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
         getDefaultExpansionNodeKeys().forEach((final Object nodeKey) -> accumulateKeyTableDirective(
                 nodeKey, Expand, directivesByNodeKey, orderedDirectives));
 
-        try (final RowSet prevRowSet = usePrev ? keyTable.getRowSet().copyPrev() : null) {
-            final RowSequence rowsToExtract = usePrev ? prevRowSet : keyTable.getRowSet();
-            final ColumnIterator<?> nodeKeyIter = ChunkedColumnIterator.make(nodeKeySource, rowsToExtract);
-            final ByteColumnIterator actionIter =
-                    actionSource == null ? null : new ChunkedByteColumnIterator(actionSource, rowsToExtract);
+        final RowSequence rowsToExtract = usePrev
+                ? keyTable.getRowSet().prev()
+                : keyTable.getRowSet();
+        // @formatter:off
+        try (final ColumnIterator<?> nodeKeyIter = ChunkedColumnIterator.make(nodeKeySource, rowsToExtract);
+             final ByteColumnIterator actionIter =
+                        actionSource == null ? null : new ChunkedByteColumnIterator(actionSource, rowsToExtract)) {
+            // @formatter:on
             // If no action source is supplied, we default to "Expand"
             final Supplier<VisitAction> nextAction = actionIter == null
                     ? () -> Expand
@@ -1235,11 +1263,11 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
                     numChildDirectives = 0;
                 }
 
-                final RowSet prevRows = snapshotState.usePrev ? forExpansion.getRowSet().copyPrev() : null;
-                final RowSet rowsToVisit = prevRows != null ? prevRows : forExpansion.getRowSet();
+                final RowSet rowsToVisit = snapshotState.usePrev
+                        ? forExpansion.getRowSet().prev()
+                        : forExpansion.getRowSet();
                 // @formatter:off
-                try (final SafeCloseable ignored = prevRows;
-                     final RowSequence.Iterator rowsToVisitIter = rowsToVisit.getRowSequenceIterator();
+                try (final RowSequence.Iterator rowsToVisitIter = rowsToVisit.getRowSequenceIterator();
                      final NodeFillContext filler = filling
                              ? new NodeFillContext(snapshotState, nodeTableState, rowsToVisit.size())
                              : null;
@@ -1273,7 +1301,8 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
                                 // We're at the start of a contracted range; we need to consume the contracted range
                                 // and expand the first row after if there is one.
                                 final long lastContractedPositionInRange = contractedRowPositionsIter.currentRangeEnd();
-                                final long rangeSize = lastContractedPositionInRange - nextContractedPosition + 1;
+                                final int rangeSize = Math.toIntExact(
+                                        lastContractedPositionInRange - nextContractedPosition + 1);
                                 cdi += rangeSize;
                                 nextChildDirective = cdi < numChildDirectives ? childDirectives.get(cdi) : null;
                                 if (rowsToVisit.size() > lastContractedPositionInRange + 1) {
@@ -1473,10 +1502,12 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
 
             try (final RowSequence.Iterator rowsIter =
                     rows.size() >= chunkSize ? rows.getRowSequenceIterator() : null) {
-                final RowSequence chunkRows =
-                        rowsIter == null ? rows : rowsIter.getNextRowSequenceWithLength(chunkSize);
-                final int chunkRowsSize = chunkRows.intSize();
                 do {
+                    final RowSequence chunkRows = rowsIter == null
+                            ? rows
+                            : rowsIter.getNextRowSequenceWithLength(chunkSize);
+                    final int chunkRowsSize = chunkRows.intSize();
+                    Assert.leq(chunkRowsSize, "chunkRowsSize", capacity, "capacity");
                     for (int di = 0, ci = columns.nextSetBit(0); ci >= 0; ++di, ci = columns.nextSetBit(ci + 1)) {
                         if (ci == ROW_EXPANDED_COLUMN_INDEX) {
                             continue;

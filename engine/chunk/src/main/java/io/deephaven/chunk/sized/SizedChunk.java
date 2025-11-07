@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.chunk.sized;
 
 import io.deephaven.chunk.ChunkType;
@@ -37,7 +37,7 @@ public class SizedChunk<T extends Any> implements SafeCloseable {
 
     /**
      * Ensure the underlying chunk has a capacity of at least {@code capacity}.
-     *
+     * <p>
      * The data and size of the returned chunk are undefined.
      *
      * @param capacity the minimum capacity for the chunk.
@@ -56,9 +56,9 @@ public class SizedChunk<T extends Any> implements SafeCloseable {
 
     /**
      * Ensure the underlying chunk has a capacity of at least {@code capacity}.
-     *
+     * <p>
      * If the chunk has existing data, then it is copied to the new chunk.
-     *
+     * <p>
      * If the underlying chunk already exists, then the size of the chunk is the original size. If the chunk did not
      * exist, then the size of the returned chunk is zero.
      *

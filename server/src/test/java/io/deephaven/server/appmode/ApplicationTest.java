@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.server.appmode;
 
 import io.deephaven.appmode.ApplicationState;
@@ -29,12 +29,12 @@ public class ApplicationTest {
     @Rule
     public final EngineCleanup base = new EngineCleanup();
 
-    private AbstractScriptSession session = null;
+    private AbstractScriptSession<?> session = null;
 
     @After
     public void tearDown() {
         if (session != null) {
-            session.release();
+            session.cleanup();
             session = null;
         }
     }
@@ -51,7 +51,7 @@ public class ApplicationTest {
 
     @Test
     public void app01() throws IOException {
-        session = new GroovyDeephavenSession(
+        session = GroovyDeephavenSession.of(
                 ExecutionContext.getContext().getUpdateGraph(),
                 ExecutionContext.getContext().getOperationInitializer(),
                 NoOp.INSTANCE, null,

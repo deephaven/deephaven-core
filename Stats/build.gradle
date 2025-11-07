@@ -9,13 +9,14 @@ dependencies {
     implementation project(':Configuration')
     implementation project(':log-factory')
     implementation project(':engine-context')
-    compileOnly 'com.google.code.java-allocation-instrumenter:java-allocation-instrumenter:3.3.0'
+    implementation project(':util-thread')
+    compileOnly libs.google.java.allocation.instrumenter
 
     testImplementation project(path: ':Base', configuration: 'tests')
 
     testRuntimeOnly project(':log-to-slf4j')
-    Classpaths.inheritSlf4j(project, 'slf4j-simple', 'testRuntimeOnly')
-    Classpaths.inheritJUnitClassic(project, 'testImplementation')
+    testRuntimeOnly libs.slf4j.simple
+    testImplementation libs.junit4
 }
 
 test {

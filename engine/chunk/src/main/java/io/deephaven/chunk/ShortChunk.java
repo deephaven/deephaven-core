@@ -1,13 +1,13 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharChunk and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit CharChunk and run "./gradlew replicateSourcesAndChunks" to regenerate
+//
+// @formatter:off
 package io.deephaven.chunk;
 
+import io.deephaven.util.QueryConstants;
 import io.deephaven.util.type.ArrayTypeUtils;
 import io.deephaven.chunk.attributes.Any;
 
@@ -34,7 +34,7 @@ public class ShortChunk<ATTR extends Any> extends ChunkBase<ATTR> {
     private static final ShortChunk EMPTY = new ShortChunk<>(ArrayTypeUtils.EMPTY_SHORT_ARRAY, 0, 0);
 
     public static <ATTR extends Any> ShortChunk<ATTR> getEmptyChunk() {
-        //noinspection unchecked
+        // noinspection unchecked
         return EMPTY;
     }
 
@@ -42,7 +42,7 @@ public class ShortChunk<ATTR extends Any> extends ChunkBase<ATTR> {
     private static final ShortChunk[] EMPTY_SHORT_CHUNK_ARRAY = new ShortChunk[0];
 
     static <ATTR extends Any> ShortChunk<ATTR>[] getEmptyChunkArray() {
-        //noinspection unchecked
+        // noinspection unchecked
         return EMPTY_SHORT_CHUNK_ARRAY;
     }
 
@@ -78,6 +78,12 @@ public class ShortChunk<ATTR extends Any> extends ChunkBase<ATTR> {
         return data[offset + index];
     }
 
+    // region isNull
+    public final boolean isNull(int index) {
+        return data[offset + index] == QueryConstants.NULL_SHORT;
+    }
+    // endregion isNull
+
     @Override
     public ShortChunk<ATTR> slice(int offset, int capacity) {
         ChunkHelpers.checkSliceArgs(size, offset, capacity);
@@ -92,7 +98,7 @@ public class ShortChunk<ATTR extends Any> extends ChunkBase<ATTR> {
 
     @Override
     public final void copyToArray(int srcOffset, Object dest, int destOffset, int length) {
-        final short[] realType = (short[])dest;
+        final short[] realType = (short[]) dest;
         copyToTypedArray(srcOffset, realType, destOffset, length);
     }
 
@@ -103,13 +109,13 @@ public class ShortChunk<ATTR extends Any> extends ChunkBase<ATTR> {
             return;
         }
         if (ChunkHelpers.canCopyForward(data, sStart, destData, destOffset, length)) {
-            //noinspection ManualArrayCopy
+            // noinspection ManualArrayCopy
             for (int ii = 0; ii < length; ++ii) {
                 destData[destOffset + ii] = data[sStart + ii];
             }
             return;
         }
-        //noinspection ManualArrayCopy
+        // noinspection ManualArrayCopy
         for (int ii = length - 1; ii >= 0; --ii) {
             destData[destOffset + ii] = data[sStart + ii];
         }
@@ -136,22 +142,26 @@ public class ShortChunk<ATTR extends Any> extends ChunkBase<ATTR> {
 
     // region CopyToBuffer
     @Override
-    public final void copyToBuffer(final int srcOffset, @NotNull final Buffer destBuffer, final int destOffset, final int length) {
+    public final void copyToBuffer(final int srcOffset, @NotNull final Buffer destBuffer, final int destOffset,
+            final int length) {
         final ShortBuffer shortDestBuffer = (ShortBuffer) destBuffer;
         copyToTypedBuffer(srcOffset, shortDestBuffer, destOffset, length);
     }
 
     /**
-     * <p>Copy a sub-range of this ShortChunk to a {@link ShortBuffer}.
+     * <p>
+     * Copy a sub-range of this ShortChunk to a {@link ShortBuffer}.
      *
-     * <p>See {@link #copyToBuffer(int, Buffer, int, int)} for general documentation.
+     * <p>
+     * See {@link #copyToBuffer(int, Buffer, int, int)} for general documentation.
      *
-     * @param srcOffset  The offset into this chunk to start copying from
+     * @param srcOffset The offset into this chunk to start copying from
      * @param destBuffer The destination {@link ShortBuffer}
      * @param destOffset The absolute offset into {@code destBuffer} to start copying to
-     * @param length     The number of elements to copy
+     * @param length The number of elements to copy
      */
-    public final void copyToTypedBuffer(final int srcOffset, @NotNull final ShortBuffer destBuffer, final int destOffset, final int length) {
+    public final void copyToTypedBuffer(final int srcOffset, @NotNull final ShortBuffer destBuffer, final int destOffset,
+            final int length) {
         if (destBuffer.hasArray()) {
             copyToTypedArray(srcOffset, destBuffer.array(), destBuffer.arrayOffset() + destOffset, length);
             return;
@@ -165,7 +175,7 @@ public class ShortChunk<ATTR extends Any> extends ChunkBase<ATTR> {
 
     // region downcast
     public static <ATTR extends Any, ATTR_DERIV extends ATTR> ShortChunk<ATTR_DERIV> downcast(ShortChunk<ATTR> self) {
-        //noinspection unchecked
+        // noinspection unchecked
         return (ShortChunk<ATTR_DERIV>) self;
     }
     // endregion downcast

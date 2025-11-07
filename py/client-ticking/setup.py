@@ -3,6 +3,7 @@
 #
 import os
 import pathlib
+import platform
 
 # Note: pkg_resources is deprecated https://setuptools.pypa.io/en/latest/pkg_resources.html, and it is suggested
 # to use an external library `packaging`. From the context of building a wheel though, we'd prefer to not have to
@@ -29,6 +30,27 @@ def _compute_version():
     return _normalize_version(os.environ['DEEPHAVEN_VERSION'])
 
 _version = _compute_version()
+_system = platform.system()
+
+if _system == 'Windows':
+    dhinstall=os.environ['DHINSTALL']
+    extra_compiler_args=['/std:c++17', f'/I{dhinstall}\\include']
+    extra_link_args=[f'/LIBPATH:{dhinstall}\\lib']
+
+    # Ensure distutils uses the compiler and linker in %PATH%
+    # You need an installation of Visual Studio 2022 with
+    # * Python Development Workload
+    # * Option "Python native development tools" enabled
+    # And this should be run from the "x64 Native Tools Command Prompt" installed by VS
+    # Note "x64_x86 Cross Tools Command Prompt" will NOT work.
+    os.environ['DISTUTILS_USE_SDK']='y'
+    os.environ['MSSdk']='y'
+    libraries=['dhcore_static', 'ws2_32']
+
+else:
+    extra_compiler_args=['-std=c++17']
+    extra_link_args=None
+    libraries=['dhcore_static']
 
 setup(
     name='pydeephaven-ticking',
@@ -54,14 +76,18 @@ setup(
         'Programming Language :: Python :: 3.9',
         'Programming Language :: Python :: 3.10',
         'Programming Language :: Python :: 3.11',
+        'Programming Language :: Python :: 3.12',
     ],
 
     ext_modules = cythonize(
         [Extension("pydeephaven_ticking._core",
                    sources=["src/pydeephaven_ticking/*.pyx"],
-                   extra_compile_args=["-std=c++17"],
-                   libraries=["dhcore_static"]
+                   language="c++",
+                   extra_compile_args=extra_compiler_args,
+                   extra_link_args=extra_link_args,
+                   libraries=libraries
         )]),
     python_requires='>=3.8',
-    install_requires=[f"pydeephaven=={_version}"]
+    install_requires=[f"pydeephaven=={_version}"],
+    package_data={'pydeephaven_ticking': ['py.typed']}
 )

@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.client.impl;
 
 import io.deephaven.client.impl.TableHandle.TableHandleException;
@@ -13,6 +13,7 @@ import io.deephaven.qst.column.Column;
 import io.deephaven.qst.table.EmptyTable;
 import io.deephaven.qst.table.InputTable;
 import io.deephaven.qst.table.LabeledTables;
+import io.deephaven.qst.table.MultiJoinInput;
 import io.deephaven.qst.table.NewTable;
 import io.deephaven.qst.table.TableSpec;
 import io.deephaven.qst.table.TicketTable;
@@ -98,6 +99,11 @@ public abstract class TableHandleManagerDelegate implements TableHandleManager {
     @Override
     public final TableHandle of(InputTable inputTable) {
         return delegate().of(inputTable);
+    }
+
+    @Override
+    public final TableHandle multiJoin(List<MultiJoinInput<TableHandle>> multiJoinInputs) {
+        return delegate().multiJoin(multiJoinInputs);
     }
 
     @Override

@@ -1,3 +1,6 @@
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.updateby.sum;
 
 import io.deephaven.base.verify.Assert;
@@ -7,9 +10,7 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
 import io.deephaven.engine.table.impl.updateby.internal.BaseObjectUpdateByOperator;
-import io.deephaven.engine.table.impl.util.RowRedirection;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import java.math.BigDecimal;
 import java.math.MathContext;
@@ -49,11 +50,16 @@ public final class BigDecimalCumSumOperator extends BaseObjectUpdateByOperator<B
         }
     }
 
-    public BigDecimalCumSumOperator(@NotNull final MatchPair inputPair,
-            @Nullable final RowRedirection rowRedirection,
+    public BigDecimalCumSumOperator(
+            @NotNull final MatchPair inputPair,
             @NotNull final MathContext mathContext) {
-        super(inputPair, new String[] {inputPair.rightColumn}, rowRedirection, BigDecimal.class);
+        super(inputPair, new String[] {inputPair.rightColumn}, BigDecimal.class);
         this.mathContext = mathContext;
+    }
+
+    @Override
+    public UpdateByOperator copy() {
+        return new BigDecimalCumSumOperator(pair, mathContext);
     }
 
     @NotNull

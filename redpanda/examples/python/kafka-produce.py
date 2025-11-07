@@ -23,7 +23,7 @@
 #
 # == Common to all:
 #
-#  * Start the redpanda compose: (cd redpanda && docker-compose up --build)
+#  * Start the redpanda compose: (cd redpanda && docker compose up --build)
 #  * From web UI do:
 #
 #    > from deephaven import kafka_consumer as kc

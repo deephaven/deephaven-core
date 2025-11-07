@@ -1,8 +1,10 @@
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit FloatRollingSumOperator and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit FloatRollingSumOperator and run "./gradlew replicateUpdateBy" to regenerate
+//
+// @formatter:off
 package io.deephaven.engine.table.impl.updateby.rollingsum;
 
 import io.deephaven.base.ringbuffer.AggregatingDoubleRingBuffer;
@@ -13,16 +15,14 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
 import io.deephaven.engine.table.impl.updateby.internal.BaseDoubleUpdateByOperator;
-import io.deephaven.engine.table.impl.util.RowRedirection;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
+import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
 
 public class DoubleRollingSumOperator extends BaseDoubleUpdateByOperator {
     private static final int BUFFER_INITIAL_SIZE = 64;
-    // region extra-fields
-    // endregion extra-fields
 
     protected class Context extends BaseDoubleUpdateByOperator.Context {
         protected DoubleChunk<? extends Values> doubleInfluencerValuesChunk;
@@ -61,11 +61,13 @@ public class DoubleRollingSumOperator extends BaseDoubleUpdateByOperator {
             aggSum.ensureRemaining(count);
 
             for (int ii = 0; ii < count; ii++) {
-                double val = doubleInfluencerValuesChunk.get(pos + ii);
-                aggSum.addUnsafe(val);
+                final double val = doubleInfluencerValuesChunk.get(pos + ii);
 
                 if (val == NULL_DOUBLE) {
                     nullCount++;
+                    aggSum.addUnsafe(NULL_DOUBLE);
+                } else {
+                    aggSum.addUnsafe(val);
                 }
             }
         }
@@ -105,17 +107,22 @@ public class DoubleRollingSumOperator extends BaseDoubleUpdateByOperator {
         return new Context(affectedChunkSize);
     }
 
-    public DoubleRollingSumOperator(@NotNull final MatchPair pair,
-                                   @NotNull final String[] affectingColumns,
-                                   @Nullable final RowRedirection rowRedirection,
-                                   @Nullable final String timestampColumnName,
-                                   final long reverseWindowScaleUnits,
-                                   final long forwardWindowScaleUnits
-                                   // region extra-constructor-args
-                                   // endregion extra-constructor-args
-    ) {
-        super(pair, affectingColumns, rowRedirection, timestampColumnName, reverseWindowScaleUnits, forwardWindowScaleUnits, true);
-        // region constructor
-        // endregion constructor
+    public DoubleRollingSumOperator(
+            @NotNull final MatchPair pair,
+            @NotNull final String[] affectingColumns,
+            @Nullable final String timestampColumnName,
+            final long reverseWindowScaleUnits,
+            final long forwardWindowScaleUnits) {
+        super(pair, affectingColumns, timestampColumnName, reverseWindowScaleUnits, forwardWindowScaleUnits, true);
+    }
+
+    @Override
+    public UpdateByOperator copy() {
+        return new DoubleRollingSumOperator(
+                pair,
+                affectingColumns,
+                timestampColumnName,
+                reverseWindowScaleUnits,
+                forwardWindowScaleUnits);
     }
 }

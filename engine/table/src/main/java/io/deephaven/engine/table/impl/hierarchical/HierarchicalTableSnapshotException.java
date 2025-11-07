@@ -1,8 +1,11 @@
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.hierarchical;
 
-import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.api.ColumnName;
 import io.deephaven.chunk.WritableChunk;
+import io.deephaven.engine.exceptions.SnapshotUnsuccessfulException;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.hierarchical.HierarchicalTable;
@@ -15,7 +18,7 @@ import java.util.BitSet;
  * {@link HierarchicalTable#snapshot(HierarchicalTable.SnapshotState, Table, ColumnName, BitSet, RowSequence, WritableChunk[])
  * snapshot}.
  */
-public class HierarchicalTableSnapshotException extends UncheckedDeephavenException {
+public class HierarchicalTableSnapshotException extends SnapshotUnsuccessfulException {
 
     public HierarchicalTableSnapshotException(@NotNull final String message, @NotNull final Throwable cause) {
         super(message, cause);

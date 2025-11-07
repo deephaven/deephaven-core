@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.lang.impl;
 
 import com.google.auto.service.AutoService;
@@ -13,11 +13,11 @@ import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Context;
-import io.deephaven.engine.table.DataColumn;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.lang.QueryLanguageFunctionUtils;
 import io.deephaven.engine.table.impl.select.ConditionFilter;
 import io.deephaven.engine.table.impl.verify.TableAssertions;
+import io.deephaven.engine.table.vectors.ColumnVectors;
 import io.deephaven.engine.util.ColorUtilImpl;
 import io.deephaven.function.*;
 import io.deephaven.gui.color.Color;
@@ -55,7 +55,6 @@ public class QueryLibraryImportsDefaults implements QueryLibraryImports {
                 Array.class,
                 TypeUtils.class,
                 Table.class,
-                DataColumn.class,
                 ArrayTypeUtils.class,
                 VectorConversions.class,
                 DateTimeUtils.class,
@@ -69,6 +68,7 @@ public class QueryLibraryImportsDefaults implements QueryLibraryImports {
                 Period.class,
                 QueryScopeParam.class,
                 ColumnSource.class,
+                ColumnVectors.class,
                 RowSet.class,
                 WritableRowSet.class,
                 TrackingRowSet.class,
@@ -79,6 +79,7 @@ public class QueryLibraryImportsDefaults implements QueryLibraryImports {
                 LongSizedDataStructure.class,
                 ConcurrentHashMap.class,
                 Chunk.class,
+                BooleanChunk.class,
                 ByteChunk.class,
                 CharChunk.class,
                 ShortChunk.class,
@@ -88,6 +89,7 @@ public class QueryLibraryImportsDefaults implements QueryLibraryImports {
                 DoubleChunk.class,
                 ObjectChunk.class,
                 WritableChunk.class,
+                WritableBooleanChunk.class,
                 WritableByteChunk.class,
                 WritableCharChunk.class,
                 WritableShortChunk.class,

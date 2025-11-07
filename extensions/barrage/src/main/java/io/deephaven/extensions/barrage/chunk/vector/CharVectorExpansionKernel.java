@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.extensions.barrage.chunk.vector;
 
 import io.deephaven.chunk.CharChunk;
@@ -12,87 +12,114 @@ import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableIntChunk;
 import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.attributes.Any;
+import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.ChunkPositions;
-import io.deephaven.engine.primitive.function.CharConsumer;
+import io.deephaven.extensions.barrage.chunk.BaseChunkReader;
 import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfChar;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.vector.CharVector;
 import io.deephaven.vector.CharVectorDirect;
-import io.deephaven.vector.Vector;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import static io.deephaven.vector.CharVectorDirect.ZERO_LENGTH_VECTOR;
 
-public class CharVectorExpansionKernel implements VectorExpansionKernel {
+public class CharVectorExpansionKernel implements VectorExpansionKernel<CharVector> {
     public final static CharVectorExpansionKernel INSTANCE = new CharVectorExpansionKernel();
+
+    private static final String DEBUG_NAME = "CharVectorExpansionKernel";
 
     @Override
     public <A extends Any> WritableChunk<A> expand(
-            final ObjectChunk<Vector<?>, A> source, final WritableIntChunk<ChunkPositions> perElementLengthDest) {
+            @NotNull final ObjectChunk<CharVector, A> source,
+            final int fixedSizeLength,
+            @Nullable final WritableIntChunk<ChunkPositions> offsetsDest) {
         if (source.size() == 0) {
-            perElementLengthDest.setSize(0);
+            if (offsetsDest != null) {
+                offsetsDest.setSize(0);
+            }
             return WritableCharChunk.makeWritableChunk(0);
         }
 
         final ObjectChunk<CharVector, A> typedSource = source.asObjectChunk();
 
         long totalSize = 0;
-        for (int i = 0; i < typedSource.size(); ++i) {
-            final CharVector row = typedSource.get(i);
-            totalSize += row == null ? 0 : row.size();
+        if (fixedSizeLength != 0) {
+            totalSize = source.size() * (long) fixedSizeLength;
+        } else {
+            for (int ii = 0; ii < source.size(); ++ii) {
+                final CharVector row = typedSource.get(ii);
+                final long rowLen = row == null ? 0 : row.size();
+                totalSize += rowLen;
+            }
         }
         final WritableCharChunk<A> result = WritableCharChunk.makeWritableChunk(
-                LongSizedDataStructure.intSize("ExpansionKernel", totalSize));
+                LongSizedDataStructure.intSize(DEBUG_NAME, totalSize));
         result.setSize(0);
 
-        perElementLengthDest.setSize(source.size() + 1);
-        for (int i = 0; i < typedSource.size(); ++i) {
-            final CharVector row = typedSource.get(i);
-            perElementLengthDest.set(i, result.size());
-            if (row == null) {
-                continue;
+        if (offsetsDest != null) {
+            offsetsDest.setSize(source.size() + 1);
+        }
+        for (int ii = 0; ii < typedSource.size(); ++ii) {
+            final CharVector row = typedSource.get(ii);
+            if (offsetsDest != null) {
+                offsetsDest.set(ii, result.size());
             }
-            final CharConsumer consumer = result::add;
-            try (final CloseablePrimitiveIteratorOfChar iter = row.iterator()) {
-                iter.forEachRemaining(consumer);
+            if (row != null) {
+                try (final CloseablePrimitiveIteratorOfChar iter = row.iterator()) {
+                    final int numToRead = LongSizedDataStructure.intSize(
+                            DEBUG_NAME, fixedSizeLength == 0 ? row.size() : fixedSizeLength);
+                    for (int jj = 0; jj < numToRead; ++jj) {
+                        result.add(iter.nextChar());
+                    }
+                }
+            }
+            if (fixedSizeLength != 0) {
+                final int toNull = LongSizedDataStructure.intSize(
+                        DEBUG_NAME, Math.max(0, fixedSizeLength - (row == null ? 0 : row.size())));
+                if (toNull > 0) {
+                    // fill the rest of the row with nulls
+                    result.fillWithNullValue(result.size(), toNull);
+                    result.setSize(result.size() + toNull);
+                }
             }
         }
-        perElementLengthDest.set(typedSource.size(), result.size());
+        if (offsetsDest != null) {
+            offsetsDest.set(typedSource.size(), result.size());
+        }
 
         return result;
     }
 
     @Override
-    public <A extends Any> WritableObjectChunk<Vector<?>, A> contract(
-            final Chunk<A> source, final IntChunk<ChunkPositions> perElementLengthDest,
-            final WritableChunk<A> outChunk, final int outOffset, final int totalRows) {
-        if (perElementLengthDest.size() == 0) {
-            if (outChunk != null) {
-                return outChunk.asWritableObjectChunk();
-            }
-            return WritableObjectChunk.makeWritableChunk(totalRows);
-        }
-
-        final int itemsInBatch = perElementLengthDest.size() - 1;
+    public <A extends Any> WritableObjectChunk<CharVector, A> contract(
+            @NotNull final Chunk<A> source,
+            final int sizePerElement,
+            @Nullable final IntChunk<ChunkPositions> offsets,
+            @Nullable final IntChunk<ChunkLengths> lengths,
+            @Nullable final WritableChunk<A> outChunk,
+            final int outOffset,
+            final int totalRows) {
+        final int itemsInBatch = offsets == null
+                ? source.size() / sizePerElement
+                : (offsets.size() - (lengths == null ? 1 : 0));
         final CharChunk<A> typedSource = source.asCharChunk();
-        final WritableObjectChunk<Vector<?>, A> result;
-        if (outChunk != null) {
-            result = outChunk.asWritableObjectChunk();
-        } else {
-            final int numRows = Math.max(itemsInBatch, totalRows);
-            result = WritableObjectChunk.makeWritableChunk(numRows);
-            result.setSize(numRows);
-        }
+        final WritableObjectChunk<CharVector, A> result = BaseChunkReader.castOrCreateChunk(
+                outChunk,
+                outOffset,
+                Math.max(totalRows, itemsInBatch),
+                WritableObjectChunk::makeWritableChunk,
+                WritableChunk::asWritableObjectChunk);
 
-        int lenRead = 0;
-        for (int i = 0; i < itemsInBatch; ++i) {
-            final int rowLen = perElementLengthDest.get(i + 1) - perElementLengthDest.get(i);
+        for (int ii = 0; ii < itemsInBatch; ++ii) {
+            final int offset = offsets == null ? ii * sizePerElement : offsets.get(ii);
+            final int rowLen = computeSize(ii, sizePerElement, offsets, lengths);
             if (rowLen == 0) {
-                result.set(outOffset + i, ZERO_LENGTH_VECTOR);
+                result.set(outOffset + ii, ZERO_LENGTH_VECTOR);
             } else {
                 final char[] row = new char[rowLen];
-                typedSource.copyToArray(lenRead, row, 0, rowLen);
-                lenRead += rowLen;
-                result.set(outOffset + i, new CharVectorDirect(row));
+                typedSource.copyToArray(offset, row, 0, rowLen);
+                result.set(outOffset + ii, new CharVectorDirect(row));
             }
         }
 

@@ -1,15 +1,17 @@
 /*
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ * Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
  */
 #include "deephaven/dhcore/utility/utility.h"
 
+#include <chrono>
+#include <filesystem>
 #include <ostream>
 #include <string>
-#include <vector>
 
 #include "deephaven/third_party/fmt/chrono.h"
 #include "deephaven/third_party/fmt/core.h"
 #include "deephaven/third_party/fmt/ostream.h"
+#include "deephaven/dhcore/container/container.h"
 
 #ifdef __GNUG__
 #include <cstdlib>
@@ -19,9 +21,12 @@
 
 static_assert(FMT_VERSION >= 100000);
 
+using deephaven::dhcore::container::ContainerBase;
+
 namespace deephaven::dhcore::utility {
 
 namespace {
+
 const char kEncodeLookup[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 const char kPadCharacter = '=';
 }  // namespace
@@ -104,7 +109,7 @@ void TrueOrThrowHelper(const DebugInfo &debug_info) {
 
 std::string FormatDebugString(const char *func, const char *file, size_t line,
     const std::string &message) {
-  return fmt::format("{}@{}:{}: {}", func, file, line, message);
+  return fmt::format("{}: {}@{}:{}", message, func, file, line);
 }
 
 std::string GetWhat(std::exception_ptr eptr) {
@@ -144,8 +149,12 @@ TimePointToStr(
   return EpochMillisToStr(TimePointToEpochMillis(time_point));
 }
 
+std::string Basename(std::string_view path) {
+  return std::filesystem::path(path).filename().string();
+}
+
 #ifdef __GNUG__
-std::string demangle(const char* name) {
+std::string demangle(const char *name) {
   int status = -1;
   char *res = abi::__cxa_demangle(name, nullptr, nullptr, &status);
   std::string result = status == 0 ? res : name;
@@ -161,5 +170,17 @@ std::string demangle(const char* name) {
 
 std::string ObjectId(const std::string &class_short_name, void *this_ptr) {
   return fmt::format("{}({})", class_short_name, this_ptr);
+}
+
+std::string ReadPasswordFromStdinNoEcho() {
+  SetStdinEcho(false);
+  std::string password;
+  std::getline(std::cin, password);
+  SetStdinEcho(true);
+  return password;
+}
+
+void ElementRenderer::Render(std::ostream &s, const std::shared_ptr<ContainerBase> &item) const {
+  s << *item;
 }
 }  // namespace deephaven::dhcore::utility

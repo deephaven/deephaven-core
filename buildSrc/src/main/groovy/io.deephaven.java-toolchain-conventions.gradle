@@ -4,19 +4,19 @@ plugins {
   id 'java'
 }
 
-def compilerVersion = Integer.parseInt((String)project.findProperty('compilerVersion') ?: '11')
+def compilerVersion = Integer.parseInt((String)project.findProperty('compilerVersion') ?: '21')
 def compilerVendor = project.hasProperty('compilerVendor') ?  JvmVendorSpec.matching((String)project.property('compilerVendor')): null
 
 def languageLevel = Integer.parseInt((String)project.findProperty('languageLevel') ?: '11')
-def runtimeVersion = Integer.parseInt((String)project.findProperty('runtimeVersion') ?: '11')
+def runtimeVersion = Integer.parseInt((String)project.findProperty('runtimeVersion') ?: '21')
 def runtimeVendor = project.hasProperty('runtimeVendor') ?  JvmVendorSpec.matching((String)project.property('runtimeVendor')): null
 
 def testLanguageLevel = Integer.parseInt((String)project.findProperty('testLanguageLevel') ?: '11')
-def testRuntimeVersion = Integer.parseInt((String)project.findProperty('testRuntimeVersion') ?: '11')
+def testRuntimeVersion = Integer.parseInt((String)project.findProperty('testRuntimeVersion') ?: '21')
 def testRuntimeVendor = project.hasProperty('testRuntimeVendor') ?  JvmVendorSpec.matching((String)project.property('testRuntimeVendor')): null
 
 if (languageLevel > compilerVersion) {
-  throw new IllegalArgumentException("languageLevel must be less than or equal to compileVersion")
+  throw new IllegalArgumentException("languageLevel must be less than or equal to compilerVersion")
 }
 if (languageLevel < 8) {
   throw new IllegalArgumentException("languageLevel must be greater than or equal to 8")
@@ -25,10 +25,12 @@ if (testLanguageLevel < 8) {
   throw new IllegalArgumentException("testLanguageLevel must be greater than or equal to 8")
 }
 if (runtimeVersion < languageLevel) {
-  throw new IllegalArgumentException("runtimeVersion must be greater than or equal to languageLevel")
+  project.logger.lifecycle("runtimeVersion was set to ${runtimeVersion}, updating to ${languageLevel} to match languageLevel")
+  runtimeVersion = languageLevel
 }
 if (testRuntimeVersion < testLanguageLevel) {
-  throw new IllegalArgumentException("testRuntimeVersion must be greater than or equal to testLanguageLevel")
+  project.logger.lifecycle("testRuntimeVersion was set to ${testRuntimeVersion}, updating to ${testLanguageLevel} to match testLanguageLevel")
+  testRuntimeVersion = testLanguageLevel
 }
 
 java {
@@ -79,24 +81,57 @@ tasks.withType(JavaCompile).configureEach {
   options.incremental = true
   options.compilerArgs << '-parameters'
 
-  if (name == 'compileTestJava') {
-    if (compilerVersion != testLanguageLevel) {
-      options.release.set testLanguageLevel
-    }
-  } else {
+  if (name == 'compileJava') {
     if (compilerVersion != languageLevel) {
       options.release.set languageLevel
+      sourceCompatibility = languageLevel
+      targetCompatibility = languageLevel
+    }
+  } else {
+    // This assumes that any JavaCompile task _not_ named 'compileJava' wants to target the testLanguageLevel.
+    // If this does not hold in the future, we can update this logic.
+    if (compilerVersion != testLanguageLevel) {
+      options.release.set testLanguageLevel
+      sourceCompatibility = testLanguageLevel
+      targetCompatibility = testLanguageLevel
     }
   }
 }
+
+tasks.withType(GroovyCompile).configureEach {
+  javaLauncher.set groovyCompilerLauncher
+
+  options.fork = true
+  options.forkOptions.memoryMaximumSize = '2G'
+  options.encoding = 'UTF-8'
+  options.incremental = true
+  options.compilerArgs << '-parameters'
+
+  if (name == 'compileGroovy') {
+    if (compilerVersion != languageLevel) {
+      options.release.set languageLevel
+      sourceCompatibility = languageLevel
+      targetCompatibility = languageLevel
+    }
+  } else {
+    // This assumes that any GroovyCompile task _not_ named 'compileGroovy' wants to target the testLanguageLevel.
+    // If this does not hold in the future, we can update this logic.
+    if (compilerVersion != testLanguageLevel) {
+      options.release.set testLanguageLevel
+      sourceCompatibility = testLanguageLevel
+      targetCompatibility = testLanguageLevel
+    }
+  }
+}
+
 
 def createCompilerDirectives = tasks.register('createCompilerDirectives') {
   def compilerDirectivesFile = project.layout.buildDirectory.file('dh-compiler-directives.txt')
   def compilerDirectivesText = new JsonBuilder([{
     match (['*.*'] as List)
-    // Note: there seems to be a bug where this option doesn't actually get picked up
-    // So using '-XX:DisableIntrinsic=_currentThread' explicitly
-    // DisableIntrinsic('_currentThread')
+    // Note: historically, there seemed to be a bug in the JVMs where DisableIntrinsic('_currentThread') didn't actually
+    // get picked up from this source. Any new options added here should have sufficient due diligence to ensure they
+    // are being picked up as appropriate.
   }]).toPrettyString()
   it.inputs.property('compilerDirectivesText', compilerDirectivesText)
   it.outputs.file(compilerDirectivesFile)
@@ -109,8 +144,6 @@ def compilerArgs = { String compilerDirectivesFile ->
   return [
           '-XX:+UnlockDiagnosticVMOptions',
           "-XX:CompilerDirectivesFile=${compilerDirectivesFile}",
-          // (deephaven-core#2500): Remove DisableIntrinsic for currentThread
-          '-XX:DisableIntrinsic=_currentThread',
           // '-XX:+CompilerDirectivesPrint',
           // '-XX:+LogCompilation',
   ]
@@ -125,6 +158,14 @@ def parseJvmArgumentsFromEnv = { String envName, List<String> orElse ->
   return s.split('\\s+').findAll { it -> !it.trim().isEmpty() } as List<String>
 }
 
+def parseJvmArgumentsFromProperty = { String propertyName, List<String> orElse ->
+  if (!project.hasProperty(propertyName)) {
+    return orElse
+  }
+  // Note: this logic could be improved to handle quotes and other cases, but hopefully this suffices for now.
+  return project.property(propertyName).toString().split('\\s+').findAll { it -> !it.trim().isEmpty() } as List<String>
+}
+
 // Note: the gradle logic is explicitly reading the JAVA_OPTS and START_OPTS environment variables to provide
 // developers a model that more closely matches with the native application script
 // https://deephaven.io/core/docs/how-to-guides/configuration/native-application/#native-application-script.
@@ -134,6 +175,9 @@ def parseJvmArgumentsFromEnv = { String envName, List<String> orElse ->
 // ```
 // START_OPTS="-Xmx1g -Dmy.system.property=123" ./gradlew server-jetty-app:run
 // ```
+//
+// Similarly, the gradle properties "deephaven.javaOpts" and "deephaven.startOpts" are a way to source the same
+// configuration. The gradle property takes precedence over the environment variable.
 
 // These are supposed to be generally applicable and recommended JVM options, but they aren't hard requirements.
 // Overly specific options do *not* belong here. For example, we should _not_ be setting something like `-Xmx4g` here.
@@ -142,18 +186,21 @@ def parseJvmArgumentsFromEnv = { String envName, List<String> orElse ->
 //
 // From the perspective of our application distribution, these options will be used as defaults for JAVA_OPTS
 // (if the user already has JAVA_OPTS set, these VM options will _not_ apply).
-def JAVA_OPTS = parseJvmArgumentsFromEnv('JAVA_OPTS', [
+def JAVA_OPTS = parseJvmArgumentsFromProperty("deephaven.javaOpts", parseJvmArgumentsFromEnv('JAVA_OPTS', [
   '-XX:+UseG1GC',
   '-XX:MaxGCPauseMillis=100',
   '-XX:+UseStringDeduplication',
-])
+  // TODO(deephaven-core#5519): Remove SoftReference cache OOM mitigation
+  // Requires -XX:+UnlockDiagnosticVMOptions which is already included in def compilerArgs earlier
+  '-XX:GCLockerRetryAllocationCount=128',
+]))
 
 // Utility to add jvm args to all executions, whether intellij or from a application script or gradle javaexec
-def START_OPTS = parseJvmArgumentsFromEnv('START_OPTS', [
+def START_OPTS = parseJvmArgumentsFromProperty("deephaven.startOpts", parseJvmArgumentsFromEnv('START_OPTS', [
 //  '-XX:Tier4CompileThreshold=1000', // this optional line makes it easier to trigger the c2 error on the above methods
 //  '-XX:+PrintFlagsFinal',           // this optional line makes it easier to explore the final values for compiler args
 //  '-XX:+PrintCompilation',          // this optional line shows jit operations as they happen
-])
+]))
 
 def createVmOptions = tasks.register('createVmOptions') {
   def vmOptionsFile = project.layout.buildDirectory.file('dh-default.vmoptions')
@@ -187,12 +234,9 @@ tasks.withType(Test).configureEach {
   jvmArgs += compilerArgs(compilerDirectivesFile.singleFile.path) + ["-XX:VMOptionsFile=${vmOptionsFile.singleFile.path}"] + START_OPTS
 }
 
-tasks.withType(GroovyCompile).configureEach {
-  javaLauncher.set groovyCompilerLauncher
-}
-
-plugins.withType(ApplicationPlugin) {
-  applicationDistribution.into('etc') {
+JavaApplication application = extensions.findByType(JavaApplication)
+if (application) {
+  application.applicationDistribution.into('etc') {
     from(createCompilerDirectives.get().outputs.files)
     from(createVmOptions.get().outputs.files)
   }

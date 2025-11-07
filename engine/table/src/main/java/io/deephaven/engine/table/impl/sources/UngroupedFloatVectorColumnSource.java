@@ -1,11 +1,10 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit UngroupedCharVectorColumnSource and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit UngroupedCharVectorColumnSource and run "./gradlew replicateSourcesAndChunks" to regenerate
+//
+// @formatter:off
 package io.deephaven.engine.table.impl.sources;
 
 import io.deephaven.engine.table.ColumnSource;
@@ -14,7 +13,8 @@ import io.deephaven.vector.FloatVector;
 
 import static io.deephaven.util.QueryConstants.NULL_FLOAT;
 
-public class UngroupedFloatVectorColumnSource extends UngroupedColumnSource<Float> implements MutableColumnSourceGetDefaults.ForFloat {
+public class UngroupedFloatVectorColumnSource extends UngroupedColumnSource<Float>
+        implements MutableColumnSourceGetDefaults.ForFloat {
     private ColumnSource<FloatVector> innerSource;
     private final boolean isUngroupable;
 
@@ -27,7 +27,7 @@ public class UngroupedFloatVectorColumnSource extends UngroupedColumnSource<Floa
     public UngroupedFloatVectorColumnSource(ColumnSource<FloatVector> innerSource) {
         super(Float.class);
         this.innerSource = innerSource;
-        this.isUngroupable = innerSource instanceof UngroupableColumnSource && ((UngroupableColumnSource)innerSource).isUngroupable();
+        this.isUngroupable = UngroupableColumnSource.isUngroupable(innerSource);
     }
 
     @Override
@@ -35,11 +35,11 @@ public class UngroupedFloatVectorColumnSource extends UngroupedColumnSource<Floa
         if (rowKey < 0) {
             return null;
         }
-        long segment = rowKey >>base;
-        int offset = (int) (rowKey & ((1<<base) - 1));
+        long segment = rowKey >> base;
+        int offset = (int) (rowKey & ((1 << base) - 1));
         final Float result;
         if (isUngroupable) {
-            result = (Float)((UngroupableColumnSource)innerSource).getUngrouped(segment, offset);
+            result = (Float) ((UngroupableColumnSource) innerSource).getUngrouped(segment, offset);
             if (result == null)
                 return null;
         } else {
@@ -56,10 +56,10 @@ public class UngroupedFloatVectorColumnSource extends UngroupedColumnSource<Floa
             return NULL_FLOAT;
         }
 
-        long segment = rowKey >>base;
-        int offset = (int) (rowKey & ((1<<base) - 1));
+        long segment = rowKey >> base;
+        int offset = (int) (rowKey & ((1 << base) - 1));
         if (isUngroupable) {
-            return ((UngroupableColumnSource)innerSource).getUngroupedFloat(segment, offset);
+            return ((UngroupableColumnSource) innerSource).getUngroupedFloat(segment, offset);
         }
 
         final FloatVector segmentArray = innerSource.get(segment);
@@ -74,10 +74,10 @@ public class UngroupedFloatVectorColumnSource extends UngroupedColumnSource<Floa
         }
 
         long segment = rowKey >> getPrevBase();
-        int offset = (int) (rowKey & ((1<< getPrevBase()) - 1));
+        int offset = (int) (rowKey & ((1 << getPrevBase()) - 1));
         final Float result;
         if (isUngroupable) {
-            result = (Float)((UngroupableColumnSource)innerSource).getUngroupedPrev(segment, offset);
+            result = (Float) ((UngroupableColumnSource) innerSource).getUngroupedPrev(segment, offset);
             if (result == null) {
                 return null;
             }
@@ -96,10 +96,10 @@ public class UngroupedFloatVectorColumnSource extends UngroupedColumnSource<Floa
         }
 
         long segment = rowKey >> getPrevBase();
-        int offset = (int) (rowKey & ((1<< getPrevBase()) - 1));
+        int offset = (int) (rowKey & ((1 << getPrevBase()) - 1));
 
         if (isUngroupable) {
-            return ((UngroupableColumnSource)innerSource).getUngroupedPrevFloat(segment, offset);
+            return ((UngroupableColumnSource) innerSource).getUngroupedPrevFloat(segment, offset);
         }
 
         final FloatVector segmentArray = innerSource.getPrev(segment);

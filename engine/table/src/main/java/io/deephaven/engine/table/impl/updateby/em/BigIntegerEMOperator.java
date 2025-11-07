@@ -1,3 +1,6 @@
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.updateby.em;
 
 import io.deephaven.api.updateby.OperationControl;
@@ -5,10 +8,9 @@ import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.MatchPair;
+import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
-import io.deephaven.engine.table.impl.util.RowRedirection;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -24,10 +26,11 @@ public class BigIntegerEMOperator extends BaseBigNumberEMOperator<BigInteger> {
         }
 
         @Override
-        public void accumulateCumulative(RowSequence inputKeys,
-                                         Chunk<? extends Values>[] valueChunkArr,
-                                         LongChunk<? extends Values> tsChunk,
-                                         int len) {
+        public void accumulateCumulative(
+                @NotNull final RowSequence inputKeys,
+                @NotNull final Chunk<? extends Values>[] valueChunkArr,
+                @Nullable final LongChunk<? extends Values> tsChunk,
+                final int len) {
             setValueChunks(valueChunkArr);
 
             // chunk processing
@@ -44,7 +47,7 @@ public class BigIntegerEMOperator extends BaseBigNumberEMOperator<BigInteger> {
                             curVal = decimalInput;
                         } else {
                             curVal = aggFunction.apply(curVal, decimalInput, opAlpha, opOneMinusAlpha);
-                         }
+                        }
                     }
                     outputValues.set(ii, curVal);
                 }
@@ -60,22 +63,25 @@ public class BigIntegerEMOperator extends BaseBigNumberEMOperator<BigInteger> {
                         handleBadData(this, true);
                     } else if (isNullTime) {
                         // no change to curVal and lastStamp
+                    } else if (curVal == null) {
+                        // We have a valid input value, we can initialize the output value with it.
+                        curVal = new BigDecimal(input, control.bigValueContextOrDefault());
+                        lastStamp = timestamp;
                     } else {
-                        final BigDecimal decimalInput = new BigDecimal(input, control.bigValueContextOrDefault());
-                        if (curVal == null) {
-                            curVal = decimalInput;
-                            lastStamp = timestamp;
-                        } else {
-                            final long dt = timestamp - lastStamp;
-                            // Alpha is dynamic based on time, but only recalculated when needed
-                            if (dt != lastDt) {
-                                alpha = computeAlpha(-dt, reverseWindowScaleUnits);
-                                oneMinusAlpha = computeOneMinusAlpha(alpha);
-                                lastDt = dt;
-                            }
-                            curVal = aggFunction.apply(curVal, decimalInput, alpha, oneMinusAlpha);
-                            lastStamp = timestamp;
+                        final long dt = timestamp - lastStamp;
+                        if (dt < 0) {
+                            // negative time deltas are not allowed, throw an exception
+                            throw new TableDataException("Timestamp values in UpdateBy operators must not decrease");
                         }
+                        // Alpha is dynamic based on time, but only recalculated when needed
+                        if (dt != lastDt) {
+                            alpha = computeAlpha(-dt, reverseWindowScaleUnits);
+                            oneMinusAlpha = computeOneMinusAlpha(alpha);
+                            lastDt = dt;
+                        }
+                        final BigDecimal decimalInput = new BigDecimal(input, control.bigValueContextOrDefault());
+                        curVal = aggFunction.apply(curVal, decimalInput, alpha, oneMinusAlpha);
+                        lastStamp = timestamp;
                     }
                     outputValues.set(ii, curVal);
                 }
@@ -90,27 +96,31 @@ public class BigIntegerEMOperator extends BaseBigNumberEMOperator<BigInteger> {
             throw new IllegalStateException("EMAOperator#push() is not used");
         }
     }
-    
+
     /**
      * An operator that computes an EMA from a BigInteger column using an exponential decay function.
      *
-     * @param pair                the {@link MatchPair} that defines the input/output for this operation
-     * @param affectingColumns    the names of the columns that affect this ema
-     * @param rowRedirection      the {@link RowRedirection} to use for dense output sources
-     * @param control             defines how to handle {@code null} input values.
+     * @param pair the {@link MatchPair} that defines the input/output for this operation
+     * @param affectingColumns the names of the columns that affect this ema
+     * @param control defines how to handle {@code null} input values.
      * @param timestampColumnName the name of the column containing timestamps for time-based calcuations
-     * @param windowScaleUnits      the smoothing window for the EMA. If no {@code timestampColumnName} is provided, this is measured in ticks, otherwise it is measured in nanoseconds
-     * @param valueSource         a reference to the input column source for this operation
+     * @param windowScaleUnits the smoothing window for the EMA. If no {@code timestampColumnName} is provided, this is
+     *        measured in ticks, otherwise it is measured in nanoseconds
      */
-    public BigIntegerEMOperator(@NotNull final MatchPair pair,
-                                @NotNull final String[] affectingColumns,
-                                @Nullable final RowRedirection rowRedirection,
-                                @NotNull final OperationControl control,
-                                @Nullable final String timestampColumnName,
-                                final double windowScaleUnits,
-                                final ColumnSource<?> valueSource,
-                                @NotNull final EmFunction aggFunction) {
-        super(pair, affectingColumns, rowRedirection, control, timestampColumnName, windowScaleUnits, valueSource, aggFunction);
+    public BigIntegerEMOperator(
+            @NotNull final MatchPair pair,
+            @NotNull final String[] affectingColumns,
+            @NotNull final OperationControl control,
+            @Nullable final String timestampColumnName,
+            final double windowScaleUnits,
+            @NotNull final EmFunction aggFunction) {
+        super(pair, affectingColumns, control, timestampColumnName, windowScaleUnits, aggFunction);
+    }
+
+    @Override
+    public UpdateByOperator copy() {
+        return new BigIntegerEMOperator(pair, affectingColumns, control, timestampColumnName, reverseWindowScaleUnits,
+                aggFunction);
     }
 
     @NotNull

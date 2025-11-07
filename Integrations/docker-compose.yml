@@ -1,7 +1,5 @@
 # test-oriented local docker compose file to run redpanda and postgres for testing
 
-version: "3.4"
-
 services:
   redpanda:
     extends:

@@ -1,16 +1,15 @@
-/**
- * Copyright (c) 2016-2023 Deephaven Data Labs and Patent Pending
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit InstantArrayTransfer and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit InstantArrayTransfer and run "./gradlew replicateParquetTransferObjects" to regenerate
+//
+// @formatter:off
 package io.deephaven.parquet.table.transfer;
 
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.parquet.table.util.TransferUtils;
+
 import org.jetbrains.annotations.NotNull;
 
 import java.nio.LongBuffer;

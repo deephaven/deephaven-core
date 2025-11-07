@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.util;
 
 import io.deephaven.base.log.LogOutput;
@@ -10,7 +10,6 @@ import io.deephaven.io.log.impl.LogOutputStringImpl;
 
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Handler;
 import java.util.logging.Level;
@@ -136,13 +135,17 @@ public final class BridgingLogHandler extends Handler {
         return log.getEntry(mapLevel(level), 1000 * timeMillis, throwable);
     }
 
-    private static final Map<Level, LogLevel> LEVEL_MAPPINGS = new HashMap<>();
-    static {
-        LEVEL_MAPPINGS.put(Level.WARNING, LogLevel.WARN);
-        LEVEL_MAPPINGS.put(Level.SEVERE, LogLevel.ERROR);
-    }
+    // Reflects org.slf4j.bridge.SLF4JBridgeHandler level mappings
+    private static final Map<Level, LogLevel> LEVEL_MAPPINGS = Map.of(
+            Level.SEVERE, LogLevel.ERROR,
+            Level.WARNING, LogLevel.WARN,
+            Level.INFO, LogLevel.INFO,
+            Level.CONFIG, LogLevel.INFO,
+            Level.FINE, LogLevel.DEBUG,
+            Level.FINER, LogLevel.TRACE,
+            Level.FINEST, LogLevel.TRACE);
 
-    private static io.deephaven.io.log.LogLevel mapLevel(final Level level) {
+    private static LogLevel mapLevel(final Level level) {
         final LogLevel mapping = LEVEL_MAPPINGS.get(level);
         if (mapping != null) {
             return mapping;

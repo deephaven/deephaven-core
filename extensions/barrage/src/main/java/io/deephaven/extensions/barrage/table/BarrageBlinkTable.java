@@ -1,7 +1,6 @@
-/*
- * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
- */
-
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.extensions.barrage.table;
 
 import io.deephaven.base.verify.Assert;
@@ -26,7 +25,6 @@ import io.deephaven.io.log.LogLevel;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayDeque;
-import java.util.BitSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
@@ -42,6 +40,7 @@ public class BarrageBlinkTable extends BarrageTable {
     private long numRowsLastRefresh = 0;
 
     protected BarrageBlinkTable(
+            @Nullable final String channelName,
             final UpdateSourceRegistrar registrar,
             final NotificationQueue notificationQueue,
             @Nullable final ScheduledExecutorService executorService,
@@ -49,7 +48,9 @@ public class BarrageBlinkTable extends BarrageTable {
             final WritableColumnSource<?>[] writableSources,
             final Map<String, Object> attributes,
             @Nullable final ViewportChangedCallback vpCallback) {
-        super(registrar, notificationQueue, executorService, columns, writableSources, attributes, vpCallback);
+        super(channelName, registrar, notificationQueue, executorService, columns, writableSources, attributes,
+                vpCallback);
+        setFlat();
     }
 
     private void processUpdate(final BarrageMessage update) {

@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.sources.regioned;
 
 import io.deephaven.engine.table.ColumnDefinition;
@@ -12,7 +12,13 @@ import io.deephaven.engine.table.impl.SourceTableComponentFactory;
  */
 public interface RegionedTableComponentFactory extends SourceTableComponentFactory {
 
+    @FunctionalInterface
+    interface RegionedColumnSourceFactory {
+        RegionedColumnSource<?> make(RegionedColumnSourceManager manager);
+    }
+
     <DATA_TYPE> RegionedColumnSource<DATA_TYPE> createRegionedColumnSource(
+            RegionedColumnSourceManager manager,
             ColumnDefinition<DATA_TYPE> columnDefinition,
             ColumnToCodecMappings codecMappings);
 }

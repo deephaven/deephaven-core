@@ -3,6 +3,7 @@ package client_test
 import (
 	"context"
 	"errors"
+	"slices"
 	"sort"
 	"testing"
 	"time"
@@ -887,7 +888,15 @@ func crossJoinQuery(t *testing.T, exec execBatchOrSerial) {
 	}
 }
 
-func TestAsOfJoinQuery(t *testing.T) {
+func TestAsOfJoinQueryBatched(t *testing.T) {
+	asOfJoinQuery(t, (*client.Client).ExecBatch)
+}
+
+func TestAsOfJoinQuerySerial(t *testing.T) {
+	asOfJoinQuery(t, (*client.Client).ExecSerial)
+}
+
+func asOfJoinQuery(t *testing.T, exec execBatchOrSerial) {
 	ctx := context.Background()
 
 	c, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort(), test_tools.GetAuthType(), test_tools.GetAuthToken())
@@ -896,53 +905,44 @@ func TestAsOfJoinQuery(t *testing.T) {
 	}
 	defer c.Close()
 
-	startTime := time.Now().Add(time.Duration(-2) * time.Second)
+	tempty, err := c.EmptyTable(ctx, 5)
+	test_tools.CheckError(t, "EmptyTable", err)
+	defer tempty.Release(ctx)
 
-	tt1 := c.TimeTableQuery(100000, startTime).Update("Col1 = i")
-	tt2 := c.TimeTableQuery(200000, startTime).Update("Col1 = i")
+	tleft := tempty.Query().Update("Time = i * 3", "LValue = 100 + i")
+	tright := tempty.Query().Update("Time = i * 5", "RValue = 200 + i")
 
-	normalTable := tt1.AsOfJoin(tt2, []string{"Col1", "Timestamp"}, nil, client.MatchRuleLessThanEqual)
-	reverseTable := tt1.AsOfJoin(tt2, []string{"Col1", "Timestamp"}, nil, client.MatchRuleGreaterThanEqual)
+	taojLeq := tleft.AsOfJoin(tright, []string{"Time"}, nil, client.MatchRuleLessThanEqual)
+	taojGeq := tleft.AsOfJoin(tright, []string{"Time"}, nil, client.MatchRuleGreaterThanEqual)
 
-	tables, err := c.ExecBatch(ctx, tt1, normalTable, reverseTable)
-	if err != nil {
-		t.Errorf("ExecBatch %s", err.Error())
-		return
-	}
-	if len(tables) != 3 {
+	tables, err := exec(c, ctx, taojLeq, taojGeq)
+	if len(tables) != 2 {
 		t.Errorf("wrong number of tables")
-		return
 	}
 	defer tables[0].Release(ctx)
 	defer tables[1].Release(ctx)
-	defer tables[2].Release(ctx)
 
-	ttRec, err := tables[0].Snapshot(ctx)
-	if err != nil {
-		t.Errorf("Snapshot %s", err.Error())
-		return
+	leqRec, err := tables[0].Snapshot(ctx)
+	test_tools.CheckError(t, "Snapshot", err)
+	defer leqRec.Release()
+
+	geqRec, err := tables[1].Snapshot(ctx)
+	test_tools.CheckError(t, "Snapshot", err)
+	defer geqRec.Release()
+
+	// Column 2 is the RValue column
+	actualLeqData := leqRec.Column(2).(*array.Int32).Int32Values()
+	actualGeqData := geqRec.Column(2).(*array.Int32).Int32Values()
+
+	expectedLeqData := []int32{200, 200, 201, 201, 202}
+	expectedGeqData := []int32{200, 201, 202, 202, 203}
+
+	if !slices.Equal(expectedLeqData, actualLeqData) {
+		t.Errorf("leq values different expected %v != actual %v", expectedLeqData, actualLeqData)
 	}
 
-	normalRec, err := tables[1].Snapshot(ctx)
-	if err != nil {
-		t.Errorf("Snapshot %s", err.Error())
-		return
-	}
-
-	reverseRec, err := tables[2].Snapshot(ctx)
-	if err != nil {
-		t.Errorf("Snapshot %s", err.Error())
-		return
-	}
-
-	if normalRec.NumRows() == 0 || normalRec.NumRows() > ttRec.NumRows() {
-		t.Error("record had wrong size")
-		return
-	}
-
-	if reverseRec.NumRows() == 0 || reverseRec.NumRows() > ttRec.NumRows() {
-		t.Error("record had wrong size")
-		return
+	if !slices.Equal(expectedGeqData, actualGeqData) {
+		t.Errorf("geq values different: expected %v != actual %v", expectedGeqData, actualGeqData)
 	}
 }
 

@@ -1,11 +1,14 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.context;
 
+import io.deephaven.UncheckedDeephavenException;
+import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.time.DateTimeUtils;
+import io.deephaven.util.CompletionStageFuture;
 import io.deephaven.util.SafeCloseable;
 import org.junit.After;
 import org.junit.Before;
@@ -18,8 +21,8 @@ import java.lang.reflect.Method;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 
 public class TestQueryCompiler {
     private final static int NUM_THREADS = 500;
@@ -27,13 +30,12 @@ public class TestQueryCompiler {
     private final static long WAIT_BETWEEN_THREAD_START_MILLIS = 5;
     private final static long MINIMUM_DELAY_MILLIS = 100;
     private final static int NUM_COMPILE_TESTS = 10;
-    private static final String CLASS_CODE;
 
     private final static List<Throwable> raisedThrowables = new ArrayList<>();
 
     // Two nearly-identical classes, so we can get an idea of how long it takes to compile one of them
-    static {
-        final StringBuilder testClassCode1 = new StringBuilder("        public class $CLASSNAME$ {");
+    private static String generateClassBody(final String className) {
+        final StringBuilder testClassCode1 = new StringBuilder("        public class " + className + " {");
         testClassCode1.append("            final static String testString = \"Hello World\\n\";");
 
         // Simple static inner classes to generate two class files
@@ -52,7 +54,7 @@ public class TestQueryCompiler {
         }
 
         testClassCode1.append("        }");
-        CLASS_CODE = testClassCode1.toString();
+        return testClassCode1.toString();
     }
 
     @Rule
@@ -68,7 +70,8 @@ public class TestQueryCompiler {
         executionContextClosable = ExecutionContext.newBuilder()
                 .captureQueryLibrary()
                 .captureQueryScope()
-                .setQueryCompiler(QueryCompiler.create(folder.newFolder(), TestQueryCompiler.class.getClassLoader()))
+                .setQueryCompiler(QueryCompilerImpl.create(
+                        folder.newFolder(), TestQueryCompiler.class.getClassLoader()))
                 .build()
                 .open();
     }
@@ -165,7 +168,7 @@ public class TestQueryCompiler {
         }
     }
 
-    private void compile(boolean printDetails, final String className) throws Exception {
+    private void compile(boolean printDetails, final String className) {
         final long startMillis;
         if (printDetails) {
             startMillis = System.currentTimeMillis();
@@ -173,8 +176,13 @@ public class TestQueryCompiler {
         } else {
             startMillis = 0;
         }
-        ExecutionContext.getContext().getQueryCompiler()
-                .compile(className, CLASS_CODE, "io.deephaven.temp");
+        ExecutionContext.getContext().getQueryCompiler().compile(
+                QueryCompilerRequest.builder()
+                        .description("Test Compile")
+                        .className(className)
+                        .classBody(generateClassBody(className))
+                        .packageNameRoot("io.deephaven.temp")
+                        .build());
         if (printDetails) {
             final long endMillis = System.currentTimeMillis();
             System.out.println(printMillis(endMillis) + ": Thread 0 ending compile: (" + (endMillis - startMillis)
@@ -192,7 +200,7 @@ public class TestQueryCompiler {
     public void testSimpleCompile() throws Exception {
         final String program1Text = String.join(
                 "\n",
-                "public class $CLASSNAME$ {",
+                "public class Test {",
                 "   public static void main (String [] args) {",
                 "      System.out.println (\"Hello, World?\");",
                 "      System.out.println (args.length);",
@@ -201,8 +209,14 @@ public class TestQueryCompiler {
                 "}");
 
         StringBuilder codeLog = new StringBuilder();
-        final Class<?> clazz1 = ExecutionContext.getContext().getQueryCompiler()
-                .compile("Test", program1Text, "com.deephaven.test", codeLog, Collections.emptyMap());
+        final Class<?> clazz1 = ExecutionContext.getContext().getQueryCompiler().compile(
+                QueryCompilerRequest.builder()
+                        .description("Test Compile")
+                        .className("Test")
+                        .classBody(program1Text)
+                        .packageNameRoot("com.deephaven.test")
+                        .codeLog(codeLog)
+                        .build());
         final Method m1 = clazz1.getMethod("main", String[].class);
         Object[] args1 = new Object[] {new String[] {"hello", "there"}};
         m1.invoke(null, args1);
@@ -224,21 +238,178 @@ public class TestQueryCompiler {
             Thread t = new Thread(() -> {
                 StringBuilder codeLog = new StringBuilder();
                 try {
-                    final Class<?> clazz1 = ExecutionContext.getContext().getQueryCompiler()
-                            .compile("Test", program1Text, "com.deephaven.test", codeLog,
-                                    Collections.emptyMap());
+                    final Class<?> clazz1 = ExecutionContext.getContext().getQueryCompiler().compile(
+                            QueryCompilerRequest.builder()
+                                    .description("Test Compile")
+                                    .className("Test")
+                                    .classBody(program1Text)
+                                    .packageNameRoot("com.deephaven.test")
+                                    .codeLog(codeLog)
+                                    .build());
                     final Method m1 = clazz1.getMethod("main", String[].class);
                     Object[] args1 = new Object[] {new String[] {"hello", "there"}};
                     m1.invoke(null, args1);
                 } catch (Exception e) {
-                    throw new RuntimeException(e);
+                    throw new UncheckedDeephavenException(e);
                 }
             });
             t.start();
             threads.add(t);
         }
-        for (int i = 0; i < threads.size(); ++i) {
-            threads.get(i).join();
+        for (final Thread thread : threads) {
+            thread.join();
         }
+    }
+
+    @Test
+    public void testMultiCompileWithFailure() throws ExecutionException, InterruptedException {
+        final String goodProgram = String.join("\n",
+                "public class GoodTest {",
+                "   public static void main (String [] args) {",
+                "   }",
+                "}");
+        final String badProgram = String.join("\n",
+                "public class Formula {",
+                "    public Formula() {",
+                "        S.badCall(0);",
+                "    }",
+                "}");
+
+        QueryCompilerRequest[] requests = new QueryCompilerRequest[] {
+                QueryCompilerRequest.builder()
+                        .description("Test Bad Compile")
+                        .className("BadTest")
+                        .classBody(badProgram)
+                        .packageNameRoot("com.deephaven.test")
+                        .build(),
+                QueryCompilerRequest.builder()
+                        .description("Test Good Compile")
+                        .className("GoodTest")
+                        .classBody(goodProgram)
+                        .packageNameRoot("com.deephaven.test")
+                        .build(),
+        };
+
+        // noinspection unchecked
+        CompletionStageFuture.Resolver<Class<?>>[] resolvers =
+                (CompletionStageFuture.Resolver<Class<?>>[]) new CompletionStageFuture.Resolver[] {
+                        CompletionStageFuture.make(),
+                        CompletionStageFuture.make(),
+                };
+
+        ExecutionContext.getContext().getQueryCompiler().compile(requests, resolvers);
+
+        Assert.eqTrue(resolvers[0].getFuture().isDone(), "resolvers[0].getFuture().isDone()");
+        Assert.eqTrue(resolvers[1].getFuture().isDone(), "resolvers[0].getFuture().isDone()");
+        Assert.neqNull(resolvers[1].getFuture().get(), "resolvers[1].getFuture().get()");
+    }
+
+    @Test
+    public void testMultiCompileWithFailureSecond() throws ExecutionException, InterruptedException {
+        final String badProgram = String.join("\n",
+                "public class Formula {",
+                "    public Formula() {",
+                "        S.badCall(0);",
+                "    }",
+                "}");
+        final String goodProgram = String.join("\n",
+                "public class Formula {",
+                "   public static void main (String [] args) {",
+                "   }",
+                "}");
+
+        QueryCompilerRequest[] requests = new QueryCompilerRequest[] {
+                QueryCompilerRequest.builder()
+                        .description("Test Good Compile")
+                        .className("Formula")
+                        .classBody(goodProgram)
+                        .packageNameRoot("com.deephaven.test")
+                        .build(),
+                QueryCompilerRequest.builder()
+                        .description("Test Bad Compile")
+                        .className("Formula")
+                        .classBody(badProgram)
+                        .packageNameRoot("com.deephaven.test")
+                        .build(),
+        };
+
+        // noinspection unchecked
+        CompletionStageFuture.Resolver<Class<?>>[] resolvers =
+                (CompletionStageFuture.Resolver<Class<?>>[]) new CompletionStageFuture.Resolver[] {
+                        CompletionStageFuture.make(),
+                        CompletionStageFuture.make(),
+                };
+
+        ExecutionContext.getContext().getQueryCompiler().compile(requests, resolvers);
+
+        Assert.eqTrue(resolvers[1].getFuture().isDone(), "resolvers[0].getFuture().isDone()");
+        Assert.eqTrue(resolvers[0].getFuture().isDone(), "resolvers[0].getFuture().isDone()");
+        Assert.neqNull(resolvers[0].getFuture().get(), "resolvers[1].getFuture().get()");
+    }
+
+    /**
+     * In DH-19289 a customer's Javac error caused us to produce an NPE instead of the actual error because the
+     * diagnostic error did not include a source. We create a bad annotation processor argument to simulate a similar
+     * situation.
+     */
+    @Test
+    public void testBadCompile() {
+        final String goodProgram = String.join("\n",
+                "public class FineFormula {",
+                "   public static void main (String [] args) {",
+                "   }",
+                "}");
+
+        QueryCompilerRequest[] requests = new QueryCompilerRequest[] {
+                QueryCompilerRequest.builder()
+                        .description("Test Good Compile")
+                        .className("FineFormula")
+                        .classBody(goodProgram)
+                        .packageNameRoot("com.deephaven.test")
+                        .build(),
+        };
+
+        // noinspection unchecked
+        CompletionStageFuture.Resolver<Class<?>>[] resolvers =
+                (CompletionStageFuture.Resolver<Class<?>>[]) new CompletionStageFuture.Resolver[] {
+                        CompletionStageFuture.make(),
+                };
+
+        final QueryCompilerImpl badCompiler = QueryCompilerImpl.createForUnitTests(List.of("InvalidClassArgument"));
+        UncheckedDeephavenException e = org.junit.Assert.assertThrows(UncheckedDeephavenException.class,
+                () -> badCompiler.compile(requests, resolvers));
+        org.junit.Assert.assertEquals("Error Invoking Compiler, no source present in diagnostic:\n" +
+                "Class names, 'InvalidClassArgument', are only accepted if annotation processing is explicitly requested",
+                e.getMessage());
+    }
+
+    @Test
+    public void testVariableClassNameThrows() {
+        final String goodProgram = String.join("\n",
+                "public class $CLASSNAME$ {",
+                "   public static void main (String [] args) {",
+                "   }",
+                "}");
+
+        QueryCompilerRequest[] requests = new QueryCompilerRequest[] {
+                QueryCompilerRequest.builder()
+                        .description("Test Good Compile")
+                        .className("FineFormula")
+                        .classBody(goodProgram)
+                        .packageNameRoot("com.deephaven.test")
+                        .build(),
+        };
+
+        // noinspection unchecked
+        CompletionStageFuture.Resolver<Class<?>>[] resolvers =
+                (CompletionStageFuture.Resolver<Class<?>>[]) new CompletionStageFuture.Resolver[] {
+                        CompletionStageFuture.make(),
+                };
+
+        IllegalArgumentException e = org.junit.Assert.assertThrows(IllegalArgumentException.class,
+                () -> ExecutionContext.getContext().getQueryCompiler().compile(requests, resolvers));
+        org.junit.Assert.assertEquals("QueryCompiler's support of the $CLASSNAME$ variable has been removed " +
+                "as the final class name affects the compiled byte code and therefore cannot be dynamically " +
+                "replaced.", e.getMessage());
     }
 }

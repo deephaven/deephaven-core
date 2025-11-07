@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2023 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.sources.immutable;
 
 import io.deephaven.base.verify.Require;
@@ -12,6 +12,7 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.SharedContext;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.WritableSourceWithPrepareForParallelPopulation;
+import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.table.impl.sources.*;
 import org.jetbrains.annotations.NotNull;
 
@@ -26,7 +27,7 @@ import java.time.ZonedDateTime;
 // endregion boxing imports
 
 public abstract class Immutable2DNanosBasedTimeArraySource<TIME_TYPE>
-        extends AbstractDeferredGroupingColumnSource<TIME_TYPE>
+        extends AbstractColumnSource<TIME_TYPE>
         implements WritableColumnSource<TIME_TYPE>, FillUnordered<Values>, InMemoryColumnSource, ConvertibleTimeSource,
         WritableSourceWithPrepareForParallelPopulation {
 

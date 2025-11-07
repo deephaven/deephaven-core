@@ -1,10 +1,9 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.parquet.base;
 
 import io.deephaven.base.ArrayUtil;
-import io.deephaven.parquet.base.util.Helpers;
 import org.apache.parquet.bytes.ByteBufferAllocator;
 import org.apache.parquet.bytes.BytesInput;
 import org.apache.parquet.column.Encoding;
@@ -21,7 +20,7 @@ import java.nio.IntBuffer;
 /**
  * Plain encoding except for binary values
  */
-public class PlainBinaryChunkedWriter extends AbstractBulkValuesWriter<Binary[]> {
+final class PlainBinaryChunkedWriter extends AbstractBulkValuesWriter<Binary[]> {
 
     private static final int MAXIMUM_TOTAL_CAPACITY = ArrayUtil.MAX_ARRAY_SIZE;
 
@@ -90,8 +89,8 @@ public class PlainBinaryChunkedWriter extends AbstractBulkValuesWriter<Binary[]>
 
     @Override
     public void writeBulk(@NotNull Binary[] bulkValues,
-                          final int rowCount,
-                          @NotNull final Statistics<?> statistics) {
+            final int rowCount,
+            @NotNull final Statistics<?> statistics) {
         for (int i = 0; i < rowCount; i++) {
             final Binary v = bulkValues[i];
             writeBytes(v);
@@ -102,9 +101,9 @@ public class PlainBinaryChunkedWriter extends AbstractBulkValuesWriter<Binary[]>
     @NotNull
     @Override
     public WriteResult writeBulkFilterNulls(@NotNull final Binary[] bulkValues,
-                                            @NotNull final RunLengthBitPackingHybridEncoder dlEncoder,
-                                            final int rowCount,
-                                            @NotNull final Statistics<?> statistics) throws IOException {
+            @NotNull final RunLengthBitPackingHybridEncoder dlEncoder,
+            final int rowCount,
+            @NotNull final Statistics<?> statistics) throws IOException {
         for (int i = 0; i < rowCount; i++) {
             if (bulkValues[i] != null) {
                 final Binary v = bulkValues[i];
@@ -121,8 +120,8 @@ public class PlainBinaryChunkedWriter extends AbstractBulkValuesWriter<Binary[]>
 
     @Override
     public @NotNull WriteResult writeBulkVectorFilterNulls(@NotNull Binary[] bulkValues,
-                                                           final int nonNullLeafCount,
-                                                           @NotNull final Statistics<?> statistics) {
+            final int nonNullLeafCount,
+            @NotNull final Statistics<?> statistics) {
         nullOffsets.clear();
         for (int i = 0; i < nonNullLeafCount; i++) {
             if (bulkValues[i] != null) {
@@ -145,9 +144,10 @@ public class PlainBinaryChunkedWriter extends AbstractBulkValuesWriter<Binary[]>
 
         final int currentCapacity = innerBuffer.capacity();
         final int currentPosition = innerBuffer.position();
-        final long requiredCapacity = (long)currentPosition + v.length() + Integer.BYTES;
+        final long requiredCapacity = (long) currentPosition + v.length() + Integer.BYTES;
         if (requiredCapacity > MAXIMUM_TOTAL_CAPACITY) {
-            throw new IllegalStateException("Unable to write " + requiredCapacity + " values. (Maximum capacity: " + MAXIMUM_TOTAL_CAPACITY + ".)");
+            throw new IllegalStateException("Unable to write " + requiredCapacity + " values. (Maximum capacity: "
+                    + MAXIMUM_TOTAL_CAPACITY + ".)");
         }
 
         int newCapacity = currentCapacity;

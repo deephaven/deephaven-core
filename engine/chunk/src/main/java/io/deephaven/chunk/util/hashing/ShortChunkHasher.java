@@ -1,11 +1,10 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharChunkHasher and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit CharChunkHasher and run "./gradlew replicateHashing" to regenerate
+//
+// @formatter:off
 package io.deephaven.chunk.util.hashing;
 
 import io.deephaven.chunk.ShortChunk;
@@ -13,6 +12,7 @@ import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.WritableIntChunk;
 import io.deephaven.chunk.attributes.HashCodes;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.util.compare.ShortComparisons;
 import io.deephaven.util.type.TypeUtils;
 
 import static io.deephaven.chunk.util.hashing.ChunkHasher.scrambleHash;
@@ -36,7 +36,7 @@ public class ShortChunkHasher implements ChunkHasher {
     }
 
     public static int hashInitialSingle(short value) {
-        return scrambleHash(Short.hashCode(value));
+        return scrambleHash(ShortComparisons.hashCode(value));
     }
 
     public static int hashUpdateSingle(int existing, short newValue) {
@@ -45,12 +45,12 @@ public class ShortChunkHasher implements ChunkHasher {
 
     @Override
     public int hashInitial(Object value) {
-        return hashInitialSingle(TypeUtils.unbox((Short)value));
+        return hashInitialSingle(TypeUtils.unbox((Short) value));
     }
 
     @Override
     public int hashUpdate(int existing, Object value) {
-        return hashUpdateSingle(existing, TypeUtils.unbox((Short)value));
+        return hashUpdateSingle(existing, TypeUtils.unbox((Short) value));
     }
 
     @Override

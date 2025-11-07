@@ -7,6 +7,22 @@ dependencies {
     implementation project(':DHProcess')
     implementation project(':engine-table')
     implementation project(':Plot')
-    Classpaths.inheritAutoService(project)
-    Classpaths.inheritGroovy(project, 'groovy', 'implementation')
+    implementation libs.guava
+    implementation libs.nidi.graphviz.java
+    compileOnly libs.autoservice
+    annotationProcessor libs.autoservice.compiler
+    implementation libs.groovy
+
+    testImplementation platform(libs.junit.bom)
+    testImplementation libs.junit.jupiter
+    testImplementation libs.junit.platform.launcher
+    testImplementation libs.commons.lang3
+    testRuntimeOnly libs.slf4j.simple
+    testRuntimeOnly project(':log-to-slf4j'),
+            project(':configs'),
+            project(':test-configs')
+}
+
+test {
+    useJUnitPlatform()
 }

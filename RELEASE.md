@@ -49,7 +49,8 @@ It may also be useful for release management purposes to ensure that no unexpect
 It is released to [GitHub releases](https://github.com/deephaven/deephaven-core/releases) in the [syft](https://github.com/anchore/syft) json format.
 
 ### Deephaven python client
-The Deephaven python client is released as the `pydeephaven` wheel at [PyPi](https://pypi.org/project/pydeephaven/).
+The Deephaven python client wheels are released on PyPi as [`pydeephaven`](https://pypi.org/project/pydeephaven/) and
+[`pydeephaven-ticking`](https://pypi.org/project/pydeephaven-ticking/).
 
 ### Deephaven go client
 The Deephaven go client is released as a [Go package](https://pkg.go.dev/github.com/deephaven/deephaven-core/go).
@@ -102,7 +103,7 @@ $ git fetch upstream
 $ git checkout upstream/main
 $ ./gradlew printVersion -PdeephavenBaseQualifier= -q
 $ git checkout -b release/vX.Y.Z
-$ git commit --allow-empty -m "Cut for X.Y.Z"
+$ git commit --allow-empty -m "chore: Cut for X.Y.Z"
 ```
 
 #### Procedure for patch releases
@@ -126,11 +127,14 @@ $ git cherry-pick <...>
 #
 # See https://github.com/deephaven/deephaven-core/issues/3466 for future improvements to this process.
 $ ...
-$ git commit -m "Bump to X.Y.1"
+$ git commit -m "chore: Bump to X.Y.1"
 $ git --no-pager log --oneline vX.Y.0..release/vX.Y.1
 #
 # Compare output to expected PR list for missing or extraneous PRs
 ```
+
+It's also best practice to ensure that the cherry-picks compile, as there can sometimes be changes that cherry-pick cleanly, but don't compile.
+`./gradlew quick` is recommended as a quick validation that things look ok.
 
 ### 3. Push to upstream
 
@@ -148,7 +152,7 @@ Note: release branches are _not_ typically merged back into `main`.
 The release will proceed with [GitHub Actions](https://github.com/deephaven/deephaven-core/actions/workflows/publish-ci.yml).
 The specific action can be found based off of the name of the release branch: [?query=branch%3Arelease%2FvX.Y.Z](https://github.com/deephaven/deephaven-core/actions/workflows/publish-ci.yml?query=branch%3Arelease%2FvX.Y.Z).
 
-The "Publish" step creates the artifacts and publishes the jars to a [Maven Central staging repository](https://s01.oss.sonatype.org).
+The "Publish" step creates the artifacts and publishes the jars to a [Maven Central Portal staging repository](https://central.sonatype.com/).
 
 The "Upload Artifacts" step uploads the Deephaven server application, the deephaven-core wheel, and the deephaven-server wheel as *temporary* GitHub action artifacts.
 
@@ -160,6 +164,12 @@ If this step fails, the deephaven-server wheel from the "Upload Artifacts" step 
 
 The "Publish pydeephaven to PyPi" uploads the pydeephaven wheel to [PyPi](https://pypi.org/project/pydeephaven/).
 If this step fails, the pydeephaven wheel from the "Upload Artifacts" step can be uploaded manually.
+
+The "Publish pydeephaven-ticking to PyPi" uploads the pydeephaven-ticking wheels to [PyPi](https://pypi.org/project/pydeephaven-ticking/).
+If this step fails, the pydeephaven-ticking wheel from the "Upload Artifacts" step can be uploaded manually.
+
+The "Publish @deephaven/jsapi-types to npmjs" uploads the TypeScript tarball to [NPM](https://www.npmjs.com/package/@deephaven/jsapi-types).
+If this step fails, the deephaven-jsapi-types tarball from the "Upload Artifacts" step can be uploaded manually.
 
 Once the workflow job is done, ensure all publication sources have the new artifacts.
 
@@ -193,7 +203,7 @@ Please post the difference to the Deephaven team to ensure there are no unexpect
 
 ### 7. Maven Central jars
 
-The jars are put into a [Maven Central Repository Manager](https://s01.oss.sonatype.org) staging repository.
+The jars are put into a [Maven Central Portal](https://central.sonatype.com/) staging repository.
 You'll need your own username and password to sign in (to ensure auditability).
 
 Arguably, the Maven Central jars are the most important artifacts - once they are officially released from the staging repository, they are released "forever".
@@ -225,7 +235,13 @@ Create a new [GitHub release](https://github.com/deephaven/deephaven-core/releas
 
 The convention is to have the Release title of the form `vX.Y.Z` and to autogenerate the release notes in comparison to the previous release tag. Question: should we always generate release notes based off of the previous minor release, instead of patch? Our git release workflow suggests we may want to do it always minor to minor.
 
-Upload the Deephaven server application, deephaven-core wheel, pydeephaven wheel, and SBOM artifacts. Also, upload the C++, Java, Python, R and TypeScript docs artifacts. 
+Do not use Github's "Generate release notes" button. Use Cocogitto to generate the release notes and copy the result into the text box.
+
+```shell
+cog changelog vX.Y.0..vX.Y.1
+```
+
+Upload the Deephaven server application, deephaven-core wheel, pydeephaven wheel, pydeephaven-ticking wheels, @deephaven/jsapi-types tarball, and SBOM artifacts. Also, upload the C++, Java, Python, R and TypeScript docs artifacts.
 (These are the artifacts downloaded in Step #5)
 
 Hit the GitHub "Publish release" button.
@@ -242,8 +258,12 @@ $ git push upstream go/vX.Y.Z
 
 ### 11. Deephaven.io release
 
-The (non-public) [deephaven.io](https://github.com/deephaven/deephaven.io) `next` branch needs to be merged into `main`.
-Ping Margaret.
+Verify that [Reference API Docs](https://deephaven.io/core/docs/#reference-guides) point to the latest version and that
+version X.Y.Z is present. _(In the case of a patch on an old release, this may not be the version just built.)_
+- ex. https://deephaven.io/core/release/vX.Y.Z/javadoc
+- ex. https://deephaven.io/core/javadoc
+
+The (non-public) [deephaven.io](https://github.com/deephaven/deephaven.io) `next` branch needs to be merged into `main`.  Ping Margaret.
 
 ### 12. Deephaven images
 
@@ -269,7 +289,7 @@ mention the version explicitly. These files are listed below:
 #
 gradle.properties
 R/rdeephaven/DESCRIPTION
-web/client-api/types/package.json
+cpp-client/deephaven/CMakeLists.txt
 ```
 
 This leaves the files "ready" for the next regular release, and also ensures any build done from

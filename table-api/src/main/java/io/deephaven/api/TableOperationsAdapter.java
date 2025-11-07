@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.api;
 
 import io.deephaven.api.agg.Aggregation;
@@ -39,6 +39,11 @@ public abstract class TableOperationsAdapter<TOPS_1 extends TableOperations<TOPS
     @Override
     public final TOPS_1 tail(long size) {
         return adapt(delegate.tail(size));
+    }
+
+    @Override
+    public final TOPS_1 slice(long firstPositionInclusive, long lastPositionExclusive) {
+        return adapt(delegate.slice(firstPositionInclusive, lastPositionExclusive));
     }
 
     @Override
@@ -116,8 +121,9 @@ public abstract class TableOperationsAdapter<TOPS_1 extends TableOperations<TOPS
     @Override
     public final TOPS_1 naturalJoin(TABLE_1 rightTable,
             Collection<? extends JoinMatch> columnsToMatch,
-            Collection<? extends JoinAddition> columnsToAdd) {
-        return adapt(delegate.naturalJoin(adapt(rightTable), columnsToMatch, columnsToAdd));
+            Collection<? extends JoinAddition> columnsToAdd,
+            NaturalJoinType joinType) {
+        return adapt(delegate.naturalJoin(adapt(rightTable), columnsToMatch, columnsToAdd, joinType));
     }
 
     @Override

@@ -1,10 +1,10 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.util.datastructures;
 
 import io.deephaven.configuration.Configuration;
-import org.apache.commons.lang3.mutable.MutableInt;
+import io.deephaven.util.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 
 import java.lang.ref.ReferenceQueue;
@@ -58,6 +58,7 @@ public interface ReleaseTracker<RESOURCE_TYPE> {
         private static final StackTraceElement[] ZERO_ELEMENT_STACK_TRACE_ARRAY = new StackTraceElement[0];
 
         private final Map<RESOURCE_TYPE, StackTraceElement[]> lastAcquireMap = new HashMap<>();
+        private AlreadyReleasedException firstDoubleFree = null;
 
         private static final class LastAcquireAndReleaseInfo {
 
@@ -96,8 +97,13 @@ public interface ReleaseTracker<RESOURCE_TYPE> {
                 }
                 final LastAcquireAndReleaseInfo lastAcquireAndRelease = lastAcquireAndReleaseMap.get(resource);
                 if (lastAcquireAndRelease != null) {
-                    throw new AlreadyReleasedException(stackTrace, lastAcquireAndRelease.lastAcquire,
-                            lastAcquireAndRelease.lastRelease);
+                    final AlreadyReleasedException alreadyReleasedException =
+                            new AlreadyReleasedException(stackTrace, lastAcquireAndRelease.lastAcquire,
+                                    lastAcquireAndRelease.lastRelease);
+                    if (firstDoubleFree == null) {
+                        firstDoubleFree = alreadyReleasedException;
+                    }
+                    throw alreadyReleasedException;
                 }
                 throw new UnmatchedAcquireException(stackTrace);
             }
@@ -115,6 +121,13 @@ public interface ReleaseTracker<RESOURCE_TYPE> {
                     }
                     lastAcquireMap.clear();
                     throw leakedException;
+                }
+                // An AlreadyReleasedException can be suppressed when we have an error case that double frees;
+                // let's be sure to blow up the tests.
+                final AlreadyReleasedException alreadyReleasedException = firstDoubleFree;
+                if (alreadyReleasedException != null) {
+                    firstDoubleFree = null;
+                    throw alreadyReleasedException;
                 }
             }
         }
@@ -227,7 +240,7 @@ public interface ReleaseTracker<RESOURCE_TYPE> {
                     "Leaked " + leaks.size() + " resources (" + dupDetector.size() + " unique traces):\n");
             final MutableInt i = new MutableInt();
             dupDetector.entrySet().stream().limit(maxUniqueTraces).forEach(entry -> {
-                sb.append("    Leak #").append(i.intValue());
+                sb.append("    Leak #").append(i.get());
                 if (entry.getValue() > 0L) {
                     sb.append(", detected " + entry.getValue() + " times, was acquired:\n");
                 } else {

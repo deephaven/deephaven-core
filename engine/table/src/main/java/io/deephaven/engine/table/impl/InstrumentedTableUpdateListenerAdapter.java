@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.base.cache.RetentionCache;
@@ -17,7 +17,9 @@ import io.deephaven.util.annotations.ReferentialIntegrity;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import javax.annotation.OverridingMethodsMustInvokeSuper;
 import java.io.IOException;
+import java.util.stream.LongStream;
 
 /**
  * This class is used for ShiftAwareListeners that represent "leaf" nodes in the update propagation tree.
@@ -55,7 +57,12 @@ public abstract class InstrumentedTableUpdateListenerAdapter extends Instrumente
      */
     public InstrumentedTableUpdateListenerAdapter(@Nullable final String description, @NotNull final Table source,
             final boolean retain) {
-        super(description);
+        super(description, false, () -> {
+            if (source instanceof HasParentPerformanceIds) {
+                return ((HasParentPerformanceIds) source).parentPerformanceEntryIds().toArray();
+            }
+            return null;
+        });
         this.source = Require.neqNull(source, "source");
         if (this.retain = retain) {
             RETENTION_CACHE.retain(this);
@@ -92,8 +99,10 @@ public abstract class InstrumentedTableUpdateListenerAdapter extends Instrumente
         return source.satisfied(step);
     }
 
+    @OverridingMethodsMustInvokeSuper
     @Override
     protected void destroy() {
+        super.destroy();
         source.removeUpdateListener(this);
         if (retain) {
             RETENTION_CACHE.forget(this);

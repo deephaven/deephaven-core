@@ -1,8 +1,10 @@
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharFillByOperator and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit CharFillByOperator and run "./gradlew replicateUpdateBy" to regenerate
+//
+// @formatter:off
 package io.deephaven.engine.table.impl.updateby.fill;
 
 import java.time.Instant;
@@ -19,9 +21,7 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
 import io.deephaven.engine.table.impl.updateby.internal.BaseLongUpdateByOperator;
-import io.deephaven.engine.table.impl.util.RowRedirection;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import static io.deephaven.util.QueryConstants.NULL_LONG;
 
@@ -53,16 +53,26 @@ public class LongFillByOperator extends BaseLongUpdateByOperator {
         }
     }
 
-    public LongFillByOperator(@NotNull final MatchPair fillPair,
-                              @Nullable final RowRedirection rowRedirection
-                              // region extra-constructor-args
-                              ,@NotNull final Class<?> type
-                              // endregion extra-constructor-args
-                              ) {
-        super(fillPair, new String[] { fillPair.rightColumn }, rowRedirection);
+    public LongFillByOperator(
+            @NotNull final MatchPair pair
+            // region extra-constructor-args
+            ,@NotNull final Class<?> type
+            // endregion extra-constructor-args
+            ) {
+        super(pair, new String[] { pair.rightColumn });
         // region constructor
         this.type = type;
         // endregion constructor
+    }
+
+    @Override
+    public UpdateByOperator copy() {
+        return new LongFillByOperator(
+                pair
+                // region extra-copy-args
+                , type
+                // endregion extra-copy-args
+            );
     }
 
     @NotNull

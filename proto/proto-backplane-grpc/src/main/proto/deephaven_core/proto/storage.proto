@@ -1,0 +1,128 @@
+/*
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
+syntax = "proto3";
+
+package io.deephaven.proto.backplane.grpc;
+
+option java_multiple_files = true;
+option optimize_for = SPEED;
+option go_package = "github.com/deephaven/deephaven-core/go/internal/proto/storage";
+
+/*
+ * Shared storage management service.
+ *
+ * Operations may fail (or omit data) if the current session does not have permission to read or write that resource.
+ *
+ * Paths will be "/" delimited and must start with a leading slash.
+*/
+service StorageService {
+  // Lists the files and directories present in a given directory. Will return an error
+  rpc ListItems(ListItemsRequest) returns (ListItemsResponse) {}
+  // Reads the file at the given path. Client can optionally specify an etag, asking the server
+  // not to send the file if it hasn't changed.
+  rpc FetchFile(FetchFileRequest) returns (FetchFileResponse) {}
+  // Can create new files or modify existing with client provided contents.
+  rpc SaveFile(SaveFileRequest) returns (SaveFileResponse) {}
+  // Moves a file from one path to another.
+  rpc MoveItem(MoveItemRequest) returns (MoveItemResponse) {}
+  // Creates a directory at the given path.
+  rpc CreateDirectory(CreateDirectoryRequest) returns (CreateDirectoryResponse) {}
+  // Deletes the file or directory at the given path. Directories must be empty to be deleted.
+  rpc DeleteItem(DeleteItemRequest) returns (DeleteItemResponse) {}
+}
+
+message ListItemsRequest {
+  // The path to the directory to list. empty to list top level
+  string path = 1;
+  // A pattern to filter for, with "?" to match any one character, "*" to match any number of characters, and "{}"s
+  // to hold a comma-separated list of possible matches. The format follows Java's FileSystem.getPathMatcher (see
+  // https://docs.oracle.com/javase/8/docs/api/java/nio/file/FileSystem.html#getPathMatcher-java.lang.String-),
+  // except without allowing subdirectories with / or **.
+  optional string filter_glob = 4;
+}
+
+enum ItemType {
+  UNKNOWN = 0;// Should not be used, exists only to indicate that this was left unset
+  DIRECTORY = 1;
+  FILE = 2;
+}
+
+message ItemInfo {
+  // The path to the item that this message describes.
+  string path = 1;
+  // The type of this item, either file or directory.
+  ItemType type = 2;
+  // If this message represents a file, this is the size of the file.
+  sint64 size = 3 [jstype=JS_STRING];
+  // Opaque string value representing a hash of the contents of this file, if available.
+  optional string etag = 4;
+}
+
+message ListItemsResponse {
+  // List of items found in the specified directory.
+  repeated ItemInfo items = 1;
+
+  // The canonical path of the listed directory. This is useful to recognize the basename
+  // of the items in a cross-platform way.
+  string canonical_path = 2;
+}
+
+message FetchFileRequest {
+  // The path to the file to read
+  string path = 1;
+  // If present, tells the server to not send a result if the etag matches the current file's content.
+  optional string etag = 2;
+}
+message FetchFileResponse {
+  // Contains the contents of the file, unless the returned etag matches the requested etag.
+  bytes contents = 1;
+  // Represents the current etag of the requested file. If an etag was in the request and this matches,
+  // contents should be ignored, and the existing client copy of the file is already correct. In all
+  // other cases, this etag can be used in future requests to see if the file's contents are different.
+  optional string etag = 2;
+}
+
+message SaveFileRequest {
+  // True to permit replacing an existing file, false to require that no file already exists with that name.
+  bool allow_overwrite = 1;
+  // The path to the file to write contents to
+  string path = 2;
+
+  // The contents to use when creating then file, or to use to replace the file.
+  bytes contents = 3;
+}
+message SaveFileResponse {
+  // Represents the etag of the saved contents, so the client can check for external changes.
+  optional string etag = 1;
+}
+
+// Requests to move a file to a new path, which may be in a different directory. Presently it is not
+// permitted to overwrite an existing file in this way.
+message MoveItemRequest {
+  // The path where the file currently exists
+  string old_path = 1;
+  // The path where the file should be moved to
+  string new_path = 2;
+  // True to permit replacing an existing file, false to require that no file already exists with that name.
+  bool allow_overwrite = 3;
+}
+
+message MoveItemResponse {
+}
+
+message CreateDirectoryRequest {
+  // The path to the directory to create
+  string path = 1;
+}
+
+message CreateDirectoryResponse {
+
+}
+
+message DeleteItemRequest {
+  // The path to the item to delete.
+  string path = 1;
+}
+message DeleteItemResponse {
+}

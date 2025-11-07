@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 #
 
 """ The deephaven.csv module supports reading an external CSV file into a Deephaven table and writing a
@@ -75,9 +75,9 @@ def read(
                 dht.byte: _JParsers.BYTE,
                 dht.char: _JParsers.CHAR,
                 dht.short: _JParsers.SHORT,
-                dht.int_: _JParsers.INT,
+                dht.int32: _JParsers.INT,
                 dht.long: _JParsers.LONG,
-                dht.float_: _JParsers.FLOAT_FAST,
+                dht.float32: _JParsers.FLOAT_FAST,
                 dht.double: _JParsers.DOUBLE,
                 dht.string: _JParsers.STRING,
                 dht.Instant: _JParsers.DATETIME,

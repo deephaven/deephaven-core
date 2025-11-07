@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.util;
 
 import gnu.trove.iterator.TLongLongIterator;
@@ -17,7 +17,7 @@ import io.deephaven.util.datastructures.hash.TNullableLongLongMap;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.LongChunk;
-import org.apache.commons.lang3.mutable.MutableInt;
+import io.deephaven.util.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -275,7 +275,7 @@ public class WritableRowRedirectionLockFree implements WritableRowRedirection {
         final MutableInt offset = new MutableInt();
         final LongChunk<? extends RowKeys> innerRowKeysTyped = innerRowKeys.asLongChunk();
         outerRowKeys.forAllRowKeys(outerRowKey -> {
-            updates.put(outerRowKey, innerRowKeysTyped.get(offset.intValue()));
+            updates.put(outerRowKey, innerRowKeysTyped.get(offset.get()));
             offset.increment();
         });
     }

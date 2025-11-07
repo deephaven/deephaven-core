@@ -1,15 +1,25 @@
 /*
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ * Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
  */
 #include "deephaven/dhcore/types.h"
 
+#include <chrono>
+#include <cstddef>
+#include <cstdint>
+#include <cmath>
+#include <iostream>
 #include <limits>
+#include <stdexcept>
 #include <sstream>
+#include <string>
+#include <string_view>
 
 #include "date/date.h"
 #include "deephaven/dhcore/utility/utility.h"
 #include "deephaven/third_party/fmt/chrono.h"
+#include "deephaven/third_party/fmt/core.h"
 #include "deephaven/third_party/fmt/format.h"
+#include "deephaven/third_party/fmt/core.h"
 #include "deephaven/third_party/fmt/ostream.h"
 
 static_assert(FMT_VERSION >= 100000);
@@ -55,10 +65,49 @@ constexpr const int64_t DeephavenConstants::kNullLong;
 constexpr const int64_t DeephavenConstants::kMinLong;
 constexpr const int64_t DeephavenConstants::kMaxLong;
 
+const char *ElementTypeId::kHumanReadableConstants[] = {
+  "char",
+  "int8", "int16", "int32", "int64",
+  "float", "double",
+  "bool", "string", "DateTime",
+  "LocalDate", "LocalTime"
+};
+
+const char *ElementTypeId::ToString(Enum id) {
+  auto index = static_cast<size_t>(id);
+  if (index >= kEnumSize) {
+    auto message = fmt::format("ElementTypeId {} is out of range", index);
+    throw std::runtime_error(message);
+  }
+  return kHumanReadableConstants[index];
+}
+
+ElementType ElementType::UnwrapList() const {
+  if (list_depth_ == 0) {
+    const char *message = "Can't unwrap list of depth 0";
+    throw std::runtime_error(DEEPHAVEN_LOCATION_STR(message));
+  }
+
+  return {list_depth_ - 1, element_type_id_};
+}
+
+std::ostream &operator<<(std::ostream &s, const ElementType &o) {
+  for (uint32_t i = 0; i != o.list_depth_; ++i) {
+    s << "list<";
+  }
+  s << ElementTypeId::ToString(o.element_type_id_);
+  for (uint32_t i = 0; i != o.list_depth_; ++i) {
+    s << ">";
+  }
+  return s;
+}
+
 DateTime DateTime::Parse(std::string_view iso_8601_timestamp) {
   // Special handling for "Z" timezone
-  const char *format_to_use = !iso_8601_timestamp.empty() && iso_8601_timestamp.back() == 'Z' ?
-    "%FT%TZ" : "%FT%T%z";
+  const char *format_to_use = (!iso_8601_timestamp.empty() && iso_8601_timestamp.back() == 'Z')
+    ? "%FT%TZ"
+    : "%FT%T%z"
+    ;
   std::istringstream istream((std::string(iso_8601_timestamp)));
   std::chrono::time_point<std::chrono::system_clock, std::chrono::nanoseconds> tp;
   istream >> date::parse(format_to_use, tp);
@@ -105,4 +154,58 @@ std::ostream &operator<<(std::ostream &s, const DateTime &o) {
   fmt::print(s, "{:%FT%TZ}", tp);
   return s;
 }
-}  // namespace deephaven::client
+
+LocalDate LocalDate::Of(int32_t year, int32_t month, int32_t day_of_month) {
+  auto ymd = date::year_month_day(date::year(year), date::month(month), date::day(day_of_month));
+  auto as_sys_days = static_cast<date::sys_days>(ymd);
+  auto as_milliseconds = std::chrono::milliseconds(as_sys_days.time_since_epoch());
+  return LocalDate(as_milliseconds.count());
+}
+
+LocalDate::LocalDate(int64_t millis) : millis_(millis) {
+  std::chrono::milliseconds chrono_millis(millis);
+  std::chrono::time_point<std::chrono::system_clock, std::chrono::milliseconds> tp(chrono_millis);
+
+  auto truncated = date::floor<date::days>(tp);
+  auto difference = tp - truncated;
+  if (difference.count() == 0) {
+    return;
+  }
+
+  auto message = fmt::format("{} milliseconds is not an integral number of days", millis);
+  throw std::runtime_error(DEEPHAVEN_LOCATION_STR(message));
+}
+
+std::ostream &operator<<(std::ostream &s, const LocalDate &o) {
+  std::chrono::milliseconds millis(o.millis_);
+  std::chrono::time_point<std::chrono::system_clock, std::chrono::milliseconds> tp(millis);
+  fmt::print(s, "{:%F}", tp);
+  return s;
+}
+
+LocalTime LocalTime::Of(int32_t hour, int32_t minute, int32_t second) {
+  auto ns = std::chrono::nanoseconds(0);
+  ns += std::chrono::hours(hour);
+  ns += std::chrono::minutes(minute);
+  ns += std::chrono::seconds(second);
+  return LocalTime(ns.count());
+}
+
+LocalTime::LocalTime(int64_t nanos) : nanos_(nanos) {
+  if (nanos >= 0) {
+    return;
+  }
+
+  auto message = fmt::format("nanos argument ({}) cannot be negative", nanos);
+  throw std::runtime_error(DEEPHAVEN_LOCATION_STR(message));
+}
+
+std::ostream &operator<<(std::ostream &s, const LocalTime &o) {
+  std::chrono::nanoseconds ns(o.nanos_);
+  // Make a time point with nanosecond precision so we can print 9 digits of fractional second
+  // precision.
+  std::chrono::time_point<std::chrono::system_clock, std::chrono::nanoseconds> tp(ns);
+  fmt::print(s, "{:%T}", tp);
+  return s;
+}
+}  // namespace deephaven::dhcore

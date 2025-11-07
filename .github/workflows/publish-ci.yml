@@ -4,32 +4,56 @@ on:
   push:
     branches: [ 'main', 'release/v*' ]
   pull_request:
-    branches: [ main ]
+    branches: [ 'main', 'rc/v*' ]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
+  changes:
+    runs-on: ubuntu-24.04
+    outputs:
+      non-docs: ${{ steps.filter.outputs.non-docs }}
+    steps:
+      # Must checkout for push, but not pull_request according to the action
+      - name: Checkout
+        if: github.event_name != 'pull_request'
+        uses: actions/checkout@v5
+      - name: Check for non-docs changes
+        id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            non-docs:
+              - '!docs/**'
+
   publish:
-    runs-on: ubuntu-22.04
+    needs: changes
+    if: ${{ needs.changes.outputs.non-docs == 'true' }}
+    runs-on: ubuntu-24.04
+    permissions:
+      id-token: write
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup JDK 11
         id: setup-java-11
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
           java-version: '11'
 
       - name: Setup JDK 17
         id: setup-java-17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
           java-version: '17'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v5
 
       - name: Set JAVA_HOME
         run: echo "JAVA_HOME=${{ steps.setup-java-11.outputs.path }}" >> $GITHUB_ENV
@@ -39,27 +63,26 @@ jobs:
           .github/scripts/gradle-properties.sh >> gradle.properties
           cat gradle.properties
 
+      - name: Setup Node for deployment to npmjs
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: 'web/client-api/types/.nvmrc'
+          registry-url: 'https://registry.npmjs.org'
+
       # TODO(deephaven-core#2614): Improve gradle/CI assemble and publishing of artifacts
 
-      - name: Publish to Maven Local
+      - name: Build all artifacts, publish to Maven Local
         if: ${{ !startsWith(github.ref, 'refs/heads/release/v') }}
-        uses: burrunan/gradle-cache-action@v1
-        with:
-          job-id: publish-local
-          arguments: server-netty-app:build server-jetty-app:build py-server:build py-embedded-server:build py-client:build publishToMavenLocal
-          gradle-version: wrapper
+        run: ./gradlew server-netty-app:build server-jetty-app:build py-server:build py-embedded-server:build py-client:build py-client-ticking:build web-client-api:types:build publishToMavenLocal
 
-      - name: Publish
+      - name: Build all artifacts, publish to Sonatype for staging to Maven Central Portal
         if: ${{ startsWith(github.ref, 'refs/heads/release/v') }}
-        uses: burrunan/gradle-cache-action@v1
-        with:
-          job-id: publish
-          # We need to be explicit here about no parallelism to ensure we don't create disjointed staging repositories.
-          arguments: --no-parallel server-netty-app:build server-jetty-app:build py-server:build py-client:build py-embedded-server:build publish
-          gradle-version: wrapper
+        # We need to be explicit here about no parallelism to ensure we don't create disjointed staging repositories.
+        # Edit: unclear if above note is still possible with the new portal API / plugin implementation.
+        run: ./gradlew --no-parallel server-netty-app:build server-jetty-app:build py-server:build py-embedded-server:build py-client:build py-client-ticking:build web-client-api:types:build publishToMavenCentral
         env:
-          ORG_GRADLE_PROJECT_ossrhUsername: ${{ secrets.SONATYPE_USERNAME }}
-          ORG_GRADLE_PROJECT_ossrhPassword: ${{ secrets.SONATYPE_PASSWORD }}
+          ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
+          ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
           ORG_GRADLE_PROJECT_signingKey: ${{ secrets.CI_AT_DEEPHAVEN_KEY }}
           ORG_GRADLE_PROJECT_signingPassword: ${{ secrets.CI_AT_DEEPHAVEN_PASSWORD }}
           ORG_GRADLE_PROJECT_signingRequired: true
@@ -74,27 +97,90 @@ jobs:
             py/server/build/wheel/
             py/embedded-server/build/wheel/
             py/client/build/wheel/
+            py/client-ticking/build/wheel/
+            web/client-api/types/build/*.tgz
 
       - name: Publish deephaven-core to PyPi
+        id: publish-deephaven-core
         if: ${{ startsWith(github.ref, 'refs/heads/release/v') }}
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
-          user: __token__
-          password: ${{ secrets.DEEPHAVENCORE_PYPI_TOKEN }}
           packages_dir: py/server/build/wheel/
+        continue-on-error: true
 
       - name: Publish deephaven-server to PyPi
+        id: publish-deephaven-server
         if: ${{ startsWith(github.ref, 'refs/heads/release/v') }}
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
-          user: __token__
-          password: ${{ secrets.DEEPHAVENSERVER_PYPI_TOKEN }}
           packages_dir: py/embedded-server/build/wheel/
+        continue-on-error: true
 
       - name: Publish pydeephaven to PyPi
+        id: publish-pydeephaven
         if: ${{ startsWith(github.ref, 'refs/heads/release/v') }}
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
-          user: __token__
-          password: ${{ secrets.PYDEEPHAVEN_PYPI_TOKEN }}
           packages_dir: py/client/build/wheel/
+        continue-on-error: true
+
+      - name: Publish pydeephaven-ticking to PyPi
+        id: publish-pydeephaven-ticking
+        if: ${{ startsWith(github.ref, 'refs/heads/release/v') }}
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages_dir: py/client-ticking/build/wheel/
+        continue-on-error: true
+
+      - name: Publish @deephaven/jsapi-types to npmjs
+        id: publish-deephaven-jsapi-types
+        if: ${{ startsWith(github.ref, 'refs/heads/release/v') }}
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.DEEPHAVENBOT_NPM_TOKEN }}
+        run: npm publish --provenance --tag latest web/client-api/types/build/deephaven-jsapi-types-*.tgz
+        continue-on-error: true
+
+      - uses: slackapi/slack-github-action@v2.1.0
+        if: ${{ steps.publish-deephaven-core.outcome == 'failure' }}
+        with:
+          webhook: ${{ secrets.SLACK_WEBHOOK_URL_PUBLISH_FAILURE }}
+          webhook-type: webhook-trigger
+          payload: |
+            step_id: "${{ steps.publish-deephaven-core.id }}"
+            action_url: "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+      - uses: slackapi/slack-github-action@v2.1.0
+        if: ${{ steps.publish-deephaven-server.outcome == 'failure' }}
+        with:
+          webhook: ${{ secrets.SLACK_WEBHOOK_URL_PUBLISH_FAILURE }}
+          webhook-type: webhook-trigger
+          payload: |
+            step_id: "${{ steps.publish-deephaven-server.id }}"
+            action_url: "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+      - uses: slackapi/slack-github-action@v2.1.0
+        if: ${{ steps.publish-pydeephaven.outcome == 'failure' }}
+        with:
+          webhook: ${{ secrets.SLACK_WEBHOOK_URL_PUBLISH_FAILURE }}
+          webhook-type: webhook-trigger
+          payload: |
+            step_id: "${{ steps.publish-pydeephaven.id }}"
+            action_url: "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+      - uses: slackapi/slack-github-action@v2.1.0
+        if: ${{ steps.publish-pydeephaven-ticking.outcome == 'failure' }}
+        with:
+          webhook: ${{ secrets.SLACK_WEBHOOK_URL_PUBLISH_FAILURE }}
+          webhook-type: webhook-trigger
+          payload: |
+            step_id: "${{ steps.publish-pydeephaven-ticking.id }}"
+            action_url: "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+      - uses: slackapi/slack-github-action@v2.1.0
+        if: ${{ steps.publish-deephaven-jsapi-types.outcome == 'failure' }}
+        with:
+          webhook: ${{ secrets.SLACK_WEBHOOK_URL_PUBLISH_FAILURE }}
+          webhook-type: webhook-trigger
+          payload: |
+            step_id: "${{ steps.publish-deephaven-jsapi-types.id }}"
+            action_url: "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"

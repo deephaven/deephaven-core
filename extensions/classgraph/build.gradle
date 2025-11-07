@@ -7,9 +7,10 @@ dependencies {
   compileOnly project(':engine-table')
   compileOnly project(':Util')
 
-  compileOnly 'javax.inject:javax.inject:1'
+  compileOnly libs.javax.inject
 
-  api 'io.github.classgraph:classgraph:4.8.154'
+  api libs.classgraph
 
-  Classpaths.inheritAutoService(project)
+  compileOnly libs.autoservice
+  annotationProcessor libs.autoservice.compiler
 }

@@ -4,7 +4,7 @@ web-plugin-packager is a docker image used to package JS plugins for the Deephav
 
 ## Usage
 
-First, follow the instructions to [Launch Deephaven from pre-built images](https://deephaven.io/core/docs/tutorials/quickstart/#set-up-your-deephaven-deployment).
+First, follow the instructions to [Launch Deephaven from pre-built images](https://deephaven.io/core/docs/getting-started/quickstart/#set-up-your-deephaven-deployment).
 
 Once you have the `docker-compose.yml` file pulled down, define your own web docker image in `web/Dockerfile` that includes the plugins you would like to use. 
 
@@ -38,7 +38,7 @@ FROM ghcr.io/deephaven/server:latest
 RUN pip install deephaven-plugin-matplotlib
 ```
 
-After building, you need to specify using that build in your `docker-compose`. Do this by modifying the existing a `docker-compose.yml` file and replace the web and server definitions with the following:
+After building, you need to specify using that build in your `docker compose`. Do this by modifying the existing a `docker-compose.yml` file and replace the web and server definitions with the following:
 ```yaml
 services:
   server:
@@ -66,7 +66,7 @@ When you're done, your directory structure should look like:
     └── Dockerfile
 ```
 
-Everything's ready to go! Now you just need to run `docker-compose up` as normal, and you will be using your custom image with your JS plugins installed. See what you can create!
+Everything's ready to go! Now you just need to run `docker compose up` as normal, and you will be using your custom image with your JS plugins installed. See what you can create!
 
 ## JS Plugin Development
 

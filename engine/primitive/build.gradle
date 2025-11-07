@@ -8,20 +8,5 @@ description 'Primitives: Expanding upon java.util.PrimitiveIterator and java.uti
 dependencies {
     implementation project(':Util')
 
-    compileOnly depAnnotations
-}
-
-spotless {
-    java {
-        targetExclude(
-                '**/*Byte*.java',
-                '**/*Char*.java',
-                '**/*Short*.java',
-                '**/*Int*.java',
-                '**/*Long*.java',
-                '**/*Float*.java',
-                '**/*Double*.java',
-                '**/*Object*.java'
-        )
-    }
+    compileOnly libs.jetbrains.annotations
 }

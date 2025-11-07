@@ -1,11 +1,10 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharSortCheck and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit CharSortCheck and run "./gradlew replicateSortCheck" to regenerate
+//
+// @formatter:off
 package io.deephaven.engine.table.impl.sortcheck;
 
 import io.deephaven.chunk.attributes.Values;
@@ -37,12 +36,8 @@ public class ByteSortCheck implements SortCheck {
     }
 
     // region comparison functions
-    private static int doComparison(byte lhs, byte rhs) {
-        return ByteComparisons.compare(lhs, rhs);
+    private static boolean leq(byte lhs, byte rhs) {
+        return ByteComparisons.leq(lhs, rhs);
     }
     // endregion comparison functions
-
-    private static boolean leq(byte lhs, byte rhs) {
-        return doComparison(lhs, rhs) <= 0;
-    }
 }

@@ -1,3 +1,6 @@
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.updateby.rollingwavg;
 
 import io.deephaven.base.ringbuffer.AggregatingObjectRingBuffer;
@@ -7,7 +10,9 @@ import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.MatchPair;
+import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
 import io.deephaven.engine.table.impl.updateby.internal.BaseObjectUpdateByOperator;
 import io.deephaven.engine.table.impl.util.RowRedirection;
@@ -25,9 +30,9 @@ public class BigDecimalRollingWAvgOperator<T> extends BaseObjectUpdateByOperator
     @NotNull
     final String weightColumnName;
     @NotNull
-    final ColumnSource weightColumnSource;
+    protected ColumnSource<?> weightColumnSource;
     @NotNull
-    final ColumnSource valueColumnSource;
+    protected ColumnSource<?> valueColumnSource;
 
     protected class Context extends BaseObjectUpdateByOperator<BigDecimal>.Context {
         ObjectChunk<BigDecimal, ? extends Any> influencerValuesChunk;
@@ -157,27 +162,38 @@ public class BigDecimalRollingWAvgOperator<T> extends BaseObjectUpdateByOperator
         return new Context(affectedChunkSize, influencerChunkSize);
     }
 
-    public BigDecimalRollingWAvgOperator(@NotNull final MatchPair pair,
+    public BigDecimalRollingWAvgOperator(
+            @NotNull final MatchPair pair,
             @NotNull final String[] affectingColumns,
-            @Nullable final RowRedirection rowRedirection,
             @Nullable final String timestampColumnName,
             final long reverseWindowScaleUnits,
             final long forwardWindowScaleUnits,
             @NotNull final String weightColumnName,
-            @NotNull final ColumnSource weightColumnSource,
-            @NotNull final ColumnSource valueColumnSource,
-            @NotNull final MathContext mathContext
-    // region extra-constructor-args
-    // endregion extra-constructor-args
-    ) {
-        super(pair, affectingColumns, rowRedirection, timestampColumnName, reverseWindowScaleUnits,
+            @NotNull final MathContext mathContext) {
+        super(pair, affectingColumns, timestampColumnName, reverseWindowScaleUnits,
                 forwardWindowScaleUnits, true, BigDecimal.class);
         this.weightColumnName = weightColumnName;
-        this.weightColumnSource = weightColumnSource;
-        this.valueColumnSource = valueColumnSource;
         this.mathContext = mathContext;
-        // region constructor
-        // endregion constructor
+    }
+
+    @Override
+    public void initializeSources(@NotNull final Table source, @Nullable final RowRedirection rowRedirection) {
+        super.initializeSources(source, rowRedirection);
+
+        valueColumnSource = ReinterpretUtils.maybeConvertToPrimitive(source.getColumnSource(pair.rightColumn));
+        weightColumnSource = ReinterpretUtils.maybeConvertToPrimitive(source.getColumnSource(weightColumnName));
+    }
+
+    @Override
+    public UpdateByOperator copy() {
+        return new BigDecimalRollingWAvgOperator(
+                pair,
+                affectingColumns,
+                timestampColumnName,
+                reverseWindowScaleUnits,
+                forwardWindowScaleUnits,
+                weightColumnName,
+                mathContext);
     }
 
     /**

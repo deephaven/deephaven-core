@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table;
 
 import io.deephaven.qst.TableCreator;
@@ -10,6 +10,7 @@ import io.deephaven.qst.table.NewTable;
 import io.deephaven.qst.table.TicketTable;
 import io.deephaven.qst.table.TimeTable;
 
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
@@ -221,14 +222,16 @@ public class TableFactory {
     }
 
     /**
-     * Equivalent to {@code of(TicketTable.of(ticket))}.
+     * Equivalent to {@code of(TicketTable.of(ticket.getBytes(StandardCharsets.UTF_8)))}.
      *
      * @param ticket the ticket string
      * @return the ticket table
-     * @see TicketTable#of(String)
+     * @see TicketTable#of(byte[])
+     * @deprecated prefer {@link #ticket(byte[])}
      */
+    @Deprecated
     public static Table ticket(String ticket) {
-        return of(TicketTable.of(ticket));
+        return of(TicketTable.of(ticket.getBytes(StandardCharsets.UTF_8)));
     }
 
     /**

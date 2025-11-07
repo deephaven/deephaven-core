@@ -1,23 +1,25 @@
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharRollingAvgOperator and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit CharRollingAvgOperator and run "./gradlew replicateUpdateBy" to regenerate
+//
+// @formatter:off
 package io.deephaven.engine.table.impl.updateby.rollingavg;
 
 import io.deephaven.base.ringbuffer.LongRingBuffer;
 import io.deephaven.base.verify.Assert;
-import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.LongChunk;
+import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
 import io.deephaven.engine.table.impl.updateby.internal.BaseDoubleUpdateByOperator;
-import io.deephaven.engine.table.impl.util.RowRedirection;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import static io.deephaven.util.QueryConstants.*;
+import static io.deephaven.util.QueryConstants.NULL_LONG;
+import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
 
 public class LongRollingAvgOperator extends BaseDoubleUpdateByOperator {
     private static final int BUFFER_INITIAL_CAPACITY = 128;
@@ -28,6 +30,7 @@ public class LongRollingAvgOperator extends BaseDoubleUpdateByOperator {
         protected LongChunk<? extends Values> influencerValuesChunk;
         protected LongRingBuffer longWindowValues;
 
+        @SuppressWarnings("unused")
         protected Context(final int affectedChunkSize, final int influencerChunkSize) {
             super(affectedChunkSize);
             longWindowValues = new LongRingBuffer(BUFFER_INITIAL_CAPACITY, true);
@@ -83,14 +86,14 @@ public class LongRollingAvgOperator extends BaseDoubleUpdateByOperator {
 
         @Override
         public void writeToOutputChunk(int outIdx) {
-            if (longWindowValues.size() == 0) {
+            if (longWindowValues.isEmpty()) {
                 outputValues.set(outIdx, NULL_DOUBLE);
             } else {
                 final int count = longWindowValues.size() - nullCount;
                 if (count == 0) {
-                    outputValues.set(outIdx, Double.NaN);
+                    outputValues.set(outIdx, NULL_DOUBLE);
                 } else {
-                    outputValues.set(outIdx, curVal / (double)count);
+                    outputValues.set(outIdx, curVal / (double) count);
                 }
             }
         }
@@ -108,17 +111,30 @@ public class LongRollingAvgOperator extends BaseDoubleUpdateByOperator {
         return new Context(affectedChunkSize, influencerChunkSize);
     }
 
-    public LongRollingAvgOperator(@NotNull final MatchPair pair,
-                                  @NotNull final String[] affectingColumns,
-                                  @Nullable final RowRedirection rowRedirection,
-                                  @Nullable final String timestampColumnName,
-                                  final long reverseWindowScaleUnits,
-                                  final long forwardWindowScaleUnits
-                                  // region extra-constructor-args
-                                  // endregion extra-constructor-args
+    public LongRollingAvgOperator(
+            @NotNull final MatchPair pair,
+            @NotNull final String[] affectingColumns,
+            @Nullable final String timestampColumnName,
+            final long reverseWindowScaleUnits,
+            final long forwardWindowScaleUnits
+    // region extra-constructor-args
+    // endregion extra-constructor-args
     ) {
-        super(pair, affectingColumns, rowRedirection, timestampColumnName, reverseWindowScaleUnits, forwardWindowScaleUnits, true);
+        super(pair, affectingColumns, timestampColumnName, reverseWindowScaleUnits, forwardWindowScaleUnits, true);
         // region constructor
         // endregion constructor
+    }
+
+    @Override
+    public UpdateByOperator copy() {
+        return new LongRollingAvgOperator(
+                pair,
+                affectingColumns,
+                timestampColumnName,
+                reverseWindowScaleUnits,
+                forwardWindowScaleUnits
+        // region extra-copy-args
+        // endregion extra-copy-args
+        );
     }
 }

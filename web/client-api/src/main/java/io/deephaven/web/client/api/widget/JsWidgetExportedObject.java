@@ -1,16 +1,16 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.web.client.api.widget;
 
 import com.vertispan.tsdefs.annotations.TsInterface;
 import com.vertispan.tsdefs.annotations.TsName;
 import elemental2.core.JsArray;
 import elemental2.promise.Promise;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.ExportRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.ExportedTableCreationResponse;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.Ticket;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.TypedTicket;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.session_pb.ExportRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.ExportedTableCreationResponse;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.ticket_pb.Ticket;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.ticket_pb.TypedTicket;
 import io.deephaven.web.client.api.Callbacks;
 import io.deephaven.web.client.api.JsLazy;
 import io.deephaven.web.client.api.JsTable;
@@ -62,6 +62,11 @@ public class JsWidgetExportedObject implements ServerObject {
         });
     }
 
+    @Override
+    public WorkerConnection getConnection() {
+        return connection;
+    }
+
     /**
      * Returns the type of this export, typically one of {@link JsVariableType}, but may also include plugin types. If
      * null, this object cannot be fetched, but can be passed to the server, such as via
@@ -94,7 +99,7 @@ public class JsWidgetExportedObject implements ServerObject {
      */
     @JsMethod
     public Promise<JsWidgetExportedObject> reexport() {
-        Ticket reexportedTicket = connection.getConfig().newTicket();
+        Ticket reexportedTicket = connection.getTickets().newExportTicket();
 
         // Future optimization - we could "race" these by running the export in the background, to avoid
         // an extra round trip.

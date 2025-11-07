@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.server.custom;
 
 import dagger.Binds;
@@ -13,8 +13,8 @@ import io.deephaven.appmode.ApplicationState;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.server.auth.AuthorizationProvider;
 import io.deephaven.server.custom.CustomComponentFactory.CustomComponent;
-import io.deephaven.server.jetty.JettyServerComponent;
 import io.deephaven.server.jetty.JettyConfig;
+import io.deephaven.server.jetty.JettyServerComponent;
 import io.deephaven.server.jetty.JettyServerModule;
 import io.deephaven.server.runner.CommunityDefaultsModule;
 import io.deephaven.server.runner.ComponentFactoryBase;
@@ -71,6 +71,7 @@ public final class CustomComponentFactory extends ComponentFactoryBase<CustomCom
 
     @Module(includes = {
             JettyServerModule.class,
+            CustomClientChannelFactoryModule.class,
             CommunityDefaultsModule.class,
     })
     public interface CustomModule {

@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.api.agg.spec;
 
 import io.deephaven.api.ColumnName;
@@ -80,15 +80,9 @@ public interface AggSpec {
     }
 
     /**
-     * @return {@link AggSpecFormula#of(String)} for {@code formula}
-     */
-    static AggSpecFormula formula(String formula) {
-        return AggSpecFormula.of(formula);
-    }
-
-    /**
      * @return {@link AggSpecFormula#of(String, String)} for {@code formula} and {@code paramToken}
      */
+    @Deprecated
     static AggSpecFormula formula(String formula, String paramToken) {
         return AggSpecFormula.of(formula, paramToken);
     }

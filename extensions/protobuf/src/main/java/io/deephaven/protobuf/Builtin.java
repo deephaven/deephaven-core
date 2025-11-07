@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2023 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.protobuf;
 
 import com.google.protobuf.Any;
@@ -20,12 +20,12 @@ import com.google.protobuf.StringValue;
 import com.google.protobuf.Timestamp;
 import com.google.protobuf.UInt32Value;
 import com.google.protobuf.UInt64Value;
-import io.deephaven.functions.ToBooleanFunction;
-import io.deephaven.functions.ToDoubleFunction;
-import io.deephaven.functions.ToFloatFunction;
-import io.deephaven.functions.ToIntFunction;
-import io.deephaven.functions.ToLongFunction;
-import io.deephaven.functions.ToObjectFunction;
+import io.deephaven.function.ToBooleanFunction;
+import io.deephaven.function.ToDoubleFunction;
+import io.deephaven.function.ToFloatFunction;
+import io.deephaven.function.ToIntFunction;
+import io.deephaven.function.ToLongFunction;
+import io.deephaven.function.ToObjectFunction;
 import io.deephaven.protobuf.FieldOptions.BytesBehavior;
 import io.deephaven.qst.type.CustomType;
 import io.deephaven.qst.type.GenericType;

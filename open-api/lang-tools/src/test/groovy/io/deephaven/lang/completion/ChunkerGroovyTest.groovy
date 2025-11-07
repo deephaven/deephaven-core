@@ -1,6 +1,5 @@
 package io.deephaven.lang.completion
 
-import io.deephaven.engine.util.VariableProvider
 import io.deephaven.lang.parse.CompletionParser
 import spock.lang.Specification
 
@@ -111,11 +110,5 @@ l.add(new SomeClass().<? super String>method(new Thing1<? super T>.Thing2<? supe
         // nodes for the specific language being handled, than to worry about how
         // oddly parser handles classes and whatnot at this time.
 
-    }
-    @Override
-    VariableProvider getVariables() {
-        return Mock(VariableProvider) {
-            _ * getVariableNames() >> []
-        }
     }
 }

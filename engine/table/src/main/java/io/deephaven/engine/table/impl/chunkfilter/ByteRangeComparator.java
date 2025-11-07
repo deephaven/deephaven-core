@@ -1,22 +1,18 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharRangeComparator and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit CharRangeComparator and run "./gradlew replicateChunkFilters" to regenerate
+//
+// @formatter:off
 package io.deephaven.engine.table.impl.chunkfilter;
 
 import io.deephaven.util.compare.ByteComparisons;
-import io.deephaven.chunk.*;
-import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
-import io.deephaven.chunk.attributes.Values;
 
 public class ByteRangeComparator {
     private ByteRangeComparator() {} // static use only
 
-    private abstract static class ByteByteFilter implements ChunkFilter.ByteChunkFilter {
+    private abstract static class ByteByteFilter extends ByteChunkFilter {
         final byte lower;
         final byte upper;
 
@@ -24,75 +20,54 @@ public class ByteRangeComparator {
             this.lower = lower;
             this.upper = upper;
         }
-
-        abstract public void filter(ByteChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys, WritableLongChunk<OrderedRowKeys> results);
     }
 
-    static class ByteByteInclusiveInclusiveFilter extends ByteByteFilter {
+    private final static class ByteByteInclusiveInclusiveFilter extends ByteByteFilter {
         private ByteByteInclusiveInclusiveFilter(byte lower, byte upper) {
             super(lower, upper);
         }
 
-        public void filter(ByteChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys, WritableLongChunk<OrderedRowKeys> results) {
-            results.setSize(0);
-            for (int ii = 0; ii < values.size(); ++ii) {
-                final byte value = values.get(ii);
-                if (ByteComparisons.geq(value, lower) && ByteComparisons.leq(value, upper)) {
-                    results.add(keys.get(ii));
-                }
-            }
+        @Override
+        public boolean matches(byte value) {
+            return ByteComparisons.geq(value, lower) && ByteComparisons.leq(value, upper);
         }
     }
 
-    static class ByteByteInclusiveExclusiveFilter extends ByteByteFilter {
+    private final static class ByteByteInclusiveExclusiveFilter extends ByteByteFilter {
         private ByteByteInclusiveExclusiveFilter(byte lower, byte upper) {
             super(lower, upper);
         }
 
-        public void filter(ByteChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys, WritableLongChunk<OrderedRowKeys> results) {
-            results.setSize(0);
-            for (int ii = 0; ii < values.size(); ++ii) {
-                final byte value = values.get(ii);
-                if (ByteComparisons.geq(value, lower) && ByteComparisons.lt(value, upper)) {
-                    results.add(keys.get(ii));
-                }
-            }
+        @Override
+        public boolean matches(byte value) {
+            return ByteComparisons.geq(value, lower) && ByteComparisons.lt(value, upper);
         }
     }
 
-    static class ByteByteExclusiveInclusiveFilter extends ByteByteFilter {
+    private final static class ByteByteExclusiveInclusiveFilter extends ByteByteFilter {
         private ByteByteExclusiveInclusiveFilter(byte lower, byte upper) {
             super(lower, upper);
         }
 
-        public void filter(ByteChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys, WritableLongChunk<OrderedRowKeys> results) {
-            results.setSize(0);
-            for (int ii = 0; ii < values.size(); ++ii) {
-                final byte value = values.get(ii);
-                if (ByteComparisons.gt(value, lower) && ByteComparisons.leq(value, upper)) {
-                    results.add(keys.get(ii));
-                }
-            }
+        @Override
+        public boolean matches(byte value) {
+            return ByteComparisons.gt(value, lower) && ByteComparisons.leq(value, upper);
         }
     }
 
-    static class ByteByteExclusiveExclusiveFilter extends ByteByteFilter {
+    private final static class ByteByteExclusiveExclusiveFilter extends ByteByteFilter {
         private ByteByteExclusiveExclusiveFilter(byte lower, byte upper) {
             super(lower, upper);
         }
 
-        public void filter(ByteChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys, WritableLongChunk<OrderedRowKeys> results) {
-            results.setSize(0);
-            for (int ii = 0; ii < values.size(); ++ii) {
-                final byte value = values.get(ii);
-                if (ByteComparisons.gt(value, lower) && ByteComparisons.lt(value, upper)) {
-                    results.add(keys.get(ii));
-                }
-            }
+        @Override
+        public boolean matches(byte value) {
+            return ByteComparisons.gt(value, lower) && ByteComparisons.lt(value, upper);
         }
     }
 
-    public static ChunkFilter.ByteChunkFilter makeByteFilter(byte lower, byte upper, boolean lowerInclusive, boolean upperInclusive) {
+    public static ByteChunkFilter makeByteFilter(byte lower, byte upper, boolean lowerInclusive,
+            boolean upperInclusive) {
         if (lowerInclusive) {
             if (upperInclusive) {
                 return new ByteByteInclusiveInclusiveFilter(lower, upper);

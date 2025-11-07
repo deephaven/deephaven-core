@@ -1,7 +1,10 @@
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.protobuf;
 
 import com.google.protobuf.Descriptors.FieldDescriptor;
-import io.deephaven.functions.ToBooleanFunction;
+import io.deephaven.function.ToBooleanFunction;
 import io.deephaven.protobuf.test.FieldPathTesting;
 import io.deephaven.protobuf.test.FieldPathTesting.Bar;
 import io.deephaven.protobuf.test.FieldPathTesting.Baz;

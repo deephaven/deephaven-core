@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.util.input;
 
 import io.deephaven.engine.exceptions.ArgumentException;
@@ -20,6 +20,20 @@ import java.util.stream.Collectors;
  * what operations they support.
  */
 public interface InputTableUpdater {
+
+    /**
+     * Get the input table updater from the given {@code table} or {@code null} if it is not set.
+     *
+     * <p>
+     * Equivalent to {@code (InputTableUpdater) table.getAttribute(Table.INPUT_TABLE_ATTRIBUTE)}.
+     * 
+     * @param table the table
+     * @return the input table updater
+     * @see Table#INPUT_TABLE_ATTRIBUTE
+     */
+    static InputTableUpdater from(Table table) {
+        return (InputTableUpdater) table.getAttribute(Table.INPUT_TABLE_ATTRIBUTE);
+    }
 
     /**
      * Gets the names of the key columns.

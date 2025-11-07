@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.parquet.base;
 
 import io.deephaven.util.QueryConstants;
@@ -17,7 +17,7 @@ import java.nio.IntBuffer;
  *
  * @param <BUFFER_TYPE>
  */
-public abstract class AbstractBulkValuesWriter<BUFFER_TYPE> extends ValuesWriter
+abstract class AbstractBulkValuesWriter<BUFFER_TYPE> extends ValuesWriter
         implements BulkWriter<BUFFER_TYPE> {
     private static final int RL_FIRST_ELEM = 0;
     private static final int RL_CONSECUTIVE_ELEM = 1;

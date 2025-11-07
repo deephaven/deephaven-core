@@ -1,11 +1,12 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.web.client.api;
 
 import elemental2.dom.DomGlobal;
 import elemental2.promise.Promise;
 import elemental2.promise.Promise.PromiseExecutorCallbackFn.RejectCallbackFn;
+import io.deephaven.web.client.api.event.HasEventHandling;
 import io.deephaven.web.shared.fu.JsBiConsumer;
 
 import javax.annotation.Nullable;

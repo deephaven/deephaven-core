@@ -1,8 +1,10 @@
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharFillByOperator and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit CharFillByOperator and run "./gradlew replicateUpdateBy" to regenerate
+//
+// @formatter:off
 package io.deephaven.engine.table.impl.updateby.fill;
 
 import io.deephaven.engine.table.ColumnSource;
@@ -11,6 +13,7 @@ import java.util.Collections;
 import io.deephaven.engine.table.impl.sources.BooleanArraySource;
 import io.deephaven.engine.table.impl.sources.BooleanSparseArraySource;
 import io.deephaven.engine.table.WritableColumnSource;
+import io.deephaven.util.BooleanUtils;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.ByteChunk;
@@ -19,11 +22,8 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
 import io.deephaven.engine.table.impl.updateby.internal.BaseByteUpdateByOperator;
-import io.deephaven.engine.table.impl.util.RowRedirection;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
-import static io.deephaven.util.BooleanUtils.NULL_BOOLEAN_AS_BYTE;
 
 public class BooleanFillByOperator extends BaseByteUpdateByOperator {
     // region extra-fields
@@ -46,20 +46,29 @@ public class BooleanFillByOperator extends BaseByteUpdateByOperator {
             Assert.eq(count, "push count", 1);
 
             byte val = booleanValueChunk.get(pos);
-            if(val != NULL_BOOLEAN_AS_BYTE) {
+            if(!BooleanUtils.isNull(val)) {
                 curVal = val;
             }
         }
     }
 
-    public BooleanFillByOperator(@NotNull final MatchPair fillPair,
-                              @Nullable final RowRedirection rowRedirection
-                              // region extra-constructor-args
-                              // endregion extra-constructor-args
-                              ) {
-        super(fillPair, new String[] { fillPair.rightColumn }, rowRedirection);
+    public BooleanFillByOperator(
+            @NotNull final MatchPair pair
+            // region extra-constructor-args
+            // endregion extra-constructor-args
+            ) {
+        super(pair, new String[] { pair.rightColumn });
         // region constructor
         // endregion constructor
+    }
+
+    @Override
+    public UpdateByOperator copy() {
+        return new BooleanFillByOperator(
+                pair
+                // region extra-copy-args
+                // endregion extra-copy-args
+            );
     }
 
     @NotNull
@@ -71,7 +80,7 @@ public class BooleanFillByOperator extends BaseByteUpdateByOperator {
     // region extra-methods
     @Override
     protected byte getNullValue() {
-        return NULL_BOOLEAN_AS_BYTE;
+        return BooleanUtils.NULL_BOOLEAN_AS_BYTE;
     }
     @Override
     protected WritableColumnSource<Byte> makeSparseSource() {

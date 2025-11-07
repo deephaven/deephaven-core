@@ -1,6 +1,10 @@
+<#--
+  Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+-->
 
 package io.deephaven.function;
 
+import io.deephaven.util.annotations.UserInvocationPermitted;
 import io.deephaven.vector.*;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.util.QueryConstants;
@@ -12,6 +16,7 @@ import static io.deephaven.function.Basic.isNull;
  * Functions for performing binary searches.
  */
 @SuppressWarnings("SameParameterValue")
+@UserInvocationPermitted({"function_library"})
 public class BinSearch {
 
     //////////////////////////// Object ////////////////////////////

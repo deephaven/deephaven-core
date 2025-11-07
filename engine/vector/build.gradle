@@ -7,27 +7,12 @@ description 'Engine Vectors: Array-like data structures for in-place data access
 
 dependencies {
     api project(':Util')
-    api project(':qst')
+    api project(':qst-type')
     api project(':engine-primitive')
 
     implementation project(':Base')
 
-    compileOnly depAnnotations
+    compileOnly libs.jetbrains.annotations
 
-    Classpaths.inheritJUnitClassic(project, 'testImplementation')
-}
-
-spotless {
-    java {
-        targetExclude(
-                '**/Byte*Vector*.java',
-                '**/Char*Vector*.java',
-                '**/Short*Vector*.java',
-                '**/Int*Vector*.java',
-                '**/Long*Vector*.java',
-                '**/Float*Vector*.java',
-                '**/Double*Vector*.java',
-                '**/Object*Vector*.java'
-        )
-    }
+    testImplementation libs.junit4
 }

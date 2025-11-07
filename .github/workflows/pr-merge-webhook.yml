@@ -1,0 +1,39 @@
+name: PR Merge Webhook
+
+on:
+  pull_request_target:
+    branches:
+      - main
+      - 'rc/v*'
+    types:
+      - closed
+
+jobs:
+  jira-webhook-pr-merge:
+    # Only on merged PRs
+    if: github.event.pull_request.merged
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Trigger PR Merge Webhook
+        env:
+          # Push the PR details in the webhook data.
+          WEBHOOK_DATA: ${{ toJSON(github.event.pull_request) }}
+        run: |
+          curl -X POST -H 'X-Automation-Webhook-Token: ${{ secrets.JIRA_WEBHOOK_SECRET_PR_MERGE }}' -H "Content-Type: application/json" --data "$WEBHOOK_DATA" ${{ secrets.JIRA_WEBHOOK_URL_PR_MERGE }}
+
+      - name: Slack Failure Message
+        uses: slackapi/slack-github-action@v2.1.0
+        id: slack-failure-message
+        if: failure() && github.ref == 'refs/heads/main' && github.repository_owner == 'deephaven'
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL_DEVREL }}
+        with:
+          webhook-type: webhook-trigger
+          payload: |
+            {
+              "repository": "${{ github.repository }}",
+              "message": "${{ github.workflow }}/${{ github.job }} failure",
+              "link": "${{ github.event.pull_request.html_url }}"
+            }

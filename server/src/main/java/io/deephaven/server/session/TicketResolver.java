@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.server.session;
 
 import io.deephaven.engine.context.ExecutionContext;
@@ -14,6 +14,23 @@ import java.util.function.Consumer;
 
 public interface TicketResolver {
     interface Authorization {
+
+        /**
+         * Check if the caller is denied access to {@code source}; semantically equivalent to
+         * {@code transform(source) == null}. A {@code false} result does <b>not</b> mean that the caller may use
+         * {@code source} untransformed; they must still call {@link #transform(Object)} as needed.
+         *
+         * <p>
+         * The default implementation is equivalent to {@code transform(source) == null}. Implementations that perform
+         * expensive transformations may want to override this method to provide a more efficient check.
+         *
+         * @param source the source object
+         * @return if the transform of {@code source} will result in {@code null}.
+         */
+        default boolean isDeniedAccess(Object source) {
+            return transform(source) == null;
+        }
+
         /**
          * Implementations must type check the provided source as any type of object can be stored in an export.
          * <p>
@@ -24,7 +41,8 @@ public interface TicketResolver {
          *          transformations to requested resources.
          *
          * @param source the object to transform (such as by applying ACLs)
-         * @return an object that has been sanitized to be used by the current user
+         * @return an object that has been sanitized to be used by the current user; may return null if user does not
+         *         have access to the resource
          */
         <T> T transform(T source);
 
@@ -56,17 +74,14 @@ public interface TicketResolver {
     }
 
     /**
-     * @return the single byte prefix used as a route on the ticket
+     * Tickets are disambiguated by their first byte. Each resolver claims one byte; and there may not be any
+     * duplicates. Some ticket resolvers do not produce any tickets, but rather depend entirely on Flight descriptors,
+     * in which case they do not require a byte, in those cases the resolver should return 0 indicating that no ticket
+     * prefix is necessary.
+     *
+     * @return the single byte prefix used as a route on the ticket; or zero for no ticket resolution
      */
     byte ticketRoute();
-
-    /**
-     * The first path entry on a route indicates which resolver to use. The remaining path elements are used to resolve
-     * the descriptor.
-     *
-     * @return the string that will route from flight descriptor to this resolver
-     */
-    String flightDescriptorRoute();
 
     /**
      * Resolve a flight ticket to an export object future.
@@ -77,7 +92,7 @@ public interface TicketResolver {
      * @param <T> the expected return type of the ticket; this is not validated
      * @return an export object; see {@link SessionState} for lifecycle propagation details
      */
-    <T> SessionState.ExportObject<T> resolve(@Nullable SessionState session, ByteBuffer ticket, final String logId);
+    <T> SessionState.ExportObject<T> resolve(@Nullable SessionState session, ByteBuffer ticket, String logId);
 
     /**
      * Resolve a flight descriptor to an export object future.
@@ -89,7 +104,7 @@ public interface TicketResolver {
      * @return an export object; see {@link SessionState} for lifecycle propagation details
      */
     <T> SessionState.ExportObject<T> resolve(@Nullable SessionState session, Flight.FlightDescriptor descriptor,
-            final String logId);
+            String logId);
 
     /**
      * Publish a new result as a flight ticket to an export object future.
@@ -105,7 +120,7 @@ public interface TicketResolver {
      * @return an export object; see {@link SessionState} for lifecycle propagation details
      */
     <T> SessionState.ExportBuilder<T> publish(
-            SessionState session, ByteBuffer ticket, final String logId, @Nullable Runnable onPublish);
+            SessionState session, ByteBuffer ticket, String logId, @Nullable Runnable onPublish);
 
     /**
      * Publish a new result as a flight descriptor to an export object future.
@@ -121,7 +136,31 @@ public interface TicketResolver {
      * @return an export object; see {@link SessionState} for lifecycle propagation details
      */
     <T> SessionState.ExportBuilder<T> publish(
-            SessionState session, Flight.FlightDescriptor descriptor, final String logId, @Nullable Runnable onPublish);
+            SessionState session, Flight.FlightDescriptor descriptor, String logId, @Nullable Runnable onPublish);
+
+    /**
+     * Publish the result of the source object as the result represented by the destination ticket.
+     *
+     * @param session the user session context
+     * @param ticket the ticket to publish to
+     * @param logId an end-user friendly identification of the ticket should an error occur
+     * @param onPublish an optional callback to invoke when the result is published
+     * @param errorHandler the error handler to invoke if the source object fails to export
+     * @param source the source object to export
+     * @param <T> the type of the result the export will publish
+     */
+    default <T> void publish(
+            final SessionState session,
+            final ByteBuffer ticket,
+            final String logId,
+            @Nullable final Runnable onPublish,
+            final SessionState.ExportErrorHandler errorHandler,
+            final SessionState.ExportObject<T> source) {
+        publish(session, ticket, logId, onPublish)
+                .onError(errorHandler)
+                .require(source)
+                .submit(source::get);
+    }
 
     /**
      * Retrieve a FlightInfo for a given FlightDescriptor.
@@ -131,7 +170,7 @@ public interface TicketResolver {
      * @return a FlightInfo describing this flight
      */
     SessionState.ExportObject<Flight.FlightInfo> flightInfoFor(@Nullable SessionState session,
-            Flight.FlightDescriptor descriptor, final String logId);
+            Flight.FlightDescriptor descriptor, String logId);
 
     /**
      * Create a human readable string to identify this ticket.
@@ -141,7 +180,7 @@ public interface TicketResolver {
      * @return a string that is good for log/error messages
      * @apiNote There is not a {@link Flight.FlightDescriptor} equivalent as the path must already be displayable.
      */
-    String getLogNameFor(ByteBuffer ticket, final String logId);
+    String getLogNameFor(ByteBuffer ticket, String logId);
 
     /**
      * This invokes the provided visitor for each valid flight descriptor this ticket resolver exposes via flight.
@@ -150,4 +189,6 @@ public interface TicketResolver {
      * @param visitor the callback to invoke per descriptor path
      */
     void forAllFlightInfo(@Nullable SessionState session, Consumer<Flight.FlightInfo> visitor);
+
+    // TODO(deephaven-core#6295): Consider use of Flight POJOs instead of protobufs
 }

@@ -1,3 +1,6 @@
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.server.table.ops;
 
 import com.google.protobuf.Message;
@@ -35,12 +38,16 @@ public abstract class GrpcTableOperationTestBase<Request extends Message>
 
     @Override
     public void tearDown() throws Exception {
-        for (ExportObject<?> export : exports) {
-            export.cancel();
+        if (exports != null) {
+            for (ExportObject<?> export : exports) {
+                export.cancel();
+            }
+            exports = null;
         }
-        exports = null;
-        executionContext.close();
-        executionContext = null;
+        if (executionContext != null) {
+            executionContext.close();
+            executionContext = null;
+        }
         super.tearDown();
     }
 

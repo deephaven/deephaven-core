@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.partitioned;
 
 import io.deephaven.chunk.ChunkType;
@@ -75,6 +75,12 @@ class LongConstantColumn implements SelectColumn {
     }
 
     @Override
+    public Class<?> getReturnedComponentType() {
+        // long does not have a component type
+        return null;
+    }
+
+    @Override
     public final List<String> getColumnArrays() {
         return Collections.emptyList();
     }
@@ -117,8 +123,7 @@ class LongConstantColumn implements SelectColumn {
         private OutputFormulaFillContext() {}
 
         @Override
-        public void close() {
-        }
+        public void close() {}
     }
 
     private final class OutputFormula extends Formula {

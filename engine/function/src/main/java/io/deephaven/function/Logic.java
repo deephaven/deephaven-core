@@ -1,14 +1,16 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.function;
 
+import io.deephaven.util.annotations.UserInvocationPermitted;
 import io.deephaven.vector.ObjectVector;
 import io.deephaven.engine.primitive.iterator.*;
 
 /**
  * Logic functions.
  */
+@UserInvocationPermitted(value = "function_library")
 public class Logic {
 
     /**

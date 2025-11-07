@@ -1,31 +1,90 @@
+import com.bmuschko.gradle.docker.tasks.container.DockerCreateContainer
+import com.bmuschko.gradle.docker.tasks.container.DockerRemoveContainer
+import com.bmuschko.gradle.docker.tasks.container.DockerStartContainer
+import io.deephaven.tools.docker.WaitForHealthyContainer
+
 plugins {
     id 'io.deephaven.project.register'
+    id 'io.deephaven.deephaven-in-docker'
+    id 'java-library'
 }
 
-apply from: "$rootDir/gradle/web-client.gradle"
+evaluationDependsOn(Docker.registryProject('selenium'))
 
 configurations {
+    // output configurations:
     js
     dts
+
+    // classpath for generating typescript via a javadoc doclet
     typescriptDoclet
+
+    // GWT compiles using all source code, from the current project and all dependencies, including
+    // any generated sources. This configuration lets us pick up not just sources, but source jars.
+    gwt {
+        attributes {
+            attribute(Usage.USAGE_ATTRIBUTE, objects.named(Usage, Usage.JAVA_RUNTIME))
+            attribute(DocsType.DOCS_TYPE_ATTRIBUTE, objects.named(DocsType, DocsType.SOURCES))
+        }
+    }
+    // Easy way for downstream projects to get this and upstream sources
+    sourcesElements {
+        transitive = true
+        extendsFrom(gwt)
+    }
+
+    testImplementation.extendsFrom(gwt)
+    api.extendsFrom(gwt)
 }
 
 dependencies {
-    implementation project(':web-shared-beans')
-    implementation project(':web-client-backplane')
+    gwt libs.gwt.user
+    gwt platform(libs.grpc.bom)
+    gwt libs.grpc.api
 
-    implementation 'com.vertispan.tsdefs:jsinterop-ts-defs-annotations:1.0.0-RC3'
-    typescriptDoclet 'com.vertispan.tsdefs:jsinterop-ts-defs-doclet:1.0.0-RC3'
+    gwt project(':engine-chunk')
+    gwt project(':extensions-barrage')
+    gwt project(':DataStructures')
+    gwt project(':web-shared-beans')
+    gwt project(':web-client-backplane')
+    gwt project(':engine-query-constants')
+    gwt project(":IO")
 
-    implementation 'com.vertispan.nio:gwt-nio:1.0-alpha-1'
+    // Promote this to compile+runtime, so GWT can see it
+    api project(':util-immutables')
+
+    gwt libs.flatbuffers.java
+    gwt libs.arrow.format
+    gwt libs.deephaven.barrage.format
+
+    api libs.vertispan.ts.defs.annotations
+    typescriptDoclet libs.vertispan.ts.defs.doclet
+
+    gwt libs.vertispan.nio.gwt
+    gwt libs.vertispan.flatbuffers.gwt
 
     js project(path: ':proto:raw-js-openapi', configuration: 'js')
+
+    gwt libs.guava
+
+    gwt libs.elemental.core
+    gwt libs.elemental.promise
+    gwt libs.elemental.dom
+
+    testImplementation libs.junit4
+    testImplementation libs.selenium.remote.driver
+
+    // These aren't being picked up from the other configurations, need to be added directly
+    testImplementation(libs.jetbrains.annotations)
+    testImplementation(libs.immutables.value.annotations)
 }
-Classpaths.inheritElemental(project, 'elemental2-core', 'implementation')
-Classpaths.inheritElemental(project, 'elemental2-promise', 'implementation')
-Classpaths.inheritElemental(project, 'elemental2-dom', 'implementation')
 
 GwtTools.gwtCompile project, 'io.deephaven.web.DeephavenApi', 'Create a jar of client JS API'
+// The GWT plugin that we're using today double-includes our resources when producing a jar, causing
+// an error unless we disable the check
+// https://github.com/esoco/gwt-gradle-plugin/issues/33
+jar.duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+
 
 def jsOutput = layout.buildDirectory.dir('js')
 def gwtOutput = tasks.register('gwtOutput', Sync) {
@@ -42,9 +101,11 @@ def dtsOutput = layout.buildDirectory.dir('ts-types');
 def tsDefs = tasks.register('typescriptDefinitions', Javadoc) {
     dependsOn 'compileJava'
     source = sourceSets.main.allJava
-    options.classpath = sourceSets.main.compileClasspath.files as List
+    doFirst {
+        options.classpath = sourceSets.main.compileClasspath.files as List
+        options.docletpath = (configurations.typescriptDoclet.files as List) + (sourceSets.main.compileClasspath.files as List)
+    }
     destinationDir = dtsOutput.get().asFile
-    options.docletpath = (configurations.typescriptDoclet.files as List) + (sourceSets.main.compileClasspath.files as List)
     options.doclet = 'com.vertispan.tsdefs.doclet.TsDoclet'
 }
 
@@ -57,6 +118,146 @@ artifacts {
     }
 }
 
-project.tasks.getByName('quick').dependsOn project.tasks.withType(de.esoco.gwt.gradle.task.GwtCompileTask)
+def gwtUnitTest = tasks.register('gwtUnitTest', Test) { t ->
+    t.group = 'verification'
+    t.systemProperties = [
+            'gwt.args': ['-sourceLevel auto',
+                         '-runStyle HtmlUnit',
+                         '-ea',
+                         '-style PRETTY',
+                         '-generateJsInteropExports',
+                         '-includeJsInteropExports io.deephaven.*',
+                         '-excludeJsInteropExports io.deephaven.web.client.api.widget.plot.*',
+                         "-war ${layout.buildDirectory.dir('unitTest-war').get().asFile.absolutePath}"
+            ].join(' '),
+            'gwt.persistentunitcachedir': layout.buildDirectory.dir('unitTest-unitCache').get().asFile.absolutePath,
+    ]
+    t.classpath += tasks.getByName('gwtCompile').src
+    t.include '**/ClientUnitTestSuite.class'
+    t.useJUnit()
+    t.scanForTestClasses = false
+}
 
-apply from: "$rootDir/gradle/web-gwt-test.gradle"
+// start a grpc-api server
+String randomSuffix = UUID.randomUUID().toString();
+deephavenDocker {
+    envVars.set([
+            'START_OPTS':'-Xmx512m -DAuthHandlers=io.deephaven.auth.AnonymousAuthenticationHandler'
+    ])
+    containerName.set "dh-server-for-js-${randomSuffix}"
+    networkName.set "js-test-network-${randomSuffix}"
+}
+
+def seleniumContainerId = "selenium-${randomSuffix}"
+def seleniumPort
+if (!hasProperty('selenium.port')) {
+    seleniumPort = '4444'
+} else {
+    seleniumPort = project.getProperty('selenium.port')
+}
+
+def createSelenium = tasks.register('createSelenium', DockerCreateContainer) { t ->
+    t.dependsOn(Docker.registryTask(project, 'selenium'), deephavenDocker.startTask)
+    t.targetImageId(Docker.localImageName('selenium'))
+    t.containerName.set(seleniumContainerId)
+    // Advised by the selenium documentation
+    t.hostConfig.shmSize.set(2L * 1024 * 1024 * 1024)
+
+    // Add our own healthcheck to confirm the container starts fully
+    t.healthCheck.cmd.set(['curl http://localhost:4444/wd/hub/status || exit 1'])
+
+    // This provides a hostname that can be referenced from inside the docker container to access the host
+    // OS, and connect to the test server.
+    t.hostConfig.extraHosts.add('host.docker.internal:host-gateway')
+    t.hostConfig.portBindings.set(["$seleniumPort:4444"])
+    t.hostConfig.network.set(deephavenDocker.networkName.get())
+}
+def startSelenium = tasks.register('startSelenium', DockerStartContainer) {t ->
+    t.dependsOn(createSelenium)
+    t.containerId.set(seleniumContainerId)
+}
+def seleniumHealthy = project.tasks.register('seleniumHealthy', WaitForHealthyContainer) { task ->
+    task.dependsOn startSelenium
+
+    task.awaitStatusTimeout.set 120
+    task.checkInterval.set 100
+
+    task.containerId.set(seleniumContainerId)
+}
+def stopSelenium = project.tasks.register('stopSelenium', DockerRemoveContainer) { task ->
+    task.dependsOn startSelenium
+    task.targetContainerId seleniumContainerId
+    task.force.set true
+    task.removeVolumes.set true
+}
+
+def gwtIntegrationTest = tasks.register('gwtIntegrationTest', Test) { t ->
+    t.group = 'verification'
+    t.dependsOn(deephavenDocker.portTask, seleniumHealthy)
+    t.finalizedBy(deephavenDocker.endTask, stopSelenium)
+    t.doFirst {
+        def webdriverUrl = "http://localhost:${seleniumPort}/"
+        t.systemProperty('gwt.args', ['-sourceLevel auto',
+                                      "-runStyle io.deephaven.web.junit.RunStyleRemoteWebDriver:${webdriverUrl}?firefox",
+                                      '-ea',
+                                      '-style PRETTY',
+                                      '-generateJsInteropExports',
+                                      '-includeJsInteropExports io.deephaven.*',
+                                      '-excludeJsInteropExports io.deephaven.web.client.api.widget.plot.*',
+                                      "-setProperty dh.server=http://${deephavenDocker.containerName.get()}:10000",
+                                      "-war ${layout.buildDirectory.dir('integrationTest-war').get().asFile.absolutePath}"
+        ].join(' '))
+        t.classpath += tasks.getByName('gwtCompile').src
+    }
+    t.systemProperties = [
+            'gwt.persistentunitcachedir':layout.buildDirectory.dir('integrationTest-unitCache').get().asFile.absolutePath,
+            'webdriver.test.host':'host.docker.internal',
+    ]
+    t.include '**/ClientIntegrationTestSuite.class'
+    t.useJUnit()
+    t.scanForTestClasses = false
+}
+
+tasks.register('manualGwtTest', Test) {t ->
+    t.group = 'verification'
+    t.description = '''Test wiring to run either unit or integration tests with a manual browser and an already-running server.
+This makes it easier to run a tests repeatedly, either one at a time or as a class/suite, without
+paying to start/stop selenium and deephaven each time. The port will remain constant at 8888 each
+run to let breakpoints continue to work across repeated runs.
+
+To use this, first start a server on port 10000 with anonymous access enabled. Then, either select
+a test in IntelliJ to run using the manualGwtTest task, or invoke from the command line with info
+logging enabled and a specific test selected, e.g.:
+./gradlew :web-client-api:manualGwtTest --info --tests io.deephaven.web.client.api.NullValueTestGwt
+
+Click the URL that is printed out to run the test in your browser, or refresh an existing browser window.'''
+    t.doFirst {
+        t.systemProperty 'gwt.args', ['-port 8888',
+                                      '-sourceLevel auto',
+                                      '-runStyle Manual:1',
+                                      '-ea',
+                                      '-style PRETTY',
+                                      '-generateJsInteropExports',
+                                      '-includeJsInteropExports io.deephaven.*',
+                                      '-excludeJsInteropExports io.deephaven.web.client.api.widget.plot.*',
+                                      '-setProperty dh.server=http://localhost:10000',
+                                      '-setProperty compiler.useSourceMaps=true',
+                                      "-war ${layout.buildDirectory.dir('manualTest-war').get().asFile.absolutePath}"
+        ].join(' ')
+        t.classpath += tasks.getByName('gwtCompile').src
+    }
+    t.systemProperties = [
+            'gwt.persistentunitcachedir':layout.buildDirectory.dir('integrationTest-unitCache').get().asFile.absolutePath,
+    ]
+    t.useJUnit()
+    t.scanForTestClasses = false
+}
+
+tasks.named('check').configure {
+    dependsOn(gwtUnitTest, gwtIntegrationTest)
+}
+
+test {
+    // Configure jvm-only tests to not run any GWT-only tests
+    exclude '**/*TestGwt.class', '**/*TestSuite.class'
+}

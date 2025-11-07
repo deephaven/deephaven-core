@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2023 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.sources.immutable;
 
 import io.deephaven.base.verify.Require;
@@ -8,6 +8,7 @@ import io.deephaven.engine.table.ColumnSource;
 
 import io.deephaven.engine.table.SharedContext;
 import io.deephaven.engine.table.WritableSourceWithPrepareForParallelPopulation;
+import io.deephaven.engine.table.impl.AbstractColumnSource;
 
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Values;
@@ -24,7 +25,7 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 
 public abstract class ImmutableNanosBasedTimeArraySource<TIME_TYPE>
-        extends AbstractDeferredGroupingColumnSource<TIME_TYPE>
+        extends AbstractColumnSource<TIME_TYPE>
         implements WritableColumnSource<TIME_TYPE>, FillUnordered<Values>, InMemoryColumnSource, ConvertibleTimeSource,
         WritableSourceWithPrepareForParallelPopulation {
 

@@ -1,3 +1,6 @@
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.updateby.prod;
 
 import io.deephaven.base.verify.Assert;
@@ -6,18 +9,17 @@ import io.deephaven.chunk.FloatChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
-import io.deephaven.engine.table.impl.updateby.internal.BaseFloatUpdateByOperator;
-import io.deephaven.engine.table.impl.util.RowRedirection;
+import io.deephaven.engine.table.impl.updateby.internal.BaseDoubleUpdateByOperator;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
-import static io.deephaven.util.QueryConstants.*;
+import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
+import static io.deephaven.util.QueryConstants.NULL_FLOAT;
 
-public class FloatCumProdOperator extends BaseFloatUpdateByOperator {
+public class FloatCumProdOperator extends BaseDoubleUpdateByOperator {
     // region extra-fields
     // endregion extra-fields
 
-    protected class Context extends BaseFloatUpdateByOperator.Context {
+    protected class Context extends BaseDoubleUpdateByOperator.Context {
         public FloatChunk<? extends Values> floatValueChunk;
 
         protected Context(final int chunkSize) {
@@ -36,19 +38,28 @@ public class FloatCumProdOperator extends BaseFloatUpdateByOperator {
             final float val = floatValueChunk.get(pos);
 
             if (val != NULL_FLOAT) {
-                curVal = curVal == NULL_FLOAT ? val : curVal * val;
+                curVal = curVal == NULL_DOUBLE ? val : curVal * val;
             }
         }
     }
 
-    public FloatCumProdOperator(@NotNull final MatchPair pair,
-                                @Nullable final RowRedirection rowRedirection
-                                // region extra-constructor-args
-                                // endregion extra-constructor-args
+    public FloatCumProdOperator(
+            @NotNull final MatchPair pair
+    // region extra-constructor-args
+    // endregion extra-constructor-args
     ) {
-        super(pair, new String[] { pair.rightColumn }, rowRedirection);
+        super(pair, new String[] {pair.rightColumn});
         // region constructor
         // endregion constructor
+    }
+
+    @Override
+    public UpdateByOperator copy() {
+        return new FloatCumProdOperator(
+                pair
+        // region extra-copy-args
+        // endregion extra-copy-args
+        );
     }
 
     @NotNull

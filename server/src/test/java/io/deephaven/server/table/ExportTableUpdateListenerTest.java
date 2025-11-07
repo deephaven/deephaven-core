@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.server.table;
 
 import io.deephaven.UncheckedDeephavenException;
@@ -41,16 +41,19 @@ public class ExportTableUpdateListenerTest {
 
     private static final AuthContext AUTH_CONTEXT = new AuthContext.SuperUser();
 
-    private SafeCloseable executionContext;
+    private ExecutionContext executionContext;
+    private SafeCloseable executionContextCloseable;
     private ControlledUpdateGraph updateGraph;
 
     private TestControlledScheduler scheduler;
     private TestSessionState session;
     private QueuingResponseObserver observer;
+    private SessionService.ErrorTransformer errorTransformer;
 
     @Before
     public void setup() {
-        executionContext = TestExecutionContext.createForUnitTests().open();
+        executionContext = TestExecutionContext.createForUnitTests();
+        executionContextCloseable = executionContext.open();
         updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         updateGraph.enableUnitTestMode();
         updateGraph.resetForUnitTests(false);
@@ -59,6 +62,8 @@ public class ExportTableUpdateListenerTest {
         scheduler = new TestControlledScheduler();
         session = new TestSessionState();
         observer = new QueuingResponseObserver();
+
+        errorTransformer = new SessionService.ObfuscatingErrorTransformer();
     }
 
     @After
@@ -69,13 +74,19 @@ public class ExportTableUpdateListenerTest {
         session = null;
         observer = null;
 
-        executionContext.close();
+        executionContextCloseable.close();
+    }
+
+    private ExportedTableUpdateListener createListener(
+            final SessionState session,
+            final QueuingResponseObserver observer) {
+        return new ExportedTableUpdateListener(session, observer, errorTransformer);
     }
 
     @Test
     public void testLifeCycleStaticTable() {
-        final ExportedTableUpdateListener listener = new ExportedTableUpdateListener(session, observer);
-        try (final SafeCloseable scope = LivenessScopeStack.open()) {
+        final ExportedTableUpdateListener listener = createListener(session, observer);
+        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
             session.addExportListener(listener);
         }
         expectNoMessage(); // the run is empty
@@ -99,7 +110,7 @@ public class ExportTableUpdateListenerTest {
         final SessionState.ExportObject<QueryTable> t1 = session.newServerSideExport(src);
 
         // now add the listener
-        final ExportedTableUpdateListener listener = new ExportedTableUpdateListener(session, observer);
+        final ExportedTableUpdateListener listener = createListener(session, observer);
         try (final SafeCloseable scope = LivenessScopeStack.open()) {
             session.addExportListener(listener);
         }
@@ -114,7 +125,7 @@ public class ExportTableUpdateListenerTest {
 
     @Test
     public void testLifeCycleTickingTable() {
-        final ExportedTableUpdateListener listener = new ExportedTableUpdateListener(session, observer);
+        final ExportedTableUpdateListener listener = createListener(session, observer);
         try (final SafeCloseable scope = LivenessScopeStack.open()) {
             session.addExportListener(listener);
         }
@@ -150,7 +161,7 @@ public class ExportTableUpdateListenerTest {
         }
 
         // now add the listener
-        final ExportedTableUpdateListener listener = new ExportedTableUpdateListener(session, observer);
+        final ExportedTableUpdateListener listener = createListener(session, observer);
         try (final SafeCloseable scope = LivenessScopeStack.open()) {
             session.addExportListener(listener);
         }
@@ -176,7 +187,7 @@ public class ExportTableUpdateListenerTest {
         final SessionState.ExportObject<QueryTable> t1 = session.newServerSideExport(src);
 
         // now add the listener
-        final ExportedTableUpdateListener listener = new ExportedTableUpdateListener(session, observer);
+        final ExportedTableUpdateListener listener = createListener(session, observer);
         try (final SafeCloseable scope = LivenessScopeStack.open()) {
             session.addExportListener(listener);
         }
@@ -209,7 +220,7 @@ public class ExportTableUpdateListenerTest {
         }
 
         // now add the listener
-        final ExportedTableUpdateListener listener = new ExportedTableUpdateListener(session, observer);
+        final ExportedTableUpdateListener listener = createListener(session, observer);
         try (final SafeCloseable scope = LivenessScopeStack.open()) {
             session.addExportListener(listener);
         }
@@ -226,10 +237,7 @@ public class ExportTableUpdateListenerTest {
         Assert.equals(updateId, "updateId", t1.getExportId(), "t1.getExportId()");
         Assert.eq(msg.getSize(), "msg.getSize()", 42);
         Assert.eqFalse(msg.getUpdateFailureMessage().isEmpty(), "msg.getUpdateFailureMessage().isEmpty()");
-
-        // TODO (core#801): validate that our error is not directly embedded in the update (that would be a security
-        // concern)
-        Assert.eqTrue(msg.getUpdateFailureMessage().contains("awful"), "msg.contains('awful')");
+        Assert.eqFalse(msg.getUpdateFailureMessage().contains("awful"), "msg.contains('awful')");
     }
 
     @Test
@@ -242,7 +250,7 @@ public class ExportTableUpdateListenerTest {
         }
 
         // now add the listener
-        final ExportedTableUpdateListener listener = new ExportedTableUpdateListener(session, observer);
+        final ExportedTableUpdateListener listener = createListener(session, observer);
         try (final SafeCloseable scope = LivenessScopeStack.open()) {
             session.addExportListener(listener);
         }
@@ -276,7 +284,7 @@ public class ExportTableUpdateListenerTest {
         final MutableObject<SessionState.ExportObject<QueryTable>> t1 = new MutableObject<>();
 
         // now add the listener
-        final ExportedTableUpdateListener listener = new ExportedTableUpdateListener(session, observer);
+        final ExportedTableUpdateListener listener = createListener(session, observer);
         try (final SafeCloseable scope = LivenessScopeStack.open()) {
             session.addExportListener(listener);
         }
@@ -297,7 +305,8 @@ public class ExportTableUpdateListenerTest {
 
             // Must be off-thread to use concurrent instantiation
             final Thread thread = new Thread(() -> {
-                try (final SafeCloseable scope = LivenessScopeStack.open()) {
+                try (final SafeCloseable ignored = LivenessScopeStack.open();
+                        final SafeCloseable ignored2 = executionContext.open()) {
                     t1.setValue(session.newServerSideExport(src));
                 }
             });

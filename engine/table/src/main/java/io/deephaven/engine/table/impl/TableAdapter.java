@@ -1,14 +1,18 @@
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.api.AsOfJoinMatch;
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.JoinAddition;
 import io.deephaven.api.JoinMatch;
+import io.deephaven.api.NaturalJoinType;
+import io.deephaven.api.Pair;
 import io.deephaven.api.RangeJoinMatch;
 import io.deephaven.api.Selectable;
 import io.deephaven.api.SortColumn;
 import io.deephaven.api.agg.Aggregation;
-import io.deephaven.api.Pair;
 import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.api.snapshot.SnapshotWhenOptions;
@@ -204,6 +208,12 @@ public interface TableAdapter extends TableDefaults {
     }
 
     @Override
+    default <DATA_TYPE> CloseableIterator<DATA_TYPE> objectColumnIterator(@NotNull String columnName,
+            @NotNull Class<? extends DATA_TYPE> clazz) {
+        return throwUnsupported();
+    }
+
+    @Override
     default Table wouldMatch(WouldMatchPair... matchers) {
         return throwUnsupported();
     }
@@ -219,7 +229,7 @@ public interface TableAdapter extends TableDefaults {
     }
 
     @Override
-    default Table moveColumns(int index, boolean moveToEnd, String... columnsToMove) {
+    default Table moveColumns(int index, String... columnsToMove) {
         return throwUnsupported();
     }
 
@@ -257,7 +267,7 @@ public interface TableAdapter extends TableDefaults {
 
     @Override
     default Table naturalJoin(Table rightTable, Collection<? extends JoinMatch> columnsToMatch,
-            Collection<? extends JoinAddition> columnsToAdd) {
+            Collection<? extends JoinAddition> columnsToAdd, NaturalJoinType joinType) {
         return throwUnsupported();
     }
 
@@ -290,6 +300,21 @@ public interface TableAdapter extends TableDefaults {
 
     @Override
     default Table removeBlink() {
+        return throwUnsupported();
+    }
+
+    @Override
+    default Table assertBlink() {
+        return throwUnsupported();
+    }
+
+    @Override
+    default Table assertAddOnly() {
+        return throwUnsupported();
+    }
+
+    @Override
+    default Table assertAppendOnly() {
         return throwUnsupported();
     }
 

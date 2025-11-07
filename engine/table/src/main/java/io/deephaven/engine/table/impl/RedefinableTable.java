@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.api.Selectable;
@@ -49,8 +49,11 @@ public abstract class RedefinableTable<IMPL_TYPE extends RedefinableTable<IMPL_T
         final Map<String, ColumnDefinition<?>> resultColumnsExternal = new LinkedHashMap<>();
         final Map<String, ColumnDefinition<?>> allColumns = new HashMap<>(definition.getColumnNameMap());
         boolean simpleRetain = true;
+
+        final QueryCompilerRequestProcessor.BatchProcessor compilationProcessor = QueryCompilerRequestProcessor.batch();
         for (final SelectColumn selectColumn : columns) {
-            List<String> usedColumnNames = selectColumn.initDef(allColumns);
+            final List<String> usedColumnNames = new ArrayList<>(
+                    selectColumn.initDef(allColumns, compilationProcessor));
             usedColumnNames.addAll(selectColumn.getColumnArrays());
             resultColumnsInternal.addAll(usedColumnNames.stream()
                     .filter(usedColumnName -> !resultColumnsExternal.containsKey(usedColumnName))
@@ -65,6 +68,7 @@ public abstract class RedefinableTable<IMPL_TYPE extends RedefinableTable<IMPL_T
             resultColumnsExternal.put(selectColumn.getName(), columnDef);
             allColumns.put(selectColumn.getName(), columnDef);
         }
+        compilationProcessor.compile();
 
         TableDefinition newDefExternal = TableDefinition.of(
                 resultColumnsExternal.values().toArray(ColumnDefinition.ZERO_LENGTH_COLUMN_DEFINITION_ARRAY));
@@ -100,28 +104,35 @@ public abstract class RedefinableTable<IMPL_TYPE extends RedefinableTable<IMPL_T
         if (pairs == null || pairs.isEmpty()) {
             return prepareReturnThis();
         }
-        Map<String, Set<String>> columnDependency = new HashMap<>();
-        Map<String, String> pairLookup = new HashMap<>();
-        for (Pair pair : pairs) {
-            ColumnDefinition<?> cDef = definition.getColumn(pair.input().name());
-            if (cDef == null) {
-                throw new IllegalArgumentException("Column \"" + pair.input().name() + "\" not found");
-            }
-            pairLookup.put(pair.input().name(), pair.output().name());
-        }
+
+        final Map<String, String> pairLookup = RenameColumnHelper.createLookupAndValidate(definition, pairs);
+        final Set<String> newNames = RenameColumnHelper.getNewColumns(pairs);
+        final Set<String> maskedNames = RenameColumnHelper.getMaskedColumns(definition, pairs);
+
+        // How many columns are removed (masked and not replaced) from the table?
+        final int removedCount = (int) maskedNames.stream().filter(n -> !pairLookup.containsKey(n)).count();
 
         ColumnDefinition<?>[] columnDefinitions = definition.getColumnsArray();
-        ColumnDefinition<?>[] resultColumnsExternal = new ColumnDefinition[columnDefinitions.length];
-        SelectColumn[] viewColumns = new SelectColumn[columnDefinitions.length];
-        for (int ci = 0; ci < columnDefinitions.length; ++ci) {
-            ColumnDefinition<?> cDef = columnDefinitions[ci];
-            String newName = pairLookup.get(cDef.getName());
+        // Create arrays that will contain the new column definitions (excluding removed columns)
+        ColumnDefinition<?>[] resultColumnsExternal = new ColumnDefinition[columnDefinitions.length - removedCount];
+        SelectColumn[] viewColumns = new SelectColumn[columnDefinitions.length - removedCount];
+
+        int resultColIdx = 0;
+        for (final ColumnDefinition<?> cDef : columnDefinitions) {
+            final String oldName = cDef.getName();
+            final String newName = pairLookup.get(oldName);
             if (newName == null) {
-                resultColumnsExternal[ci] = cDef;
-                viewColumns[ci] = new SourceColumn(cDef.getName());
+                if (newNames.contains(oldName)) {
+                    // this column is being masked by a rename; skip it
+                    continue;
+                }
+                resultColumnsExternal[resultColIdx] = cDef;
+                viewColumns[resultColIdx] = new SourceColumn(oldName);
+                resultColIdx++;
             } else {
-                resultColumnsExternal[ci] = cDef.withName(newName);
-                viewColumns[ci] = new SourceColumn(cDef.getName(), newName);
+                resultColumnsExternal[resultColIdx] = cDef.withName(newName);
+                viewColumns[resultColIdx] = new SourceColumn(oldName, newName);
+                resultColIdx++;
             }
         }
         return redefine(TableDefinition.of(resultColumnsExternal), definition, viewColumns);
@@ -131,7 +142,7 @@ public abstract class RedefinableTable<IMPL_TYPE extends RedefinableTable<IMPL_T
      * Redefine this table with a subset of its current columns.
      *
      * @param newDefinition A TableDefinition with a subset of this RedefinableTable's ColumnDefinitions.
-     * @return
+     * @return the redefined table
      */
     protected abstract Table redefine(TableDefinition newDefinition);
 
@@ -144,7 +155,7 @@ public abstract class RedefinableTable<IMPL_TYPE extends RedefinableTable<IMPL_T
      * @param newDefinitionInternal A TableDefinition with a subset of this RedefinableTable's ColumnDefinitions.
      * @param viewColumns A set of SelectColumns to apply in order to transform a table with newDefinitionInternal to a
      *        table with newDefinitionExternal.
-     * @return
+     * @return the redefined table
      */
     protected abstract Table redefine(TableDefinition newDefinitionExternal, TableDefinition newDefinitionInternal,
             SelectColumn[] viewColumns);

@@ -1,51 +1,79 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
+import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.configuration.Configuration;
-import io.deephaven.datastructures.util.CollectionUtil;
+import io.deephaven.engine.primitive.iterator.CloseableIterator;
 import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.rowset.RowSequenceFactory;
-import io.deephaven.engine.table.WritableColumnSource;
-import io.deephaven.engine.table.impl.indexer.RowSetIndexer;
-import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.impl.sort.LongMegaMergeKernel;
-import io.deephaven.engine.table.impl.sources.*;
-import io.deephaven.engine.table.impl.util.*;
+import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
-import io.deephaven.util.QueryConstants;
-import io.deephaven.util.datastructures.LongSizedDataStructure;
-import io.deephaven.engine.table.impl.sort.findruns.FindRunsKernel;
-import io.deephaven.engine.table.impl.sort.timsort.LongIntTimsortKernel;
-import io.deephaven.engine.table.impl.sort.permute.PermuteKernel;
-import io.deephaven.engine.table.impl.sort.LongSortKernel;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.impl.sources.LongArraySource;
-import io.deephaven.engine.table.impl.sources.LongSparseArraySource;
-import io.deephaven.chunk.*;
+import io.deephaven.engine.table.DataIndex;
+import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.WritableColumnSource;
+import io.deephaven.engine.table.impl.sort.LongMegaMergeKernel;
+import io.deephaven.engine.table.impl.sort.LongSortKernel;
+import io.deephaven.engine.table.impl.sort.findruns.FindRunsKernel;
+import io.deephaven.engine.table.impl.sort.permute.PermuteKernel;
+import io.deephaven.engine.table.impl.sort.timsort.ComparatorLongTimsortKernel;
+import io.deephaven.engine.table.impl.sort.timsort.LongIntTimsortKernel;
+import io.deephaven.engine.table.impl.sources.*;
 import io.deephaven.engine.table.impl.sources.regioned.SymbolTableSource;
+import io.deephaven.engine.table.impl.util.ContiguousWritableRowRedirection;
+import io.deephaven.engine.table.impl.util.GroupedWritableRowRedirection;
+import io.deephaven.engine.table.impl.util.LongColumnSourceWritableRowRedirection;
+import io.deephaven.engine.table.impl.util.WritableRowRedirection;
+import io.deephaven.engine.table.iterators.ChunkedColumnIterator;
+import io.deephaven.util.QueryConstants;
 import io.deephaven.util.annotations.VisibleForTesting;
-import io.deephaven.util.type.TypeUtils;
-
-import org.apache.commons.lang3.mutable.MutableInt;
+import io.deephaven.util.datastructures.LongSizedDataStructure;
+import io.deephaven.util.mutable.MutableInt;
+import io.deephaven.util.type.ArrayTypeUtils;
 import org.jetbrains.annotations.NotNull;
 
-import java.lang.reflect.Array;
-import java.util.Arrays;
+import java.util.Comparator;
 import java.util.Map;
 import java.util.function.LongPredicate;
 
+import static io.deephaven.engine.table.impl.SortHelpers.AllowSymbolTable.ALLOW_SYMBOL_TABLE;
+
 public class SortHelpers {
-    public static boolean sortBySymbolTable =
+
+    /**
+     * Whether symbol tables should be permitted.
+     */
+    enum AllowSymbolTable {
+        /**
+         * Allow the symbol table to be used.
+         */
+        ALLOW_SYMBOL_TABLE(true),
+        /**
+         * Do not allow the symbol table to be used.
+         */
+        DISALLOW_SYMBOL_TABLE(false),
+        ;
+
+        private final boolean allowed;
+
+        AllowSymbolTable(final boolean allowed) {
+            this.allowed = allowed;
+        }
+
+        boolean allowed() {
+            return SORT_BY_SYMBOL_TABLE && allowed;
+        }
+    }
+
+    public static boolean SORT_BY_SYMBOL_TABLE =
             Configuration.getInstance().getBooleanWithDefault("QueryTable.sortBySymbolTable", true);
 
     /**
@@ -61,7 +89,7 @@ public class SortHelpers {
      * When the sort is greater than or equal to than megaSortSize, instead of sorting one large chunk, we will sort
      * individual chunks of sortChunkSize and then merge them into ArrayBackedColumnSources with the
      * LongMegaMergeKernel.
-     *
+     * <p>
      * There are some boundary conditions in the chunk sizing math that make Integer.MAX_VALUE fail; you could probably
      * back off to Integer.MAX_VALUE - 32 safely. We're being very conservative with 1 << 30 instead.
      */
@@ -101,17 +129,17 @@ public class SortHelpers {
         }
 
         @Override
-        final public long size() {
+        public long size() {
             return size;
         }
 
         @NotNull
-        final public long[] getArrayMapping() {
+        public long[] getArrayMapping() {
             return Require.neqNull(mapping, "mapping");
         }
 
         @Override
-        final public boolean forEachLong(LongPredicate consumer) {
+        public boolean forEachLong(LongPredicate consumer) {
             for (int ii = 0; ii < mapping.length; ++ii) {
                 if (!consumer.test(mapping[ii])) {
                     return false;
@@ -143,17 +171,17 @@ public class SortHelpers {
         }
 
         @Override
-        final public long size() {
+        public long size() {
             return size;
         }
 
         @NotNull
-        final public long[] getArrayMapping() {
+        public long[] getArrayMapping() {
             throw new ArrayIndexOutOfBoundsException();
         }
 
         @Override
-        final public boolean forEachLong(LongPredicate consumer) {
+        public boolean forEachLong(LongPredicate consumer) {
             assert null != columnSource;
             for (long ii = 0; ii < size; ++ii) {
                 if (!consumer.test(columnSource.getLong(ii))) {
@@ -169,24 +197,24 @@ public class SortHelpers {
         }
     }
 
-    final static class GroupedSortMapping implements SortMapping {
+    final static class IndexedSortMapping implements SortMapping {
         private final long size;
         private final long[] groupSize;
         private final RowSet[] groups;
 
-        private GroupedSortMapping(long size, long[] groupSize, RowSet[] groups) {
+        private IndexedSortMapping(long size, long[] groupSize, RowSet[] groups) {
             this.size = size;
             this.groupSize = groupSize;
             this.groups = groups;
         }
 
         @Override
-        final public long size() {
+        public long size() {
             return size;
         }
 
         @NotNull
-        final public long[] getArrayMapping() {
+        public long[] getArrayMapping() {
             if (size <= Integer.MAX_VALUE) {
                 final long[] mapping = new long[(int) size];
                 final MutableInt pos = new MutableInt(0);
@@ -201,7 +229,7 @@ public class SortHelpers {
         }
 
         @Override
-        final public boolean forEachLong(LongPredicate consumer) {
+        public boolean forEachLong(LongPredicate consumer) {
             for (int ii = 0; ii < groups.length; ++ii) {
                 if (!groups[ii].forEachRowKey(consumer::test)) {
                     return false;
@@ -216,46 +244,57 @@ public class SortHelpers {
         }
     }
 
-    static private final SortMapping EMPTY_SORT_MAPPING = new ArraySortMapping(CollectionUtil.ZERO_LENGTH_LONG_ARRAY);
+    static private final SortMapping EMPTY_SORT_MAPPING = new ArraySortMapping(ArrayTypeUtils.EMPTY_LONG_ARRAY);
 
-    /**
-     * Note that if usePrev is true, then rowSetToSort is the previous RowSet; not the current RowSet, and we should not
-     * need to call copyPrev.
-     */
-    static SortMapping getSortedKeys(SortingOrder[] order, ColumnSource<Comparable<?>>[] columnsToSortBy,
-            RowSet rowSetToSort, boolean usePrev) {
-        return getSortedKeys(order, columnsToSortBy, rowSetToSort, usePrev, sortBySymbolTable);
+    private static boolean allTrue(final boolean[] values) {
+        for (final boolean value : values) {
+            if (!value) {
+                return false;
+            }
+        }
+        return true;
     }
 
     /**
      * Note that if usePrev is true, then rowSetToSort is the previous RowSet; not the current RowSet, and we should not
-     * need to call copyPrev.
+     * need to call prev().
      */
-    static SortMapping getSortedKeys(SortingOrder[] order, ColumnSource<Comparable<?>>[] columnsToSortBy,
-            RowSet rowSetToSort, boolean usePrev, boolean allowSymbolTable) {
-        if (rowSetToSort.size() == 0) {
+    static SortMapping getSortedKeys(
+            final SortingOrder[] order,
+            final ColumnSource<Comparable<?>>[] originalColumnsToSortBy,
+            final ColumnSource<Comparable<?>>[] columnsToSortBy,
+            final Comparator[] comparators,
+            final boolean[] comparatorsRespectEquality,
+            final DataIndex dataIndex,
+            final RowSet rowSetToSort,
+            final boolean usePrev,
+            final AllowSymbolTable allowSymbolTable) {
+        if (rowSetToSort.isEmpty()) {
             return EMPTY_SORT_MAPPING;
         }
 
+        // Don't use a full index if it is too large.
+        if (dataIndex != null
+                && allTrue(comparatorsRespectEquality)
+                && dataIndex.keyColumnNames().size() == columnsToSortBy.length
+                && rowSetToSort.size() > dataIndex.table().size() * 2L) {
+            return getSortMappingIndexed(order, originalColumnsToSortBy, comparators, comparatorsRespectEquality,
+                    dataIndex, rowSetToSort, usePrev);
+        }
+
         if (columnsToSortBy.length == 1) {
-            if (rowSetToSort.isTracking()
-                    && RowSetIndexer.of(rowSetToSort.trackingCast()).hasGrouping(columnsToSortBy[0])) {
-                if (!usePrev || columnsToSortBy[0].isImmutable()) {
-                    return getSortMappingGrouped(order[0], columnsToSortBy[0], rowSetToSort.trackingCast());
-                } else {
-                    return getSortMappingOne(order[0], columnsToSortBy[0], rowSetToSort, usePrev);
-                }
+            if (allowSymbolTable.allowed() && columnsToSortBy[0] instanceof SymbolTableSource
+                    && ((SymbolTableSource<Comparable<?>>) columnsToSortBy[0]).hasSymbolTable(rowSetToSort)) {
+                return doSymbolTableMapping(order[0], columnsToSortBy[0], comparators[0], comparatorsRespectEquality[0],
+                        rowSetToSort, usePrev);
             } else {
-                if (allowSymbolTable && columnsToSortBy[0] instanceof SymbolTableSource
-                        && ((SymbolTableSource<Comparable<?>>) columnsToSortBy[0]).hasSymbolTable(rowSetToSort)) {
-                    return doSymbolTableMapping(order[0], columnsToSortBy[0], rowSetToSort, usePrev);
-                } else {
-                    return getSortMappingOne(order[0], columnsToSortBy[0], rowSetToSort, usePrev);
-                }
+                return getSortMappingOne(order[0], columnsToSortBy[0], comparators[0], rowSetToSort, usePrev);
             }
         }
 
-        return getSortMappingMulti(order, columnsToSortBy, rowSetToSort, usePrev);
+        return getSortMappingMulti(order, originalColumnsToSortBy, columnsToSortBy, comparators,
+                comparatorsRespectEquality, dataIndex,
+                rowSetToSort, usePrev);
     }
 
     private static class SparseSymbolMapping {
@@ -300,7 +339,9 @@ public class SortHelpers {
             return lookupTable[region][id];
         }
 
-        private static SparseSymbolMapping createMapping(LongChunk originalSymbol, IntChunk mappedIndex) {
+        private static SparseSymbolMapping createMapping(
+                @NotNull final LongChunk<Values> originalSymbol,
+                @NotNull final LongChunk<Values> mappedIndex) {
             // figure out what the maximum region is, and determine how many bits of it there are
             int maxUpperPart = 0;
             int minTrailing = 32;
@@ -330,7 +371,7 @@ public class SortHelpers {
                 final long symTabId = originalSymbol.get(ii);
                 final int region = (int) (symTabId >> (32 + minTrailing));
                 final int id = (int) symTabId;
-                final int mappedId = mappedIndex.get(ii);
+                final int mappedId = Math.toIntExact(mappedIndex.get(ii));
                 maxMapping = Math.max(maxMapping, mappedId);
                 lookupTable[region][id] = mappedId;
             }
@@ -340,23 +381,43 @@ public class SortHelpers {
     }
 
     private static final String SORTED_INDEX_COLUMN_NAME = "SortedIndex";
-    private static final String SORTED_INDEX_COLUMN_UPDATE = SORTED_INDEX_COLUMN_NAME + "=i";
 
-    private static SortMapping doSymbolTableMapping(SortingOrder order, ColumnSource<Comparable<?>> columnSource,
-            RowSet rowSet, boolean usePrev) {
+    private static SortMapping doSymbolTableMapping(final SortingOrder order,
+            final ColumnSource<Comparable<?>> columnSource,
+            final Comparator comparator,
+            final boolean comparatorRespectsEquality,
+            final RowSet rowSet,
+            final boolean usePrev) {
         final int sortSize = rowSet.intSize();
 
         final ColumnSource<Long> reinterpreted = columnSource.reinterpret(long.class);
-        final Table symbolTable = ((SymbolTableSource) columnSource).getStaticSymbolTable(rowSet, true);
+        final Table symbolTable = ((SymbolTableSource<?>) columnSource).getStaticSymbolTable(rowSet, true);
 
-        if (symbolTable.size() >= sortSize) {
-            // the very first thing we will do is sort the symbol table, using a regular sort; if it is larger than the
-            // actual table we care to sort, then it is wasteful to use the symbol table sorting
-            return getSortMappingOne(order, columnSource, rowSet, usePrev);
+        if (symbolTable.isEmpty()) {
+            // All nulls, so we can just return the row set as the sort mapping
+            return new IndexedSortMapping(rowSet.size(), new long[] {rowSet.size()}, new RowSet[] {rowSet});
         }
 
-        final Table idMapping = symbolTable.sort(SymbolTableSource.SYMBOL_COLUMN_NAME)
-                .groupBy(SymbolTableSource.SYMBOL_COLUMN_NAME).update(SORTED_INDEX_COLUMN_UPDATE).ungroup()
+        if (symbolTable.size() >= sortSize || !comparatorRespectsEquality) {
+            // the very first thing we will do is sort the symbol table, using a regular sort; if it is larger than the
+            // actual table we care to sort, then it is wasteful to use the symbol table sorting
+            //
+            // if our comparator does not respect equality, then we cannot use the symbol table sort; because we will
+            // be unable to preserve the original order of distinct values in the table
+            return getSortMappingOne(order, columnSource, comparator, rowSet, usePrev);
+        }
+
+        final QueryTable groupedSymbols = (QueryTable) ((QueryTable) symbolTable)
+                .sort(ComparatorSortColumn.asc(SymbolTableSource.SYMBOL_COLUMN_NAME, comparator, true))
+                .groupBy(SymbolTableSource.SYMBOL_COLUMN_NAME).coalesce();
+        final Map<String, ColumnSource<?>> extraColumn;
+        if (groupedSymbols.isFlat()) {
+            extraColumn = Map.of(SORTED_INDEX_COLUMN_NAME, RowKeyColumnSource.INSTANCE);
+        } else {
+            extraColumn = Map.of(SORTED_INDEX_COLUMN_NAME, new RowPositionColumnSource(groupedSymbols.getRowSet()));
+        }
+        final Table idMapping = groupedSymbols.withAdditionalColumns(extraColumn)
+                .ungroup()
                 .view(SymbolTableSource.ID_COLUMN_NAME, SORTED_INDEX_COLUMN_NAME);
 
         final int symbolEntries = idMapping.intSize();
@@ -364,13 +425,13 @@ public class SortHelpers {
         final SparseSymbolMapping mapping;
 
         try (final WritableLongChunk<Values> originalSymbol = WritableLongChunk.makeWritableChunk(symbolEntries);
-                final WritableIntChunk<Values> mappedIndex = WritableIntChunk.makeWritableChunk(symbolEntries)) {
-            final ColumnSource idSource = idMapping.getColumnSource(SymbolTableSource.ID_COLUMN_NAME);
+                final WritableLongChunk<Values> mappedIndex = WritableLongChunk.makeWritableChunk(symbolEntries)) {
+            final ColumnSource<?> idSource = idMapping.getColumnSource(SymbolTableSource.ID_COLUMN_NAME);
             try (final ColumnSource.FillContext idContext = idSource.makeFillContext(symbolEntries)) {
                 idSource.fillChunk(idContext, originalSymbol, idMapping.getRowSet());
             }
 
-            final ColumnSource sortedRowSetSource = idMapping.getColumnSource(SORTED_INDEX_COLUMN_NAME);
+            final ColumnSource<?> sortedRowSetSource = idMapping.getColumnSource(SORTED_INDEX_COLUMN_NAME);
             try (final ColumnSource.FillContext sortedIndexContext =
                     sortedRowSetSource.makeFillContext(symbolEntries)) {
                 sortedRowSetSource.fillChunk(sortedIndexContext, mappedIndex, idMapping.getRowSet());
@@ -395,8 +456,7 @@ public class SortHelpers {
                 for (int ii = 0; ii < unmappedValues.size(); ++ii) {
                     // symTabId is the packed ID, nulls get converted to the right kind of null, other values are pulled
                     // apart into region and id; and then used as offsets in the lookup table to get the unique sorted
-                    // id
-                    // and the mapped value is added to the mappedValues chunk
+                    // id and the mapped value is added to the mappedValues chunk
                     mappedValues.set(ii, mapping.lookupByte(unmappedValues.get(ii)));
                 }
                 sortContext = LongSortKernel.makeContext(ChunkType.Byte, order, sortSize, false);
@@ -406,8 +466,7 @@ public class SortHelpers {
                 for (int ii = 0; ii < unmappedValues.size(); ++ii) {
                     // symTabId is the packed ID, nulls get converted to the right kind of null, other values are pulled
                     // apart into region and id; and then used as offsets in the lookup table to get the unique sorted
-                    // id
-                    // and the mapped value is added to the mappedValues chunk
+                    // id and the mapped value is added to the mappedValues chunk
                     mappedValues.set(ii, mapping.lookupShort(unmappedValues.get(ii)));
                 }
                 sortContext = LongSortKernel.makeContext(ChunkType.Short, order, sortSize, false);
@@ -417,8 +476,7 @@ public class SortHelpers {
                 for (int ii = 0; ii < unmappedValues.size(); ++ii) {
                     // symTabId is the packed ID, nulls get converted to the right kind of null, other values are pulled
                     // apart into region and id; and then used as offsets in the lookup table to get the unique sorted
-                    // id
-                    // and the mapped value is added to the mappedValues chunk
+                    // id and the mapped value is added to the mappedValues chunk
                     mappedValues.set(ii, mapping.lookupInt(unmappedValues.get(ii)));
 
                 }
@@ -441,14 +499,22 @@ public class SortHelpers {
         }
     }
 
-    private static SortMapping getSortMappingOne(SortingOrder order, ColumnSource<Comparable<?>> columnSource,
-            RowSet rowSet, boolean usePrev) {
+    private static SortMapping getSortMappingOne(final SortingOrder order,
+            final ColumnSource<Comparable<?>> columnSource,
+            final Comparator comparator,
+            final RowSet rowSet,
+            final boolean usePrev) {
         final long sortSize = rowSet.size();
 
         if (sortSize >= megaSortSize) {
+            if (comparator != null) {
+                throw new UnsupportedOperationException(
+                        "Cannot sort more than " + megaSortSize + " rows with a comparator");
+            }
             return doMegaSortOne(order, columnSource, rowSet, usePrev, sortSize);
         } else {
-            return new ArraySortMapping(doChunkSortingOne(order, columnSource, rowSet, usePrev, (int) sortSize));
+            return new ArraySortMapping(
+                    doChunkSortingOne(order, columnSource, comparator, rowSet, usePrev, (int) sortSize));
         }
     }
 
@@ -489,16 +555,24 @@ public class SortHelpers {
         return new ColumnSourceSortMapping(resultIndices, sortSize);
     }
 
+    /**
+     * Sorts a single chunk, does not apply any optimizations that would be influenced by a comparator not respecting
+     * equality.
+     */
     @NotNull
-    private static long[] doChunkSortingOne(SortingOrder order, ColumnSource<Comparable<?>> columnSource,
-            RowSequence rowSequence, boolean usePrev, int chunkSize) {
+    private static long[] doChunkSortingOne(final SortingOrder order,
+            final ColumnSource<Comparable<?>> columnSource,
+            final Comparator comparator,
+            final RowSequence rowSequence,
+            final boolean usePrev,
+            final int chunkSize) {
         try (final WritableChunk<Values> values = makeAndFillValues(usePrev, rowSequence, columnSource)) {
             final long[] rowKeysArray = new long[chunkSize];
             final WritableLongChunk<RowKeys> rowKeys = WritableLongChunk.writableChunkWrap(rowKeysArray);
             rowSequence.fillRowKeyChunk(rowKeys);
 
             try (final LongSortKernel<Values, RowKeys> sortContext =
-                    LongSortKernel.makeContext(columnSource.getChunkType(), order, chunkSize, false)) {
+                    getSortContext(columnSource, order, chunkSize, comparator, false)) {
                 sortContext.sort(rowKeys, values);
             }
 
@@ -506,49 +580,88 @@ public class SortHelpers {
         }
     }
 
-    private static SortMapping getSortMappingGrouped(SortingOrder order, ColumnSource<Comparable<?>> columnSource,
-            TrackingRowSet rowSet) {
-        final Map<Object, RowSet> groupToRange = RowSetIndexer.of(rowSet).getGrouping(columnSource);
-        final Object[] keys = groupToRange.keySet().toArray((Object[]) Array.newInstance(
-                io.deephaven.util.type.TypeUtils.getBoxedType(columnSource.getType()), groupToRange.size()));
+    private static @NotNull LongSortKernel<Values, RowKeys> getSortContext(
+            final ColumnSource<Comparable<?>> columnSource,
+            final SortingOrder order,
+            final int chunkSize,
+            final Comparator comparator,
+            final boolean preserveValues) {
+        if (comparator == null) {
+            return LongSortKernel.makeContext(columnSource.getChunkType(), order, chunkSize, preserveValues);
+        }
+        final Comparator useComparator = order == SortingOrder.Ascending ? comparator : comparator.reversed();
+        return ComparatorLongTimsortKernel.createContext(chunkSize, useComparator);
+    }
 
-        Arrays.sort((Comparable<?>[]) keys, order.getComparator());
+    private static SortMapping getSortMappingIndexed(final SortingOrder[] order,
+            final ColumnSource<Comparable<?>>[] columnSources,
+            final Comparator[] comparators,
+            final boolean[] comparatorsRespectEquality,
+            final DataIndex dataIndex,
+            final RowSet rowSet,
+            final boolean usePrev) {
+        Assert.neqNull(dataIndex, "dataIndex");
+
+        final Table indexTable = dataIndex.table();
+        final RowSet indexRowSet = usePrev ? indexTable.getRowSet().prev() : indexTable.getRowSet();
+        // noinspection unchecked
+        final ColumnSource<Comparable<?>>[] originalIndexKeyColumns =
+                (ColumnSource<Comparable<?>>[]) dataIndex.keyColumns(columnSources);
+        // noinspection unchecked
+        final ColumnSource<Comparable<?>>[] indexKeyColumns =
+                (ColumnSource<Comparable<?>>[]) ReinterpretUtils.maybeConvertToPrimitive(originalIndexKeyColumns);
+        final SortMapping indexMapping =
+                getSortedKeys(order, originalIndexKeyColumns, indexKeyColumns, comparators, comparatorsRespectEquality,
+                        null, indexRowSet, usePrev, ALLOW_SYMBOL_TABLE);
+
+        final String rowSetColumnName = dataIndex.rowSetColumnName();
+        final ColumnSource<RowSet> rawRowSetColumn = dataIndex.table().getColumnSource(rowSetColumnName, RowSet.class);
+        final ColumnSource<RowSet> redirectedRowSetColumn = RedirectedColumnSource.alwaysRedirect(
+                indexMapping.makeHistoricalRowRedirection(),
+                usePrev ? rawRowSetColumn.getPrevSource() : rawRowSetColumn);
 
         final boolean fitsIntoArray = rowSet.size() < (long) Integer.MAX_VALUE;
-        final long elementsPerGroup = rowSet.size() / (long) groupToRange.size();
-
+        final long elementsPerGroup = rowSet.size() / indexRowSet.size();
         if (fitsIntoArray && (elementsPerGroup < groupedRedirectionThreshold)) {
             final long[] rowKeysArray = new long[rowSet.intSize()];
-            final MutableInt outputIdx = new MutableInt(0);
-            for (final Object key : keys) {
-                final RowSet group = groupToRange.get(key).intersect(rowSet);
-                group.forAllRowKeys(rowKey -> {
-                    rowKeysArray[outputIdx.intValue()] = rowKey;
-                    outputIdx.increment();
-                });
+
+            final MutableInt nextOutputOffset = new MutableInt(0);
+            try (final RowSequence flat = RowSequenceFactory.forRange(0, indexRowSet.size() - 1);
+                    final CloseableIterator<RowSet> groups = ChunkedColumnIterator.make(redirectedRowSetColumn, flat)) {
+                groups.forEachRemaining((final RowSet group) -> group
+                        .forAllRowKeys(rowKey -> rowKeysArray[nextOutputOffset.getAndIncrement()] = rowKey));
             }
 
             return new ArraySortMapping(rowKeysArray);
         } else {
-            // create a grouped row redirection
-            final long[] groupSize = new long[groupToRange.size()];
-            final RowSet[] groupRowSet = new RowSet[groupToRange.size()];
+            final int indexSize = indexRowSet.intSize();
+            final long[] cumulativeSize = new long[indexSize];
+            final RowSet[] groupRowSet = new RowSet[indexSize];
 
-            long outputSize = 0;
-            int ii = 0;
-            for (final Object key : keys) {
-                final RowSet group = groupToRange.get(key).intersect(rowSet);
-                outputSize += group.size();
-                groupSize[ii] = outputSize;
-                groupRowSet[ii++] = group;
+            final MutableInt nextGroupOffset = new MutableInt(0);
+            try (final RowSequence flat = RowSequenceFactory.forRange(0, indexRowSet.size() - 1);
+                    final CloseableIterator<RowSet> groups = ChunkedColumnIterator.make(redirectedRowSetColumn, flat)) {
+                groups.forEachRemaining((final RowSet group) -> {
+                    final int go = nextGroupOffset.getAndIncrement();
+                    cumulativeSize[go] = go == 0 ? group.size() : cumulativeSize[go - 1] + group.size();
+                    groupRowSet[go] = group; // No need to copy(): either static, or never used after instantiation
+                });
             }
 
-            return new GroupedSortMapping(outputSize, groupSize, groupRowSet);
+            Assert.eq(cumulativeSize[indexSize - 1], "cumulativeSize[indexSize - 1]", rowSet.size(), "rowSet.size()");
+            return new IndexedSortMapping(rowSet.size(), cumulativeSize, groupRowSet);
         }
     }
 
-    private static SortMapping getSortMappingMulti(SortingOrder[] order, ColumnSource<Comparable<?>>[] columnSources,
-            RowSet rowSet, boolean usePrev) {
+    private static SortMapping getSortMappingMulti(
+            final SortingOrder[] order,
+            final ColumnSource<Comparable<?>>[] originalColumnSources,
+            final ColumnSource<Comparable<?>>[] columnSources,
+            @NotNull final Comparator[] comparators,
+            @NotNull final boolean[] comparatorsRespectEquality,
+            final DataIndex dataIndex,
+            final RowSet rowSet,
+            boolean usePrev) {
         Assert.gt(columnSources.length, "columnSources.length", 1);
         final int sortSize = rowSet.intSize();
 
@@ -560,27 +673,43 @@ public class SortHelpers {
 
         ColumnSource<Comparable<?>> columnSource = columnSources[0];
 
-        if (rowSet.isTracking() && RowSetIndexer.of(rowSet.trackingCast()).hasGrouping(columnSources[0])) {
-            final Map<Comparable<?>, RowSet> groupToRange = columnSource.getGroupToRange();
-            final Object[] keys = groupToRange.keySet().toArray(
-                    (Object[]) Array.newInstance(TypeUtils.getBoxedType(columnSource.getType()), groupToRange.size()));
+        // Can we utilize an existing index on the first column?
+        if (dataIndex != null
+                && comparatorsRespectEquality[0]
+                && dataIndex.keyColumnNames().size() == 1
+                && dataIndex.keyColumnNamesByIndexedColumn().containsKey(originalColumnSources[0])) {
+            final Table indexTable = dataIndex.table();
+            final RowSet indexRowSet = usePrev ? indexTable.getRowSet().prev() : indexTable.getRowSet();
+            final ColumnSource<Comparable<?>> originalIndexKeyColumn = indexTable.getColumnSource(
+                    dataIndex.keyColumnNamesByIndexedColumn().get(originalColumnSources[0]),
+                    originalColumnSources[0].getType());
+            // noinspection unchecked
+            final ColumnSource<Comparable<?>> indexColumn =
+                    (ColumnSource<Comparable<?>>) ReinterpretUtils.maybeConvertToPrimitive(originalIndexKeyColumn);
 
-            Arrays.sort((Comparable<?>[]) keys, order[0].getComparator());
+            final SortMapping indexMapping =
+                    getSortMappingOne(order[0], indexColumn, comparators[0], indexRowSet, usePrev);
 
+            final String rowSetColumnName = dataIndex.rowSetColumnName();
+            final ColumnSource<RowSet> rawRowSetColumn =
+                    dataIndex.table().getColumnSource(rowSetColumnName, RowSet.class);
+            final ColumnSource<RowSet> redirectedRowSetColumn = RedirectedColumnSource.alwaysRedirect(
+                    indexMapping.makeHistoricalRowRedirection(),
+                    usePrev ? rawRowSetColumn.getPrevSource() : rawRowSetColumn);
+
+            rowKeys.setSize(0);
             offsetsOut.setSize(0);
             lengthsOut.setSize(0);
-
-            final MutableInt outputIdx = new MutableInt(0);
-            for (final Object key : keys) {
-                // noinspection SuspiciousMethodCalls
-                final RowSet group = groupToRange.get(key).intersect(rowSet);
-                if (group.size() > 1) {
-                    offsetsOut.add(outputIdx.intValue());
-                    lengthsOut.add(group.intSize());
-                }
-                group.forAllRowKeys(rowKey -> {
-                    rowKeysArray[outputIdx.intValue()] = rowKey;
-                    outputIdx.increment();
+            final WritableIntChunk<ChunkPositions> fOffsetsOut = offsetsOut;
+            final WritableIntChunk<ChunkLengths> fLengthsOut = lengthsOut;
+            try (final RowSequence flat = RowSequenceFactory.forRange(0, indexRowSet.size() - 1);
+                    final CloseableIterator<RowSet> groups = ChunkedColumnIterator.make(redirectedRowSetColumn, flat)) {
+                groups.forEachRemaining((final RowSet group) -> {
+                    if (group.size() > 1) {
+                        fOffsetsOut.add(rowKeys.size());
+                        fLengthsOut.add(group.intSize());
+                    }
+                    group.forAllRowKeys(rowKeys::add);
                 });
             }
         } else {
@@ -590,7 +719,7 @@ public class SortHelpers {
 
             final WritableChunk<Values> values = makeAndFillValues(usePrev, rowSet, columnSource);
             try (final LongSortKernel<Values, RowKeys> sortContext =
-                    LongSortKernel.makeContext(chunkType, order[0], sortSize, true)) {
+                    getSortContext(columnSource, order[0], sortSize, comparators[0], true)) {
                 sortContext.sort(rowKeys, values);
             }
 
@@ -617,7 +746,8 @@ public class SortHelpers {
         WritableChunk<Values> values = fetchSecondaryValues(usePrev, columnSources[1], indicesToFetch,
                 originalPositions, sortIndexContext, maximumSecondarySize);
         try (final LongSortKernel<Values, RowKeys> sortContext =
-                LongSortKernel.makeContext(chunkType, order[1], indicesToFetch.size(), columnSources.length != 2)) {
+                getSortContext(columnSources[1], order[1], indicesToFetch.size(),
+                        comparators[1], columnSources.length != 2)) {
             // and we can sort the stuff within the run now
             sortContext.sort(rowKeys, values, offsetsOut, lengthsOut);
         }
@@ -646,8 +776,10 @@ public class SortHelpers {
                 values = fetchSecondaryValues(usePrev, columnSources[columnIndex], indicesToFetch, originalPositions,
                         sortIndexContext, maximumSecondarySize);
 
-                try (final LongSortKernel<Values, RowKeys> sortContext = LongSortKernel.makeContext(chunkType,
-                        order[columnIndex], indicesToFetch.size(), columnIndex != columnSources.length - 1)) {
+                try (final LongSortKernel<Values, RowKeys> sortContext = getSortContext(columnSource,
+                        order[columnIndex], indicesToFetch.size(),
+                        comparators[columnIndex],
+                        columnIndex != columnSources.length - 1)) {
                     // and we can sort the stuff within the run now
                     sortContext.sort(rowKeys, values, offsetsOut, lengthsOut);
                 }
@@ -675,7 +807,7 @@ public class SortHelpers {
         return new ArraySortMapping(rowKeysArray);
     }
 
-    private static WritableChunk<Values> fetchSecondaryValues(boolean usePrev, ColumnSource columnSource,
+    private static WritableChunk<Values> fetchSecondaryValues(boolean usePrev, ColumnSource<?> columnSource,
             WritableLongChunk<RowKeys> indicesToFetch, WritableIntChunk<ChunkPositions> originalPositions,
             LongIntTimsortKernel.LongIntSortKernelContext<RowKeys, ChunkPositions> sortIndexContext,
             int maximumSecondarySize) {

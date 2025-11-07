@@ -1,11 +1,10 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharacterArraySource and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit CharacterArraySource and run "./gradlew replicateSourcesAndChunks" to regenerate
+//
+// @formatter:off
 package io.deephaven.engine.table.impl.sources;
 
 import java.util.function.LongFunction;
@@ -33,7 +32,7 @@ import io.deephaven.engine.table.impl.MutableColumnSourceGetDefaults;
 import io.deephaven.util.SoftRecycler;
 import io.deephaven.util.compare.LongComparisons;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
-import org.apache.commons.lang3.mutable.MutableInt;
+import io.deephaven.util.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
@@ -217,19 +216,6 @@ public class LongArraySource extends ArraySourceHelper<Long, long[]>
         }
     }
 
-    @Override
-    public void shift(long start, long end, long offset) {
-        if (offset > 0) {
-            for (long i = (int) end; i >= start; i--) {
-                set((i + offset), getLong(i));
-            }
-        } else {
-            for (int i = (int) start; i <= end; i++) {
-                set((i + offset), getLong(i));
-            }
-        }
-    }
-
     public void move(long source, long dest, long length) {
         if (prevBlocks != null) {
             throw new UnsupportedOperationException();
@@ -355,7 +341,7 @@ public class LongArraySource extends ArraySourceHelper<Long, long[]>
             if (from > maxIndex) {
                 // the whole region is beyond us
                 final int sz = LongSizedDataStructure.intSize("int cast", to - from + 1);
-                destination.fillWithNullValue(destOffset.intValue(), sz);
+                destination.fillWithNullValue(destOffset.get(), sz);
                 destOffset.add(sz);
                 return;
             }
@@ -371,34 +357,34 @@ public class LongArraySource extends ArraySourceHelper<Long, long[]>
             if (fromBlock == toBlock) {
                 final int sz = LongSizedDataStructure.intSize("int cast", to - from + 1);
                 // region copyFromArray
-                destination.copyFromArray(getBlock(fromBlock), fromOffsetInBlock, destOffset.intValue(), sz);
+                destination.copyFromArray(getBlock(fromBlock), fromOffsetInBlock, destOffset.get(), sz);
                 // endregion copyFromArray
                 destOffset.add(sz);
             } else {
                 final int sz = BLOCK_SIZE - fromOffsetInBlock;
                 // region copyFromArray
-                destination.copyFromArray(getBlock(fromBlock), fromOffsetInBlock, destOffset.intValue(), sz);
+                destination.copyFromArray(getBlock(fromBlock), fromOffsetInBlock, destOffset.get(), sz);
                 // endregion copyFromArray
                 destOffset.add(sz);
                 for (int blockNo = fromBlock + 1; blockNo < toBlock; ++blockNo) {
                     // region copyFromArray
-                    destination.copyFromArray(getBlock(blockNo), 0, destOffset.intValue(), BLOCK_SIZE);
+                    destination.copyFromArray(getBlock(blockNo), 0, destOffset.get(), BLOCK_SIZE);
                     // endregion copyFromArray
                     destOffset.add(BLOCK_SIZE);
                 }
                 int restSz = (int) (to & INDEX_MASK) + 1;
                 // region copyFromArray
-                destination.copyFromArray(getBlock(toBlock), 0, destOffset.intValue(), restSz);
+                destination.copyFromArray(getBlock(toBlock), 0, destOffset.get(), restSz);
                 // endregion copyFromArray
                 destOffset.add(restSz);
             }
 
             if (valuesAtEnd > 0) {
-                destination.fillWithNullValue(destOffset.intValue(), valuesAtEnd);
+                destination.fillWithNullValue(destOffset.get(), valuesAtEnd);
                 destOffset.add(valuesAtEnd);
             }
         });
-        destination.setSize(destOffset.intValue());
+        destination.setSize(destOffset.get());
     }
     
     public <R> void fillChunk(
@@ -420,7 +406,7 @@ public class LongArraySource extends ArraySourceHelper<Long, long[]>
             if (from > maxIndex) {
                 // the whole region is beyond us
                 final int sz = LongSizedDataStructure.intSize("int cast", to - from + 1);
-                destination.fillWithNullValue(destOffset.intValue(), sz);
+                destination.fillWithNullValue(destOffset.get(), sz);
                 destOffset.add(sz);
                 return;
             }
@@ -439,7 +425,7 @@ public class LongArraySource extends ArraySourceHelper<Long, long[]>
                 {
                     long[] block = (long[])getBlock(fromBlock);
                     for (int ii = 0; ii < sz; ii++) {
-                        chunk.set(ii + destOffset.intValue(), converter.apply(block[ii + fromOffsetInBlock]));
+                        chunk.set(ii + destOffset.get(), converter.apply(block[ii + fromOffsetInBlock]));
                     }
                 }
                 // endregion copyFromArray
@@ -450,7 +436,7 @@ public class LongArraySource extends ArraySourceHelper<Long, long[]>
                 {
                     long[] block = (long[])getBlock(fromBlock);
                     for (int ii = 0; ii < sz; ii++) {
-                        chunk.set(ii + destOffset.intValue(), converter.apply(block[ii + fromOffsetInBlock]));
+                        chunk.set(ii + destOffset.get(), converter.apply(block[ii + fromOffsetInBlock]));
                     }
                 }
                 // endregion copyFromArray
@@ -460,7 +446,7 @@ public class LongArraySource extends ArraySourceHelper<Long, long[]>
                     {
                         long[] block = (long[])getBlock(blockNo);
                         for (int ii = 0; ii < BLOCK_SIZE; ii++) {
-                            chunk.set(ii + destOffset.intValue(), converter.apply(block[ii + 0]));
+                            chunk.set(ii + destOffset.get(), converter.apply(block[ii + 0]));
                         }
                     }
                     // endregion copyFromArray
@@ -471,7 +457,7 @@ public class LongArraySource extends ArraySourceHelper<Long, long[]>
                 {
                     long[] block = (long[])getBlock(toBlock);
                     for (int ii = 0; ii < restSz; ii++) {
-                        chunk.set(ii + destOffset.intValue(), converter.apply(block[ii + 0]));
+                        chunk.set(ii + destOffset.get(), converter.apply(block[ii + 0]));
                     }
                 }
                 // endregion copyFromArray
@@ -479,11 +465,11 @@ public class LongArraySource extends ArraySourceHelper<Long, long[]>
             }
 
             if (valuesAtEnd > 0) {
-                destination.fillWithNullValue(destOffset.intValue(), valuesAtEnd);
+                destination.fillWithNullValue(destOffset.get(), valuesAtEnd);
                 destOffset.add(valuesAtEnd);
             }
         });
-        destination.setSize(destOffset.intValue());
+        destination.setSize(destOffset.get());
     }
     // endregion fillChunk
 
@@ -520,11 +506,11 @@ public class LongArraySource extends ArraySourceHelper<Long, long[]>
             if (inUse != null) {
                 // region conditionalCopy
                 effectiveContext.copyKernel.conditionalCopy(destination, getBlock(blockNo), getPrevBlock(blockNo),
-                        inUse, srcOffset, destOffset.intValue(), length);
+                        inUse, srcOffset, destOffset.get(), length);
                 // endregion conditionalCopy
             } else {
                 // region copyFromArray
-                destination.copyFromArray(getBlock(blockNo), srcOffset, destOffset.intValue(), length);
+                destination.copyFromArray(getBlock(blockNo), srcOffset, destOffset.get(), length);
                 // endregion copyFromArray
             }
             destOffset.add(length);
@@ -535,7 +521,7 @@ public class LongArraySource extends ArraySourceHelper<Long, long[]>
             if (from > maxIndex) {
                 // the whole region is beyond us
                 final int sz = LongSizedDataStructure.intSize("int cast", to - from + 1);
-                destination.fillWithNullValue(destOffset.intValue(), sz);
+                destination.fillWithNullValue(destOffset.get(), sz);
                 destOffset.add(sz);
                 return;
             } else if (to > maxIndex) {
@@ -563,11 +549,11 @@ public class LongArraySource extends ArraySourceHelper<Long, long[]>
             }
 
             if (valuesAtEnd > 0) {
-                destination.fillWithNullValue(destOffset.intValue(), valuesAtEnd);
+                destination.fillWithNullValue(destOffset.get(), valuesAtEnd);
                 destOffset.add(valuesAtEnd);
             }
         });
-        destination.setSize(destOffset.intValue());
+        destination.setSize(destOffset.get());
     }
     
     public <R> void fillPrevChunk(
@@ -596,7 +582,7 @@ public class LongArraySource extends ArraySourceHelper<Long, long[]>
             final long[] inUse = prevInUse[blockNo];
             if (inUse != null) {
                 // region conditionalCopy
-                final int chunkOffset = destOffset.intValue();
+                final int chunkOffset = destOffset.get();
                 long[] baseInput = (long[]) getBlock(blockNo);
                 long[] overInput = (long[]) getPrevBlock(blockNo);
 
@@ -617,7 +603,7 @@ public class LongArraySource extends ArraySourceHelper<Long, long[]>
                 {
                     long[] block = (long[])getBlock(blockNo);
                     for (int ii = 0; ii < length; ii++) {
-                        chunk.set(ii + destOffset.intValue(), converter.apply(block[ii + srcOffset]));
+                        chunk.set(ii + destOffset.get(), converter.apply(block[ii + srcOffset]));
                     }
                 }
                 // endregion copyFromArray
@@ -630,7 +616,7 @@ public class LongArraySource extends ArraySourceHelper<Long, long[]>
             if (from > maxIndex) {
                 // the whole region is beyond us
                 final int sz = LongSizedDataStructure.intSize("int cast", to - from + 1);
-                destination.fillWithNullValue(destOffset.intValue(), sz);
+                destination.fillWithNullValue(destOffset.get(), sz);
                 destOffset.add(sz);
                 return;
             } else if (to > maxIndex) {
@@ -658,11 +644,11 @@ public class LongArraySource extends ArraySourceHelper<Long, long[]>
             }
 
             if (valuesAtEnd > 0) {
-                destination.fillWithNullValue(destOffset.intValue(), valuesAtEnd);
+                destination.fillWithNullValue(destOffset.get(), valuesAtEnd);
                 destOffset.add(valuesAtEnd);
             }
         });
-        destination.setSize(destOffset.intValue());
+        destination.setSize(destOffset.get());
     }
     // endregion fillPrevChunk
 

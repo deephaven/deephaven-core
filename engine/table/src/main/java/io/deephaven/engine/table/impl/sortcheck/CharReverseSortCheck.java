@@ -1,6 +1,11 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit CharReverseSortCheck and run "./gradlew replicateSortCheck" to regenerate
+//
+// @formatter:off
+
 package io.deephaven.engine.table.impl.sortcheck;
 
 import io.deephaven.chunk.attributes.Values;
@@ -33,12 +38,8 @@ public class CharReverseSortCheck implements SortCheck {
 
     // region comparison functions
     // note that this is a descending kernel, thus the comparisons here are backwards (e.g., the lt function is in terms of the sort direction, so is implemented by gt)
-    private static int doComparison(char lhs, char rhs) {
-        return -1 * CharComparisons.compare(lhs, rhs);
+    private static boolean leq(char lhs, char rhs) {
+        return CharComparisons.geq(lhs, rhs);
     }
     // endregion comparison functions
-
-    private static boolean leq(char lhs, char rhs) {
-        return doComparison(lhs, rhs) <= 0;
-    }
 }

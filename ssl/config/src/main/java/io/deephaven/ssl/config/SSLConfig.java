@@ -1,12 +1,11 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.ssl.config;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import io.deephaven.annotations.BuildableStyle;
+import io.deephaven.annotations.CopyableStyle;
 import org.immutables.value.Value;
-import org.immutables.value.Value.Default;
 import org.immutables.value.Value.Immutable;
 
 import java.io.IOException;
@@ -19,8 +18,8 @@ import java.util.Optional;
  *
  * @see io.deephaven.ssl.config
  */
-@Immutable(copy = true)
-@BuildableStyle
+@Immutable
+@CopyableStyle
 @JsonDeserialize(as = ImmutableSSLConfig.class)
 public abstract class SSLConfig {
 

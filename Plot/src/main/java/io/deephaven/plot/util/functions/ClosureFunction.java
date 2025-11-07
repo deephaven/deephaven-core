@@ -1,14 +1,14 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.plot.util.functions;
 
 import groovy.lang.Closure;
 
 /**
- * Wraps a {@link SerializableClosure} with the API of a function.
+ * Wraps a {@link HasClosure} with the API of a function.
  */
-public class ClosureFunction<T, R> extends SerializableClosure<R> implements SerializableFunction<T, R> {
+public class ClosureFunction<T, R> extends HasClosure<R> implements SerializableFunction<T, R> {
 
     private static final long serialVersionUID = 3693316124178311688L;
 

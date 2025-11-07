@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 #
 
 """ This module implements the Table, PartitionedTable and PartitionedTableProxy classes which are the main
@@ -11,10 +11,13 @@ import contextlib
 import inspect
 from enum import Enum
 from enum import auto
-from typing import Any, Optional, Callable, Dict
-from typing import Sequence, List, Union, Protocol
+from functools import cached_property
+from typing import Any, Optional, Callable, Dict, Generator, Tuple, Literal
+from typing import Sequence, List, Union, Protocol, Mapping, Iterable
 
 import jpy
+import numpy as np
+import sys
 
 from deephaven import DHError
 from deephaven import dtypes
@@ -22,7 +25,8 @@ from deephaven._jpy import strict_cast
 from deephaven._wrapper import JObjectWrapper
 from deephaven._wrapper import unwrap
 from deephaven.agg import Aggregation
-from deephaven.column import Column, ColumnType
+from deephaven.column import col_def, ColumnDefinition
+from deephaven.concurrency_control import ConcurrencyControl, Barrier
 from deephaven.filters import Filter, and_, or_
 from deephaven.jcompat import j_unary_operator, j_binary_operator, j_map_to_dict, j_hashmap
 from deephaven.jcompat import to_sequence, j_array_list
@@ -30,18 +34,18 @@ from deephaven.update_graph import auto_locking_ctx, UpdateGraph
 from deephaven.updateby import UpdateByOperation
 
 # Table
-_J_Table = jpy.get_type("io.deephaven.engine.table.Table")
+_JTable = jpy.get_type("io.deephaven.engine.table.Table")
 _JAttributeMap = jpy.get_type("io.deephaven.engine.table.AttributeMap")
 _JTableTools = jpy.get_type("io.deephaven.engine.util.TableTools")
 _JColumnName = jpy.get_type("io.deephaven.api.ColumnName")
 _JSortColumn = jpy.get_type("io.deephaven.api.SortColumn")
-_JFilter = jpy.get_type("io.deephaven.api.filter.Filter")
-_JFilterOr = jpy.get_type("io.deephaven.api.filter.FilterOr")
 _JPair = jpy.get_type("io.deephaven.api.Pair")
 _JLayoutHintBuilder = jpy.get_type("io.deephaven.engine.util.LayoutHintBuilder")
 _JSearchDisplayMode = jpy.get_type("io.deephaven.engine.util.LayoutHintBuilder$SearchDisplayModes")
 _JSnapshotWhenOptions = jpy.get_type("io.deephaven.api.snapshot.SnapshotWhenOptions")
 _JBlinkTableTools = jpy.get_type("io.deephaven.engine.table.impl.BlinkTableTools")
+_JDiffItems = jpy.get_type("io.deephaven.engine.util.TableDiff$DiffItems")
+_JEnumSet = jpy.get_type("java.util.EnumSet")
 
 # PartitionedTable
 _JPartitionedTable = jpy.get_type("io.deephaven.engine.table.PartitionedTable")
@@ -51,6 +55,7 @@ _JPartitionedTableProxy = jpy.get_type("io.deephaven.engine.table.PartitionedTab
 _JJoinMatch = jpy.get_type("io.deephaven.api.JoinMatch")
 _JJoinAddition = jpy.get_type("io.deephaven.api.JoinAddition")
 _JAsOfJoinRule = jpy.get_type("io.deephaven.api.AsOfJoinRule")
+_JNaturalJoinType = jpy.get_type("io.deephaven.api.NaturalJoinType")
 _JTableOperations = jpy.get_type("io.deephaven.api.TableOperations")
 
 # Dynamic Query Scope
@@ -69,22 +74,114 @@ _JNodeType = jpy.get_type("io.deephaven.engine.table.hierarchical.RollupTable$No
 _JFormatOperationsRecorder = jpy.get_type("io.deephaven.engine.table.hierarchical.FormatOperationsRecorder")
 _JSortOperationsRecorder = jpy.get_type("io.deephaven.engine.table.hierarchical.SortOperationsRecorder")
 _JFilterOperationsRecorder = jpy.get_type("io.deephaven.engine.table.hierarchical.FilterOperationsRecorder")
+_JUpdateViewOperationsRecorder = jpy.get_type("io.deephaven.engine.table.hierarchical.UpdateViewOperationsRecorder")
 
 # MultiJoin Table and input
 _JMultiJoinInput = jpy.get_type("io.deephaven.engine.table.MultiJoinInput")
 _JMultiJoinTable = jpy.get_type("io.deephaven.engine.table.MultiJoinTable")
 _JMultiJoinFactory = jpy.get_type("io.deephaven.engine.table.MultiJoinFactory")
 
+# Keyed Transpose Table
+_JKeyedTranspose = jpy.get_type("io.deephaven.engine.table.impl.util.KeyedTranspose")
+_JNewColumnBehaviorType = jpy.get_type("io.deephaven.engine.table.impl.util.KeyedTranspose$NewColumnBehavior")
+
+# Selectable
+_JSelectable = jpy.get_type("io.deephaven.api.Selectable")
+
+
+class Selectable(ConcurrencyControl["Selectable"], JObjectWrapper):
+    """A Selectable represents a formula with explicit ordering control that affects the order and the parallelization
+    of its evaluation when used in table operations `update`, `select`.
+
+    Note that, it can only be created with the factory method  `parse`.
+    """
+    j_object_type = _JSelectable
+
+    @property
+    def j_object(self) -> jpy.JType:
+        return self.j_selectable
+
+    def __init__(self, j_selectable: jpy.JType):
+        self.j_selectable = j_selectable
+
+    @classmethod
+    def parse(cls, formula: str) -> Selectable:
+        """Creates a Selectable from the given formula string.
+
+        Args:
+            formula (str): The formula string.
+
+        Returns:
+            Selectable
+
+        Raises:
+            DHError
+        """
+        try:
+            return Selectable(j_selectable=_JSelectable.parse(formula))
+        except Exception as e:
+            raise DHError(e, f"failed to create a Selectable: {formula}") from e
+
+    def with_declared_barriers(self, barriers: Union[Barrier, Sequence[Barrier]]) -> Selectable:
+        """ Returns a new Selectable with the given declared barriers.
+
+        Args:
+            barriers (Union[Barrier, Sequence[Barrier]]): The declared barrier(s).
+
+        Returns:
+            Selectable
+
+        Raises:
+            DHError
+        """
+        try:
+            barriers = to_sequence(barriers)
+            return Selectable(j_selectable=self.j_selectable.withDeclaredBarriers(*barriers))
+        except Exception as e:
+            raise DHError(e, f"failed to create selectable with declared barriers: {barriers}") from e
+
+    def with_respected_barriers(self, barriers: Union[Barrier, Sequence[Barrier]]) -> Selectable:
+        """ Returns a new Selectable with the given respected barriers.
+
+        Args:
+            barriers (Union[Barrier, Sequence[Barrier]]): The respected barrier(s).
+
+        Returns:
+            Selectable
+
+        Raises:
+            DHError
+        """
+        try:
+            barriers = to_sequence(barriers)
+            return Selectable(j_selectable=self.j_selectable.withRespectedBarriers(*barriers))
+        except Exception as e:
+            raise DHError(e, f"failed to create selectable with respected barriers: {barriers}") from e
+
+    def with_serial(self) -> Selectable:
+        """ Returns a new Selectable with serial evaluation enforced.
+
+        Returns:
+            Selectable
+
+        Raises:
+            DHError
+        """
+        try:
+            return Selectable(j_selectable=self.j_selectable.withSerial())
+        except Exception as e:
+            raise DHError(e, "failed to create selectable with serial evaluation.") from e
+
 
 class NodeType(Enum):
     """An enum of node types for RollupTable"""
     AGGREGATED = _JNodeType.Aggregated
     """Nodes at an aggregated (rolled up) level in the RollupTable. An aggregated level is above the constituent (
-    leaf) level. These nodes have column names and types that result from applying aggregations on the source table 
+    leaf) level. These nodes have column names and types that result from applying aggregations on the source table
     of the RollupTable. """
     CONSTITUENT = _JNodeType.Constituent
-    """Nodes at the leaf level when :meth:`~deephaven.table.Table.rollup` method is called with 
-    include_constituent=True. The constituent level is the lowest in a rollup table. These nodes have column names 
+    """Nodes at the leaf level when :meth:`~deephaven.table.Table.rollup` method is called with
+    include_constituent=True. The constituent level is the lowest in a rollup table. These nodes have column names
     and types from the source table of the RollupTable. """
 
 
@@ -97,6 +194,29 @@ class SearchDisplayMode(Enum):
     HIDE = _JSearchDisplayMode.Hide
     """Hide the search bar, regardless of user or system settings."""
 
+class NaturalJoinType(Enum):
+    """An Enum defining ways to handle duplicate right hand table values during natural join operations"""
+
+    ERROR_ON_DUPLICATE = _JNaturalJoinType.ERROR_ON_DUPLICATE
+    """Throw an error if a duplicate right hand table row is found. This is the default behavior if not specified"""
+
+    FIRST_MATCH = _JNaturalJoinType.FIRST_MATCH
+    """Match the first right hand table row and ignore later duplicates"""
+
+    LAST_MATCH = _JNaturalJoinType.LAST_MATCH
+    """Match the last right hand table row and ignore earlier duplicates"""
+
+    EXACTLY_ONE_MATCH = _JNaturalJoinType.EXACTLY_ONE_MATCH
+    """Match exactly one right hand table row; throw an error if there are zero or more than one matches"""
+
+class NewColumnBehaviorType(Enum):
+    """An enum of behavior types for new columns introduced while ticking"""
+    FAIL = _JNewColumnBehaviorType.FAIL
+    """The result table reports an error when a new column is detected. This is the default behavior, which ensures
+    consistency between the result and a newly created keyed_transpose."""
+    IGNORE = _JNewColumnBehaviorType.IGNORE
+    """The result table ignores the new column. If a new column would have been created, then the result table
+    becomes inconsistent with a newly created keyed_transpose."""
 
 class _FormatOperationsRecorder(Protocol):
     """A mixin for creating format operations to be applied to individual nodes of either RollupTable or TreeTable."""
@@ -146,9 +266,18 @@ class _FilterOperationsRecorder(Protocol):
         j_filter_ops_recorder = jpy.cast(self.j_node_ops_recorder, _JFilterOperationsRecorder)
         return self.__class__(j_filter_ops_recorder.where(and_(filters).j_filter))
 
+class _UpdateViewOperationsRecorder(Protocol):
+    """A mixin for creating updateView operations to be applied to individual nodes of RollupTable."""
+
+    def update_view(self, formulas: Union[str, Sequence[str]]):
+        """Returns a new recorder with the :meth:`~deephaven.table.Table.update_view` operation applied to nodes."""
+        formulas = to_sequence(formulas)
+        j_update_view_ops_recorder = jpy.cast(self.j_node_ops_recorder, _JUpdateViewOperationsRecorder)
+        return self.__class__(j_update_view_ops_recorder.updateView(*formulas))
+
 
 class RollupNodeOperationsRecorder(JObjectWrapper, _FormatOperationsRecorder,
-                                   _SortOperationsRecorder):
+                                   _SortOperationsRecorder, _UpdateViewOperationsRecorder):
     """Recorder for node-level operations to be applied when gathering snapshots of RollupTable. Supported operations
     include column formatting and sorting.
 
@@ -250,6 +379,25 @@ class RollupTable(JObjectWrapper):
                                include_constituents=self.include_constituents, aggs=self.aggs, by=self.by)
         except Exception as e:
             raise DHError(e, "with_filters operation on RollupTable failed.") from e
+
+    def with_update_view(self, formulas: Union[str, Sequence[str]]) -> RollupTable:
+        """Returns a new RollupTable by applying the given set of filters to the group-by columns of this RollupTable.
+
+        Args:
+            formulas (Union[str, Sequence[str]]): the column formula(s)
+
+        Returns:
+            a new RollupTable
+
+        Raises:
+            DHError
+        """
+        try:
+            formulas = to_sequence(formulas)
+            return RollupTable(j_rollup_table=self.j_rollup_table.withUpdateView(*formulas),
+                               include_constituents=self.include_constituents, aggs=self.aggs, by=self.by)
+        except Exception as e:
+            raise DHError(e, "with_update_view operation on RollupTable failed.") from e
 
 
 class TreeNodeOperationsRecorder(JObjectWrapper, _FormatOperationsRecorder,
@@ -404,19 +552,133 @@ def _sort_column(col, dir_):
         _JColumnName.of(col)))
 
 
-def _td_to_columns(table_definition):
-    cols = []
-    j_cols = table_definition.getColumnsArray()
-    for j_col in j_cols:
-        cols.append(
-            Column(
-                name=j_col.getName(),
-                data_type=dtypes.from_jtype(j_col.getDataType()),
-                component_type=dtypes.from_jtype(j_col.getComponentType()),
-                column_type=ColumnType(j_col.getColumnType()),
+if sys.version_info >= (3, 10):
+    from typing import TypeAlias # novermin
+
+    TableDefinitionLike: TypeAlias = Union[
+        "TableDefinition",
+        Mapping[str, dtypes.DType],
+        Iterable[ColumnDefinition],
+        jpy.JType,
+    ]
+    """A Union representing objects that can be coerced into a TableDefinition."""
+else:
+    TableDefinitionLike = Union[
+        "TableDefinition",
+        Mapping[str, dtypes.DType],
+        Iterable[ColumnDefinition],
+        jpy.JType,
+    ]
+    """A Union representing objects that can be coerced into a TableDefinition."""
+
+
+class TableDefinition(JObjectWrapper, Mapping):
+    """A Deephaven table definition, as a mapping from column name to ColumnDefinition."""
+
+    j_object_type = _JTableDefinition
+
+    @staticmethod
+    def _to_j_table_definition(table_definition: TableDefinitionLike) -> jpy.JType:
+        if isinstance(table_definition, TableDefinition):
+            return table_definition.j_table_definition
+        if isinstance(table_definition, _JTableDefinition):
+            return table_definition
+        if isinstance(table_definition, Mapping):
+            for name in table_definition.keys():
+                if not isinstance(name, str):
+                    raise DHError(
+                        f"Expected TableDefinitionLike Mapping to contain str keys, found type {type(name)}"
+                    )
+            for data_type in table_definition.values():
+                if not isinstance(data_type, dtypes.DType):
+                    raise DHError(
+                        f"Expected TableDefinitionLike Mapping to contain DType values, found type {type(data_type)}"
+                    )
+            column_definitions = [
+                col_def(name, data_type) for name, data_type in table_definition.items()
+            ]
+        elif isinstance(table_definition, Iterable):
+            for column_definition in table_definition:
+                if not isinstance(column_definition, ColumnDefinition):
+                    raise DHError(
+                        f"Expected TableDefinitionLike Iterable to contain ColumnDefinition values, found type {type(column_definition)}"
+                    )
+            column_definitions = table_definition
+        else:
+            raise DHError(
+                f"Unexpected TableDefinitionLike type: {type(table_definition)}"
             )
+        return _JTableDefinition.of(
+            [col.j_column_definition for col in column_definitions]
         )
-    return cols
+
+    def __init__(self, table_definition: TableDefinitionLike):
+        """Construct a TableDefinition.
+
+        Args:
+            table_definition (TableDefinitionLike): The table definition like object
+
+        Returns:
+            A new TableDefinition
+
+        Raises:
+            DHError
+        """
+        self.j_table_definition = TableDefinition._to_j_table_definition(
+            table_definition
+        )
+
+    @property
+    def j_object(self) -> jpy.JType:
+        return self.j_table_definition
+
+    @property
+    def table(self) -> Table:
+        """This table definition as a table."""
+        return Table(_JTableTools.metaTable(self.j_table_definition))
+
+    def keys(self):
+        """The column names as a dictview."""
+        return self._dict.keys()
+
+    def items(self):
+        """The column name, column definition tuples as a dictview."""
+        return self._dict.items()
+
+    def values(self):
+        """The column definitions as a dictview."""
+        return self._dict.values()
+
+    @cached_property
+    def _dict(self) -> Dict[str, ColumnDefinition]:
+        return {
+            col.name: col
+            for col in [
+                ColumnDefinition(j_col)
+                for j_col in self.j_table_definition.getColumnsArray()
+            ]
+        }
+
+    def __getitem__(self, key) -> ColumnDefinition:
+        return self._dict[key]
+
+    def __iter__(self):
+        return iter(self._dict)
+
+    def __len__(self):
+        return len(self._dict)
+
+    def __contains__(self, item):
+        return item in self._dict
+
+    def __eq__(self, other):
+        return JObjectWrapper.__eq__(self, other)
+
+    def __ne__(self, other):
+        return JObjectWrapper.__ne__(self, other)
+
+    def __hash__(self):
+        return JObjectWrapper.__hash__(self)
 
 
 class Table(JObjectWrapper):
@@ -426,17 +688,13 @@ class Table(JObjectWrapper):
     data ingestion operations, queries, aggregations, joins, etc.
 
     """
-    j_object_type = _J_Table
+    j_object_type = _JTable
 
     def __init__(self, j_table: jpy.JType):
         self.j_table = jpy.cast(j_table, self.j_object_type)
         if self.j_table is None:
             raise DHError("j_table type is not io.deephaven.engine.table.Table")
-        self._definition = self.j_table.getDefinition()
-        self._schema = None
-        self._is_refreshing = None
-        self._update_graph = None
-        self._is_flat = None
+        self._definition = TableDefinition(self.j_table.getDefinition())
 
     def __repr__(self):
         default_repr = super().__repr__()
@@ -462,9 +720,7 @@ class Table(JObjectWrapper):
     @property
     def is_refreshing(self) -> bool:
         """Whether this table is refreshing."""
-        if self._is_refreshing is None:
-            self._is_refreshing = self.j_table.isRefreshing()
-        return self._is_refreshing
+        return self.j_table.isRefreshing()
 
     @property
     def is_blink(self) -> bool:
@@ -472,27 +728,34 @@ class Table(JObjectWrapper):
         return _JBlinkTableTools.isBlink(self.j_table)
 
     @property
+    def is_failed(self) -> bool:
+        """Whether this table is in a failure state and is no longer usable."""
+        return self.j_table.isFailed()
+
+    @cached_property
     def update_graph(self) -> UpdateGraph:
         """The update graph of the table."""
-        if self._update_graph is None:
-            self._update_graph = UpdateGraph(self.j_table.getUpdateGraph())
-        return self._update_graph
+        return UpdateGraph(self.j_table.getUpdateGraph())
 
     @property
     def is_flat(self) -> bool:
         """Whether this table is guaranteed to be flat, i.e. its row set will be from 0 to number of rows - 1."""
-        if self._is_flat is None:
-            self._is_flat = self.j_table.isFlat()
-        return self._is_flat
+        return self.j_table.isFlat()
 
     @property
-    def columns(self) -> List[Column]:
-        """The column definitions of the table."""
-        if self._schema:
-            return self._schema
+    def definition(self) -> TableDefinition:
+        """The table definition."""
+        return self._definition
 
-        self._schema = _td_to_columns(self._definition)
-        return self._schema
+    @property
+    def column_names(self) -> List[str]:
+        """The column names of the table."""
+        return list(self.definition.keys())
+
+    @property
+    def columns(self) -> List[ColumnDefinition]:
+        """The column definitions of the table."""
+        return list(self.definition.values())
 
     @property
     def meta_table(self) -> Table:
@@ -502,6 +765,117 @@ class Table(JObjectWrapper):
     @property
     def j_object(self) -> jpy.JType:
         return self.j_table
+
+    def iter_dict(self, cols: Optional[Union[str, Sequence[str]]] = None, *, chunk_size: int = 2048) \
+            -> Generator[Dict[str, Any], None, None]:
+        """ Returns a generator that reads one row at a time from the table into a dictionary. The dictionary is a map
+        of column names to scalar values of the column data type.
+
+        If the table is refreshing and no update graph locks are currently being held, the generator will try to acquire
+        the shared lock of the update graph before reading the table data. This provides a consistent view of the data.
+        The side effect of this is that the table will not be able to refresh while the table is being iterated on.
+        Additionally, the generator internally maintains a fill context. The auto acquired shared lock and the fill
+        context will be released after the generator is destroyed. That can happen implicitly when the generator
+        is used in a for-loop. When the generator is not used in a for-loop, to prevent resource leaks, it must be closed
+        after use by either (1) setting it to None, (2) using the del statement, or (3) calling the close() method on it.
+
+        Args:
+            cols (Optional[Union[str, Sequence[str]]]): The columns to read. If None, all columns are read.
+            chunk_size (int): The number of rows to read at a time internally to reduce the number of Java/Python boundary
+                crossings. Default is 2048.
+
+        Returns:
+            A generator that yields a dictionary of column names to scalar values.
+
+        Raises:
+            ValueError
+        """
+        from deephaven._table_reader import _table_reader_row_dict # to prevent circular import
+        return _table_reader_row_dict(self, cols, chunk_size=chunk_size)
+
+    def iter_tuple(self, cols: Optional[Union[str, Sequence[str]]] = None, *, tuple_name: str = 'Deephaven',
+                   chunk_size: int = 2048) -> Generator[Tuple[Any, ...], None, None]:
+        """ Returns a generator that reads one row at a time from the table into a named tuple. The named tuple is made
+        up of fields with their names being the column names and their values being of the column data types.
+
+        If the table is refreshing and no update graph locks are currently being held, the generator will try to acquire
+        the shared lock of the update graph before reading the table data. This provides a consistent view of the data.
+        The side effect of this is that the table will not be able to refresh while the table is being iterated on.
+        Additionally, the generator internally maintains a fill context. The auto acquired shared lock and the fill
+        context will be released after the generator is destroyed. That can happen implicitly when the generator
+        is used in a for-loop. When the generator is not used in a for-loop, to prevent resource leaks, it must be closed
+        after use by either (1) setting it to None, (2) using the del statement, or (3) calling the close() method on it.
+
+        Args:
+            cols (Optional[Union[str, Sequence[str]]]): The columns to read. If None, all columns are read. Default is None.
+            tuple_name (str): The name of the named tuple. Default is 'Deephaven'.
+            chunk_size (int): The number of rows to read at a time internally to reduce the number of Java/Python boundary
+                crossings. Default is 2048.
+
+        Returns:
+            A generator that yields a named tuple for each row in the table
+
+        Raises:
+            ValueError
+        """
+        from deephaven._table_reader import _table_reader_row_tuple # to prevent circular import
+        return _table_reader_row_tuple(self, cols, tuple_name = tuple_name, chunk_size = chunk_size)
+
+    def iter_chunk_dict(self, cols: Optional[Union[str, Sequence[str]]] = None, chunk_size: int = 2048) \
+            -> Generator[Dict[str, np.ndarray], None, None]:
+        """ Returns a generator that reads one chunk of rows at a time from the table into a dictionary. The dictionary
+        is a map of column names to numpy arrays of the column data type.
+
+        If the table is refreshing and no update graph locks are currently being held, the generator will try to acquire
+        the shared lock of the update graph before reading the table data. This provides a consistent view of the data.
+        The side effect of this is that the table will not be able to refresh while the table is being iterated on.
+        Additionally, the generator internally maintains a fill context. The auto acquired shared lock and the fill
+        context will be released after the generator is destroyed. That can happen implicitly when the generator
+        is used in a for-loop. When the generator is not used in a for-loop, to prevent resource leaks, it must be closed
+        after use by either (1) setting it to None, (2) using the del statement, or (3) calling the close() method on it.
+
+        Args:
+            cols (Optional[Union[str, Sequence[str]]]): The columns to read. If None, all columns are read.
+            chunk_size (int): The number of rows to read at a time. Default is 2048.
+
+        Returns:
+            A generator that yields a dictionary of column names to numpy arrays.
+
+        Raises
+            ValueError
+        """
+        from deephaven._table_reader import _table_reader_chunk_dict  # to prevent circular import
+
+        return _table_reader_chunk_dict(self, cols=cols, row_set=self.j_table.getRowSet(), chunk_size=chunk_size,
+                                        prev=False)
+
+    def iter_chunk_tuple(self, cols: Optional[Union[str, Sequence[str]]] = None, tuple_name: str = 'Deephaven',
+                         chunk_size: int = 2048,)-> Generator[Tuple[np.ndarray, ...], None, None]:
+        """ Returns a generator that reads one chunk of rows at a time from the table into a named tuple. The named
+        tuple is made up of fields with their names being the column names and their values being numpy arrays of the
+        column data types.
+
+        If the table is refreshing and no update graph locks are currently being held, the generator will try to acquire
+        the shared lock of the update graph before reading the table data. This provides a consistent view of the data.
+        The side effect of this is that the table will not be able to refresh while the table is being iterated on.
+        Additionally, the generator internally maintains a fill context. The auto acquired shared lock and the fill
+        context will be released after the generator is destroyed. That can happen implicitly when the generator
+        is used in a for-loop. When the generator is not used in a for-loop, to prevent resource leaks, it must be closed
+        after use by either (1) setting it to None, (2) using the del statement, or (3) calling the close() method on it.
+
+        Args:
+            cols (Optional[Union[str, Sequence[str]]]): The columns to read. If None, all columns are read.
+            tuple_name (str): The name of the named tuple. Default is 'Deephaven'.
+            chunk_size (int): The number of rows to read at a time. Default is 2048.
+
+        Returns:
+            A generator that yields a named tuple for each row in the table.
+
+        Raises:
+            ValueError
+        """
+        from deephaven._table_reader import _table_reader_chunk_tuple  # to prevent circular import
+        return _table_reader_chunk_tuple(self, cols=cols, tuple_name=tuple_name, chunk_size=chunk_size)
 
     def has_columns(self, cols: Union[str, Sequence[str]]):
         """Whether this table contains a column for each of the provided names, return False if any of the columns is
@@ -590,6 +964,10 @@ class Table(JObjectWrapper):
         """Returns a new version of this table with a flat row set, i.e. from 0 to number of rows - 1."""
         return Table(j_table=self.j_table.flatten())
 
+    def remove_blink(self) -> Table:
+        """Returns a non-blink child table, or this table if it is not a blink table."""
+        return Table(j_table=self.j_table.removeBlink())
+
     def snapshot(self) -> Table:
         """Returns a static snapshot table.
 
@@ -612,6 +990,10 @@ class Table(JObjectWrapper):
         When trigger_table updates, a snapshot of this table and the "stamp key" from trigger_table form the resulting
         table. The "stamp key" is the last row of the trigger_table, limited by the stamp_cols. If trigger_table is
         empty, the "stamp key" will be represented by NULL values.
+
+        Note: the trigger_table must be append-only when the history flag is set to True. If the trigger_table is not
+        append-only and has modified or removed rows in its updates, the result snapshot table will be put in a failure
+        state and become unusable.
 
         Args:
             trigger_table (Table): the trigger table
@@ -665,10 +1047,12 @@ class Table(JObjectWrapper):
 
     def move_columns(self, idx: int, cols: Union[str, Sequence[str]]) -> Table:
         """The move_columns method creates a new table with specified columns moved to a specific column index value.
+        Columns may be renamed with the same semantics as rename_columns. The renames are simultaneous and unordered,
+        enabling direct swaps between column names. Specifying a source or destination more than once is prohibited.
 
         Args:
             idx (int): the column index where the specified columns will be moved in the new table.
-            cols (Union[str, Sequence[str]]) : the column name(s)
+            cols (Union[str, Sequence[str]]) : the column name(s) or the column rename expr(s) as "X = Y"
 
         Returns:
             a new table
@@ -684,10 +1068,12 @@ class Table(JObjectWrapper):
 
     def move_columns_down(self, cols: Union[str, Sequence[str]]) -> Table:
         """The move_columns_down method creates a new table with specified columns appearing last in order, to the far
-        right.
+        right. Columns may be renamed with the same semantics as rename_columns. The renames are simultaneous and
+        unordered, enabling direct swaps between column names. Specifying a source or destination more than once is
+        prohibited.
 
         Args:
-            cols (Union[str, Sequence[str]]) : the column name(s)
+            cols (Union[str, Sequence[str]]) : the column name(s) or the column rename expr(s) as "X = Y"
 
         Returns:
             a new table
@@ -703,10 +1089,12 @@ class Table(JObjectWrapper):
 
     def move_columns_up(self, cols: Union[str, Sequence[str]]) -> Table:
         """The move_columns_up method creates a new table with specified columns appearing first in order, to the far
-        left.
+        left. Columns may be renamed with the same semantics as rename_columns. The renames are simultaneous and
+        unordered, enabling direct swaps between column names. Specifying a source or destination more than once is
+        prohibited.
 
         Args:
-            cols (Union[str, Sequence[str]]) : the column name(s)
+            cols (Union[str, Sequence[str]]) : the column name(s) or the column rename expr(s) as "X = Y"
 
         Returns:
             a new table
@@ -721,7 +1109,10 @@ class Table(JObjectWrapper):
             raise DHError(e, "table move_columns_up operation failed.") from e
 
     def rename_columns(self, cols: Union[str, Sequence[str]]) -> Table:
-        """The rename_columns method creates a new table with the specified columns renamed.
+        """The rename_columns method creates a new table with the specified columns renamed. The renames are
+        simultaneous and unordered, enabling direct swaps between column names. Specifying a source or
+        destination more than once is prohibited. If a new column name conflicts with an existing column
+        name in the table, the existing column will be silently replaced.
 
         Args:
             cols (Union[str, Sequence[str]]) : the column rename expr(s) as "X = Y"
@@ -734,16 +1125,15 @@ class Table(JObjectWrapper):
         """
         try:
             cols = to_sequence(cols)
-            with auto_locking_ctx(self):
-                return Table(j_table=self.j_table.renameColumns(*cols))
+            return Table(j_table=self.j_table.renameColumns(*cols))
         except Exception as e:
             raise DHError(e, "table rename_columns operation failed.") from e
 
-    def update(self, formulas: Union[str, Sequence[str]]) -> Table:
+    def update(self, formulas: Union[str, Sequence[str], Selectable, Sequence[Selectable]]) -> Table:
         """The update method creates a new table containing a new, in-memory column for each formula.
 
         Args:
-            formulas (Union[str, Sequence[str]]): the column formula(s)
+            formulas (Union[str, Sequence[str], Selectable, Sequence[Selectable]]): the column formula(s) or Selectable(s)
 
         Returns:
             A new table
@@ -754,7 +1144,10 @@ class Table(JObjectWrapper):
         try:
             formulas = to_sequence(formulas)
             with _query_scope_ctx(), auto_locking_ctx(self):
-                return Table(j_table=self.j_table.update(*formulas))
+                if isinstance(formulas[0], Selectable.j_object_type):
+                    return Table(j_table=self.j_table.update(j_array_list(formulas)))
+                else:
+                    return Table(j_table=self.j_table.update(*formulas))
         except Exception as e:
             raise DHError(e, "table update operation failed.") from e
 
@@ -815,12 +1208,13 @@ class Table(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "table update_view operation failed.") from e
 
-    def select(self, formulas: Union[str, Sequence[str]] = None) -> Table:
+    def select(self, formulas: Union[str, Sequence[str], Selectable, Sequence[Selectable]] = None) -> Table:
         """The select method creates a new in-memory table that includes one column for each formula. If no formula
         is specified, all columns will be included.
 
         Args:
-            formulas (Union[str, Sequence[str]], optional): the column formula(s), default is None
+            formulas (Union[str, Sequence[str], Selectable, Sequence[Selectable], optional): the column formula(s)
+                or Selectable(s), default is None
 
         Returns:
             a new table
@@ -832,8 +1226,12 @@ class Table(JObjectWrapper):
             with _query_scope_ctx(), auto_locking_ctx(self):
                 if not formulas:
                     return Table(j_table=self.j_table.select())
+
                 formulas = to_sequence(formulas)
-                return Table(j_table=self.j_table.select(*formulas))
+                if isinstance(formulas[0], Selectable.j_object_type):
+                    return Table(j_table=self.j_table.select(j_array_list(formulas)))
+                else:
+                    return Table(j_table=self.j_table.select(*formulas))
         except Exception as e:
             raise DHError(e, "table select operation failed.") from e
 
@@ -1095,9 +1493,12 @@ class Table(JObjectWrapper):
             order_by = to_sequence(order_by)
             if not order:
                 order = (SortDirection.ASCENDING,) * len(order_by)
-            order = to_sequence(order)
-            if len(order_by) != len(order):
-                raise DHError(message="The number of sort columns must be the same as the number of sort directions.")
+            else:
+                order = to_sequence(order)
+                if any([o not in (SortDirection.ASCENDING, SortDirection.DESCENDING) for o in order]):
+                    raise DHError(message="The sort direction must be either 'ASCENDING' or 'DESCENDING'.")
+                if len(order_by) != len(order):
+                    raise DHError(message="The number of sort columns must be the same as the number of sort directions.")
 
             sort_columns = [_sort_column(col, dir_) for col, dir_ in zip(order_by, order)]
             j_sc_list = j_array_list(sort_columns)
@@ -1113,7 +1514,8 @@ class Table(JObjectWrapper):
     # region Join
 
     def natural_join(self, table: Table, on: Union[str, Sequence[str]],
-                     joins: Union[str, Sequence[str]] = None) -> Table:
+                     joins: Union[str, Sequence[str]] = None,
+                     type: NaturalJoinType = NaturalJoinType.ERROR_ON_DUPLICATE) -> Table:
         """The natural_join method creates a new table containing all the rows and columns of this table,
         plus additional columns containing data from the right table. For columns appended to the left table (joins),
         row values equal the row values from the right table where the key values in the left and right tables are
@@ -1125,6 +1527,8 @@ class Table(JObjectWrapper):
                 i.e. "col_a = col_b" for different column names
             joins (Union[str, Sequence[str]], optional): the column(s) to be added from the right table to the result
                 table, can be renaming expressions, i.e. "new_col = col"; default is None
+            joinType (NaturalJoinType, optional): the action to be taken when duplicate right hand rows are
+                encountered; default is ERROR_ON_DUPLICATE
 
         Returns:
             a new table
@@ -1139,12 +1543,12 @@ class Table(JObjectWrapper):
                 if joins:
                     return Table(
                         j_table=self.j_table.naturalJoin(
-                            table.j_table, ",".join(on), ",".join(joins)
+                            table.j_table, ",".join(on), ",".join(joins), type.value
                         )
                     )
                 else:
                     return Table(
-                        j_table=self.j_table.naturalJoin(table.j_table, ",".join(on))
+                        j_table=self.j_table.naturalJoin(table.j_table, ",".join(on), type.value)
                     )
         except Exception as e:
             raise DHError(e, "table natural_join operation failed.") from e
@@ -1885,7 +2289,8 @@ class Table(JObjectWrapper):
         """
         try:
             formulas = to_sequence(formulas)
-            return Table(j_table=self.j_table.formatColumns(formulas))
+            with _query_scope_ctx():
+                return Table(j_table=self.j_table.formatColumns(formulas))
         except Exception as e:
             raise DHError(e, "failed to color format columns.") from e
 
@@ -1905,7 +2310,8 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
-            return Table(j_table=self.j_table.formatColumnWhere(col, cond, formula))
+            with _query_scope_ctx():
+                return Table(j_table=self.j_table.formatColumnWhere(col, cond, formula))
         except Exception as e:
             raise DHError(e, "failed to color format column conditionally.") from e
 
@@ -1924,7 +2330,8 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
-            return Table(j_table=self.j_table.formatRowWhere(cond, formula))
+            with _query_scope_ctx():
+                return Table(j_table=self.j_table.formatRowWhere(cond, formula))
         except Exception as e:
             raise DHError(e, "failed to color format rows conditionally.") from e
 
@@ -2001,6 +2408,9 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
+            if not isinstance(drop_keys, bool):
+                raise DHError(message="drop_keys must be a boolean value.")
+
             by = to_sequence(by)
             return PartitionedTable(j_partitioned_table=self.j_table.partitionBy(drop_keys, *by))
         except Exception as e:
@@ -2057,6 +2467,16 @@ class Table(JObjectWrapper):
 
         Raises:
             DHError
+
+        Examples:
+            >>> table.slice(0, 5)    # first 5 rows
+            >>> table.slice(-5, 0)   # last 5 rows
+            >>> table.slice(2, 6)    # rows from index 2 to 5
+            >>> table.slice(6, 2)    # ERROR: cannot slice start after end
+            >>> table.slice(-6, -2)  # rows from 6th last to 2nd last (exclusive)
+            >>> table.slice(-2, -6)  # ERROR: cannot slice start after end
+            >>> table.slice(2, -3)   # all rows except the first 2 and the last 3
+            >>> table.slice(-6, 8)   # rows from 6th last to index 8 (exclusive)
         """
         try:
             return Table(j_table=self.j_table.slice(start, stop))
@@ -2207,13 +2627,8 @@ class PartitionedTable(JObjectWrapper):
 
     def __init__(self, j_partitioned_table):
         self.j_partitioned_table = j_partitioned_table
-        self._schema = None
+        self._definition = None
         self._table = None
-        self._key_columns = None
-        self._unique_keys = None
-        self._constituent_column = None
-        self._constituent_changes_permitted = None
-        self._is_refreshing = None
 
     @classmethod
     def from_partitioned_table(cls,
@@ -2221,18 +2636,18 @@ class PartitionedTable(JObjectWrapper):
                                key_cols: Union[str, List[str]] = None,
                                unique_keys: bool = None,
                                constituent_column: str = None,
-                               constituent_table_columns: List[Column] = None,
+                               constituent_table_columns: Optional[TableDefinitionLike] = None,
                                constituent_changes_permitted: bool = None) -> PartitionedTable:
         """Creates a PartitionedTable from the provided underlying partitioned Table.
 
-        Note: key_cols, unique_keys, constituent_column, constituent_table_columns,
+        Note: key_cols, unique_keys, constituent_column, constituent_table_definition,
         constituent_changes_permitted must either be all None or all have values. When they are None, their values will
         be inferred as follows:
 
         |    * key_cols: the names of all columns with a non-Table data type
         |    * unique_keys: False
         |    * constituent_column: the name of the first column with a Table data type
-        |    * constituent_table_columns: the column definitions of the first cell (constituent table) in the constituent
+        |    * constituent_table_definition: the table definitions of the first cell (constituent table) in the constituent
             column. Consequently, the constituent column can't be empty.
         |    * constituent_changes_permitted: the value of table.is_refreshing
 
@@ -2242,7 +2657,7 @@ class PartitionedTable(JObjectWrapper):
             key_cols (Union[str, List[str]]): the key column name(s) of 'table'
             unique_keys (bool): whether the keys in 'table' are guaranteed to be unique
             constituent_column (str): the constituent column name in 'table'
-            constituent_table_columns (List[Column]): the column definitions of the constituent table
+            constituent_table_columns (Optional[TableDefinitionLike]): the table definitions of the constituent table
             constituent_changes_permitted (bool): whether the values of the constituent column can change
 
         Returns:
@@ -2259,7 +2674,7 @@ class PartitionedTable(JObjectWrapper):
                 return PartitionedTable(j_partitioned_table=_JPartitionedTableFactory.of(table.j_table))
 
             if all([arg is not None for arg in none_args]):
-                table_def = _JTableDefinition.of([col.j_column_definition for col in constituent_table_columns])
+                table_def = TableDefinition(constituent_table_columns).j_table_definition
                 j_partitioned_table = _JPartitionedTableFactory.of(table.j_table,
                                                                    j_array_list(to_sequence(key_cols)),
                                                                    unique_keys,
@@ -2276,18 +2691,18 @@ class PartitionedTable(JObjectWrapper):
     @classmethod
     def from_constituent_tables(cls,
                                 tables: List[Table],
-                                constituent_table_columns: List[Column] = None) -> PartitionedTable:
+                                constituent_table_columns: Optional[TableDefinitionLike] = None) -> PartitionedTable:
         """Creates a PartitionedTable with a single column named '__CONSTITUENT__' containing the provided constituent
         tables.
 
         The result PartitionedTable has no key columns, and both its unique_keys and constituent_changes_permitted
-        properties are set to False. When constituent_table_columns isn't provided, it will be set to the column
+        properties are set to False. When constituent_table_definition isn't provided, it will be set to the table
         definitions of the first table in the provided constituent tables.
 
         Args:
             tables (List[Table]): the constituent tables
-            constituent_table_columns (List[Column]): a list of column definitions compatible with all the constituent
-                tables, default is None
+            constituent_table_columns (Optional[TableDefinitionLike]): the table definition compatible with all the
+                constituent tables, default is None
 
         Returns:
             a PartitionedTable
@@ -2299,37 +2714,31 @@ class PartitionedTable(JObjectWrapper):
             if not constituent_table_columns:
                 return PartitionedTable(j_partitioned_table=_JPartitionedTableFactory.ofTables(to_sequence(tables)))
             else:
-                table_def = _JTableDefinition.of([col.j_column_definition for col in constituent_table_columns])
+                table_def = TableDefinition(constituent_table_columns).j_table_definition
                 return PartitionedTable(j_partitioned_table=_JPartitionedTableFactory.ofTables(table_def,
                                                                                                to_sequence(tables)))
         except Exception as e:
             raise DHError(e, "failed to create a PartitionedTable from constituent tables.") from e
 
-    @property
+    @cached_property
     def table(self) -> Table:
         """The underlying partitioned table."""
-        if self._table is None:
-            self._table = Table(j_table=self.j_partitioned_table.table())
-        return self._table
+        return Table(j_table=self.j_partitioned_table.table())
 
     @property
     def update_graph(self) -> UpdateGraph:
         """The underlying partitioned table's update graph."""
         return self.table.update_graph
 
-    @property
+    @cached_property
     def is_refreshing(self) -> bool:
         """Whether the underlying partitioned table is refreshing."""
-        if self._is_refreshing is None:
-            self._is_refreshing = self.table.is_refreshing
-        return self._is_refreshing
+        return self.table.is_refreshing
 
-    @property
+    @cached_property
     def key_columns(self) -> List[str]:
         """The partition key column names."""
-        if self._key_columns is None:
-            self._key_columns = list(self.j_partitioned_table.keyColumnNames().toArray())
-        return self._key_columns
+        return list(self.j_partitioned_table.keyColumnNames().toArray())
 
     def keys(self) -> Table:
         """Returns a Table containing all the keys of the underlying partitioned table."""
@@ -2338,32 +2747,31 @@ class PartitionedTable(JObjectWrapper):
         else:
             return self.table.select_distinct(self.key_columns)
 
-    @property
+    @cached_property
     def unique_keys(self) -> bool:
         """Whether the keys in the underlying table must always be unique. If keys must be unique, one can expect
         that self.table.select_distinct(self.key_columns) and self.table.view(self.key_columns) operations always
         produce equivalent tables."""
-        if self._unique_keys is None:
-            self._unique_keys = self.j_partitioned_table.uniqueKeys()
-        return self._unique_keys
+        return self.j_partitioned_table.uniqueKeys()
 
-    @property
+    @cached_property
     def constituent_column(self) -> str:
         """The name of the column containing constituent tables."""
-        if self._constituent_column is None:
-            self._constituent_column = self.j_partitioned_table.constituentColumnName()
-        return self._constituent_column
+        return self.j_partitioned_table.constituentColumnName()
+
+    @cached_property
+    def constituent_table_definition(self) -> TableDefinition:
+        """The table definitions for constituent tables. All constituent tables in a partitioned table have the
+        same table definitions."""
+        return TableDefinition(self.j_partitioned_table.constituentDefinition())
 
     @property
-    def constituent_table_columns(self) -> List[Column]:
+    def constituent_table_columns(self) -> List[ColumnDefinition]:
         """The column definitions for constituent tables. All constituent tables in a partitioned table have the
         same column definitions."""
-        if not self._schema:
-            self._schema = _td_to_columns(self.j_partitioned_table.constituentDefinition())
+        return list(self.constituent_table_definition.values())
 
-        return self._schema
-
-    @property
+    @cached_property
     def constituent_changes_permitted(self) -> bool:
         """Can the constituents of the underlying partitioned table change?  Specifically, can the values of the
         constituent column change?
@@ -2378,9 +2786,7 @@ class PartitionedTable(JObjectWrapper):
         if the underlying partitioned table is refreshing. Also note that the underlying partitioned table must be
         refreshing if it contains any refreshing constituents.
         """
-        if self._constituent_changes_permitted is None:
-            self._constituent_changes_permitted = self.j_partitioned_table.constituentChangesPermitted()
-        return self._constituent_changes_permitted
+        return self.j_partitioned_table.constituentChangesPermitted()
 
     def merge(self) -> Table:
         """Makes a new Table that contains all the rows from all the constituent tables. In the merged result,
@@ -2730,12 +3136,14 @@ class PartitionedTableProxy(JObjectWrapper):
             DHError
         """
         try:
-            order_by = to_sequence(order_by)
             if not order:
                 order = (SortDirection.ASCENDING,) * len(order_by)
-            order = to_sequence(order)
-            if len(order_by) != len(order):
-                raise ValueError("The number of sort columns must be the same as the number of sort directions.")
+            else:
+                order = to_sequence(order)
+                if any([o not in (SortDirection.ASCENDING, SortDirection.DESCENDING) for o in order]):
+                    raise DHError(message="The sort direction must be either 'ASCENDING' or 'DESCENDING'.")
+                if len(order_by) != len(order):
+                    raise DHError(message="The number of sort columns must be the same as the number of sort directions.")
 
             sort_columns = [_sort_column(col, dir_) for col, dir_ in zip(order_by, order)]
             j_sc_list = j_array_list(sort_columns)
@@ -2783,7 +3191,7 @@ class PartitionedTableProxy(JObjectWrapper):
         try:
             filters = to_sequence(filters)
             with _query_scope_ctx(), auto_locking_ctx(self):
-                return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.where(*filters))
+                return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.where(and_(filters).j_filter))
         except Exception as e:
             raise DHError(e, "where operation on the PartitionedTableProxy failed.") from e
 
@@ -2873,13 +3281,13 @@ class PartitionedTableProxy(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "update_view operation on the PartitionedTableProxy failed.") from e
 
-    def update(self, formulas: Union[str, Sequence[str]]) -> PartitionedTableProxy:
+    def update(self, formulas: Union[str, Sequence[str], Selectable, Sequence[Selectable]]) -> PartitionedTableProxy:
         """Applies the :meth:`~Table.update` table operation to all constituent tables of the underlying partitioned
         table, and produces a new PartitionedTableProxy with the result tables as the constituents of its underlying
         partitioned table.
 
         Args:
-            formulas (Union[str, Sequence[str]]): the column formula(s)
+            formulas (Union[str, Sequence[str], Selectable, Sequence[Selectable]]): the column formula(s) or Selectable(s)
 
         Returns:
             A new PartitionedTableProxy
@@ -2890,17 +3298,21 @@ class PartitionedTableProxy(JObjectWrapper):
         try:
             formulas = to_sequence(formulas)
             with _query_scope_ctx(), auto_locking_ctx(self):
-                return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.update(*formulas))
+                if isinstance(formulas[0], Selectable.j_object_type):
+                    return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.update(j_array_list(formulas)))
+                else:
+                    return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.update(*formulas))
         except Exception as e:
             raise DHError(e, "update operation on the PartitionedTableProxy failed.") from e
 
-    def select(self, formulas: Union[str, Sequence[str]] = None) -> PartitionedTableProxy:
+    def select(self, formulas: Union[str, Sequence[str], Selectable, Sequence[Selectable]] = None) -> PartitionedTableProxy:
         """Applies the :meth:`~Table.select` table operation to all constituent tables of the underlying partitioned
         table, and produces a new PartitionedTableProxy with the result tables as the constituents of its underlying
         partitioned table.
 
         Args:
-            formulas (Union[str, Sequence[str]], optional): the column formula(s), default is None
+            formulas (Union[str, Sequence[str], Selectable, Sequence[Selectable]], optional): the column formula(s) or
+                Selectable(s), default is None
 
         Returns:
             A new PartitionedTableProxy
@@ -2911,7 +3323,10 @@ class PartitionedTableProxy(JObjectWrapper):
         try:
             formulas = to_sequence(formulas)
             with _query_scope_ctx(), auto_locking_ctx(self):
-                return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.select(*formulas))
+                if isinstance(formulas[0], Selectable.j_object_type):
+                    return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.select(j_array_list(formulas)))
+                else:
+                    return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.select(*formulas))
         except Exception as e:
             raise DHError(e, "select operation on the PartitionedTableProxy failed.") from e
 
@@ -3551,7 +3966,7 @@ class MultiJoinInput(JObjectWrapper):
             table (Table): the right table to include in the join
             on (Union[str, Sequence[str]]): the column(s) to match, can be a common name or an equal expression,
                 i.e. "col_a = col_b" for different column names
-            joins (Union[str, Sequence[str]], optional): the column(s) to be added from the this table to the result
+            joins (Union[str, Sequence[str]], optional): the column(s) to be added from the table to the result
                 table, can be renaming expressions, i.e. "new_col = col"; default is None
 
         Raises:
@@ -3568,13 +3983,14 @@ class MultiJoinInput(JObjectWrapper):
 
 class MultiJoinTable(JObjectWrapper):
     """A MultiJoinTable is an object that contains the result of a multi-table natural join. To retrieve the underlying
-    result Table, use the table() method. """
+    result Table, use the :attr:`.table` property. """
     j_object_type = _JMultiJoinTable
 
     @property
     def j_object(self) -> jpy.JType:
         return self.j_multijointable
 
+    @property
     def table(self) -> Table:
         """Returns the Table containing the multi-table natural join output. """
         return Table(j_table=self.j_multijointable.table())
@@ -3631,6 +4047,155 @@ def multi_join(input: Union[Table, Sequence[Table], MultiJoinInput, Sequence[Mul
 
     Returns:
         MultiJoinTable: the result of the multi-table natural join operation. To access the underlying Table, use the
-            table() method.
+            :attr:`~MultiJoinTable.table` property.
     """
     return MultiJoinTable(input, on)
+
+
+# region utility functions
+
+def table_diff(t1: Table, t2: Table, max_diffs: int = 1, floating_comparison: Literal['exact', 'absolute', 'relative'] = 'exact',
+               ignore_column_order: bool = False) -> str:
+    """Returns the differences between this table and the provided table as a string. If the two tables are the same,
+    an empty string is returned. The differences are returned in a human-readable format.
+
+    This method starts by comparing the table sizes, and then the schema of the two tables, such as the number of
+    columns, column names, column types, column orders. If the schemas are different, the comparison stops and
+    the differences are returned. If the schemas are the same, the method proceeds to compare the data in the
+    tables. The method compares the data in the tables column by column (not row by row) and only records the first
+    difference found in each column.
+
+    Note, inexact comparison of floating numbers may sometimes be desirable due to their inherent imprecision.
+    When that is the case, the floating_comparison should be set to either 'absolute' or 'relative'. When it is set
+    to 'absolute', the absolute value of the difference between two floating numbers is used to compare against a
+    threshold. The threshold is set to 0.0001 for Doubles and 0.005 for Floats. Only differences that are greater
+    than the threshold are recorded. When floating_comparison is set to 'relative', the relative difference between
+    two floating numbers is used to compare against the threshold. The relative difference is calculated as the absolute
+    difference divided by the smaller absolute value between the two numbers.
+
+    Args:
+        t1 (Table): the table to compare
+        t2 (Table): the table to compare against
+        max_diffs (int): the maximum number of differences to return, default is 1
+        floating_comparison (Literal['exact', 'absolute', 'relative']): the type of comparison to use for floating numbers,
+            default is 'exact'
+        ignore_column_order (bool): whether columns that exist in both tables but in different orders are
+            treated as differences.  False indicates that column order matters (default), and True indicates that
+            column order does not matter.
+
+    Returns:
+        string
+
+    Raises:
+        DHError
+    """
+    try:
+        diff_items = []
+        if max_diffs < 1:
+            raise ValueError("max_diffs must be greater than 0.")
+
+        if floating_comparison not in ['exact', 'absolute', 'relative']:
+            raise ValueError("floating_comparison must be one of 'exact', 'absolute', or 'relative'.")
+
+        if floating_comparison != 'exact':
+            diff_items.append(_JDiffItems.DoublesExact)
+        if floating_comparison == 'relative':
+            diff_items.append(_JDiffItems.DoubleFraction)
+        if ignore_column_order:
+            diff_items.append(_JDiffItems.ColumnsOrder)
+
+        with auto_locking_ctx(t1, t2):
+            if diff_items:
+                j_diff_items = _JEnumSet.of(*diff_items)
+                return _JTableTools.diff(t1.j_table, t2.j_table, max_diffs, j_diff_items)
+            else:
+                return _JTableTools.diff(t1.j_table, t2.j_table, max_diffs)
+    except Exception as e:
+        raise DHError(e, "table diff failed") from e
+
+# endregion
+
+def keyed_transpose(table: Table, aggs: Union[Aggregation, Sequence[Aggregation]],
+                    row_by_cols: Union[str, Sequence[str]], col_by_cols: Union[str, Sequence[str]],
+                    initial_groups: Table = None,
+                    new_column_behavior: NewColumnBehaviorType = NewColumnBehaviorType.FAIL) -> Table:
+    """The keyed_transpose operation takes a source table with a set of aggregations and produces a new table where
+    the columns specified in ``row_by_cols`` are the keys used for the aggregation, and the values for the columns
+    specified in ``col_by_cols`` are used for the column names. An optional set of ``initial_groups`` can be
+    provided to ensure that the output table contains the full set of aggregated columns, even if no data is present yet
+    in the source table.
+
+    For example, given the following source table...
+
+    ============ =========
+    Date         Level
+    ============ =========
+    2025-08-05   INFO
+    2025-08-05   INFO
+    2025-08-06   WARN
+    2025-08-07   ERROR
+    ============ =========
+
+    ... and the usage ...
+
+    ``t = keyed_transpose(source, [agg.count_('Count')], ['Date'], ['Level'])``
+
+    The expected output for table "t" is ...
+
+    ============ ========= ========= =========
+    Date         INFO      WARN      ERROR
+    ============ ========= ========= =========
+    2025-08-05           2    (null)    (null)
+    2025-08-06      (null)         1    (null)
+    2025-08-07      (null)    (null)         1
+    ============ ========= ========= =========
+
+    In the example, you can see that the column names (e.g. INFO, WARN, ERROR) are taken from the values occurring for
+    ``Level``. But what if there are multiple aggregations or multiple ``col_by_cols`` specified? The
+    resulting column names may yield duplicates.
+
+    To avoid conflicts, the column naming works according to the following contract:
+
+    - If ``aggs = 1`` and ``col_by_cols = 1``: Column names are the value of the ``col_by_cols`` column. (ex. INFO, WARN)
+    - If ``aggs > 1``: Column names are prefixed with the aggregation column name. (ex. Count_INFO, MySum_INFO)
+    - If ``col_by_cols > 1``: Values for the original columns are separated by an underscore (ex. INFO_OTHER1, WARN_OTHER2)
+    - If Illegal Characters: Purge characters that are invalid for Deephaven column names. (ex. "1-2.3/4" becomes "1234")
+    - If Starts with Number: Add the prefix "column_" to the column name. (ex. column_123)
+    - If Duplicate Column Name: Add a suffix to differentiate the columns. (ex. INFO, INFO2)
+
+    Given the above contract, and to give you more control over the result, it may be necessary to sanitize data values
+    that may be used as column names before using ``keyed_transpose``. Otherwise, "12.34" could be translated to
+    "column_1234" instead of a more meaningful column name.
+
+    Args:
+        table (Table): The source table to transpose.
+        aggs (Union[Aggregation, Sequence[Aggregation]]): The aggregation(s) to apply to the source table.
+        row_by_cols (Union[str, Sequence[str]]): The column(s) to use as row keys in the transposed table.
+        col_by_cols (Union[str, Sequence[str]]): The columns whose values become the new aggregated columns.
+        initial_groups (Table, optional): An optional initial set of groups to ensure all columns are present in the
+            output, defaults to None.
+        new_column_behavior (NewColumnBehaviorType, optional): The behavior when a new column would be added to the
+            table, default is NewColumnBehaviorType.FAIL.
+
+    Returns:
+        a new table
+
+    Raises:
+        DHError
+    """
+    try:
+        j_source_table = unwrap(table)
+        aggs = to_sequence(aggs)
+        row_by_cols = to_sequence(row_by_cols)
+        col_by_cols = to_sequence(col_by_cols)
+        j_agg_list = j_array_list([agg.j_aggregation for agg in aggs])
+
+        with auto_locking_ctx(table):
+            j_row_by_cols_list = j_array_list([_JColumnName.of(col) for col in row_by_cols])
+            j_col_by_cols_list = j_array_list([_JColumnName.of(col) for col in col_by_cols])
+            j_initial_groups_table = unwrap(initial_groups)
+            return Table(
+                j_table=_JKeyedTranspose.keyedTranspose(j_source_table, j_agg_list, j_row_by_cols_list,
+                    j_col_by_cols_list, j_initial_groups_table, new_column_behavior.value))
+    except Exception as e:
+        raise DHError(e, "keyed_transpose operation failed.") from e

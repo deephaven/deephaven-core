@@ -1,9 +1,8 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.util;
 
-import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.ColumnSource;
@@ -31,7 +30,7 @@ class TableShowTools {
         try (final SafeCloseable ignored = QueryPerformanceRecorder.getInstance().getNugget("TableTools.show()")) {
             if (columns.length == 0) {
                 final List<String> columnNames = source.getDefinition().getColumnNames();
-                columns = columnNames.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
+                columns = columnNames.toArray(String[]::new);
             }
             final ColumnSource[] columnSources =
                     Arrays.stream(columns).map(source::getColumnSource).toArray(ColumnSource[]::new);
@@ -42,11 +41,11 @@ class TableShowTools {
             if (showRowSet) {
                 out.print("RowPosition");
                 out.print(delimiter);
-                out.print("     RowKey");
+                out.print("    RowKey");
                 out.print(delimiter);
-                columnLimits.add(10);
-                columnLimits.add(21);
-                lineLen = 22;
+                columnLimits.add(11);
+                columnLimits.add(22);
+                lineLen = 23;
             }
             final int[] columnLengths = new int[columns.length];
             for (int i = 0; i < columns.length; i++) {
@@ -80,7 +79,7 @@ class TableShowTools {
                 columnPrinters[i] = getColumnPrinter(columnSources[i], columnLengths[i], timeZone);
             }
 
-            final ColumnPrinter positionPrinter = new DefaultPrinter(10);
+            final ColumnPrinter positionPrinter = new DefaultPrinter(11);
             final ColumnPrinter indexPrinter = new DefaultPrinter(10);
             long ri = 0;
             for (final RowSet.Iterator indexIterator = rowSet.iterator(); ri < lastRowExclusive

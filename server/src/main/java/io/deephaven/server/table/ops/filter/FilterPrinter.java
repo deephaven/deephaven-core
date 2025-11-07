@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.server.table.ops.filter;
 
 import io.deephaven.proto.backplane.grpc.CaseSensitivity;
@@ -11,6 +11,7 @@ import io.deephaven.proto.backplane.grpc.MatchType;
 import io.deephaven.proto.backplane.grpc.Reference;
 import io.deephaven.proto.backplane.grpc.Value;
 import org.apache.commons.text.StringEscapeUtils;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 
@@ -164,7 +165,7 @@ public class FilterPrinter implements FilterVisitor<Void> {
     }
 
     @Override
-    public Void onInvoke(String method, Value target, List<Value> argumentsList) {
+    public Void onInvoke(String method, @Nullable Value target, List<Value> argumentsList) {
         if (target != null) {
             accept(target);
             sb.append(".");
@@ -278,7 +279,7 @@ public class FilterPrinter implements FilterVisitor<Void> {
                 sb.append(literal.getLongValue());
                 break;
             case NANO_TIME_VALUE:
-                sb.append("DateTimeUtils.epochNanosToInstant(").append(literal.getNanoTimeValue()).append(")");
+                sb.append("'").append(literal.getNanoTimeValue()).append("'");
                 break;
             case VALUE_NOT_SET:
             default:

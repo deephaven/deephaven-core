@@ -1,14 +1,15 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.select.codegen;
 
-import io.deephaven.engine.context.QueryCompiler;
 import io.deephaven.engine.context.ExecutionContext;
-import io.deephaven.util.SafeCloseable;
+import io.deephaven.engine.context.QueryCompilerImpl;
+import io.deephaven.engine.context.QueryCompilerRequest;
+import io.deephaven.engine.table.impl.QueryCompilerRequestProcessor;
+import io.deephaven.util.CompletionStageFuture;
 import io.deephaven.vector.Vector;
 import io.deephaven.engine.context.QueryScopeParam;
-import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.impl.select.Formula;
 import io.deephaven.engine.table.impl.select.DhFormulaColumn;
 import io.deephaven.engine.table.impl.select.FormulaCompilationException;
@@ -29,22 +30,40 @@ import static io.deephaven.engine.util.IterableUtils.makeCommaSeparatedList;
 
 public class JavaKernelBuilder {
     private static final String FORMULA_KERNEL_FACTORY_NAME = "__FORMULA_KERNEL_FACTORY";
+    private static final String CLASS_NAME = "FormulaKernel";
 
-    public static Result create(String cookedFormulaString, Class<?> returnedType, String timeInstanceVariables,
-            Map<String, RichType> columns, Map<String, Class<?>> arrays, Map<String, Class<?>> params) {
-        final JavaKernelBuilder jkf = new JavaKernelBuilder(cookedFormulaString, returnedType, timeInstanceVariables,
-                columns, arrays, params);
+    public static CompletionStageFuture<Result> create(
+            @NotNull final String originalFormulaString,
+            @NotNull final String cookedFormulaString,
+            @NotNull final Class<?> returnedType,
+            @NotNull final String timeInstanceVariables,
+            @NotNull final Map<String, RichType> columns,
+            @NotNull final Map<String, Class<?>> arrays,
+            @NotNull final Map<String, Class<?>> params,
+            @NotNull final QueryCompilerRequestProcessor compilationRequestProcessor) {
+        final JavaKernelBuilder jkf = new JavaKernelBuilder(
+                originalFormulaString, cookedFormulaString, returnedType, timeInstanceVariables, columns, arrays,
+                params);
         final String classBody = jkf.generateKernelClassBody();
-        final Class<?> clazz = compileFormula(cookedFormulaString, classBody, "Formula");
-        final FormulaKernelFactory fkf;
-        try {
-            fkf = (FormulaKernelFactory) clazz.getField(FORMULA_KERNEL_FACTORY_NAME).get(null);
-        } catch (ReflectiveOperationException e) {
-            throw new FormulaCompilationException("Formula compilation error for: " + cookedFormulaString, e);
-        }
-        return new Result(classBody, clazz, fkf);
+
+        return compilationRequestProcessor.submit(QueryCompilerRequest.builder()
+                .description("FormulaKernel: " + originalFormulaString)
+                .className(CLASS_NAME)
+                .classBody(classBody)
+                .packageNameRoot(QueryCompilerImpl.FORMULA_CLASS_PREFIX)
+                .build()).thenApply(clazz -> {
+                    final FormulaKernelFactory fkf;
+                    try {
+                        fkf = (FormulaKernelFactory) clazz.getField(FORMULA_KERNEL_FACTORY_NAME).get(null);
+                    } catch (ReflectiveOperationException e) {
+                        throw new FormulaCompilationException(
+                                "Formula compilation error for: " + cookedFormulaString, e);
+                    }
+                    return new Result(classBody, clazz, fkf);
+                });
     }
 
+    private final String originalFormulaString;
     private final String cookedFormulaString;
     private final Class<?> returnedType;
     private final String timeInstanceVariables;
@@ -62,8 +81,15 @@ public class JavaKernelBuilder {
      */
     private final Map<String, Class<?>> params;
 
-    private JavaKernelBuilder(String cookedFormulaString, Class<?> returnedType, String timeInstanceVariables,
-            Map<String, RichType> columns, Map<String, Class<?>> arrays, Map<String, Class<?>> params) {
+    private JavaKernelBuilder(
+            @NotNull final String originalFormulaString,
+            @NotNull final String cookedFormulaString,
+            @NotNull final Class<?> returnedType,
+            @NotNull final String timeInstanceVariables,
+            @NotNull final Map<String, RichType> columns,
+            @NotNull final Map<String, Class<?>> arrays,
+            @NotNull final Map<String, Class<?>> params) {
+        this.originalFormulaString = originalFormulaString;
         this.cookedFormulaString = cookedFormulaString;
         this.returnedType = returnedType;
         this.timeInstanceVariables = timeInstanceVariables;
@@ -80,7 +106,8 @@ public class JavaKernelBuilder {
 
         final CodeGenerator g = CodeGenerator.create(
                 CodeGenerator.create(ExecutionContext.getContext().getQueryLibrary().getImportStrings().toArray()), "",
-                "public class $CLASSNAME$ implements [[FORMULA_KERNEL_INTERFACE_CANONICAL]]", CodeGenerator.block(
+                "public class " + CLASS_NAME + " implements [[FORMULA_KERNEL_INTERFACE_CANONICAL]]",
+                CodeGenerator.block(
                         generateFactoryLambda(), "",
                         CodeGenerator.repeated("instanceVar", "private final [[TYPE]] [[NAME]];"),
                         timeInstanceVariables,
@@ -108,7 +135,8 @@ public class JavaKernelBuilder {
 
     private CodeGenerator generateFactoryLambda() {
         final CodeGenerator g = CodeGenerator.create(
-                "public static final [[FORMULA_KERNEL_FACTORY_CANONICAL]] [[FORMULA_KERNEL_FACTORY_NAME]] = $CLASSNAME$::new;");
+                "public static final [[FORMULA_KERNEL_FACTORY_CANONICAL]] [[FORMULA_KERNEL_FACTORY_NAME]] = "
+                        + CLASS_NAME + "::new;");
         g.replace("FORMULA_KERNEL_FACTORY_CANONICAL", FormulaKernelFactory.class.getCanonicalName());
         g.replace("FORMULA_KERNEL_FACTORY_NAME", FORMULA_KERNEL_FACTORY_NAME);
         return g.freeze();
@@ -116,7 +144,7 @@ public class JavaKernelBuilder {
 
     private CodeGenerator generateKernelConstructor() {
         final CodeGenerator g = CodeGenerator.create(
-                "public $CLASSNAME$([[VECTOR_CANONICAL]][] __vectors,", CodeGenerator.indent(
+                "public " + CLASS_NAME + "([[VECTOR_CANONICAL]][] __vectors,", CodeGenerator.indent(
                         "[[PARAM_CANONICAL]][] __params)"),
                 CodeGenerator.block(
                         CodeGenerator.repeated("getVector", "[[NAME]] = ([[TYPE]])__vectors[[[INDEX]]];"),
@@ -214,7 +242,7 @@ public class JavaKernelBuilder {
                 null);
         g.replace("ARGS", makeCommaSeparatedList(args));
         g.replace("FORMULA_STRING", ta.wrapWithCastIfNecessary(cookedFormulaString));
-        final String joinedFormulaString = QueryCompiler.createEscapedJoinedString(cookedFormulaString);
+        final String joinedFormulaString = QueryCompilerImpl.createEscapedJoinedString(originalFormulaString);
         g.replace("JOINED_FORMULA_STRING", joinedFormulaString);
         g.replace("EXCEPTION_TYPE", FormulaEvaluationException.class.getCanonicalName());
         return g.freeze();
@@ -257,23 +285,16 @@ public class JavaKernelBuilder {
         return results;
     }
 
-    @SuppressWarnings("SameParameterValue")
-    private static Class<?> compileFormula(final String what, final String classBody, final String className) {
-        // System.out.printf("compileFormula: formulaString is %s. Code is...%n%s%n", what, classBody);
-        try (final SafeCloseable ignored = QueryPerformanceRecorder.getInstance().getCompilationNugget(what)) {
-            // Compilation needs to take place with elevated privileges, but the created object should not have them.
-            final QueryCompiler compiler = ExecutionContext.getContext().getQueryCompiler();
-            return compiler.compile(className, classBody, QueryCompiler.FORMULA_PREFIX);
-        }
-    }
-
 
     public static class Result {
         public final String classBody;
         public final Class<?> clazz;
         public final FormulaKernelFactory formulaKernelFactory;
 
-        public Result(String classBody, Class<?> clazz, FormulaKernelFactory formulaKernelFactory) {
+        public Result(
+                @NotNull final String classBody,
+                @NotNull final Class<?> clazz,
+                @NotNull final FormulaKernelFactory formulaKernelFactory) {
             this.classBody = classBody;
             this.clazz = clazz;
             this.formulaKernelFactory = formulaKernelFactory;

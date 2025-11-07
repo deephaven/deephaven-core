@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2016-2023 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 #
 
 """Deephaven Python Client (`pydeephaven`) is a Python API built on top of Deephaven's highly efficient Open API which is
@@ -27,7 +27,7 @@ import importlib.metadata
 
 from .session import Session
 from .dherror import DHError
-from ._table_interface import SortDirection
+from ._table_interface import SortDirection, NaturalJoinType
 from .query import Query
 from .table import Table
 

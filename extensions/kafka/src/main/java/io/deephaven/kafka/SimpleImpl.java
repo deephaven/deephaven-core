@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.kafka;
 
 import io.confluent.kafka.schemaregistry.SchemaProvider;
@@ -33,7 +33,7 @@ import io.deephaven.qst.type.ShortType;
 import io.deephaven.qst.type.StringType;
 import io.deephaven.qst.type.Type;
 import io.deephaven.util.annotations.VisibleForTesting;
-import org.apache.commons.lang3.mutable.MutableInt;
+import io.deephaven.util.mutable.MutableInt;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.common.serialization.ByteArrayDeserializer;
 import org.apache.kafka.common.serialization.ByteBufferDeserializer;
@@ -233,13 +233,14 @@ class SimpleImpl {
 
         @Override
         Serializer<?> getSerializer(SchemaRegistryClient schemaRegistryClient, TableDefinition definition) {
-            final Class<?> dataType = definition.getColumn(columnName).getDataType();
-            final Serializer<?> serializer = serializer(Type.find(dataType)).orElse(null);
+            final ColumnDefinition<?> cd = definition.getColumn(columnName);
+            final Type<?> type = Type.find(cd.getDataType(), cd.getComponentType());
+            final Serializer<?> serializer = serializer(type).orElse(null);
             if (serializer != null) {
                 return serializer;
             }
             throw new UncheckedDeephavenException(
-                    String.format("Serializer not found for column %s, type %s", columnName, dataType.getName()));
+                    String.format("Serializer not found for column %s, type %s", columnName, type));
         }
 
         @Override

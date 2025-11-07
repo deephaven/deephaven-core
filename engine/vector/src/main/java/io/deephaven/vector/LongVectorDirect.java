@@ -1,15 +1,14 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharVectorDirect and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit CharVectorDirect and run "./gradlew replicateVectors" to regenerate
+//
+// @formatter:off
 package io.deephaven.vector;
 
 import io.deephaven.base.verify.Require;
-import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfLong;
+import io.deephaven.engine.primitive.value.iterator.ValueIteratorOfLong;
 import io.deephaven.util.annotations.ArrayType;
 import io.deephaven.util.annotations.ArrayTypeGetter;
 import org.jetbrains.annotations.NotNull;
@@ -63,9 +62,9 @@ public final class LongVectorDirect implements LongVector {
     }
 
     @Override
-    public CloseablePrimitiveIteratorOfLong iterator(final long fromIndexInclusive, final long toIndexExclusive) {
+    public ValueIteratorOfLong iterator(final long fromIndexInclusive, final long toIndexExclusive) {
         if (fromIndexInclusive == 0 && toIndexExclusive == data.length) {
-            return CloseablePrimitiveIteratorOfLong.of(data);
+            return ValueIteratorOfLong.of(data);
         }
         return LongVector.super.iterator(fromIndexInclusive, toIndexExclusive);
     }
@@ -92,6 +91,23 @@ public final class LongVectorDirect implements LongVector {
         }
         return LongVector.equals(this, obj);
     }
+
+    // region compareTo
+    @Override
+    public int compareTo(final LongVector o) {
+        if (o instanceof LongVectorDirect) {
+            // The byte, short, integer, and long versions can use direct vector comparisons as our order matches the
+            // natural order of numbers.
+            //
+            // Float and double can not use direct vector comparisons. Although NaN works because Float.compare and
+            // Double.compare sort NaNs last, as we do for Deephaven values; and the Arrays.compare is defined to work
+            // as Float.compare. However, Float.compare(0f,-0) does not produce 0 but rather ranks -0 as less than 0.
+            return Arrays.compare(data, ((LongVectorDirect) o).data);
+        }
+        return LongVector.super.compareTo(o);
+    }
+
+    // endregion compareTo
 
     @Override
     public int hashCode() {

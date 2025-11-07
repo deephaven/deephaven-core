@@ -1,8 +1,10 @@
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit ImmutableCharTestSource and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit ImmutableCharTestSource and run "./gradlew replicateSourceAndChunkTests" to regenerate
+//
+// @formatter:off
 package io.deephaven.engine.testutil.sources;
 
 import io.deephaven.base.verify.Assert;
@@ -17,8 +19,8 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.table.impl.ImmutableColumnSourceGetDefaults;
 import io.deephaven.util.type.TypeUtils;
+import io.deephaven.util.mutable.MutableInt;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
-import org.apache.commons.lang3.mutable.MutableInt;
 
 import java.util.function.LongConsumer;
 
@@ -63,8 +65,6 @@ public class ImmutableObjectTestSource<T> extends AbstractColumnSource<T>
 
     // region chunk add
     public synchronized void add(final RowSet rowSet, Chunk<Values> vs) {
-        setGroupToRange(null);
-
         if (rowSet.size() != vs.size()) {
             throw new IllegalArgumentException("rowSet=" + rowSet + ", data size=" + vs.size());
         }
@@ -77,7 +77,7 @@ public class ImmutableObjectTestSource<T> extends AbstractColumnSource<T>
             public void accept(final long v) {
                 // the unit test framework will ask us to add things, we need to conveniently ignore it
                 if (!data.containsKey(v)) {
-                    data.put(v, vcs.get(ii.intValue()));
+                    data.put(v, vcs.get(ii.get()));
                 }
                 ii.increment();
             }

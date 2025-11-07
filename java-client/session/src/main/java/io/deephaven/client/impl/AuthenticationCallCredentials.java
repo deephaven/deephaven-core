@@ -1,3 +1,6 @@
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.client.impl;
 
 import io.grpc.CallCredentials;
@@ -18,7 +21,7 @@ class AuthenticationCallCredentials extends CallCredentials {
     @Override
     public void applyRequestMetadata(RequestInfo requestInfo, Executor appExecutor, MetadataApplier applier) {
         final Metadata headers = new Metadata();
-        headers.put(AUTHORIZATION_HEADER, authenticationTypeAndValue);
+        headers.put(AUTHORIZATION_HEADER, authenticationTypeAndValue.trim());
         applier.apply(headers);
     }
 

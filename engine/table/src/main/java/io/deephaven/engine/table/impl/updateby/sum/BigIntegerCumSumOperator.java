@@ -1,3 +1,6 @@
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.updateby.sum;
 
 import io.deephaven.base.verify.Assert;
@@ -7,9 +10,7 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
 import io.deephaven.engine.table.impl.updateby.internal.BaseObjectUpdateByOperator;
-import io.deephaven.engine.table.impl.util.RowRedirection;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import java.math.BigInteger;
 
@@ -34,19 +35,24 @@ public final class BigIntegerCumSumOperator extends BaseObjectUpdateByOperator<B
             final BigInteger currentVal = objectValueChunk.get(pos);
 
             final boolean isCurrentNull = currentVal == null;
-            if(curVal == null) {
+            if (curVal == null) {
                 curVal = isCurrentNull ? null : currentVal;
             } else {
-                if(!isCurrentNull) {
+                if (!isCurrentNull) {
                     curVal = curVal.add(objectValueChunk.get(pos));
                 }
             }
         }
     }
 
-    public BigIntegerCumSumOperator(@NotNull final MatchPair inputPair,
-                                    @Nullable final RowRedirection rowRedirection) {
-        super(inputPair, new String[] {inputPair.rightColumn}, rowRedirection, BigInteger.class);
+    public BigIntegerCumSumOperator(
+            @NotNull final MatchPair inputPair) {
+        super(inputPair, new String[] {inputPair.rightColumn}, BigInteger.class);
+    }
+
+    @Override
+    public UpdateByOperator copy() {
+        return new BigIntegerCumSumOperator(pair);
     }
 
     @NotNull

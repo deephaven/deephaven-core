@@ -1,43 +1,24 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.client.impl;
 
 import com.google.protobuf.ByteStringAccess;
-import io.deephaven.api.ColumnName;
-import io.deephaven.api.JoinAddition;
-import io.deephaven.api.JoinMatch;
-import io.deephaven.api.RawString;
-import io.deephaven.api.Selectable;
-import io.deephaven.api.SortColumn;
-import io.deephaven.api.SortColumn.Order;
-import io.deephaven.api.Strings;
+import io.deephaven.api.*;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.api.expression.Expression;
 import io.deephaven.api.expression.Function;
 import io.deephaven.api.expression.Method;
 import io.deephaven.api.filter.Filter;
-import io.deephaven.api.filter.FilterAnd;
-import io.deephaven.api.filter.FilterComparison;
-import io.deephaven.api.filter.FilterComparison.Operator;
-import io.deephaven.api.filter.FilterIn;
-import io.deephaven.api.filter.FilterIsNull;
-import io.deephaven.api.filter.FilterNot;
-import io.deephaven.api.filter.FilterOr;
-import io.deephaven.api.filter.FilterPattern;
 import io.deephaven.api.literal.Literal;
 import io.deephaven.api.snapshot.SnapshotWhenOptions;
 import io.deephaven.api.snapshot.SnapshotWhenOptions.Flag;
 import io.deephaven.proto.backplane.grpc.AggregateAllRequest;
 import io.deephaven.proto.backplane.grpc.AggregateRequest;
 import io.deephaven.proto.backplane.grpc.AjRajTablesRequest;
-import io.deephaven.proto.backplane.grpc.AndCondition;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.Builder;
-import io.deephaven.proto.backplane.grpc.CompareCondition;
-import io.deephaven.proto.backplane.grpc.CompareCondition.CompareOperation;
-import io.deephaven.proto.backplane.grpc.Condition;
 import io.deephaven.proto.backplane.grpc.CreateInputTableRequest;
 import io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind;
 import io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind.Blink;
@@ -50,16 +31,14 @@ import io.deephaven.proto.backplane.grpc.ExactJoinTablesRequest;
 import io.deephaven.proto.backplane.grpc.FetchTableRequest;
 import io.deephaven.proto.backplane.grpc.FilterTableRequest;
 import io.deephaven.proto.backplane.grpc.HeadOrTailRequest;
-import io.deephaven.proto.backplane.grpc.InCondition;
-import io.deephaven.proto.backplane.grpc.IsNullCondition;
 import io.deephaven.proto.backplane.grpc.MergeTablesRequest;
+import io.deephaven.proto.backplane.grpc.MultiJoinTablesRequest;
 import io.deephaven.proto.backplane.grpc.NaturalJoinTablesRequest;
-import io.deephaven.proto.backplane.grpc.NotCondition;
-import io.deephaven.proto.backplane.grpc.OrCondition;
 import io.deephaven.proto.backplane.grpc.RangeJoinTablesRequest;
 import io.deephaven.proto.backplane.grpc.Reference;
 import io.deephaven.proto.backplane.grpc.SelectDistinctRequest;
 import io.deephaven.proto.backplane.grpc.SelectOrUpdateRequest;
+import io.deephaven.proto.backplane.grpc.SliceRequest;
 import io.deephaven.proto.backplane.grpc.SnapshotTableRequest;
 import io.deephaven.proto.backplane.grpc.SnapshotWhenTableRequest;
 import io.deephaven.proto.backplane.grpc.SortDescriptor;
@@ -90,6 +69,8 @@ import io.deephaven.qst.table.InputTable;
 import io.deephaven.qst.table.JoinTable;
 import io.deephaven.qst.table.LazyUpdateTable;
 import io.deephaven.qst.table.MergeTable;
+import io.deephaven.qst.table.MultiJoinInput;
+import io.deephaven.qst.table.MultiJoinTable;
 import io.deephaven.qst.table.NaturalJoinTable;
 import io.deephaven.qst.table.NewTable;
 import io.deephaven.qst.table.RangeJoinTable;
@@ -97,6 +78,7 @@ import io.deephaven.qst.table.ReverseTable;
 import io.deephaven.qst.table.SelectDistinctTable;
 import io.deephaven.qst.table.SelectTable;
 import io.deephaven.qst.table.SingleParentTable;
+import io.deephaven.qst.table.SliceTable;
 import io.deephaven.qst.table.SnapshotTable;
 import io.deephaven.qst.table.SnapshotWhenTable;
 import io.deephaven.qst.table.SortTable;
@@ -234,6 +216,15 @@ class BatchTableRequestBuilder {
         }
 
         @Override
+        public Operation visit(SliceTable sliceTable) {
+            return op(Builder::setSlice, SliceRequest.newBuilder().setResultId(ticket)
+                    .setSourceId(ref(sliceTable.parent()))
+                    .setFirstPositionInclusive(sliceTable.firstPositionInclusive())
+                    .setLastPositionExclusive(sliceTable.lastPositionExclusive())
+                    .build());
+        }
+
+        @Override
         public Operation visit(ReverseTable reverseTable) {
             // a bit hacky at the proto level, but this is how to specify a reverse
             return op(Builder::setSort,
@@ -251,8 +242,7 @@ class BatchTableRequestBuilder {
             for (SortColumn column : sortTable.columns()) {
                 SortDescriptor descriptor =
                         SortDescriptor.newBuilder().setColumnName(column.column().name())
-                                .setDirection(column.order() == Order.ASCENDING ? SortDirection.ASCENDING
-                                        : SortDirection.DESCENDING)
+                                .setDirection(column.isAscending() ? SortDirection.ASCENDING : SortDirection.DESCENDING)
                                 .build();
                 builder.addSorts(descriptor);
             }
@@ -583,6 +573,29 @@ class BatchTableRequestBuilder {
             return op(Builder::setDropColumns, request);
         }
 
+        @Override
+        public Operation visit(MultiJoinTable multiJoinTable) {
+            final MultiJoinTablesRequest.Builder request = MultiJoinTablesRequest.newBuilder()
+                    .setResultId(ticket);
+            for (MultiJoinInput<TableSpec> input : multiJoinTable.inputs()) {
+                request.addMultiJoinInputs(adapt(input));
+            }
+            return op(Builder::setMultiJoin, request);
+        }
+
+        private io.deephaven.proto.backplane.grpc.MultiJoinInput adapt(MultiJoinInput<TableSpec> input) {
+            io.deephaven.proto.backplane.grpc.MultiJoinInput.Builder builder =
+                    io.deephaven.proto.backplane.grpc.MultiJoinInput.newBuilder()
+                            .setSourceId(ref(input.table()));
+            for (JoinMatch match : input.matches()) {
+                builder.addColumnsToMatch(Strings.of(match));
+            }
+            for (JoinAddition addition : input.additions()) {
+                builder.addColumnsToAdd(Strings.of(addition));
+            }
+            return builder.build();
+        }
+
         private SelectOrUpdateRequest selectOrUpdate(SingleParentTable x,
                 Collection<Selectable> columns) {
             SelectOrUpdateRequest.Builder builder =
@@ -604,7 +617,7 @@ class BatchTableRequestBuilder {
         }
     }
 
-    private static Reference reference(ColumnName columnName) {
+    static Reference reference(ColumnName columnName) {
         return Reference.newBuilder().setColumnName(columnName.name()).build();
     }
 
@@ -775,133 +788,4 @@ class BatchTableRequestBuilder {
         }
     }
 
-    static class FilterAdapter implements Filter.Visitor<Condition> {
-
-        static Condition of(Filter filter) {
-            return filter.walk(new FilterAdapter());
-        }
-
-        private static CompareOperation adapt(Operator operator) {
-            switch (operator) {
-                case LESS_THAN:
-                    return CompareOperation.LESS_THAN;
-                case LESS_THAN_OR_EQUAL:
-                    return CompareOperation.LESS_THAN_OR_EQUAL;
-                case GREATER_THAN:
-                    return CompareOperation.GREATER_THAN;
-                case GREATER_THAN_OR_EQUAL:
-                    return CompareOperation.GREATER_THAN_OR_EQUAL;
-                case EQUALS:
-                    return CompareOperation.EQUALS;
-                case NOT_EQUALS:
-                    return CompareOperation.NOT_EQUALS;
-                default:
-                    throw new IllegalArgumentException("Unexpected operator " + operator);
-            }
-        }
-
-        @Override
-        public Condition visit(FilterIsNull isNull) {
-            if (!(isNull.expression() instanceof ColumnName)) {
-                // TODO(deephaven-core#3609): Update gRPC expression / filter / literal structures
-                throw new UnsupportedOperationException("Only supports null checking a reference to a column");
-            }
-            return Condition.newBuilder()
-                    .setIsNull(IsNullCondition.newBuilder().setReference(reference((ColumnName) isNull.expression()))
-                            .build())
-                    .build();
-        }
-
-        @Override
-        public Condition visit(FilterComparison comparison) {
-            FilterComparison preferred = comparison.maybeTranspose();
-            Operator operator = preferred.operator();
-            // Processing as single FilterIn is currently the more efficient server impl.
-            // See FilterTableGrpcImpl
-            // See io.deephaven.server.table.ops.filter.FilterFactory
-            switch (operator) {
-                case EQUALS:
-                    return visit(FilterIn.of(preferred.lhs(), preferred.rhs()));
-                case NOT_EQUALS:
-                    return visit(Filter.not(FilterIn.of(preferred.lhs(), preferred.rhs())));
-            }
-            return Condition.newBuilder()
-                    .setCompare(CompareCondition.newBuilder()
-                            .setOperation(adapt(operator))
-                            .setLhs(ExpressionAdapter.adapt(preferred.lhs()))
-                            .setRhs(ExpressionAdapter.adapt(preferred.rhs()))
-                            .build())
-                    .build();
-        }
-
-        @Override
-        public Condition visit(FilterIn in) {
-            final InCondition.Builder builder = InCondition.newBuilder()
-                    .setTarget(ExpressionAdapter.adapt(in.expression()));
-            for (Expression value : in.values()) {
-                builder.addCandidates(ExpressionAdapter.adapt(value));
-            }
-            return Condition.newBuilder().setIn(builder).build();
-        }
-
-        @Override
-        public Condition visit(FilterNot<?> not) {
-            // This is a shallow simplification that removes the need for setNot when it is not needed.
-            final Filter invertedFilter = not.invertFilter();
-            if (not.equals(invertedFilter)) {
-                return Condition.newBuilder().setNot(NotCondition.newBuilder().setFilter(of(not.filter())).build())
-                        .build();
-            } else {
-                return of(invertedFilter);
-            }
-        }
-
-        @Override
-        public Condition visit(FilterOr ors) {
-            OrCondition.Builder builder = OrCondition.newBuilder();
-            for (Filter filter : ors) {
-                builder.addFilters(of(filter));
-            }
-            return Condition.newBuilder().setOr(builder.build()).build();
-        }
-
-        @Override
-        public Condition visit(FilterAnd ands) {
-            AndCondition.Builder builder = AndCondition.newBuilder();
-            for (Filter filter : ands) {
-                builder.addFilters(of(filter));
-            }
-            return Condition.newBuilder().setAnd(builder.build()).build();
-        }
-
-        @Override
-        public Condition visit(FilterPattern pattern) {
-            // TODO(deephaven-core#3609): Update gRPC expression / filter / literal structures
-            throw new UnsupportedOperationException("Can't build Condition with FilterPattern");
-        }
-
-        @Override
-        public Condition visit(Function function) {
-            // TODO(deephaven-core#3609): Update gRPC expression / filter / literal structures
-            throw new UnsupportedOperationException("Can't build Condition with Function");
-        }
-
-        @Override
-        public Condition visit(Method method) {
-            // TODO(deephaven-core#3609): Update gRPC expression / filter / literal structures
-            throw new UnsupportedOperationException("Can't build Condition with Method");
-        }
-
-        @Override
-        public Condition visit(boolean literal) {
-            // TODO(deephaven-core#3609): Update gRPC expression / filter / literal structures
-            throw new UnsupportedOperationException("Can't build Condition with literal");
-        }
-
-        @Override
-        public Condition visit(RawString rawString) {
-            // TODO(deephaven-core#3609): Update gRPC expression / filter / literal structures
-            throw new UnsupportedOperationException("Can't build Condition with raw string");
-        }
-    }
 }

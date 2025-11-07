@@ -1,13 +1,15 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.vector;
 
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.primitive.iterator.CloseableIterator;
+import io.deephaven.engine.primitive.value.iterator.ValueIterator;
 import io.deephaven.qst.type.GenericVectorType;
 import io.deephaven.qst.type.GenericType;
 import io.deephaven.util.annotations.FinalDefault;
+import io.deephaven.util.compare.ObjectComparisons;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -24,7 +26,7 @@ public interface ObjectVector<COMPONENT_TYPE> extends Vector<ObjectVector<COMPON
 
     long serialVersionUID = 2691131699080413017L;
 
-    static <T> GenericVectorType<ObjectVector<T>, T> type(GenericType<T> genericType) {
+    static <T> GenericVectorType<ObjectVector<T>, T> type(final GenericType<T> genericType) {
         // noinspection unchecked
         return GenericVectorType.of((Class<ObjectVector<T>>) (Class<?>) ObjectVector.class, genericType);
     }
@@ -58,7 +60,7 @@ public interface ObjectVector<COMPONENT_TYPE> extends Vector<ObjectVector<COMPON
 
     @Override
     @FinalDefault
-    default CloseableIterator<COMPONENT_TYPE> iterator() {
+    default ValueIterator<COMPONENT_TYPE> iterator() {
         return iterator(0, size());
     }
 
@@ -70,9 +72,9 @@ public interface ObjectVector<COMPONENT_TYPE> extends Vector<ObjectVector<COMPON
      * @param toIndexExclusive The first position after {@code fromIndexInclusive} to not include
      * @return An iterator over the requested slice
      */
-    default CloseableIterator<COMPONENT_TYPE> iterator(final long fromIndexInclusive, final long toIndexExclusive) {
+    default ValueIterator<COMPONENT_TYPE> iterator(final long fromIndexInclusive, final long toIndexExclusive) {
         Require.leq(fromIndexInclusive, "fromIndexInclusive", toIndexExclusive, "toIndexExclusive");
-        return new CloseableIterator<>() {
+        return new ValueIterator<>() {
 
             long nextIndex = fromIndexInclusive;
 
@@ -85,7 +87,30 @@ public interface ObjectVector<COMPONENT_TYPE> extends Vector<ObjectVector<COMPON
             public boolean hasNext() {
                 return nextIndex < toIndexExclusive;
             }
+
+            @Override
+            public long remaining() {
+                return toIndexExclusive - nextIndex;
+            }
         };
+    }
+
+
+    /**
+     * <p>
+     * Compare this vector with another vector.
+     * </p>
+     *
+     * <p>
+     * The vectors must {@link Comparable} elements. The vectors are ordered lexicographically, producing an order
+     * consistent with {@link Arrays#compare(Comparable[], Comparable[])}.
+     * </p>
+     *
+     * {@see Comparable#compareTo}
+     */
+    @Override
+    default int compareTo(ObjectVector<COMPONENT_TYPE> o) {
+        return compareTo(this, o);
     }
 
     @Override
@@ -151,12 +176,44 @@ public interface ObjectVector<COMPONENT_TYPE> extends Vector<ObjectVector<COMPON
              final CloseableIterator<?> bIterator = bVector.iterator()) {
             // @formatter:on
             while (aIterator.hasNext()) {
-                if (!Objects.equals(aIterator.next(), bIterator.next())) {
+                if (!Objects.deepEquals(aIterator.next(), bIterator.next())) {
                     return false;
                 }
             }
         }
         return true;
+    }
+
+
+    /**
+     * Implements {@link Comparable#compareTo(Object)} for a generic CharVector.
+     * 
+     * @param aVector the first vector (this in compareTo)
+     * @param bVector the second vector ("o" or other in compareTo)
+     * @return -1, 0, or 1 if aVector is less than, equal to, or greater than bVector (respectively)
+     */
+    static <T> int compareTo(final ObjectVector<T> aVector, final ObjectVector<T> bVector) {
+        if (aVector == bVector) {
+            return 0;
+        }
+        try (final ValueIterator<T> aIterator = aVector.iterator();
+                final ValueIterator<T> bIterator = bVector.iterator()) {
+            while (aIterator.hasNext()) {
+                if (!bIterator.hasNext()) {
+                    return 1;
+                }
+                final T aValue = aIterator.next();
+                final T bValue = bIterator.next();
+                final int compare = ObjectComparisons.compare(aValue, bValue);
+                if (compare != 0) {
+                    return compare;
+                }
+            }
+            if (bIterator.hasNext()) {
+                return -1;
+            }
+        }
+        return 0;
     }
 
     /**

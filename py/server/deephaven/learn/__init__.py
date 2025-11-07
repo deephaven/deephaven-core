@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 #
 
 """ Deephaven's learn module provides utilities for efficient data transfer between Deephaven tables and Python objects,
@@ -71,7 +71,7 @@ def _validate(inputs: Input, outputs: Output, table: Table):
     input_columns_list = [input_.input.getColNames()[i] for input_ in inputs for i in
                           range(len(input_.input.getColNames()))]
     input_columns = set(input_columns_list)
-    table_columns = {col.name for col in table.columns}
+    table_columns = set(table.definition.keys())
     if table_columns >= input_columns:
         if outputs is not None:
             output_columns_list = [output.output.getColName() for output in outputs]
@@ -99,7 +99,7 @@ def _create_non_conflicting_col_name(table: Table, base_col_name: str) -> str:
     Returns:
         column name that is not present in the table.
     """
-    table_col_names = set([col.name for col in table.columns])
+    table_col_names = set(table.definition.keys())
     if base_col_name not in table_col_names:
         return base_col_name
     else:
@@ -153,11 +153,14 @@ def learn(table: Table = None, model_func: Callable = None, inputs: List[Input] 
 
         result = _create_non_conflicting_col_name(table, "__Result")
 
+        # calling __computer.clear() in a separate update ensures calculations are complete before computer is cleared
         return (table
                 .update(formulas=[
                     f"{future_offset} = __computer.compute(k)",
-                    f"{result} = {future_offset}.getFuture().get()",
-                    f"{clean} = __computer.clear()",
+                    f"{result} = {future_offset}.getFuture().get()"
+                ])
+                .update(formulas=[
+                    f"{clean} = __computer.clear()"
                 ])
                 .drop_columns(cols=[
                     f"{future_offset}",

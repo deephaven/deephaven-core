@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2016-2023 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 #
 
 import unittest
@@ -15,6 +15,11 @@ _JDateTimeUtils = jpy.get_type("io.deephaven.time.DateTimeUtils")
 
 
 class CalendarTestCase(BaseTestCase):
+    @classmethod
+    def setUpClass(cls) -> None:
+        super().setUpClass()
+        jpy.get_type('io.deephaven.time.calendar.CalendarInit').init()
+
     def setUp(self) -> None:
         super().setUp()
 

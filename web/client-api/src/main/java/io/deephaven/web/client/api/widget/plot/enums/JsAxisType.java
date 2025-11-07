@@ -1,10 +1,10 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.web.client.api.widget.plot.enums;
 
 import com.vertispan.tsdefs.annotations.TsTypeDef;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.figuredescriptor.AxisDescriptor;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.console_pb.figuredescriptor.AxisDescriptor;
 import jsinterop.annotations.JsType;
 
 @JsType(name = "AxisType", namespace = "dh.plot")

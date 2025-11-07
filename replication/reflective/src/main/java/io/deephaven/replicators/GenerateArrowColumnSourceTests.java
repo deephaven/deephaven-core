@@ -1,3 +1,6 @@
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.replicators;
 
 import com.squareup.javapoet.AnnotationSpec;
@@ -112,11 +115,6 @@ public class GenerateArrowColumnSourceTests {
                         "0, 14, 34, 300000000",
                         "21, 59, 29, 26000000")));
 
-        generateTests("ArrowTimestampVectorTest", "/timestamp_vector.arrow", "get", "WritableObjectChunk",
-                null, ClassName.get("java.time", "Instant"), null, expectedRows,
-                addWrapper("io.deephaven.time.DateTimeUtils.epochNanosToInstant(%s)", Arrays.asList(
-                        "1670443801", "1570443532", null, "0", "170443801", "-72309740")));
-
         generateTests("ArrowDecimalVectorTest", "/decimal_vector.arrow", "get", "WritableObjectChunk",
                 BigDecimal.class, null, expectedRows,
                 addWrapper("new java.math.BigDecimal(\"%s\", java.math.MathContext.DECIMAL64)\n", Arrays.asList(
@@ -178,7 +176,7 @@ public class GenerateArrowColumnSourceTests {
     }
 
     private static TypeName mutableInt() {
-        return ClassName.get("org.apache.commons.lang3.mutable", "MutableInt");
+        return ClassName.get("io.deephaven.util.mutable", "MutableInt");
     }
 
     private static TypeName staticAssert() {
@@ -234,17 +232,18 @@ public class GenerateArrowColumnSourceTests {
 
         String path = "extensions/arrow/src/test/java/io/deephaven/extensions/arrow/" + className + ".java";
         try {
-            final String header = Stream.of(
-                    "/*",
-                    " * Copyright (c) 2016-2023 Deephaven Data Labs and Patent Pending",
-                    " */",
-                    "/*",
-                    " * ---------------------------------------------------------------------------------------------------------------------",
-                    " * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit "
-                            + MethodHandles.lookup().lookupClass().getSimpleName() + " and regenerate",
-                    " * ---------------------------------------------------------------------------------------------------------------------",
-                    " */",
-                    "").collect(Collectors.joining(System.lineSeparator()));
+            String gradleTask = "generateArrowColumnTestSources";
+            Class<?> generatorClass = GenerateArrowColumnSourceTests.class;
+            final String header = String.join("\n",
+                    "//",
+                    "// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending",
+                    "//",
+                    "// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY",
+                    "// ****** Run " + generatorClass.getSimpleName() + " or \"./gradlew " + gradleTask
+                            + "\" to regenerate",
+                    "//",
+                    "// @formatter:off",
+                    "");
 
             Files.write(Paths.get(path), (header + javaFile).getBytes(StandardCharsets.UTF_8));
         } catch (IOException e) {

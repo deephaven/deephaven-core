@@ -1,22 +1,24 @@
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.updateby;
 
 import io.deephaven.api.updateby.DeltaControl;
 import io.deephaven.api.updateby.NullBehavior;
 import io.deephaven.api.updateby.UpdateByOperation;
+import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.context.ExecutionContext;
-import io.deephaven.engine.table.PartitionedTable;
-import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.impl.DataAccessHelpers;
+import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.QueryTable;
-import io.deephaven.engine.testutil.ControlledUpdateGraph;
-import io.deephaven.engine.testutil.EvalNugget;
-import io.deephaven.engine.testutil.GenerateTableUpdates;
-import io.deephaven.engine.testutil.TstUtils;
+import io.deephaven.engine.table.vectors.ColumnVectors;
+import io.deephaven.engine.testutil.*;
 import io.deephaven.engine.testutil.generator.CharGenerator;
 import io.deephaven.engine.testutil.generator.SortedInstantGenerator;
 import io.deephaven.engine.testutil.generator.TestDataGenerator;
+import io.deephaven.engine.util.TableTools;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.time.DateTimeUtils;
+import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -25,10 +27,13 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.Instant;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 
 import static io.deephaven.engine.testutil.GenerateTableUpdates.generateAppends;
+import static io.deephaven.engine.testutil.TstUtils.getTable;
+import static io.deephaven.engine.testutil.TstUtils.initColumnInfos;
 import static io.deephaven.engine.testutil.testcase.RefreshingTableTestCase.simulateShiftAwareStep;
 import static io.deephaven.engine.util.TableTools.intCol;
 import static io.deephaven.util.QueryConstants.*;
@@ -70,16 +75,16 @@ public class TestDelta extends BaseUpdateByTest {
 
         // default is NULL_DOMINATES
         QueryTable result = (QueryTable) table.updateBy(List.of(UpdateByOperation.Delta()));
-        assertArrayEquals((int[]) DataAccessHelpers.getColumn(result, "Int").getDirect(), outputNullDominates);
+        assertArrayEquals(ColumnVectors.ofInt(result, "Int").toArray(), outputNullDominates);
 
         result = (QueryTable) table.updateBy(List.of(UpdateByOperation.Delta(DeltaControl.NULL_DOMINATES)));
-        assertArrayEquals((int[]) DataAccessHelpers.getColumn(result, "Int").getDirect(), outputNullDominates);
+        assertArrayEquals(ColumnVectors.ofInt(result, "Int").toArray(), outputNullDominates);
 
         result = (QueryTable) table.updateBy(List.of(UpdateByOperation.Delta(DeltaControl.VALUE_DOMINATES)));
-        assertArrayEquals((int[]) DataAccessHelpers.getColumn(result, "Int").getDirect(), outputValueDominates);
+        assertArrayEquals(ColumnVectors.ofInt(result, "Int").toArray(), outputValueDominates);
 
         result = (QueryTable) table.updateBy(List.of(UpdateByOperation.Delta(DeltaControl.ZERO_DOMINATES)));
-        assertArrayEquals((int[]) DataAccessHelpers.getColumn(result, "Int").getDirect(), outputZeroDominates);
+        assertArrayEquals(ColumnVectors.ofInt(result, "Int").toArray(), outputZeroDominates);
     }
 
     // region Zero Key Tests
@@ -100,8 +105,9 @@ public class TestDelta extends BaseUpdateByTest {
             if ("boolCol".equals(col)) {
                 continue;
             }
-            assertWithDelta(DataAccessHelpers.getColumn(t, col).getDirect(),
-                    DataAccessHelpers.getColumn(result, col).getDirect(),
+            assertWithDelta(
+                    ColumnVectors.of(t, col).toArray(),
+                    ColumnVectors.of(result, col).toArray(),
                     DeltaControl.DEFAULT);
         }
 
@@ -111,8 +117,9 @@ public class TestDelta extends BaseUpdateByTest {
             if ("boolCol".equals(col)) {
                 continue;
             }
-            assertWithDelta(DataAccessHelpers.getColumn(t, col).getDirect(),
-                    DataAccessHelpers.getColumn(result, col).getDirect(),
+            assertWithDelta(
+                    ColumnVectors.of(t, col).toArray(),
+                    ColumnVectors.of(result, col).toArray(),
                     DeltaControl.NULL_DOMINATES);
         }
 
@@ -122,8 +129,9 @@ public class TestDelta extends BaseUpdateByTest {
             if ("boolCol".equals(col)) {
                 continue;
             }
-            assertWithDelta(DataAccessHelpers.getColumn(t, col).getDirect(),
-                    DataAccessHelpers.getColumn(result, col).getDirect(),
+            assertWithDelta(
+                    ColumnVectors.of(t, col).toArray(),
+                    ColumnVectors.of(result, col).toArray(),
                     DeltaControl.VALUE_DOMINATES);
         }
 
@@ -133,8 +141,9 @@ public class TestDelta extends BaseUpdateByTest {
             if ("boolCol".equals(col)) {
                 continue;
             }
-            assertWithDelta(DataAccessHelpers.getColumn(t, col).getDirect(),
-                    DataAccessHelpers.getColumn(result, col).getDirect(),
+            assertWithDelta(
+                    ColumnVectors.of(t, col).toArray(),
+                    ColumnVectors.of(result, col).toArray(),
                     DeltaControl.ZERO_DOMINATES);
         }
     }
@@ -172,8 +181,9 @@ public class TestDelta extends BaseUpdateByTest {
 
         preOp.partitionedTransform(postOp, (source, actual) -> {
             Arrays.stream(columns).forEach(col -> {
-                assertWithDelta(DataAccessHelpers.getColumn(source, col).getDirect(),
-                        DataAccessHelpers.getColumn(actual, col).getDirect(),
+                assertWithDelta(
+                        ColumnVectors.of(source, col).toArray(),
+                        ColumnVectors.of(actual, col).toArray(),
                         DeltaControl.DEFAULT);
             });
             return source;
@@ -186,8 +196,9 @@ public class TestDelta extends BaseUpdateByTest {
 
         preOp.partitionedTransform(postOp, (source, actual) -> {
             Arrays.stream(columns).forEach(col -> {
-                assertWithDelta(DataAccessHelpers.getColumn(source, col).getDirect(),
-                        DataAccessHelpers.getColumn(actual, col).getDirect(),
+                assertWithDelta(
+                        ColumnVectors.of(source, col).toArray(),
+                        ColumnVectors.of(actual, col).toArray(),
                         DeltaControl.NULL_DOMINATES);
             });
             return source;
@@ -200,8 +211,9 @@ public class TestDelta extends BaseUpdateByTest {
 
         preOp.partitionedTransform(postOp, (source, actual) -> {
             Arrays.stream(columns).forEach(col -> {
-                assertWithDelta(DataAccessHelpers.getColumn(source, col).getDirect(),
-                        DataAccessHelpers.getColumn(actual, col).getDirect(),
+                assertWithDelta(
+                        ColumnVectors.of(source, col).toArray(),
+                        ColumnVectors.of(actual, col).toArray(),
                         DeltaControl.VALUE_DOMINATES);
             });
             return source;
@@ -214,8 +226,9 @@ public class TestDelta extends BaseUpdateByTest {
 
         preOp.partitionedTransform(postOp, (source, actual) -> {
             Arrays.stream(columns).forEach(col -> {
-                assertWithDelta(DataAccessHelpers.getColumn(source, col).getDirect(),
-                        DataAccessHelpers.getColumn(actual, col).getDirect(),
+                assertWithDelta(
+                        ColumnVectors.of(source, col).toArray(),
+                        ColumnVectors.of(actual, col).toArray(),
                         DeltaControl.ZERO_DOMINATES);
             });
             return source;
@@ -308,6 +321,58 @@ public class TestDelta extends BaseUpdateByTest {
             } catch (Throwable ex) {
                 System.out.println("Crapped out on step " + ii);
                 throw ex;
+            }
+        }
+    }
+
+    @Test
+    public void testDHC5040() {
+        // ensure that Instant columns are handled correctly (interpreted to longs internally).
+        try (final SafeCloseable ignored = ExecutionContext.newBuilder()
+                .newQueryLibrary("DEFAULT")
+                .captureQueryCompiler()
+                .captureQueryScope()
+                .build().open();) {
+            ExecutionContext.getContext().getQueryLibrary().importStatic(TableTools.class);
+
+            final Random billy = new Random(0xB177B177);
+            int size = 1;
+
+            final ColumnInfo<?, ?>[] infos = initColumnInfos(
+                    new String[] {"Timestamp"},
+                    new SortedInstantGenerator(DateTimeUtils.parseInstant("2015-09-11T09:30:00 NY"),
+                            DateTimeUtils.parseInstant("2015-09-11T10:00:00 NY")));
+
+            final QueryTable timeTable = getTable(false, size, billy, infos);
+            timeTable.setRefreshing(true);
+
+            final Table st = timeTable
+                    .update("Minutes=(long)(epochNanos(Timestamp)/60_000_000_000)",
+                            "TimestampTable=newTable(longCol(\"Minutes\", Minutes), instantCol(\"Timestamp2\", Timestamp)).updateView(\"Timestamp2=Timestamp2+1\")")
+                    .dropColumns("Timestamp");
+
+            final TableDefinition td = TableDefinition.of(
+                    ColumnDefinition.ofTime("Timestamp2"),
+                    ColumnDefinition.ofLong("Minutes"));
+
+            final PartitionedTable pt = PartitionedTableFactory.of(
+                    st,
+                    Collections.singleton("Minutes"),
+                    false,
+                    "TimestampTable",
+                    td,
+                    true);
+
+            final Table mt = pt.merge();
+
+            final Table ut = mt.updateBy(UpdateByOperation.Delta("NanosDelta=Timestamp2"), "Minutes");
+
+            for (int ii = 0; ii < DYNAMIC_UPDATE_STEPS; ii++) {
+                ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().runWithinUnitTestCycle(
+                        () -> generateAppends(1, billy, timeTable, infos));
+                Assert.eqFalse(st.isFailed(), "st.isFailed()");
+                Assert.eqFalse(ut.isFailed(), "ut.isFailed()");
+                Assert.eq(st.size(), "st.size()", ut.size(), "ut.size()");
             }
         }
     }

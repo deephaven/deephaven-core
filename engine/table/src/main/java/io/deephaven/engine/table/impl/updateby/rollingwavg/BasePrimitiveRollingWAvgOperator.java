@@ -1,3 +1,6 @@
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.updateby.rollingwavg;
 
 import io.deephaven.base.ringbuffer.AggregatingDoubleRingBuffer;
@@ -5,7 +8,9 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.MatchPair;
+import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.impl.updateby.internal.BaseDoubleUpdateByOperator;
 import io.deephaven.engine.table.impl.util.RowRedirection;
 import io.deephaven.engine.table.impl.util.cast.ToDoubleCast;
@@ -17,10 +22,7 @@ import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
 abstract class BasePrimitiveRollingWAvgOperator extends BaseDoubleUpdateByOperator {
     private static final int BUFFER_INITIAL_CAPACITY = 128;
     final String weightColumnName;
-    final ColumnSource weightColumnSource;
-
-    // region extra-fields
-    // endregion extra-fields
+    ColumnSource<?> weightColumnSource;
 
     abstract class Context extends BaseDoubleUpdateByOperator.Context {
         DoubleChunk<? extends Values> influencerWeightValuesChunk;
@@ -82,8 +84,7 @@ abstract class BasePrimitiveRollingWAvgOperator extends BaseDoubleUpdateByOperat
         @Override
         public void writeToOutputChunk(int outIdx) {
             if (windowValues.size() == nullCount) {
-                // Looks weird but returning NaN is consistent with Numeric#wavg and AggWAvg
-                outputValues.set(outIdx, Double.NaN);
+                outputValues.set(outIdx, NULL_DOUBLE);
             } else {
                 final double weightedValSum = windowValues.evaluate();
                 final double weightSum = windowWeightValues.evaluate();
@@ -101,23 +102,22 @@ abstract class BasePrimitiveRollingWAvgOperator extends BaseDoubleUpdateByOperat
         }
     }
 
-    public BasePrimitiveRollingWAvgOperator(@NotNull final MatchPair pair,
+    public BasePrimitiveRollingWAvgOperator(
+            @NotNull final MatchPair pair,
             @NotNull final String[] affectingColumns,
-            @Nullable final RowRedirection rowRedirection,
             @Nullable final String timestampColumnName,
             final long reverseWindowScaleUnits,
             final long forwardWindowScaleUnits,
-            @NotNull final String weightColumnName,
-            @NotNull final ColumnSource weightColumnSource
-    // region extra-constructor-args
-    // endregion extra-constructor-args
-    ) {
-        super(pair, affectingColumns, rowRedirection, timestampColumnName, reverseWindowScaleUnits,
-                forwardWindowScaleUnits, true);
+            @NotNull final String weightColumnName) {
+        super(pair, affectingColumns, timestampColumnName, reverseWindowScaleUnits, forwardWindowScaleUnits, true);
         this.weightColumnName = weightColumnName;
-        this.weightColumnSource = weightColumnSource;
-        // region constructor
-        // endregion constructor
+    }
+
+    @Override
+    public void initializeSources(@NotNull final Table source, @Nullable final RowRedirection rowRedirection) {
+        super.initializeSources(source, rowRedirection);
+
+        weightColumnSource = ReinterpretUtils.maybeConvertToPrimitive(source.getColumnSource(weightColumnName));
     }
 
     /**

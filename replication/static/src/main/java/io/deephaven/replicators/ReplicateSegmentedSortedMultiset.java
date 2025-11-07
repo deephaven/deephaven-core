@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.replicators;
 
 import gnu.trove.set.hash.THashSet;
@@ -8,6 +8,7 @@ import org.apache.commons.io.FileUtils;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Array;
 import java.nio.charset.Charset;
 import java.time.Instant;
 import java.util.Arrays;
@@ -19,101 +20,105 @@ import static io.deephaven.replication.ReplicatePrimitiveCode.*;
 import static io.deephaven.replication.ReplicationUtils.*;
 
 public class ReplicateSegmentedSortedMultiset {
+    private static final String TASK = "replicateSegmentedSortedMultiset";
+
     public static void main(String[] args) throws IOException {
-        charToAllButBooleanAndLong(
+        charToAllButBooleanAndLong(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/ssms/CharSegmentedSortedMultiset.java");
-        insertInstantExtensions(charToLong(
+        insertInstantExtensions(charToLong(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/ssms/CharSegmentedSortedMultiset.java"));
 
-        String objectSsm = charToObject(
+        String objectSsm = charToObject(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/ssms/CharSegmentedSortedMultiset.java");
         fixupObjectSsm(objectSsm, ReplicateSegmentedSortedMultiset::fixupNulls,
+                ReplicateSegmentedSortedMultiset::fixupObjectGeneric,
                 ReplicateSegmentedSortedMultiset::fixupTHashes,
                 ReplicateSegmentedSortedMultiset::fixupSsmConstructor,
-                ReplicateSegmentedSortedMultiset::fixupObjectCompare);
+                ReplicateSegmentedSortedMultiset::fixupObjectCompare,
+                ReplicateSegmentedSortedMultiset::fixupKeyArrayAllocation);
 
-        charToAllButBoolean(
+        charToAllButBoolean(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmminmax/CharSetResult.java");
         fixupObjectSsm(
-                charToObject(
+                charToObject(TASK,
                         "engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmminmax/CharSetResult.java"),
                 ReplicateSegmentedSortedMultiset::fixupNulls);
 
-        charToAllButBoolean(
+        charToAllButBoolean(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmpercentile/CharPercentileTypeHelper.java");
         fixupObjectSsm(
-                charToObject(
+                charToObject(TASK,
                         "engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmpercentile/CharPercentileTypeHelper.java"),
                 ReplicateSegmentedSortedMultiset::fixupNulls);
 
-        charToIntegers(
+        charToIntegers(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmpercentile/CharPercentileTypeMedianHelper.java");
-        floatToAllFloatingPoints(
+        floatToAllFloatingPoints(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmpercentile/FloatPercentileTypeMedianHelper.java");
 
-        charToAllButBoolean(
+        charToAllButBoolean(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmcountdistinct/CharSsmBackedSource.java");
-        objectSsm = charToObject(
+        objectSsm = charToObject(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmcountdistinct/CharSsmBackedSource.java");
         fixupObjectSsm(objectSsm,
                 ReplicateSegmentedSortedMultiset::fixupSourceConstructor,
                 (l) -> replaceRegion(l, "CreateNew", Collections.singletonList(
-                        "            underlying.set(key, ssm = new ObjectSegmentedSortedMultiset(SsmDistinctContext.NODE_SIZE, Object.class));")));
+                        "            underlying.set(key, ssm = new ObjectSegmentedSortedMultiset(SsmDistinctContext.NODE_SIZE, componentType));")));
 
-        charToAllButBoolean(
+        charToAllButBoolean(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmcountdistinct/count/CharChunkedCountDistinctOperator.java");
         fixupObjectKernelOperator(
-                charToObject(
+                charToObject(TASK,
                         "engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmcountdistinct/count/CharChunkedCountDistinctOperator.java"),
                 "ssms");
 
-        charToAllButBooleanAndLong(
+        charToAllButBooleanAndLong(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmcountdistinct/distinct/CharChunkedDistinctOperator.java");
         fixupLongKernelOperator(
-                charToLong(
+                charToLong(TASK,
                         "engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmcountdistinct/distinct/CharChunkedDistinctOperator.java"),
                 "    externalResult = new InstantSsmSourceWrapper(internalResult);");
         fixupObjectKernelOperator(
-                charToObject(
+                charToObject(TASK,
                         "engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmcountdistinct/distinct/CharChunkedDistinctOperator.java"),
                 "internalResult");
 
-        charToAllButBooleanAndLong(
+        charToAllButBooleanAndLong(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmcountdistinct/unique/CharChunkedUniqueOperator.java");
         fixupLongKernelOperator(
-                charToLong(
+                charToLong(TASK,
                         "engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmcountdistinct/unique/CharChunkedUniqueOperator.java"),
                 "    externalResult = new LongAsInstantColumnSource(internalResult);");
         fixupObjectKernelOperator(
-                charToObject(
+                charToObject(TASK,
                         "engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmcountdistinct/unique/CharChunkedUniqueOperator.java"),
                 "ssms");
 
-        charToAllButBoolean(
+        charToAllButBoolean(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmcountdistinct/count/CharRollupCountDistinctOperator.java");
-        fixupObjectKernelOperator(charToObject(
+        fixupObjectKernelOperator(charToObject(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmcountdistinct/count/CharRollupCountDistinctOperator.java"),
                 "ssms");
 
-        charToAllButBooleanAndLong(
+        charToAllButBooleanAndLong(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmcountdistinct/distinct/CharRollupDistinctOperator.java");
         fixupLongKernelOperator(
-                charToLong(
+                charToLong(TASK,
                         "engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmcountdistinct/distinct/CharRollupDistinctOperator.java"),
                 "    externalResult = new InstantSsmSourceWrapper(internalResult);");
         fixupObjectKernelOperator(
-                charToObject(
+                charToObject(TASK,
                         "engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmcountdistinct/distinct/CharRollupDistinctOperator.java"),
                 "internalResult");
 
-        charToAllButBooleanAndLong(
+        charToAllButBooleanAndLong(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmcountdistinct/unique/CharRollupUniqueOperator.java");
         fixupLongKernelOperator(
-                charToLong(
+                charToLong(TASK,
                         "engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmcountdistinct/unique/CharRollupUniqueOperator.java"),
                 "    externalResult = new LongAsInstantColumnSource(internalResult);");
         fixupObjectKernelOperator(
-                charToObject(
+                charToObject(TASK,
                         "engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmcountdistinct/unique/CharRollupUniqueOperator.java"),
                 "ssms");
     }
@@ -171,6 +176,16 @@ public class ReplicateSegmentedSortedMultiset {
         FileUtils.writeLines(objectFile, lines);
     }
 
+    private static List<String> fixupKeyArrayAllocation(List<String> lines) {
+        lines = replaceRegion(lines, "KeyArrayAllocation",
+                indent(Collections.singletonList(
+                        "final Object[] keyArray = (Object[]) Array.newInstance(getComponentType(), totalSize);"), 8));
+        lines = replaceRegion(lines, "EmptyKeyArrayAllocation",
+                indent(Collections.singletonList(
+                        "return (Object[]) Array.newInstance(getComponentType(), 0);"), 12));
+        return addImport(lines, Array.class);
+    }
+
     private static List<String> fixupNulls(List<String> lines) {
         lines = globalReplacements(lines, "NULL_OBJECT", "null");
         return removeImport(lines, "\\s*import static.*QueryConstants.*;");
@@ -203,6 +218,10 @@ public class ReplicateSegmentedSortedMultiset {
                         "    public Class getComponentType() {\n" +
                         "        return componentType;\n" +
                         "    }"));
+    }
+
+    private static List<String> fixupObjectGeneric(List<String> lines) {
+        return globalReplacements(lines, "ObjectVector \\{", "ObjectVector<Object> \\{");
     }
 
     private static List<String> fixupSourceConstructor(List<String> lines) {

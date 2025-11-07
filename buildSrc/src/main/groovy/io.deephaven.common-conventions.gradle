@@ -12,5 +12,5 @@ def versionSeparator = deephavenBaseQualifier.isEmpty() ? "" : "-"
 version = "${deephavenBaseVersion}${versionSeparator}${deephavenBaseQualifier}"
 
 if (!name.startsWith('deephaven-')) {
-    archivesBaseName = "deephaven-${name}"
+    base.archivesName.set "deephaven-${name}"
 }

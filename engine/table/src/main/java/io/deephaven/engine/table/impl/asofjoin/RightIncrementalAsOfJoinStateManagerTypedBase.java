@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.asofjoin;
 
 import io.deephaven.base.verify.Assert;
@@ -22,7 +22,7 @@ import io.deephaven.engine.table.impl.ssa.SegmentedSortedArray;
 import io.deephaven.engine.table.impl.util.TypedHasherUtil;
 import io.deephaven.engine.table.impl.util.TypedHasherUtil.BuildOrProbeContext.ProbeContext;
 import io.deephaven.util.QueryConstants;
-import org.apache.commons.lang3.mutable.MutableInt;
+import io.deephaven.util.mutable.MutableInt;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -207,7 +207,7 @@ public abstract class RightIncrementalAsOfJoinStateManagerTypedBase extends Righ
         source.getUnsafe(location).appendKey(keyToAdd);
     }
 
-    protected void addLeftIndex(long tableLocation, long keyToAdd, byte currentState) {
+    protected void addLeftKey(long tableLocation, long keyToAdd, byte currentState) {
         final boolean isEmpty = (currentState & ENTRY_LEFT_MASK) == ENTRY_LEFT_IS_EMPTY;
         if (isEmpty) {
             final byte newState = (byte) ((currentState & ENTRY_RIGHT_MASK) | ENTRY_LEFT_IS_BUILDER);
@@ -220,7 +220,7 @@ public abstract class RightIncrementalAsOfJoinStateManagerTypedBase extends Righ
         }
     }
 
-    protected void addRightIndex(long tableLocation, long keyToAdd, byte currentState) {
+    protected void addRightKey(long tableLocation, long keyToAdd, byte currentState) {
         final boolean isEmpty = (currentState & ENTRY_RIGHT_MASK) == ENTRY_RIGHT_IS_EMPTY;
         if (isEmpty) {
             final byte newState = (byte) ((currentState & ENTRY_LEFT_MASK) | ENTRY_RIGHT_IS_BUILDER);
@@ -233,7 +233,7 @@ public abstract class RightIncrementalAsOfJoinStateManagerTypedBase extends Righ
         }
     }
 
-    protected void addAlternateLeftIndex(long tableLocation, long keyToAdd, byte currentState) {
+    protected void addAlternateLeftKey(long tableLocation, long keyToAdd, byte currentState) {
         final boolean isEmpty = (currentState & ENTRY_LEFT_MASK) == ENTRY_LEFT_IS_EMPTY;
         if (isEmpty) {
             final byte newState = (byte) ((currentState & ENTRY_RIGHT_MASK) | ENTRY_LEFT_IS_BUILDER);
@@ -246,7 +246,7 @@ public abstract class RightIncrementalAsOfJoinStateManagerTypedBase extends Righ
         }
     }
 
-    protected void addAlternateRightIndex(long tableLocation, long keyToAdd, byte currentState) {
+    protected void addAlternateRightKey(long tableLocation, long keyToAdd, byte currentState) {
         final boolean isEmpty = (currentState & ENTRY_RIGHT_MASK) == ENTRY_RIGHT_IS_EMPTY;
         if (isEmpty) {
             final byte newState = (byte) ((currentState & ENTRY_LEFT_MASK) | ENTRY_RIGHT_IS_BUILDER);
@@ -287,7 +287,7 @@ public abstract class RightIncrementalAsOfJoinStateManagerTypedBase extends Righ
                 final long entriesAdded = numEntries - oldEntries;
                 // if we actually added anything, then take away from the "equity" we've built up rehashing, otherwise
                 // don't penalize this build call with additional rehashing
-                bc.rehashCredits.subtract(entriesAdded);
+                bc.rehashCredits.subtract((int) entriesAdded);
 
                 bc.resetSharedContexts();
             }
@@ -361,24 +361,24 @@ public abstract class RightIncrementalAsOfJoinStateManagerTypedBase extends Righ
     @Override
     public int markForRemoval(RowSet restampRemovals, ColumnSource<?>[] sources, IntegerArraySource slots,
             ObjectArraySource<RowSetBuilderSequential> sequentialBuilders) {
-        return accumulateIndices(restampRemovals, sources, slots, sequentialBuilders, true);
+        return accumulateRowSets(restampRemovals, sources, slots, sequentialBuilders, true);
     }
 
     @Override
     public int probeAdditions(RowSet restampAdditions, ColumnSource<?>[] sources, IntegerArraySource slots,
             ObjectArraySource<RowSetBuilderSequential> sequentialBuilders) {
-        return accumulateIndices(restampAdditions, sources, slots, sequentialBuilders, false);
+        return accumulateRowSets(restampAdditions, sources, slots, sequentialBuilders, false);
     }
 
     @Override
-    public int gatherShiftIndex(RowSet restampAdditions, ColumnSource<?>[] sources, IntegerArraySource slots,
+    public int gatherShiftRowSet(RowSet restampAdditions, ColumnSource<?>[] sources, IntegerArraySource slots,
             ObjectArraySource<RowSetBuilderSequential> sequentialBuilders) {
-        return accumulateIndices(restampAdditions, sources, slots, sequentialBuilders, true);
+        return accumulateRowSets(restampAdditions, sources, slots, sequentialBuilders, true);
     }
 
     public int gatherModifications(RowSet restampAdditions, ColumnSource<?>[] sources, IntegerArraySource slots,
             ObjectArraySource<RowSetBuilderSequential> sequentialBuilders) {
-        return accumulateIndices(restampAdditions, sources, slots, sequentialBuilders, false);
+        return accumulateRowSets(restampAdditions, sources, slots, sequentialBuilders, false);
     }
 
     protected void probeTable(
@@ -425,16 +425,16 @@ public abstract class RightIncrementalAsOfJoinStateManagerTypedBase extends Righ
     }
 
     @Override
-    public void probeRightInitial(RowSequence rightIndex, ColumnSource<?>[] rightSources) {
-        if (rightIndex.isEmpty()) {
+    public void probeRightInitial(RowSequence rowsToProbe, ColumnSource<?>[] rightSources) {
+        if (rowsToProbe.isEmpty()) {
             return;
         }
-        try (final ProbeContext pc = makeProbeContext(rightSources, rightIndex.size())) {
-            probeTable(pc, rightIndex, false, rightSources, new RightProbeHandler());
+        try (final ProbeContext pc = makeProbeContext(rightSources, rowsToProbe.size())) {
+            probeTable(pc, rowsToProbe, false, rightSources, new RightProbeHandler());
         }
     }
 
-    private int accumulateIndices(RowSet rowSet, ColumnSource<?>[] sources, IntegerArraySource slots,
+    private int accumulateRowSets(RowSet rowSet, ColumnSource<?>[] sources, IntegerArraySource slots,
             ObjectArraySource<RowSetBuilderSequential> sequentialBuilders, boolean usePrev) {
         resetCookie();
 
@@ -479,13 +479,20 @@ public abstract class RightIncrementalAsOfJoinStateManagerTypedBase extends Righ
     }
 
     @Override
-    public WritableRowSet getAndClearLeftIndex(int slot) {
-        final RowSetBuilderSequential builder = (RowSetBuilderSequential) leftRowSetSource.getUnsafe(slot);
-        leftRowSetSource.set(slot, null);
-        if (builder == null) {
+    public WritableRowSet getAndClearLeftRowSet(int slot) {
+        final Object o = leftRowSetSource.getUnsafe(slot);
+        if (o == null) {
             return null;
         }
-        return builder.build();
+        leftRowSetSource.set(slot, null);
+
+        // This might already be a row set loaded from an index table. If so, just return it.
+        if (o instanceof WritableRowSet) {
+            return (WritableRowSet) o;
+        } else {
+            final RowSetBuilderSequential builder = (RowSetBuilderSequential) o;
+            return builder.build();
+        }
     }
 
     @Override
@@ -542,8 +549,8 @@ public abstract class RightIncrementalAsOfJoinStateManagerTypedBase extends Righ
             case ENTRY_RIGHT_IS_EMPTY:
                 return makeSsaFromEmpty(slot, ssaFactory, rowSetSource, source,
                         (byte) ((entryType & ENTRY_LEFT_MASK) | ENTRY_RIGHT_IS_SSA));
-            case ENTRY_RIGHT_IS_INDEX:
-                return makeSsaFromIndex(slot, ssaFactory, rowSetSource, source,
+            case ENTRY_RIGHT_IS_ROWSET:
+                return makeSsaFromRowSet(slot, ssaFactory, rowSetSource, source,
                         (byte) ((entryType & ENTRY_LEFT_MASK) | ENTRY_RIGHT_IS_SSA));
             case ENTRY_RIGHT_IS_BUILDER:
                 return makeSsaFromBuilder(slot, ssaFactory, rowSetSource, source,
@@ -555,7 +562,7 @@ public abstract class RightIncrementalAsOfJoinStateManagerTypedBase extends Righ
     }
 
     @Override
-    public WritableRowSet getRightIndex(int slot) {
+    public WritableRowSet getRightRowSet(int slot) {
         final ImmutableByteArraySource source;
         final ImmutableObjectArraySource<Object> rowSetSource;
         if ((slot & ALTERNATE_SWITCH_MASK) == mainInsertMask) {
@@ -569,19 +576,19 @@ public abstract class RightIncrementalAsOfJoinStateManagerTypedBase extends Righ
         slot = slot & ALTERNATE_INNER_MASK;
 
         final byte entryType = source.getUnsafe(slot);
-        if ((entryType & ENTRY_RIGHT_MASK) == ENTRY_RIGHT_IS_INDEX) {
+        if ((entryType & ENTRY_RIGHT_MASK) == ENTRY_RIGHT_IS_ROWSET) {
             return (WritableRowSet) rowSetSource.getUnsafe(slot);
         } else if ((entryType & ENTRY_RIGHT_MASK) == ENTRY_RIGHT_IS_BUILDER) {
             final WritableRowSet rowSet = ((RowSetBuilderSequential) rowSetSource.getUnsafe(slot)).build();
             rowSetSource.set(slot, rowSet);
-            source.set(slot, (byte) ((entryType & ENTRY_LEFT_MASK) | ENTRY_RIGHT_IS_INDEX));
+            source.set(slot, (byte) ((entryType & ENTRY_LEFT_MASK) | ENTRY_RIGHT_IS_ROWSET));
             return rowSet;
         }
         throw new IllegalStateException();
     }
 
     @Override
-    public WritableRowSet getLeftIndex(int slot) {
+    public WritableRowSet getLeftRowSet(int slot) {
         final ImmutableByteArraySource source;
         final ImmutableObjectArraySource<Object> rowSetSource;
         if ((slot & ALTERNATE_SWITCH_MASK) == mainInsertMask) {
@@ -595,19 +602,19 @@ public abstract class RightIncrementalAsOfJoinStateManagerTypedBase extends Righ
         slot = slot & ALTERNATE_INNER_MASK;
 
         final byte entryType = source.getUnsafe(slot);
-        if ((entryType & ENTRY_LEFT_MASK) == ENTRY_LEFT_IS_INDEX) {
+        if ((entryType & ENTRY_LEFT_MASK) == ENTRY_LEFT_IS_ROWSET) {
             return (WritableRowSet) rowSetSource.getUnsafe(slot);
         } else if ((entryType & ENTRY_LEFT_MASK) == ENTRY_LEFT_IS_BUILDER) {
             final WritableRowSet rowSet = ((RowSetBuilderSequential) rowSetSource.getUnsafe(slot)).build();
             rowSetSource.set(slot, rowSet);
-            source.set(slot, (byte) ((entryType & ENTRY_RIGHT_MASK) | ENTRY_LEFT_IS_INDEX));
+            source.set(slot, (byte) ((entryType & ENTRY_RIGHT_MASK) | ENTRY_LEFT_IS_ROWSET));
             return rowSet;
         }
         throw new IllegalStateException();
     }
 
     @Override
-    public void setLeftIndex(int slot, RowSet rowSet) {
+    public void setLeftRowSet(int slot, RowSet rowSet) {
         final ImmutableByteArraySource source;
         final ImmutableObjectArraySource<Object> rowSetSource;
         if ((slot & ALTERNATE_SWITCH_MASK) == mainInsertMask) {
@@ -622,7 +629,7 @@ public abstract class RightIncrementalAsOfJoinStateManagerTypedBase extends Righ
 
         final byte entryType = source.getUnsafe(slot);
         if ((entryType & ENTRY_LEFT_MASK) == ENTRY_LEFT_IS_EMPTY) {
-            source.set(slot, (byte) ((entryType & ENTRY_RIGHT_MASK) | ENTRY_LEFT_IS_INDEX));
+            source.set(slot, (byte) ((entryType & ENTRY_RIGHT_MASK) | ENTRY_LEFT_IS_ROWSET));
             rowSetSource.set(slot, rowSet);
             return;
         }
@@ -630,7 +637,7 @@ public abstract class RightIncrementalAsOfJoinStateManagerTypedBase extends Righ
     }
 
     @Override
-    public void setRightIndex(int slot, RowSet rowSet) {
+    public void setRightRowSet(int slot, RowSet rowSet) {
         final ImmutableByteArraySource source;
         final ImmutableObjectArraySource<Object> rowSetSource;
         if ((slot & ALTERNATE_SWITCH_MASK) == mainInsertMask) {
@@ -645,11 +652,65 @@ public abstract class RightIncrementalAsOfJoinStateManagerTypedBase extends Righ
 
         final byte entryType = source.getUnsafe(slot);
         if ((entryType & ENTRY_RIGHT_MASK) == ENTRY_RIGHT_IS_EMPTY) {
-            source.set(slot, (byte) ((entryType & ENTRY_LEFT_MASK) | ENTRY_RIGHT_IS_INDEX));
+            source.set(slot, (byte) ((entryType & ENTRY_LEFT_MASK) | ENTRY_RIGHT_IS_ROWSET));
             rowSetSource.set(slot, rowSet);
             return;
         }
         throw new IllegalStateException();
+    }
+
+    @Override
+    public void populateRightRowSetsFromIndexTable(
+            @NotNull final IntegerArraySource slots,
+            final int slotCount,
+            @NotNull final ColumnSource<RowSet> rowSetSource) {
+        for (int slotIndex = 0; slotIndex < slotCount; ++slotIndex) {
+            final int slot = slots.getInt(slotIndex);
+
+            final RowSetBuilderSequential sequentialBuilder =
+                    (RowSetBuilderSequential) rightRowSetSource.getUnsafe(slot);
+            if (sequentialBuilder == null) {
+                continue;
+            }
+            final WritableRowSet rs = sequentialBuilder.build();
+            final byte entryType = stateSource.getUnsafe(slot);
+            if (rs.isEmpty()) {
+                stateSource.set(slot, (byte) ((entryType & ENTRY_LEFT_MASK) | ENTRY_RIGHT_IS_EMPTY));
+                rs.close();
+            } else if (rs.size() == 1) {
+                // Set a copy of the RowSet into the row set source because the original is owned by the index.
+                rightRowSetSource.set(slot, rowSetSource.get(rs.firstRowKey()).copy());
+                stateSource.set(slot, (byte) ((entryType & ENTRY_LEFT_MASK) | ENTRY_RIGHT_IS_ROWSET));
+            } else {
+                throw new IllegalStateException("Index-built row set should have exactly one value: " + rs);
+            }
+        }
+    }
+
+    @Override
+    public void populateLeftRowSetsFromIndexTable(IntegerArraySource slots, int slotCount,
+            ColumnSource<RowSet> rowSetSource) {
+        for (int slotIndex = 0; slotIndex < slotCount; ++slotIndex) {
+            final int slot = slots.getInt(slotIndex);
+
+            final RowSetBuilderSequential sequentialBuilder =
+                    (RowSetBuilderSequential) leftRowSetSource.getUnsafe(slot);
+            if (sequentialBuilder == null) {
+                continue;
+            }
+            final WritableRowSet rs = sequentialBuilder.build();
+            final byte entryType = stateSource.getUnsafe(slot);
+            if (rs.isEmpty()) {
+                stateSource.set(slot, (byte) ((entryType & ENTRY_RIGHT_MASK) | ENTRY_LEFT_IS_EMPTY));
+                rs.close();
+            } else if (rs.size() == 1) {
+                // Set a copy of the RowSet into the row set source because the original is owned by the index.
+                leftRowSetSource.set(slot, rowSetSource.get(rs.firstRowKey()).copy());
+                stateSource.set(slot, (byte) ((entryType & ENTRY_RIGHT_MASK) | ENTRY_LEFT_IS_ROWSET));
+            } else {
+                throw new IllegalStateException("Index-built row set should have exactly one value: " + rs);
+            }
+        }
     }
 
     @Override
@@ -695,8 +756,8 @@ public abstract class RightIncrementalAsOfJoinStateManagerTypedBase extends Righ
             case ENTRY_LEFT_IS_BUILDER:
                 return makeSsaFromBuilder(slot, ssaFactory, rowSetSource, source,
                         (byte) ((entryType & ENTRY_RIGHT_MASK) | ENTRY_LEFT_IS_SSA));
-            case ENTRY_LEFT_IS_INDEX:
-                return makeSsaFromIndex(slot, ssaFactory, rowSetSource, source,
+            case ENTRY_LEFT_IS_ROWSET:
+                return makeSsaFromRowSet(slot, ssaFactory, rowSetSource, source,
                         (byte) ((entryType & ENTRY_RIGHT_MASK) | ENTRY_LEFT_IS_SSA));
             case ENTRY_LEFT_IS_SSA:
                 return (SegmentedSortedArray) rowSetSource.getUnsafe(slot);
@@ -705,7 +766,7 @@ public abstract class RightIncrementalAsOfJoinStateManagerTypedBase extends Righ
     }
 
     @Override
-    public SegmentedSortedArray getLeftSsaOrIndex(int slot, MutableObject<WritableRowSet> indexOutput) {
+    public SegmentedSortedArray getLeftSsaOrRowSet(int slot, MutableObject<WritableRowSet> indexOutput) {
         final ImmutableByteArraySource source;
         final ImmutableObjectArraySource<Object> rowSetSource;
         if ((slot & ALTERNATE_SWITCH_MASK) == mainInsertMask) {
@@ -719,13 +780,12 @@ public abstract class RightIncrementalAsOfJoinStateManagerTypedBase extends Righ
         slot = slot & ALTERNATE_INNER_MASK;
 
         final byte entryType = source.getUnsafe(slot);
-        final byte stateValueForIndex = (byte) ((entryType & ENTRY_RIGHT_MASK) | ENTRY_LEFT_IS_INDEX);
-        return getSsaOrIndex(indexOutput, slot, leftEntryAsRightType(entryType), rowSetSource, source,
-                stateValueForIndex);
+        final byte state = (byte) ((entryType & ENTRY_RIGHT_MASK) | ENTRY_LEFT_IS_ROWSET);
+        return getSsaOrRowSet(indexOutput, slot, leftEntryAsRightType(entryType), rowSetSource, source, state);
     }
 
     @Override
-    public SegmentedSortedArray getRightSsaOrIndex(int slot, MutableObject<WritableRowSet> indexOutput) {
+    public SegmentedSortedArray getRightSsaOrRowSet(int slot, MutableObject<WritableRowSet> indexOutput) {
         final ImmutableByteArraySource source;
         final ImmutableObjectArraySource<Object> rowSetSource;
         if ((slot & ALTERNATE_SWITCH_MASK) == mainInsertMask) {
@@ -739,32 +799,31 @@ public abstract class RightIncrementalAsOfJoinStateManagerTypedBase extends Righ
         slot = slot & ALTERNATE_INNER_MASK;
 
         final byte entryType = source.getUnsafe(slot);
-        final byte stateValueForIndex = (byte) ((entryType & ENTRY_LEFT_MASK) | ENTRY_RIGHT_IS_INDEX);
-        return getSsaOrIndex(indexOutput, slot, getRightEntryType(entryType), rowSetSource, source,
-                stateValueForIndex);
+        final byte state = (byte) ((entryType & ENTRY_LEFT_MASK) | ENTRY_RIGHT_IS_ROWSET);
+        return getSsaOrRowSet(indexOutput, slot, getRightEntryType(entryType), rowSetSource, source, state);
     }
 
     @Nullable
-    private static SegmentedSortedArray getSsaOrIndex(MutableObject<WritableRowSet> indexOutput, long location,
+    private static SegmentedSortedArray getSsaOrRowSet(MutableObject<WritableRowSet> indexOutput, long location,
             byte entryType, ImmutableObjectArraySource<Object> sideSource, ImmutableByteArraySource stateSource,
-            byte stateValueForIndex) {
+            byte state) {
         switch (entryType) {
             case ENTRY_RIGHT_IS_SSA:
                 return (SegmentedSortedArray) sideSource.getUnsafe(location);
-            case ENTRY_RIGHT_IS_INDEX:
+            case ENTRY_RIGHT_IS_ROWSET:
                 indexOutput.setValue((WritableRowSet) sideSource.getUnsafe(location));
                 return null;
             case ENTRY_RIGHT_IS_EMPTY: {
                 final WritableRowSet emptyRowSet = RowSetFactory.empty();
                 sideSource.set(location, emptyRowSet);
-                stateSource.set(location, stateValueForIndex);
+                stateSource.set(location, state);
                 indexOutput.setValue(emptyRowSet);
                 return null;
             }
             case ENTRY_RIGHT_IS_BUILDER: {
                 final WritableRowSet rowSet = ((RowSetBuilderSequential) sideSource.getUnsafe(location)).build();
                 sideSource.set(location, rowSet);
-                stateSource.set(location, stateValueForIndex);
+                stateSource.set(location, state);
                 indexOutput.setValue(rowSet);
                 return null;
             }
@@ -783,22 +842,23 @@ public abstract class RightIncrementalAsOfJoinStateManagerTypedBase extends Righ
         } else {
             rowSet = builder.build();
         }
-        return makeSsaFromIndex(slot, ssaFactory, ssaSource, stateSource, newState, rowSet);
+        return makeSsaFromRowSet(slot, ssaFactory, ssaSource, stateSource, newState, rowSet);
     }
 
     @Nullable
     private SegmentedSortedArray makeSsaFromEmpty(int slot, Function<RowSet, SegmentedSortedArray> ssaFactory,
             ImmutableObjectArraySource<Object> ssaSource, ImmutableByteArraySource stateSource, byte newState) {
-        return makeSsaFromIndex(slot, ssaFactory, ssaSource, stateSource, newState, RowSetFactory.empty());
+        return makeSsaFromRowSet(slot, ssaFactory, ssaSource, stateSource, newState, RowSetFactory.empty());
     }
 
     @Nullable
-    private SegmentedSortedArray makeSsaFromIndex(int slot, Function<RowSet, SegmentedSortedArray> ssaFactory,
+    private SegmentedSortedArray makeSsaFromRowSet(int slot, Function<RowSet, SegmentedSortedArray> ssaFactory,
             ImmutableObjectArraySource<Object> ssaSource, ImmutableByteArraySource stateSource, byte newState) {
-        return makeSsaFromIndex(slot, ssaFactory, ssaSource, stateSource, newState, (RowSet) ssaSource.getUnsafe(slot));
+        return makeSsaFromRowSet(slot, ssaFactory, ssaSource, stateSource, newState,
+                (RowSet) ssaSource.getUnsafe(slot));
     }
 
-    private SegmentedSortedArray makeSsaFromIndex(int slot, Function<RowSet, SegmentedSortedArray> ssaFactory,
+    private SegmentedSortedArray makeSsaFromRowSet(int slot, Function<RowSet, SegmentedSortedArray> ssaFactory,
             ImmutableObjectArraySource<Object> ssaSource, ImmutableByteArraySource stateSource, byte newState,
             RowSet rowSet) {
         stateSource.set(slot, newState);
@@ -808,7 +868,26 @@ public abstract class RightIncrementalAsOfJoinStateManagerTypedBase extends Righ
         return ssa;
     }
 
-    protected void newAlternate() {
+    /**
+     * After creating the new alternate key states, advise the derived classes, so they can cast them to the typed
+     * versions of the column source and adjust the derived class pointers.
+     */
+    protected abstract void adviseNewAlternate();
+
+    private void setupNewAlternate(int oldTableSize) {
+        Assert.eqZero(rehashPointer, "rehashPointer");
+
+        for (int ii = 0; ii < mainKeySources.length; ++ii) {
+            alternateKeySources[ii] = mainKeySources[ii];
+            mainKeySources[ii] = InMemoryColumnSource.getImmutableMemoryColumnSource(tableSize,
+                    alternateKeySources[ii].getType(), alternateKeySources[ii].getComponentType());
+            mainKeySources[ii].ensureCapacity(tableSize);
+        }
+        alternateTableSize = oldTableSize;
+        if (numEntries > 0) {
+            rehashPointer = alternateTableSize;
+        }
+
         alternateRightRowSetSource = rightRowSetSource;
         rightRowSetSource = new ImmutableObjectArraySource<>(Object.class, null);
         rightRowSetSource.ensureCapacity(tableSize);
@@ -849,7 +928,7 @@ public abstract class RightIncrementalAsOfJoinStateManagerTypedBase extends Righ
      */
     public boolean doRehash(boolean fullRehash, MutableInt rehashCredits, int nextChunkSize) {
         if (rehashPointer > 0) {
-            final int requiredRehash = nextChunkSize - rehashCredits.intValue();
+            final int requiredRehash = nextChunkSize - rehashCredits.get();
             if (requiredRehash <= 0) {
                 return false;
             }
@@ -875,8 +954,8 @@ public abstract class RightIncrementalAsOfJoinStateManagerTypedBase extends Righ
         }
 
         // we can't give the caller credit for rehashes with the old table, we need to begin migrating things again
-        if (rehashCredits.intValue() > 0) {
-            rehashCredits.setValue(0);
+        if (rehashCredits.get() > 0) {
+            rehashCredits.set(0);
         }
 
         if (fullRehash) {
@@ -891,20 +970,8 @@ public abstract class RightIncrementalAsOfJoinStateManagerTypedBase extends Righ
             return false;
         }
 
-        Assert.eqZero(rehashPointer, "rehashPointer");
-
-        for (int ii = 0; ii < mainKeySources.length; ++ii) {
-            alternateKeySources[ii] = mainKeySources[ii];
-            mainKeySources[ii] = InMemoryColumnSource.getImmutableMemoryColumnSource(tableSize,
-                    alternateKeySources[ii].getType(), alternateKeySources[ii].getComponentType());
-            mainKeySources[ii].ensureCapacity(tableSize);
-        }
-        alternateTableSize = oldTableSize;
-        if (numEntries > 0) {
-            rehashPointer = alternateTableSize;
-        }
-
-        newAlternate();
+        setupNewAlternate(oldTableSize);
+        adviseNewAlternate();
 
         return true;
     }

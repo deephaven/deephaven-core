@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.jpy.integration;
 
 import io.deephaven.jpy.BuiltinsModule;
@@ -17,6 +17,7 @@ import org.jpy.PyObject;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -226,8 +227,18 @@ public class ReferenceCountingTest extends PythonTest {
 
     @Test
     public void expressionHasRefCount1() {
-        final PyObject pyObject = PyObject.executeCode("'expressionHasRefCount1'", PyInputMode.EXPRESSION);
+        // https://peps.python.org/pep-0683/ introduced immortal objects. "small" strings may become immortal.
+        final PyObject pyObject =
+                PyObject.executeCode("'expressionHasRefCount1: note making this a larger string so it is not immortal'",
+                        PyInputMode.EXPRESSION);
         ref.check(1, pyObject);
+    }
+
+    @Test
+    public void smallStringIsImmportal() {
+        // https://peps.python.org/pep-0683/ introduced immortal objects. "small" strings may become immortal.
+        final PyObject pyObject = PyObject.executeCode("'small'", PyInputMode.EXPRESSION);
+        ref.check(-1, pyObject);
     }
 
     @Test

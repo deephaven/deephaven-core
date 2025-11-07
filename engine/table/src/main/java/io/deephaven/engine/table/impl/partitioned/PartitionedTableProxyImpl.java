@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.partitioned;
 
 import io.deephaven.api.*;
@@ -18,10 +18,12 @@ import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.*;
 import io.deephaven.engine.table.impl.select.MatchFilter;
+import io.deephaven.engine.table.impl.select.MatchFilter.MatchType;
 import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.engine.table.impl.select.SourceColumn;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.select.analyzers.SelectAndViewAnalyzer;
+import io.deephaven.engine.table.impl.updateby.UpdateBy;
 import io.deephaven.engine.updategraph.NotificationQueue.Dependency;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.util.TableTools;
@@ -232,7 +234,7 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
                                         requireMatchingKeys,
                                         sanityCheckJoins);
                             },
-                            () -> refreshingResults,
+                            refreshingResults,
                             ptp -> refreshingResults));
         }
         throw onUnexpectedTableOperations(other);
@@ -338,7 +340,7 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
         final Table rhsKeys = rhs.table().updateView(rhsKeyColumnRenames).selectDistinct(lhsKeyColumnNames);
         final Table unionedKeys = TableTools.merge(lhsKeys, rhsKeys);
         final Table countedKeys = unionedKeys.countBy(FOUND_IN.name(), lhs.keyColumnNames());
-        final Table nonMatchingKeys = countedKeys.where(new MatchFilter(FOUND_IN.name(), 1));
+        final Table nonMatchingKeys = countedKeys.where(new MatchFilter(MatchType.Regular, FOUND_IN.name(), 1));
         final Table nonMatchingKeysOnly = nonMatchingKeys.view(lhsKeyColumnNames);
         checkNonMatchingKeys(nonMatchingKeysOnly);
         return new DependentValidation("Matching Partition Keys", nonMatchingKeysOnly,
@@ -429,6 +431,11 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
     }
 
     @Override
+    public PartitionedTable.Proxy slice(long firstPositionInclusive, long lastPositionExclusive) {
+        return basicTransform(ct -> ct.slice(firstPositionInclusive, lastPositionExclusive));
+    }
+
+    @Override
     public PartitionedTable.Proxy reverse() {
         return basicTransform(Table::reverse);
     }
@@ -463,21 +470,25 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
     public PartitionedTable.Proxy where(Filter filter) {
         final WhereFilter[] whereFilters = WhereFilter.fromInternal(filter);
         final TableDefinition definition = target.constituentDefinition();
+        final QueryCompilerRequestProcessor.BatchProcessor compilationProcessor = QueryCompilerRequestProcessor.batch();
         for (WhereFilter whereFilter : whereFilters) {
-            whereFilter.init(definition);
+            whereFilter.init(definition, compilationProcessor);
         }
+        compilationProcessor.compile();
         return basicTransform(ct -> ct.where(Filter.and(WhereFilter.copyFrom(whereFilters))));
     }
 
     @Override
     public PartitionedTable.Proxy whereIn(TableOperations<?, ?> rightTable,
             Collection<? extends JoinMatch> columnsToMatch) {
+        // TODO (https://github.com/deephaven/deephaven-core/issues/5261): Share set tables when possible
         return complexTransform(rightTable, (ct, ot) -> ct.whereIn(ot, columnsToMatch), columnsToMatch);
     }
 
     @Override
     public PartitionedTable.Proxy whereNotIn(TableOperations<?, ?> rightTable,
             Collection<? extends JoinMatch> columnsToMatch) {
+        // TODO (https://github.com/deephaven/deephaven-core/issues/5261): Share set tables when possible
         return complexTransform(rightTable, (ct, ot) -> ct.whereNotIn(ot, columnsToMatch), columnsToMatch);
     }
 
@@ -521,9 +532,12 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
     }
 
     @Override
-    public PartitionedTable.Proxy naturalJoin(TableOperations<?, ?> rightTable,
-            Collection<? extends JoinMatch> columnsToMatch, Collection<? extends JoinAddition> columnsToAdd) {
-        return complexTransform(rightTable, (ct, ot) -> ct.naturalJoin(ot, columnsToMatch, columnsToAdd),
+    public PartitionedTable.Proxy naturalJoin(
+            final TableOperations<?, ?> rightTable,
+            final Collection<? extends JoinMatch> columnsToMatch,
+            final Collection<? extends JoinAddition> columnsToAdd,
+            final NaturalJoinType joinType) {
+        return complexTransform(rightTable, (ct, ot) -> ct.naturalJoin(ot, columnsToMatch, columnsToAdd, joinType),
                 columnsToMatch);
     }
 
@@ -580,7 +594,7 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
             // Force a consistent view of initial groups table to be used for all current and future constituents
             final Table initialGroupsTable = LivenessScopeStack.computeEnclosed(
                     () -> ((Table) initialGroups).selectDistinct(groupByColumns).snapshot(),
-                    () -> ((Table) initialGroups).isRefreshing(),
+                    ((Table) initialGroups).isRefreshing(),
                     Table::isRefreshing);
             return basicTransform(
                     true,
@@ -599,7 +613,9 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
     @Override
     public PartitionedTable.Proxy updateBy(UpdateByControl control, Collection<? extends UpdateByOperation> operations,
             Collection<? extends ColumnName> byColumns) {
-        return basicTransform(ct -> ct.updateBy(control, operations, byColumns));
+        final UpdateBy.UpdateByOperatorCollection collection = UpdateBy.UpdateByOperatorCollection
+                .from(target.constituentDefinition(), control, operations, byColumns);
+        return basicTransform(ct -> UpdateBy.updateBy((QueryTable) ct, collection.copy(), control));
     }
 
     @Override

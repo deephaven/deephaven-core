@@ -1,21 +1,24 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.testutil.testcase;
 
 import io.deephaven.base.testing.BaseArrayTestCase;
 import io.deephaven.chunk.util.pools.ChunkPoolReleaseTracking;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.context.ExecutionContext;
-import io.deephaven.engine.context.QueryCompiler;
+import io.deephaven.engine.context.QueryCompilerImpl;
 import io.deephaven.engine.context.TestExecutionContext;
 import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.UpdateErrorReporter;
+import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
 import io.deephaven.engine.table.impl.util.AsyncClientErrorNotifier;
 import io.deephaven.engine.table.impl.util.AsyncErrorLogger;
 import io.deephaven.engine.testutil.*;
+import io.deephaven.engine.updategraph.UpdateGraph;
+import io.deephaven.engine.updategraph.impl.PeriodicUpdateGraph;
 import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
 import io.deephaven.util.ExceptionDetails;
 import io.deephaven.util.SafeCloseable;
@@ -58,6 +61,14 @@ abstract public class RefreshingTableTestCase extends BaseArrayTestCase implemen
         oldProcessEnvironment = ProcessEnvironment.tryGet();
         ProcessEnvironment.set(FakeProcessEnvironment.INSTANCE, true);
 
+        // clear out any old performance tracker and update graph
+        UpdatePerformanceTracker.resetForUnitTests();
+        PeriodicUpdateGraph.removeInstance(PeriodicUpdateGraph.DEFAULT_UPDATE_GRAPH_NAME);
+        // the primary PUG needs to be named DEFAULT or else UpdatePerformanceTracker will fail to initialize
+        PeriodicUpdateGraph.newBuilder(PeriodicUpdateGraph.DEFAULT_UPDATE_GRAPH_NAME)
+                .numUpdateThreads(PeriodicUpdateGraph.NUM_THREADS_DEFAULT_UPDATE_GRAPH)
+                .existingOrBuild();
+
         // initialize the unit test's execution context
         executionContext = TestExecutionContext.createForUnitTests().open();
 
@@ -70,7 +81,7 @@ abstract public class RefreshingTableTestCase extends BaseArrayTestCase implemen
         errors = null;
         livenessScopeCloseable = LivenessScopeStack.open(new LivenessScope(true), true);
 
-        oldLogEnabled = QueryCompiler.setLogEnabled(ENABLE_QUERY_COMPILER_LOGGING);
+        oldLogEnabled = QueryCompilerImpl.setLogEnabled(ENABLE_QUERY_COMPILER_LOGGING);
         oldSerialSafe = updateGraph.setSerialTableOperationsSafe(true);
         AsyncErrorLogger.init();
         ChunkPoolReleaseTracking.enableStrict();
@@ -78,15 +89,18 @@ abstract public class RefreshingTableTestCase extends BaseArrayTestCase implemen
 
     @Override
     public void tearDown() throws Exception {
+        // shutdown the UPT before we check for leaked chunks
+        UpdatePerformanceTracker.resetForUnitTests();
+        livenessScopeCloseable.close();
+
         ChunkPoolReleaseTracking.checkAndDisable();
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         updateGraph.setSerialTableOperationsSafe(oldSerialSafe);
-        QueryCompiler.setLogEnabled(oldLogEnabled);
+        QueryCompilerImpl.setLogEnabled(oldLogEnabled);
 
         // reset the execution context
         executionContext.close();
 
-        livenessScopeCloseable.close();
         AsyncClientErrorNotifier.setReporter(oldReporter);
         QueryTable.setMemoizeResults(oldMemoize);
         updateGraph.resetForUnitTests(true);
@@ -127,6 +141,19 @@ abstract public class RefreshingTableTestCase extends BaseArrayTestCase implemen
         this.expectError = expectError;
     }
 
+    public class ExpectingError implements SafeCloseable {
+        final boolean originalExpectError = getExpectError();
+
+        public ExpectingError() {
+            setExpectError(true);
+        }
+
+        @Override
+        public void close() {
+            setExpectError(originalExpectError);
+        }
+    }
+
     public <T> T allowingError(Supplier<T> function, Predicate<List<Throwable>> errorsAcceptable) {
         final boolean original = getExpectError();
         T retval;
@@ -160,7 +187,7 @@ abstract public class RefreshingTableTestCase extends BaseArrayTestCase implemen
                 en);
     }
 
-    protected static void simulateShiftAwareStep(final GenerateTableUpdates.SimulationProfile simulationProfile,
+    public static void simulateShiftAwareStep(final GenerateTableUpdates.SimulationProfile simulationProfile,
             final String ctxt, int targetUpdateSize, Random random, QueryTable table, ColumnInfo[] columnInfo,
             EvalNuggetInterface[] en) {
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();

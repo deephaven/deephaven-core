@@ -1,19 +1,18 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table;
 
 import io.deephaven.base.verify.Require;
-import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.ChunkType;
-import io.deephaven.engine.rowset.WritableRowSet;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.util.annotations.FinalDefault;
 import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.Nullable;
 import javax.annotation.OverridingMethodsMustInvokeSuper;
-import java.util.Map;
 
 /**
  * A "source" for column data - allows cell values to be looked up by (long) keys.
@@ -40,10 +39,26 @@ public interface ColumnSource<T>
         return ChunkType.fromElementType(dataType);
     }
 
+    /**
+     * Return a {@link RowSet row set} where the values in the column source match the given keys.
+     *
+     * @param invertMatch Whether to invert the match, i.e. return the rows where the values do not match the given keys
+     * @param usePrev Whether to use the previous values for the ColumnSource
+     * @param caseInsensitive Whether to perform a case insensitive match
+     * @param dataIndex An optional data index that can be used to accelerate the match (the index table must be
+     *        included in snapshot controls or otherwise guaranteed to be current)
+     * @param mapper Restrict results to this row set
+     * @param keys The keys to match in the column
+     *
+     * @return The rows that match the given keys
+     */
     WritableRowSet match(
-            boolean invertMatch, boolean usePrev, boolean caseInsensitive, @NotNull RowSet mapper, Object... keys);
-
-    Map<T, RowSet> getValuesMapping(RowSet subRange);
+            boolean invertMatch,
+            boolean usePrev,
+            boolean caseInsensitive,
+            @Nullable final DataIndex dataIndex,
+            @NotNull RowSet mapper,
+            Object... keys);
 
     /**
      * ColumnSource implementations that track previous values have the option to not actually start tracking previous
@@ -58,21 +73,6 @@ public interface ColumnSource<T>
             throw new UnsupportedOperationException(this.getClass().getName());
         }
     }
-
-    /**
-     * Compute grouping information for all keys present in this column source.
-     *
-     * @return A map from distinct data values to a RowSet that contains those values
-     */
-    Map<T, RowSet> getGroupToRange();
-
-    /**
-     * Compute grouping information for (at least) all keys present in rowSet.
-     *
-     * @param rowSet The RowSet to consider
-     * @return A map from distinct data values to a RowSet that contains those values
-     */
-    Map<T, RowSet> getGroupToRange(RowSet rowSet);
 
     /**
      * Determine if this column source is immutable, meaning that the values at a given row key never change.
@@ -126,16 +126,31 @@ public interface ColumnSource<T>
     }
 
     @Override
-    default <ELEMENT_TYPE> void exportElement(final T tuple, final int elementIndex,
+    @FinalDefault
+    default int tupleLength() {
+        return 1;
+    }
+
+    @Override
+    @FinalDefault
+    default <ELEMENT_TYPE> void exportElement(@NotNull final T tuple, final int elementIndex,
             @NotNull final WritableColumnSource<ELEMENT_TYPE> writableSource, final long destinationIndexKey) {
         // noinspection unchecked
         writableSource.set(destinationIndexKey, (ELEMENT_TYPE) tuple);
     }
 
     @Override
-    default Object exportElement(T tuple, int elementIndex) {
+    @FinalDefault
+    default Object exportElement(@NotNull final T tuple, final int elementIndex) {
         Require.eqZero(elementIndex, "elementIndex");
         return tuple;
+    }
+
+    @Override
+    @FinalDefault
+    default void exportAllTo(final Object @NotNull [] dest, @NotNull final T tuple) {
+        Require.geqZero(dest.length, "dest.length");
+        dest[0] = tuple;
     }
 
     @Override
@@ -162,8 +177,34 @@ public interface ColumnSource<T>
      */
     @FinalDefault
     default <TYPE> ColumnSource<TYPE> cast(Class<? extends TYPE> clazz) {
+        return cast(clazz, (String) null);
+    }
+
+    /**
+     * Returns this {@code ColumnSource}, parameterized by {@code <TYPE>}, if the data type of this column (as given by
+     * {@link #getType()}) can be cast to {@code clazz}. This is analogous to casting the objects provided by this
+     * column source to {@code clazz}.
+     * <p>
+     * For example, the following code will throw an exception if the "MyString" column does not actually contain
+     * {@code String} data:
+     *
+     * <pre>
+     *     ColumnSource&lt;String&gt; colSource = table.getColumnSource("MyString").cast(String.class, "MyString")
+     * </pre>
+     * <p>
+     * Due to the nature of type erasure, the JVM will still insert an additional cast to {@code TYPE} when elements are
+     * retrieved from the column source, such as with {@code String myStr = colSource.get(0)}.
+     *
+     * @param clazz The target type.
+     * @param <TYPE> The target type, as a type parameter. Intended to be inferred from {@code clazz}.
+     * @param colName An optional column name, which will be included in exception messages.
+     * @return A {@code ColumnSource} parameterized by {@code TYPE}.
+     */
+    @FinalDefault
+    default <TYPE> ColumnSource<TYPE> cast(Class<? extends TYPE> clazz, @Nullable String colName) {
         Require.neqNull(clazz, "clazz");
-        TypeHelper.checkCastTo("ColumnSource", getType(), clazz);
+        final String castCheckPrefix = colName == null ? "ColumnSource" : "ColumnSource[" + colName + ']';
+        TypeHelper.checkCastTo(castCheckPrefix, getType(), clazz);
         // noinspection unchecked
         return (ColumnSource<TYPE>) this;
     }
@@ -193,8 +234,39 @@ public interface ColumnSource<T>
      */
     @FinalDefault
     default <TYPE> ColumnSource<TYPE> cast(Class<? extends TYPE> clazz, @Nullable Class<?> componentType) {
+        return cast(clazz, componentType, null);
+    }
+
+    /**
+     * Returns this {@code ColumnSource}, parameterized by {@code <TYPE>}, if the data type of this column (as given by
+     * {@link #getType()}) can be cast to {@code clazz}. This is analogous to casting the objects provided by this
+     * column source to {@code clazz}. Additionally, this checks that the component type of this column (as given by
+     * {@link #getComponentType()}) can be cast to {@code componentType} (both must be present and castable, or both
+     * must be {@code null}).
+     *
+     * <p>
+     * For example, the following code will throw an exception if the "MyString" column does not actually contain
+     * {@code String} data:
+     *
+     * <pre>
+     *     ColumnSource&lt;String&gt; colSource = table.getColumnSource("MyString").cast(String.class, null, "MyString")
+     * </pre>
+     * <p>
+     * Due to the nature of type erasure, the JVM will still insert an additional cast to {@code TYPE} when elements are
+     * retrieved from the column source, such as with {@code String myStr = colSource.get(0)}.
+     *
+     * @param clazz The target type.
+     * @param componentType The target component type, may be {@code null}.
+     * @param colName An optional column name, which will be included in exception messages.
+     * @param <TYPE> The target type, as a type parameter. Intended to be inferred from {@code clazz}.
+     * @return A {@code ColumnSource} parameterized by {@code TYPE}.
+     */
+    @FinalDefault
+    default <TYPE> ColumnSource<TYPE> cast(Class<? extends TYPE> clazz, @Nullable Class<?> componentType,
+            @Nullable String colName) {
         Require.neqNull(clazz, "clazz");
-        TypeHelper.checkCastTo("ColumnSource", getType(), getComponentType(), clazz, componentType);
+        final String castCheckPrefix = colName == null ? "ColumnSource" : "ColumnSource[" + colName + ']';
+        TypeHelper.checkCastTo(castCheckPrefix, getType(), getComponentType(), clazz, componentType);
         // noinspection unchecked
         return (ColumnSource<TYPE>) this;
     }

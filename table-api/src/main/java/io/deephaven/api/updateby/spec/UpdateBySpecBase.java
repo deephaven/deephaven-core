@@ -1,3 +1,6 @@
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.api.updateby.spec;
 
 import io.deephaven.api.Pair;
@@ -42,6 +45,13 @@ public abstract class UpdateBySpecBase implements UpdateBySpec {
         return ColumnUpdateOperation.builder()
                 .spec(this)
                 .addAllColumns(pairs)
+                .build();
+    }
+
+    @Override
+    public final ColumnUpdateOperation clause() {
+        return ColumnUpdateOperation.builder()
+                .spec(this)
                 .build();
     }
 

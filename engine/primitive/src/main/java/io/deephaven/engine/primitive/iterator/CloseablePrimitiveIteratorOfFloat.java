@@ -1,8 +1,10 @@
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CloseablePrimitiveIteratorOfChar and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit CloseablePrimitiveIteratorOfFloat and run "./gradlew replicatePrimitiveInterfaces" to regenerate
+//
+// @formatter:off
 package io.deephaven.engine.primitive.iterator;
 
 import io.deephaven.engine.primitive.function.FloatConsumer;
@@ -69,7 +71,7 @@ public interface CloseablePrimitiveIteratorOfFloat extends CloseablePrimitiveIte
 
             @Override
             public double nextDouble() {
-                return adapter.applyAsDouble(CloseablePrimitiveIteratorOfFloat.this.next());
+                return adapter.applyAsDouble(CloseablePrimitiveIteratorOfFloat.this.nextFloat());
             }
 
             @Override

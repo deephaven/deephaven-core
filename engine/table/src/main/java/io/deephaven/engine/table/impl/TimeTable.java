@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.base.clock.Clock;
@@ -17,21 +17,26 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.DataIndex;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.perf.PerformanceEntry;
 import io.deephaven.engine.table.impl.sources.FillUnordered;
 import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.function.Numeric;
 import io.deephaven.util.QueryConstants;
+import io.deephaven.util.SafeCloseable;
+import io.deephaven.util.annotations.TestUseOnly;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import javax.annotation.OverridingMethodsMustInvokeSuper;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Collections;
-import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Stream;
 
 import static io.deephaven.time.DateTimeUtils.currentClock;
 import static io.deephaven.time.DateTimeUtils.epochNanos;
@@ -45,12 +50,12 @@ import static io.deephaven.util.type.TypeUtils.box;
 
 /**
  * A TimeTable adds rows at a fixed interval with a single column named "Timestamp".
- *
+ * <p>
  * To create a TimeTable, you should use the {@link TableTools#timeTable} family of methods.
  *
  * @implNote The constructor publishes {@code this} to the {@link UpdateSourceRegistrar} and thus cannot be subclassed.
  */
-public final class TimeTable extends QueryTable implements Runnable {
+public final class TimeTable extends QueryTable implements Runnable, HasRefreshingSource {
 
     public static class Builder {
         private UpdateSourceRegistrar registrar = ExecutionContext.getContext().getUpdateGraph();
@@ -99,9 +104,12 @@ public final class TimeTable extends QueryTable implements Runnable {
         }
 
         public QueryTable build() {
-            return new TimeTable(registrar,
-                    Objects.requireNonNullElse(clock, currentClock()),
-                    startTime, period, blinkTable);
+            try (final SafeCloseable ignored =
+                    ExecutionContext.getContext().withUpdateGraph(registrar.getUpdateGraph()).open()) {
+                return new TimeTable(registrar,
+                        Objects.requireNonNullElse(clock, currentClock()),
+                        startTime, period, blinkTable);
+            }
         }
     }
 
@@ -143,7 +151,13 @@ public final class TimeTable extends QueryTable implements Runnable {
             refresh(false);
         }
         setRefreshing(true);
+        initializeLastNotificationStep(registrar.getUpdateGraph().clock());
         registrar.addSource(refresher);
+    }
+
+    @Override
+    public boolean satisfied(final long step) {
+        return registrar.satisfied(step);
     }
 
     private static Map<String, ColumnSource<?>> initColumn(Instant firstTime, long period) {
@@ -154,8 +168,14 @@ public final class TimeTable extends QueryTable implements Runnable {
     }
 
     @Override
+    @TestUseOnly
     public void run() {
         refresh(true);
+    }
+
+    @Override
+    public String getDescription() {
+        return name;
     }
 
     private class SourceRefresher extends InstrumentedTableUpdateSource {
@@ -203,6 +223,7 @@ public final class TimeTable extends QueryTable implements Runnable {
         }
     }
 
+    @OverridingMethodsMustInvokeSuper
     @Override
     protected void destroy() {
         super.destroy();
@@ -251,6 +272,7 @@ public final class TimeTable extends QueryTable implements Runnable {
                 final boolean invertMatch,
                 final boolean usePrev,
                 final boolean caseInsensitive,
+                @Nullable final DataIndex dataIndex,
                 @NotNull final RowSet selection,
                 final Object... keys) {
             if (startTime == null) {
@@ -282,14 +304,6 @@ public final class TimeTable extends QueryTable implements Runnable {
             final WritableRowSet matching = matchingSet.build();
             matching.retain(selection);
             return matching;
-        }
-
-        @Override
-        public Map<Instant, RowSet> getValuesMapping(RowSet subRange) {
-            final Map<Instant, RowSet> result = new LinkedHashMap<>();
-            subRange.forAllRowKeys(
-                    ii -> result.put(computeInstant(ii), RowSetFactory.fromKeys(ii)));
-            return result;
         }
 
         @Override
@@ -401,6 +415,7 @@ public final class TimeTable extends QueryTable implements Runnable {
                     final boolean invertMatch,
                     final boolean usePrev,
                     final boolean caseInsensitive,
+                    @Nullable final DataIndex dataIndex,
                     @NotNull final RowSet selection,
                     final Object... keys) {
                 if (startTime == null) {
@@ -432,14 +447,6 @@ public final class TimeTable extends QueryTable implements Runnable {
                 final WritableRowSet matching = matchingSet.build();
                 matching.retain(selection);
                 return matching;
-            }
-
-            @Override
-            public Map<Long, RowSet> getValuesMapping(RowSet subRange) {
-                final Map<Long, RowSet> result = new LinkedHashMap<>();
-                subRange.forAllRowKeys(
-                        ii -> result.put(box(computeNanos(ii)), RowSetFactory.fromKeys(ii)));
-                return result;
             }
 
             @Override
@@ -482,5 +489,14 @@ public final class TimeTable extends QueryTable implements Runnable {
                 return true;
             }
         }
+    }
+
+    @NotNull
+    @Override
+    public Stream<PerformanceEntry> sourceEntries() {
+        if (refresher.getEntry() != null) {
+            return Stream.of(refresher.getEntry());
+        }
+        return Stream.empty();
     }
 }

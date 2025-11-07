@@ -1,10 +1,20 @@
 import io.deephaven.project.util.PublishingTools
+import com.github.jengelman.gradle.plugins.shadow.ShadowBasePlugin
+import com.github.jengelman.gradle.plugins.shadow.ShadowJavaPlugin
+import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
+import org.gradle.jvm.tasks.Jar
 
 plugins {
   id 'java'
   id 'signing'
-  id 'maven-publish'
-  id 'com.github.johnrengelman.shadow'
+  // Note: applying `com.vanniktech.maven.publish.base` instead of `com.vanniktech.maven.publish` since we need more
+  // fine-grained configuration wrt shadowing. Specifically, when `com.vanniktech.maven.publish.JavaLibrary` is applied
+  // by `com.vanniktech.maven.publish`, it automatically creates a "maven" publication based on the "java" component,
+  // and that conflicts with our desires for the "shadow" publication, and would result in the error:
+  // Multiple publications with coordinates '...' are published to repository 'mavenLocal'. The publications 'maven' in
+  // project '...' and 'shadow' in project '...' will overwrite each other!
+  id 'com.vanniktech.maven.publish.base'
+  id 'com.gradleup.shadow'
   id 'io.deephaven.javadoc-conventions'
 }
 
@@ -13,38 +23,36 @@ java {
   withSourcesJar()
 }
 
-tasks.withType(Javadoc) {
+tasks.withType(Javadoc).configureEach {
   // https://github.com/gradle/gradle/issues/19869
   options.addStringOption('sourcepath', sourceSets.main.allJava.getSourceDirectories().getAsPath())
 }
 
-PublishingTools.setupPublications(project) { publication ->
-  // This assumes that the shadow plugin is enabled, rather than using the vanilla java component.
-
-  // Inlines the shadow.component call, which doesn't actually use components, and doesn't generate
-  // the pom late enough to pick up gradle's own artifactId wiring from our archivesBaseName changes
-//  project.shadow.component(publication)
-  publication.artifact(project.tasks.named("shadowJar"))
-  publication.pom {
-    withXml {
-      def root = asNode()
-      def dependenciesNode = root.appendNode('dependencies')
-
-      project.configurations.shadow.allDependencies.each {
-        if ((it instanceof ProjectDependency) || ! (it instanceof SelfResolvingDependency)) {
-          def dependencyNode = dependenciesNode.appendNode('dependency')
-          dependencyNode.appendNode('groupId', it.group)
-          BasePluginConvention base = it.dependencyProject.convention.getPlugin(BasePluginConvention)
-
-          dependencyNode.appendNode('artifactId', base.archivesBaseName)
-          dependencyNode.appendNode('version', it.version)
-          dependencyNode.appendNode('scope', 'runtime')
-        }
-      }
+project
+    .extensions
+    .getByType(PublishingExtension)
+    .publications
+    .create(PublishingTools.SHADOW_PUBLICATION_NAME, MavenPublication) {
+      from(project.components.named(ShadowBasePlugin.COMPONENT_NAME).get())
+      artifact(project.tasks.named('sourcesJar'))
+      artifact(project.tasks.named('javadocJar'))
     }
-  }
+
+def shadowJar = project.tasks.named(ShadowJavaPlugin.SHADOW_JAR_TASK_NAME, ShadowJar) {
+  // We want the shadow jar to be the "default" jar, so we don't want it to have a classifier
+  archiveClassifier = ''
 }
 
-PublishingTools.setupRepositories(project)
-PublishingTools.setupMavenPublication(project, publishing.publications.mavenJava)
-PublishingTools.setupSigning(project, publishing.publications.mavenJava)
+project.tasks.named('jar', Jar) {
+  // Note: this is forcing the output name of the plain jar task to be _different_ than the shadow jar, otherwise you
+  // can end up with gradle thinking that the jar output is an implicit, unstated dependency of some shadow tasks, and
+  // causes failures. (In addition to potential issues w/ tasks stomping on other tasks.)
+  archiveClassifier = 'orig'
+}
+
+project.tasks.named('assemble') {
+  it.dependsOn(shadowJar)
+}
+
+PublishingTools.setupPublishing(project)
+// Projects will need to call PublishingTools.setupShadowName to setup appropriate shadow names

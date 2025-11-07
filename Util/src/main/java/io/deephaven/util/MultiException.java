@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.util;
 
 import java.io.PrintStream;
@@ -105,7 +105,7 @@ public class MultiException extends Exception {
     @Override
     public String getMessage() {
         StringBuilder sb = new StringBuilder();
-        sb.append(super.getMessage()).append(": \n");
+        sb.append(super.getMessage()).append(":\n");
         for (int i = 0; i < causes.length; i++) {
             sb.append("Cause ").append(i).append(": ");
             sb.append(causes[i].toString());

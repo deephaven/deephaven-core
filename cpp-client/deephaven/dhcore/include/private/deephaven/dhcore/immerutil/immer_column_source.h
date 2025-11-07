@@ -1,16 +1,20 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+/*
+ * Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
  */
 #pragma once
+
+#include <memory>
+#include <utility>
 #include <immer/algorithm.hpp>
 #include <immer/flex_vector.hpp>
 #include "deephaven/dhcore/chunk/chunk.h"
 #include "deephaven/dhcore/chunk/chunk_traits.h"
 #include "deephaven/dhcore/column/column_source.h"
+#include "deephaven/dhcore/container/row_sequence.h"
 #include "deephaven/dhcore/types.h"
 #include "deephaven/dhcore/utility/utility.h"
 
-namespace deephaven::client::immerutil {
+namespace deephaven::dhcore::immerutil {
 namespace internal {
 struct ImmerColumnSourceImpls {
   using BooleanChunk = deephaven::dhcore::chunk::BooleanChunk;
@@ -28,7 +32,6 @@ struct ImmerColumnSourceImpls {
    * flags. On the other hand if this pointer is null, then the caller doesn't care about null flags
    * and we don't have to do any special work to determine nullness.
    */
-
   template<typename T>
   static void FillChunk(const immer::flex_vector<T> &src_data,
       const immer::flex_vector<bool> *src_null_flags,
@@ -36,64 +39,86 @@ struct ImmerColumnSourceImpls {
     using deephaven::dhcore::chunk::TypeToChunk;
     using deephaven::dhcore::utility::TrueOrThrow;
     using deephaven::dhcore::utility::VerboseCast;
-    typedef typename TypeToChunk<T>::type_t chunkType_t;
+    using chunkType_t = typename TypeToChunk<T>::type_t;
     auto *typed_dest = VerboseCast<chunkType_t *>(DEEPHAVEN_LOCATION_EXPR(dest_data));
 
     constexpr bool kTypeIsNumeric = deephaven::dhcore::DeephavenTraits<T>::kIsNumeric;
 
+    TrueOrThrow(DEEPHAVEN_LOCATION_EXPR(rows.Size() <= src_data.size()));
     TrueOrThrow(DEEPHAVEN_LOCATION_EXPR(rows.Size() <= typed_dest->Size()));
-    TrueOrThrow(DEEPHAVEN_LOCATION_EXPR(optional_dest_null_flags == nullptr ||
-        rows.Size() <= optional_dest_null_flags->Size()));
     if (!kTypeIsNumeric) {
       TrueOrThrow(DEEPHAVEN_LOCATION_EXPR(src_null_flags != nullptr));
-    } else {
-      // avoid CLion warning about unused variable.
-      (void)src_null_flags;
+      TrueOrThrow(DEEPHAVEN_LOCATION_EXPR(rows.Size() <= src_null_flags->size()));
     }
+    if (optional_dest_null_flags != nullptr) {
+      TrueOrThrow(DEEPHAVEN_LOCATION_EXPR(rows.Size() <= optional_dest_null_flags->Size()));
+    }
+    (void) src_null_flags;  // avoid CLion warning about unused variable.
+
     auto *dest_datap = typed_dest->data();
-    auto *dest_nullp = optional_dest_null_flags != nullptr ? optional_dest_null_flags->data() : nullptr;
-
-    auto copy_data_inner = [&dest_datap, &dest_nullp](const T *data_begin, const T *data_end) {
-      for (const T *current = data_begin; current != data_end; ++current) {
-        auto value = *current;
-        *dest_datap++ = value;
-        if constexpr(deephaven::dhcore::DeephavenTraits<T>::kIsNumeric) {
-          if (dest_nullp != nullptr) {
-            *dest_nullp++ = value == deephaven::dhcore::DeephavenTraits<T>::kNullValue;
-          }
-        } else {
-          // avoid clang complaining about unused variables
-          (void)dest_nullp;
-        }
+    // We have a nested loop here, represented by two lambdas. This code invokes
+    // RowSequence::ForEachInterval which takes contiguous ranges from 'rows' and feeds them
+    // to 'copy_data_outer'. Then 'copy_data_outer' turns that contiguous range into a
+    // pair of [begin, end) Immer iterators. But then, rather than store into that iterator range
+    // directly, those Immer iterators are passed to immer::for_each_chunk. This breaks down the
+    // Immer range into subranges of plain data, and invokes the copy_data_inner lambda. Then,
+    // 'copy_data_inner' just copies data in the normal C++ way.
+    auto copy_data_inner = [&dest_datap](const T *src_beginp, const T *src_endp) {
+      for (const T *current = src_beginp; current != src_endp; ++current) {
+        *dest_datap++ = *current;
       }
     };
 
-    auto copy_nulls_inner = [&dest_nullp](const bool *null_begin, const bool *null_end) {
-      for (const bool *current = null_begin; current != null_end; ++current) {
-        *dest_nullp++ = *current;
-      }
-    };
-
-    auto copy_outer = [&src_data, src_null_flags, dest_nullp, &copy_data_inner,
-        &copy_nulls_inner](uint64_t src_begin, uint64_t src_end) {
+    auto copy_data_outer = [&src_data, &copy_data_inner](uint64_t src_begin, uint64_t src_end) {
       auto src_beginp = src_data.begin() + src_begin;
       auto src_endp = src_data.begin() + src_end;
       immer::for_each_chunk(src_beginp, src_endp, copy_data_inner);
-
-      if constexpr(!deephaven::dhcore::DeephavenTraits<T>::kIsNumeric) {
-        if (dest_nullp != nullptr) {
-          auto nulls_begin = src_null_flags->begin() + src_begin;
-          auto nulls_end = src_null_flags->begin() + src_end;
-          immer::for_each_chunk(nulls_begin, nulls_end, copy_nulls_inner);
-        }
-      } else {
-        // avoid clang complaining about unused variables.
-        (void)src_null_flags;
-        (void)dest_nullp;
-        (void)copy_nulls_inner;
-      }
     };
-    rows.ForEachInterval(copy_outer);
+
+    rows.ForEachInterval(copy_data_outer);
+
+    // If the caller has opted out of getting null flags, we are done.
+    if (optional_dest_null_flags == nullptr) {
+      return;
+    }
+
+    // Otherwise (if the caller wants null flags), we do a similar algorithm to copy null flags.
+    // The one complication is that the column source only stores null flags explicitly for
+    // non-numeric types. For numeric types, the column source uses the Deephaven convention
+    // for nullness. To handle this, we have two different forms of the operation,
+    // one which supports the numeric convention and one which supports the non-numeric convention.
+    auto *dest_nullp = optional_dest_null_flags->data();
+
+    if constexpr (kTypeIsNumeric) {
+      auto copy_nulls_inner = [&dest_nullp](const T *data_begin, const T *data_end) {
+        for (const T *current = data_begin; current != data_end; ++current) {
+          auto is_null = *current == deephaven::dhcore::DeephavenTraits<T>::kNullValue;
+          *dest_nullp++ = is_null;
+        }
+      };
+
+      auto copy_nulls_outer = [&src_data, &copy_nulls_inner](uint64_t src_begin,
+          uint64_t src_end) {
+        auto src_beginp = src_data.begin() + src_begin;
+        auto src_endp = src_data.begin() + src_end;
+        immer::for_each_chunk(src_beginp, src_endp, copy_nulls_inner);
+      };
+      rows.ForEachInterval(copy_nulls_outer);
+    } else {
+      auto copy_nulls_inner = [&dest_nullp](const bool *null_begin, const bool *null_end) {
+        for (const bool *current = null_begin; current != null_end; ++current) {
+          *dest_nullp++ = *current;
+        }
+      };
+
+      auto copy_nulls_outer = [src_null_flags, &copy_nulls_inner](uint64_t src_begin,
+          uint64_t src_end) {
+        auto nulls_begin = src_null_flags->begin() + src_begin;
+        auto nulls_end = src_null_flags->begin() + src_end;
+        immer::for_each_chunk(nulls_begin, nulls_end, copy_nulls_inner);
+      };
+      rows.ForEachInterval(copy_nulls_outer);
+    }
   }
 
   template<typename T>
@@ -109,12 +134,17 @@ struct ImmerColumnSourceImpls {
     constexpr bool kTypeIsNumeric = deephaven::dhcore::DeephavenTraits<T>::kIsNumeric;
 
     auto *typed_dest = VerboseCast<chunkType_t *>(DEEPHAVEN_LOCATION_EXPR(dest_data));
+    TrueOrThrow(DEEPHAVEN_LOCATION_EXPR(rows.Size() <= src_data.size()));
     TrueOrThrow(DEEPHAVEN_LOCATION_EXPR(rows.Size() <= typed_dest->Size()));
-    TrueOrThrow(DEEPHAVEN_LOCATION_EXPR(optional_dest_null_flags == nullptr ||
-        rows.Size() <= optional_dest_null_flags->Size()));
     if (!kTypeIsNumeric) {
       TrueOrThrow(DEEPHAVEN_LOCATION_EXPR(src_null_flags != nullptr));
+      TrueOrThrow(DEEPHAVEN_LOCATION_EXPR(rows.Size() <= src_null_flags->size()));
     }
+    if (optional_dest_null_flags != nullptr) {
+      TrueOrThrow(DEEPHAVEN_LOCATION_EXPR(rows.Size() <= optional_dest_null_flags->Size()));
+    }
+    (void) src_null_flags;  // avoid CLion warning about unused variable.
+
     auto *destp = typed_dest->data();
     auto *dest_nullp = optional_dest_null_flags != nullptr ? optional_dest_null_flags->data() : nullptr;
 
@@ -136,11 +166,25 @@ struct ImmerColumnSourceImpls {
 }  // namespace internal
 
 class ImmerColumnSource : public virtual deephaven::dhcore::column::ColumnSource {
+public:
+  explicit ImmerColumnSource(const ElementType &element_type) : element_type_(element_type) {}
+
+  const ElementType &GetElementType() const final {
+    return element_type_;
+  }
+
+protected:
+  ElementType element_type_;
 };
 
+#ifdef _WIN32
+// Avoid Visual Studio warning about "inherits via dominance" for diamond inheritance pattern.
+#pragma warning(push)
+#pragma warning(disable: 4250)
+#endif
 template<typename T>
 class NumericImmerColumnSource final : public ImmerColumnSource,
-    public deephaven::dhcore::column::NumericColumnSource<T>,
+    public deephaven::dhcore::column::GenericColumnSource<T>,
     std::enable_shared_from_this<NumericImmerColumnSource<T>> {
   struct Private {};
 
@@ -150,11 +194,13 @@ class NumericImmerColumnSource final : public ImmerColumnSource,
   using RowSequence = deephaven::dhcore::container::RowSequence;
 
 public:
-  static std::shared_ptr<NumericImmerColumnSource> Create(immer::flex_vector<T> data) {
-    return std::make_shared<NumericImmerColumnSource>(Private(), std::move(data));
+  static std::shared_ptr<NumericImmerColumnSource> Create(const ElementType &element_type,
+      immer::flex_vector<T> data) {
+    return std::make_shared<NumericImmerColumnSource>(Private(), element_type, std::move(data));
   }
 
-  explicit NumericImmerColumnSource(Private, immer::flex_vector<T> data) : data_(std::move(data)) {}
+  explicit NumericImmerColumnSource(Private, const ElementType &element_type,
+      immer::flex_vector<T> data) : ImmerColumnSource(element_type), data_(std::move(data)) {}
 
   ~NumericImmerColumnSource() final = default;
 
@@ -176,21 +222,32 @@ public:
 private:
   immer::flex_vector<T> data_;
 };
+#ifdef _WIN32
+#pragma warning(pop)
+#endif
 
+#ifdef _WIN32
+// Avoid Visual Studio warning about "inherits via dominance" for diamond inheritance pattern.
+#pragma warning(push)
+#pragma warning(disable: 4250)
+#endif
 template<typename T>
 class GenericImmerColumnSource final : public ImmerColumnSource,
     public deephaven::dhcore::column::GenericColumnSource<T>,
     std::enable_shared_from_this<GenericImmerColumnSource<T>> {
   struct Private {};
   using ColumnSourceVisitor = deephaven::dhcore::column::ColumnSourceVisitor;
+
 public:
-  static std::shared_ptr<GenericImmerColumnSource> Create(immer::flex_vector<T> data,
-      immer::flex_vector<bool> null_flags) {
-    return std::make_shared<GenericImmerColumnSource>(Private(), std::move(data), std::move(null_flags));
+  static std::shared_ptr<GenericImmerColumnSource> Create(const ElementType &element_type,
+      immer::flex_vector<T> data, immer::flex_vector<bool> null_flags) {
+    return std::make_shared<GenericImmerColumnSource>(Private(), element_type, std::move(data),
+        std::move(null_flags));
   }
 
-  GenericImmerColumnSource(Private, immer::flex_vector<T> &&data, immer::flex_vector<bool> &&null_flags) :
-      data_(std::move(data)), null_flags_(std::move(null_flags)) {}
+  GenericImmerColumnSource(Private, const ElementType &element_type,
+      immer::flex_vector<T> &&data, immer::flex_vector<bool> &&null_flags) :
+      ImmerColumnSource(element_type), data_(std::move(data)), null_flags_(std::move(null_flags)) {}
   ~GenericImmerColumnSource() final = default;
 
   void FillChunk(const RowSequence &rows, Chunk *dest, BooleanChunk *optional_dest_null_flags) const final {
@@ -212,4 +269,7 @@ private:
   immer::flex_vector<T> data_;
   immer::flex_vector<bool> null_flags_;
 };
+#ifdef _WIN32
+#pragma warning(pop)
+#endif
 }  // namespace deephaven::dhcore::immerutil

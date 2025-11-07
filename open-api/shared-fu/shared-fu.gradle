@@ -2,6 +2,4 @@ plugins {
     id 'io.deephaven.project.register'
 }
 
-apply from: "$rootDir/gradle/web-common.gradle"
-
 // Contains all general purpose utilities used across all open-api modules.

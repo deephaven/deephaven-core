@@ -1,0 +1,21 @@
+plugins {
+    id 'java-library'
+    id 'io.deephaven.project.register'
+}
+
+dependencies {
+    api project(':qst-type')
+    implementation project(':engine-query-constants')
+
+    compileOnly libs.jetbrains.annotations
+
+    testImplementation libs.assertj
+    testImplementation platform(libs.junit.bom)
+    testImplementation libs.junit.jupiter
+    testRuntimeOnly libs.junit.jupiter.engine
+    testRuntimeOnly libs.junit.platform.launcher
+}
+
+test {
+    useJUnitPlatform()
+}

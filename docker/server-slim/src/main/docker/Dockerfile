@@ -23,7 +23,7 @@ VOLUME /cache
 #     failure mode (via docker inspect, but only until that failure stales out).
 #   * If grpc_health_probe fails with any non-zero exit code, normalize to 1.
 # The net effect is that the server will have 3s until the earliest possible success, and
-# 33-36s until it is considered to have failed startup (so downstream docker-compose services
+# 33-36s until it is considered to have failed startup (so downstream docker compose services
 # will not attempt to start). If the server is running but trying to shut down, failure will
 # occur within about 9s, as the port will connect correctly, but respond that it isn't
 # available.

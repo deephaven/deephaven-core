@@ -1,11 +1,9 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.by;
 
-import io.deephaven.api.ColumnName;
-import io.deephaven.api.Pair;
-import io.deephaven.api.SortColumn;
+import io.deephaven.api.*;
 import io.deephaven.api.agg.*;
 import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.api.agg.spec.AggSpecAbsSum;
@@ -38,11 +36,8 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.impl.MatchPair;
+import io.deephaven.engine.table.impl.*;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.impl.BaseTable;
-import io.deephaven.engine.table.impl.QueryTable;
-import io.deephaven.engine.table.impl.TupleSourceFactory;
 import io.deephaven.engine.table.impl.by.rollup.NullColumns;
 import io.deephaven.engine.table.impl.by.rollup.RollupAggregation;
 import io.deephaven.engine.table.impl.by.rollup.RollupAggregationOutputs;
@@ -96,12 +91,16 @@ import io.deephaven.engine.table.impl.by.ssmcountdistinct.unique.ShortChunkedUni
 import io.deephaven.engine.table.impl.by.ssmcountdistinct.unique.ShortRollupUniqueOperator;
 import io.deephaven.engine.table.impl.by.ssmminmax.SsmChunkedMinMaxOperator;
 import io.deephaven.engine.table.impl.by.ssmpercentile.SsmChunkedPercentileOperator;
+import io.deephaven.engine.table.impl.select.SelectColumn;
+import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.impl.ssms.SegmentedSortedMultiSet;
 import io.deephaven.engine.table.impl.util.freezeby.FreezeByCountOperator;
 import io.deephaven.engine.table.impl.util.freezeby.FreezeByOperator;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.annotations.FinalDefault;
+import io.deephaven.util.type.ArrayTypeUtils;
+import io.deephaven.vector.VectorFactory;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -109,36 +108,20 @@ import org.jetbrains.annotations.Nullable;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_DOUBLE_ARRAY;
-import static io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_STRING_ARRAY;
-import static io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_STRING_ARRAY_ARRAY;
 import static io.deephaven.engine.table.ChunkSource.WithPrev.ZERO_LENGTH_CHUNK_SOURCE_WITH_PREV_ARRAY;
 import static io.deephaven.engine.table.Table.AGGREGATION_ROW_LOOKUP_ATTRIBUTE;
 import static io.deephaven.engine.table.impl.by.IterativeChunkedAggregationOperator.ZERO_LENGTH_ITERATIVE_CHUNKED_AGGREGATION_OPERATOR_ARRAY;
-import static io.deephaven.engine.table.impl.by.RollupConstants.ROLLUP_COLUMN_SUFFIX;
-import static io.deephaven.engine.table.impl.by.RollupConstants.ROLLUP_DISTINCT_SSM_COLUMN_ID;
-import static io.deephaven.engine.table.impl.by.RollupConstants.ROLLUP_NAN_COUNT_COLUMN_ID;
-import static io.deephaven.engine.table.impl.by.RollupConstants.ROLLUP_NI_COUNT_COLUMN_ID;
-import static io.deephaven.engine.table.impl.by.RollupConstants.ROLLUP_NONNULL_COUNT_COLUMN_ID;
-import static io.deephaven.engine.table.impl.by.RollupConstants.ROLLUP_PI_COUNT_COLUMN_ID;
-import static io.deephaven.engine.table.impl.by.RollupConstants.ROLLUP_RUNNING_SUM2_COLUMN_ID;
-import static io.deephaven.engine.table.impl.by.RollupConstants.ROLLUP_RUNNING_SUM_COLUMN_ID;
-import static io.deephaven.engine.table.impl.by.RollupConstants.ROW_REDIRECTION_PREFIX;
+import static io.deephaven.engine.table.impl.by.RollupConstants.*;
 import static io.deephaven.util.QueryConstants.*;
 import static io.deephaven.util.type.TypeUtils.getBoxedType;
-import static io.deephaven.util.type.TypeUtils.isNumeric;
+import static io.deephaven.util.type.NumericTypeUtils.isNumeric;
 
 /**
  * Conversion tool to generate an {@link AggregationContextFactory} for a collection of {@link Aggregation
@@ -165,6 +148,13 @@ public class AggregationProcessor implements AggregationContextFactory {
 
     private final Collection<? extends Aggregation> aggregations;
     private final Type type;
+
+    /**
+     * For {@link Formula formula} aggregations we need a representation of the table definition with the column data
+     * types converted to {@link io.deephaven.vector.Vector vectors}. This can be computed once and re-used across all
+     * formula aggregations.
+     */
+    private Map<String, ColumnDefinition<?>> vectorColumnDefinitions;
 
     /**
      * Convert a collection of {@link Aggregation aggregations} to an {@link AggregationContextFactory}.
@@ -198,7 +188,8 @@ public class AggregationProcessor implements AggregationContextFactory {
         baseAggregations.addAll(aggregations);
         baseAggregations.add(includeConstituents
                 ? Partition.of(rollupColumn)
-                : RollupAggregation.nullColumns(rollupColumn.name(), Table.class));
+                : RollupAggregation.nullColumns(
+                        ColumnDefinition.of(rollupColumn.name(), io.deephaven.qst.type.Type.find(Table.class))));
         return new AggregationProcessor(baseAggregations, Type.ROLLUP_BASE);
     }
 
@@ -209,11 +200,12 @@ public class AggregationProcessor implements AggregationContextFactory {
      * @param aggregations The {@link Aggregation aggregations}. Must not be further mutated by the caller. Will not be
      *        mutated by {@link AggregationProcessor}.
      * @param nullColumns Map of group-by column names and data types to aggregate with a null-column aggregation
+     * @param rollupColumn the name of the rollup column in the result, used to traverse to the next lower level nodes
      * @return The {@link AggregationContextFactory}
      */
     public static AggregationContextFactory forRollupReaggregated(
             @NotNull final Collection<? extends Aggregation> aggregations,
-            @NotNull final Map<String, Class<?>> nullColumns,
+            @NotNull final Collection<ColumnDefinition<?>> nullColumns,
             @NotNull final ColumnName rollupColumn) {
         if (aggregations.stream().anyMatch(agg -> agg instanceof Partition)) {
             rollupUnsupported("Partition");
@@ -222,6 +214,31 @@ public class AggregationProcessor implements AggregationContextFactory {
         reaggregations.add(RollupAggregation.nullColumns(nullColumns));
         reaggregations.addAll(aggregations);
         reaggregations.add(Partition.of(rollupColumn));
+        return new AggregationProcessor(reaggregations, Type.ROLLUP_REAGGREGATED);
+    }
+
+    /**
+     * Convert a collection of {@link Aggregation aggregations} to an {@link AggregationContextFactory} for use in
+     * computing a reaggregated table, but without the ability to descend to the lower level (the rollupColumn is null).
+     *
+     * @param aggregations The {@link Aggregation aggregations}. Must not be further mutated by the caller. Will not be
+     *        mutated by {@link AggregationProcessor}.
+     * @param nullColumns Map of group-by column names and data types to aggregate with a null-column aggregation
+     * @param rollupColumn the name of the rollup column in the result, which is always a null result
+     * @return The {@link AggregationContextFactory}
+     */
+    public static AggregationContextFactory forRollupReaggregatedLeaf(
+            @NotNull final Collection<? extends Aggregation> aggregations,
+            @NotNull final Collection<ColumnDefinition<?>> nullColumns,
+            @NotNull final ColumnName rollupColumn) {
+        if (aggregations.stream().anyMatch(agg -> agg instanceof Partition)) {
+            rollupUnsupported("Partition");
+        }
+        final Collection<Aggregation> reaggregations = new ArrayList<>(aggregations.size() + 2);
+        reaggregations.add(RollupAggregation.nullColumns(nullColumns));
+        reaggregations.addAll(aggregations);
+        reaggregations.add(RollupAggregation
+                .nullColumns(ColumnDefinition.of(rollupColumn.name(), io.deephaven.qst.type.Type.find(Table.class))));
         return new AggregationProcessor(reaggregations, Type.ROLLUP_REAGGREGATED);
     }
 
@@ -346,7 +363,7 @@ public class AggregationProcessor implements AggregationContextFactory {
             isBlink = this.table.isBlink();
         }
 
-        final AggregationContext build() {
+        AggregationContext build() {
             walkAllAggregations();
             transformers.add(new RowLookupAttributeSetter());
             return makeAggregationContext();
@@ -422,7 +439,7 @@ public class AggregationProcessor implements AggregationContextFactory {
         // -------------------------------------------------------------------------------------------------------------
 
         void addNoInputOperator(@NotNull final IterativeChunkedAggregationOperator operator) {
-            addOperator(operator, null, ZERO_LENGTH_STRING_ARRAY);
+            addOperator(operator, null, ArrayTypeUtils.EMPTY_STRING_ARRAY);
         }
 
         @SafeVarargs
@@ -518,9 +535,14 @@ public class AggregationProcessor implements AggregationContextFactory {
                 }
                 final IterativeChunkedAggregationOperator operator = operators.get(ii);
                 if (operator instanceof SsmChunkedMinMaxOperator) {
-                    final SsmChunkedMinMaxOperator minMaxOperator = (SsmChunkedMinMaxOperator) operator;
-                    addOperator(minMaxOperator.makeSecondaryOperator(isMin, resultName), null, inputName);
-                    return;
+                    final Collection<? extends ColumnSource<?>> resultColumns = operator.getResultColumns().values();
+                    Assert.eq(1, "1", resultColumns.size(), "SsmChunkedMinMaxOperator.resultColumns.size()");
+                    final Class<?> existingOperatorType = resultColumns.iterator().next().getType();
+                    if (existingOperatorType == type) {
+                        final SsmChunkedMinMaxOperator minMaxOperator = (SsmChunkedMinMaxOperator) operator;
+                        addOperator(minMaxOperator.makeSecondaryOperator(isMin, resultName), null, inputName);
+                        return;
+                    }
                 }
             }
             addOperator(makeMinOrMaxOperator(type, resultName, isMin, isAddOnly || isBlink), inputSource, inputName);
@@ -577,14 +599,17 @@ public class AggregationProcessor implements AggregationContextFactory {
         }
 
         final void descendingSortedFirstOrLastUnsupported(@NotNull final SortColumn sortColumn, final boolean isFirst) {
-            if (sortColumn.order() == SortColumn.Order.ASCENDING) {
+            if (sortColumn.isAscending()) {
                 return;
             }
             throw new UnsupportedOperationException(String.format("%s does not support sort order in %s",
                     isFirst ? "SortedFirst" : "SortedLast", sortColumn));
         }
 
-        final void addWeightedAvgOrSumOperator(@NotNull final String weightName, final boolean isSum) {
+        final void addWeightedAvgOrSumOperator(
+                @NotNull final String weightName,
+                final boolean isSum,
+                final boolean exposeInternal) {
             final ColumnSource<?> weightSource = table.getColumnSource(weightName);
             final boolean weightSourceIsFloatingPoint;
             if (isInteger(weightSource.getChunkType())) {
@@ -653,10 +678,59 @@ public class AggregationProcessor implements AggregationContextFactory {
                     }
                 } else {
                     resultOperator = new ChunkedWeightedAverageOperator(
-                            r.source.getChunkType(), doubleWeightOperator, r.pair.output().name());
+                            r.source.getChunkType(), doubleWeightOperator, r.pair.output().name(), exposeInternal);
                 }
                 addOperator(resultOperator, r.source, r.pair.input().name(), weightName);
             });
+        }
+
+        final void addCountWhereOperator(@NotNull CountWhere countWhere) {
+            final WhereFilter[] whereFilters = WhereFilter.fromInternal(countWhere.filter());
+
+            final Map<String, RecordingInternalOperator> inputColumnRecorderMap = new HashMap<>();
+            final List<RecordingInternalOperator> recorderList = new ArrayList<>();
+            final List<RecordingInternalOperator[]> filterRecorderList = new ArrayList<>();
+
+            // Verify all the columns in the where filters are present in the table and valid for use.
+            for (final WhereFilter whereFilter : whereFilters) {
+                whereFilter.init(table.getDefinition());
+                if (whereFilter.isRefreshing()) {
+                    throw new UnsupportedOperationException("AggCountWhere does not support refreshing filters");
+                }
+
+                // Compute which recording operators this filter will use.
+                final List<String> inputColumnNames = whereFilter.getColumns();
+                final int inputColumnCount = whereFilter.getColumns().size();
+                final RecordingInternalOperator[] recorders = new RecordingInternalOperator[inputColumnCount];
+                for (int ii = 0; ii < inputColumnCount; ++ii) {
+                    final String inputColumnName = inputColumnNames.get(ii);
+                    final RecordingInternalOperator recorder =
+                            inputColumnRecorderMap.computeIfAbsent(inputColumnName, k -> {
+                                // Create a recording operator for the column and add it to the list of operators.
+                                final ColumnSource<?> inputSource = table.getColumnSource(inputColumnName);
+                                final RecordingInternalOperator newRecorder =
+                                        new RecordingInternalOperator(inputColumnName, inputSource);
+                                recorderList.add(newRecorder);
+                                return newRecorder;
+                            });
+                    recorders[ii] = recorder;
+                }
+                filterRecorderList.add(recorders);
+            }
+
+            final RecordingInternalOperator[] recorders = recorderList.toArray(RecordingInternalOperator[]::new);
+            final RecordingInternalOperator[][] filterRecorders =
+                    filterRecorderList.toArray(RecordingInternalOperator[][]::new);
+            final String[] inputColumnNames =
+                    inputColumnRecorderMap.keySet().toArray(ArrayTypeUtils.EMPTY_STRING_ARRAY);
+
+            // Add the recording operators, making them dependent on all input columns so they all are populated if any
+            // are modified
+            for (final RecordingInternalOperator recorder : recorders) {
+                addOperator(recorder, recorder.getInputColumnSource(), inputColumnNames);
+            }
+            addOperator(new CountWhereOperator(countWhere.column().name(), whereFilters, recorders, filterRecorders),
+                    null, inputColumnNames);
         }
     }
 
@@ -669,12 +743,21 @@ public class AggregationProcessor implements AggregationContextFactory {
      * {@link AggregationContext} for standard aggregations. Accumulates state by visiting each aggregation.
      */
     private final class NormalConverter extends Converter {
+        private final QueryCompilerRequestProcessor.BatchProcessor compilationProcessor;
 
         private NormalConverter(
                 @NotNull final Table table,
                 final boolean requireStateChangeRecorder,
                 @NotNull final String... groupByColumnNames) {
             super(table, requireStateChangeRecorder, groupByColumnNames);
+            this.compilationProcessor = QueryCompilerRequestProcessor.batch();
+        }
+
+        @Override
+        AggregationContext build() {
+            final AggregationContext resultContext = super.build();
+            compilationProcessor.compile();
+            return resultContext;
         }
 
         // -------------------------------------------------------------------------------------------------------------
@@ -684,6 +767,11 @@ public class AggregationProcessor implements AggregationContextFactory {
         @Override
         public void visit(@NotNull final Count count) {
             addNoInputOperator(new CountAggregationOperator(count.column().name()));
+        }
+
+        @Override
+        public void visit(@NotNull final CountWhere countWhere) {
+            addCountWhereOperator(countWhere);
         }
 
         @Override
@@ -706,6 +794,50 @@ public class AggregationProcessor implements AggregationContextFactory {
                     partition.column().name(),
                     PARTITION_ATTRIBUTE_COPIER,
                     groupByColumnNames));
+        }
+
+        @Override
+        public void visit(@NotNull final Formula formula) {
+            final SelectColumn selectColumn = SelectColumn.of(formula.selectable());
+
+            // Get or create a column definition map composed of vectors of the original column types (or scalars when
+            // part of the key columns).
+            final Set<String> groupByColumnSet = Set.of(groupByColumnNames);
+            if (vectorColumnDefinitions == null) {
+                vectorColumnDefinitions = table.getDefinition().getColumnStream().collect(Collectors.toMap(
+                        ColumnDefinition::getName,
+                        (final ColumnDefinition<?> cd) -> groupByColumnSet.contains(cd.getName())
+                                ? cd
+                                : ColumnDefinition.fromGenericType(
+                                        cd.getName(),
+                                        VectorFactory.forElementType(cd.getDataType()).vectorType(),
+                                        cd.getDataType())));
+            }
+
+            // Get the input column names from the formula and provide them to the groupBy operator
+            final String[] allInputColumns =
+                    selectColumn.initDef(vectorColumnDefinitions, compilationProcessor).toArray(String[]::new);
+
+            final Map<Boolean, List<String>> partitioned = Arrays.stream(allInputColumns)
+                    .collect(Collectors.partitioningBy(groupByColumnSet::contains));
+            final String[] inputKeyColumns = partitioned.get(true).toArray(String[]::new);
+            final String[] inputNonKeyColumns = partitioned.get(false).toArray(String[]::new);
+
+            if (!selectColumn.getColumnArrays().isEmpty()) {
+                throw new IllegalArgumentException("AggFormula does not support column arrays ("
+                        + selectColumn.getColumnArrays() + ")");
+            }
+            if (selectColumn.hasVirtualRowVariables()) {
+                throw new IllegalArgumentException("AggFormula does not support virtual row variables");
+            }
+            // TODO: re-use shared groupBy operators (https://github.com/deephaven/deephaven-core/issues/6363)
+            final GroupByChunkedOperator groupByChunkedOperator = new GroupByChunkedOperator(table, false, null,
+                    Arrays.stream(inputNonKeyColumns).map(col -> MatchPair.of(Pair.parse(col)))
+                            .toArray(MatchPair[]::new));
+
+            final FormulaMultiColumnChunkedOperator op = new FormulaMultiColumnChunkedOperator(table,
+                    groupByChunkedOperator, true, selectColumn, inputKeyColumns);
+            addNoInputOperator(op);
         }
 
         // -------------------------------------------------------------------------------------------------------------
@@ -746,10 +878,12 @@ public class AggregationProcessor implements AggregationContextFactory {
         @Override
         public void visit(@NotNull final AggSpecFormula formula) {
             unsupportedForBlinkTables("Formula");
+            // TODO: re-use shared groupBy operators (https://github.com/deephaven/deephaven-core/issues/6363)
             final GroupByChunkedOperator groupByChunkedOperator = new GroupByChunkedOperator(table, false, null,
                     resultPairs.stream().map(pair -> MatchPair.of((Pair) pair.input())).toArray(MatchPair[]::new));
             final FormulaChunkedOperator formulaChunkedOperator = new FormulaChunkedOperator(groupByChunkedOperator,
-                    true, formula.formula(), formula.paramToken(), MatchPair.fromPairs(resultPairs));
+                    true, formula.formula(), formula.paramToken(), compilationProcessor,
+                    MatchPair.fromPairs(resultPairs));
             addNoInputOperator(formulaChunkedOperator);
         }
 
@@ -813,7 +947,7 @@ public class AggregationProcessor implements AggregationContextFactory {
         public void visit(@NotNull final AggSpecTDigest tDigest) {
             addBasicOperators((t, n) -> new TDigestPercentileOperator(t,
                     tDigest.compression().orElse(TDigestPercentileOperator.COMPRESSION_DEFAULT), n,
-                    ZERO_LENGTH_DOUBLE_ARRAY, ZERO_LENGTH_STRING_ARRAY));
+                    ArrayTypeUtils.EMPTY_DOUBLE_ARRAY, ArrayTypeUtils.EMPTY_STRING_ARRAY));
         }
 
         @Override
@@ -824,12 +958,12 @@ public class AggregationProcessor implements AggregationContextFactory {
 
         @Override
         public void visit(@NotNull final AggSpecWAvg wAvg) {
-            addWeightedAvgOrSumOperator(wAvg.weight().name(), false);
+            addWeightedAvgOrSumOperator(wAvg.weight().name(), false, false);
         }
 
         @Override
         public void visit(@NotNull final AggSpecWSum wSum) {
-            addWeightedAvgOrSumOperator(wSum.weight().name(), true);
+            addWeightedAvgOrSumOperator(wSum.weight().name(), true, false);
         }
 
         @Override
@@ -858,6 +992,12 @@ public class AggregationProcessor implements AggregationContextFactory {
         @FinalDefault
         default void visit(@NotNull final LastRowKey lastRowKey) {
             rollupUnsupported("LastRowKey");
+        }
+
+        @Override
+        @FinalDefault
+        default void visit(@NotNull final Formula formula) {
+            rollupUnsupported("Formula");
         }
 
         // -------------------------------------------------------------------------------------------------------------
@@ -904,13 +1044,6 @@ public class AggregationProcessor implements AggregationContextFactory {
         default void visit(@NotNull final AggSpecTDigest tDigest) {
             rollupUnsupported("TDigest");
         }
-
-        @Override
-        @FinalDefault
-        default void visit(@NotNull final AggSpecWAvg wAvg) {
-            // TODO(deephaven-core#3350): AggWAvg support for rollup()
-            rollupUnsupported("WAvg", 3350);
-        }
     }
 
     private static void rollupUnsupported(@NotNull final String operationName) {
@@ -950,6 +1083,11 @@ public class AggregationProcessor implements AggregationContextFactory {
         @Override
         public void visit(@NotNull final Count count) {
             addNoInputOperator(new CountAggregationOperator(count.column().name()));
+        }
+
+        @Override
+        public void visit(@NotNull final CountWhere countWhere) {
+            addCountWhereOperator(countWhere);
         }
 
         @Override
@@ -1042,7 +1180,14 @@ public class AggregationProcessor implements AggregationContextFactory {
 
         @Override
         public void visit(@NotNull final AggSpecWSum wSum) {
-            addWeightedAvgOrSumOperator(wSum.weight().name(), true);
+            // Weighted sum does not need to expose internal columns to re-aggregate.
+            addWeightedAvgOrSumOperator(wSum.weight().name(), true, false);
+        }
+
+        @Override
+        public void visit(@NotNull final AggSpecWAvg wAvg) {
+            // Weighted average needs access internal columns to re-aggregate.
+            addWeightedAvgOrSumOperator(wAvg.weight().name(), false, true);
         }
 
         @Override
@@ -1086,6 +1231,13 @@ public class AggregationProcessor implements AggregationContextFactory {
         @Override
         public void visit(@NotNull final Count count) {
             final String resultName = count.column().name();
+            final ColumnSource<?> resultSource = table.getColumnSource(resultName);
+            addOperator(makeSumOperator(resultSource.getType(), resultName, false), resultSource, resultName);
+        }
+
+        @Override
+        public void visit(@NotNull final CountWhere countWhere) {
+            final String resultName = countWhere.column().name();
             final ColumnSource<?> resultSource = table.getColumnSource(resultName);
             addOperator(makeSumOperator(resultSource.getType(), resultName, false), resultSource, resultName);
         }
@@ -1191,6 +1343,12 @@ public class AggregationProcessor implements AggregationContextFactory {
         }
 
         @Override
+        public void visit(@NotNull final AggSpecWAvg wAvg) {
+            reaggregateWAvgOperator();
+        }
+
+
+        @Override
         public void visit(@NotNull final AggSpecVar var) {
             reaggregateStdOrVarOperators(false);
         }
@@ -1288,6 +1446,28 @@ public class AggregationProcessor implements AggregationContextFactory {
             }
         }
 
+        private void reaggregateWAvgOperator() {
+            for (final Pair pair : resultPairs) {
+                final String resultName = pair.output().name();
+
+                // Make a recording operator for the sum of weights column
+                final String sumOfWeightsName = resultName + ROLLUP_SUM_WEIGHTS_COLUMN_ID + ROLLUP_COLUMN_SUFFIX;
+                final ColumnSource<?> sumOfWeightsSource = table.getColumnSource(sumOfWeightsName);
+
+                final DoubleWeightRecordingInternalOperator doubleWeightOperator =
+                        new DoubleWeightRecordingInternalOperator(sumOfWeightsSource.getChunkType());
+                addOperator(doubleWeightOperator, sumOfWeightsSource, resultName, sumOfWeightsName);
+
+                final ColumnSource<?> weightedAveragesSource = table.getColumnSource(resultName);
+
+                // The sum of weights column is directly usable as the weights for the WAvg re-aggregation.
+                final IterativeChunkedAggregationOperator resultOperator = new ChunkedWeightedAverageOperator(
+                        weightedAveragesSource.getChunkType(), doubleWeightOperator, resultName, true);
+
+                addOperator(resultOperator, weightedAveragesSource, resultName, sumOfWeightsName);
+            }
+        }
+
         private void reaggregateStdOrVarOperators(final boolean isStd) {
             for (final Pair pair : resultPairs) {
                 final String resultName = pair.output().name();
@@ -1375,7 +1555,7 @@ public class AggregationProcessor implements AggregationContextFactory {
         return new AggregationContext(
                 new IterativeChunkedAggregationOperator[] {
                         new UniqueRowKeyChunkedOperator(TreeConstants.SOURCE_ROW_LOOKUP_ROW_KEY_COLUMN.name())},
-                new String[][] {ZERO_LENGTH_STRING_ARRAY},
+                new String[][] {ArrayTypeUtils.EMPTY_STRING_ARRAY},
                 new ChunkSource.WithPrev[] {null},
                 new AggregationContextTransformer[] {new RowLookupAttributeSetter()});
     }
@@ -1385,13 +1565,13 @@ public class AggregationProcessor implements AggregationContextFactory {
             // noinspection unchecked
             return new AggregationContext(
                     new IterativeChunkedAggregationOperator[] {new CountAggregationOperator(null)},
-                    new String[][] {ZERO_LENGTH_STRING_ARRAY},
+                    new String[][] {ArrayTypeUtils.EMPTY_STRING_ARRAY},
                     new ChunkSource.WithPrev[] {null});
         }
         // noinspection unchecked
         return new AggregationContext(
                 ZERO_LENGTH_ITERATIVE_CHUNKED_AGGREGATION_OPERATOR_ARRAY,
-                ZERO_LENGTH_STRING_ARRAY_ARRAY,
+                ArrayTypeUtils.EMPTY_STRING_ARRAY_ARRAY,
                 ZERO_LENGTH_CHUNK_SOURCE_WITH_PREV_ARRAY);
     }
 
@@ -1406,16 +1586,18 @@ public class AggregationProcessor implements AggregationContextFactory {
                             new GroupByChunkedOperator(inputQueryTable, true, EXPOSED_GROUP_ROW_SETS.name()),
                             new CountAggregationOperator(null)
                     },
-                    new String[][] {ZERO_LENGTH_STRING_ARRAY, ZERO_LENGTH_STRING_ARRAY},
-                    new ChunkSource.WithPrev[] {null, null});
+                    new String[][] {ArrayTypeUtils.EMPTY_STRING_ARRAY, ArrayTypeUtils.EMPTY_STRING_ARRAY},
+                    new ChunkSource.WithPrev[] {null, null},
+                    new AggregationContextTransformer[] {new RowLookupAttributeSetter()});
         }
         // noinspection unchecked
         return new AggregationContext(
                 new IterativeChunkedAggregationOperator[] {
                         new GroupByChunkedOperator(inputQueryTable, true, EXPOSED_GROUP_ROW_SETS.name())
                 },
-                new String[][] {ZERO_LENGTH_STRING_ARRAY},
-                new ChunkSource.WithPrev[] {null});
+                new String[][] {ArrayTypeUtils.EMPTY_STRING_ARRAY},
+                new ChunkSource.WithPrev[] {null},
+                new AggregationContextTransformer[] {new RowLookupAttributeSetter()});
     }
 
     private static ColumnSource<?> maybeReinterpretInstantAsLong(@NotNull final ColumnSource<?> inputSource) {
@@ -1975,7 +2157,6 @@ public class AggregationProcessor implements AggregationContextFactory {
     public static AggregationRowLookup getRowLookup(@NotNull final Table aggregationResult) {
         final Object value = aggregationResult.getAttribute(AGGREGATION_ROW_LOOKUP_ATTRIBUTE);
         Assert.neqNull(value, "aggregation result row lookup");
-        Assert.instanceOf(value, "aggregation result row lookup", AggregationRowLookup.class);
         return (AggregationRowLookup) value;
     }
 }

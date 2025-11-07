@@ -1,8 +1,12 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+/*
+ * Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
  */
 #include "deephaven/dhcore/chunk/chunk.h"
+
+#include <cstddef>
+#include <string_view>
 #include "deephaven/dhcore/utility/utility.h"
+#include "deephaven/third_party/fmt/core.h"
 
 using deephaven::dhcore::chunk::Chunk;
 

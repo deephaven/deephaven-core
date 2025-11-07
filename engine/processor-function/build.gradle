@@ -1,0 +1,27 @@
+plugins {
+    id 'java-library'
+    id 'io.deephaven.project.register'
+}
+
+
+dependencies {
+    api project(':engine-processor')
+    api project(':util-function')
+
+    implementation project(':engine-time')
+
+    testImplementation libs.assertj
+    testImplementation platform(libs.junit.bom)
+    testImplementation libs.junit.jupiter
+    testRuntimeOnly libs.junit.jupiter.engine
+    testRuntimeOnly libs.junit.platform.launcher
+
+    testRuntimeOnly project(':log-to-slf4j')
+    testRuntimeOnly project(':configs')
+    testRuntimeOnly project(':test-configs')
+    testRuntimeOnly libs.slf4j.simple
+}
+
+test {
+    useJUnitPlatform()
+}

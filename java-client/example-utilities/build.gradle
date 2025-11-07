@@ -4,9 +4,9 @@ plugins {
 }
 
 dependencies {
-    api 'info.picocli:picocli:4.6.1'
+    api libs.picocli
     api project(':java-client-session')
 
-    Classpaths.inheritGrpcPlatform(project, 'api')
-    api 'io.grpc:grpc-api'
+    api platform(libs.grpc.bom)
+    api libs.grpc.api
 }

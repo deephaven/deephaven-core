@@ -1,16 +1,18 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.plugin;
 
 import dagger.Module;
 import dagger.Provides;
 import dagger.multibindings.ElementsIntoSet;
+import io.deephaven.engine.validation.ColumnExpressionValidator;
 import io.deephaven.plugin.js.JsPlugin;
+import io.deephaven.plugin.options.AcceptsPluginOptions;
+import io.deephaven.plugin.options.PluginOptions;
 import io.deephaven.plugin.type.ObjectType;
 
 import java.util.ServiceLoader;
-import java.util.ServiceLoader.Provider;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -20,28 +22,43 @@ import java.util.stream.Collectors;
  */
 @Module
 public interface PluginModule {
-
     @Provides
-    @ElementsIntoSet
-    static Set<Registration> providesServiceLoaderRegistrations() {
-        return ServiceLoader.load(Registration.class).stream().map(Provider::get).collect(Collectors.toSet());
+    static PluginOptions pluginOptions(ColumnExpressionValidator validator) {
+        return PluginOptions.builder().columnExpressionValidator(validator).build();
     }
 
     @Provides
     @ElementsIntoSet
-    static Set<Registration> providesServiceLoaderPlugins() {
-        return ServiceLoader.load(Plugin.class).stream().map(Provider::get).collect(Collectors.toSet());
+    static Set<Registration> providesServiceLoaderRegistrations(PluginOptions options) {
+        return ServiceLoader.load(Registration.class).stream()
+                .map(provider -> applyPluginOptions(provider.get(), options)).collect(Collectors.toSet());
     }
 
     @Provides
     @ElementsIntoSet
-    static Set<Registration> providesServiceLoaderObjectTypes() {
-        return ServiceLoader.load(ObjectType.class).stream().map(Provider::get).collect(Collectors.toSet());
+    static Set<Registration> providesServiceLoaderPlugins(PluginOptions options) {
+        return ServiceLoader.load(Plugin.class).stream().map(provider -> applyPluginOptions(provider.get(), options))
+                .collect(Collectors.toSet());
     }
 
     @Provides
     @ElementsIntoSet
-    static Set<Registration> providesServiceLoaderJsPlugin() {
-        return ServiceLoader.load(JsPlugin.class).stream().map(Provider::get).collect(Collectors.toSet());
+    static Set<Registration> providesServiceLoaderObjectTypes(PluginOptions options) {
+        return ServiceLoader.load(ObjectType.class).stream()
+                .map(provider -> applyPluginOptions(provider.get(), options)).collect(Collectors.toSet());
+    }
+
+    @Provides
+    @ElementsIntoSet
+    static Set<Registration> providesServiceLoaderJsPlugin(PluginOptions options) {
+        return ServiceLoader.load(JsPlugin.class).stream().map(provider -> applyPluginOptions(provider.get(), options))
+                .collect(Collectors.toSet());
+    }
+
+    static Registration applyPluginOptions(Registration registration, PluginOptions options) {
+        if (registration instanceof AcceptsPluginOptions) {
+            ((AcceptsPluginOptions) registration).setPluginOptions(options);
+        }
+        return registration;
     }
 }

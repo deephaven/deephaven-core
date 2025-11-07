@@ -1,3 +1,6 @@
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.updateby.hashing;
 
 import io.deephaven.chunk.WritableIntChunk;
@@ -5,7 +8,7 @@ import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.util.SafeCloseable;
-import org.apache.commons.lang3.mutable.MutableInt;
+import io.deephaven.util.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
@@ -28,27 +31,28 @@ public abstract class UpdateByStateManager {
         if (keySourcesForErrorMessages.length == 1) {
             return Objects.toString(keySourcesForErrorMessages[0].get(leftKey));
         }
-        return "[" + Arrays.stream(keySourcesForErrorMessages).map(ls -> Objects.toString(ls.get(leftKey))).collect(Collectors.joining(", ")) + "]";
+        return "[" + Arrays.stream(keySourcesForErrorMessages).map(ls -> Objects.toString(ls.get(leftKey)))
+                .collect(Collectors.joining(", ")) + "]";
     }
 
     public abstract void add(final boolean initialBuild,
-             final SafeCloseable bc,
-             final RowSequence orderedKeys,
-             final ColumnSource<?>[] sources,
-             final MutableInt nextOutputPosition,
-             final WritableIntChunk<RowKeys> outputPositions);
+            final SafeCloseable bc,
+            final RowSequence orderedKeys,
+            final ColumnSource<?>[] sources,
+            final MutableInt nextOutputPosition,
+            final WritableIntChunk<RowKeys> outputPositions);
 
     public void remove(@NotNull final SafeCloseable pc,
-                        @NotNull final RowSequence indexToRemove,
-                        @NotNull final ColumnSource<?>[] sources,
-                        @NotNull final WritableIntChunk<RowKeys> outputPositions)  {
+            @NotNull final RowSequence indexToRemove,
+            @NotNull final ColumnSource<?>[] sources,
+            @NotNull final WritableIntChunk<RowKeys> outputPositions) {
         throw new UnsupportedOperationException("Remove is not supported");
     }
 
     public void findModifications(@NotNull final SafeCloseable pc,
-                                   @NotNull final RowSequence modifiedIndex,
-                                   @NotNull final ColumnSource<?> [] keySources,
-                                   @NotNull final WritableIntChunk<RowKeys> outputPositions)  {
+            @NotNull final RowSequence modifiedIndex,
+            @NotNull final ColumnSource<?>[] keySources,
+            @NotNull final WritableIntChunk<RowKeys> outputPositions) {
         throw new UnsupportedOperationException("Find is not supported");
     }
 

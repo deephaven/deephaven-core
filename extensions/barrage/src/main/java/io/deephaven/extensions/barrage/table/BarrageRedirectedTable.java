@@ -1,7 +1,6 @@
-/*
- * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
- */
-
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.extensions.barrage.table;
 
 import io.deephaven.base.verify.Assert;
@@ -11,6 +10,7 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
@@ -21,6 +21,7 @@ import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.WritableColumnSource;
+import io.deephaven.engine.table.impl.FlattenOperation;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
 import io.deephaven.engine.table.impl.util.UpdateCoalescer;
@@ -31,7 +32,6 @@ import io.deephaven.io.log.LogLevel;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayDeque;
-import java.util.BitSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
@@ -48,16 +48,33 @@ public class BarrageRedirectedTable extends BarrageTable {
     /** represents which rows in writable source exist but are not mapped to any parent rows */
     private WritableRowSet freeset = RowSetFactory.empty();
 
-    protected BarrageRedirectedTable(final UpdateSourceRegistrar registrar,
+    /**
+     * A full subscription is where the server sends all data to the client. The server is allowed to initially send
+     * growing viewports to the client to avoid contention on the update graph lock. Once the server has grown the
+     * viewport to match the entire table as of any particular consistent state, it will not send any more snapshots and
+     * {@code serverViewport} will be set to {@code null}.
+     */
+    protected final boolean isFullSubscription;
+
+    protected BarrageRedirectedTable(
+            @Nullable final String channelName,
+            final UpdateSourceRegistrar registrar,
             final NotificationQueue notificationQueue,
             @Nullable final ScheduledExecutorService executorService,
             final LinkedHashMap<String, ColumnSource<?>> columns,
             final WritableColumnSource<?>[] writableSources,
             final WritableRowRedirection rowRedirection,
             final Map<String, Object> attributes,
+            final boolean isFlat,
+            final boolean isFullSubscription,
             @Nullable final ViewportChangedCallback vpCallback) {
-        super(registrar, notificationQueue, executorService, columns, writableSources, attributes, vpCallback);
+        super(channelName, registrar, notificationQueue, executorService, columns, writableSources, attributes,
+                vpCallback);
         this.rowRedirection = rowRedirection;
+        this.isFullSubscription = isFullSubscription;
+        if (!isFullSubscription || isFlat) {
+            setFlat();
+        }
     }
 
     private UpdateCoalescer processUpdate(final BarrageMessage update, final UpdateCoalescer coalescer) {
@@ -102,23 +119,31 @@ public class BarrageRedirectedTable extends BarrageTable {
         final boolean serverReverseViewport = getServerReverseViewport();
 
         try (final RowSet currRowsFromPrev = currentRowSet.copy();
-                final WritableRowSet populatedRows =
-                        (serverViewport != null
-                                ? currentRowSet.subSetForPositions(serverViewport, serverReverseViewport)
-                                : null)) {
+                final WritableRowSet populatedRows = serverViewport != null && isFullSubscription
+                        ? currentRowSet.subSetForPositions(serverViewport, serverReverseViewport)
+                        : null) {
+
+            final RowSetShiftData updateShiftData;
+            if (isFullSubscription) {
+                updateShiftData = update.shifted;
+            } else {
+                updateShiftData = FlattenOperation.computeFlattenedRowSetShiftData(
+                        update.rowsRemoved, update.rowsAdded, currentRowSet.size());
+            }
 
             // removes
             currentRowSet.remove(update.rowsRemoved);
-            try (final RowSet removed = serverViewport != null ? populatedRows.extract(update.rowsRemoved) : null) {
-                freeRows(removed != null ? removed : update.rowsRemoved);
+            try (final RowSet populatedRowsRemoved =
+                    populatedRows != null ? populatedRows.extract(update.rowsRemoved) : null) {
+                freeRows(populatedRowsRemoved != null ? populatedRowsRemoved : update.rowsRemoved);
             }
 
             // shifts
-            if (update.shifted.nonempty()) {
-                rowRedirection.applyShift(currentRowSet, update.shifted);
-                update.shifted.apply(currentRowSet);
+            if (updateShiftData.nonempty()) {
+                rowRedirection.applyShift(currentRowSet, updateShiftData);
+                updateShiftData.apply(currentRowSet);
                 if (populatedRows != null) {
-                    update.shifted.apply(populatedRows);
+                    updateShiftData.apply(populatedRows);
                 }
             }
             currentRowSet.insert(update.rowsAdded);
@@ -228,7 +253,7 @@ public class BarrageRedirectedTable extends BarrageTable {
             }
 
             // remove all data outside of our viewport
-            if (serverViewport != null) {
+            if (populatedRows != null) {
                 try (final RowSet newPopulated =
                         currentRowSet.subSetForPositions(serverViewport, serverReverseViewport)) {
                     populatedRows.remove(newPopulated);
@@ -244,7 +269,8 @@ public class BarrageRedirectedTable extends BarrageTable {
             }
 
             final TableUpdate downstream = new TableUpdateImpl(
-                    update.rowsAdded.copy(), update.rowsRemoved.copy(), totalMods, update.shifted, modifiedColumnSet);
+                    update.rowsAdded, update.rowsRemoved, totalMods, updateShiftData, modifiedColumnSet);
+
             return (coalescer == null) ? new UpdateCoalescer(currRowsFromPrev, downstream)
                     : coalescer.update(downstream);
         }

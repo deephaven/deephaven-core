@@ -1,13 +1,17 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.parquet.table.layout;
 
+import io.deephaven.base.FileUtils;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.locations.impl.TableLocationKeyFinder;
-import io.deephaven.engine.table.impl.locations.local.FileTableLocationKey;
+import io.deephaven.engine.table.impl.locations.local.URITableLocationKey;
+import io.deephaven.parquet.table.ParquetInstructions;
 import io.deephaven.parquet.table.location.ParquetTableLocationKey;
 import io.deephaven.util.annotations.VisibleForTesting;
+import io.deephaven.util.channel.SeekableChannelsProvider;
+import io.deephaven.util.channel.SeekableChannelsProviderLoader;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -23,6 +27,10 @@ import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
+import java.net.URI;
+
+import static io.deephaven.base.FileUtils.convertToURI;
+
 /**
  * {@link TableLocationKeyFinder} that will traverse a directory hierarchy laid out in Deephaven's "nested-partitioned"
  * format, e.g.
@@ -31,10 +39,10 @@ import java.util.function.Predicate;
  * tableRootDirectory/internalPartitionValue/columnPartitionValue/tableName/...
  * </pre>
  *
- * , producing {@link FileTableLocationKey}'s with two partitions, for keys {@value INTERNAL_PARTITION_KEY} and the
+ * , producing {@link URITableLocationKey}'s with two partitions, for keys {@value INTERNAL_PARTITION_KEY} and the
  * specified {@code columnPartitionKey}.
  */
-public abstract class DeephavenNestedPartitionLayout<TLK extends FileTableLocationKey>
+public abstract class DeephavenNestedPartitionLayout<TLK extends URITableLocationKey>
         implements TableLocationKeyFinder<TLK> {
 
     @VisibleForTesting
@@ -44,14 +52,18 @@ public abstract class DeephavenNestedPartitionLayout<TLK extends FileTableLocati
             @NotNull final File tableRootDirectory,
             @NotNull final String tableName,
             @NotNull final String columnPartitionKey,
-            @Nullable final Predicate<String> internalPartitionValueFilter) {
+            @Nullable final Predicate<String> internalPartitionValueFilter,
+            @NotNull final ParquetInstructions readInstructions) {
+        // noinspection resource
+        final SeekableChannelsProvider channelsProvider = SeekableChannelsProviderLoader.getInstance()
+                .load(FileUtils.FILE_URI_SCHEME, readInstructions.getSpecialInstructions());
         return new DeephavenNestedPartitionLayout<>(tableRootDirectory, tableName,
                 columnPartitionKey, internalPartitionValueFilter) {
             @Override
             protected ParquetTableLocationKey makeKey(@NotNull Path tableLeafDirectory,
                     @NotNull Map<String, Comparable<?>> partitions) {
-                return new ParquetTableLocationKey(tableLeafDirectory.resolve(PARQUET_FILE_NAME).toFile(), 0,
-                        partitions);
+                final URI fileURI = convertToURI(tableLeafDirectory.resolve(PARQUET_FILE_NAME), false);
+                return new ParquetTableLocationKey(fileURI, 0, partitions, channelsProvider);
             }
         };
     }

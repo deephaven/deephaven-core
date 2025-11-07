@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.server.table.ops.filter;
 
 import io.deephaven.proto.backplane.grpc.CaseSensitivity;
@@ -9,6 +9,7 @@ import io.deephaven.proto.backplane.grpc.Condition;
 import io.deephaven.proto.backplane.grpc.MatchType;
 import io.deephaven.proto.backplane.grpc.Reference;
 import io.deephaven.proto.backplane.grpc.Value;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 
@@ -46,7 +47,10 @@ public abstract class AbstractNormalizeFilters implements FilterVisitor<Conditio
     }
 
     @Override
-    public Condition onInvoke(String method, Value target, List<Value> argumentsList) {
+    public Condition onInvoke(String method, @Nullable Value target, List<Value> argumentsList) {
+        if (target == null) {
+            return NormalizeFilterUtil.doInvoke(method, argumentsList);
+        }
         return NormalizeFilterUtil.doInvoke(method, target, argumentsList);
     }
 

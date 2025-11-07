@@ -6,6 +6,7 @@ measurement.per_thread_cpu=false
 QueryCompiler.logEnabledDefault=false
 UpdatePerformanceTracker.reportingMode=NONE
 UpdatePerformanceTracker.reportIntervalMillis=60000
+UpdatePerformanceTracker.logAllEntriesOnce=true
 
 #
 # NIO driver thread pool
@@ -94,6 +95,9 @@ BarrageMessageProducer.minSnapshotCellCount=50
 BarrageMessageProducer.maxSnapshotCellCount=50
 BarrageStreamGenerator.batchSize=4
 
+web.storage.layout.directory=/layouts
+web.storage.notebook.directory=/notebooks
+
 http.session.durationMs=300000
 AuthHandlers=io.deephaven.auth.AnonymousAuthenticationHandler
 authentication.client.configuration.list=
@@ -102,3 +106,20 @@ client.version.list=
 authentication.anonymous.warn=false
 
 deephaven.console.type=none
+
+BaseTable.validateUpdateIndices=true
+
+PerformanceEntry.requireAuthContext=true
+
+PushdownResult.forceValidation=true
+
+# Permit any instance methods on boxed types
+ColumnExpressionValidator.allowedMethods.primitives=java.lang.Character *(..);java.lang.Byte *(..);java.lang.Short *(..);java.lang.Integer *(..);java.lang.Long *(..);java.lang.Float *(..);java.lang.Double *(..);java.lang.Boolean *(..)
+# Permit any instance methods on immutable types (e.g. Strings; Instants; BigInteger; and Decimal)
+ColumnExpressionValidator.allowedMethods.basic=java.lang.String *(..);java.time.Instant *(..);java.math.BigInteger *(..);java.math.BigDecimal *(..);java.time.LocalTime *(..)
+# Permit converting any value to a String, comparing equality, or using a hashCode
+ColumnExpressionValidator.allowedMethods.toString=java.lang.Object toString()
+ColumnExpressionValidator.allowedMethods.equals=java.lang.Object equals(java.lang.Object)
+ColumnExpressionValidator.allowedMethods.hashCode=java.lang.Object hashCode()
+
+ColumnExpressionValidator.annotationSets.default=base,vector,function_library

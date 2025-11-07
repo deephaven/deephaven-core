@@ -1,9 +1,11 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+/*
+ * Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
  */
 #pragma once
 
 #include <arrow/type.h>
+#include <arrow/visitor.h>
+#include <string>
 #include "deephaven/dhcore/types.h"
 
 namespace deephaven::client::arrowutil {
@@ -13,6 +15,7 @@ class ArrowTypeVisitor final : public arrow::TypeVisitor {
 public:
   ArrowTypeVisitor() = default;
   explicit ArrowTypeVisitor(InnerType inner) : inner_(std::move(inner)) {}
+  ~ArrowTypeVisitor() final = default;
 
   arrow::Status Visit(const arrow::Int8Type &) final {
     inner_.template operator()<int8_t>();
@@ -67,10 +70,11 @@ private:
 };
 
 template<typename InnerType>
-class ArrowArrayTypeVisitor : public arrow::ArrayVisitor {
+class ArrowArrayTypeVisitor final : public arrow::ArrayVisitor {
 public:
   ArrowArrayTypeVisitor() = default;
   explicit ArrowArrayTypeVisitor(InnerType inner) : inner_(std::move(inner)) {}
+  ~ArrowArrayTypeVisitor() final = default;
 
   arrow::Status Visit(const arrow::Int8Array &) final {
     inner_.template operator()<int8_t>();

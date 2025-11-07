@@ -1,3 +1,6 @@
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.updateby;
 
 import io.deephaven.api.updateby.UpdateByControl;
@@ -6,13 +9,14 @@ import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.impl.DataAccessHelpers;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.TableDefaults;
+import io.deephaven.engine.table.vectors.ColumnVectors;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.EvalNugget;
 import io.deephaven.engine.testutil.GenerateTableUpdates;
 import io.deephaven.engine.testutil.TstUtils;
+import io.deephaven.engine.testutil.generator.CharGenerator;
 import io.deephaven.engine.testutil.generator.SortedInstantGenerator;
 import io.deephaven.engine.testutil.generator.TestDataGenerator;
 import io.deephaven.engine.util.TableDiff;
@@ -58,6 +62,25 @@ public class TestRollingSum extends BaseUpdateByTest {
     // region Static Zero Key Tests
 
     @Test
+    public void testStaticZeroKeyAllNullVector() {
+        final QueryTable t = createTestTable(10000, false, false, false, 0x31313131).t;
+        t.setRefreshing(false);
+
+        // With a window size of 1 and 10% null generation, guaranteed to cover the all NULL case.
+        final int prevTicks = 1;
+        final int postTicks = 0;
+
+        final Table summed = t.updateBy(UpdateByOperation.RollingSum(prevTicks, postTicks));
+
+        for (String col : t.getDefinition().getColumnNamesArray()) {
+            assertWithRollingSumTicks(
+                    ColumnVectors.of(t, col).toArray(),
+                    ColumnVectors.of(summed, col).toArray(),
+                    summed.getDefinition().getColumn(col).getDataType(), prevTicks, postTicks);
+        }
+    }
+
+    @Test
     public void testStaticZeroKeyRev() {
         final QueryTable t = createTestTable(10000, false, false, false, 0x31313131).t;
         t.setRefreshing(false);
@@ -67,9 +90,8 @@ public class TestRollingSum extends BaseUpdateByTest {
 
         final Table summed = t.updateBy(UpdateByOperation.RollingSum(prevTicks, postTicks));
         for (String col : t.getDefinition().getColumnNamesArray()) {
-            assertWithRollingSumTicks(DataAccessHelpers.getColumn(t, col).getDirect(),
-                    DataAccessHelpers.getColumn(summed, col).getDirect(),
-                    DataAccessHelpers.getColumn(summed, col).getType(), prevTicks, postTicks);
+            assertWithRollingSumTicks(ColumnVectors.of(t, col).toArray(), ColumnVectors.of(summed, col).toArray(),
+                    summed.getDefinition().getColumn(col).getDataType(), prevTicks, postTicks);
         }
     }
 
@@ -83,9 +105,8 @@ public class TestRollingSum extends BaseUpdateByTest {
 
         final Table summed = t.updateBy(UpdateByOperation.RollingSum(prevTicks, postTicks));
         for (String col : t.getDefinition().getColumnNamesArray()) {
-            assertWithRollingSumTicks(DataAccessHelpers.getColumn(t, col).getDirect(),
-                    DataAccessHelpers.getColumn(summed, col).getDirect(),
-                    DataAccessHelpers.getColumn(summed, col).getType(), prevTicks, postTicks);
+            assertWithRollingSumTicks(ColumnVectors.of(t, col).toArray(), ColumnVectors.of(summed, col).toArray(),
+                    summed.getDefinition().getColumn(col).getDataType(), prevTicks, postTicks);
         }
     }
 
@@ -99,9 +120,8 @@ public class TestRollingSum extends BaseUpdateByTest {
 
         final Table summed = t.updateBy(UpdateByOperation.RollingSum(prevTicks, postTicks));
         for (String col : t.getDefinition().getColumnNamesArray()) {
-            assertWithRollingSumTicks(DataAccessHelpers.getColumn(t, col).getDirect(),
-                    DataAccessHelpers.getColumn(summed, col).getDirect(),
-                    DataAccessHelpers.getColumn(summed, col).getType(), prevTicks, postTicks);
+            assertWithRollingSumTicks(ColumnVectors.of(t, col).toArray(), ColumnVectors.of(summed, col).toArray(),
+                    summed.getDefinition().getColumn(col).getDataType(), prevTicks, postTicks);
         }
     }
 
@@ -115,9 +135,8 @@ public class TestRollingSum extends BaseUpdateByTest {
 
         final Table summed = t.updateBy(UpdateByOperation.RollingSum(prevTicks, postTicks));
         for (String col : t.getDefinition().getColumnNamesArray()) {
-            assertWithRollingSumTicks(DataAccessHelpers.getColumn(t, col).getDirect(),
-                    DataAccessHelpers.getColumn(summed, col).getDirect(),
-                    DataAccessHelpers.getColumn(summed, col).getType(), prevTicks, postTicks);
+            assertWithRollingSumTicks(ColumnVectors.of(t, col).toArray(), ColumnVectors.of(summed, col).toArray(),
+                    summed.getDefinition().getColumn(col).getDataType(), prevTicks, postTicks);
         }
     }
 
@@ -131,9 +150,8 @@ public class TestRollingSum extends BaseUpdateByTest {
 
         final Table summed = t.updateBy(UpdateByOperation.RollingSum(prevTicks, postTicks));
         for (String col : t.getDefinition().getColumnNamesArray()) {
-            assertWithRollingSumTicks(DataAccessHelpers.getColumn(t, col).getDirect(),
-                    DataAccessHelpers.getColumn(summed, col).getDirect(),
-                    DataAccessHelpers.getColumn(summed, col).getType(), prevTicks, postTicks);
+            assertWithRollingSumTicks(ColumnVectors.of(t, col).toArray(), ColumnVectors.of(summed, col).toArray(),
+                    summed.getDefinition().getColumn(col).getDataType(), prevTicks, postTicks);
         }
     }
 
@@ -153,16 +171,16 @@ public class TestRollingSum extends BaseUpdateByTest {
                         "doubleCol", "boolCol", "bigIntCol", "bigDecimalCol"));
 
 
-        final Instant[] ts = (Instant[]) DataAccessHelpers.getColumn(t, "ts").getDirect();
+        final Instant[] ts = ColumnVectors.ofObject(t, "ts", Instant.class).toArray();
         final long[] timestamps = new long[t.intSize()];
         for (int i = 0; i < t.intSize(); i++) {
             timestamps[i] = DateTimeUtils.epochNanos(ts[i]);
         }
 
         for (String col : t.getDefinition().getColumnNamesArray()) {
-            assertWithRollingSumTime(DataAccessHelpers.getColumn(t, col).getDirect(),
-                    DataAccessHelpers.getColumn(summed, col).getDirect(), timestamps,
-                    DataAccessHelpers.getColumn(summed, col).getType(), prevTime.toNanos(), postTime.toNanos());
+            assertWithRollingSumTime(ColumnVectors.of(t, col).toArray(), ColumnVectors.of(summed, col).toArray(),
+                    timestamps, summed.getDefinition().getColumn(col).getDataType(),
+                    prevTime.toNanos(), postTime.toNanos());
         }
     }
 
@@ -182,16 +200,16 @@ public class TestRollingSum extends BaseUpdateByTest {
                         "doubleCol", "boolCol", "bigIntCol", "bigDecimalCol"));
 
 
-        final Instant[] ts = (Instant[]) DataAccessHelpers.getColumn(t, "ts").getDirect();
+        final Instant[] ts = ColumnVectors.ofObject(t, "ts", Instant.class).toArray();
         final long[] timestamps = new long[t.intSize()];
         for (int i = 0; i < t.intSize(); i++) {
             timestamps[i] = DateTimeUtils.epochNanos(ts[i]);
         }
 
         for (String col : t.getDefinition().getColumnNamesArray()) {
-            assertWithRollingSumTime(DataAccessHelpers.getColumn(t, col).getDirect(),
-                    DataAccessHelpers.getColumn(summed, col).getDirect(), timestamps,
-                    DataAccessHelpers.getColumn(summed, col).getType(), prevTime.toNanos(), postTime.toNanos());
+            assertWithRollingSumTime(ColumnVectors.of(t, col).toArray(), ColumnVectors.of(summed, col).toArray(),
+                    timestamps, summed.getDefinition().getColumn(col).getDataType(),
+                    prevTime.toNanos(), postTime.toNanos());
         }
     }
 
@@ -211,16 +229,16 @@ public class TestRollingSum extends BaseUpdateByTest {
                         "doubleCol", "boolCol", "bigIntCol", "bigDecimalCol"));
 
 
-        final Instant[] ts = (Instant[]) DataAccessHelpers.getColumn(t, "ts").getDirect();
+        final Instant[] ts = ColumnVectors.ofObject(t, "ts", Instant.class).toArray();
         final long[] timestamps = new long[t.intSize()];
         for (int i = 0; i < t.intSize(); i++) {
             timestamps[i] = DateTimeUtils.epochNanos(ts[i]);
         }
 
         for (String col : t.getDefinition().getColumnNamesArray()) {
-            assertWithRollingSumTime(DataAccessHelpers.getColumn(t, col).getDirect(),
-                    DataAccessHelpers.getColumn(summed, col).getDirect(), timestamps,
-                    DataAccessHelpers.getColumn(summed, col).getType(), prevTime.toNanos(), postTime.toNanos());
+            assertWithRollingSumTime(ColumnVectors.of(t, col).toArray(), ColumnVectors.of(summed, col).toArray(),
+                    timestamps, summed.getDefinition().getColumn(col).getDataType(),
+                    prevTime.toNanos(), postTime.toNanos());
         }
     }
 
@@ -240,16 +258,16 @@ public class TestRollingSum extends BaseUpdateByTest {
                         "doubleCol", "boolCol", "bigIntCol", "bigDecimalCol"));
 
 
-        final Instant[] ts = (Instant[]) DataAccessHelpers.getColumn(t, "ts").getDirect();
+        final Instant[] ts = ColumnVectors.ofObject(t, "ts", Instant.class).toArray();
         final long[] timestamps = new long[t.intSize()];
         for (int i = 0; i < t.intSize(); i++) {
             timestamps[i] = DateTimeUtils.epochNanos(ts[i]);
         }
 
         for (String col : t.getDefinition().getColumnNamesArray()) {
-            assertWithRollingSumTime(DataAccessHelpers.getColumn(t, col).getDirect(),
-                    DataAccessHelpers.getColumn(summed, col).getDirect(), timestamps,
-                    DataAccessHelpers.getColumn(summed, col).getType(), prevTime.toNanos(), postTime.toNanos());
+            assertWithRollingSumTime(ColumnVectors.of(t, col).toArray(), ColumnVectors.of(summed, col).toArray(),
+                    timestamps, summed.getDefinition().getColumn(col).getDataType(),
+                    prevTime.toNanos(), postTime.toNanos());
         }
     }
 
@@ -269,16 +287,16 @@ public class TestRollingSum extends BaseUpdateByTest {
                         "doubleCol", "boolCol", "bigIntCol", "bigDecimalCol"));
 
 
-        final Instant[] ts = (Instant[]) DataAccessHelpers.getColumn(t, "ts").getDirect();
+        final Instant[] ts = ColumnVectors.ofObject(t, "ts", Instant.class).toArray();
         final long[] timestamps = new long[t.intSize()];
         for (int i = 0; i < t.intSize(); i++) {
             timestamps[i] = DateTimeUtils.epochNanos(ts[i]);
         }
 
         for (String col : t.getDefinition().getColumnNamesArray()) {
-            assertWithRollingSumTime(DataAccessHelpers.getColumn(t, col).getDirect(),
-                    DataAccessHelpers.getColumn(summed, col).getDirect(), timestamps,
-                    DataAccessHelpers.getColumn(summed, col).getType(), prevTime.toNanos(), postTime.toNanos());
+            assertWithRollingSumTime(ColumnVectors.of(t, col).toArray(), ColumnVectors.of(summed, col).toArray(),
+                    timestamps, summed.getDefinition().getColumn(col).getDataType(),
+                    prevTime.toNanos(), postTime.toNanos());
         }
     }
 
@@ -307,6 +325,14 @@ public class TestRollingSum extends BaseUpdateByTest {
                 UpdateByOperation.RollingSum(100, "IntValSum=IntVal")), "Sym");
 
         assertTableEquals(expected, r);
+    }
+
+    @Test
+    public void testStaticBucketedAllNull() {
+        // With a window size of 1 and 10% null generation, guaranteed to cover the all NULL case.
+        final int prevTicks = 1;
+        final int postTicks = 0;
+        doTestStaticBucketed(false, prevTicks, postTicks);
     }
 
     @Test
@@ -361,9 +387,10 @@ public class TestRollingSum extends BaseUpdateByTest {
 
         preOp.partitionedTransform(postOp, (source, actual) -> {
             Arrays.stream(columns).forEach(col -> {
-                assertWithRollingSumTicks(DataAccessHelpers.getColumn(source, col).getDirect(),
-                        DataAccessHelpers.getColumn(actual, col).getDirect(),
-                        DataAccessHelpers.getColumn(actual, col).getType(), prevTicks, postTicks);
+                assertWithRollingSumTicks(
+                        ColumnVectors.of(source, col).toArray(),
+                        ColumnVectors.of(actual, col).toArray(),
+                        actual.getDefinition().getColumn(col).getDataType(), prevTicks, postTicks);
             });
             return source;
         });
@@ -422,16 +449,17 @@ public class TestRollingSum extends BaseUpdateByTest {
         String[] columns = t.getDefinition().getColumnStream().map(ColumnDefinition::getName).toArray(String[]::new);
 
         preOp.partitionedTransform(postOp, (source, actual) -> {
-            Instant[] ts = (Instant[]) DataAccessHelpers.getColumn(source, "ts").getDirect();
+            Instant[] ts = ColumnVectors.ofObject(source, "ts", Instant.class).toArray();
             long[] timestamps = new long[source.intSize()];
             for (int i = 0; i < source.intSize(); i++) {
                 timestamps[i] = DateTimeUtils.epochNanos(ts[i]);
             }
             Arrays.stream(columns).forEach(col -> {
-                assertWithRollingSumTime(DataAccessHelpers.getColumn(source, col).getDirect(),
-                        DataAccessHelpers.getColumn(actual, col).getDirect(),
-                        timestamps,
-                        DataAccessHelpers.getColumn(actual, col).getType(), prevTime.toNanos(), postTime.toNanos());
+                assertWithRollingSumTime(
+                        ColumnVectors.of(source, col).toArray(),
+                        ColumnVectors.of(actual, col).toArray(),
+                        timestamps, actual.getDefinition().getColumn(col).getDataType(),
+                        prevTime.toNanos(), postTime.toNanos());
             });
             return source;
         });
@@ -440,6 +468,14 @@ public class TestRollingSum extends BaseUpdateByTest {
     // endregion
 
     // region Live Tests
+
+    @Test
+    public void testZeroKeyAppendOnlyAllNull() {
+        // With a window size of 1 and 10% null generation, guaranteed to cover the all NULL case.
+        final int prevTicks = 1;
+        final int postTicks = 0;
+        doTestAppendOnly(false, prevTicks, postTicks);
+    }
 
     @Test
     public void testZeroKeyAppendOnlyRev() {
@@ -477,6 +513,14 @@ public class TestRollingSum extends BaseUpdateByTest {
     }
 
     @Test
+    public void testBucketedAppendOnlyAllNull() {
+        // With a window size of 1 and 10% null generation, guaranteed to cover the all NULL case.
+        final int prevTicks = 1;
+        final int postTicks = 0;
+        doTestAppendOnly(true, prevTicks, postTicks);
+    }
+
+    @Test
     public void testBucketedAppendOnlyRev() {
         final int prevTicks = 100;
         final int postTicks = 0;
@@ -505,7 +549,9 @@ public class TestRollingSum extends BaseUpdateByTest {
     }
 
     private void doTestAppendOnly(boolean bucketed, int prevTicks, int postTicks) {
-        final CreateResult result = createTestTable(10000, bucketed, false, true, 0x31313131);
+        final CreateResult result = createTestTable(10000, bucketed, false, true, 0x31313131,
+                new String[] {"charCol"},
+                new TestDataGenerator[] {new CharGenerator('A', 'z', 0.1)});
         final QueryTable t = result.t;
         t.setAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE, Boolean.TRUE);
 
@@ -564,9 +610,10 @@ public class TestRollingSum extends BaseUpdateByTest {
 
     private void doTestAppendOnlyTimed(boolean bucketed, Duration prevTime, Duration postTime) {
         final CreateResult result = createTestTable(10000, bucketed, false, true, 0x31313131,
-                new String[] {"ts"}, new TestDataGenerator[] {new SortedInstantGenerator(
+                new String[] {"ts", "charCol"}, new TestDataGenerator[] {new SortedInstantGenerator(
                         DateTimeUtils.parseInstant("2022-03-09T09:00:00.000 NY"),
-                        DateTimeUtils.parseInstant("2022-03-09T16:30:00.000 NY"))});
+                        DateTimeUtils.parseInstant("2022-03-09T16:30:00.000 NY")),
+                        new CharGenerator('A', 'z', 0.1)});
         final QueryTable t = result.t;
         t.setAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE, Boolean.TRUE);
 
@@ -627,7 +674,9 @@ public class TestRollingSum extends BaseUpdateByTest {
 
     @Test
     public void testZeroKeyGeneralTickingRev() {
-        final CreateResult result = createTestTable(10000, false, false, true, 0x31313131);
+        final CreateResult result = createTestTable(10000, false, false, true, 0x31313131,
+                new String[] {"charCol"},
+                new TestDataGenerator[] {new CharGenerator('A', 'z', 0.1)});
         final QueryTable t = result.t;
 
         final long prevTicks = 100;
@@ -652,7 +701,9 @@ public class TestRollingSum extends BaseUpdateByTest {
 
     @Test
     public void testZeroKeyGeneralTickingRevExclusive() {
-        final CreateResult result = createTestTable(10000, false, false, true, 0x31313131);
+        final CreateResult result = createTestTable(10000, false, false, true, 0x31313131,
+                new String[] {"charCol"},
+                new TestDataGenerator[] {new CharGenerator('A', 'z', 0.1)});
         final QueryTable t = result.t;
 
         final long prevTicks = 100;
@@ -677,7 +728,9 @@ public class TestRollingSum extends BaseUpdateByTest {
 
     @Test
     public void testZeroKeyGeneralTickingFwd() {
-        final CreateResult result = createTestTable(10000, false, false, true, 0x31313131);
+        final CreateResult result = createTestTable(10000, false, false, true, 0x31313131,
+                new String[] {"charCol"},
+                new TestDataGenerator[] {new CharGenerator('A', 'z', 0.1)});
         final QueryTable t = result.t;
 
         final EvalNugget[] nuggets = new EvalNugget[] {
@@ -699,7 +752,9 @@ public class TestRollingSum extends BaseUpdateByTest {
 
     @Test
     public void testZeroKeyGeneralTickingFwdExclusive() {
-        final CreateResult result = createTestTable(10000, false, false, true, 0x31313131);
+        final CreateResult result = createTestTable(10000, false, false, true, 0x31313131,
+                new String[] {"charCol"},
+                new TestDataGenerator[] {new CharGenerator('A', 'z', 0.1)});
         final QueryTable t = result.t;
 
         final EvalNugget[] nuggets = new EvalNugget[] {
@@ -724,7 +779,9 @@ public class TestRollingSum extends BaseUpdateByTest {
         final int prevTicks = 100;
         final int postTicks = 0;
 
-        final CreateResult result = createTestTable(10000, true, false, true, 0x31313131);
+        final CreateResult result = createTestTable(10000, true, false, true, 0x31313131,
+                new String[] {"charCol"},
+                new TestDataGenerator[] {new CharGenerator('A', 'z', 0.1)});
         final QueryTable t = result.t;
 
         final EvalNugget[] nuggets = new EvalNugget[] {
@@ -752,7 +809,9 @@ public class TestRollingSum extends BaseUpdateByTest {
         final int prevTicks = 100;
         final int postTicks = -50;
 
-        final CreateResult result = createTestTable(10000, true, false, true, 0x31313131);
+        final CreateResult result = createTestTable(10000, true, false, true, 0x31313131,
+                new String[] {"charCol"},
+                new TestDataGenerator[] {new CharGenerator('A', 'z', 0.1)});
         final QueryTable t = result.t;
 
         final EvalNugget[] nuggets = new EvalNugget[] {
@@ -780,7 +839,9 @@ public class TestRollingSum extends BaseUpdateByTest {
         final int prevTicks = 0;
         final int postTicks = 100;
 
-        final CreateResult result = createTestTable(10000, true, false, true, 0x31313131);
+        final CreateResult result = createTestTable(10000, true, false, true, 0x31313131,
+                new String[] {"charCol"},
+                new TestDataGenerator[] {new CharGenerator('A', 'z', 0.1)});
         final QueryTable t = result.t;
 
         final EvalNugget[] nuggets = new EvalNugget[] {
@@ -808,7 +869,9 @@ public class TestRollingSum extends BaseUpdateByTest {
         final int prevTicks = -50;
         final int postTicks = 100;
 
-        final CreateResult result = createTestTable(10000, true, false, true, 0x31313131);
+        final CreateResult result = createTestTable(10000, true, false, true, 0x31313131,
+                new String[] {"charCol"},
+                new TestDataGenerator[] {new CharGenerator('A', 'z', 0.1)});
         final QueryTable t = result.t;
 
         final EvalNugget[] nuggets = new EvalNugget[] {
@@ -836,7 +899,9 @@ public class TestRollingSum extends BaseUpdateByTest {
         final int prevTicks = 50;
         final int postTicks = 50;
 
-        final CreateResult result = createTestTable(10000, true, false, true, 0x31313131);
+        final CreateResult result = createTestTable(10000, true, false, true, 0x31313131,
+                new String[] {"charCol"},
+                new TestDataGenerator[] {new CharGenerator('A', 'z', 0.1)});
         final QueryTable t = result.t;
 
         final EvalNugget[] nuggets = new EvalNugget[] {
@@ -1168,20 +1233,20 @@ public class TestRollingSum extends BaseUpdateByTest {
         return result;
     }
 
-    private float[] rollingSum(float[] values, int prevTicks, int postTicks) {
+    private double[] rollingSum(float[] values, int prevTicks, int postTicks) {
         if (values == null) {
             return null;
         }
 
         if (values.length == 0) {
-            return new float[0];
+            return new double[0];
         }
 
-        float[] result = new float[values.length];
+        double[] result = new double[values.length];
 
 
         for (int i = 0; i < values.length; i++) {
-            result[i] = NULL_FLOAT;
+            result[i] = NULL_DOUBLE;
 
             // set the head and the tail
             final int head = Math.max(0, i - prevTicks + 1);
@@ -1190,7 +1255,7 @@ public class TestRollingSum extends BaseUpdateByTest {
             // compute everything in this window
             for (int computeIdx = head; computeIdx <= tail; computeIdx++) {
                 if (!isNull(values[computeIdx])) {
-                    if (result[i] == NULL_FLOAT) {
+                    if (result[i] == NULL_DOUBLE) {
                         result[i] = values[computeIdx];
                     } else {
                         result[i] += values[computeIdx];
@@ -1509,22 +1574,22 @@ public class TestRollingSum extends BaseUpdateByTest {
         return result;
     }
 
-    private float[] rollingSumTime(float[] values, long[] timestamps, long prevNanos, long postNanos) {
+    private double[] rollingSumTime(float[] values, long[] timestamps, long prevNanos, long postNanos) {
         if (values == null) {
             return null;
         }
 
         if (values.length == 0) {
-            return new float[0];
+            return new double[0];
         }
 
-        float[] result = new float[values.length];
+        double[] result = new double[values.length];
 
         int head = 0;
         int tail = 0;
 
         for (int i = 0; i < values.length; i++) {
-            result[i] = NULL_FLOAT;
+            result[i] = NULL_DOUBLE;
 
             // check the current timestamp. skip if NULL
             if (timestamps[i] == NULL_LONG) {
@@ -1547,7 +1612,7 @@ public class TestRollingSum extends BaseUpdateByTest {
             // compute everything in this window
             for (int computeIdx = head; computeIdx < tail; computeIdx++) {
                 if (!isNull(values[computeIdx])) {
-                    if (result[i] == NULL_FLOAT) {
+                    if (result[i] == NULL_DOUBLE) {
                         result[i] = values[computeIdx];
                     } else {
                         result[i] += values[computeIdx];
@@ -1731,7 +1796,7 @@ public class TestRollingSum extends BaseUpdateByTest {
         } else if (expected instanceof long[]) {
             assertArrayEquals(rollingSum((long[]) expected, prevTicks, postTicks), (long[]) actual);
         } else if (expected instanceof float[]) {
-            assertArrayEquals(rollingSum((float[]) expected, prevTicks, postTicks), (float[]) actual, deltaF);
+            assertArrayEquals(rollingSum((float[]) expected, prevTicks, postTicks), (double[]) actual, deltaF);
         } else if (expected instanceof double[]) {
             assertArrayEquals(rollingSum((double[]) expected, prevTicks, postTicks), (double[]) actual, deltaD);
         } else if (expected instanceof Boolean[]) {
@@ -1760,7 +1825,7 @@ public class TestRollingSum extends BaseUpdateByTest {
         } else if (expected instanceof long[]) {
             assertArrayEquals(rollingSumTime((long[]) expected, timestamps, prevTime, postTime), (long[]) actual);
         } else if (expected instanceof float[]) {
-            assertArrayEquals(rollingSumTime((float[]) expected, timestamps, prevTime, postTime), (float[]) actual,
+            assertArrayEquals(rollingSumTime((float[]) expected, timestamps, prevTime, postTime), (double[]) actual,
                     deltaF);
         } else if (expected instanceof double[]) {
             assertArrayEquals(rollingSumTime((double[]) expected, timestamps, prevTime, postTime), (double[]) actual,

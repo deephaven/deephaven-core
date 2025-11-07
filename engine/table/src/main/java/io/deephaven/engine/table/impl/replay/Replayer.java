@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.replay;
 
 import io.deephaven.base.clock.Clock;
@@ -218,10 +218,12 @@ public class Replayer implements ReplayerInterface, Runnable {
      */
     @Override
     public Table replayGrouped(Table dataSource, String timeColumn, String groupingColumn) {
+        if (dataSource.isRefreshing()) {
+            dataSource = dataSource.snapshot();
+        }
         final ReplayGroupedFullTable result;
         try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(updateGraph).open()) {
-            result = new ReplayGroupedFullTable(
-                    dataSource.getRowSet(), dataSource.getColumnSourceMap(), timeColumn, this, groupingColumn);
+            result = new ReplayGroupedFullTable(dataSource, timeColumn, this, groupingColumn);
         }
         currentTables.add(result);
         if (deltaNanos < Long.MAX_VALUE) {
@@ -240,10 +242,12 @@ public class Replayer implements ReplayerInterface, Runnable {
      */
     @Override
     public Table replayGroupedLastBy(Table dataSource, String timeColumn, String... groupingColumns) {
+        if (dataSource.isRefreshing()) {
+            dataSource = dataSource.snapshot();
+        }
         final ReplayLastByGroupedTable result;
         try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(updateGraph).open()) {
-            result = new ReplayLastByGroupedTable(
-                    dataSource.getRowSet(), dataSource.getColumnSourceMap(), timeColumn, this, groupingColumns);
+            result = new ReplayLastByGroupedTable(dataSource, timeColumn, this, groupingColumns);
         }
         currentTables.add(result);
         if (deltaNanos < Long.MAX_VALUE) {

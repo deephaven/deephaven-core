@@ -1,18 +1,12 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.util;
 
 import org.jpy.PyDictWrapper;
 import org.jpy.PyObject;
 
-import java.util.AbstractMap.SimpleImmutableEntry;
-import java.util.Collection;
-import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Optional;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * A collection of methods around retrieving objects from the given Python scope.
@@ -31,26 +25,6 @@ public interface PythonScope<PyObj> {
      * @return the value, or empty
      */
     Optional<PyObj> getValueRaw(String name);
-
-    /**
-     * Retrieves all keys from the give scope.
-     * <p>
-     * No conversion is done.
-     * <p>
-     * Technically, the keys can be tuples...
-     *
-     * @return the keys
-     */
-    Stream<PyObj> getKeysRaw();
-
-    /**
-     * Retrieves all keys and values from the given scope.
-     * <p>
-     * No conversion is done.
-     *
-     * @return the keys and values
-     */
-    Stream<Entry<PyObj, PyObj>> getEntriesRaw();
 
     /**
      * The helper method to turn a raw key into a string key.
@@ -123,57 +97,14 @@ public interface PythonScope<PyObj> {
     }
 
     /**
-     * Equivalent to {@link #getKeysRaw()}.map({@link #convertStringKey(Object)})
-     *
-     * @return the string keys
-     */
-    default Stream<String> getKeys() {
-        return getKeysRaw()
-                .map(this::convertStringKey);
-    }
-
-    /**
-     * Equivalent to {@link #getEntriesRaw()}, where the keys have been converted via {@link #convertStringKey(Object)}
-     * and the values via {@link #convertValue(Object)}.
-     *
-     * @return the string keys and converted values
-     */
-    default Stream<Entry<String, Object>> getEntries() {
-        return getEntriesRaw()
-                .map(e -> new SimpleImmutableEntry<>(convertStringKey(e.getKey()), convertValue(e.getValue())));
-    }
-
-    /**
-     * Equivalent to {@link #getKeys()}.collect(someCollector)
-     *
-     * @return the string keys, as a collection
-     */
-    default Collection<String> getKeysCollection() {
-        return getKeys()
-                .collect(Collectors.toList());
-    }
-
-    /**
-     * Equivalent to {@link #getEntries()}.collect(someMapCollector)
-     *
-     * @return the string keys and converted values, as a map
-     */
-    default Map<String, Object> getEntriesMap() {
-        return getEntries()
-                .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
-
-        // we're currently making sure that we don't convert None to null...
-        /*
-         * // workaround since the collector doesn't work w/ null values //
-         * https://bugs.openjdk.java.net/browse/JDK-8148463 return getEntries() .collect( HashMap::new, (map, entry) ->
-         * map.put(entry.getKey(), entry.getValue()), HashMap::putAll);
-         */
-    }
-
-    /**
      * @return the Python's __main__ module namespace
      */
-    public PyDictWrapper mainGlobals();
+    PyDictWrapper mainGlobals();
+
+    /**
+     * @return the current scope or the main globals if no scope is set
+     */
+    PyDictWrapper currentScope();
 
     /**
      * Push the provided Python scope into the thread scope stack for subsequent operations on Tables

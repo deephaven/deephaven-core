@@ -1,24 +1,21 @@
 #
-# Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 #
-
 """ This module provides various ways to make a Deephaven table. """
-
-import datetime
-from typing import Callable, List, Dict, Any, Union, Sequence, Tuple, Mapping
+from functools import wraps
+from typing import Callable, List, Dict, Any, Union, Sequence, Tuple, Mapping, Optional
 
 import jpy
-import numpy as np
 import pandas as pd
 
-from deephaven import execution_context, DHError, time
+from deephaven import execution_context, DHError
 from deephaven._wrapper import JObjectWrapper
-from deephaven.column import InputColumn, Column
-from deephaven.dtypes import DType, Duration, Instant
+from deephaven.column import InputColumn
+from deephaven.dtypes import DType
 from deephaven.execution_context import ExecutionContext
-from deephaven.jcompat import j_lambda
-from deephaven.jcompat import to_sequence
-from deephaven.table import Table
+from deephaven.jcompat import j_lambda, j_list_to_list, to_sequence
+from deephaven.table import Table, TableDefinition, TableDefinitionLike
+from deephaven.time import DurationLike, InstantLike, to_j_duration, to_j_instant
 from deephaven.update_graph import auto_locking_ctx
 
 _JTableFactory = jpy.get_type("io.deephaven.engine.table.TableFactory")
@@ -29,10 +26,22 @@ _JAppendOnlyArrayBackedInputTable = jpy.get_type(
 _JKeyedArrayBackedInputTable = jpy.get_type("io.deephaven.engine.table.impl.util.KeyedArrayBackedInputTable")
 _JTableDefinition = jpy.get_type("io.deephaven.engine.table.TableDefinition")
 _JTable = jpy.get_type("io.deephaven.engine.table.Table")
-_J_INPUT_TABLE_ATTRIBUTE = _JTable.INPUT_TABLE_ATTRIBUTE
+_J_InputTableUpdater = jpy.get_type("io.deephaven.engine.util.input.InputTableUpdater")
 _JRingTableTools = jpy.get_type("io.deephaven.engine.table.impl.sources.ring.RingTableTools")
 _JSupplier = jpy.get_type('java.util.function.Supplier')
 _JFunctionGeneratedTableFactory = jpy.get_type("io.deephaven.engine.table.impl.util.FunctionGeneratedTableFactory")
+_JPythonInputTableStatusListenerAdapter = jpy.get_type(
+    "io.deephaven.integrations.python.PythonInputTableStatusListenerAdapter")
+
+_DEFAULT_INPUT_TABLE_ON_ERROR_CALLBACK = lambda e: print(f"An error occurred during InputTable async operation: {e}")
+
+
+def _error_callback_wrapper(callback: Callable[[Exception], None]):
+    @wraps(callback)
+    def wrapper(e):
+        callback(RuntimeError(e))
+
+    return wrapper
 
 
 def empty_table(size: int) -> Table:
@@ -53,16 +62,16 @@ def empty_table(size: int) -> Table:
         raise DHError(e, "failed to create an empty table.") from e
 
 
-def time_table(period: Union[Duration, int, str, datetime.timedelta, np.timedelta64, pd.Timedelta],
-               start_time: Union[None, Instant, int, str, datetime.datetime, np.datetime64, pd.Timestamp] = None,
+def time_table(period: DurationLike,
+               start_time: Optional[InstantLike] = None,
                blink_table: bool = False) -> Table:
     """Creates a table that adds a new row on a regular interval.
 
     Args:
-        period (Union[dtypes.Duration, int, str, datetime.timedelta, np.timedelta64, pd.Timedelta]):
+        period (DurationLike):
             time interval between new row additions, can be expressed as an integer in nanoseconds,
             a time interval string, e.g. "PT00:00:00.001" or "PT1s", or other time duration types.
-        start_time (Union[None, Instant, int, str, datetime.datetime, np.datetime64, pd.Timestamp], optional):
+        start_time (Optional[InstantLike]):
             start time for adding new rows, defaults to None which means use the current time
             as the start time.
         blink_table (bool, optional): if the time table should be a blink table, defaults to False
@@ -76,14 +85,13 @@ def time_table(period: Union[Duration, int, str, datetime.timedelta, np.timedelt
     try:
         builder = _JTableTools.timeTableBuilder()
 
-        if not isinstance(period, str) and not isinstance(period, int):
-            period = time.to_j_duration(period)
+        if period is None:
+            raise ValueError("period must be specified")
 
-        builder.period(period)
+        builder.period(to_j_duration(period))
 
         if start_time:
-            start_time = time.to_j_instant(start_time)
-            builder.startTime(start_time)
+            builder.startTime(to_j_instant(start_time))
 
         if blink_table:
             builder.blinkTable(blink_table)
@@ -231,53 +239,23 @@ class DynamicTableWriter(JObjectWrapper):
 
 
 class InputTable(Table):
-    """InputTable is a subclass of Table that allows the users to dynamically add/delete/modify data in it. There are two
-    types of InputTable - append-only and keyed.
+    """InputTable is a subclass of Table that allows the users to dynamically add/delete/modify data in it.
 
-    The append-only input table is not keyed, all rows are added to the end of the table, and deletions and edits are
-    not permitted.
-
-    The keyed input tablet has keys for each row and supports addition/deletion/modification of rows by the keys.
+    Users should always create InputTables through factory methods rather than directly from the constructor.
     """
 
-    def __init__(self, col_defs: Dict[str, DType] = None, init_table: Table = None,
-                 key_cols: Union[str, Sequence[str]] = None):
-        """Creates an InputTable instance from either column definitions or initial table. When key columns are
-        provided, the InputTable will be keyed, otherwise it will be append-only.
-
-        Args:
-            col_defs (Dict[str, DType]): the column definitions
-            init_table (Table): the initial table
-            key_cols (Union[str, Sequence[str]): the name(s) of the key column(s)
-
-        Raises:
-            DHError
-        """
+    def __init__(self, j_table: jpy.JType):
+        super().__init__(j_table)
         try:
-            if col_defs is None and init_table is None:
-                raise ValueError("either column definitions or init table should be provided.")
-            elif col_defs and init_table:
-                raise ValueError("both column definitions and init table are provided.")
-
-            if col_defs:
-                j_arg_1 = _JTableDefinition.of(
-                    [Column(name=n, data_type=t).j_column_definition for n, t in col_defs.items()])
-            else:
-                j_arg_1 = init_table.j_table
-
-            key_cols = to_sequence(key_cols)
-            if key_cols:
-                super().__init__(_JKeyedArrayBackedInputTable.make(j_arg_1, key_cols))
-            else:
-                super().__init__(_JAppendOnlyArrayBackedInputTable.make(j_arg_1))
-            self.j_input_table = self.j_table.getAttribute(_J_INPUT_TABLE_ATTRIBUTE)
-            self.key_columns = key_cols
+            self.j_input_table = getattr(_J_InputTableUpdater, "from")(self.j_table)
         except Exception as e:
-            raise DHError(e, "failed to create a InputTable.") from e
+            raise DHError(e, "the provided table input is not suitable for input tables.") from e
+        if not self.j_input_table:
+            raise DHError("the provided table input is not suitable for input tables.")
 
     def add(self, table: Table) -> None:
-        """Writes rows from the provided table to this input table. If this is a keyed input table, added rows with keys
-        that match existing rows will replace those rows.
+        """Synchronously writes rows from the provided table to this input table. If this is a keyed input table,
+        added rows with keys that match existing rows will replace those rows.
 
         Args:
             table (Table): the table that provides the rows to write
@@ -291,8 +269,8 @@ class InputTable(Table):
             raise DHError(e, "add to InputTable failed.") from e
 
     def delete(self, table: Table) -> None:
-        """Deletes the keys contained in the provided table from this keyed input table. If this method is called on an
-        append-only input table, a PermissionError will be raised.
+        """Synchronously  deletes the keys contained in the provided table from this keyed input table. If this
+        method is called on an append-only input table, an error will be raised.
 
         Args:
             table (Table): the table with the keys to delete
@@ -301,20 +279,105 @@ class InputTable(Table):
             DHError
         """
         try:
-            if not self.key_columns:
-                raise PermissionError("deletion on an append-only input table is not allowed.")
             self.j_input_table.delete(table.j_table)
         except Exception as e:
             raise DHError(e, "delete data in the InputTable failed.") from e
 
+    def add_async(self, table: Table, on_success: Callable[[], None] = None,
+                  on_error: Callable[[Exception], None] = None) -> None:
+        """Asynchronously writes rows from the provided table to this input table. If this is a keyed input table,
+        added rows with keys that match existing rows will replace those rows. This method returns immediately without
+        waiting for the operation to complete. If the operation succeeds, the optional on_success callback if provided
+        will be called. If the operation fails, the optional on_error callback if provided will be called. If on_error
+        is not provided, a default callback function will be called that simply prints out the received exception.
 
-def input_table(col_defs: Dict[str, DType] = None, init_table: Table = None,
+        Note, multiple calls to this method on the same thread will be queued and processed in order. However, ordering
+        is not guaranteed across threads.
+
+        Args:
+            table (Table): the table that provides the rows to write
+            on_success (Callable[[], None]): the success callback function, default is None
+            on_error (Callable[[Exception], None]): the error callback function, default is None. When None, a default
+                callback function will be provided that simply prints out the received exception. If the callback
+                function itself raises an exception, the new exception will be logged in the Deephaven server log and
+                will not be further processed by the server.
+
+        Raises:
+            DHError
+        """
+        try:
+            if on_error:
+                on_error_callback = _error_callback_wrapper(on_error)
+            else:
+                on_error_callback = _error_callback_wrapper(_DEFAULT_INPUT_TABLE_ON_ERROR_CALLBACK)
+
+            j_input_table_status_listener = _JPythonInputTableStatusListenerAdapter.create(on_success,
+                                                                                           on_error_callback)
+            self.j_input_table.addAsync(table.j_table, j_input_table_status_listener)
+        except Exception as e:
+            raise DHError(e, "async add to InputTable failed.") from e
+
+    def delete_async(self, table: Table, on_success: Callable[[], None] = None,
+                     on_error: Callable[[Exception], None] = None) -> None:
+        """Asynchronously deletes the keys contained in the provided table from this keyed input table. If this
+        method is
+        called on an append-only input table, an error will be raised. This method returns immediately without
+        waiting for
+        the operation to complete. If the operation succeeds, the optional on_success callback if provided
+        will be called. If the operation fails, the optional on_error callback if provided will be called. If on_error
+        is not provided, a default callback function will be called that simply prints out the received exception.
+
+        Note, multiple calls to this method on the same thread will be queued and processed in order. However, ordering
+        is not guaranteed across threads.
+
+        Args:
+            table (Table): the table with the keys to delete
+            on_success (Callable[[], None]): the success callback function, default is None
+            on_error (Callable[[Exception], None]): the error callback function, default is None. When None, a default
+                callback function will be provided that simply prints out the received exception. If the callback
+                function itself raises an exception, the new exception will be logged in the Deephaven server log and
+                will not be further processed by the server.
+
+        Raises:
+            DHError
+        """
+        try:
+            if on_error:
+                on_error_callback = _error_callback_wrapper(on_error)
+            else:
+                on_error_callback = _error_callback_wrapper(_DEFAULT_INPUT_TABLE_ON_ERROR_CALLBACK)
+
+            j_input_table_status_listener = _JPythonInputTableStatusListenerAdapter.create(on_success,
+                                                                                           on_error_callback)
+            self.j_input_table.deleteAsync(table.j_table, j_input_table_status_listener)
+        except Exception as e:
+            raise DHError(e, "async delete data in the InputTable failed.") from e
+
+    @property
+    def key_names(self) -> List[str]:
+        """The names of the key columns of the InputTable."""
+        return j_list_to_list(self.j_input_table.getKeyNames())
+
+    @property
+    def value_names(self) -> List[str]:
+        """The names of the value columns. By default, any column not marked as a key column is a value column."""
+        return j_list_to_list(self.j_input_table.getValueNames())
+
+
+def input_table(col_defs: Optional[TableDefinitionLike] = None, init_table: Table = None,
                 key_cols: Union[str, Sequence[str]] = None) -> InputTable:
-    """Creates an InputTable from either column definitions or initial table. When key columns are
+    """Creates an in-memory InputTable from either column definitions or an initial table. When key columns are
     provided, the InputTable will be keyed, otherwise it will be append-only.
 
+    There are two types of in-memory InputTable - append-only and keyed.
+
+    The append-only input table is not keyed, all rows are added to the end of the table, and deletions and edits are
+    not permitted.
+
+    The keyed input table has keys for each row and supports addition/deletion/modification of rows by the keys.
+
     Args:
-        col_defs (Dict[str, DType]): the column definitions
+        col_defs (Optional[TableDefinitionLike]): the table definition
         init_table (Table): the initial table
         key_cols (Union[str, Sequence[str]): the name(s) of the key column(s)
 
@@ -324,7 +387,27 @@ def input_table(col_defs: Dict[str, DType] = None, init_table: Table = None,
     Raises:
         DHError
     """
-    return InputTable(col_defs=col_defs, init_table=init_table, key_cols=key_cols)
+
+    try:
+        if col_defs is None and init_table is None:
+            raise ValueError("either column definitions or init table should be provided.")
+        elif col_defs and init_table:
+            raise ValueError("both column definitions and init table are provided.")
+
+        if col_defs:
+            j_arg_1 = TableDefinition(col_defs).j_table_definition
+        else:
+            j_arg_1 = init_table.j_table
+
+        key_cols = to_sequence(key_cols)
+        if key_cols:
+            j_table = _JKeyedArrayBackedInputTable.make(j_arg_1, key_cols)
+        else:
+            j_table = _JAppendOnlyArrayBackedInputTable.make(j_arg_1)
+    except Exception as e:
+        raise DHError(e, "failed to create an in-memory InputTable.") from e
+
+    return InputTable(j_table)
 
 
 def ring_table(parent: Table, capacity: int, initialize: bool = True) -> Table:
@@ -352,11 +435,11 @@ def ring_table(parent: Table, capacity: int, initialize: bool = True) -> Table:
 
 
 def function_generated_table(table_generator: Callable[..., Table],
-           source_tables: Union[Table, List[Table]] = None,
-           refresh_interval_ms: int = None,
-           exec_ctx: ExecutionContext = None,
-           args: Tuple = (),
-           kwargs: Dict = {}) -> Table:
+                             source_tables: Union[Table, List[Table]] = None,
+                             refresh_interval_ms: int = None,
+                             exec_ctx: ExecutionContext = None,
+                             args: Tuple = (),
+                             kwargs: Dict = {}) -> Table:
     """Creates an abstract table that is generated by running the table_generator() function. The function will first be
     run to generate the table when this method is called, then subsequently either (a) whenever one of the
     'source_tables' ticks or (b) after refresh_interval_ms have elapsed. Either 'refresh_interval_ms' or
@@ -366,13 +449,15 @@ def function_generated_table(table_generator: Callable[..., Table],
     function-generated tables can create tables that are produced by arbitrary Python logic (including using Pandas or
     numpy). They can also be used to retrieve data from external sources (such as files or websites).
 
-    The table definition must not change between invocations of the 'table_generator' function, or an exception will be raised.
+    The table definition must not change between invocations of the 'table_generator' function, or an exception will
+    be raised.
 
     Note that the 'table_generator' may access data in the sourceTables but should not perform further table operations
     on them without careful handling. Table operations may be memoized, and it is possible that a table operation will
     return a table created by a previous invocation of the same operation. Since that result will not have been included
     in the 'source_table', it's not automatically treated as a dependency for purposes of determining when it's safe to
-    invoke 'table_generator', allowing races to exist between accessing the operation result and that result's own update
+    invoke 'table_generator', allowing races to exist between accessing the operation result and that result's own
+    update
     processing. It's best to include all dependencies directly in 'source_table', or only compute on-demand inputs under
     a LivenessScope.
 
@@ -439,6 +524,6 @@ def function_generated_table(table_generator: Callable[..., Table],
             j_function_generated_table = _JFunctionGeneratedTableFactory.create(
                 table_generator_j_function,
                 source_j_tables
-        )
+            )
 
     return Table(j_function_generated_table)

@@ -20,6 +20,6 @@ done
 EOF
 )
 
-(nohup docker-compose run -T --entrypoint /bin/bash mzcli -c "$SCRIPT" < /dev/null >& $OUT &)
+(nohup docker compose run -T --entrypoint /bin/bash mzcli -c "$SCRIPT" < /dev/null >& $OUT &)
 
 exit 0

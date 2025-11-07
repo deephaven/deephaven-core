@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.web.client.api.barrage.stream;
 
 import elemental2.core.Function;
@@ -44,6 +44,11 @@ public class ResponseStreamWrapper<T> {
         @JsOverlay
         default boolean isOk() {
             return getCode() == Code.OK;
+        }
+
+        @JsOverlay
+        default boolean isTransportError() {
+            return getCode() == Code.Internal || getCode() == Code.Unknown || getCode() == Code.Unavailable;
         }
     }
     @JsType(isNative = true)

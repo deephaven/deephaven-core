@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.replicators;
 
 import io.deephaven.replication.ReplicatePrimitiveCode;
@@ -17,11 +17,12 @@ import static io.deephaven.replication.ReplicatePrimitiveCode.*;
 import static io.deephaven.replication.ReplicationUtils.*;
 
 public class ReplicateRingBuffers {
+    private static final String TASK = "replicateRingBuffers";
 
     public static void main(String... args) throws IOException {
         // replicate ring buffers to all but Object (since RingBuffer<> already exisits)
-        charToAllButBoolean("Base/src/main/java/io/deephaven/base/ringbuffer/CharRingBuffer.java");
-        String objectResult = ReplicatePrimitiveCode.charToObject(
+        charToAllButBoolean(TASK, "Base/src/main/java/io/deephaven/base/ringbuffer/CharRingBuffer.java");
+        String objectResult = ReplicatePrimitiveCode.charToObject(TASK,
                 "Base/src/main/java/io/deephaven/base/ringbuffer/CharRingBuffer.java");
         File objectFile = new File(objectResult);
         List<String> lines = FileUtils.readLines(objectFile, Charset.defaultCharset());
@@ -64,11 +65,24 @@ public class ReplicateRingBuffers {
                                 "        System.arraycopy(storage, 0, result, firstCopyLen, secondCopyLen);\n" +
                                 "        Arrays.fill(storage, 0, secondCopyLen, null);" +
                                 "\n"));
+
+        lines = ReplicationUtils.replaceRegion(lines, "object-bulk-clear",
+                Collections.singletonList(
+                        "        final int storageHead = (int) (head & mask);\n" +
+                                "        final int size = size();\n" +
+                                "        // firstLen is either the size of the ring buffer or the distance from head to the end of the storage array.\n"
+                                +
+                                "        final int firstLen = Math.min(storage.length - storageHead, size);\n" +
+                                "        // secondLen is the number of elements remaining from the first clear.\n" +
+                                "        final int secondLen = size - firstLen;\n" +
+                                "        Arrays.fill(storage, storageHead, storageHead + firstLen, null);\n" +
+                                "        Arrays.fill(storage, 0, secondLen, null);"));
+
         FileUtils.writeLines(objectFile, lines);
 
-        charToAllButBoolean(
+        charToAllButBoolean(TASK,
                 "Base/src/main/java/io/deephaven/base/ringbuffer/AggregatingCharRingBuffer.java");
-        objectResult = ReplicatePrimitiveCode.charToObject(
+        objectResult = ReplicatePrimitiveCode.charToObject(TASK,
                 "Base/src/main/java/io/deephaven/base/ringbuffer/AggregatingCharRingBuffer.java");
         objectFile = new File(objectResult);
         lines = FileUtils.readLines(objectFile, Charset.defaultCharset());
@@ -102,17 +116,24 @@ public class ReplicateRingBuffers {
 
 
         // replicate the tests
-        charToAllButBoolean("Base/src/test/java/io/deephaven/base/ringbuffer/CharRingBufferTest.java");
-        objectResult = ReplicatePrimitiveCode.charToObject(
-                "Base/src/test/java/io/deephaven/base/ringbuffer/CharRingBufferTest.java");
+        charToAllButBoolean(TASK, "Base/src/test/java/io/deephaven/base/ringbuffer/TestCharRingBuffer.java");
+        objectResult = ReplicatePrimitiveCode.charToObject(TASK,
+                "Base/src/test/java/io/deephaven/base/ringbuffer/TestCharRingBuffer.java");
         objectFile = new File(objectResult);
         lines = FileUtils.readLines(objectFile, Charset.defaultCharset());
         lines = ReplicationUtils.globalReplacements(lines,
                 "Object.MIN_VALUE", "new Object()");
+
+        lines = ReplicationUtils.replaceRegion(lines, "empty-test",
+                Collections.singletonList(
+                        "        for (Object val : rb.getStorage()) {\n" +
+                                "            assertNull(val);\n" +
+                                "        }"));
+
         FileUtils.writeLines(objectFile, lines);
 
-        List<String> files = charToAllButBoolean(
-                "Base/src/test/java/io/deephaven/base/ringbuffer/AggregatingCharRingBufferTest.java");
+        List<String> files = charToAllButBoolean(TASK,
+                "Base/src/test/java/io/deephaven/base/ringbuffer/TestAggregatingCharRingBuffer.java");
         for (final String f : files) {
             if (f.contains("Byte")) {
                 objectFile = new File(f);

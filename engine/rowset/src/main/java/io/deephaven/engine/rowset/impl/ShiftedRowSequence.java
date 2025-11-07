@@ -1,9 +1,10 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.rowset.impl;
 
 import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.rowset.RowSequenceFactory;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeyRanges;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
@@ -11,7 +12,7 @@ import io.deephaven.util.datastructures.LongAbortableConsumer;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.util.datastructures.LongRangeAbortableConsumer;
-import org.apache.commons.lang3.mutable.MutableInt;
+import io.deephaven.util.mutable.MutableInt;
 
 public class ShiftedRowSequence extends RowSequenceAsChunkImpl implements RowSequence {
 
@@ -79,6 +80,9 @@ public class ShiftedRowSequence extends RowSequenceAsChunkImpl implements RowSeq
 
         @Override
         public long peekNextKey() {
+            if (!hasMore()) {
+                return RowSet.NULL_ROW_KEY;
+            }
             return wrappedIt.peekNextKey() + shiftAmount;
         }
 
@@ -106,7 +110,7 @@ public class ShiftedRowSequence extends RowSequenceAsChunkImpl implements RowSeq
     }
 
     @Override
-    public Iterator getRowSequenceIterator() {
+    public RowSequence.Iterator getRowSequenceIterator() {
         return new Iterator();
     }
 
@@ -149,11 +153,17 @@ public class ShiftedRowSequence extends RowSequenceAsChunkImpl implements RowSeq
 
     @Override
     public long firstRowKey() {
+        if (wrappedOK.isEmpty()) {
+            return RowSet.NULL_ROW_KEY;
+        }
         return wrappedOK.firstRowKey() + shiftAmount;
     }
 
     @Override
     public long lastRowKey() {
+        if (wrappedOK.isEmpty()) {
+            return RowSet.NULL_ROW_KEY;
+        }
         return wrappedOK.lastRowKey() + shiftAmount;
     }
 
@@ -179,7 +189,7 @@ public class ShiftedRowSequence extends RowSequenceAsChunkImpl implements RowSeq
 
     @Override
     public void close() {
-        closeRowSequenceAsChunkImpl();
+        super.close();
         clear();
     }
 
@@ -187,7 +197,7 @@ public class ShiftedRowSequence extends RowSequenceAsChunkImpl implements RowSeq
     public long rangesCountUpperBound() {
         final MutableInt mi = new MutableInt(0);
         wrappedOK.forAllRowKeyRanges((final long start, final long end) -> mi.increment());
-        return mi.intValue();
+        return mi.get();
     }
 
     private void shiftIndicesChunk(WritableLongChunk<? super OrderedRowKeys> chunkToFill) {

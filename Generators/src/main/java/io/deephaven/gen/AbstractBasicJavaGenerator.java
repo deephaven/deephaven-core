@@ -1,7 +1,9 @@
-/**
- * Copyright (c) 2016-2023 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.gen;
+
+import io.deephaven.util.annotations.UserInvocationPermitted;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -41,13 +43,21 @@ public abstract class AbstractBasicJavaGenerator {
      * @param skipsGen Collection of predicates to determine if a function should be skipped when generating code.
      * @throws ClassNotFoundException If a class in the imports array cannot be found.
      */
-    public AbstractBasicJavaGenerator(final String gradleTask, final String packageName, final String className,
-            final String[] imports, Predicate<Method> includeMethod, Collection<Predicate<JavaFunction>> skipsGen)
+    public AbstractBasicJavaGenerator(
+            final String gradleTask,
+            final String packageName,
+            final String className,
+            final String[] imports,
+            final Predicate<Method> includeMethod,
+            final Collection<Predicate<JavaFunction>> skipsGen,
+            final Level logLevel)
             throws ClassNotFoundException {
         this.gradleTask = gradleTask;
         this.packageName = packageName;
         this.className = className;
         this.skipsGen = skipsGen;
+
+        log.setLevel(logLevel);
 
         for (String imp : imports) {
             Class<?> c = Class.forName(imp, false, Thread.currentThread().getContextClassLoader());
@@ -105,14 +115,20 @@ public abstract class AbstractBasicJavaGenerator {
         String code = GenUtils.javaHeader(this.getClass(), gradleTask);
         code += "package " + packageName + ";\n\n";
 
+        final String annotation = generateInvocationAnnotation();
+
         Set<String> imports = GenUtils.typesToImport(functions.keySet());
 
         for (String imp : imports) {
             code += "import " + imp + ";\n";
         }
+        if (!annotation.isEmpty()) {
+            code += "import " + UserInvocationPermitted.class.getCanonicalName() + ";\n";
+        }
 
         code += "\n";
         code += generateClassJavadoc();
+        code += annotation;
         code += "public class " + className + " {\n";
 
         for (JavaFunction f : functions.keySet()) {
@@ -133,6 +149,10 @@ public abstract class AbstractBasicJavaGenerator {
         code += "}\n\n";
 
         return code;
+    }
+
+    protected String generateInvocationAnnotation() {
+        return "@" + UserInvocationPermitted.class.getSimpleName() + "(\"function_library\")\n";
     }
 
     /**
@@ -158,7 +178,6 @@ public abstract class AbstractBasicJavaGenerator {
             System.exit(-1);
         }
 
-        log.setLevel(Level.WARNING);
         log.warning("Running " + gen.getClass().getSimpleName() + " assertNoChange=" + assertNoChange);
 
         final String code = gen.generateCode();

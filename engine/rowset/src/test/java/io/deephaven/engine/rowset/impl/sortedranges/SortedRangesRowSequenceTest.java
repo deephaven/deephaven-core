@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.rowset.impl.sortedranges;
 
 import static org.junit.Assert.*;
@@ -10,17 +10,22 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.impl.RowSequenceTestBase;
 import io.deephaven.engine.rowset.impl.WritableRowSetImpl;
 import io.deephaven.engine.testutil.rowset.RowSetTstUtils;
-import org.apache.commons.lang3.mutable.MutableInt;
+import io.deephaven.util.mutable.MutableInt;
 import org.junit.Test;
 
 public class SortedRangesRowSequenceTest extends RowSequenceTestBase {
     @Override
     protected RowSequence create(long... values) {
-        SortedRanges sar = SortedRanges.makeForKnownRange(values[0], values[values.length - 1], true);
+        SortedRanges sar;
+        if (values.length != 0) {
+            sar = SortedRanges.makeForKnownRange(values[0], values[values.length - 1], true);
+        } else {
+            sar = SortedRanges.makeEmpty();
+        }
         if (sar == null) {
             throw new IllegalStateException();
         }
-        for (long v : values) {
+        for (final long v : values) {
             sar = sar.add(v);
             if (sar == null) {
                 throw new IllegalStateException();
@@ -106,12 +111,12 @@ public class SortedRangesRowSequenceTest extends RowSequenceTestBase {
             final long[] expected = new long[] {5, 6, 7, 8, 9, 15, 20, 21, 22, 23, 24};
             final MutableInt i = new MutableInt(0);
             rs.forEachRowKey((final long v) -> {
-                final int j = i.intValue();
+                final int j = i.get();
                 assertEquals("v==" + v + " && j==" + j, expected[j], v);
                 i.increment();
                 return true;
             });
-            assertEquals(expected.length, i.intValue());
+            assertEquals(expected.length, i.get());
         }
     }
 

@@ -1,17 +1,18 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.SortColumn;
 import io.deephaven.api.agg.Partition;
+import io.deephaven.base.FileUtils;
 import io.deephaven.base.SleepUtil;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.verify.Assert;
-import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryScope;
+import io.deephaven.engine.exceptions.TableInitializationException;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.liveness.SingletonLivenessManager;
 import io.deephaven.engine.rowset.RowSet;
@@ -29,13 +30,19 @@ import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
+import io.deephaven.parquet.table.ParquetInstructions;
+import io.deephaven.parquet.table.ParquetTools;
 import io.deephaven.test.types.OutOfBandTest;
+import io.deephaven.util.mutable.MutableLong;
 import io.deephaven.util.SafeCloseable;
 import junit.framework.TestCase;
 import org.apache.commons.lang3.mutable.MutableBoolean;
-import org.apache.commons.lang3.mutable.MutableLong;
 import org.junit.experimental.categories.Category;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -332,12 +339,12 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
 
         Table merged = partitionedTable.merge();
         if (SystemicObjectTracker.isSystemicObjectMarkingEnabled()) {
-            TestCase.assertEquals(CollectionUtil.mapFromArray(String.class, Object.class, "quux", "baz",
+            TestCase.assertEquals(mapFromArray("quux", "baz",
                     Table.SORTABLE_COLUMNS_ATTRIBUTE, "bar", Table.MERGED_TABLE_ATTRIBUTE, true,
                     Table.SYSTEMIC_TABLE_ATTRIBUTE, Boolean.TRUE), merged.getAttributes());
         } else {
             TestCase.assertEquals(
-                    CollectionUtil.mapFromArray(String.class, Object.class, "quux", "baz",
+                    mapFromArray("quux", "baz",
                             Table.SORTABLE_COLUMNS_ATTRIBUTE, "bar", Table.MERGED_TABLE_ATTRIBUTE, true),
                     merged.getAttributes());
         }
@@ -349,12 +356,12 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
         // the merged table just takes the set that is consistent
         merged = transformed.merge();
         if (SystemicObjectTracker.isSystemicObjectMarkingEnabled()) {
-            TestCase.assertEquals(CollectionUtil.mapFromArray(String.class, Object.class, "quux", "baz",
+            TestCase.assertEquals(mapFromArray("quux", "baz",
                     Table.SORTABLE_COLUMNS_ATTRIBUTE, "bar", Table.MERGED_TABLE_ATTRIBUTE, true,
                     Table.SYSTEMIC_TABLE_ATTRIBUTE, Boolean.TRUE), merged.getAttributes());
         } else {
             TestCase.assertEquals(
-                    CollectionUtil.mapFromArray(String.class, Object.class, "quux", "baz",
+                    mapFromArray("quux", "baz",
                             Table.SORTABLE_COLUMNS_ATTRIBUTE, "bar", Table.MERGED_TABLE_ATTRIBUTE, true),
                     merged.getAttributes());
         }
@@ -849,7 +856,7 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
         final Table underlying;
         try (final SafeCloseable ignored = ExecutionContext.makeExecutionContext(false).open()) {
             underlying = base.update(
-                    "Constituent=emptyTable(1000 * step.longValue()).update(\"JJ=ii * \" + II + \" * step.longValue()\")");
+                    "Constituent=emptyTable(1000 * step.get()).update(\"JJ=ii * \" + II + \" * step.get()\")");
         }
 
         final PartitionedTable partitioned = PartitionedTableFactory.of(underlying);
@@ -862,7 +869,7 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
         modifiedColumnSet.setAll("II");
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         while (step.incrementAndGet() <= 100) {
-            final boolean evenStep = step.longValue() % 2 == 0;
+            final boolean evenStep = step.get() % 2 == 0;
             updateGraph.runWithinUnitTestCycle(() -> {
                 base.notifyListeners(new TableUpdateImpl(
                         RowSetFactory.empty(),
@@ -875,11 +882,11 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
             final Table[] tables = LongStream.range(0, 10).mapToObj((final long II) -> {
                 final boolean evenPos = II % 2 == 0;
                 if (evenStep == evenPos) {
-                    return emptyTable(1000 * step.longValue())
-                            .updateView("JJ = ii * " + II + " * step.longValue()");
+                    return emptyTable(1000 * step.get())
+                            .updateView("JJ = ii * " + II + " * step.get()");
                 } else {
-                    return emptyTable(1000 * (step.longValue() - 1))
-                            .updateView("JJ = ii * " + II + " * (step.longValue() - 1)");
+                    return emptyTable(1000 * (step.get() - 1))
+                            .updateView("JJ = ii * " + II + " * (step.get() - 1)");
                 }
             }).toArray(Table[]::new);
             final Table matching = TableTools.merge(tables);
@@ -1063,13 +1070,53 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
         try {
             partitionedTable.transform(t -> t.join(refreshingInput, "c", "c2=c"));
             TestCase.fail("Expected exception");
-        } catch (IllegalStateException expected) {
+        } catch (TableInitializationException expected) {
+            Assert.eqTrue(expected.getCause().getClass() == IllegalStateException.class,
+                    "expected.getCause().getClass() instanceof IllegalStateException");
         }
 
         try {
             partitionedTable.partitionedTransform(partitionedTable, (t, u) -> t.join(refreshingInput, "c", "c2=c"));
             TestCase.fail("Expected exception");
-        } catch (IllegalStateException expected) {
+        } catch (TableInitializationException expected) {
+            Assert.eqTrue(expected.getCause().getClass() == IllegalStateException.class,
+                    "expected.getCause().getClass() instanceof IllegalStateException");
         }
+    }
+
+    public void testPartitionedTableSort() throws IOException {
+        final File tmpDir = Files.createTempDirectory("PartitionedTableTest-").toFile();
+        try {
+            final ParquetInstructions instructions = ParquetInstructions.builder().useDictionary("I", true).build();
+            Table a = emptyTable(200).update("I = `` + (50 + (ii % 100))", "K = ii");
+            Table b = emptyTable(200).update("I = `` + (ii % 100)", "K = ii");
+            ParquetTools.writeTable(a, tmpDir + "/Partition=p0/data.parquet", instructions);
+            ParquetTools.writeTable(b, tmpDir + "/Partition=p1/data.parquet", instructions);
+            a = a.updateView("Partition = `p0`").moveColumnsUp("Partition");
+            b = b.updateView("Partition = `p1`").moveColumnsUp("Partition");
+
+            final Table fromDisk = ParquetTools.readTable(tmpDir.getPath());
+
+            // Assert non-partitioned table sorts.
+            final Table diskOuterSort = fromDisk.sort("I");
+            final Table exOuterSort = TableTools.merge(a, b).sort("I");
+            assertTableEquals(exOuterSort, diskOuterSort);
+
+            // Assert partitioned table sorts.
+            final Table diskInnerSort = fromDisk.partitionBy("Partition").proxy().sort("I").target().merge();
+            final Table exInnerSort = TableTools.merge(a.sort("I"), b.sort("I"));
+            assertTableEquals(exInnerSort, diskInnerSort);
+        } finally {
+            FileUtils.deleteRecursively(tmpDir);
+        }
+    }
+
+    @SuppressWarnings({"unchecked"})
+    public static <K, V> Map<K, V> mapFromArray(Object... data) {
+        Map<K, V> map = new LinkedHashMap<K, V>();
+        for (int nIndex = 0; nIndex < data.length; nIndex += 2) {
+            map.put((K) data[nIndex], (V) data[nIndex + 1]);
+        }
+        return map;
     }
 }

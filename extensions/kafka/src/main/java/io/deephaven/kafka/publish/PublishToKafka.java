@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.kafka.publish;
 
 import io.deephaven.api.ColumnName;
@@ -35,6 +35,7 @@ import org.apache.kafka.clients.producer.RecordMetadata;
 import org.apache.kafka.common.serialization.Serializer;
 import org.jetbrains.annotations.NotNull;
 
+import javax.annotation.OverridingMethodsMustInvokeSuper;
 import java.time.Instant;
 import java.util.Objects;
 import java.util.Properties;
@@ -398,6 +399,7 @@ public class PublishToKafka<K, V> extends LivenessArtifact {
         }
     }
 
+    @OverridingMethodsMustInvokeSuper
     @Override
     protected void destroy() {
         super.destroy();

@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.extensions.barrage.util;
 
 import org.jetbrains.annotations.NotNull;
@@ -22,7 +22,7 @@ public class DefensiveCapture extends InputStream {
         if (delegate != null) {
             return delegate;
         }
-        final BarrageProtoUtil.ExposedByteArrayOutputStream out = new BarrageProtoUtil.ExposedByteArrayOutputStream();
+        final ExposedByteArrayOutputStream out = new ExposedByteArrayOutputStream();
         final int size = in.drainTo(out);
         in.close();
         in = null;

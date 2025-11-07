@@ -1,19 +1,25 @@
+<#--
+  Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+-->
 
 package io.deephaven.function;
 
 import io.deephaven.vector.*;
-import io.deephaven.function.comparators.NullNaNAwareComparator;
 import org.apache.commons.lang3.ArrayUtils;
 
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.stream.IntStream;
 
+import io.deephaven.util.annotations.UserInvocationPermitted;
 import static io.deephaven.util.QueryConstants.*;
 import static io.deephaven.function.Basic.isNull;
+import static io.deephaven.function.Numeric.compare;
 
 /**
  * Functions for sorting primitive types.
  */
+@UserInvocationPermitted({"function_library"})
 public class Sort {
 
     //////////////////////////// Object ////////////////////////////
@@ -46,7 +52,7 @@ public class Sort {
      * @return sorted values.
      */
     static public <T extends Comparable<? super T>> T[] sortObj(final ObjectVector<T> values) {
-        return sortObj(values, new NullNaNAwareComparator<>());
+        return sortObj(values, Comparator.nullsFirst(Comparator.naturalOrder()));
     }
 
     /**
@@ -78,7 +84,65 @@ public class Sort {
      */
     @SafeVarargs
     static public <T extends Comparable<? super T>> T[] sortObj(final T... values) {
-        return sortObj(values, new NullNaNAwareComparator<>());
+        return sortObj(values, Comparator.nullsFirst(Comparator.naturalOrder()));
+    }
+
+    /**
+     * Returns the indices of values sorted from smallest to largest.
+     *
+     * @param values values.
+     * @param comparator value comparator.
+     * @return sorted indices.
+     */
+    static public <T extends Comparable<? super T>> int[] rankObj(final ObjectVector<T> values, final Comparator<T> comparator) {
+        if (values == null) {
+            return null;
+        }
+        if (values.isEmpty()) {
+            return new int[0];
+        }
+
+        return IntStream.range(0, values.intSize("rank"))
+            .boxed().sorted((i, j) -> comparator.compare(values.get(i), values.get(j)))
+            .mapToInt(ele -> ele).toArray();
+    }
+
+    /**
+     * Returns the indices of values sorted from smallest to largest.
+     *
+     * @param values values.
+     * @return sorted indices.
+     */
+    static public <T extends Comparable<? super T>> int[] rankObj(final ObjectVector<T> values) {
+        return rankObj(values, Comparator.nullsFirst(Comparator.naturalOrder()));
+    }
+
+    /**
+     * Returns the indices of values sorted from smallest to largest.
+     *
+     * @param values values.
+     * @param comparator value comparator.
+     * @return sorted indices.
+     */
+    static public <T extends Comparable<? super T>> int[] rankObj(final T[] values, final Comparator<T> comparator) {
+        if (values == null) {
+            return null;
+        }
+
+        return IntStream.range(0, values.length)
+            .boxed().sorted((i, j) -> comparator.compare(values[i], values[j]))
+            .mapToInt(ele -> ele).toArray();
+    }
+
+    /**
+     * Returns the indices of values sorted from smallest to largest.
+     *
+     * @param values values.
+     * @return sorted indices.
+     */
+    @SafeVarargs
+    static public <T extends Comparable<? super T>> int[] rankObj(final T... values) {
+        return rankObj(values, Comparator.nullsFirst(Comparator.naturalOrder()));
     }
 
     /**
@@ -109,7 +173,7 @@ public class Sort {
      * @return sorted values.
      */
     static public <T extends Comparable<? super T>> T[] sortDescendingObj(final ObjectVector<T> values) {
-        return sortDescendingObj(values, new NullNaNAwareComparator<>());
+        return sortDescendingObj(values, Comparator.nullsFirst(Comparator.naturalOrder()));
     }
 
     /**
@@ -135,7 +199,64 @@ public class Sort {
      */
     @SafeVarargs
     static public <T extends Comparable<? super T>> T[] sortDescendingObj(final T... values) {
-        return sortDescendingObj(values, new NullNaNAwareComparator<>());
+        return sortDescendingObj(values, Comparator.nullsFirst(Comparator.naturalOrder()));
+    }
+
+    /**
+     * Returns the indices of values sorted from largest to smallest.
+     *
+     * @param values values.
+     * @param comparator value comparator.
+     * @return sorted indices.
+     */
+    static public <T extends Comparable<? super T>> int[] rankDescendingObj(final ObjectVector<T> values, final Comparator<T> comparator) {
+        if (values == null) {
+            return null;
+        }
+
+        if (values.isEmpty()) {
+            return new int[0];
+        }
+
+        return IntStream.range(0, values.intSize("rank"))
+            .boxed().sorted((i, j) -> comparator.compare(values.get(j), values.get(i)))
+            .mapToInt(ele -> ele).toArray();
+    }
+
+    /**
+     * Returns the indices of values sorted from largest to smallest.
+     *
+     * @param values values.
+     * @return sorted indices.
+     */
+    static public <T extends Comparable<? super T>> int[] rankDescendingObj(final ObjectVector<T> values) {
+        return rankDescendingObj(values, Comparator.nullsFirst(Comparator.naturalOrder()));
+    }
+
+    /**
+     * Returns the indices of values sorted from largest to smallest.
+     *
+     * @param values values.
+     * @param comparator value comparator.
+     * @return sorted indices.
+     */
+    static public <T extends Comparable<? super T>> int[] rankDescendingObj(final T[] values, final Comparator<T> comparator) {
+        if (values == null) {
+            return null;
+        }
+
+        return rankDescendingObj(new ObjectVectorDirect<>(values), comparator);
+    }
+
+    /**
+     * Returns the indices of values sorted from largest to smallest.
+     *
+     * @param values values.
+     * @return sorted indices.
+     */
+    @SafeVarargs
+    static public <T extends Comparable<? super T>> int[] rankDescendingObj(final T... values) {
+        return rankDescendingObj(values, Comparator.nullsFirst(Comparator.naturalOrder()));
     }
 
     <#list primitiveTypes as pt>
@@ -159,9 +280,9 @@ public class Sort {
             return values.toArray();
         }
 
-        final ${pt.primitive}[] vs = values.copyToArray();
-        Arrays.sort(vs);
-        return vs;
+        final ${pt.boxed}[] vb = ArrayUtils.toObject(values.toArray());
+        Arrays.sort(vb, Numeric::compare);
+        return ArrayUtils.toPrimitive(vb);
     }
 
     /**
@@ -193,13 +314,66 @@ public class Sort {
             return new ${pt.primitive}[]{};
         }
 
+        final ${pt.boxed}[] vb = values.clone();
+        Arrays.sort(vb, Numeric::compare);
+        return ArrayUtils.toPrimitive(vb);
+    }
+
+    /**
+     * Returns the indices of values sorted from smallest to largest.
+     *
+     * @param values values.
+     * @return sorted indices.
+     */
+    public static int[] rank(final ${pt.vector} values) {
+        if (values == null) {
+            return null;
+        }
+
+        if (values.isEmpty()) {
+            return new int[0];
+        }
+
+        return IntStream.range(0, values.intSize("rank"))
+            .boxed().sorted((i, j) -> compare(values.get(i), values.get(j)))
+            .mapToInt(ele -> ele).toArray();
+    }
+
+    /**
+     * Returns the indices of values sorted from smallest to largest.
+     *
+     * @param values values.
+     * @return sorted indices.
+     */
+    public static int[] rank(final ${pt.primitive}... values) {
+        if (values == null) {
+            return null;
+        }
+
+        return rank(new ${pt.vectorDirect}(values));
+    }
+
+    /**
+     * Returns the indices of values sorted from smallest to largest.
+     *
+     * @param values values.
+     * @return sorted indices.
+     */
+    public static int[] rank(final ${pt.boxed}[] values) {
+        if (values == null) {
+            return null;
+        }
+
+        if (values.length == 0) {
+            return new int[0];
+        }
+
         final ${pt.primitive}[] vs = new ${pt.primitive}[values.length];
         for (int i = 0; i < values.length; i++) {
             vs[i] = isNull(values[i]) ? ${pt.null} : values[i];
         }
 
-        Arrays.sort(vs);
-        return vs;
+        return rank(new ${pt.vectorDirect}(vs));
     }
 
     /**
@@ -217,10 +391,8 @@ public class Sort {
             return values.toArray();
         }
 
-        final ${pt.primitive}[] vs = values.copyToArray();
-        Arrays.sort(vs);
+        final ${pt.primitive}[] vs = sort(values);
         ArrayUtils.reverse(vs);
-
         return vs;
     }
 
@@ -254,6 +426,58 @@ public class Sort {
         return result;
     }
 
+    /**
+     * Returns the indices of values sorted from largest to smallest.
+     *
+     * @param values values.
+     * @return sorted indices.
+     */
+    public static int[] rankDescending(final ${pt.vector} values) {
+        if (values == null) {
+            return null;
+        }
+
+        if (values.isEmpty()) {
+            return new int[0];
+        }
+
+        return IntStream.range(0, values.intSize("rank"))
+            .boxed().sorted((i, j) -> compare(values.get(j), values.get(i)))
+            .mapToInt(ele -> ele).toArray();
+    }
+
+    /**
+     * Returns the indices of values sorted from largest to smallest.
+     *
+     * @param values values.
+     * @return sorted indices.
+     */
+    public static int[] rankDescending(final ${pt.primitive}... values) {
+        if (values == null) {
+            return null;
+        }
+
+        return rankDescending(new ${pt.vectorDirect}(values));
+    }
+
+    /**
+     * Returns the indices of values sorted from largest to smallest.
+     *
+     * @param values values.
+     * @return sorted indices.
+     */
+    public static int[] rankDescending(final ${pt.boxed}[] values) {
+        if (values == null) {
+            return null;
+        }
+
+        final ${pt.primitive}[] vs = new ${pt.primitive}[values.length];
+        for (int i = 0; i < values.length; i++) {
+            vs[i] = isNull(values[i]) ? ${pt.null} : values[i];
+        }
+
+        return rankDescending(new ${pt.vectorDirect}(vs));
+    }
 
     </#if>
     </#list>

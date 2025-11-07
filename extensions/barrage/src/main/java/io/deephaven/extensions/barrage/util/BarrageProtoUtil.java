@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.extensions.barrage.util;
 
 import com.google.common.io.LittleEndianDataInputStream;
@@ -10,26 +10,22 @@ import com.google.protobuf.WireFormat;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.barrage.flatbuf.BarrageMessageWrapper;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
-import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.rowset.impl.ExternalizableRowSetUtils;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.io.streams.ByteBufferInputStream;
+import io.deephaven.util.type.ArrayTypeUtils;
 import org.apache.arrow.flatbuf.Message;
 import org.apache.arrow.flatbuf.MessageHeader;
 import org.apache.arrow.flight.impl.Flight;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 
 public class BarrageProtoUtil {
-    public static final BarrageSubscriptionOptions DEFAULT_SER_OPTIONS =
-            BarrageSubscriptionOptions.builder().build();
     private static final int TAG_TYPE_BITS = 3;
 
     public static final int BODY_TAG =
@@ -44,7 +40,6 @@ public class BarrageProtoUtil {
     private static final Logger log = LoggerFactory.getLogger(BarrageProtoUtil.class);
 
     public static ByteBuffer toByteBuffer(final RowSet rowSet) {
-        // noinspection UnstableApiUsage
         try (final ExposedByteArrayOutputStream baos = new ExposedByteArrayOutputStream();
                 final LittleEndianDataOutputStream oos = new LittleEndianDataOutputStream(baos)) {
             ExternalizableRowSetUtils.writeExternalCompressedDeltas(oos, rowSet);
@@ -55,19 +50,19 @@ public class BarrageProtoUtil {
         }
     }
 
+    public static byte[] toByteArray(final RowSet rowSet) {
+        final ByteBuffer bb = toByteBuffer(rowSet);
+        final byte[] array = new byte[bb.remaining()];
+        bb.get(array);
+        return array;
+    }
+
     public static RowSet toRowSet(final ByteBuffer string) {
-        // noinspection UnstableApiUsage
         try (final InputStream bais = new ByteBufferInputStream(string);
                 final LittleEndianDataInputStream ois = new LittleEndianDataInputStream(bais)) {
             return ExternalizableRowSetUtils.readExternalCompressedDelta(ois);
         } catch (final IOException e) {
             throw new UncheckedDeephavenException("Unexpected exception during deserialization: ", e);
-        }
-    }
-
-    public static class ExposedByteArrayOutputStream extends ByteArrayOutputStream {
-        public byte[] peekBuffer() {
-            return buf;
         }
     }
 
@@ -144,7 +139,6 @@ public class BarrageProtoUtil {
         /** the parsed protobuf from the flight descriptor embedded in app_metadata */
         public Flight.FlightDescriptor descriptor = null;
         /** the payload beyond the header metadata */
-        @SuppressWarnings("UnstableApiUsage")
         public LittleEndianDataInputStream inputStream = null;
     }
 
@@ -180,7 +174,6 @@ public class BarrageProtoUtil {
                     // at this point, we're in the body, we will read it and then break, the rest of the payload should
                     // be the body
                     size = decoder.readRawVarint32();
-                    // noinspection UnstableApiUsage
                     mi.inputStream = new LittleEndianDataInputStream(
                             new BarrageProtoUtil.ObjectInputStreamAdapter(decoder, size));
                     // we do not actually remove the content from our stream; prevent reading the next tag via a labeled
@@ -194,9 +187,8 @@ public class BarrageProtoUtil {
         }
 
         if (mi.header != null && mi.header.headerType() == MessageHeader.RecordBatch && mi.inputStream == null) {
-            // noinspection UnstableApiUsage
             mi.inputStream =
-                    new LittleEndianDataInputStream(new ByteArrayInputStream(CollectionUtil.ZERO_LENGTH_BYTE_ARRAY));
+                    new LittleEndianDataInputStream(new ByteArrayInputStream(ArrayTypeUtils.EMPTY_BYTE_ARRAY));
         }
 
         return mi;

@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.util;
 
 import io.deephaven.base.verify.Assert;
@@ -54,7 +54,7 @@ abstract class BaseArrayBackedInputTable extends UpdatableTable {
     }
 
     public InputTableUpdater inputTable() {
-        return (InputTableUpdater) getAttribute(Table.INPUT_TABLE_ATTRIBUTE);
+        return InputTableUpdater.from(this);
     }
 
     public Table readOnlyCopy() {
@@ -171,7 +171,7 @@ abstract class BaseArrayBackedInputTable extends UpdatableTable {
         String error;
 
         private PendingChange(@NotNull Table table, boolean delete) {
-            Assert.holdsLock(pendingChanges, "pendingChanges");
+            Assert.assertion(Thread.holdsLock(pendingChanges), "Thread.holdsLock(pendingChanges)");
             Assert.neqNull(table, "table");
             this.table = table;
             this.delete = delete;
@@ -198,7 +198,9 @@ abstract class BaseArrayBackedInputTable extends UpdatableTable {
         public void add(@NotNull final Table newData) throws IOException {
             checkBlockingEditSafety();
             PendingChange pendingChange = enqueueAddition(newData);
-            blockingContinuation(pendingChange);
+            if (pendingChange != null) {
+                blockingContinuation(pendingChange);
+            }
         }
 
         @Override
@@ -207,7 +209,11 @@ abstract class BaseArrayBackedInputTable extends UpdatableTable {
                 @NotNull final InputTableStatusListener listener) {
             checkAsyncEditSafety(newData);
             final PendingChange pendingChange = enqueueAddition(newData);
-            asynchronousContinuation(pendingChange, listener);
+            if (pendingChange != null) {
+                asynchronousContinuation(pendingChange, listener);
+            } else {
+                listener.onSuccess();
+            }
         }
 
         private PendingChange enqueueAddition(@NotNull final Table newData) {
@@ -215,6 +221,9 @@ abstract class BaseArrayBackedInputTable extends UpdatableTable {
             // we want to get a clean copy of the table; that can not change out from under us or result in long reads
             // during our UGP run
             final Table newDataSnapshot = snapshotData(newData);
+            if (newDataSnapshot.size() == 0) {
+                return null;
+            }
             final PendingChange pendingChange;
             synchronized (pendingChanges) {
                 pendingChange = new PendingChange(newDataSnapshot, false);
@@ -228,7 +237,9 @@ abstract class BaseArrayBackedInputTable extends UpdatableTable {
         public void delete(@NotNull final Table table) throws IOException {
             checkBlockingEditSafety();
             final PendingChange pendingChange = enqueueDeletion(table);
-            blockingContinuation(pendingChange);
+            if (pendingChange != null) {
+                blockingContinuation(pendingChange);
+            }
         }
 
         @Override
@@ -237,12 +248,19 @@ abstract class BaseArrayBackedInputTable extends UpdatableTable {
                 @NotNull final InputTableStatusListener listener) {
             checkAsyncEditSafety(table);
             final PendingChange pendingChange = enqueueDeletion(table);
-            asynchronousContinuation(pendingChange, listener);
+            if (pendingChange != null) {
+                asynchronousContinuation(pendingChange, listener);
+            } else {
+                listener.onSuccess();
+            }
         }
 
         private PendingChange enqueueDeletion(@NotNull final Table table) {
             validateDelete(table);
             final Table oldDataSnapshot = snapshotData(table);
+            if (oldDataSnapshot.size() == 0) {
+                return null;
+            }
             final PendingChange pendingChange;
             synchronized (pendingChanges) {
                 pendingChange = new PendingChange(oldDataSnapshot, true);
@@ -288,18 +306,23 @@ abstract class BaseArrayBackedInputTable extends UpdatableTable {
             if (updateGraph.currentThreadProcessesUpdates()) {
                 throw new UnsupportedOperationException("Attempted to make a blocking input table edit from a listener "
                         + "or notification. This is unsupported, because it will block the update graph from making "
-                        + "progress.");
+                        + "progress and hang indefinitely.");
+            }
+            if (updateGraph.sharedLock().isHeldByCurrentThread()) {
+                throw new UnsupportedOperationException("Attempted to make a blocking input table edit while holding "
+                        + "the update graph's shared lock. This is unsupported, because it will block the update graph "
+                        + "from making progress and hang indefinitely.");
             }
         }
 
         private void checkAsyncEditSafety(@NotNull final Table changeData) {
             if (changeData.isRefreshing()
-                    && updateGraph.currentThreadProcessesUpdates()
-                    && !changeData.satisfied(updateGraph.clock().currentStep())) {
+                    && changeData.getUpdateGraph().currentThreadProcessesUpdates()
+                    && !changeData.satisfied(changeData.getUpdateGraph().clock().currentStep())) {
                 throw new UnsupportedOperationException("Attempted to make an asynchronous input table edit from a "
-                        + "listener or notification before the change data table is satisfied on the current cycle. "
-                        + "This is unsupported, because it may block the update graph from making progress or produce "
-                        + "inconsistent results.");
+                        + "listener or notification before the table of data to add or delete is satisfied on the "
+                        + "current cycle. This is unsupported, because it may block the update graph from making "
+                        + "progress or produce inconsistent results.");
             }
         }
 
@@ -325,21 +348,5 @@ abstract class BaseArrayBackedInputTable extends UpdatableTable {
                 }
             }
         }
-
-        @NotNull
-        private Map<String, WritableColumnSource<Object>> buildSourcesMap(int capacity,
-                List<ColumnDefinition<?>> columnDefinitions) {
-            final Map<String, WritableColumnSource<Object>> sources = new LinkedHashMap<>();
-            for (final ColumnDefinition<?> columnDefinition : columnDefinitions) {
-                WritableColumnSource<?> cs = ArrayBackedColumnSource.getMemoryColumnSource(
-                        capacity, columnDefinition.getDataType());
-                // noinspection unchecked
-                final WritableColumnSource<Object> memoryColumnSource = (WritableColumnSource<Object>) cs;
-                memoryColumnSource.ensureCapacity(capacity);
-                sources.put(columnDefinition.getName(), memoryColumnSource);
-            }
-            return sources;
-        }
-
     }
 }

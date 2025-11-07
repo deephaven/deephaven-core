@@ -1,3 +1,6 @@
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.hierarchical;
 
 import io.deephaven.api.Selectable;
@@ -5,14 +8,12 @@ import io.deephaven.api.SortColumn;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.hierarchical.RollupTable;
 import io.deephaven.engine.table.hierarchical.TreeTable;
-import io.deephaven.engine.table.impl.AbsoluteSortColumnConventions;
-import io.deephaven.engine.table.impl.NoSuchColumnException;
-import io.deephaven.engine.table.impl.QueryTable;
-import io.deephaven.engine.table.impl.TableAdapter;
+import io.deephaven.engine.table.impl.*;
 import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.engine.table.impl.select.analyzers.SelectAndViewAnalyzer;
 import io.deephaven.engine.table.impl.sources.NullValueColumnSource;
@@ -32,7 +33,7 @@ import java.util.stream.Stream;
  */
 abstract class BaseNodeOperationsRecorder<TYPE> {
 
-    final TableDefinition definition;
+    private final TableDefinition initialDefinition;
 
     private final Collection<? extends SelectColumn> recordedFormats;
     private final Collection<SortColumn> recordedSorts;
@@ -45,14 +46,16 @@ abstract class BaseNodeOperationsRecorder<TYPE> {
             @NotNull final Collection<? extends SelectColumn> recordedFormats,
             @NotNull final Collection<SortColumn> recordedSorts,
             @NotNull final Collection<? extends SelectColumn> recordedAbsoluteViews) {
-        this.definition = definition;
+        this.initialDefinition = definition;
         this.recordedFormats = recordedFormats;
         this.recordedSorts = recordedSorts;
         this.recordedAbsoluteViews = recordedAbsoluteViews;
     }
 
     public boolean isEmpty() {
-        return recordedFormats.isEmpty() && recordedSorts.isEmpty();
+        return recordedFormats.isEmpty()
+                && recordedSorts.isEmpty()
+                && recordedAbsoluteViews.isEmpty();
     }
 
     Collection<? extends SelectColumn> getRecordedFormats() {
@@ -97,13 +100,13 @@ abstract class BaseNodeOperationsRecorder<TYPE> {
                 return localResult;
             }
             if (getRecordedFormats().isEmpty()) {
-                return resultDefinition = definition;
+                // No new column definitions will be created
+                return resultDefinition = initialDefinition;
             }
             try (final SafeCloseable ignored = LivenessScopeStack.open()) {
-                final Table emptyNode = new QueryTable(definition, RowSetFactory.empty().toTracking(),
-                        NullValueColumnSource.createColumnSourceMap(definition));
-                final Table emptyNodeFormatted = emptyNode.updateView(getRecordedFormats());
-                return resultDefinition = emptyNodeFormatted.getDefinition();
+                final Table emptyTable = new QueryTable(initialDefinition, RowSetFactory.empty().toTracking(),
+                        NullValueColumnSource.createColumnSourceMap(initialDefinition));
+                return resultDefinition = emptyTable.updateView(getRecordedFormats()).getDefinition();
             }
         }
     }
@@ -145,37 +148,37 @@ abstract class BaseNodeOperationsRecorder<TYPE> {
     }
 
     public TYPE formatColumns(String... columnFormats) {
-        final FormatRecordingTableAdapter adapter = new FormatRecordingTableAdapter(definition);
+        final FormatRecordingTableAdapter adapter = new FormatRecordingTableAdapter(getResultDefinition());
         adapter.formatColumns(columnFormats);
         return adapter.hasSelectColumns() ? withFormats(adapter.selectColumns()) : self();
     }
 
     public TYPE formatRowWhere(String condition, String formula) {
-        final FormatRecordingTableAdapter adapter = new FormatRecordingTableAdapter(definition);
+        final FormatRecordingTableAdapter adapter = new FormatRecordingTableAdapter(getResultDefinition());
         adapter.formatRowWhere(condition, formula);
         return adapter.hasSelectColumns() ? withFormats(adapter.selectColumns()) : self();
     }
 
     public TYPE formatColumnWhere(String columnName, String condition, String formula) {
-        final FormatRecordingTableAdapter adapter = new FormatRecordingTableAdapter(definition);
+        final FormatRecordingTableAdapter adapter = new FormatRecordingTableAdapter(getResultDefinition());
         adapter.formatColumnWhere(columnName, condition, formula);
         return adapter.hasSelectColumns() ? withFormats(adapter.selectColumns()) : self();
     }
 
     public TYPE sort(String... columnsToSortBy) {
-        final SortRecordingTableAdapter adapter = new SortRecordingTableAdapter(definition);
+        final SortRecordingTableAdapter adapter = new SortRecordingTableAdapter(getResultDefinition());
         adapter.sort(columnsToSortBy);
         return adapter.hasSortColumns() ? withSorts(adapter.sortColumns(), adapter.absoluteSelectColumns()) : self();
     }
 
     public TYPE sortDescending(String... columnsToSortBy) {
-        final SortRecordingTableAdapter adapter = new SortRecordingTableAdapter(definition);
+        final SortRecordingTableAdapter adapter = new SortRecordingTableAdapter(getResultDefinition());
         adapter.sortDescending(columnsToSortBy);
         return adapter.hasSortColumns() ? withSorts(adapter.sortColumns(), adapter.absoluteSelectColumns()) : self();
     }
 
     public TYPE sort(Collection<SortColumn> columnsToSortBy) {
-        final SortRecordingTableAdapter adapter = new SortRecordingTableAdapter(definition);
+        final SortRecordingTableAdapter adapter = new SortRecordingTableAdapter(getResultDefinition());
         adapter.sort(columnsToSortBy);
         return adapter.hasSortColumns() ? withSorts(adapter.sortColumns(), adapter.absoluteSelectColumns()) : self();
     }
@@ -261,6 +264,18 @@ abstract class BaseNodeOperationsRecorder<TYPE> {
                 throw new NoSuchColumnException(existingColumns, unknownColumns);
             }
 
+            for (final SortColumn sc : columnsToSortBy) {
+                String columnName = sc.column().name();
+                if (AbsoluteSortColumnConventions.isAbsoluteColumnName(columnName)) {
+                    columnName = AbsoluteSortColumnConventions.absoluteColumnNameToBaseName(columnName);
+                }
+                final ColumnDefinition<Object> defToSort = getDefinition().getColumn(columnName);
+                final Class<Object> dataType = defToSort.getDataType();
+                if (!dataType.isPrimitive() && !Comparable.class.isAssignableFrom(dataType)) {
+                    throw new NotSortableColumnException(columnName + " is not a sortable type: " + dataType);
+                }
+            }
+
             this.sortColumns = columnsToSortBy;
             return this;
         }
@@ -281,16 +296,24 @@ abstract class BaseNodeOperationsRecorder<TYPE> {
             // custom columns in the future. For now, we've plumbed absolute column value sorting via naming
             // conventions. Note that we simply avoid telling the client about these columns when sending schemas, so we
             // have no need to drop them post-sort.
-            return sortColumns.stream()
+
+            final QueryCompilerRequestProcessor.BatchProcessor compilationProcessor =
+                    QueryCompilerRequestProcessor.batch();
+
+            final SelectColumn[] columns = sortColumns.stream()
                     .map(sc -> sc.column().name())
                     .filter(AbsoluteSortColumnConventions::isAbsoluteColumnName)
                     .map(cn -> {
                         final String baseColumnName = AbsoluteSortColumnConventions.absoluteColumnNameToBaseName(cn);
                         final Selectable selectable = AbsoluteSortColumnConventions.makeSelectable(cn, baseColumnName);
                         final SelectColumn selectColumn = SelectColumn.of(selectable);
-                        selectColumn.initDef(Map.of(baseColumnName, getDefinition().getColumn(baseColumnName)));
+                        selectColumn.initDef(Map.of(baseColumnName, getDefinition().getColumn(baseColumnName)),
+                                compilationProcessor);
                         return selectColumn;
-                    });
+                    }).toArray(SelectColumn[]::new);
+
+            compilationProcessor.compile();
+            return Stream.of(columns);
         }
     }
 }

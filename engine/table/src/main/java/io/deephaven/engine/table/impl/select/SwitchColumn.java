@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.select;
 
 import io.deephaven.base.verify.Require;
@@ -8,6 +8,7 @@ import io.deephaven.engine.table.*;
 import io.deephaven.api.util.NameValidator;
 import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.table.impl.MatchPair;
+import io.deephaven.engine.table.impl.QueryCompilerRequestProcessor;
 import io.deephaven.engine.table.impl.select.python.FormulaColumnPython;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.rowset.TrackingRowSet;
@@ -15,6 +16,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 public class SwitchColumn implements SelectColumn {
 
@@ -45,7 +47,14 @@ public class SwitchColumn implements SelectColumn {
     }
 
     @Override
-    public List<String> initDef(Map<String, ColumnDefinition<?>> columnDefinitionMap) {
+    public List<String> initDef(@NotNull Map<String, ColumnDefinition<?>> columnDefinitionMap) {
+        return initDef(columnDefinitionMap, QueryCompilerRequestProcessor.immediate());
+    }
+
+    @Override
+    public List<String> initDef(
+            @NotNull final Map<String, ColumnDefinition<?>> columnDefinitionMap,
+            @NotNull final QueryCompilerRequestProcessor compilationRequestProcessor) {
         if (realColumn == null) {
             if (columnDefinitionMap.get(expression) != null) {
                 realColumn = new SourceColumn(expression, columnName);
@@ -53,7 +62,7 @@ public class SwitchColumn implements SelectColumn {
                 realColumn = FormulaColumn.createFormulaColumn(columnName, expression, parser);
             }
         }
-        List<String> usedColumns = realColumn.initDef(columnDefinitionMap);
+        final List<String> usedColumns = realColumn.initDef(columnDefinitionMap, compilationRequestProcessor);
         if (realColumn instanceof DhFormulaColumn) {
             FormulaColumnPython formulaColumnPython = ((DhFormulaColumn) realColumn).getFormulaColumnPython();
             realColumn = formulaColumnPython != null ? formulaColumnPython : realColumn;
@@ -64,6 +73,11 @@ public class SwitchColumn implements SelectColumn {
     @Override
     public Class<?> getReturnedType() {
         return getRealColumn().getReturnedType();
+    }
+
+    @Override
+    public Class<?> getReturnedComponentType() {
+        return getRealColumn().getReturnedComponentType();
     }
 
     @Override
@@ -134,6 +148,31 @@ public class SwitchColumn implements SelectColumn {
     @Override
     public boolean isStateless() {
         return getRealColumn().isStateless();
+    }
+
+    @Override
+    public boolean hasVirtualRowVariables() {
+        return getRealColumn().hasVirtualRowVariables();
+    }
+
+    @Override
+    public boolean hasConstantArrayAccess() {
+        return getRealColumn().hasConstantArrayAccess();
+    }
+
+    @Override
+    public Optional<SourceColumn> maybeGetSourceColumn() {
+        return getRealColumn().maybeGetSourceColumn();
+    }
+
+    @Override
+    public boolean hasConstantValue() {
+        return getRealColumn().hasConstantValue();
+    }
+
+    @Override
+    public Optional<FormulaColumn> maybeGetFormulaColumn() {
+        return getRealColumn().maybeGetFormulaColumn();
     }
 
     @Override

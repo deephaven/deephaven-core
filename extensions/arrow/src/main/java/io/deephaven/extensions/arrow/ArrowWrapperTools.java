@@ -1,13 +1,14 @@
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.extensions.arrow;
 
 import io.deephaven.base.ArrayUtil;
 import io.deephaven.base.reference.WeakCleanupReference;
 import io.deephaven.configuration.Configuration;
-import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.ResettableContext;
 import io.deephaven.engine.util.file.FileHandle;
 import io.deephaven.engine.util.file.TrackedFileHandleFactory;
-import io.deephaven.engine.util.reference.CleanupReferenceProcessorInstance;
 import io.deephaven.extensions.arrow.sources.ArrowByteColumnSource;
 import io.deephaven.extensions.arrow.sources.ArrowCharColumnSource;
 import io.deephaven.extensions.arrow.sources.ArrowInstantColumnSource;
@@ -52,6 +53,7 @@ import io.deephaven.util.annotations.ReferentialIntegrity;
 import io.deephaven.util.annotations.TestUseOnly;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.util.datastructures.SizeException;
+import io.deephaven.util.reference.CleanupReferenceProcessor;
 import org.apache.arrow.compression.CommonsCompressionFactory;
 import org.apache.arrow.flatbuf.Message;
 import org.apache.arrow.flatbuf.RecordBatch;
@@ -157,11 +159,16 @@ public class ArrowWrapperTools {
                 channel.position(block.getOffset());
 
                 final ByteBuffer metadataBuf = ByteBuffer.wrap(rawMetadataBuf, 0, block.getMetadataLength());
-                int numRead = channel.read(metadataBuf);
-                if (numRead != block.getMetadataLength()) {
-                    throw new IOException("Unexpected end of input trying to read block " + ii + " of '" + path + "'");
+                while (metadataBuf.hasRemaining()) {
+                    final int read = channel.read(metadataBuf);
+                    if (read == 0) {
+                        throw new IllegalStateException("ReadableByteChannel.read returned 0");
+                    }
+                    if (read == -1) {
+                        throw new IOException(
+                                "Unexpected end of input trying to read block " + ii + " of '" + path + "'");
+                    }
                 }
-
                 metadataBuf.flip();
                 if (metadataBuf.getInt() == IPC_CONTINUATION_TOKEN) {
                     // if the continuation token is present, skip the length
@@ -250,7 +257,7 @@ public class ArrowWrapperTools {
             case TIMESTAMPNANOTZ:
             case TIMESTAMPSEC:
             case TIMESTAMPSECTZ:
-                return new ArrowInstantColumnSource(highBit, field, arrowHelper);
+                return new ArrowInstantColumnSource(vector.getMinorType(), highBit, field, arrowHelper);
             case NULL:
             case STRUCT:
             case DATEDAY:
@@ -433,7 +440,7 @@ public class ArrowWrapperTools {
         private final ArrowFileReader reader;
 
         private ReaderCleanup(final Shareable shareable) {
-            super(shareable, CleanupReferenceProcessorInstance.DEFAULT.getReferenceQueue());
+            super(shareable, CleanupReferenceProcessor.getDefault().getReferenceQueue());
             this.reader = shareable.getReader();
         }
 

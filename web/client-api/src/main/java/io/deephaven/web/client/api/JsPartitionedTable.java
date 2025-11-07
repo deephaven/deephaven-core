@@ -1,20 +1,21 @@
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.web.client.api;
 
 import elemental2.core.JsArray;
 import elemental2.core.JsObject;
 import elemental2.core.JsSet;
-import elemental2.dom.CustomEvent;
-import elemental2.dom.CustomEventInit;
-import elemental2.dom.Event;
 import elemental2.promise.Promise;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.partitionedtable_pb.GetTableRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.partitionedtable_pb.MergeRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.partitionedtable_pb.PartitionedTableDescriptor;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.DropColumnsRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.TypedTicket;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.partitionedtable_pb.GetTableRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.partitionedtable_pb.MergeRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.partitionedtable_pb.PartitionedTableDescriptor;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.SelectOrUpdateRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.ticket_pb.TypedTicket;
 import io.deephaven.web.client.api.barrage.WebBarrageUtils;
 import io.deephaven.web.client.api.barrage.def.ColumnDefinition;
 import io.deephaven.web.client.api.barrage.def.InitialTableDefinition;
+import io.deephaven.web.client.api.event.Event;
 import io.deephaven.web.client.api.lifecycle.HasLifecycle;
 import io.deephaven.web.client.api.subscription.SubscriptionTableData;
 import io.deephaven.web.client.api.subscription.TableSubscription;
@@ -23,7 +24,7 @@ import io.deephaven.web.client.fu.LazyPromise;
 import io.deephaven.web.client.state.ClientTableState;
 import io.deephaven.web.shared.data.RangeSet;
 import jsinterop.annotations.JsIgnore;
-import jsinterop.annotations.JsMethod;
+import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsProperty;
 import jsinterop.annotations.JsType;
 import jsinterop.base.Js;
@@ -52,7 +53,8 @@ public class JsPartitionedTable extends HasLifecycle implements ServerObject {
     private final JsWidget widget;
     private List<String> keyColumnTypes;
     private PartitionedTableDescriptor descriptor;
-    private JsTable keys;
+    private Promise<JsTable> keys;
+    private JsTable baseTable;
     private TableSubscription subscription;
 
     private final Set<List<Object>> knownKeys = new HashSet<>();
@@ -69,16 +71,21 @@ public class JsPartitionedTable extends HasLifecycle implements ServerObject {
     }
 
     @JsIgnore
+    @Override
+    public WorkerConnection getConnection() {
+        return connection;
+    }
+
+    @JsIgnore
     public Promise<JsPartitionedTable> refetch() {
-        if (keys != null) {
-            keys.close();
-        }
-        if (subscription != null) {
-            subscription.close();
-        }
+        closeSubscriptions();
+
         return widget.refetch().then(w -> {
             descriptor = PartitionedTableDescriptor.deserializeBinary(w.getDataAsU8());
 
+            return w.getExportedObjects()[0].fetch();
+        }).then(result -> {
+            baseTable = (JsTable) result;
             keyColumnTypes = new ArrayList<>();
             InitialTableDefinition tableDefinition = WebBarrageUtils.readTableDefinition(
                     WebBarrageUtils.readSchemaMessage(descriptor.getConstituentDefinitionSchema_asU8()));
@@ -86,83 +93,76 @@ public class JsPartitionedTable extends HasLifecycle implements ServerObject {
             Column[] columns = new Column[0];
             for (int i = 0; i < columnDefinitions.length; i++) {
                 ColumnDefinition columnDefinition = columnDefinitions[i];
-                Column column = columnDefinition.makeJsColumn(columns.length, tableDefinition.getColumnsByName());
+                Column column =
+                        columnDefinition.makeJsColumn(columns.length, tableDefinition.getColumnsByName());
                 columns[columns.length] = column;
             }
             Column[] keyColumns = new Column[0];
             JsArray<String> keyColumnNames = descriptor.getKeyColumnNamesList();
             for (int i = 0; i < keyColumnNames.length; i++) {
                 String name = keyColumnNames.getAt(i);
-                ColumnDefinition columnDefinition = tableDefinition.getColumnsByName().get(false).get(name);
-                keyColumnTypes.add(columnDefinition.getType());
-                keyColumns[keyColumns.length] = columns[columnDefinition.getColumnIndex()];
+                Column keyColumn = baseTable.findColumn(name);
+                keyColumnTypes.add(keyColumn.getType());
+                keyColumns[keyColumns.length] = keyColumn;
             }
             this.columns = JsObject.freeze(columns);
             this.keyColumns = JsObject.freeze(keyColumns);
-            return w.getExportedObjects()[0].fetch();
-        }).then(result -> {
-            keys = (JsTable) result;
+
             // TODO(deephaven-core#3604) in case of a new session, we should do a full refetch
-            keys.addEventListener(JsTable.EVENT_DISCONNECT, event -> fireEvent(EVENT_DISCONNECT));
-            keys.addEventListener(JsTable.EVENT_RECONNECT, event -> {
-                subscribeToKeys().then(ignore -> {
+            baseTable.addEventListener(JsTable.EVENT_DISCONNECT, event -> fireEvent(EVENT_DISCONNECT));
+            baseTable.addEventListener(JsTable.EVENT_RECONNECT, event -> {
+                subscribeToBaseTable().then(ignore -> {
                     unsuppressEvents();
                     fireEvent(EVENT_RECONNECT);
                     return null;
                 }, failure -> {
-                    CustomEventInit<Object> init = CustomEventInit.create();
-                    init.setDetail(failure);
                     unsuppressEvents();
-                    fireEvent(EVENT_RECONNECTFAILED, init);
+                    fireEvent(EVENT_RECONNECTFAILED, failure);
                     suppressEvents();
                     return null;
                 });
             });
-            return subscribeToKeys();
+            return subscribeToBaseTable();
         });
     }
 
+    @JsIgnore
     @Override
     public TypedTicket typedTicket() {
         return widget.typedTicket();
     }
 
-    private Promise<JsPartitionedTable> subscribeToKeys() {
-        subscription = keys.subscribe(
-                JsArray.asJsArray(keys.findColumns(descriptor.getKeyColumnNamesList().asArray(new String[0]))));
+    private Promise<JsPartitionedTable> subscribeToBaseTable() {
+        subscription = baseTable.subscribe(
+                JsArray.asJsArray(baseTable.findColumns(descriptor.getKeyColumnNamesList().asArray(new String[0]))));
         subscription.addEventListener(TableSubscription.EVENT_UPDATED, this::handleKeys);
 
         LazyPromise<JsPartitionedTable> promise = new LazyPromise<>();
         subscription.addEventListenerOneShot(TableSubscription.EVENT_UPDATED, data -> promise.succeed(this));
-        keys.addEventListener(JsTable.EVENT_DISCONNECT, e -> promise.fail("Underlying table disconnected"));
+        baseTable.addEventListener(JsTable.EVENT_DISCONNECT, e -> promise.fail("Underlying table disconnected"));
         return promise.asPromise();
     }
 
-    private void handleKeys(Event update) {
-        // noinspection unchecked
-        CustomEvent<SubscriptionTableData.UpdateEventData> event =
-                (CustomEvent<SubscriptionTableData.UpdateEventData>) update;
+    private void handleKeys(Event<SubscriptionTableData> update) {
 
         // We're only interested in added rows, send an event indicating the new keys that are available
-        SubscriptionTableData.UpdateEventData eventData = event.detail;
+        SubscriptionTableData eventData = update.getDetail();
         RangeSet added = eventData.getAdded().getRange();
         added.indexIterator().forEachRemaining((long index) -> {
             // extract the key to use
-            JsArray<Object> key = eventData.getColumns().map((c, p1, p2) -> eventData.getData(index, c));
+            JsArray<Object> key = eventData.getColumns().map((c, p1) -> eventData.getData(index, c));
             knownKeys.add(key.asList());
-            CustomEventInit<JsArray<Object>> init = CustomEventInit.create();
-            init.setDetail(key);
-            fireEvent(EVENT_KEYADDED, init);
+            fireEvent(EVENT_KEYADDED, key);
         });
     }
 
     /**
-     * Fetch the table with the given key.
+     * Fetch the table with the given key. If the key does not exist, returns `null`.
      *
      * @param key The key to fetch. An array of values for each key column, in the same order as the key columns are.
-     * @return Promise of dh.Table
+     * @return Promise of dh.Table, or `null` if the key does not exist.
      */
-    public Promise<JsTable> getTable(Object key) {
+    public Promise<@JsNullable JsTable> getTable(Object key) {
         // Wrap non-arrays in an array so we are consistent with how we track keys
         if (!JsArray.isArray(key)) {
             key = JsArray.of(key);
@@ -188,6 +188,7 @@ public class JsPartitionedTable extends HasLifecycle implements ServerObject {
                         getTableRequest.setPartitionedTable(widget.getTicket());
                         getTableRequest.setKeyTableTicket(table.getHandle().makeTicket());
                         getTableRequest.setResultId(cts.getHandle().makeTicket());
+                        getTableRequest.setUniqueBehavior(GetTableRequest.UniqueBehavior.getPERMIT_MULTIPLE_KEYS());
                         connection.partitionedTableServiceClient().getTable(getTableRequest, connection.metadata(),
                                 (error, success) -> {
                                     table.close();
@@ -268,17 +269,45 @@ public class JsPartitionedTable extends HasLifecycle implements ServerObject {
      *
      * @return Promise of a Table
      */
-    @JsMethod
+    @Deprecated
     public Promise<JsTable> getKeyTable() {
-        return connection.newState((c, state, metadata) -> {
-            DropColumnsRequest drop = new DropColumnsRequest();
-            drop.setColumnNamesList(new String[] {descriptor.getConstituentColumnName()});
-            drop.setSourceId(keys.state().getHandle().makeTableReference());
-            drop.setResultId(state.getHandle().makeTicket());
-            connection.tableServiceClient().dropColumns(drop, metadata, c::apply);
-        }, "drop constituent column")
-                .refetch(this, connection.metadata())
-                .then(state -> Promise.resolve(new JsTable(connection, state)));
+        if (keys == null) {
+            keys = connection.newState((c, state, metadata) -> {
+                SelectOrUpdateRequest view = new SelectOrUpdateRequest();
+                view.setSourceId(baseTable.state().getHandle().makeTableReference());
+                view.setResultId(state.getHandle().makeTicket());
+                view.setColumnSpecsList(descriptor.getKeyColumnNamesList());
+                connection.tableServiceClient().view(view, metadata, c::apply);
+            }, "view only key columns")
+                    .refetch(this, connection.metadata())
+                    .then(state -> Promise.resolve(new JsTable(state.getConnection(), state)));
+        }
+        return keys.then(JsTable::copy);
+    }
+
+    /**
+     * Fetch the underlying base table of the partitioned table.
+     *
+     * @return Promise of a Table
+     */
+    public Promise<JsTable> getBaseTable() {
+        return baseTable.copy();
+    }
+
+    /** Close any subscriptions to underlying tables or key tables */
+    private void closeSubscriptions() {
+        if (baseTable != null) {
+            baseTable.close();
+        }
+        if (keys != null) {
+            keys.then(table -> {
+                table.close();
+                return Promise.resolve(table);
+            });
+        }
+        if (subscription != null) {
+            subscription.close();
+        }
     }
 
     /**
@@ -286,12 +315,7 @@ public class JsPartitionedTable extends HasLifecycle implements ServerObject {
      * will not affect tables in use.
      */
     public void close() {
-        if (keys != null) {
-            keys.close();
-        }
-        if (subscription != null) {
-            subscription.close();
-        }
+        closeSubscriptions();
 
         widget.close();
     }

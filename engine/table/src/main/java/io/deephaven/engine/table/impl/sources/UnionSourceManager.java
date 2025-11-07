@@ -1,27 +1,37 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.sources;
 
+import gnu.trove.list.array.TIntArrayList;
+import gnu.trove.list.array.TLongArrayList;
 import io.deephaven.base.verify.Assert;
+import io.deephaven.base.verify.Require;
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.liveness.LivenessReferent;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.table.impl.partitioned.TableTransformationColumn;
+import io.deephaven.engine.table.impl.select.WhereFilter;
+import io.deephaven.engine.table.impl.util.JobScheduler;
 import io.deephaven.engine.table.iterators.ChunkedObjectColumnIterator;
 import io.deephaven.engine.table.iterators.ObjectColumnIterator;
 import io.deephaven.engine.updategraph.UpdateCommitter;
 import io.deephaven.engine.table.impl.*;
 import io.deephaven.util.MultiException;
 import io.deephaven.util.SafeCloseable;
+import io.deephaven.util.SafeCloseableArray;
 import io.deephaven.util.datastructures.linked.IntrusiveDoublyLinkedNode;
 import io.deephaven.util.datastructures.linked.IntrusiveDoublyLinkedQueue;
+import io.deephaven.util.mutable.MutableLong;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
+import java.util.function.Consumer;
+import java.util.function.LongConsumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -30,7 +40,7 @@ import static io.deephaven.engine.rowset.RowSequence.NULL_ROW_KEY;
 import static io.deephaven.engine.table.impl.sources.UnionRedirection.checkOverflow;
 import static io.deephaven.engine.table.impl.sources.UnionRedirection.keySpaceFor;
 
-public class UnionSourceManager {
+public class UnionSourceManager implements PushdownPredicateManager {
 
     /**
      * Re-usable empty table update to simplify update processing for listeners with no recorded update.
@@ -59,7 +69,7 @@ public class UnionSourceManager {
      * {@link MergedUnionListener#canExecute(long)}, which is mutually-synchronized with all modification operations.
      */
     private final IntrusiveDoublyLinkedQueue<LinkedListenerRecorder> listenerRecorders;
-    private final MergedListener mergedListener;
+    private final MergedUnionListener mergedListener;
     private final ConstituentChangesListenerRecorder constituentChangesListener;
     private final UpdateCommitter<UnionSourceManager> updateCommitter;
     private final ExecutionContext executionContext;
@@ -125,6 +135,9 @@ public class UnionSourceManager {
                     listenerRecorders.offer(constituentListener);
                 }
             });
+        }
+        if (mergedListener != null) {
+            mergedListener.logAllAncestors();
         }
         unionRedirection.initializePrev();
     }
@@ -267,6 +280,17 @@ public class UnionSourceManager {
                 return listenerRecorders.stream().allMatch(lr -> lr.satisfied(step));
             }
         }
+
+        public void logAllAncestors() {
+            synchronized (listenerRecorders) {
+                logNewAncestors(listenerRecorders);
+            }
+        }
+
+        @Override
+        public void logNewAncestors(Iterable<? extends ListenerRecorder> recorders) {
+            super.logNewAncestors(recorders);
+        }
     }
 
     private TableUpdate getAndCheckConstituentChanges() {
@@ -312,6 +336,7 @@ public class UnionSourceManager {
         private long nextModifiedKey;
         private Table nextModifiedPreviousValue;
         private ConstituentListenerRecorder nextListener;
+        private List<ConstituentListenerRecorder> addedListeners;
 
         // Slot indexes
         private int nextCurrentSlot;
@@ -323,12 +348,16 @@ public class UnionSourceManager {
          * {@link #resultRows}. The truncating constituent and following will need to insert their entire shifted row
          * set, and must update the next slot in {@link #currFirstRowKeys}.
          */
-        boolean slotAllocationChanged;
+        private boolean slotAllocationChanged;
         /**
          * The first key after which we began inserting shifted constituent row sets instead of trying for piecemeal
          * updates.
          */
-        long firstTruncatedResultKey;
+        private long firstTruncatedResultKey;
+        /**
+         * Removed constituent listeners to bulk-unmanage.
+         */
+        private List<LivenessReferent> toUnmanage;
 
         private ChangeProcessingContext(@NotNull final TableUpdate constituentChanges) {
             modifiedColumnSet.clear();
@@ -347,12 +376,16 @@ public class UnionSourceManager {
             }
             removedValues = prevConstituentIter(constituentChanges.removed());
             // noinspection resource
-            addedKeys = constituentChanges.added().iterator();
-            // noinspection resource
+            final RowSet addedConstituents = constituentChanges.added();
+            addedKeys = addedConstituents.iterator();
             modifiedKeys = constituentChanges.modified().iterator();
             modifiedPreviousValues = prevConstituentIter(constituentChanges.getModifiedPreShift());
             listeners = listenerRecorders.iterator();
             Assert.eq(listeners.next(), "first listener", constituentChangesListener, "constituentChangesListener");
+
+            if (addedConstituents.isNonempty()) {
+                addedListeners = new ArrayList<>(addedConstituents.intSize());
+            }
         }
 
         private void advanceRemoved() {
@@ -388,7 +421,10 @@ public class UnionSourceManager {
                  final SafeCloseable ignored3 = removedValues;
                  final SafeCloseable ignored4 = addedKeys;
                  final SafeCloseable ignored5 = modifiedKeys;
-                 final SafeCloseable ignored6 = modifiedPreviousValues) {
+                 final SafeCloseable ignored6 = modifiedPreviousValues;
+                 final SafeCloseable ignored7 = toUnmanage == null
+                         ? null
+                         : () -> mergedListener.unmanage(toUnmanage.stream())) {
             }
             // @formatter:on
         }
@@ -477,6 +513,11 @@ public class UnionSourceManager {
                 resultRows.insert(addedToInsert);
             }
 
+            if (addedListeners != null) {
+                mergedListener.logNewAncestors(addedListeners);
+                addedListeners.clear();
+            }
+
             return new TableUpdateImpl(
                     downstreamAdded,
                     downstreamRemoved,
@@ -504,7 +545,10 @@ public class UnionSourceManager {
                     listeners.remove();
                 }
                 removedConstituent.removeUpdateListener(nextListener);
-                mergedListener.unmanage(nextListener);
+                if (toUnmanage == null) {
+                    toUnmanage = new ArrayList<>();
+                }
+                toUnmanage.add(nextListener);
                 advanceListener();
             }
             final long firstRemovedKey = prevFirstRowKeys[nextPreviousSlot];
@@ -520,6 +564,7 @@ public class UnionSourceManager {
             if (addedConstituent.isRefreshing()) {
                 final ConstituentListenerRecorder addedListener = new ConstituentListenerRecorder(addedConstituent);
                 addedConstituent.addUpdateListener(addedListener);
+                addedListeners.add(addedListener);
                 synchronized (listenerRecorders) {
                     listenerRecorders.insertBefore(addedListener, nextListener);
                 }
@@ -548,10 +593,11 @@ public class UnionSourceManager {
 
                 // Make sure we propagate any actual error on to the listeners, and advance the listener so we can
                 // continue to process the rest of the tables
-                if (nextListener.error != null) {
+                final Throwable listenerError = nextListener.error;
+                if (listenerError != null) {
                     final String referentDescription = nextListener.getParent().getDescription();
                     advanceListener();
-                    throw new ConstituentTableException(referentDescription, nextListener.error);
+                    throw new ConstituentTableException(referentDescription, listenerError);
                 }
 
                 changes = nextListener.getUpdate();
@@ -723,5 +769,220 @@ public class UnionSourceManager {
         private ColumnSource<T> sourceFromTable(@NotNull final Table table) {
             return table.getColumnSource(columnName);
         }
+    }
+
+    @Override
+    public void estimatePushdownFilterCost(
+            final WhereFilter filter,
+            final RowSet selection,
+            final boolean usePrev,
+            final io.deephaven.engine.table.impl.PushdownFilterContext context,
+            final JobScheduler jobScheduler,
+            final LongConsumer onComplete,
+            final Consumer<Exception> onError) {
+
+        // Determine the minimum cost across all tables that contain rows from `selection`
+
+        final UnionSourcePushdownFilterContext ctx = (UnionSourcePushdownFilterContext) context;
+        ctx.initialize(selection, usePrev);
+        final MutableLong minCost = new MutableLong(Long.MAX_VALUE);
+
+        jobScheduler.iterateParallel(
+                ExecutionContext.getContext(),
+                logOutput -> logOutput.append("UnionSourceManager#estimatePushdownFilterCost"),
+                JobScheduler.DEFAULT_CONTEXT_FACTORY,
+                0,
+                ctx.matchers.size(),
+                (localContext, idx, nec, resume) -> {
+                    final PushdownFilterMatcher matcher = ctx.matchers.get(idx);
+                    final long firstRowKey = ctx.firstRowKeys.get(idx);
+                    final long lastRowKey = ctx.lastRowKeys.get(idx);
+                    try (final WritableRowSet localSelection = selection.subSetByKeyRange(firstRowKey, lastRowKey)) {
+                        if (localSelection.isEmpty()) {
+                            // No rows remain for this constituent, so we can skip it.
+                            resume.run();
+                            return;
+                        }
+                        // Shift to local space and delegate to the constituent matcher.
+                        localSelection.shiftInPlace(-firstRowKey);
+                        final RowSet localSelectionCopy = localSelection.copy();
+                        matcher.estimatePushdownFilterCost(
+                                filter, localSelectionCopy, usePrev, ctx.contexts.get(idx), jobScheduler,
+                                cost -> {
+                                    synchronized (minCost) {
+                                        minCost.set(Math.min(minCost.get(), cost));
+                                    }
+                                    localSelectionCopy.close();
+                                    resume.run();
+                                }, nec);
+                    }
+                },
+                () -> onComplete.accept(minCost.get()),
+                () -> {
+                }, // no cleanup needed
+                onError);
+    }
+
+    @Override
+    public void pushdownFilter(
+            final WhereFilter filter,
+            final RowSet selection,
+            final boolean usePrev,
+            final io.deephaven.engine.table.impl.PushdownFilterContext context,
+            final long costCeiling,
+            final JobScheduler jobScheduler,
+            final Consumer<PushdownResult> onComplete,
+            final Consumer<Exception> onError) {
+
+        final UnionSourcePushdownFilterContext ctx = (UnionSourcePushdownFilterContext) context;
+        ctx.initialize(selection, usePrev);
+
+        final WritableRowSet[] matches = new WritableRowSet[ctx.matchers.size()];
+        final WritableRowSet[] maybeMatches = new WritableRowSet[ctx.matchers.size()];
+
+        jobScheduler.iterateParallel(
+                ExecutionContext.getContext(),
+                logOutput -> logOutput.append("UnionSourceManager#pushdownFilter"),
+                JobScheduler.DEFAULT_CONTEXT_FACTORY,
+                0,
+                ctx.matchers.size(),
+                (localContext, idx, nec, resume) -> {
+                    final PushdownFilterMatcher matcher = ctx.matchers.get(idx);
+                    final long firstRowKey = ctx.firstRowKeys.get(idx);
+                    final long lastRowKey = ctx.lastRowKeys.get(idx);
+                    try (final WritableRowSet localSelection = selection.subSetByKeyRange(firstRowKey, lastRowKey)) {
+                        if (localSelection.isEmpty()) {
+                            matches[idx] = RowSetFactory.empty();
+                            maybeMatches[idx] = RowSetFactory.empty();
+                            resume.run();
+                            return;
+                        }
+                        localSelection.shiftInPlace(-firstRowKey);
+                        final RowSet localSelectionCopy = localSelection.copy();
+                        matcher.pushdownFilter(
+                                filter, localSelectionCopy, usePrev, ctx.contexts.get(idx), costCeiling, jobScheduler,
+                                result -> {
+                                    result.match().shiftInPlace(firstRowKey);
+                                    result.maybeMatch().shiftInPlace(firstRowKey);
+
+                                    matches[idx] = result.match();
+                                    maybeMatches[idx] = result.maybeMatch();
+
+                                    localSelectionCopy.close();
+                                    resume.run();
+                                }, nec);
+                    }
+                },
+                () -> {
+                    // Note: it's not obvious what the best approach for building these RowSets is; that is, sequential
+                    // insertion vs sequential builder. We know that the individual results are ordered and
+                    // non-overlapping.
+                    // If this becomes important, we can do more benchmarking.
+                    try (final WritableRowSet match = RowSetFactory.unionInsert(Arrays.asList(matches));
+                            final WritableRowSet maybeMatch = RowSetFactory.unionInsert(Arrays.asList(maybeMatches))) {
+                        // Insert the rows from the constituents that don't support pushdown.
+                        maybeMatch.insert(ctx.maybeMatch);
+                        onComplete.accept(PushdownResult.of(selection, match, maybeMatch));
+                    }
+                },
+                () -> {
+                    SafeCloseableArray.close(matches);
+                    SafeCloseableArray.close(maybeMatches);
+                },
+                onError);
+    }
+
+    public static class UnionSourcePushdownFilterContext extends BasePushdownFilterContext {
+        final UnionSourceManager manager;
+        final WritableRowSet maybeMatch;
+
+        boolean initialized = false;
+        List<PushdownFilterMatcher> matchers;
+        TLongArrayList firstRowKeys;
+        TLongArrayList lastRowKeys;
+        List<io.deephaven.engine.table.impl.PushdownFilterContext> contexts;
+
+        public UnionSourcePushdownFilterContext(
+                @NotNull final WhereFilter filter,
+                @NotNull final List<ColumnSource<?>> columnSources,
+                @NotNull final UnionSourceManager manager) {
+            super(filter, columnSources);
+            this.manager = Require.neqNull(manager, "manager");
+            maybeMatch = RowSetFactory.empty();
+        }
+
+        /**
+         * Initialize the context with the selection and whether to use previous values. This must be called before
+         * using the context.
+         *
+         * @param selection The selection of row keys to filter
+         * @param usePrev Whether to use previous values for filtering
+         */
+        public void initialize(final RowSet selection, final boolean usePrev) {
+            if (initialized) {
+                return;
+            }
+            initialized = true;
+
+            // We must identify which constituents contain rows from `selection`. Also, whether to use previous values
+            // is very important for UnionSourceManager because will likely contain refreshing constituent tables.
+
+            final RowSet rowSetToUse = usePrev ? manager.constituentRows.prev() : manager.constituentRows;
+            final TIntArrayList tableSlots = new TIntArrayList(rowSetToUse.intSize());
+            rowSetToUse.forAllRowKeys(slot -> tableSlots.add((int) slot)); // Can't overflow, slots are dense
+
+            matchers = new ArrayList<>(tableSlots.size());
+            contexts = new ArrayList<>(tableSlots.size());
+            firstRowKeys = new TLongArrayList(tableSlots.size());
+            lastRowKeys = new TLongArrayList(tableSlots.size());
+
+            tableSlots.forEach(slot -> {
+                final long firstKey = usePrev
+                        ? manager.unionRedirection.prevFirstRowKeyForSlot(slot)
+                        : manager.unionRedirection.currFirstRowKeyForSlot(slot);
+                final long lastKey = usePrev
+                        ? manager.unionRedirection.prevLastRowKeyForSlot(slot)
+                        : manager.unionRedirection.currLastRowKeyForSlot(slot);
+
+                // If there is no overlap, we can ignore this table completely.
+                if (selection.overlapsRange(firstKey, lastKey)) {
+                    final Table constituent = usePrev
+                            ? manager.constituentTables.getPrev(slot)
+                            : manager.constituentTables.get(slot);
+
+                    final List<ColumnSource<?>> filterSources = filter.getColumns().stream()
+                            .map(constituent::getColumnSource).collect(Collectors.toList());
+
+                    final PushdownFilterMatcher matcher =
+                            PushdownFilterMatcher.getPushdownFilterMatcher(filter, filterSources);
+
+                    if (matcher != null) {
+                        matchers.add(matcher);
+                        contexts.add(matcher.makePushdownFilterContext(filter, filterSources));
+                        firstRowKeys.add(firstKey);
+                        lastRowKeys.add(lastKey);
+                    } else {
+                        // Skip this table, but save the rows from this constituent as "maybe"
+                        try (final RowSet localSelection = selection.subSetByKeyRange(firstKey, lastKey)) {
+                            maybeMatch.insert(localSelection);
+                        }
+                    }
+                }
+                return true;
+            });
+        }
+
+        @Override
+        public void close() {
+            contexts.forEach(io.deephaven.engine.table.impl.PushdownFilterContext::close);
+            super.close();
+        }
+    }
+
+    @Override
+    public UnionSourcePushdownFilterContext makePushdownFilterContext(
+            final WhereFilter filter,
+            final List<ColumnSource<?>> filterSources) {
+        return new UnionSourcePushdownFilterContext(filter, filterSources, this);
     }
 }

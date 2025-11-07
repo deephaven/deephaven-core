@@ -1,18 +1,23 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.web.client.api;
 
 import com.vertispan.tsdefs.annotations.TsIgnore;
 import elemental2.core.JsArray;
 import elemental2.core.JsSet;
-import elemental2.dom.CustomEventInit;
-import elemental2.dom.DomGlobal;
 import elemental2.promise.Promise;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.TerminationNotificationResponse;
+import io.deephaven.javascript.proto.dhinternal.grpcweb.client.RpcOptions;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.console_pb.GetConsoleTypesRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.console_pb.GetConsoleTypesResponse;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.console_pb.GetHeapInfoRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.console_pb.GetHeapInfoResponse;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.console_pb.StartConsoleRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.session_pb.TerminationNotificationResponse;
+import io.deephaven.web.client.api.event.HasEventHandling;
+import io.deephaven.web.client.api.grpc.GrpcTransportFactory;
 import io.deephaven.web.client.ide.IdeSession;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.*;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.Ticket;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.ticket_pb.Ticket;
 import io.deephaven.web.client.api.barrage.stream.ResponseStreamWrapper;
 import io.deephaven.web.client.fu.CancellablePromise;
 import io.deephaven.web.client.fu.JsLog;
@@ -26,6 +31,7 @@ import jsinterop.base.JsPropertyMap;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.BiFunction;
 
 import static io.deephaven.web.client.ide.IdeConnection.HACK_CONNECTION_FAILURE;
 import static io.deephaven.web.shared.fu.PromiseLike.CANCELLATION_MESSAGE;
@@ -51,9 +57,9 @@ public abstract class QueryConnectable<Self extends QueryConnectable<Self>> exte
         this.connection = JsLazy.of(() -> new WorkerConnection(this));
     }
 
-    public abstract Promise<ConnectToken> getConnectToken();
+    public abstract ConnectToken getToken();
 
-    public abstract Promise<ConnectOptions> getConnectOptions();
+    public abstract ConnectOptions getOptions();
 
     @Deprecated
     public void notifyConnectionError(ResponseStreamWrapper.Status status) {
@@ -62,12 +68,10 @@ public abstract class QueryConnectable<Self extends QueryConnectable<Self>> exte
         }
         notifiedConnectionError = true;
 
-        CustomEventInit<JsPropertyMap<Object>> event = CustomEventInit.create();
-        event.setDetail(JsPropertyMap.of(
+        fireEvent(HACK_CONNECTION_FAILURE, JsPropertyMap.of(
                 "status", status.getCode(),
                 "details", status.getDetails(),
                 "metadata", status.getMetadata()));
-        fireEvent(HACK_CONNECTION_FAILURE, event);
         JsLog.warn(
                 "The event dh.IdeConnection.HACK_CONNECTION_FAILURE is deprecated and will be removed in a later release");
     }
@@ -142,9 +146,8 @@ public abstract class QueryConnectable<Self extends QueryConnectable<Self>> exte
     public CancellablePromise<IdeSession> startSession(String type) {
         JsLog.debug("Starting", type, "console session");
         LazyPromise<Ticket> promise = new LazyPromise<>();
-        final ClientConfiguration config = connection.get().getConfig();
-        final Ticket ticket = new Ticket();
-        ticket.setTicket(config.newTicketRaw());
+        final Tickets config = connection.get().getTickets();
+        final Ticket ticket = config.newExportTicket();
 
         final JsRunnable closer = () -> {
             boolean run = !cancelled.has(ticket);
@@ -216,12 +219,7 @@ public abstract class QueryConnectable<Self extends QueryConnectable<Self>> exte
         fireEvent(QueryInfoConstants.EVENT_CONNECT);
 
         if (hasDisconnected) {
-            if (hasListeners(QueryInfoConstants.EVENT_RECONNECT)) {
-                fireEvent(QueryInfoConstants.EVENT_RECONNECT);
-            } else {
-                DomGlobal.console.log(logPrefix()
-                        + "Query reconnected (to prevent this log message, handle the EVENT_RECONNECT event)");
-            }
+            fireCriticalEvent(QueryInfoConstants.EVENT_RECONNECT);
         }
     }
 
@@ -245,13 +243,23 @@ public abstract class QueryConnectable<Self extends QueryConnectable<Self>> exte
 
         hasDisconnected = true;
 
-        if (hasListeners(QueryInfoConstants.EVENT_DISCONNECT)) {
-            this.fireEvent(QueryInfoConstants.EVENT_DISCONNECT);
-        } else {
-            DomGlobal.console.log(logPrefix()
-                    + "Query disconnected (to prevent this log message, handle the EVENT_DISCONNECT event)");
-        }
+        fireCriticalEvent(QueryInfoConstants.EVENT_DISCONNECT);
     }
 
     public abstract void notifyServerShutdown(TerminationNotificationResponse success);
+
+    public boolean supportsClientStreaming() {
+        return getOptions().transportFactory.getSupportsClientStreaming();
+    }
+
+    public <T> T createClient(BiFunction<String, Object, T> constructor) {
+        return constructor.apply(getServerUrl(), makeRpcOptions());
+    }
+
+    public RpcOptions makeRpcOptions() {
+        RpcOptions options = RpcOptions.create();
+        options.setDebug(getOptions().debug);
+        options.setTransport(GrpcTransportFactory.adapt(getOptions().transportFactory));
+        return options;
+    }
 }

@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.server.jetty;
 
 import io.deephaven.annotations.BuildableStyle;
@@ -11,7 +11,13 @@ import org.immutables.value.Value.Immutable;
 import org.immutables.value.Value.Style;
 
 import javax.annotation.Nullable;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.OptionalInt;
 import java.util.OptionalLong;
+import java.util.Set;
 
 /**
  * The jetty server configuration.
@@ -29,6 +35,11 @@ public abstract class JettyConfig implements ServerConfig {
     public static final String HTTP_STREAM_TIMEOUT = "http2.stream.idleTimeoutMs";
     public static final String HTTP_COMPRESSION = "http.compression";
     public static final String SNI_HOST_CHECK = "https.sniHostCheck";
+    public static final String MAX_CONCURRENT_STREAMS = "http2.maxConcurrentStreams";
+    public static final String MAX_HEADER_REQUEST_SIZE = "http.maxHeaderRequestSize";
+    public static final String ALLOWED_HTTP_METHODS = "http.allowedMethods";
+    public static final Set<String> DEFAULT_ALLOWED_METHODS = Set.of("GET", "POST", "OPTIONS");
+    public static final String EXTRA_HEADERS = "http.add.header.";
 
     /**
      * Values to indicate what kind of websocket support should be offered.
@@ -93,6 +104,12 @@ public abstract class JettyConfig implements ServerConfig {
         String httpCompression = config.getStringWithDefault(HTTP_COMPRESSION, null);
         String sniHostCheck = config.getStringWithDefault(SNI_HOST_CHECK, null);
         String h2StreamIdleTimeout = config.getStringWithDefault(HTTP_STREAM_TIMEOUT, null);
+        String h2MaxConcurrentStreams = config.getStringWithDefault(MAX_CONCURRENT_STREAMS, null);
+        String maxHeaderRequestSize = config.getStringWithDefault(MAX_HEADER_REQUEST_SIZE, null);
+        Set<String> allowedHttpMethods = config.getStringSetFromPropertyWithDefault(ALLOWED_HTTP_METHODS,
+                DEFAULT_ALLOWED_METHODS);
+        Map<String, String> extraHeaders = readExtraHeaders(config);
+
         if (httpWebsockets != null) {
             switch (httpWebsockets.toLowerCase()) {
                 case "true":// backwards compatible
@@ -122,7 +139,35 @@ public abstract class JettyConfig implements ServerConfig {
         if (sniHostCheck != null) {
             builder.sniHostCheck(Boolean.parseBoolean(sniHostCheck));
         }
+        if (h2MaxConcurrentStreams != null) {
+            builder.maxConcurrentStreams(Integer.parseInt(h2MaxConcurrentStreams));
+        }
+        if (maxHeaderRequestSize != null) {
+            builder.maxHeaderRequestSize(Integer.parseInt(maxHeaderRequestSize));
+        }
+        builder.allowedHttpMethods(allowedHttpMethods);
+        builder.extraHeaders(extraHeaders);
         return builder;
+    }
+
+    private static Map<String, String> readExtraHeaders(Configuration config) {
+        Map<String, String> extraHeaders = new HashMap<>();
+        final List<String> headerKeys = new ArrayList<>();
+
+        config.getProperties(EXTRA_HEADERS).forEach((suffixArg, valueArg) -> {
+            final String suffix = (String) suffixArg;
+            if (suffix != null && suffix.endsWith(".enabled") && valueArg != null
+                    && Boolean.parseBoolean(valueArg.toString())) {
+                headerKeys.add(suffix.substring(0, suffix.length() - ".enabled".length()));
+            }
+        });
+        for (String headerKey : headerKeys) {
+            final String headerValue = config.getStringWithDefault(EXTRA_HEADERS + headerKey + ".value", null);
+            if (headerValue != null) {
+                extraHeaders.put(headerKey, headerValue);
+            }
+        }
+        return extraHeaders;
     }
 
     /**
@@ -212,6 +257,27 @@ public abstract class JettyConfig implements ServerConfig {
         return httpCompression == null || httpCompression;
     }
 
+    /**
+     * Value is in bytes. If unset, uses Jetty's default (presently 8192).
+     */
+    public abstract OptionalInt maxHeaderRequestSize();
+
+    /**
+     * If unset, uses Jetty's default (presently 128). Only applies to http2 connections.
+     */
+    public abstract OptionalInt maxConcurrentStreams();
+
+    /**
+     * If unset, defaults to permitting "GET", "POST", and "OPTIONS" methods, ensuring that gRPC calls and requests to
+     * load the web client are permitted.
+     */
+    public abstract Set<String> allowedHttpMethods();
+
+    /**
+     * Extra headers to return in every response from this server.
+     */
+    public abstract Map<String, String> extraHeaders();
+
     public interface Builder extends ServerConfig.Builder<JettyConfig, Builder> {
 
         Builder websockets(WebsocketsSupport websockets);
@@ -223,5 +289,13 @@ public abstract class JettyConfig implements ServerConfig {
         Builder http2StreamIdleTimeout(long timeoutInMillis);
 
         Builder sniHostCheck(boolean sniHostCheck);
+
+        Builder maxHeaderRequestSize(int maxHeaderRequestSize);
+
+        Builder maxConcurrentStreams(int maxConcurrentStreams);
+
+        Builder allowedHttpMethods(Iterable<String> allowedHttpMethods);
+
+        Builder extraHeaders(Map<String, ? extends String> extraHeaders);
     }
 }

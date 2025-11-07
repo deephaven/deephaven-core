@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.time.calendar;
 
 import io.deephaven.time.DateTimeUtils;
@@ -81,7 +81,7 @@ public class TimeRange<T extends Comparable<T> & Temporal> {
      * @return length of the range in nanoseconds
      */
     public long nanos() {
-        return start.until(end, ChronoUnit.NANOS) - (inclusiveEnd ? 0 : 1);
+        return start.until(end, ChronoUnit.NANOS) + (inclusiveEnd ? 1 : 0);
     }
 
     /**

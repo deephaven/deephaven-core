@@ -1,15 +1,18 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.web.client.api;
 
 import com.vertispan.tsdefs.annotations.TsName;
+import com.vertispan.tsdefs.annotations.TsTypeRef;
 import io.deephaven.web.client.api.filter.FilterValue;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsNullable;
+import jsinterop.annotations.JsOptional;
 import jsinterop.annotations.JsProperty;
 import jsinterop.base.Any;
 
+import java.util.Objects;
 import java.util.stream.IntStream;
 import java.util.stream.IntStream.Builder;
 
@@ -21,7 +24,6 @@ import java.util.stream.IntStream.Builder;
 public class Column {
     private final int index;
 
-    private final Integer formatColumnIndex;
     private final Integer styleColumnIndex;
     private final Integer formatStringColumnIndex;
 
@@ -45,17 +47,20 @@ public class Column {
 
     private String description;
     private final boolean isInputTableKeyColumn;
+    private final boolean isInputTableValueColumn;
 
     /**
      * Format entire rows colors using the expression specified. Returns a <b>CustomColumn</b> object to apply to a
      * table using <b>applyCustomColumns</b> with the parameters specified.
      *
      * @param expression
+     * @param options
      * @return {@link CustomColumn}
      */
     @JsMethod(namespace = "dh.Column")
-    public static CustomColumn formatRowColor(String expression) {
-        return new CustomColumn(CustomColumn.ROW_FORMAT_NAME, CustomColumn.TYPE_FORMAT_COLOR, expression);
+    public static CustomColumn formatRowColor(String expression,
+            @JsOptional @JsNullable @TsTypeRef(CustomColumnOptions.class) Object options) {
+        return new CustomColumn(CustomColumn.ROW_FORMAT_NAME, CustomColumn.TYPE_FORMAT_COLOR, expression, options);
     }
 
     /**
@@ -63,19 +68,23 @@ public class Column {
      *
      * @param name
      * @param expression
+     * @param options
      * @return {@link CustomColumn}
      */
     @JsMethod(namespace = "dh.Column")
-    public static CustomColumn createCustomColumn(String name, String expression) {
-        return new CustomColumn(name, CustomColumn.TYPE_NEW, expression);
+    public static CustomColumn createCustomColumn(
+            String name,
+            String expression,
+            @JsOptional @JsNullable @TsTypeRef(CustomColumnOptions.class) Object options) {
+        return new CustomColumn(name, CustomColumn.TYPE_NEW, expression, options);
     }
 
     public Column(int jsIndex, int index, Integer formatColumnIndex, Integer styleColumnIndex, String type, String name,
             boolean isPartitionColumn, Integer formatStringColumnIndex, String description,
-            boolean inputTableKeyColumn, boolean isSortable) {
+            boolean inputTableKeyColumn, boolean inputTableValueColumn, boolean isSortable) {
         this.jsIndex = jsIndex;
         this.index = index;
-        this.formatColumnIndex = formatColumnIndex;
+        assert Objects.equals(formatColumnIndex, styleColumnIndex);
         this.styleColumnIndex = styleColumnIndex;
         this.type = type;
         this.name = name;
@@ -83,6 +92,7 @@ public class Column {
         this.formatStringColumnIndex = formatStringColumnIndex;
         this.description = description;
         this.isInputTableKeyColumn = inputTableKeyColumn;
+        this.isInputTableValueColumn = inputTableValueColumn;
         this.isSortable = isSortable;
     }
 
@@ -170,14 +180,6 @@ public class Column {
         this.constituentType = constituentType;
     }
 
-    /**
-     * @deprecated Prefer {@link #getFormatStringColumnIndex()}.
-     */
-    @Deprecated
-    public Integer getFormatColumnIndex() {
-        return formatColumnIndex;
-    }
-
     public Integer getFormatStringColumnIndex() {
         return formatStringColumnIndex;
     }
@@ -187,11 +189,10 @@ public class Column {
     }
 
     /**
-     * True if this column is a partition column. Partition columns are used for filtering uncoalesced tables (see
-     * <b>isUncoalesced</b> property on <b>Table</b>)
+     * True if this column is a partition column. Partition columns are used for filtering uncoalesced tables - see
+     * {@link JsTable#isUncoalesced()}.
      *
-     * @return boolean
-     *
+     * @return true if the column is a partition column
      */
     @JsProperty
     public boolean getIsPartitionColumn() {
@@ -200,6 +201,10 @@ public class Column {
 
     public boolean isInputTableKeyColumn() {
         return isInputTableKeyColumn;
+    }
+
+    public boolean isInputTableValueColumn() {
+        return isInputTableValueColumn;
     }
 
     /**
@@ -235,8 +240,9 @@ public class Column {
      * @return {@link CustomColumn}
      */
     @JsMethod
-    public CustomColumn formatColor(String expression) {
-        return new CustomColumn(name, CustomColumn.TYPE_FORMAT_COLOR, expression);
+    public CustomColumn formatColor(String expression,
+            @JsOptional @JsNullable @TsTypeRef(CustomColumnOptions.class) Object options) {
+        return new CustomColumn(name, CustomColumn.TYPE_FORMAT_COLOR, expression, options);
     }
 
     /**
@@ -246,8 +252,9 @@ public class Column {
      * @return {@link CustomColumn}
      */
     @JsMethod
-    public CustomColumn formatNumber(String expression) {
-        return new CustomColumn(name, CustomColumn.TYPE_FORMAT_NUMBER, expression);
+    public CustomColumn formatNumber(String expression,
+            @JsOptional @JsNullable @TsTypeRef(CustomColumnOptions.class) Object options) {
+        return new CustomColumn(name, CustomColumn.TYPE_FORMAT_NUMBER, expression, options);
     }
 
     /**
@@ -257,8 +264,9 @@ public class Column {
      * @return {@link CustomColumn}
      */
     @JsMethod
-    public CustomColumn formatDate(String expression) {
-        return new CustomColumn(name, CustomColumn.TYPE_FORMAT_DATE, expression);
+    public CustomColumn formatDate(String expression,
+            @JsOptional @JsNullable @TsTypeRef(CustomColumnOptions.class) Object options) {
+        return new CustomColumn(name, CustomColumn.TYPE_FORMAT_DATE, expression, options);
     }
 
     @JsMethod
@@ -266,7 +274,6 @@ public class Column {
     public String toString() {
         return "Column{" +
                 "index=" + index +
-                ", formatColumnIndex=" + formatColumnIndex +
                 ", styleColumnIndex=" + styleColumnIndex +
                 ", formatStringColumnIndex=" + formatStringColumnIndex +
                 ", type='" + type + '\'' +
@@ -285,9 +292,6 @@ public class Column {
 
         if (index != column.index)
             return false;
-        if (formatColumnIndex != null ? !formatColumnIndex.equals(column.formatColumnIndex)
-                : column.formatColumnIndex != null)
-            return false;
         if (styleColumnIndex != null ? !styleColumnIndex.equals(column.styleColumnIndex)
                 : column.styleColumnIndex != null)
             return false;
@@ -296,13 +300,17 @@ public class Column {
             return false;
         if (!type.equals(column.type))
             return false;
+
+        if (isSortable != column.isSortable || isInputTableKeyColumn != column.isInputTableKeyColumn
+                || isInputTableValueColumn != column.isInputTableValueColumn) {
+            return false;
+        }
         return name.equals(column.name);
     }
 
     @Override
     public int hashCode() {
         int result = index;
-        result = 31 * result + (formatColumnIndex != null ? formatColumnIndex.hashCode() : 0);
         result = 31 * result + (styleColumnIndex != null ? styleColumnIndex.hashCode() : 0);
         result = 31 * result + (formatStringColumnIndex != null ? formatStringColumnIndex.hashCode() : 0);
         result = 31 * result + type.hashCode();
@@ -311,12 +319,12 @@ public class Column {
     }
 
     public Column withFormatStringColumnIndex(int formatStringColumnIndex) {
-        return new Column(jsIndex, index, formatColumnIndex, styleColumnIndex, type, name, isPartitionColumn,
-                formatStringColumnIndex, description, isInputTableKeyColumn, isSortable);
+        return new Column(jsIndex, index, styleColumnIndex, styleColumnIndex, type, name, isPartitionColumn,
+                formatStringColumnIndex, description, isInputTableKeyColumn, isInputTableValueColumn, isSortable);
     }
 
     public Column withStyleColumnIndex(int styleColumnIndex) {
-        return new Column(jsIndex, index, formatColumnIndex, styleColumnIndex, type, name, isPartitionColumn,
-                formatStringColumnIndex, description, isInputTableKeyColumn, isSortable);
+        return new Column(jsIndex, index, styleColumnIndex, styleColumnIndex, type, name, isPartitionColumn,
+                formatStringColumnIndex, description, isInputTableKeyColumn, isInputTableValueColumn, isSortable);
     }
 }

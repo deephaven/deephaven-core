@@ -1,9 +1,10 @@
 package io.deephaven.lang.completion
 
+import io.deephaven.engine.context.QueryScope
+import io.deephaven.engine.context.StandaloneQueryScope
 import io.deephaven.engine.context.TestExecutionContext
 import io.deephaven.engine.table.Table
-import io.deephaven.engine.table.TableDefinition
-import io.deephaven.engine.util.VariableProvider
+import io.deephaven.engine.table.TableFactory
 import io.deephaven.internal.log.LoggerFactory
 import io.deephaven.io.logger.Logger
 import io.deephaven.lang.parse.CompletionParser
@@ -49,24 +50,14 @@ class ChunkerCompletionHandlerTest extends Specification implements ChunkerCompl
         return this
     }
 
-    VariableProvider mockVars(Closure configure) {
-        return Mock(VariableProvider, configure)
-    }
-
     @Unroll
     def "Complex chains of methods on tables can parse #src sanely at any index"(String src) {
         CompletionParser p = new CompletionParser()
 
         when:
         doc = p.parse(src)
-        VariableProvider vars = Mock(VariableProvider){
-            _ * getVariableType('t') >> Table
-            _ * getVariableType(_) >> null
-            _ * getVariable(_, _) >> null
-            _ * getVariableNames() >> []
-            _ * getTableDefinition('emptyTable') >> TableDefinition.of()
-            0 * _
-        }
+        QueryScope vars = new StandaloneQueryScope();
+        vars.putParam('t', TableFactory.emptyTable(0))
 
         then:
         assertAllValid(doc, src)
@@ -96,13 +87,8 @@ t = emptyTable(10).update(
 t = emptyTable(10)
 u = t.'''
         CompletionParser p = new CompletionParser()
-        VariableProvider vars = Mock(VariableProvider){
-            _ * getVariableType('t') >> Table
-            _ * getVariableType(_) >> null
-            _ * getVariable(_,_) >> null
-            _ * getVariableNames() >> []
-            0 * _
-        }
+        QueryScope vars = new StandaloneQueryScope();
+        vars.putParam('t', TableFactory.emptyTable(0))
 
         when:
         doc = p.parse(src)
@@ -137,10 +123,9 @@ u = t.'''
         doc = p.parse(src)
 
         LoggerFactory.getLogger(CompletionHandler)
-        VariableProvider variables = Mock(VariableProvider) {
-            _ * getVariableNames() >> ['emptyTable']
-            0 * _
-        }
+        QueryScope variables = new StandaloneQueryScope();
+        variables.putParam('emptyTable', TableFactory.emptyTable(0))
+
 
         when: "Cursor is at EOF, table name completion from t is returned"
         Set<CompletionItem> result = performSearch(doc, src.length(), variables)
@@ -164,10 +149,8 @@ c = 3
         p.update(uri, 1, [ makeChange(3, 0, src2) ])
         doc = p.finish(uri)
 
-        VariableProvider variables = Mock(VariableProvider) {
-            _ * getVariableNames() >> ['emptyTable']
-            0 * _
-        }
+        QueryScope variables = new StandaloneQueryScope();
+        variables.putParam('emptyTable', TableFactory.emptyTable(0))
 
         when: "Cursor is at EOF, table name completion from t is returned"
         Set<CompletionItem> result = performSearch(doc, (src1 + src2).length(), variables)
@@ -194,20 +177,12 @@ b = 2
         doc = p.parse(src)
 
         LoggerFactory.getLogger(CompletionHandler)
-        VariableProvider variables = Mock(VariableProvider) {
-            _ * getVariableNames() >> ['emptyTable']
-            0 * _
-        }
+        QueryScope variables = new StandaloneQueryScope();
+        variables.putParam('emptyTable', TableFactory.emptyTable(0))
 
         when: "Cursor is in the comment after the variablename+dot and completion is requested"
         Set<CompletionItem> result = performSearch(doc, beforeCursor.length(), variables)
         then: "Expect the completion result to suggest nothing"
         result.size() == 0
-    }
-    @Override
-    VariableProvider getVariables() {
-        return Mock(VariableProvider) {
-            _ * getVariableNames() >> []
-        }
     }
 }

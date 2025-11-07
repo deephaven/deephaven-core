@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table;
 
 import io.deephaven.api.*;
@@ -44,8 +44,7 @@ public interface Table extends
     TableDefinition getDefinition();
 
     /**
-     * Provides column metadata in Table form. Convenience method, behaves exactly the same as
-     * getDefinition().getColumnDefinitionsTable().
+     * Provides column metadata in Table form.
      *
      * @return A Table of metadata about this Table's columns.
      */
@@ -180,10 +179,16 @@ public interface Table extends
      * implementation.
      */
     String AGGREGATION_ROW_LOOKUP_ATTRIBUTE = "AggregationRowLookup";
+
     /**
      * Attribute on sort results used for hierarchical table construction. Specification is left to the implementation.
      */
     String SORT_REVERSE_LOOKUP_ATTRIBUTE = "SortReverseLookup";
+    /**
+     * Attribute on sort results used for hierarchical table construction. Specification is left to the implementation.
+     */
+    String SORT_ROW_REDIRECTION_ATTRIBUTE = "SortRowRedirection";
+
     String SNAPSHOT_VIEWPORT_TYPE = "Snapshot";
     /**
      * This attribute is used internally by TableTools.merge to detect successive merges. Its presence indicates that it
@@ -218,6 +223,12 @@ public interface Table extends
      * Set this attribute to enable collection of barrage performance stats.
      */
     String BARRAGE_PERFORMANCE_KEY_ATTRIBUTE = "BarragePerformanceTableKey";
+    /**
+     * Set an Apache Arrow POJO Schema to this attribute to control the column encoding used for barrage serialization.
+     * <p>
+     * See {@code org.apache.arrow.vector.types.pojo.Schema}.
+     */
+    String BARRAGE_SCHEMA_ATTRIBUTE = "BarrageSchema";
 
     // -----------------------------------------------------------------------------------------------------------------
     // ColumnSources for fetching data by row key
@@ -302,6 +313,9 @@ public interface Table extends
 
     <DATA_TYPE> CloseableIterator<DATA_TYPE> objectColumnIterator(@NotNull String columnName);
 
+    <DATA_TYPE> CloseableIterator<DATA_TYPE> objectColumnIterator(@NotNull String columnName,
+            @NotNull Class<? extends DATA_TYPE> clazz);
+
     // -----------------------------------------------------------------------------------------------------------------
     // Filter Operations
     // -----------------------------------------------------------------------------------------------------------------
@@ -326,10 +340,65 @@ public interface Table extends
     @ConcurrentMethod
     Table dropColumnFormats();
 
+    /**
+     * Produce a new table with the specified columns renamed using the specified {@link Pair pairs}. The renames are
+     * simultaneous and unordered, enabling direct swaps between column names. The resulting table retains the original
+     * column ordering after applying the specified renames.
+     * <p>
+     * NOTE: If a new column name conflicts with an existing column name in the table, the existing column will be
+     * silently replaced.
+     * <p>
+     * {@link IllegalArgumentException} will be thrown:
+     * <ul>
+     * <li>if a source column does not exist</li>
+     * <li>if a source column is used more than once</li>
+     * <li>if a destination column is used more than once</li>
+     * </ul>
+     *
+     * @param pairs The columns to rename
+     * @return The new table, with the columns renamed
+     */
+    @ConcurrentMethod
     Table renameColumns(Collection<Pair> pairs);
 
+    /**
+     * Produce a new table with the specified columns renamed using the syntax {@code "NewColumnName=OldColumnName"}.
+     * The renames are simultaneous and unordered, enabling direct swaps between column names. The resulting table
+     * retains the original column ordering after applying the specified renames.
+     * <p>
+     * NOTE: If a new column name conflicts with an existing column name in the table, the existing column will be
+     * silently replaced.
+     * <p>
+     * {@link IllegalArgumentException} will be thrown:
+     * <ul>
+     * <li>if a source column does not exist</li>
+     * <li>if a source column is used more than once</li>
+     * <li>if a destination column is used more than once</li>
+     * </ul>
+     *
+     * @param pairs The columns to rename
+     * @return The new table, with the columns renamed
+     */
+    @ConcurrentMethod
     Table renameColumns(String... pairs);
 
+    /**
+     * Produce a new table with the specified columns renamed using the provided function. The renames are simultaneous
+     * and unordered, enabling direct swaps between column names. The resulting table retains the original column
+     * ordering after applying the specified renames.
+     * <p>
+     * NOTE: If a new column name conflicts with an existing column name in the table, the existing column will be
+     * silently replaced.
+     * <p>
+     * {@link IllegalArgumentException} will be thrown:
+     * <ul>
+     * <li>if a destination column is used more than once</li>
+     * </ul>
+     *
+     * @param renameFunction The function to apply to each column name
+     * @return The new table, with the columns renamed
+     */
+    @ConcurrentMethod
     Table renameAllColumns(UnaryOperator<String> renameFunction);
 
     @ConcurrentMethod
@@ -343,27 +412,56 @@ public interface Table extends
 
     /**
      * Produce a new table with the specified columns moved to the leftmost position. Columns can be renamed with the
-     * usual syntax, i.e. {@code "NewColumnName=OldColumnName")}.
+     * usual syntax, i.e. {@code "NewColumnName=OldColumnName")}. The renames are simultaneous and unordered, enabling
+     * direct swaps between column names. All other columns are left in their original order.
+     * <p>
+     * {@link IllegalArgumentException} will be thrown:
+     * <ul>
+     * <li>if a source column does not exist</li>
+     * <li>if a source column is used more than once</li>
+     * <li>if a destination column is used more than once</li>
+     * </ul>
      *
      * @param columnsToMove The columns to move to the left (and, optionally, to rename)
-     * @return The new table, with the columns rearranged as explained above {@link #moveColumns(int, String...)}
+     * @return The new table, with the columns rearranged as explained above
      */
     @ConcurrentMethod
     Table moveColumnsUp(String... columnsToMove);
 
     /**
      * Produce a new table with the specified columns moved to the rightmost position. Columns can be renamed with the
-     * usual syntax, i.e. {@code "NewColumnName=OldColumnName")}.
+     * usual syntax, i.e. {@code "NewColumnName=OldColumnName")}. The renames are simultaneous and unordered, enabling
+     * direct swaps between column names. All other columns are left in their original order.
+     * <p>
+     * {@link IllegalArgumentException} will be thrown:
+     * <ul>
+     * <li>if a source column does not exist</li>
+     * <li>if a source column is used more than once</li>
+     * <li>if a destination column is used more than once</li>
+     * </ul>
      *
      * @param columnsToMove The columns to move to the right (and, optionally, to rename)
-     * @return The new table, with the columns rearranged as explained above {@link #moveColumns(int, String...)}
+     * @return The new table, with the columns rearranged as explained above
      */
     @ConcurrentMethod
     Table moveColumnsDown(String... columnsToMove);
 
     /**
      * Produce a new table with the specified columns moved to the specified {@code index}. Column indices begin at 0.
-     * Columns can be renamed with the usual syntax, i.e. {@code "NewColumnName=OldColumnName")}.
+     * Columns can be renamed with the usual syntax, i.e. {@code "NewColumnName=OldColumnName")}. The renames are
+     * simultaneous and unordered, enabling direct swaps between column names. The resulting table retains the original
+     * column ordering except for the specified columns, which are inserted at the specified index, in the order of
+     * {@code columnsToMove}, after the effects of applying any renames.
+     * <p>
+     * {@link IllegalArgumentException} will be thrown:
+     * <ul>
+     * <li>if a source column does not exist</li>
+     * <li>if a source column is used more than once</li>
+     * <li>if a destination column is used more than once</li>
+     * </ul>
+     * <p>
+     * Values of {@code index} outside the range of 0 to the number of columns in the table (exclusive) will be clamped
+     * to the nearest valid index.
      *
      * @param index The index to which the specified columns should be moved
      * @param columnsToMove The columns to move to the specified index (and, optionally, to rename)
@@ -372,41 +470,9 @@ public interface Table extends
     @ConcurrentMethod
     Table moveColumns(int index, String... columnsToMove);
 
-    @ConcurrentMethod
-    Table moveColumns(int index, boolean moveToEnd, String... columnsToMove);
-
     // -----------------------------------------------------------------------------------------------------------------
     // Slice Operations
     // -----------------------------------------------------------------------------------------------------------------
-
-    /**
-     * Extracts a subset of a table by row position.
-     * <p>
-     * If both firstPosition and lastPosition are positive, then the rows are counted from the beginning of the table.
-     * The firstPosition is inclusive, and the lastPosition is exclusive. The {@link #head}(N) call is equivalent to
-     * slice(0, N). The firstPosition must be less than or equal to the lastPosition.
-     * <p>
-     * If firstPosition is positive and lastPosition is negative, then the firstRow is counted from the beginning of the
-     * table, inclusively. The lastPosition is counted from the end of the table. For example, slice(1, -1) includes all
-     * rows but the first and last. If the lastPosition would be before the firstRow, the result is an emptyTable.
-     * <p>
-     * If firstPosition is negative, and lastPosition is zero, then the firstRow is counted from the end of the table,
-     * and the end of the slice is the size of the table. slice(-N, 0) is equivalent to {@link #tail}(N).
-     * <p>
-     * If the firstPosition is negative and the lastPosition is negative, they are both counted from the end of the
-     * table. For example, slice(-2, -1) returns the second to last row of the table.
-     * <p>
-     * If firstPosition is negative and lastPosition is positive, then firstPosition is counted from the end of the
-     * table, inclusively. The lastPosition is counted from the beginning of the table, exclusively. For example,
-     * slice(-3, 5) returns all rows starting from the third-last row to the fifth row of the table. If there are no
-     * rows between these positions, the function will return an empty table.
-     *
-     * @param firstPositionInclusive the first position to include in the result
-     * @param lastPositionExclusive the last position to include in the result
-     * @return a new Table, which is the request subset of rows from the original table
-     */
-    @ConcurrentMethod
-    Table slice(long firstPositionInclusive, long lastPositionExclusive);
 
     /**
      * Extracts a subset of a table by row percentages.
@@ -493,10 +559,83 @@ public interface Table extends
      * If this table is a blink table, i.e. it has {@link #BLINK_TABLE_ATTRIBUTE} set to {@code true}, return a child
      * without the attribute, restoring standard semantics for aggregation operations.
      *
+     * <p>
+     * Removing the {@link #BLINK_TABLE_ATTRIBUTE blink attribute} does not change the underlying update pattern of the
+     * table. On each cycle, all existing rows are removed. When used with an aggregation this has the effect of
+     * providing the aggregated values for only this cycle, because aggregating the result table will no longer apply
+     * special blink semantics.
+     * </p>
+     *
+     * <p>
+     * Some aggregations (in particular {@link #groupBy} and {@link #partitionBy} cannot provide the desired blink table
+     * aggregation semantics because doing so would require storing the entire stream of blink updates in memory. If
+     * that behavior is desired, use {@code blinkToAppendOnly}. If on the other hand, you would like to group or
+     * partition only values from the current update, remove the blink attribute with this method.
+     * </p>
+     *
+     * <p>
+     * To add the blink attribute to a table that generates updates consistent with blink semantics, use
+     * {@link #assertBlink()}.
+     * </p>
+     *
      * @return A non-blink child table, or this table if it is not a blink table
      */
     @ConcurrentMethod
     Table removeBlink();
+
+    /**
+     * Returns {@code this} or a child Table with {@link #BLINK_TABLE_ATTRIBUTE} set to {@code true}.
+     *
+     * <p>
+     * This table must already produce an update pattern that conforms to blink semantics. If it produces an update that
+     * does not conform to blink semantics, then the returned table will notify of an error and cease updating.
+     * </p>
+     *
+     * @return A child table with the blink attribute set, or this table if already a blink table.
+     */
+    @ConcurrentMethod
+    Table assertBlink();
+
+    /**
+     * Returns {@code this} or a child Table with {@link #ADD_ONLY_TABLE_ATTRIBUTE} set to {@code true}.
+     *
+     * <p>
+     * This table must already produce an update pattern that conforms to add-only semantics. If it produces an update
+     * that does not conform to add-only semantics, then the returned table will notify of an error and cease updating.
+     * </p>
+     *
+     * <p>
+     * If the engine can identify a table as add only, then some query operations may be optimized (for example, a
+     * lastBy operation need only track the current last row per-group rather than all of the rows in a group). In
+     * formulas, the {@code k} variable (for the current row key) can be used safely.
+     * </p>
+     *
+     * @return A child table with the add-only attribute set, or this table if the attribute is already set.
+     */
+    @ConcurrentMethod
+    Table assertAddOnly();
+
+    /**
+     * Returns {@code this} or a child Table with {@link #APPEND_ONLY_TABLE_ATTRIBUTE} set to {@code true}.
+     *
+     * <p>
+     * This table must already produce an update pattern that conforms to append-only semantics. If it produces an
+     * update that does not conform to append-only semantics, then the returned table will notify of an error and cease
+     * updating.
+     * </p>
+     *
+     * <p>
+     * If the engine can identify a table as append only, then some query operations may be optimized (for example, a
+     * lastBy operation need only track the current last row per-group rather than all of the rows in a group). In
+     * formulas, the {@code i} (for the current row position), {@code ii} (for the current row position), and {@code k}
+     * (for the current row key) variables can be used safely.
+     * </p>
+     *
+     *
+     * @return A child table with the append-only attribute set, or this table if the attribute is already set.
+     */
+    @ConcurrentMethod
+    Table assertAppendOnly();
 
     // -----------------------------------------------------------------------------------------------------------------
     // PartitionBy Operations
@@ -675,7 +814,7 @@ public interface Table extends
     /**
      * Get a {@link Table} that contains a sub-set of the rows from {@code this}. The result will share the same
      * {@link #getColumnSources() column sources} and {@link #getDefinition() definition} as this table.
-     *
+     * <p>
      * The result will not update on its own. The caller must also establish an appropriate listener to update
      * {@code rowSet} and propagate {@link TableUpdate updates}.
      *

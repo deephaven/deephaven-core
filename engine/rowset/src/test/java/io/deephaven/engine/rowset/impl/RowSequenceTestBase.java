@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.rowset.impl;
 
 import io.deephaven.engine.rowset.*;
@@ -13,7 +13,7 @@ import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.testutil.rowset.RowSetTstUtils;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.SafeCloseableList;
-import org.apache.commons.lang3.mutable.MutableInt;
+import io.deephaven.util.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 import org.junit.After;
 import org.junit.Before;
@@ -347,6 +347,19 @@ public abstract class RowSequenceTestBase {
     }
 
     @Test
+    public void testIteratorPeekEmpty() {
+        final long[] indices = indicesFromRanges(new long[0]);
+        try (final RowSequence OK = create(indices)) {
+            assertEquals(RowSet.NULL_ROW_KEY, OK.firstRowKey());
+
+            try (final RowSequence.Iterator it = OK.getRowSequenceIterator()) {
+                assertFalse(it.hasMore());
+                assertEquals(RowSet.NULL_ROW_KEY, it.peekNextKey());
+            }
+        }
+    }
+
+    @Test
     public void testIteratorAdvanceAndPeekOnlyCertainElements() {
         final long[] indices = indicesFromRanges(ranges1);
         try (final RowSequence OK = create(indices)) {
@@ -519,7 +532,7 @@ public abstract class RowSequenceTestBase {
             final MutableInt idx = new MutableInt(0);
             final RowSet ix = rowSequence.asRowSet();
             assertTrue(msg, ix.forEachRowKey((value) -> {
-                assertEquals(msg + " && value==" + value, expectedIndices.get(idx.intValue()), value);
+                assertEquals(msg + " && value==" + value, expectedIndices.get(idx.get()), value);
                 idx.add(1);
                 return true;
             }));

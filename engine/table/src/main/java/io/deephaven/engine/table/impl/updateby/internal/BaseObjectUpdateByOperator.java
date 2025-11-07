@@ -1,8 +1,10 @@
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit BaseCharUpdateByOperator and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit BaseCharUpdateByOperator and run "./gradlew replicateUpdateBy" to regenerate
+//
+// @formatter:off
 package io.deephaven.engine.table.impl.updateby.internal;
 
 import io.deephaven.engine.table.impl.util.ChunkUtils;
@@ -23,6 +25,7 @@ import io.deephaven.engine.table.impl.util.RowRedirection;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import javax.annotation.OverridingMethodsMustInvokeSuper;
 import java.util.Collections;
 import java.util.Map;
 
@@ -30,11 +33,11 @@ import static io.deephaven.engine.rowset.RowSequence.NULL_ROW_KEY;
 import static io.deephaven.util.QueryConstants.*;
 
 public abstract class BaseObjectUpdateByOperator<T> extends UpdateByOperator {
-    protected final WritableColumnSource<T> outputSource;
-    protected final WritableColumnSource<T> maybeInnerSource;
+    protected WritableColumnSource<T> outputSource;
+    protected WritableColumnSource<T> maybeInnerSource;
 
     // region extra-fields
-    private final Class<T> colType;
+    protected final Class<T> colType;
     // endregion extra-fields
 
     protected abstract class Context extends UpdateByOperator.Context {
@@ -44,15 +47,15 @@ public abstract class BaseObjectUpdateByOperator<T> extends UpdateByOperator {
         public T curVal = null;
 
         protected Context(final int chunkSize) {
-            this.outputFillContext = outputSource.makeFillFromContext(chunkSize);
-            this.outputValues = WritableObjectChunk.makeWritableChunk(chunkSize);
+            outputFillContext = outputSource.makeFillFromContext(chunkSize);
+            outputValues = WritableObjectChunk.makeWritableChunk(chunkSize);
         }
 
         @Override
         public void accumulateCumulative(@NotNull final RowSequence inputKeys,
-                                         @NotNull final Chunk<? extends Values>[] valueChunkArr,
-                                         @Nullable final LongChunk<? extends Values> tsChunk,
-                                         final int len) {
+                @NotNull final Chunk<? extends Values>[] valueChunkArr,
+                @Nullable final LongChunk<? extends Values> tsChunk,
+                final int len) {
 
             setValueChunks(valueChunkArr);
 
@@ -67,13 +70,15 @@ public abstract class BaseObjectUpdateByOperator<T> extends UpdateByOperator {
         }
 
         @Override
-        public void accumulateRolling(@NotNull final RowSequence inputKeys,
-                                      @NotNull final Chunk<? extends Values>[] influencerValueChunkArr,
-                                      @Nullable final LongChunk<OrderedRowKeys> affectedPosChunk,
-                                      @Nullable final LongChunk<OrderedRowKeys> influencerPosChunk,
-                                      @NotNull final IntChunk<? extends Values> pushChunk,
-                                      @NotNull final IntChunk<? extends Values> popChunk,
-                                      final int len) {
+        public void accumulateRolling(
+                @NotNull final RowSequence inputKeys,
+                @NotNull final Chunk<? extends Values>[] influencerValueChunkArr,
+                @Nullable final LongChunk<OrderedRowKeys> affectedPosChunk,
+                @Nullable final LongChunk<OrderedRowKeys> influencerPosChunk,
+                @NotNull final IntChunk<? extends Values> pushChunk,
+                @NotNull final IntChunk<? extends Values> popChunk,
+                final int affectedCount,
+                final int influencerCount) {
 
             setValueChunks(influencerValueChunkArr);
             setPosChunks(affectedPosChunk, influencerPosChunk);
@@ -81,7 +86,7 @@ public abstract class BaseObjectUpdateByOperator<T> extends UpdateByOperator {
             int pushIndex = 0;
 
             // chunk processing
-            for (int ii = 0; ii < len; ii++) {
+            for (int ii = 0; ii < affectedCount; ii++) {
                 final int pushCount = pushChunk.get(ii);
                 final int popCount = popChunk.get(ii);
 
@@ -117,7 +122,7 @@ public abstract class BaseObjectUpdateByOperator<T> extends UpdateByOperator {
             outputValues.set(outIdx, curVal);
         }
 
-        void writeNullToOutputChunk(final int outIdx) {
+        protected void writeNullToOutputChunk(final int outIdx) {
             outputValues.set(outIdx, null);
         }
 
@@ -142,62 +147,66 @@ public abstract class BaseObjectUpdateByOperator<T> extends UpdateByOperator {
     /**
      * Construct a base operator for operations that produce Object outputs.
      *
-     * @param pair             the {@link MatchPair} that defines the input/output for this operation
+     * @param pair the {@link MatchPair} that defines the input/output for this operation
      * @param affectingColumns a list of all columns (including the input column from the pair) that affects the result
-     *                         of this operator.
-     * @param rowRedirection the {@link RowRedirection} for the output column
+     *        of this operator.
      */
-    public BaseObjectUpdateByOperator(@NotNull final MatchPair pair,
-                                    @NotNull final String[] affectingColumns,
-                                    @Nullable final RowRedirection rowRedirection
-                                    // region extra-constructor-args
-                                      , final Class<T> colType
-                                    // endregion extra-constructor-args
+    public BaseObjectUpdateByOperator(
+            @NotNull final MatchPair pair,
+            @NotNull final String[] affectingColumns
+    // region extra-constructor-args
+            , final Class<T> colType
+    // endregion extra-constructor-args
     ) {
-        this(pair, affectingColumns, rowRedirection, null, 0, 0, false, colType);
+        this(pair, affectingColumns, null, 0, 0, false, colType);
     }
 
     /**
      * Construct a base operator for operations that produce Object outputs.
      *
-     * @param pair             the {@link MatchPair} that defines the input/output for this operation
+     * @param pair the {@link MatchPair} that defines the input/output for this operation
      * @param affectingColumns a list of all columns (including the input column from the pair) that affects the result
-     *                         of this operator.
-     * @param rowRedirection the {@link RowRedirection} for the output column
+     *        of this operator.
      * @param timestampColumnName an optional timestamp column. If this is null, it will be assumed time is measured in
      *        integer ticks.
-     * @param reverseWindowScaleUnits the reverse window for the operator. If no {@code timestampColumnName} is provided, this
-     *                       is measured in ticks, otherwise it is measured in nanoseconds.
-     * @param forwardWindowScaleUnits the forward window for the operator. If no {@code timestampColumnName} is provided, this
-     *                       is measured in ticks, otherwise it is measured in nanoseconds.
+     * @param reverseWindowScaleUnits the reverse window for the operator. If no {@code timestampColumnName} is
+     *        provided, this is measured in ticks, otherwise it is measured in nanoseconds.
+     * @param forwardWindowScaleUnits the forward window for the operator. If no {@code timestampColumnName} is
+     *        provided, this is measured in ticks, otherwise it is measured in nanoseconds.
      */
-    public BaseObjectUpdateByOperator(@NotNull final MatchPair pair,
-                                    @NotNull final String[] affectingColumns,
-                                    @Nullable final RowRedirection rowRedirection,
-                                    @Nullable final String timestampColumnName,
-                                    final long reverseWindowScaleUnits,
-                                    final long forwardWindowScaleUnits,
-                                    final boolean isWindowed
-                                    // region extra-constructor-args
-                                      , final Class<T> colType
-                                    // endregion extra-constructor-args
-                                    ) {
-        super(pair, affectingColumns, rowRedirection, timestampColumnName, reverseWindowScaleUnits, forwardWindowScaleUnits, isWindowed);
-        if(rowRedirection != null) {
-            // region create-dense
-            this.maybeInnerSource = new ObjectArraySource<>(colType);
-            // endregion create-dense
-            this.outputSource = WritableRedirectedColumnSource.maybeRedirect(rowRedirection, maybeInnerSource, 0);
-        } else {
-            this.maybeInnerSource = null;
-            // region create-sparse
-            this.outputSource = new ObjectSparseArraySource<>(colType);
-            // endregion create-sparse
-        }
-
+    public BaseObjectUpdateByOperator(
+            @NotNull final MatchPair pair,
+            @NotNull final String[] affectingColumns,
+            @Nullable final String timestampColumnName,
+            final long reverseWindowScaleUnits,
+            final long forwardWindowScaleUnits,
+            final boolean isWindowed
+    // region extra-constructor-args
+            , final Class<T> colType
+    // endregion extra-constructor-args
+    ) {
+        super(pair, affectingColumns, timestampColumnName, reverseWindowScaleUnits, forwardWindowScaleUnits,
+                isWindowed);
         // region constructor
         this.colType = colType;
         // endregion constructor
+    }
+
+    @Override
+    @OverridingMethodsMustInvokeSuper
+    public void initializeSources(@NotNull final Table source, @Nullable final RowRedirection rowRedirection) {
+        this.rowRedirection = rowRedirection;
+        if (rowRedirection != null) {
+            // region create-dense
+            maybeInnerSource = new ObjectArraySource<>(colType);
+            // endregion create-dense
+            outputSource = WritableRedirectedColumnSource.maybeRedirect(rowRedirection, maybeInnerSource, 0);
+        } else {
+            maybeInnerSource = null;
+            // region create-sparse
+            outputSource = new ObjectSparseArraySource<>(colType);
+            // endregion create-sparse
+        }
     }
 
 
@@ -206,9 +215,9 @@ public abstract class BaseObjectUpdateByOperator<T> extends UpdateByOperator {
 
     @Override
     public void initializeCumulative(@NotNull final UpdateByOperator.Context context,
-                                     final long firstUnmodifiedKey,
-                                     final long firstUnmodifiedTimestamp,
-                                     @NotNull final RowSet bucketRowSet) {
+            final long firstUnmodifiedKey,
+            final long firstUnmodifiedTimestamp,
+            @NotNull final RowSet bucketRowSet) {
         Context ctx = (Context) context;
         ctx.reset();
         if (firstUnmodifiedKey != NULL_ROW_KEY) {
@@ -228,7 +237,7 @@ public abstract class BaseObjectUpdateByOperator<T> extends UpdateByOperator {
     // region Shifts
     @Override
     public void applyOutputShift(@NotNull final RowSet subRowSetToShift, final long delta) {
-        ((ObjectSparseArraySource)outputSource).shift(subRowSetToShift, delta);
+        ((ObjectSparseArraySource) outputSource).shift(subRowSetToShift, delta);
     }
     // endregion Shifts
 
@@ -236,7 +245,8 @@ public abstract class BaseObjectUpdateByOperator<T> extends UpdateByOperator {
     public void prepareForParallelPopulation(final RowSet changedRows) {
         if (rowRedirection != null) {
             assert maybeInnerSource != null;
-            ((WritableSourceWithPrepareForParallelPopulation) maybeInnerSource).prepareForParallelPopulation(changedRows);
+            ((WritableSourceWithPrepareForParallelPopulation) maybeInnerSource)
+                    .prepareForParallelPopulation(changedRows);
         } else {
             ((WritableSourceWithPrepareForParallelPopulation) outputSource).prepareForParallelPopulation(changedRows);
         }

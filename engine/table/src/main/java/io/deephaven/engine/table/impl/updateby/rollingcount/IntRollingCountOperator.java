@@ -1,8 +1,10 @@
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharRollingCountOperator and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit CharRollingCountOperator and run "./gradlew replicateUpdateBy" to regenerate
+//
+// @formatter:off
 package io.deephaven.engine.table.impl.updateby.rollingcount;
 
 import io.deephaven.base.ringbuffer.ByteRingBuffer;
@@ -13,7 +15,6 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
 import io.deephaven.engine.table.impl.updateby.internal.BaseLongUpdateByOperator;
-import io.deephaven.engine.table.impl.util.RowRedirection;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -28,6 +29,7 @@ public class IntRollingCountOperator extends BaseLongUpdateByOperator {
         protected IntChunk<? extends Values> influencerValuesChunk;
         protected ByteRingBuffer buffer;
 
+        @SuppressWarnings("unused")
         protected Context(final int affectedChunkSize, final int influencerChunkSize) {
             super(affectedChunkSize);
             buffer = new ByteRingBuffer(BUFFER_INITIAL_CAPACITY, true);
@@ -43,6 +45,7 @@ public class IntRollingCountOperator extends BaseLongUpdateByOperator {
         public void setValueChunks(@NotNull final Chunk<? extends Values>[] valueChunks) {
             influencerValuesChunk = valueChunks[0].asIntChunk();
         }
+
         @Override
         public void push(int pos, int count) {
             buffer.ensureRemaining(count);
@@ -91,17 +94,29 @@ public class IntRollingCountOperator extends BaseLongUpdateByOperator {
         return new Context(affectedChunkSize, influencerChunkSize);
     }
 
-    public IntRollingCountOperator(@NotNull final MatchPair pair,
-                                    @NotNull final String[] affectingColumns,
-                                    @Nullable final RowRedirection rowRedirection,
-                                    @Nullable final String timestampColumnName,
-                                    final long reverseWindowScaleUnits,
-                                    final long forwardWindowScaleUnits
-                                    // region extra-constructor-args
-                                    // endregion extra-constructor-args
+    public IntRollingCountOperator(
+            @NotNull final MatchPair pair,
+            @NotNull final String[] affectingColumns,
+            @Nullable final String timestampColumnName,
+            final long reverseWindowScaleUnits,
+            final long forwardWindowScaleUnits
+    // region extra-constructor-args
+    // endregion extra-constructor-args
     ) {
-        super(pair, affectingColumns, rowRedirection, timestampColumnName, reverseWindowScaleUnits, forwardWindowScaleUnits, true);
+        super(pair, affectingColumns, timestampColumnName, reverseWindowScaleUnits, forwardWindowScaleUnits, true);
         // region constructor
         // endregion constructor
+    }
+
+    @Override
+    public UpdateByOperator copy() {
+        return new IntRollingCountOperator(pair,
+                affectingColumns,
+                timestampColumnName,
+                reverseWindowScaleUnits,
+                forwardWindowScaleUnits
+        // region extra-copy-args
+        // endregion extra-copy-args
+        );
     }
 }

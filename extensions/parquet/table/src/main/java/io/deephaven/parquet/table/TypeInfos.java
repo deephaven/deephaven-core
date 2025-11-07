@@ -1,17 +1,19 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.parquet.table;
 
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.CodecLookup;
+import io.deephaven.engine.table.impl.dataindex.RowSetCodec;
 import io.deephaven.stringset.StringSet;
 import io.deephaven.util.codec.ExternalizableCodec;
 import io.deephaven.util.codec.SerializableCodec;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.parquet.schema.GroupType;
 import org.apache.parquet.schema.LogicalTypeAnnotation;
 import org.apache.parquet.schema.PrimitiveType;
 import org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName;
@@ -56,6 +58,12 @@ public class TypeInfos {
     };
 
     private static final Map<Class<?>, TypeInfo> BY_CLASS;
+
+    /**
+     * A list's element must be named this, see
+     * <a href="https://github.com/apache/parquet-format/blob/master/LogicalTypes.md#lists">lists</a>
+     */
+    private static final String ELEMENT_NAME = "element";
 
     static {
         final Map<Class<?>, TypeInfo> fa = new HashMap<>();
@@ -105,17 +113,25 @@ public class TypeInfos {
 
         // Impute an appropriate codec for the data type
         final Class<?> dataType = columnDefinition.getDataType();
+        // TODO (https://github.com/deephaven/deephaven-core/issues/5262): Eliminate reliance on RowSetCodec
+        if (dataType.equals(RowSet.class)) {
+            return new ImmutablePair<>(RowSetCodec.class.getName(), null);
+        }
         if (Externalizable.class.isAssignableFrom(dataType)) {
             return new ImmutablePair<>(ExternalizableCodec.class.getName(), dataType.getName());
         }
         return new ImmutablePair<>(SerializableCodec.class.getName(), null);
     }
 
+    /**
+     * Get the precision and scale for a given big decimal column. If already cached, fetch it directly, else compute it
+     * by scanning the entire column and store the values in the cache.
+     */
     public static PrecisionAndScale getPrecisionAndScale(
             @NotNull final Map<String, Map<ParquetCacheTags, Object>> computedCache,
             @NotNull final String columnName,
             @NotNull final RowSet rowSet,
-            @NotNull Supplier<ColumnSource<BigDecimal>> columnSourceSupplier) {
+            @NotNull final Supplier<ColumnSource<?>> columnSourceSupplier) {
         return (PrecisionAndScale) computedCache
                 .computeIfAbsent(columnName, unusedColumnName -> new HashMap<>())
                 .computeIfAbsent(ParquetCacheTags.DECIMAL_ARGS,
@@ -143,8 +159,8 @@ public class TypeInfos {
         final String columnName = column.getName();
         // noinspection unchecked
         final PrecisionAndScale precisionAndScale = getPrecisionAndScale(
-                computedCache, columnName, rowSet, () -> (ColumnSource<BigDecimal>) columnSourceMap.get(columnName));
-        final Set<Class<?>> clazzes = Collections.singleton(BigDecimal.class);
+                computedCache, columnName, rowSet, () -> columnSourceMap.get(columnName));
+        final Set<Class<?>> clazzes = Set.of(BigDecimal.class);
         return new TypeInfo() {
             @Override
             public Set<Class<?>> getTypes() {
@@ -152,7 +168,8 @@ public class TypeInfos {
             }
 
             @Override
-            public PrimitiveBuilder<PrimitiveType> getBuilderImpl(boolean required, boolean repeating, Class dataType) {
+            public PrimitiveBuilder<PrimitiveType> getBuilderImpl(boolean required, boolean repeating,
+                    Class<?> dataType) {
                 return type(PrimitiveTypeName.BINARY, required, repeating)
                         .as(LogicalTypeAnnotation.decimalType(precisionAndScale.scale, precisionAndScale.precision));
             }
@@ -165,8 +182,7 @@ public class TypeInfos {
             final RowSet rowSet,
             final Map<String, ? extends ColumnSource<?>> columnSourceMap,
             @NotNull final ParquetInstructions instructions) {
-        final Class<?> dataType = column.getDataType();
-        if (BigDecimal.class.equals(dataType)) {
+        if (column.getDataType() == BigDecimal.class || column.getComponentType() == BigDecimal.class) {
             return bigDecimalTypeInfo(computedCache, column, rowSet, columnSourceMap);
         }
         return lookupTypeInfo(column, instructions);
@@ -183,8 +199,7 @@ public class TypeInfos {
     private enum IntType implements TypeInfo {
         INSTANCE;
 
-        private static final Set<Class<?>> clazzes = Collections
-                .unmodifiableSet(new HashSet<>(Arrays.asList(int.class, Integer.class)));
+        private static final Set<Class<?>> clazzes = Set.of(int.class, Integer.class);
 
         @Override
         public Set<Class<?>> getTypes() {
@@ -200,8 +215,7 @@ public class TypeInfos {
     private enum LongType implements TypeInfo {
         INSTANCE;
 
-        private static final Set<Class<?>> clazzes = Collections
-                .unmodifiableSet(new HashSet<>(Arrays.asList(long.class, Long.class)));
+        private static final Set<Class<?>> clazzes = Set.of(long.class, Long.class);
 
         @Override
         public Set<Class<?>> getTypes() {
@@ -217,8 +231,7 @@ public class TypeInfos {
     private enum ShortType implements TypeInfo {
         INSTANCE;
 
-        private static final Set<Class<?>> clazzes = Collections
-                .unmodifiableSet(new HashSet<>(Arrays.asList(short.class, Short.class)));
+        private static final Set<Class<?>> clazzes = Set.of(short.class, Short.class);
 
         @Override
         public Set<Class<?>> getTypes() {
@@ -234,8 +247,7 @@ public class TypeInfos {
     private enum BooleanType implements TypeInfo {
         INSTANCE;
 
-        private static final Set<Class<?>> clazzes = Collections
-                .unmodifiableSet(new HashSet<>(Arrays.asList(boolean.class, Boolean.class)));
+        private static final Set<Class<?>> clazzes = Set.of(boolean.class, Boolean.class);
 
         @Override
         public Set<Class<?>> getTypes() {
@@ -251,8 +263,7 @@ public class TypeInfos {
     private enum FloatType implements TypeInfo {
         INSTANCE;
 
-        private static final Set<Class<?>> clazzes = Collections
-                .unmodifiableSet(new HashSet<>(Arrays.asList(float.class, Float.class)));
+        private static final Set<Class<?>> clazzes = Set.of(float.class, Float.class);
 
         @Override
         public Set<Class<?>> getTypes() {
@@ -268,8 +279,7 @@ public class TypeInfos {
     private enum DoubleType implements TypeInfo {
         INSTANCE;
 
-        private static final Set<Class<?>> clazzes = Collections
-                .unmodifiableSet(new HashSet<>(Arrays.asList(double.class, Double.class)));
+        private static final Set<Class<?>> clazzes = Set.of(double.class, Double.class);
 
         @Override
         public Set<Class<?>> getTypes() {
@@ -285,8 +295,7 @@ public class TypeInfos {
     private enum CharType implements TypeInfo {
         INSTANCE;
 
-        private static final Set<Class<?>> clazzes = Collections
-                .unmodifiableSet(new HashSet<>(Arrays.asList(char.class, Character.class)));
+        private static final Set<Class<?>> clazzes = Set.of(char.class, Character.class);
 
         @Override
         public Set<Class<?>> getTypes() {
@@ -302,8 +311,7 @@ public class TypeInfos {
     private enum ByteType implements TypeInfo {
         INSTANCE;
 
-        private static final Set<Class<?>> clazzes = Collections
-                .unmodifiableSet(new HashSet<>(Arrays.asList(byte.class, Byte.class)));
+        private static final Set<Class<?>> clazzes = Set.of(byte.class, Byte.class);
 
         @Override
         public Set<Class<?>> getTypes() {
@@ -319,7 +327,7 @@ public class TypeInfos {
     private enum StringType implements TypeInfo {
         INSTANCE;
 
-        private static final Set<Class<?>> clazzes = Collections.singleton(String.class);
+        private static final Set<Class<?>> clazzes = Set.of(String.class);
 
         @Override
         public Set<Class<?>> getTypes() {
@@ -336,7 +344,7 @@ public class TypeInfos {
     private enum InstantType implements TypeInfo {
         INSTANCE;
 
-        private static final Set<Class<?>> clazzes = Collections.singleton(Instant.class);
+        private static final Set<Class<?>> clazzes = Set.of(Instant.class);
 
         @Override
         public Set<Class<?>> getTypes() {
@@ -354,7 +362,7 @@ public class TypeInfos {
     private enum LocalDateTimeType implements TypeInfo {
         INSTANCE;
 
-        private static final Set<Class<?>> clazzes = Collections.singleton(LocalDateTime.class);
+        private static final Set<Class<?>> clazzes = Set.of(LocalDateTime.class);
 
         @Override
         public Set<Class<?>> getTypes() {
@@ -372,7 +380,7 @@ public class TypeInfos {
     private enum LocalDateType implements TypeInfo {
         INSTANCE;
 
-        private static final Set<Class<?>> clazzes = Collections.singleton(LocalDate.class);
+        private static final Set<Class<?>> clazzes = Set.of(LocalDate.class);
 
         @Override
         public Set<Class<?>> getTypes() {
@@ -389,7 +397,7 @@ public class TypeInfos {
     private enum LocalTimeType implements TypeInfo {
         INSTANCE;
 
-        private static final Set<Class<?>> clazzes = Collections.singleton(LocalTime.class);
+        private static final Set<Class<?>> clazzes = Set.of(LocalTime.class);
 
         @Override
         public Set<Class<?>> getTypes() {
@@ -409,11 +417,13 @@ public class TypeInfos {
      * We will encode BigIntegers as Decimal types. Parquet has no special type for BigIntegers, but we can maintain
      * external compatibility by encoding them as fixed length decimals of scale 1. Internally, we'll record that we
      * wrote this as a decimal, so we can properly decode it back to BigInteger.
+     *
+     * @see ParquetSchemaReader
      */
     private enum BigIntegerType implements TypeInfo {
         INSTANCE;
 
-        private static final Set<Class<?>> clazzes = Collections.singleton(BigInteger.class);
+        private static final Set<Class<?>> clazzes = Set.of(BigInteger.class);
 
         @Override
         public Set<Class<?>> getTypes() {
@@ -472,12 +482,19 @@ public class TypeInfos {
                 isRepeating = false;
             }
             if (!isRepeating) {
+                instructions.getFieldId(columnDefinition.getName()).ifPresent(builder::id);
                 return builder.named(parquetColumnName);
             }
-            return Types.buildGroup(Type.Repetition.OPTIONAL).addField(
-                    Types.buildGroup(Type.Repetition.REPEATED).addField(
-                            builder.named("item")).named(parquetColumnName))
-                    .as(LogicalTypeAnnotation.listType()).named(parquetColumnName);
+            // Note: the Parquet type builder would take care of the element name for us if we were constructing it
+            // ahead of time via ListBuilder.optionalElement
+            // (org.apache.parquet.schema.Types.BaseListBuilder.ElementBuilder.named) when we named the outer list; but
+            // since we are constructing types recursively (without regard to the outer type), we are responsible for
+            // setting the element name correctly at this point in time.
+            final Types.ListBuilder<GroupType> listBuilder = Types.optionalList();
+            instructions.getFieldId(columnDefinition.getName()).ifPresent(listBuilder::id);
+            return listBuilder
+                    .element(builder.named(ELEMENT_NAME))
+                    .named(parquetColumnName);
         }
     }
 

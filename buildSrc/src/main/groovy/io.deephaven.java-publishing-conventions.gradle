@@ -3,7 +3,9 @@ import io.deephaven.project.util.PublishingTools
 plugins {
   id 'java'
   id 'signing'
-  id 'maven-publish'
+  // Note: applying `com.vanniktech.maven.publish.base` instead of `com.vanniktech.maven.publish` which gives us more
+  // control over (otherwise `com.vanniktech.maven.publish.JavaLibrary` would be applied by default).
+  id 'com.vanniktech.maven.publish.base'
   id 'io.deephaven.javadoc-conventions'
 }
 
@@ -12,15 +14,28 @@ java {
   withSourcesJar()
 }
 
-tasks.withType(Javadoc) {
+// Any published source jar should contain apt-generated sources
+// See https://github.com/gradle/gradle/issues/33287
+sourceSets.configureEach { sourceSet ->
+  if (tasks.names.contains(sourceSet.getSourcesJarTaskName())) {
+    tasks.named(sourceSet.getSourcesJarTaskName(), Jar) {
+      from sourceSet.output.generatedSourcesDirs
+    }
+  }
+}
+
+tasks.withType(Javadoc).configureEach {
   // https://github.com/gradle/gradle/issues/19869
   options.addStringOption('sourcepath', sourceSets.main.allJava.getSourceDirectories().getAsPath())
 }
 
-PublishingTools.setupPublications(project) {
-  from components.java
-}
+project
+    .extensions
+    .getByType(PublishingExtension)
+    .publications
+    .create('mavenJava', MavenPublication) {
+      // "java" is the component name created by the java plugin (does not provide a constant)
+      from(project.components.named('java').get())
+    }
 
-PublishingTools.setupRepositories(project)
-PublishingTools.setupMavenPublication(project, publishing.publications.mavenJava)
-PublishingTools.setupSigning(project, publishing.publications.mavenJava)
+PublishingTools.setupPublishing(project)

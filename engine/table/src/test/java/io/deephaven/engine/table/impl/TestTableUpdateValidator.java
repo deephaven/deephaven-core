@@ -1,7 +1,6 @@
-/*
- * Copyright (c) 2016-2019 Deephaven Data Labs and Patent Pending
- */
-
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.engine.context.QueryScope;
@@ -12,7 +11,7 @@ import io.deephaven.engine.testutil.*;
 import io.deephaven.engine.testutil.generator.DoubleGenerator;
 import io.deephaven.engine.testutil.generator.FloatGenerator;
 import io.deephaven.engine.util.PrintListener;
-import org.apache.commons.lang3.mutable.MutableInt;
+import io.deephaven.util.mutable.MutableInt;
 import org.junit.Test;
 
 import java.util.Random;
@@ -76,7 +75,7 @@ public class TestTableUpdateValidator extends QueryTableTestBase {
         final QueryTable table1 = TstUtils.testRefreshingTable(i(2, 4, 6).toTracking(), intCol("x", 1, 2, 3));
         QueryScope.addParam("mult", mult);
         try {
-            final Table table2 = table1.updateView("Y=x*mult.intValue()");
+            final Table table2 = table1.updateView("Y=x*mult.get()");
             final QueryTable table3 = TableUpdateValidator.make((QueryTable) table2).getResultTable();
 
             ControlledUpdateGraph updateGraph = table1.updateGraph.cast();
@@ -92,7 +91,7 @@ public class TestTableUpdateValidator extends QueryTableTestBase {
             table3.removeUpdateListener(listener);
 
             // next should fail because we set mult
-            mult.setValue(3);
+            mult.set(3);
 
             updateGraph.runWithinUnitTestCycle(() -> {
                 addToTable(table1, i(6), intCol("x", 5));
@@ -106,6 +105,30 @@ public class TestTableUpdateValidator extends QueryTableTestBase {
             } catch (TableAlreadyFailedException e) {
                 assertEquals("Can not listen to failed table QueryTable", e.getMessage());
             }
+        } finally {
+            QueryScope.addParam("mult", null);
+        }
+    }
+
+    @Test
+    public void testMCS() {
+        final MutableInt mult = new MutableInt(2);
+
+        final QueryTable table1 = TstUtils.testRefreshingTable(i(2, 4, 6).toTracking(), intCol("x", 1, 2, 3));
+        QueryScope.addParam("mult", mult);
+        try {
+            final Table table2 = table1.updateView("Y=x*mult.get()");
+            final QueryTable table3 = TableUpdateValidator.make((QueryTable) table2).getResultTable();
+
+            final Table table4 = table3.updateView("Z=Y*2");
+
+            ControlledUpdateGraph updateGraph = table1.updateGraph.cast();
+            updateGraph.runWithinUnitTestCycle(() -> {
+                addToTable(table1, i(6), intCol("x", 4));
+                table1.notifyListeners(i(), i(), i(6));
+            });
+
+            assertTableEquals(table1.updateView("Y=x*2", "Z=Y*2"), table4);
         } finally {
             QueryScope.addParam("mult", null);
         }

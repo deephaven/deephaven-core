@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.partitioned;
 
 import io.deephaven.api.SortColumn;
@@ -19,12 +19,10 @@ import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.*;
-import io.deephaven.engine.table.impl.BaseTable;
-import io.deephaven.engine.table.impl.MatchPair;
-import io.deephaven.engine.table.impl.MemoizedOperationKey;
-import io.deephaven.engine.table.impl.QueryTable;
+import io.deephaven.engine.table.impl.*;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
 import io.deephaven.engine.table.impl.select.MatchFilter;
+import io.deephaven.engine.table.impl.select.MatchFilter.MatchType;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.sources.NullValueColumnSource;
 import io.deephaven.engine.table.impl.sources.UnionSourceManager;
@@ -34,7 +32,7 @@ import io.deephaven.engine.updategraph.OperationInitializer;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.InternalUseOnly;
-import org.apache.commons.lang3.mutable.MutableInt;
+import io.deephaven.util.mutable.MutableInt;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -235,10 +233,12 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
     @Override
     public PartitionedTableImpl filter(@NotNull final Collection<? extends Filter> filters) {
         final WhereFilter[] whereFilters = WhereFilter.from(filters);
+        final QueryCompilerRequestProcessor.BatchProcessor compilationProcessor = QueryCompilerRequestProcessor.batch();
         final boolean invalidFilter = Arrays.stream(whereFilters).flatMap((final WhereFilter filter) -> {
-            filter.init(table.getDefinition());
+            filter.init(table.getDefinition(), compilationProcessor);
             return Stream.concat(filter.getColumns().stream(), filter.getColumnArrays().stream());
         }).anyMatch((final String columnName) -> columnName.equals(constituentColumnName));
+        compilationProcessor.compile();
         if (invalidFilter) {
             throw new IllegalArgumentException("Unsupported filter against constituent column " + constituentColumnName
                     + " found in filters: " + filters);
@@ -252,7 +252,7 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
                         constituentDefinition,
                         constituentChangesPermitted || table.isRefreshing(),
                         false),
-                table::isRefreshing,
+                table.isRefreshing(),
                 pt -> pt.table().isRefreshing());
     }
 
@@ -275,7 +275,7 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
                         constituentDefinition,
                         constituentChangesPermitted || table.isRefreshing(),
                         false),
-                table::isRefreshing,
+                table.isRefreshing(),
                 pt -> pt.table().isRefreshing());
     }
 
@@ -459,7 +459,7 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
         final List<MatchFilter> filters = new ArrayList<>(numKeys);
         final String[] keyColumnNames = keyColumnNames().toArray(String[]::new);
         for (int kci = 0; kci < numKeys; ++kci) {
-            filters.add(new MatchFilter(keyColumnNames[kci], keyColumnValues[kci]));
+            filters.add(new MatchFilter(MatchType.Regular, keyColumnNames[kci], keyColumnValues[kci]));
         }
         return LivenessScopeStack.computeEnclosed(() -> {
             final Table[] matchingConstituents = filter(filters).snapshotConstituents();
@@ -470,7 +470,7 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
             }
             return matchingCount == 1 ? matchingConstituents[0] : null;
         },
-                table::isRefreshing,
+                table.isRefreshing(),
                 constituent -> constituent != null && constituent.isRefreshing());
     }
 
@@ -479,7 +479,7 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
     public Table[] constituents() {
         return LivenessScopeStack.computeArrayEnclosed(
                 this::snapshotConstituents,
-                table::isRefreshing,
+                table.isRefreshing(),
                 constituent -> constituent != null && constituent.isRefreshing());
     }
 
@@ -600,7 +600,8 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
             final ColumnSource<Table> constituentColumnSource = parent.getColumnSource(constituentColumnName);
             try (final RowSequence prevRows = usePrev ? parent.getRowSet().copyPrev() : null) {
                 final RowSequence rowsToCheck = usePrev ? prevRows : parent.getRowSet();
-                validateConstituents(constituentDefinition, constituentColumnSource, rowsToCheck);
+                validateConstituents(constituentDefinition, constituentColumnSource, rowsToCheck,
+                        parent.isRefreshing());
             }
             final QueryTable child = parent.getSubTable(
                     parent.getRowSet(), parent.getModifiedColumnSetForUpdates(), parent.getAttributes());
@@ -608,8 +609,8 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
             return new Result<>(child, new BaseTable.ListenerImpl(getDescription(), parent, child) {
                 @Override
                 public void onUpdate(@NotNull final TableUpdate upstream) {
-                    validateConstituents(constituentDefinition, constituentColumnSource, upstream.modified());
-                    validateConstituents(constituentDefinition, constituentColumnSource, upstream.added());
+                    validateConstituents(constituentDefinition, constituentColumnSource, upstream.modified(), true);
+                    validateConstituents(constituentDefinition, constituentColumnSource, upstream.added(), true);
                     super.onUpdate(upstream);
                 }
             });
@@ -624,7 +625,8 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
     private static void validateConstituents(
             @NotNull final TableDefinition constituentDefinition,
             @NotNull final ColumnSource<Table> constituentSource,
-            @NotNull final RowSequence rowsToValidate) {
+            @NotNull final RowSequence rowsToValidate,
+            final boolean refreshingParent) {
         try (final ChunkSource.GetContext getContext = constituentSource.makeGetContext(DEFAULT_CHUNK_SIZE);
                 final RowSequence.Iterator rowsIterator = rowsToValidate.getRowSequenceIterator()) {
             final RowSequence sliceRows = rowsIterator.getNextRowSequenceWithLength(DEFAULT_CHUNK_SIZE);
@@ -635,6 +637,10 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
                 final Table constituent = sliceConstituents.get(sci);
                 if (constituent == null) {
                     throw new IllegalStateException("Encountered null constituent");
+                }
+                if (!refreshingParent && constituent.isRefreshing()) {
+                    throw new IllegalStateException(
+                            "Constituents may not be refreshing if the underlying table is static");
                 }
                 constituentDefinition.checkMutualCompatibility(constituent.getDefinition(), "expected", "constituent");
             }
@@ -655,8 +661,8 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
             this.constituentDefinition = constituentDefinition;
             final MutableInt hashAccumulator = new MutableInt(31 + constituentColumnName.hashCode());
             constituentDefinition.getColumnStream().map(ColumnDefinition::getName).sorted().forEach(
-                    cn -> hashAccumulator.setValue(31 * hashAccumulator.intValue() + cn.hashCode()));
-            hashCode = hashAccumulator.intValue();
+                    cn -> hashAccumulator.set(31 * hashAccumulator.get() + cn.hashCode()));
+            hashCode = hashAccumulator.get();
         }
 
         @Override

@@ -1,8 +1,10 @@
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharacterChunkedStats and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit CharacterChunkedStats and run "./gradlew replicateColumnStats" to regenerate
+//
+// @formatter:off
 package io.deephaven.server.table.stats;
 
 import java.util.Set;
@@ -17,9 +19,9 @@ import io.deephaven.engine.table.impl.util.ColumnHolder;
 import io.deephaven.engine.table.iterators.ObjectColumnIterator;
 import io.deephaven.engine.table.iterators.ChunkedObjectColumnIterator;
 import io.deephaven.engine.util.TableTools;
+import io.deephaven.util.type.ArrayTypeUtils;
 
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -81,10 +83,17 @@ public class ObjectChunkedStats implements ChunkedStatsKernel {
         }
         List<Map.Entry<String, Long>> sorted = new ArrayList<>(countValues.size());
 
-        countValues.forEachEntry((o, c) -> {
-            sorted.add(Map.entry(Objects.toString(o), c));
-            return true;
-        });
+        if (columnSource.getType().isArray()) {
+            countValues.forEachEntry((o, c) -> {
+                sorted.add(Map.entry(ArrayTypeUtils.toString(o), c));
+                return true;
+            });
+        } else {
+            countValues.forEachEntry((o, c) -> {
+                sorted.add(Map.entry(Objects.toString(o), c));
+                return true;
+            });
+        }
         sorted.sort(Map.Entry.<String, Long>comparingByValue().reversed());
 
         int resultCount = Math.min(maxUniqueToDisplay, sorted.size());

@@ -1,11 +1,10 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit ResettableWritableCharChunk and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit ResettableWritableCharChunk and run "./gradlew replicateSourcesAndChunks" to regenerate
+//
+// @formatter:off
 package io.deephaven.chunk;
 
 import io.deephaven.chunk.attributes.Any;
@@ -17,18 +16,14 @@ import static io.deephaven.chunk.util.pools.ChunkPoolConstants.POOL_RESETTABLE_C
 /**
  * {@link ResettableWritableChunk} implementation for byte data.
  */
-public final class ResettableWritableByteChunk<ATTR_BASE extends Any>
+public class ResettableWritableByteChunk<ATTR_BASE extends Any>
         extends WritableByteChunk<ATTR_BASE>
         implements ResettableWritableChunk<ATTR_BASE> {
 
     public static <ATTR_BASE extends Any> ResettableWritableByteChunk<ATTR_BASE> makeResettableChunk() {
         if (POOL_RESETTABLE_CHUNKS) {
-            return MultiChunkPool.forThisThread().getByteChunkPool().takeResettableWritableByteChunk();
+            return MultiChunkPool.forThisThread().takeResettableWritableByteChunk();
         }
-        return new ResettableWritableByteChunk<>();
-    }
-
-    public static <ATTR_BASE extends Any> ResettableWritableByteChunk<ATTR_BASE> makeResettableChunkForPool() {
         return new ResettableWritableByteChunk<>();
     }
 
@@ -36,7 +31,7 @@ public final class ResettableWritableByteChunk<ATTR_BASE extends Any>
         super(data, offset, capacity);
     }
 
-    private ResettableWritableByteChunk() {
+    protected ResettableWritableByteChunk() {
         this(ArrayTypeUtils.EMPTY_BYTE_ARRAY, 0, 0);
     }
 
@@ -47,18 +42,19 @@ public final class ResettableWritableByteChunk<ATTR_BASE extends Any>
     }
 
     @Override
-    public <ATTR extends ATTR_BASE> WritableByteChunk<ATTR> resetFromChunk(WritableChunk<ATTR> other, int offset, int capacity) {
+    public <ATTR extends ATTR_BASE> WritableByteChunk<ATTR> resetFromChunk(WritableChunk<ATTR> other, int offset,
+            int capacity) {
         return resetFromTypedChunk(other.asWritableByteChunk(), offset, capacity);
     }
 
     @Override
     public <ATTR extends ATTR_BASE> WritableByteChunk<ATTR> resetFromArray(Object array, int offset, int capacity) {
-        final byte[] typedArray = (byte[])array;
+        final byte[] typedArray = (byte[]) array;
         return resetFromTypedArray(typedArray, offset, capacity);
     }
 
     public <ATTR extends ATTR_BASE> WritableByteChunk<ATTR> resetFromArray(Object array) {
-        final byte[] typedArray = (byte[])array;
+        final byte[] typedArray = (byte[]) array;
         return resetFromTypedArray(typedArray, 0, typedArray.length);
     }
 
@@ -67,7 +63,8 @@ public final class ResettableWritableByteChunk<ATTR_BASE extends Any>
         return resetFromArray(ArrayTypeUtils.EMPTY_BYTE_ARRAY, 0, 0);
     }
 
-    public <ATTR extends ATTR_BASE> WritableByteChunk<ATTR> resetFromTypedChunk(WritableByteChunk<ATTR> other, int offset, int capacity) {
+    public <ATTR extends ATTR_BASE> WritableByteChunk<ATTR> resetFromTypedChunk(WritableByteChunk<ATTR> other,
+            int offset, int capacity) {
         ChunkHelpers.checkSliceArgs(other.size, offset, capacity);
         return resetFromTypedArray(other.data, other.offset + offset, capacity);
     }
@@ -78,14 +75,7 @@ public final class ResettableWritableByteChunk<ATTR_BASE extends Any>
         this.offset = offset;
         this.capacity = capacity;
         this.size = capacity;
-        //noinspection unchecked
+        // noinspection unchecked
         return (WritableByteChunk<ATTR>) this;
-    }
-
-    @Override
-    public void close() {
-        if (POOL_RESETTABLE_CHUNKS) {
-            MultiChunkPool.forThisThread().getByteChunkPool().giveResettableWritableByteChunk(this);
-        }
     }
 }

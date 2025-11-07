@@ -1,18 +1,36 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl;
 
+import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
-import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
+import io.deephaven.engine.table.impl.DeferredViewTable.TableReference;
 import io.deephaven.engine.table.impl.locations.TableLocationProvider;
 import io.deephaven.engine.table.impl.select.SelectColumn;
+import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
+
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 /**
  * Simple source table with no partitioning support.
  */
 public class SimpleSourceTable extends SourceTable<SimpleSourceTable> {
+
+    private static TableDefinition checkSimple(final TableDefinition tableDefinition) {
+        final String partitioningColumns = tableDefinition.getColumns()
+                .stream()
+                .filter(ColumnDefinition::isPartitioning)
+                .map(ColumnDefinition::toString)
+                .collect(Collectors.joining(", "));
+        if (!partitioningColumns.isEmpty()) {
+            throw new IllegalArgumentException(String
+                    .format("Can't construct SimpleSourceTable with column type(s) [%s]", partitioningColumns));
+        }
+        return tableDefinition;
+    }
 
     /**
      * @param tableDefinition A TableDefinition
@@ -26,7 +44,7 @@ public class SimpleSourceTable extends SourceTable<SimpleSourceTable> {
             SourceTableComponentFactory componentFactory,
             TableLocationProvider locationProvider,
             UpdateSourceRegistrar updateSourceRegistrar) {
-        super(tableDefinition, description, componentFactory, locationProvider, updateSourceRegistrar);
+        super(checkSimple(tableDefinition), description, componentFactory, locationProvider, updateSourceRegistrar);
     }
 
     protected SimpleSourceTable newInstance(TableDefinition tableDefinition,
@@ -40,26 +58,26 @@ public class SimpleSourceTable extends SourceTable<SimpleSourceTable> {
 
     @Override
     protected SimpleSourceTable copy() {
-        final SimpleSourceTable result = newInstance(definition, description, componentFactory, locationProvider,
+        final SimpleSourceTable result = newInstance(definition, getDescription(), componentFactory, locationProvider,
                 updateSourceRegistrar);
         LiveAttributeMap.copyAttributes(this, result, ak -> true);
         return result;
     }
 
     @Override
-    protected final SourceTable redefine(TableDefinition newDefinition) {
+    protected final SourceTable<?> redefine(TableDefinition newDefinition) {
         if (newDefinition.getColumnNames().equals(definition.getColumnNames())) {
             // Nothing changed - we have the same columns in the same order.
             return this;
         }
-        return newInstance(newDefinition, description + "-retainColumns", componentFactory, locationProvider,
+        return newInstance(newDefinition, getDescription() + "-retainColumns", componentFactory, locationProvider,
                 updateSourceRegistrar);
     }
 
     @Override
     protected final Table redefine(TableDefinition newDefinitionExternal, TableDefinition newDefinitionInternal,
             SelectColumn[] viewColumns) {
-        return new DeferredViewTable(newDefinitionExternal, description + "-redefined",
-                new QueryTableReference(redefine(newDefinitionInternal)), new String[0], viewColumns, null);
+        return new DeferredViewTable(newDefinitionExternal, getDescription() + "-redefined",
+                new TableReference(redefine(newDefinitionInternal)), new String[0], viewColumns, null);
     }
 }

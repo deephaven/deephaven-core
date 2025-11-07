@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.util;
 
 import gnu.trove.map.TLongLongMap;
@@ -11,7 +11,7 @@ import io.deephaven.engine.table.ChunkSink;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.LongChunk;
-import org.apache.commons.lang3.mutable.MutableInt;
+import io.deephaven.util.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -132,7 +132,7 @@ public interface WritableRowRedirection extends RowRedirection, ChunkSink<RowKey
         final MutableInt offset = new MutableInt();
         final LongChunk<? extends RowKeys> innerRowKeysTyped = innerRowKeys.asLongChunk();
         outerRowKeys.forAllRowKeys(outerRowKey -> {
-            final long innerRowKey = innerRowKeysTyped.get(offset.intValue());
+            final long innerRowKey = innerRowKeysTyped.get(offset.get());
             if (innerRowKey == RowSequence.NULL_ROW_KEY) {
                 removeVoid(outerRowKey);
             } else {
@@ -171,7 +171,7 @@ public interface WritableRowRedirection extends RowRedirection, ChunkSink<RowKey
     }
 
     /**
-     * Factory for producing WritableRowSets and their components.
+     * Factory for producing WritableRowRedirections and their components.
      */
     interface Factory {
         TLongLongMap createUnderlyingMapWithCapacity(int initialCapacity);

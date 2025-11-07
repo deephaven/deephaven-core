@@ -1,10 +1,10 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.web.client.api;
 
 import com.vertispan.tsdefs.annotations.TsName;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.SortDescriptor;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.SortDescriptor;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsProperty;
 
@@ -21,7 +21,7 @@ public class Sort {
             REVERSE = "REVERSE";
 
     private static final Column REVERSE_COLUMN =
-            new Column(-1, -1, null, null, "", "__REVERSE_COLUMN", false, null, null, false, false);
+            new Column(-1, -1, null, null, "", "__REVERSE_COLUMN", false, null, null, false, false, false);
 
     private final Column column;
     private String direction;

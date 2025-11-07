@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.sources.regioned;
 
 import io.deephaven.engine.rowset.RowSequence;
@@ -21,9 +21,11 @@ abstract class RegionedColumnSourceChar<ATTR extends Values>
         extends RegionedColumnSourceArray<Character, ATTR, ColumnRegionChar<ATTR>>
         implements ColumnSourceGetDefaults.ForChar /* MIXIN_INTERFACES */ {
 
-    RegionedColumnSourceChar(@NotNull final ColumnRegionChar<ATTR> nullRegion,
-                             @NotNull final MakeDeferred<ATTR, ColumnRegionChar<ATTR>> makeDeferred) {
-        super(nullRegion, char.class, makeDeferred);
+    RegionedColumnSourceChar(
+            @NotNull final RegionedColumnSourceManager manager,
+            @NotNull final ColumnRegionChar<ATTR> nullRegion,
+            @NotNull final MakeDeferred<ATTR, ColumnRegionChar<ATTR>> makeDeferred) {
+        super(manager, nullRegion, char.class, makeDeferred);
     }
 
     @Override
@@ -34,8 +36,8 @@ abstract class RegionedColumnSourceChar<ATTR extends Values>
     interface MakeRegionDefault extends MakeRegion<Values, ColumnRegionChar<Values>> {
         @Override
         default ColumnRegionChar<Values> makeRegion(@NotNull final ColumnDefinition<?> columnDefinition,
-                                                    @NotNull final ColumnLocation columnLocation,
-                                                    final int regionIndex) {
+                @NotNull final ColumnLocation columnLocation,
+                final int regionIndex) {
             if (columnLocation.exists()) {
                 return columnLocation.makeColumnRegionChar(columnDefinition);
             }
@@ -47,28 +49,30 @@ abstract class RegionedColumnSourceChar<ATTR extends Values>
     // endregion reinterpretation
 
     static final class AsValues extends RegionedColumnSourceChar<Values> implements MakeRegionDefault {
-        AsValues() {
-            super(ColumnRegionChar.createNull(PARAMETERS.regionMask), DeferredColumnRegionChar::new);
+        AsValues(final RegionedColumnSourceManager manager) {
+            super(manager, ColumnRegionChar.createNull(PARAMETERS.regionMask), DeferredColumnRegionChar::new);
         }
     }
 
     static final class Partitioning extends RegionedColumnSourceChar<Values> {
-
-        Partitioning() {
-            super(ColumnRegionChar.createNull(PARAMETERS.regionMask),
+        Partitioning(final RegionedColumnSourceManager manager) {
+            super(manager,
+                    ColumnRegionChar.createNull(PARAMETERS.regionMask),
                     (pm, rs) -> rs.get() // No need to interpose a deferred region in this case
             );
         }
 
         @Override
         public ColumnRegionChar<Values> makeRegion(@NotNull final ColumnDefinition<?> columnDefinition,
-                                                   @NotNull final ColumnLocation columnLocation,
-                                                   final int regionIndex) {
+                @NotNull final ColumnLocation columnLocation,
+                final int regionIndex) {
             final TableLocationKey locationKey = columnLocation.getTableLocation().getKey();
             final Object partitioningColumnValue = locationKey.getPartitionValue(columnDefinition.getName());
-            if (partitioningColumnValue != null && !Character.class.isAssignableFrom(partitioningColumnValue.getClass())) {
-                throw new TableDataException("Unexpected partitioning column value type for " + columnDefinition.getName()
-                        + ": " + partitioningColumnValue + " is not a Character at location " + locationKey);
+            if (partitioningColumnValue != null
+                    && !Character.class.isAssignableFrom(partitioningColumnValue.getClass())) {
+                throw new TableDataException(
+                        "Unexpected partitioning column value type for " + columnDefinition.getName()
+                                + ": " + partitioningColumnValue + " is not a Character at location " + locationKey);
             }
             return new ColumnRegionChar.Constant<>(regionMask(), unbox((Character) partitioningColumnValue));
         }

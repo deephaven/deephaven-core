@@ -1,5 +1,0 @@
-click==7.1.2
-google-cloud-monitoring==2.2.1
-google-cloud-monitoring-dashboards==2.0.0
-requests==2.25.1
-jinja2==2.11.3

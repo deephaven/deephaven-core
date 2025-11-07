@@ -10,14 +10,14 @@ on:
     # effect the labels because the merge requirements need checks to pass against the most recent
     # commit.
     types: [ opened, synchronize, reopened, labeled, unlabeled ]
-    branches: [ main ]
+    branches: [ 'main', 'rc/v*' ]
 
 jobs:
   doc-labels:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Check Documentation Labels
         env:
@@ -26,10 +26,10 @@ jobs:
         run: .github/scripts/check-doc-labels.sh
 
   releasenotes-labels:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Check Release Notes Labels
         env:

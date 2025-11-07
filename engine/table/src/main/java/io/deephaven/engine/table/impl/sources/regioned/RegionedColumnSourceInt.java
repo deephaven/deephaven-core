@@ -1,11 +1,10 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit RegionedColumnSourceChar and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit RegionedColumnSourceChar and run "./gradlew replicateRegionsAndRegionedSources" to regenerate
+//
+// @formatter:off
 package io.deephaven.engine.table.impl.sources.regioned;
 
 import io.deephaven.engine.rowset.RowSequence;
@@ -26,9 +25,11 @@ abstract class RegionedColumnSourceInt<ATTR extends Values>
         extends RegionedColumnSourceArray<Integer, ATTR, ColumnRegionInt<ATTR>>
         implements ColumnSourceGetDefaults.ForInt /* MIXIN_INTERFACES */ {
 
-    RegionedColumnSourceInt(@NotNull final ColumnRegionInt<ATTR> nullRegion,
-                             @NotNull final MakeDeferred<ATTR, ColumnRegionInt<ATTR>> makeDeferred) {
-        super(nullRegion, int.class, makeDeferred);
+    RegionedColumnSourceInt(
+            @NotNull final RegionedColumnSourceManager manager,
+            @NotNull final ColumnRegionInt<ATTR> nullRegion,
+            @NotNull final MakeDeferred<ATTR, ColumnRegionInt<ATTR>> makeDeferred) {
+        super(manager, nullRegion, int.class, makeDeferred);
     }
 
     @Override
@@ -39,8 +40,8 @@ abstract class RegionedColumnSourceInt<ATTR extends Values>
     interface MakeRegionDefault extends MakeRegion<Values, ColumnRegionInt<Values>> {
         @Override
         default ColumnRegionInt<Values> makeRegion(@NotNull final ColumnDefinition<?> columnDefinition,
-                                                    @NotNull final ColumnLocation columnLocation,
-                                                    final int regionIndex) {
+                @NotNull final ColumnLocation columnLocation,
+                final int regionIndex) {
             if (columnLocation.exists()) {
                 return columnLocation.makeColumnRegionInt(columnDefinition);
             }
@@ -52,28 +53,30 @@ abstract class RegionedColumnSourceInt<ATTR extends Values>
     // endregion reinterpretation
 
     static final class AsValues extends RegionedColumnSourceInt<Values> implements MakeRegionDefault {
-        AsValues() {
-            super(ColumnRegionInt.createNull(PARAMETERS.regionMask), DeferredColumnRegionInt::new);
+        AsValues(final RegionedColumnSourceManager manager) {
+            super(manager, ColumnRegionInt.createNull(PARAMETERS.regionMask), DeferredColumnRegionInt::new);
         }
     }
 
     static final class Partitioning extends RegionedColumnSourceInt<Values> {
-
-        Partitioning() {
-            super(ColumnRegionInt.createNull(PARAMETERS.regionMask),
+        Partitioning(final RegionedColumnSourceManager manager) {
+            super(manager,
+                    ColumnRegionInt.createNull(PARAMETERS.regionMask),
                     (pm, rs) -> rs.get() // No need to interpose a deferred region in this case
             );
         }
 
         @Override
         public ColumnRegionInt<Values> makeRegion(@NotNull final ColumnDefinition<?> columnDefinition,
-                                                   @NotNull final ColumnLocation columnLocation,
-                                                   final int regionIndex) {
+                @NotNull final ColumnLocation columnLocation,
+                final int regionIndex) {
             final TableLocationKey locationKey = columnLocation.getTableLocation().getKey();
             final Object partitioningColumnValue = locationKey.getPartitionValue(columnDefinition.getName());
-            if (partitioningColumnValue != null && !Integer.class.isAssignableFrom(partitioningColumnValue.getClass())) {
-                throw new TableDataException("Unexpected partitioning column value type for " + columnDefinition.getName()
-                        + ": " + partitioningColumnValue + " is not a Integer at location " + locationKey);
+            if (partitioningColumnValue != null
+                    && !Integer.class.isAssignableFrom(partitioningColumnValue.getClass())) {
+                throw new TableDataException(
+                        "Unexpected partitioning column value type for " + columnDefinition.getName()
+                                + ": " + partitioningColumnValue + " is not a Integer at location " + locationKey);
             }
             return new ColumnRegionInt.Constant<>(regionMask(), unbox((Integer) partitioningColumnValue));
         }

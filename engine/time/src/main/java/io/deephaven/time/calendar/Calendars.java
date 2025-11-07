@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.time.calendar;
 
 import io.deephaven.api.util.NameValidator;
@@ -9,101 +9,69 @@ import io.deephaven.base.verify.RequirementFailure;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
+import io.deephaven.util.annotations.UserInvocationPermitted;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.*;
-import java.nio.file.NoSuchFileException;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
-import java.util.function.Consumer;
 
 /**
  * A collection of business calendars.
  */
+@UserInvocationPermitted(value = "function_library")
 public class Calendars {
 
     private static final Logger logger = LoggerFactory.getLogger(Calendars.class);
     private static final String BUSINESS_CALENDAR_PROP_INTERNAL = "Calendar.importPath";
     private static final String BUSINESS_CALENDAR_PROP_USER = "Calendar.userImportPath";
     private static String defaultName = Configuration.getInstance().getProperty("Calendar.default");
+    private static final Map<String, BusinessCalendar> calMap = new TreeMap<>();
 
-    // Variable should only be accessed through getMap()
-    private static volatile Map<String, BusinessCalendar> calMap;
+    /**
+     * Loads the line-separated calendar XML resources from the resource file configuration value
+     * {@value BUSINESS_CALENDAR_PROP_INTERNAL}. If the resource file configuration value
+     * {@value BUSINESS_CALENDAR_PROP_USER} exists, those line-separated calendar XML resources will be returned as
+     * well.
+     *
+     * @return the calendars
+     * @see BusinessCalendarXMLParser#loadBusinessCalendarFromResource(String)
+     */
+    public static List<BusinessCalendar> calendarsFromConfiguration() {
+        final Configuration configuration = Configuration.getInstance();
+        final List<BusinessCalendar> configurationCalendars = new ArrayList<>(
+                loadCalendarsFromResourceList(configuration.getProperty(BUSINESS_CALENDAR_PROP_INTERNAL)));
+        if (configuration.hasProperty(BUSINESS_CALENDAR_PROP_USER)) {
+            configurationCalendars.addAll(
+                    loadCalendarsFromResourceList(configuration.getProperty(BUSINESS_CALENDAR_PROP_USER)));
+        }
+        return configurationCalendars;
+    }
 
     private Calendars() {}
 
     // region Load
 
-    // Get the initialized map of calendars.
-    // Initilization is deferred to so that errors are easier for users to find.
-    private static Map<String, BusinessCalendar> getMap() {
-        if (calMap != null) {
-            return calMap;
+    private static List<BusinessCalendar> loadCalendarsFromResourceList(String resource) {
+        final InputStream in = Calendars.class.getResourceAsStream(resource);
+        if (in == null) {
+            logger.warn("Could not find resource " + resource + " on classpath");
+            throw new RuntimeException("Could not open resource " + resource + " from classpath");
         }
-
-        synchronized (Calendars.class) {
-            if (calMap != null) {
-                return calMap;
+        final List<BusinessCalendar> calendars = new ArrayList<>();
+        try (final BufferedReader config = new BufferedReader(new InputStreamReader(in))) {
+            final Iterator<String> it = config.lines().iterator();
+            while (it.hasNext()) {
+                final String calendarResource = it.next();
+                calendars.add(BusinessCalendarXMLParser.loadBusinessCalendarFromResource(calendarResource));
             }
-
-            calMap = new TreeMap<>();
-            final Configuration configuration = Configuration.getInstance();
-
-            loadProperty(configuration, BUSINESS_CALENDAR_PROP_INTERNAL);
-
-            if (configuration.hasProperty(BUSINESS_CALENDAR_PROP_USER)) {
-                loadProperty(configuration, BUSINESS_CALENDAR_PROP_USER);
-            }
-
-            return calMap;
-        }
-    }
-
-    private static void loadProperty(final Configuration configuration, final String property) {
-        final String location = configuration.getProperty(property);
-        try {
-            load(location);
+            return calendars;
         } catch (Exception e) {
-            logger.warn().append("Problem loading calendars. property=").append(property)
-                    .append(" importPath=").append(location).append(e).endl();
-            throw new RuntimeException("Problem loading calendars. property=" + property +
-                    " importPath=" + location, e);
-        }
-    }
-
-    private static void load(final String businessCalendarConfig) throws NoSuchFileException {
-        final InputStream configToLoad = Calendars.class.getResourceAsStream(businessCalendarConfig);
-
-        if (configToLoad == null) {
-            logger.warn("Could not find " + businessCalendarConfig + " on classpath");
-            throw new RuntimeException("Could not open " + businessCalendarConfig + " from classpath");
-        }
-
-        final Consumer<String> consumer = (filePath) -> {
-            try {
-                final InputStream inputStream = Calendars.class.getResourceAsStream(filePath);
-                if (inputStream != null) {
-                    final File calendarFile = inputStreamToFile(inputStream);
-                    final BusinessCalendar businessCalendar =
-                            BusinessCalendarXMLParser.loadBusinessCalendar(calendarFile);
-                    addCalendar(businessCalendar);
-                    // noinspection ResultOfMethodCallIgnored
-                    calendarFile.delete();
-                } else {
-                    logger.warn("Could not open " + filePath + " from classpath");
-                    throw new RuntimeException("Could not open " + filePath + " from classpath");
-                }
-            } catch (Exception e) {
-                logger.warn("Problem loading calendar: location=" + businessCalendarConfig, e);
-                throw new RuntimeException("Problem loading calendar: location=" + businessCalendarConfig, e);
-            }
-        };
-
-        try (final BufferedReader config = new BufferedReader(new InputStreamReader(configToLoad))) {
-            config.lines().forEach(consumer);
-        } catch (Exception e) {
-            logger.warn("Problem loading calendar: location=" + businessCalendarConfig, e);
-            throw new RuntimeException("Problem loading calendar: location=" + businessCalendarConfig, e);
+            logger.warn("Problem loading calendar: location=" + resource, e);
+            throw new RuntimeException("Problem loading calendar: location=" + resource, e);
         }
     }
 
@@ -115,7 +83,7 @@ public class Calendars {
      */
     public synchronized static void removeCalendar(final String name) {
         Require.neqNull(name, "name");
-        getMap().remove(name);
+        calMap.remove(name);
     }
 
     /**
@@ -131,8 +99,7 @@ public class Calendars {
         if (!NameValidator.isValidQueryParameterName(name)) {
             throw new IllegalArgumentException("Invalid name for calendar: name='" + name + "'");
         }
-
-        final Map<String, BusinessCalendar> map = getMap();
+        final Map<String, BusinessCalendar> map = calMap;
 
         if (map.containsKey(name)) {
             final Calendar oldCalendar = map.get(name);
@@ -219,7 +186,7 @@ public class Calendars {
         }
 
         final String n = name.toUpperCase();
-        final Map<String, BusinessCalendar> map = getMap();
+        final Map<String, BusinessCalendar> map = calMap;
 
         if (!map.containsKey(n)) {
             throw new IllegalArgumentException("No such calendar: " + name);
@@ -258,7 +225,7 @@ public class Calendars {
      * @return names of all available calendars
      */
     public synchronized static String[] calendarNames() {
-        return getMap().keySet().toArray(String[]::new);
+        return calMap.keySet().toArray(String[]::new);
     }
 
     // endregion

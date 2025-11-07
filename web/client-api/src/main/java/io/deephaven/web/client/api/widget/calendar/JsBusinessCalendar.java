@@ -1,13 +1,13 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.web.client.api.widget.calendar;
 
 import com.vertispan.tsdefs.annotations.TsInterface;
 import com.vertispan.tsdefs.annotations.TsName;
 import elemental2.core.JsArray;
 import elemental2.core.JsObject;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.figuredescriptor.BusinessCalendarDescriptor;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.console_pb.figuredescriptor.BusinessCalendarDescriptor;
 import io.deephaven.web.client.api.i18n.JsTimeZone;
 import io.deephaven.web.client.api.widget.calendar.enums.JsDayOfWeek;
 import jsinterop.annotations.JsProperty;
@@ -28,9 +28,9 @@ public class JsBusinessCalendar {
         JsObject.freeze(this.businessCalendarDescriptor);
         timeZone = JsTimeZone.getTimeZone(businessCalendarDescriptor.getTimeZone());
         businessPeriods =
-                businessCalendarDescriptor.getBusinessPeriodsList().map((p0, p1, p2) -> new JsBusinessPeriod(p0));
+                businessCalendarDescriptor.getBusinessPeriodsList().map((p0, p1) -> new JsBusinessPeriod(p0));
         JsObject.freeze(businessPeriods);
-        holidays = businessCalendarDescriptor.getHolidaysList().map((p0, p1, p2) -> new JsHoliday(p0));
+        holidays = businessCalendarDescriptor.getHolidaysList().map((p0, p1) -> new JsHoliday(p0));
         JsObject.freeze(holidays);
     }
 
@@ -62,7 +62,7 @@ public class JsBusinessCalendar {
     @JsProperty
     public JsArray<String> getBusinessDays() {
         return businessCalendarDescriptor.getBusinessDaysList()
-                .map((p0, p1, p2) -> JsDayOfWeek.values()[(int) (double) p0]);
+                .map((p0, p1) -> JsDayOfWeek.values()[(int) (double) p0]);
     }
 
     /**

@@ -5,11 +5,12 @@ plugins {
 dependencies {
     implementation project(':Base')
     implementation project(':Util')
-    testRuntimeOnly project(path: ':configs')
-    testRuntimeOnly project(path: ':test-configs')
+    implementation project(":util-pool")
+    testRuntimeOnly project(':configs')
+    testRuntimeOnly project(':test-configs')
 
-    runtimeOnly project(path: ':configs')
+    runtimeOnly project(':configs')
 
     testRuntimeOnly project(':log-to-slf4j')
-    Classpaths.inheritSlf4j(project, 'slf4j-simple', 'testRuntimeOnly')
+    testRuntimeOnly libs.slf4j.simple
 }

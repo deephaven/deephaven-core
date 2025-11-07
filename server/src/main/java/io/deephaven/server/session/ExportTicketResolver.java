@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.server.session;
 
 import com.google.rpc.Code;
@@ -55,7 +55,7 @@ public class ExportTicketResolver extends TicketResolverBase {
                     }
 
                     throw Exceptions.statusRuntimeException(Code.NOT_FOUND,
-                            "Could not resolve '" + logId + "': flight '" + descriptor.toString() + " does not exist");
+                            "Could not resolve '" + logId + "': flight '" + descriptor + "' not found");
                 });
     }
 

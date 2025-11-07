@@ -2,7 +2,7 @@ name: Check CI
 
 on:
   pull_request:
-    branches: [ main ]
+    branches: [ 'main', 'rc/v*' ]
   push:
     branches: [ 'main', 'check/**', 'release/v*' ]
 
@@ -11,27 +11,59 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  checks:
-    runs-on: ubuntu-22.04
+  changes:
+    runs-on: ubuntu-24.04
+    outputs:
+      non-docs: ${{ steps.filter.outputs.non-docs }}
     steps:
+      # Must checkout for push, but not pull_request according to the action
       - name: Checkout
-        uses: actions/checkout@v4
+        if: github.event_name != 'pull_request'
+        uses: actions/checkout@v5
+      - name: Check for non-docs changes
+        id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            non-docs:
+              - '!docs/**'
+
+  checks:
+    runs-on: ubuntu-24.04
+    needs: changes
+    if: ${{ needs.changes.outputs.non-docs == 'true' }}
+    steps:
+      - name: Free Disk Space
+        uses: endersonmenezes/free-disk-space@v2
+        with:
+          remove_haskell: true
+          remove_folders: "/usr/share/swift /usr/share/miniconda /usr/share/az* /usr/local/share/chromium /usr/local/share/powershell /usr/local/julia /usr/local/aws-cli /usr/share/gradle"
+          testing: false
+
+      - name: Starting available disk space
+        run: df -h
+
+      - name: Checkout
+        uses: actions/checkout@v5
         with:
           lfs: true
 
       - name: Setup JDK 11
         id: setup-java-11
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
           java-version: '11'
 
       - name: Setup JDK 17
         id: setup-java-17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
           java-version: '17'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v5
 
       - name: Set JAVA_HOME
         run: echo "JAVA_HOME=${{ steps.setup-java-11.outputs.path }}" >> $GITHUB_ENV
@@ -42,11 +74,10 @@ jobs:
           cat gradle.properties
 
       - name: Check
-        uses: burrunan/gradle-cache-action@v1
-        with:
-          job-id: checks
-          arguments: --scan --continue check
-          gradle-version: wrapper
+        run: ./gradlew --scan --continue check
+
+      - name: Run df -h after build
+        run: df -h
 
       - name: Upload Test Results
         uses: actions/upload-artifact@v4

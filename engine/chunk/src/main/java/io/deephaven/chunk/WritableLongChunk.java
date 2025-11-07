@@ -1,14 +1,11 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit WritableCharChunk and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
-package io.deephaven.chunk;
-
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit WritableCharChunk and run "./gradlew replicateSourcesAndChunks" to regenerate
+//
 // @formatter:off
+package io.deephaven.chunk;
 
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.chunk.util.pools.MultiChunkPool;
@@ -28,8 +25,6 @@ import java.nio.LongBuffer;
 
 import static io.deephaven.chunk.util.pools.ChunkPoolConstants.POOL_WRITABLE_CHUNKS;
 
-// @formatter:on
-
 /**
  * {@link WritableChunk} implementation for long data.
  */
@@ -39,25 +34,22 @@ public class WritableLongChunk<ATTR extends Any> extends LongChunk<ATTR> impleme
     private static final WritableLongChunk[] EMPTY_WRITABLE_LONG_CHUNK_ARRAY = new WritableLongChunk[0];
 
     static <ATTR extends Any> WritableLongChunk<ATTR>[] getEmptyChunkArray() {
-        //noinspection unchecked
+        // noinspection unchecked
         return EMPTY_WRITABLE_LONG_CHUNK_ARRAY;
     }
 
+    /**
+     * Get a {@link WritableLongChunk} with {@link #size()} of {@code size} for use by the caller until it is
+     * {@link #close() closed}.
+     *
+     * @param size The {@link #size()} and minimum capacity of the returned chunk
+     * @return The chunk
+     */
     public static <ATTR extends Any> WritableLongChunk<ATTR> makeWritableChunk(int size) {
         if (POOL_WRITABLE_CHUNKS) {
-            return MultiChunkPool.forThisThread().getLongChunkPool().takeWritableLongChunk(size);
+            return MultiChunkPool.forThisThread().takeWritableLongChunk(size);
         }
         return new WritableLongChunk<>(makeArray(size), 0, size);
-    }
-
-    @SuppressWarnings("rawtypes")
-    public static WritableLongChunk makeWritableChunkForPool(int size) {
-        return new WritableLongChunk(makeArray(size), 0, size) {
-            @Override
-            public void close() {
-                MultiChunkPool.forThisThread().getLongChunkPool().giveWritableLongChunk(this);
-            }
-        };
     }
 
     public static <ATTR extends Any> WritableLongChunk<ATTR> writableChunkWrap(long[] data) {
@@ -76,7 +68,9 @@ public class WritableLongChunk<ATTR extends Any> extends LongChunk<ATTR> impleme
         data[offset + index] = value;
     }
 
-    public final void add(long value) { data[offset + size++] = value; }
+    public final void add(long value) {
+        data[offset + size++] = value;
+    }
 
     @Override
     public WritableLongChunk<ATTR> slice(int offset, int capacity) {
@@ -119,7 +113,7 @@ public class WritableLongChunk<ATTR extends Any> extends LongChunk<ATTR> impleme
     // region fillWithBoxedValue
     @Override
     public final void fillWithBoxedValue(int offset, int size, Object value) {
-        fillWithValue(offset,size, TypeUtils.unbox((Long) value));
+        fillWithValue(offset, size, TypeUtils.unbox((Long) value));
     }
     // endregion fillWithBoxedValue
 
@@ -151,7 +145,7 @@ public class WritableLongChunk<ATTR extends Any> extends LongChunk<ATTR> impleme
 
     @Override
     public final void copyFromArray(Object srcArray, int srcOffset, int destOffset, int length) {
-        final long[] typedArray = (long[])srcArray;
+        final long[] typedArray = (long[]) srcArray;
         copyFromTypedArray(typedArray, srcOffset, destOffset, length);
     }
 
@@ -163,13 +157,13 @@ public class WritableLongChunk<ATTR extends Any> extends LongChunk<ATTR> impleme
             return;
         }
         if (ChunkHelpers.canCopyForward(src, srcOffset, data, destOffset, length)) {
-            //noinspection ManualArrayCopy
+            // noinspection ManualArrayCopy
             for (int ii = 0; ii < length; ++ii) {
                 data[netDestOffset + ii] = src[srcOffset + ii];
             }
             return;
         }
-        //noinspection ManualArrayCopy
+        // noinspection ManualArrayCopy
         for (int ii = length - 1; ii >= 0; --ii) {
             data[netDestOffset + ii] = src[srcOffset + ii];
         }
@@ -177,22 +171,26 @@ public class WritableLongChunk<ATTR extends Any> extends LongChunk<ATTR> impleme
 
     // region CopyFromBuffer
     @Override
-    public final void copyFromBuffer(@NotNull final Buffer srcBuffer, final int srcOffset, final int destOffset, final int length) {
+    public final void copyFromBuffer(@NotNull final Buffer srcBuffer, final int srcOffset, final int destOffset,
+            final int length) {
         final LongBuffer longSrcBuffer = (LongBuffer) srcBuffer;
         copyFromTypedBuffer(longSrcBuffer, srcOffset, destOffset, length);
     }
 
     /**
-     * <p>Fill a sub-range of this WritableLongChunk with values from a {@link LongBuffer}.
+     * <p>
+     * Fill a sub-range of this WritableLongChunk with values from a {@link LongBuffer}.
      *
-     * <p>See {@link #copyFromBuffer(Buffer, int, int, int)} for general documentation.
+     * <p>
+     * See {@link #copyFromBuffer(Buffer, int, int, int)} for general documentation.
      *
-     * @param srcBuffer  The source {@link LongBuffer}
-     * @param srcOffset  The absolute offset into {@code srcBuffer} to start copying from
+     * @param srcBuffer The source {@link LongBuffer}
+     * @param srcOffset The absolute offset into {@code srcBuffer} to start copying from
      * @param destOffset The offset into this chunk to start copying to
-     * @param length     The number of elements to copy
+     * @param length The number of elements to copy
      */
-    public final void copyFromTypedBuffer(@NotNull final LongBuffer srcBuffer, final int srcOffset, final int destOffset, final int length) {
+    public final void copyFromTypedBuffer(@NotNull final LongBuffer srcBuffer, final int srcOffset,
+            final int destOffset, final int length) {
         if (srcBuffer.hasArray()) {
             copyFromTypedArray(srcBuffer.array(), srcBuffer.arrayOffset() + srcOffset, destOffset, length);
         } else {
@@ -220,12 +218,12 @@ public class WritableLongChunk<ATTR extends Any> extends LongChunk<ATTR> impleme
     // endregion sort
 
     @Override
-    public void close() {
-    }
+    public void close() {}
 
     // region downcast
-    public static <ATTR extends Any, ATTR_DERIV extends ATTR> WritableLongChunk<ATTR> upcast(WritableLongChunk<ATTR_DERIV> self) {
-        //noinspection unchecked
+    public static <ATTR extends Any, ATTR_DERIV extends ATTR> WritableLongChunk<ATTR> upcast(
+            WritableLongChunk<ATTR_DERIV> self) {
+        // noinspection unchecked
         return (WritableLongChunk<ATTR>) self;
     }
     // endregion downcast

@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.replicators;
 
 import io.deephaven.replication.ReplicationUtils;
@@ -12,29 +12,35 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.List;
 
-import static io.deephaven.replication.ReplicatePrimitiveCode.charToAllButBoolean;
-import static io.deephaven.replication.ReplicatePrimitiveCode.charToObject;
+import static io.deephaven.replication.ReplicatePrimitiveCode.*;
 
 public class ReplicateVectorColumnWrappers {
+    private static final String TASK = "replicateVectorColumnWrappers";
 
     private static final String CHAR_IMPL_PATH =
-            "engine/table/src/main/java/io/deephaven/engine/table/impl/vector/CharVectorColumnWrapper.java";
+            "engine/api/src/main/java/io/deephaven/engine/table/vectors/CharVectorColumnWrapper.java";
     private static final String CHAR_TEST_PATH =
-            "engine/table/src/test/java/io/deephaven/engine/table/impl/vector/CharVectorColumnWrapperTest.java";
+            "engine/api/src/test/java/io/deephaven/engine/table/vectors/CharVectorColumnWrapperTest.java";
+
+    private static final String FLOAT_TEST_PATH =
+            "engine/api/src/test/java/io/deephaven/engine/table/vectors/FloatVectorCompareTest.java";
 
     public static void main(String[] args) throws IOException {
-        charToAllButBoolean(CHAR_IMPL_PATH);
-        charToAllButBoolean(CHAR_TEST_PATH);
-        fixupObject(charToObject(CHAR_TEST_PATH));
+        charToAllButBoolean(TASK, CHAR_IMPL_PATH);
+        charToAllButBoolean(TASK, CHAR_TEST_PATH);
+        fixupObject(charToObject(TASK, CHAR_TEST_PATH));
+        floatToAllFloatingPoints(TASK, FLOAT_TEST_PATH);
     }
 
     private static void fixupObject(@NotNull final String path) throws IOException {
         final File file = new File(path);
         List<String> lines = FileUtils.readLines(file, Charset.defaultCharset());
+        lines = ReplicationUtils.removeImport(lines, ".*NULL_OBJECT.*");
         lines = ReplicationUtils.globalReplacements(lines,
                 "ObjectVector ", "ObjectVector<Object> ",
                 "new ObjectVectorColumnWrapper", "new ObjectVectorColumnWrapper<>",
-                "getMemoryColumnSource\\(data\\)", "getMemoryColumnSource(data, Object.class, null)");
+                "getMemoryColumnSource\\(data\\)", "getMemoryColumnSource(data, Object.class, null)",
+                "NULL_OBJECT", "null");
         FileUtils.writeLines(file, lines);
     }
 }

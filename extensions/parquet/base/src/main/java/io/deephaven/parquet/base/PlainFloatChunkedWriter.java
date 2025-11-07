@@ -1,14 +1,12 @@
-/*
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit PlainIntChunkedWriter and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit PlainIntChunkedWriter and run "./gradlew replicateParquetChunkedWriters" to regenerate
+//
+// @formatter:off
 package io.deephaven.parquet.base;
 
-import io.deephaven.parquet.base.util.Helpers;
 import io.deephaven.util.QueryConstants;
 import org.apache.parquet.bytes.ByteBufferAllocator;
 import org.apache.parquet.bytes.BytesInput;
@@ -26,7 +24,7 @@ import java.nio.IntBuffer;
 /**
  * A writer for encoding floats in the PLAIN format
  */
-public class PlainFloatChunkedWriter extends AbstractBulkValuesWriter<FloatBuffer> {
+final class PlainFloatChunkedWriter extends AbstractBulkValuesWriter<FloatBuffer> {
     private static final int MAXIMUM_TOTAL_CAPACITY = Integer.MAX_VALUE / Float.BYTES;
     private final ByteBufferAllocator allocator;
 
@@ -91,8 +89,8 @@ public class PlainFloatChunkedWriter extends AbstractBulkValuesWriter<FloatBuffe
 
     @Override
     public void writeBulk(@NotNull FloatBuffer bulkValues,
-                          final int rowCount,
-                          @NotNull final Statistics<?> statistics) {
+            final int rowCount,
+            @NotNull final Statistics<?> statistics) {
         ensureCapacityFor(bulkValues);
         // Generate statistics before we perform the bulk write.
         for (int i = 0; i < rowCount; i++) {
@@ -104,9 +102,9 @@ public class PlainFloatChunkedWriter extends AbstractBulkValuesWriter<FloatBuffe
     @NotNull
     @Override
     public WriteResult writeBulkFilterNulls(@NotNull final FloatBuffer bulkValues,
-                                            @NotNull final RunLengthBitPackingHybridEncoder dlEncoder,
-                                            final int rowCount,
-                                            @NotNull final Statistics<?> statistics) throws IOException {
+            @NotNull final RunLengthBitPackingHybridEncoder dlEncoder,
+            final int rowCount,
+            @NotNull final Statistics<?> statistics) throws IOException {
         ensureCapacityFor(bulkValues);
         while (bulkValues.hasRemaining()) {
             final float v = bulkValues.get();
@@ -125,8 +123,8 @@ public class PlainFloatChunkedWriter extends AbstractBulkValuesWriter<FloatBuffe
     @NotNull
     @Override
     public WriteResult writeBulkVectorFilterNulls(@NotNull final FloatBuffer bulkValues,
-                                                  final int rowCount,
-                                                  @NotNull final Statistics<?> statistics) {
+            final int rowCount,
+            @NotNull final Statistics<?> statistics) {
         ensureCapacityFor(bulkValues);
         int i = 0;
         nullOffsets.clear();
@@ -158,7 +156,8 @@ public class PlainFloatChunkedWriter extends AbstractBulkValuesWriter<FloatBuffe
         }
 
         if (requiredCapacity > MAXIMUM_TOTAL_CAPACITY) {
-            throw new IllegalStateException("Unable to write " + requiredCapacity + " values. (Maximum capacity: " + MAXIMUM_TOTAL_CAPACITY + ".)");
+            throw new IllegalStateException("Unable to write " + requiredCapacity + " values. (Maximum capacity: "
+                    + MAXIMUM_TOTAL_CAPACITY + ".)");
         }
 
         int newCapacity = currentCapacity;

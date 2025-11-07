@@ -1,13 +1,13 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.stats;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
-import io.deephaven.stats.util.OSUtil;
+import io.deephaven.base.OSUtil;
 import io.deephaven.base.stats.*;
 import io.deephaven.hash.KeyedLongObjectHash;
 import io.deephaven.hash.KeyedLongObjectHashMap;

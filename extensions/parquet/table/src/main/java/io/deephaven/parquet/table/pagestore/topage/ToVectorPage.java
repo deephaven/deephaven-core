@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.parquet.table.pagestore.topage;
 
 import io.deephaven.chunk.attributes.Any;
@@ -17,7 +17,8 @@ public class ToVectorPage<ATTR extends Any, RESULT, VECTOR_TYPE extends Vector<?
 
     private final Class<VECTOR_TYPE> nativeType;
 
-    public static <ATTR extends Any> ToPage<ATTR, ?> create(@NotNull final Class<?> nativeType,
+    public static <ATTR extends Any> ToPage<ATTR, ?> create(
+            @NotNull final Class<?> nativeType,
             @NotNull final Class<?> componentType,
             @NotNull final ToPage<ATTR, ?> toPage) {
         if (!Vector.class.isAssignableFrom(nativeType)) {

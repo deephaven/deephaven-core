@@ -1,3 +1,6 @@
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.web.client.api.storage;
 
 import elemental2.core.JsArray;
@@ -5,19 +8,19 @@ import elemental2.core.Uint8Array;
 import elemental2.dom.Blob;
 import elemental2.promise.Promise;
 import io.deephaven.javascript.proto.dhinternal.browserheaders.BrowserHeaders;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.storage_pb.CreateDirectoryRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.storage_pb.CreateDirectoryResponse;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.storage_pb.DeleteItemRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.storage_pb.DeleteItemResponse;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.storage_pb.FetchFileRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.storage_pb.FetchFileResponse;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.storage_pb.ListItemsRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.storage_pb.ListItemsResponse;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.storage_pb.MoveItemRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.storage_pb.MoveItemResponse;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.storage_pb.SaveFileRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.storage_pb.SaveFileResponse;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.storage_pb_service.StorageServiceClient;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.storage_pb.CreateDirectoryRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.storage_pb.CreateDirectoryResponse;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.storage_pb.DeleteItemRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.storage_pb.DeleteItemResponse;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.storage_pb.FetchFileRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.storage_pb.FetchFileResponse;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.storage_pb.ListItemsRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.storage_pb.ListItemsResponse;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.storage_pb.MoveItemRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.storage_pb.MoveItemResponse;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.storage_pb.SaveFileRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.storage_pb.SaveFileResponse;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.storage_pb_service.StorageServiceClient;
 import io.deephaven.web.client.api.Callbacks;
 import io.deephaven.web.client.api.WorkerConnection;
 import jsinterop.annotations.JsIgnore;
@@ -61,7 +64,8 @@ public class JsStorageService {
         req.setFilterGlob(glob);
         return Callbacks.<ListItemsResponse, Object>grpcUnaryPromise(c -> client().listItems(req, metadata(), c::apply))
                 .then(response -> Promise
-                        .resolve(response.getItemsList().map((item, i, arr) -> JsItemDetails.fromProto(item))));
+                        .resolve(response.getItemsList()
+                                .map((item, i) -> JsItemDetails.fromProto(response.getCanonicalPath(), item))));
     }
 
     /**

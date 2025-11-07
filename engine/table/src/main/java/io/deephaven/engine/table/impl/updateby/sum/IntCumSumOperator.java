@@ -1,23 +1,23 @@
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit ShortCumSumOperator and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit CharCumSumOperator and run "./gradlew replicateUpdateBy" to regenerate
+//
+// @formatter:off
 package io.deephaven.engine.table.impl.updateby.sum;
 
 import io.deephaven.base.verify.Assert;
-import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.IntChunk;
+import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
 import io.deephaven.engine.table.impl.updateby.internal.BaseLongUpdateByOperator;
-import io.deephaven.engine.table.impl.util.RowRedirection;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
-import static io.deephaven.util.QueryConstants.NULL_LONG;
 import static io.deephaven.util.QueryConstants.NULL_INT;
+import static io.deephaven.util.QueryConstants.NULL_LONG;
 
 public class IntCumSumOperator extends BaseLongUpdateByOperator {
     // region extra-fields
@@ -42,7 +42,7 @@ public class IntCumSumOperator extends BaseLongUpdateByOperator {
             // read the value from the values chunk
             final int currentVal = intValueChunk.get(pos);
 
-            if(curVal == NULL_LONG) {
+            if (curVal == NULL_LONG) {
                 curVal = currentVal == NULL_INT ? NULL_LONG : currentVal;
             } else if (currentVal != NULL_INT) {
                 curVal += currentVal;
@@ -50,14 +50,21 @@ public class IntCumSumOperator extends BaseLongUpdateByOperator {
         }
     }
 
-    public IntCumSumOperator(@NotNull final MatchPair pair,
-                               @Nullable final RowRedirection rowRedirection
-                               // region extra-constructor-args
-                               // endregion extra-constructor-args
+    public IntCumSumOperator(@NotNull final MatchPair pair
+    // region extra-constructor-args
+    // endregion extra-constructor-args
     ) {
-        super(pair, new String[] { pair.rightColumn }, rowRedirection);
+        super(pair, new String[] {pair.rightColumn});
         // region constructor
         // endregion constructor
+    }
+
+    @Override
+    public UpdateByOperator copy() {
+        return new IntCumSumOperator(pair
+        // region extra-copy-args
+        // endregion extra-copy-args
+        );
     }
 
     @NotNull

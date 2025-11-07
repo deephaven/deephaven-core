@@ -1,9 +1,12 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.server.table;
 
 import com.google.rpc.Code;
+import dagger.assisted.Assisted;
+import dagger.assisted.AssistedFactory;
+import dagger.assisted.AssistedInject;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.exceptions.SnapshotUnsuccessfulException;
 import io.deephaven.engine.exceptions.TableAlreadyFailedException;
@@ -16,7 +19,6 @@ import io.deephaven.engine.table.impl.NotificationStepReceiver;
 import io.deephaven.engine.table.impl.OperationSnapshotControl;
 import io.deephaven.engine.table.impl.UncoalescedTable;
 import io.deephaven.engine.updategraph.NotificationQueue;
-import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.hash.KeyedLongObjectHashMap;
 import io.deephaven.hash.KeyedLongObjectKey;
 import io.deephaven.internal.log.LoggerFactory;
@@ -26,11 +28,14 @@ import io.deephaven.proto.backplane.grpc.ExportedTableUpdateMessage;
 import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.proto.util.Exceptions;
 import io.deephaven.proto.util.ExportTicketHelper;
+import io.deephaven.server.session.SessionService;
 import io.deephaven.server.session.SessionState;
+import io.deephaven.util.mutable.MutableLong;
 import io.deephaven.util.SafeCloseable;
 import io.grpc.stub.StreamObserver;
-import org.apache.commons.lang3.mutable.MutableLong;
 import org.jetbrains.annotations.NotNull;
+
+import javax.annotation.OverridingMethodsMustInvokeSuper;
 
 import static io.deephaven.extensions.barrage.util.GrpcUtil.safelyComplete;
 
@@ -42,6 +47,12 @@ import static io.deephaven.extensions.barrage.util.GrpcUtil.safelyComplete;
  * sent a notification for exportId == 0 (which is otherwise an invalid export id).
  */
 public class ExportedTableUpdateListener implements StreamObserver<ExportNotification> {
+    @AssistedFactory
+    public interface Factory {
+        ExportedTableUpdateListener create(
+                SessionState session,
+                StreamObserver<ExportedTableUpdateMessage> responseObserver);
+    }
 
     private static final Logger log = LoggerFactory.getLogger(ExportedTableUpdateListener.class);
 
@@ -49,16 +60,20 @@ public class ExportedTableUpdateListener implements StreamObserver<ExportNotific
 
     private final String logPrefix;
     private final StreamObserver<ExportedTableUpdateMessage> responseObserver;
+    private final SessionService.ErrorTransformer errorTransformer;
     private final KeyedLongObjectHashMap<ListenerImpl> updateListenerMap = new KeyedLongObjectHashMap<>(EXPORT_KEY);
 
     private volatile boolean isDestroyed = false;
 
+    @AssistedInject
     public ExportedTableUpdateListener(
-            final SessionState session,
-            final StreamObserver<ExportedTableUpdateMessage> responseObserver) {
+            @Assisted final SessionState session,
+            @Assisted final StreamObserver<ExportedTableUpdateMessage> responseObserver,
+            final SessionService.ErrorTransformer errorTransformer) {
         this.session = session;
         this.logPrefix = "ExportedTableUpdateListener(" + Integer.toHexString(System.identityHashCode(this)) + ") ";
         this.responseObserver = responseObserver;
+        this.errorTransformer = errorTransformer;
     }
 
     /**
@@ -165,16 +180,16 @@ public class ExportedTableUpdateListener implements StreamObserver<ExportNotific
             BaseTable.initializeWithSnapshot(logPrefix, snapshotControl, (usePrev, beforeClockValue) -> {
                 snapshotControl.setListenerAndResult(listener, NOOP_NOTIFICATION_STEP_RECEIVER);
                 final TrackingRowSet rowSet = table.getRowSet();
-                initSize.setValue(usePrev ? rowSet.sizePrev() : rowSet.size());
+                initSize.set(usePrev ? rowSet.sizePrev() : rowSet.size());
                 return true;
             });
-            sendUpdateMessage(ticket, initSize.longValue(), null);
+            sendUpdateMessage(ticket, initSize.get(), null);
         } catch (final SnapshotUnsuccessfulException err) {
             if (err.getCause() instanceof TableAlreadyFailedException) {
                 sendUpdateMessage(ticket, -1, Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
                         "Exported Table Already Failed"));
             } else {
-                sendUpdateMessage(ticket, -1, GrpcUtil.securelyWrapError(log, err, Code.FAILED_PRECONDITION));
+                sendUpdateMessage(ticket, -1, errorTransformer.transform(err));
             }
         }
     }
@@ -213,10 +228,10 @@ public class ExportedTableUpdateListener implements StreamObserver<ExportNotific
      * The table listener implementation that propagates updates to our internal queue.
      */
     private class ListenerImpl extends InstrumentedTableUpdateListener {
-        final private BaseTable table;
+        final private BaseTable<?> table;
         final private int exportId;
 
-        private ListenerImpl(final BaseTable table, final int exportId) {
+        private ListenerImpl(final BaseTable<?> table, final int exportId) {
             super("ExportedTableUpdateListener (" + exportId + ")");
             this.table = table;
             this.exportId = exportId;
@@ -230,9 +245,11 @@ public class ExportedTableUpdateListener implements StreamObserver<ExportNotific
 
         @Override
         public void onFailureInternal(final Throwable error, final Entry sourceEntry) {
-            sendUpdateMessage(ExportTicketHelper.wrapExportIdInTicket(exportId), table.size(), error);
+            sendUpdateMessage(ExportTicketHelper.wrapExportIdInTicket(exportId), table.size(),
+                    errorTransformer.transform(error));
         }
 
+        @OverridingMethodsMustInvokeSuper
         @Override
         public void destroy() {
             super.destroy();

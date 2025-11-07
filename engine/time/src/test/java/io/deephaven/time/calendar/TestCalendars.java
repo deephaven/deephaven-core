@@ -1,16 +1,23 @@
-/**
- * Copyright (c) 2016-2023 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.time.calendar;
 
 import io.deephaven.base.testing.BaseArrayTestCase;
 import io.deephaven.configuration.Configuration;
+import io.deephaven.time.DateTimeUtils;
 
 import java.net.URISyntaxException;
 import java.nio.file.Paths;
 import java.util.Objects;
 
 public class TestCalendars extends BaseArrayTestCase {
+
+    @Override
+    public void setUp() throws Exception {
+        super.setUp();
+        CalendarInit.init();
+    }
 
     public void testDefault() {
         final BusinessCalendar calendar = Calendars.calendar();
@@ -76,6 +83,15 @@ public class TestCalendars extends BaseArrayTestCase {
         } catch (Exception e) {
             // pass
         }
+    }
 
+    public void testUTCDayLength() {
+        final BusinessCalendar cal = Calendars.calendar("UTC");
+        assertEquals(DateTimeUtils.DAY, cal.standardBusinessDay().businessNanos());
+    }
+
+    public void testNYSEDayLength() {
+        final BusinessCalendar cal = Calendars.calendar("USNYSE_EXAMPLE");
+        assertEquals(6 * DateTimeUtils.HOUR + 30 * DateTimeUtils.MINUTE, cal.standardBusinessDay().businessNanos());
     }
 }

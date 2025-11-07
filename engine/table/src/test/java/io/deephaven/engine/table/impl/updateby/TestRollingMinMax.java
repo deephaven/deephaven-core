@@ -1,3 +1,6 @@
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.updateby;
 
 import io.deephaven.api.ColumnName;
@@ -6,9 +9,12 @@ import io.deephaven.api.updateby.UpdateByOperation;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryScope;
+import io.deephaven.engine.table.ColumnDefinition;
+import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.impl.DataAccessHelpers;
+import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.QueryTable;
+import io.deephaven.engine.table.vectors.ColumnVectors;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.EvalNugget;
 import io.deephaven.engine.testutil.GenerateTableUpdates;
@@ -20,18 +26,19 @@ import io.deephaven.engine.util.TableDiff;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.time.DateTimeUtils;
+import io.deephaven.util.annotations.TestUseOnly;
+import io.deephaven.util.annotations.VisibleForTesting;
 import io.deephaven.vector.ObjectVector;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.time.Duration;
+import java.time.*;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.Random;
-import java.util.function.Function;
 
 import static io.deephaven.engine.testutil.GenerateTableUpdates.generateAppends;
 import static io.deephaven.engine.testutil.testcase.RefreshingTableTestCase.simulateShiftAwareStep;
@@ -100,133 +107,136 @@ public class TestRollingMinMax extends BaseUpdateByTest {
 
     // region Object Helper functions
 
-    final Function<ObjectVector<BigInteger>, BigInteger> minBigInt = bigIntegerObjectVector -> {
-        if (bigIntegerObjectVector == null) {
-            return null;
-        }
+    @SuppressWarnings("unused") // Functions used via QueryLibrary
+    @VisibleForTesting
+    @TestUseOnly
+    public static class Helpers {
 
-        BigInteger min = BigInteger.valueOf(Long.MAX_VALUE);
-        long count = 0;
-        final long n = bigIntegerObjectVector.size();
-
-        for (long i = 0; i < n; i++) {
-            BigInteger val = bigIntegerObjectVector.get(i);
-            if (!isNull(val)) {
-                if (val.compareTo(min) < 0) {
-                    min = val;
-                }
-                count++;
+        public static BigInteger minBigInt(ObjectVector<BigInteger> bigIntegerObjectVector) {
+            if (bigIntegerObjectVector == null) {
+                return null;
             }
-        }
-        if (count == 0) {
-            return null;
-        }
-        return min;
-    };
 
-    final Function<ObjectVector<BigInteger>, BigInteger> maxBigInt = bigIntegerObjectVector -> {
-        if (bigIntegerObjectVector == null) {
-            return null;
-        }
+            BigInteger min = BigInteger.valueOf(Long.MAX_VALUE);
+            long count = 0;
+            final long n = bigIntegerObjectVector.size();
 
-        BigInteger max = BigInteger.valueOf(Long.MIN_VALUE);
-        long count = 0;
-        final long n = bigIntegerObjectVector.size();
-
-        for (long i = 0; i < n; i++) {
-            BigInteger val = bigIntegerObjectVector.get(i);
-            if (!isNull(val)) {
-                if (val.compareTo(max) > 0) {
-                    max = val;
+            for (long i = 0; i < n; i++) {
+                BigInteger val = bigIntegerObjectVector.get(i);
+                if (!isNull(val)) {
+                    if (val.compareTo(min) < 0) {
+                        min = val;
+                    }
+                    count++;
                 }
-                count++;
             }
-        }
-        if (count == 0) {
-            return null;
-        }
-        return max;
-    };
-
-    final Function<ObjectVector<BigDecimal>, BigDecimal> minBigDec = bigDecimalObjectVector -> {
-        if (bigDecimalObjectVector == null) {
-            return null;
+            if (count == 0) {
+                return null;
+            }
+            return min;
         }
 
-        BigDecimal min = new BigDecimal(Double.MAX_VALUE);
-        long count = 0;
-        final long n = bigDecimalObjectVector.size();
+        public static BigInteger maxBigInt(ObjectVector<BigInteger> bigIntegerObjectVector) {
+            if (bigIntegerObjectVector == null) {
+                return null;
+            }
 
-        for (long i = 0; i < n; i++) {
-            BigDecimal val = bigDecimalObjectVector.get(i);
-            if (!isNull(val)) {
-                if (val.compareTo(min) < 0) {
-                    min = val;
+            BigInteger max = BigInteger.valueOf(Long.MIN_VALUE);
+            long count = 0;
+            final long n = bigIntegerObjectVector.size();
+
+            for (long i = 0; i < n; i++) {
+                BigInteger val = bigIntegerObjectVector.get(i);
+                if (!isNull(val)) {
+                    if (val.compareTo(max) > 0) {
+                        max = val;
+                    }
+                    count++;
                 }
-                count++;
             }
-        }
-        if (count == 0) {
-            return null;
-        }
-        return min;
-    };
-
-    final Function<ObjectVector<BigDecimal>, BigDecimal> maxBigDec = bigDecimalObjectVector -> {
-        if (bigDecimalObjectVector == null) {
-            return null;
+            if (count == 0) {
+                return null;
+            }
+            return max;
         }
 
-        BigDecimal max = new BigDecimal(Double.MIN_VALUE);
-        long count = 0;
-        final long n = bigDecimalObjectVector.size();
+        public static BigDecimal minBigDec(ObjectVector<BigDecimal> bigDecimalObjectVector) {
+            if (bigDecimalObjectVector == null) {
+                return null;
+            }
 
-        for (long i = 0; i < n; i++) {
-            BigDecimal val = bigDecimalObjectVector.get(i);
-            if (!isNull(val)) {
-                if (val.compareTo(max) > 0) {
-                    max = val;
+            BigDecimal min = new BigDecimal(Double.MAX_VALUE);
+            long count = 0;
+            final long n = bigDecimalObjectVector.size();
+
+            for (long i = 0; i < n; i++) {
+                BigDecimal val = bigDecimalObjectVector.get(i);
+                if (!isNull(val)) {
+                    if (val.compareTo(min) < 0) {
+                        min = val;
+                    }
+                    count++;
                 }
-                count++;
             }
+            if (count == 0) {
+                return null;
+            }
+            return min;
         }
-        if (count == 0) {
-            return null;
+
+        public static BigDecimal maxBigDec(ObjectVector<BigDecimal> bigDecimalObjectVector) {
+            if (bigDecimalObjectVector == null) {
+                return null;
+            }
+
+            BigDecimal max = new BigDecimal(Double.MIN_VALUE);
+            long count = 0;
+            final long n = bigDecimalObjectVector.size();
+
+            for (long i = 0; i < n; i++) {
+                BigDecimal val = bigDecimalObjectVector.get(i);
+                if (!isNull(val)) {
+                    if (val.compareTo(max) > 0) {
+                        max = val;
+                    }
+                    count++;
+                }
+            }
+            if (count == 0) {
+                return null;
+            }
+            return max;
         }
-        return max;
-    };
+    }
 
     private void doTestStaticZeroKeyBigNumbers(final QueryTable t, final int prevTicks, final int postTicks) {
-        QueryScope.addParam("minBigInt", minBigInt);
-        QueryScope.addParam("maxBigInt", maxBigInt);
-        QueryScope.addParam("minBigDec", minBigDec);
-        QueryScope.addParam("maxBigDec", maxBigDec);
+        ExecutionContext.getContext().getQueryLibrary().importStatic(Helpers.class);
 
         // TEST MIN VALUES
 
         Table actual = t.updateBy(UpdateByOperation.RollingMin(prevTicks, postTicks, "bigIntCol", "bigDecimalCol"));
         Table expected = t.updateBy(UpdateByOperation.RollingGroup(prevTicks, postTicks, "bigIntCol", "bigDecimalCol"))
-                .update("bigIntCol=minBigInt.apply(bigIntCol)", "bigDecimalCol=minBigDec.apply(bigDecimalCol)");
+                .update("bigIntCol=minBigInt(bigIntCol)", "bigDecimalCol=minBigDec(bigDecimalCol)");
 
-        BigInteger[] biActual = (BigInteger[]) DataAccessHelpers.getColumn(actual, "bigIntCol").getDirect();
-        Object[] biExpected = (Object[]) DataAccessHelpers.getColumn(expected, "bigIntCol").getDirect();
+        BigInteger[] biActual = ColumnVectors.ofObject(actual, "bigIntCol", BigInteger.class).toArray();
+        BigInteger[] biExpected = ColumnVectors.ofObject(expected, "bigIntCol", BigInteger.class).toArray();
 
         Assert.eq(biActual.length, "array length", biExpected.length);
         for (int ii = 0; ii < biActual.length; ii++) {
             BigInteger actualVal = biActual[ii];
-            BigInteger expectedVal = (BigInteger) biExpected[ii];
+            BigInteger expectedVal = biExpected[ii];
             if (actualVal != null || expectedVal != null) {
                 Assert.eqTrue(actualVal.compareTo(expectedVal) == 0, "values match");
             }
         }
 
-        BigDecimal[] bdActual = (BigDecimal[]) DataAccessHelpers.getColumn(actual, "bigDecimalCol").getDirect();
-        Object[] bdExpected = (Object[]) DataAccessHelpers.getColumn(expected, "bigDecimalCol").getDirect();
+        BigDecimal[] bdActual = ColumnVectors.ofObject(actual, "bigDecimalCol", BigDecimal.class).toArray();
+        BigDecimal[] bdExpected = ColumnVectors.ofObject(expected, "bigDecimalCol", BigDecimal.class).toArray();
 
         Assert.eq(bdActual.length, "array length", bdExpected.length);
         for (int ii = 0; ii < bdActual.length; ii++) {
             BigDecimal actualVal = bdActual[ii];
-            BigDecimal expectedVal = (BigDecimal) bdExpected[ii];
+            BigDecimal expectedVal = bdExpected[ii];
             if (actualVal != null || expectedVal != null) {
                 Assert.eqTrue(actualVal.compareTo(expectedVal) == 0, "values match");
             }
@@ -236,27 +246,27 @@ public class TestRollingMinMax extends BaseUpdateByTest {
 
         actual = t.updateBy(UpdateByOperation.RollingMax(prevTicks, postTicks, "bigIntCol", "bigDecimalCol"));
         expected = t.updateBy(UpdateByOperation.RollingGroup(prevTicks, postTicks, "bigIntCol", "bigDecimalCol"))
-                .update("bigIntCol=maxBigInt.apply(bigIntCol)", "bigDecimalCol=maxBigDec.apply(bigDecimalCol)");
+                .update("bigIntCol=maxBigInt(bigIntCol)", "bigDecimalCol=maxBigDec(bigDecimalCol)");
 
-        biActual = (BigInteger[]) DataAccessHelpers.getColumn(actual, "bigIntCol").getDirect();
-        biExpected = (Object[]) DataAccessHelpers.getColumn(expected, "bigIntCol").getDirect();
+        biActual = ColumnVectors.ofObject(actual, "bigIntCol", BigInteger.class).toArray();
+        biExpected = ColumnVectors.ofObject(expected, "bigIntCol", BigInteger.class).toArray();
 
         Assert.eq(biActual.length, "array length", biExpected.length);
         for (int ii = 0; ii < biActual.length; ii++) {
             BigInteger actualVal = biActual[ii];
-            BigInteger expectedVal = (BigInteger) biExpected[ii];
+            BigInteger expectedVal = biExpected[ii];
             if (actualVal != null || expectedVal != null) {
                 Assert.eqTrue(actualVal.compareTo(expectedVal) == 0, "values match");
             }
         }
 
-        bdActual = (BigDecimal[]) DataAccessHelpers.getColumn(actual, "bigDecimalCol").getDirect();
-        bdExpected = (Object[]) DataAccessHelpers.getColumn(expected, "bigDecimalCol").getDirect();
+        bdActual = ColumnVectors.ofObject(actual, "bigDecimalCol", BigDecimal.class).toArray();
+        bdExpected = ColumnVectors.ofObject(expected, "bigDecimalCol", BigDecimal.class).toArray();
 
         Assert.eq(bdActual.length, "array length", bdExpected.length);
         for (int ii = 0; ii < bdActual.length; ii++) {
             BigDecimal actualVal = bdActual[ii];
-            BigDecimal expectedVal = (BigDecimal) bdExpected[ii];
+            BigDecimal expectedVal = bdExpected[ii];
             if (actualVal != null || expectedVal != null) {
                 Assert.eqTrue(actualVal.compareTo(expectedVal) == 0, "values match");
             }
@@ -265,37 +275,34 @@ public class TestRollingMinMax extends BaseUpdateByTest {
 
     private void doTestStaticZeroKeyTimedBigNumbers(final QueryTable t, final Duration prevTime,
             final Duration postTime) {
-        QueryScope.addParam("minBigInt", minBigInt);
-        QueryScope.addParam("maxBigInt", maxBigInt);
-        QueryScope.addParam("minBigDec", minBigDec);
-        QueryScope.addParam("maxBigDec", maxBigDec);
+        ExecutionContext.getContext().getQueryLibrary().importStatic(Helpers.class);
 
         // TEST MIN VALUES
 
         Table actual = t.updateBy(UpdateByOperation.RollingMin("ts", prevTime, postTime, "bigIntCol", "bigDecimalCol"));
         Table expected =
                 t.updateBy(UpdateByOperation.RollingGroup("ts", prevTime, postTime, "bigIntCol", "bigDecimalCol"))
-                        .update("bigIntCol=minBigInt.apply(bigIntCol)", "bigDecimalCol=minBigDec.apply(bigDecimalCol)");
+                        .update("bigIntCol=minBigInt(bigIntCol)", "bigDecimalCol=minBigDec(bigDecimalCol)");
 
-        BigInteger[] biActual = (BigInteger[]) DataAccessHelpers.getColumn(actual, "bigIntCol").getDirect();
-        Object[] biExpected = (Object[]) DataAccessHelpers.getColumn(expected, "bigIntCol").getDirect();
+        BigInteger[] biActual = ColumnVectors.ofObject(actual, "bigIntCol", BigInteger.class).toArray();
+        BigInteger[] biExpected = ColumnVectors.ofObject(expected, "bigIntCol", BigInteger.class).toArray();
 
         Assert.eq(biActual.length, "array length", biExpected.length);
         for (int ii = 0; ii < biActual.length; ii++) {
             BigInteger actualVal = biActual[ii];
-            BigInteger expectedVal = (BigInteger) biExpected[ii];
+            BigInteger expectedVal = biExpected[ii];
             if (actualVal != null || expectedVal != null) {
                 Assert.eqTrue(actualVal.compareTo(expectedVal) == 0, "values match");
             }
         }
 
-        BigDecimal[] bdActual = (BigDecimal[]) DataAccessHelpers.getColumn(actual, "bigDecimalCol").getDirect();
-        Object[] bdExpected = (Object[]) DataAccessHelpers.getColumn(expected, "bigDecimalCol").getDirect();
+        BigDecimal[] bdActual = ColumnVectors.ofObject(actual, "bigDecimalCol", BigDecimal.class).toArray();
+        BigDecimal[] bdExpected = ColumnVectors.ofObject(expected, "bigDecimalCol", BigDecimal.class).toArray();
 
         Assert.eq(bdActual.length, "array length", bdExpected.length);
         for (int ii = 0; ii < bdActual.length; ii++) {
             BigDecimal actualVal = bdActual[ii];
-            BigDecimal expectedVal = (BigDecimal) bdExpected[ii];
+            BigDecimal expectedVal = bdExpected[ii];
             if (actualVal != null || expectedVal != null) {
                 Assert.eqTrue(actualVal.compareTo(expectedVal) == 0, "values match");
             }
@@ -305,27 +312,27 @@ public class TestRollingMinMax extends BaseUpdateByTest {
 
         actual = t.updateBy(UpdateByOperation.RollingMax("ts", prevTime, postTime, "bigIntCol", "bigDecimalCol"));
         expected = t.updateBy(UpdateByOperation.RollingGroup("ts", prevTime, postTime, "bigIntCol", "bigDecimalCol"))
-                .update("bigIntCol=maxBigInt.apply(bigIntCol)", "bigDecimalCol=maxBigDec.apply(bigDecimalCol)");
+                .update("bigIntCol=maxBigInt(bigIntCol)", "bigDecimalCol=maxBigDec(bigDecimalCol)");
 
-        biActual = (BigInteger[]) DataAccessHelpers.getColumn(actual, "bigIntCol").getDirect();
-        biExpected = (Object[]) DataAccessHelpers.getColumn(expected, "bigIntCol").getDirect();
+        biActual = ColumnVectors.ofObject(actual, "bigIntCol", BigInteger.class).toArray();
+        biExpected = ColumnVectors.ofObject(expected, "bigIntCol", BigInteger.class).toArray();
 
         Assert.eq(biActual.length, "array length", biExpected.length);
         for (int ii = 0; ii < biActual.length; ii++) {
             BigInteger actualVal = biActual[ii];
-            BigInteger expectedVal = (BigInteger) biExpected[ii];
+            BigInteger expectedVal = biExpected[ii];
             if (actualVal != null || expectedVal != null) {
                 Assert.eqTrue(actualVal.compareTo(expectedVal) == 0, "values match");
             }
         }
 
-        bdActual = (BigDecimal[]) DataAccessHelpers.getColumn(actual, "bigDecimalCol").getDirect();
-        bdExpected = (Object[]) DataAccessHelpers.getColumn(expected, "bigDecimalCol").getDirect();
+        bdActual = ColumnVectors.ofObject(actual, "bigDecimalCol", BigDecimal.class).toArray();
+        bdExpected = ColumnVectors.ofObject(expected, "bigDecimalCol", BigDecimal.class).toArray();
 
         Assert.eq(bdActual.length, "array length", bdExpected.length);
         for (int ii = 0; ii < bdActual.length; ii++) {
             BigDecimal actualVal = bdActual[ii];
-            BigDecimal expectedVal = (BigDecimal) bdExpected[ii];
+            BigDecimal expectedVal = bdExpected[ii];
             if (actualVal != null || expectedVal != null) {
                 Assert.eqTrue(actualVal.compareTo(expectedVal) == 0, "values match");
             }
@@ -333,10 +340,7 @@ public class TestRollingMinMax extends BaseUpdateByTest {
     }
 
     private void doTestStaticBucketedBigNumbers(final QueryTable t, final int prevTicks, final int postTicks) {
-        QueryScope.addParam("minBigInt", minBigInt);
-        QueryScope.addParam("maxBigInt", maxBigInt);
-        QueryScope.addParam("minBigDec", minBigDec);
-        QueryScope.addParam("maxBigDec", maxBigDec);
+        ExecutionContext.getContext().getQueryLibrary().importStatic(Helpers.class);
 
         // TEST MIN VALUES
 
@@ -344,27 +348,27 @@ public class TestRollingMinMax extends BaseUpdateByTest {
                 t.updateBy(UpdateByOperation.RollingMin(prevTicks, postTicks, "bigIntCol", "bigDecimalCol"), "Sym");
         Table expected =
                 t.updateBy(UpdateByOperation.RollingGroup(prevTicks, postTicks, "bigIntCol", "bigDecimalCol"), "Sym")
-                        .update("bigIntCol=minBigInt.apply(bigIntCol)", "bigDecimalCol=minBigDec.apply(bigDecimalCol)");
+                        .update("bigIntCol=minBigInt(bigIntCol)", "bigDecimalCol=minBigDec(bigDecimalCol)");
 
-        BigInteger[] biActual = (BigInteger[]) DataAccessHelpers.getColumn(actual, "bigIntCol").getDirect();
-        Object[] biExpected = (Object[]) DataAccessHelpers.getColumn(expected, "bigIntCol").getDirect();
+        BigInteger[] biActual = ColumnVectors.ofObject(actual, "bigIntCol", BigInteger.class).toArray();
+        BigInteger[] biExpected = ColumnVectors.ofObject(expected, "bigIntCol", BigInteger.class).toArray();
 
         Assert.eq(biActual.length, "array length", biExpected.length);
         for (int ii = 0; ii < biActual.length; ii++) {
             BigInteger actualVal = biActual[ii];
-            BigInteger expectedVal = (BigInteger) biExpected[ii];
+            BigInteger expectedVal = biExpected[ii];
             if (actualVal != null || expectedVal != null) {
                 Assert.eqTrue(actualVal.compareTo(expectedVal) == 0, "values match");
             }
         }
 
-        BigDecimal[] bdActual = (BigDecimal[]) DataAccessHelpers.getColumn(actual, "bigDecimalCol").getDirect();
-        Object[] bdExpected = (Object[]) DataAccessHelpers.getColumn(expected, "bigDecimalCol").getDirect();
+        BigDecimal[] bdActual = ColumnVectors.ofObject(actual, "bigDecimalCol", BigDecimal.class).toArray();
+        BigDecimal[] bdExpected = ColumnVectors.ofObject(expected, "bigDecimalCol", BigDecimal.class).toArray();
 
         Assert.eq(bdActual.length, "array length", bdExpected.length);
         for (int ii = 0; ii < bdActual.length; ii++) {
             BigDecimal actualVal = bdActual[ii];
-            BigDecimal expectedVal = (BigDecimal) bdExpected[ii];
+            BigDecimal expectedVal = bdExpected[ii];
             if (actualVal != null || expectedVal != null) {
                 Assert.eqTrue(actualVal.compareTo(expectedVal) == 0, "values match");
             }
@@ -374,27 +378,27 @@ public class TestRollingMinMax extends BaseUpdateByTest {
 
         actual = t.updateBy(UpdateByOperation.RollingMax(prevTicks, postTicks, "bigIntCol", "bigDecimalCol"), "Sym");
         expected = t.updateBy(UpdateByOperation.RollingGroup(prevTicks, postTicks, "bigIntCol", "bigDecimalCol"), "Sym")
-                .update("bigIntCol=maxBigInt.apply(bigIntCol)", "bigDecimalCol=maxBigDec.apply(bigDecimalCol)");
+                .update("bigIntCol=maxBigInt(bigIntCol)", "bigDecimalCol=maxBigDec(bigDecimalCol)");
 
-        biActual = (BigInteger[]) DataAccessHelpers.getColumn(actual, "bigIntCol").getDirect();
-        biExpected = (Object[]) DataAccessHelpers.getColumn(expected, "bigIntCol").getDirect();
+        biActual = ColumnVectors.ofObject(actual, "bigIntCol", BigInteger.class).toArray();
+        biExpected = ColumnVectors.ofObject(expected, "bigIntCol", BigInteger.class).toArray();
 
         Assert.eq(biActual.length, "array length", biExpected.length);
         for (int ii = 0; ii < biActual.length; ii++) {
             BigInteger actualVal = biActual[ii];
-            BigInteger expectedVal = (BigInteger) biExpected[ii];
+            BigInteger expectedVal = biExpected[ii];
             if (actualVal != null || expectedVal != null) {
                 Assert.eqTrue(actualVal.compareTo(expectedVal) == 0, "values match");
             }
         }
 
-        bdActual = (BigDecimal[]) DataAccessHelpers.getColumn(actual, "bigDecimalCol").getDirect();
-        bdExpected = (Object[]) DataAccessHelpers.getColumn(expected, "bigDecimalCol").getDirect();
+        bdActual = ColumnVectors.ofObject(actual, "bigDecimalCol", BigDecimal.class).toArray();
+        bdExpected = ColumnVectors.ofObject(expected, "bigDecimalCol", BigDecimal.class).toArray();
 
         Assert.eq(bdActual.length, "array length", bdExpected.length);
         for (int ii = 0; ii < bdActual.length; ii++) {
             BigDecimal actualVal = bdActual[ii];
-            BigDecimal expectedVal = (BigDecimal) bdExpected[ii];
+            BigDecimal expectedVal = bdExpected[ii];
             if (actualVal != null || expectedVal != null) {
                 Assert.eqTrue(actualVal.compareTo(expectedVal) == 0, "values match");
             }
@@ -403,10 +407,7 @@ public class TestRollingMinMax extends BaseUpdateByTest {
 
     private void doTestStaticBucketedTimedBigNumbers(final QueryTable t, final Duration prevTime,
             final Duration postTime) {
-        QueryScope.addParam("minBigInt", minBigInt);
-        QueryScope.addParam("maxBigInt", maxBigInt);
-        QueryScope.addParam("minBigDec", minBigDec);
-        QueryScope.addParam("maxBigDec", maxBigDec);
+        ExecutionContext.getContext().getQueryLibrary().importStatic(Helpers.class);
 
         // TEST MIN VALUES
 
@@ -414,27 +415,27 @@ public class TestRollingMinMax extends BaseUpdateByTest {
                 t.updateBy(UpdateByOperation.RollingMin("ts", prevTime, postTime, "bigIntCol", "bigDecimalCol"), "Sym");
         Table expected = t
                 .updateBy(UpdateByOperation.RollingGroup("ts", prevTime, postTime, "bigIntCol", "bigDecimalCol"), "Sym")
-                .update("bigIntCol=minBigInt.apply(bigIntCol)", "bigDecimalCol=minBigDec.apply(bigDecimalCol)");
+                .update("bigIntCol=minBigInt(bigIntCol)", "bigDecimalCol=minBigDec(bigDecimalCol)");
 
-        BigInteger[] biActual = (BigInteger[]) DataAccessHelpers.getColumn(actual, "bigIntCol").getDirect();
-        Object[] biExpected = (Object[]) DataAccessHelpers.getColumn(expected, "bigIntCol").getDirect();
+        BigInteger[] biActual = ColumnVectors.ofObject(actual, "bigIntCol", BigInteger.class).toArray();
+        BigInteger[] biExpected = ColumnVectors.ofObject(expected, "bigIntCol", BigInteger.class).toArray();
 
         Assert.eq(biActual.length, "array length", biExpected.length);
         for (int ii = 0; ii < biActual.length; ii++) {
             BigInteger actualVal = biActual[ii];
-            BigInteger expectedVal = (BigInteger) biExpected[ii];
+            BigInteger expectedVal = biExpected[ii];
             if (actualVal != null || expectedVal != null) {
                 Assert.eqTrue(actualVal.compareTo(expectedVal) == 0, "values match");
             }
         }
 
-        BigDecimal[] bdActual = (BigDecimal[]) DataAccessHelpers.getColumn(actual, "bigDecimalCol").getDirect();
-        Object[] bdExpected = (Object[]) DataAccessHelpers.getColumn(expected, "bigDecimalCol").getDirect();
+        BigDecimal[] bdActual = ColumnVectors.ofObject(actual, "bigDecimalCol", BigDecimal.class).toArray();
+        BigDecimal[] bdExpected = ColumnVectors.ofObject(expected, "bigDecimalCol", BigDecimal.class).toArray();
 
         Assert.eq(bdActual.length, "array length", bdExpected.length);
         for (int ii = 0; ii < bdActual.length; ii++) {
             BigDecimal actualVal = bdActual[ii];
-            BigDecimal expectedVal = (BigDecimal) bdExpected[ii];
+            BigDecimal expectedVal = bdExpected[ii];
             if (actualVal != null || expectedVal != null) {
                 Assert.eqTrue(actualVal.compareTo(expectedVal) == 0, "values match");
             }
@@ -446,27 +447,27 @@ public class TestRollingMinMax extends BaseUpdateByTest {
                 "Sym");
         expected = t
                 .updateBy(UpdateByOperation.RollingGroup("ts", prevTime, postTime, "bigIntCol", "bigDecimalCol"), "Sym")
-                .update("bigIntCol=maxBigInt.apply(bigIntCol)", "bigDecimalCol=maxBigDec.apply(bigDecimalCol)");
+                .update("bigIntCol=maxBigInt(bigIntCol)", "bigDecimalCol=maxBigDec(bigDecimalCol)");
 
-        biActual = (BigInteger[]) DataAccessHelpers.getColumn(actual, "bigIntCol").getDirect();
-        biExpected = (Object[]) DataAccessHelpers.getColumn(expected, "bigIntCol").getDirect();
+        biActual = ColumnVectors.ofObject(actual, "bigIntCol", BigInteger.class).toArray();
+        biExpected = ColumnVectors.ofObject(expected, "bigIntCol", BigInteger.class).toArray();
 
         Assert.eq(biActual.length, "array length", biExpected.length);
         for (int ii = 0; ii < biActual.length; ii++) {
             BigInteger actualVal = biActual[ii];
-            BigInteger expectedVal = (BigInteger) biExpected[ii];
+            BigInteger expectedVal = biExpected[ii];
             if (actualVal != null || expectedVal != null) {
                 Assert.eqTrue(actualVal.compareTo(expectedVal) == 0, "values match");
             }
         }
 
-        bdActual = (BigDecimal[]) DataAccessHelpers.getColumn(actual, "bigDecimalCol").getDirect();
-        bdExpected = (Object[]) DataAccessHelpers.getColumn(expected, "bigDecimalCol").getDirect();
+        bdActual = ColumnVectors.ofObject(actual, "bigDecimalCol", BigDecimal.class).toArray();
+        bdExpected = ColumnVectors.ofObject(expected, "bigDecimalCol", BigDecimal.class).toArray();
 
         Assert.eq(bdActual.length, "array length", bdExpected.length);
         for (int ii = 0; ii < bdActual.length; ii++) {
             BigDecimal actualVal = bdActual[ii];
-            BigDecimal expectedVal = (BigDecimal) bdExpected[ii];
+            BigDecimal expectedVal = bdExpected[ii];
             if (actualVal != null || expectedVal != null) {
                 Assert.eqTrue(actualVal.compareTo(expectedVal) == 0, "values match");
             }
@@ -475,6 +476,14 @@ public class TestRollingMinMax extends BaseUpdateByTest {
     // endregion Object Helper functions
 
     // region Static Zero Key Tests
+
+    @Test
+    public void testStaticZeroKeyAllNullVector() {
+        final int prevTicks = 1;
+        final int postTicks = 0;
+
+        doTestStaticZeroKey(prevTicks, postTicks);
+    }
 
     @Test
     public void testStaticZeroKeyRev() {
@@ -1237,5 +1246,81 @@ public class TestRollingMinMax extends BaseUpdateByTest {
 
         // We can assert equality to the input table because the data values are constant.
         TstUtils.assertTableEquals(t, expected, TableDiff.DiffItems.DoublesExact);
+    }
+
+    @Test
+    public void testResultDataTypes() {
+        final Instant baseInstant = DateTimeUtils.parseInstant("2023-01-01T00:00:00 NY");
+        final ZoneId zone = ZoneId.of("America/Los_Angeles");
+
+        QueryScope.addParam("baseInstant", baseInstant);
+        QueryScope.addParam("baseLDT", LocalDateTime.ofInstant(baseInstant, zone));
+        QueryScope.addParam("baseZDT", baseInstant.atZone(zone));
+
+        final TableDefinition expectedDefinition = TableDefinition.of(
+                ColumnDefinition.ofByte("byteCol"),
+                ColumnDefinition.ofChar("charCol"),
+                ColumnDefinition.ofShort("shortCol"),
+                ColumnDefinition.ofInt("intCol"),
+                ColumnDefinition.ofLong("longCol"),
+                ColumnDefinition.ofFloat("floatCol"),
+                ColumnDefinition.ofDouble("doubleCol"),
+                ColumnDefinition.ofString("stringCol"),
+                ColumnDefinition.fromGenericType("instantCol", Instant.class),
+                ColumnDefinition.fromGenericType("ldtCol", LocalDateTime.class),
+                ColumnDefinition.fromGenericType("zdtCol", ZonedDateTime.class));
+
+        final String[] columnNames = expectedDefinition.getColumnNamesArray();
+
+        final String[] updateStrings = new String[] {
+                "byteCol=(byte)i",
+                "charCol=(char)(i + 64)",
+                "shortCol=(short)i",
+                "intCol=i",
+                "longCol=ii",
+                "floatCol=(float)ii",
+                "doubleCol=(double)ii",
+                "stringCol=String.valueOf(i)",
+                "instantCol=baseInstant.plusSeconds(i)",
+                "ldtCol=baseLDT.plusSeconds(i)",
+                "zdtCol=baseZDT.plusSeconds(i)",
+        };
+
+        // NOTE: boolean is not supported by RollingMinMaxSpec.applicableTo()
+        final Table source = TableTools.emptyTable(20).update(updateStrings);
+
+        // Verify all the source columns are the expected types.
+        source.getDefinition().checkCompatibility(expectedDefinition);
+
+        final Table expected = source.updateBy(UpdateByOperation.RollingMax(5, columnNames));
+
+        // Verify all the result columns are the expected types.
+        expected.getDefinition().checkCompatibility(expectedDefinition);
+    }
+
+    @Test
+    public void testProxy() {
+        final QueryTable t = createTestTable(STATIC_TABLE_SIZE, true, false, false, 0x31313131,
+                new String[] {"charCol"},
+                new TestDataGenerator[] {new CharGenerator('A', 'z', 0.1)}).t;
+
+        final int prevTicks = 100;
+        final int postTicks = 0;
+
+        Table actual;
+        Table expected;
+
+        PartitionedTable pt = t.partitionBy("Sym");
+        actual = pt.proxy()
+                .updateBy(UpdateByOperation.RollingMin(prevTicks, postTicks))
+                .target().merge().sort("Sym");
+        expected = t.sort("Sym").updateBy(UpdateByOperation.RollingMin(prevTicks, postTicks), "Sym");
+        TstUtils.assertTableEquals(expected, actual);
+
+        actual = pt.proxy()
+                .updateBy(UpdateByOperation.RollingMax(prevTicks, postTicks))
+                .target().merge().sort("Sym");
+        expected = t.sort("Sym").updateBy(UpdateByOperation.RollingMax(prevTicks, postTicks), "Sym");
+        TstUtils.assertTableEquals(expected, actual);
     }
 }

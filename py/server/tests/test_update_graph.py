@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 #
 
 import unittest
@@ -160,32 +160,6 @@ class UpdateGraphTestCase(BaseTestCase):
         for op in ops:
             with self.subTest(op=op):
                 result_table = left_table.aj(right_table, on="X")
-
-    def test_auto_locking_rename_columns(self):
-        with ug.shared_lock(self.test_update_graph):
-            test_table = time_table("PT00:00:00.001").update(["X=i", "Y=i%13", "Z=X*Y"])
-
-        cols_to_rename = [
-            f"{f.name + '_2'} = {f.name}" for f in test_table.columns[::2]
-        ]
-
-        with self.assertRaises(DHError) as cm:
-            result_table = test_table.rename_columns(cols_to_rename)
-        self.assertRegex(str(cm.exception), r"IllegalStateException")
-
-        ug.auto_locking = True
-        result_table = test_table.rename_columns(cols_to_rename)
-
-    def test_auto_locking_ungroup(self):
-        with ug.shared_lock(self.test_update_graph):
-            test_table = time_table("PT00:00:00.001").update(["X=i", "Y=i%13"])
-        grouped_table = test_table.group_by(by=["Y"])
-        with self.assertRaises(DHError) as cm:
-            ungrouped_table = grouped_table.ungroup(cols=["X"])
-        self.assertRegex(str(cm.exception), r"IllegalStateException")
-
-        ug.auto_locking = True
-        ungrouped_table = grouped_table.ungroup(cols=["X"])
 
     def test_auto_locking_head_tail_by(self):
         ops = [Table.head_by, Table.tail_by]

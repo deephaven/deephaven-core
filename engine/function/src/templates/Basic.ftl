@@ -1,11 +1,12 @@
-/*
- * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
- */
+<#--
+  Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+-->
 
 package io.deephaven.function;
 
 import io.deephaven.vector.*;
 import io.deephaven.engine.primitive.iterator.*;
+import io.deephaven.util.annotations.UserInvocationPermitted;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.util.QueryConstants;
 import gnu.trove.list.array.*;
@@ -21,6 +22,7 @@ import static io.deephaven.util.QueryConstants.*;
 /**
  * Basic functions that can be applied to primitive types.
  */
+@UserInvocationPermitted({"function_library"})
 public class Basic {
 
     //////////////////////////// Object ////////////////////////////

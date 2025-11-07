@@ -7,11 +7,11 @@ dependencies {
 	implementation project(':log-example-base')
 
 	runtimeOnly project(':log-to-slf4j')
-	Classpaths.inheritSlf4j(project, 'slf4j-simple', 'runtimeOnly')
+	runtimeOnly libs.slf4j.simple
 }
 
 application {
-	mainClassName = 'io.deephaven.internal.example.LogExampleMain'
+	mainClass.set 'io.deephaven.internal.example.LogExampleMain'
 	applicationDefaultJvmArgs = [
 		// http://www.slf4j.org/api/org/slf4j/impl/SimpleLogger.html
 		'-Dorg.slf4j.simpleLogger.defaultLogLevel=debug',

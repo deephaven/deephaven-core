@@ -1,11 +1,11 @@
-/**
- * Copyright (c) 2016-2023 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.protobuf;
 
 import com.google.protobuf.Descriptors.Descriptor;
 import com.google.protobuf.Message;
-import io.deephaven.functions.TypedFunction;
+import io.deephaven.function.TypedFunction;
 
 /**
  * A specialized / simplified version of {@link MessageParser} that produces a single unnamed function.

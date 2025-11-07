@@ -1,16 +1,15 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharVectorSlice and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit CharVectorSlice and run "./gradlew replicateVectors" to regenerate
+//
+// @formatter:off
 package io.deephaven.vector;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
-import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfInt;
+import io.deephaven.engine.primitive.value.iterator.ValueIteratorOfInt;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
@@ -96,7 +95,7 @@ public class IntVectorSlice extends IntVector.Indirect {
     }
 
     @Override
-    public CloseablePrimitiveIteratorOfInt iterator(final long fromIndexInclusive, final long toIndexExclusive) {
+    public ValueIteratorOfInt iterator(final long fromIndexInclusive, final long toIndexExclusive) {
         Require.leq(fromIndexInclusive, "fromIndexInclusive", toIndexExclusive, "toIndexExclusive");
         final long totalWanted = toIndexExclusive - fromIndexInclusive;
         long nextIndexWanted = fromIndexInclusive + offsetIndex;
@@ -120,16 +119,10 @@ public class IntVectorSlice extends IntVector.Indirect {
             includedInnerLength = 0;
         }
 
-        final CloseablePrimitiveIteratorOfInt initialNullsIterator = includedInitialNulls > 0
-                ? CloseablePrimitiveIteratorOfInt.repeat(NULL_INT, includedInitialNulls)
-                : null;
-        final CloseablePrimitiveIteratorOfInt innerIterator = includedInnerLength > 0
+        final ValueIteratorOfInt innerIterator = includedInnerLength > 0
                 ? innerVector.iterator(firstIncludedInnerOffset, firstIncludedInnerOffset + includedInnerLength)
                 : null;
-        final CloseablePrimitiveIteratorOfInt finalNullsIterator = remaining > 0
-                ? CloseablePrimitiveIteratorOfInt.repeat(NULL_INT, remaining)
-                : null;
-        return CloseablePrimitiveIteratorOfInt.maybeConcat(initialNullsIterator, innerIterator, finalNullsIterator);
+        return ValueIteratorOfInt.wrapWithNulls(innerIterator, includedInitialNulls, remaining);
     }
 
     @Override

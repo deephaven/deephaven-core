@@ -1,0 +1,17 @@
+plugins {
+    id 'java-library'
+    id 'io.deephaven.project.register'
+}
+
+description 'util-processenvironment: Deephaven ProcessEnvironment and default implementations'
+
+dependencies {
+    api project(':Configuration')
+    api project(':IO')
+
+    implementation project(':util-thread')
+    implementation project(':log-factory')
+    implementation project(':Base')
+
+    compileOnly libs.jetbrains.annotations
+}

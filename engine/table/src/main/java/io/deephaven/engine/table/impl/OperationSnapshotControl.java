@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.configuration.Configuration;
@@ -119,7 +119,7 @@ public class OperationSnapshotControl implements ConstructSnapshot.SnapshotContr
                     .append("} snapshotCompletedConsistently: afterClockValue=").append(afterClockValue)
                     .append(", usedPreviousValues=").append(usedPreviousValues)
                     .append(", snapshotConsistent=").append(snapshotConsistent)
-                    .append(", last=").append(lastNotificationStep)
+                    .append(", lastNotificationStep=").append(lastNotificationStep)
                     .endl();
         }
 

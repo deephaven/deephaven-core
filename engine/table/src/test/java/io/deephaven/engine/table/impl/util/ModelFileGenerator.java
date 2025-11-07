@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.util;
 
 import junit.framework.TestCase;
@@ -41,9 +41,7 @@ public class ModelFileGenerator {
     }
 
     private String processClassDef(final String rawClassDef) {
-        return "package io.deephaven.engine.table.impl.select;\n" +
-                rawClassDef.replace("$CLASSNAME$", classType.getSimpleName())
-                        .replace("import static io.deephaven.numerics.suanshu.SuanShuIntegration.*;", "");
-
+        return classType.getPackage() + ";\n" + rawClassDef
+                .replace("import static io.deephaven.numerics.suanshu.SuanShuIntegration.*;", "");
     }
 }

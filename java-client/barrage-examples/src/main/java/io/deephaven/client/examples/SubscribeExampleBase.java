@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.client.examples;
 
 import io.deephaven.client.impl.BarrageSession;
@@ -10,7 +10,6 @@ import io.deephaven.client.impl.TableHandleManager;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.impl.DataAccessHelpers;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.TableUpdateListener;
 import io.deephaven.engine.table.impl.InstrumentedTableUpdateListener;
@@ -21,6 +20,7 @@ import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.ReferentialIntegrity;
 import picocli.CommandLine;
 
+import javax.annotation.OverridingMethodsMustInvokeSuper;
 import java.util.concurrent.CountDownLatch;
 
 abstract class SubscribeExampleBase extends BarrageClientExampleBase {
@@ -73,7 +73,7 @@ abstract class SubscribeExampleBase extends BarrageClientExampleBase {
 
             System.out.println("Subscription established");
             System.out.println("Table info: rows = " + subscriptionTable.size() + ", cols = " +
-                    DataAccessHelpers.getColumns(subscriptionTable).length);
+                    subscriptionTable.numColumns());
             TableTools.show(subscriptionTable);
             System.out.println();
 
@@ -86,6 +86,7 @@ abstract class SubscribeExampleBase extends BarrageClientExampleBase {
                     manage(tableRef);
                 }
 
+                @OverridingMethodsMustInvokeSuper
                 @Override
                 protected void destroy() {
                     super.destroy();

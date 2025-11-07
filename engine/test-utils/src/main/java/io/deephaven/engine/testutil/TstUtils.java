@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.testutil;
 
 import io.deephaven.base.Pair;
@@ -12,6 +12,7 @@ import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.configuration.Configuration;
+import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.liveness.LivenessStateException;
 import io.deephaven.engine.rowset.*;
@@ -24,6 +25,7 @@ import io.deephaven.engine.table.impl.NoSuchColumnException;
 import io.deephaven.engine.table.impl.NoSuchColumnException.Type;
 import io.deephaven.engine.table.impl.PrevColumnSource;
 import io.deephaven.engine.table.impl.QueryTable;
+import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.select.Formula;
 import io.deephaven.engine.table.impl.sources.RedirectedColumnSource;
 import io.deephaven.engine.table.impl.sources.ViewColumnSource;
@@ -60,11 +62,11 @@ import io.deephaven.stringset.StringSet;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
+import io.deephaven.util.mutable.MutableInt;
 import io.deephaven.util.type.TypeUtils;
 import junit.framework.AssertionFailedError;
 import junit.framework.ComparisonFailure;
 import junit.framework.TestCase;
-import org.apache.commons.lang3.mutable.MutableInt;
 import org.assertj.core.api.Assertions;
 import org.jetbrains.annotations.NotNull;
 
@@ -111,15 +113,15 @@ public class TstUtils {
     }
 
     /**
-     * Create a grouped column holder from the given chunk.
+     * Create an indexed column holder from the given chunk.
      *
      * @param name the name of the column
      * @param type the type of the column
      * @param componentType the component type of the column if applicable
      * @param chunkData the data in an chunk for this column
-     * @return the new ColumnHolder with the grouping attribute set
+     * @return the new ColumnHolder with the indexed attribute set
      */
-    public static <T> ColumnHolder<T> groupedColumnHolderForChunk(
+    public static <T> ColumnHolder<T> indexedColumnHolderForChunk(
             String name, Class<T> type, Class<?> componentType, Chunk<Values> chunkData) {
         return ColumnHolder.makeForChunk(name, type, componentType, true, chunkData);
     }
@@ -132,6 +134,17 @@ public class TstUtils {
      */
     public static WritableRowSet i(long... keys) {
         return RowSetFactory.fromKeys(keys);
+    }
+
+    /**
+     * A shorthand for {@link RowSetFactory#fromRange(long, long)} for use in unit tests.
+     *
+     * @param firstRowKey the first key of the new RowSet
+     * @param lastRowKey the last key (inclusive) of the new RowSet
+     * @return a new RowSet with the given key range
+     */
+    public static WritableRowSet ir(final long firstRowKey, final long lastRowKey) {
+        return RowSetFactory.fromRange(firstRowKey, lastRowKey);
     }
 
     public static void addToTable(final Table table, final RowSet rowSet, final ColumnHolder<?>... columnHolders) {
@@ -209,7 +222,7 @@ public class TstUtils {
     }
 
     @SafeVarargs
-    public static <T> ColumnHolder<T> colGrouped(String name, T... data) {
+    public static <T> ColumnHolder<T> colIndexed(String name, T... data) {
         return ColumnHolder.createColumnHolder(name, true, data);
     }
 
@@ -429,7 +442,7 @@ public class TstUtils {
             System.out.println("================ NEXT ITERATION ================");
         }
         for (int i = 0; i < en.length; i++) {
-            try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+            try (final SafeCloseable ignored = LivenessScopeStack.open(new LivenessScope(true), true)) {
                 if (RefreshingTableTestCase.printTableUpdates) {
                     if (i != 0) {
                         System.out.println("================ NUGGET (" + i + ") ================");
@@ -551,29 +564,80 @@ public class TstUtils {
         return getTable(true, size, random, columnInfos);
     }
 
-    public static QueryTable getTable(boolean refreshing, int size, Random random, ColumnInfo<?, ?>[] columnInfos) {
+    public static QueryTable getTable(
+            final boolean refreshing,
+            final int size,
+            @NotNull final Random random,
+            @NotNull final ColumnInfo<?, ?>[] columnInfos) {
         final TrackingWritableRowSet rowSet = getInitialIndex(size, random).toTracking();
-        final ColumnHolder<?>[] sources = new ColumnHolder[columnInfos.length];
+        final ColumnHolder<?>[] columnHolders = new ColumnHolder[columnInfos.length];
         for (int i = 0; i < columnInfos.length; i++) {
-            sources[i] = columnInfos[i].generateInitialColumn(rowSet, random);
+            columnHolders[i] = columnInfos[i].generateInitialColumn(rowSet, random);
         }
         if (refreshing) {
-            return testRefreshingTable(rowSet, sources);
+            return testRefreshingTable(rowSet, columnHolders);
         } else {
-            return testTable(rowSet, sources);
+            return testTable(rowSet, columnHolders);
         }
     }
 
-    public static QueryTable testTable(ColumnHolder<?>... columnHolders) {
-        final WritableRowSet rowSet = RowSetFactory.flat(columnHolders[0].size());
-        return testTable(rowSet.toTracking(), columnHolders);
+    private static QueryTable testTable(
+            final boolean refreshing,
+            final boolean flat,
+            @NotNull final TrackingRowSet rowSet,
+            @NotNull final ColumnHolder<?>... columnHolders) {
+        final Map<String, ColumnSource<?>> columns = getColumnSourcesFromHolders(rowSet, columnHolders);
+        final QueryTable queryTable = new QueryTable(rowSet, columns);
+        queryTable.setAttribute(BaseTable.TEST_SOURCE_TABLE_ATTRIBUTE, true);
+        if (refreshing) {
+            queryTable.setRefreshing(true);
+        }
+        if (flat) {
+            Assert.assertion(rowSet.isFlat(), "rowSet.isFlat()");
+            queryTable.setFlat();
+        }
+
+        // Add indexes for the indexed columns.
+        for (ColumnHolder<?> columnHolder : columnHolders) {
+            if (columnHolder.indexed) {
+                // This mechanism is only safe in a reachability/liveness sense if we're enclosed in a LivenessScope
+                // that enforces strong reachability.
+                DataIndexer.getOrCreateDataIndex(queryTable, columnHolder.name);
+            }
+        }
+
+        return queryTable;
     }
 
-    public static QueryTable testTable(TrackingRowSet rowSet, ColumnHolder<?>... columnHolders) {
-        final Map<String, ColumnSource<?>> columns = getColumnSourcesFromHolders(rowSet, columnHolders);
-        QueryTable queryTable = new QueryTable(rowSet, columns);
-        queryTable.setAttribute(BaseTable.TEST_SOURCE_TABLE_ATTRIBUTE, true);
-        return queryTable;
+    public static QueryTable testTable(
+            @NotNull final TrackingRowSet rowSet,
+            @NotNull final ColumnHolder<?>... columnHolders) {
+        return testTable(false, false, rowSet, columnHolders);
+    }
+
+    public static QueryTable testRefreshingTable(
+            @NotNull final TrackingRowSet rowSet,
+            @NotNull final ColumnHolder<?>... columnHolders) {
+        return testTable(true, false, rowSet, columnHolders);
+    }
+
+    public static QueryTable testFlatRefreshingTable(
+            @NotNull final TrackingRowSet rowSet,
+            @NotNull final ColumnHolder<?>... columnHolders) {
+        return testTable(true, true, rowSet, columnHolders);
+    }
+
+    private static QueryTable testTable(final boolean refreshing, @NotNull final ColumnHolder<?>... columnHolders) {
+        final WritableRowSet rowSet = RowSetFactory.flat(columnHolders[0].size());
+        return testTable(refreshing, false, rowSet.toTracking(), columnHolders);
+    }
+
+    public static QueryTable testTable(@NotNull final ColumnHolder<?>... columnHolders) {
+        return testTable(false, columnHolders);
+    }
+
+    public static QueryTable testRefreshingTable(@NotNull final ColumnHolder<?>... columnHolders) {
+        return testTable(true, columnHolders);
     }
 
     @NotNull
@@ -584,29 +648,6 @@ public class TstUtils {
             columns.put(columnHolder.name, getTestColumnSource(rowSet, columnHolder));
         }
         return columns;
-    }
-
-    public static QueryTable testRefreshingTable(TrackingRowSet rowSet, ColumnHolder<?>... columnHolders) {
-        final QueryTable queryTable = testTable(rowSet, columnHolders);
-        queryTable.setRefreshing(true);
-        queryTable.setAttribute(BaseTable.TEST_SOURCE_TABLE_ATTRIBUTE, true);
-        return queryTable;
-    }
-
-    public static QueryTable testFlatRefreshingTable(TrackingRowSet rowSet, ColumnHolder<?>... columnHolders) {
-        Assert.assertion(rowSet.isFlat(), "rowSet.isFlat()", rowSet, "rowSet");
-        return new QueryTable(rowSet, getColumnSourcesFromHolders(rowSet, columnHolders)) {
-            {
-                setRefreshing(true);
-                setFlat();
-            }
-        };
-    }
-
-    public static QueryTable testRefreshingTable(ColumnHolder<?>... columnHolders) {
-        final QueryTable queryTable = testTable(columnHolders);
-        queryTable.setRefreshing(true);
-        return queryTable;
     }
 
     public static ColumnSource<?> getTestColumnSource(RowSet rowSet, ColumnHolder<?> columnHolder) {
@@ -674,9 +715,6 @@ public class TstUtils {
             } else {
                 result = new ObjectTestSource<>(columnHolder.dataType, rowSet, chunkData);
             }
-        }
-        if (columnHolder.grouped) {
-            result.setGroupToRange(result.getValuesMapping(rowSet));
         }
         return result;
     }
@@ -887,11 +925,11 @@ public class TstUtils {
         boolean failed = false;
         MutableInt maxSteps = new MutableInt(initialSteps);
         for (int seed = initialSeed; seed < maxSeed; ++seed) {
-            if (maxSteps.intValue() <= 0) {
+            if (maxSteps.get() <= 0) {
                 System.out.println("Best Run: bestSeed=" + bestSeed + " bestSteps=" + bestSteps);
                 return;
             }
-            System.out.println("Running: seed=" + seed + " numSteps=" + maxSteps.intValue() + " bestSeed=" + bestSeed
+            System.out.println("Running: seed=" + seed + " numSteps=" + maxSteps.get() + " bestSeed=" + bestSeed
                     + " bestSteps=" + bestSteps);
             if (seed != initialSeed) {
                 try {
@@ -912,9 +950,9 @@ public class TstUtils {
             } catch (Exception | Error e) {
                 failed = true;
                 bestSeed = seed;
-                bestSteps = maxSteps.intValue() + 1;
+                bestSteps = maxSteps.get() + 1;
                 e.printStackTrace();
-                System.out.println("Candidate: seed=" + seed + " numSteps=" + (maxSteps.intValue() + 1));
+                System.out.println("Candidate: seed=" + seed + " numSteps=" + (maxSteps.get() + 1));
             }
         }
 
@@ -1047,6 +1085,30 @@ public class TstUtils {
                 @NotNull final WritableChunk<? super Values> destination,
                 @NotNull final RowSequence rowSequence) {
             fillChunk(context, destination, rowSequence);
+        }
+    }
+
+    /**
+     * Fetch row data as boxed Objects for the specified row position and column names. This is not an efficient
+     * data-retrieval mechanism, just a convenient one.
+     *
+     * @param table The table to fetch from
+     * @param rowPosition The row position to fetch
+     * @param columnNames The names of columns to fetch; if empty, fetch all columns
+     * @return An array of row data as boxed Objects
+     */
+    public static Object[] getRowData(
+            @NotNull Table table,
+            final long rowPosition,
+            @NotNull final String... columnNames) {
+        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+            table = table.coalesce();
+            final long rowKey = table.getRowSet().get(rowPosition);
+            return (columnNames.length > 0
+                    ? Arrays.stream(columnNames).map(table::getColumnSource)
+                    : table.getColumnSources().stream())
+                    .map(columnSource -> columnSource.get(rowKey))
+                    .toArray(Object[]::new);
         }
     }
 }

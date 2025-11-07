@@ -1,3 +1,6 @@
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.protobuf;
 
 import com.google.protobuf.Any;
@@ -16,9 +19,9 @@ import com.google.protobuf.StringValue;
 import com.google.protobuf.Timestamp;
 import com.google.protobuf.UInt32Value;
 import com.google.protobuf.UInt64Value;
-import io.deephaven.functions.ToLongFunction;
-import io.deephaven.functions.ToObjectFunction;
-import io.deephaven.functions.TypedFunction;
+import io.deephaven.function.ToLongFunction;
+import io.deephaven.function.ToObjectFunction;
+import io.deephaven.function.TypedFunction;
 import io.deephaven.protobuf.FieldOptions.BytesBehavior;
 import io.deephaven.protobuf.FieldOptions.MapBehavior;
 import io.deephaven.protobuf.FieldOptions.WellKnownBehavior;
@@ -42,6 +45,7 @@ import io.deephaven.protobuf.test.ByteWrapper;
 import io.deephaven.protobuf.test.ByteWrapperRepeated;
 import io.deephaven.protobuf.test.FieldMaskWrapper;
 import io.deephaven.protobuf.test.MultiRepeated;
+import io.deephaven.protobuf.test.NestedArrays;
 import io.deephaven.protobuf.test.NestedByteWrapper;
 import io.deephaven.protobuf.test.NestedRepeatedTimestamps;
 import io.deephaven.protobuf.test.NestedRepeatedTimestamps.Timestamps;
@@ -1465,6 +1469,111 @@ public class ProtobufDescriptorParserTest {
                 .build();
         final Map<List<String>, TypedFunction<Message>> nf = nf(TwoTs.getDescriptor(), options);
         assertThat(nf.keySet()).containsExactly(List.of("ts1"), List.of("ts2", "seconds"), List.of("ts2", "nanos"));
+    }
+
+    @Test
+    void nestedArraysADirect() {
+        checkKey(
+                NestedArrays.getDescriptor(),
+                List.of("a_direct", "b", "c"),
+                Type.stringType().arrayType(),
+                new HashMap<>() {
+                    {
+                        put(NestedArrays.getDefaultInstance(), null);
+
+                        put(NestedArrays.newBuilder()
+                                .setADirect(NestedArrays.A.getDefaultInstance())
+                                .build(), null);
+
+                        // c is only non-null when b has been explicitly set
+
+                        put(NestedArrays.newBuilder()
+                                .setADirect(NestedArrays.A.newBuilder()
+                                        .setB(NestedArrays.B.getDefaultInstance())
+                                        .build())
+                                .build(), new String[0]);
+
+                        put(NestedArrays.newBuilder()
+                                .setADirect(NestedArrays.A.newBuilder()
+                                        .setB(NestedArrays.B.newBuilder()
+                                                .addC("Foo")
+                                                .addC("Bar")
+                                                .build())
+                                        .build())
+                                .build(), new String[] {"Foo", "Bar"});
+                    }
+                });
+    }
+
+    @Test
+    void nestedArraysARepeated() {
+        checkKey(
+                NestedArrays.getDescriptor(),
+                List.of("a_repeated", "b", "c"),
+                Type.stringType().arrayType().arrayType(),
+                new HashMap<>() {
+                    {
+                        put(NestedArrays.getDefaultInstance(), new String[0][]);
+                        put(NestedArrays.newBuilder()
+                                .addARepeated(NestedArrays.A.getDefaultInstance())
+                                .addARepeated(NestedArrays.A.newBuilder()
+                                        .setB(NestedArrays.B.getDefaultInstance())
+                                        .build())
+                                .addARepeated(NestedArrays.A.newBuilder()
+                                        .setB(NestedArrays.B.newBuilder()
+                                                .addC("Foo")
+                                                .addC("Bar")
+                                                .build())
+                                        .build())
+                                .build(), new String[][] {null, new String[0], new String[] {"Foo", "Bar"}});
+                    }
+                });
+    }
+
+    @Test
+    void nestedArraysBDirect() {
+        checkKey(
+                NestedArrays.getDescriptor(),
+                List.of("b_direct", "c"),
+                Type.stringType().arrayType(),
+                new HashMap<>() {
+                    {
+                        put(NestedArrays.getDefaultInstance(), null);
+
+                        put(NestedArrays.newBuilder()
+                                .setBDirect(NestedArrays.B.getDefaultInstance())
+                                .build(), new String[0]);
+
+                        put(NestedArrays.newBuilder()
+                                .setBDirect(NestedArrays.B.newBuilder()
+                                        .addC("Foo")
+                                        .addC("Bar")
+                                        .build())
+                                .build(), new String[] {"Foo", "Bar"});
+                    }
+                });
+    }
+
+    @Test
+    void nestedArraysBRepeated() {
+        checkKey(
+                NestedArrays.getDescriptor(),
+                List.of("b_repeated", "c"),
+                Type.stringType().arrayType().arrayType(),
+                new HashMap<>() {
+                    {
+                        put(NestedArrays.getDefaultInstance(), new String[0][]);
+
+                        put(NestedArrays.newBuilder()
+                                .addBRepeated(NestedArrays.B.getDefaultInstance())
+                                .addBRepeated(NestedArrays.B.newBuilder()
+                                        .addC("Foo")
+                                        .addC("Bar")
+                                        .build())
+
+                                .build(), new String[][] {new String[0], new String[] {"Foo", "Bar"}});
+                    }
+                });
     }
 
     private static Map<List<String>, TypedFunction<Message>> nf(Descriptor descriptor) {

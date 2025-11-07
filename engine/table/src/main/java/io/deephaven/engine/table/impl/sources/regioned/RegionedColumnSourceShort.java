@@ -1,11 +1,10 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit RegionedColumnSourceChar and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit RegionedColumnSourceChar and run "./gradlew replicateRegionsAndRegionedSources" to regenerate
+//
+// @formatter:off
 package io.deephaven.engine.table.impl.sources.regioned;
 
 import io.deephaven.engine.rowset.RowSequence;
@@ -26,9 +25,11 @@ abstract class RegionedColumnSourceShort<ATTR extends Values>
         extends RegionedColumnSourceArray<Short, ATTR, ColumnRegionShort<ATTR>>
         implements ColumnSourceGetDefaults.ForShort /* MIXIN_INTERFACES */ {
 
-    RegionedColumnSourceShort(@NotNull final ColumnRegionShort<ATTR> nullRegion,
-                             @NotNull final MakeDeferred<ATTR, ColumnRegionShort<ATTR>> makeDeferred) {
-        super(nullRegion, short.class, makeDeferred);
+    RegionedColumnSourceShort(
+            @NotNull final RegionedColumnSourceManager manager,
+            @NotNull final ColumnRegionShort<ATTR> nullRegion,
+            @NotNull final MakeDeferred<ATTR, ColumnRegionShort<ATTR>> makeDeferred) {
+        super(manager, nullRegion, short.class, makeDeferred);
     }
 
     @Override
@@ -39,8 +40,8 @@ abstract class RegionedColumnSourceShort<ATTR extends Values>
     interface MakeRegionDefault extends MakeRegion<Values, ColumnRegionShort<Values>> {
         @Override
         default ColumnRegionShort<Values> makeRegion(@NotNull final ColumnDefinition<?> columnDefinition,
-                                                    @NotNull final ColumnLocation columnLocation,
-                                                    final int regionIndex) {
+                @NotNull final ColumnLocation columnLocation,
+                final int regionIndex) {
             if (columnLocation.exists()) {
                 return columnLocation.makeColumnRegionShort(columnDefinition);
             }
@@ -52,28 +53,30 @@ abstract class RegionedColumnSourceShort<ATTR extends Values>
     // endregion reinterpretation
 
     static final class AsValues extends RegionedColumnSourceShort<Values> implements MakeRegionDefault {
-        AsValues() {
-            super(ColumnRegionShort.createNull(PARAMETERS.regionMask), DeferredColumnRegionShort::new);
+        AsValues(final RegionedColumnSourceManager manager) {
+            super(manager, ColumnRegionShort.createNull(PARAMETERS.regionMask), DeferredColumnRegionShort::new);
         }
     }
 
     static final class Partitioning extends RegionedColumnSourceShort<Values> {
-
-        Partitioning() {
-            super(ColumnRegionShort.createNull(PARAMETERS.regionMask),
+        Partitioning(final RegionedColumnSourceManager manager) {
+            super(manager,
+                    ColumnRegionShort.createNull(PARAMETERS.regionMask),
                     (pm, rs) -> rs.get() // No need to interpose a deferred region in this case
             );
         }
 
         @Override
         public ColumnRegionShort<Values> makeRegion(@NotNull final ColumnDefinition<?> columnDefinition,
-                                                   @NotNull final ColumnLocation columnLocation,
-                                                   final int regionIndex) {
+                @NotNull final ColumnLocation columnLocation,
+                final int regionIndex) {
             final TableLocationKey locationKey = columnLocation.getTableLocation().getKey();
             final Object partitioningColumnValue = locationKey.getPartitionValue(columnDefinition.getName());
-            if (partitioningColumnValue != null && !Short.class.isAssignableFrom(partitioningColumnValue.getClass())) {
-                throw new TableDataException("Unexpected partitioning column value type for " + columnDefinition.getName()
-                        + ": " + partitioningColumnValue + " is not a Short at location " + locationKey);
+            if (partitioningColumnValue != null
+                    && !Short.class.isAssignableFrom(partitioningColumnValue.getClass())) {
+                throw new TableDataException(
+                        "Unexpected partitioning column value type for " + columnDefinition.getName()
+                                + ": " + partitioningColumnValue + " is not a Short at location " + locationKey);
             }
             return new ColumnRegionShort.Constant<>(regionMask(), unbox((Short) partitioningColumnValue));
         }

@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.locations.impl;
 
 import io.deephaven.base.verify.Require;
@@ -40,7 +40,7 @@ public class TableLocationUpdateSubscriptionBuffer implements TableLocation.List
             if (tableLocation.supportsSubscriptions()) {
                 tableLocation.subscribe(this);
             } else {
-                // NB: Locations that don't support subscriptions don't tick - this single call to run is
+                // NB: Locations that don't support subscriptions don't tick - this single call to refresh is
                 // sufficient.
                 tableLocation.refresh();
                 handleUpdate();

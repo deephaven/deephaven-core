@@ -1,10 +1,11 @@
 #
-# Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 #
 
 import unittest
 from time import sleep
 import datetime
+import sys
 import pandas as pd
 import numpy as np
 
@@ -72,8 +73,9 @@ class TimeTestCase(BaseTestCase):
         self.assertEqual(str(tz), "UTC")
 
         pytz = datetime.datetime.now()
-        tz = to_j_time_zone(pytz)
-        self.assertEqual(str(tz), "UTC")
+        with self.assertRaises(DHError):
+            tz = to_j_time_zone(pytz)
+            self.fail("Expected DHError")
 
         pytz = datetime.datetime.now().astimezone()
         tz = to_j_time_zone(pytz)
@@ -92,6 +94,37 @@ class TimeTestCase(BaseTestCase):
         tz1 = to_j_time_zone("CT")
         tz2 = to_j_time_zone(tz1)
         self.assertEqual(tz1, tz2)
+
+        ts = pd.Timestamp("2022-07-07", tz="America/New_York")
+        self.assertEqual(to_j_time_zone(ts), to_j_time_zone("America/New_York"))
+
+        dttz = datetime.timezone(offset=datetime.timedelta(hours=5), name="XYZ")
+        dt = datetime.datetime(2022, 7, 7, 14, 21, 17, 123456, tzinfo=dttz)
+        self.assertEqual(to_j_time_zone(dttz), to_j_time_zone("UTC+5"))
+        self.assertEqual(to_j_time_zone(dt), to_j_time_zone("UTC+5"))
+
+        dttz = datetime.timezone(offset=-datetime.timedelta(hours=5), name="XYZ")
+        dt = datetime.datetime(2022, 7, 7, 14, 21, 17, 123456, tzinfo=dttz)
+        self.assertEqual(to_j_time_zone(dttz), to_j_time_zone("UTC-5"))
+        self.assertEqual(to_j_time_zone(dt), to_j_time_zone("UTC-5"))
+
+        dttz = datetime.timezone(offset=-datetime.timedelta(hours=5, microseconds=10), name="XYZ")
+        dt = datetime.datetime(2022, 7, 7, 14, 21, 17, 123456, tzinfo=dttz)
+
+        with self.assertRaises(DHError):
+            to_j_time_zone(dttz)
+            self.fail("Expected DHError")
+
+        with self.assertRaises(DHError):
+            to_j_time_zone(dt)
+            self.fail("Expected DHError")
+
+        if sys.version_info >= (3, 9):
+            import zoneinfo
+            dttz = zoneinfo.ZoneInfo("America/New_York")
+            dt = datetime.datetime(2022, 7, 7, 14, 21, 17, 123456, tzinfo=dttz)
+            self.assertEqual(to_j_time_zone(dttz), to_j_time_zone("America/New_York"))
+            self.assertEqual(to_j_time_zone(dt), to_j_time_zone("America/New_York"))
 
         with self.assertRaises(TypeError):
             to_j_time_zone(False)
@@ -597,6 +630,20 @@ class TimeTestCase(BaseTestCase):
         with self.assertRaises(TypeError):
             to_np_timedelta64(False)
             self.fail("Expected TypeError")
+
+    # endregion
+
+    # region: Utilities
+
+    def test_simple_date_format(self):
+        s = "12/10/2021 14:21:17 CST"
+        i = _JDateTimeUtils.parseInstant("2021-12-10T14:21:17 CT")
+        sdf = simple_date_format("MM/dd/yyyy HH:mm:ss z")
+        self.assertEqual(sdf.parse(s).toInstant(), i)
+
+        with self.assertRaises(DHError):
+            simple_date_format("junk")
+            self.fail("Expected DHError")
 
     # endregion
 

@@ -1,8 +1,9 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.testutil;
 
+import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.util.TableTools;
@@ -21,7 +22,7 @@ public abstract class EvalNuggetSet extends EvalNugget {
 
     @Override
     public void validate(final String msg) {
-        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+        try (final SafeCloseable ignored = LivenessScopeStack.open(new LivenessScope(true), true)) {
             final Table expected = e();
             try {
                 TableTools.show(expected);

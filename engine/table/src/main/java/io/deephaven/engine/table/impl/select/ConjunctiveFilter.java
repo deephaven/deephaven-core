@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.select;
 
 import io.deephaven.api.filter.FilterAnd;
@@ -42,7 +42,7 @@ public class ConjunctiveFilter extends ComposedFilter {
             }
         }
 
-        return new ConjunctiveFilter(rawComponents.toArray(WhereFilter.ZERO_LENGTH_SELECT_FILTER_ARRAY));
+        return new ConjunctiveFilter(rawComponents.toArray(WhereFilter.ZERO_LENGTH_WHERE_FILTER_ARRAY));
     }
 
     static WritableRowSet andImpl(RowSet selection, RowSet fullSet, Table table, boolean usePrev, boolean invert,
@@ -81,5 +81,10 @@ public class ConjunctiveFilter extends ComposedFilter {
     @Override
     public String toString() {
         return "ConjunctiveFilter(" + Arrays.toString(componentFilters) + ')';
+    }
+
+    @Override
+    public final <T> T walk(Visitor<T> visitor) {
+        return visitor.visit(this);
     }
 }

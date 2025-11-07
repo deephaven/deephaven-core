@@ -1,14 +1,11 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl;
 
-import io.deephaven.api.ColumnName;
-import io.deephaven.api.JoinMatch;
-import io.deephaven.api.RangeJoinMatch;
+import io.deephaven.api.*;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.WouldMatchPair;
 import io.deephaven.engine.table.impl.select.*;
 import io.deephaven.engine.table.impl.sources.regioned.SymbolTableSource;
 import org.jetbrains.annotations.NotNull;
@@ -60,6 +57,16 @@ public abstract class MemoizedOperationKey {
         abstract BaseTable.CopyAttributeOperation copyType();
     }
 
+    abstract static class BlinkIncompatibleMemoizedOperationKey extends MemoizedOperationKey {
+        @Override
+        boolean attributesCompatible(Map<String, Object> oldAttributes, Map<String, Object> newAttributes) {
+            return BlinkTableTools.hasBlink(oldAttributes) == BlinkTableTools.hasBlink(newAttributes);
+        }
+
+        @Override
+        abstract BaseTable.CopyAttributeOperation copyType();
+    }
+
     public interface Provider {
         MemoizedOperationKey getMemoKey();
     }
@@ -77,8 +84,12 @@ public abstract class MemoizedOperationKey {
         return Flatten.FLATTEN_INSTANCE;
     }
 
-    static MemoizedOperationKey sort(SortPair[] sortPairs) {
-        return new Sort(sortPairs);
+    static MemoizedOperationKey sort(SortSpec[] sortColumns) {
+        return new Sort(sortColumns);
+    }
+
+    static MemoizedOperationKey ungroup(final boolean nullFill, String[] columns) {
+        return new Ungroup(nullFill, columns);
     }
 
     static MemoizedOperationKey dropColumns(String[] columns) {
@@ -231,10 +242,10 @@ public abstract class MemoizedOperationKey {
     }
 
     private static class Sort extends MemoizedOperationKey {
-        private final SortPair[] sortPairs;
+        private final SortSpec[] sortColumns;
 
-        private Sort(SortPair[] sortPairs) {
-            this.sortPairs = sortPairs;
+        private Sort(SortSpec[] sortColumns) {
+            this.sortColumns = sortColumns;
         }
 
         @Override
@@ -248,12 +259,12 @@ public abstract class MemoizedOperationKey {
 
             final Sort sort = (Sort) other;
 
-            return Arrays.equals(sortPairs, sort.sortPairs);
+            return Arrays.equals(sortColumns, sort.sortColumns);
         }
 
         @Override
         public int hashCode() {
-            return Arrays.hashCode(sortPairs);
+            return Arrays.hashCode(sortColumns);
         }
 
         @Override
@@ -360,7 +371,7 @@ public abstract class MemoizedOperationKey {
         }
     }
 
-    private static class AggBy extends AttributeAgnosticMemoizedOperationKey {
+    private static class AggBy extends BlinkIncompatibleMemoizedOperationKey {
 
         private final List<? extends Aggregation> aggregations;
         private final boolean preserveEmpty;
@@ -442,7 +453,7 @@ public abstract class MemoizedOperationKey {
         }
     }
 
-    private static class Rollup extends AttributeAgnosticMemoizedOperationKey {
+    private static class Rollup extends BlinkIncompatibleMemoizedOperationKey {
 
         private final AggBy aggBy;
         private final boolean includeConstituents;
@@ -515,10 +526,12 @@ public abstract class MemoizedOperationKey {
     }
 
     private static final class WouldMatch extends AttributeAgnosticMemoizedOperationKey {
-        private final WouldMatchPair[] pairs;
+        private final String[] names;
+        private final WhereFilter[] filters;
 
-        private WouldMatch(WouldMatchPair[] pairs) {
-            this.pairs = pairs;
+        private WouldMatch(String[] names, WhereFilter[] filters) {
+            this.names = names;
+            this.filters = filters;
         }
 
         @Override
@@ -530,12 +543,12 @@ public abstract class MemoizedOperationKey {
                 return false;
             }
             final WouldMatch wouldMatch = (WouldMatch) other;
-            return Arrays.equals(pairs, wouldMatch.pairs);
+            return Arrays.equals(names, wouldMatch.names) && Arrays.equals(filters, wouldMatch.filters);
         }
 
         @Override
         public int hashCode() {
-            return Arrays.hashCode(pairs);
+            return Arrays.hashCode(names) ^ Arrays.hashCode(filters);
         }
 
         @Override
@@ -544,8 +557,11 @@ public abstract class MemoizedOperationKey {
         }
     }
 
-    public static MemoizedOperationKey wouldMatch(WouldMatchPair... pairs) {
-        return new WouldMatch(pairs);
+    public static MemoizedOperationKey wouldMatch(String[] names, WhereFilter... filters) {
+        if (Arrays.stream(filters).allMatch(WhereFilter::canMemoize)) {
+            return new WouldMatch(names, filters);
+        }
+        return null;
     }
 
     private static class CrossJoin extends AttributeAgnosticMemoizedOperationKey {
@@ -703,6 +719,40 @@ public abstract class MemoizedOperationKey {
         @Override
         public int hashCode() {
             return 31 * key.hashCode() + Long.hashCode(sizeLimit);
+        }
+
+        @Override
+        BaseTable.CopyAttributeOperation copyType() {
+            return BaseTable.CopyAttributeOperation.None;
+        }
+    }
+
+    private static class Ungroup extends AttributeAgnosticMemoizedOperationKey {
+        private final boolean nullFill;
+        private final HashSet<String> columns;
+
+        private Ungroup(boolean nullFill, String[] columns) {
+            this.nullFill = nullFill;
+            this.columns = new HashSet<>(Arrays.asList(columns));
+        }
+
+        @Override
+        public boolean equals(final Object other) {
+            if (this == other) {
+                return true;
+            }
+            if (other == null || getClass() != other.getClass()) {
+                return false;
+            }
+
+            final Ungroup ungroup = (Ungroup) other;
+
+            return nullFill == ungroup.nullFill && columns.equals(ungroup.columns);
+        }
+
+        @Override
+        public int hashCode() {
+            return Boolean.hashCode(nullFill) ^ columns.hashCode();
         }
 
         @Override

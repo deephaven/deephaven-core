@@ -1,11 +1,18 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.web.client.api.filter;
 
 import elemental2.core.JsArray;
 import elemental2.core.Uint8Array;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.*;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.AndCondition;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.Condition;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.InvokeCondition;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.NotCondition;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.OrCondition;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.Reference;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.SearchCondition;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.Value;
 import io.deephaven.web.client.api.Column;
 import jsinterop.annotations.*;
 

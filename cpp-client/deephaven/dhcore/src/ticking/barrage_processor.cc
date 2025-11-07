@@ -1,12 +1,13 @@
 /*
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ * Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
  */
 #include "deephaven/dhcore/ticking/barrage_processor.h"
 
-#include <functional>
 #include <iostream>
 #include <memory>
+#include <string>
 #include <tuple>
+#include <utility>
 #include "deephaven/dhcore/chunk/chunk_maker.h"
 #include "deephaven/dhcore/column/column_source.h"
 #include "deephaven/dhcore/immerutil/abstract_flex_vector.h"
@@ -185,7 +186,7 @@ std::vector<uint8_t> BarrageProcessor::CreateSubscriptionRequest(const void *tic
   const auto *payloadp = static_cast<int8_t*>(static_cast<void*>(payload_builder.GetBufferPointer()));
   const auto payload_size = payload_builder.GetSize();
 
-  // TODO: I'd really like to just point this buffer backwards to the thing I just created, rather
+  // TODO(kosak): I'd really like to just point this buffer backwards to the thing I just created, rather
   // then copying it. But, eh, version 2.
   flatbuffers::FlatBufferBuilder wrapper_builder(4096);
   auto payload = wrapper_builder.CreateVector(payloadp, payload_size);
@@ -295,7 +296,7 @@ std::optional<TickingUpdate> AwaitingMetadata::ProcessNextChunk(BarrageProcessor
 
   std::vector<std::shared_ptr<RowSequence>> per_column_modifies;
   per_column_modifies.reserve(mod_column_nodes.size());
-  for (size_t i = 0; i < mod_column_nodes.size(); ++i) {
+  for (flatbuffers::uoffset_t i = 0; i < mod_column_nodes.size(); ++i) {
     const auto &elt = mod_column_nodes.Get(i);
     DataInput di_modified(*elt->modified_rows());
     auto mod_rows = IndexDecoder::ReadExternalCompressedDelta(&di_modified);
@@ -330,10 +331,10 @@ AwaitingMetadata::ProcessRemoves(const RowSequence &removed_rows) {
   std::shared_ptr<ClientTable> after_removes;
   if (removed_rows.Empty()) {
     removed_rows_index_space = RowSequence::CreateEmpty();
-      after_removes = prev;
+    after_removes = prev;
   } else {
     removed_rows_index_space = table_state_.Erase(removed_rows);
-      after_removes = table_state_.Snapshot();
+    after_removes = table_state_.Snapshot();
   }
   return {std::move(prev), std::move(removed_rows_index_space), std::move(after_removes)};
 }
@@ -511,7 +512,7 @@ std::optional<TickingUpdate> AwaitingModifies::ProcessNextChunk(BarrageProcessor
 
   for (const auto &mr : modified_rows_remaining_) {
     if (!mr->Empty()) {
-      // Need more data from caller.
+      // Return an indication that at least one column is hungry for more data
       return {};
     }
   }

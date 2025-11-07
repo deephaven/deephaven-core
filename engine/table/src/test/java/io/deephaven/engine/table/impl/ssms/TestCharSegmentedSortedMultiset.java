@@ -1,6 +1,7 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
+// @formatter:off
 package io.deephaven.engine.table.impl.ssms;
 
 import io.deephaven.base.verify.AssertionFailure;
@@ -27,8 +28,8 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.impl.util.compact.CharCompactKernel;
 import io.deephaven.test.types.ParallelTest;
 import io.deephaven.util.SafeCloseable;
+import io.deephaven.util.mutable.MutableInt;
 import junit.framework.TestCase;
-import org.apache.commons.lang3.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 import org.junit.experimental.categories.Category;
 
@@ -322,8 +323,8 @@ public class TestCharSegmentedSortedMultiset extends RefreshingTableTestCase {
 
                 final MutableInt offset = new MutableInt(0);
                 checkMap.forEach((key, count) -> {
-                    assertEquals((char) key, keys.get(offset.intValue()));
-                    assertEquals((long) count, counts.get(offset.intValue()));
+                    assertEquals((char) key, keys.get(offset.get()));
+                    assertEquals((long) count, counts.get(offset.get()));
                     offset.increment();
                 });
             }
