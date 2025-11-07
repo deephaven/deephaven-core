@@ -5,6 +5,10 @@ template:
   bootstrap: 5
   bootswatch: cosmo
   
+home:
+  strip_header: false
+
+  
 navbar:
   structure:
     left:  [reference, articles]

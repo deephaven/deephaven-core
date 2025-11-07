@@ -13,11 +13,9 @@ cd $DH_PREFIX/src/rdeephaven
 
 R --no-save --no-restore <<EOF
 library('pkgdown')
-# Fix Pandoc error 23: disable definition_lists extension which is incompatible with gfm
-Sys.setenv(PKGDOWN_PANDOC_ARGS = "--from=markdown-definition_lists --to=html")
 status = tryCatch(
   {
-     pkgdown::build_site(preview=FALSE, new_process=FALSE)
+     pkgdown::build_site(preview=FALSE)
      0
   },
   error=function(e) { print(paste0('ERROR: ', e)); 1 }
