@@ -234,12 +234,12 @@ This will print out a date and time in the default format, such as `2021-09-09T1
 
 `yyyy-MM-ddThh:mm:ss.ffffff TZ`
 
-- `yyyy` - the year.
-- `MM` - the month.
-- `dd` - the day.
-- `T` - the separator between the date and time.
-- `hh` - the hour of the day.
-- `mm` - the minute of the hour.
+- `yyyy` - the year
+- `MM` - the month
+- `dd` - the day
+- `T` - the separator between the date and time
+- `hh` - the hour of the day
+- `mm` - the minute of the hour
 - `ss` - the second of the minute.
 - `ffffff` - the fraction of a second.
 - `TZ` - the time zone.

@@ -227,7 +227,7 @@ Because Deephaven does not need to keep all the history of rows read from the in
 
 Attempting to use the following operations on a blink table will raise an error:
 
-- [`groupBy`](../reference/table-operations/group-and-aggregate/groupBy.md) <!--TODO: bullet-points - does it make sense to do periods for sentence lines and no periods for lines that are just links?-->
+- [`groupBy`](../reference/table-operations/group-and-aggregate/groupBy.md)
 - [`partitionBy`](../reference/table-operations/group-and-aggregate/partitionBy.md) (see [below](#partition-a-blink-table) for a workaround)
 - [`partitionedAggBy`](../reference/table-operations/group-and-aggregate/partitionedAggBy.md)
 - [`headPct`](../reference/table-operations/filter/head-pct.md)
