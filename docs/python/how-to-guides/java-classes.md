@@ -48,9 +48,9 @@ source_meta = source.meta_table
 
 Java classes can have three types of methods:
 
-1. **Static methods**: Called on the class itself, not on instances
-2. **Instance methods**: Called on object instances
-3. **Constructor methods**: Special methods used to create new instances with the `new` keyword
+1. **Static methods**: Called on the class itself, not on instances.
+2. **Instance methods**: Called on object instances.
+3. **Constructor methods**: Special methods used to create new instances with the `new` keyword.
 
 All three are supported in query strings.
 

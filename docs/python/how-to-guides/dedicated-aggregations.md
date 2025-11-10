@@ -20,7 +20,7 @@ result = source.DEDICATED_AGG(by=["GroupingColumns"])
 
 The `by = ["GroupingColumns"]` parameter determines the column(s) by which to group data.
 
-- `DEDICATED_AGG` should be substituted with one of the chosen aggregations below
+- `DEDICATED_AGG` should be substituted with one of the chosen aggregations below.
 - `[]` uses the whole table as a single group.
 - `["X"]` will output the desired value for each group in column `X`.
 - `["X", "Y"]` will output the desired value for each group designated from the `X` and `Y` columns.

@@ -56,9 +56,9 @@ result2 = t2.where(
 
 This filter includes:
 
-- Hour 14 (2:00 PM) with minutes greater than or equal to 30
-- All of hour 15 (3:00 PM)
-- Hour 16 (4:00 PM) with minutes less than or equal to 15
+- Hour 14 (2:00 PM) with minutes greater than or equal to 30.
+- All of hour 15 (3:00 PM).
+- Hour 16 (4:00 PM) with minutes less than or equal to 15.
 
 > [!NOTE]
 > These FAQ pages contain answers to questions about Deephaven Community Core that our users have asked in our [Community Slack](/slack). If you have a question that is not in our documentation, [join our Community](/slack) and we'll be happy to help!

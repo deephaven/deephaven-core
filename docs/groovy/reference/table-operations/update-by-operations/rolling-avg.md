@@ -8,8 +8,8 @@ $SMA = \frac{\sum_{1}^{n}x_{i}}{n}$
 
 Where:
 
-- $n$ is the number window size in ticks
-- $x_{i}$ is the current value
+- $n$ is the number window size in ticks.
+- $x_{i}$ is the current value.
 
 For a tick-based (row-based) SMA, `n` is the window size, determined by [`fwdTicks`](#parameters) and [`revTicks`](#parameters).
 

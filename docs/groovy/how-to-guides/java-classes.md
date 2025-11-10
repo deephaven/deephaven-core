@@ -68,10 +68,10 @@ sourceMeta = source.meta()
 
 One of Groovy's greatest strengths is its seamless interoperability with Java. In Groovy query strings, you can:
 
-- Use any Java class without imports (for classes in `java.lang` and other common packages)
-- Access Java static methods and variables directly
-- Create Java objects using the `new` keyword
-- Call Java instance methods on objects
+- Use any Java class without imports (for classes in `java.lang` and other common packages).
+- Access Java static methods and variables directly.
+- Create Java objects using the `new` keyword.
+- Call Java instance methods on objects.
 
 This makes working with Java objects in Groovy query strings very natural and straightforward.
 
