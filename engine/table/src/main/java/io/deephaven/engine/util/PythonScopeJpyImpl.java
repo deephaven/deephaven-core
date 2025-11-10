@@ -7,7 +7,6 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.configuration.Configuration;
-import io.deephaven.engine.context.ExecutionContext;
 import org.jpy.PyDictWrapper;
 import org.jpy.PyLib;
 import org.jpy.PyObject;
@@ -21,16 +20,15 @@ public class PythonScopeJpyImpl implements PythonScope<PyObject> {
     private static volatile boolean cacheEnabled =
             Configuration.getInstance().getBooleanForClassWithDefault(PythonScopeJpyImpl.class, "cacheEnabled", false);
 
-    @SuppressWarnings("unused")
     public static void setCacheEnabled(boolean enabled) {
         cacheEnabled = enabled;
     }
 
     private final PyDictWrapper dict;
 
+    private static final ThreadLocal<Deque<PyDictWrapper>> threadScopeStack = new ThreadLocal<>();
     private static final Cache<PyObject, Object> conversionCache = CacheBuilder.newBuilder().weakValues().build();
 
-    @SuppressWarnings("unused")
     public static PythonScopeJpyImpl ofMainGlobals() {
         return new PythonScopeJpyImpl(PyLib.getMainGlobals().asDict());
     }
@@ -41,9 +39,7 @@ public class PythonScopeJpyImpl implements PythonScope<PyObject> {
 
     @Override
     public PyDictWrapper currentScope() {
-        final ExecutionContext context = ExecutionContext.getContext();
-        // noinspection unchecked
-        final Deque<PyDictWrapper> scopeStack = (Deque<PyDictWrapper>) context.getPythonScopeStack();
+        Deque<PyDictWrapper> scopeStack = threadScopeStack.get();
         if (scopeStack == null || scopeStack.isEmpty()) {
             return this.dict;
         } else {
@@ -126,21 +122,17 @@ public class PythonScopeJpyImpl implements PythonScope<PyObject> {
 
     @Override
     public void pushScope(PyObject pydict) {
-        final ExecutionContext context = ExecutionContext.getContext();
-        // noinspection unchecked
-        Deque<PyDictWrapper> scopeStack = (Deque<PyDictWrapper>) context.getPythonScopeStack();
+        Deque<PyDictWrapper> scopeStack = threadScopeStack.get();
         if (scopeStack == null) {
             scopeStack = new ArrayDeque<>();
-            context.setPythonScopeStack(scopeStack);
+            threadScopeStack.set(scopeStack);
         }
         scopeStack.push(pydict.asDict());
     }
 
     @Override
     public void popScope() {
-        final ExecutionContext context = ExecutionContext.getContext();
-        // noinspection unchecked
-        final Deque<PyDictWrapper> scopeStack = (Deque<PyDictWrapper>) context.getPythonScopeStack();
+        Deque<PyDictWrapper> scopeStack = threadScopeStack.get();
         if (scopeStack == null) {
             throw new IllegalStateException("The thread scope stack is empty.");
         }
