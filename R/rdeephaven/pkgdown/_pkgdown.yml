@@ -8,6 +8,9 @@ template:
 home:
   strip_header: false
 
+# Disable LLM docs generation to avoid Pandoc error 23 with gfm/definition_lists incompatibility
+build:
+  llms: false
   
 navbar:
   structure:
