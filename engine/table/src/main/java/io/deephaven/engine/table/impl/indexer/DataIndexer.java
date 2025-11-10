@@ -263,6 +263,7 @@ public class DataIndexer implements TrackingRowSet.Indexer {
      * @param keyColumns The {@link ColumnSource column sources} for which to retrieve {@link DataIndex data indexes}
      * @return All the {@link DataIndex DataIndexes} in this DataIndexer
      */
+    @NotNull
     public List<DataIndex> getCompatibleDataIndexes(@NotNull final Collection<ColumnSource<?>> keyColumns) {
         if (keyColumns.isEmpty()) {
             return List.of();
@@ -517,7 +518,7 @@ public class DataIndexer implements TrackingRowSet.Indexer {
                 resultHolder.setValue(validateAndManageCachedDataIndex(cache.dataIndexReference.get()));
                 return true;
             });
-            return resultHolder.getValue();
+            return resultHolder.get();
         }
 
         /**
@@ -595,7 +596,7 @@ public class DataIndexer implements TrackingRowSet.Indexer {
                 resultHolder.setValue(dataIndex);
                 return true;
             });
-            return resultHolder.getValue();
+            return resultHolder.get();
         }
     }
 }
