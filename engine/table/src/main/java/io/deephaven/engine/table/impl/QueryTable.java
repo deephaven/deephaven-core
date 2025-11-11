@@ -1429,22 +1429,17 @@ public class QueryTable extends BaseTable<QueryTable> {
                     return memoizeResult(MemoizedOperationKey.filter(filters), () -> {
                         try (final SafeCloseable ignored = Arrays.stream(filters)
                                 .map(filter -> filter.beginOperation(this)).collect(SafeCloseableList.COLLECTOR)) {
-                            final OperationSnapshotControl snapshotControl = createSnapshotControlIfRefreshing(
-                                    (final BaseTable<?> parent) -> {
-                                        /*
-                                         * Note that the dependencies for instantiation may be different from the
-                                         * dependencies for the WhereListener. Do not refactor to share this array with
-                                         * the WhereListener unless you ensure that this no longer holds, i.e. if
-                                         * MatchFilter starts applying data indexes during update processing.
-                                         */
-                                        final NotificationQueue.Dependency[] filterDependencies =
-                                                WhereListener.extractDependencies(filters)
-                                                        .toArray(NotificationQueue.Dependency[]::new);
-                                        getUpdateGraph(filterDependencies);
-                                        return filterDependencies.length > 0
-                                                ? new OperationSnapshotControlEx(parent, filterDependencies)
-                                                : new OperationSnapshotControl(parent);
-                                    });
+                            final NotificationQueue.Dependency[] filterDependencies =
+                                    WhereListener.extractDependencies(filters)
+                                            .toArray(NotificationQueue.Dependency[]::new);
+                            getUpdateGraph(filterDependencies);
+
+                            final OperationSnapshotControl snapshotControl =
+                                    isRefreshing() || filterDependencies.length > 0
+                                            ? filterDependencies.length > 0
+                                                    ? new OperationSnapshotControlEx(this, filterDependencies)
+                                                    : new OperationSnapshotControl(this)
+                                            : null;
 
                             final Mutable<QueryTable> result = new MutableObject<>();
                             initializeWithSnapshot("where", snapshotControl,
@@ -1500,16 +1495,28 @@ public class QueryTable extends BaseTable<QueryTable> {
                                         }
 
                                         if (snapshotControl != null) {
-                                            final ListenerRecorder recorder = new ListenerRecorder(
-                                                    whereDescription, QueryTable.this,
-                                                    filteredTable);
-                                            final WhereListener whereListener = new WhereListener(
-                                                    log, this, recorder, filteredTable, filters);
-                                            filteredTable.setWhereListener(whereListener);
-                                            recorder.setMergedListener(whereListener);
-                                            snapshotControl.setListenerAndResult(recorder, filteredTable);
-                                            filteredTable.addParentReference(whereListener);
+                                            if (!isRefreshing()) {
+                                                // Static source, but had dependencies requiring snapshot control.
+                                                if (refreshingFilters) {
+                                                    final WhereListener whereListener =
+                                                            new WhereListener(log, this, null, filteredTable, filters);
+                                                    filteredTable.setWhereListener(whereListener);
+                                                    filteredTable.addParentReference(whereListener);
+                                                }
+                                                snapshotControl.setListenerAndResult(null, filteredTable);
+                                            } else {
+                                                // Refreshing source, possibly refreshing filters with dependencies.
+                                                final ListenerRecorder recorder = new ListenerRecorder(whereDescription,
+                                                        QueryTable.this, filteredTable);
+                                                final WhereListener whereListener =
+                                                        new WhereListener(log, this, recorder, filteredTable, filters);
+                                                filteredTable.setWhereListener(whereListener);
+                                                recorder.setMergedListener(whereListener);
+                                                snapshotControl.setListenerAndResult(recorder, filteredTable);
+                                                filteredTable.addParentReference(whereListener);
+                                            }
                                         } else if (refreshingFilters) {
+                                            // Refreshing filters, but a static table.
                                             final WhereListener whereListener = new WhereListener(
                                                     log, this, null, filteredTable, filters);
                                             filteredTable.setWhereListener(whereListener);
@@ -1545,34 +1552,11 @@ public class QueryTable extends BaseTable<QueryTable> {
         return QueryPerformanceRecorder.withNugget(
                 "whereIn(rightTable, " + inclusion + ", " + matchString(columnsToMatch) + ")",
                 sizeForInstrumentation(), () -> {
-                    checkInitiateOperation(rightTable);
-
-                    final Table distinctValues;
-                    final boolean setRefreshing = rightTable.isRefreshing();
-
-                    final String[] rightColumnNames = MatchPair.getRightColumns(columnsToMatch);
-                    final DataIndex rightIndex = DataIndexer.getDataIndex(rightTable, rightColumnNames);
-                    if (rightIndex != null) {
-                        // We have a distinct index table, let's use it.
-                        distinctValues = rightIndex.table();
-                    } else if (setRefreshing) {
-                        distinctValues = rightTable.selectDistinct(rightColumnNames);
-                    } else {
-                        final TableDefinition rightDef = rightTable.getDefinition();
-                        final boolean allPartitioning =
-                                Arrays.stream(rightColumnNames).allMatch(cn -> rightDef.getColumn(cn).isPartitioning());
-                        if (allPartitioning) {
-                            distinctValues = rightTable.selectDistinct(rightColumnNames);
-                        } else {
-                            distinctValues = rightTable.coalesce();
-                        }
-                    }
-
                     final DynamicWhereFilter dynamicWhereFilter =
-                            new DynamicWhereFilter((QueryTable) distinctValues, inclusion, columnsToMatch);
+                            new DynamicWhereFilter(rightTable, inclusion, columnsToMatch);
                     final Table where = whereInternal(dynamicWhereFilter);
-                    if (distinctValues.isRefreshing()) {
-                        where.addParentReference(distinctValues);
+                    if (rightTable.isRefreshing()) {
+                        where.addParentReference(rightTable);
                     }
                     if (dynamicWhereFilter.isRefreshing()) {
                         where.addParentReference(dynamicWhereFilter);

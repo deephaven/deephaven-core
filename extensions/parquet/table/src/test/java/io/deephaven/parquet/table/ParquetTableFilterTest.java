@@ -141,7 +141,8 @@ public final class ParquetTableFilterTest {
     }
 
     private static void filterAndVerifyResults(Table diskTable, Table memTable, WhereFilter filter) {
-        verifyResults(diskTable.where(filter).coalesce(), memTable.where(filter).coalesce());
+        // the filter may already be initialized and must be copied before reuse.
+        verifyResults(diskTable.where(filter.copy()).coalesce(), memTable.where(filter.copy()).coalesce());
     }
 
     private static void filterAndVerifyResultsAllowEmpty(Table diskTable, Table memTable, String... filters) {
@@ -149,7 +150,8 @@ public final class ParquetTableFilterTest {
     }
 
     private static void filterAndVerifyResultsAllowEmpty(Table diskTable, Table memTable, WhereFilter filter) {
-        verifyResultsAllowEmpty(diskTable.where(filter).coalesce(), memTable.where(filter).coalesce());
+        // the filter may already be initialized and must be copied before reuse.
+        verifyResultsAllowEmpty(diskTable.where(filter.copy()).coalesce(), memTable.where(filter.copy()).coalesce());
     }
 
     private static void verifyResultsAllowEmpty(Table filteredDiskTable, Table filteredMemTable) {

@@ -118,23 +118,6 @@ class UpdateGraphTestCase(BaseTestCase):
             with self.subTest(op=op):
                 result_table = op(test_table, "X = i % 11")
 
-    def test_auto_locking_wherein(self):
-        with ug.shared_lock(self.test_update_graph):
-            test_table = time_table("PT00:00:00.001").update(["X=i", "Y=i%13", "Z=X*Y"])
-        unique_table = test_table.head(num_rows=50).select_distinct(formulas=["X", "Y"])
-
-        with self.assertRaises(DHError) as cm:
-            result_table = test_table.where_in(unique_table, cols=["Y"])
-        self.assertRegex(str(cm.exception), r"IllegalStateException")
-
-        with self.assertRaises(DHError) as cm:
-            result_table = test_table.where_not_in(unique_table, cols=["Y"])
-        self.assertRegex(str(cm.exception), r"IllegalStateException")
-
-        ug.auto_locking = True
-        result_table = test_table.where_in(unique_table, cols=["Y"])
-        result_table = test_table.where_not_in(unique_table, cols=["Y"])
-
     def test_auto_locking_joins(self):
         with ug.shared_lock(self.test_update_graph):
             test_table = time_table("PT00:00:00.001").update(["X=i", "Y=i%13", "Z=X*Y"])
