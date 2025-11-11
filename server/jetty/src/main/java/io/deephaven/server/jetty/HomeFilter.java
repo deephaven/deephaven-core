@@ -31,7 +31,6 @@ public class HomeFilter implements Filter {
             resp.sendRedirect(location.toString());
             return;
         }
-
         chain.doFilter(request, response);
     }
 }
