@@ -18,11 +18,11 @@ Directories can contain multiple Parquet files. These can be loaded as sections 
 
 A flat layout may be useful if:
 
-- you want to control the size of your file
-- you want to write one piece at a time
-- you are writing files sequentially; e.g., writing once per hour
-- you have different systems publishing
-- you are using a third-party index
+- you want to control the size of your file.
+- you want to write one piece at a time.
+- you are writing files sequentially; e.g., writing once per hour.
+- you have different systems publishing.
+- you are using a third-party index.
 
 ## Nested Parquet files
 

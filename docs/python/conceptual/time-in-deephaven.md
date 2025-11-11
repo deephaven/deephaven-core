@@ -752,9 +752,9 @@ print("No boundary crossings: ", t2_time)
 
 Careful inspection of the slower code reveals many boundary crossings. If the table has `n` rows, there are:
 
-1. `n` boundary crossings to call the Python function
-2. `n` boundary crossings to convert the Java [`Instant`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Instant.html) to a Python [`datetime`](https://docs.python.org/3/library/datetime.html#datetime.datetime)
-3. `n` boundary crossings to convert a Python [`datetime`](https://docs.python.org/3/library/datetime.html#datetime.datetime) to a Java [`Instant`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Instant.html)
+1. `n` boundary crossings to call the Python function.
+2. `n` boundary crossings to convert the Java [`Instant`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Instant.html) to a Python [`datetime`](https://docs.python.org/3/library/datetime.html#datetime.datetime).
+3. `n` boundary crossings to convert a Python [`datetime`](https://docs.python.org/3/library/datetime.html#datetime.datetime) to a Java [`Instant`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Instant.html).
 
 Thus, in total, there are `3n` boundary crossings, which significantly slows the query.
 

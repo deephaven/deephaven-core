@@ -49,6 +49,18 @@ public interface SchemaProvider {
         return TableSnapshot.TABLE_SNAPSHOT;
     }
 
+    /**
+     * Provides a stricter version of {@link Schema#sameSchema(Schema)} that also checks for equality of the
+     * {@link Schema#schemaId() schema ids}.
+     *
+     * @param schema the first Schema
+     * @param other the second Schema
+     * @return if the Schemas are the same and have equal ids
+     */
+    static boolean sameSchemaAndId(final Schema schema, final Schema other) {
+        return schema.schemaId() == other.schemaId() && schema.sameSchema(other);
+    }
+
     interface Visitor<T> {
         T visit(TableSchema tableSchema);
 
@@ -157,16 +169,14 @@ public interface SchemaProvider {
         }
     }
 
+    /**
+     * This is a wrapper around {@link Schema} that provides equality based on {@link #sameSchemaAndId(Schema, Schema)}.
+     */
     final class DirectSchema implements SchemaProvider {
         private final Schema schema;
 
         private DirectSchema(Schema schema) {
             this.schema = Objects.requireNonNull(schema);
-            if (schema.schemaId() != 0) {
-                // It's unfortunate that org.apache.iceberg.Schema.DEFAULT_SCHEMA_ID overlaps with a real schema id
-                throw new IllegalArgumentException(
-                        "Direct schemas should not set a schema id; use fromSchemaId instead");
-            }
         }
 
         public Schema schema() {
@@ -183,7 +193,7 @@ public interface SchemaProvider {
             if (!(o instanceof DirectSchema))
                 return false;
             DirectSchema that = (DirectSchema) o;
-            return schema.sameSchema(that.schema);
+            return schema == that.schema || sameSchemaAndId(schema, that.schema);
         }
 
         @Override
@@ -192,7 +202,14 @@ public interface SchemaProvider {
             // but different identifierFieldIds (see implementation of Schema.sameSchema). This is unlikely an issue in
             // practice, and simplifies this layer of code from having to know more implementation details of sameSchema
             // (for example, if sameSchema adds new fields in the future, this code should still be correct).
-            return schema.asStruct().hashCode();
+            return 31 * schema.schemaId() + schema.asStruct().hashCode();
+        }
+
+        @Override
+        public String toString() {
+            return "DirectSchema{" +
+                    "schema=" + schema +
+                    '}';
         }
     }
 }

@@ -120,11 +120,11 @@ public class MixedUtilities {
 
 When designing your annotations, follow these recommendations:
 
-- **Use descriptive annotation values** that clearly indicate the method category (e.g., `math_operations`, `string_utilities`)
-- **Group logically related methods** together rather than creating separate annotations for each method
-- **Avoid creating too many small annotation categories**, as this increases configuration complexity
-- **Consider the security implications** - only annotate methods that are safe for user formulas
-- **Group related methods under the same annotation value** to reduce configuration
+- **Use descriptive annotation values** that clearly indicate the method category (e.g., `math_operations`, `string_utilities`).
+- **Group logically related methods** together rather than creating separate annotations for each method.
+- **Avoid creating too many small annotation categories**, as this increases configuration complexity.
+- **Consider the security implications** - only annotate methods that are safe for user formulas.
+- **Group related methods under the same annotation value** to reduce configuration.
 
 ### Configuration
 

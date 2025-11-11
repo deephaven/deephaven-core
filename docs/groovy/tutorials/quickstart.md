@@ -299,7 +299,7 @@ instrumentExtremity = instrumentRollingStats.update(
 
 ![Animated GIF highlighting extremity detection using Z-scores derived from rolling statistics](../assets/tutorials/quickstart/quickstart-14.gif)
 
-There's a lot more to [`updateBy`](../reference/table-operations/update-by-operations/updateBy.md). See the [user guide](../how-to-guides/use-update-by.md) for more information.
+There's a lot more to [`updateBy`](../reference/table-operations/update-by-operations/updateBy.md). See the [user guide](../how-to-guides/rolling-aggregations.md) for more information.
 
 ### Combining tables
 

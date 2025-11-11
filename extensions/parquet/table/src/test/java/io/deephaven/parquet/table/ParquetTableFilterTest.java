@@ -14,11 +14,7 @@ import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.table.impl.PushdownFilterContext;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
-import io.deephaven.engine.table.impl.select.ConditionFilter;
-import io.deephaven.engine.table.impl.select.DoubleRangeFilter;
-import io.deephaven.engine.table.impl.select.FloatRangeFilter;
-import io.deephaven.engine.table.impl.select.MatchFilter;
-import io.deephaven.engine.table.impl.select.WhereFilter;
+import io.deephaven.engine.table.impl.select.*;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
 import io.deephaven.engine.table.impl.util.ImmediateJobScheduler;
 import io.deephaven.engine.testutil.filters.ParallelizedRowSetCapturingFilter;
@@ -2086,6 +2082,16 @@ public final class ParquetTableFilterTest {
         assertEquals(100_000, filterB.numRowsProcessed());
 
         assertEquals(23435, result.size());
+        allFilters.forEach(RowSetCapturingFilter::reset);
+
+        // Inverted - Barrier to force B then A
+        result = diskTable.where(Filter.and(
+                WhereFilterInvertedImpl.of(filterB.withDeclaredBarriers("b1")),
+                WhereFilterInvertedImpl.of(filterA.withRespectedBarriers("b1"))));
+        assertEquals(97, filterA.numRowsProcessed()); // only indexA rows
+        assertEquals(100_000, filterB.numRowsProcessed());
+
+        assertEquals(26430, result.size());
         allFilters.forEach(RowSetCapturingFilter::reset);
     }
 }

@@ -18,7 +18,7 @@ Aggregators are applied to data by the [`aggBy`](../reference/table-operations/g
 
 The general syntax follows:
 
-```groovy skip-test
+```groovy syntax
 import static io.deephaven.api.agg.Aggregation.AggAvg
 import static io.deephaven.api.agg.Aggregation.AggLast
 
@@ -27,7 +27,7 @@ agg_list = [
     AggLast("inputColumn = outputColumn")  // second aggregation
 ]
 
-result = source.aggBy(agg_list, groupingColumns...) // apply the aggregations to data .aggBy
+result = source.aggBy(agg_list, groupingColumns...) // apply the aggregations to data
 ```
 
 ## What aggregations are available?
@@ -49,12 +49,12 @@ A number of built-in aggregations are available:
 - [`AggMin`](../reference/table-operations/group-and-aggregate/AggMin.md) - Minimum value for each group.
 - [`AggPartition`](../reference/table-operations/group-and-aggregate/AggPartition.md) - Creates partition for the aggregation group.
 - [`AggPct`](../reference/table-operations/group-and-aggregate/AggPct.md) - Percentile of values for each group.
-- [`AggSortedFirst`](../reference/table-operations/group-and-aggregate/AggSortedFirst.md) - First value of each column within an aggregation group, sorted.
-- [`AggSortedLast`](../reference/table-operations/group-and-aggregate/AggSortedLast.md) - Last value of each column within an aggregation group, sorted.
-- [`AggStd`](../reference/table-operations/group-and-aggregate/AggStd.md) - Standard deviation for each group.
+- [`AggSortedFirst`](../reference/table-operations/group-and-aggregate/AggSortedFirst.md) - Sorts in ascending order, then computes the first value for each group.
+- [`AggSortedLast`](../reference/table-operations/group-and-aggregate/AggSortedLast.md) - Sorts in descending order, then computes the last value for each group.
+- [`AggStd`](../reference/table-operations/group-and-aggregate/AggStd.md) - Sample standard deviation for each group.
 - [`AggSum`](../reference/table-operations/group-and-aggregate/AggSum.md) - Sum of values for each group.
 - [`AggUnique`](../reference/table-operations/group-and-aggregate/AggUnique.md) - Returns one single value for a column, or a default.
-- [`AggVar`](../reference/table-operations/group-and-aggregate/AggVar.md) - Variance for each group.
+- [`AggVar`](../reference/table-operations/group-and-aggregate/AggVar.md) - Sample variance for each group.
 - [`AggWAvg`](../reference/table-operations/group-and-aggregate/AggWAvg.md) - Weighted average for each group.
 - [`AggWSum`](../reference/table-operations/group-and-aggregate/AggWSum.md) - Weighted sum for each group.
 

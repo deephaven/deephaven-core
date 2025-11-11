@@ -229,7 +229,6 @@ public class QueryTable extends BaseTable<QueryTable> {
     public static boolean USE_DATA_INDEX_FOR_JOINS =
             Configuration.getInstance().getBooleanWithDefault("QueryTable.useDataIndexForJoins", true);
 
-
     /**
      * For a static select(), we would prefer to flatten the table to avoid using memory unnecessarily (because the data
      * may be spread out across many blocks depending on the input RowSet). However, the select() can become slower
@@ -1370,8 +1369,7 @@ public class QueryTable extends BaseTable<QueryTable> {
 
                     boolean hasConstArrayOffsetFilter = false;
                     for (final WhereFilter filter : extractedFilters) {
-                        final Set<ShiftedColumnDefinition> shifted = ExtractShiftedColumnDefinitions.of(filter);
-                        if (shifted != null && !shifted.isEmpty()) {
+                        if (ExtractShiftedColumnDefinitions.hasAny(filter)) {
                             hasConstArrayOffsetFilter = true;
                             break;
                         }

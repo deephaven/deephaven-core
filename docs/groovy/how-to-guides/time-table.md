@@ -30,9 +30,9 @@ In this example, the `startTime` argument was not provided, so the first row of 
 > [!TIP]
 > Duration strings are formatted as `"PTnHnMnS"`, where:
 >
-> - `PT` is the prefix to indicate a [duration](../reference/query-language/types/durations.md)
-> - `n` is a number
-> - `H`, `M`, and `S` are the units of time (hours, minutes, and seconds, respectively)
+> - `PT` is the prefix to indicate a [duration](../reference/query-language/types/durations.md).
+> - `n` is a number.
+> - `H`, `M`, and `S` are the units of time (hours, minutes, and seconds, respectively).
 
 <LoopedVideo src='../assets/tutorials/timetable.mp4' />
 

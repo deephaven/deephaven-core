@@ -82,4 +82,9 @@ public class ConjunctiveFilter extends ComposedFilter {
     public String toString() {
         return "ConjunctiveFilter(" + Arrays.toString(componentFilters) + ')';
     }
+
+    @Override
+    public final <T> T walk(Visitor<T> visitor) {
+        return visitor.visit(this);
+    }
 }

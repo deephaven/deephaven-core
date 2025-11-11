@@ -362,6 +362,9 @@ public class TableViewportSubscription extends AbstractTableSubscription {
         return promise.asPromise();
     }
 
+    /**
+     * @deprecated Use {@link JsTable#createSnapshot(Object)} instead
+     */
     @JsMethod
     @Deprecated
     public Promise<TableData> snapshot(JsRangeSet rows, Column[] columns) {

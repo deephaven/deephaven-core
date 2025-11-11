@@ -137,6 +137,10 @@
               {
                 "label": "Core API design",
                 "path": "conceptual/deephaven-core-api.md"
+              },
+              {
+                "label": "Servers & clients",
+                "path": "conceptual/client-server-model.md"
               }
             ]
           },
@@ -306,6 +310,15 @@
               {
                 "label": "Sort",
                 "path": "how-to-guides/sort.md"
+              },
+              {
+                "label": "Transpose",
+                "items": [
+                  {
+                    "label": "Keyed transpose",
+                    "path": "how-to-guides/keyed-transpose.md"
+                  }
+                ]
               },
               {
                 "label": "Merge",
@@ -953,8 +966,29 @@
                     "path": "how-to-guides/python-errors.md"
                   },
                   {
-                    "label": "Debugging with PyCharm",
-                    "path": "how-to-guides/debugging/pycharm-debugging.md"
+                    "label": "Debugging",
+                    "items": [
+                      {
+                        "label": "Overview",
+                        "path": "how-to-guides/debugging/debugging-landing.md"
+                      },
+                      {
+                        "label": "Docker setup",
+                        "path": "how-to-guides/debugging/docker-setup.md"
+                      },
+                      {
+                        "label": "pip setup",
+                        "path": "how-to-guides/debugging/pip-setup.md"
+                      },
+                      {
+                        "label": "Source setup",
+                        "path": "how-to-guides/debugging/source-setup.md"
+                      },
+                      {
+                        "label": "Common problems",
+                        "path": "how-to-guides/debugging/common-problems.md"
+                      }
+                    ]
                   },
                   {
                     "label": "Retrieve logs",
@@ -1755,6 +1789,15 @@
                     "label": "format_row_where",
                     "path": "reference/table-operations/format/format-row-where.md"
                   },
+                  {
+                    "label": "layout_hints",
+                    "path": "reference/table-operations/format/layout-hints.md"
+                  }
+                ]
+              },
+              {
+                "label": "Transpose",
+                "items": [
                   {
                     "label": "keyed_transpose",
                     "path": "reference/table-operations/format/keyed-transpose.md"
@@ -2664,6 +2707,14 @@
                     "path": "reference/community-questions/extract-values-from-tables.md"
                   },
                   {
+                    "label": "How do I delete historical data?",
+                    "path": "reference/community-questions/how-to-delete-historical-data.md"
+                  },
+                  {
+                    "label": "How do I extract a list of distinct dates from a table?",
+                    "path": "reference/community-questions/extract-distinct-dates-list.md"
+                  },
+                  {
                     "label": "How do I get the ISO week number from a datetime?",
                     "path": "reference/community-questions/iso-week-number.md"
                   },
@@ -2686,6 +2737,10 @@
                   {
                     "label": "When should I use `where_in` or `natural_join`?",
                     "path": "reference/community-questions/wherein-vs-naturaljoin.md"
+                  },
+                  {
+                    "label": "How do I filter by time of day across all dates?",
+                    "path": "reference/community-questions/filter-time-window-all-dates.md"
                   }
                 ]
               },
@@ -2711,6 +2766,10 @@
                   {
                     "label": "How do I import one Python script into another in the Deephaven IDE?",
                     "path": "reference/community-questions/import-python-script.md"
+                  },
+                  {
+                    "label": "Why am I getting a \"Java class not found\" error when starting deephaven-server?",
+                    "path": "reference/community-questions/java-class-not-found-error.md"
                   },
                   {
                     "label": "Why am I getting an UpdateGraphConflictException?",

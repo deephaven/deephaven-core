@@ -402,17 +402,17 @@ result = source.update_by(ops=updateby_ops)
 
 **Tick-based decay** (`decay_ticks`):
 
-- Smaller values = faster decay, more weight on recent data
-- `decay_ticks=1`: Each previous row has ~37% the weight of the current row
-- `decay_ticks=10`: Each previous row has ~90% the weight of the current row
-- Higher values create smoother, slower-responding averages
+- Smaller values = faster decay, more weight on recent data.
+- `decay_ticks=1`: Each previous row has ~37% the weight of the current row.
+- `decay_ticks=10`: Each previous row has ~90% the weight of the current row.
+- Higher values create smoother, slower-responding averages.
 
 **Time-based decay** (`decay_time`):
 
-- Controls how quickly older data loses influence over time
-- `decay_time="PT1s"`: Data from 1 second ago has ~37% weight
-- `decay_time="PT10s"`: Data from 10 seconds ago has ~37% weight
-- Longer decay times create more stable, less responsive averages
+- Controls how quickly older data loses influence over time.
+- `decay_time="PT1s"`: Data from 1 second ago has ~37% weight.
+- `decay_time="PT10s"`: Data from 10 seconds ago has ~37% weight.
+- Longer decay times create more stable, less responsive averages.
 
 The same example can be modified to use time-based windows instead of tick-based windows:
 
@@ -435,9 +435,9 @@ result = source.update_by(ops=updateby_ops)
 
 In this time-based example:
 
-- `decay_time="PT2s"`: Creates a fast-responding average where data loses ~63% influence after 2 seconds
-- `decay_time="PT4s"`: Medium responsiveness, data loses ~63% influence after 4 seconds
-- `decay_time="PT6s"`: Slower response, data loses ~63% influence after 6 seconds
+- `decay_time="PT2s"`: Creates a fast-responding average where data loses ~63% influence after 2 seconds.
+- `decay_time="PT4s"`: Medium responsiveness, data loses ~63% influence after 4 seconds.
+- `decay_time="PT6s"`: Slower response, data loses ~63% influence after 6 seconds.
 
 #### Additional rolling operations
 
@@ -543,21 +543,21 @@ It's common for tables to contain null, NaN, or other erroneous values. Differen
 
 Certain operations can be configured to handle erroneous data through control parameters:
 
-- [`ema_tick`](../reference/table-operations/update-by-operations/ema-tick.md) and [`ema_time`](../reference/table-operations/update-by-operations/ema-time.md): Use `op_control` parameter with [OperationControl](../reference/table-operations/update-by-operations/OperationControl.md)
-- [`delta`](../reference/table-operations/update-by-operations/delta.md): Use `delta_control` parameter with [DeltaControl](../reference/table-operations/update-by-operations/DeltaControl.md)
+- [`ema_tick`](../reference/table-operations/update-by-operations/ema-tick.md) and [`ema_time`](../reference/table-operations/update-by-operations/ema-time.md): Use `op_control` parameter with [OperationControl](../reference/table-operations/update-by-operations/OperationControl.md).
+- [`delta`](../reference/table-operations/update-by-operations/delta.md): Use `delta_control` parameter with [DeltaControl](../reference/table-operations/update-by-operations/DeltaControl.md).
 
 ### Default null handling behavior
 
 Most [`update_by`](../reference/table-operations/update-by-operations/updateBy.md) operations have consistent default behavior for null values:
 
-- **Cumulative operations** (`cum_sum`, `cum_max`, etc.): Skip null values and continue with the last valid result
-- **Rolling operations** (`rolling_avg_tick`, `rolling_sum_time`, etc.): Exclude null values from window calculations
-- **Exponential operations** (`ema_tick`, `emmax_time`, etc.): Skip null values unless configured otherwise via `op_control`
+- **Cumulative operations** (`cum_sum`, `cum_max`, etc.): Skip null values and continue with the last valid result.
+- **Rolling operations** (`rolling_avg_tick`, `rolling_sum_time`, etc.): Exclude null values from window calculations.
+- **Exponential operations** (`ema_tick`, `emmax_time`, etc.): Skip null values unless configured otherwise via `op_control`.
 
 ### Specialized null handling operations
 
-- **[`forward_fill`](../reference/table-operations/update-by-operations/forward-fill.md)**: Specifically designed to replace null values with the most recent non-null value
-- **[`delta`](../reference/table-operations/update-by-operations/delta.md)**: Configurable null handling through `DeltaControl` (see [Sequential difference](#sequential-difference) section)
+- **[`forward_fill`](../reference/table-operations/update-by-operations/forward-fill.md)**: Specifically designed to replace null values with the most recent non-null value.
+- **[`delta`](../reference/table-operations/update-by-operations/delta.md)**: Configurable null handling through `DeltaControl` (see [Sequential difference](#sequential-difference) section).
 
 For detailed configuration options, see the [OperationControl reference guide](../reference/table-operations/update-by-operations/OperationControl.md).
 

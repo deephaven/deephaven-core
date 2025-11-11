@@ -13,8 +13,8 @@ Deephaven's [deephaven-examples Github organization](https://github.com/deephave
 
 Deephaven expects your Application Mode configuration to be defined in a [config file](../reference/app-mode/application-mode-config.md) that ends with `.app` (this is the `*.app` file). For using Application Mode with scripts, you need to set:
 
-- `type=script`
-- the `scriptType` to `python` or `groovy`
+- `type=script`.
+- the `scriptType` to `python` or `groovy`.
 - your `file_N` files to run. Your `file_N` files can be any number of files defined relative to where the `*.app` file is located when packaged into Docker.
 
 The following shows an example of a typical .app file:

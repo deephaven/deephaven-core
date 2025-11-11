@@ -3,16 +3,23 @@
 //
 package io.deephaven.server.table.ops;
 
+import com.google.protobuf.ProtocolStringList;
 import com.google.rpc.Code;
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.Pair;
+import io.deephaven.api.Selectable;
 import io.deephaven.api.updateby.*;
 import io.deephaven.api.updateby.BadDataBehavior;
 import io.deephaven.api.updateby.spec.*;
 import io.deephaven.api.updateby.spec.WindowScale;
 import io.deephaven.auth.codegen.impl.TableServiceContextualAuthWiring;
 import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.impl.select.SelectColumn;
+import io.deephaven.engine.util.TableTools;
+import io.deephaven.engine.validation.ColumnExpressionValidator;
 import io.deephaven.proto.backplane.grpc.*;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest;
 import io.deephaven.proto.backplane.grpc.UpdateByRequest;
@@ -28,7 +35,9 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.math.MathContext;
 import java.math.RoundingMode;
+import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import static io.deephaven.proto.backplane.grpc.BadDataBehavior.BAD_DATA_BEHAVIOR_NOT_SPECIFIED;
@@ -36,10 +45,14 @@ import static io.deephaven.proto.backplane.grpc.BadDataBehavior.BAD_DATA_BEHAVIO
 @Singleton
 public final class UpdateByGrpcImpl extends GrpcTableOperation<UpdateByRequest> {
 
+    private final ColumnExpressionValidator expressionValidator;
+
     @Inject
-    public UpdateByGrpcImpl(final TableServiceContextualAuthWiring authWiring) {
+    public UpdateByGrpcImpl(final TableServiceContextualAuthWiring authWiring,
+            final ColumnExpressionValidator expressionValidator) {
         super(authWiring::checkPermissionUpdateBy, BatchTableRequest.Operation::getUpdateBy,
                 UpdateByRequest::getResultId, UpdateByRequest::getSourceId);
+        this.expressionValidator = expressionValidator;
     }
 
     public void validateRequest(final UpdateByRequest request) throws StatusRuntimeException {
@@ -70,10 +83,13 @@ public final class UpdateByGrpcImpl extends GrpcTableOperation<UpdateByRequest> 
 
         final Table parent = sourceTables.get(0).get();
         final UpdateByControl control = request.hasOptions() ? adaptOptions(request.getOptions()) : null;
+
         final List<UpdateByOperation> operations =
                 request.getOperationsList().stream().map(UpdateByGrpcImpl::adaptOperation).collect(Collectors.toList());
         final List<ColumnName> groupByColumns =
                 request.getGroupByColumnsList().stream().map(ColumnName::of).collect(Collectors.toList());
+
+        request.getOperationsList().forEach(op -> validateFormulas(op, parent, groupByColumns));
 
         if (parent.isRefreshing()) {
             return parent.getUpdateGraph().sharedLock().computeLocked(() -> control == null
@@ -185,6 +201,109 @@ public final class UpdateByGrpcImpl extends GrpcTableOperation<UpdateByRequest> 
                 throw new IllegalArgumentException("Unexpected spec type: " + spec.getTypeCase());
         }
     }
+
+
+    private void validateFormulas(UpdateByRequest.UpdateByOperation operation, Table parent,
+            List<ColumnName> groupByColumns) {
+        if (operation.getTypeCase() != UpdateByRequest.UpdateByOperation.TypeCase.COLUMN) {
+            return;
+        }
+
+        final UpdateByColumn.UpdateBySpec spec = operation.getColumn().getSpec();
+        switch (spec.getTypeCase()) {
+            case TYPE_NOT_SET:
+            case SUM:
+            case MIN:
+            case MAX:
+            case PRODUCT:
+            case FILL:
+            case EMA:
+            case EMS:
+            case EM_MAX:
+            case EM_MIN:
+            case EM_STD:
+            case DELTA:
+            case ROLLING_SUM:
+            case ROLLING_GROUP:
+            case ROLLING_AVG:
+            case ROLLING_MIN:
+            case ROLLING_MAX:
+            case ROLLING_PRODUCT:
+            case ROLLING_COUNT:
+            case ROLLING_STD:
+            case ROLLING_WAVG:
+                // these types do not contain formula
+                return;
+
+            case ROLLING_FORMULA:
+                if (!spec.getRollingFormula().getParamToken().isEmpty()) {
+                    validateFormulaWithParamToken(parent, groupByColumns, spec,
+                            operation.getColumn().getMatchPairsList());
+                } else {
+                    validateFormulaNoParamToken(parent, groupByColumns, spec);
+
+                }
+                break;
+            case COUNT_WHERE:
+                expressionValidator.validateSelectFilters(spec.getCountWhere().getFiltersList().toArray(String[]::new),
+                        parent.getDefinition());
+                break;
+            case ROLLING_COUNT_WHERE:
+                expressionValidator.validateSelectFilters(
+                        spec.getRollingCountWhere().getFiltersList().toArray(String[]::new), parent.getDefinition());
+                break;
+
+            default:
+                throw new IllegalStateException("Unknown spec type for formula validation: " + spec.getTypeCase());
+        }
+    }
+
+    private void validateFormulaNoParamToken(Table parent, List<ColumnName> groupByColumns,
+            final UpdateByColumn.UpdateBySpec spec) {
+        // Uses columns from the original table, but with all non-key columns turned into a Vector
+        final Table formulaInputPrototype = TableTools.newTable(parent.getDefinition()).groupBy(groupByColumns);
+        final String formulaString = spec.getRollingFormula().getFormula();
+        final SelectColumn[] sc = SelectColumn.from(Selectable.from(formulaString));
+        expressionValidator.validateColumnExpressions(sc, new String[] {formulaString},
+                formulaInputPrototype.getDefinition());
+    }
+
+    private void validateFormulaWithParamToken(Table parent, List<ColumnName> groupByColumns,
+            final UpdateByColumn.UpdateBySpec spec, final ProtocolStringList matchPairs) {
+        final Set<String> keyColumns =
+                groupByColumns.stream().map(ColumnName::name).collect(Collectors.toSet());
+
+        List<Pair> pairs;
+        if (matchPairs.isEmpty()) {
+            pairs = parent.getDefinition().getColumnStream()
+                    .filter(cd -> !keyColumns.contains(cd.getName()))
+                    .map(cd -> Pair.of(ColumnName.of(cd.getName()), ColumnName.of(cd.getName())))
+                    .collect(Collectors.toList());
+        } else {
+            pairs = matchPairs.stream().map(Pair::parse).collect(Collectors.toList());
+        }
+        pairs.forEach(pair -> {
+            final String inputName = pair.input().name();
+
+            // Uses key columns from the original table, plus one input at a time
+            final Collection<ColumnDefinition<?>> formulaInputDefinition =
+                    parent.getDefinition().getColumnStream()
+                            .filter(cd -> keyColumns.contains(cd.getName()) || cd.getName().equals(inputName))
+                            .collect(Collectors.toList());
+
+            final Table formulaInputPrototype =
+                    TableTools.newTable(TableDefinition.of(formulaInputDefinition)).groupBy(groupByColumns);
+
+            final String formulaString = spec.getRollingFormula().getFormula();
+            final SelectColumn[] sc = SelectColumn.from(
+                    Selectable.from(pair.output().name() + "="
+                            + formulaString.replaceAll(spec.getRollingFormula().getParamToken(), inputName)));
+
+            expressionValidator.validateColumnExpressions(sc, new String[] {formulaString},
+                    formulaInputPrototype.getDefinition());
+        });
+    }
+
 
     private static CumSumSpec adaptSum(@SuppressWarnings("unused") UpdateByCumulativeSum sum) {
         return CumSumSpec.of();
@@ -330,6 +449,12 @@ public final class UpdateByGrpcImpl extends GrpcTableOperation<UpdateByRequest> 
     }
 
     private static RollingFormulaSpec adaptRollingFormula(UpdateByRollingFormula formula) {
+        if (formula.getParamToken().isEmpty()) {
+            return RollingFormulaSpec.of(
+                    adaptWindowScale(formula.getReverseWindowScale()),
+                    adaptWindowScale(formula.getForwardWindowScale()),
+                    formula.getFormula());
+        }
         return RollingFormulaSpec.of(
                 adaptWindowScale(formula.getReverseWindowScale()),
                 adaptWindowScale(formula.getForwardWindowScale()),

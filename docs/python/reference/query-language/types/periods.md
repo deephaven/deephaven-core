@@ -10,7 +10,7 @@ Periods are a special type of string used to represent a period of calendar time
 
 - `[-]` - An optional sign to indicate that the period is negative. Omitting this makes the period positive.
 - `P` - The prefix indicating this is a period string.
-- `n` - An integer value
+- `n` - An integer value.
 - `Y` - Years
 - `M` - Months
 - `W` - Weeks

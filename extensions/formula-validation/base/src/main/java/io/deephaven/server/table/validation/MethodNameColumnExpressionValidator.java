@@ -11,7 +11,7 @@ import com.github.javaparser.ast.expr.MethodCallExpr;
 import com.github.javaparser.ast.expr.ObjectCreationExpr;
 import com.github.javaparser.ast.visitor.VoidVisitorAdapter;
 import io.deephaven.base.verify.Assert;
-import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.lang.QueryLanguageFunctionUtils;
 import io.deephaven.engine.table.impl.lang.QueryLanguageParser;
@@ -84,7 +84,8 @@ public class MethodNameColumnExpressionValidator extends VoidVisitorAdapter<Obje
     }
 
     @Override
-    public WhereFilter[] validateSelectFilters(final String[] conditionalExpressions, final Table table) {
+    public WhereFilter[] validateSelectFilters(final String[] conditionalExpressions,
+            final TableDefinition definition) {
         final WhereFilter[] whereFilters = WhereFilterFactory.getExpressions(conditionalExpressions);
         final List<String> dummyAssignments = new ArrayList<>();
         for (int ii = 0; ii < whereFilters.length; ++ii) {
@@ -97,13 +98,14 @@ public class MethodNameColumnExpressionValidator extends VoidVisitorAdapter<Obje
         if (!dummyAssignments.isEmpty()) {
             final String[] daArray = dummyAssignments.toArray(String[]::new);
             final SelectColumn[] selectColumns = SelectColumnFactory.getExpressions(daArray);
-            validateColumnExpressions(selectColumns, daArray, table);
+            validateColumnExpressions(selectColumns, daArray, definition);
         }
         return whereFilters;
     }
 
     @Override
-    public void validateConditionFilters(final List<ConditionFilter> conditionFilters, final Table table) {
+    public void validateConditionFilters(final List<ConditionFilter> conditionFilters,
+            final TableDefinition definition) {
         final List<String> dummyAssignments = new ArrayList<>();
         for (int ii = 0; ii < conditionFilters.size(); ++ii) {
             final ConditionFilter cf = conditionFilters.get(ii);
@@ -113,17 +115,17 @@ public class MethodNameColumnExpressionValidator extends VoidVisitorAdapter<Obje
         if (!dummyAssignments.isEmpty()) {
             final String[] daArray = dummyAssignments.toArray(String[]::new);
             final SelectColumn[] selectColumns = SelectColumnFactory.getExpressions(daArray);
-            validateColumnExpressions(selectColumns, daArray, table);
+            validateColumnExpressions(selectColumns, daArray, definition);
         }
     }
 
     @Override
     public void validateColumnExpressions(final SelectColumn[] selectColumns, final String[] originalExpressions,
-            final Table table) {
+            final TableDefinition definition) {
         // It's unfortunate that we have to validateSelect which does a bunch of analysis, just to get throw-away cloned
         // columns back, so we can check here for disallowed methods. (We need to make sure SwitchColumns get
         // initialized.)
-        final QueryTable prototype = (QueryTable) TableTools.newTable(table.getDefinition());
+        final QueryTable prototype = (QueryTable) TableTools.newTable(definition);
         final SelectColumn[] clonedColumns = prototype.validateSelect(selectColumns).getClonedColumns();
         assert (clonedColumns.length == originalExpressions.length);
         for (int ii = 0; ii < clonedColumns.length; ++ii) {
