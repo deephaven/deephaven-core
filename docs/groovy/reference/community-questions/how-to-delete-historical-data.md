@@ -80,7 +80,7 @@ builder = new Builder().period("PT0.5s").blinkTable(true)
 t = builder.build()
 ```
 
-Blink tables don't require manual deletion—they automatically discard previous data with each update.
+Blink tables don't require manual deletion - they automatically discard previous data with each update.
 
 ## Partitioned table partitions
 

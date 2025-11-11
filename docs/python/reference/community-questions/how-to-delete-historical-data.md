@@ -75,7 +75,7 @@ from deephaven import time_table
 t = time_table("PT0.5s", blink_table=True)
 ```
 
-Blink tables don't require manual deletion—they automatically discard previous data with each update.
+Blink tables don't require manual deletion - they automatically discard previous data with each update.
 
 ## Partitioned table partitions
 
