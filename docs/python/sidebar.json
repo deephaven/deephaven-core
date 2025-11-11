@@ -2707,6 +2707,10 @@
                     "path": "reference/community-questions/extract-values-from-tables.md"
                   },
                   {
+                    "label": "How do I delete historical data?",
+                    "path": "reference/community-questions/how-to-delete-historical-data.md"
+                  },
+                  {
                     "label": "How do I extract a list of distinct dates from a table?",
                     "path": "reference/community-questions/extract-distinct-dates-list.md"
                   },
