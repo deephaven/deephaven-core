@@ -2,7 +2,7 @@
 title: "Moving Operations with update_by"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Moving Operations with update_by}
+  %\VignetteIndexEntry{update_by}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---

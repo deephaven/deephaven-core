@@ -18,13 +18,7 @@ status = tryCatch(
      pkgdown::build_site(preview=FALSE)
      0
   },
-  error=function(e) { 
-    cat("ERROR occurred during pkgdown::build_site()\n")
-    cat("Error message:", conditionMessage(e), "\n")
-    cat("Error class:", class(e), "\n")
-    print(e)
-    1 
-  }
+  error=function(e) { print(paste0('ERROR: ', e)); 1 }
 )
 print(paste0('status=', status))
 quit(save='no', status=status)

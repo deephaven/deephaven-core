@@ -179,7 +179,8 @@ def rClientSite = Docker.registerDockerTask(project, 'rClientSite') {
         runCommand("mkdir -p ${prefix}/src/rdeephaven/docs")
         runCommand('''echo "status = tryCatch(" \
                            "   {" \
-                           "      install.packages('pkgdown'); " \
+                           "      install.packages('remotes'); " \
+                           "      remotes::install_version('pkgdown', version = '2.1.3', repos = 'https://cloud.r-project.org'); " \
                            "      0" \
                            "   }," \
                            "  error=function(e) { print(paste0('ERROR: ', e)); 1 }" \

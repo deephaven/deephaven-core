@@ -2,7 +2,7 @@
 title: "Overview of the Deephaven Core R Client"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Overview of the Deephaven Core R Client}
+  %\VignetteIndexEntry{rdeephaven}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
