@@ -13,33 +13,54 @@ To achieve this:
 
 Here's a complete example:
 
-```groovy skip-test
+```groovy
 import io.deephaven.engine.table.impl.util.DynamicTableWriter
 import io.deephaven.engine.updategraph.DynamicNode
 import io.deephaven.time.DateTimeUtils
-
 import static io.deephaven.api.agg.Aggregation.*
+import io.deephaven.engine.table.impl.sources.ring.RingTableTools
 import static io.deephaven.engine.util.TableTools.*
+import io.deephaven.engine.context.ExecutionContext
+import io.deephaven.engine.table.TableUpdate
+import io.deephaven.engine.table.impl.InstrumentedTableUpdateListenerAdapter
 
-source = timeTable("PT0.2s", true).update("X = (double)ii")
+source = timeTableBuilder().period("PT0.2S").blinkTable(true).build().update("X = (double)ii")
 
 tableWriter = new DynamicTableWriter(
-    ["Timestamp": DateTimeUtils.currentInstant().getClass(), "X": double.class]
+    ["Timestamp", "X"] as String[],
+    [DateTimeUtils.now().getClass(), double.class] as Class[]
 )
 
 result = tableWriter.getTable()
 
-handle = source.listenDo { update, isReplay ->
-    added = update.added()
-    if (added.size() > 0) {
-        firstTimestamp = added.getColumn("Timestamp").get(0)
-        firstX = added.getColumn("X").getDouble(0)
-        
-        tableWriter.logRow(firstTimestamp, firstX)
+// Capture the execution context for thread-safe operations
+ctx = ExecutionContext.getContext()
+
+listener = new InstrumentedTableUpdateListenerAdapter("MyListener", source, false) {
+    @Override
+    void onUpdate(TableUpdate update) {
+        added = update.added()
+        if (added.size() > 0) {
+            firstTimestamp = source.getColumnSource("Timestamp").get(added.get(0))
+            firstX = source.getColumnSource("X").getDouble(added.get(0))
+
+            // Use the captured execution context for thread-safe writes
+            ctx.apply(() -> {
+                tableWriter.logRow(firstTimestamp, firstX)
+            })
+        }
+    }
+
+    @Override
+    void onFailureInternal(Throwable originalException, Entry sourceEntry) {
+        originalException.printStackTrace()
     }
 }
 
-result_ring = ringTable(result, 10)
+// Store the listener reference for potential cleanup
+listenerHandle = source.addUpdateListener(listener)
+
+resultRing = RingTableTools.of(result, 10).where("!isNull(X)")
 ```
 
 ![First row of last 10 blinks](../../assets/reference/faq/blink-ring.gif)
