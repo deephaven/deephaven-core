@@ -17,7 +17,6 @@ public class HomeFilter implements Filter {
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
             throws IOException, ServletException {
-
         if (request instanceof HttpServletRequest req && response instanceof HttpServletResponse resp) {
             String contextPath = req.getContextPath(); // e.g. "/deephaven" or "" if root
             String queryString = req.getQueryString();
