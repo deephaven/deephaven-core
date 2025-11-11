@@ -1690,19 +1690,23 @@ public abstract class QueryTableWhereTest {
         QueryTable.PARALLEL_WHERE_SEGMENTS = 10;
         QueryTable.PARALLEL_WHERE_ROWS_PER_SEGMENT = 10_000;
         final QueryTable source = testRefreshingTable(RowSetFactory.flat(100_000).toTracking());
-        final QueryTable sourceWithData = (QueryTable) source.update("A = ii");
-        DataIndexer.getOrCreateDataIndex(sourceWithData, "A");
+        final QueryTable sourceWithData = (QueryTable) source.update("A = ii % 100");
+        final DataIndex dataIndex = DataIndexer.getOrCreateDataIndex(sourceWithData, "A");
 
         final RowSetCapturingFilter preFilter = new RowSetCapturingFilter();
         final RowSetCapturingFilter postFilter = new RowSetCapturingFilter();
 
-        final Table result = sourceWithData.where(
-                Filter.and(preFilter, RawString.of("A < 50000"), postFilter));
+        final RowSetCapturingFilter filter = new RowSetCapturingFilter(RawString.of("A < 50"));
 
-        // we expect the pre-filter to see after the raw-string filter
-        assertEquals(50_000, numRowsFiltered(preFilter));
-        assertEquals(50_000, numRowsFiltered(postFilter));
+        final Table result = sourceWithData.where(
+                Filter.and(preFilter, filter, postFilter));
+
+        // we expect the pre-filter to run after the raw-string filter
+        assertEquals(50_000, preFilter.numRowsProcessed());
+        assertEquals(50_000, postFilter.numRowsProcessed());
         assertEquals(50_000, result.size());
+
+        assertEquals(100, filter.numRowsProcessed()); // index table size
     }
 
     @Test
@@ -1710,18 +1714,22 @@ public abstract class QueryTableWhereTest {
         QueryTable.PARALLEL_WHERE_SEGMENTS = 10;
         QueryTable.PARALLEL_WHERE_ROWS_PER_SEGMENT = 10_000;
         final QueryTable source = testRefreshingTable(RowSetFactory.flat(100_000).toTracking());
-        final QueryTable sourceWithData = (QueryTable) source.update("A = ii");
-        DataIndexer.getOrCreateDataIndex(sourceWithData, "A");
+        final QueryTable sourceWithData = (QueryTable) source.update("A = ii % 100");
+        final DataIndex dataIndex = DataIndexer.getOrCreateDataIndex(sourceWithData, "A");
 
         final RowSetCapturingFilter preFilter = new RowSetCapturingFilter();
         final RowSetCapturingFilter postFilter = new RowSetCapturingFilter();
 
+        final RowSetCapturingFilter filter = new RowSetCapturingFilter(RawString.of("A < 50"));
+
         final Table result = sourceWithData.where(
-                Filter.and(preFilter, RawString.of("A < 50000").withSerial(), postFilter));
+                Filter.and(preFilter, filter.withSerial(), postFilter));
 
         assertEquals(100_000, numRowsFiltered(preFilter));
         assertEquals(50_000, numRowsFiltered(postFilter));
         assertEquals(50_000, result.size());
+
+        assertEquals(100_000, filter.numRowsProcessed()); // serial so index table ignored
     }
 
     @Test
@@ -1729,22 +1737,26 @@ public abstract class QueryTableWhereTest {
         QueryTable.PARALLEL_WHERE_SEGMENTS = 10;
         QueryTable.PARALLEL_WHERE_ROWS_PER_SEGMENT = 10_000;
         final QueryTable source = testRefreshingTable(RowSetFactory.flat(100_000).toTracking());
-        final QueryTable sourceWithData = (QueryTable) source.update("A = ii");
-        DataIndexer.getOrCreateDataIndex(sourceWithData, "A");
+        final QueryTable sourceWithData = (QueryTable) source.update("A = ii % 100");
+        final DataIndex dataIndex = DataIndexer.getOrCreateDataIndex(sourceWithData, "A");
 
         final RowSetCapturingFilter preFilter = new RowSetCapturingFilter();
         final RowSetCapturingFilter postFilter = new RowSetCapturingFilter();
+
+        final RowSetCapturingFilter filter = new RowSetCapturingFilter(RawString.of("A < 50"));
 
         final Object barrier = new Object(); // dummy barrier object for testing
         final Table result = sourceWithData.where(
                 Filter.and(
                         preFilter.withDeclaredBarriers(barrier),
-                        RawString.of("A < 50000").withRespectedBarriers(barrier),
+                        filter.withRespectedBarriers(barrier),
                         postFilter));
 
         assertEquals(100_000, numRowsFiltered(preFilter));
         assertEquals(50_000, numRowsFiltered(postFilter));
         assertEquals(50_000, result.size());
+
+        assertEquals(100, filter.numRowsProcessed()); // index table size
     }
 
     @Test
@@ -1753,12 +1765,14 @@ public abstract class QueryTableWhereTest {
         QueryTable.PARALLEL_WHERE_SEGMENTS = 10;
         QueryTable.PARALLEL_WHERE_ROWS_PER_SEGMENT = 10_000;
         final QueryTable source = testRefreshingTable(RowSetFactory.flat(100_000).toTracking());
-        final QueryTable sourceWithData = (QueryTable) source.update("A = ii");
+        final QueryTable sourceWithData = (QueryTable) source.update("A = ii % 100");
         final DataIndex dataIndex = DataIndexer.getOrCreateDataIndex(sourceWithData, "A");
 
         final RowSetCapturingFilter preFilter = new RowSetCapturingFilter();
         final RowSetCapturingFilter preFilter2 = new RowSetCapturingFilter();
         final RowSetCapturingFilter postFilter = new RowSetCapturingFilter();
+
+        final RowSetCapturingFilter filter = new RowSetCapturingFilter(RawString.of("A < 50"));
 
         final Object barrier = new Object(); // dummy barrier object for testing
         // we are looking to see the RawString prioritize over preFilter2
@@ -1766,13 +1780,15 @@ public abstract class QueryTableWhereTest {
                 Filter.and(
                         preFilter.withDeclaredBarriers(barrier),
                         preFilter2,
-                        RawString.of("A < 50000").withRespectedBarriers(barrier),
+                        filter.withRespectedBarriers(barrier),
                         postFilter));
 
         assertEquals(100_000, numRowsFiltered(preFilter));
         assertEquals(50_000, numRowsFiltered(preFilter2)); // raw-string prioritizes over prefilter2
         assertEquals(50_000, numRowsFiltered(postFilter));
         assertEquals(50_000, result.size());
+
+        assertEquals(100, filter.numRowsProcessed()); // index table size
     }
 
     @Test
@@ -1780,11 +1796,13 @@ public abstract class QueryTableWhereTest {
         QueryTable.PARALLEL_WHERE_SEGMENTS = 10;
         QueryTable.PARALLEL_WHERE_ROWS_PER_SEGMENT = 10_000;
         final QueryTable source = testRefreshingTable(RowSetFactory.flat(100_000).toTracking());
-        final QueryTable sourceWithData = (QueryTable) source.update("A = ii");
-        DataIndexer.getOrCreateDataIndex(sourceWithData, "A");
+        final QueryTable sourceWithData = (QueryTable) source.update("A = ii % 100");
+        final DataIndex dataIndex = DataIndexer.getOrCreateDataIndex(sourceWithData, "A");
 
         final RowSetCapturingFilter preFilter = new RowSetCapturingFilter();
         final RowSetCapturingFilter postFilter = new RowSetCapturingFilter();
+
+        final RowSetCapturingFilter filter = new RowSetCapturingFilter(RawString.of("A < 50"));
 
         final class DeepEqBarrier {
             final String name;
@@ -1812,12 +1830,14 @@ public abstract class QueryTableWhereTest {
         final Table result = sourceWithData.where(
                 Filter.and(
                         preFilter.withDeclaredBarriers(new DeepEqBarrier("my_test_barrier")),
-                        RawString.of("A < 50000").withRespectedBarriers(new DeepEqBarrier("my_test_barrier")),
+                        filter.withRespectedBarriers(new DeepEqBarrier("my_test_barrier")),
                         postFilter));
 
         assertEquals(100_000, numRowsFiltered(preFilter));
         assertEquals(50_000, numRowsFiltered(postFilter));
         assertEquals(50_000, result.size());
+
+        assertEquals(100, filter.numRowsProcessed()); // index table size
     }
 
     @Test
@@ -1825,16 +1845,18 @@ public abstract class QueryTableWhereTest {
         QueryTable.PARALLEL_WHERE_SEGMENTS = 10;
         QueryTable.PARALLEL_WHERE_ROWS_PER_SEGMENT = 10_000;
         final QueryTable source = testRefreshingTable(RowSetFactory.flat(100_000).toTracking());
-        final QueryTable sourceWithData = (QueryTable) source.update("A = ii");
-        DataIndexer.getOrCreateDataIndex(sourceWithData, "A");
+        final QueryTable sourceWithData = (QueryTable) source.update("A = ii % 100");
+        final DataIndex dataIndex = DataIndexer.getOrCreateDataIndex(sourceWithData, "A");
 
         final RowSetCapturingFilter preFilter = new RowSetCapturingFilter();
         final RowSetCapturingFilter postFilter = new RowSetCapturingFilter();
 
+        final RowSetCapturingFilter filter = new RowSetCapturingFilter(RawString.of("A < 50"));
+
         final IllegalArgumentException err = assertThrows(IllegalArgumentException.class, () -> {
             sourceWithData.where(Filter.and(
                     preFilter.withDeclaredBarriers(new Object()),
-                    RawString.of("A < 50000").withRespectedBarriers(new Object()),
+                    filter.withRespectedBarriers(new Object()),
                     postFilter));
         });
         assertTrue(err.getMessage().contains("respects barrier"));
@@ -1843,6 +1865,8 @@ public abstract class QueryTableWhereTest {
         // filters should not have run at all
         assertEquals(0, getAndSortSizes(preFilter).size());
         assertEquals(0, getAndSortSizes(postFilter).size());
+
+        assertEquals(0, filter.numRowsProcessed());
     }
 
     @Test
@@ -1850,17 +1874,19 @@ public abstract class QueryTableWhereTest {
         QueryTable.PARALLEL_WHERE_SEGMENTS = 10;
         QueryTable.PARALLEL_WHERE_ROWS_PER_SEGMENT = 10_000;
         final QueryTable source = testRefreshingTable(RowSetFactory.flat(100_000).toTracking());
-        final QueryTable sourceWithData = (QueryTable) source.update("A = ii");
-        DataIndexer.getOrCreateDataIndex(sourceWithData, "A");
+        final QueryTable sourceWithData = (QueryTable) source.update("A = ii % 100");
+        final DataIndex dataIndex = DataIndexer.getOrCreateDataIndex(sourceWithData, "A");
 
         final Object barrier = new Object(); // dummy barrier object for testing
         final RowSetCapturingFilter preFilter = new RowSetCapturingFilter();
         final RowSetCapturingFilter postFilter = new RowSetCapturingFilter();
 
+        final RowSetCapturingFilter filter = new RowSetCapturingFilter(RawString.of("A < 50"));
+
         final IllegalArgumentException err = assertThrows(IllegalArgumentException.class, () -> {
             sourceWithData.where(Filter.and(
                     preFilter.withDeclaredBarriers(barrier),
-                    RawString.of("A < 50000").withDeclaredBarriers(barrier),
+                    filter.withDeclaredBarriers(barrier),
                     postFilter));
         });
         assertTrue(err.getMessage().contains("Filter Barriers must be unique!"));
@@ -1868,6 +1894,8 @@ public abstract class QueryTableWhereTest {
         // filters should not have run at all
         assertEquals(0, getAndSortSizes(preFilter).size());
         assertEquals(0, getAndSortSizes(postFilter).size());
+
+        assertEquals(0, filter.numRowsProcessed());
     }
 
     @Test
@@ -1875,26 +1903,33 @@ public abstract class QueryTableWhereTest {
         QueryTable.PARALLEL_WHERE_SEGMENTS = 10;
         QueryTable.PARALLEL_WHERE_ROWS_PER_SEGMENT = 10_000;
         final QueryTable source = testRefreshingTable(RowSetFactory.flat(100_000).toTracking());
-        final QueryTable sourceWithData = (QueryTable) source.update("A = ii");
-        DataIndexer.getOrCreateDataIndex(sourceWithData, "A");
+        final QueryTable sourceWithData = (QueryTable) source.update("A = ii % 100");
+        final DataIndex dataIndex = DataIndexer.getOrCreateDataIndex(sourceWithData, "A");
 
         final Object barrier = new Object();
         final RowSetCapturingFilter preFilter = new RowSetCapturingFilter();
         final RowSetCapturingFilter midFilter = new RowSetCapturingFilter();
         final RowSetCapturingFilter postFilter = new RowSetCapturingFilter();
 
+        final RowSetCapturingFilter filter1 = new RowSetCapturingFilter(RawString.of("A < 50"));
+        final RowSetCapturingFilter filter2 = new RowSetCapturingFilter(RawString.of("A < 25"));
+
+
         final Table result = sourceWithData.where(
                 Filter.and(
                         preFilter,
-                        RawString.of("A < 50000").withDeclaredBarriers(barrier),
+                        filter1.withDeclaredBarriers(barrier),
                         midFilter.withRespectedBarriers(barrier),
-                        RawString.of("A < 25000").withRespectedBarriers(barrier),
+                        filter2.withRespectedBarriers(barrier),
                         postFilter));
 
         // note that while the mid-filter respects the barrier, but will not be prioritized
         assertEquals(25_000, numRowsFiltered(preFilter));
         assertEquals(25_000, numRowsFiltered(midFilter));
         assertEquals(25_000, numRowsFiltered(postFilter));
+
+        assertEquals(100, filter1.numRowsProcessed()); // index table size
+        assertEquals(100, filter2.numRowsProcessed()); // index table size
     }
 
     @Test
@@ -1902,16 +1937,16 @@ public abstract class QueryTableWhereTest {
         QueryTable.PARALLEL_WHERE_SEGMENTS = 10;
         QueryTable.PARALLEL_WHERE_ROWS_PER_SEGMENT = 10_000;
         final QueryTable source = testRefreshingTable(RowSetFactory.flat(100_000).toTracking());
-        final QueryTable sourceWithData = (QueryTable) source.update("A = ii");
-        DataIndexer.getOrCreateDataIndex(sourceWithData, "A");
+        final QueryTable sourceWithData = (QueryTable) source.update("A = ii % 100");
+        final DataIndex dataIndex = DataIndexer.getOrCreateDataIndex(sourceWithData, "A");
 
         final Object barrier = new Object();
         final RowSetCapturingFilter preFilter = new RowSetCapturingFilter();
         final RowSetCapturingFilter midFilter = new RowSetCapturingFilter();
         final RowSetCapturingFilter postFilter = new RowSetCapturingFilter();
 
-        final RowSetCapturingFilter filter1 = new RowSetCapturingFilter(RawString.of("A < 50000"));
-        final RowSetCapturingFilter filter2 = new RowSetCapturingFilter(RawString.of("A < 25000"));
+        final RowSetCapturingFilter filter1 = new RowSetCapturingFilter(RawString.of("A < 50"));
+        final RowSetCapturingFilter filter2 = new RowSetCapturingFilter(RawString.of("A < 25"));
 
         final Table result = sourceWithData.where(
                 Filter.and(
@@ -1923,10 +1958,219 @@ public abstract class QueryTableWhereTest {
 
         // note that while the mid-filter respects the barrier, but will not be prioritized
         assertEquals(100_000, numRowsFiltered(preFilter));
-        assertEquals(100_000, numRowsFiltered(filter1));
+        assertEquals(100_000, numRowsFiltered(filter1)); // forced to be serial
         assertEquals(50_000, numRowsFiltered(midFilter));
-        assertEquals(50_000, numRowsFiltered(filter2));
+        assertEquals(100, numRowsFiltered(filter2)); // index table size
         assertEquals(25_000, numRowsFiltered(postFilter));
+    }
+
+    private Table getMultiColumnTestSourceTable() {
+        final QueryTable source = testRefreshingTable(RowSetFactory.flat(100_000).toTracking());
+        return source.update("A = ii % 97", "B = ii % 11", "C = ii");
+    }
+
+    private void testMultiColumnDataIndexInternal(
+            final Table source,
+            final String columnA,
+            final String columnB,
+            final String columnC) {
+        QueryTable.PARALLEL_WHERE_SEGMENTS = 10;
+        QueryTable.PARALLEL_WHERE_ROWS_PER_SEGMENT = 10_000;
+
+        final RowSetCapturingFilter preFilter = new RowSetCapturingFilter();
+        final RowSetCapturingFilter postFilter = new RowSetCapturingFilter();
+
+        final RowSetCapturingFilter filterA = new ParallelizedRowSetCapturingFilter(RawString.of(columnA + " < 50"));
+        final RowSetCapturingFilter filterB = new ParallelizedRowSetCapturingFilter(RawString.of(columnB + " < 3"));
+        final RowSetCapturingFilter filterAConditional =
+                new ParallelizedRowSetCapturingFilter(RawString.of(columnA + " < (49 + 1)"));
+        final RowSetCapturingFilter filterBConditional =
+                new ParallelizedRowSetCapturingFilter(RawString.of(columnB + " < (2 + 1)"));
+        final RowSetCapturingFilter filterABConditional =
+                new ParallelizedRowSetCapturingFilter(RawString.of(columnA + " < 50 && " + columnB + " < 3"));
+
+        final ArrayList<RowSetCapturingFilter> allFilters = Lists.newArrayList(preFilter, postFilter, filterA, filterB,
+                filterAConditional, filterBConditional, filterABConditional);
+
+        Table result;
+
+        // Single column filter
+        result = source.where(Filter.and(preFilter.withSerial(), filterA, postFilter));
+
+        assertEquals(100_000, preFilter.numRowsProcessed());
+        assertEquals(97, filterA.numRowsProcessed()); // indexA table size
+        assertEquals(51550, postFilter.numRowsProcessed());
+        assertEquals(51550, result.size());
+
+        allFilters.forEach(RowSetCapturingFilter::reset);
+
+        // Single column filter
+        result = source.where(Filter.and(preFilter.withSerial(), filterB, postFilter));
+
+        assertEquals(100_000, preFilter.numRowsProcessed());
+        assertEquals(1_067, filterB.numRowsProcessed()); // indexAB table size
+        assertEquals(27273, postFilter.numRowsProcessed());
+        assertEquals(27273, result.size());
+
+        allFilters.forEach(RowSetCapturingFilter::reset);
+
+        // Conjunctive filter
+        result = source.where(Filter.and(preFilter.withSerial(), Filter.and(filterA, filterB), postFilter));
+
+        assertEquals(100_000, preFilter.numRowsProcessed());
+        assertEquals(97, filterA.numRowsProcessed()); // indexA table size
+        assertEquals(1_067, filterB.numRowsProcessed()); // indexAB table size
+        assertEquals(14062, postFilter.numRowsProcessed());
+        assertEquals(14062, result.size());
+
+        allFilters.forEach(RowSetCapturingFilter::reset);
+
+        // Conditional multi-column filter
+        result = source.where(Filter.and(preFilter.withSerial(), filterABConditional, postFilter));
+
+        assertEquals(100_000, preFilter.numRowsProcessed());
+        assertEquals(1_067, filterABConditional.numRowsProcessed()); // indexAB table size
+        assertEquals(14062, postFilter.numRowsProcessed());
+        assertEquals(14062, result.size());
+
+        allFilters.forEach(RowSetCapturingFilter::reset);
+
+        // Conditional single column filter
+        result = source.where(Filter.and(preFilter.withSerial(), filterAConditional, postFilter));
+
+        assertEquals(100_000, preFilter.numRowsProcessed());
+        assertEquals(97, filterAConditional.numRowsProcessed()); // indexA table size
+        assertEquals(51550, postFilter.numRowsProcessed());
+        assertEquals(51550, result.size());
+
+        allFilters.forEach(RowSetCapturingFilter::reset);
+
+        // Conditional single column filter
+        result = source.where(Filter.and(preFilter.withSerial(), filterBConditional, postFilter));
+
+        assertEquals(100_000, preFilter.numRowsProcessed());
+        assertEquals(1_067, filterBConditional.numRowsProcessed()); // indexAB table size
+        assertEquals(27273, postFilter.numRowsProcessed());
+        assertEquals(27273, result.size());
+
+        allFilters.forEach(RowSetCapturingFilter::reset);
+
+        // Disjunctive filter
+        result = source.where(Filter.and(preFilter.withSerial(), Filter.or(filterA, filterB), postFilter));
+
+        assertEquals(100_000, preFilter.numRowsProcessed());
+        // NOTE: the disjunctive filter is executed completely against the indexAB table, running A first
+        // then B against the A == false results
+        assertEquals(1_067, filterA.numRowsProcessed()); // indexAB table size
+        assertEquals(517, filterB.numRowsProcessed()); // indexAB minus A == true
+        assertEquals(64761, postFilter.numRowsProcessed());
+        assertEquals(64761, result.size());
+
+        allFilters.forEach(RowSetCapturingFilter::reset);
+
+        // Complex filter with internal barriers
+        RowSetCapturingFilter tmpFilter = new ParallelizedRowSetCapturingFilter(RawString.of(columnA + " > 10"));
+        result = source.where(Filter.and(preFilter.withSerial(),
+                Filter.and(
+                        filterB.withDeclaredBarriers("b1"),
+                        Filter.and(
+                                tmpFilter.withDeclaredBarriers("b2"),
+                                filterA.withRespectedBarriers("b1", "b2"))),
+                postFilter));
+
+        assertEquals(100_000, preFilter.numRowsProcessed());
+        assertEquals(97, filterA.numRowsProcessed()); // indexA table size
+        assertEquals(1_067, filterB.numRowsProcessed()); // indexAB table size
+        assertEquals(97, tmpFilter.numRowsProcessed()); // indexA table size
+        assertEquals(10969, postFilter.numRowsProcessed());
+        assertEquals(10969, result.size());
+
+        allFilters.forEach(RowSetCapturingFilter::reset);
+
+        // Ensure data-index-capable filters are prioritized over other filters (when no barriers are present)
+        tmpFilter = new RowSetCapturingFilter(RawString.of(columnC + " > 50000")); // non-indexed column
+
+        // force the pre-filter to run before the user filters
+        result = source.where(Filter.and(
+                preFilter.withSerial(),
+                tmpFilter, // user order puts this before filterA
+                filterABConditional,
+                postFilter));
+
+        assertEquals(100_000, preFilter.numRowsProcessed());
+        assertEquals(1_067, filterABConditional.numRowsProcessed()); // indexAB table size
+        assertEquals(14062, tmpFilter.numRowsProcessed()); // only rows that passed through indexed filter
+        assertEquals(7025, postFilter.numRowsProcessed());
+        assertEquals(7025, result.size());
+
+        allFilters.forEach(RowSetCapturingFilter::reset);
+
+        // Ensure data-index-capable filters honor barriers
+        tmpFilter = new RowSetCapturingFilter(RawString.of(columnC + " > 50000")); // non-indexed column
+
+        result = source.where(Filter.and(
+                preFilter.withSerial(),
+                tmpFilter.withDeclaredBarriers("b1"),
+                filterABConditional.withRespectedBarriers("b1"),
+                postFilter));
+
+        assertEquals(100_000, preFilter.numRowsProcessed());
+        assertEquals(100_000, tmpFilter.numRowsProcessed()); // processes all rows
+        assertEquals(1_067, filterABConditional.numRowsProcessed()); // indexAB table size
+        assertEquals(7025, postFilter.numRowsProcessed());
+        assertEquals(7025, result.size());
+
+        allFilters.forEach(RowSetCapturingFilter::reset);
+
+        // make the non-data-index-capable filter serial
+        tmpFilter = new RowSetCapturingFilter(RawString.of(columnC + " > 50000")); // non-indexed column
+
+        result = source.where(Filter.and(
+                preFilter.withSerial(),
+                tmpFilter.withSerial(),
+                filterABConditional,
+                postFilter));
+
+        assertEquals(100_000, preFilter.numRowsProcessed());
+        assertEquals(100_000, tmpFilter.numRowsProcessed()); // processes all rows
+        assertEquals(1_067, filterABConditional.numRowsProcessed()); // indexAB table size
+        assertEquals(7025, postFilter.numRowsProcessed());
+        assertEquals(7025, result.size());
+
+        allFilters.forEach(RowSetCapturingFilter::reset);
+    }
+
+    @Test
+    public void testMultiColumnDataIndex() {
+        final Table source = getMultiColumnTestSourceTable();
+
+        final DataIndex dataIndexA = DataIndexer.getOrCreateDataIndex(source, "A");
+        final DataIndex dataIndexAB = DataIndexer.getOrCreateDataIndex(source, "A", "B");
+
+        testMultiColumnDataIndexInternal(source, "A", "B", "C");
+    }
+
+    @Test
+    public void testMultiColumnDataIndexRenamedColumns() {
+        final Table source = getMultiColumnTestSourceTable();
+
+        final DataIndex dataIndexA = DataIndexer.getOrCreateDataIndex(source, "A");
+        final DataIndex dataIndexAB = DataIndexer.getOrCreateDataIndex(source, "A", "B");
+
+        final Table renamedTable = source.renameColumns("A_renamed=A", "B_renamed=B", "C_renamed=C");
+
+        testMultiColumnDataIndexInternal(renamedTable, "A_renamed", "B_renamed", "C_renamed");
+    }
+
+    @Test
+    public void testMultiColumnDataIndexOnRenamedColumns() {
+        final Table source = getMultiColumnTestSourceTable();
+        final DataIndex dataIndexA = DataIndexer.getOrCreateDataIndex(source, "A");
+
+        final Table renamedTable = source.renameColumns("A_renamed=A", "B_renamed=B", "C_renamed=C");
+        final DataIndex dataIndexAB = DataIndexer.getOrCreateDataIndex(renamedTable, "A_renamed", "B_renamed");
+
+        testMultiColumnDataIndexInternal(renamedTable, "A_renamed", "B_renamed", "C_renamed");
     }
 
     @Test
