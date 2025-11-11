@@ -13,7 +13,7 @@ To achieve this:
 
 Here's a complete example:
 
-```python skip-test
+```python
 from deephaven.stream.table_publisher import table_publisher
 from deephaven.execution_context import get_exec_ctx
 from deephaven.stream import blink_to_append_only
