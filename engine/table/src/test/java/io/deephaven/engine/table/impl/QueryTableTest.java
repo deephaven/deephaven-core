@@ -785,7 +785,7 @@ public class QueryTableTest extends QueryTableTestBase {
         assertEquals(long.class, result.getColumnSource("ColumnC").getType());
     }
 
-    public void testRenameColumnExeptions() {
+    public void testRenameColumnExceptions() {
         // Create a test table with a String column and an array column
         final Table testTable = TableTools.newTable(
                 TableTools.stringCol("ColumnA", "A", "B", "C"),
@@ -3322,6 +3322,208 @@ public class QueryTableTest extends QueryTableTestBase {
         assertTrue(DataIndexer.of(t2.getRowSet()).hasDataIndex(result));
 
         assertFalse(DataIndexer.of(t2.getRowSet()).hasDataIndex(reinterpreted));
+    }
+
+    public void testDropColumnsValidateDefinition() {
+        final Map<String, ColumnSource<?>> columnSourceMap = Map.of(
+                "String", TableTools.objColSource("c", "e", "g"),
+                "Int", colSource(2, 4, 6),
+                "Double", colSource(1.0, 2.0, 3.0));
+
+        final TableDefinition partitioningDef = TableDefinition.of(
+                ColumnDefinition.ofString("String").withPartitioning(),
+                ColumnDefinition.ofInt("Int"),
+                ColumnDefinition.ofDouble("Double").withNormal());
+        final Table sourceTable = new QueryTable(partitioningDef, i(0, 1, 2).toTracking(), columnSourceMap);
+
+        Table result;
+
+        result = sourceTable.dropColumns("String");
+        // Assert the remaining columns are still correct
+        assertTrue(result.getDefinition().getColumn("Int").isDirect());
+        assertTrue(result.getDefinition().getColumn("Double").isDirect());
+
+        result = sourceTable.dropColumns("Int");
+        // Assert the remaining columns are still correct
+        assertTrue(result.getDefinition().getColumn("String").isPartitioning());
+        assertTrue(result.getDefinition().getColumn("Double").isDirect());
+
+        result = sourceTable.dropColumns("Double");
+        // Assert the remaining columns are still correct
+        assertTrue(result.getDefinition().getColumn("String").isPartitioning());
+        assertTrue(result.getDefinition().getColumn("Int").isDirect());
+    }
+
+    public void testRenameColumnsValidateDefinition() {
+        final Map<String, ColumnSource<?>> columnSourceMap = Map.of(
+                "String", TableTools.objColSource("c", "e", "g"),
+                "Int", colSource(2, 4, 6),
+                "Double", colSource(1.0, 2.0, 3.0));
+
+        final TableDefinition partitioningDef = TableDefinition.of(
+                ColumnDefinition.ofString("String").withPartitioning(),
+                ColumnDefinition.ofInt("Int"),
+                ColumnDefinition.ofDouble("Double").withNormal());
+        final Table sourceTable = new QueryTable(partitioningDef, i(0, 1, 2).toTracking(), columnSourceMap);
+
+        Table result;
+
+        result = sourceTable.renameColumns("renamed=String");
+        assertTrue(result.getDefinition().getColumn("renamed").isPartitioning());
+        assertTrue(result.getDefinition().getColumn("Int").isDirect());
+        assertTrue(result.getDefinition().getColumn("Double").isDirect());
+
+        result = sourceTable.renameColumns("renamed=Int");
+        assertTrue(result.getDefinition().getColumn("String").isPartitioning());
+        assertTrue(result.getDefinition().getColumn("renamed").isDirect());
+        assertTrue(result.getDefinition().getColumn("Double").isDirect());
+
+        result = sourceTable.renameColumns("renamed=Double");
+        assertTrue(result.getDefinition().getColumn("String").isPartitioning());
+        assertTrue(result.getDefinition().getColumn("Int").isDirect());
+        assertTrue(result.getDefinition().getColumn("renamed").isDirect());
+
+        final Table refreshingTable = new QueryTable(partitioningDef, i(0, 2).toTracking(), columnSourceMap);
+        refreshingTable.setRefreshing(true);
+
+        result = refreshingTable.renameColumns("renamed=String");
+        assertTrue(result.getDefinition().getColumn("renamed").isPartitioning());
+        assertTrue(result.getDefinition().getColumn("Int").isDirect());
+        assertTrue(result.getDefinition().getColumn("Double").isDirect());
+
+        result = refreshingTable.renameColumns("renamed=Int");
+        assertTrue(result.getDefinition().getColumn("String").isPartitioning());
+        assertTrue(result.getDefinition().getColumn("renamed").isDirect());
+        assertTrue(result.getDefinition().getColumn("Double").isDirect());
+
+        result = refreshingTable.renameColumns("renamed=Double");
+        assertTrue(result.getDefinition().getColumn("String").isPartitioning());
+        assertTrue(result.getDefinition().getColumn("Int").isDirect());
+        assertTrue(result.getDefinition().getColumn("renamed").isDirect());
+    }
+
+    public void testUpdateValidateDefinition() {
+        final Map<String, ColumnSource<?>> columnSourceMap = Map.of(
+                "String", TableTools.objColSource("c", "e", "g"),
+                "Int", colSource(2, 4, 6),
+                "Double", colSource(1.0, 2.0, 3.0));
+
+
+        final TableDefinition partitioningDef = TableDefinition.of(
+                ColumnDefinition.ofString("String").withPartitioning(),
+                ColumnDefinition.ofInt("Int"),
+                ColumnDefinition.ofDouble("Double").withNormal());
+        final Table sourceTable = new QueryTable(partitioningDef, i(0, 1, 2).toTracking(), columnSourceMap);
+
+        Table result;
+
+        result = sourceTable.update("X = Int + 1");
+        assertTrue(result.getDefinition().getColumn("String").isPartitioning());
+        assertTrue(result.getDefinition().getColumn("Int").isDirect());
+        assertTrue(result.getDefinition().getColumn("Double").isDirect());
+
+        final Table refreshingTable = new QueryTable(partitioningDef, i(0, 2).toTracking(), columnSourceMap);
+        refreshingTable.setRefreshing(true);
+
+        result = refreshingTable.update("X = Int + 1");
+        assertTrue(result.getDefinition().getColumn("String").isPartitioning());
+        assertTrue(result.getDefinition().getColumn("Int").isDirect());
+        assertTrue(result.getDefinition().getColumn("Double").isDirect());
+    }
+
+    public void testUpdateViewValidateDefinition() {
+        final Map<String, ColumnSource<?>> columnSourceMap = Map.of(
+                "String", TableTools.objColSource("c", "e", "g"),
+                "Int", colSource(2, 4, 6),
+                "Double", colSource(1.0, 2.0, 3.0));
+
+        final TableDefinition partitioningDef = TableDefinition.of(
+                ColumnDefinition.ofString("String").withPartitioning(),
+                ColumnDefinition.ofInt("Int"),
+                ColumnDefinition.ofDouble("Double").withNormal());
+        final Table sourceTable = new QueryTable(partitioningDef, i(0, 1, 2).toTracking(), columnSourceMap);
+
+        Table result;
+
+        result = sourceTable.updateView("X = Int + 1");
+        assertTrue(result.getDefinition().getColumn("String").isPartitioning());
+        assertTrue(result.getDefinition().getColumn("Int").isDirect());
+        assertTrue(result.getDefinition().getColumn("Double").isDirect());
+
+        final Table refreshingTable = new QueryTable(partitioningDef, i(0, 2).toTracking(), columnSourceMap);
+        refreshingTable.setRefreshing(true);
+
+        result = refreshingTable.updateView("X = Int + 1");
+        assertTrue(result.getDefinition().getColumn("String").isPartitioning());
+        assertTrue(result.getDefinition().getColumn("Int").isDirect());
+        assertTrue(result.getDefinition().getColumn("Double").isDirect());
+    }
+
+    public void testSelectValidateDefinition() {
+        final Map<String, ColumnSource<?>> columnSourceMap = Map.of(
+                "String", TableTools.objColSource("c", "e", "g"),
+                "Int", colSource(2, 4, 6),
+                "Double", colSource(1.0, 2.0, 3.0));
+
+
+        final TableDefinition partitioningDef = TableDefinition.of(
+                ColumnDefinition.ofString("String").withPartitioning(),
+                ColumnDefinition.ofInt("Int"),
+                ColumnDefinition.ofDouble("Double").withNormal());
+        final Table sourceTable = new QueryTable(partitioningDef, i(0, 1, 2).toTracking(), columnSourceMap);
+
+        Table result;
+
+        result = sourceTable.select();
+        assertTrue(result.getDefinition().getColumn("String").isPartitioning());
+        assertTrue(result.getDefinition().getColumn("Int").isDirect());
+        assertTrue(result.getDefinition().getColumn("Double").isDirect());
+
+        final Table refreshingTable = new QueryTable(partitioningDef, i(0, 2).toTracking(), columnSourceMap);
+        refreshingTable.setRefreshing(true);
+
+        result = refreshingTable.select();
+        assertTrue(result.getDefinition().getColumn("String").isPartitioning());
+        assertTrue(result.getDefinition().getColumn("Int").isDirect());
+        assertTrue(result.getDefinition().getColumn("Double").isDirect());
+    }
+
+    public void testFlattenValidateDefinition() {
+        final Map<String, ColumnSource<?>> columnSourceMap = Map.of(
+                "String", TableTools.objColSource("c", "e", "g"),
+                "Int", colSource(2, 4, 6),
+                "Double", colSource(1.0, 2.0, 3.0));
+
+        final TableDefinition partitioningDef = TableDefinition.of(
+                ColumnDefinition.ofString("String").withPartitioning(),
+                ColumnDefinition.ofInt("Int"),
+                ColumnDefinition.ofDouble("Double").withNormal());
+        final Table sourceTable = new QueryTable(partitioningDef, i(0, 1, 2).toTracking(), columnSourceMap);
+
+        Table result;
+
+        // This flatten is a no-op since we are static and dense.
+        result = sourceTable.flatten();
+        assertTrue(result.getDefinition().getColumn("String").isPartitioning());
+        assertTrue(result.getDefinition().getColumn("Int").isDirect());
+        assertTrue(result.getDefinition().getColumn("Double").isDirect());
+
+        // This flatten results in new dense column sources, column defs re-written.
+        final Table sparseTable = new QueryTable(partitioningDef, i(0, 2).toTracking(), columnSourceMap);
+
+        result = sparseTable.flatten();
+        assertTrue(result.getDefinition().getColumn("String").isDirect());
+        assertTrue(result.getDefinition().getColumn("Int").isDirect());
+        assertTrue(result.getDefinition().getColumn("Double").isDirect());
+
+        // This flatten results in redirected sources, column defs re-written.
+        final Table refreshingTable = new QueryTable(partitioningDef, i(0, 2).toTracking(), columnSourceMap);
+        refreshingTable.setRefreshing(true);
+
+        result = refreshingTable.flatten();
+        assertTrue(result.getDefinition().getColumn("String").isDirect());
+        assertTrue(result.getDefinition().getColumn("Int").isDirect());
+        assertTrue(result.getDefinition().getColumn("Double").isDirect());
     }
 
     static void validateUpdates(final Table table) {
