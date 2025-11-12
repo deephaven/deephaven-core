@@ -68,7 +68,7 @@ add_module_names = False
 # if we allow sphinx to generate type hints for signatures (default), it would make the generated doc cluttered and hard to read
 autodoc_typehints = 'none'
 autoclass_content = 'both'
-
+autodoc_default_options = {'inherited-members': False}
 #########################################################################################################################################################################
 
 
