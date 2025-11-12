@@ -1760,7 +1760,6 @@ public abstract class QueryTableWhereTest {
     }
 
     @Test
-    @Ignore
     public void testDataIndexRespectBarrierPartialPrioritization() {
         QueryTable.PARALLEL_WHERE_SEGMENTS = 10;
         QueryTable.PARALLEL_WHERE_ROWS_PER_SEGMENT = 10_000;
@@ -1784,7 +1783,9 @@ public abstract class QueryTableWhereTest {
                         postFilter));
 
         assertEquals(100_000, numRowsFiltered(preFilter));
-        assertEquals(50_000, numRowsFiltered(preFilter2)); // raw-string prioritizes over prefilter2
+        // This filter isn't prioritized because the engine doesn't apply
+        // filters to data indexes generally (only MatchFilter)
+        assertEquals(100_000, numRowsFiltered(preFilter2));
         assertEquals(50_000, numRowsFiltered(postFilter));
         assertEquals(50_000, result.size());
 

@@ -17,6 +17,7 @@ import io.deephaven.engine.util.PythonEvaluatorJpy;
 import io.deephaven.engine.util.PythonScope;
 import io.deephaven.engine.util.ScriptFinder;
 import io.deephaven.engine.util.ScriptSession;
+import io.deephaven.engine.util.ThreadLocalScope;
 import io.deephaven.integrations.python.PythonDeephavenSession.PythonSnapshot;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
@@ -383,5 +384,38 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
         void close();
 
         void _register_named_java_executor(String executorName, Consumer<Runnable> execute);
+    }
+
+    @SuppressWarnings("rawtypes")
+    public class PythonScriptSessionQueryScope extends AbstractScriptSession.ScriptSessionQueryScope
+            implements ThreadLocalScope {
+
+        @Override
+        public Object captureScope() {
+            final PyDictWrapper wrapper = PythonDeephavenSession.this.scope.currentScope();
+            // Return a copy of the current scope dictionary.
+            return wrapper.copy().unwrap();
+        }
+
+        @Override
+        public void pushScope(Object scope) {
+            if (!(scope instanceof PyObject) || !((PyObject) scope).isDict()) {
+                throw new IllegalArgumentException("Expected a PyObject but received" + scope.getClass());
+            }
+            // Make a copy of the passed-in scope dictionary and install it.
+            final PyDictWrapper wrapper = ((PyObject) scope).asDict().copy();
+            PythonDeephavenSession.this.pushScope(wrapper.unwrap());
+        }
+
+        @Override
+        public void popScope() {
+            // This will pop the current scope and close the dictionary (releasing its resources).
+            PythonDeephavenSession.this.popScope();
+        }
+    }
+
+    @Override
+    protected ScriptSessionQueryScope makeScriptSessionQueryScope() {
+        return new PythonScriptSessionQueryScope();
     }
 }
