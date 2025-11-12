@@ -2739,6 +2739,10 @@
                     "path": "reference/community-questions/wherein-vs-naturaljoin.md"
                   },
                   {
+                    "label": "How can I capture the first row of the last N updates?",
+                    "path": "reference/community-questions/blink-ring.md"
+                  },
+                  {
                     "label": "How do I filter by time of day across all dates?",
                     "path": "reference/community-questions/filter-time-window-all-dates.md"
                   }
