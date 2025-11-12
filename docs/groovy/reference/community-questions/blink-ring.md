@@ -13,7 +13,7 @@ To achieve this:
 
 Here's a complete example:
 
-```groovy
+```groovy order=source,result,resultRing
 import io.deephaven.engine.table.impl.util.DynamicTableWriter
 import io.deephaven.engine.updategraph.DynamicNode
 import io.deephaven.time.DateTimeUtils
