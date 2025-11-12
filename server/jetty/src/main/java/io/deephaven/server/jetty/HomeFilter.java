@@ -22,7 +22,7 @@ public class HomeFilter implements Filter {
             String queryString = req.getQueryString();
 
             StringBuilder location = new StringBuilder();
-            location.append(contextPath).append("/ide/");
+            location.append(contextPath.isEmpty() ? "" : contextPath).append("/ide/");
 
             if (queryString != null) {
                 location.append('?').append(queryString);
