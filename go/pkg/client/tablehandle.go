@@ -12,6 +12,7 @@ import (
 
 	tablepb2 "github.com/deephaven/deephaven-core/go/internal/proto/table"
 	ticketpb2 "github.com/deephaven/deephaven-core/go/internal/proto/ticket"
+	"github.com/deephaven/deephaven-core/go/pkg/client/ticking"
 )
 
 // ErrInvalidTableHandle is returned by most table methods
@@ -169,6 +170,14 @@ func (th *TableHandle) Snapshot(ctx context.Context) (arrow.Record, error) {
 	}
 	defer th.lock.RUnlock()
 	return th.client.snapshotRecord(ctx, th.ticket)
+}
+
+func (th *TableHandle) Subscribe(ctx context.Context, options ...SubscribeOption) (*ticking.TickingTable, <-chan ticking.TickingStatus, error) {
+	if !th.rLockIfValid() {
+		return nil, nil, ErrInvalidTableHandle
+	}
+	defer th.lock.RUnlock()
+	return th.client.subscribe(ctx, th)
 }
 
 // Query creates a new QueryNode based on this table.
