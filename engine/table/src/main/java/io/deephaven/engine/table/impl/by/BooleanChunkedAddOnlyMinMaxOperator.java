@@ -19,7 +19,7 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * Iterative average operator.
+ * Iterative add only min max operator.
  */
 class BooleanChunkedAddOnlyMinMaxOperator implements IterativeChunkedAggregationOperator {
     private final BooleanArraySource resultColumn = new BooleanArraySource();
@@ -31,7 +31,7 @@ class BooleanChunkedAddOnlyMinMaxOperator implements IterativeChunkedAggregation
         this.name = name;
     }
 
-    private Boolean min(ObjectChunk<Boolean, ?> values, MutableInt chunkNonNull, int chunkStart, int chunkEnd) {
+    private static Boolean min(ObjectChunk<Boolean, ?> values, MutableInt chunkNonNull, int chunkStart, int chunkEnd) {
         int nonNull = 0;
         Boolean value = QueryConstants.NULL_BOOLEAN;
         for (int ii = chunkStart; ii < chunkEnd; ++ii) {
@@ -48,7 +48,7 @@ class BooleanChunkedAddOnlyMinMaxOperator implements IterativeChunkedAggregation
         return value;
     }
 
-    private Boolean max(ObjectChunk<Boolean, ?> values, MutableInt chunkNonNull, int chunkStart, int chunkEnd) {
+    private static Boolean max(ObjectChunk<Boolean, ?> values, MutableInt chunkNonNull, int chunkStart, int chunkEnd) {
         int nonNull = 0;
         Boolean value = QueryConstants.NULL_BOOLEAN;
         for (int ii = chunkStart; ii < chunkEnd; ++ii) {
@@ -65,12 +65,12 @@ class BooleanChunkedAddOnlyMinMaxOperator implements IterativeChunkedAggregation
         return value;
     }
 
-    private Boolean min(Boolean a, Boolean b) {
-        return ObjectComparisons.lt(a, b) ? a : b;
+    private static Boolean min(Boolean a, Boolean b) {
+        return ObjectComparisons.leq(a, b) ? a : b;
     }
 
-    private Boolean max(Boolean a, Boolean b) {
-        return ObjectComparisons.gt(a, b) ? a : b;
+    private static Boolean max(Boolean a, Boolean b) {
+        return ObjectComparisons.geq(a, b) ? a : b;
     }
 
     @Override
@@ -126,7 +126,7 @@ class BooleanChunkedAddOnlyMinMaxOperator implements IterativeChunkedAggregation
             // that it is in fact empty and we should use the value from the chunk
             result = chunkValue;
         } else {
-            result = minimum ? min(chunkValue, oldValue) : max(chunkValue, oldValue);
+            result = minimum ? min(oldValue, chunkValue) : max(oldValue, chunkValue);
         }
         if (oldValue == null || !Objects.equals(result, oldValue)) {
             resultColumn.set(destination, result);

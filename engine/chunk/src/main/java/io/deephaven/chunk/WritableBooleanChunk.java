@@ -170,8 +170,20 @@ public class WritableBooleanChunk<ATTR extends Any> extends BooleanChunk<ATTR> i
         sort(0, size);
     }
 
-    // region sort
-    // endregion sort
+    @Override
+    public final void sort(int start, int length) {
+        WritableChunkUtils.sort(data, offset + start, offset + start + length);
+    }
+
+    @Override
+    public final void sortUnsafe() {
+        sortUnsafe(0, size);
+    }
+
+    @Override
+    public final void sortUnsafe(int start, int length) {
+        WritableChunkUtils.sortUnsafe(data, offset + start, offset + start + length);
+    }
 
     @Override
     public void close() {}

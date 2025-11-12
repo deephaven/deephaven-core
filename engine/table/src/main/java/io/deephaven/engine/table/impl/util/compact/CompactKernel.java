@@ -20,8 +20,9 @@ public interface CompactKernel {
     void compact(WritableChunk<? extends Any> values, BooleanChunk<Any> retainValues);
 
     /**
-     * Sort valuesChunk, eliminate duplicates, and write the number of times a value occurred into the parallel slot
-     * within counts. null values are removed from the chunk.
+     * Sort valuesChunk in Deephaven-order, eliminate duplicates, and write the number of times a value occurred into
+     * the parallel slot within counts. A value of {@code -0.0} or {@code 0.0} may be returned for the floating-point's
+     * zeros case. null and NaN values are removed from the chunk.
      *
      * @param valueChunk a chunk of values, input and output
      * @param counts an output chunk parallel to valueChunk with the number of times a value occurred
@@ -32,19 +33,21 @@ public interface CompactKernel {
     }
 
     /**
-     * Sort valuesChunk, eliminate duplicates, and write the number of times a value occurred into the parallel slot
-     * within counts.
+     * Sort valuesChunk in Deephaven-order, eliminate duplicates, and write the number of times a value occurred into
+     * the parallel slot within counts. A value of {@code -0.0} or {@code 0.0} may be returned for the floating-point's
+     * zeros case.
      *
      * @param valueChunk a chunk of values, input and output
      * @param counts an output chunk parallel to valueChunk with the number of times a value occurred
-     * @param countNull if the compaction should count nulls or not
+     * @param countNullAndNan if the compaction should count nulls and NaNs or not
      */
     void compactAndCount(WritableChunk<? extends Values> valueChunk,
-            WritableIntChunk<ChunkLengths> counts, boolean countNull);
+            WritableIntChunk<ChunkLengths> counts, boolean countNullAndNan);
 
     /**
-     * For each run in valuesChunk, sort it, eliminate duplicates, and write the number of times a value occurred into
-     * the parallel slot within counts. null values are removed from the chunk.
+     * For each run in valuesChunk, sort it in Deephaven-order, eliminate duplicates, and write the number of times a
+     * value occurred into the parallel slot within counts. A value of {@code -0.0} or {@code 0.0} may be returned for
+     * the floating-point's zeros case. null and NaN values are removed from the chunk.
      *
      * @param valueChunk a chunk of values, input and output
      * @param counts an output chunk parallel to valueChunk with the number of times a value occurred
@@ -58,18 +61,19 @@ public interface CompactKernel {
     }
 
     /**
-     * For each run in valuesChunk, sort it, eliminate duplicates, and write the number of times a value occurred into
-     * the parallel slot within counts.
+     * For each run in valuesChunk, sort it in Deephaven-order, eliminate duplicates, and write the number of times a
+     * value occurred into the parallel slot within counts. A value of {@code -0.0} or {@code 0.0} may be returned for
+     * the floating-point's zeros case.
      *
      * @param valueChunk a chunk of values, input and output
      * @param counts an output chunk parallel to valueChunk with the number of times a value occurred
      * @param startPositions the start of each run
      * @param lengths the length of each run, input and output
-     * @param countNull if the compaction should count nulls or not
+     * @param countNullAndNan if the compaction should count nulls and NaNs or not
      */
     void compactAndCount(WritableChunk<? extends Values> valueChunk,
             WritableIntChunk<ChunkLengths> counts, IntChunk<ChunkPositions> startPositions,
-            WritableIntChunk<ChunkLengths> lengths, boolean countNull);
+            WritableIntChunk<ChunkLengths> lengths, boolean countNullAndNan);
 
     static CompactKernel makeCompact(ChunkType chunkType) {
         switch (chunkType) {

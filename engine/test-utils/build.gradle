@@ -24,5 +24,17 @@ dependencies {
 
     implementation libs.junit4
     implementation platform(libs.junit.bom)
-    implementation libs.assertj
+    api libs.assertj
+
+    testImplementation libs.junit.jupiter
+    testRuntimeOnly libs.junit.platform.launcher
+    testRuntimeOnly libs.slf4j.simple
+
+    testRuntimeOnly project(':log-to-slf4j')
+    testRuntimeOnly project(':configs')
+    testRuntimeOnly project(':test-configs')
+}
+
+test {
+    useJUnitPlatform()
 }

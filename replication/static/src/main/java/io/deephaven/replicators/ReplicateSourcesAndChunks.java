@@ -660,14 +660,7 @@ public class ReplicateSourcesAndChunks {
     }
 
     private static void replicateWritableChunks() throws IOException {
-        final List<String> files =
-                charToAllButBoolean(TASK, "engine/chunk/src/main/java/io/deephaven/chunk/WritableCharChunk.java");
-        for (String fileName : files) {
-            final File classFile = new File(fileName);
-            List<String> lines = FileUtils.readLines(classFile, Charset.defaultCharset());
-            lines = ReplicationUtils.removeRegion(lines, "SortFixup");
-            FileUtils.writeLines(classFile, lines);
-        }
+        charToAllButBoolean(TASK, "engine/chunk/src/main/java/io/deephaven/chunk/WritableCharChunk.java");
         replicateWritableBooleanChunks();
         replicateWritableObjectChunks();
     }
@@ -686,7 +679,6 @@ public class ReplicateSourcesAndChunks {
                 ReplicationUtils.removeRegion(writableBooleanChunkClassLines, "FillWithNullValueImports");
         writableBooleanChunkClassLines =
                 ReplicationUtils.removeRegion(writableBooleanChunkClassLines, "FillWithNullValueImpl");
-        writableBooleanChunkClassLines = ReplicationUtils.removeRegion(writableBooleanChunkClassLines, "sort");
         FileUtils.writeLines(writableBooleanChunkClassFile, writableBooleanChunkClassLines);
     }
 

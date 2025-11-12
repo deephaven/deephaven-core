@@ -22,7 +22,7 @@ import java.util.Collections;
 import java.util.Map;
 
 /**
- * Iterative average operator.
+ * Iterative add only min max operator.
  */
 class ByteChunkedAddOnlyMinMaxOperator implements IterativeChunkedAggregationOperator {
     private final ByteArraySource resultColumn;
@@ -42,46 +42,48 @@ class ByteChunkedAddOnlyMinMaxOperator implements IterativeChunkedAggregationOpe
         // endregion resultColumn initialization
     }
 
-    private byte min(ByteChunk<?> values, MutableInt chunkNonNull, int chunkStart, int chunkEnd) {
-        int nonNull = 0;
+    private static byte min(ByteChunk<?> values, MutableInt chunkNonNullNan, int chunkStart, int chunkEnd) {
+        int nonNullNan = 0;
         byte value = QueryConstants.NULL_BYTE;
         for (int ii = chunkStart; ii < chunkEnd; ++ii) {
             final byte candidate = values.get(ii);
-            if (candidate != QueryConstants.NULL_BYTE) {
-                if (nonNull++ == 0) {
-                    value = candidate;
-                } else if (ByteComparisons.lt(candidate, value)) {
-                    value = candidate;
-                }
+            if (MinMaxHelper.isNullOrNan(candidate)) {
+                continue;
+            }
+            if (nonNullNan++ == 0) {
+                value = candidate;
+            } else if (ByteComparisons.lt(candidate, value)) {
+                value = candidate;
             }
         }
-        chunkNonNull.set(nonNull);
+        chunkNonNullNan.set(nonNullNan);
         return value;
     }
 
-    private byte max(ByteChunk<?> values, MutableInt chunkNonNull, int chunkStart, int chunkEnd) {
-        int nonNull = 0;
+    private static byte max(ByteChunk<?> values, MutableInt chunkNonNullNan, int chunkStart, int chunkEnd) {
+        int nonNullNan = 0;
         byte value = QueryConstants.NULL_BYTE;
         for (int ii = chunkStart; ii < chunkEnd; ++ii) {
             final byte candidate = values.get(ii);
-            if (candidate != QueryConstants.NULL_BYTE) {
-                if (nonNull++ == 0) {
-                    value = candidate;
-                } else if (ByteComparisons.gt(candidate, value)) {
-                    value = candidate;
-                }
+            if (MinMaxHelper.isNullOrNan(candidate)) {
+                continue;
+            }
+            if (nonNullNan++ == 0) {
+                value = candidate;
+            } else if (ByteComparisons.gt(candidate, value)) {
+                value = candidate;
             }
         }
-        chunkNonNull.set(nonNull);
+        chunkNonNullNan.set(nonNullNan);
         return value;
     }
 
-    private byte min(byte a, byte b) {
-        return ByteComparisons.lt(a, b) ? a : b;
+    private static byte min(byte a, byte b) {
+        return ByteComparisons.leq(a, b) ? a : b;
     }
 
-    private byte max(byte a, byte b) {
-        return ByteComparisons.gt(a, b) ? a : b;
+    private static byte max(byte a, byte b) {
+        return ByteComparisons.geq(a, b) ? a : b;
     }
 
     @Override
@@ -135,22 +137,22 @@ class ByteChunkedAddOnlyMinMaxOperator implements IterativeChunkedAggregationOpe
         if (chunkSize == 0) {
             return false;
         }
-        final MutableInt chunkNonNull = new MutableInt(0);
+        final MutableInt chunkNonNullNan = new MutableInt(0);
         final int chunkEnd = chunkStart + chunkSize;
-        final byte chunkValue = minimum ? min(values, chunkNonNull, chunkStart, chunkEnd)
-                : max(values, chunkNonNull, chunkStart, chunkEnd);
-        if (chunkNonNull.get() == 0) {
+        final byte chunkValue = minimum ? min(values, chunkNonNullNan, chunkStart, chunkEnd)
+                : max(values, chunkNonNullNan, chunkStart, chunkEnd);
+        if (chunkNonNullNan.get() == 0) {
             return false;
         }
 
         final byte result;
         final byte oldValue = resultColumn.getUnsafe(destination);
-        if (oldValue == QueryConstants.NULL_BYTE) {
-            // we exclude nulls from the min/max calculation, therefore if the value in our min/max is null we know
-            // that it is in fact empty and we should use the value from the chunk
+        if (MinMaxHelper.isNullOrNan(oldValue)) {
+            // we exclude nulls (and NaNs) from the min/max calculation, therefore if the value in our min/max is null
+            // or NaN we know that it is in fact empty and we should use the value from the chunk
             result = chunkValue;
         } else {
-            result = minimum ? min(chunkValue, oldValue) : max(chunkValue, oldValue);
+            result = minimum ? min(oldValue, chunkValue) : max(oldValue, chunkValue);
         }
         if (!ByteComparisons.eq(result, oldValue)) {
             resultColumn.set(destination, result);

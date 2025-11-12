@@ -41,14 +41,14 @@ public class CharCompactKernel implements CompactKernel {
 
     @Override
     public void compactAndCount(WritableChunk<? extends Values> valueChunk, WritableIntChunk<ChunkLengths> counts,
-            boolean countNull) {
-        compactAndCount(valueChunk.asWritableCharChunk(), counts, countNull);
+            boolean countNullAndNan) {
+        compactAndCount(valueChunk.asWritableCharChunk(), counts, countNullAndNan);
     }
 
     @Override
     public void compactAndCount(WritableChunk<? extends Values> valueChunk, WritableIntChunk<ChunkLengths> counts,
-            IntChunk<ChunkPositions> startPositions, WritableIntChunk<ChunkLengths> lengths, boolean countNull) {
-        compactAndCount(valueChunk.asWritableCharChunk(), counts, startPositions, lengths, countNull);
+            IntChunk<ChunkPositions> startPositions, WritableIntChunk<ChunkLengths> lengths, boolean countNullAndNan) {
+        compactAndCount(valueChunk.asWritableCharChunk(), counts, startPositions, lengths, countNullAndNan);
     }
 
     public static void compactAndCount(WritableCharChunk<? extends Values> valueChunk,
@@ -65,24 +65,29 @@ public class CharCompactKernel implements CompactKernel {
 
     public static void compactAndCount(WritableCharChunk<? extends Values> valueChunk,
             WritableIntChunk<ChunkLengths> counts, IntChunk<ChunkPositions> startPositions,
-            WritableIntChunk<ChunkLengths> lengths, boolean countNull) {
+            WritableIntChunk<ChunkLengths> lengths, boolean countNullAndNan) {
         for (int ii = 0; ii < startPositions.size(); ++ii) {
-            final int newSize = compactAndCount(valueChunk, counts, startPositions.get(ii), lengths.get(ii), countNull);
+            final int newSize =
+                    compactAndCount(valueChunk, counts, startPositions.get(ii), lengths.get(ii), countNullAndNan);
             lengths.set(ii, newSize);
         }
     }
 
     public static int compactAndCount(WritableCharChunk<? extends Values> valueChunk,
-            WritableIntChunk<ChunkLengths> counts, final int start, final int length, boolean countNull) {
+            WritableIntChunk<ChunkLengths> counts, final int start, final int length, boolean countNullAndNan) {
         int wpos = -1;
         // region compactAndCount
-        valueChunk.sort(start, length);
+        if (countNullAndNan) {
+            valueChunk.sort(start, length);
+        } else {
+            valueChunk.sortUnsafe(start, length);
+        }
         char lastValue = NULL_CHAR;
         int currentCount = -1;
         final int end = start + length;
         for (int rpos = start; rpos < end; ++rpos) {
             final char nextValue = valueChunk.get(rpos);
-            if (!countNull && shouldIgnore(nextValue)) {
+            if (!countNullAndNan && isNullOrNan(nextValue)) {
                 continue;
             }
             if (wpos == -1 || !CharComparisons.eq(nextValue, lastValue)) {
@@ -97,9 +102,9 @@ public class CharCompactKernel implements CompactKernel {
         return wpos + 1;
     }
 
-    private static boolean shouldIgnore(char value) {
-        // region shouldIgnore
+    private static boolean isNullOrNan(char value) {
+        // region isNullOrNan
         return value == NULL_CHAR;
-        // endregion shouldIgnore
+        // endregion isNullOrNan
     }
 }

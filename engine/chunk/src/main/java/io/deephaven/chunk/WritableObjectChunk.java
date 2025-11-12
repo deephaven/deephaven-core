@@ -178,15 +178,20 @@ public class WritableObjectChunk<T, ATTR extends Any> extends ObjectChunk<T, ATT
         sort(0, size);
     }
 
-    // region sort
-    private static final Comparator<Comparable<Object>> COMPARATOR = Comparator.nullsFirst(Comparator.naturalOrder());
-
     @Override
     public final void sort(int start, int length) {
-        //noinspection unchecked
-        Arrays.sort(data, offset + start, offset + start + length, (Comparator<? super T>) COMPARATOR);
+        WritableChunkUtils.sort(data, offset + start, offset + start + length);
     }
-    // endregion sort
+
+    @Override
+    public final void sortUnsafe() {
+        sortUnsafe(0, size);
+    }
+
+    @Override
+    public final void sortUnsafe(int start, int length) {
+        WritableChunkUtils.sortUnsafe(data, offset + start, offset + start + length);
+    }
 
     @Override
     public void close() {}
