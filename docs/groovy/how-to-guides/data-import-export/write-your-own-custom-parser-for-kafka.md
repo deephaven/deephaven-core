@@ -126,7 +126,7 @@ From here, you can:
 
 ## Alternative: Use an object processor spec
 
-For more advanced custom parsing, you can use [`objectProcessorSpec`](https://deephaven.io/core/javadoc/io/deephaven/kafka/KafkaTools.Consume.html#objectProcessorSpec(org.apache.kafka.common.serialization.Deserializer,io.deephaven.processor.NamedObjectProcessor)) with a JSON provider such as [`JacksonProvider`](/core/javadoc/io/deephaven/json/jackson/JacksonProvider.html) to describe how to interpret Kafka values.
+For more advanced custom parsing, you can use [`objectProcessorSpec`](https://deephaven.io/core/javadoc/io/deephaven/kafka/KafkaTools.Consume.html#objectProcessorSpec(org.apache.kafka.common.serialization.Deserializer,io.deephaven.processor.NamedObjectProcessor)) with a JSON provider such as [`JacksonProvider`](https://deephaven.io/core/javadoc/io/deephaven/json/jackson/JacksonProvider.html) to describe how to interpret Kafka values.
 
 The Kafka streaming guide's JSON section shows a pattern like this:
 

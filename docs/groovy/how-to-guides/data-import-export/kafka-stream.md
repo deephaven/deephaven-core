@@ -603,7 +603,7 @@ runnable = KafkaTools.produceFromTable(options)
 ## Related documentation
 
 - [Kafka basic terminology](../../conceptual/kafka-basic-terms.md)
-- [Kafka custom parser](./write-your-own-custom-parser-for-kafka.md)
+- [Custom parser for Kafka](./write-your-own-custom-parser-for-kafka.md)
 - [`consumeToTable`](../../reference/data-import-export/Kafka/consumeToTable.md)
 - [`timeTable`](../../reference/table-operations/create/timeTable.md)
 - [`lastBy`](../../reference/table-operations/group-and-aggregate/lastBy.md)
