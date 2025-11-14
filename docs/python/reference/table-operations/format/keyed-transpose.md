@@ -110,12 +110,12 @@ In the above example, you can see that the column names (e.g. INFO, WARN, ERROR)
 
 To avoid conflicts, the column naming works according to the following contract:
 
-- If `aggs = 1` and `col_by_cols = 1`: Column names are the value of the `col_by_cols` column. (ex. INFO, WARN)
-- If `aggs > 1`: Column names are prefixed with the aggregation column name. (ex. Count_INFO, MySum_INFO)
-- If `col_by_cols > 1`: Values for the original columns are separated by an underscore (ex. INFO_OTHER1, WARN_OTHER2)
-- If Illegal Characters: Purge characters that are invalid for Deephaven column names. (ex. "1-2.3/4" becomes "1234")
-- If Starts with Number: Add the prefix "column\_" to the column name. (ex. column_123)
-- If Duplicate Column Name: Add a suffix to differentiate the columns. (ex. INFO, INFO2)
+- If `aggs = 1` and `col_by_cols = 1`: Column names are the value of the `col_by_cols` column (ex. INFO, WARN).
+- If `aggs > 1`: Column names are prefixed with the aggregation column name (ex. Count_INFO, MySum_INFO).
+- If `col_by_cols > 1`: Values for the original columns are separated by an underscore (ex. INFO_OTHER1, WARN_OTHER2).
+- If Illegal Characters: Purge characters that are invalid for Deephaven column names (ex. "1-2.3/4" becomes "1234").
+- If Starts with Number: Add the prefix "column\_" to the column name (ex. column_123).
+- If Duplicate Column Name: Add a suffix to differentiate the columns (ex. INFO, INFO2).
 
 Given the above contract, and to give you more control over the result, it may be necessary to sanitize data values that may be used as column names before using `keyed_transpose`. Otherwise, "12.34" could be translated to "column_1234" instead of a more meaningful column name.
 

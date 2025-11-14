@@ -1148,8 +1148,6 @@ public class ParquetTableLocation extends AbstractTableLocation {
             final WhereFilter copiedFilter = ExtractFilterWithoutBarriers.of(filter).copy();
             final Table toFilter;
             if (!renameMap.isEmpty()) {
-                // TODO: When https://deephaven.atlassian.net/browse/DH-19443 is implemented, we should be able
-                // to use the filter directly on the index table without renaming.
                 final Collection<Pair> renamePairs = renameMap.entrySet().stream()
                         .map(entry -> io.deephaven.api.Pair.of(ColumnName.of(entry.getValue()),
                                 ColumnName.of(entry.getKey())))
@@ -1170,8 +1168,10 @@ public class ParquetTableLocation extends AbstractTableLocation {
                     });
                 }
             } catch (final Exception e) {
-                // Exception occurs here if we have a data type mismatch between the index and the filter.
-                // Just swallow the exception return a copy of the original input
+                // TODO: Exception occurs here if we have a data type mismatch between the index and the filter.
+                // When https://deephaven.atlassian.net/browse/DH-19443 is implemented, we should be able
+                // to remove the catch block and let any exception propagate. For now, just swallow the exception
+                // and return a copy of the original input, skipping pushdown filtering.
                 return result.copy();
             }
         }

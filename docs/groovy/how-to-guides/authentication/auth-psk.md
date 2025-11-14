@@ -53,7 +53,7 @@ services:
       - START_OPTS=-Xmx4g -Dauthentication.psk=${DEEPHAVEN_PSK}
 ```
 
-This will use the value of your system's environment variable -- `DEEPHAVEN_PSK` -- as the key. This value can be set inline when you start Deephaven via Docker:
+This will use the value of your system's environment variable - `DEEPHAVEN_PSK` - as the key. This value can be set inline when you start Deephaven via Docker:
 
 ```bash
 DEEPHAVEN_PSK=YOUR_PASSWORD_HERE docker compose up
