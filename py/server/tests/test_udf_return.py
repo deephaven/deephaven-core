@@ -153,6 +153,8 @@ foo = Foo()
             "np_array",
         ]
 
+        globals().update({"dt_list": dt_list, "np_array": np_array})
+
         # we are capable of mapping all datetime arrays (Sequence, np.ndarray) to instant arrays, so even if the actual
         # return value of the function doesn't match its type hint (which will be caught by a static type checker),
         # as long as it is a valid datetime collection, we can still convert it to instant array
@@ -161,13 +163,13 @@ foo = Foo()
                 with self.subTest(np_dtype=np_dtype, data=data):
                     func_decl_str = f"""def fn(col) -> {np_dtype}:"""
                     func_body_str = f"""    return {data}"""
-                    exec(
-                        "\n".join([func_decl_str, func_body_str]),
-                        globals().update({"dt_list": dt_list, "np_array": np_array}),
-                    )
+                    exec("\n".join([func_decl_str, func_body_str]), globals())
 
                     t = empty_table(10).update("X = i").update("Y= fn(X + 1)")
                     self.assertEqual(t.columns[1].data_type, dtypes.instant_array)
+                    
+        del globals()["dt_list"]
+        del globals()["np_array"]
 
     def test_return_value_errors(self):
         def fn(col) -> list[object]:
