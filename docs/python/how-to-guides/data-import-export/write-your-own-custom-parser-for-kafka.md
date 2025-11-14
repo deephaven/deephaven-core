@@ -98,8 +98,8 @@ You can adjust `parse_person` to match any format your topic uses, such as CSV, 
 
 With the raw table and parser in place, you can call [`update`](../../reference/table-operations/select/update.md) to create a column that holds the parsed object, and then project that into regular columns.
 
-```python docker-config=kafka order=null
-from org.jpy import PyObject
+```python syntax
+from jpy import PyObject
 
 parsed_table = raw_table.update(["Person = (PyObject) parse_person(Bytes)"]).view(
     [
@@ -109,7 +109,7 @@ parsed_table = raw_table.update(["Person = (PyObject) parse_person(Bytes)"]).vie
 )
 ```
 
-This pattern uses `PyObject` to store a Python object in a Deephaven column and then casts its attributes into concrete Deephaven column types.
+This pattern stores a Python object in a Deephaven column and then projects its attributes into regular Deephaven column types.
 
 The resulting `parsed_table` has the following columns:
 
