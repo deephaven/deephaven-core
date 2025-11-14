@@ -80,8 +80,8 @@ public final class CharSegmentedSortedMultiset implements SegmentedSortedMultiSe
         int rlpos = 0;
         char nextValue;
         while (rlpos < leafSize && ripos < valuesToInsert.size()
-                && (leq(nextValue = valuesToInsert.get(ripos), maxInsert) || lastLeaf)) {
-            if (gt(leafValues[rlpos], nextValue)) {
+                && (CharComparisons.leq(nextValue = valuesToInsert.get(ripos), maxInsert) || lastLeaf)) {
+            if (CharComparisons.gt(leafValues[rlpos], nextValue)) {
                 // we're not going to find nextValue in this leaf, so we skip over it
                 valuesToInsert.set(wipos.get(), nextValue);
                 counts.set(wipos.get(), counts.get(ripos));
@@ -90,7 +90,7 @@ public final class CharSegmentedSortedMultiset implements SegmentedSortedMultiSe
             } else {
                 rlpos = upperBound(leafValues, rlpos, leafSize, nextValue);
                 if (rlpos < leafSize) {
-                    if (eq(leafValues[rlpos], nextValue)) {
+                    if (CharComparisons.eq(leafValues[rlpos], nextValue)) {
                         leafCounts[rlpos] += counts.get(ripos);
                         ripos++;
                     }
@@ -142,7 +142,7 @@ public final class CharSegmentedSortedMultiset implements SegmentedSortedMultiSe
         while (remaining-- > 0) {
             final char insertValue = valuesToInsert.get(ripos);
             final char leafValue = leafValues[firstLeaf][rlpos];
-            final boolean useInsertValue = gt(insertValue, leafValue);
+            final boolean useInsertValue = CharComparisons.gt(insertValue, leafValue);
 
             if (useInsertValue) {
                 leafValues[wleaf][wpos] = insertValue;
@@ -288,7 +288,7 @@ public final class CharSegmentedSortedMultiset implements SegmentedSortedMultiSe
             final char insertValue = valuesToInsert.get(ripos);
             final char leafValue = leafValues[rlpos];
 
-            if (gt(insertValue, leafValue)) {
+            if (CharComparisons.gt(insertValue, leafValue)) {
                 leafValues[wpos] = insertValue;
                 leafCounts[wpos] = counts.get(ripos);
                 if (ripos == 0) {
@@ -441,7 +441,7 @@ public final class CharSegmentedSortedMultiset implements SegmentedSortedMultiSe
 
         maybeAccumulateAdditions(valuesToInsert);
 
-        if (leafCount > 1 && gt(valuesToInsert.get(0), getMaxChar())) {
+        if (leafCount > 1 && CharComparisons.gt(valuesToInsert.get(0), getMaxChar())) {
             doAppend(valuesToInsert, counts);
             return;
         }
@@ -687,7 +687,7 @@ public final class CharSegmentedSortedMultiset implements SegmentedSortedMultiSe
         while (lo < hi) {
             final int mid = (lo + hi) >>> 1;
             final char testValue = valuesToSearch[mid];
-            final boolean moveLo = leq(testValue, searchValue);
+            final boolean moveLo = CharComparisons.leq(testValue, searchValue);
             if (moveLo) {
                 lo = mid;
                 if (lo == hi - 1) {
@@ -714,7 +714,7 @@ public final class CharSegmentedSortedMultiset implements SegmentedSortedMultiSe
         while (lo < hi) {
             final int mid = (lo + hi) >>> 1;
             final char testValue = valuesToSearch.get(mid);
-            final boolean moveLo = leq(testValue, searchValue);
+            final boolean moveLo = CharComparisons.leq(testValue, searchValue);
             if (moveLo) {
                 if (mid == lo) {
                     return mid + 1;
@@ -741,7 +741,7 @@ public final class CharSegmentedSortedMultiset implements SegmentedSortedMultiSe
         while (lo < hi) {
             final int mid = (lo + hi) >>> 1;
             final char testValue = valuesToSearch[mid];
-            final boolean moveLo = leq(testValue, searchValue);
+            final boolean moveLo = CharComparisons.leq(testValue, searchValue);
             if (moveLo) {
                 if (mid == lo) {
                     return mid + 1;
@@ -768,7 +768,7 @@ public final class CharSegmentedSortedMultiset implements SegmentedSortedMultiSe
         while (lo < hi) {
             final int mid = (lo + hi) >>> 1;
             final char testValue = valuesToSearch[mid];
-            final boolean moveHi = geq(testValue, searchValue);
+            final boolean moveHi = CharComparisons.geq(testValue, searchValue);
             if (moveHi) {
                 hi = mid;
             } else {
@@ -792,7 +792,7 @@ public final class CharSegmentedSortedMultiset implements SegmentedSortedMultiSe
         while (lo < hi) {
             final int mid = (lo + hi) >>> 1;
             final char testValue = valuesToSearch.get(mid);
-            final boolean moveHi = gt(testValue, searchValue);
+            final boolean moveHi = CharComparisons.gt(testValue, searchValue);
             if (moveHi) {
                 hi = mid;
             } else {
@@ -816,7 +816,7 @@ public final class CharSegmentedSortedMultiset implements SegmentedSortedMultiSe
         while (lo < hi) {
             final int mid = (lo + hi) >>> 1;
             final char testValue = valuesToSearch[mid];
-            final boolean moveLo = lt(testValue, searchValue);
+            final boolean moveLo = CharComparisons.lt(testValue, searchValue);
             if (moveLo) {
                 lo = mid + 1;
                 if (lo == hi) {
@@ -1229,18 +1229,20 @@ public final class CharSegmentedSortedMultiset implements SegmentedSortedMultiSe
                 final char lastValue = leafValues[ii][leafSizes[ii] - 1];
                 if (ii < leafCount - 1) {
                     final char directoryValue = directoryValues[ii];
-                    Assert.assertion(leq(lastValue, directoryValue), "lt(lastValue, directoryValue)", lastValue,
+                    Assert.assertion(CharComparisons.leq(lastValue, directoryValue), "lt(lastValue, directoryValue)",
+                            lastValue,
                             "leafValues[ii][leafSizes[ii] - 1]", directoryValue, "directoryValue");
 
                     if (ii < leafCount - 2) {
                         final char nextDirectoryValue = directoryValues[ii + 1];
-                        Assert.assertion(lt(directoryValue, nextDirectoryValue),
+                        Assert.assertion(CharComparisons.lt(directoryValue, nextDirectoryValue),
                                 "lt(directoryValue, nextDirectoryValue)", directoryValue, "directoryValue",
                                 nextDirectoryValue, "nextDirectoryValue");
                     }
 
                     final char nextFirstValue = leafValues[ii + 1][0];
-                    Assert.assertion(lt(directoryValue, nextFirstValue), "lt(directoryValue, nextFirstValue)",
+                    Assert.assertion(CharComparisons.lt(directoryValue, nextFirstValue),
+                            "lt(directoryValue, nextFirstValue)",
                             directoryValue, "directoryValue", nextFirstValue, "nextFirstValue");
                 }
                 // It would be nice to enable an assertion to make sure we are dense after removals, but the other
@@ -1262,7 +1264,7 @@ public final class CharSegmentedSortedMultiset implements SegmentedSortedMultiSe
         for (int leaf = 0; leaf < leafCount - 1; ++leaf) {
             final char lastValue = leafValues[leaf][leafSizes[leaf] - 1];
             final char nextValue = leafValues[leaf + 1][0];
-            Assert.assertion(lt(lastValue, nextValue), lastValue + " < " + nextValue);
+            Assert.assertion(CharComparisons.lt(lastValue, nextValue), lastValue + " < " + nextValue);
         }
     }
 
@@ -1278,7 +1280,8 @@ public final class CharSegmentedSortedMultiset implements SegmentedSortedMultiSe
             Assert.gtZero(counts[ii], "counts[ii]");
             final char thisValue = values[ii];
             final char nextValue = values[ii + 1];
-            Assert.assertion(lt(values[ii], values[ii + 1]), "lt(values[ii], values[ii + 1])", (Character) thisValue,
+            Assert.assertion(CharComparisons.lt(values[ii], values[ii + 1]), "lt(values[ii], values[ii + 1])",
+                    (Character) thisValue,
                     "values[ii]", (Character) nextValue, "values[ii + 1]", ii, "ii");
         }
         if (size > 0) {
@@ -1306,7 +1309,6 @@ public final class CharSegmentedSortedMultiset implements SegmentedSortedMultiSe
 
     // endregion
 
-    // region Comparisons
     private int getDesiredLeafCount(int newSize) {
         return (newSize + leafSize - 1) / leafSize;
     }
@@ -1314,33 +1316,6 @@ public final class CharSegmentedSortedMultiset implements SegmentedSortedMultiSe
     private static int valuesPerLeaf(int values, int leafCount) {
         return (values + leafCount - 1) / leafCount;
     }
-
-    private static int doComparison(char lhs, char rhs) {
-        return CharComparisons.compare(lhs, rhs);
-    }
-
-    private static boolean gt(char lhs, char rhs) {
-        return doComparison(lhs, rhs) > 0;
-    }
-
-    private static boolean lt(char lhs, char rhs) {
-        return doComparison(lhs, rhs) < 0;
-    }
-
-    private static boolean leq(char lhs, char rhs) {
-        return doComparison(lhs, rhs) <= 0;
-    }
-
-    private static boolean geq(char lhs, char rhs) {
-        return doComparison(lhs, rhs) >= 0;
-    }
-
-    private static boolean eq(char lhs, char rhs) {
-        // region equality function
-        return lhs == rhs;
-        // endregion equality function
-    }
-    // endregion
 
     @Override
     public long totalSize() {
@@ -1485,12 +1460,12 @@ public final class CharSegmentedSortedMultiset implements SegmentedSortedMultiSe
 
         if (SEGMENTED_SORTED_MULTISET_VALIDATION) {
             if (destination.size > 0) {
-                Assert.assertion(geq(getMinChar(), destination.getMaxChar()),
+                Assert.assertion(CharComparisons.geq(getMinChar(), destination.getMaxChar()),
                         "geq(getMinChar(), destination.getMaxChar())");
             }
         }
 
-        if (destination.size > 0 && eq(getMinChar(), destination.getMaxChar())) {
+        if (destination.size > 0 && CharComparisons.eq(getMinChar(), destination.getMaxChar())) {
             final long minCount = getMinCount();
             final long toAdd;
             if (minCount > count) {
@@ -1758,7 +1733,7 @@ public final class CharSegmentedSortedMultiset implements SegmentedSortedMultiSe
 
         if (SEGMENTED_SORTED_MULTISET_VALIDATION) {
             if (size > 0 && destination.size > 0) {
-                Assert.assertion(geq(getMinChar(), destination.getMaxChar()),
+                Assert.assertion(CharComparisons.geq(getMinChar(), destination.getMaxChar()),
                         "geq(getMinChar(), destination.getMaxChar())");
             }
         }
@@ -1920,12 +1895,12 @@ public final class CharSegmentedSortedMultiset implements SegmentedSortedMultiSe
 
         if (SEGMENTED_SORTED_MULTISET_VALIDATION) {
             if (destination.size > 0) {
-                Assert.assertion(leq(getMaxChar(), destination.getMinChar()),
+                Assert.assertion(CharComparisons.leq(getMaxChar(), destination.getMinChar()),
                         "leq(getMaxChar(), destination.getMinChar())");
             }
         }
 
-        if (destination.size > 0 && eq(getMaxChar(), destination.getMinChar())) {
+        if (destination.size > 0 && CharComparisons.eq(getMaxChar(), destination.getMinChar())) {
             final long maxCount = getMaxCount();
             final long toAdd;
             if (maxCount > count) {
@@ -2125,7 +2100,7 @@ public final class CharSegmentedSortedMultiset implements SegmentedSortedMultiSe
 
         if (SEGMENTED_SORTED_MULTISET_VALIDATION) {
             if (size > 0 && destination.size > 0) {
-                Assert.assertion(leq(getMaxChar(), destination.getMinChar()),
+                Assert.assertion(CharComparisons.leq(getMaxChar(), destination.getMinChar()),
                         "leq(getMaxChar(), destination.getMinChar())");
             }
         }

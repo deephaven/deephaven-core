@@ -54,9 +54,9 @@ public class LongDoubleFloatTuple implements Comparable<LongDoubleFloatTuple>, E
         this.element2 = element2;
         this.element3 = element3;
         cachedHashCode = ((31 +
-                Long.hashCode(element1)) * 31 +
-                Double.hashCode(element2)) * 31 +
-                Float.hashCode(element3);
+                LongComparisons.hashCode(element1)) * 31 +
+                DoubleComparisons.hashCode(element2)) * 31 +
+                FloatComparisons.hashCode(element3);
     }
 
     public final long getFirstElement() {
@@ -86,9 +86,9 @@ public class LongDoubleFloatTuple implements Comparable<LongDoubleFloatTuple>, E
         }
         final LongDoubleFloatTuple typedOther = (LongDoubleFloatTuple) other;
         // @formatter:off
-        return element1 == typedOther.element1 &&
-               element2 == typedOther.element2 &&
-               element3 == typedOther.element3;
+        return LongComparisons.eq(element1, typedOther.element1) &&
+               DoubleComparisons.eq(element2, typedOther.element2) &&
+               FloatComparisons.eq(element3, typedOther.element3);
         // @formatter:on
     }
 

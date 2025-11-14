@@ -48,8 +48,8 @@ public class ShortLongTuple implements Comparable<ShortLongTuple>, Externalizabl
         this.element1 = element1;
         this.element2 = element2;
         cachedHashCode = (31 +
-                Short.hashCode(element1)) * 31 +
-                Long.hashCode(element2);
+                ShortComparisons.hashCode(element1)) * 31 +
+                LongComparisons.hashCode(element2);
     }
 
     public final short getFirstElement() {
@@ -75,8 +75,8 @@ public class ShortLongTuple implements Comparable<ShortLongTuple>, Externalizabl
         }
         final ShortLongTuple typedOther = (ShortLongTuple) other;
         // @formatter:off
-        return element1 == typedOther.element1 &&
-               element2 == typedOther.element2;
+        return ShortComparisons.eq(element1, typedOther.element1) &&
+               LongComparisons.eq(element2, typedOther.element2);
         // @formatter:on
     }
 

@@ -54,9 +54,9 @@ public class LongByteShortTuple implements Comparable<LongByteShortTuple>, Exter
         this.element2 = element2;
         this.element3 = element3;
         cachedHashCode = ((31 +
-                Long.hashCode(element1)) * 31 +
-                Byte.hashCode(element2)) * 31 +
-                Short.hashCode(element3);
+                LongComparisons.hashCode(element1)) * 31 +
+                ByteComparisons.hashCode(element2)) * 31 +
+                ShortComparisons.hashCode(element3);
     }
 
     public final long getFirstElement() {
@@ -86,9 +86,9 @@ public class LongByteShortTuple implements Comparable<LongByteShortTuple>, Exter
         }
         final LongByteShortTuple typedOther = (LongByteShortTuple) other;
         // @formatter:off
-        return element1 == typedOther.element1 &&
-               element2 == typedOther.element2 &&
-               element3 == typedOther.element3;
+        return LongComparisons.eq(element1, typedOther.element1) &&
+               ByteComparisons.eq(element2, typedOther.element2) &&
+               ShortComparisons.eq(element3, typedOther.element3);
         // @formatter:on
     }
 

@@ -48,8 +48,8 @@ public class ObjectObjectTuple implements Comparable<ObjectObjectTuple>, Externa
         this.element1 = element1;
         this.element2 = element2;
         cachedHashCode = (31 +
-                Objects.hashCode(element1)) * 31 +
-                Objects.hashCode(element2);
+                ObjectComparisons.hashCode(element1)) * 31 +
+                ObjectComparisons.hashCode(element2);
     }
 
     public final Object getFirstElement() {

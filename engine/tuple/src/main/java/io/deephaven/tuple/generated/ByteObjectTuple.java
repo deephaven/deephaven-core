@@ -49,8 +49,8 @@ public class ByteObjectTuple implements Comparable<ByteObjectTuple>, Externaliza
         this.element1 = element1;
         this.element2 = element2;
         cachedHashCode = (31 +
-                Byte.hashCode(element1)) * 31 +
-                Objects.hashCode(element2);
+                ByteComparisons.hashCode(element1)) * 31 +
+                ObjectComparisons.hashCode(element2);
     }
 
     public final byte getFirstElement() {
@@ -76,7 +76,7 @@ public class ByteObjectTuple implements Comparable<ByteObjectTuple>, Externaliza
         }
         final ByteObjectTuple typedOther = (ByteObjectTuple) other;
         // @formatter:off
-        return element1 == typedOther.element1 &&
+        return ByteComparisons.eq(element1, typedOther.element1) &&
                ObjectComparisons.eq(element2, typedOther.element2);
         // @formatter:on
     }

@@ -55,9 +55,9 @@ public class IntObjectShortTuple implements Comparable<IntObjectShortTuple>, Ext
         this.element2 = element2;
         this.element3 = element3;
         cachedHashCode = ((31 +
-                Integer.hashCode(element1)) * 31 +
-                Objects.hashCode(element2)) * 31 +
-                Short.hashCode(element3);
+                IntComparisons.hashCode(element1)) * 31 +
+                ObjectComparisons.hashCode(element2)) * 31 +
+                ShortComparisons.hashCode(element3);
     }
 
     public final int getFirstElement() {
@@ -87,9 +87,9 @@ public class IntObjectShortTuple implements Comparable<IntObjectShortTuple>, Ext
         }
         final IntObjectShortTuple typedOther = (IntObjectShortTuple) other;
         // @formatter:off
-        return element1 == typedOther.element1 &&
+        return IntComparisons.eq(element1, typedOther.element1) &&
                ObjectComparisons.eq(element2, typedOther.element2) &&
-               element3 == typedOther.element3;
+               ShortComparisons.eq(element3, typedOther.element3);
         // @formatter:on
     }
 

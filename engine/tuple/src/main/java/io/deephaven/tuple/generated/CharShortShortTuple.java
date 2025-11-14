@@ -53,9 +53,9 @@ public class CharShortShortTuple implements Comparable<CharShortShortTuple>, Ext
         this.element2 = element2;
         this.element3 = element3;
         cachedHashCode = ((31 +
-                Character.hashCode(element1)) * 31 +
-                Short.hashCode(element2)) * 31 +
-                Short.hashCode(element3);
+                CharComparisons.hashCode(element1)) * 31 +
+                ShortComparisons.hashCode(element2)) * 31 +
+                ShortComparisons.hashCode(element3);
     }
 
     public final char getFirstElement() {
@@ -85,9 +85,9 @@ public class CharShortShortTuple implements Comparable<CharShortShortTuple>, Ext
         }
         final CharShortShortTuple typedOther = (CharShortShortTuple) other;
         // @formatter:off
-        return element1 == typedOther.element1 &&
-               element2 == typedOther.element2 &&
-               element3 == typedOther.element3;
+        return CharComparisons.eq(element1, typedOther.element1) &&
+               ShortComparisons.eq(element2, typedOther.element2) &&
+               ShortComparisons.eq(element3, typedOther.element3);
         // @formatter:on
     }
 

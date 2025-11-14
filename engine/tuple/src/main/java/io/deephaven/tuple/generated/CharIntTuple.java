@@ -48,8 +48,8 @@ public class CharIntTuple implements Comparable<CharIntTuple>, Externalizable, S
         this.element1 = element1;
         this.element2 = element2;
         cachedHashCode = (31 +
-                Character.hashCode(element1)) * 31 +
-                Integer.hashCode(element2);
+                CharComparisons.hashCode(element1)) * 31 +
+                IntComparisons.hashCode(element2);
     }
 
     public final char getFirstElement() {
@@ -75,8 +75,8 @@ public class CharIntTuple implements Comparable<CharIntTuple>, Externalizable, S
         }
         final CharIntTuple typedOther = (CharIntTuple) other;
         // @formatter:off
-        return element1 == typedOther.element1 &&
-               element2 == typedOther.element2;
+        return CharComparisons.eq(element1, typedOther.element1) &&
+               IntComparisons.eq(element2, typedOther.element2);
         // @formatter:on
     }
 

@@ -47,8 +47,8 @@ public class LongLongTuple implements Comparable<LongLongTuple>, Externalizable,
         this.element1 = element1;
         this.element2 = element2;
         cachedHashCode = (31 +
-                Long.hashCode(element1)) * 31 +
-                Long.hashCode(element2);
+                LongComparisons.hashCode(element1)) * 31 +
+                LongComparisons.hashCode(element2);
     }
 
     public final long getFirstElement() {
@@ -74,8 +74,8 @@ public class LongLongTuple implements Comparable<LongLongTuple>, Externalizable,
         }
         final LongLongTuple typedOther = (LongLongTuple) other;
         // @formatter:off
-        return element1 == typedOther.element1 &&
-               element2 == typedOther.element2;
+        return LongComparisons.eq(element1, typedOther.element1) &&
+               LongComparisons.eq(element2, typedOther.element2);
         // @formatter:on
     }
 

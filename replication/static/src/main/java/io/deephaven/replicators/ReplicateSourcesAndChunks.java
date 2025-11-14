@@ -665,7 +665,6 @@ public class ReplicateSourcesAndChunks {
         for (String fileName : files) {
             final File classFile = new File(fileName);
             List<String> lines = FileUtils.readLines(classFile, Charset.defaultCharset());
-            lines = ReplicationUtils.removeRegion(lines, "SortFixup");
             FileUtils.writeLines(classFile, lines);
         }
         replicateWritableBooleanChunks();
