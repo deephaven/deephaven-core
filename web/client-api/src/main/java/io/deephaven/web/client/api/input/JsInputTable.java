@@ -125,10 +125,18 @@ public class JsInputTable {
      * @return Promise of dh.InputTable
      */
     public Promise<JsInputTable> addRows(JsPropertyMap<?>[] rows, @JsOptional String userTimeZone) {
-        String[] names =
-                Arrays.stream(table.lastVisibleState().getColumns()).map(Column::getName).toArray(String[]::new);
-        String[] types =
-                Arrays.stream(table.lastVisibleState().getColumns()).map(Column::getType).toArray(String[]::new);
+        // Filter out columns that are not keys or values of the input table
+        Column[] filteredColumns = Arrays.stream(table.lastVisibleState().getColumns())
+                .filter(column -> column.isInputTableKeyColumn() || column.isInputTableValueColumn())
+                .toArray(Column[]::new);
+
+        String[] names = Arrays.stream(filteredColumns)
+                .map(Column::getName)
+                .toArray(String[]::new);
+
+        String[] types = Arrays.stream(filteredColumns)
+                .map(Column::getType)
+                .toArray(String[]::new);
 
         Object[][] data = new Object[names.length][];
         for (int i = 0; i < names.length; i++) {
