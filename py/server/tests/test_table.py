@@ -100,7 +100,7 @@ class TableTestCase(BaseTestCase):
             "d": dtypes.int32,
             "e": dtypes.int32
         })
-        self.assertEquals(expected, self.test_table.definition)
+        self.assertEqual(expected, self.test_table.definition)
 
     def test_meta_table(self):
         t = self.test_table.meta_table
@@ -762,7 +762,7 @@ class TableTestCase(BaseTestCase):
             attrs = self.test_table.attributes()
             attrs["LayoutHints"] = layout_hint_str
             self.assertIsNotNone(t)
-            self.assertEquals(attrs, t.attributes())
+            self.assertEqual(attrs, t.attributes())
 
         t = self.test_table.layout_hints(front="d", back="b", freeze="c", hide="d", column_groups=[
             {

@@ -27,7 +27,11 @@ class ColumnTestCase(BaseTestCase):
     def test_column_error(self):
         jobj = j_array_list([1, -1])
         with self.assertRaises(DHError) as cm:
-            bool_input_col = bool_col(name="Boolean", data=[True, 'abc'])
+            class NoBoolAllowed:
+                def __bool__(self):
+                    raise TypeError("This object cannot be converted to a boolean")
+
+            _ = bool_col(name="Boolean", data=[True, NoBoolAllowed()])
 
         self.assertNotIn("bool_input_col", dir())
 
@@ -162,24 +166,24 @@ class ColumnTestCase(BaseTestCase):
 
     def test_col_def_simple(self):
         foo_def = col_def("Foo", dtypes.int32)
-        self.assertEquals(foo_def.name, "Foo")
-        self.assertEquals(foo_def.data_type, dtypes.int32)
-        self.assertEquals(foo_def.component_type, None)
-        self.assertEquals(foo_def.column_type, ColumnType.NORMAL)
+        self.assertEqual(foo_def.name, "Foo")
+        self.assertEqual(foo_def.data_type, dtypes.int32)
+        self.assertEqual(foo_def.component_type, None)
+        self.assertEqual(foo_def.column_type, ColumnType.NORMAL)
 
     def test_col_def_array(self):
         foo_def = col_def("Foo", dtypes.int32_array)
-        self.assertEquals(foo_def.name, "Foo")
-        self.assertEquals(foo_def.data_type, dtypes.int32_array)
-        self.assertEquals(foo_def.component_type, dtypes.int32)
-        self.assertEquals(foo_def.column_type, ColumnType.NORMAL)
+        self.assertEqual(foo_def.name, "Foo")
+        self.assertEqual(foo_def.data_type, dtypes.int32_array)
+        self.assertEqual(foo_def.component_type, dtypes.int32)
+        self.assertEqual(foo_def.column_type, ColumnType.NORMAL)
 
     def test_col_def_partitioning(self):
         foo_def = col_def("Foo", dtypes.string, column_type=ColumnType.PARTITIONING)
-        self.assertEquals(foo_def.name, "Foo")
-        self.assertEquals(foo_def.data_type, dtypes.string)
-        self.assertEquals(foo_def.component_type, None)
-        self.assertEquals(foo_def.column_type, ColumnType.PARTITIONING)
+        self.assertEqual(foo_def.name, "Foo")
+        self.assertEqual(foo_def.data_type, dtypes.string)
+        self.assertEqual(foo_def.component_type, None)
+        self.assertEqual(foo_def.column_type, ColumnType.PARTITIONING)
 
     def test_col_def_invalid_component_type(self):
         with self.assertRaises(DHError):
