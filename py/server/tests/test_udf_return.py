@@ -167,7 +167,7 @@ foo = Foo()
 
                     t = empty_table(10).update("X = i").update("Y= fn(X + 1)")
                     self.assertEqual(t.columns[1].data_type, dtypes.instant_array)
-                    
+
         del globals()["dt_list"]
         del globals()["np_array"]
 
