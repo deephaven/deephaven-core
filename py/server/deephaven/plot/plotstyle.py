@@ -2,7 +2,7 @@
 # Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 #
 
-""" This module provides support for different plot styles (e.g. line, bar, area, etc.). """
+"""This module provides support for different plot styles (e.g. line, bar, area, etc.)."""
 
 from enum import Enum
 
@@ -12,7 +12,7 @@ _JPlotStyle = jpy.get_type("io.deephaven.plot.PlotStyle")
 
 
 class PlotStyle(Enum):
-    """ An enum defining the styles of a plot (e.g. line, bar, etc.). """
+    """An enum defining the styles of a plot (e.g. line, bar, etc.)."""
 
     BAR = _JPlotStyle.BAR
     """ A bar chart. """

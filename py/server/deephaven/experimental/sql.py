@@ -3,8 +3,10 @@
 #
 import contextlib
 import inspect
+from collections.abc import Mapping
+from typing import Any, Union
+
 import jpy
-from typing import Dict, Union, Mapping, Optional, Any
 
 from deephaven import DHError
 from deephaven.table import Table, _j_py_script_session

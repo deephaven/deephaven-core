@@ -2,17 +2,19 @@
 # Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 #
 
-""" This module implement various filters that can be used in deephaven table's filter operations."""
+"""This module implement various filters that can be used in deephaven table's filter operations."""
+
 from __future__ import annotations
 
+from collections.abc import Sequence
 from enum import Enum
-from typing import List, Union, Sequence
+from typing import Union
 
 import jpy
 
-from deephaven import DHError, dtypes
+from deephaven import DHError
 from deephaven._wrapper import JObjectWrapper
-from deephaven.concurrency_control import ConcurrencyControl, T, Barrier
+from deephaven.concurrency_control import Barrier, ConcurrencyControl
 from deephaven.jcompat import to_sequence
 
 _JFilter = jpy.get_type("io.deephaven.api.filter.Filter")
@@ -37,8 +39,10 @@ class Filter(ConcurrencyControl["Filter"], JObjectWrapper):
     def __init__(self, j_filter):
         self.j_filter = j_filter
 
-    def with_declared_barriers(self, barriers: Union[Barrier, Sequence[Barrier]]) -> Filter:
-        """ Returns a new Filter with the given declared barriers.
+    def with_declared_barriers(
+        self, barriers: Union[Barrier, Sequence[Barrier]]
+    ) -> Filter:
+        """Returns a new Filter with the given declared barriers.
 
         Args:
             barriers (Union[Barrier, Sequence[Barrier]]): the barrier(s) to declare
@@ -55,8 +59,10 @@ class Filter(ConcurrencyControl["Filter"], JObjectWrapper):
         except Exception as e:
             raise DHError(e, "failed to create filter with declared barriers.") from e
 
-    def with_respected_barriers(self, barriers: Union[Barrier, Sequence[Barrier]]) -> Filter:
-        """ Returns a new Filter with the given respected barriers.
+    def with_respected_barriers(
+        self, barriers: Union[Barrier, Sequence[Barrier]]
+    ) -> Filter:
+        """Returns a new Filter with the given respected barriers.
 
         Args:
             barriers (Union[Barrier, Sequence[Barrier]]): the barrier(s) to respect
@@ -74,7 +80,7 @@ class Filter(ConcurrencyControl["Filter"], JObjectWrapper):
             raise DHError(e, "failed to create filter with respected barriers.") from e
 
     def with_serial(self) -> Filter:
-        """ Returns a new Filter with serial evaluation enforced.
+        """Returns a new Filter with serial evaluation enforced.
 
         Returns:
             a new Filter with serial evaluation enforced
@@ -83,7 +89,7 @@ class Filter(ConcurrencyControl["Filter"], JObjectWrapper):
             DHError
         """
         try:
-            return Filter(j_filter = self.j_filter.withSerial())
+            return Filter(j_filter=self.j_filter.withSerial())
         except Exception as e:
             raise DHError(e, "failed to create filter with serial evaluation.") from e
 
@@ -96,11 +102,13 @@ class Filter(ConcurrencyControl["Filter"], JObjectWrapper):
         return Filter(j_filter=getattr(_JFilter, "not")(self.j_filter))
 
     @classmethod
-    def from_(cls, conditions: Union[str, List[str]]) -> Union[Filter, List[Filter]]:
+    def from_(
+        cls, conditions: Union[str, Sequence[str]]
+    ) -> Union[Filter, Sequence[Filter]]:
         """Creates filter(s) from the given condition(s).
 
         Args:
-            conditions (Union[str, List[str]]): filter condition(s)
+            conditions (Union[str, Sequence[str]]): filter condition(s)
 
         Returns:
             filter(s)
@@ -129,14 +137,14 @@ def or_(filters: Union[str, Filter, Sequence[str], Sequence[Filter]]) -> Filter:
         a new or Filter
     """
     seq = [
-        Filter.from_(f).j_filter if isinstance(f, str) else f
+        Filter.from_(f).j_filter if isinstance(f, str) else f  # type: ignore[union-attr]
         for f in to_sequence(filters)
     ]
     return Filter(j_filter=getattr(_JFilter, "or")(*seq))
 
 
 def and_(filters: Union[str, Filter, Sequence[str], Sequence[Filter]]) -> Filter:
-    """Creates a new filter that evaluates to true when all of the given filters evaluates to true.
+    """Creates a new filter that evaluates to true when all the given filters evaluates to true.
 
     Args:
         filters (Union[str, Filter, Sequence[str], Sequence[Filter]]): the component filters
@@ -145,7 +153,7 @@ def and_(filters: Union[str, Filter, Sequence[str], Sequence[Filter]]) -> Filter
         a new and Filter
     """
     seq = [
-        Filter.from_(f).j_filter if isinstance(f, str) else f
+        Filter.from_(f).j_filter if isinstance(f, str) else f  # type: ignore[union-attr]
         for f in to_sequence(filters)
     ]
     return Filter(j_filter=getattr(_JFilter, "and")(*seq))
@@ -198,10 +206,7 @@ class PatternMode(Enum):
 
 
 def pattern(
-    mode: PatternMode,
-    col: str,
-    regex: str,
-    invert_pattern: bool = False
+    mode: PatternMode, col: str, regex: str, invert_pattern: bool = False
 ) -> Filter:
     """Creates a regular-expression pattern filter.
 

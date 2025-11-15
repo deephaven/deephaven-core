@@ -54,6 +54,7 @@ RUN set -eux; \
   python3 -m grpc_tools.protoc \
     --grpc_python_out=/generated/python \
     --python_out=/generated/python \
+    --mypy_out=/generated/python \
     -I/includes \
     /includes/deephaven_core/proto/ticket.proto \
     /includes/deephaven_core/proto/console.proto \

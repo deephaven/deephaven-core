@@ -18,4 +18,8 @@ from deephaven_core.proto import ticket_pb2
 # Log a warning that users should update imports
 from warnings import warn
 
-warn('The pydeephaven.proto namespace is deprecated, please use deephaven_core.proto instead. Deprecated in 0.37.0. Will be removed in 0.39.0', FutureWarning, stacklevel=2)
+warn(
+    "The pydeephaven.proto namespace is deprecated, please use deephaven_core.proto instead. Deprecated in 0.37.0. Will be removed in 0.39.0",
+    FutureWarning,
+    stacklevel=2,
+)
