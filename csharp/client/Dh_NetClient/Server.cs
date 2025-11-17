@@ -223,8 +223,7 @@ public class Server : IDisposable {
       }
     }
     try {
-      var req = new ConfigurationConstantsRequest();
-      SendRpc(opts => ConfigStub.GetConfigurationConstantsAsync(req, opts));
+      Ping();
     } catch (Exception e) {
       Debug.WriteLine($"Keepalive timer: ignoring {e}");
       // Successful SendRpc will reset the timer for us. For a failed SendRpc,
@@ -235,6 +234,11 @@ public class Server : IDisposable {
         }
       }
     }
+  }
+
+  public void Ping() {
+    var req = new ConfigurationConstantsRequest();
+    SendRpc(opts => ConfigStub.GetConfigurationConstantsAsync(req, opts));
   }
 
   private static bool TryExtractExpirationInterval(ConfigurationConstantsResponse ccResp, out TimeSpan result) {
