@@ -35,7 +35,7 @@ def evaluate(
 
     Args:
         sql (str): SQL query string
-        dry_run (bool, optional): if the query should be a dry run, default is False
+        dry_run (bool): if the query should be a dry run, default is False
 
     Returns:
         a new Table, or a java TableSpec if dry_run is True

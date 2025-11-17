@@ -56,7 +56,7 @@ def produce(
 
     Args:
         table (Table): the source table to publish to Kafka
-        kafka_config (Dict): configuration for the associated Kafka producer.
+        kafka_config (dict): configuration for the associated Kafka producer.
             This is used to call the constructor of org.apache.kafka.clients.producer.KafkaProducer;
             pass any KafkaProducer specific desired configuration here
         topic (Optional[str]): the default topic name. When None, topic_col must be set. See topic_col for behavior.

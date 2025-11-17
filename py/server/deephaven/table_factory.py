@@ -93,7 +93,7 @@ def time_table(
         start_time (Optional[InstantLike]):
             start time for adding new rows, defaults to None which means use the current time
             as the start time.
-        blink_table (bool, optional): if the time table should be a blink table, defaults to False
+        blink_table (bool): if the time table should be a blink table, defaults to False
 
     Returns:
         a Table
@@ -174,8 +174,8 @@ def merge(tables: Sequence[Table]) -> Table:
 
 def merge_sorted(tables: Sequence[Table], order_by: str) -> Table:
     """Combines two or more tables into one sorted, aggregate table. This essentially stacks the tables one on top
-    of the other and sorts the result. Null tables are ignored. mergeSorted is more efficient than using merge
-    followed by sort.
+    of the other and sorts the result. Null tables are ignored. merge_sorted is more efficient than using merge
+    followed by sort. The input tables must be already sorted on the order_by column.
 
     Args:
         tables (Sequence[Table]): the source tables
@@ -428,7 +428,7 @@ def input_table(
     Args:
         col_defs (Optional[TableDefinitionLike]): the table definition
         init_table (Optional[Table]): the initial table
-        key_cols (Optional[Union[str, Sequence[str]]): the name(s) of the key column(s)
+        key_cols (Optional[Union[str, Sequence[str]]]): the name(s) of the key column(s)
 
     Returns:
         an InputTable
@@ -521,8 +521,8 @@ def function_generated_table(
         refresh_interval_ms (Optional[int]): Interval (in milliseconds) at which the 'table_generator' function is rerun.
         exec_ctx (Optional[ExecutionContext]): A custom execution context. If 'None', the current
             execution context is used. If there is no current execution context, a ValueError is raised.
-        args (Tuple): Optional tuple of positional arguments to pass to table_generator. Defaults to ()
-        kwargs (Dict): Optional dictionary of keyword arguments to pass to table_generator. Defaults to {}
+        args (tuple): Optional tuple of positional arguments to pass to table_generator. Defaults to ()
+        kwargs (dict): Optional dictionary of keyword arguments to pass to table_generator. Defaults to {}
 
     Returns:
         a new table

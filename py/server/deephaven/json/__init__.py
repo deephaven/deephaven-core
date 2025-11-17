@@ -403,7 +403,7 @@ def typed_object_val(
     Args:
         type_field (str): the type-discriminating field
         shared_fields (dict[str, Union[JsonValueType, ObjectField]]): the shared fields
-        objects (dict[str, Union[JsonValueType, ObjectField]]): the individual objects, keyed by their
+        objects (dict[str, JsonValueType]): the individual objects, keyed by their
             type-discriminated value. The values must be object options.
         allow_unknown_types (bool): if unknown types are allow, by default is True
         allow_missing (bool): if the object is allowed to be missing, by default is True
@@ -971,8 +971,8 @@ def double_val(
         allow_string (bool): if the double value is allowed to be a JSON string type, default is False
         allow_missing (bool): if the double value is allowed to be missing, default is True
         allow_null (bool): if the double value is allowed to be a JSON null type, default is True
-        on_missing (Optional[int]): the value to use when the JSON value is missing and allow_missing is True, default is None.
-        on_null (Optional[int]): the value to use when the JSON value is null and allow_null is True, default is None.
+        on_missing (Optional[float]): the value to use when the JSON value is missing and allow_missing is True, default is None.
+        on_null (Optional[float]): the value to use when the JSON value is null and allow_null is True, default is None.
 
     Returns:
         the double value

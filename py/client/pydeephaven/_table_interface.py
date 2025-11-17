@@ -560,7 +560,7 @@ class TableInterface(ABC, Generic[T]):
         which ensures that the sample variance will be an unbiased estimator of population variance.
 
         Args:
-            by (Union[str, list[str]]): the group-by column name(s), default is None, meaning grouping
+            by (Optional[Union[str, list[str]]]): the group-by column name(s), default is None, meaning grouping
                 all the rows into one group
 
         Returns:
@@ -577,7 +577,7 @@ class TableInterface(ABC, Generic[T]):
         grouping must be of numeric types.
 
         Args:
-            by (Union[str, list[str]]): the group-by column name(s), default is None, meaning grouping
+            by (Optional[Union[str, list[str]]]): the group-by column name(s), default is None, meaning grouping
                 all the rows into one group
 
         Returns:
@@ -594,7 +594,7 @@ class TableInterface(ABC, Generic[T]):
         grouping must be of numeric types.
 
         Args:
-            by (Union[str, list[str]]): the group-by column name(s), default is None, meaning grouping
+            by (Optional[Union[str, list[str]]]): the group-by column name(s), default is None, meaning grouping
                 all the rows into one group
 
         Returns:
@@ -611,7 +611,7 @@ class TableInterface(ABC, Generic[T]):
         grouping must be of numeric types.
 
         Args:
-            by (Union[str, list[str]]): the group-by column name(s), default is None, meaning grouping
+            by (Optional[Union[str, list[str]]]): the group-by column name(s), default is None, meaning grouping
                 all the rows into one group
 
         Returns:
@@ -629,7 +629,7 @@ class TableInterface(ABC, Generic[T]):
 
         Args:
             col (str): the name of the column to store the counts
-            by (Union[str, list[str]]): the group-by column name(s), default is None, meaning grouping
+            by (Optional[Union[str, list[str]]]): the group-by column name(s), default is None, meaning grouping
                 all the rows into one group
 
         Returns:
@@ -702,8 +702,9 @@ class TableInterface(ABC, Generic[T]):
         identified by the provided key columns.
 
         Args:
-            ops (Union[UpdateByOperatoin, list[UpdateByOperation]]): the UpdateByOperation(s) to be applied
-            by (Union[str, list[str]]): the group-by column name(s)
+            ops (Union[UpdateByOperation, list[UpdateByOperation]]): the UpdateByOperation(s) to be applied
+            by (Optional[Union[str, list[str]]]): the group-by column name(s), defaults to None, meaning all calculations are
+                performed over the entire table
 
         Returns:
             a Table or Query object

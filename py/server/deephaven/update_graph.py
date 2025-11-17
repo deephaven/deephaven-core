@@ -49,7 +49,7 @@ def has_exclusive_lock(
     """Checks if the current thread is holding the provided Update Graph's (UG) exclusive lock.
 
     Args:
-        ug (Union[UpdateGraph, Table, PartitionedTable, PartitionTableProxy]): The Update Graph (UG) or a
+        ug (Union[UpdateGraph, Table, PartitionedTable, PartitionedTableProxy]): The Update Graph (UG) or a
             table-like object.
 
     Returns:
@@ -67,7 +67,7 @@ def has_shared_lock(
     """Checks if the current thread is holding the provided Update Graph's (UG) shared lock.
 
     Args:
-        ug (Union[UpdateGraph, Table, PartitionedTable, PartitionTableProxy]): The Update Graph (UG) or a
+        ug (Union[UpdateGraph, Table, PartitionedTable, PartitionedTableProxy]): The Update Graph (UG) or a
             table-like object.
 
     Returns:
@@ -86,7 +86,7 @@ def exclusive_lock(
     """Context manager for running a block of code under an Update Graph (UG) exclusive lock.
 
     Args:
-        ug (Union[UpdateGraph, Table, PartitionedTable, PartitionTableProxy]): The Update Graph (UG) or a
+        ug (Union[UpdateGraph, Table, PartitionedTable, PartitionedTableProxy]): The Update Graph (UG) or a
             table-like object.
     """
     if not isinstance(ug, UpdateGraph):
@@ -107,7 +107,7 @@ def shared_lock(ug: Union[UpdateGraph, Table, PartitionedTable, PartitionedTable
     """Context manager for running a block of code under an Update Graph (UG) shared lock.
 
     Args:
-        ug (Union[UpdateGraph, Table, PartitionedTable, PartitionTableProxy]): The Update Graph (UG) or a
+        ug (Union[UpdateGraph, Table, PartitionedTable, PartitionedTableProxy]): The Update Graph (UG) or a
             table-like object.
     """
     if not isinstance(ug, UpdateGraph):
@@ -131,7 +131,7 @@ def exclusive_locked(
     lock. The lock is released after the function returns regardless of what happens inside the function.
 
     Args:
-        ug (Union[UpdateGraph, Table, PartitionedTable, PartitionTableProxy]): The Update Graph (UG) or a
+        ug (Union[UpdateGraph, Table, PartitionedTable, PartitionedTableProxy]): The Update Graph (UG) or a
             table-like object.
     """
     if not isinstance(ug, UpdateGraph):
@@ -155,7 +155,7 @@ def shared_locked(
     The lock is released after the function returns regardless of what happens inside the function.
 
     Args:
-        ug (Union[UpdateGraph, Table, PartitionedTable, PartitionTableProxy]): The Update Graph (UG) or a
+        ug (Union[UpdateGraph, Table, PartitionedTable, PartitionedTableProxy]): The Update Graph (UG) or a
             table-like object.
     """
     if not isinstance(ug, UpdateGraph):
@@ -201,7 +201,7 @@ def _serial_table_operations_safe(
     Update Graph (UG) without locking.
 
     Args:
-        ug (Union[UpdateGraph, Table, PartitionedTable, PartitionTableProxy]): The Update Graph (UG) or a
+        ug (Union[UpdateGraph, Table, PartitionedTable, PartitionedTableProxy]): The Update Graph (UG) or a
             table-like object.
 
     Returns:
@@ -220,7 +220,7 @@ def _current_thread_processes_updates(
     """Checks if the current thread processes updates for the provided Update Graph (UG).
 
     Args:
-        ug (Union[UpdateGraph, Table, PartitionedTable, PartitionTableProxy]): The Update Graph (UG) or a
+        ug (Union[UpdateGraph, Table, PartitionedTable, PartitionedTableProxy]): The Update Graph (UG) or a
             table-like object.
 
     Returns:

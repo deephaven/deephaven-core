@@ -70,12 +70,12 @@ class _DhClientAuthMiddleware(ClientMiddleware):
     def call_completed(self, exception: Optional[Exception]) -> None:
         super().call_completed(exception)
 
-    def received_headers(self, headers: Any) -> None:
+    def received_headers(self, headers: dict) -> None:
         super().received_headers(headers)
         header_key = "authorization"
         try:
             if headers and header_key in headers:
-                header_value = headers.get(header_key)
+                header_value = headers[header_key]
                 auth_header_value = bytes(header_value[0], encoding="ascii")
                 if auth_header_value:
                     self._session._auth_header_value = auth_header_value
@@ -112,9 +112,6 @@ class Session:
         tables (list[str]): names of the global tables available in the server after running scripts
         is_alive (bool): check if the session is still alive (may refresh the session)
     """
-
-    host: str
-    port: int
 
     def __init__(
         self,
@@ -174,14 +171,14 @@ class Session:
         self._ticket_bitarray = BitArray(1024)
 
         if not host:
-            self.host = os.environ.get("DH_HOST", "localhost")
+            self._host = os.environ.get("DH_HOST", "localhost")
         else:
-            self.host = host
+            self._host = host
 
         if not port:
-            self.port = int(os.environ.get("DH_PORT", 10000))
+            self._port = int(os.environ.get("DH_PORT", 10000))
         else:
-            self.port = port
+            self._port = port
 
         self._logpfx = f"pydh.Session {id(self)} {host}:port: "
         self._use_tls = use_tls
@@ -276,6 +273,16 @@ class Session:
         response = stub_call(*args, **kwargs)
         self.update_metadata(response.initial_metadata())
         return response
+
+    @property
+    def host(self) -> str:
+        """The host name of the server."""
+        return self._host
+
+    @property
+    def port(self) -> int:
+        """The port number of the server."""
+        return self._port
 
     @property
     def tables(self) -> list[str]:
@@ -412,7 +419,7 @@ class Session:
             try:
                 scheme = "grpc+tls" if self._use_tls else "grpc"
                 self._flight_client = paflight.FlightClient(
-                    location=f"{scheme}://{self.host}:{self.port}",
+                    location=f"{scheme}://{self._host}:{self._port}",
                     middleware=[_DhClientAuthMiddlewareFactory(self)],
                     tls_root_certs=self._tls_root_certs,
                     cert_chain=self._client_cert_chain,
@@ -621,7 +628,9 @@ class Session:
         Raises:
             DHError: If the operation fails.
         """
-        self._session_service.publish(source_ticket, result_ticket)  # type: ignore[union-attr]
+        if not self._session_service:
+            raise DHError("session service is not available")
+        self._session_service.publish(source_ticket, result_ticket)
 
     def fetch(self, ticket: Ticket) -> ExportTicket:
         """Fetches a server object by ticket.
@@ -639,7 +648,9 @@ class Session:
         Raises:
             DHError
         """
-        return self._session_service.fetch(ticket)  # type: ignore[union-attr]
+        if not self._session_service:
+            raise DHError("session service is not available")
+        return self._session_service.fetch(ticket)
 
     def publish_table(self, ticket: SharedTicket, table: Table) -> None:
         """Publishes a table to the given shared ticket. The ticket can then be used by another session to fetch the
@@ -739,7 +750,8 @@ class Session:
 
         Args:
             tables (list[Table]): the list of Table objects to merge
-            order_by (str): if specified the resultant table will be sorted on this column, default is ""
+            order_by (str): the order by column name, if specified, the input tables must already be sorted on this
+                column, and the result table will be sorted on it as well, default is ""
 
         Returns:
             a Table object

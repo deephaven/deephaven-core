@@ -1,6 +1,8 @@
 #
 # Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 #
+from __future__ import annotations
+
 from typing import Optional
 from warnings import warn
 
@@ -47,7 +49,7 @@ class Credentials(JObjectWrapper):
         return self._j_object
 
     @classmethod
-    def resolving(cls) -> "Credentials":
+    def resolving(cls) -> Credentials:
         """
         Default credentials provider used by Deephaven which resolves credentials in the following order:
 
@@ -66,7 +68,7 @@ class Credentials(JObjectWrapper):
         return cls(_JCredentials.resolving())
 
     @classmethod
-    def default(cls) -> "Credentials":
+    def default(cls) -> Credentials:
         """
         Default credentials provider used by the AWS SDK that looks for credentials in this order:
         Java System Properties (`aws.accessKeyId` and `aws.secretAccessKey`), Environment Variables (`AWS_ACCESS_KEY_ID`
@@ -79,7 +81,7 @@ class Credentials(JObjectWrapper):
         return cls(_JCredentials.defaultCredentials())
 
     @classmethod
-    def basic(cls, access_key_id: str, secret_access_key: str) -> "Credentials":
+    def basic(cls, access_key_id: str, secret_access_key: str) -> Credentials:
         """
         Basic credentials provider with the specified access key id and secret access key.
 
@@ -95,7 +97,7 @@ class Credentials(JObjectWrapper):
     @classmethod
     def session(
         cls, access_key_id: str, secret_access_key: str, session_token: str
-    ) -> "Credentials":
+    ) -> Credentials:
         """
         Session credentials provider with the specified access key id, secret access key, and session token.
         This is useful when using temporary credentials from AWS STS or similar services.
@@ -113,7 +115,7 @@ class Credentials(JObjectWrapper):
         )
 
     @classmethod
-    def anonymous(cls) -> "Credentials":
+    def anonymous(cls) -> Credentials:
         """
         Anonymous credentials provider, which can only be used to read data with S3 policy set to allow anonymous access.
 
@@ -123,7 +125,7 @@ class Credentials(JObjectWrapper):
         return cls(_JCredentials.anonymous())
 
     @classmethod
-    def profile(cls) -> "Credentials":
+    def profile(cls) -> Credentials:
         """
         Use the profile name, config file path, or credentials file path from S3 Instructions for loading the
         credentials and fail if none found.

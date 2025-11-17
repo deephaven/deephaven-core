@@ -109,7 +109,7 @@ def calendar(name: Optional[str] = None) -> BusinessCalendar:
     objects to Java date-time objects, use the conversion functions in the 'deephaven.time' module.
 
     Args:
-        name (str): the name of the calendar.  If not specified, the default calendar is returned.
+        name (Optional[str]): the name of the calendar.  If not specified, the default calendar is returned.
 
     Returns:
         the calendar with the given name or the defalt calendar if name is not specified.

@@ -59,7 +59,7 @@ class Color(JObjectWrapper):
             r (int): the red component in the range (0 - 255)
             g (int): the green component in the range (0 - 255)
             b (int): the blue component in the range (0 - 255)
-            alpha (int, optional): the alpha component in the range (0 - 255), default is 255. Lower alpha means more
+            alpha (int): the alpha component in the range (0 - 255), default is 255. Lower alpha means more
                 transparent for the color.
 
         Returns:
@@ -81,7 +81,7 @@ class Color(JObjectWrapper):
             r (float): the red component in the range (0.0 - 1.0)
             g (float): the green component in the range (0.0 - 1.0)
             b (float): the blue component in the range (0.0 - 1.0)
-            alpha (float, optional): the alpha component in the range (0.0 - 1.0), default is 1.0. Lower alpha means
+            alpha (float): the alpha component in the range (0.0 - 1.0), default is 1.0. Lower alpha means
                 more transparent for the color.
 
         Returns:
@@ -104,7 +104,7 @@ class Color(JObjectWrapper):
             h (float): the hue component, as a degree on the color wheel in the range (0.0 - 360.0)
             s (float): the saturation component, as a percentage in the range (1.0 - 100.0)
             l (float): the lightness component, as a percentage in the range (1.0 - 100.0)
-            alpha (float, optional): the alpha component in the range (0.0 - 1.0), default is 1.0. Lower alpha means
+            alpha (float): the alpha component in the range (0.0 - 1.0), default is 1.0. Lower alpha means
                 more transparent for the color.
 
         Returns:

@@ -3,5 +3,3 @@ grpcio
 protobuf
 bitstring
 numpy
-
-

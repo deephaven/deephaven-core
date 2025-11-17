@@ -706,7 +706,7 @@ def cum_count_where(
 
     Args:
         col (str): the column to hold the counts of rows that pass the filter condition columns.
-        filters (Union[str, Filter, Sequence[str], Sequence[Filter]], optional): the filter condition
+        filters (Union[str, Filter, Sequence[str], Sequence[Filter]]): the filter condition
             expression(s) or Filter object(s)
 
     Returns:
@@ -860,9 +860,9 @@ def rolling_sum_time(
         ts_col (str): the timestamp column for determining the window
         cols (Union[str, Sequence[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by performs the rolling sum operation on all columns.
-        rev_time (int): the look-behind window size, can be expressed as an integer in nanoseconds or a time
+        rev_time (Union[int, str]): the look-behind window size, can be expressed as an integer in nanoseconds or a time
             interval string, e.g. "PT00:00:00.001" or "PT5M"
-        fwd_time (int): the look-ahead window size, can be expressed as an integer in nanoseconds or a time
+        fwd_time (Union[int, str]): the look-ahead window size, can be expressed as an integer in nanoseconds or a time
             interval string, e.g. "PT00:00:00.001" or "PT5M", default is 0
 
     Returns:
@@ -966,9 +966,9 @@ def rolling_group_time(
         ts_col (str): the timestamp column for determining the window
         cols (Union[str, Sequence[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by performs the rolling group operation on all columns.
-        rev_time (int): the look-behind window size, can be expressed as an integer in nanoseconds or a time
+        rev_time (Union[int, str]): the look-behind window size, can be expressed as an integer in nanoseconds or a time
             interval string, e.g. "PT00:00:00.001" or "PT5M"
-        fwd_time (int): the look-ahead window size, can be expressed as an integer in nanoseconds or a time
+        fwd_time (Union[int, str]): the look-ahead window size, can be expressed as an integer in nanoseconds or a time
             interval string, e.g. "PT00:00:00.001" or "PT5M", default is 0
 
     Returns:
@@ -1072,9 +1072,9 @@ def rolling_avg_time(
         ts_col (str): the timestamp column for determining the window
         cols (Union[str, Sequence[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by performs the rolling average operation on all columns.
-        rev_time (int): the look-behind window size, can be expressed as an integer in nanoseconds or a time
+        rev_time (Union[int, str]): the look-behind window size, can be expressed as an integer in nanoseconds or a time
             interval string, e.g. "PT00:00:00.001" or "PT5M"
-        fwd_time (int): the look-ahead window size, can be expressed as an integer in nanoseconds or a time
+        fwd_time (Union[int, str]): the look-ahead window size, can be expressed as an integer in nanoseconds or a time
             interval string, e.g. "PT00:00:00.001" or "PT5M", default is 0
 
     Returns:
@@ -1178,9 +1178,9 @@ def rolling_min_time(
         ts_col (str): the timestamp column for determining the window
         cols (Union[str, Sequence[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by performs the rolling minimum operation on all columns.
-        rev_time (int): the look-behind window size, can be expressed as an integer in nanoseconds or a time
+        rev_time (Union[int, str]): the look-behind window size, can be expressed as an integer in nanoseconds or a time
             interval string, e.g. "PT00:00:00.001" or "PT5M"
-        fwd_time (int): the look-ahead window size, can be expressed as an integer in nanoseconds or a time
+        fwd_time (Union[int, str]): the look-ahead window size, can be expressed as an integer in nanoseconds or a time
             interval string, e.g. "PT00:00:00.001" or "PT5M", default is 0
 
     Returns:
@@ -1284,9 +1284,9 @@ def rolling_max_time(
         ts_col (str): the timestamp column for determining the window
         cols (Union[str, Sequence[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by performs the rolling maximum operation on all columns.
-        rev_time (int): the look-behind window size, can be expressed as an integer in nanoseconds or a time
+        rev_time (Union[int, str]): the look-behind window size, can be expressed as an integer in nanoseconds or a time
             interval string, e.g. "PT00:00:00.001" or "PT5M"
-        fwd_time (int): the look-ahead window size, can be expressed as an integer in nanoseconds or a time
+        fwd_time (Union[int, str]): the look-ahead window size, can be expressed as an integer in nanoseconds or a time
             interval string, e.g. "PT00:00:00.001" or "PT5M", default is 0
 
     Returns:
@@ -1392,9 +1392,9 @@ def rolling_prod_time(
         ts_col (str): the timestamp column for determining the window
         cols (Union[str, Sequence[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by performs the rolling product operation on all columns.
-        rev_time (int): the look-behind window size, can be expressed as an integer in nanoseconds or a time
+        rev_time (Union[int, str]): the look-behind window size, can be expressed as an integer in nanoseconds or a time
             interval string, e.g. "PT00:00:00.001" or "PT5M"
-        fwd_time (int): the look-ahead window size, can be expressed as an integer in nanoseconds or a time
+        fwd_time (Union[int, str]): the look-ahead window size, can be expressed as an integer in nanoseconds or a time
             interval string, e.g. "PT00:00:00.001" or "PT5M", default is 0
 
     Returns:
@@ -1498,9 +1498,9 @@ def rolling_count_time(
         ts_col (str): the timestamp column for determining the window
         cols (Union[str, Sequence[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by performs the rolling count operation on all columns.
-        rev_time (int): the look-behind window size, can be expressed as an integer in nanoseconds or a time
+        rev_time (Union[int, str]): the look-behind window size, can be expressed as an integer in nanoseconds or a time
             interval string, e.g. "PT00:00:00.001" or "PT5M"
-        fwd_time (int): the look-ahead window size, can be expressed as an integer in nanoseconds or a time
+        fwd_time (Union[int, str]): the look-ahead window size, can be expressed as an integer in nanoseconds or a time
             interval string, e.g. "PT00:00:00.001" or "PT5M", default is 0
 
     Returns:
@@ -1610,9 +1610,9 @@ def rolling_std_time(
         ts_col (str): the timestamp column for determining the window
         cols (Union[str, Sequence[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by performs the rolling sample standard deviation operation on all columns.
-        rev_time (int): the look-behind window size, can be expressed as an integer in nanoseconds or a time
+        rev_time (Union[int, str]): the look-behind window size, can be expressed as an integer in nanoseconds or a time
             interval string, e.g. "PT00:00:00.001" or "PT5M"
-        fwd_time (int): the look-ahead window size, can be expressed as an integer in nanoseconds or a time
+        fwd_time (Union[int, str]): the look-ahead window size, can be expressed as an integer in nanoseconds or a time
             interval string, e.g. "PT00:00:00.001" or "PT5M", default is 0
 
     Returns:
@@ -1721,9 +1721,9 @@ def rolling_wavg_time(
         wcol (str):  the column containing the weight values
         cols (Union[str, Sequence[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by performs the rolling weighted average operation on all columns.
-        rev_time (int): the look-behind window size, can be expressed as an integer in nanoseconds or a time
+        rev_time (Union[int, str]): the look-behind window size, can be expressed as an integer in nanoseconds or a time
             interval string, e.g. "PT00:00:00.001" or "PT5M"
-        fwd_time (int): the look-ahead window size, can be expressed as an integer in nanoseconds or a time
+        fwd_time (Union[int, str]): the look-ahead window size, can be expressed as an integer in nanoseconds or a time
             interval string, e.g. "PT00:00:00.001" or "PT5M", default is 0
 
     Returns:
@@ -1888,9 +1888,9 @@ def rolling_formula_time(
         cols (Optional[Union[str, Sequence[str]]]): If provided, supplies the column(s) to operate on, can include expressions to
             rename the output, i.e. "new_col = col". If omitted and the `formula_param` is provided, update_by performs
             the rolling formula operation on all columns
-        rev_time (int): the look-behind window size, can be expressed as an integer in nanoseconds or a time
+        rev_time (Union[int, str]): the look-behind window size, can be expressed as an integer in nanoseconds or a time
             interval string, e.g. "PT00:00:00.001" or "PT5M"
-        fwd_time (int): the look-ahead window size, can be expressed as an integer in nanoseconds or a time
+        fwd_time (Union[int, str]): the look-ahead window size, can be expressed as an integer in nanoseconds or a time
             interval string, e.g. "PT00:00:00.001" or "PT5M", default is 0
 
     Returns:
@@ -1956,7 +1956,7 @@ def rolling_count_where_tick(
 
     Args:
         col (str): the column to hold the counts of rows that pass the filter condition columns.
-        filters (Union[str, Filter, Sequence[str], Sequence[Filter]], optional): the filter condition
+        filters (Union[str, Filter, Sequence[str], Sequence[Filter]]): the filter condition
             expression(s) or Filter object(s)
         rev_ticks (int): the look-behind window size (in rows/ticks)
         fwd_ticks (int): the look-forward window size (int rows/ticks), default is 0
@@ -2014,11 +2014,11 @@ def rolling_count_where_time(
     Args:
         ts_col (str): the timestamp column for determining the window
         col (str): the column to hold the counts of rows that pass the filter condition columns.
-        filters (Union[str, Filter, Sequence[str], Sequence[Filter]], optional): the filter condition
+        filters (Union[str, Filter, Sequence[str], Sequence[Filter]]): the filter condition
             expression(s) or Filter object(s)
-        rev_time (int): the look-behind window size, can be expressed as an integer in nanoseconds or a time
+        rev_time (Union[int, str]): the look-behind window size, can be expressed as an integer in nanoseconds or a time
             interval string, e.g. "PT00:00:00.001" or "PT5M"
-        fwd_time (int): the look-ahead window size, can be expressed as an integer in nanoseconds or a time
+        fwd_time (Union[int, str]): the look-ahead window size, can be expressed as an integer in nanoseconds or a time
             interval string, e.g. "PT00:00:00.001" or "PT5M", default is 0
 
     Returns:

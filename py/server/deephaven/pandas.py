@@ -115,9 +115,9 @@ def to_pandas(
     Args:
         table (Table): the source table
         cols (Optional[list[str]]): the source column names, default is None which means include all columns
-        dtype_backend (str): which dtype_backend to use, e.g. whether a DataFrame should have NumPy arrays,
-            nullable dtypes are used for all dtypes that have a nullable implementation when “numpy_nullable” is set,
-            pyarrow is used for all dtypes if “pyarrow” is set. None means Numpy backed DataFrames with no nullable
+        dtype_backend (Literal[None, "pyarrow", "numpy_nullable"]): which dtype_backend to use, e.g. whether a DataFrame should have NumPy arrays,
+            nullable dtypes are used for all dtypes that have a nullable implementation when "numpy_nullable" is set,
+            pyarrow is used for all dtypes if "pyarrow" is set. None means Numpy backed DataFrames with no nullable
             dtypes. Both "numpy_nullable" and "pyarrow" automatically convert Deephaven nulls to Pandas NA and enable
             Pandas extension types.  Extension types are needed to support types beyond NumPy's type system.  Extension
             types support operations such as properly mapping Java Strings to Python strings. default is "numpy_nullable".

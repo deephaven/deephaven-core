@@ -148,7 +148,7 @@ def count_where(
 
     Args:
         col (str): the column to hold the counts of rows that pass the filter condition
-        filters (Union[str, Filter, Sequence[str], Sequence[Filter]], optional): the filter condition
+        filters (Union[str, Filter, Sequence[str], Sequence[Filter]]): the filter condition
             expression(s) or Filter object(s)
 
     Returns:

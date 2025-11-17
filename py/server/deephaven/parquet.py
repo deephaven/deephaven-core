@@ -410,7 +410,7 @@ def write_partitioned(
     subdirectories are created if they do not exist.
 
     Args:
-        table (Table): the source table or partitioned table
+        table (Union[Table, PartitionedTable]): the source table or partitioned table
         destination_dir (str): The path or URI to the destination root directory in which the partitioned parquet data
             will be stored in a nested directory structure format. Non-existing directories in the provided path will be
             created.

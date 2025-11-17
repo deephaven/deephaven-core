@@ -148,7 +148,7 @@ def dh_now(system: bool = False, resolution: Literal["ns", "ms"] = "ns") -> Inst
         system (bool): True to use the system clock; False to use the default clock.  Under most circumstances,
             the default clock will return the current system time, but during replay simulations, the default
             clock can return the replay time.
-        resolution (str): The resolution of the returned time.  The default "ns" will return nanosecond resolution times
+        resolution (Literal["ns", "ms"]): The resolution of the returned time.  The default "ns" will return nanosecond resolution times
             if possible. "ms" will return millisecond resolution times.
 
     Returns:

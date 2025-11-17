@@ -425,7 +425,7 @@ def unique(
             default is None, only valid when used in Table agg_all_by operation
         include_nulls (bool): whether null is treated as a value for the purpose of determining if the values in the
             aggregation group are unique, default is False.
-        non_unique_sentinel (Union[np.number, str, bool]): the non-null sentinel value when no unique value exists,
+        non_unique_sentinel (Optional[Union[np.number, str, bool]]): the non-null sentinel value when no unique value exists,
             default is None. Must be a non-None value when include_nulls is True. When passed in as a numpy scalar
             number value, it must be of one of these types: np.int8, np.int16, np.uint16, np.int32, np.int64(int),
             np.float32, np.float64(float). Please note that np.uint16 is interpreted as a Deephaven/Java char.

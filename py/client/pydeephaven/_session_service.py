@@ -23,7 +23,7 @@ class SessionService:
 
     def connect(self) -> grpc.Channel:
         """Connects to the server and returns a gRPC channel upon success."""
-        target = ":".join([self.session.host, str(self.session.port)])
+        target = ":".join([self.session._host, str(self.session._port)])
         if self.session._use_tls:
             credentials = grpc.ssl_channel_credentials(
                 root_certificates=self.session._tls_root_certs,

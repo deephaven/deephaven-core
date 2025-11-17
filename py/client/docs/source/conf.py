@@ -17,7 +17,7 @@
 # -- Project information -----------------------------------------------------
 
 project = "Deephaven Python Client API"
-copyright = "2021, Deephaven Data Labs"
+copyright = "2021-2025, Deephaven Data Labs"
 author = "Deephaven Data Labs"
 
 # The full version, including alpha/beta/rc tags

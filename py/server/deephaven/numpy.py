@@ -137,7 +137,7 @@ def to_table(np_array: np.ndarray, cols: Sequence[str]) -> Table:
 
     Args:
         np_array (np.ndarray): a numpy array
-        cols (Sequence[str]): a list of column names
+        cols (Sequence[str]): a sequence of column names
 
     Returns:
         a Deephaven table

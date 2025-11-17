@@ -65,7 +65,12 @@ _ALL_PARTITIONS_SEEK_TO_END = _JKafkaTools.ALL_PARTITIONS_SEEK_TO_END
 
 class KeyValueSpec(JObjectWrapper):
     IGNORE: KeyValueSpec
+    """ The spec for explicitly ignoring either key or value in a Kafka message when consuming a Kafka stream. """
+
     FROM_PROPERTIES: KeyValueSpec
+    """ The spec for specifying that when consuming a Kafka stream, the names for the key or value columns can be provided
+    in the properties as "key.column.name" or "value.column.name" in the config, and otherwise default to "key" or "value".
+    """
 
     j_object_type = jpy.get_type("io.deephaven.kafka.KafkaTools$Consume$KeyOrValueSpec")
 
@@ -78,20 +83,23 @@ class KeyValueSpec(JObjectWrapper):
 
 
 KeyValueSpec.IGNORE = KeyValueSpec(_JKafkaTools_Consume.IGNORE)
-""" The spec for explicitly ignoring either key or value in a Kafka message when consuming a Kafka stream. """
-
 KeyValueSpec.FROM_PROPERTIES = KeyValueSpec(_JKafkaTools.FROM_PROPERTIES)
-""" The spec for specifying that when consuming a Kafka stream, the names for the key or value columns can be provided
-in the properties as "key.column.name" or "value.column.name" in the config, and otherwise default to "key" or "value".
-"""
 
 
 class TableType(JObjectWrapper):
     """A factory that creates the supported Table Type for consuming Kafka."""
 
     Stream: TableType
+    """ Deprecated, prefer TableType.blink(). Consume all partitions into a single interleaved blink table, which will
+    present only newly-available rows to downstream operations and visualizations."""
+
     Append: TableType
+    """ Deprecated, prefer TableType.append(). Consume all partitions into a single interleaved in-memory append-only 
+    table."""
+
     Blink: TableType
+    """Consume all partitions into a single interleaved blink table, which will present only newly-available rows
+            to downstream operations and visualizations."""
 
     j_object_type = jpy.get_type("io.deephaven.kafka.KafkaTools$TableType")
 
@@ -132,18 +140,12 @@ class TableType(JObjectWrapper):
 
 # TODO (https://github.com/deephaven/deephaven-core/issues/3853): Delete this attribute
 TableType.Stream = TableType.blink()
-""" Deprecated, prefer TableType.blink(). Consume all partitions into a single interleaved blink table, which will
-present only newly-available rows to downstream operations and visualizations."""
-
 # TODO (https://github.com/deephaven/deephaven-core/issues/3853): Delete this attribute
 TableType.Append = TableType.append()
-""" Deprecated, prefer TableType.append(). Consume all partitions into a single interleaved in-memory append-only 
-table."""
-
 TableType.Blink = TableType.blink()
 
 
-def j_partitions(partitions: Optional[Sequence[int]]) -> jpy.JType:
+def _j_partitions(partitions: Optional[Sequence[int]]) -> jpy.JType:
     if partitions is None:
         partitions = ALL_PARTITIONS
     else:
@@ -171,7 +173,7 @@ def consume(
     """Consume from Kafka to a Deephaven table.
 
     Args:
-        kafka_config (Dict): configuration for the associated Kafka consumer and also the resulting table.
+        kafka_config (dict): configuration for the associated Kafka consumer and also the resulting table.
             Once the table-specific properties are stripped, the remaining one is used to call the constructor of
             org.apache.kafka.clients.consumer.KafkaConsumer; pass any KafkaConsumer specific desired configuration here
         topic (str): the Kafka topic name
@@ -230,7 +232,7 @@ def consume_to_partitioned_table(
     """Consume from Kafka to a Deephaven partitioned table.
 
     Args:
-        kafka_config (Dict): configuration for the associated Kafka consumer and also the resulting table.
+        kafka_config (dict): configuration for the associated Kafka consumer and also the resulting table.
             Once the table-specific properties are stripped, the remaining one is used to call the constructor of
             org.apache.kafka.clients.consumer.KafkaConsumer; pass any KafkaConsumer specific desired configuration here
         topic (str): the Kafka topic name
@@ -291,7 +293,7 @@ def _consume(
     to_partitioned: bool = False,
 ) -> Union[Table, PartitionedTable]:
     try:
-        partitions = j_partitions(partitions)
+        partitions = _j_partitions(partitions)
 
         if offsets is None or offsets == ALL_PARTITIONS_DONT_SEEK:
             offsets = _ALL_PARTITIONS_DONT_SEEK
@@ -502,7 +504,7 @@ def json_spec(
     """Creates a spec for how to use JSON data when consuming a Kafka stream to a Deephaven table.
 
     Args:
-        col_defs (Union[TableDefinitionLike, Sequence[tuple[str, DType]]): the table definition, preferably specified as
+        col_defs (Union[TableDefinitionLike, Sequence[tuple[str, DType]]]): the table definition, preferably specified as
             TableDefinitionLike. A list of tuples with two elements, a string for column name and a Deephaven type for
             column data type also works, but is deprecated for removal.
         mapping (Optional[dict]): a dict mapping JSON fields to column names defined in the col_defs

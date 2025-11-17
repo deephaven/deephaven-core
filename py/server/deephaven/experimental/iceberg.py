@@ -24,7 +24,6 @@ _JBuildCatalogOptions = jpy.get_type("io.deephaven.iceberg.util.BuildCatalogOpti
 _JIcebergUpdateMode = cast(
     type[Any], jpy.get_type("io.deephaven.iceberg.util.IcebergUpdateMode")
 )  # type: TypeAlias
-# _JIcebergUpdateMode = jpy.get_type("io.deephaven.iceberg.util.IcebergUpdateMode")  # type: TypeAlias
 _JIcebergReadInstructions = jpy.get_type(
     "io.deephaven.iceberg.util.IcebergReadInstructions"
 )

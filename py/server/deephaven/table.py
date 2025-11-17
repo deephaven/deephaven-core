@@ -1209,7 +1209,7 @@ class Table(JObjectWrapper):
 
         Args:
             trigger_table (Table): the trigger table
-            stamp_cols (Union[str, Sequence[str]): The columns from trigger_table that form the "stamp key", may be
+            stamp_cols (Optional[Union[str, Sequence[str]]]): The columns from trigger_table that form the "stamp key", may be
                 renames. None, or empty, means that all columns from trigger_table form the "stamp key".
             initial (bool): Whether to take an initial snapshot upon construction, default is False. When False, the
                 resulting table will remain empty until trigger_table first updates.
@@ -1247,7 +1247,7 @@ class Table(JObjectWrapper):
         columns.
 
         Args:
-            cols (Union[str, Sequence[str]): the column name(s)
+            cols (Union[str, Sequence[str]]): the column name(s)
 
         Returns:
             a new table
@@ -1437,7 +1437,7 @@ class Table(JObjectWrapper):
         is specified, all columns will be included.
 
         Args:
-            formulas (Union[str, Sequence[str], Selectable, Sequence[Selectable]): the column formula(s)
+            formulas (Optional[Union[str, Sequence[str], Selectable, Sequence[Selectable]]]): the column formula(s)
                 or Selectable(s), default is None
 
         Returns:
@@ -2054,7 +2054,7 @@ class Table(JObjectWrapper):
             on (Union[str, Sequence[str]]): the match expression(s) that must include zero-or-more exact match
             expression,
                 and exactly one range match expression as described above
-            aggs (Optional[Union[Aggregation, Sequence[Aggregation]]]): the aggregation(s) to perform over the
+            aggs (Union[Aggregation, Sequence[Aggregation]]): the aggregation(s) to perform over the
             responsive ranges from
                 the right table for each row from this Table
 
@@ -2676,7 +2676,7 @@ class Table(JObjectWrapper):
             freeze (Optional[Union[str, Sequence[str]]]): the columns to freeze to the front.
                 These will not be affected by horizontal scrolling.
             hide (Optional[Union[str, Sequence[str]]]): the columns to hide.
-            column_groups (Optional[Sequence[Dict]]): A list of dicts specifying which columns should be grouped in
+            column_groups (Optional[Sequence[dict]]): A sequence of dicts specifying which columns should be grouped in
             the UI.
                 The dicts can specify the following:
 
@@ -3564,7 +3564,7 @@ class PartitionedTableProxy(JObjectWrapper):
 
         Args:
             trigger_table (Union[Table, PartitionedTableProxy]): the trigger Table or PartitionedTableProxy
-            stamp_cols (Optional[Union[str, Sequence[str]]): The columns from trigger_table that form the "stamp
+            stamp_cols (Optional[Union[str, Sequence[str]]]): The columns from trigger_table that form the "stamp
             key", may be
                 renames. None, or empty, means that all columns from trigger_table form the "stamp key".
             initial (bool): Whether to take an initial snapshot upon construction, default is False. When False, the

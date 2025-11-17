@@ -165,7 +165,7 @@ def j_function(func: Callable[[T], R], dtype: DType) -> jpy.JType:
     'apply' method that accepts a single argument.
 
     Args:
-        func (Callable): a Python callable or an object with an 'apply' method that accepts a single argument
+        func (Callable[[T], R]): a Python callable or an object with an 'apply' method that accepts a single argument
         dtype (DType): the return type of 'func'
 
     Returns:
@@ -181,7 +181,7 @@ def j_unary_operator(func: Callable[[T], T], dtype: DType) -> jpy.JType:
     'apply' method that accepts a single argument.
 
     Args:
-        func (Callable): a Python callable or an object with an 'apply' method that accepts a single argument
+        func (Callable[[T], T]): a Python callable or an object with an 'apply' method that accepts a single argument
         dtype (DType): the return type of 'func'
 
     Returns:
@@ -197,7 +197,7 @@ def j_binary_operator(func: Callable[[T, T], T], dtype: DType) -> jpy.JType:
     'apply' method that accepts a single argument.
 
     Args:
-        func (Callable): a Python callable or an object with an 'apply' method that accepts two arguments
+        func (Callable[[T, T], T]): a Python callable or an object with an 'apply' method that accepts two arguments
         dtype (DType): the return type of 'func'
 
     Returns:
@@ -244,8 +244,8 @@ def to_sequence(v: Union[None, str, T] = None, wrapped: bool = False) -> Sequenc
     for the convenience of the users, e.g. both x= "abc" and x = ["abc"] are valid arguments.
 
     Args:
-        v (Optional[None, str, T]): the input value(s) to be converted to a sequence
-        wrapped (Optional[bool]): if True, the input value(s) will remain wrapped in a JPy object; otherwise, the input
+        v (Union[None, str, T]): the input value(s) to be converted to a sequence
+        wrapped (bool): if True, the input value(s) will remain wrapped in a JPy object; otherwise, the input
             value(s) will be unwrapped. Defaults to False.
 
     Returns:
