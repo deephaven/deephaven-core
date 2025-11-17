@@ -11,6 +11,6 @@ The projects under [ssl/](.) are meant to service the needs of clients and serve
 ### kickstart
 
 [ssl-kickstart](kickstart) serves as an implementation/adapter role, guided by
-[sslcontext-kickstart](https://github.com/Hakky54/sslcontext-kickstart). This handles the translation from the 
+[ayza](https://github.com/Hakky54/ayza). This handles the translation from the 
 configuration objects into JDK-native SSL objects, which can then be used in the construction of specific client or
 server libraries. 
