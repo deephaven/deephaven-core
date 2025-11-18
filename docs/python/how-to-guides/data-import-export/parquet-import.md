@@ -1,6 +1,6 @@
 ---
-title: Import Parquet Files to Deephaven Tables
-sidebar_label: Import Parquet files
+title: Read Parquet files into Deephaven tables
+sidebar_label: Read Parquet files
 ---
 
 Deephaven integrates seamlessly with Parquet via the [Parquet Python module](/core/pydoc/code/deephaven.parquet.html#module-deephaven.parquet), making it easy to read Parquet files directly into Deephaven tables. This document covers reading data into tables from single Parquet files, flat Parquet directories, and partitioned key-value Parquet directories. This document also covers reading Parquet files from [S3](https://docs.aws.amazon.com/AmazonS3/latest/API/Welcome.html) into Deephaven tables, a common use case.
@@ -240,7 +240,7 @@ The `col_instructions` argument to [`parquet.read`](/core/pydoc/code/deephaven.p
 - `codec_args`: An implementation-specific string that maps types to/from bytes. It is typically used in cases where there is no obvious language-agnostic representation in Parquet.
 - `use_dictionary`: `True` or `False` indicating whether or not to use [dictionary-based encoding](https://en.wikipedia.org/wiki/Dictionary_coder) for string columns.
 
-Of particular interest is the `codec_name` argument. This defines the particular type of compression used for the given column and can have significant implications for the speed of the import. The options are:
+Of particular interest is the `codec_name` argument. This defines the particular type of compression used for the given column and can have significant implications for the speed of reading data. The options are:
 
 - `SNAPPY`: (default) Aims for high speed and a reasonable amount of compression. Based on [Google](https://github.com/google/snappy/blob/main/format_description.txt)'s Snappy compression format.
 - `UNCOMPRESSED`: The output will not be compressed.
