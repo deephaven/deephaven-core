@@ -4,7 +4,7 @@ title: Connect to a Kafka stream
 
 Kafka is a distributed event streaming platform that lets you read, write, store, and process events, also called records.
 
-Kafka topics take on many forms, such as raw input, [JSON](#read-kafka-topic-in-json-format), [AVRO](#read-kafka-topic-in-avro-format), or [Protobuf](#read-kafka-topic-in-protobuf-format) In this guide, we show you how to import each of these formats as Deephaven tables.
+Kafka topics take on many forms, such as raw input, [JSON](#read-kafka-topic-in-json-format), [AVRO](#read-kafka-topic-in-avro-format), or [Protobuf](#read-kafka-topic-in-protobuf-format) In this guide, we show you how to read each of these formats into Deephaven tables.
 
 Please see our overview, [Kafka in Deephaven: Basic terms](../../how-to-guides/data-import-export/kafka-stream.md), for a detailed discussion of Kafka topics and supported formats. See the [Apache Kafka Documentation](https://kafka.apache.org/22/javadoc/org/apache/kafka/clients/consumer/KafkaConsumer.html) for full details on how to use Kafka.
 
@@ -164,7 +164,7 @@ Since the `resultBlink` table doesn't show the values in the topic, let's add a 
 lastBlink = resultBlink.lastBy()
 ```
 
-## Import a Kafka stream with append
+## Read a Kafka stream with append
 
 In this example, [`consumeToTable`](../../reference/data-import-export/Kafka/consumeToTable.md) reads the Kafka topic `share.price`. The specific key and value result in a table that appends new rows.
 
@@ -208,7 +208,7 @@ AAPL 135.99
 AAPL 136.82
 ```
 
-## Import a Kafka stream ignoring keys
+## Read a Kafka stream ignoring keys
 
 In this example, [`consumeToTable`](../../reference/data-import-export/Kafka/consumeToTable.md) reads the Kafka topic `share.price` and ignores the partition and key values.
 
