@@ -145,21 +145,21 @@ public class JdbcTypeMapper {
      */
     public static abstract class DataTypeMapping<T> {
         final int sqlType;
-        private final Class<T> dbType;
+        private final Class<T> deephavenType;
         private final Class<?> inputType;
 
         DataTypeMapping(int sqlType, @NotNull final Class<T> type) {
             this(sqlType, type, type);
         }
 
-        DataTypeMapping(int sqlType, @NotNull final Class<T> dbType, @NotNull final Class<?> inputType) {
+        DataTypeMapping(final int sqlType, @NotNull final Class<T> deephavenType, @NotNull final Class<?> inputType) {
             this.sqlType = sqlType;
-            this.dbType = dbType;
+            this.deephavenType = deephavenType;
             this.inputType = inputType;
         }
 
         public Class<T> getDeephavenType() {
-            return dbType;
+            return deephavenType;
         }
 
         public Class<?> getInputType() {
