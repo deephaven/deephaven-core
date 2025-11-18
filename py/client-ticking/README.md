@@ -80,7 +80,7 @@ cd ${DHROOT}/py/client-ticking
 
 ```sh
 # Ensure the DHCPP environment variable is set per the instructions above
-rm -rf build dist  # Ensure we clean the remnants of any pre-existing build.
+rm -rf build dist src/pydeephaven_ticking/_core.cpp # Ensure we clean the remnants of any pre-existing build.
 DEEPHAVEN_VERSION=$(../../gradlew :printVersion -q) CPPFLAGS="-I${DHCPP}/include" LDFLAGS="-L${DHCPP}/lib" python3 setup.py build_ext -i
 ```
 
