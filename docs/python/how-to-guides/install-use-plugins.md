@@ -89,7 +89,7 @@ All of the following user interface plugins can be installed with `pip` with no 
 
 ### Remote File Sourcing
 
-This plugin can be installed with `pip`.
+This plugin can be installed with `pip`:
 
 - [deephaven-plugin-python-remote-file-source](https://pypi.org/project/deephaven-plugin-python-remote-file-source/): A Deephaven bi-directional plugin to allow sourcing Python imports from a remote file source. Use with the [Deephaven VS Code extension](https://deephaven.io/vscode/docs/) to enable local Python workspaces.
 
