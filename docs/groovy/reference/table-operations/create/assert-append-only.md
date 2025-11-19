@@ -22,6 +22,23 @@ This method takes no arguments.
 
 A new Table with the append-only attribute set.
 
+## Example
+
+The following example creates a simple table using `timeTable` and asserts that it is append-only. This enables optimizations and safe use of the `i`, `ii`, and `k` variables in formulas.
+
+```groovy syntax
+import io.deephaven.engine.table.impl.TimeTable.Builder
+
+builder = new Builder().period("PT1S")
+t = builder.build()
+
+// Assert that it is append-only to enable optimizations
+tAppendOnly = t.assertAppendOnly()
+
+// Verify the attribute is set
+println(tAppendOnly.isAppendOnly())
+```
+
 ## Related documentation
 
 - [assertBlink](assert-blink.md)
