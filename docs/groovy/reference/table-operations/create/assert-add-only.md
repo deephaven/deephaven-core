@@ -43,4 +43,4 @@ println(tAddOnly.isAddOnly())
 
 - [assertBlink](assert-blink.md)
 - [assertAppendOnly](assert-append-only.md)
-- [Javadoc](<https://deephaven.io/core/javadoc/io/deephaven/engine/table/Table.html#assertAddOnly()>)
+- [Javadoc](https://deephaven.io/core/javadoc/io/deephaven/engine/table/Table.html#assertAddOnly())

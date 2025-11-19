@@ -1,1 +1,0 @@
-{"file":"reference/table-operations/create/assert-add-only.md","objects":{"t":{"type":"Table","data":{"columns":[{"name":"Timestamp","type":"java.time.Instant"}],"rows":[]}},"tAddOnly":{"type":"Table","data":{"columns":[{"name":"Timestamp","type":"java.time.Instant"}],"rows":[]}},":log":{"type":"Log","data":"true\n"}}}
