@@ -55,9 +55,9 @@ public class ByteObjectShortTuple implements Comparable<ByteObjectShortTuple>, E
         this.element2 = element2;
         this.element3 = element3;
         cachedHashCode = ((31 +
-                Byte.hashCode(element1)) * 31 +
-                Objects.hashCode(element2)) * 31 +
-                Short.hashCode(element3);
+                ByteComparisons.hashCode(element1)) * 31 +
+                ObjectComparisons.hashCode(element2)) * 31 +
+                ShortComparisons.hashCode(element3);
     }
 
     public final byte getFirstElement() {
@@ -87,9 +87,9 @@ public class ByteObjectShortTuple implements Comparable<ByteObjectShortTuple>, E
         }
         final ByteObjectShortTuple typedOther = (ByteObjectShortTuple) other;
         // @formatter:off
-        return element1 == typedOther.element1 &&
+        return ByteComparisons.eq(element1, typedOther.element1) &&
                ObjectComparisons.eq(element2, typedOther.element2) &&
-               element3 == typedOther.element3;
+               ShortComparisons.eq(element3, typedOther.element3);
         // @formatter:on
     }
 
