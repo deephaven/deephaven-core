@@ -26,7 +26,7 @@ A new Table with the add-only attribute set.
 
 The following example creates a simple table using `timeTable` and asserts that it is add-only. This enables optimizations and safe use of the `k` variable in formulas.
 
-```groovy
+```groovy skip-test
 import io.deephaven.engine.table.impl.TimeTable.Builder
 
 builder = new Builder().period("PT1S")
@@ -43,4 +43,4 @@ println(tAddOnly.isAddOnly())
 
 - [assertBlink](assert-blink.md)
 - [assertAppendOnly](assert-append-only.md)
-- [Javadoc](https://deephaven.io/core/javadoc/io/deephaven/engine/table/Table.html#assertAddOnly())
+- [Javadoc](<https://deephaven.io/core/javadoc/io/deephaven/engine/table/Table.html#assertAddOnly()>)

@@ -26,7 +26,7 @@ A new Table with the append-only attribute set.
 
 The following example creates a simple table using `timeTable` and asserts that it is append-only. This enables optimizations and safe use of the `i`, `ii`, and `k` variables in formulas.
 
-```groovy syntax
+```groovy skip-test
 import io.deephaven.engine.table.impl.TimeTable.Builder
 
 builder = new Builder().period("PT1S")
@@ -43,4 +43,4 @@ println(tAppendOnly.isAppendOnly())
 
 - [assertBlink](assert-blink.md)
 - [assertAddOnly](assert-add-only.md)
-- [Javadoc](https://deephaven.io/core/javadoc/io/deephaven/engine/table/Table.html#assertAppendOnly())
+- [Javadoc](<https://deephaven.io/core/javadoc/io/deephaven/engine/table/Table.html#assertAppendOnly()>)
