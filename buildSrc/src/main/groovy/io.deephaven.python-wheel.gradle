@@ -49,7 +49,10 @@ def buildWheel = Docker.registerDockerTask(project, 'buildWheel') { config ->
                       mypy --install-types --non-interactive --config-file pyproject.toml .;\\
                       ruff check;\\
                       ruff format --check;\\
-                      python setup.py bdist_wheel'''
+                      python setup.py bdist_wheel; \\
+                      pip freeze | xargs pip uninstall -y; \\
+                      rm -rf .mypy_cache; \\
+                      '''
     }
     config.parentContainers = [ Docker.registryTask(project, 'python') ]
     config.containerOutPath='/usr/src/app/dist'

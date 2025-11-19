@@ -6,7 +6,6 @@ import pathlib
 import platform
 
 from Cython.Build import cythonize
-
 from packaging.version import parse as parse_version
 from setuptools import Extension, find_packages, setup
 
