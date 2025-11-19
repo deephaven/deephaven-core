@@ -713,17 +713,6 @@ public class ReplicateSourcesAndChunks {
                 "    public final void fillWithBoxedValue(int offset, int size, Object value) {",
                 "        fillWithValue(offset,size, (T)value);",
                 "    }"));
-        lines = ReplicationUtils.addImport(lines,
-                "import io.deephaven.util.compare.ObjectComparisons;",
-                "import java.util.Comparator;");
-        lines = ReplicationUtils.replaceRegion(lines, "sort", Arrays.asList(
-                "    private static final Comparator<Comparable<Object>> COMPARATOR = Comparator.nullsFirst(Comparator.naturalOrder());",
-                "",
-                "    @Override",
-                "    public final void sort(int start, int length) {",
-                "        //noinspection unchecked",
-                "        Arrays.sort(data, offset + start, offset + start + length, (Comparator<? super T>) COMPARATOR);",
-                "    }"));
         FileUtils.writeLines(classFile, lines);
     }
 

@@ -100,6 +100,9 @@ public class TestChunkSort {
     }
     // endregion PermutationIterator
 
+    final static int MAX_OFFSET = 100;
+    final static int[] OFFSET_ARRAY = new int[] {0, 1, MAX_OFFSET / 2, MAX_OFFSET};
+
     // These assertions reflect sorting assumptions made by chunk sorting code. If these assertions
     // change, this code will need to be carefully audited.
     @Test
@@ -128,20 +131,59 @@ public class TestChunkSort {
         expected.add((char) 3);
         expected.add((char) (Character.MAX_VALUE - 1));
 
-        System.out.println("Exploring " + PermutationIterator.permutationCount(expected.size()) + " permutations");
-        final PermutationIterator<Character> iterator = new PermutationIterator<>(expected);
+        validateCharChunkSort(expected);
+    }
 
-        while (iterator.hasNext()) {
-            final List<Character> permutation = iterator.next();
-            try (final WritableCharChunk<Any> chunk = WritableCharChunk.makeWritableChunk(permutation.size())) {
-                chunk.setSize(0);
-                permutation.forEach(chunk::add);
-                chunk.sort();
-                TestCase.assertEquals(expected.size(), chunk.size());
-                for (int i = 0; i < expected.size(); i++) {
-                    TestCase.assertEquals(
-                            "Expected " + expected.get(i) + " but got " + chunk.get(i) + " at index " + i,
-                            (char) expected.get(i), chunk.get(i));
+    @Test
+    public void testCharChunkSortSpecialCases() {
+        final List<Character> expected = new ArrayList<>();
+
+        // Zero values
+        expected.clear();
+        validateCharChunkSort(expected);
+
+        // Single value
+        expected.clear();
+        expected.add((char) 10);
+        validateCharChunkSort(expected);
+
+        // All null
+        expected.clear();
+        expected.add(NULL_CHAR);
+        expected.add(NULL_CHAR);
+        expected.add(NULL_CHAR);
+        validateCharChunkSort(expected);
+
+        // No null
+        expected.clear();
+        expected.add((char) 0);
+        expected.add((char) 1);
+        expected.add((char) 2);
+        expected.add((char) 3);
+        validateCharChunkSort(expected);
+    }
+
+    private static void validateCharChunkSort(List<Character> expected) {
+        System.out.println("Exploring " + PermutationIterator.permutationCount(expected.size()) + " permutations");
+
+        final int setSize = expected.size();
+
+        // Reusable chunk large enough to hold any permutation plus the max offset.
+        try (final WritableCharChunk<Any> chunk = WritableCharChunk.makeWritableChunk(setSize + MAX_OFFSET)) {
+            final PermutationIterator<Character> iterator = new PermutationIterator<>(expected);
+            while (iterator.hasNext()) {
+                final List<Character> permutation = iterator.next();
+
+                for (final int offset : OFFSET_ARRAY) {
+                    chunk.setSize(offset);
+                    permutation.forEach(chunk::add);
+                    chunk.sort(offset, setSize);
+                    TestCase.assertEquals(expected.size(), chunk.size() - offset);
+                    for (int i = 0; i < expected.size(); i++) {
+                        TestCase.assertEquals(
+                                "Expected " + expected.get(i) + " but got " + chunk.get(i + offset) + " at index " + i,
+                                (char) expected.get(i), chunk.get(i + offset));
+                    }
                 }
             }
         }
@@ -159,20 +201,30 @@ public class TestChunkSort {
         expected.add((byte) (Byte.MAX_VALUE - 1));
         expected.add(Byte.MAX_VALUE);
 
-        System.out.println("Exploring " + PermutationIterator.permutationCount(expected.size()) + " permutations");
-        final PermutationIterator<Byte> iterator = new PermutationIterator<>(expected);
+        validateByteChunkSort(expected);
+    }
 
-        while (iterator.hasNext()) {
-            final List<Byte> permutation = iterator.next();
-            try (final WritableByteChunk<Any> chunk = WritableByteChunk.makeWritableChunk(permutation.size())) {
-                chunk.setSize(0);
-                permutation.forEach(chunk::add);
-                chunk.sort();
-                TestCase.assertEquals(expected.size(), chunk.size());
-                for (int i = 0; i < expected.size(); i++) {
-                    TestCase.assertEquals(
-                            "Expected " + expected.get(i) + " but got " + chunk.get(i) + " at index " + i,
-                            (byte) expected.get(i), chunk.get(i));
+    private static void validateByteChunkSort(List<Byte> expected) {
+        System.out.println("Exploring " + PermutationIterator.permutationCount(expected.size()) + " permutations");
+
+        final int setSize = expected.size();
+
+        // Reusable chunk large enough to hold any permutation plus the max offset.
+        try (final WritableByteChunk<Any> chunk = WritableByteChunk.makeWritableChunk(setSize + MAX_OFFSET)) {
+            final PermutationIterator<Byte> iterator = new PermutationIterator<>(expected);
+            while (iterator.hasNext()) {
+                final List<Byte> permutation = iterator.next();
+
+                for (final int offset : OFFSET_ARRAY) {
+                    chunk.setSize(offset);
+                    permutation.forEach(chunk::add);
+                    chunk.sort(offset, setSize);
+                    TestCase.assertEquals(expected.size(), chunk.size() - offset);
+                    for (int i = 0; i < expected.size(); i++) {
+                        TestCase.assertEquals(
+                                "Expected " + expected.get(i) + " but got " + chunk.get(i + offset) + " at index " + i,
+                                (byte) expected.get(i), chunk.get(i + offset));
+                    }
                 }
             }
         }
@@ -190,20 +242,30 @@ public class TestChunkSort {
         expected.add((short) (Short.MAX_VALUE - 1));
         expected.add(Short.MAX_VALUE);
 
-        System.out.println("Exploring " + PermutationIterator.permutationCount(expected.size()) + " permutations");
-        final PermutationIterator<Short> iterator = new PermutationIterator<>(expected);
+        validateShortChunkSort(expected);
+    }
 
-        while (iterator.hasNext()) {
-            final List<Short> permutation = iterator.next();
-            try (final WritableShortChunk<Any> chunk = WritableShortChunk.makeWritableChunk(permutation.size())) {
-                chunk.setSize(0);
-                permutation.forEach(chunk::add);
-                chunk.sort();
-                TestCase.assertEquals(expected.size(), chunk.size());
-                for (int i = 0; i < expected.size(); i++) {
-                    TestCase.assertEquals(
-                            "Expected " + expected.get(i) + " but got " + chunk.get(i) + " at index " + i,
-                            (short) expected.get(i), chunk.get(i));
+    private static void validateShortChunkSort(List<Short> expected) {
+        System.out.println("Exploring " + PermutationIterator.permutationCount(expected.size()) + " permutations");
+
+        final int setSize = expected.size();
+
+        // Reusable chunk large enough to hold any permutation plus the max offset.
+        try (final WritableShortChunk<Any> chunk = WritableShortChunk.makeWritableChunk(setSize + MAX_OFFSET)) {
+            final PermutationIterator<Short> iterator = new PermutationIterator<>(expected);
+            while (iterator.hasNext()) {
+                final List<Short> permutation = iterator.next();
+
+                for (final int offset : OFFSET_ARRAY) {
+                    chunk.setSize(offset);
+                    permutation.forEach(chunk::add);
+                    chunk.sort(offset, setSize);
+                    TestCase.assertEquals(expected.size(), chunk.size() - offset);
+                    for (int i = 0; i < expected.size(); i++) {
+                        TestCase.assertEquals(
+                                "Expected " + expected.get(i) + " but got " + chunk.get(i + offset) + " at index " + i,
+                                (short) expected.get(i), chunk.get(i + offset));
+                    }
                 }
             }
         }
@@ -221,20 +283,30 @@ public class TestChunkSort {
         expected.add(Integer.MAX_VALUE - 1);
         expected.add(Integer.MAX_VALUE);
 
-        System.out.println("Exploring " + PermutationIterator.permutationCount(expected.size()) + " permutations");
-        final PermutationIterator<Integer> iterator = new PermutationIterator<>(expected);
+        validateIntChunkSort(expected);
+    }
 
-        while (iterator.hasNext()) {
-            final List<Integer> permutation = iterator.next();
-            try (final WritableIntChunk<Any> chunk = WritableIntChunk.makeWritableChunk(permutation.size())) {
-                chunk.setSize(0);
-                permutation.forEach(chunk::add);
-                chunk.sort();
-                TestCase.assertEquals(expected.size(), chunk.size());
-                for (int i = 0; i < expected.size(); i++) {
-                    TestCase.assertEquals(
-                            "Expected " + expected.get(i) + " but got " + chunk.get(i) + " at index " + i,
-                            (int) expected.get(i), chunk.get(i));
+    private static void validateIntChunkSort(List<Integer> expected) {
+        System.out.println("Exploring " + PermutationIterator.permutationCount(expected.size()) + " permutations");
+
+        final int setSize = expected.size();
+
+        // Reusable chunk large enough to hold any permutation plus the max offset.
+        try (final WritableIntChunk<Any> chunk = WritableIntChunk.makeWritableChunk(setSize + MAX_OFFSET)) {
+            final PermutationIterator<Integer> iterator = new PermutationIterator<>(expected);
+            while (iterator.hasNext()) {
+                final List<Integer> permutation = iterator.next();
+
+                for (final int offset : OFFSET_ARRAY) {
+                    chunk.setSize(offset);
+                    permutation.forEach(chunk::add);
+                    chunk.sort(offset, setSize);
+                    TestCase.assertEquals(expected.size(), chunk.size() - offset);
+                    for (int i = 0; i < expected.size(); i++) {
+                        TestCase.assertEquals(
+                                "Expected " + expected.get(i) + " but got " + chunk.get(i + offset) + " at index " + i,
+                                (int) expected.get(i), chunk.get(i + offset));
+                    }
                 }
             }
         }
@@ -252,20 +324,30 @@ public class TestChunkSort {
         expected.add(Long.MAX_VALUE - 1);
         expected.add(Long.MAX_VALUE);
 
-        System.out.println("Exploring " + PermutationIterator.permutationCount(expected.size()) + " permutations");
-        final PermutationIterator<Long> iterator = new PermutationIterator<>(expected);
+        validateLongChunkSort(expected);
+    }
 
-        while (iterator.hasNext()) {
-            final List<Long> permutation = iterator.next();
-            try (final WritableLongChunk<Any> chunk = WritableLongChunk.makeWritableChunk(permutation.size())) {
-                chunk.setSize(0);
-                permutation.forEach(chunk::add);
-                chunk.sort();
-                TestCase.assertEquals(expected.size(), chunk.size());
-                for (int i = 0; i < expected.size(); i++) {
-                    TestCase.assertEquals(
-                            "Expected " + expected.get(i) + " but got " + chunk.get(i) + " at index " + i,
-                            (long) expected.get(i), chunk.get(i));
+    private static void validateLongChunkSort(List<Long> expected) {
+        System.out.println("Exploring " + PermutationIterator.permutationCount(expected.size()) + " permutations");
+
+        final int setSize = expected.size();
+
+        // Reusable chunk large enough to hold any permutation plus the max offset.
+        try (final WritableLongChunk<Any> chunk = WritableLongChunk.makeWritableChunk(setSize + MAX_OFFSET)) {
+            final PermutationIterator<Long> iterator = new PermutationIterator<>(expected);
+            while (iterator.hasNext()) {
+                final List<Long> permutation = iterator.next();
+
+                for (final int offset : OFFSET_ARRAY) {
+                    chunk.setSize(offset);
+                    permutation.forEach(chunk::add);
+                    chunk.sort(offset, setSize);
+                    TestCase.assertEquals(expected.size(), chunk.size() - offset);
+                    for (int i = 0; i < expected.size(); i++) {
+                        TestCase.assertEquals(
+                                "Expected " + expected.get(i) + " but got " + chunk.get(i + offset) + " at index " + i,
+                                (long) expected.get(i), chunk.get(i + offset));
+                    }
                 }
             }
         }
@@ -286,21 +368,74 @@ public class TestChunkSort {
         expected.add(Float.POSITIVE_INFINITY);
         expected.add(Float.NaN);
 
-        System.out.println("Exploring " + PermutationIterator.permutationCount(expected.size()) + " permutations");
-        final PermutationIterator<Float> iterator = new PermutationIterator<>(expected);
+        validateFloatChunkSort(expected);
+    }
 
-        while (iterator.hasNext()) {
-            final List<Float> permutation = iterator.next();
-            try (final WritableFloatChunk<Any> chunk = WritableFloatChunk.makeWritableChunk(permutation.size())) {
-                chunk.setSize(0);
-                permutation.forEach(chunk::add);
-                chunk.sort();
-                TestCase.assertEquals(expected.size(), chunk.size());
-                for (int i = 0; i < expected.size(); i++) {
-                    if (Float.isNaN(expected.get(i))) {
-                        TestCase.assertTrue(Float.isNaN(chunk.get(i)));
-                    } else if (expected.get(i) != chunk.get(i)) {
-                        TestCase.fail("Expected " + expected.get(i) + " but got " + chunk.get(i) + " at index " + i);
+    @Test
+    public void testFloatChunkSortSpecialCases() {
+        final List<Float> expected = new ArrayList<>();
+
+        // Zero values
+        expected.clear();
+        validateFloatChunkSort(expected);
+
+        // Single value
+        expected.clear();
+        expected.add(10.0f);
+        validateFloatChunkSort(expected);
+
+        // No negative infinity
+        expected.clear();
+        expected.add(NULL_FLOAT);
+        expected.add(1.0f);
+        expected.add(2.0f);
+        expected.add(3.0f);
+        expected.add(Float.POSITIVE_INFINITY);
+        expected.add(Float.NaN);
+        validateFloatChunkSort(expected);
+
+        // No NULL_FLOAT
+        expected.clear();
+        expected.add(Float.NEGATIVE_INFINITY);
+        expected.add(1.0f);
+        expected.add(2.0f);
+        expected.add(3.0f);
+        expected.add(Float.POSITIVE_INFINITY);
+        expected.add(Float.NaN);
+        validateFloatChunkSort(expected);
+
+        // Only NULL_FLOAT, negative infinity
+        expected.clear();
+        expected.add(NULL_FLOAT);
+        expected.add(NULL_FLOAT);
+        expected.add(Float.NEGATIVE_INFINITY);
+        expected.add(Float.NEGATIVE_INFINITY);
+        validateFloatChunkSort(expected);
+    }
+
+    private static void validateFloatChunkSort(List<Float> expected) {
+        System.out.println("Exploring " + PermutationIterator.permutationCount(expected.size()) + " permutations");
+
+        final int setSize = expected.size();
+
+        // Reusable chunk large enough to hold any permutation plus the max offset.
+        try (final WritableFloatChunk<Any> chunk = WritableFloatChunk.makeWritableChunk(setSize + MAX_OFFSET)) {
+            final PermutationIterator<Float> iterator = new PermutationIterator<>(expected);
+            while (iterator.hasNext()) {
+                final List<Float> permutation = iterator.next();
+
+                for (final int offset : OFFSET_ARRAY) {
+                    chunk.setSize(offset);
+                    permutation.forEach(chunk::add);
+                    chunk.sort(offset, setSize);
+                    TestCase.assertEquals(expected.size(), chunk.size() - offset);
+                    for (int i = 0; i < expected.size(); i++) {
+                        if (Float.isNaN(expected.get(i))) {
+                            TestCase.assertTrue(Float.isNaN(chunk.get(i + offset)));
+                        } else if (expected.get(i) != chunk.get(i + offset)) {
+                            TestCase.fail("Expected " + expected.get(i) + " but got " + chunk.get(i + offset)
+                                    + " at index " + i);
+                        }
                     }
                 }
             }
@@ -322,23 +457,74 @@ public class TestChunkSort {
         expected.add(Double.POSITIVE_INFINITY);
         expected.add(Double.NaN);
 
-        System.out.println("Exploring " + PermutationIterator.permutationCount(expected.size()) + " permutations");
-        final PermutationIterator<Double> iterator = new PermutationIterator<>(expected);
+        validateDoubleChunkSort(expected);
+    }
 
-        while (iterator.hasNext()) {
-            final List<Double> permutation = iterator.next();
-            try (final WritableDoubleChunk<Any> chunk = WritableDoubleChunk.makeWritableChunk(permutation.size())) {
-                chunk.setSize(0);
-                permutation.forEach(chunk::add);
-                chunk.sort();
-                TestCase.assertEquals(expected.size(), chunk.size());
-                for (int i = 0; i < expected.size(); i++) {
-                    if (Double.isNaN(expected.get(i))) {
-                        TestCase.assertTrue(Double.isNaN(chunk.get(i)));
-                    } else {
-                        TestCase.assertEquals(
-                                "Expected " + expected.get(i) + " but got " + chunk.get(i) + " at index " + i,
-                                (double) expected.get(i), chunk.get(i));
+    @Test
+    public void testDoubleChunkSortSpecialCases() {
+        final List<Double> expected = new ArrayList<>();
+
+        // Zero values
+        expected.clear();
+        validateDoubleChunkSort(expected);
+
+        // Single value
+        expected.clear();
+        expected.add(10.0);
+        validateDoubleChunkSort(expected);
+
+        // No negative infinity
+        expected.clear();
+        expected.add(NULL_DOUBLE);
+        expected.add(1.0);
+        expected.add(2.0);
+        expected.add(3.0);
+        expected.add(Double.POSITIVE_INFINITY);
+        expected.add(Double.NaN);
+        validateDoubleChunkSort(expected);
+
+        // No NULL_DOUBLE
+        expected.clear();
+        expected.add(Double.NEGATIVE_INFINITY);
+        expected.add(1.0);
+        expected.add(2.0);
+        expected.add(3.0);
+        expected.add(Double.POSITIVE_INFINITY);
+        expected.add(Double.NaN);
+        validateDoubleChunkSort(expected);
+
+        // Only NULL_DOUBLE, negative infinity
+        expected.clear();
+        expected.add(NULL_DOUBLE);
+        expected.add(NULL_DOUBLE);
+        expected.add(Double.NEGATIVE_INFINITY);
+        expected.add(Double.NEGATIVE_INFINITY);
+        validateDoubleChunkSort(expected);
+    }
+
+    private static void validateDoubleChunkSort(List<Double> expected) {
+        System.out.println("Exploring " + PermutationIterator.permutationCount(expected.size()) + " permutations");
+
+        final int setSize = expected.size();
+
+        // Reusable chunk large enough to hold any permutation plus the max offset.
+        try (final WritableDoubleChunk<Any> chunk = WritableDoubleChunk.makeWritableChunk(setSize + MAX_OFFSET)) {
+            final PermutationIterator<Double> iterator = new PermutationIterator<>(expected);
+            while (iterator.hasNext()) {
+                final List<Double> permutation = iterator.next();
+
+                for (final int offset : OFFSET_ARRAY) {
+                    chunk.setSize(offset);
+                    permutation.forEach(chunk::add);
+                    chunk.sort(offset, setSize);
+                    TestCase.assertEquals(expected.size(), chunk.size() - offset);
+                    for (int i = 0; i < expected.size(); i++) {
+                        if (Double.isNaN(expected.get(i))) {
+                            TestCase.assertTrue(Double.isNaN(chunk.get(i + offset)));
+                        } else if (expected.get(i) != chunk.get(i + offset)) {
+                            TestCase.fail("Expected " + expected.get(i) + " but got " + chunk.get(i + offset)
+                                    + " at index " + i);
+                        }
                     }
                 }
             }
@@ -357,21 +543,31 @@ public class TestChunkSort {
         expected.add("aaaa");
         expected.add("bbbb");
 
-        System.out.println("Exploring " + PermutationIterator.permutationCount(expected.size()) + " permutations");
-        final PermutationIterator<String> iterator = new PermutationIterator<>(expected);
+        validateStringChunkSort(expected);
+    }
 
-        while (iterator.hasNext()) {
-            final List<String> permutation = iterator.next();
-            try (final WritableObjectChunk<String, ? extends Any> chunk =
-                    WritableObjectChunk.makeWritableChunk(permutation.size())) {
-                chunk.setSize(0);
-                permutation.forEach(chunk::add);
-                chunk.sort();
-                TestCase.assertEquals(expected.size(), chunk.size());
-                for (int i = 0; i < expected.size(); i++) {
-                    TestCase.assertEquals(
-                            "Expected " + expected.get(i) + " but got " + chunk.get(i) + " at index " + i,
-                            expected.get(i), chunk.get(i));
+    private static void validateStringChunkSort(List<String> expected) {
+        System.out.println("Exploring " + PermutationIterator.permutationCount(expected.size()) + " permutations");
+
+        final int setSize = expected.size();
+
+        // Reusable chunk large enough to hold any permutation plus the max offset.
+        try (final WritableObjectChunk<String, Any> chunk =
+                WritableObjectChunk.makeWritableChunk(setSize + MAX_OFFSET)) {
+            final PermutationIterator<String> iterator = new PermutationIterator<>(expected);
+            while (iterator.hasNext()) {
+                final List<String> permutation = iterator.next();
+
+                for (final int offset : OFFSET_ARRAY) {
+                    chunk.setSize(offset);
+                    permutation.forEach(chunk::add);
+                    chunk.sort(offset, setSize);
+                    TestCase.assertEquals(expected.size(), chunk.size() - offset);
+                    for (int i = 0; i < expected.size(); i++) {
+                        TestCase.assertEquals(
+                                "Expected " + expected.get(i) + " but got " + chunk.get(i + offset) + " at index " + i,
+                                expected.get(i), chunk.get(i + offset));
+                    }
                 }
             }
         }
@@ -390,21 +586,31 @@ public class TestChunkSort {
         expected.add(BigInteger.valueOf(Long.MAX_VALUE));
         expected.add(BigInteger.valueOf(Long.MAX_VALUE).add(BigInteger.ONE));
 
-        System.out.println("Exploring " + PermutationIterator.permutationCount(expected.size()) + " permutations");
-        final PermutationIterator<BigInteger> iterator = new PermutationIterator<>(expected);
+        validateBigIntegerChunkSort(expected);
+    }
 
-        while (iterator.hasNext()) {
-            final List<BigInteger> permutation = iterator.next();
-            try (final WritableObjectChunk<BigInteger, ? extends Any> chunk =
-                    WritableObjectChunk.makeWritableChunk(permutation.size())) {
-                chunk.setSize(0);
-                permutation.forEach(chunk::add);
-                chunk.sort();
-                TestCase.assertEquals(expected.size(), chunk.size());
-                for (int i = 0; i < expected.size(); i++) {
-                    TestCase.assertEquals(
-                            "Expected " + expected.get(i) + " but got " + chunk.get(i) + " at index " + i,
-                            expected.get(i), chunk.get(i));
+    private static void validateBigIntegerChunkSort(List<BigInteger> expected) {
+        System.out.println("Exploring " + PermutationIterator.permutationCount(expected.size()) + " permutations");
+
+        final int setSize = expected.size();
+
+        // Reusable chunk large enough to hold any permutation plus the max offset.
+        try (final WritableObjectChunk<BigInteger, Any> chunk =
+                WritableObjectChunk.makeWritableChunk(setSize + MAX_OFFSET)) {
+            final PermutationIterator<BigInteger> iterator = new PermutationIterator<>(expected);
+            while (iterator.hasNext()) {
+                final List<BigInteger> permutation = iterator.next();
+
+                for (final int offset : OFFSET_ARRAY) {
+                    chunk.setSize(offset);
+                    permutation.forEach(chunk::add);
+                    chunk.sort(offset, setSize);
+                    TestCase.assertEquals(expected.size(), chunk.size() - offset);
+                    for (int i = 0; i < expected.size(); i++) {
+                        TestCase.assertEquals(
+                                "Expected " + expected.get(i) + " but got " + chunk.get(i + offset) + " at index " + i,
+                                expected.get(i), chunk.get(i + offset));
+                    }
                 }
             }
         }
@@ -423,21 +629,31 @@ public class TestChunkSort {
         expected.add(new BigDecimal("1E+10"));
         expected.add(new BigDecimal("1E+1000"));
 
-        System.out.println("Exploring " + PermutationIterator.permutationCount(expected.size()) + " permutations");
-        final PermutationIterator<java.math.BigDecimal> iterator = new PermutationIterator<>(expected);
+        validateBigDecimalChunkSort(expected);
+    }
 
-        while (iterator.hasNext()) {
-            final List<java.math.BigDecimal> permutation = iterator.next();
-            try (final WritableObjectChunk<java.math.BigDecimal, ? extends Any> chunk =
-                    WritableObjectChunk.makeWritableChunk(permutation.size())) {
-                chunk.setSize(0);
-                permutation.forEach(chunk::add);
-                chunk.sort();
-                TestCase.assertEquals(expected.size(), chunk.size());
-                for (int i = 0; i < expected.size(); i++) {
-                    TestCase.assertEquals(
-                            "Expected " + expected.get(i) + " but got " + chunk.get(i) + " at index " + i,
-                            expected.get(i), chunk.get(i));
+    private static void validateBigDecimalChunkSort(List<BigDecimal> expected) {
+        System.out.println("Exploring " + PermutationIterator.permutationCount(expected.size()) + " permutations");
+
+        final int setSize = expected.size();
+
+        // Reusable chunk large enough to hold any permutation plus the max offset.
+        try (final WritableObjectChunk<BigDecimal, Any> chunk =
+                WritableObjectChunk.makeWritableChunk(setSize + MAX_OFFSET)) {
+            final PermutationIterator<BigDecimal> iterator = new PermutationIterator<>(expected);
+            while (iterator.hasNext()) {
+                final List<BigDecimal> permutation = iterator.next();
+
+                for (final int offset : OFFSET_ARRAY) {
+                    chunk.setSize(offset);
+                    permutation.forEach(chunk::add);
+                    chunk.sort(offset, setSize);
+                    TestCase.assertEquals(expected.size(), chunk.size() - offset);
+                    for (int i = 0; i < expected.size(); i++) {
+                        TestCase.assertEquals(
+                                "Expected " + expected.get(i) + " but got " + chunk.get(i + offset) + " at index " + i,
+                                expected.get(i), chunk.get(i + offset));
+                    }
                 }
             }
         }

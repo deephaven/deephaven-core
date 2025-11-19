@@ -4075,12 +4075,19 @@ public class QueryTableAggregationTest {
 
         final ExecutionContext executionContext = ExecutionContext.makeExecutionContext(true);
         ThreadPoolExecutor executor = (ThreadPoolExecutor) Executors.newFixedThreadPool(1);
-        executor.submit(() -> {
+
+        // This consistently resulted in an infinite loop prior to the fix for the issue.
+        final Table result = executor.submit(() -> {
             try (final SafeCloseable ignored = executionContext.open()) {
                 // This might trigger an infinite loop in DoubleSegmentedSortedMultiSet
                 return merged.aggBy(AggCountDistinct(true, "CountDistinctWithNulls=X"));
             }
         }).get(10, TimeUnit.SECONDS);
+
+        final Table expected = newTable(
+                longCol("CountDistinctWithNulls", 5));
+
+        assertTableEquals(expected, result);
     }
 
     private void diskBackedTestHarness(Consumer<Table> testFunction) throws IOException {

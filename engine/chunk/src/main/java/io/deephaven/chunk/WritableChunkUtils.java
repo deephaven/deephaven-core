@@ -56,24 +56,24 @@ final class WritableChunkUtils {
     }
 
     public static void sort(float[] data, int fromIndexInclusive, int toIndexExclusive) {
+        if (toIndexExclusive - fromIndexInclusive <= 1) {
+            // size 0 or 1, already sorted
+            return;
+        }
         Arrays.sort(data, fromIndexInclusive, toIndexExclusive);
         // We need to fix up null (-Float.MAX_VALUE) vs -Infinity, which we know will be at the beginning of the
         // slice
         // [ -Inf * m, NULL_FLOAT * n, ...]
         // ->
         // [ NULL_FLOAT * n, -Inf * m, ...]
-        if (toIndexExclusive - fromIndexInclusive <= 1) {
-            // size 0 or 1, already sorted
-            return;
-        }
         if (data[fromIndexInclusive] != Float.NEGATIVE_INFINITY) {
             // Only chance that NULL_FLOAT is mis-sorted is when -Infinity is present, and we know that only happens
             // when it's in the first position
             return;
         }
-        // We can start with fromIndexInclusive + 1 because we know that data[fromIndexInclusive] is not NULL_FLOAT
+        // We can start with fromIndexInclusive + 1 because we know that data[fromIndexInclusive] is NEGATIVE_INFINITY
         final int beginNullIdx = lowerBound(data, fromIndexInclusive + 1, toIndexExclusive, NULL_FLOAT);
-        if (beginNullIdx == toIndexExclusive || data[beginNullIdx] != NULL_FLOAT) {
+        if (data[beginNullIdx] != NULL_FLOAT) {
             // No NULL_FLOAT
             return;
         }
@@ -93,24 +93,24 @@ final class WritableChunkUtils {
     }
 
     public static void sort(double[] data, int fromIndexInclusive, int toIndexExclusive) {
+        if (toIndexExclusive - fromIndexInclusive <= 1) {
+            // size 0 or 1, already sorted
+            return;
+        }
         Arrays.sort(data, fromIndexInclusive, toIndexExclusive);
         // We need to fix up null (-Double.MAX_VALUE) vs -Infinity, which we know will be at the beginning of the
         // slice
         // [ -Inf * m, NULL_DOUBLE * n, ...]
         // ->
         // [ NULL_DOUBLE * n, -Inf * m, ...]
-        if (toIndexExclusive - fromIndexInclusive <= 1) {
-            // size 0 or 1, already sorted
-            return;
-        }
         if (data[fromIndexInclusive] != Double.NEGATIVE_INFINITY) {
             // Only chance that NULL_DOUBLE is mis-sorted is when -Infinity is present, and we know that only happens
             // when it's in the first position
             return;
         }
-        // We can start with fromIndexInclusive + 1 because we know that data[fromIndexInclusive] is not NULL_DOUBLE
+        // We can start with fromIndexInclusive + 1 because we know that data[fromIndexInclusive] is NEGATIVE_INFINITY
         final int beginNullIdx = lowerBound(data, fromIndexInclusive + 1, toIndexExclusive, NULL_DOUBLE);
-        if (beginNullIdx == toIndexExclusive || data[beginNullIdx] != NULL_DOUBLE) {
+        if (data[beginNullIdx] != NULL_DOUBLE) {
             // No NULL_DOUBLE
             return;
         }
@@ -136,7 +136,7 @@ final class WritableChunkUtils {
     }
 
     /**
-     * @return the smallest i in [begin, end) where a[i] >= key, or end if no such element
+     * @return the smallest i in [begin, end) where a[i] >= key
      */
     private static int lowerBound(char[] a, int begin, int end, char key) {
         while (begin < end) {
@@ -151,7 +151,8 @@ final class WritableChunkUtils {
     }
 
     /**
-     * @return the smallest i in [begin, end) where a[i] >= key, or end if no such element
+     * @return the smallest i in [begin, end) where a[i] >= key. Uses {@link Float#compare(float, float)} because this
+     *         assumes {@code a} was sorted by {@link Arrays#sort(float[])}.
      */
     private static int lowerBound(float[] a, int begin, int end, float key) {
         while (begin < end) {
@@ -166,7 +167,8 @@ final class WritableChunkUtils {
     }
 
     /**
-     * @return the smallest i in [begin, end) where a[i] > key, or end if no such element
+     * @return the smallest i in [begin, end) where a[i] > key. Uses {@link Float#compare(float, float)} because this
+     *         assumes {@code a} was sorted by {@link Arrays#sort(float[])}.
      */
     private static int upperBound(float[] a, int begin, int end, float key) {
         while (begin < end) {
@@ -181,7 +183,8 @@ final class WritableChunkUtils {
     }
 
     /**
-     * @return the smallest i in [begin, end) where a[i] >= key, or end if no such element
+     * @return the smallest i in [begin, end) where a[i] >= key. Uses {@link Double#compare(double, double)} because
+     *         this assumes {@code a} was sorted by {@link Arrays#sort(double[])}.
      */
     private static int lowerBound(double[] a, int begin, int end, double key) {
         while (begin < end) {
@@ -196,7 +199,8 @@ final class WritableChunkUtils {
     }
 
     /**
-     * @return the smallest i in [begin, end) where a[i] > key, or end if no such element
+     * @return the smallest i in [begin, end) where a[i] > key. Uses {@link Double#compare(double, double)} because this
+     *         assumes {@code a} was sorted by {@link Arrays#sort(double[])}.
      */
     private static int upperBound(double[] a, int begin, int end, double key) {
         while (begin < end) {

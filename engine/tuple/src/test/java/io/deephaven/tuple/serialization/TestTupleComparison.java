@@ -9,6 +9,9 @@ import junit.framework.TestCase;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import java.util.Arrays;
+import java.util.Random;
+
 import static io.deephaven.util.QueryConstants.*;
 
 public class TestTupleComparison {
@@ -522,5 +525,68 @@ public class TestTupleComparison {
         TestCase.assertEquals(0, posZeroTuple.compareTo(new ArrayTuple(0, 0.0)));
         TestCase.assertTrue(posZeroTuple.equals(new ArrayTuple(0, -0.0))); // special case
         TestCase.assertEquals(0, posZeroTuple.compareTo(new ArrayTuple(0, -0.0))); // special case
+    }
+
+    private static Object[] randomizedCopy(final Object[] array, final long seed) {
+        final Object[] result = array.clone();
+        final Random random = new Random(seed);
+
+        // Iterate from the last element down to the second element
+        for (int i = result.length - 1; i > 0; i--) {
+            int j = random.nextInt(i + 1);
+
+            // Swap the element at index 'i' with the element at index 'j'
+            Object temp = result[i];
+            result[i] = result[j];
+            result[j] = temp;
+        }
+        return result;
+    }
+
+    @Test
+    public void testLexicographicalOrderSize2() {
+        final Object[] expected = new Object[] {
+                new IntByteTuple(0, (byte) 0),
+                new IntByteTuple(0, (byte) 1),
+                new IntByteTuple(0, (byte) 2),
+                new IntByteTuple(1, (byte) 0),
+                new IntByteTuple(1, (byte) 1),
+                new IntByteTuple(1, (byte) 2),
+                new IntByteTuple(2, (byte) 0),
+                new IntByteTuple(2, (byte) 1),
+                new IntByteTuple(2, (byte) 2)
+        };
+
+        // Test a few random orderings to ensure that lexicographical order is restored.
+        for (final long seed : new long[] {0L, 0xDEADBEEFL, 0xBADDCAFEL, 0xFEEDFACEL, 0xCAFEBABEL}) {
+            final Object[] toSort = randomizedCopy(expected, seed);
+            Arrays.sort(toSort);
+            TestCase.assertEquals("Failed with seed " + seed,
+                    Arrays.asList(expected),
+                    Arrays.asList(toSort));
+        }
+    }
+
+    @Test
+    public void testLexicographicalOrderSize3() {
+        final Object[] expected = new Object[] {
+                new IntByteShortTuple(0, (byte) 0, (short) 0),
+                new IntByteShortTuple(0, (byte) 0, (short) 1),
+                new IntByteShortTuple(0, (byte) 1, (short) 0),
+                new IntByteShortTuple(0, (byte) 1, (short) 1),
+                new IntByteShortTuple(1, (byte) 0, (short) 0),
+                new IntByteShortTuple(1, (byte) 0, (short) 1),
+                new IntByteShortTuple(1, (byte) 1, (short) 0),
+                new IntByteShortTuple(1, (byte) 1, (short) 1)
+        };
+
+        // Test a few random orderings to ensure that lexicographical order is restored.
+        for (final long seed : new long[] {0L, 0xDEADBEEFL, 0xBADDCAFEL, 0xFEEDFACEL, 0xCAFEBABEL}) {
+            final Object[] toSort = randomizedCopy(expected, seed);
+            Arrays.sort(toSort);
+            TestCase.assertEquals("Failed with seed " + seed,
+                    Arrays.asList(expected),
+                    Arrays.asList(toSort));
+        }
     }
 }
