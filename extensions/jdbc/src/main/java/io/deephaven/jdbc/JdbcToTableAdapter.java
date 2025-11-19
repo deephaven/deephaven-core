@@ -39,6 +39,8 @@ import java.util.Set;
 import java.util.TimeZone;
 import java.util.function.Function;
 
+import static io.deephaven.jdbc.JdbcReadInstructions.NO_ROW_LIMIT;
+
 /**
  * The JdbcToTableAdapter class provides a simple interface to convert a Java Database Connectivity (JDBC)
  * {@link ResultSet} to a Deephaven {@link Table}.
@@ -60,37 +62,71 @@ import java.util.function.Function;
  * </pre>
  * <p/>
  * <p>
- * There are several options than can be set to change the behavior of the ingestion. Provide the customized options
- * object to {@link JdbcToTableAdapter#readJdbc(ResultSet, ReadJdbcOptions, String...)} like this:
+ * There are several options that can be set to change the behavior of the ingestion. Provide the customized
+ * instructions object to {@link JdbcToTableAdapter#readJdbc(ResultSet, JdbcReadInstructions, String...)} like this:
  *
  * <pre>
- * JdbcToTableAdapter.ReadJdbcOptions options = JdbcToTableAdapter.readJdbcOptions();
- * Table resultTable = JdbcToTableAdapter.readJdbc(resultSet, options);
+ * JdbcReadInstructions instructions = JdbcReadInstructions.builder()
+ *         .maxRows(1000)
+ *         .strict(false)
+ *         .build();
+ * Table resultTable = JdbcToTableAdapter.readJdbc(resultSet, instructions);
  * </pre>
  * <p>
  * There are many supported mappings from JDBC type to Deephaven type. The default can be overridden by specifying the
- * desired result type in the options. For example, convert BigDecimal to double on 'MyCol' via
- * {@code options.columnTargetType("MyCol", double.class)}.
+ * desired result type in the instructions. For example, convert BigDecimal to double on 'MyCol' via
+ * {@code instructions = JdbcReadInstructions.builder().putTargetTypeMap("MyCol", double.class).build()}.
  */
 public class JdbcToTableAdapter {
 
     /**
      * String formatting styles for use when standardizing externally supplied column names. Casing of the enum members
      * indicates the resultant format. None means no change to the casing of the source string.
+     *
+     * @deprecated Use {@link io.deephaven.jdbc.CasingStyle} instead. This enum is maintained for backward compatibility
+     *             only and will be removed in a future release.
      */
+    @Deprecated(forRemoval = true)
     public enum CasingStyle {
-        UpperCamel, lowerCamel, UPPERCASE, lowercase, None
+        /**
+         * UpperCamelCase (e.g., "MyColumnName")
+         */
+        UpperCamel,
+
+        /**
+         * lowerCamelCase (e.g., "myColumnName")
+         */
+        lowerCamel,
+
+        /**
+         * UPPERCASE (e.g., "MY_COLUMN_NAME")
+         */
+        UPPERCASE,
+
+        /**
+         * lowercase (e.g., "my_column_name")
+         */
+        lowercase,
+
+        /**
+         * No change to casing
+         */
+        None
     }
 
     /**
      * Options applicable when reading JDBC data into a Deephaven in-memory table. Designed to constructed in a "fluent"
      * manner, with defaults applied if not specified by the user.
+     *
+     * @deprecated Use {@link JdbcReadInstructions} and its builder instead. This class is maintained for backward
+     *             compatibility only and will be removed in a future release.
      */
+    @Deprecated(forRemoval = true)
     @SuppressWarnings("UnusedReturnValue")
     public static class ReadJdbcOptions {
-        private CasingStyle casingStyle = null;
+        private CasingStyle casingStyle = CasingStyle.None;
         private String replacement = "_";
-        private int maxRows = -1;
+        private int maxRows = NO_ROW_LIMIT;
         private boolean strict = true;
         private TimeZone sourceTimeZone = TimeZone.getTimeZone(DateTimeUtils.timeZone());
         private String arrayDelimiter = ",";
@@ -176,23 +212,115 @@ public class JdbcToTableAdapter {
             targetTypeMap.put(columnName, targetType);
             return this;
         }
+
+        /**
+         * @return the casing style for column names
+         */
+        public CasingStyle getColumnNameCasingStyle() {
+            return casingStyle;
+        }
+
+        /**
+         * @return the replacement string for invalid characters in column names
+         */
+        public String getColumnNameInvalidCharacterReplacement() {
+            return replacement;
+        }
+
+        /**
+         * @return the maximum number of rows to read, or {@link JdbcReadInstructions#NO_ROW_LIMIT} for no limit
+         */
+        public int getMaxRows() {
+            return maxRows;
+        }
+
+        /**
+         * @return whether strict mode is enabled
+         */
+        public boolean isStrict() {
+            return strict;
+        }
+
+        /**
+         * @return the source time zone for date/time columns
+         */
+        public TimeZone getSourceTimeZone() {
+            return sourceTimeZone;
+        }
+
+        /**
+         * @return the delimiter for array columns
+         */
+        public String getArrayDelimiter() {
+            return arrayDelimiter;
+        }
+
+        /**
+         * @return the target type map for columns
+         */
+        public Map<String, Class<?>> getColumnTargetTypes() {
+            return new HashMap<>(targetTypeMap);
+        }
+
+        /**
+         * Convert this ReadJdbcOptions to a JdbcReadInstructions instance.
+         * 
+         * @return an immutable JdbcReadInstructions with the same settings
+         * @deprecated Use JdbcReadInstructions and its builder directly.
+         */
+        @Deprecated
+        public JdbcReadInstructions toInstructions() {
+            return JdbcReadInstructions.builder()
+                    .columnNameCasingStyle(convertCasingStyle(getColumnNameCasingStyle()))
+                    .columnNameInvalidCharacterReplacement(getColumnNameInvalidCharacterReplacement())
+                    .maxRows(getMaxRows())
+                    .strict(isStrict())
+                    .sourceTimeZone(getSourceTimeZone().toZoneId())
+                    .arrayDelimiter(getArrayDelimiter())
+                    .putAllColumnTargetTypes(getColumnTargetTypes())
+                    .build();
+        }
+
+        private static io.deephaven.jdbc.CasingStyle convertCasingStyle(CasingStyle style) {
+            if (style == null) {
+                return null;
+            }
+            switch (style) {
+                case UpperCamel:
+                    return io.deephaven.jdbc.CasingStyle.UpperCamel;
+                case lowerCamel:
+                    return io.deephaven.jdbc.CasingStyle.lowerCamel;
+                case UPPERCASE:
+                    return io.deephaven.jdbc.CasingStyle.UPPERCASE;
+                case lowercase:
+                    return io.deephaven.jdbc.CasingStyle.lowercase;
+                case None:
+                    return io.deephaven.jdbc.CasingStyle.None;
+                default:
+                    throw new IllegalArgumentException("Unknown CasingStyle: " + style);
+            }
+        }
     }
 
     /**
      * Returns a new options object that the user can use to customize a readJdbc operation.
      *
      * @return a new ReadJdbcOptions object
+     * @deprecated Use {@link JdbcReadInstructions#builder()} instead. This method is maintained for backward
+     *             compatibility only and will be removed in a future release.
      */
+    @Deprecated(forRemoval = true)
     public static ReadJdbcOptions readJdbcOptions() {
         return new ReadJdbcOptions();
     }
 
     /**
      * A factory to produce a {@link RowSink} that will consume rows from a {@link ResultSet} as driven by
-     * {@link #readJdbc(ResultSet, ReadJdbcOptions, RowSinkFactory)} and produce a result of type {@code RESULT_TYPE}.
+     * {@link #readJdbc(ResultSet, JdbcReadInstructions, RowSinkFactory)} and produce a result of type
+     * {@code RESULT_TYPE}.
      *
      * @param <RESULT_TYPE> The result type produced by {@link RowSink row sinks}
-     *        {@link #make(ResultSet, int, ReadJdbcOptions) made} by this factory
+     *        {@link #make(ResultSet, int, JdbcReadInstructions) made} by this factory
      */
     public interface RowSinkFactory<RESULT_TYPE> {
         /**
@@ -200,7 +328,7 @@ public class JdbcToTableAdapter {
          *
          * @param resultSet The {@link ResultSet} that will be consumed
          * @param numRows The number of rows expected to be consumed, 0 if the number is unknown
-         * @param options {@link ReadJdbcOptions} that should apply to the returned sink and its result
+         * @param instructions {@link JdbcReadInstructions} that should apply to the returned sink and its result
          * @return The {@link RowSink} to be used to consume {@code resultSet}
          * @throws SQLException If the RowSinkFactory encountered a {@link SQLException} while interacting with the
          *         {@link ResultSet}
@@ -208,7 +336,7 @@ public class JdbcToTableAdapter {
         RowSink<RESULT_TYPE> make(
                 @NotNull ResultSet resultSet,
                 int numRows,
-                @NotNull ReadJdbcOptions options)
+                @NotNull JdbcReadInstructions instructions)
                 throws SQLException;
     }
 
@@ -243,7 +371,7 @@ public class JdbcToTableAdapter {
      * return.
      *
      * @param resultSet The {@link ResultSet} that will be consumed
-     * @param options {@link ReadJdbcOptions} that should apply to the returned sink and its result
+     * @param instructions {@link JdbcReadInstructions} that should apply to the returned sink and its result
      * @param rowSinkFactory The {@link RowSinkFactory} to be used to consume {@code resultSet}
      * @return The {@link RowSink#result() result}
      * @throws SQLException If a {@link SQLException} was encountered while interacting with the {@link ResultSet}
@@ -251,17 +379,17 @@ public class JdbcToTableAdapter {
      */
     public static <RESULT_TYPE> RESULT_TYPE readJdbc(
             @NotNull final ResultSet resultSet,
-            final ReadJdbcOptions options,
+            final JdbcReadInstructions instructions,
             @NotNull final RowSinkFactory<RESULT_TYPE> rowSinkFactory) throws SQLException {
         // Note: JDBC result set cardinality is limited to Integer.MAX_VALUE
-        final int maxRows = options.maxRows;
+        final int maxRows = instructions.maxRows();
         final int numRows = maxRows < 0
                 ? getExpectedSize(resultSet)
                 : Math.min(maxRows, getExpectedSize(resultSet));
 
-        try (final RowSink<RESULT_TYPE> rowSink = rowSinkFactory.make(resultSet, numRows, options)) {
+        try (final RowSink<RESULT_TYPE> rowSink = rowSinkFactory.make(resultSet, numRows, instructions)) {
             int numRowsConsumed = 0;
-            while (resultSet.next() && (maxRows == -1 || numRowsConsumed < maxRows)) {
+            while (resultSet.next() && (maxRows == NO_ROW_LIMIT || numRowsConsumed < maxRows)) {
                 rowSink.consumeRow();
                 ++numRowsConsumed;
             }
@@ -286,7 +414,7 @@ public class JdbcToTableAdapter {
         private TableRowSink(
                 @NotNull final ResultSet resultSet,
                 final int numRows,
-                @NotNull final ReadJdbcOptions options,
+                @NotNull final JdbcReadInstructions instructions,
                 @Nullable final Function<String, String> resultSetColumnNameToTableColumnName,
                 @NotNull String... resultSetColumnNames) throws SQLException {
             this.resultSet = resultSet;
@@ -303,7 +431,7 @@ public class JdbcToTableAdapter {
             final int numColumns = resultSetColumnNames.length;
             final String[] columnNames;
             if (resultSetColumnNameToTableColumnName == null) {
-                columnNames = fixColumnNames(options, resultSetColumnNames);
+                columnNames = fixColumnNames(instructions, resultSetColumnNames);
             } else {
                 columnNames = Arrays.stream(resultSetColumnNames)
                         .map(resultSetColumnNameToTableColumnName)
@@ -316,7 +444,7 @@ public class JdbcToTableAdapter {
                 for (int ci = 0; ci < numColumns; ++ci) {
                     final int columnIndex = resultSet.findColumn(resultSetColumnNames[ci]);
                     final String columnName = columnNames[ci];
-                    final Class<?> destinationType = options.targetTypeMap.get(columnName);
+                    final Class<?> destinationType = instructions.columnTargetTypes().get(columnName);
 
                     final JdbcTypeMapper.DataTypeMapping<?> typeMapping =
                             JdbcTypeMapper.getColumnTypeMapping(resultSet, columnIndex, destinationType);
@@ -348,7 +476,9 @@ public class JdbcToTableAdapter {
             this.columnSources = columnSources;
             this.sourceFillers = sourceFillers;
             typeMapperContext = JdbcTypeMapper.Context.of(
-                    options.sourceTimeZone, options.arrayDelimiter, options.strict);
+                    instructions.sourceTimeZone(),
+                    instructions.arrayDelimiter(),
+                    instructions.strict());
         }
 
         @Override
@@ -392,7 +522,7 @@ public class JdbcToTableAdapter {
      * @throws SQLException if reading from the result set fails
      */
     public static Table readJdbc(final ResultSet rs, final String... origColumnNames) throws SQLException {
-        return readJdbc(rs, readJdbcOptions(), origColumnNames);
+        return readJdbc(rs, JdbcReadInstructions.builder().build(), origColumnNames);
     }
 
     /**
@@ -403,10 +533,18 @@ public class JdbcToTableAdapter {
      * @param origColumnNames columns to include or all if none provided
      * @return a deephaven static table
      * @throws SQLException if reading from the result set fails
+     * @deprecated Use {@link #readJdbc(ResultSet, JdbcReadInstructions, String...)} instead. This method is maintained
+     *             for backward compatibility only and will be removed in a future release.
      */
+    @Deprecated(forRemoval = true)
     public static Table readJdbc(final ResultSet resultSet, final ReadJdbcOptions options, String... origColumnNames)
             throws SQLException {
-        return readJdbc(resultSet, options,
+        return readJdbc(resultSet, options.toInstructions(), origColumnNames);
+    }
+
+    public static Table readJdbc(final ResultSet resultSet, final JdbcReadInstructions instructions,
+            String... origColumnNames) throws SQLException {
+        return readJdbc(resultSet, instructions,
                 (rs, nr, o) -> new TableRowSink(rs, nr, o, null, origColumnNames));
     }
 
@@ -496,15 +634,15 @@ public class JdbcToTableAdapter {
     }
 
     private static final CaseFormat fromFormat = CaseFormat.LOWER_HYPHEN;
-    private static final Map<CasingStyle, CaseFormat> caseFormats;
+    private static final Map<io.deephaven.jdbc.CasingStyle, CaseFormat> caseFormats;
 
     static {
-        Map<CasingStyle, CaseFormat> initFormats = new HashMap<>();
-        initFormats.put(CasingStyle.lowerCamel, CaseFormat.LOWER_CAMEL);
-        initFormats.put(CasingStyle.UpperCamel, CaseFormat.UPPER_CAMEL);
-        initFormats.put(CasingStyle.lowercase, CaseFormat.LOWER_UNDERSCORE);
-        initFormats.put(CasingStyle.UPPERCASE, CaseFormat.UPPER_UNDERSCORE);
-        initFormats.put(CasingStyle.None, null);
+        Map<io.deephaven.jdbc.CasingStyle, CaseFormat> initFormats = new HashMap<>();
+        initFormats.put(io.deephaven.jdbc.CasingStyle.lowerCamel, CaseFormat.LOWER_CAMEL);
+        initFormats.put(io.deephaven.jdbc.CasingStyle.UpperCamel, CaseFormat.UPPER_CAMEL);
+        initFormats.put(io.deephaven.jdbc.CasingStyle.lowercase, CaseFormat.LOWER_UNDERSCORE);
+        initFormats.put(io.deephaven.jdbc.CasingStyle.UPPERCASE, CaseFormat.UPPER_UNDERSCORE);
+        initFormats.put(io.deephaven.jdbc.CasingStyle.None, null);
 
         caseFormats = Collections.unmodifiableMap(initFormats);
     }
@@ -514,14 +652,14 @@ public class JdbcToTableAdapter {
      *
      * @param originalColumnName Column name to be checked for validity and uniqueness
      * @param usedNames List of names already used in the table
-     * @param casing Optional {@link CasingStyle} to use when processing source names, if null or
-     *        {@link CasingStyle#None} the source name's casing is not modified
+     * @param casing Optional {@link io.deephaven.jdbc.CasingStyle} to use when processing source names, if null or
+     *        {@link io.deephaven.jdbc.CasingStyle#None} the source name's casing is not modified
      * @param replacement A String to use as a replacement for invalid characters in the source name
      * @return Legalized, uniquified, column name, with specified casing applied
      */
     private static String fixColumnName(final String originalColumnName,
             @NotNull final Set<String> usedNames,
-            final CasingStyle casing,
+            final io.deephaven.jdbc.CasingStyle casing,
             @NotNull final String replacement) {
         if (casing == null || caseFormats.get(casing) == null) {
             return NameValidator.legalizeColumnName(originalColumnName, (s) -> s.replaceAll("[- ]", replacement),
@@ -549,11 +687,12 @@ public class JdbcToTableAdapter {
                 usedNames);
     }
 
-    private static String[] fixColumnNames(ReadJdbcOptions options, String[] origColumnNames) {
+    private static String[] fixColumnNames(JdbcReadInstructions instructions, String[] origColumnNames) {
         final Set<String> usedNames = new HashSet<>();
         final String[] columnNames = new String[origColumnNames.length];
         for (int ii = 0; ii < origColumnNames.length; ++ii) {
-            columnNames[ii] = fixColumnName(origColumnNames[ii], usedNames, options.casingStyle, options.replacement);
+            columnNames[ii] = fixColumnName(origColumnNames[ii], usedNames, instructions.columnNameCasingStyle(),
+                    instructions.columnNameInvalidCharacterReplacement());
             usedNames.add(columnNames[ii]);
         }
         return columnNames;

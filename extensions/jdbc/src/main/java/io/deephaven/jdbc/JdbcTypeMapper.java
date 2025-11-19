@@ -31,6 +31,7 @@ import java.sql.Date;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.ZoneId;
 import java.util.*;
 
 public class JdbcTypeMapper {
@@ -47,8 +48,8 @@ public class JdbcTypeMapper {
         private final ArrayParser arrayParser;
         private final boolean strict;
 
-        private Context(TimeZone sourceTimeZone, String arrayDelimiter, boolean strict) {
-            this.sourceCalendar = Calendar.getInstance(sourceTimeZone);
+        private Context(ZoneId sourceTimeZone, String arrayDelimiter, boolean strict) {
+            this.sourceCalendar = Calendar.getInstance(TimeZone.getTimeZone(sourceTimeZone));
             this.arrayParser = ArrayParser.getInstance(arrayDelimiter);
             this.strict = strict;
         }
@@ -67,7 +68,7 @@ public class JdbcTypeMapper {
          * @param arrayDelimiter necessary when encoding/decoding arrays as strings
          * @param strict indicates how forgiving to be with malformed/unexpected input data
          */
-        public static Context of(TimeZone sourceTimeZone, String arrayDelimiter, boolean strict) {
+        public static Context of(ZoneId sourceTimeZone, String arrayDelimiter, boolean strict) {
             return new Context(sourceTimeZone, arrayDelimiter, strict);
         }
 
