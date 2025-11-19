@@ -185,11 +185,11 @@
                 "label": "CSV",
                 "items": [
                   {
-                    "label": "Import CSV files",
+                    "label": "Read CSV files",
                     "path": "how-to-guides/data-import-export/csv-import.md"
                   },
                   {
-                    "label": "Export CSV files",
+                    "label": "Write CSV files",
                     "path": "how-to-guides/data-import-export/csv-export.md"
                   }
                 ]
@@ -198,11 +198,11 @@
                 "label": "HTML",
                 "items": [
                   {
-                    "label": "Import HTML files",
+                    "label": "Read HTML files",
                     "path": "how-to-guides/data-import-export/html-import.md"
                   },
                   {
-                    "label": "Export HTML files",
+                    "label": "Write HTML files",
                     "path": "how-to-guides/data-import-export/html-export.md"
                   }
                 ]
@@ -240,11 +240,11 @@
                     "path": "how-to-guides/data-import-export/parquet-formats.md"
                   },
                   {
-                    "label": "Import Parquet files",
+                    "label": "Read Parquet files",
                     "path": "how-to-guides/data-import-export/parquet-import.md"
                   },
                   {
-                    "label": "Export to Parquet",
+                    "label": "Write Parquet files",
                     "path": "how-to-guides/data-import-export/parquet-export.md"
                   }
                 ]
