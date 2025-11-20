@@ -42,58 +42,117 @@ public class BooleanCompactKernel implements CompactKernel {
 
 
     @Override
-    public void compactAndCount(WritableChunk<? extends Values> valueChunk, WritableIntChunk<ChunkLengths> counts,
-            boolean countNull) {
-        compactAndCount(valueChunk.asWritableBooleanChunk(), counts, countNull);
+    public void compactAndCount(
+            WritableChunk<? extends Values> valueChunk,
+            WritableIntChunk<ChunkLengths> counts,
+            boolean countNull,
+            boolean countNaN) {
+        compactAndCount(valueChunk.asWritableBooleanChunk(), counts, countNull, countNaN);
     }
 
     @Override
-    public void compactAndCount(WritableChunk<? extends Values> valueChunk, WritableIntChunk<ChunkLengths> counts,
-            IntChunk<ChunkPositions> startPositions, WritableIntChunk<ChunkLengths> lengths, boolean countNull) {
-        compactAndCount(valueChunk.asWritableBooleanChunk(), counts, startPositions, lengths, countNull);
+    public void compactAndCount(
+            WritableChunk<? extends Values> valueChunk,
+            WritableIntChunk<ChunkLengths> counts,
+            IntChunk<ChunkPositions> startPositions,
+            WritableIntChunk<ChunkLengths> lengths,
+            boolean countNull,
+            boolean countNaN) {
+        compactAndCount(valueChunk.asWritableBooleanChunk(), counts, startPositions, lengths, countNull, countNaN);
     }
 
-    public static void compactAndCount(WritableBooleanChunk<? extends Values> valueChunk,
+    public static void compactAndCount(
+            WritableBooleanChunk<? extends Values> valueChunk,
             WritableIntChunk<ChunkLengths> counts) {
-        compactAndCount(valueChunk, counts, false);
+        compactAndCount(valueChunk, counts, false, false);
     }
 
-    public static void compactAndCount(WritableBooleanChunk<? extends Values> valueChunk,
-            WritableIntChunk<ChunkLengths> counts, boolean countNull) {
-        final int newSize = compactAndCount(valueChunk, counts, 0, valueChunk.size(), countNull);
+    public static void compactAndCount(
+            WritableBooleanChunk<? extends Values> valueChunk,
+            WritableIntChunk<ChunkLengths> counts,
+            boolean countNullNaN) {
+        compactAndCount(valueChunk, counts, countNullNaN, countNullNaN);
+    }
+
+    public static void compactAndCount(
+            WritableBooleanChunk<? extends Values> valueChunk,
+            WritableIntChunk<ChunkLengths> counts,
+            boolean countNull,
+            boolean countNaN) {
+        final int newSize = compactAndCount(valueChunk, counts, 0, valueChunk.size(), countNull, countNaN);
         valueChunk.setSize(newSize);
         counts.setSize(newSize);
     }
 
-    public static void compactAndCount(WritableBooleanChunk<? extends Values> valueChunk,
-            WritableIntChunk<ChunkLengths> counts, IntChunk<ChunkPositions> startPositions,
-            WritableIntChunk<ChunkLengths> lengths, boolean countNull) {
+    public static void compactAndCount(
+            WritableBooleanChunk<? extends Values> valueChunk,
+            WritableIntChunk<ChunkLengths> counts,
+            IntChunk<ChunkPositions> startPositions,
+            WritableIntChunk<ChunkLengths> lengths,
+            boolean countNullNaN) {
+        compactAndCount(valueChunk, counts, startPositions, lengths, countNullNaN, countNullNaN);
+    }
+
+    public static void compactAndCount(
+            WritableBooleanChunk<? extends Values> valueChunk,
+            WritableIntChunk<ChunkLengths> counts,
+            IntChunk<ChunkPositions> startPositions,
+            WritableIntChunk<ChunkLengths> lengths,
+            boolean countNull,
+            boolean countNaN) {
         for (int ii = 0; ii < startPositions.size(); ++ii) {
-            final int newSize = compactAndCount(valueChunk, counts, startPositions.get(ii), lengths.get(ii), countNull);
+            final int newSize = compactAndCount(valueChunk, counts, startPositions.get(ii), lengths.get(ii), countNull, countNaN);
             lengths.set(ii, newSize);
         }
     }
 
-    public static int compactAndCount(WritableBooleanChunk<? extends Values> valueChunk,
-            WritableIntChunk<ChunkLengths> counts, final int start, final int length, boolean countNull) {
+    public static int compactAndCount(
+            WritableBooleanChunk<? extends Values> valueChunk,
+            WritableIntChunk<ChunkLengths> counts,
+            final int start,
+            final int length,
+            boolean countNullNaN) {
+        return compactAndCount(valueChunk, counts, start, length, countNullNaN, countNullNaN);
+    }
+
+    public static int compactAndCount(
+            WritableBooleanChunk<? extends Values> valueChunk,
+            WritableIntChunk<ChunkLengths> counts,
+            final int start,
+            final int length,
+            boolean countNull,
+            boolean countNaN) {
         int wpos = -1;
         // region compactAndCount
-        int trueValues = 0;        int falseValues = 0;        final int end = start + length;        for (int rpos = start; rpos < end; ++rpos) {            final boolean nextValue = valueChunk.get(rpos);            if (nextValue) {                trueValues++;            }            else {                falseValues++;            }        }
-        if (trueValues > 0) {
-            valueChunk.set(++wpos, true);
-            counts.set(wpos, trueValues);
+        int trueValues = 0;
+        int falseValues = 0;
+        final int end = start + length;
+        for (int rpos = start; rpos < end; ++rpos) {
+            final boolean nextValue = valueChunk.get(rpos);
+            if (nextValue) {
+                trueValues++;
+            }
+            else {
+                falseValues++;
+            }
         }
+
+        if (trueValues > 0) {
+
+            valueChunk.set(++wpos, true);
+
+            counts.set(wpos, trueValues);
+
+        }
+
         if (falseValues > 0) {
+
             valueChunk.set(++wpos, false);
+
             counts.set(wpos, falseValues);
+
         }
         // endregion compactAndCount
         return wpos + 1;
-    }
-
-    private static boolean shouldIgnore(boolean value) {
-        // region shouldIgnore
-        return false;
-        // endregion shouldIgnore
     }
 }

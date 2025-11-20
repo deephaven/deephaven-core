@@ -7,7 +7,6 @@ import io.deephaven.base.verify.Assert;
 import org.apache.commons.io.FileUtils;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.Arrays;
@@ -80,25 +79,25 @@ public class ReplicateHashing {
         List<String> lines = FileUtils.readLines(objectFile, Charset.defaultCharset());
 
         lines = replaceRegion(lines, "compactAndCount", Arrays.asList(
-                "        int trueValues = 0;" +
-                        "        int falseValues = 0;" +
-                        "        final int end = start + length;" +
-                        "        for (int rpos = start; rpos < end; ++rpos) {" +
-                        "            final boolean nextValue = valueChunk.get(rpos);" +
-                        "            if (nextValue) {" +
-                        "                trueValues++;" +
-                        "            }" +
-                        "            else {" +
-                        "                falseValues++;" +
-                        "            }" +
-                        "        }",
-                "        if (trueValues > 0) {",
-                "            valueChunk.set(++wpos, true);",
-                "            counts.set(wpos, trueValues);",
-                "        }",
-                "        if (falseValues > 0) {",
-                "            valueChunk.set(++wpos, false);",
-                "            counts.set(wpos, falseValues);",
+                "        int trueValues = 0;\n" +
+                        "        int falseValues = 0;\n" +
+                        "        final int end = start + length;\n" +
+                        "        for (int rpos = start; rpos < end; ++rpos) {\n" +
+                        "            final boolean nextValue = valueChunk.get(rpos);\n" +
+                        "            if (nextValue) {\n" +
+                        "                trueValues++;\n" +
+                        "            }\n" +
+                        "            else {\n" +
+                        "                falseValues++;\n" +
+                        "            }\n" +
+                        "        }\n",
+                "        if (trueValues > 0) {\n",
+                "            valueChunk.set(++wpos, true);\n",
+                "            counts.set(wpos, trueValues);\n",
+                "        }\n",
+                "        if (falseValues > 0) {\n",
+                "            valueChunk.set(++wpos, false);\n",
+                "            counts.set(wpos, falseValues);\n",
                 "        }"));
 
         lines = replaceRegion(lines, "shouldIgnore", Collections.singletonList("        return false;"));
@@ -125,8 +124,10 @@ public class ReplicateHashing {
     private static void fixupFloatCompact(String doublePath, String typeOfFloat) throws IOException {
         final File objectFile = new File(doublePath);
         List<String> lines = FileUtils.readLines(objectFile, Charset.defaultCharset());
-        lines = replaceRegion(lines, "shouldIgnore", Collections.singletonList(
-                "        return value == NULL_" + typeOfFloat.toUpperCase() + " || " + typeOfFloat + ".isNaN(value);"));
+        lines = replaceRegion(lines, "maybeCountNaN", Collections.singletonList(
+                "            if (!countNaN && " + typeOfFloat + ".isNaN(nextValue)) {\n" +
+                        "                continue;\n" +
+                        "            }"));
         FileUtils.writeLines(objectFile, lines);
     }
 

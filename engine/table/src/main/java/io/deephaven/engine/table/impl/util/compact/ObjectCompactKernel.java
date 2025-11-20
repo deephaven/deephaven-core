@@ -43,40 +43,86 @@ public class ObjectCompactKernel implements CompactKernel {
 
 
     @Override
-    public void compactAndCount(WritableChunk<? extends Values> valueChunk, WritableIntChunk<ChunkLengths> counts,
-            boolean countNull) {
-        compactAndCount(valueChunk.asWritableObjectChunk(), counts, countNull);
+    public void compactAndCount(
+            WritableChunk<? extends Values> valueChunk,
+            WritableIntChunk<ChunkLengths> counts,
+            boolean countNull,
+            boolean countNaN) {
+        compactAndCount(valueChunk.asWritableObjectChunk(), counts, countNull, countNaN);
     }
 
     @Override
-    public void compactAndCount(WritableChunk<? extends Values> valueChunk, WritableIntChunk<ChunkLengths> counts,
-            IntChunk<ChunkPositions> startPositions, WritableIntChunk<ChunkLengths> lengths, boolean countNull) {
-        compactAndCount(valueChunk.asWritableObjectChunk(), counts, startPositions, lengths, countNull);
+    public void compactAndCount(
+            WritableChunk<? extends Values> valueChunk,
+            WritableIntChunk<ChunkLengths> counts,
+            IntChunk<ChunkPositions> startPositions,
+            WritableIntChunk<ChunkLengths> lengths,
+            boolean countNull,
+            boolean countNaN) {
+        compactAndCount(valueChunk.asWritableObjectChunk(), counts, startPositions, lengths, countNull, countNaN);
     }
 
-    public static <T> void compactAndCount(WritableObjectChunk<T, ? extends Values> valueChunk,
+    public static <T> void compactAndCount(
+            WritableObjectChunk<T, ? extends Values> valueChunk,
             WritableIntChunk<ChunkLengths> counts) {
-        compactAndCount(valueChunk, counts, false);
+        compactAndCount(valueChunk, counts, false, false);
     }
 
-    public static <T> void compactAndCount(WritableObjectChunk<T, ? extends Values> valueChunk,
-            WritableIntChunk<ChunkLengths> counts, boolean countNull) {
-        final int newSize = compactAndCount(valueChunk, counts, 0, valueChunk.size(), countNull);
+    public static <T> void compactAndCount(
+            WritableObjectChunk<T, ? extends Values> valueChunk,
+            WritableIntChunk<ChunkLengths> counts,
+            boolean countNullNaN) {
+        compactAndCount(valueChunk, counts, countNullNaN, countNullNaN);
+    }
+
+    public static <T> void compactAndCount(
+            WritableObjectChunk<T, ? extends Values> valueChunk,
+            WritableIntChunk<ChunkLengths> counts,
+            boolean countNull,
+            boolean countNaN) {
+        final int newSize = compactAndCount(valueChunk, counts, 0, valueChunk.size(), countNull, countNaN);
         valueChunk.setSize(newSize);
         counts.setSize(newSize);
     }
 
-    public static <T> void compactAndCount(WritableObjectChunk<T, ? extends Values> valueChunk,
-            WritableIntChunk<ChunkLengths> counts, IntChunk<ChunkPositions> startPositions,
-            WritableIntChunk<ChunkLengths> lengths, boolean countNull) {
+    public static <T> void compactAndCount(
+            WritableObjectChunk<T, ? extends Values> valueChunk,
+            WritableIntChunk<ChunkLengths> counts,
+            IntChunk<ChunkPositions> startPositions,
+            WritableIntChunk<ChunkLengths> lengths,
+            boolean countNullNaN) {
+        compactAndCount(valueChunk, counts, startPositions, lengths, countNullNaN, countNullNaN);
+    }
+
+    public static <T> void compactAndCount(
+            WritableObjectChunk<T, ? extends Values> valueChunk,
+            WritableIntChunk<ChunkLengths> counts,
+            IntChunk<ChunkPositions> startPositions,
+            WritableIntChunk<ChunkLengths> lengths,
+            boolean countNull,
+            boolean countNaN) {
         for (int ii = 0; ii < startPositions.size(); ++ii) {
-            final int newSize = compactAndCount(valueChunk, counts, startPositions.get(ii), lengths.get(ii), countNull);
+            final int newSize = compactAndCount(valueChunk, counts, startPositions.get(ii), lengths.get(ii), countNull, countNaN);
             lengths.set(ii, newSize);
         }
     }
 
-    public static <T> int compactAndCount(WritableObjectChunk<T, ? extends Values> valueChunk,
-            WritableIntChunk<ChunkLengths> counts, final int start, final int length, boolean countNull) {
+    public static <T> int compactAndCount(
+            WritableObjectChunk<T, ? extends Values> valueChunk,
+            WritableIntChunk<ChunkLengths> counts,
+            final int start,
+            final int length,
+            boolean countNullNaN) {
+        return compactAndCount(valueChunk, counts, start, length, countNullNaN, countNullNaN);
+    }
+
+    public static <T> int compactAndCount(
+            WritableObjectChunk<T, ? extends Values> valueChunk,
+            WritableIntChunk<ChunkLengths> counts,
+            final int start,
+            final int length,
+            boolean countNull,
+            boolean countNaN) {
         int wpos = -1;
         // region compactAndCount
         valueChunk.sort(start, length);
@@ -85,9 +131,11 @@ public class ObjectCompactKernel implements CompactKernel {
         final int end = start + length;
         for (int rpos = start; rpos < end; ++rpos) {
             final T nextValue = valueChunk.get(rpos);
-            if (!countNull && shouldIgnore(nextValue)) {
+            if (!countNull && nextValue == null) {
                 continue;
             }
+            // region maybeCountNaN
+            // endregion maybeCountNaN
             if (wpos == -1 || !ObjectComparisons.eq(nextValue, lastValue)) {
                 valueChunk.set(++wpos + start, nextValue);
                 counts.set(wpos + start, currentCount = 1);
@@ -98,11 +146,5 @@ public class ObjectCompactKernel implements CompactKernel {
         }
         // endregion compactAndCount
         return wpos + 1;
-    }
-
-    private static boolean shouldIgnore(Object value) {
-        // region shouldIgnore
-        return value == null;
-        // endregion shouldIgnore
     }
 }
