@@ -193,6 +193,7 @@ public class JsWidget extends HasEventHandling implements ServerObject, WidgetMe
 
     /**
      * Exports another copy of this widget.
+     * 
      * @return Promise resolving to a re-exported copy of this widget
      */
     @JsMethod
