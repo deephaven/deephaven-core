@@ -17,6 +17,7 @@ import elemental2.promise.Promise;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.Hierarchicaltable_pb;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.hierarchicaltable_pb.*;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.hierarchicaltable_pb_service.UnaryResponse;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.session_pb.ExportRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.*;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.ticket_pb.Ticket;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.ticket_pb.TypedTicket;
@@ -34,6 +35,7 @@ import io.deephaven.web.client.api.lifecycle.HasLifecycle;
 import io.deephaven.web.client.api.subscription.AbstractTableSubscription;
 import io.deephaven.web.client.api.subscription.SubscriptionType;
 import io.deephaven.web.client.api.widget.JsWidget;
+import io.deephaven.web.client.api.widget.JsWidgetExportedObject;
 import io.deephaven.web.client.fu.JsItr;
 import io.deephaven.web.client.fu.JsLog;
 import io.deephaven.web.client.fu.LazyPromise;
@@ -1434,12 +1436,6 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
      * @return Promise of dh.TreeTable
      */
     public Promise<JsTreeTable> copy() {
-        return connection.newState((c, state, metadata) -> {
-            // connection.getServer().reexport(this.baseTable.getHandle(), state.getHandle(), c);
-            throw new UnsupportedOperationException("reexport");// probably not needed at all with new session
-                                                                // mechanism?
-        }, "reexport for tree.copy()")
-                .refetch(this, connection.metadata())
-                .then(state -> Promise.resolve(new JsTreeTable(connection, widget)));
+        return Js.uncheckedCast(widget.copy());
     }
 }

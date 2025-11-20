@@ -17,8 +17,10 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.object_p
 import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.object_pb.ServerData;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.object_pb.StreamRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.object_pb.StreamResponse;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.session_pb.ExportRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.ticket_pb.Ticket;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.ticket_pb.TypedTicket;
+import io.deephaven.web.client.api.Callbacks;
 import io.deephaven.web.client.api.ServerObject;
 import io.deephaven.web.client.api.WorkerConnection;
 import io.deephaven.web.client.api.barrage.stream.BiDiStream;
@@ -186,6 +188,29 @@ public class JsWidget extends HasEventHandling implements ServerObject, WidgetMe
             data.setSourceId(typedTicket);
             req.setConnect(data);
             messageStream.send(req);
+        });
+    }
+
+    /**
+     * Exports another copy of this widget.
+     * @return Promise resolving to a re-exported copy of this widget
+     */
+    @JsMethod
+    public Promise<JsWidget> copy() {
+        Ticket reexportedTicket = connection.getTickets().newExportTicket();
+
+        // Future optimization - we could "race" these by running the export in the background, to avoid
+        // an extra round trip.
+        return Callbacks.grpcUnaryPromise(c -> {
+            ExportRequest req = new ExportRequest();
+            req.setSourceId(getTicket());
+            req.setResultId(reexportedTicket);
+            connection.sessionServiceClient().exportFromTicket(req, connection.metadata(), c::apply);
+        }).then(success -> {
+            TypedTicket typedTicket = new TypedTicket();
+            typedTicket.setTicket(reexportedTicket);
+            typedTicket.setType(getType());
+            return Js.uncheckedCast(connection.getObject(typedTicket));
         });
     }
 
