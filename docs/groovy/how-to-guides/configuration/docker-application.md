@@ -137,16 +137,16 @@ table = emptyTable(5).update(
 
 ## Standard images
 
-- `ghcr.io/deephaven/server:latest`: Python session based, includes jpy, deephaven-plugin, numpy, pandas, and numba
-- `ghcr.io/deephaven/server-slim:latest`: Groovy session based
+- `ghcr.io/deephaven/server:latest`: Python session based, includes jpy, deephaven-plugin, numpy, pandas, and numba.
+- `ghcr.io/deephaven/server-slim:latest`: Groovy session based.
 
 ## Extended python images:
 
-- `ghcr.io/deephaven/server-all-ai:latest`: contains the standard packages as well as nltk, tensorflow, torch, and scikit-learn
-- `ghcr.io/deephaven/server-nltk:latest`: contains the standard packages as well as nltk
-- `ghcr.io/deephaven/server-pytorch:latest`: contains the standard packages as well as torch
-- `ghcr.io/deephaven/server-sklearn:latest`: contains the standard packages as well as scikit-learn
-- `ghcr.io/deephaven/server-tensorflow:latest`: contains the standard packages as well as tensorflow
+- `ghcr.io/deephaven/server-all-ai:latest`: contains the standard packages as well as nltk, tensorflow, torch, and scikit-learn.
+- `ghcr.io/deephaven/server-nltk:latest`: contains the standard packages as well as nltk.
+- `ghcr.io/deephaven/server-pytorch:latest`: contains the standard packages as well as torch.
+- `ghcr.io/deephaven/server-sklearn:latest`: contains the standard packages as well as scikit-learn.
+- `ghcr.io/deephaven/server-tensorflow:latest`: contains the standard packages as well as tensorflow.
 
 ## Related documentation
 

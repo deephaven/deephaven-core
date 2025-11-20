@@ -49,8 +49,8 @@ public class LongObjectTuple implements Comparable<LongObjectTuple>, Externaliza
         this.element1 = element1;
         this.element2 = element2;
         cachedHashCode = (31 +
-                Long.hashCode(element1)) * 31 +
-                Objects.hashCode(element2);
+                LongComparisons.hashCode(element1)) * 31 +
+                ObjectComparisons.hashCode(element2);
     }
 
     public final long getFirstElement() {
@@ -76,7 +76,7 @@ public class LongObjectTuple implements Comparable<LongObjectTuple>, Externaliza
         }
         final LongObjectTuple typedOther = (LongObjectTuple) other;
         // @formatter:off
-        return element1 == typedOther.element1 &&
+        return LongComparisons.eq(element1, typedOther.element1) &&
                ObjectComparisons.eq(element2, typedOther.element2);
         // @formatter:on
     }

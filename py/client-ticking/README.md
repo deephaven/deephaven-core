@@ -7,6 +7,11 @@ wrapper around Deephaven's C++ library.
 
 ## Prerequisites
 
+Before installing this library, you will need to install the Deephaven Core C++ library and the
+pydeephaven python package. All three packages (Deephaven Core C++, pydeephaven, 
+and pydeephaven-ticking) are present in the Deephaven Core GitHub repository. We assume you
+have checked out this repository at the location specified by `${DHROOT}`.
+
 The Deephaven C++ client (and ticking Python client) are tested regularly on Ubuntu 22.04 x86_64.
 Additionally, successful tests have been run on RHEL 8 and Fedora 38 (both on x86_64).
 
@@ -75,7 +80,7 @@ cd ${DHROOT}/py/client-ticking
 
 ```sh
 # Ensure the DHCPP environment variable is set per the instructions above
-rm -rf build dist  # Ensure we clean the remnants of any pre-existing build.
+rm -rf build dist src/pydeephaven_ticking/_core.cpp # Ensure we clean the remnants of any pre-existing build.
 DEEPHAVEN_VERSION=$(../../gradlew :printVersion -q) CPPFLAGS="-I${DHCPP}/include" LDFLAGS="-L${DHCPP}/lib" python3 setup.py build_ext -i
 ```
 

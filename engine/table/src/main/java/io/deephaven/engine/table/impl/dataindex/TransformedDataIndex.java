@@ -67,6 +67,11 @@ public class TransformedDataIndex extends LivenessArtifact implements BasicDataI
     }
 
     @Override
+    public boolean tableIsCached() {
+        return indexTable != null;
+    }
+
+    @Override
     @NotNull
     public Table table(final DataIndexOptions unused) {
         Table localIndexTable;

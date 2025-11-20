@@ -87,6 +87,12 @@ All of the following user interface plugins can be installed with `pip` with no 
 - [`deephaven-plugin-plotly-express`](https://pypi.org/project/deephaven-plugin-plotly-express/): A plugin that makes [Plotly Express](https://plotly.com/python/plotly-express/) compatible with Deephaven tables.
 - [`deephaven-plugin-matplotlib`](./plotting/matplot-seaborn.md): A plugin that makes [Matplotlib](https://matplotlib.org/) and [Seaborn](https://seaborn.pydata.org/) compatible with Deephaven tables.
 
+### Remote File Sourcing
+
+This plugin can be installed with `pip`:
+
+- [deephaven-plugin-python-remote-file-source](https://pypi.org/project/deephaven-plugin-python-remote-file-source/): A Deephaven bi-directional plugin to allow sourcing Python imports from a remote file source. Use with the [Deephaven VS Code extension](https://deephaven.io/vscode/docs/) to enable local Python workspaces.
+
 ### Authentication
 
 Authentication plugins have a more complex installation process than other plugins. Please refer to the documentation links below for more information.

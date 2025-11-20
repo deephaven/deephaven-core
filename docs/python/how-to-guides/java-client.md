@@ -14,9 +14,9 @@ We will show you how to construct a simple system that: monitors weather data (s
 
 ## Prerequisites
 
-- Clone the [Deephaven Community repository](https://github.com/deephaven/deephaven-core)
-- [Build and run Deephaven](../getting-started/docker-install.md)
-- Create a valid [Google Geolocation API key](https://developers.google.com/maps/documentation/geolocation/overview)
+- Clone the [Deephaven Community repository](https://github.com/deephaven/deephaven-core).
+- [Build and run Deephaven](../getting-started/docker-install.md).
+- Create a valid [Google Geolocation API key](https://developers.google.com/maps/documentation/geolocation/overview).
 
 ## The application
 

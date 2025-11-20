@@ -119,19 +119,7 @@ import java.util.stream.Collectors;
 
 import static io.deephaven.base.FileUtils.convertToURI;
 import static io.deephaven.engine.testutil.TstUtils.assertTableEquals;
-import static io.deephaven.engine.util.TableTools.booleanCol;
-import static io.deephaven.engine.util.TableTools.byteCol;
-import static io.deephaven.engine.util.TableTools.charCol;
-import static io.deephaven.engine.util.TableTools.doubleCol;
-import static io.deephaven.engine.util.TableTools.emptyTable;
-import static io.deephaven.engine.util.TableTools.floatCol;
-import static io.deephaven.engine.util.TableTools.instantCol;
-import static io.deephaven.engine.util.TableTools.intCol;
-import static io.deephaven.engine.util.TableTools.longCol;
-import static io.deephaven.engine.util.TableTools.merge;
-import static io.deephaven.engine.util.TableTools.newTable;
-import static io.deephaven.engine.util.TableTools.shortCol;
-import static io.deephaven.engine.util.TableTools.stringCol;
+import static io.deephaven.engine.util.TableTools.*;
 import static io.deephaven.parquet.base.materializers.ParquetMaterializerUtils.MAX_CONVERTIBLE_MILLIS;
 import static io.deephaven.parquet.table.ParquetTableWriter.INDEX_ROW_SET_COLUMN_NAME;
 import static io.deephaven.parquet.table.ParquetTools.readTable;
@@ -4656,6 +4644,154 @@ public final class ParquetTableReadWriteTest {
         assertTableEquals(
                 testTable.where("ColumnA=`A`").renameColumns("ColumnA=ColumnB"),
                 fromDisk.where("ColumnA=`A`").renameColumns("ColumnA=ColumnB"));
+    }
+
+    @Test
+    public void testDropColumnsValidateDefinition() {
+        final Table testTable = TableTools.newTable(
+                TableTools.stringCol("String", "c", "e", "g"),
+                TableTools.intCol("Int", 2, 4, 6),
+                TableTools.doubleCol("Double", 1.0, 2.0, 3.0));
+        final PartitionedTable pt = testTable.partitionBy("String");
+
+        // Round trip to disk
+        final File source = new File(rootFile, "dropColumns");
+        writeKeyValuePartitionedTable(pt, source.getPath(), ParquetInstructions.EMPTY);
+        final Table sourceTable = readTable(source.getPath());
+
+        // Assert our initial expectations.
+        assertTrue(sourceTable.getDefinition().getColumn("String").isPartitioning());
+        assertTrue(sourceTable.getDefinition().getColumn("Int").isDirect());
+        assertTrue(sourceTable.getDefinition().getColumn("Double").isDirect());
+
+        Table result;
+
+        result = sourceTable.dropColumns("String");
+        assertTrue(result.getDefinition().getColumn("Int").isDirect());
+        assertTrue(result.getDefinition().getColumn("Double").isDirect());
+
+        result = sourceTable.dropColumns("Int");
+        assertTrue(result.getDefinition().getColumn("String").isPartitioning());
+        assertTrue(result.getDefinition().getColumn("Double").isDirect());
+
+        result = sourceTable.dropColumns("Double");
+        assertTrue(result.getDefinition().getColumn("String").isPartitioning());
+        assertTrue(result.getDefinition().getColumn("Int").isDirect());
+    }
+
+    @Test
+    public void testRenameColumnsValidateDefinition() {
+        final Table testTable = TableTools.newTable(
+                TableTools.stringCol("String", "c", "e", "g"),
+                TableTools.intCol("Int", 2, 4, 6),
+                TableTools.doubleCol("Double", 1.0, 2.0, 3.0));
+        final PartitionedTable pt = testTable.partitionBy("String");
+
+        // Round trip to disk
+        final File source = new File(rootFile, "dropColumns");
+        writeKeyValuePartitionedTable(pt, source.getPath(), ParquetInstructions.EMPTY);
+        final Table sourceTable = readTable(source.getPath());
+
+        // Assert our initial expectations.
+        assertTrue(sourceTable.getDefinition().getColumn("String").isPartitioning());
+        assertTrue(sourceTable.getDefinition().getColumn("Int").isDirect());
+        assertTrue(sourceTable.getDefinition().getColumn("Double").isDirect());
+
+        Table result;
+
+        result = sourceTable.renameColumns("renamed=String");
+        assertTrue(result.getDefinition().getColumn("renamed").isPartitioning());
+        assertTrue(result.getDefinition().getColumn("Int").isDirect());
+        assertTrue(result.getDefinition().getColumn("Double").isDirect());
+
+        result = sourceTable.renameColumns("renamed=Int");
+        assertTrue(result.getDefinition().getColumn("String").isPartitioning());
+        assertTrue(result.getDefinition().getColumn("renamed").isDirect());
+        assertTrue(result.getDefinition().getColumn("Double").isDirect());
+
+        result = sourceTable.renameColumns("renamed=Double");
+        assertTrue(result.getDefinition().getColumn("String").isPartitioning());
+        assertTrue(result.getDefinition().getColumn("Int").isDirect());
+        assertTrue(result.getDefinition().getColumn("renamed").isDirect());
+    }
+
+    @Test
+    public void testUpdateValidateDefinition() {
+        final Table testTable = TableTools.newTable(
+                TableTools.stringCol("String", "c", "e", "g"),
+                TableTools.intCol("Int", 2, 4, 6),
+                TableTools.doubleCol("Double", 1.0, 2.0, 3.0));
+        final PartitionedTable pt = testTable.partitionBy("String");
+
+        // Round trip to disk
+        final File source = new File(rootFile, "dropColumns");
+        writeKeyValuePartitionedTable(pt, source.getPath(), ParquetInstructions.EMPTY);
+        final Table sourceTable = readTable(source.getPath());
+
+        // Assert our initial expectations.
+        assertTrue(sourceTable.getDefinition().getColumn("String").isPartitioning());
+        assertTrue(sourceTable.getDefinition().getColumn("Int").isDirect());
+        assertTrue(sourceTable.getDefinition().getColumn("Double").isDirect());
+
+        Table result;
+
+        result = sourceTable.update("X = Int + 1");
+        assertTrue(result.getDefinition().getColumn("String").isPartitioning());
+        assertTrue(result.getDefinition().getColumn("Int").isDirect());
+        assertTrue(result.getDefinition().getColumn("Double").isDirect());
+    }
+
+    @Test
+    public void testUpdateViewValidateDefinition() {
+        final Table testTable = TableTools.newTable(
+                TableTools.stringCol("String", "c", "e", "g"),
+                TableTools.intCol("Int", 2, 4, 6),
+                TableTools.doubleCol("Double", 1.0, 2.0, 3.0));
+        final PartitionedTable pt = testTable.partitionBy("String");
+
+        // Round trip to disk
+        final File source = new File(rootFile, "dropColumns");
+        writeKeyValuePartitionedTable(pt, source.getPath(), ParquetInstructions.EMPTY);
+        final Table sourceTable = readTable(source.getPath());
+
+        // Assert our initial expectations.
+        assertTrue(sourceTable.getDefinition().getColumn("String").isPartitioning());
+        assertTrue(sourceTable.getDefinition().getColumn("Int").isDirect());
+        assertTrue(sourceTable.getDefinition().getColumn("Double").isDirect());
+
+        Table result;
+
+        result = sourceTable.updateView("X = Int + 1");
+        assertTrue(result.getDefinition().getColumn("String").isPartitioning());
+        assertTrue(result.getDefinition().getColumn("Int").isDirect());
+        assertTrue(result.getDefinition().getColumn("Double").isDirect());
+    }
+
+    @Test
+    public void testSelectValidateDefinition() {
+        final Table testTable = TableTools.newTable(
+                TableTools.stringCol("String", "c", "e", "g"),
+                TableTools.intCol("Int", 2, 4, 6),
+                TableTools.doubleCol("Double", 1.0, 2.0, 3.0));
+        final PartitionedTable pt = testTable.partitionBy("String");
+
+        // Round trip to disk
+        final File source = new File(rootFile, "dropColumns");
+        writeKeyValuePartitionedTable(pt, source.getPath(), ParquetInstructions.EMPTY);
+        final Table sourceTable = readTable(source.getPath());
+
+        // Assert our initial expectations.
+        assertTrue(sourceTable.getDefinition().getColumn("String").isPartitioning());
+        assertTrue(sourceTable.getDefinition().getColumn("Int").isDirect());
+        assertTrue(sourceTable.getDefinition().getColumn("Double").isDirect());
+
+        Table result;
+
+        // Expect re-written column definitions.
+        result = sourceTable.select();
+        assertTrue(result.getDefinition().getColumn("String").isDirect());
+        assertTrue(result.getDefinition().getColumn("Int").isDirect());
+        assertTrue(result.getDefinition().getColumn("Double").isDirect());
     }
 
     private void assertTableStatistics(Table inputTable, File dest) {

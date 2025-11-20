@@ -1,12 +1,12 @@
 ---
-title: Import CSV or other delimited files
-sidebar_label: Import CSV files
+title: Read CSV or other delimited files
+sidebar_label: Read CSV files
 ---
 
-This guide will show you how to import data from CSV (and other delimited) files into Deephaven tables with the [`read_csv`](../../reference/data-import-export/CSV/readCsv.md) method.
+This guide will show you how to read data from CSV (and other delimited) files into in-memory Deephaven tables with the [`read_csv`](../../reference/data-import-export/CSV/readCsv.md) method.
 
 > [!TIP]
-> CSV files can also be imported into Deephaven with drag-and-drop uploading in the UI.
+> CSV files can also be uploaded into Deephaven with drag-and-drop in the UI.
 
 ## `read_csv`
 
@@ -24,7 +24,7 @@ Let's dive into some simple examples. So that we don't have to create a new CSV 
 
 ### `read_csv` with a file path
 
-The `read_csv` method can be used to import a CSV file from a file path. In this example, we will import a CSV file containing R.A. Fisher's classic iris flower dataset commonly used in machine learning applications.
+The `read_csv` method can be used to read a CSV file from a file path. In this example, we will read a CSV file containing R.A. Fisher's classic iris flower dataset commonly used in machine learning applications.
 
 ```python order=iris
 from deephaven import read_csv
@@ -46,7 +46,7 @@ See [Docker data volumes](../../conceptual/docker-data-volumes.md) to learn more
 
 ### `read_csv` with a URL
 
-Now, we will import the same CSV file, but this time we will use a URL instead of a file path.
+Now, we will read the same CSV file, but this time we will use a URL instead of a file path.
 
 ```python order=iris
 from deephaven import read_csv
@@ -90,7 +90,7 @@ deniro = read_csv(
 
 #### Tab-delimited data
 
-Deephaven allows you to specify other delimiters as a second argument if your file is not comma-delimited. In the example below, we import a tab-delimited file, which requires a second argument.
+Deephaven allows you to specify other delimiters as a second argument if your file is not comma-delimited. In the example below, we read a tab-delimited file, which requires a second argument.
 
 ```python order=deniro_tsv
 from deephaven import read_csv

@@ -49,8 +49,8 @@ public class ObjectShortTuple implements Comparable<ObjectShortTuple>, Externali
         this.element1 = element1;
         this.element2 = element2;
         cachedHashCode = (31 +
-                Objects.hashCode(element1)) * 31 +
-                Short.hashCode(element2);
+                ObjectComparisons.hashCode(element1)) * 31 +
+                ShortComparisons.hashCode(element2);
     }
 
     public final Object getFirstElement() {
@@ -77,7 +77,7 @@ public class ObjectShortTuple implements Comparable<ObjectShortTuple>, Externali
         final ObjectShortTuple typedOther = (ObjectShortTuple) other;
         // @formatter:off
         return ObjectComparisons.eq(element1, typedOther.element1) &&
-               element2 == typedOther.element2;
+               ShortComparisons.eq(element2, typedOther.element2);
         // @formatter:on
     }
 

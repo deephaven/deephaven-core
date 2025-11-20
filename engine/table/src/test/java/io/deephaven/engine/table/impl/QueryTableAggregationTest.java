@@ -61,6 +61,7 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.nio.file.Files;
 import java.util.*;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -4061,6 +4062,32 @@ public class QueryTableAggregationTest {
         final IllegalArgumentException iae =
                 assertThrows(IllegalArgumentException.class, () -> arraySource.countBy("Count", "Key"));
         assertEquals("Cannot aggregate using an array column: Key, column type is an array of int", iae.getMessage());
+    }
+
+    @Test
+    public void testIssue5820() throws ExecutionException, InterruptedException, TimeoutException {
+        final Table x = newTable(
+                doubleCol("X", -0.0, 0.0, Double.NaN, Double.POSITIVE_INFINITY, Double.NEGATIVE_INFINITY, NULL_DOUBLE))
+                .updateView("XStr=Double.toString(X)");
+        final Table[] x_arr = new Table[1_000]; // need a lot of rows to trigger the issue
+        Arrays.fill(x_arr, x);
+        final Table merged = merge(x_arr).select();
+
+        final ExecutionContext executionContext = ExecutionContext.makeExecutionContext(true);
+        ThreadPoolExecutor executor = (ThreadPoolExecutor) Executors.newFixedThreadPool(1);
+
+        // This consistently resulted in an infinite loop prior to the fix for the issue.
+        final Table result = executor.submit(() -> {
+            try (final SafeCloseable ignored = executionContext.open()) {
+                // This might trigger an infinite loop in DoubleSegmentedSortedMultiSet
+                return merged.aggBy(AggCountDistinct(true, "CountDistinctWithNulls=X"));
+            }
+        }).get(10, TimeUnit.SECONDS);
+
+        final Table expected = newTable(
+                longCol("CountDistinctWithNulls", 5));
+
+        assertTableEquals(expected, result);
     }
 
     private void diskBackedTestHarness(Consumer<Table> testFunction) throws IOException {

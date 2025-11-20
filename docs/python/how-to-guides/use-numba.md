@@ -199,9 +199,9 @@ Here, the `nopython=True` option is used. This option produces faster, primitive
 
 This example looks at three cases:
 
-- A regular function without JIT
-- A JIT function that needs compilation
-- A JIT function that is already compiled
+- A regular function without JIT.
+- A JIT function that needs compilation.
+- A JIT function that is already compiled.
 
 The first time the JIT-enabled function is run on a matrix of integers, it's almost ten times slower than the standard function. However, after compilation, the JIT-enabled function is almost two hundred times faster!
 
