@@ -2402,6 +2402,50 @@ public class QueryTableAggregationTest {
         }
     }
 
+    /**
+     * Min/Max on a static table has a different code path than incremental; verify they agree on a set of large tables.
+     */
+    @Test
+    public void testMinMaxStaticVsIncremental() {
+        final int[] sizes = {10, 100, 1_000, 100_000, 1_000_000};
+        for (final int size : sizes) {
+            for (int seed = 0; seed < 1; ++seed) {
+                testMinMaxStaticVsIncremental(size, seed);
+            }
+        }
+    }
+
+    private void testMinMaxStaticVsIncremental(int size, int seed) {
+        final Random random = new Random(seed);
+        final QueryTable queryTable = getTable(size, random,
+                initColumnInfos(
+                        new String[] {"Sym", "intCol", "shortCol", "byteCol", "doubleCol", "Timestamp", "boolCol",
+                                "betterDoubleCol", "floatCol"},
+                        new SetGenerator<>("a", "b", "c", "d"),
+                        new IntGenerator(10, 100, 0.1),
+                        new ShortGenerator((short) 10, (short) 100, 0.1),
+                        new ByteGenerator((byte) 10, (byte) 100, 0.1),
+                        new SetGenerator<>(10.1, 20.1, 30.1),
+                        new UnsortedInstantGenerator(DateTimeUtils.parseInstant("2020-01-01T00:00:00 NY"),
+                                DateTimeUtils.parseInstant("2020-01-25T00:00:00 NY")),
+                        new BooleanGenerator(0.4, 0.2),
+                        new DoubleGenerator(Double.MIN_NORMAL, Double.MIN_NORMAL, 0.05, 0.01),
+                        new FloatGenerator(Float.MIN_NORMAL, Float.MIN_NORMAL, 0.05, 0.01)));
+
+        if (RefreshingTableTestCase.printTableUpdates) {
+            TableTools.showWithRowSet(queryTable);
+        }
+
+        // Compare a static snapshot static min/maxBy against the incremental version
+        final EvalNuggetInterface[] en = new EvalNuggetInterface[] {
+                new TableComparator(queryTable.snapshot().maxBy("Sym").sort("Sym"),
+                        queryTable.maxBy("Sym").sort("Sym")),
+                new TableComparator(queryTable.snapshot().minBy("Sym").sort("Sym"),
+                        queryTable.minBy("Sym").sort("Sym")),
+        };
+        TstUtils.validate(en);
+    }
+
     @Test
     public void testMinMaxByIncremental() {
         final int[] sizes = {10, 20, 50, 200};
@@ -2427,8 +2471,8 @@ public class QueryTableAggregationTest {
                         new UnsortedInstantGenerator(DateTimeUtils.parseInstant("2020-01-01T00:00:00 NY"),
                                 DateTimeUtils.parseInstant("2020-01-25T00:00:00 NY")),
                         new BooleanGenerator(0.4, 0.2),
-                        new DoubleGenerator(Double.MIN_NORMAL, Double.MIN_NORMAL, 0.05, 0.05),
-                        new FloatGenerator(Float.MIN_NORMAL, Float.MIN_NORMAL, 0.05, 0.05)));
+                        new DoubleGenerator(Double.MIN_NORMAL, Double.MIN_NORMAL, 0.05, 0.01),
+                        new FloatGenerator(Float.MIN_NORMAL, Float.MIN_NORMAL, 0.05, 0.01)));
 
         final String[] minQueryStrings = queryTable.getDefinition().getColumnStream()
                 .map(ColumnDefinition::getName)
@@ -2458,7 +2502,8 @@ public class QueryTableAggregationTest {
                         .maxBy("intCol").sort("intCol")),
                 EvalNugget.from(() -> queryTable.sort("Sym", "intCol").update("x=intCol+1").maxBy("Sym", "intCol")
                         .sort("Sym", "intCol")),
-                EvalNugget.from(() -> queryTable.sort("Sym", "intCol").update("x=intCol+1").maxBy("Sym").sort("Sym")),
+                EvalNugget.from(() -> queryTable.sort("Sym",
+                        "intCol").update("x=intCol+1").maxBy("Sym").sort("Sym")),
                 EvalNugget.from(() -> queryTable.minBy("Sym").sort("Sym")),
                 EvalNugget.from(() -> queryTable.sort("Sym").minBy("Sym")),
                 EvalNugget.from(() -> queryTable.dropColumns("Sym").sort("intCol").minBy("intCol").sort("intCol")),
@@ -2468,12 +2513,14 @@ public class QueryTableAggregationTest {
                         .minBy("intCol").sort("intCol")),
                 EvalNugget.from(() -> queryTable.sort("Sym", "intCol").update("x=intCol+1").minBy("Sym", "intCol")
                         .sort("Sym", "intCol")),
-                EvalNugget.from(() -> queryTable.sort("Sym", "intCol").update("x=intCol+1").minBy("Sym").sort("Sym")),
+                EvalNugget.from(() -> queryTable.sort("Sym",
+                        "intCol").update("x=intCol+1").minBy("Sym").sort("Sym")),
                 new TableComparator(queryTable.maxBy("Sym").sort("Sym"),
                         queryTable.groupBy("Sym").update(maxQueryStrings).sort("Sym")),
                 new TableComparator(queryTable.minBy("Sym").sort("Sym"),
                         queryTable.groupBy("Sym").update(minQueryStrings).sort("Sym")),
         };
+        TstUtils.validate(en);
         for (int step = 0; step < 50; step++) {
             if (RefreshingTableTestCase.printTableUpdates) {
                 System.out.println("Seed = " + seed + ", size=" + size + ", step=" + step);
@@ -2613,11 +2660,12 @@ public class QueryTableAggregationTest {
         final Random random = new Random(0);
         final ColumnInfo<?, ?>[] columnInfo;
         final QueryTable queryTable = getTable(size, random,
-                columnInfo = initColumnInfos(new String[] {"Sym", "intCol", "doubleCol", "floatCol"},
+                columnInfo = initColumnInfos(new String[] {"Sym", "intCol", "doubleCol", "doubleColNullNaN", "floatCol"},
                         new SetGenerator<>("a", "b", "c", "d"),
                         new IntGenerator(10, 100),
                         new SetGenerator<>(10.1, 20.1, 30.1),
-                        new FloatGenerator(0, 100.0f)));
+                        new DoubleGenerator(0, 100.0, 0.05f, 0.01f),
+                        new FloatGenerator(0, 100.0f, 0.05f, 0.01f)));
         final Table withoutFloats = queryTable.dropColumns("floatCol");
         if (RefreshingTableTestCase.printTableUpdates) {
             TableTools.showWithRowSet(queryTable);

@@ -516,8 +516,10 @@ public class QueryTableAggregationTestFormulaStaticMethods {
         int count = 0;
         for (int ii = 0; ii < values.size(); ++ii) {
             final double v = values.get(ii);
-            if (v != QueryConstants.NULL_DOUBLE) { // TODO: the existing aggregator doesn't handle this &&
-                                                   // !Double.isNaN(v)) {
+            if (Double.isNaN(v)) {
+                return Double.NaN; // NaN poisons min operation
+            }
+            if (v != QueryConstants.NULL_DOUBLE) {
                 if (count++ == 0) {
                     min = v;
                 } else if (DoubleComparisons.lt(v, min)) {
@@ -536,8 +538,10 @@ public class QueryTableAggregationTestFormulaStaticMethods {
         int count = 0;
         for (int ii = 0; ii < values.size(); ++ii) {
             final double v = values.get(ii);
-            if (v != QueryConstants.NULL_DOUBLE) { // TODO: the existing aggregator doesn't handle this &&
-                                                   // !Double.isNaN(v)) {
+            if (Double.isNaN(v)) {
+                return Double.NaN; // NaN poisons max operation
+            }
+            if (v != QueryConstants.NULL_DOUBLE) {
                 if (count++ == 0) {
                     min = v;
                 } else if (DoubleComparisons.gt(v, min)) {

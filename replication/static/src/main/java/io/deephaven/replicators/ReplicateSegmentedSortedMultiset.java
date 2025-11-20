@@ -4,6 +4,7 @@
 package io.deephaven.replicators;
 
 import gnu.trove.set.hash.THashSet;
+import io.deephaven.replication.ReplicationUtils;
 import org.apache.commons.io.FileUtils;
 
 import java.io.File;
@@ -38,8 +39,33 @@ public class ReplicateSegmentedSortedMultiset {
                 ReplicateSegmentedSortedMultiset::fixupObjectCompare,
                 ReplicateSegmentedSortedMultiset::fixupKeyArrayAllocation);
 
-        charToAllButBoolean(TASK,
+        final List<String> files = charToAllButBoolean(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmminmax/CharSetResult.java");
+        for (String file : files) {
+            if (file.contains("Float")) {
+                final File updatedFile = new File(file);
+                List<String> lines = FileUtils.readLines(updatedFile, Charset.defaultCharset());
+                lines = ReplicationUtils.replaceRegion(lines, "nan handling", List.of("" +
+                        "            if (minimum) {\n" +
+                        "                newResult = Double.isNaN(floatSsm.getMaxFloat()) ? Float.NaN : floatSsm.getMinFloat();\n"
+                        +
+                        "            } else {\n" +
+                        "                newResult = floatSsm.getMaxFloat(); // NaN sorts to max\n" +
+                        "            }"));
+                FileUtils.writeLines(updatedFile, lines);
+            } else if (file.contains("Double")) {
+                final File updatedFile = new File(file);
+                List<String> lines = FileUtils.readLines(updatedFile, Charset.defaultCharset());
+                lines = ReplicationUtils.replaceRegion(lines, "nan handling", List.of("" +
+                        "            if (minimum) {\n" +
+                        "                newResult = Double.isNaN(doubleSsm.getMaxDouble()) ? Double.NaN : doubleSsm.getMinDouble();\n"
+                        +
+                        "            } else {\n" +
+                        "                newResult = doubleSsm.getMaxDouble(); // NaN sorts to max\n" +
+                        "            }"));
+                FileUtils.writeLines(updatedFile, lines);
+            }
+        }
         fixupObjectSsm(
                 charToObject(TASK,
                         "engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmminmax/CharSetResult.java"),
