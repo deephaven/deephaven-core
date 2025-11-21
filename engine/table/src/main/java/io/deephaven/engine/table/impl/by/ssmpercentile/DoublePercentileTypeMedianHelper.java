@@ -34,9 +34,9 @@ public class DoublePercentileTypeMedianHelper extends DoublePercentileTypeHelper
             return setResult(destination, NULL_DOUBLE);
         } else {
             // region maybeHandleNaN
-            final DoubleSegmentedSortedMultiset floatSsmLo = (DoubleSegmentedSortedMultiset) ssmLo;
-            final DoubleSegmentedSortedMultiset floatSsmHi = (DoubleSegmentedSortedMultiset) ssmHi;
-            if ((hiSize > 0 && Double.isNaN(floatSsmHi.getMax())) || (loSize > 0 && Double.isNaN(floatSsmLo.getMax()))) {
+            final DoubleSegmentedSortedMultiset doubleSsmLo = (DoubleSegmentedSortedMultiset) ssmLo;
+            final DoubleSegmentedSortedMultiset doubleSsmHi = (DoubleSegmentedSortedMultiset) ssmHi;
+            if ((hiSize > 0 && Double.isNaN(doubleSsmHi.getMax())) || (loSize > 0 && Double.isNaN(doubleSsmLo.getMax()))) {
                 // No need to pivot while we have NaN values present
                 return setResult(destination, Double.NaN);
             }

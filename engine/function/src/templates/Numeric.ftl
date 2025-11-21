@@ -1249,10 +1249,10 @@ public class Numeric {
      */
 <#else>
     /**
-     * Returns the minimum.  Null values are excluded.
+     * Returns the maximum.  Null values are excluded.
      *
      * @param values values.
-     * @return minimum of non-null values, or null if there are no non-null values.
+     * @return maximum of non-null values, or null if there are no non-null values.
      */
 </#if>
     public static ${pt.primitive} max(${pt.boxed}[] values) {

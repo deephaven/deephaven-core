@@ -174,11 +174,11 @@ public class ReplicateSegmentedSortedMultiset {
         final File updatedFile = new File(file);
         List<String> lines = FileUtils.readLines(updatedFile, Charset.defaultCharset());
         lines = ReplicationUtils.replaceRegion(lines, "maybeHandleNaN", List.of("" +
-                "            final DoubleSegmentedSortedMultiset floatSsmLo = (DoubleSegmentedSortedMultiset) ssmLo;\n"
+                "            final DoubleSegmentedSortedMultiset doubleSsmLo = (DoubleSegmentedSortedMultiset) ssmLo;\n"
                 +
-                "            final DoubleSegmentedSortedMultiset floatSsmHi = (DoubleSegmentedSortedMultiset) ssmHi;\n"
+                "            final DoubleSegmentedSortedMultiset doubleSsmHi = (DoubleSegmentedSortedMultiset) ssmHi;\n"
                 +
-                "            if ((hiSize > 0 && Double.isNaN(floatSsmHi.getMax())) || (loSize > 0 && Double.isNaN(floatSsmLo.getMax()))) {\n"
+                "            if ((hiSize > 0 && Double.isNaN(doubleSsmHi.getMax())) || (loSize > 0 && Double.isNaN(doubleSsmLo.getMax()))) {\n"
                 +
                 "                // No need to pivot while we have NaN values present\n" +
                 "                return setResult(destination, Double.NaN);\n" +
