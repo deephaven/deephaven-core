@@ -78,19 +78,19 @@ public class ReplicateHashing {
         final File objectFile = new File(booleanPath);
         List<String> lines = FileUtils.readLines(objectFile, Charset.defaultCharset());
 
-        lines = replaceRegion(lines, "compactAndCount", Arrays.asList(
+        lines = replaceRegion(lines, "compactAndCount", Arrays.asList("" +
                 "        int trueValues = 0;\n" +
-                        "        int falseValues = 0;\n" +
-                        "        final int end = start + length;\n" +
-                        "        for (int rpos = start; rpos < end; ++rpos) {\n" +
-                        "            final boolean nextValue = valueChunk.get(rpos);\n" +
-                        "            if (nextValue) {\n" +
-                        "                trueValues++;\n" +
-                        "            }\n" +
-                        "            else {\n" +
-                        "                falseValues++;\n" +
-                        "            }\n" +
-                        "        }\n",
+                "        int falseValues = 0;\n" +
+                "        final int end = start + length;\n" +
+                "        for (int rpos = start; rpos < end; ++rpos) {\n" +
+                "            final boolean nextValue = valueChunk.get(rpos);\n" +
+                "            if (nextValue) {\n" +
+                "                trueValues++;\n" +
+                "            }\n" +
+                "            else {\n" +
+                "                falseValues++;\n" +
+                "            }\n" +
+                "        }\n",
                 "        if (trueValues > 0) {\n",
                 "            valueChunk.set(++wpos, true);\n",
                 "            counts.set(wpos, trueValues);\n",
@@ -99,8 +99,6 @@ public class ReplicateHashing {
                 "            valueChunk.set(++wpos, false);\n",
                 "            counts.set(wpos, falseValues);\n",
                 "        }"));
-
-        lines = replaceRegion(lines, "shouldIgnore", Collections.singletonList("        return false;"));
 
         lines = removeImport(lines, "\\s*import io.deephaven.util.compare.BooleanComparisons;");
         lines = removeImport(lines, "\\s*import static.*QueryConstants.*;");
@@ -124,10 +122,10 @@ public class ReplicateHashing {
     private static void fixupFloatCompact(String doublePath, String typeOfFloat) throws IOException {
         final File objectFile = new File(doublePath);
         List<String> lines = FileUtils.readLines(objectFile, Charset.defaultCharset());
-        lines = replaceRegion(lines, "maybeCountNaN", Collections.singletonList(
+        lines = replaceRegion(lines, "maybeCountNaN", Collections.singletonList("" +
                 "            if (!countNaN && " + typeOfFloat + ".isNaN(nextValue)) {\n" +
-                        "                continue;\n" +
-                        "            }"));
+                "                continue;\n" +
+                "            }"));
         FileUtils.writeLines(objectFile, lines);
     }
 

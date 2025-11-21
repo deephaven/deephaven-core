@@ -102,7 +102,8 @@ public class ObjectCompactKernel implements CompactKernel {
             boolean countNull,
             boolean countNaN) {
         for (int ii = 0; ii < startPositions.size(); ++ii) {
-            final int newSize = compactAndCount(valueChunk, counts, startPositions.get(ii), lengths.get(ii), countNull, countNaN);
+            final int newSize =
+                    compactAndCount(valueChunk, counts, startPositions.get(ii), lengths.get(ii), countNull, countNaN);
             lengths.set(ii, newSize);
         }
     }
