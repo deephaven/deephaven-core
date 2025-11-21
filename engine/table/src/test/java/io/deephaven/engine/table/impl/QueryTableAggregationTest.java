@@ -1123,10 +1123,11 @@ public class QueryTableAggregationTest {
 
         final ColumnInfo<?, ?>[] columnInfo;
         final QueryTable table = getTable(size, random,
-                columnInfo = initColumnInfos(new String[] {"Sym", "intCol", "doubleCol"},
+                columnInfo = initColumnInfos(new String[] {"Sym", "intCol", "doubleCol", "doubleColNaN"},
                         new SetGenerator<>("aa", "bb", "bc", "cc", "dd"),
                         new IntGenerator(0, 100),
-                        new DoubleGenerator(0, 100)));
+                        new DoubleGenerator(0, 100),
+                        new DoubleGenerator(0, 100, 0.01, 0.001)));
 
         final EvalNuggetInterface[] en = new EvalNuggetInterface[] {
                 new EvalNugget() {
@@ -1395,7 +1396,7 @@ public class QueryTableAggregationTest {
 
         final Table result = queryTable.dropColumns("Sym").sumBy();
         final List<String> updates = queryTable.getDefinition().getColumnNames().stream().filter(c -> !c.equals("Sym"))
-                .map(c -> c + "=" + QueryTableAggregationTestFormulaStaticMethods.sumFunction(c) + "(" + c + ")")
+                .map(c -> c + "=" + QueryTableAggregationTestFormulaStaticMethods.sumFunction(c))
                 .collect(Collectors.toList());
         final Table updateResult = queryTable.dropColumns("Sym").groupBy().update(Selectable.from(updates));
         assertTableEquals(updateResult, result, TableDiff.DiffItems.DoublesExact);
@@ -1403,7 +1404,7 @@ public class QueryTableAggregationTest {
         final Table resultKeyed = queryTable.sumBy("Sym");
         final List<String> updateKeyed = queryTable.getDefinition().getColumnNames().stream()
                 .filter(c -> !c.equals("Sym"))
-                .map(c -> c + "=" + QueryTableAggregationTestFormulaStaticMethods.sumFunction(c) + "(" + c + ")")
+                .map(c -> c + "=" + QueryTableAggregationTestFormulaStaticMethods.sumFunction(c))
                 .collect(Collectors.toList());
         final Table updateKeyedResult = queryTable.groupBy("Sym").update(Selectable.from(updateKeyed));
         assertTableEquals(updateKeyedResult, resultKeyed, TableDiff.DiffItems.DoublesExact);
@@ -1411,7 +1412,7 @@ public class QueryTableAggregationTest {
         final Table resultAbs = queryTable.dropColumns("Sym").absSumBy();
         final List<String> updatesAbs =
                 queryTable.getDefinition().getColumnNames().stream().filter(c -> !c.equals("Sym"))
-                        .map(c -> c + "=" + QueryTableAggregationTestFormulaStaticMethods.absSumFunction(c, c))
+                        .map(c -> c + "=" + QueryTableAggregationTestFormulaStaticMethods.absSumFunction(c))
                         .collect(Collectors.toList());
         final Table updateResultAbs = queryTable.dropColumns("Sym").groupBy().update(Selectable.from(updatesAbs));
         TableTools.show(resultAbs);
@@ -1421,7 +1422,7 @@ public class QueryTableAggregationTest {
         final Table resultKeyedAbs = queryTable.absSumBy("Sym");
         final List<String> updateKeyedAbs =
                 queryTable.getDefinition().getColumnNames().stream().filter(c -> !c.equals("Sym"))
-                        .map(c -> c + "=" + QueryTableAggregationTestFormulaStaticMethods.absSumFunction(c, c))
+                        .map(c -> c + "=" + QueryTableAggregationTestFormulaStaticMethods.absSumFunction(c))
                         .collect(Collectors.toList());
         final Table updateKeyedResultAbs = queryTable.groupBy("Sym").update(Selectable.from(updateKeyedAbs));
         assertTableEquals(updateKeyedResultAbs, resultKeyedAbs, TableDiff.DiffItems.DoublesExact);
@@ -1538,8 +1539,8 @@ public class QueryTableAggregationTest {
         final Table result = queryTable.dropColumns("Sym").avgBy();
         final List<String> updates = queryTable.getDefinition().getColumnNames().stream().filter(c -> !c.equals("Sym"))
                 .flatMap(c -> Stream.of(
-                        c + "_Sum=" + QueryTableAggregationTestFormulaStaticMethods.sumFunction(c) + "(" + c + ")",
-                        c + "_Count=" + QueryTableAggregationTestFormulaStaticMethods.countFunction(c) + "(" + c + ")",
+                        c + "_Sum=" + QueryTableAggregationTestFormulaStaticMethods.sumFunction(c),
+                        c + "_Count=" + QueryTableAggregationTestFormulaStaticMethods.countFunction(c),
                         avgExpr(c)))
                 .collect(Collectors.toList());
         final List<String> sumsAndCounts =
@@ -2332,7 +2333,6 @@ public class QueryTableAggregationTest {
             System.out.println("Original Source Table:");
             TableTools.showWithRowSet(queryTable);
         }
-
 
         // long columns result in overflows when doing randomized tests
         final EvalNuggetInterface[] en = new EvalNuggetInterface[] {
