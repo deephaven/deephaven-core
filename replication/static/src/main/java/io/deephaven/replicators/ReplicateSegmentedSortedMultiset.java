@@ -47,7 +47,7 @@ public class ReplicateSegmentedSortedMultiset {
                 List<String> lines = FileUtils.readLines(updatedFile, Charset.defaultCharset());
                 lines = ReplicationUtils.replaceRegion(lines, "nan handling", List.of("" +
                         "            if (minimum) {\n" +
-                        "                newResult = Double.isNaN(floatSsm.getMaxFloat()) ? Float.NaN : floatSsm.getMinFloat();\n"
+                        "                newResult = Float.isNaN(floatSsm.getMaxFloat()) ? Float.NaN : floatSsm.getMinFloat();\n"
                         +
                         "            } else {\n" +
                         "                newResult = floatSsm.getMaxFloat(); // NaN sorts to max\n" +
@@ -73,6 +73,10 @@ public class ReplicateSegmentedSortedMultiset {
 
         charToAllButBoolean(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmpercentile/CharPercentileTypeHelper.java");
+        updateFloatPercentileHelper(
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmpercentile/FloatPercentileTypeHelper.java");
+        updateDoublePercentileHelper(
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmpercentile/DoublePercentileTypeHelper.java");
         fixupObjectSsm(
                 charToObject(TASK,
                         "engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmpercentile/CharPercentileTypeHelper.java"),
@@ -82,6 +86,8 @@ public class ReplicateSegmentedSortedMultiset {
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmpercentile/CharPercentileTypeMedianHelper.java");
         floatToAllFloatingPoints(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmpercentile/FloatPercentileTypeMedianHelper.java");
+        updateDoublePercentileHelper(
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmpercentile/DoublePercentileTypeMedianHelper.java");
 
         charToAllButBoolean(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmcountdistinct/CharSsmBackedSource.java");
@@ -148,6 +154,36 @@ public class ReplicateSegmentedSortedMultiset {
                 charToObject(TASK,
                         "engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmcountdistinct/unique/CharRollupUniqueOperator.java"),
                 "ssms");
+    }
+
+    private static void updateFloatPercentileHelper(String file) throws IOException {
+        final File updatedFile = new File(file);
+        List<String> lines = FileUtils.readLines(updatedFile, Charset.defaultCharset());
+        lines = ReplicationUtils.replaceRegion(lines, "maybeHandleNaN", List.of("" +
+                "            final FloatSegmentedSortedMultiset floatSsmLo = (FloatSegmentedSortedMultiset) ssmLo;\n" +
+                "            final FloatSegmentedSortedMultiset floatSsmHi = (FloatSegmentedSortedMultiset) ssmHi;\n" +
+                "            if ((hiSize > 0 && Float.isNaN(floatSsmHi.getMax())) || (loSize > 0 && Float.isNaN(floatSsmLo.getMax()))) {\n"
+                +
+                "                // No need to pivot while we have NaN values present\n" +
+                "                return setResult(destination, Float.NaN);\n" +
+                "            }"));
+        FileUtils.writeLines(updatedFile, lines);
+    }
+
+    private static void updateDoublePercentileHelper(String file) throws IOException {
+        final File updatedFile = new File(file);
+        List<String> lines = FileUtils.readLines(updatedFile, Charset.defaultCharset());
+        lines = ReplicationUtils.replaceRegion(lines, "maybeHandleNaN", List.of("" +
+                "            final DoubleSegmentedSortedMultiset floatSsmLo = (DoubleSegmentedSortedMultiset) ssmLo;\n"
+                +
+                "            final DoubleSegmentedSortedMultiset floatSsmHi = (DoubleSegmentedSortedMultiset) ssmHi;\n"
+                +
+                "            if ((hiSize > 0 && Double.isNaN(floatSsmHi.getMax())) || (loSize > 0 && Double.isNaN(floatSsmLo.getMax()))) {\n"
+                +
+                "                // No need to pivot while we have NaN values present\n" +
+                "                return setResult(destination, Double.NaN);\n" +
+                "            }"));
+        FileUtils.writeLines(updatedFile, lines);
     }
 
     private static void fixupLongKernelOperator(String longPath, String externalResultSetter) throws IOException {

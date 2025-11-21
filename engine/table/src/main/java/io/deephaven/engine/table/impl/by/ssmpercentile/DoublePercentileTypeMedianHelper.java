@@ -33,6 +33,14 @@ public class DoublePercentileTypeMedianHelper extends DoublePercentileTypeHelper
         if (totalSize == 0) {
             return setResult(destination, NULL_DOUBLE);
         } else {
+            // region maybeHandleNaN
+            final DoubleSegmentedSortedMultiset floatSsmLo = (DoubleSegmentedSortedMultiset) ssmLo;
+            final DoubleSegmentedSortedMultiset floatSsmHi = (DoubleSegmentedSortedMultiset) ssmHi;
+            if ((hiSize > 0 && Double.isNaN(floatSsmHi.getMax())) || (loSize > 0 && Double.isNaN(floatSsmLo.getMax()))) {
+                // No need to pivot while we have NaN values present
+                return setResult(destination, Double.NaN);
+            }
+            // endregion maybeHandleNaN
             final long targetLo = (int) ((totalSize - 1) * percentile) + 1;
             if (loSize < targetLo) {
                 ssmHi.moveFrontToBack(ssmLo, targetLo - loSize);

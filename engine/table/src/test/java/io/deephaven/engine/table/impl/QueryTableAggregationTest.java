@@ -2660,16 +2660,36 @@ public class QueryTableAggregationTest {
         final Random random = new Random(0);
         final ColumnInfo<?, ?>[] columnInfo;
         final QueryTable queryTable = getTable(size, random,
-                columnInfo = initColumnInfos(new String[] {"Sym", "intCol", "doubleCol", "doubleColNullNaN", "floatCol"},
-                        new SetGenerator<>("a", "b", "c", "d"),
-                        new IntGenerator(10, 100),
-                        new SetGenerator<>(10.1, 20.1, 30.1),
-                        new DoubleGenerator(0, 100.0, 0.05f, 0.01f),
-                        new FloatGenerator(0, 100.0f, 0.05f, 0.01f)));
+                columnInfo =
+                        initColumnInfos(new String[] {"Sym", "intCol", "doubleCol", "doubleColNullNaN", "floatCol"},
+                                new SetGenerator<>("a", "b", "c", "d"),
+                                new IntGenerator(10, 100),
+                                new SetGenerator<>(10.1, 20.1, 30.1),
+                                new DoubleGenerator(0, 100.0, 0.05, 0.01),
+                                new FloatGenerator(0, 100.0f, 0.05, 0.01)));
         final Table withoutFloats = queryTable.dropColumns("floatCol");
         if (RefreshingTableTestCase.printTableUpdates) {
             TableTools.showWithRowSet(queryTable);
         }
+
+        final String[] medianQueryStrings = queryTable.getDefinition().getColumnStream()
+                .map(ColumnDefinition::getName)
+                .filter(name -> !name.equals("Sym") && !name.equals("floatCol"))
+                .map(name -> name + " = median(" + name + ")")
+                .toArray(String[]::new);
+
+        final String[] percentile_025_QueryStrings = queryTable.getDefinition().getColumnStream()
+                .map(ColumnDefinition::getName)
+                .filter(name -> !name.equals("Sym") && !name.equals("floatCol"))
+                .map(name -> name + " = percentile(0.25, " + name + ")")
+                .toArray(String[]::new);
+
+        final String[] percentile_075_QueryStrings = queryTable.getDefinition().getColumnStream()
+                .map(ColumnDefinition::getName)
+                .filter(name -> !name.equals("Sym") && !name.equals("floatCol"))
+                .map(name -> name + " = percentile(0.75, " + name + ")")
+                .toArray(String[]::new);
+
         final EvalNuggetInterface[] en = new EvalNuggetInterface[] {
                 EvalNugget.from(() -> queryTable.dropColumns("Sym").medianBy()),
                 EvalNugget.from(() -> queryTable.view("doubleCol").medianBy()),
@@ -2679,7 +2699,14 @@ public class QueryTableAggregationTest {
                 EvalNugget.from(() -> withoutFloats.aggAllBy(percentile(0.75), "Sym").sort("Sym")),
                 EvalNugget.from(() -> withoutFloats.aggAllBy(percentile(0.1), "Sym").sort("Sym")),
                 EvalNugget.from(() -> withoutFloats.aggAllBy(percentile(0.99), "Sym").sort("Sym")),
-                EvalNugget.from(() -> withoutFloats.where("Sym=`a`").aggAllBy(percentile(0.99), "Sym").sort("Sym"))
+                EvalNugget.from(() -> withoutFloats.where("Sym=`a`").aggAllBy(percentile(0.99), "Sym").sort("Sym")),
+                // vs Numeric methods
+                new TableComparator(withoutFloats.medianBy("Sym").sort("Sym"),
+                        withoutFloats.groupBy("Sym").update(medianQueryStrings).sort("Sym")),
+                new TableComparator(withoutFloats.aggAllBy(percentile(0.25), "Sym").sort("Sym"),
+                        withoutFloats.groupBy("Sym").update(percentile_025_QueryStrings).sort("Sym")),
+                new TableComparator(withoutFloats.aggAllBy(percentile(0.75), "Sym").sort("Sym"),
+                        withoutFloats.groupBy("Sym").update(percentile_075_QueryStrings).sort("Sym")),
         };
         for (int step = 0; step < 50; step++) {
             if (RefreshingTableTestCase.printTableUpdates) {
