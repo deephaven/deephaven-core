@@ -1123,7 +1123,7 @@ public class QueryTableAggregationTest {
 
         final ColumnInfo<?, ?>[] columnInfo;
         final QueryTable table = getTable(size, random,
-                columnInfo = initColumnInfos(new String[] {"Sym", "intCol", "doubleCol", "doubleColNaN"},
+                columnInfo = initColumnInfos(new String[] {"Sym", "intCol", "doubleCol", "doubleNanCol"},
                         new SetGenerator<>("aa", "bb", "bc", "cc", "dd"),
                         new IntGenerator(0, 100),
                         new DoubleGenerator(0, 100),
@@ -2063,15 +2063,23 @@ public class QueryTableAggregationTest {
         final ColumnInfo<?, ?>[] columnInfo;
         final QueryTable queryTable = getTable(size, random,
                 columnInfo = initColumnInfos(
-                        new String[] {"Sym", "intCol", "doubleCol", "floatCol", "bigI", "bigD", "byteCol"},
+                        new String[] {"Sym", "intCol", "doubleCol", "doubleNanCol", "floatCol", "bigI", "bigD",
+                                "byteCol"},
                         new SetGenerator<>("a", "b", "c", "d"),
                         new IntGenerator(10, 100),
                         new SetGenerator<>(10.1, 20.1, 30.1),
+                        new DoubleGenerator(0, 100, 0.01, 0.001),
                         new FloatGenerator(0, 100),
                         new BigIntegerGenerator(),
                         new BigDecimalGenerator(),
                         new ByteGenerator()));
-        final EvalNugget[] en = new EvalNugget[] {
+
+        final List<String> updates =
+                queryTable.getDefinition().getColumnNames().stream().filter(c -> !c.equals("Sym"))
+                        .map(c -> c + "=" + QueryTableAggregationTestFormulaStaticMethods.avgFunction(c))
+                        .collect(Collectors.toList());
+
+        final EvalNuggetInterface[] en = new EvalNuggetInterface[] {
                 EvalNugget.from(() -> queryTable.dropColumns("Sym").avgBy()),
                 EvalNugget.from(() -> queryTable.sort("Sym").avgBy("Sym")),
                 EvalNugget.from(() -> queryTable.dropColumns("Sym").sort("intCol").avgBy("intCol").sort("intCol")),
@@ -2082,11 +2090,15 @@ public class QueryTableAggregationTest {
                 EvalNugget.from(() -> queryTable.sort("Sym", "intCol").update("x=intCol+1").avgBy("Sym", "intCol")
                         .sort("Sym", "intCol")),
                 EvalNugget.from(() -> queryTable.sort("Sym", "intCol").update("x=intCol+1").avgBy("Sym").sort("Sym")),
+                new TableComparator(queryTable.dropColumns("Sym").avgBy(),
+                        queryTable.dropColumns("Sym").groupBy().update(Selectable.from(updates))),
+                new TableComparator(queryTable.avgBy("Sym"),
+                        queryTable.groupBy("Sym").update(Selectable.from(updates))),
         };
+        TstUtils.validate(en);
         for (int i = 0; i < 50; i++) {
             RefreshingTableTestCase.simulateShiftAwareStep(size, random, queryTable, columnInfo, en);
         }
-
     }
 
     @Test
@@ -2103,7 +2115,7 @@ public class QueryTableAggregationTest {
         final QueryTable queryTable = getTable(size, random,
                 columnInfo = initColumnInfos(
                         new String[] {"Sym", "byteCol", "charCol", "shortCol", "intCol", "longCol", "floatCol",
-                                "doubleCol", "bigI", "bigD"},
+                                "doubleCol", "doubleNanCol", "bigI", "bigD"},
                         new SetGenerator<>("a", "b", "c", "d"),
                         new ByteGenerator((byte) (Byte.MIN_VALUE + 1), Byte.MAX_VALUE, 0.1),
                         new CharGenerator('a', 'z', 0.1),
@@ -2112,6 +2124,7 @@ public class QueryTableAggregationTest {
                         new LongGenerator(-100, 100000, 0.1),
                         new FloatGenerator(0, 100, 0.1),
                         new DoubleGenerator(0, 100, 0.1),
+                        new DoubleGenerator(0, 100, 0.1, 0.001),
                         new BigIntegerGenerator(),
                         new BigDecimalGenerator()));
 
@@ -2132,6 +2145,15 @@ public class QueryTableAggregationTest {
         final Table doubleComparisonVar = bigVsDoubleVar.view("Sym", integerCmp, decimalCmp);
         final Table bigVsDoubleStd = bigAsDouble.stdBy("Sym");
         final Table doubleComparisonStd = bigVsDoubleStd.view("Sym", integerCmp, decimalCmp);
+
+        final List<String> updateStd =
+                queryTable.getDefinition().getColumnNames().stream().filter(c -> !c.equals("Sym"))
+                        .map(c -> c + "=" + QueryTableAggregationTestFormulaStaticMethods.stdFunction(c))
+                        .collect(Collectors.toList());
+        final List<String> updateVar =
+                queryTable.getDefinition().getColumnNames().stream().filter(c -> !c.equals("Sym"))
+                        .map(c -> c + "=" + QueryTableAggregationTestFormulaStaticMethods.varFunction(c))
+                        .collect(Collectors.toList());
 
         final EvalNuggetInterface[] en = new EvalNuggetInterface[] {
                 new EvalNugget() {
@@ -2171,7 +2193,15 @@ public class QueryTableAggregationTest {
                         System.out.println("Double Comparison (std)");
                         TableTools.showWithRowSet(doubleComparisonStd);
                     }
-                }
+                },
+                new TableComparator(queryTable.dropColumns("Sym").stdBy(),
+                        queryTable.dropColumns("Sym").groupBy().update(Selectable.from(updateStd))),
+                new TableComparator(queryTable.stdBy("Sym"),
+                        queryTable.groupBy("Sym").update(Selectable.from(updateStd))),
+                new TableComparator(queryTable.dropColumns("Sym").varBy(),
+                        queryTable.dropColumns("Sym").groupBy().update(Selectable.from(updateVar))),
+                new TableComparator(queryTable.varBy("Sym"),
+                        queryTable.groupBy("Sym").update(Selectable.from(updateVar))),
         };
         for (int i = 0; i < 50; i++) {
             RefreshingTableTestCase.simulateShiftAwareStep(size, random, queryTable, columnInfo, en);
@@ -2221,7 +2251,7 @@ public class QueryTableAggregationTest {
         final ColumnInfo<?, ?>[] columnInfo;
         final QueryTable queryTable = getTable(size, random,
                 columnInfo = initColumnInfos(
-                        new String[] {"Sym", "intCol", "intCol2", "doubleCol", "doubleNullCol", "doubleCol2",
+                        new String[] {"Sym", "intCol", "intCol2", "doubleCol", "doubleNanCol", "doubleCol2",
                                 "floatCol", "charCol", "byteCol", "shortCol"},
                         new SetGenerator<>("a", "b", "c", "d"),
                         new IntGenerator(10, 100),
@@ -2238,7 +2268,6 @@ public class QueryTableAggregationTest {
             System.out.println("Original Source Table:");
             TableTools.showWithRowSet(queryTable);
         }
-
 
         // long columns result in overflows when doing randomized tests
         final EvalNuggetInterface[] en = new EvalNuggetInterface[] {
@@ -2257,6 +2286,28 @@ public class QueryTableAggregationTest {
                         queryTable.updateView("W=intCol*intCol2").groupBy()
                                 .update("WSum=sum(W)", "C=sum(intCol2)", "intCol=WSum/C").view("intCol"),
                         "update"),
+                new TableComparator(queryTable.dropColumns("Sym")
+                        .aggBy(Aggregation.AggWAvg("intCol", "intCol2", "doubleCol", "doubleNanCol", "doubleCol2",
+                                "floatCol")),
+                        queryTable.dropColumns("Sym", "charCol", "byteCol", "shortCol")
+                                .groupBy().update(
+                                        "intCol2=wavg(intCol2, intCol)",
+                                        "doubleCol=wavg(doubleCol, intCol)",
+                                        "doubleCol2=wavg(doubleCol2, intCol)",
+                                        "doubleNanCol=wavg(doubleNanCol, intCol)",
+                                        "floatCol=wavg(floatCol, intCol)")
+                                .dropColumns("intCol")),
+                new TableComparator(queryTable.dropColumns("Sym")
+                        .aggBy(Aggregation.AggWAvg("doubleCol", "intCol", "intCol2", "doubleNanCol", "doubleCol2",
+                                "floatCol")),
+                        queryTable.dropColumns("Sym", "charCol", "byteCol", "shortCol")
+                                .groupBy().update(
+                                        "intCol=wavg(intCol, doubleCol)",
+                                        "intCol2=wavg(intCol2, doubleCol)",
+                                        "doubleCol2=wavg(doubleCol2, doubleCol)",
+                                        "doubleNanCol=wavg(doubleNanCol, doubleCol)",
+                                        "floatCol=wavg(floatCol, doubleCol)")
+                                .dropColumns("doubleCol")),
         };
         for (int step = 0; step < 50; step++) {
             if (RefreshingTableTestCase.printTableUpdates) {
@@ -2264,7 +2315,6 @@ public class QueryTableAggregationTest {
             }
             RefreshingTableTestCase.simulateShiftAwareStep(size, random, queryTable, columnInfo, en);
         }
-
     }
 
     @Test
@@ -2316,7 +2366,7 @@ public class QueryTableAggregationTest {
         final ColumnInfo<?, ?>[] columnInfo;
         final QueryTable queryTable = getTable(size, random,
                 columnInfo = initColumnInfos(
-                        new String[] {"Sym", "intCol", "intCol2", "doubleCol", "doubleNullCol", "doubleCol2",
+                        new String[] {"Sym", "intCol", "intCol2", "doubleCol", "doubleNanCol", "doubleCol2",
                                 "floatCol", "charCol", "byteCol", "shortCol"},
                         new SetGenerator<>("a", "b", "c", "d"),
                         new IntGenerator(10, 100),
@@ -2362,6 +2412,28 @@ public class QueryTableAggregationTest {
                         queryTable.updateView("W=doubleCol*doubleCol2").groupBy().update("doubleCol=sum(W)")
                                 .view("doubleCol"),
                         "update"),
+                new TableComparator(queryTable.dropColumns("Sym")
+                        .aggBy(Aggregation.AggWSum("intCol", "intCol2", "doubleCol", "doubleNanCol", "doubleCol2",
+                                "floatCol")),
+                        queryTable.dropColumns("Sym", "charCol", "byteCol", "shortCol")
+                                .groupBy().update(
+                                        "intCol2=wsum(intCol2, intCol)",
+                                        "doubleCol=wsum(doubleCol, intCol)",
+                                        "doubleCol2=wsum(doubleCol2, intCol)",
+                                        "doubleNanCol=wsum(doubleNanCol, intCol)",
+                                        "floatCol=wsum(floatCol, intCol)")
+                                .dropColumns("intCol")),
+                new TableComparator(queryTable.dropColumns("Sym")
+                        .aggBy(Aggregation.AggWSum("doubleCol", "intCol", "intCol2", "doubleNanCol", "doubleCol2",
+                                "floatCol")),
+                        queryTable.dropColumns("Sym", "charCol", "byteCol", "shortCol")
+                                .groupBy().update(
+                                        "intCol=wsum(intCol, doubleCol)",
+                                        "intCol2=wsum(intCol2, doubleCol)",
+                                        "doubleCol2=wsum(doubleCol2, doubleCol)",
+                                        "doubleNanCol=wsum(doubleNanCol, doubleCol)",
+                                        "floatCol=wsum(floatCol, doubleCol)")
+                                .dropColumns("doubleCol")),
         };
         for (int step = 0; step < 50; step++) {
             if (RefreshingTableTestCase.printTableUpdates) {
@@ -2369,7 +2441,6 @@ public class QueryTableAggregationTest {
             }
             RefreshingTableTestCase.simulateShiftAwareStep(size, random, queryTable, columnInfo, en);
         }
-
     }
 
     @Test

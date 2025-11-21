@@ -11,6 +11,7 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.math.RoundingMode;
 
+import static io.deephaven.function.Basic.isNull;
 import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
 
 public class QueryTableAggregationTestFormulaStaticMethods {
@@ -240,6 +241,55 @@ public class QueryTableAggregationTestFormulaStaticMethods {
         return count == 0 ? QueryConstants.NULL_CHAR : max;
     }
 
+    @SuppressWarnings("unused")
+    public static BigDecimal avgBigInt(ObjectVector<BigInteger> bigIntegerObjectVector) {
+        if (bigIntegerObjectVector == null || bigIntegerObjectVector.isEmpty()) {
+            return null;
+        }
+
+        BigDecimal sum = new BigDecimal(0);
+        long count = 0;
+
+        final long n = bigIntegerObjectVector.size();
+
+        for (long i = 0; i < n; i++) {
+            BigInteger val = bigIntegerObjectVector.get(i);
+            if (!isNull(val)) {
+                final BigDecimal decVal = new BigDecimal(val);
+                sum = sum.add(decVal);
+                count++;
+            }
+        }
+        if (count == 0) {
+            return null;
+        }
+        return sum.divide(new BigDecimal(count), RoundingMode.HALF_UP);
+    }
+
+    @SuppressWarnings("unused")
+    public static BigDecimal avgBigDec(ObjectVector<BigDecimal> bigDecimalObjectVector) {
+        if (bigDecimalObjectVector == null || bigDecimalObjectVector.isEmpty()) {
+            return null;
+        }
+
+        BigDecimal sum = new BigDecimal(0);
+        long count = 0;
+
+        final long n = bigDecimalObjectVector.size();
+
+        for (long i = 0; i < n; i++) {
+            BigDecimal val = bigDecimalObjectVector.get(i);
+            if (!isNull(val)) {
+                sum = sum.add(val);
+                count++;
+            }
+        }
+        if (count == 0) {
+            return null;
+        }
+        return sum.divide(new BigDecimal(count), RoundingMode.HALF_UP);
+    }
+
     static String sumFunction(String col) {
         final String className = QueryTableAggregationTestFormulaStaticMethods.class.getCanonicalName();
         switch (col) {
@@ -341,4 +391,30 @@ public class QueryTableAggregationTestFormulaStaticMethods {
                 return "absSum(" + col + ")";
         }
     }
+
+    static String avgFunction(String col) {
+        final String className = QueryTableAggregationTestFormulaStaticMethods.class.getCanonicalName();
+        switch (col) {
+            case "bigI":
+                return className + ".avgBigInt(" + col + ")";
+            case "bigD":
+                return className + ".avgBigDec(" + col + ")";
+            default:
+                return "avg(" + col + ")";
+        }
+    }
+
+    static String wavgFunction(String col, String wcol) {
+        return "wavg(" + col + "," + wcol + ")";
+        // final String className = QueryTableAggregationTestFormulaStaticMethods.class.getCanonicalName();
+        // switch (col) {
+        // case "bigI":
+        // return className + ".wavgBigInt(" + col + ")";
+        // case "bigD":
+        // return className + ".wavgBigDec(" + col + ")";
+        // default:
+        // return "wavg(" + col + "," + wcol + ")";
+        // }
+    }
+
 }
