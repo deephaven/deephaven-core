@@ -14,6 +14,7 @@ from deephaven import DHError
 from deephaven._wrapper import JObjectWrapper
 from deephaven.jcompat import to_sequence
 from deephaven.update_graph import UpdateGraph
+from deephaven._query_scope import query_scope_ctx
 
 _JExecutionContext = jpy.get_type("io.deephaven.engine.context.ExecutionContext")
 
@@ -72,16 +73,17 @@ def make_user_exec_ctx(freeze_vars: Union[str, Sequence[str]] = None) -> Executi
     if not freeze_vars:
         return ExecutionContext(j_exec_ctx=_JExecutionContext.makeExecutionContext(False))
     else:
-        try:
-            j_exec_ctx = (_JExecutionContext.newBuilder()
-                          .captureQueryCompiler()
-                          .captureQueryLibrary()
-                          .captureQueryScopeVars(*freeze_vars)
-                          .captureUpdateGraph()
-                          .build())
-            return ExecutionContext(j_exec_ctx=j_exec_ctx)
-        except Exception as e:
-            raise DHError(message="failed to make a new ExecutionContext") from e
+        with query_scope_ctx():
+            try:
+                j_exec_ctx = (_JExecutionContext.newBuilder()
+                              .captureQueryCompiler()
+                              .captureQueryLibrary()
+                              .captureQueryScopeVars(*freeze_vars)
+                              .captureUpdateGraph()
+                              .build())
+                return ExecutionContext(j_exec_ctx=j_exec_ctx)
+            except Exception as e:
+                raise DHError(message="failed to make a new ExecutionContext") from e
 
 
 def get_exec_ctx() -> ExecutionContext:
