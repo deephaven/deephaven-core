@@ -778,6 +778,9 @@ public class UnionColumnSource<T> extends AbstractColumnSource<T> {
 
     @Override
     public PushdownPredicateManager pushdownManager() {
+        if (QueryTable.DISABLE_WHERE_PUSHDOWN_MERGED_TABLES) {
+            return null;
+        }
         return unionSourceManager;
     }
 
@@ -790,6 +793,10 @@ public class UnionColumnSource<T> extends AbstractColumnSource<T> {
             final JobScheduler jobScheduler,
             final LongConsumer onComplete,
             final Consumer<Exception> onError) {
+        if (QueryTable.DISABLE_WHERE_PUSHDOWN_MERGED_TABLES) {
+            onComplete.accept(Long.MAX_VALUE);
+            return;
+        }
         // Delegate to the manager.
         unionSourceManager.estimatePushdownFilterCost(filter, selection, usePrev, context, jobScheduler,
                 onComplete, onError);
@@ -805,6 +812,9 @@ public class UnionColumnSource<T> extends AbstractColumnSource<T> {
             final JobScheduler jobScheduler,
             final Consumer<PushdownResult> onComplete,
             final Consumer<Exception> onError) {
+        if (QueryTable.DISABLE_WHERE_PUSHDOWN_MERGED_TABLES) {
+            onComplete.accept(PushdownResult.allMaybeMatch(selection));
+        }
         // Delegate to the manager.
         unionSourceManager.pushdownFilter(filter, selection, usePrev, context, costCeiling, jobScheduler,
                 onComplete, onError);
@@ -814,6 +824,9 @@ public class UnionColumnSource<T> extends AbstractColumnSource<T> {
     public PushdownFilterContext makePushdownFilterContext(
             final WhereFilter filter,
             final List<ColumnSource<?>> filterSources) {
+        if (QueryTable.DISABLE_WHERE_PUSHDOWN_MERGED_TABLES) {
+            return PushdownFilterContext.NO_PUSHDOWN_CONTEXT;
+        }
         // Delegate to the manager.
         return unionSourceManager.makePushdownFilterContext(filter, filterSources);
     }
