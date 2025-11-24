@@ -38,22 +38,6 @@ public interface CompactKernel {
      *
      * @param valueChunk a chunk of values, input and output
      * @param counts an output chunk parallel to valueChunk with the number of times a value occurred
-     * @param countNullNaN if the compaction should count null/NaN
-     */
-    default void compactAndCount(
-            WritableChunk<? extends Values> valueChunk,
-            WritableIntChunk<ChunkLengths> counts,
-            boolean countNullNaN) {
-        // count (or ignore) NaN and Null together
-        compactAndCount(valueChunk, counts, countNullNaN, countNullNaN);
-    }
-
-    /**
-     * Sort valuesChunk, eliminate duplicates, and write the number of times a value occurred into the parallel slot
-     * within counts.
-     *
-     * @param valueChunk a chunk of values, input and output
-     * @param counts an output chunk parallel to valueChunk with the number of times a value occurred
      * @param countNull if the compaction should count nulls or not
      * @param countNaN if the compaction should count NaN or not (only applies to float/double)
      */
@@ -78,26 +62,6 @@ public interface CompactKernel {
             IntChunk<ChunkPositions> startPositions,
             WritableIntChunk<ChunkLengths> lengths) {
         compactAndCount(valueChunk, counts, startPositions, lengths, false, false);
-    }
-
-    /**
-     * For each run in valuesChunk, sort it, eliminate duplicates, and write the number of times a value occurred into
-     * the parallel slot within counts.
-     *
-     * @param valueChunk a chunk of values, input and output
-     * @param counts an output chunk parallel to valueChunk with the number of times a value occurred
-     * @param startPositions the start of each run
-     * @param lengths the length of each run, input and output
-     * @param countNullNaN if the compaction should count null/NaN
-     */
-    default void compactAndCount(
-            WritableChunk<? extends Values> valueChunk,
-            WritableIntChunk<ChunkLengths> counts,
-            IntChunk<ChunkPositions> startPositions,
-            WritableIntChunk<ChunkLengths> lengths,
-            boolean countNullNaN) {
-        // count (or ignore) NaN and Null together
-        compactAndCount(valueChunk, counts, startPositions, lengths, countNullNaN, countNullNaN);
     }
 
     /**

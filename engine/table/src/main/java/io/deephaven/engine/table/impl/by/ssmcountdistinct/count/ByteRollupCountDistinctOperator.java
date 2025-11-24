@@ -42,7 +42,7 @@ public class ByteRollupCountDistinctOperator implements IterativeChunkedAggregat
     private final ByteSsmBackedSource ssms;
     private final Supplier<SegmentedSortedMultiSet.RemoveContext> removeContextFactory;
     private final LongArraySource resultColumn;
-    private final boolean countNull;
+    private final boolean countNullNaN;
 
     private UpdateCommitter<ByteRollupCountDistinctOperator> prevFlusher = null;
     private WritableRowSet touchedStates;
@@ -51,9 +51,9 @@ public class ByteRollupCountDistinctOperator implements IterativeChunkedAggregat
             // region Constructor
             // endregion Constructor
             String name,
-            boolean countNulls) {
+            boolean countNullNaN) {
         this.name = name;
-        this.countNull = countNulls;
+        this.countNullNaN = countNullNaN;
         this.resultColumn = new LongArraySource();
 
         // region SsmCreation
@@ -105,7 +105,7 @@ public class ByteRollupCountDistinctOperator implements IterativeChunkedAggregat
                 bucketedContext.counts.ensureCapacityPreserve(currentPos + newLength);
                 bucketedContext.counts.get().setSize(currentPos + newLength);
                 newLength = ByteCompactKernel.compactAndCount(bucketedContext.valueCopy.get().asWritableByteChunk(),
-                        bucketedContext.counts.get(), currentPos, newLength, countNull);
+                        bucketedContext.counts.get(), currentPos, newLength, countNullNaN, countNullNaN);
             }
 
             bucketedContext.lengthCopy.set(ii, newLength);
@@ -186,7 +186,7 @@ public class ByteRollupCountDistinctOperator implements IterativeChunkedAggregat
                 context.counts.ensureCapacityPreserve(currentPos + newLength);
                 context.counts.get().setSize(currentPos + newLength);
                 newLength = ByteCompactKernel.compactAndCount(context.valueCopy.get().asWritableByteChunk(),
-                        context.counts.get(), currentPos, newLength, countNull);
+                        context.counts.get(), currentPos, newLength, countNullNaN, countNullNaN);
             }
 
             context.lengthCopy.set(ii, newLength);
@@ -221,7 +221,7 @@ public class ByteRollupCountDistinctOperator implements IterativeChunkedAggregat
             final WritableIntChunk<ChunkLengths> countSlice =
                     context.countResettable.resetFromChunk(context.counts.get(), startPosition, runLength);
             ssm.remove(removeContext, valueSlice, countSlice);
-            if (ssm.size() == 0) {
+            if (ssm.isEmpty()) {
                 clearSsm(destination);
             }
 
@@ -271,7 +271,7 @@ public class ByteRollupCountDistinctOperator implements IterativeChunkedAggregat
                 context.counts.ensureCapacityPreserve(currentPos + newLength);
                 context.counts.get().setSize(currentPos + newLength);
                 newLength = ByteCompactKernel.compactAndCount(context.valueCopy.get().asWritableByteChunk(),
-                        context.counts.get(), currentPos, newLength, countNull);
+                        context.counts.get(), currentPos, newLength, countNullNaN, countNullNaN);
             }
 
             context.lengthCopy.set(ii, newLength);
@@ -304,7 +304,7 @@ public class ByteRollupCountDistinctOperator implements IterativeChunkedAggregat
             final WritableIntChunk<ChunkLengths> countSlice =
                     context.countResettable.resetFromChunk(context.counts.get(), startPosition, runLength);
             ssm.remove(removeContext, valueSlice, countSlice);
-            if (ssm.size() == 0) {
+            if (ssm.isEmpty()) {
                 context.ssmsToMaybeClear.set(ii, true);
             }
         }
@@ -374,7 +374,7 @@ public class ByteRollupCountDistinctOperator implements IterativeChunkedAggregat
             context.counts.ensureCapacityPreserve(currentPos);
             context.counts.get().setSize(currentPos);
             ByteCompactKernel.compactAndCount(context.valueCopy.get().asWritableByteChunk(), context.counts.get(),
-                    countNull);
+                    countNullNaN, countNullNaN);
         }
         return context;
     }
@@ -426,7 +426,7 @@ public class ByteRollupCountDistinctOperator implements IterativeChunkedAggregat
             context.counts.ensureCapacityPreserve(currentPos);
             context.counts.get().setSize(currentPos);
             ByteCompactKernel.compactAndCount(context.valueCopy.get().asWritableByteChunk(), context.counts.get(),
-                    countNull);
+                    countNullNaN, countNullNaN);
         }
         return context;
     }
@@ -443,7 +443,7 @@ public class ByteRollupCountDistinctOperator implements IterativeChunkedAggregat
 
         final ByteSegmentedSortedMultiset ssm = ssmForSlot(destination);
         ssm.remove(context.removeContext, updatedValues, context.counts.get());
-        if (ssm.size() == 0) {
+        if (ssm.isEmpty()) {
             clearSsm(destination);
         }
 
@@ -482,7 +482,7 @@ public class ByteRollupCountDistinctOperator implements IterativeChunkedAggregat
             context.counts.ensureCapacityPreserve(currentPos);
             context.counts.get().setSize(currentPos);
             ByteCompactKernel.compactAndCount(context.valueCopy.get().asWritableByteChunk(), context.counts.get(),
-                    countNull);
+                    countNullNaN, countNullNaN);
         }
     }
 
@@ -507,7 +507,7 @@ public class ByteRollupCountDistinctOperator implements IterativeChunkedAggregat
             }
             ssm.insert(updatedValues, context.counts.get());
             newSize = ssm.size();
-        } else if (ssm != null && ssm.size() == 0) {
+        } else if (ssm != null && ssm.isEmpty()) {
             clearSsm(destination);
         } else if (ssm == null) {
             return false;

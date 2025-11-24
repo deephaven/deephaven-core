@@ -72,27 +72,11 @@ public class DoubleCompactKernel implements CompactKernel {
     public static void compactAndCount(
             WritableDoubleChunk<? extends Values> valueChunk,
             WritableIntChunk<ChunkLengths> counts,
-            boolean countNullNaN) {
-        compactAndCount(valueChunk, counts, countNullNaN, countNullNaN);
-    }
-
-    public static void compactAndCount(
-            WritableDoubleChunk<? extends Values> valueChunk,
-            WritableIntChunk<ChunkLengths> counts,
             boolean countNull,
             boolean countNaN) {
         final int newSize = compactAndCount(valueChunk, counts, 0, valueChunk.size(), countNull, countNaN);
         valueChunk.setSize(newSize);
         counts.setSize(newSize);
-    }
-
-    public static void compactAndCount(
-            WritableDoubleChunk<? extends Values> valueChunk,
-            WritableIntChunk<ChunkLengths> counts,
-            IntChunk<ChunkPositions> startPositions,
-            WritableIntChunk<ChunkLengths> lengths,
-            boolean countNullNaN) {
-        compactAndCount(valueChunk, counts, startPositions, lengths, countNullNaN, countNullNaN);
     }
 
     public static void compactAndCount(
@@ -107,15 +91,6 @@ public class DoubleCompactKernel implements CompactKernel {
                     compactAndCount(valueChunk, counts, startPositions.get(ii), lengths.get(ii), countNull, countNaN);
             lengths.set(ii, newSize);
         }
-    }
-
-    public static int compactAndCount(
-            WritableDoubleChunk<? extends Values> valueChunk,
-            WritableIntChunk<ChunkLengths> counts,
-            final int start,
-            final int length,
-            boolean countNullNaN) {
-        return compactAndCount(valueChunk, counts, start, length, countNullNaN, countNullNaN);
     }
 
     public static int compactAndCount(
