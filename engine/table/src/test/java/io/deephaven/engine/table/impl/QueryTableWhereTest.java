@@ -2736,9 +2736,7 @@ public abstract class QueryTableWhereTest {
         final RowSetCapturingFilter filter0 = new ParallelizedRowSetCapturingFilter(RawString.of("B = 42"));
         final RowSetCapturingFilter postFilter = new RowSetCapturingFilter();
 
-        Table merged;
-
-        merged = TableTools.merge(source1, source2).renameColumns("B=A");
+        final Table merged = TableTools.merge(source1, source2).renameColumns("B=A");
 
         // force pre and post filters to run when expected using barriers
         final Table res0 = merged.where(Filter.and(
@@ -2766,12 +2764,8 @@ public abstract class QueryTableWhereTest {
         final RowSetCapturingFilter filter0 = new ParallelizedRowSetCapturingFilter(RawString.of("B = 42"));
         final RowSetCapturingFilter postFilter = new RowSetCapturingFilter();
 
-        Table merged;
-
         // flip around A and B
-        merged = TableTools.merge(source1, source2).updateView("D=B", "B=A", "A=D").dropColumns("D");
-
-        TableTools.showWithRowSet(merged);
+        final Table merged = TableTools.merge(source1, source2).updateView("D=B", "B=A", "A=D").dropColumns("D");
 
         // force pre and post filters to run when expected using barriers
         final Table res0 = merged.where(Filter.and(
@@ -2783,9 +2777,8 @@ public abstract class QueryTableWhereTest {
 
         assertEquals(10, preFilter.numRowsProcessed());
         assertEquals(2, filter0.numRowsProcessed()); // 1 from source1, 1 from source2
-        assertEquals(5, postFilter.numRowsProcessed()); // 1 from source1, 5 from source2
-
-        assertEquals(5, res0.size()); // 1 from source1, 10 from source2
+        assertEquals(5, postFilter.numRowsProcessed()); // 5 from source2
+        assertEquals(5, res0.size());
 
         preFilter.reset();
         postFilter.reset();

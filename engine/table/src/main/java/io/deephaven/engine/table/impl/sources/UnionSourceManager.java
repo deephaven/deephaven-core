@@ -920,7 +920,6 @@ public class UnionSourceManager implements PushdownPredicateManager {
             this.manager = Require.neqNull(manager, "manager");
             maybeMatch = RowSetFactory.empty();
 
-
             final List<String> filterColumns = filter.getColumns();
             Require.eq(filterColumns.size(), "filterColumns.size()",
                     columnSources.size(), "columnSources.size()");
