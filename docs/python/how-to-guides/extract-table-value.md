@@ -8,7 +8,7 @@ Deephaven tables have methods to extract values from tables into Python. General
 
 The recommended way to extract values from a table by positional index is using [`to_numpy`](../reference/numpy/to-numpy.md). This converts table columns to NumPy arrays, which provide positional index access.
 
-```python order=source test-set=1
+```python order=result test-set=1
 from deephaven import empty_table
 from deephaven.numpy import to_numpy
 
@@ -51,7 +51,7 @@ for value in integers_array:
 
 For multiple columns, convert each separately or use table operations:
 
-```python order=source test-set=2
+```python order=multi_col_table test-set=2
 from deephaven import empty_table
 from deephaven.numpy import to_numpy
 

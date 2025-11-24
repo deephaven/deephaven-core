@@ -279,6 +279,10 @@
                 "path": "how-to-guides/iterate-table-data.md"
               },
               {
+                "label": "Extract table values",
+                "path": "how-to-guides/extract-table-value.md"
+              },
+              {
                 "label": "Replay",
                 "path": "how-to-guides/replay-data.md"
               }
