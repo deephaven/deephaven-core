@@ -814,6 +814,7 @@ public class UnionColumnSource<T> extends AbstractColumnSource<T> {
             final Consumer<Exception> onError) {
         if (QueryTable.DISABLE_WHERE_PUSHDOWN_MERGED_TABLES) {
             onComplete.accept(PushdownResult.allMaybeMatch(selection));
+            return;
         }
         // Delegate to the manager.
         unionSourceManager.pushdownFilter(filter, selection, usePrev, context, costCeiling, jobScheduler,
