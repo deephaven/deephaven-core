@@ -871,8 +871,14 @@ public class BarrageUtil {
 
         public ChunkType[] computeWireChunkTypes() {
             return tableDef.getColumnStream()
-                    .map(ColumnDefinition::getDataType)
-                    .map(ReinterpretUtils::maybeConvertToWritablePrimitiveChunkType)
+                    .map(def -> {
+                        final Field field = arrowSchema.findField(def.getName());
+                        if (field != null && field.getType().getTypeID() == ArrowType.ArrowTypeID.Timestamp) {
+                            // An Arrow timestamp is a long; so we should interpret it as such.
+                            return ChunkType.Long;
+                        }
+                        return ReinterpretUtils.maybeConvertToWritablePrimitiveChunkType(def.getDataType());
+                    })
                     .toArray(ChunkType[]::new);
         }
 
@@ -1215,6 +1221,7 @@ public class BarrageUtil {
                         return Types.MinorType.VARBINARY.getType();
                     }
                     if (type == Instant.class || type == ZonedDateTime.class) {
+                        // Note: We are choosing to discard the time zone for a ZonedDateTime here.
                         return NANO_SINCE_EPOCH_TYPE;
                     }
                     if (type == Duration.class) {
