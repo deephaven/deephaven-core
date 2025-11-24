@@ -1389,7 +1389,8 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
                             // note we use column name `Sym` instead of `objCol` for the groupBy op in #createNuggets
                             columnInfo = initColumnInfos(
                                     new String[] {"longCol", "intCol", "Sym", "byteCol", "doubleCol", "floatCol",
-                                            "shortCol", "charCol", "boolCol", "strCol", "strArrCol", "datetimeCol", "zdtCol"},
+                                            "shortCol", "charCol", "boolCol", "strCol", "strArrCol", "datetimeCol",
+                                            "zdtCol"},
                                     new SortedLongGenerator(0, Long.MAX_VALUE - 1),
                                     new IntGenerator(10, 100, 0.1),
                                     new SetGenerator<>("a", "b", "c", "d"), // covers strings
@@ -1406,10 +1407,11 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
                                             DateTimeUtils.parseInstant("2020-02-14T00:00:00 NY"),
                                             DateTimeUtils.parseInstant("2020-02-25T00:00:00 NY")),
                                     new SetGenerator<>(
-                                            DateTimeUtils.parseInstant("2025-11-13T00:00:00 NY").atZone(ZoneId.of("UTC")),
-                                            DateTimeUtils.parseInstant("2025-11-14T00:00:00 NY").atZone(ZoneId.of("UTC")),
-                                            null
-                                    ));
+                                            DateTimeUtils.parseInstant("2025-11-13T00:00:00 NY")
+                                                    .atZone(ZoneId.of("UTC")),
+                                            DateTimeUtils.parseInstant("2025-11-14T00:00:00 NY")
+                                                    .atZone(ZoneId.of("UTC")),
+                                            null));
                             sourceTable = getTable(size / 4, random, columnInfo);
                         }
                     };
