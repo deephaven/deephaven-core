@@ -2507,12 +2507,12 @@ public class QueryTableAggregationTest {
             TableTools.showWithRowSet(queryTable);
         }
 
-        // Compare a static snapshot static min/maxBy against the incremental version
+        // Compare a static snapshot min/maxBy against the incremental version
         final EvalNuggetInterface[] en = new EvalNuggetInterface[] {
-                new TableComparator(queryTable.snapshot().maxBy("Sym").sort("Sym"),
-                        queryTable.maxBy("Sym").sort("Sym")),
-                new TableComparator(queryTable.snapshot().minBy("Sym").sort("Sym"),
-                        queryTable.minBy("Sym").sort("Sym")),
+                new TableComparator(queryTable.snapshot().maxBy("Sym"),
+                        queryTable.maxBy("Sym")),
+                new TableComparator(queryTable.snapshot().minBy("Sym"),
+                        queryTable.minBy("Sym")),
         };
         TstUtils.validate(en);
     }

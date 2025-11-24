@@ -132,26 +132,17 @@ public class BooleanCompactKernel implements CompactKernel {
             final boolean nextValue = valueChunk.get(rpos);
             if (nextValue) {
                 trueValues++;
-            }
-            else {
+            } else {
                 falseValues++;
             }
         }
-
         if (trueValues > 0) {
-
             valueChunk.set(++wpos, true);
-
             counts.set(wpos, trueValues);
-
         }
-
         if (falseValues > 0) {
-
             valueChunk.set(++wpos, false);
-
             counts.set(wpos, falseValues);
-
         }
         // endregion compactAndCount
         return wpos + 1;

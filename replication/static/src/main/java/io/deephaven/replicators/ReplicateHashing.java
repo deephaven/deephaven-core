@@ -86,18 +86,17 @@ public class ReplicateHashing {
                 "            final boolean nextValue = valueChunk.get(rpos);\n" +
                 "            if (nextValue) {\n" +
                 "                trueValues++;\n" +
-                "            }\n" +
-                "            else {\n" +
+                "            } else {\n" +
                 "                falseValues++;\n" +
                 "            }\n" +
-                "        }\n",
-                "        if (trueValues > 0) {\n",
-                "            valueChunk.set(++wpos, true);\n",
-                "            counts.set(wpos, trueValues);\n",
-                "        }\n",
-                "        if (falseValues > 0) {\n",
-                "            valueChunk.set(++wpos, false);\n",
-                "            counts.set(wpos, falseValues);\n",
+                "        }\n" +
+                "        if (trueValues > 0) {\n" +
+                "            valueChunk.set(++wpos, true);\n" +
+                "            counts.set(wpos, trueValues);\n" +
+                "        }\n" +
+                "        if (falseValues > 0) {\n" +
+                "            valueChunk.set(++wpos, false);\n" +
+                "            counts.set(wpos, falseValues);\n" +
                 "        }"));
 
         lines = removeImport(lines, "\\s*import io.deephaven.util.compare.BooleanComparisons;");
