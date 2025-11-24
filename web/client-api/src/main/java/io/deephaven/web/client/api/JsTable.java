@@ -845,7 +845,13 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
         if (copy.columns == null) {
             throw new IllegalArgumentException("Missing 'columns' property in viewport subscription options");
         }
-        return TableViewportSubscription.make(copy, this);
+        TableViewportSubscription subscription = TableViewportSubscription.make(copy, this);
+
+        // Sever any connection between this table and the subscription
+        subscription.retainForExternalUse();
+        subscription.internalClose();
+
+        return subscription;
     }
 
 
