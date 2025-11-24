@@ -873,7 +873,7 @@ public class BarrageUtil {
             return tableDef.getColumnStream()
                     .map(def -> {
                         final Field field = arrowSchema.findField(def.getName());
-                        if (field.getType().getTypeID() == ArrowType.ArrowTypeID.Timestamp) {
+                        if (field != null && field.getType().getTypeID() == ArrowType.ArrowTypeID.Timestamp) {
                             // An Arrow timestamp is a long; so we should interpret it as such.
                             return ChunkType.Long;
                         }
