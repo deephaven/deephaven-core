@@ -4090,6 +4090,40 @@ public class QueryTableAggregationTest {
         assertTableEquals(expected, result);
     }
 
+    @Test
+    public void testDH20997() {
+        final QueryTable table = testRefreshingTable(i(0).toTracking(), intCol("x", 0));
+        final Table distinct = table.aggBy(AggDistinct("x")).ungroup();
+        final Table distinctWithValues = distinct.update("extra=`value_string`");
+
+        final Table result = table.naturalJoin(distinctWithValues, "x");
+        Table expected;
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+
+        System.out.println("Adding key 1");
+        updateGraph.runWithinUnitTestCycle(() -> {
+            addToTable(table, i(1), intCol("x", 1));
+            table.notifyListeners(i(1), i(), i());
+        });
+
+        expected = testTable(
+                intCol("x", 0, 1),
+                col("extra", "value_string", "value_string"));
+        assertTableEquals(expected, result);
+
+        System.out.println("Adding key 2");
+        updateGraph.runWithinUnitTestCycle(() -> {
+            addToTable(table, i(2), intCol("x", 2));
+            table.notifyListeners(i(2), i(), i());
+        });
+
+        expected = testTable(
+                intCol("x", 0, 1, 2),
+                col("extra", "value_string", "value_string", "value_string"));
+        assertTableEquals(expected, result);
+    }
+
     private void diskBackedTestHarness(Consumer<Table> testFunction) throws IOException {
         final File directory = Files.createTempDirectory("QueryTableAggregationTest").toFile();
 
