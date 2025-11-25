@@ -34,7 +34,7 @@ first_three = integers_array[0:3]
 print(f"First three values: {first_three}")
 ```
 
-> [!WARNING] 
+> [!WARNING]
 > `to_numpy` copies the entire table into memory. For large tables, consider limiting table size before converting.
 
 > [!IMPORTANT]
@@ -85,7 +85,7 @@ column_source = result.j_object.getColumnSource("Integers")
 print(column_source)
 ```
 
-> [!IMPORTANT] 
+> [!IMPORTANT]
 > `ColumnSource` methods use **row keys**, not positional indices. Row keys are internal identifiers that may not match positional indices, especially in filtered or modified tables.
 
 For primitive columns, use type-specific methods:
