@@ -161,6 +161,15 @@ public class TestChunkSort {
         expected.add((char) 2);
         expected.add((char) 3);
         validateCharChunkSort(expected);
+
+        // Single value plus nulls
+        expected.clear();
+        expected.add((char) 10);
+        expected.add(NULL_CHAR);
+        expected.add(NULL_CHAR);
+        expected.add(NULL_CHAR);
+        validateCharChunkSort(expected);
+
     }
 
     private static void validateCharChunkSort(List<Character> expected) {
@@ -411,6 +420,18 @@ public class TestChunkSort {
         expected.add(Float.NEGATIVE_INFINITY);
         expected.add(Float.NEGATIVE_INFINITY);
         validateFloatChunkSort(expected);
+
+        // Only negative infinity
+        expected.clear();
+        expected.add(Float.NEGATIVE_INFINITY);
+        expected.add(Float.NEGATIVE_INFINITY);
+        validateFloatChunkSort(expected);
+
+        // Only NULL_FLOAT
+        expected.clear();
+        expected.add(NULL_FLOAT);
+        expected.add(NULL_FLOAT);
+        validateFloatChunkSort(expected);
     }
 
     private static void validateFloatChunkSort(List<Float> expected) {
@@ -499,6 +520,18 @@ public class TestChunkSort {
         expected.add(NULL_DOUBLE);
         expected.add(Double.NEGATIVE_INFINITY);
         expected.add(Double.NEGATIVE_INFINITY);
+        validateDoubleChunkSort(expected);
+
+        // Only negative infinity
+        expected.clear();
+        expected.add(Double.NEGATIVE_INFINITY);
+        expected.add(Double.NEGATIVE_INFINITY);
+        validateDoubleChunkSort(expected);
+
+        // Only NULL_FLOAT
+        expected.clear();
+        expected.add(NULL_DOUBLE);
+        expected.add(NULL_DOUBLE);
         validateDoubleChunkSort(expected);
     }
 
