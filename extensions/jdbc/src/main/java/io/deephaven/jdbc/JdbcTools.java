@@ -3,9 +3,7 @@
 //
 package io.deephaven.jdbc;
 
-import com.google.common.base.CaseFormat;
 import io.deephaven.UncheckedDeephavenException;
-import io.deephaven.api.util.NameValidator;
 import io.deephaven.chunk.ResettableWritableChunk;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Values;
@@ -123,16 +121,16 @@ public class JdbcTools {
     }
 
     /**
-     * Construct a {@link RowSink} for {@code resultSet} and {@code options} using {@code rowSinkFactory},
-     * {@link RowSink#consumeRow() consume} all rows from {@code resultSet} (limited by {@code options.maxRows}), and
-     * return the {@link RowSink#result() result}, ensuring that the sink is {@link RowSink#close() closed} before
-     * return.
+     * Construct a {@link RowSink} for {@code resultSet} and {@code instructions} using {@code rowSinkFactory},
+     * {@link RowSink#consumeRow() consume} all rows from {@code resultSet} after its current cursor (limited by
+     * {@code instructions.maxRows()}), and return the {@link RowSink#result() result}, ensuring that the sink is
+     * {@link RowSink#close() closed} before return.
      *
-     * @param resultSet The {@link ResultSet} that will be consumed
+     * @param resultSet The {@link ResultSet} that will be consumed, with its cursor before the first row to read
      * @param instructions {@link JdbcReadInstructions} that should apply to the returned sink and its result
      * @param rowSinkFactory The {@link RowSinkFactory} to be used to consume {@code resultSet}
      * @return The {@link RowSink#result() result}
-     * @throws SQLException If a {@link SQLException} was encountered while interacting with the {@link ResultSet}
+     * @throws SQLException If a {@link SQLException} was encountered while interacting with {@code resultSet}
      * @param <RESULT_TYPE> The result type produced by the sink's {@link RowSink#result()}
      */
     public static <RESULT_TYPE> RESULT_TYPE readJdbc(
@@ -156,107 +154,13 @@ public class JdbcTools {
     }
 
     /**
-     * Returns a table that was populated from the provided result set.
-     *
-     * @param resultSet result set to read, its cursor should be before the first row to import
-     * @param origColumnNames columns to include or all if none provided
-     * @return a deephaven static table
-     * @throws SQLException if reading from the result set fails
-     */
-    public static Table readTable(final ResultSet resultSet, final String... origColumnNames) throws SQLException {
-        return readTable(resultSet, JdbcReadInstructions.builder().build(), origColumnNames);
-    }
-
-    /**
-     * Returns a table that was populated from the provided result set.
-     *
-     * @param resultSet result set to read, its cursor should be before the first row to import
-     * @param instructions options to change the way readJdbc behaves
-     * @param origColumnNames columns to include or all if none provided
-     * @return a deephaven static table
-     * @throws SQLException if reading from the result set fails
-     */
-    public static Table readTable(
-            final ResultSet resultSet,
-            final JdbcReadInstructions instructions,
-            String... origColumnNames) throws SQLException {
-        return readJdbc(resultSet, instructions,
-                (rs, nr, o) -> new TableRowSink(rs, nr, o, null, origColumnNames));
-    }
-
-    private static final CaseFormat fromFormat = CaseFormat.LOWER_HYPHEN;
-    private static final Map<CasingStyle, CaseFormat> caseFormats;
-    static {
-        Map<CasingStyle, CaseFormat> initFormats = new HashMap<>();
-        initFormats.put(CasingStyle.lowerCamel, CaseFormat.LOWER_CAMEL);
-        initFormats.put(CasingStyle.UpperCamel, CaseFormat.UPPER_CAMEL);
-        initFormats.put(CasingStyle.lowercase, CaseFormat.LOWER_UNDERSCORE);
-        initFormats.put(CasingStyle.UPPERCASE, CaseFormat.UPPER_UNDERSCORE);
-        initFormats.put(CasingStyle.None, null);
-        caseFormats = Collections.unmodifiableMap(initFormats);
-    }
-
-    /**
-     * Ensures that columns names are valid for use in Deephaven and applies optional casing rules.
-     *
-     * @param originalColumnName Column name to be checked for validity and uniqueness
-     * @param usedNames List of names already used in the table
-     * @param casing Optional {@link CasingStyle} to use when processing source names, if null or
-     *        {@link CasingStyle#None} the source name's casing is not modified
-     * @param replacement A String to use as a replacement for invalid characters in the source name
-     * @return Legalized, uniquified, column name, with specified casing applied
-     */
-    private static String fixColumnName(
-            final String originalColumnName,
-            @NotNull final Set<String> usedNames,
-            final CasingStyle casing,
-            @NotNull final String replacement) {
-        if (casing == null || caseFormats.get(casing) == null) {
-            return NameValidator.legalizeColumnName(originalColumnName, (s) -> s.replaceAll("[- ]", replacement),
-                    usedNames);
-        }
-
-        // Run through the legalization and casing process twice, in case legalization returns a name that doesn't
-        // conform with casing.
-        // During casing adjustment, we'll allow hyphen, space, backslash, forward slash, and period as word separators.
-        // noinspection unchecked
-        final String intermediateLegalName =
-                NameValidator.legalizeColumnName(
-                        originalColumnName.replaceAll("[- .\\\\/]", "_"),
-                        (s) -> s,
-                        Collections.EMPTY_SET)
-                        .replaceAll("_", "-").toLowerCase();
-
-        // There should be no reason for the casing options to return a String with hyphen or space in them, but, in
-        // case we add other CasingStyles later, we'll check.
-        return NameValidator.legalizeColumnName(
-                fromFormat.to(
-                        caseFormats.get(casing),
-                        intermediateLegalName),
-                (s) -> s.replaceAll("[- _]", replacement),
-                usedNames);
-    }
-
-    private static String[] fixColumnNames(JdbcReadInstructions instructions, String[] origColumnNames) {
-        final Set<String> usedNames = new HashSet<>();
-        final String[] columnNames = new String[origColumnNames.length];
-        for (int ii = 0; ii < origColumnNames.length; ++ii) {
-            columnNames[ii] =
-                    JdbcTools.fixColumnName(origColumnNames[ii], usedNames, instructions.columnNameCasingStyle(),
-                            instructions.columnNameInvalidCharacterReplacement());
-            usedNames.add(columnNames[ii]);
-        }
-        return columnNames;
-    }
-
-    /**
-     * Gets the expected size of the {@link ResultSet}, or 0 if we can not figure it out. This method may move the
+     * Gets the expected size of the {@link ResultSet}, or 0 if it cannot be determined. This method may move the
      * cursor, but will restore it before returning if so.
      *
      * @param resultSet The result to determine the size of
      * @return The expected size (or 0 if unknown)
      */
-    protected static int getExpectedSize(@NotNull final ResultSet resultSet) {
+    private static int getExpectedSize(@NotNull final ResultSet resultSet) {
         // It would be swell to get the size of our ResultSet, but only if it is scrollable
         final int type;
         try {
@@ -287,6 +191,82 @@ public class JdbcTools {
         return 0;
     }
 
+    /**
+     * Produce a {@link Table} populated from the rows of {@code resultSet}. The returned table will never be
+     * {@link Table#isRefreshing() refreshing}.
+     *
+     * @param resultSet {@link ResultSet} to read, with its cursor before the first row to include
+     * @param inputColumnsToInclude Columns from {@code resultSet} to include; an empty input means "include all
+     *        columns"
+     * @return The resulting {@link Table}
+     * @throws SQLException If a {@link SQLException} was encountered while interacting with {@code resultSet}
+     */
+    public static Table readTable(final ResultSet resultSet, final String... inputColumnsToInclude)
+            throws SQLException {
+        return readTable(resultSet, JdbcReadInstructions.builder().build(), inputColumnsToInclude);
+    }
+
+    /**
+     * Produce a {@link Table} populated from the rows of {@code resultSet}. The returned table will never be
+     * {@link Table#isRefreshing() refreshing}.
+     *
+     * @param resultSet {@link ResultSet} to read, with its cursor before the first row to include
+     * @param instructions {@link JdbcReadInstructions} that should apply
+     * @param inputColumnsToInclude Columns from {@code resultSet} to include; an empty input means "include all
+     *        columns"
+     * @return The resulting {@link Table}
+     * @throws SQLException If a {@link SQLException} was encountered while interacting with {@code resultSet}
+     */
+    public static Table readTable(
+            final ResultSet resultSet,
+            final JdbcReadInstructions instructions,
+            String... inputColumnsToInclude) throws SQLException {
+        return readJdbc(resultSet, instructions,
+                (rs, nr, ri) -> new TableRowSink(rs, nr, ri, null, inputColumnsToInclude));
+    }
+
+    // region Name Mapping
+
+    /**
+     * Ensure we have result set column names, either from the supplied array or by querying the result set metadata.
+     *
+     * @param resultSet The result set to examine if {@code resultSetColumnNames} is null or empty
+     * @param inputResultSetColumnNames The supplied result set column names
+     * @return The result set column names to use
+     * @throws SQLException If we encounter an error querying the result set metadata
+     */
+    private static @NotNull String @NotNull [] ensureResultSetColumnNames(
+            @NotNull final ResultSet resultSet,
+            @NotNull final String[] inputResultSetColumnNames) throws SQLException {
+        if (inputResultSetColumnNames != null && inputResultSetColumnNames.length > 0) {
+            return inputResultSetColumnNames;
+        }
+        final ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
+        final String[] resultSetColumnNames = new String[resultSetMetaData.getColumnCount()];
+        for (int ii = 0; ii < resultSetColumnNames.length; ++ii) {
+            resultSetColumnNames[ii] = resultSetMetaData.getColumnName(ii + 1);
+        }
+        return resultSetColumnNames;
+    }
+
+    /**
+     * Ensure we have a result set column name to output column name mapping function, either from the supplied function
+     * or by creating a default one.
+     *
+     * @param instructions The {@link JdbcReadInstructions} to use when creating a default mapping function
+     * @param resultSetColumnNameToOutputColumnName The supplied mapping function
+     * @return The mapping function to use
+     */
+    private static @NotNull Function<String, String> ensureResultSetColumnNameToOutputColumnName(
+            @NotNull final JdbcReadInstructions instructions,
+            @Nullable final Function<String, String> resultSetColumnNameToOutputColumnName) {
+        return resultSetColumnNameToOutputColumnName != null
+                ? resultSetColumnNameToOutputColumnName
+                : new StandardColumnNameMappingFunction(instructions);
+    }
+
+    // endregion Name Mapping
+
     private interface SourceFiller extends SafeCloseable {
         void readRow(ResultSet rs, JdbcTypeMapper.Context context, long destRowKey) throws SQLException;
     }
@@ -309,36 +289,26 @@ public class JdbcTools {
                 @NotNull final ResultSet resultSet,
                 final int numRows,
                 @NotNull final JdbcReadInstructions instructions,
-                @Nullable final Function<String, String> resultSetColumnNameToTableColumnName,
+                @Nullable Function<String, String> resultSetColumnNameToTableColumnName,
                 @NotNull String... resultSetColumnNames) throws SQLException {
             this.resultSet = resultSet;
 
-            final ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
-
-            if (resultSetColumnNames.length == 0) {
-                resultSetColumnNames = new String[resultSetMetaData.getColumnCount()];
-                for (int ii = 0; ii < resultSetColumnNames.length; ++ii) {
-                    resultSetColumnNames[ii] = resultSetMetaData.getColumnName(ii + 1);
-                }
-            }
+            resultSetColumnNames = ensureResultSetColumnNames(resultSet, resultSetColumnNames);
+            resultSetColumnNameToTableColumnName =
+                    ensureResultSetColumnNameToOutputColumnName(instructions, resultSetColumnNameToTableColumnName);
 
             final int numColumns = resultSetColumnNames.length;
-            final String[] columnNames;
-            if (resultSetColumnNameToTableColumnName == null) {
-                columnNames = JdbcTools.fixColumnNames(instructions, resultSetColumnNames);
-            } else {
-                columnNames = Arrays.stream(resultSetColumnNames)
-                        .map(resultSetColumnNameToTableColumnName)
-                        .toArray(String[]::new);
-            }
+            final String[] outputColumnNames = Arrays.stream(resultSetColumnNames)
+                    .map(resultSetColumnNameToTableColumnName)
+                    .toArray(String[]::new);
 
             final Map<String, WritableColumnSource<?>> columnSources = new LinkedHashMap<>(numColumns);
             final SourceFiller[] sourceFillers = new SourceFiller[numColumns];
             try {
                 for (int ci = 0; ci < numColumns; ++ci) {
                     final int columnIndex = resultSet.findColumn(resultSetColumnNames[ci]);
-                    final String columnName = columnNames[ci];
-                    final Class<?> destinationType = instructions.columnTargetTypes().get(columnName);
+                    final String outputColumnName = outputColumnNames[ci];
+                    final Class<?> destinationType = instructions.columnTargetTypes().get(outputColumnName);
 
                     final JdbcTypeMapper.DataTypeMapping<?> typeMapping =
                             JdbcTypeMapper.getColumnTypeMapping(resultSet, columnIndex, destinationType);
@@ -352,7 +322,7 @@ public class JdbcTools {
                     if (numRows > 0) {
                         columnSource.ensureCapacity(numRows, false);
                     }
-                    columnSources.put(columnName, columnSource);
+                    columnSources.put(outputColumnName, columnSource);
 
                     if (ChunkedBackingStoreExposedWritableSource.exposesChunkedBackingStore(columnSource)) {
                         // noinspection resource
@@ -487,4 +457,135 @@ public class JdbcTools {
             fillFromContext.close();
         }
     }
+//
+//    /**
+//     * A {@link StreamPublisher} that is also a {@link RowSinkFactory} implementation.
+//     * {@link StreamPublisherRowSinkFactory#make(ResultSet, int, JdbcReadInstructions) created} {@link RowSink row
+//     * sinks} will publish data via the publisher/factory.
+//     */
+//    private static final class StreamPublisherRowSinkFactory implements StreamPublisher, RowSinkFactory<Void> {
+//
+//
+//        private final SourceFiller[] sourceFillers;
+//        // TODO: We have a chicken-and-egg problem regarding chunk types, and the type mappers for Instant need to fill
+//        // long chunks...
+//        final JdbcTypeMapper.Context typeMapperContext;
+//
+//        // TODO: We probably need to record at most one error and deliver it...
+//        boolean errorEncountered;
+//
+//        private StreamPublisherRowSinkFactory(
+//                @NotNull final ResultSet resultSet,
+//                @NotNull final JdbcReadInstructions instructions,
+//                @Nullable Function<String, String> resultSetColumnNameToPublisherColumnName,
+//                @NotNull String... resultSetColumnNames) throws SQLException {
+//
+//            resultSetColumnNames = ensureResultSetColumnNames(resultSet, resultSetColumnNames);
+//            resultSetColumnNameToPublisherColumnName =
+//                    ensureResultSetColumnNameToOutputColumnName(instructions, resultSetColumnNameToPublisherColumnName);
+//
+//            final int numColumns = resultSetColumnNames.length;
+//            final String[] outputColumnNames;
+//            if (resultSetColumnNameToPublisherColumnName == null) {
+//                outputColumnNames = fixColumnNames(instructions, resultSetColumnNames);
+//            } else {
+//                outputColumnNames = Arrays.stream(resultSetColumnNames)
+//                        .map(resultSetColumnNameToPublisherColumnName)
+//                        .toArray(String[]::new);
+//            }
+//
+//            final Map<String, WritableColumnSource<?>> columnSources = new LinkedHashMap<>(numColumns);
+//            final SourceFiller[] sourceFillers = new SourceFiller[numColumns];
+//            try {
+//                for (int ci = 0; ci < numColumns; ++ci) {
+//                    final int columnIndex = resultSet.findColumn(resultSetColumnNames[ci]);
+//                    final String columnName = outputColumnNames[ci];
+//                    final Class<?> destinationType = instructions.columnTargetTypes().get(columnName);
+//
+//                    final JdbcTypeMapper.DataTypeMapping<?> typeMapping =
+//                            JdbcTypeMapper.getColumnTypeMapping(resultSet, columnIndex, destinationType);
+//
+//                    final Class<?> deephavenType = typeMapping.getDeephavenType();
+//                    final Class<?> componentType = deephavenType.getComponentType();
+//                    final WritableColumnSource<?> columnSource = numRows == 0
+//                            ? ArrayBackedColumnSource.getMemoryColumnSource(0, deephavenType, componentType)
+//                            : InMemoryColumnSource.getImmutableMemoryColumnSource(numRows, deephavenType,
+//                                    componentType);
+//                    if (numRows > 0) {
+//                        columnSource.ensureCapacity(numRows, false);
+//                    }
+//                    columnSources.put(columnName, columnSource);
+//
+//                    if (ChunkedBackingStoreExposedWritableSource.exposesChunkedBackingStore(columnSource)) {
+//                        // noinspection resource
+//                        sourceFillers[ci] = new BackingStoreSourceFiller(columnIndex, typeMapping, columnSource);
+//                    } else {
+//                        // noinspection resource
+//                        sourceFillers[ci] = new ChunkFlushingSourceFiller(columnIndex, typeMapping, columnSource);
+//                    }
+//                }
+//            } catch (final Throwable t) {
+//                SafeCloseable.closeAll(sourceFillers);
+//                throw t;
+//            }
+//
+//            this.columnSources = columnSources;
+//            this.sourceFillers = sourceFillers;
+//            typeMapperContext = JdbcTypeMapper.Context.of(
+//                    options.sourceTimeZone, options.arrayDelimiter, options.strict);
+//        }
+//
+//        @Override
+//        public RowSink<Void> make(
+//                @NotNull final ResultSet resultSet,
+//                final int numRows,
+//                @NotNull final JdbcReadInstructions instructions)
+//                throws SQLException {
+//            return new RowSink<>() {
+//
+//                int numRowsConsumed;
+//
+//                @Override
+//                public void consumeRow() throws SQLException {
+//                    if (errorEncountered) {
+//                        throw new IllegalStateException("Previously encountered an error in append");
+//                    }
+//                    try {
+//                        for (SourceFiller filler : sourceFillers) {
+//                            filler.readRow(resultSet, typeMapperContext, numRowsConsumed);
+//                        }
+//                    } catch (final Throwable t) {
+//                        errorEncountered = true;
+//                        throw t;
+//                    }
+//                    ++numRowsConsumed;
+//                }
+//
+//                @Override
+//                public Void result() {
+//                    return null;
+//                }
+//
+//                @Override
+//                public void close() {
+//                    SafeCloseable.closeAll(sourceFillers);
+//                }
+//            };
+//        }
+//
+//        @Override
+//        public void register(@NotNull final StreamConsumer consumer) {
+//
+//        }
+//
+//        @Override
+//        public void flush() {
+//
+//        }
+//
+//        @Override
+//        public void shutdown() {
+//
+//        }
+//    }
 }
