@@ -164,10 +164,10 @@ public class TestChunkSort {
 
         // Single value plus nulls
         expected.clear();
+        expected.add(NULL_CHAR);
+        expected.add(NULL_CHAR);
+        expected.add(NULL_CHAR);
         expected.add((char) 10);
-        expected.add(NULL_CHAR);
-        expected.add(NULL_CHAR);
-        expected.add(NULL_CHAR);
         validateCharChunkSort(expected);
 
     }
