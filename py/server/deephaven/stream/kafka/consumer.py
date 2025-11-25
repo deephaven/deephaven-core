@@ -98,8 +98,8 @@ class TableType(JObjectWrapper):
     table."""
 
     Blink: TableType
-    """Consume all partitions into a single interleaved blink table, which will present only newly-available rows
-            to downstream operations and visualizations."""
+    """ Deprecated, prefer TableType.blink(). Consume all partitions into a single interleaved blink table, which will 
+    present only newly-available rows to downstream operations and visualizations."""
 
     j_object_type = jpy.get_type("io.deephaven.kafka.KafkaTools$TableType")
 
@@ -142,6 +142,7 @@ class TableType(JObjectWrapper):
 TableType.Stream = TableType.blink()
 # TODO (https://github.com/deephaven/deephaven-core/issues/3853): Delete this attribute
 TableType.Append = TableType.append()
+# TODO (https://github.com/deephaven/deephaven-core/issues/3853): Delete this attribute
 TableType.Blink = TableType.blink()
 
 
