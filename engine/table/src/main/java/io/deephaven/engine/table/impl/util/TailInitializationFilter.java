@@ -30,9 +30,13 @@ import java.util.function.LongUnaryOperator;
  * <p>
  * Once initialized, the filter returns all new rows, rows that have already been passed are not removed or modified.
  * <p>
- * The input must be sorted by Timestamp, or the resulting table is undefined. Null timestamps are not permitted.
+ * Each partition in the input must be sorted by Timestamp, or the resulting table is undefined. Null timestamps are not
+ * permitted.
  * <p>
- * For consistency, the last value of each partition is used to determine the threshold for that partition.
+ * For consistency, the last value of each partition is used to determine the threshold for that partition. As the
+ * partitions must be sorted, the last row in each partition must be the most recent timestamp within that partition.
+ * The provided period is subtracted from the timestamp; and a binary search is performed to identify rows that are
+ * within the window defined by period.
  */
 public class TailInitializationFilter {
 
@@ -42,7 +46,7 @@ public class TailInitializationFilter {
      * @param table the source table to filter
      * @param timestampName the name of the timestamp column
      * @param period interval between the last row in a partition (as converted by
-     *        {@link DateTimeUtils#parseDurationNanos(String)})
+     *        {@link DateTimeUtils#parseDurationNanos(String)}) and rows that match the filter
      * @return a table with only the most recent values in each partition
      */
     public static Table mostRecent(final Table table, final String timestampName, final String period) {
@@ -54,7 +58,7 @@ public class TailInitializationFilter {
      *
      * @param table the source table to filter
      * @param timestampName the name of the timestamp column
-     * @param nanos interval between the last row in a partition, in nanoseconds
+     * @param nanos interval between the last row in a partition, in nanoseconds and rows that match the filter
      * @return a table with only the most recent values in each partition
      */
     public static Table mostRecent(final Table table, final String timestampName, final long nanos) {
