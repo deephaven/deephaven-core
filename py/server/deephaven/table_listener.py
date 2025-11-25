@@ -15,7 +15,7 @@ import numpy
 from deephaven import DHError, update_graph
 from deephaven._table_reader import _table_reader_all_dict, _table_reader_chunk_dict
 from deephaven._wrapper import JObjectWrapper
-from deephaven.jcompat import j_list_to_list, to_sequence
+from deephaven.jcompat import _to_sequence, j_list_to_list
 from deephaven.table import Table
 from deephaven.table_factory import _error_callback_wrapper
 
@@ -359,7 +359,7 @@ class TableListenerHandle(JObjectWrapper):
 
         self.t = t
         self.description = description
-        self.dependencies = to_sequence(dependencies)
+        self.dependencies = _to_sequence(dependencies)
 
         if isinstance(listener, TableListener):
             if on_error:
@@ -637,8 +637,8 @@ class MergedListenerHandle(JObjectWrapper):
 
         try:
             self.merged_listener_adapter = _JPythonMergedListenerAdapter.create(
-                to_sequence(self.listener_recorders),
-                to_sequence(self.dependencies),
+                _to_sequence(self.listener_recorders),
+                _to_sequence(self.dependencies),
                 description,
                 self,
                 on_error_callback,
