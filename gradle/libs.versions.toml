@@ -92,7 +92,7 @@ xerial = "3.51.0.0"
 
 # test versions
 assertj = "3.27.6"
-h2database = "2.3.232"
+h2database = "2.4.240"
 jmock = "2.13.1"
 junit = "5.12.1"
 junit4 = "4.13.2"
