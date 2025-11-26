@@ -52,7 +52,7 @@ The `new_table()` function automatically infers column types from the provided d
 
 You can also create tables from pandas DataFrames:
 
-```python order=custom_table_pandas
+```python order=custom_table
 import pandas as pd
 from deephaven import pandas as dhpd
 
@@ -98,7 +98,7 @@ for i in range(100):
 
 For replaying historical data or simulating real-time feeds:
 
-```python order=replayer_table
+```python order=replayed_table
 from deephaven import new_table
 from deephaven.column import string_col, double_col, datetime_col
 from deephaven.replay import TableReplayer
