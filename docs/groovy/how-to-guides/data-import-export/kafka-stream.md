@@ -535,51 +535,9 @@ resultAppend = KafkaTools.consumeToPartitionedTable(
 
 ### Custom Kafka parser
 
-Some use cases will call for custom parsing of Kafka streams. In such cases, it's common to extend Deephaven's library to match requirements. The following example shows how to create a `Person` class containing `name` and `age` attributes derived from a binary Kafka stream of JSON strings. It then calls [`update`](../../reference/table-operations/select/update.md) to create a new column containing the value of the parsed stream.
+Some use cases call for custom parsing of Kafka streams, such as when payloads use non-standard encodings or need complex transformation.
 
-```groovy docker-config=kafka order=null
-import io.deephaven.kafka.KafkaTools
-import io.deephaven.engine.table.ColumnDefinition
-
-kafkaProps = new Properties()
-kafkaProps.put('bootstrap.servers', 'redpanda:9092')
-kafkaProps.put('schema.registry.url', 'http://redpanda:8081')
-
-// Define the Person class
-class Person {
-    int age
-    String name
-
-    Person(int age, String name) {
-        this.age = age
-        this.name = name
-    }
-}
-
-// Define column definitions for JSON deserialization
-ageDef = ColumnDefinition.ofInt('Age')
-nameDef = ColumnDefinition.ofString('Name')
-
-// Create column definitions array
-ColumnDefinition[] colDefs = [ageDef, nameDef]
-
-// Create mapping from JSON field names to column names
-mapping = ['age': 'Age', 'name': 'Name']
-
-// Create JSON spec for Kafka consumption
-jsonSpec = KafkaTools.Consume.jsonSpec(colDefs, mapping, null)
-
-// Consume the Kafka topic with JSON deserialization
-myParsedTable = KafkaTools.consumeToTable(
-    kafkaProps,
-    "test.topic",
-    KafkaTools.ALL_PARTITIONS,
-    KafkaTools.ALL_PARTITIONS_SEEK_TO_END,
-    KafkaTools.Consume.IGNORE,
-    jsonSpec,
-    KafkaTools.TableType.append()
-)
-```
+See the dedicated guide, [Write your own custom parser for Kafka](./write-your-own-custom-parser-for-kafka.md), for a step-by-step walkthrough and complete examples.
 
 ## Write to a Kafka stream
 
@@ -636,6 +594,7 @@ runnable = KafkaTools.produceFromTable(options)
 ## Related documentation
 
 - [Kafka basic terminology](../../conceptual/kafka-basic-terms.md)
+- [Custom parser for Kafka](./write-your-own-custom-parser-for-kafka.md)
 - [`consumeToTable`](../../reference/data-import-export/Kafka/consumeToTable.md)
 - [`timeTable`](../../reference/table-operations/create/timeTable.md)
 - [`lastBy`](../../reference/table-operations/group-and-aggregate/lastBy.md)
