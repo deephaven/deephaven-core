@@ -39,7 +39,7 @@ public class CharChunkedDistinctOperator implements IterativeChunkedAggregationO
     private final CharSsmBackedSource internalResult;
     private final ColumnSource<?> externalResult;
     private final Supplier<SegmentedSortedMultiSet.RemoveContext> removeContextFactory;
-    private final boolean countNull;
+    private final boolean countNullNaN;
     private final boolean exposeInternal;
     private WritableRowSet touchedStates;
     private UpdateCommitter<CharChunkedDistinctOperator> prevFlusher = null;
@@ -47,9 +47,9 @@ public class CharChunkedDistinctOperator implements IterativeChunkedAggregationO
     public CharChunkedDistinctOperator(
             // region Constructor
             // endregion Constructor
-            String name, boolean countNulls, boolean exposeInternal) {
+            String name, boolean countNullNaN, boolean exposeInternal) {
         this.name = name;
-        this.countNull = countNulls;
+        this.countNullNaN = countNullNaN;
         this.exposeInternal = exposeInternal;
         // region SsmCreation
         this.internalResult = new CharSsmBackedSource();
@@ -74,7 +74,7 @@ public class CharChunkedDistinctOperator implements IterativeChunkedAggregationO
         context.lengthCopy.copyFromChunk(length, 0, 0, length.size());
 
         CharCompactKernel.compactAndCount((WritableCharChunk<? extends Values>) context.valueCopy, context.counts,
-                startPositions, context.lengthCopy, countNull);
+                startPositions, context.lengthCopy, countNullNaN, countNullNaN);
         return context;
     }
 
@@ -194,7 +194,7 @@ public class CharChunkedDistinctOperator implements IterativeChunkedAggregationO
         context.valueCopy.setSize(values.size());
         context.valueCopy.copyFromChunk(values, 0, 0, values.size());
         CharCompactKernel.compactAndCount((WritableCharChunk<? extends Values>) context.valueCopy, context.counts,
-                countNull);
+                countNullNaN, countNullNaN);
         return context;
     }
 

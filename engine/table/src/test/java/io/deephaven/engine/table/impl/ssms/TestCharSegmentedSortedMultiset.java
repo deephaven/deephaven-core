@@ -132,12 +132,12 @@ public class TestCharSegmentedSortedMultiset extends RefreshingTableTestCase {
              final WritableIntChunk<ChunkLengths> counts = WritableIntChunk.makeWritableChunk(1024)
         ) {
             valueSource.fillChunk(fillContext, chunk, john.getRowSet());
-            CharCompactKernel.compactAndCount(chunk, counts, true);
+            CharCompactKernel.compactAndCount(chunk, counts, true, true);
         }
     }
     //endregion SortFixupSanityCheck
 
-    private void testUpdates(@NotNull final SsaTestHelpers.TestDescriptor desc, boolean allowAddition, boolean allowRemoval, boolean countNull) {
+    private void testUpdates(@NotNull final SsaTestHelpers.TestDescriptor desc, boolean allowAddition, boolean allowRemoval, boolean countNullNaN) {
         final Random random = new Random(desc.seed());
         final ColumnInfo[] columnInfo;
         final QueryTable table = getTable(desc.tableSize(), random, columnInfo = initColumnInfos(new String[]{"Value"},
@@ -150,7 +150,7 @@ public class TestCharSegmentedSortedMultiset extends RefreshingTableTestCase {
         //noinspection unchecked
         final ColumnSource<Character> valueSource = asCharacter.getColumnSource("Value");
 
-        checkSsmInitial(asCharacter, ssm, valueSource, countNull, desc);
+        checkSsmInitial(asCharacter, ssm, valueSource, countNullNaN, desc);
 
         try (final SafeCloseable ignored = LivenessScopeStack.open(new LivenessScope(true), true)) {
             final ShiftObliviousListener asCharacterListener = new ShiftObliviousInstrumentedListenerAdapter(asCharacter, false) {
@@ -165,14 +165,14 @@ public class TestCharSegmentedSortedMultiset extends RefreshingTableTestCase {
 
                         if (removed.isNonempty()) {
                             valueSource.fillPrevChunk(fillContext, chunk, removed);
-                            CharCompactKernel.compactAndCount(chunk, counts, countNull);
+                            CharCompactKernel.compactAndCount(chunk, counts, countNullNaN, countNullNaN);
                             ssm.remove(removeContext, chunk, counts);
                         }
 
 
                         if (added.isNonempty()) {
                             valueSource.fillChunk(fillContext, chunk, added);
-                            CharCompactKernel.compactAndCount(chunk, counts, countNull);
+                            CharCompactKernel.compactAndCount(chunk, counts, countNullNaN, countNullNaN);
                             ssm.insert(chunk, counts);
                         }
                     }
@@ -189,7 +189,7 @@ public class TestCharSegmentedSortedMultiset extends RefreshingTableTestCase {
                 });
 
                 try (final ColumnSource.GetContext getContext = valueSource.makeGetContext(asCharacter.intSize())) {
-                    checkSsm(ssm, valueSource.getChunk(getContext, asCharacter.getRowSet()).asCharChunk(), countNull, desc);
+                    checkSsm(ssm, valueSource.getChunk(getContext, asCharacter.getRowSet()).asCharChunk(), countNullNaN, desc);
                 }
 
                 if (!allowAddition && table.size() == 0) {
@@ -271,19 +271,19 @@ public class TestCharSegmentedSortedMultiset extends RefreshingTableTestCase {
         checkSsm(asCharacter, ssmLo, valueSource, countNull, desc);
     }
 
-    private void checkSsmInitial(Table asCharacter, CharSegmentedSortedMultiset ssm, ColumnSource<?> valueSource, boolean countNull, @NotNull final SsaTestHelpers.TestDescriptor desc) {
+    private void checkSsmInitial(Table asCharacter, CharSegmentedSortedMultiset ssm, ColumnSource<?> valueSource, boolean countNullNaN, @NotNull final SsaTestHelpers.TestDescriptor desc) {
         try (final ColumnSource.FillContext fillContext = valueSource.makeFillContext(asCharacter.intSize());
              final WritableCharChunk<Values> valueChunk = WritableCharChunk.makeWritableChunk(asCharacter.intSize());
              final WritableIntChunk<ChunkLengths> counts = WritableIntChunk.makeWritableChunk(asCharacter.intSize())) {
             valueSource.fillChunk(fillContext, valueChunk, asCharacter.getRowSet());
             valueChunk.sort();
 
-            CharCompactKernel.compactAndCount(valueChunk, counts, countNull);
+            CharCompactKernel.compactAndCount(valueChunk, counts, countNullNaN, countNullNaN);
 
             ssm.insert(valueChunk, counts);
 
             valueSource.fillChunk(fillContext, valueChunk, asCharacter.getRowSet());
-            checkSsm(ssm, valueChunk, countNull, desc);
+            checkSsm(ssm, valueChunk, countNullNaN, desc);
         }
     }
 

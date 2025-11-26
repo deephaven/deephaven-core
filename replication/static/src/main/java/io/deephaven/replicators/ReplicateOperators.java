@@ -44,6 +44,8 @@ public class ReplicateOperators {
         charToAllButBoolean(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/util/cast/CharToBigDecimalCast.java");
         replicateObjectAddOnlyMinMax();
+        fixupFloatAddOnlyMinMax();
+        fixupDoubleAddOnlyMinMax();
         fixupLongAddOnlyMinMax();
         charToAllButBoolean(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/by/CharAddOnlySortedFirstOrLastChunkedOperator.java");
@@ -77,6 +79,64 @@ public class ReplicateOperators {
             "        } else {\n" +
             "            actualResult = resultColumn = new LongArraySource();\n" +
             "        }";
+
+    private static void fixupFloatAddOnlyMinMax() throws IOException {
+        final File floatAddOnlyMinMaxFile =
+                new File(
+                        "engine/table/src/main/java/io/deephaven/engine/table/impl/by/FloatChunkedAddOnlyMinMaxOperator.java");
+        List<String> lines = FileUtils.readLines(floatAddOnlyMinMaxFile, Charset.defaultCharset());
+        lines = ReplicationUtils.replaceRegion(lines, "extra chunk value test", Collections.singletonList("" +
+                "            if (Float.isNaN(candidate)) {\n" +
+                "                chunkNonNull.set(1);\n" +
+                "                return Float.NaN;\n" +
+                "            }"));
+        lines = ReplicationUtils.replaceRegion(lines, "extra oldValue test", Collections.singletonList("" +
+                "        if (Float.isNaN(oldValue)) {\n" +
+                "            return false; // stuck on NaN, can never change\n" +
+                "        }"));
+        lines = ReplicationUtils.replaceRegion(lines, "compute result", Collections.singletonList("" +
+                "        final float result;\n" +
+                "        if (Float.isNaN(chunkValue)) {\n" +
+                "            result = Float.NaN;\n" +
+                "        } else if (oldValue == QueryConstants.NULL_FLOAT) {\n" +
+                "            // we exclude nulls from the min/max calculation, therefore if the value in our min/max is null we know\n"
+                +
+                "            // that it is in fact empty and we should use the value from the chunk\n" +
+                "            result = chunkValue;\n" +
+                "        } else {\n" +
+                "            result = minimum ? min(chunkValue, oldValue) : max(chunkValue, oldValue);\n" +
+                "        }"));
+        FileUtils.writeLines(floatAddOnlyMinMaxFile, lines);
+    }
+
+    private static void fixupDoubleAddOnlyMinMax() throws IOException {
+        final File floatAddOnlyMinMaxFile =
+                new File(
+                        "engine/table/src/main/java/io/deephaven/engine/table/impl/by/DoubleChunkedAddOnlyMinMaxOperator.java");
+        List<String> lines = FileUtils.readLines(floatAddOnlyMinMaxFile, Charset.defaultCharset());
+        lines = ReplicationUtils.replaceRegion(lines, "extra chunk value test", Collections.singletonList("" +
+                "            if (Double.isNaN(candidate)) {\n" +
+                "                chunkNonNull.set(1);\n" +
+                "                return Double.NaN;\n" +
+                "            }"));
+        lines = ReplicationUtils.replaceRegion(lines, "extra oldValue test", Collections.singletonList("" +
+                "        if (Double.isNaN(oldValue)) {\n" +
+                "            return false; // stuck on NaN, can never change\n" +
+                "        }"));
+        lines = ReplicationUtils.replaceRegion(lines, "compute result", Collections.singletonList("" +
+                "        final double result;\n" +
+                "        if (Double.isNaN(chunkValue)) {\n" +
+                "            result = Double.NaN;\n" +
+                "        } else if (oldValue == QueryConstants.NULL_DOUBLE) {\n" +
+                "            // we exclude nulls from the min/max calculation, therefore if the value in our min/max is null we know\n"
+                +
+                "            // that it is in fact empty and we should use the value from the chunk\n" +
+                "            result = chunkValue;\n" +
+                "        } else {\n" +
+                "            result = minimum ? min(chunkValue, oldValue) : max(chunkValue, oldValue);\n" +
+                "        }"));
+        FileUtils.writeLines(floatAddOnlyMinMaxFile, lines);
+    }
 
     private static void fixupLongAddOnlyMinMax() throws IOException {
         final File longAddOnlyMinMaxFile =

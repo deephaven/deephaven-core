@@ -47,6 +47,8 @@ class ShortChunkedAddOnlyMinMaxOperator implements IterativeChunkedAggregationOp
         short value = QueryConstants.NULL_SHORT;
         for (int ii = chunkStart; ii < chunkEnd; ++ii) {
             final short candidate = values.get(ii);
+            // region extra chunk value test
+            // endregion extra chunk value test
             if (candidate != QueryConstants.NULL_SHORT) {
                 if (nonNull++ == 0) {
                     value = candidate;
@@ -64,6 +66,8 @@ class ShortChunkedAddOnlyMinMaxOperator implements IterativeChunkedAggregationOp
         short value = QueryConstants.NULL_SHORT;
         for (int ii = chunkStart; ii < chunkEnd; ++ii) {
             final short candidate = values.get(ii);
+            // region extra chunk value test
+            // endregion extra chunk value test
             if (candidate != QueryConstants.NULL_SHORT) {
                 if (nonNull++ == 0) {
                     value = candidate;
@@ -135,6 +139,9 @@ class ShortChunkedAddOnlyMinMaxOperator implements IterativeChunkedAggregationOp
         if (chunkSize == 0) {
             return false;
         }
+        final short oldValue = resultColumn.getUnsafe(destination);
+        // region extra oldValue test
+        // endregion extra oldValue test
         final MutableInt chunkNonNull = new MutableInt(0);
         final int chunkEnd = chunkStart + chunkSize;
         final short chunkValue = minimum ? min(values, chunkNonNull, chunkStart, chunkEnd)
@@ -142,9 +149,8 @@ class ShortChunkedAddOnlyMinMaxOperator implements IterativeChunkedAggregationOp
         if (chunkNonNull.get() == 0) {
             return false;
         }
-
+        // region compute result
         final short result;
-        final short oldValue = resultColumn.getUnsafe(destination);
         if (oldValue == QueryConstants.NULL_SHORT) {
             // we exclude nulls from the min/max calculation, therefore if the value in our min/max is null we know
             // that it is in fact empty and we should use the value from the chunk
@@ -152,6 +158,7 @@ class ShortChunkedAddOnlyMinMaxOperator implements IterativeChunkedAggregationOp
         } else {
             result = minimum ? min(chunkValue, oldValue) : max(chunkValue, oldValue);
         }
+        // endregion compute result
         if (!ShortComparisons.eq(result, oldValue)) {
             resultColumn.set(destination, result);
             return true;

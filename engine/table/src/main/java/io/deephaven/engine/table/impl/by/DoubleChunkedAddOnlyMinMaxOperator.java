@@ -47,6 +47,12 @@ class DoubleChunkedAddOnlyMinMaxOperator implements IterativeChunkedAggregationO
         double value = QueryConstants.NULL_DOUBLE;
         for (int ii = chunkStart; ii < chunkEnd; ++ii) {
             final double candidate = values.get(ii);
+            // region extra chunk value test
+            if (Double.isNaN(candidate)) {
+                chunkNonNull.set(1);
+                return Double.NaN;
+            }
+            // endregion extra chunk value test
             if (candidate != QueryConstants.NULL_DOUBLE) {
                 if (nonNull++ == 0) {
                     value = candidate;
@@ -64,6 +70,12 @@ class DoubleChunkedAddOnlyMinMaxOperator implements IterativeChunkedAggregationO
         double value = QueryConstants.NULL_DOUBLE;
         for (int ii = chunkStart; ii < chunkEnd; ++ii) {
             final double candidate = values.get(ii);
+            // region extra chunk value test
+            if (Double.isNaN(candidate)) {
+                chunkNonNull.set(1);
+                return Double.NaN;
+            }
+            // endregion extra chunk value test
             if (candidate != QueryConstants.NULL_DOUBLE) {
                 if (nonNull++ == 0) {
                     value = candidate;
@@ -135,6 +147,12 @@ class DoubleChunkedAddOnlyMinMaxOperator implements IterativeChunkedAggregationO
         if (chunkSize == 0) {
             return false;
         }
+        final double oldValue = resultColumn.getUnsafe(destination);
+        // region extra oldValue test
+        if (Double.isNaN(oldValue)) {
+            return false; // stuck on NaN, can never change
+        }
+        // endregion extra oldValue test
         final MutableInt chunkNonNull = new MutableInt(0);
         final int chunkEnd = chunkStart + chunkSize;
         final double chunkValue = minimum ? min(values, chunkNonNull, chunkStart, chunkEnd)
@@ -142,16 +160,18 @@ class DoubleChunkedAddOnlyMinMaxOperator implements IterativeChunkedAggregationO
         if (chunkNonNull.get() == 0) {
             return false;
         }
-
+        // region compute result
         final double result;
-        final double oldValue = resultColumn.getUnsafe(destination);
-        if (oldValue == QueryConstants.NULL_DOUBLE) {
+        if (Double.isNaN(chunkValue)) {
+            result = Double.NaN;
+        } else if (oldValue == QueryConstants.NULL_DOUBLE) {
             // we exclude nulls from the min/max calculation, therefore if the value in our min/max is null we know
             // that it is in fact empty and we should use the value from the chunk
             result = chunkValue;
         } else {
             result = minimum ? min(chunkValue, oldValue) : max(chunkValue, oldValue);
         }
+        // endregion compute result
         if (!DoubleComparisons.eq(result, oldValue)) {
             resultColumn.set(destination, result);
             return true;

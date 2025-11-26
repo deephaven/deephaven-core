@@ -26,7 +26,9 @@ public class CharSetResult implements SsmChunkedMinMaxOperator.SetResult {
             newResult = NULL_CHAR;
         } else {
             final CharSegmentedSortedMultiset charSsm = (CharSegmentedSortedMultiset) ssm;
+            // region nan handling
             newResult = minimum ? charSsm.getMinChar() : charSsm.getMaxChar();
+            // endregion nan handling
         }
         return setResult(destination, newResult);
     }

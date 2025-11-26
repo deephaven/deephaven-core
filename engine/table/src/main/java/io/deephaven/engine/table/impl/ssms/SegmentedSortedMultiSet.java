@@ -163,7 +163,6 @@ public interface SegmentedSortedMultiSet<T> extends LongSizedDataStructure {
 
     T getMax();
 
-
     void setTrackDeltas(boolean shouldTrackDeltas);
 
     void clearDeltas();

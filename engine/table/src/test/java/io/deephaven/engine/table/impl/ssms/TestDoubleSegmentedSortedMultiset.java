@@ -135,12 +135,12 @@ public class TestDoubleSegmentedSortedMultiset extends RefreshingTableTestCase {
              final WritableIntChunk<ChunkLengths> counts = WritableIntChunk.makeWritableChunk(1024)
         ) {
             valueSource.fillChunk(fillContext, chunk, john.getRowSet());
-            DoubleCompactKernel.compactAndCount(chunk, counts, true);
+            DoubleCompactKernel.compactAndCount(chunk, counts, true, true);
         }
     }
     //endregion SortFixupSanityCheck
 
-    private void testUpdates(@NotNull final SsaTestHelpers.TestDescriptor desc, boolean allowAddition, boolean allowRemoval, boolean countNull) {
+    private void testUpdates(@NotNull final SsaTestHelpers.TestDescriptor desc, boolean allowAddition, boolean allowRemoval, boolean countNullNaN) {
         final Random random = new Random(desc.seed());
         final ColumnInfo[] columnInfo;
         final QueryTable table = getTable(desc.tableSize(), random, columnInfo = initColumnInfos(new String[]{"Value"},
@@ -153,7 +153,7 @@ public class TestDoubleSegmentedSortedMultiset extends RefreshingTableTestCase {
         //noinspection unchecked
         final ColumnSource<Double> valueSource = asDouble.getColumnSource("Value");
 
-        checkSsmInitial(asDouble, ssm, valueSource, countNull, desc);
+        checkSsmInitial(asDouble, ssm, valueSource, countNullNaN, desc);
 
         try (final SafeCloseable ignored = LivenessScopeStack.open(new LivenessScope(true), true)) {
             final ShiftObliviousListener asDoubleListener = new ShiftObliviousInstrumentedListenerAdapter(asDouble, false) {
@@ -168,14 +168,14 @@ public class TestDoubleSegmentedSortedMultiset extends RefreshingTableTestCase {
 
                         if (removed.isNonempty()) {
                             valueSource.fillPrevChunk(fillContext, chunk, removed);
-                            DoubleCompactKernel.compactAndCount(chunk, counts, countNull);
+                            DoubleCompactKernel.compactAndCount(chunk, counts, countNullNaN, countNullNaN);
                             ssm.remove(removeContext, chunk, counts);
                         }
 
 
                         if (added.isNonempty()) {
                             valueSource.fillChunk(fillContext, chunk, added);
-                            DoubleCompactKernel.compactAndCount(chunk, counts, countNull);
+                            DoubleCompactKernel.compactAndCount(chunk, counts, countNullNaN, countNullNaN);
                             ssm.insert(chunk, counts);
                         }
                     }
@@ -192,7 +192,7 @@ public class TestDoubleSegmentedSortedMultiset extends RefreshingTableTestCase {
                 });
 
                 try (final ColumnSource.GetContext getContext = valueSource.makeGetContext(asDouble.intSize())) {
-                    checkSsm(ssm, valueSource.getChunk(getContext, asDouble.getRowSet()).asDoubleChunk(), countNull, desc);
+                    checkSsm(ssm, valueSource.getChunk(getContext, asDouble.getRowSet()).asDoubleChunk(), countNullNaN, desc);
                 }
 
                 if (!allowAddition && table.size() == 0) {
@@ -274,19 +274,19 @@ public class TestDoubleSegmentedSortedMultiset extends RefreshingTableTestCase {
         checkSsm(asDouble, ssmLo, valueSource, countNull, desc);
     }
 
-    private void checkSsmInitial(Table asDouble, DoubleSegmentedSortedMultiset ssm, ColumnSource<?> valueSource, boolean countNull, @NotNull final SsaTestHelpers.TestDescriptor desc) {
+    private void checkSsmInitial(Table asDouble, DoubleSegmentedSortedMultiset ssm, ColumnSource<?> valueSource, boolean countNullNaN, @NotNull final SsaTestHelpers.TestDescriptor desc) {
         try (final ColumnSource.FillContext fillContext = valueSource.makeFillContext(asDouble.intSize());
              final WritableDoubleChunk<Values> valueChunk = WritableDoubleChunk.makeWritableChunk(asDouble.intSize());
              final WritableIntChunk<ChunkLengths> counts = WritableIntChunk.makeWritableChunk(asDouble.intSize())) {
             valueSource.fillChunk(fillContext, valueChunk, asDouble.getRowSet());
             valueChunk.sort();
 
-            DoubleCompactKernel.compactAndCount(valueChunk, counts, countNull);
+            DoubleCompactKernel.compactAndCount(valueChunk, counts, countNullNaN, countNullNaN);
 
             ssm.insert(valueChunk, counts);
 
             valueSource.fillChunk(fillContext, valueChunk, asDouble.getRowSet());
-            checkSsm(ssm, valueChunk, countNull, desc);
+            checkSsm(ssm, valueChunk, countNullNaN, desc);
         }
     }
 

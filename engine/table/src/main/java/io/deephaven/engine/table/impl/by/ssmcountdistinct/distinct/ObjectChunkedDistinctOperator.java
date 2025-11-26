@@ -43,7 +43,7 @@ public class ObjectChunkedDistinctOperator implements IterativeChunkedAggregatio
     private final ObjectSsmBackedSource internalResult;
     private final ColumnSource<?> externalResult;
     private final Supplier<SegmentedSortedMultiSet.RemoveContext> removeContextFactory;
-    private final boolean countNull;
+    private final boolean countNullNaN;
     private final boolean exposeInternal;
     private WritableRowSet touchedStates;
     private UpdateCommitter<ObjectChunkedDistinctOperator> prevFlusher = null;
@@ -52,9 +52,9 @@ public class ObjectChunkedDistinctOperator implements IterativeChunkedAggregatio
             // region Constructor
             Class<?> type,
             // endregion Constructor
-            String name, boolean countNulls, boolean exposeInternal) {
+            String name, boolean countNullNaN, boolean exposeInternal) {
         this.name = name;
-        this.countNull = countNulls;
+        this.countNullNaN = countNullNaN;
         this.exposeInternal = exposeInternal;
         // region SsmCreation
         this.internalResult = new ObjectSsmBackedSource(type);
@@ -79,7 +79,7 @@ public class ObjectChunkedDistinctOperator implements IterativeChunkedAggregatio
         context.lengthCopy.copyFromChunk(length, 0, 0, length.size());
 
         ObjectCompactKernel.compactAndCount((WritableObjectChunk<?, ? extends Values>) context.valueCopy, context.counts,
-                startPositions, context.lengthCopy, countNull);
+                startPositions, context.lengthCopy, countNullNaN, countNullNaN);
         return context;
     }
 
@@ -199,7 +199,7 @@ public class ObjectChunkedDistinctOperator implements IterativeChunkedAggregatio
         context.valueCopy.setSize(values.size());
         context.valueCopy.copyFromChunk(values, 0, 0, values.size());
         ObjectCompactKernel.compactAndCount((WritableObjectChunk<?, ? extends Values>) context.valueCopy, context.counts,
-                countNull);
+                countNullNaN, countNullNaN);
         return context;
     }
 

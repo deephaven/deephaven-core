@@ -40,40 +40,62 @@ public class CharCompactKernel implements CompactKernel {
 
 
     @Override
-    public void compactAndCount(WritableChunk<? extends Values> valueChunk, WritableIntChunk<ChunkLengths> counts,
-            boolean countNull) {
-        compactAndCount(valueChunk.asWritableCharChunk(), counts, countNull);
+    public void compactAndCount(
+            WritableChunk<? extends Values> valueChunk,
+            WritableIntChunk<ChunkLengths> counts,
+            boolean countNull,
+            boolean countNaN) {
+        compactAndCount(valueChunk.asWritableCharChunk(), counts, countNull, countNaN);
     }
 
     @Override
-    public void compactAndCount(WritableChunk<? extends Values> valueChunk, WritableIntChunk<ChunkLengths> counts,
-            IntChunk<ChunkPositions> startPositions, WritableIntChunk<ChunkLengths> lengths, boolean countNull) {
-        compactAndCount(valueChunk.asWritableCharChunk(), counts, startPositions, lengths, countNull);
+    public void compactAndCount(
+            WritableChunk<? extends Values> valueChunk,
+            WritableIntChunk<ChunkLengths> counts,
+            IntChunk<ChunkPositions> startPositions,
+            WritableIntChunk<ChunkLengths> lengths,
+            boolean countNull,
+            boolean countNaN) {
+        compactAndCount(valueChunk.asWritableCharChunk(), counts, startPositions, lengths, countNull, countNaN);
     }
 
-    public static void compactAndCount(WritableCharChunk<? extends Values> valueChunk,
+    public static void compactAndCount(
+            WritableCharChunk<? extends Values> valueChunk,
             WritableIntChunk<ChunkLengths> counts) {
-        compactAndCount(valueChunk, counts, false);
+        compactAndCount(valueChunk, counts, false, false);
     }
 
-    public static void compactAndCount(WritableCharChunk<? extends Values> valueChunk,
-            WritableIntChunk<ChunkLengths> counts, boolean countNull) {
-        final int newSize = compactAndCount(valueChunk, counts, 0, valueChunk.size(), countNull);
+    public static void compactAndCount(
+            WritableCharChunk<? extends Values> valueChunk,
+            WritableIntChunk<ChunkLengths> counts,
+            boolean countNull,
+            boolean countNaN) {
+        final int newSize = compactAndCount(valueChunk, counts, 0, valueChunk.size(), countNull, countNaN);
         valueChunk.setSize(newSize);
         counts.setSize(newSize);
     }
 
-    public static void compactAndCount(WritableCharChunk<? extends Values> valueChunk,
-            WritableIntChunk<ChunkLengths> counts, IntChunk<ChunkPositions> startPositions,
-            WritableIntChunk<ChunkLengths> lengths, boolean countNull) {
+    public static void compactAndCount(
+            WritableCharChunk<? extends Values> valueChunk,
+            WritableIntChunk<ChunkLengths> counts,
+            IntChunk<ChunkPositions> startPositions,
+            WritableIntChunk<ChunkLengths> lengths,
+            boolean countNull,
+            boolean countNaN) {
         for (int ii = 0; ii < startPositions.size(); ++ii) {
-            final int newSize = compactAndCount(valueChunk, counts, startPositions.get(ii), lengths.get(ii), countNull);
+            final int newSize =
+                    compactAndCount(valueChunk, counts, startPositions.get(ii), lengths.get(ii), countNull, countNaN);
             lengths.set(ii, newSize);
         }
     }
 
-    public static int compactAndCount(WritableCharChunk<? extends Values> valueChunk,
-            WritableIntChunk<ChunkLengths> counts, final int start, final int length, boolean countNull) {
+    public static int compactAndCount(
+            WritableCharChunk<? extends Values> valueChunk,
+            WritableIntChunk<ChunkLengths> counts,
+            final int start,
+            final int length,
+            boolean countNull,
+            boolean countNaN) {
         int wpos = -1;
         // region compactAndCount
         valueChunk.sort(start, length);
@@ -82,9 +104,11 @@ public class CharCompactKernel implements CompactKernel {
         final int end = start + length;
         for (int rpos = start; rpos < end; ++rpos) {
             final char nextValue = valueChunk.get(rpos);
-            if (!countNull && shouldIgnore(nextValue)) {
+            if (!countNull && nextValue == NULL_CHAR) {
                 continue;
             }
+            // region maybeCountNaN
+            // endregion maybeCountNaN
             if (wpos == -1 || !CharComparisons.eq(nextValue, lastValue)) {
                 valueChunk.set(++wpos + start, nextValue);
                 counts.set(wpos + start, currentCount = 1);
@@ -95,11 +119,5 @@ public class CharCompactKernel implements CompactKernel {
         }
         // endregion compactAndCount
         return wpos + 1;
-    }
-
-    private static boolean shouldIgnore(char value) {
-        // region shouldIgnore
-        return value == NULL_CHAR;
-        // endregion shouldIgnore
     }
 }

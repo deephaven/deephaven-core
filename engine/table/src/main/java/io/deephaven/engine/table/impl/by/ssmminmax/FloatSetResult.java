@@ -30,7 +30,13 @@ public class FloatSetResult implements SsmChunkedMinMaxOperator.SetResult {
             newResult = NULL_FLOAT;
         } else {
             final FloatSegmentedSortedMultiset floatSsm = (FloatSegmentedSortedMultiset) ssm;
-            newResult = minimum ? floatSsm.getMinFloat() : floatSsm.getMaxFloat();
+            // region nan handling
+            if (minimum) {
+                newResult = Float.isNaN(floatSsm.getMaxFloat()) ? Float.NaN : floatSsm.getMinFloat();
+            } else {
+                newResult = floatSsm.getMaxFloat(); // NaN sorts to max
+            }
+            // endregion nan handling
         }
         return setResult(destination, newResult);
     }

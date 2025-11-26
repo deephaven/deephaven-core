@@ -177,7 +177,9 @@ public class SsmChunkedPercentileOperator implements IterativeChunkedAggregation
         context.lengthCopy.setSize(length.size());
         context.lengthCopy.copyFromChunk(length, 0, 0, length.size());
 
-        compactAndCountKernel.compactAndCount(context.valueCopy, context.counts, startPositions, context.lengthCopy);
+        // Count NaN, but not NULL values
+        compactAndCountKernel.compactAndCount(context.valueCopy, context.counts, startPositions, context.lengthCopy,
+                false, true);
 
         for (int ii = 0; ii < startPositions.size(); ++ii) {
             final int runLength = context.lengthCopy.get(ii);
@@ -210,7 +212,9 @@ public class SsmChunkedPercentileOperator implements IterativeChunkedAggregation
         context.lengthCopy.setSize(length.size());
         context.lengthCopy.copyFromChunk(length, 0, 0, length.size());
 
-        compactAndCountKernel.compactAndCount(context.valueCopy, context.counts, startPositions, context.lengthCopy);
+        // Count NaN, but not NULL values
+        compactAndCountKernel.compactAndCount(context.valueCopy, context.counts, startPositions, context.lengthCopy,
+                false, true);
 
         final SegmentedSortedMultiSet.RemoveContext removeContext = removeContextFactory.get();
         for (int ii = 0; ii < startPositions.size(); ++ii) {
@@ -318,7 +322,9 @@ public class SsmChunkedPercentileOperator implements IterativeChunkedAggregation
         context.lengthCopy.setSize(length.size());
         context.lengthCopy.copyFromChunk(length, 0, 0, length.size());
 
-        compactAndCountKernel.compactAndCount(context.valueCopy, context.counts, startPositions, context.lengthCopy);
+        // Count NaN, but not NULL values
+        compactAndCountKernel.compactAndCount(context.valueCopy, context.counts, startPositions, context.lengthCopy,
+                false, true);
 
         final SegmentedSortedMultiSet.RemoveContext removeContext = removeContextFactory.get();
         context.ssmsToMaybeClear.fillWithValue(0, destinations.size(), false);
@@ -347,7 +353,9 @@ public class SsmChunkedPercentileOperator implements IterativeChunkedAggregation
         context.lengthCopy.setSize(length.size());
         context.lengthCopy.copyFromChunk(length, 0, 0, length.size());
 
-        compactAndCountKernel.compactAndCount(context.valueCopy, context.counts, startPositions, context.lengthCopy);
+        // Count NaN, but not NULL values
+        compactAndCountKernel.compactAndCount(context.valueCopy, context.counts, startPositions, context.lengthCopy,
+                false, true);
         for (int ii = 0; ii < startPositions.size(); ++ii) {
             final int runLength = context.lengthCopy.get(ii);
             final int startPosition = startPositions.get(ii);
@@ -382,7 +390,8 @@ public class SsmChunkedPercentileOperator implements IterativeChunkedAggregation
         context.valueCopy.setSize(values.size());
         // noinspection unchecked
         context.valueCopy.copyFromChunk((Chunk) values, 0, 0, values.size());
-        compactAndCountKernel.compactAndCount(context.valueCopy, context.counts);
+        // Count NaN, but not NULL values
+        compactAndCountKernel.compactAndCount(context.valueCopy, context.counts, false, true);
         final SegmentedSortedMultiSet ssmLo = ssmLoForSlot(destination);
         final SegmentedSortedMultiSet ssmHi = ssmHiForSlot(destination);
         if (context.valueCopy.size() > 0) {
@@ -399,7 +408,8 @@ public class SsmChunkedPercentileOperator implements IterativeChunkedAggregation
         context.valueCopy.setSize(values.size());
         // noinspection unchecked
         context.valueCopy.copyFromChunk((Chunk) values, 0, 0, values.size());
-        compactAndCountKernel.compactAndCount(context.valueCopy, context.counts);
+        // Count NaN, but not NULL values
+        compactAndCountKernel.compactAndCount(context.valueCopy, context.counts, false, true);
         if (context.valueCopy.size() == 0) {
             return false;
         }
@@ -426,7 +436,8 @@ public class SsmChunkedPercentileOperator implements IterativeChunkedAggregation
         context.valueCopy.setSize(preValues.size());
         // noinspection unchecked
         context.valueCopy.copyFromChunk((Chunk) preValues, 0, 0, preValues.size());
-        compactAndCountKernel.compactAndCount(context.valueCopy, context.counts);
+        // Count NaN, but not NULL values
+        compactAndCountKernel.compactAndCount(context.valueCopy, context.counts, false, true);
         SegmentedSortedMultiSet ssmLo = null;
         SegmentedSortedMultiSet ssmHi = null;
         if (context.valueCopy.size() > 0) {
@@ -440,7 +451,8 @@ public class SsmChunkedPercentileOperator implements IterativeChunkedAggregation
         context.valueCopy.setSize(postValues.size());
         // noinspection unchecked
         context.valueCopy.copyFromChunk((Chunk) postValues, 0, 0, postValues.size());
-        compactAndCountKernel.compactAndCount(context.valueCopy, context.counts);
+        // Count NaN, but not NULL values
+        compactAndCountKernel.compactAndCount(context.valueCopy, context.counts, false, true);
         if (context.valueCopy.size() > 0) {
             if (ssmLo == null) {
                 ssmLo = ssmLoForSlot(destination);

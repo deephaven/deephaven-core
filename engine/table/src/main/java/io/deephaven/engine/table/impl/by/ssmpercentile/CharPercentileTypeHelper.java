@@ -37,6 +37,8 @@ public class CharPercentileTypeHelper implements SsmChunkedPercentileOperator.Pe
         if (totalSize == 0) {
             return setResult(destination, NULL_CHAR);
         } else {
+            // region maybeHandleNaN
+            // endregion maybeHandleNaN
             final long targetLo = Math.round((totalSize - 1) * percentile) + 1;
             if (loSize < targetLo) {
                 ssmHi.moveFrontToBack(ssmLo, targetLo - loSize);

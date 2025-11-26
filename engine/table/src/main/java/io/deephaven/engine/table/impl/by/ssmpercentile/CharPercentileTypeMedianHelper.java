@@ -32,6 +32,8 @@ public class CharPercentileTypeMedianHelper extends CharPercentileTypeHelper {
         if (totalSize == 0) {
             newResult = NULL_DOUBLE;
         } else {
+            // region maybeHandleNaN
+            // endregion maybeHandleNaN
             final long targetLo = (int) ((totalSize - 1) * percentile) + 1;
             if (loSize < targetLo) {
                 ssmHi.moveFrontToBack(ssmLo, targetLo - loSize);

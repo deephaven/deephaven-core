@@ -43,6 +43,8 @@ class CharChunkedAddOnlyMinMaxOperator implements IterativeChunkedAggregationOpe
         char value = QueryConstants.NULL_CHAR;
         for (int ii = chunkStart; ii < chunkEnd; ++ii) {
             final char candidate = values.get(ii);
+            // region extra chunk value test
+            // endregion extra chunk value test
             if (candidate != QueryConstants.NULL_CHAR) {
                 if (nonNull++ == 0) {
                     value = candidate;
@@ -60,6 +62,8 @@ class CharChunkedAddOnlyMinMaxOperator implements IterativeChunkedAggregationOpe
         char value = QueryConstants.NULL_CHAR;
         for (int ii = chunkStart; ii < chunkEnd; ++ii) {
             final char candidate = values.get(ii);
+            // region extra chunk value test
+            // endregion extra chunk value test
             if (candidate != QueryConstants.NULL_CHAR) {
                 if (nonNull++ == 0) {
                     value = candidate;
@@ -131,6 +135,9 @@ class CharChunkedAddOnlyMinMaxOperator implements IterativeChunkedAggregationOpe
         if (chunkSize == 0) {
             return false;
         }
+        final char oldValue = resultColumn.getUnsafe(destination);
+        // region extra oldValue test
+        // endregion extra oldValue test
         final MutableInt chunkNonNull = new MutableInt(0);
         final int chunkEnd = chunkStart + chunkSize;
         final char chunkValue = minimum ? min(values, chunkNonNull, chunkStart, chunkEnd)
@@ -138,9 +145,8 @@ class CharChunkedAddOnlyMinMaxOperator implements IterativeChunkedAggregationOpe
         if (chunkNonNull.get() == 0) {
             return false;
         }
-
+        // region compute result
         final char result;
-        final char oldValue = resultColumn.getUnsafe(destination);
         if (oldValue == QueryConstants.NULL_CHAR) {
             // we exclude nulls from the min/max calculation, therefore if the value in our min/max is null we know
             // that it is in fact empty and we should use the value from the chunk
@@ -148,6 +154,7 @@ class CharChunkedAddOnlyMinMaxOperator implements IterativeChunkedAggregationOpe
         } else {
             result = minimum ? min(chunkValue, oldValue) : max(chunkValue, oldValue);
         }
+        // endregion compute result
         if (!CharComparisons.eq(result, oldValue)) {
             resultColumn.set(destination, result);
             return true;
