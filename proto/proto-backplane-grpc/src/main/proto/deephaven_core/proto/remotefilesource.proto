@@ -1,0 +1,36 @@
+/*
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
+syntax = "proto3";
+
+package io.deephaven.proto.backplane.grpc;
+
+option java_multiple_files = true;
+option optimize_for = SPEED;
+option go_package = "github.com/deephaven/deephaven-core/go/internal/proto/remotefilesource";
+
+import "deephaven_core/proto/ticket.proto";
+
+message RemoteFileSourcePluginRequest {
+  // A client-specified identifier used to identify the response for this request when multiple requests are in flight.
+  // This must be set to a unique value.
+  string request_id = 1;
+  oneof request {
+    RemoteFileSourceMetaRequest meta = 2;
+    RemoteFileSourceSetConnectionIdRequest set_connection_id = 3;
+  }
+}
+
+// Request meta info from the server plugin
+message RemoteFileSourceMetaRequest {
+}
+
+message RemoteFileSourceSetConnectionIdRequest {
+  // The connection ID to set for the remote file source.
+  string connection_id = 1;
+}
+
+//// Fetch the remote file source plugin into the specified ticket
+//message RemoteFileSourcePluginFetchRequest {
+//  io.deephaven.proto.backplane.grpc.Ticket result_id = 1;
+//}
