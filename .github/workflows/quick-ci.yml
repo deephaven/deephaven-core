@@ -19,7 +19,7 @@ jobs:
       # Must checkout for push, but not pull_request according to the action
       - name: Checkout
         if: github.event_name != 'pull_request'
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
       - name: Check for non-docs changes
         id: filter
         uses: dorny/paths-filter@v3
@@ -34,7 +34,7 @@ jobs:
     if: ${{ needs.changes.outputs.non-docs == 'true' }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Check gitignore rules
         run: .github/scripts/check-gitignore-rules.sh
@@ -74,7 +74,7 @@ jobs:
     needs: changes
     if: ${{ needs.changes.outputs.non-docs == 'true' }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
