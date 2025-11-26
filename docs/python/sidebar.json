@@ -2648,6 +2648,10 @@
                 "label": "General",
                 "items": [
                   {
+                    "label": "Can I integrate custom data sources with Deephaven?",
+                    "path": "reference/community-questions/custom-data-sources.md"
+                  },
+                  {
                     "label": "How can I find which Core version to which a feature or fix was added?",
                     "path": "reference/community-questions/how-do-i-find-a-specific-build.md"
                   },
