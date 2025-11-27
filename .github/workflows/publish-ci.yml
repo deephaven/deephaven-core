@@ -19,7 +19,7 @@ jobs:
       # Must checkout for push, but not pull_request according to the action
       - name: Checkout
         if: github.event_name != 'pull_request'
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
       - name: Check for non-docs changes
         id: filter
         uses: dorny/paths-filter@v3
@@ -46,7 +46,7 @@ jobs:
         run: df -h
 
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Setup JDK 11
         id: setup-java-11
