@@ -16,14 +16,14 @@ There are three main integration approaches:
 
 Each Deephaven table consists of:
 
-- A [RowSet](https://deephaven.io/core/javadoc/io/deephaven/engine/rowset/RowSet.html) - An ordered set of long keys representing valid row addresses.
-- Named [ColumnSources](https://deephaven.io/core/javadoc/io/deephaven/engine/table/ColumnSource.html) - A Java map from column name to ColumnSource, which acts as a dictionary from row key to cell value.
+- A [`RowSet`](https://deephaven.io/core/javadoc/io/deephaven/engine/rowset/RowSet.html) - An ordered set of long keys representing valid row addresses.
+- Named [`ColumnSources`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/ColumnSource.html) - A Java map from column name to `ColumnSource`, which acts as a dictionary from row key to cell value.
 
-To construct a table for use by Deephaven engine operations, create a [QueryTable](https://deephaven.io/core/javadoc/io/deephaven/engine/table/impl/QueryTable.html) by passing in a RowSet and `Map<String, ColumnSource>`. We recommend using a LinkedHashMap to preserve column order.
+To construct a table for use by Deephaven engine operations, create a [`QueryTable`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/impl/QueryTable.html) by passing in a `RowSet` and `Map<String, ColumnSource>`. We recommend using a LinkedHashMap to preserve column order.
 
 ## Static in-memory tables
 
-For simple static data sources, create a table with a flat address space where the RowSet includes keys 0 to size-1.
+For simple static data sources, create a table with a flat address space where the `RowSet` includes keys 0 to size-1.
 
 Here's an example of creating a static table from custom data:
 
@@ -51,7 +51,7 @@ columnSources.put("Volume", ArrayBackedColumnSource.getMemoryColumnSource(volume
 customTable = new QueryTable(rowSet, columnSources)
 ```
 
-The [ArrayBackedColumnSource](https://deephaven.io/core/javadoc/io/deephaven/engine/table/impl/sources/ArrayBackedColumnSource.html) automatically determines the column type for primitive arrays (e.g., `int[]`, `double[]`). For object arrays (e.g., `String[]`), you must explicitly specify the type using `getMemoryColumnSource(array, Type.class, null)`.
+The [`ArrayBackedColumnSource`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/impl/sources/ArrayBackedColumnSource.html) automatically determines the column type for primitive arrays (e.g., `int[]`, `double[]`). For object arrays (e.g., `String[]`), you must explicitly specify the type using `getMemoryColumnSource(array, Type.class, null)`.
 
 ## Dynamic in-memory tables
 
@@ -62,7 +62,7 @@ Key features of dynamic tables:
 - Use the same `ArrayBackedColumnSource` as static tables.
 - Poll for updates on each Deephaven update cycle.
 - Track both current and previous values for incremental computation.
-- Notify listeners using [notifyListeners](https://deephaven.io/core/javadoc/io/deephaven/engine/table/impl/QueryTable.html#notifyListeners(io.deephaven.engine.table.TableUpdate)).
+- Notify listeners using [`notifyListeners`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/impl/QueryTable.html#notifyListeners(io.deephaven.engine.table.TableUpdate)).
 
 Here's a simplified example of a dynamic table that updates periodically:
 
@@ -154,7 +154,7 @@ Tables are automatically coalesced when needed. For example, when reading from d
 
 ## On-disk tables with lazy loading
 
-For large datasets, implement custom [ColumnSource](https://deephaven.io/core/javadoc/io/deephaven/engine/table/ColumnSource.html) classes that load data on demand rather than all at once.
+For large datasets, implement custom [ColumnSource](https://deephaven.io/core/javadoc/io/deephaven/engine/table/ColumnSource.html) classes that load data on demand rather than loading it all at once.
 
 Key implementation points:
 
@@ -212,7 +212,7 @@ class CustomFileColumnSource implements ColumnSource<Double> {
 
 ### Grouping information for performance
 
-ColumnSources can provide grouping information (similar to database indexes) to optimize operations like filtering and joins. Grouping information is represented as a Map from key to a RowSet of matching row keys.
+`ColumnSources` can provide grouping information (similar to database indexes) to optimize operations like filtering and joins. Grouping information is represented as a Map from a key to a `RowSet` of matching row keys.
 
 Deephaven's Apache Parquet integration uses these techniques:
 
