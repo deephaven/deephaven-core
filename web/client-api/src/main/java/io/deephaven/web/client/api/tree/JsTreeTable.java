@@ -1434,12 +1434,6 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
      * @return Promise of dh.TreeTable
      */
     public Promise<JsTreeTable> copy() {
-        return connection.newState((c, state, metadata) -> {
-            // connection.getServer().reexport(this.baseTable.getHandle(), state.getHandle(), c);
-            throw new UnsupportedOperationException("reexport");// probably not needed at all with new session
-                                                                // mechanism?
-        }, "reexport for tree.copy()")
-                .refetch(this, connection.metadata())
-                .then(state -> Promise.resolve(new JsTreeTable(connection, widget)));
+        return Js.uncheckedCast(widget.copy());
     }
 }
