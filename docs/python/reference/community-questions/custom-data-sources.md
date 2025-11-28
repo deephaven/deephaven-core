@@ -135,7 +135,7 @@ For advanced use cases requiring custom data loading logic, you can use Java int
 > [!WARNING]
 > This is an advanced technique requiring knowledge of Deephaven's Java internals. For most use cases, `new_table()`, `DynamicTableWriter`, or pandas integration are recommended.
 
-```python skip-test
+```python order=custom_table
 from deephaven.jcompat import j_hashmap
 import jpy
 
@@ -145,6 +145,7 @@ ArrayBackedColumnSource = jpy.get_type(
     "io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource"
 )
 QueryTable = jpy.get_type("io.deephaven.engine.table.impl.QueryTable")
+String = jpy.get_type("java.lang.String")
 
 # Your custom data as Java arrays
 symbols = jpy.array("java.lang.String", ["AAPL", "GOOGL", "MSFT", "AMZN"])
@@ -160,7 +161,7 @@ row_set = RowSetFactory.flat(len(symbols)).toTracking()
 column_sources = j_hashmap(
     {
         "Symbol": ArrayBackedColumnSource.getMemoryColumnSource(
-            symbols, jpy.get_type("java.lang.String"), None
+            symbols, String.jclass, None
         ),
         "Price": ArrayBackedColumnSource.getMemoryColumnSource(prices),
         "Volume": ArrayBackedColumnSource.getMemoryColumnSource(volumes),
