@@ -51,7 +51,7 @@ columnSources.put("Volume", ArrayBackedColumnSource.getMemoryColumnSource(volume
 customTable = new QueryTable(rowSet, columnSources)
 ```
 
-The [ArrayBackedColumnSource](https://deephaven.io/core/javadoc/io/deephaven/engine/table/impl/sources/ArrayBackedColumnSource.html) automatically determines the column type based on the input array type.
+The [ArrayBackedColumnSource](https://deephaven.io/core/javadoc/io/deephaven/engine/table/impl/sources/ArrayBackedColumnSource.html) automatically determines the column type for primitive arrays (e.g., `int[]`, `double[]`). For object arrays (e.g., `String[]`), you must explicitly specify the type using `getMemoryColumnSource(array, Type.class, null)`.
 
 ## Dynamic in-memory tables
 
@@ -69,6 +69,9 @@ Here's a simplified example of a dynamic table that updates periodically:
 ```groovy order=dynamicTable
 import io.deephaven.engine.rowset.RowSetFactory
 import io.deephaven.engine.rowset.TrackingRowSet
+import io.deephaven.engine.table.impl.TableUpdateImpl
+import io.deephaven.engine.rowset.RowSetShiftData
+import io.deephaven.engine.table.ModifiedColumnSet
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource
 import io.deephaven.engine.table.impl.QueryTable
 
@@ -98,10 +101,46 @@ columnSources.put("Price", priceSource)
 
 dynamicTable = new QueryTable(rowSet, columnSources)
 
-// In your update logic (called on each cycle):
-// 1. Update values in the column sources
-// 2. Create a TableUpdate describing changes
-// 3. Call dynamicTable.notifyListeners(update)
+// Make the table refreshing so it can receive updates
+dynamicTable.setRefreshing(true)
+
+// To update the table, use a time table to trigger updates on each cycle
+import static io.deephaven.engine.util.TableTools.timeTable
+
+// Create a time table that ticks every second to drive updates
+updateTrigger = timeTable("PT1S")
+
+// Listen to the trigger table and update dynamicTable on each tick
+updateTrigger.addUpdateListener(new io.deephaven.engine.table.impl.InstrumentedTableUpdateListener("DynamicTableUpdater") {
+    @Override
+    public void onUpdate(io.deephaven.engine.table.TableUpdate upstream) {
+        // Example update logic: Modify prices for rows 0-9
+        RowSet modifiedRows = RowSetFactory.fromRange(0, 9)
+        
+        // Update the column source values
+        for (long i = 0; i < 10; i++) {
+            double newPrice = prices[(int)i] + Math.random() * 10.0
+            priceSource.set(i, newPrice)
+        }
+        
+        // Create a TableUpdate describing the changes
+        TableUpdateImpl update = new TableUpdateImpl(
+            RowSetFactory.empty(),  // added rows
+            RowSetFactory.empty(),  // removed rows
+            modifiedRows,           // modified rows
+            RowSetShiftData.EMPTY,  // row shifts
+            ModifiedColumnSet.ALL   // modified columns (all columns marked as modified)
+        )
+        
+        // Notify listeners of the update
+        dynamicTable.notifyListeners(update)
+    }
+    
+    @Override
+    public void onFailureInternal(Throwable originalException, Entry sourceEntry) {
+        originalException.printStackTrace()
+    }
+})
 ```
 
 ### Coalesced vs. uncoalesced tables
@@ -111,7 +150,7 @@ Deephaven tables can be "coalesced" or "uncoalesced":
 - **Uncoalesced tables** - Reference data but cannot be used for most query operations.
 - **Coalesced tables** - Fully formed `QueryTable` instances ready for query operations.
 
-Tables are automatically coalesced when needed. For example, when reading from disk with partitioning filters like `"Date=lastBusinessDateNy()"`, the table remains uncoalesced until the filter is applied, avoiding the need to determine the complete Index upfront.
+Tables are automatically coalesced when needed. For example, when reading from disk with partitioning filters like `"Date=today()"`, the table remains uncoalesced until the filter is applied, avoiding the need to determine the complete Index upfront.
 
 ## On-disk tables with lazy loading
 

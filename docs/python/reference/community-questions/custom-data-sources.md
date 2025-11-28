@@ -155,6 +155,8 @@ volumes = jpy.array("int", [1000000, 500000, 750000, 600000])
 row_set = RowSetFactory.flat(len(symbols)).toTracking()
 
 # Create column sources
+# Note: Primitive arrays (int, double) infer type automatically,
+# but object arrays (String) require explicit type specification
 column_sources = j_hashmap(
     {
         "Symbol": ArrayBackedColumnSource.getMemoryColumnSource(
