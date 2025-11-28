@@ -129,7 +129,7 @@ public class IntChunkedCountDistinctOperator implements IterativeChunkedAggregat
             final WritableIntChunk<ChunkLengths> countSlice =
                     context.countResettable.resetFromChunk(context.counts, startPosition, runLength);
             ssm.remove(removeContext, valueSlice, countSlice);
-            if (ssm.size() == 0) {
+            if (ssm.isEmpty()) {
                 clearSsm(destination);
             }
 
@@ -160,7 +160,7 @@ public class IntChunkedCountDistinctOperator implements IterativeChunkedAggregat
             final WritableIntChunk<ChunkLengths> countSlice =
                     context.countResettable.resetFromChunk(context.counts, startPosition, runLength);
             ssm.remove(removeContext, valueSlice, countSlice);
-            if (ssm.size() == 0) {
+            if (ssm.isEmpty()) {
                 context.ssmsToMaybeClear.set(ii, true);
             }
         }
@@ -224,7 +224,7 @@ public class IntChunkedCountDistinctOperator implements IterativeChunkedAggregat
 
         final IntSegmentedSortedMultiset ssm = ssmForSlot(destination);
         ssm.remove(context.removeContext, context.valueCopy, context.counts);
-        if (ssm.size() == 0) {
+        if (ssm.isEmpty()) {
             clearSsm(destination);
         }
 
@@ -244,7 +244,7 @@ public class IntChunkedCountDistinctOperator implements IterativeChunkedAggregat
         IntSegmentedSortedMultiset ssm = ssmForSlot(destination);
         if (context.valueCopy.size() > 0) {
             ssm.insert(context.valueCopy, context.counts);
-        } else if (ssm.size() == 0) {
+        } else if (ssm.isEmpty()) {
             clearSsm(destination);
         }
 
@@ -295,17 +295,15 @@ public class IntChunkedCountDistinctOperator implements IterativeChunkedAggregat
     public void startTrackingPrevValues() {
         resultColumn.startTrackingPrevValues();
 
-        if (exposeInternal) {
-            if (prevFlusher != null) {
-                throw new IllegalStateException("startTrackingPrevValues must only be called once");
-            }
-
-            ssms.startTrackingPrevValues();
-            prevFlusher = new UpdateCommitter<>(this,
-                    ExecutionContext.getContext().getUpdateGraph(),
-                    IntChunkedCountDistinctOperator::flushPrevious);
-            touchedStates = RowSetFactory.empty();
+        if (prevFlusher != null) {
+            throw new IllegalStateException("startTrackingPrevValues must only be called once");
         }
+
+        ssms.startTrackingPrevValues();
+        prevFlusher = new UpdateCommitter<>(this,
+                ExecutionContext.getContext().getUpdateGraph(),
+                IntChunkedCountDistinctOperator::flushPrevious);
+        touchedStates = RowSetFactory.empty();
     }
 
     @Override
@@ -325,7 +323,7 @@ public class IntChunkedCountDistinctOperator implements IterativeChunkedAggregat
     }
 
     private boolean setResult(IntSegmentedSortedMultiset ssm, long destination) {
-        final long expectedResult = ssm.size() == 0 ? QueryConstants.NULL_LONG : ssm.size();
+        final long expectedResult = ssm.isEmpty() ? QueryConstants.NULL_LONG : ssm.size();
         final boolean countChanged = resultColumn.getAndSetUnsafe(destination, expectedResult) != expectedResult;
         return countChanged || (exposeInternal && (ssm.getAddedSize() > 0 || ssm.getRemovedSize() > 0));
     }

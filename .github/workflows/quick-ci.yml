@@ -84,4 +84,4 @@ jobs:
         run: pip install vermin==1.6.0
 
       - name: Verify minimum version support
-        run: vermin -t=3.8 --no-tips --eval-annotations --violations --feature fstring-self-doc --feature union-types py/server/deephaven py/client py/client-ticking py/embedded-server
+        run: vermin -t=3.9 --no-tips --eval-annotations --violations --feature fstring-self-doc --feature union-types --exclude-regex '\.pyi$' py/server/deephaven py/client py/client-ticking py/embedded-server

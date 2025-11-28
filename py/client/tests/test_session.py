@@ -4,18 +4,16 @@
 import unittest
 from time import sleep, time
 
-import pyarrow as pa
 import pandas as pd
+import pyarrow as pa
 from pyarrow import csv
 
-from pydeephaven import DHError
-from pydeephaven import Session
-from pydeephaven.ticket import SharedTicket, ScopeTicket
+from pydeephaven import DHError, Session
+from pydeephaven.ticket import ScopeTicket, SharedTicket
 from tests.testbase import BaseTestCase
 
 
 class SessionTestCase(BaseTestCase):
-
     def test_connect(self):
         session = Session()
         self.assertEqual(True, session.is_connected)
@@ -30,7 +28,7 @@ class SessionTestCase(BaseTestCase):
 
     def test_connect_failure(self):
         with self.assertRaises(DHError):
-            session = Session(port=80)
+            Session(port=80)
 
     @unittest.skip("GH ticket filed #1178.")
     def test_never_timeout(self):
@@ -55,14 +53,14 @@ class SessionTestCase(BaseTestCase):
             self.assertFalse(t.is_static)
             session.bind_table("t", t)
 
-            console_script = ("""
+            console_script = """
 from deephaven import empty_table
 try:
     del t1
 except NameError:
     pass
 t1 = empty_table(0) if t.is_blink else None
-""")
+"""
             session.run_script(console_script)
             self.assertNotIn("t1", session.tables)
 
@@ -77,7 +75,9 @@ t1 = empty_table(0) if t.is_blink else None
         table1 = session.import_table(pa_table)
         table2 = table1.group_by(by=["a", "c"]).ungroup(cols=["b", "d", "e"])
         table3 = table1.where(["a % 2 > 0 && b % 3 == 1"])
-        result_table = session.merge_tables(tables=[table1, table2, table3], order_by="a")
+        result_table = session.merge_tables(
+            tables=[table1, table2, table3], order_by="a"
+        )
 
         self.assertTrue(result_table.size > table1.size)
         self.assertTrue(result_table.size > table2.size)
@@ -118,19 +118,23 @@ t1 = empty_table(0) if t.is_blink else None
             pa.int16(),
             pa.int32(),
             pa.int64(),
-            pa.timestamp('ns', tz='UTC'),
+            pa.timestamp("ns", tz="UTC"),
             pa.float32(),
             pa.float64(),
             pa.string(),
         ]
         pa_data = [
             pa.array([True, False]),
-            pa.array([2 ** 7 - 1, -2 ** 7 + 1]),
-            pa.array([2 ** 15 - 1, -2 ** 15 + 1]),
-            pa.array([2 ** 31 - 1, -2 ** 31 + 1]),
-            pa.array([2 ** 63 - 1, -2 ** 63 + 1]),
-            pa.array([pd.Timestamp('2017-01-01T12:01:01', tz='UTC'),
-                      pd.Timestamp('2017-01-01T11:01:01', tz='Europe/Paris')]),
+            pa.array([2**7 - 1, -(2**7) + 1]),
+            pa.array([2**15 - 1, -(2**15) + 1]),
+            pa.array([2**31 - 1, -(2**31) + 1]),
+            pa.array([2**63 - 1, -(2**63) + 1]),
+            pa.array(
+                [
+                    pd.Timestamp("2017-01-01T12:01:01", tz="UTC"),
+                    pd.Timestamp("2017-01-01T11:01:01", tz="Europe/Paris"),
+                ]
+            ),
             pa.array([1.1, 2.2], pa.float32()),
             pa.array([1.1, 2.2], pa.float64()),
             pa.array(["foo", "bar"]),
@@ -183,19 +187,23 @@ t1 = empty_table(0) if t.is_blink else None
             pa.int16(),
             pa.int32(),
             pa.int64(),
-            pa.timestamp('ns', tz='UTC'),
+            pa.timestamp("ns", tz="UTC"),
             pa.float32(),
             pa.float64(),
             pa.string(),
         ]
         pa_data = [
             pa.array([True, False]),
-            pa.array([2 ** 7 - 1, -2 ** 7 + 1]),
-            pa.array([2 ** 15 - 1, -2 ** 15 + 1]),
-            pa.array([2 ** 31 - 1, -2 ** 31 + 1]),
-            pa.array([2 ** 63 - 1, -2 ** 63 + 1]),
-            pa.array([pd.Timestamp('2017-01-01T12:01:01', tz='UTC'),
-                      pd.Timestamp('2017-01-01T11:01:01', tz='Europe/Paris')]),
+            pa.array([2**7 - 1, -(2**7) + 1]),
+            pa.array([2**15 - 1, -(2**15) + 1]),
+            pa.array([2**31 - 1, -(2**31) + 1]),
+            pa.array([2**63 - 1, -(2**63) + 1]),
+            pa.array(
+                [
+                    pd.Timestamp("2017-01-01T12:01:01", tz="UTC"),
+                    pd.Timestamp("2017-01-01T11:01:01", tz="Europe/Paris"),
+                ]
+            ),
             pa.array([1.1, 2.2], pa.float32()),
             pa.array([1.1, 2.2], pa.float64()),
             pa.array(["foo", "bar"]),
@@ -213,25 +221,27 @@ t1 = empty_table(0) if t.is_blink else None
                 pa_table = blink_input_table.to_arrow()
                 self.assertEqual(schema, pa_table.schema)
                 session.bind_table("t", blink_input_table)
-                console_script = ("""
+                console_script = """
 from deephaven import empty_table
 try:
     del t1
 except NameError:
     pass
 t1 = empty_table(0) if t.is_blink else None
-        """)
+        """
                 session.run_script(console_script)
                 self.assertIn("t1", session.tables)
 
                 with self.assertRaises(ValueError):
-                    session.input_table(schema=schema, init_table=blink_input_table, blink_table=True)
+                    session.input_table(
+                        schema=schema, init_table=blink_input_table, blink_table=True
+                    )
                 with self.assertRaises(ValueError):
                     session.input_table(key_cols="f0", blink_table=True)
 
             with self.subTest("blink InputTable ops"):
                 session.bind_table("dh_table", dh_table)
-                console_script = ("""
+                console_script = """
 from deephaven import empty_table
 try:
     del t1
@@ -240,7 +250,7 @@ except NameError:
 t.add(dh_table)
 t.await_update()
 t1 = empty_table(0) if t.size == 2 else None
-        """)
+        """
                 session.run_script(console_script)
                 self.assertIn("t1", session.tables)
 
@@ -260,16 +270,20 @@ t1 = empty_table(0) if t.size == 2 else None
         pa_table = t1.to_arrow()
         self.assertEqual(pa_table.num_rows, 1000)
 
-        with self.subTest("the 1st subscriber session is gone, shared ticket is still valid"):
+        with self.subTest(
+            "the 1st subscriber session is gone, shared ticket is still valid"
+        ):
             sub_session1.close()
             sub_session2 = Session()
             t2 = sub_session2.fetch_table(shared_ticket)
             self.assertEqual(t2.size, 1000)
 
-        with self.subTest("the publisher session is gone, shared ticket becomes invalid"):
+        with self.subTest(
+            "the publisher session is gone, shared ticket becomes invalid"
+        ):
             pub_session.close()
             with self.assertRaises(DHError):
-                 sub_session2.fetch_table(shared_ticket)
+                sub_session2.fetch_table(shared_ticket)
             sub_session2.close()
 
     # Note no 'test_' prefix; we don't want this to be picked up
@@ -281,19 +295,23 @@ t1 = empty_table(0) if t.size == 2 else None
         # otherwise debugging is hard.
         import datetime
         import threading
+
         session = self.session
         num_threads = 200
-        run_time_seconds = 60*60
+        run_time_seconds = 60 * 60
         deadline = time() + run_time_seconds
+
         def _interact_with_server(ti):
-            print(f'THREAD {ti} START at {datetime.datetime.now()}', flush=True)
+            print(f"THREAD {ti} START at {datetime.datetime.now()}", flush=True)
             while time() < deadline:
-                session.run_script(f'import deephaven; t1_{ti} = deephaven.time_table("PT1S")')
+                session.run_script(
+                    f'import deephaven; t1_{ti} = deephaven.time_table("PT1S")'
+                )
                 sleep(2)
-                table = session.open_table(f't1_{ti}')
-                pa_table = table.to_arrow()
+                table = session.open_table(f"t1_{ti}")
+                table.to_arrow()
                 sleep(1)
-            print(f'THREAD {ti} END at {datetime.datetime.now()}', flush=True)
+            print(f"THREAD {ti} END at {datetime.datetime.now()}", flush=True)
 
         threads = []
         for ti in range(num_threads):
@@ -307,17 +325,19 @@ t1 = empty_table(0) if t.size == 2 else None
             t.join()
 
     def test_systemic_scripts(self):
-        fields = [pa.field(f"S", pa.bool_())]
+        fields = [pa.field("S", pa.bool_())]
         schema = pa.schema(fields)
 
         with Session() as session:
             # Run the setup script.
-            session.run_script("""
+            session.run_script(
+                """
 from deephaven import time_table
 import jpy
 
 j_sot = jpy.get_type("io.deephaven.engine.util.systemicmarking.SystemicObjectTracker")
-""")
+"""
+            )
             table_script = """
 t1 = time_table("PT1S").update("A=ii")
 t2 = empty_table(1).update("S = (boolean)j_sot.isSystemic(t1.j_table)")
@@ -325,18 +345,19 @@ t2 = empty_table(1).update("S = (boolean)j_sot.isSystemic(t1.j_table)")
             # Make sure defaults apply (expected false)
             session.run_script(table_script)
             t = session.fetch_table(ticket=ScopeTicket.scope_ticket("t2"))
-            pa_table = pa.table([ pa.array([False]) ], schema=schema)
+            pa_table = pa.table([pa.array([False])], schema=schema)
             self.assertTrue(pa_table.equals(t.to_arrow()))
 
             session.run_script(table_script, True)
             t = session.fetch_table(ticket=ScopeTicket.scope_ticket("t2"))
-            pa_table = pa.table([ pa.array([True]) ], schema=schema)
+            pa_table = pa.table([pa.array([True])], schema=schema)
             self.assertTrue(pa_table.equals(t.to_arrow()))
 
             session.run_script(table_script, False)
             t = session.fetch_table(ticket=ScopeTicket.scope_ticket("t2"))
-            pa_table = pa.table([ pa.array([False]) ], schema=schema)
+            pa_table = pa.table([pa.array([False])], schema=schema)
             self.assertTrue(pa_table.equals(t.to_arrow()))
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()

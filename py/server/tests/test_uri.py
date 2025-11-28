@@ -16,7 +16,9 @@ class UriTestCase(BaseTestCase):
     def test_uri_local_table(self):
         _JResolver = jpy.get_type("io.deephaven.server.uri.CsvTableResolver")
         _JUriResolvers = jpy.get_type("io.deephaven.uri.resolver.UriResolvers")
-        _JUriResolversInstance = jpy.get_type("io.deephaven.uri.resolver.UriResolversInstance")
+        _JUriResolversInstance = jpy.get_type(
+            "io.deephaven.uri.resolver.UriResolversInstance"
+        )
         j_resolver = _JResolver()
         j_resolver_set = j_hashset({j_resolver})
         j_resolvers = _JUriResolvers(j_resolver_set)

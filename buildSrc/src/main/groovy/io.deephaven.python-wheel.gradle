@@ -11,7 +11,7 @@ project.extensions.create('wheel', PythonWheelExtension, project.objects)
 spotless {
     python {
         target '**/*.py'
-        targetExclude '**/proto/*_pb2*', '**/setup.py', 'docs/**'
+        targetExclude '**/proto/*_pb2*', '**/setup.py', 'docs/**', "*venv/**"
         licenseHeader '#\n' +
                 '# Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending\n' +
                 '#', '[^#]'
@@ -44,7 +44,15 @@ def buildWheel = Docker.registerDockerTask(project, 'buildWheel') { config ->
         action.from 'sources as build'
         action.runCommand '''set -eux; \\
                       test -n "${DEEPHAVEN_VERSION}";\\
-                      python setup.py bdist_wheel'''
+                      pip install --upgrade pip;\\
+                      pip install --root-user-action ignore -r requirements-dev.txt;\\
+                      mypy --install-types --non-interactive --config-file pyproject.toml .;\\
+                      ruff check;\\
+                      ruff format --check;\\
+                      python setup.py bdist_wheel; \\
+                      pip freeze | xargs pip uninstall -y; \\
+                      rm -rf .mypy_cache; \\
+                      '''
     }
     config.parentContainers = [ Docker.registryTask(project, 'python') ]
     config.containerOutPath='/usr/src/app/dist'

@@ -44,7 +44,7 @@ A `SelectableDataSetOneClick`.
 
 ## Examples
 
-In this example, we create a source table, then use `oneClick` to create a [`SelectableDataSetOneClick`](../../reference/query-language/types/SelectableDataSetOneClick.md) copy of the table. Then, we use [`plot`](../plot/plot.md) to turn our [`SelectableDataSetOneClick`](../query-language/types/SelectableDataSetOneClick.md) into a plot, which can then be filtered via [**Controls > Input Filter**](../../how-to-guides/user-interface/filters.md#input-filters) in the user interface.
+In this example, we create a source table, then use `oneClick` to create a [`SelectableDataSetOneClick`](../../reference/query-language/types/SelectableDataSetOneClick.md) copy of the table. Then, we use [`plot`](./plot.md) to turn our [`SelectableDataSetOneClick`](../query-language/types/SelectableDataSetOneClick.md) into a plot, which can then be filtered via [**Controls > Input Filter**](../../how-to-guides/user-interface/filters.md#input-filters) in the user interface.
 
 ```groovy skip-test
 import static io.deephaven.csv.CsvTools.readCsv
@@ -73,5 +73,5 @@ plot2 = plot("Plot", oc2, "Timestamp", "Price").show()
 ## Related documentation
 
 - [`readCsv`](../data-import-export/CSV/readCsv.md)
-- [`plot`](../plot/plot.md)
+- [`plot`](./plot.md)
 - [Javadoc](https://deephaven.io/core/javadoc/io/deephaven/plot/filters/Selectables.html#oneClick(io.deephaven.engine.table.PartitionedTable))

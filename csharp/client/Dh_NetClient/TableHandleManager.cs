@@ -184,6 +184,13 @@ public class TableHandleManager : IDisposable {
   }
 
   /// <summary>
+  /// Ping the server
+  /// </summary>
+  public void Ping() {
+    _server.Ping();
+  }
+
+  /// <summary>
   /// Transforms 'tableName' into a Deephaven "scope reference".
   /// </summary>
   /// <param name="tableName"></param>

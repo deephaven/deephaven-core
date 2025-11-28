@@ -137,7 +137,7 @@ public class LongChunkedDistinctOperator implements IterativeChunkedAggregationO
             final WritableIntChunk<ChunkLengths> countSlice =
                     context.countResettable.resetFromChunk(context.counts, startPosition, runLength);
             stateModified.set(ii, ssm.remove(removeContext, valueSlice, countSlice));
-            if (ssm.size() == 0) {
+            if (ssm.isEmpty()) {
                 clearSsm(destination);
             }
         }
@@ -166,7 +166,7 @@ public class LongChunkedDistinctOperator implements IterativeChunkedAggregationO
             final WritableIntChunk<ChunkLengths> countSlice =
                     context.countResettable.resetFromChunk(context.counts, startPosition, runLength);
             ssm.remove(removeContext, valueSlice, countSlice);
-            if (ssm.size() == 0) {
+            if (ssm.isEmpty()) {
                 context.ssmsToMaybeClear.set(ii, true);
             }
         }
@@ -234,7 +234,7 @@ public class LongChunkedDistinctOperator implements IterativeChunkedAggregationO
 
         final LongSegmentedSortedMultiset ssm = ssmForSlot(destination);
         final boolean removed = ssm.remove(context.removeContext, context.valueCopy, context.counts);
-        if (ssm.size() == 0) {
+        if (ssm.isEmpty()) {
             clearSsm(destination);
         }
         return removed;
@@ -256,7 +256,7 @@ public class LongChunkedDistinctOperator implements IterativeChunkedAggregationO
                 ssm = ssmForSlot(destination);
             }
             ssm.insert(context.valueCopy, context.counts);
-        } else if (ssm != null && ssm.size() == 0) {
+        } else if (ssm != null && ssm.isEmpty()) {
             clearSsm(destination);
         } else if (ssm == null) {
             return false;
@@ -307,15 +307,13 @@ public class LongChunkedDistinctOperator implements IterativeChunkedAggregationO
     @Override
     public void startTrackingPrevValues() {
         internalResult.startTrackingPrevValues();
-        if (exposeInternal) {
-            if (prevFlusher != null) {
-                throw new IllegalStateException("startTrackingPrevValues must only be called once");
-            }
-
-            prevFlusher = new UpdateCommitter<>(this, ExecutionContext.getContext().getUpdateGraph(),
-                    LongChunkedDistinctOperator::flushPrevious);
-            touchedStates = RowSetFactory.empty();
+        if (prevFlusher != null) {
+            throw new IllegalStateException("startTrackingPrevValues must only be called once");
         }
+
+        prevFlusher = new UpdateCommitter<>(this, ExecutionContext.getContext().getUpdateGraph(),
+                LongChunkedDistinctOperator::flushPrevious);
+        touchedStates = RowSetFactory.empty();
     }
 
     // endregion

@@ -283,6 +283,10 @@
                 "path": "how-to-guides/iterate-table-data.md"
               },
               {
+                "label": "Extract table values",
+                "path": "how-to-guides/extract-table-value.md"
+              },
+              {
                 "label": "Replay",
                 "path": "how-to-guides/replay-data.md"
               }
@@ -2647,6 +2651,10 @@
               {
                 "label": "General",
                 "items": [
+                  {
+                    "label": "Can I integrate custom data sources with Deephaven?",
+                    "path": "reference/community-questions/custom-data-sources.md"
+                  },
                   {
                     "label": "How can I find which Core version to which a feature or fix was added?",
                     "path": "reference/community-questions/how-do-i-find-a-specific-build.md"

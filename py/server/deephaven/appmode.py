@@ -2,27 +2,27 @@
 # Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 #
 
-""" This module supports writing Deephaven application mode Python scripts. """
-from typing import Dict
+"""This module supports writing Deephaven application mode Python scripts."""
 
 import jpy
 
 from deephaven import DHError
-from deephaven._wrapper import JObjectWrapper, pythonify, javaify
+from deephaven._wrapper import JObjectWrapper, javaify, pythonify
 
 _JApplicationContext = jpy.get_type("io.deephaven.appmode.ApplicationContext")
 _JApplicationState = jpy.get_type("io.deephaven.appmode.ApplicationState")
 
 
 class ApplicationState(JObjectWrapper):
-    """ The ApplicationState represents the state of an application. """
+    """The ApplicationState represents the state of an application."""
+
     j_object_type = _JApplicationState
 
     @property
     def j_object(self) -> jpy.JType:
         return self.j_app_state
 
-    def __init__(self, j_app_state):
+    def __init__(self, j_app_state: jpy.JType):
         self.j_app_state = j_app_state
 
     def __repr__(self):
@@ -49,7 +49,7 @@ class ApplicationState(JObjectWrapper):
             raise KeyError(key)
 
     @property
-    def fields(self) -> Dict[str, object]:
+    def fields(self) -> dict[str, object]:
         fields = {}
         j_fields = self.j_app_state.listFields()
         for i in range(j_fields.size()):
@@ -60,7 +60,7 @@ class ApplicationState(JObjectWrapper):
 
 
 def get_app_state():
-    """ Get the current application state object.
+    """Get the current application state object.
 
     Raises:
          DHError

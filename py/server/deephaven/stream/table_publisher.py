@@ -3,9 +3,9 @@
 #
 """The table_publisher module supports publishing Deephaven Tables into blink Tables."""
 
-import jpy
+from typing import Callable, Optional
 
-from typing import Callable, Dict, Optional, Tuple, Union, List
+import jpy
 
 from deephaven._wrapper import JObjectWrapper
 from deephaven.execution_context import get_exec_ctx
@@ -78,7 +78,7 @@ def table_publisher(
     on_shutdown_callback: Optional[Callable[[], None]] = None,
     update_graph: Optional[UpdateGraph] = None,
     chunk_size: int = 2048,
-) -> Tuple[Table, TablePublisher]:
+) -> tuple[Table, TablePublisher]:
     """Constructs a blink Table and TablePublisher to populate it.
 
     Args:
@@ -101,7 +101,7 @@ def table_publisher(
     """
 
     def adapt_callback(_table_publisher: jpy.JType):
-        on_flush_callback(TablePublisher(j_table_publisher=_table_publisher))
+        on_flush_callback(TablePublisher(j_table_publisher=_table_publisher))  # type: ignore[misc]
 
     j_table_publisher = _JTablePublisher.of(
         name,

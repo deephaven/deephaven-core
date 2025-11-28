@@ -64,17 +64,17 @@ can be modelled as
 See the methods in this module more more details on modelling JSON values.
 """
 
-import jpy
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import Dict, List, Union, Tuple, Optional, Literal, Any
+from typing import Iterable, Literal, Optional, Union
+
+import jpy
 
 from deephaven import dtypes
+from deephaven._jpy import strict_cast
 from deephaven._wrapper import JObjectWrapper
 from deephaven.time import InstantLike, to_j_instant
-from deephaven._jpy import strict_cast
-
 
 __all__ = [
     "string_val",
@@ -161,9 +161,9 @@ JsonValueType = Union[
     JsonValue,
     dtypes.DType,
     type,
-    Dict[str, Union["JsonValueType", "ObjectField"]],
-    List["JsonValueType"],
-    Tuple["JsonValueType", ...],
+    dict[str, Union["JsonValueType", "ObjectField"]],
+    list["JsonValueType"],
+    tuple["JsonValueType", ...],
 ]
 """The JSON value alias"""
 
@@ -194,13 +194,13 @@ def json_val(json_value_type: JsonValueType) -> JsonValue:
         return _dtype_dict[json_value_type]
     if isinstance(json_value_type, type):
         return _type_dict[json_value_type]
-    if isinstance(json_value_type, Dict):
+    if isinstance(json_value_type, dict):
         return object_val(json_value_type)
-    if isinstance(json_value_type, List):
-        if len(json_value_type) is not 1:
+    if isinstance(json_value_type, list):
+        if len(json_value_type) != 1:
             raise TypeError("Expected List as json type to have exactly one element")
         return array_val(json_value_type[0])
-    if isinstance(json_value_type, Tuple):
+    if isinstance(json_value_type, tuple):
         return tuple_val(json_value_type)
     raise TypeError(f"Unsupported JSON value type {type(json_value_type)}")
 
@@ -250,7 +250,7 @@ class ObjectField:
 
     value_type: JsonValueType
     """The json value type"""
-    aliases: Union[str, List[str]] = field(default_factory=list)
+    aliases: Union[str, list[str]] = field(default_factory=list)
     """The field name aliases. By default, is an empty list."""
     repeated_behavior: RepeatedFieldBehavior = RepeatedFieldBehavior.ERROR
     """The repeated field behavior. By default, is RepeatedFieldBehavior.ERROR."""
@@ -296,7 +296,7 @@ def _build(
 
 
 def object_val(
-    fields: Dict[str, Union[JsonValueType, ObjectField]],
+    fields: dict[str, Union[JsonValueType, ObjectField]],
     allow_unknown_fields: bool = True,
     allow_missing: bool = True,
     allow_null: bool = True,
@@ -316,7 +316,7 @@ def object_val(
         object_val({ "name": str, "age": int })
 
     In contexts where the user needs to create a JsonValueType and isn't changing any default values, the user can
-    simplify by using a Dict[str, Union[JsonValueType, ObjectField]]. For example,
+    simplify by using a dict[str, Union[JsonValueType, ObjectField]]. For example,
 
     .. code-block:: python
 
@@ -329,7 +329,7 @@ def object_val(
         some_method({ "name": str, "age": int })
 
     Args:
-        fields (Dict[str, Union[JsonValueType, ObjectField]]): the fields
+        fields (dict[str, Union[JsonValueType, ObjectField]]): the fields
         allow_unknown_fields (bool): if unknown fields are allow, by default is True
         allow_missing (bool): if the object is allowed to be missing, by default is True
         allow_null (bool): if the object is allowed to be a JSON null type, by default is True
@@ -361,8 +361,8 @@ def object_val(
 
 def typed_object_val(
     type_field: str,
-    shared_fields: Dict[str, Union[JsonValueType, ObjectField]],
-    objects: Dict[str, JsonValueType],
+    shared_fields: dict[str, Union[JsonValueType, ObjectField]],
+    objects: dict[str, JsonValueType],
     allow_unknown_types: bool = True,
     allow_missing: bool = True,
     allow_null: bool = True,
@@ -402,8 +402,8 @@ def typed_object_val(
 
     Args:
         type_field (str): the type-discriminating field
-        shared_fields (Dict[str, Union[JsonValueType, ObjectField]]): the shared fields
-        objects (Dict[str, Union[JsonValueType, ObjectField]]): the individual objects, keyed by their
+        shared_fields (dict[str, Union[JsonValueType, ObjectField]]): the shared fields
+        objects (dict[str, JsonValueType]): the individual objects, keyed by their
             type-discriminated value. The values must be object options.
         allow_unknown_types (bool): if unknown types are allow, by default is True
         allow_missing (bool): if the object is allowed to be missing, by default is True
@@ -529,7 +529,7 @@ def object_entries_val(
 
 
 def tuple_val(
-    values: Union[Tuple[JsonValueType, ...], Dict[str, JsonValueType]],
+    values: Union[tuple[JsonValueType, ...], dict[str, JsonValueType]],
     allow_missing: bool = True,
     allow_null: bool = True,
 ) -> JsonValue:
@@ -567,15 +567,15 @@ def tuple_val(
         some_method((tuple_type_1, tuple_type_2))
 
     Args:
-        values (Union[Tuple[JsonValueType, ...], Dict[str, JsonValueType]]): the tuple value types
+        values (Union[tuple[JsonValueType, ...], dict[str, JsonValueType]]): the tuple value types
         allow_missing (bool): if the array is allowed to be missing, by default is True
         allow_null (bool): if the array is allowed to be a JSON null type, by default is True
     Returns:
         the tuple value
     """
-    if isinstance(values, Tuple):
-        kvs = enumerate(values)
-    elif isinstance(values, Dict):
+    if isinstance(values, tuple):
+        kvs: Iterable = enumerate(values)
+    elif isinstance(values, dict):
         kvs = values.items()
     else:
         raise TypeError(f"Invalid tuple type: {type(values)}")
@@ -971,8 +971,8 @@ def double_val(
         allow_string (bool): if the double value is allowed to be a JSON string type, default is False
         allow_missing (bool): if the double value is allowed to be missing, default is True
         allow_null (bool): if the double value is allowed to be a JSON null type, default is True
-        on_missing (Optional[int]): the value to use when the JSON value is missing and allow_missing is True, default is None.
-        on_null (Optional[int]): the value to use when the JSON value is null and allow_null is True, default is None.
+        on_missing (Optional[float]): the value to use when the JSON value is missing and allow_missing is True, default is None.
+        on_null (Optional[float]): the value to use when the JSON value is null and allow_null is True, default is None.
 
     Returns:
         the double value

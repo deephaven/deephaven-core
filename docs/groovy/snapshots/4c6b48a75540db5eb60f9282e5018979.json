@@ -1,1 +1,0 @@
-{"file":"core_versioned_docs/version-groovy/docs/how-to-guides/extract-table-value.md","objects":{"result":{"type":"Table","data":{"columns":[{"name":"Integers","type":"int"}],"rows":[[{"value":"1"}],[{"value":"2"}],[{"value":"3"}],[{"value":"4"}],[{"value":"5"}]]}},":log":{"type":"Log","data":"io.deephaven.engine.table.impl.sources.IntegerArraySource@3178a532\n"}}}

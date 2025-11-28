@@ -127,11 +127,11 @@ A key specification and a value specification, called a `KeyValueSpec` in code, 
 
 When consuming data from Kafka, Deephaven supports writing that data to three different types of tables:
 
-- [Append-only](../conceptual/table-types.md#specialization-1-append-only)
+- [Append-only](./table-types.md#specialization-1-append-only)
   - Append-only tables keep a full data history.
-- [Blink](../conceptual/table-types.md#specialization-3-blink)
+- [Blink](./table-types.md#specialization-3-blink)
   - Blink tables keep only data from the current update cycle. As soon as a new update cycle begins, the previous cycle's data is discarded.
-- [Ring](../conceptual/table-types.md#specialization-4-ring)
+- [Ring](./table-types.md#specialization-4-ring)
   - Ring tables can grow to a maximum size of `N` rows. When the maximum size is exceeded, the oldest rows are removed until `N` are left.
 
 ### Partitioned tables
@@ -145,6 +145,6 @@ When producing to Kafka, you can specify which column corresponds to the Kafka p
 - [Table update model](./table-update-model.md)
 - [Deephaven Core API design](./deephaven-core-api.md)
 - [How to connect to a Kafka stream](../how-to-guides/data-import-export/kafka-stream.md)
-- [Table types](../conceptual/table-types.md)
+- [Table types](./table-types.md)
 - [`consume`](../reference/data-import-export/Kafka/consume.md)
 - [`consume_to_partitioned_table`](../reference/data-import-export/Kafka/consume-to-partitioned-table.md)

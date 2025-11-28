@@ -1070,10 +1070,15 @@ join_example = last_ss_1.join(merge_first_and_last_ss_2, ["String1"], ["RenamedD
 ## Use columns as arrays and cells as variables
 
 ```python test-set=1
-get_a_column = static_source_1.j_object.getColumnSource("String1")
-print(get_a_column)
-get_a_cell = get_a_column.get(0)
-print(get_a_cell)
+from deephaven.numpy import to_numpy
+
+# Convert a column to a numpy array for positional index access
+column_array = to_numpy(static_source_1, cols=["String1"])
+print(column_array)
+
+# Access a cell by positional index
+cell_value = column_array[0]
+print(f"Value at index 0: {cell_value}")
 ```
 
 ## Read and write files

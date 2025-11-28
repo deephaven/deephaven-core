@@ -191,7 +191,7 @@ With some practice, you will get a feeling for how to format chained query opera
 - [Handle nulls, infs, and NaNs](../how-to-guides/null-inf-nan.md)
 - [Work with arrays](../how-to-guides/work-with-arrays.md)
 - [Work with strings](../how-to-guides/strings.md)
-- [Work with time](../conceptual/time-in-deephaven.md)
+- [Work with time](./time-in-deephaven.md)
 - [Use filters](../how-to-guides/filters.md)
 - [Use ternary-if](../how-to-guides/ternary-if-how-to.md)
 - [Use variables in query strings](../how-to-guides/queryscope.md)

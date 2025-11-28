@@ -19,8 +19,8 @@ For Deephaven-specific memory configuration and performance guidance, see:
 
 - [Garbage collection guide](../../how-to-guides/performance/garbage-collection.md)
 - [Performance tables for monitoring](../../how-to-guides/performance/performance-tables.md)
-- [Table memory usage estimation](../community-questions/find-how-much-memory-a-table-is-using.md)
-- [Minimum memory allocation recommendation](../community-questions/whats-minimum-amount-memory-to-allocate.md)
+- [Table memory usage estimation](./find-how-much-memory-a-table-is-using.md)
+- [Minimum memory allocation recommendation](./whats-minimum-amount-memory-to-allocate.md)
 
 > [!NOTE]
 > These FAQ pages contain answers to questions about Deephaven Community Core that our users have asked in our [Community Slack](/slack). If you have a question that is not answered in our documentation, [join our Community](/slack) and we'll be happy to help.

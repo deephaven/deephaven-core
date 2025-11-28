@@ -267,6 +267,13 @@ public class QueryTable extends BaseTable<QueryTable> {
             Configuration.getInstance().getIntegerWithDefault("QueryTable.parallelWhereSegments", -1);
 
     /**
+     * Disable the usage of push-down filtering on a merged table.
+     */
+    public static boolean DISABLE_WHERE_PUSHDOWN_MERGED_TABLES =
+            Configuration.getInstance().getBooleanWithDefault("QueryTable.disableWherePushdownMergedTables",
+                    false);
+
+    /**
      * Disable the usage of parquet row group metadata during push-down filtering.
      */
     public static boolean DISABLE_WHERE_PUSHDOWN_PARQUET_ROW_GROUP_METADATA =

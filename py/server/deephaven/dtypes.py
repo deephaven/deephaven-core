@@ -2,53 +2,75 @@
 # Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 #
 
-""" This module defines the data types supported by the Deephaven engine.
+"""This module defines the data types supported by the Deephaven engine.
 
 Each data type is represented by a DType class which supports creating arrays of the same type and more.
 """
+
 from __future__ import annotations
 
 import datetime
-from typing import Any, Sequence, Callable, Dict, Type, Union, Optional
+from collections.abc import Sequence
+from typing import TYPE_CHECKING, Any, Callable, Optional, Union, cast
 
 import jpy
 import numpy as np
 import pandas as pd
 
-from deephaven import DHError
-from deephaven.constants import NULL_BYTE, NULL_SHORT, NULL_INT, NULL_LONG, NULL_FLOAT, NULL_DOUBLE, NULL_CHAR
+from deephaven.constants import (
+    NULL_BYTE,
+    NULL_CHAR,
+    NULL_DOUBLE,
+    NULL_FLOAT,
+    NULL_INT,
+    NULL_LONG,
+    NULL_SHORT,
+)
+
+from .dherror import DHError
+
+if TYPE_CHECKING:
+    from typing_extensions import TypeAlias  # novermin  # noqa
 
 _JQstType = jpy.get_type("io.deephaven.qst.type.Type")
 _JTableTools = jpy.get_type("io.deephaven.engine.util.TableTools")
-_JPrimitiveArrayConversionUtility = jpy.get_type("io.deephaven.integrations.common.PrimitiveArrayConversionUtility")
+_JPrimitiveArrayConversionUtility = jpy.get_type(
+    "io.deephaven.integrations.common.PrimitiveArrayConversionUtility"
+)
 
-_j_name_type_map: Dict[str, DType] = {}
+_j_name_type_map: dict[str, DType] = {}
 
 
-def _qst_custom_type(cls_name: str):
+def _qst_custom_type(cls_name: str) -> Optional[jpy.JType]:
     try:
         return _JQstType.find(_JTableTools.typeFromName(cls_name))
-    except:
+    except Exception:
         return None
 
 
 class DType:
-    """ A class representing a data type in Deephaven."""
+    """A class representing a data type in Deephaven."""
 
-    def __init__(self, j_name: str, j_type: Type = None, qst_type: jpy.JType = None, is_primitive: bool = False,
-                 np_type: Any = np.object_):
+    def __init__(
+        self,
+        j_name: str,
+        j_type: Optional[type] = None,
+        qst_type: Optional[jpy.JType] = None,
+        is_primitive: bool = False,
+        np_type: Any = np.object_,
+    ):
         """
         Args:
              j_name (str): the full qualified name of the Java class
-             j_type (Type): the mapped Python class created by JPY
-             qst_type (JType): the JPY wrapped object for a instance of QST Type
+             j_type (Optional[type]): the mapped Python class created by JPY
+             qst_type (Optional[JType]): the JPY wrapped object for a instance of QST Type
              is_primitive (bool): whether this instance represents a primitive Java type
              np_type (Any): an instance of numpy dtype (dtype("int64") or numpy class (e.g. np.int16), default is
                 np.object_
         """
         self.j_name = j_name
         self.j_type = j_type if j_type else jpy.get_type(j_name)
-        self.qst_type = qst_type if qst_type else _qst_custom_type(j_name)
+        self.qst_type: jpy.JType = qst_type if qst_type else _qst_custom_type(j_name)
         self.is_primitive = is_primitive
         self.np_type = np_type
 
@@ -67,33 +89,60 @@ class DType:
             raise DHError(e, f"failed to create an instance of {self.j_name}") from e
 
 
-bool_ = DType(j_name="java.lang.Boolean", qst_type=_JQstType.booleanType(), np_type=np.bool_)
+bool_: DType = DType(
+    j_name="java.lang.Boolean", qst_type=_JQstType.booleanType(), np_type=np.bool_
+)
 """Boolean type"""
-byte = DType(j_name="byte", qst_type=_JQstType.byteType(), is_primitive=True, np_type=np.int8)
+byte: DType = DType(
+    j_name="byte", qst_type=_JQstType.byteType(), is_primitive=True, np_type=np.int8
+)
 """Signed byte integer type"""
 int8 = byte
 """Signed byte integer type"""
-short = DType(j_name="short", qst_type=_JQstType.shortType(), is_primitive=True, np_type=np.int16)
+short: DType = DType(
+    j_name="short", qst_type=_JQstType.shortType(), is_primitive=True, np_type=np.int16
+)
 """Signed short integer type"""
 int16 = short
 """Signed short integer type"""
-char = DType(j_name="char", qst_type=_JQstType.charType(), is_primitive=True, np_type=np.dtype('uint16'))
+char: DType = DType(
+    j_name="char",
+    qst_type=_JQstType.charType(),
+    is_primitive=True,
+    np_type=np.uint16,
+)
 """Character type"""
-int32 = DType(j_name="int", qst_type=_JQstType.intType(), is_primitive=True, np_type=np.int32)
+int32: DType = DType(
+    j_name="int", qst_type=_JQstType.intType(), is_primitive=True, np_type=np.int32
+)
 """Signed 32bit integer type"""
-long = DType(j_name="long", qst_type=_JQstType.longType(), is_primitive=True, np_type=np.int64)
+int64: DType = DType(
+    j_name="long", qst_type=_JQstType.longType(), is_primitive=True, np_type=np.int64
+)
 """Signed 64bit integer type"""
-int64 = long
+long = int64
 """Signed 64bit integer type"""
-float32 = DType(j_name="float", qst_type=_JQstType.floatType(), is_primitive=True, np_type=np.float32)
+float32: DType = DType(
+    j_name="float",
+    qst_type=_JQstType.floatType(),
+    is_primitive=True,
+    np_type=np.float32,
+)
 """Single-precision floating-point number type"""
 single = float32
 """Single-precision floating-point number type"""
-float64 = DType(j_name="double", qst_type=_JQstType.doubleType(), is_primitive=True, np_type=np.float64)
+float64: DType = DType(
+    j_name="double",
+    qst_type=_JQstType.doubleType(),
+    is_primitive=True,
+    np_type=np.float64,
+)
 """Double-precision floating-point number type"""
 double = float64
 """Double-precision floating-point number type"""
-string = DType(j_name="java.lang.String", qst_type=_JQstType.stringType(), np_type=np.str_)
+string = DType(
+    j_name="java.lang.String", qst_type=_JQstType.stringType(), np_type=np.str_
+)
 """String type"""
 Character = DType(j_name="java.lang.Character")
 """Character type"""
@@ -103,59 +152,63 @@ BigDecimal = DType(j_name="java.math.BigDecimal")
 """Java BigDecimal type"""
 StringSet = DType(j_name="io.deephaven.stringset.StringSet")
 """Deephaven StringSet type"""
-Instant = DType(j_name="java.time.Instant", np_type=np.dtype("datetime64[ns]"))
+Instant = cast(
+    type, DType(j_name="java.time.Instant", np_type=np.dtype("datetime64[ns]"))
+)  # type: TypeAlias
 """Instant date time type"""
-LocalDate = DType(j_name="java.time.LocalDate")
+LocalDate = cast(type, DType(j_name="java.time.LocalDate"))  # type: TypeAlias
 """Local date type"""
-LocalTime = DType(j_name="java.time.LocalTime")
+LocalTime = cast(type, DType(j_name="java.time.LocalTime"))  # type: TypeAlias
 """Local time type"""
-ZonedDateTime = DType(j_name="java.time.ZonedDateTime")
+ZonedDateTime = cast(type, DType(j_name="java.time.ZonedDateTime"))  # type: TypeAlias
 """Zoned date time type"""
-Duration = DType(j_name="java.time.Duration")
+Duration = cast(type, DType(j_name="java.time.Duration"))  # type: TypeAlias
 """Time period type, which is a unit of time in terms of clock time (24-hour days, hours, minutes, seconds, and nanoseconds)."""
-Period = DType(j_name="java.time.Period")
+Period = cast(type, DType(j_name="java.time.Period"))  # type: TypeAlias
 """Time period type, which is a unit of time in terms of calendar time (days, weeks, months, years, etc.)."""
-TimeZone = DType(j_name="java.time.ZoneId")
+TimeZone = cast(type, DType(j_name="java.time.ZoneId"))  # type: TypeAlias
 """Time zone type."""
-BusinessCalendar = DType(j_name='io.deephaven.time.calendar.BusinessCalendar')
+BusinessCalendar = cast(
+    type, DType(j_name="io.deephaven.time.calendar.BusinessCalendar")
+)  # type: TypeAlias
 """Business calendar type"""
 PyObject = DType(j_name="org.jpy.PyObject")
 """Python object type"""
 JObject = DType(j_name="java.lang.Object")
 """Java Object type"""
-bool_array = DType(j_name='[Z')
+bool_array = DType(j_name="[Z")
 """boolean array type"""
-byte_array = DType(j_name='[B')
+byte_array = DType(j_name="[B")
 """Byte array type"""
 int8_array = byte_array
 """Byte array type"""
-short_array = DType(j_name='[S')
+short_array = DType(j_name="[S")
 """Short array type"""
 int16_array = short_array
 """Short array type"""
-char_array = DType(j_name='[C')
+char_array = DType(j_name="[C")
 """char array type"""
-int32_array = DType(j_name='[I')
+int32_array = DType(j_name="[I")
 """32bit integer array type"""
-long_array = DType(j_name='[J')
+long_array = DType(j_name="[J")
 """64bit integer array type"""
 int64_array = long_array
 """64bit integer array type"""
-single_array = DType(j_name='[F')
+single_array = DType(j_name="[F")
 """Single-precision floating-point array type"""
 float32_array = single_array
 """Single-precision floating-point array type"""
-double_array = DType(j_name='[D')
+double_array = DType(j_name="[D")
 """Double-precision floating-point array type"""
 float64_array = double_array
 """Double-precision floating-point array type"""
-string_array = DType(j_name='[Ljava.lang.String;')
+string_array = DType(j_name="[Ljava.lang.String;")
 """Java String array type"""
-boolean_array = DType(j_name='[Ljava.lang.Boolean;')
+boolean_array = DType(j_name="[Ljava.lang.Boolean;")
 """Java Boolean array type"""
-instant_array = DType(j_name='[Ljava.time.Instant;')
+instant_array = DType(j_name="[Ljava.time.Instant;")
 """Java Instant array type"""
-zdt_array = DType(j_name='[Ljava.time.ZonedDateTime;')
+zdt_array = DType(j_name="[Ljava.time.ZonedDateTime;")
 """Zoned date time array type"""
 
 _PRIMITIVE_DTYPE_NULL_MAP = {
@@ -198,7 +251,7 @@ _J_ARRAY_NP_TYPE_MAP = {
 
 
 def null_remap(dtype: DType) -> Callable[[Any], Any]:
-    """ Creates a null value remap function for the provided DType.
+    """Creates a null value remap function for the provided DType.
 
     Args:
         dtype (DType): the DType instance
@@ -216,18 +269,18 @@ def null_remap(dtype: DType) -> Callable[[Any], Any]:
     return lambda v: null_value if v is None else v
 
 
-def _instant_array(data: Sequence) -> jpy.JType:
+def _instant_array(data: Union[Sequence, np.ndarray]) -> jpy.JType:
     """Converts a sequence of either datetime64[ns], datetime.datetime, pandas.Timestamp, datetime strings,
-    or integers in nanoseconds, to a Java array of Instant values. """
+    or integers in nanoseconds, to a Java array of Instant values."""
 
     if len(data) == 0:
         return jpy.array(Instant.j_type, [])
 
-    if isinstance(data, np.ndarray) and data.dtype.kind == 'U':
+    if isinstance(data, np.ndarray) and data.dtype.kind == "U":
         return _JPrimitiveArrayConversionUtility.translateArrayStringToInstant(data)
 
-    if all((d == None or isinstance(d, str)) for d in data):
-        jdata = jpy.array('java.lang.String', data)
+    if all((d is None or isinstance(d, str)) for d in data):
+        jdata = jpy.array("java.lang.String", data)
         return _JPrimitiveArrayConversionUtility.translateArrayStringToInstant(jdata)
 
     # try to convert to numpy array of datetime64 if not already, so that we can call translateArrayLongToInstant on
@@ -236,16 +289,18 @@ def _instant_array(data: Sequence) -> jpy.JType:
         try:
             # Pandas drops unrecognized time zones, so it may handle time zones incorrectly when parsing strings
             if not any(isinstance(i, str) for i in data):
-                data = np.array([pd.Timestamp(dt).to_numpy() for dt in data], dtype=np.datetime64)
-        except Exception as e:
+                data = np.array(
+                    [pd.Timestamp(dt).to_numpy() for dt in data], dtype=np.datetime64
+                )
+        except Exception:
             ...
 
     # Pandas drops unrecognized time zones, so it may handle time zones incorrectly, so do not handle 'U' dtype
-    if isinstance(data, np.ndarray) and data.dtype.kind in ('M', 'i'):
-        if data.dtype.kind == 'M':
-            longs = jpy.array('long', data.astype('datetime64[ns]').astype('int64'))
-        elif data.dtype.kind == 'i':
-            longs = jpy.array('long', data.astype('int64'))
+    if isinstance(data, np.ndarray) and data.dtype.kind in ("M", "i"):
+        if data.dtype.kind == "M":
+            longs = jpy.array("long", data.astype("datetime64[ns]").astype("int64"))
+        elif data.dtype.kind == "i":
+            longs = jpy.array("long", data.astype("int64"))
         else:
             raise Exception(f"Unexpected dtype: {data.dtype.kind}")
 
@@ -253,21 +308,24 @@ def _instant_array(data: Sequence) -> jpy.JType:
 
     if not isinstance(data, instant_array.j_type):
         from deephaven.time import to_j_instant
+
         data = [to_j_instant(d) for d in data]
 
     return jpy.array(Instant.j_type, data)
 
 
-def array(dtype: DType, seq: Optional[Sequence], remap: Callable[[Any], Any] = None) -> Optional[jpy.JType]:
-    """ Creates a Java array of the specified data type populated with values from a sequence.
+def array(
+    dtype: DType, seq: Optional[Sequence], remap: Optional[Callable[[Any], Any]] = None
+) -> Optional[jpy.JType]:
+    """Creates a Java array of the specified data type populated with values from a sequence.
 
     Note:
         this method does unsafe casting, meaning precision and values might be lost with down cast
 
     Args:
         dtype (DType): the component type of the array
-        seq (Sequence): a sequence of compatible data, e.g. list, tuple, numpy array, Pandas series, etc.
-        remap (optional): a callable that takes one value and maps it to another, for handling the translation of
+        seq (Optional[Sequence]): a sequence of compatible data, e.g. list, tuple, numpy array, Pandas series, etc.
+        remap (Optional[Callable[[Any], Any]]): a callable that takes one value and maps it to another, for handling the translation of
             special DH values such as NULL_INT, NAN_INT between Python and the DH engine
 
     Returns:
@@ -283,7 +341,9 @@ def array(dtype: DType, seq: Optional[Sequence], remap: Callable[[Any], Any] = N
         raise ValueError("array() does not support multi-dimensional arrays")
 
     if not isinstance(dtype, DType):
-        raise TypeError(f"array() expects a DType for the first argument but given a {type(dtype).__name__}")
+        raise TypeError(
+            f"array() expects a DType for the first argument but given a {type(dtype).__name__}"
+        )
 
     try:
         if isinstance(seq, str) and dtype == char:
@@ -302,7 +362,9 @@ def array(dtype: DType, seq: Optional[Sequence], remap: Callable[[Any], Any] = N
             if dtype == bool_:
                 bytes_ = seq.astype(dtype=np.int8)
                 j_bytes = array(byte, bytes_)
-                seq = _JPrimitiveArrayConversionUtility.translateArrayByteToBoolean(j_bytes)
+                seq = _JPrimitiveArrayConversionUtility.translateArrayByteToBoolean(
+                    j_bytes
+                )
 
         return jpy.array(dtype.j_type, seq)
     except Exception as e:
@@ -310,7 +372,14 @@ def array(dtype: DType, seq: Optional[Sequence], remap: Callable[[Any], Any] = N
 
 
 def from_jtype(j_class: Any) -> Optional[DType]:
-    """ looks up a DType that matches the java type, if not found, creates a DType for it. """
+    """looks up a DType that matches the java type, if not found, creates a DType for it.
+
+    Args:
+        j_class (Any): the java class
+
+    Returns:
+        an instance of DType or None if j_class is None
+    """
     if not j_class:
         return None
 
@@ -323,8 +392,8 @@ def from_jtype(j_class: Any) -> Optional[DType]:
 
 
 def from_np_dtype(np_dtype: Union[np.dtype, pd.api.extensions.ExtensionDtype]) -> DType:
-    """ Looks up a DType that matches the provided numpy dtype or Pandas's nullable equivalent; if not found,
-    returns PyObject. """
+    """Looks up a DType that matches the provided numpy dtype or Pandas's nullable equivalent; if not found,
+    returns PyObject."""
 
     if isinstance(np_dtype, pd.api.extensions.ExtensionDtype):
         # check if it is a Pandas nullable numeric types such as pd.Float64Dtype/Int32Dtype/BooleanDtype etc.
@@ -335,10 +404,10 @@ def from_np_dtype(np_dtype: Union[np.dtype, pd.api.extensions.ExtensionDtype]) -
         else:
             return PyObject
 
-    if np_dtype.kind in {'U', 'S'}:
+    if np_dtype.kind in {"U", "S"}:
         return string
 
-    if np_dtype.kind in {'M'}:
+    if np_dtype.kind in {"M"}:
         return Instant
 
     for _, dtype in _j_name_type_map.items():
@@ -370,29 +439,35 @@ def _scalar(x: Any, dtype: DType) -> Any:
 
     # NULL_BOOL will appear in Java as a byte value which causes a cast error. We just let JPY converts it to Java null
     # and the engine has casting logic to handle it.
-    if (dt := _PRIMITIVE_DTYPE_NULL_MAP.get(dtype)) and _is_py_null(x) and dtype not in (bool_, char):
+    if (
+        (dt := _PRIMITIVE_DTYPE_NULL_MAP.get(dtype))
+        and _is_py_null(x)
+        and dtype not in (bool_, char)
+    ):
         return dt
 
     try:
         if hasattr(x, "dtype"):
-            if x.dtype.char == 'H':  # np.uint16 maps to Java char
+            if x.dtype.char == "H":  # np.uint16 maps to Java char
                 return Character(int(x))
             elif x.dtype.char in _NUMPY_INT_TYPE_CODES:
                 return int(x)
             elif x.dtype.char in _NUMPY_FLOATING_TYPE_CODES:
                 return float(x)
-            elif x.dtype.char == '?':
+            elif x.dtype.char == "?":
                 return bool(x)
-            elif x.dtype.char == 'U':
+            elif x.dtype.char == "U":
                 return str(x)
-            elif x.dtype.char == 'O':
+            elif x.dtype.char == "O":
                 return x
-            elif x.dtype.char == 'M':
+            elif x.dtype.char == "M":
                 from deephaven.time import to_j_instant
+
                 return to_j_instant(x)
         elif isinstance(x, (datetime.datetime, pd.Timestamp)):
-                from deephaven.time import to_j_instant
-                return to_j_instant(x)
+            from deephaven.time import to_j_instant
+
+            return to_j_instant(x)
         return x
-    except:
+    except Exception:
         return x
