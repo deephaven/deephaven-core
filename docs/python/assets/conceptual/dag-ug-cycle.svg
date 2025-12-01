@@ -1,0 +1,143 @@
+<svg viewBox="0 0 1000 600" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <style>
+      .title { font: bold 16px sans-serif; fill: #1f2937; }
+      .label { font: 14px sans-serif; fill: #374151; }
+      .step-num { font: bold 20px sans-serif; fill: #ffffff; }
+      .description { font: 11px sans-serif; fill: #6b7280; }
+      .time { font: 12px sans-serif; fill: #059669; font-weight: bold; }
+      .phase { fill: #e0e7ff; stroke: #6366f1; stroke-width: 2; }
+      .timeline { fill: #fef3c7; stroke: #f59e0b; stroke-width: 2; }
+      .arrow { stroke: #6b7280; stroke-width: 2.5; fill: none; marker-end: url(#arrowhead); }
+      .cycle-arrow { stroke: #6366f1; stroke-width: 3; fill: none; marker-end: url(#cycle); }
+      .shadow { filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1)); }
+      .step-circle { fill: #6366f1; }
+    </style>
+    
+    <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#6b7280" />
+    </marker>
+    
+    <marker id="cycle" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#6366f1" />
+    </marker>
+  </defs>
+  
+  <!-- Title -->
+  <text class="title" x="500" y="30" text-anchor="middle">Update Graph (UG) Cycle: Batched Real-time Processing</text>
+  <text class="description" x="500" y="50" text-anchor="middle">Default cycle: 1000ms | Changes are collected and processed together</text>
+  
+  <!-- Timeline -->
+  <g class="shadow">
+    <rect class="timeline" x="50" y="80" width="900" height="60" rx="8"/>
+    <text class="label" x="70" y="105" font-weight="bold">Timeline</text>
+    
+    <!-- Time markers -->
+    <line x1="150" y1="90" x2="150" y2="130" stroke="#f59e0b" stroke-width="2"/>
+    <text class="time" x="150" y="155" text-anchor="middle">0ms</text>
+    
+    <line x1="400" y1="90" x2="400" y2="130" stroke="#f59e0b" stroke-width="2"/>
+    <text class="time" x="400" y="155" text-anchor="middle">1000ms</text>
+    
+    <line x1="650" y1="90" x2="650" y2="130" stroke="#f59e0b" stroke-width="2"/>
+    <text class="time" x="650" y="155" text-anchor="middle">2000ms</text>
+    
+    <line x1="900" y1="90" x2="900" y2="130" stroke="#f59e0b" stroke-width="2"/>
+    <text class="time" x="900" y="155" text-anchor="middle">3000ms</text>
+    
+    <!-- Cycle indicators -->
+    <rect fill="#e0e7ff" x="150" y="100" width="250" height="20" opacity="0.6"/>
+    <text class="description" x="275" y="114" text-anchor="middle" font-weight="bold">Cycle 1</text>
+    
+    <rect fill="#e0e7ff" x="400" y="100" width="250" height="20" opacity="0.6"/>
+    <text class="description" x="525" y="114" text-anchor="middle" font-weight="bold">Cycle 2</text>
+    
+    <rect fill="#e0e7ff" x="650" y="100" width="250" height="20" opacity="0.6"/>
+    <text class="description" x="775" y="114" text-anchor="middle" font-weight="bold">Cycle 3</text>
+  </g>
+  
+  <!-- Step 1: Collect Changes -->
+  <g class="shadow" transform="translate(50, 200)">
+    <rect class="phase" x="0" y="0" width="200" height="90" rx="8"/>
+    <circle class="step-circle" cx="20" cy="20" r="15"/>
+    <text class="step-num" x="20" y="26" text-anchor="middle">1</text>
+    <text class="label" x="45" y="25" font-weight="bold">Collect Changes</text>
+    <text class="description" x="10" y="50">• Source tables modified</text>
+    <text class="description" x="10" y="65">• Rows added/updated/deleted</text>
+    <text class="description" x="10" y="80">• Batched over cycle period</text>
+  </g>
+  
+  <!-- Arrow to step 2 -->
+  <path class="cycle-arrow" d="M 250 245 L 290 245"/>
+  
+  <!-- Step 2: Propagate Updates -->
+  <g class="shadow" transform="translate(290, 200)">
+    <rect class="phase" x="0" y="0" width="200" height="90" rx="8"/>
+    <circle class="step-circle" cx="20" cy="20" r="15"/>
+    <text class="step-num" x="20" y="26" text-anchor="middle">2</text>
+    <text class="label" x="45" y="25" font-weight="bold">Propagate Updates</text>
+    <text class="description" x="10" y="50">• Topological order</text>
+    <text class="description" x="10" y="65">• Sources → Dependents</text>
+    <text class="description" x="10" y="80">• Follows DAG structure</text>
+  </g>
+  
+  <!-- Arrow to step 3 -->
+  <path class="cycle-arrow" d="M 490 245 L 530 245"/>
+  
+  <!-- Step 3: Batch Processing -->
+  <g class="shadow" transform="translate(530, 200)">
+    <rect class="phase" x="0" y="0" width="200" height="90" rx="8"/>
+    <circle class="step-circle" cx="20" cy="20" r="15"/>
+    <text class="step-num" x="20" y="26" text-anchor="middle">3</text>
+    <text class="label" x="45" y="25" font-weight="bold">Batch Processing</text>
+    <text class="description" x="10" y="50">• Each table processes all</text>
+    <text class="description" x="10" y="65">  input changes at once</text>
+    <text class="description" x="10" y="80">• Efficient bulk operations</text>
+  </g>
+  
+  <!-- Arrow to step 4 -->
+  <path class="cycle-arrow" d="M 730 245 L 770 245"/>
+  
+  <!-- Step 4: Notification -->
+  <g class="shadow" transform="translate(770, 200)">
+    <rect class="phase" x="0" y="0" width="180" height="90" rx="8"/>
+    <circle class="step-circle" cx="20" cy="20" r="15"/>
+    <text class="step-num" x="20" y="26" text-anchor="middle">4</text>
+    <text class="label" x="45" y="25" font-weight="bold">Notification</text>
+    <text class="description" x="10" y="50">• UI updates</text>
+    <text class="description" x="10" y="65">• Listeners notified</text>
+    <text class="description" x="10" y="80">• Cycle complete</text>
+  </g>
+  
+  <!-- Example scenario -->
+  <g class="shadow" transform="translate(50, 340)">
+    <rect fill="#f0f9ff" stroke="#3b82f6" stroke-width="2" x="0" y="0" width="900" height="180" rx="8"/>
+    <text class="label" x="20" y="25" font-weight="bold">Example: 5 new rows in t1 during one UG cycle</text>
+    
+    <!-- Timeline of events -->
+    <g transform="translate(20, 45)">
+      <circle fill="#22c55e" cx="10" cy="5" r="6"/>
+      <text class="description" x="25" y="10">Time 0ms: t1 receives rows #1, #2, #3</text>
+      
+      <circle fill="#22c55e" cx="10" cy="30" r="6"/>
+      <text class="description" x="25" y="35">Time 500ms: t1 receives rows #4, #5</text>
+      
+      <circle fill="#3b82f6" cx="10" cy="55" r="6"/>
+      <text class="description" x="25" y="60">Time 1000ms: UG cycle begins</text>
+      
+      <rect fill="#fef3c7" x="40" y="75" width="840" height="80" rx="5" stroke="#f59e0b"/>
+      <text class="description" x="50" y="95" font-weight="bold">Processing (happens in milliseconds):</text>
+      <text class="description" x="60" y="115">1. t1 processes 5 additions → notifies t2 and t3 of changes</text>
+      <text class="description" x="60" y="130">2. t2 (last_by) processes updates for affected Label values (0 and 1)</text>
+      <text class="description" x="60" y="145">3. t3 (natural_join) incorporates changes from both t1 and t2</text>
+    </g>
+  </g>
+  
+  <!-- Key benefits -->
+  <g transform="translate(50, 540)">
+    <text class="label" x="0" y="0" font-weight="bold">⚡ Benefits of Batched Processing:</text>
+    <text class="description" x="0" y="20">• Efficient: Process multiple changes at once instead of one at a time</text>
+    <text class="description" x="0" y="35">• Consistent: All tables see the same "snapshot" of changes</text>
+    <text class="description" x="0" y="50">• Performant: Reduces overhead from constant individual updates</text>
+  </g>
+</svg>
