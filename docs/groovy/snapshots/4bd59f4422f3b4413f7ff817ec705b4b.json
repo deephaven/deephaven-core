@@ -1,0 +1,1 @@
+{"file":"how-to-guides/performance/formula-threads.md","objects":{"x":{"type":"Table","data":{"columns":[{"name":"Thr","type":"java.lang.Thread"}],"rows":[[{"value":"Thread[#39,OperationInitializationThreadPool-initializationExecutor-9,5,OperationInitializationThreadPool]"}]]}}}}

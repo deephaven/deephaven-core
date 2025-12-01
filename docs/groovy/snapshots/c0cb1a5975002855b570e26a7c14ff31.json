@@ -1,0 +1,1 @@
+{"file":"how-to-guides/performance/formula-threads.md","objects":{"x":{"type":"Table","data":{"columns":[{"name":"Timestamp","type":"java.time.Instant"},{"name":"Row","type":"int"}],"rows":[[{"value":"2025-12-01 14:21:11.000"},{"value":"0"}]]}},":log":{"type":"Log","data":"[]\n"}}}
