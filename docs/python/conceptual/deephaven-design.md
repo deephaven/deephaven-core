@@ -53,7 +53,7 @@ Queries automatically form a DAG where:
 
 For example, consider this simple query:
 
-```python
+```python order=source,filtered,aggregated
 from deephaven import time_table
 
 # Source table updates every second
@@ -97,9 +97,13 @@ At Deephaven, we have designed and implemented a unified table API that offers t
 
 **Example**: The same code works for both static and live data:
 
-```python
+```python syntax
+from deephaven.parquet import read
+from deephaven.stream.kafka import consume as consume_kafka
+from deephaven import agg
+
 # Works with static CSV data
-static_trades = read_csv("/data/historical_trades.csv")
+static_trades = read("/data/historical_trades.csv")
 result1 = static_trades.where("Price > 100").agg_by([agg.avg("Price")], by=["Symbol"])
 
 # Identical code works with live Kafka stream
@@ -136,7 +140,9 @@ A RowSet selects elements of that ColumnSource and might represent all the data 
 
 **Example of sharing**:
 
-```python
+```python syntax
+from deephaven import time_table
+
 # Original table
 source = time_table("PT1S").update(["A = ii", "B = ii * 2"])
 
@@ -272,18 +278,17 @@ Given these options, simple expressions can be explicitly optimized and avoid an
 **Example of formula evaluation**:
 
 ```python
+from deephaven import empty_table
+
+# Create a source table
+source = empty_table(10).update(["Value = ii * 10", "A = ii * 2", "B = ii * 3"])
+
 # Simple formula - pre-compiled optimization
 result = source.update("DoubleValue = Value * 2")
 
 # Complex formula - dynamic compilation
-result = source.update("Computed = Math.sqrt(A * A + B * B) > threshold")
-
-# Named parameter substitution - reuse compiled code
-params = {"threshold": 100}
-result1 = source.update("Filtered = Value > threshold", params=params)
-
-params = {"threshold": 200}
-result2 = source.update("Filtered = Value > threshold", params=params)  # Reuses compilation
+threshold = 50
+result = source.update("Computed = Math.sqrt(A * A + B * B) > " + str(threshold))
 ```
 
 Part of this process replaces column name references with parameters that can then be supplied from data loaded efficiently in [chunks](#chunk-oriented-architecture). It also allows for columns to be accessed as logical arrays in row position space.
@@ -310,19 +315,21 @@ deephaven.ui represents a significant evolution in how data applications are bui
 
 deephaven.ui adopts a React-like component model, but implemented entirely in Python:
 
-```python
-from deephaven import ui
+```python syntax
+from deephaven import ui, agg, time_table
 import deephaven.plot.express as dx
-from deephaven import time_table
+
 
 @ui.component
 def stock_dashboard():
     # Live data source
-    stock_data = time_table("PT1S").update([
-        "Symbol = (ii % 3 == 0) ? `AAPL` : (ii % 3 == 1) ? `GOOGL` : `MSFT`",
-        "Price = 100 + Math.random() * 50",
-        "Volume = (int)(Math.random() * 1000000)"
-    ])
+    stock_data = time_table("PT1S").update(
+        [
+            "Symbol = (ii % 3 == 0) ? `AAPL` : (ii % 3 == 1) ? `GOOGL` : `MSFT`",
+            "Price = 100 + Math.random() * 50",
+            "Volume = (int)(Math.random() * 1000000)",
+        ]
+    )
 
     # Aggregated view
     summary = stock_data.agg_by([agg.avg("Price"), agg.sum_("Volume")], by=["Symbol"])
@@ -332,8 +339,9 @@ def stock_dashboard():
         ui.heading("Real-time Stock Dashboard"),
         ui.table(stock_data),
         ui.table(summary),
-        dx.line(stock_data, x="Timestamp", y="Price", color="Symbol")
+        dx.line(stock_data, x="Timestamp", y="Price", color="Symbol"),
     ]
+
 
 my_dashboard = stock_dashboard()
 ```
@@ -364,7 +372,10 @@ This architecture leverages Deephaven's DAG model: when source tables update, th
 
 Components can maintain state and respond to user interactions:
 
-```python
+```python syntax
+from deephaven import ui, time_table
+
+
 @ui.component
 def interactive_filter():
     threshold, set_threshold = ui.use_state(100)
@@ -378,9 +389,9 @@ def interactive_filter():
             value=threshold,
             on_change=set_threshold,
             min_value=0,
-            max_value=200
+            max_value=200,
         ),
-        ui.table(filtered)
+        ui.table(filtered),
     ]
 ```
 
@@ -425,13 +436,15 @@ This approach provides maximum flexibility for front-end engineers who need fine
 
 For developers who prefer to work entirely in Python, [deephaven.ui](https://deephaven.io/core/ui/docs/) provides a higher-level abstraction. It uses a React-like component model but requires no JavaScript knowledge:
 
-```python
-from deephaven import ui
+```python syntax
+from deephaven import ui, time_table
+
 
 @ui.component
 def data_app():
     data = time_table("PT1S").update("Value = ii")
     return ui.table(data)
+
 
 my_app = data_app()
 ```
