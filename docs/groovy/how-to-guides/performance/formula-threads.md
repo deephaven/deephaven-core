@@ -10,7 +10,7 @@ Most interaction with the Deephaven engine is via gRPC. When processing a gRPC r
 A query operation beings on one of these thread pools, but evaluation may move to another thread depending on the operation. Consider the following snippet executed from a code studio:
 
 ```groovy
-x=emptyTable(1).update(Selectable.parse("Thr=java.lang.Thread.currentThread()").withSerial())
+x=emptyTable(1).update([Selectable.parse("Thr=java.lang.Thread.currentThread()").withSerial()])
 ```
 
 ```python
