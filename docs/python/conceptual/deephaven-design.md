@@ -54,7 +54,7 @@ Queries automatically form a DAG where:
 For example, consider this simple query:
 
 ```python order=source,filtered,aggregated
-from deephaven import time_table
+from deephaven import time_table, agg
 
 # Source table updates every second
 source = time_table("PT1S").update("Value = ii * 2")
@@ -277,7 +277,7 @@ Given these options, simple expressions can be explicitly optimized and avoid an
 
 **Example of formula evaluation**:
 
-```python
+```python order=source,result
 from deephaven import empty_table
 
 # Create a source table
