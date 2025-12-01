@@ -107,7 +107,7 @@ print(used_threads)
 
 Similarly, a refreshing `where` operation is evaluated on the Update Graph thread pool:
 
-```groovy
+```groovy test-set=1
 used_threads = new LinkedHashSet<>()
 record_thread = { int x -> 
     used_threads.add(java.lang.Thread.currentThread().getName())
@@ -118,7 +118,7 @@ x=timeTable("PT1s").head(2).update("Row=i").where("(boolean)record_thread(Row)")
 println(used_threads)
 ```
 
-```python
+```python test-set=2
 import jpy
 from deephaven import time_table
 
@@ -137,11 +137,11 @@ x = time_table("PT1s").head(2).update("Row=i").where("(boolean)record_thread(Row
 
 After waiting for the table to tick, we can print the value of `used_threads`:
 
-```groovy
+```groovy test-set=1
 println(used_threads)
 ```
 
-```python
+```python test-set=2
 print(used_threads)
 ```
 
