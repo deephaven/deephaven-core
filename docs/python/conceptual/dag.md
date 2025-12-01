@@ -102,7 +102,7 @@ Most users never interact directly with update notifications, but it is possible
 
 Here's a practical example of a custom listener that monitors disk usage:
 
-```python order=disk_monitor,critical_alerts,handle_alert
+```python order=disk_monitor,critical_alerts
 from deephaven import time_table
 from deephaven.table_listener import listen
 
