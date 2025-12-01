@@ -78,6 +78,26 @@ The `select`, `update`, and `where` operations can parallelize within a single w
 
 The [`ConcurrencyControl`](https://docs.deephaven.io/core/javadoc/io/deephaven/api/ConcurrencyControl.html) interface allows you to control the behavior of [`Filter`](https://docs.deephaven.io/core/javadoc/io/deephaven/api/filter/Filter.html) (where clause) and [`Selectable`](https://docs.deephaven.io/core/javadoc/io/deephaven/api/Selectable.html) (column formula) objects.
 
+> [!NOTE]
+> Most queries don't need serial execution or barriers. Use these features only when you have:
+>
+> - Operations with **stateful side effects** (e.g., updating global variables)
+> - Operations that must execute in a **specific order** due to dependencies
+> - **Race conditions** causing incorrect results in parallel execution
+
+#### Example: When you need ordering control
+
+This example demonstrates a common problem that requires ordering control. Two columns reference a shared AtomicInteger:
+
+```groovy order=null
+import java.util.concurrent.atomic.AtomicInteger
+
+a = new AtomicInteger(0)
+t = emptyTable(1_000_000).update("A=a.getAndIncrement()", "B=a.getAndIncrement()")
+```
+
+Deephaven's default behavior treats both `A` and `B` as stateful, evaluating them in order. However, if marked as stateless, parallel evaluation could cause race conditions. The following sections show how to control evaluation order explicitly.
+
 #### Key terms
 
 Three concepts work together to control parallelization:
@@ -86,10 +106,27 @@ Three concepts work together to control parallelization:
 - **Serial**: A property applied to a Selectable or Filter that forces in-order row evaluation. Applied using `.withSerial()`.
 - **Barrier**: An explicit ordering mechanism that controls when Selectables or Filters can begin evaluation. One Selectable declares a barrier, and another respects it.
 
-You can control ordering in two ways:
+#### Choosing the right approach
 
-1. **Mark a Selectable as serial** - Ensures rows are evaluated in order; may also create implicit barriers between serial Selectables (config-dependent).
-2. **Use explicit barriers** - Provides fine-grained control over which Selectables must complete before others begin.
+Use this guide to decide which concurrency control method fits your needs:
+
+**Use `.withSerial()`** if:
+
+- You need rows evaluated **in order within a single operation** (e.g., sequential state updates)
+- You have a single Filter or Selectable with order-dependent logic
+- Example: Processing events in chronological sequence
+
+**Use explicit barriers** if:
+
+- You need to control **ordering between different operations** (operation A must finish before operation B starts)
+- Multiple Filters or Selectables have dependencies
+- Example: Filter A populates a cache that Filter B reads from
+
+**Use implicit barriers** (serial Selectables in stateful mode) if:
+
+- Multiple operations share global state and shouldn't run concurrently
+- You want the engine to automatically prevent concurrent execution
+- This is the default behavior when operations are marked stateful
 
 #### Using serial Selectables and Filters
 
@@ -100,14 +137,14 @@ To explicitly mark a Selectable or Filter as stateful, use the `withSerial` meth
 
 > [!IMPORTANT] > `ConcurrencyControl` cannot be applied to Selectables passed to `view` or `updateView`. These operations compute results on demand and cannot enforce ordering constraints. Use `select` or `update` instead when serial evaluation or barriers are needed.
 
-**Implicit barriers and serial Selectables:**
+**Advanced: Implicit barriers and serial Selectables**
 
-Serial Selectables have different behavior depending on the `QueryTable.SERIAL_SELECT_IMPLICIT_BARRIERS` configuration:
+Serial Selectables can create implicit barriers between each other, controlled by `QueryTable.SERIAL_SELECT_IMPLICIT_BARRIERS`:
 
-- **When `true` (default for stateful mode)**: Each serial Selectable acts as an absolute barrier with respect to all other serial Selectables. This means serial Selectables cannot run concurrently with each other, allowing them to safely access shared global state. Non-serial Selectables may still be reordered.
-- **When `false` (default for stateless mode)**: Serial Selectables enforce in-order row evaluation within their own column, but don't create barriers between different Selectables. Natural column dependencies still apply (if column B references column A, then A evaluates before B). Use explicit barriers for additional ordering constraints.
+- **Stateful mode** (default): Serial Selectables act as barriers to each other, preventing concurrent execution
+- **Stateless mode**: Serial Selectables only enforce in-order row evaluation within themselves; use explicit barriers for cross-operation ordering
 
-The `QueryTable.SERIAL_SELECT_IMPLICIT_BARRIERS` value is controlled by the `QueryTable.serialSelectImplicitBarriers` property, and defaults to the inverse of `QueryTable.statelessSelectByDefault`.
+Most users can rely on the default stateful behavior. Use explicit barriers when you need fine-grained control.
 
 #### Using explicit barriers
 
@@ -118,22 +155,11 @@ Subsequent Filters or Selectables may respect a previously declared barrier:
 - If a Filter respects a barrier, it cannot begin evaluation until the Filter that declared the barrier has been completely evaluated.
 - If a Selectable respects a barrier, it cannot begin evaluation until the Selectable that declared the barrier has been completely evaluated.
 
-In this code block, two columns reference the AtomicInteger `a`:
+#### Detailed example: Two approaches for ordering control
 
-```groovy order=null
-import java.util.concurrent.atomic.AtomicInteger
+Returning to the AtomicInteger example shown earlier, here are two ways to ensure column `A` completes before column `B` starts when expressions are marked stateless:
 
-a = new AtomicInteger(0)
-t = emptyTable(1_000_000).update("A=a.getAndIncrement()", "B=a.getAndIncrement()")
-```
-
-Deephaven's default behavior is to treat both `A` and `B` statefully, therefore the table is equivalent to:
-
-```groovy order=null
-t = emptyTable(1_000_000).update("A=i", "B=1_000_000 + i")
-```
-
-However, when the columns are stateless, then the rows from either column can be evaluated in any order. To indicate that `A` must be evaluated before `B`, we can use a barrier:
+**Approach 1: Using explicit barriers**
 
 ```groovy order=null
 import java.util.concurrent.atomic.AtomicInteger
