@@ -1,0 +1,1 @@
+{"file":"conceptual/dag.md","objects":{"live_data":{"type":"Table","data":{"columns":[{"name":"Timestamp","type":"java.time.Instant"},{"name":"Group","type":"long"},{"name":"ExpensiveCalc","type":"long"}],"rows":[]}},"result":{"type":"Table","data":{"columns":[{"name":"Group","type":"long"},{"name":"ExpensiveCalc","type":"long"}],"rows":[]}}}}

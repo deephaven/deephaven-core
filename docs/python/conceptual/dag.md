@@ -29,7 +29,7 @@ This is fundamentally different from traditional batch processing, where entire 
 
 Deephaven’s query syntax is very natural and readable. Under the hood, queries are converted into directed acyclic graphs (DAGs) for efficient real-time processing. Let’s look at an example to understand DAGs.
 
-```python order=t1,t2,t3
+```python order=t1,t2,t3 test-set=dag-example
 from deephaven import time_table
 
 t1 = time_table("PT1S").update(formulas=["Label=(ii%2)"])
@@ -65,7 +65,7 @@ When `t3` is set to `None`, there are no references to the result of the [`natur
 
 If you later need to recreate `t3`, you can simply rerun the join operation:
 
-```python order=t3
+```python order=t3 test-set=dag-example
 # Recreate the join - this adds it back to the DAG
 t3 = t1.natural_join(table=t2, on=["Label"], joins=["T2=Timestamp"])
 ```
@@ -107,13 +107,16 @@ from deephaven import time_table
 from deephaven.table_listener import listen
 
 # Create a monitoring table
-disk_monitor = time_table("PT5S").update([
-    "Server = `server-` + (ii % 3)",
-    "DiskUsagePct = 60 + Math.random() * 35"  # Simulated disk usage
-])
+disk_monitor = time_table("PT5S").update(
+    [
+        "Server = `server-` + (ii % 3)",
+        "DiskUsagePct = 60 + Math.random() * 35",  # Simulated disk usage
+    ]
+)
 
 # Filter for critical alerts (>90% usage)
 critical_alerts = disk_monitor.where("DiskUsagePct > 90")
+
 
 # Custom listener that "sends an alert" when disk usage is critical
 def handle_alert(update, is_replay):
@@ -127,6 +130,7 @@ def handle_alert(update, is_replay):
         print(f"ALERT: {server} disk usage at {usage:.1f}%")
         # In production: send_email() or post_to_slack()
 
+
 # Attach the listener to the table
 handle = listen(critical_alerts, handle_alert)
 ```
@@ -135,26 +139,9 @@ In this example, whenever a new row appears in `critical_alerts` (indicating a s
 
 ### Cross-query sharing
 
-DAGs are not limited to one query or even one host. Shared tables allow tables and update notifications to be shared between queries. You may have Query1 perform a difficult or secret calculation. Query2 can use the shared results of Query1 without having to recompute and without being able to see the secret sauce that went into Query1's calculation.
+DAGs are not limited to one query or even one host. Preemptive tables allow tables and update notifications to be shared between queries. You may have Query1 perform a difficult or secret calculation. Query2 can use the shared results of Query1 without having to recompute and without being able to see the secret sauce that went into Query1's calculation.
 
-For example:
-
-```python order=raw_data,expensive_result,shared_data,downstream_analysis
-# Query 1: Complex proprietary calculation
-raw_data = time_table("PT1S").update("Value = ii")
-expensive_result = raw_data.update("Calculated = proprietaryAlgorithm(Value)")
-
-# Share this table with other queries
-from deephaven import share_table
-share_table("shared_results", expensive_result)
-
-# Query 2: Can use the shared results without knowing the algorithm
-from deephaven import fetch_table
-shared_data = fetch_table("shared_results")
-downstream_analysis = shared_data.where("Calculated > 100")
-```
-
-This creates a distributed DAG where multiple queries can efficiently share expensive computations.
+This distributed DAG capability enables efficient reuse of expensive computations across multiple query sessions, reducing redundant processing and improving overall system performance.
 
 ## Performance analysis
 
@@ -164,11 +151,11 @@ Thinking in terms of DAGs, UG cycles, and update notifications can be insightful
 
 Deephaven's performance analysis tools help you dig into an unresponsive query to locate which operations are causing slow UG cycles. Use the Update Graph Processor (UGP) metrics to identify problems:
 
-```python order=metrics
-from deephaven.ugp import exclusive_lock_metrics
+```python syntax
+# from deephaven.ugp import exclusive_lock_metrics
 
 # View which operations take the most time
-metrics = exclusive_lock_metrics()
+# metrics = exclusive_lock_metrics()
 ```
 
 Common performance bottlenecks include:
@@ -191,13 +178,23 @@ Once you understand what operations are slow, you can optimize your query:
 For example, instead of:
 
 ```python order=live_data,result
+from deephaven import time_table
+from deephaven import agg
+
+live_data = time_table("PT1S").update(["Group = ii % 3", "ExpensiveCalc = ii * 2"])
+
 # Expensive: recalculates complex aggregation on every update
 result = live_data.agg_by([agg.sum_("ExpensiveCalc")], by=["Group"])
 ```
 
 Consider:
 
-```python order=result
+```python order=result test-set=optimization-example
+from deephaven import time_table
+from deephaven import agg
+
+live_data = time_table("PT1S").update(["Group = ii % 3", "ExpensiveCalc = ii * 2"])
+
 # Optimized: snapshot reduces update frequency
 result = live_data.snapshot().agg_by([agg.sum_("ExpensiveCalc")], by=["Group"])
 ```
