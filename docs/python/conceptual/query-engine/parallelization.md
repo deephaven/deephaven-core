@@ -20,7 +20,7 @@ with a 100,000-row table called `myTable`, running `myTable.update("X = random()
 100,000 times (once per row).
 
 If an operation's source table is
-[refreshing](<https://deephaven.io/core/javadoc/io/deephaven/engine/table/impl/BaseTable.html#isRefreshing()>),
+[refreshing](https://deephaven.io/core/javadoc/io/deephaven/engine/table/impl/BaseTable.html#isRefreshing()),
 then initialization will create a new node in the [update graph](../dag.md) as well.
 
 ### Query updates
@@ -103,6 +103,29 @@ To explicitly mark a Selectable or Filter as stateful, use the `with_serial` met
 
 - A serial Filter cannot be reordered with respect to other Filters. Every input row to a serial Filter is evaluated in order.
 - When a Selectable is serial, every row for that column is evaluated in order.
+
+> [!IMPORTANT] > `ConcurrencyControl` cannot be applied to Selectables passed to [`view`](../../reference/table-operations/select/view.md) or [`update_view`](../../reference/table-operations/select/update-view.md). These operations compute results on demand and cannot enforce ordering constraints. Use [`select`](../../reference/table-operations/select/select.md) or [`update`](../../reference/table-operations/select/update.md) instead when serial evaluation or barriers are needed.
+
+**Serial Filter example:**
+
+Serial filters are needed when filter evaluation has stateful side effects or when order matters between multiple filters:
+
+```python order=null
+from deephaven import empty_table
+from deephaven.filters import and_, or_
+
+# Create filters with serial evaluation
+filter1 = and_("X > 0", "Y < 100").with_serial()
+filter2 = or_("Z == 5", "W != 10").with_serial()
+
+result = (
+    empty_table(1000)
+    .update(["X = i", "Y = i * 2", "Z = i % 10", "W = i % 5"])
+    .where([filter1, filter2])
+)
+```
+
+Filters can also use barriers for explicit ordering control, similar to Selectables (see [Using explicit barriers](#using-explicit-barriers) below).
 
 **Implicit barriers and serial Selectables:**
 
@@ -223,7 +246,7 @@ described in the table below:
 | OperationInitializationThreadPool.threads | -1            | Determines the number of threads available for parallel processing of initialization operations.                |
 | PeriodicUpdateGraph.updateThreads         | -1            | Determines the number of threads available for parallel processing of the Update Graph Processor refresh cycle. |
 
-Setting either of these properties to `-1` instructs Deephaven to use all available processors. The number of available processors is retrieved from the Java Virtual Machine at Deephaven startup, using [Runtime.availableProcessors()](<https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/lang/Runtime.html#availableProcessors()>).
+Setting either of these properties to `-1` instructs Deephaven to use all available processors. The number of available processors is retrieved from the Java Virtual Machine at Deephaven startup, using [Runtime.availableProcessors()](https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/lang/Runtime.html#availableProcessors()).
 
 ### Related documentation
 

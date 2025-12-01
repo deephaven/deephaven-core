@@ -80,17 +80,45 @@ The `select`, `update`, and `where` operations can parallelize within a single w
 
 The [`ConcurrencyControl`](https://docs.deephaven.io/core/javadoc/io/deephaven/api/ConcurrencyControl.html) interface allows you to control the behavior of [`Filter`](https://docs.deephaven.io/core/javadoc/io/deephaven/api/filter/Filter.html) (where clause) and [`Selectable`](https://docs.deephaven.io/core/javadoc/io/deephaven/api/Selectable.html) (column formula) objects.
 
-ConccurencyControl cannot be applied to Selectables passed to `view` or `updateView`. The `view` and `updateView` operations compute results on demand, and therefore cannot enforce ordering constraints.
+#### Key terms
+
+Three concepts work together to control parallelization:
+
+- **Selectable**: A column expression object used in `select` or `update` operations. Created using `Selectable.of()`.
+- **Serial**: A property applied to a Selectable or Filter that forces in-order row evaluation. Applied using `.withSerial()`.
+- **Barrier**: An explicit ordering mechanism that controls when Selectables or Filters can begin evaluation. One Selectable declares a barrier, and another respects it.
+
+You can control ordering in two ways:
+
+1. **Mark a Selectable as serial** - Ensures rows are evaluated in order; may also create implicit barriers between serial Selectables (config-dependent).
+2. **Use explicit barriers** - Provides fine-grained control over which Selectables must complete before others begin.
+
+#### Using serial Selectables and Filters
 
 To explicitly mark a Selectable or Filter as stateful, use the `withSerial` method.
 
-- A serial Filter cannot be reordered with respect to other Filters. Every input row to a stateful Filter is evaluated in order.
-- When a Selectable is serial, then every row for that column is evaluated in order.
-- For Selectables, additional ordering constraints are controlled by the value of the `QueryTable.SERIAL_SELECT_IMPLICIT_BARRIERS`. This is set by the property `QueryTable.serialSelectImplicitBarriers`. The default value is the inverse of `QueryTable.statelessSelectByDefault`. When `Selectables` are stateless by default, no implicit barriers are added (i.e., `QueryTable.SERIAL_SELECT_IMPLICIT_BARRIERS` is false). When `Selectables` are stateful by default, then implicit barriers are added (i.e. `QueryTable.SERIAL_SELECT_IMPLICIT_BARRIERS` is true).
-- If `QueryTable.SERIAL_SELECT_IMPLICIT_BARRIERS` is false, no additional ordering between expressions is imposed. As with every `select` or `update` call, if column B references column A, then the necessary inputs to column B from column A are evaluated before column B is evaluated. To impose further ordering constraints, use barriers.
-- If `QueryTable.SERIAL_SELECT_IMPLICIT_BARRIERS` is true, then a serial selectable is an absolute barrier with respect to all other serial selectables. This prohibits serial selectables from being evaluated concurrently, permitting them to access global state. Selectables that are not serial may be reordered with respect to a serial selectable.
+- A serial Filter cannot be reordered with respect to other Filters. Every input row to a serial Filter is evaluated in order.
+- When a Selectable is serial, every row for that column is evaluated in order.
 
-Filters and Selectables may declare a _barrier_. A barrier is an opaque object (compared using reference equality) that is used to mark a particular Filter or Selectable. Subsequent Filters or Selectables may respect a previously declared barrier. If a Filter respects a barrier, that Filter cannot begin evaluation until the Filter which declares the barrier has been completely evaluated. Similarly, if a Selectable respects a barrier, then it cannot begin evaluation until the Selectable which declared the barrier has been completely evaluated.
+> [!IMPORTANT] > `ConcurrencyControl` cannot be applied to Selectables passed to `view` or `updateView`. These operations compute results on demand and cannot enforce ordering constraints. Use `select` or `update` instead when serial evaluation or barriers are needed.
+
+**Implicit barriers and serial Selectables:**
+
+Serial Selectables have different behavior depending on the `QueryTable.SERIAL_SELECT_IMPLICIT_BARRIERS` configuration:
+
+- **When `true` (default for stateful mode)**: Each serial Selectable acts as an absolute barrier with respect to all other serial Selectables. This means serial Selectables cannot run concurrently with each other, allowing them to safely access shared global state. Non-serial Selectables may still be reordered.
+- **When `false` (default for stateless mode)**: Serial Selectables enforce in-order row evaluation within their own column, but don't create barriers between different Selectables. Natural column dependencies still apply (if column B references column A, then A evaluates before B). Use explicit barriers for additional ordering constraints.
+
+The `QueryTable.SERIAL_SELECT_IMPLICIT_BARRIERS` value is controlled by the `QueryTable.serialSelectImplicitBarriers` property, and defaults to the inverse of `QueryTable.statelessSelectByDefault`.
+
+#### Using explicit barriers
+
+Filters and Selectables may declare a [`Barrier`](https://docs.deephaven.io/core/javadoc/io/deephaven/api/ConcurrencyControl.Barrier.html). A barrier is an opaque object (compared using reference equality) used to control evaluation order between Filters or Selectables.
+
+Subsequent Filters or Selectables may respect a previously declared barrier:
+
+- If a Filter respects a barrier, it cannot begin evaluation until the Filter that declared the barrier has been completely evaluated.
+- If a Selectable respects a barrier, it cannot begin evaluation until the Selectable that declared the barrier has been completely evaluated.
 
 In this code block, two columns reference the AtomicInteger `a`:
 
