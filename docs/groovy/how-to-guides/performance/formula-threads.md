@@ -58,16 +58,16 @@ The `select` and `update` operations behave identically to each other, eagerly c
 
 The `view` and `updateView` operations on the other hand, only compute the result when the result is accessed. This can happen on a variety of threads. For example, when performing another query operation, the results are read from the thread executing that operation. For example:
 
-```groovy
+```groovy order=x,sd
 x=emptyTable(1).view("Thr=java.lang.Thread.currentThread()")
-y=x.selectDistinct()
+sd=x.selectDistinct()
 ```
 
-```python
+```python order=x,sd
 from deephaven import empty_table
 
 x = empty_table(1).view(["Thr=java.lang.Thread.currentThread()"])
-y = x.select_distinct()
+sd = x.select_distinct()
 ```
 
 The value of `Thr` in `y` is `Thread[DeephavenApiServer-Scheduler-Serial-1,5,main]` - the thread that executed the `selectDistinct` operation. However, when viewing the table `x`, the `Thr` column takes on a value like `Thread[DeephavenApiServer-Scheduler-Concurrent-4,5,main]` because that is the thread that the barrage snapshot operation read the value on. Each time a cell is accessed (e.g., by reloading or scrolling around a table), the value is recomputed potentially on another thread.
