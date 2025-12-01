@@ -19,7 +19,7 @@ when the method is called. Initialization produces a result table based on the d
 with a 100,000-row table called `myTable`, running `myTable.update("X = random()")` will run the `random()` method
 100,000 times (once per row).
 
-If an operation's source table is [refreshing](<https://deephaven.io/core/javadoc/io/deephaven/engine/table/impl/BaseTable.html#isRefreshing()>), then initialization will create a new node in the [update graph](../dag.md) as well.
+If an operation's source table is [refreshing](https://deephaven.io/core/javadoc/io/deephaven/engine/table/impl/BaseTable.html#isRefreshing()), then initialization will create a new node in the [update graph](../dag.md) as well.
 
 ### Query updates
 
@@ -168,7 +168,7 @@ described in the table below:
 
 Setting either of these properties to `-1` instructs Deephaven to use all available processors. The number of available
 processors is retrieved from the Java Virtual Machine at Deephaven startup,
-using [Runtime.availableProcessors()](<https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/lang/Runtime.html#availableProcessors()>).
+using [Runtime.availableProcessors()](https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/lang/Runtime.html#availableProcessors()).
 
 ### Related documentation
 
