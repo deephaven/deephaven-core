@@ -192,27 +192,26 @@ public class JsWidget extends HasEventHandling implements ServerObject, WidgetMe
     }
 
     /**
-     * Exports another copy of this widget.
+     * Exports another copy of the widget, allowing it to be fetched separately.
      * 
-     * @return Promise resolving to a re-exported copy of this widget
+     * @return Promise returning a reexported copy of this widget, still referencing the same server-side widget.
      */
-    @JsMethod
-    public Promise<JsWidget> copy() {
+    public Promise<JsWidget> reexport() {
         Ticket reexportedTicket = connection.getTickets().newExportTicket();
 
         // Future optimization - we could "race" these by running the export in the background, to avoid
         // an extra round trip.
-        return Callbacks.grpcUnaryPromise(c -> {
+        Callbacks.grpcUnaryPromise(c -> {
             ExportRequest req = new ExportRequest();
             req.setSourceId(getTicket());
             req.setResultId(reexportedTicket);
             connection.sessionServiceClient().exportFromTicket(req, connection.metadata(), c::apply);
-        }).then(success -> {
-            TypedTicket typedTicket = new TypedTicket();
-            typedTicket.setTicket(reexportedTicket);
-            typedTicket.setType(getType());
-            return Js.uncheckedCast(connection.getObject(typedTicket));
         });
+
+        TypedTicket typedTicket = new TypedTicket();
+        typedTicket.setTicket(reexportedTicket);
+        typedTicket.setType(getType());
+        return new JsWidget(connection, typedTicket).refetch();
     }
 
     public Ticket getTicket() {

@@ -53,8 +53,6 @@ import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 import java.util.*;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 /**
  * Behaves like a {@link JsTable} externally, but data, state, and viewports are managed by an entirely different
@@ -1434,6 +1432,6 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
      * @return Promise of dh.TreeTable
      */
     public Promise<JsTreeTable> copy() {
-        return Js.uncheckedCast(widget.copy());
+        return widget.reexport().then(exportedWidget -> Promise.resolve(new JsTreeTable(connection, exportedWidget)));
     }
 }
