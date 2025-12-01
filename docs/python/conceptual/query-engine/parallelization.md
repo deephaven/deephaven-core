@@ -223,8 +223,7 @@ described in the table below:
 | OperationInitializationThreadPool.threads | -1            | Determines the number of threads available for parallel processing of initialization operations.                |
 | PeriodicUpdateGraph.updateThreads         | -1            | Determines the number of threads available for parallel processing of the Update Graph Processor refresh cycle. |
 
-Setting either of these properties to `-1` instructs Deephaven to use all available processors. The number of available
-processors is retrieved from the Java Virtual Machine at Deephaven startup, using [Runtime.availableProcessors()](<https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/lang/Runtime.html#availableProcessors()>).
+Setting either of these properties to `-1` instructs Deephaven to use all available processors. The number of available processors is retrieved from the Java Virtual Machine at Deephaven startup, using [Runtime.availableProcessors()](<https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/lang/Runtime.html#availableProcessors()>).
 
 ### Related documentation
 
