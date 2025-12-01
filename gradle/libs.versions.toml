@@ -64,7 +64,7 @@ jsinterop = "2.0.2"
 # google is annoying, and have different versions released for the same groupId
 jsinterop-base = "1.0.3"
 logback = "1.5.19"
-lz4 = "1.8.0"
+lz4 = "1.8.1"
 mindrot = "0.4"
 nidi = "0.18.1"
 oshi = "5.8.3"
