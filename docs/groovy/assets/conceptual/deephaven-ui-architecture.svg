@@ -1,0 +1,149 @@
+<svg viewBox="0 0 1100 850" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <style>
+      .title { font: bold 16px sans-serif; fill: #1f2937; }
+      .label { font: 14px sans-serif; fill: #374151; }
+      .code { font: 12px 'Courier New', monospace; fill: #1f2937; }
+      .description { font: 11px sans-serif; fill: #6b7280; }
+      .python-layer { fill: #dbeafe; stroke: #3b82f6; stroke-width: 2.5; }
+      .server-layer { fill: #fef3c7; stroke: #f59e0b; stroke-width: 2.5; }
+      .client-layer { fill: #dcfce7; stroke: #22c55e; stroke-width: 2.5; }
+      .component { fill: #e0e7ff; stroke: #6366f1; stroke-width: 2; }
+      .arrow { stroke: #6b7280; stroke-width: 3; fill: none; marker-end: url(#arrowhead); }
+      .flow-arrow { stroke: #f59e0b; stroke-width: 2.5; fill: none; marker-end: url(#flow); }
+      .shadow { filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1)); }
+    </style>
+    
+    <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#6b7280" />
+    </marker>
+    
+    <marker id="flow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#f59e0b" />
+    </marker>
+  </defs>
+  
+  <!-- Title -->
+  <text class="title" x="550" y="30" text-anchor="middle">deephaven.ui Architecture: Python to React</text>
+  <text class="description" x="550" y="50" text-anchor="middle">Build reactive web UIs entirely in Python, rendered as React components</text>
+  
+  <!-- LAYER 1: Python Component Layer -->
+  <g class="shadow" transform="translate(50, 80)">
+    <rect class="python-layer" x="0" y="0" width="1000" height="180" rx="10"/>
+    <text class="label" x="20" y="30" font-weight="bold" font-size="16">Layer 1: Python Component Definition</text>
+    <text class="description" x="20" y="50">Developers write components using @ui.component decorator</text>
+    
+    <!-- Code example -->
+    <rect fill="#ffffff" stroke="#3b82f6" x="20" y="65" width="960" height="100" rx="5"/>
+    <text class="code" x="35" y="85" font-size="11">@ui.component</text>
+    <text class="code" x="35" y="100" font-size="11">def my_dashboard():</text>
+    <text class="code" x="55" y="115" font-size="11">data = time_table("PT1S").update("Value = ii")</text>
+    <text class="code" x="55" y="130" font-size="11">return [</text>
+    <text class="code" x="75" y="145" font-size="11">ui.heading("Live Data"),</text>
+    <text class="code" x="75" y="160" font-size="11">ui.table(data)</text>
+    <text class="code" x="55" y="175" font-size="11">]</text>
+    
+    <text class="description" x="850" y="95" fill="#3b82f6" font-weight="bold">• Pure Python</text>
+    <text class="description" x="850" y="115" fill="#3b82f6" font-weight="bold">• No JavaScript</text>
+    <text class="description" x="850" y="135" fill="#3b82f6" font-weight="bold">• Live table aware</text>
+    <text class="description" x="850" y="155" fill="#3b82f6" font-weight="bold">• Declarative</text>
+  </g>
+  
+  <!-- Arrow down -->
+  <path class="flow-arrow" d="M 550 260 L 550 300"/>
+  <text class="description" x="570" y="285" fill="#f59e0b" font-weight="bold">Render</text>
+  
+  <!-- LAYER 2: Server-Side Processing -->
+  <g class="shadow" transform="translate(50, 300)">
+    <rect class="server-layer" x="0" y="0" width="1000" height="220" rx="10"/>
+    <text class="label" x="20" y="30" font-weight="bold" font-size="16">Layer 2: Server-Side Processing (Deephaven Engine)</text>
+    <text class="description" x="20" y="50">Framework maintains state, tracks dependencies, serializes components</text>
+    
+    <!-- Three boxes for server operations -->
+    <g transform="translate(20, 70)">
+      <rect class="component" x="0" y="0" width="300" height="120" rx="8"/>
+      <text class="label" x="10" y="25">Component State</text>
+      <text class="description" x="10" y="45" font-size="10">• Tracks component hierarchy</text>
+      <text class="description" x="10" y="60" font-size="10">• Manages Python state hooks</text>
+      <text class="description" x="10" y="75" font-size="10">• Handles re-render triggers</text>
+      <text class="description" x="10" y="90" font-size="10">• Garbage collects unused</text>
+      <text class="description" x="10" y="105" font-size="10">  components</text>
+    </g>
+    
+    <g transform="translate(340, 70)">
+      <rect class="component" x="0" y="0" width="300" height="120" rx="8"/>
+      <text class="label" x="10" y="25">DAG Integration</text>
+      <text class="description" x="10" y="45" font-size="10">• Monitors table updates</text>
+      <text class="description" x="10" y="60" font-size="10">• Detects dependency changes</text>
+      <text class="description" x="10" y="75" font-size="10">• Triggers component refresh</text>
+      <text class="description" x="10" y="90" font-size="10">• Maintains consistency via</text>
+      <text class="description" x="10" y="105" font-size="10">  logical clock</text>
+    </g>
+    
+    <g transform="translate(660, 70)">
+      <rect class="component" x="0" y="0" width="300" height="120" rx="8"/>
+      <text class="label" x="10" y="25">Serialization</text>
+      <text class="description" x="10" y="45" font-size="10">• Converts Python components</text>
+      <text class="description" x="10" y="60" font-size="10">  to JSON descriptors</text>
+      <text class="description" x="10" y="75" font-size="10">• Prepares table subscriptions</text>
+      <text class="description" x="10" y="90" font-size="10">• Creates event callbacks</text>
+    </g>
+  </g>
+  
+  <!-- Arrow down with WebSocket -->
+  <path class="flow-arrow" d="M 550 520 L 550 580"/>
+  <text class="description" x="570" y="535" fill="#f59e0b" font-weight="bold">WebSocket / gRPC</text>
+  <text class="description" x="570" y="555" fill="#f59e0b" font-style="italic">Component descriptors +</text>
+  <text class="description" x="570" y="570" fill="#f59e0b" font-style="italic">table data (Barrage)</text>
+  
+  <!-- LAYER 3: Client-Side Rendering -->
+  <g class="shadow" transform="translate(50, 580)">
+    <rect class="client-layer" x="0" y="0" width="1000" height="220" rx="10"/>
+    <text class="label" x="20" y="30" font-weight="bold" font-size="16">Layer 3: Client-Side Rendering (Browser)</text>
+    <text class="description" x="20" y="50">React framework renders components, manages DOM updates, handles user events</text>
+    
+    <!-- Three boxes for client operations -->
+    <g transform="translate(20, 70)">
+      <rect class="component" x="0" y="0" width="300" height="120" rx="8"/>
+      <text class="label" x="10" y="25">React Rendering</text>
+      <text class="description" x="10" y="45" font-size="10">• Deserializes component tree</text>
+      <text class="description" x="10" y="60" font-size="10">• Creates React elements</text>
+      <text class="description" x="10" y="75" font-size="10">• Renders to DOM</text>
+      <text class="description" x="10" y="90" font-size="10">• Handles virtual DOM diffing</text>
+    </g>
+    
+    <g transform="translate(340, 70)">
+      <rect class="component" x="0" y="0" width="300" height="120" rx="8"/>
+      <text class="label" x="10" y="25">Live Table Display</text>
+      <text class="description" x="10" y="45" font-size="10">• Subscribes to table updates</text>
+      <text class="description" x="10" y="60" font-size="10">• Receives incremental deltas</text>
+      <text class="description" x="10" y="75" font-size="10">• Updates grid/chart in place</text>
+      <text class="description" x="10" y="90" font-size="10">• Maintains viewport position</text>
+    </g>
+    
+    <g transform="translate(660, 70)">
+      <rect class="component" x="0" y="0" width="300" height="120" rx="8"/>
+      <text class="label" x="10" y="25">Event Handling</text>
+      <text class="description" x="10" y="45" font-size="10">• Captures user interactions</text>
+      <text class="description" x="10" y="60" font-size="10">• Sends events to server</text>
+      <text class="description" x="10" y="75" font-size="10">• Triggers Python callbacks</text>
+      <text class="description" x="10" y="90" font-size="10">• Receives updated state</text>
+    </g>
+  </g>
+  
+  <!-- Feedback loop arrow -->
+  <g opacity="0.7">
+    <path stroke="#ef4444" stroke-width="2.5" fill="none" marker-end="url(#arrowhead)" 
+          d="M 1000 700 L 1070 700 L 1070 400 L 1000 400" stroke-dasharray="5,5"/>
+    <text class="description" x="1010" y="550" fill="#ef4444" font-weight="bold" writing-mode="tb">User events</text>
+  </g>
+  
+  <!-- Key example -->
+  <g class="shadow" transform="translate(50, 820)">
+    <rect fill="#f0f9ff" stroke="#3b82f6" stroke-width="2" x="0" y="0" width="1000" height="20" rx="5"/>
+    <text class="description" x="10" y="14" font-weight="bold">
+      💡 Example: User clicks button → Event sent to server → Python callback executes → New component state → 
+      Serialized → Sent to client → React re-renders
+    </text>
+  </g>
+</svg>
