@@ -20,7 +20,7 @@ with a 100,000-row table called `myTable`, running `myTable.update("X = random()
 100,000 times (once per row).
 
 If an operation's source table is
-[refreshing](https://deephaven.io/core/javadoc/io/deephaven/engine/table/impl/BaseTable.html#isRefreshing()),
+[refreshing](<https://deephaven.io/core/javadoc/io/deephaven/engine/table/impl/BaseTable.html#isRefreshing()>),
 then initialization will create a new node in the [update graph](../dag.md) as well.
 
 ### Query updates
@@ -84,15 +84,36 @@ By default, the Deephaven engine assumes that expressions are stateful (not stat
 
 The [`ConcurrencyControl`](https://docs.deephaven.io/core/pydoc/code/deephaven.concurrency_control.html#deephaven.concurrency_control.ConcurrencyControl) interface allows you to control the behavior of [`Filter`](https://docs.deephaven.io/core/pydoc/code/deephaven.filters.html) (where clause) and [`Selectable`](https://docs.deephaven.io/core/pydoc/code/deephaven.table.html#deephaven.table.Selectable) objects (update and select table operations).
 
+#### Key terms
+
+Three concepts work together to control parallelization:
+
+- **Selectable**: A column expression object used in `select` or `update` operations. Created using `Selectable.parse(formula="ColumnName = expression")`.
+- **Serial**: A property applied to a Selectable or Filter that forces in-order row evaluation. Applied using `.with_serial()`.
+- **Barrier**: An explicit ordering mechanism that controls when Selectables or Filters can begin evaluation. One Selectable declares a barrier, and another respects it.
+
+You can control ordering in two ways:
+
+1. **Mark a Selectable as serial** - Ensures rows are evaluated in order; may also create implicit barriers between serial Selectables (config-dependent).
+2. **Use explicit barriers** - Provides fine-grained control over which Selectables must complete before others begin.
+
+#### Using serial Selectables and Filters
+
 To explicitly mark a Selectable or Filter as stateful, use the `with_serial` method.
 
 - A serial Filter cannot be reordered with respect to other Filters. Every input row to a serial Filter is evaluated in order.
 - When a Selectable is serial, every row for that column is evaluated in order.
-- For Selectables, additional ordering constraints are controlled by `QueryTable.SERIAL_SELECT_IMPLICIT_BARRIERS`, which is set by the property `QueryTable.serialSelectImplicitBarriers`. The default value is the inverse of `QueryTable.statelessSelectByDefault`:
-  - When Selectables are stateless by default, no implicit barriers are added (`QueryTable.SERIAL_SELECT_IMPLICIT_BARRIERS` is false).
-  - When Selectables are stateful by default, implicit barriers are added (`QueryTable.SERIAL_SELECT_IMPLICIT_BARRIERS` is true).
-- If `QueryTable.SERIAL_SELECT_IMPLICIT_BARRIERS` is false, no additional ordering between expressions is imposed. As with every [`select`](../../reference/table-operations/select/select.md) or [`update`](../../reference/table-operations/select/update.md) call, if column B references column A, then column A is evaluated before column B. To impose further ordering constraints, use barriers.
-- If `QueryTable.SERIAL_SELECT_IMPLICIT_BARRIERS` is true, a serial Selectable acts as an absolute barrier with respect to all other serial Selectables. This prohibits serial Selectables from being evaluated concurrently, permitting them to access global state. Non-serial Selectables may be reordered with respect to a serial Selectable.
+
+**Implicit barriers and serial Selectables:**
+
+Serial Selectables have different behavior depending on the `QueryTable.SERIAL_SELECT_IMPLICIT_BARRIERS` configuration:
+
+- **When `true` (default for stateful mode)**: Each serial Selectable acts as an absolute barrier with respect to all other serial Selectables. This means serial Selectables cannot run concurrently with each other, allowing them to safely access shared global state. Non-serial Selectables may still be reordered.
+- **When `false` (default for stateless mode)**: Serial Selectables enforce in-order row evaluation within their own column, but don't create barriers between different Selectables. Natural column dependencies still apply (if column B references column A, then A evaluates before B). Use explicit barriers for additional ordering constraints.
+
+The `QueryTable.SERIAL_SELECT_IMPLICIT_BARRIERS` value is controlled by the `QueryTable.serialSelectImplicitBarriers` property, and defaults to the inverse of `QueryTable.statelessSelectByDefault`.
+
+#### Using explicit barriers
 
 Filters and Selectables may declare a [`Barrier`](https://docs.deephaven.io/core/pydoc/code/deephaven.concurrency_control.html#deephaven.concurrency_control.Barrier). A barrier is an opaque object (compared using reference equality) used to control evaluation order between Filters or Selectables.
 
@@ -100,6 +121,10 @@ Subsequent Filters or Selectables may respect a previously declared barrier:
 
 - If a Filter respects a barrier, it cannot begin evaluation until the Filter that declared the barrier has been completely evaluated.
 - If a Selectable respects a barrier, it cannot begin evaluation until the Selectable that declared the barrier has been completely evaluated.
+
+#### Example problem: Non-thread-safe function
+
+The following examples demonstrate two different approaches to safely handle a non-thread-safe function that maintains global state. Both approaches solve the same problem: ensuring that all rows of column `A` are evaluated before any rows of column `B` begin evaluation.
 
 In this code block, two columns call a Python stateful function that is not thread-safe:
 
@@ -129,7 +154,11 @@ from deephaven import empty_table
 t = empty_table(1_000_000).update(["A=i", "B=1_000_000 + i"])
 ```
 
-However, if the columns were marked as stateless (e.g., if `QueryTable.statelessSelectByDefault` were `true`), the rows from either column could be evaluated in any order, potentially causing race conditions. To ensure that all rows of `A` are evaluated before any rows of `B` begin evaluation, use a barrier:
+However, if the columns were marked as stateless (e.g., if `QueryTable.statelessSelectByDefault` were `true`), the rows from either column could be evaluated in any order, potentially causing race conditions.
+
+**Approach 1: Using explicit barriers**
+
+To ensure that all rows of `A` are evaluated before any rows of `B` begin evaluation, use a barrier:
 
 ```python order=null
 from deephaven.concurrency_control import Barrier
@@ -157,7 +186,9 @@ col_b = Selectable.parse(
 t = empty_table(1_000_000).update([col_a, col_b])
 ```
 
-Alternatively, you can ensure that values of `A` are evaluated in order by using `with_serial` on a Selectable:
+**Approach 2: Using serial Selectables**
+
+Alternatively, you can ensure that values of `A` are evaluated in order by using `with_serial`. When `QueryTable.SERIAL_SELECT_IMPLICIT_BARRIERS` is true (the default in stateful mode), marking `col_a` as serial creates an implicit barrier that prevents `col_b` from evaluating concurrently:
 
 ```python order=null
 from deephaven.concurrency_control import Barrier
@@ -193,7 +224,7 @@ described in the table below:
 | PeriodicUpdateGraph.updateThreads         | -1            | Determines the number of threads available for parallel processing of the Update Graph Processor refresh cycle. |
 
 Setting either of these properties to `-1` instructs Deephaven to use all available processors. The number of available
-processors is retrieved from the Java Virtual Machine at Deephaven startup, using [Runtime.availableProcessors()](https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/lang/Runtime.html#availableProcessors()).
+processors is retrieved from the Java Virtual Machine at Deephaven startup, using [Runtime.availableProcessors()](<https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/lang/Runtime.html#availableProcessors()>).
 
 ### Related documentation
 
