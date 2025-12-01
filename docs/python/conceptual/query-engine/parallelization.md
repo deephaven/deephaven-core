@@ -15,7 +15,7 @@ Every table operation method — [`.where`](../../reference/table-operations/fil
 [`.update`](../../reference/table-operations/select/update.md),
 [`.natural_join`](../../reference/table-operations/join/natural-join.md), etc. — undergoes an _initialization_ phase when the method is called. Initialization produces a result table based on the data in the source table. For example, with a 100,000-row table called `myTable`, running `myTable.update("X = random()")` will run the `random()` method 100,000 times (once per row).
 
-If an operation's source table is [refreshing](<https://deephaven.io/core/javadoc/io/deephaven/engine/table/impl/BaseTable.html#isRefreshing()>), then initialization will create a new node in the [update graph](../dag.md) as well.
+If an operation's source table is [refreshing](https://deephaven.io/core/javadoc/io/deephaven/engine/table/impl/BaseTable.html#isRefreshing()), then initialization will create a new node in the [update graph](../dag.md) as well.
 
 ### Query updates
 
@@ -275,7 +275,7 @@ described in the table below:
 | OperationInitializationThreadPool.threads | -1            | Determines the number of threads available for parallel processing of initialization operations.                |
 | PeriodicUpdateGraph.updateThreads         | -1            | Determines the number of threads available for parallel processing of the Update Graph Processor refresh cycle. |
 
-Setting either of these properties to `-1` instructs Deephaven to use all available processors. The number of available processors is retrieved from the Java Virtual Machine at Deephaven startup, using [Runtime.availableProcessors()](<https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/lang/Runtime.html#availableProcessors()>).
+Setting either of these properties to `-1` instructs Deephaven to use all available processors. The number of available processors is retrieved from the Java Virtual Machine at Deephaven startup, using [Runtime.availableProcessors()](https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/lang/Runtime.html#availableProcessors()).
 
 ### Related documentation
 
