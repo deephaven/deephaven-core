@@ -25,11 +25,11 @@ public class FloatRangeFilter extends AbstractRangeFilter {
     }
 
     public static FloatRangeFilter gt(String columnName, float x) {
-        return new FloatRangeFilter(columnName, x, Float.NaN, false, true);
+        return new FloatRangeFilter(columnName, x, Float.NaN, false, false);
     }
 
     public static FloatRangeFilter geq(String columnName, float x) {
-        return new FloatRangeFilter(columnName, x, Float.NaN, true, true);
+        return new FloatRangeFilter(columnName, x, Float.NaN, true, false);
     }
 
     private final float upper;
