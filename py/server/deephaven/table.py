@@ -1309,7 +1309,7 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
-            formulas = to_sequence(formulas)
+            formulas = _to_sequence(formulas)
             with query_scope_ctx(), auto_locking_ctx(self):
                 if isinstance(formulas[0], Selectable.j_object_type):
                     return Table(j_table=self.j_table.update(j_array_list(formulas)))
@@ -1331,7 +1331,7 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
-            formulas = to_sequence(formulas)
+            formulas = _to_sequence(formulas)
             with query_scope_ctx(), auto_locking_ctx(self):
                 return Table(j_table=self.j_table.lazyUpdate(*formulas))
         except Exception as e:
@@ -1350,7 +1350,7 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
-            formulas = to_sequence(formulas)
+            formulas = _to_sequence(formulas)
             with query_scope_ctx():
                 return Table(j_table=self.j_table.view(*formulas))
         except Exception as e:
@@ -1369,7 +1369,7 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
-            formulas = to_sequence(formulas)
+            formulas = _to_sequence(formulas)
             with query_scope_ctx():
                 return Table(j_table=self.j_table.updateView(*formulas))
         except Exception as e:
@@ -1424,7 +1424,7 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
-            formulas = to_sequence(formulas)
+            formulas = _to_sequence(formulas)
             with query_scope_ctx():
                 return Table(j_table=self.j_table.selectDistinct(*formulas))
         except Exception as e:
@@ -1455,7 +1455,7 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
-            filters = to_sequence(filters)
+            filters = _to_sequence(filters)
             with query_scope_ctx():
                 return Table(j_table=self.j_table.where(and_(filters).j_filter))
         except Exception as e:
@@ -1525,7 +1525,7 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
-            filters = to_sequence(filters)
+            filters = _to_sequence(filters)
             with query_scope_ctx():
                 return Table(j_table=self.j_table.where(or_(filters).j_filter))
         except Exception as e:
@@ -2560,7 +2560,7 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
-            formulas = to_sequence(formulas)
+            formulas = _to_sequence(formulas)
             with query_scope_ctx():
                 return Table(j_table=self.j_table.formatColumns(formulas))
         except Exception as e:
@@ -3641,7 +3641,7 @@ class PartitionedTableProxy(JObjectWrapper):
             DHError
         """
         try:
-            filters = to_sequence(filters)
+            filters = _to_sequence(filters)
             with query_scope_ctx(), auto_locking_ctx(self):
                 return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.where(and_(filters).j_filter))
         except Exception as e:
@@ -3720,7 +3720,7 @@ class PartitionedTableProxy(JObjectWrapper):
             DHError
         """
         try:
-            formulas = to_sequence(formulas)
+            formulas = _to_sequence(formulas)
             with query_scope_ctx(), auto_locking_ctx(self):
                 return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.view(*formulas))
         except Exception as e:
@@ -3743,7 +3743,7 @@ class PartitionedTableProxy(JObjectWrapper):
             DHError
         """
         try:
-            formulas = to_sequence(formulas)
+            formulas = _to_sequence(formulas)
             with query_scope_ctx(), auto_locking_ctx(self):
                 return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.updateView(*formulas))
         except Exception as e:
@@ -3769,7 +3769,7 @@ class PartitionedTableProxy(JObjectWrapper):
             DHError
         """
         try:
-            formulas = to_sequence(formulas)
+            formulas = _to_sequence(formulas)
             with query_scope_ctx(), auto_locking_ctx(self):
                 if isinstance(formulas[0], Selectable.j_object_type):
                     return PartitionedTableProxy(
@@ -3805,7 +3805,7 @@ class PartitionedTableProxy(JObjectWrapper):
             DHError
         """
         try:
-            formulas = to_sequence(formulas)
+            formulas = _to_sequence(formulas)
             with query_scope_ctx(), auto_locking_ctx(self):
                 if isinstance(formulas[0], Selectable.j_object_type):
                     return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.select(j_array_list(formulas)))
@@ -3835,7 +3835,7 @@ class PartitionedTableProxy(JObjectWrapper):
             DHError
         """
         try:
-            formulas = to_sequence(formulas)
+            formulas = _to_sequence(formulas)
             with query_scope_ctx(), auto_locking_ctx(self):
                 return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.selectDistinct(*formulas))
         except Exception as e:
