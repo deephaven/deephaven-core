@@ -1458,6 +1458,10 @@ public class TestNumeric extends BaseArrayTestCase {
         assertEquals(NULL_DOUBLE, wvar(new ${pt.primitive}[]{${pt.null}, ${pt.null}, ${pt.null}}, new ${pt2.primitive}[]{1, 2, 3}));
         assertEquals(NULL_DOUBLE, wvar(new ${pt.primitive}[]{${pt.null}, ${pt.null}, ${pt.null}}, new ${pt2.primitive}[]{${pt2.null}, ${pt2.null}, ${pt2.null}}));
 
+        <#if pt.valueType.isFloat >
+        // verify the NaN value case return NaN
+        assertTrue(Double.isNaN(wvar(new ${pt.primitive}[]{1, ${pt.boxed}.NaN, 3}, new ${pt2.primitive}[]{1, 1, 1})));
+        </#if>
         // verify size==1
         assertEquals(Double.NaN, wvar(new ${pt.primitive}[]{1}, new ${pt2.primitive}[]{4}));
 
