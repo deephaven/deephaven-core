@@ -135,6 +135,10 @@
                 "path": "conceptual/table-types.md"
               },
               {
+                "label": "Column types",
+                "path": "conceptual/column-types.md"
+              },
+              {
                 "label": "Core API design",
                 "path": "conceptual/deephaven-core-api.md"
               },
@@ -185,11 +189,11 @@
                 "label": "CSV",
                 "items": [
                   {
-                    "label": "Import CSV files",
+                    "label": "Read CSV files",
                     "path": "how-to-guides/data-import-export/csv-import.md"
                   },
                   {
-                    "label": "Export CSV files",
+                    "label": "Write CSV files",
                     "path": "how-to-guides/data-import-export/csv-export.md"
                   }
                 ]
@@ -198,11 +202,11 @@
                 "label": "HTML",
                 "items": [
                   {
-                    "label": "Import HTML files",
+                    "label": "Read HTML files",
                     "path": "how-to-guides/data-import-export/html-import.md"
                   },
                   {
-                    "label": "Export HTML files",
+                    "label": "Write HTML files",
                     "path": "how-to-guides/data-import-export/html-export.md"
                   }
                 ]
@@ -240,11 +244,11 @@
                     "path": "how-to-guides/data-import-export/parquet-formats.md"
                   },
                   {
-                    "label": "Import Parquet files",
+                    "label": "Read Parquet files",
                     "path": "how-to-guides/data-import-export/parquet-import.md"
                   },
                   {
-                    "label": "Export to Parquet",
+                    "label": "Write Parquet files",
                     "path": "how-to-guides/data-import-export/parquet-export.md"
                   }
                 ]
@@ -277,6 +281,10 @@
               {
                 "label": "Table iterators",
                 "path": "how-to-guides/iterate-table-data.md"
+              },
+              {
+                "label": "Extract table values",
+                "path": "how-to-guides/extract-table-value.md"
               },
               {
                 "label": "Replay",
@@ -312,8 +320,13 @@
                 "path": "how-to-guides/sort.md"
               },
               {
-                "label": "Keyed transpose",
-                "path": "how-to-guides/keyed-transpose.md"
+                "label": "Transpose",
+                "items": [
+                  {
+                    "label": "Keyed transpose",
+                    "path": "how-to-guides/keyed-transpose.md"
+                  }
+                ]
               },
               {
                 "label": "Merge",
@@ -961,8 +974,29 @@
                     "path": "how-to-guides/python-errors.md"
                   },
                   {
-                    "label": "Debugging with PyCharm",
-                    "path": "how-to-guides/debugging/pycharm-debugging.md"
+                    "label": "Debugging",
+                    "items": [
+                      {
+                        "label": "Overview",
+                        "path": "how-to-guides/debugging/debugging-landing.md"
+                      },
+                      {
+                        "label": "Docker setup",
+                        "path": "how-to-guides/debugging/docker-setup.md"
+                      },
+                      {
+                        "label": "pip setup",
+                        "path": "how-to-guides/debugging/pip-setup.md"
+                      },
+                      {
+                        "label": "Source setup",
+                        "path": "how-to-guides/debugging/source-setup.md"
+                      },
+                      {
+                        "label": "Common problems",
+                        "path": "how-to-guides/debugging/common-problems.md"
+                      }
+                    ]
                   },
                   {
                     "label": "Retrieve logs",
@@ -1766,7 +1800,12 @@
                   {
                     "label": "layout_hints",
                     "path": "reference/table-operations/format/layout-hints.md"
-                  },
+                  }
+                ]
+              },
+              {
+                "label": "Transpose",
+                "items": [
                   {
                     "label": "keyed_transpose",
                     "path": "reference/table-operations/format/keyed-transpose.md"
@@ -2676,6 +2715,14 @@
                     "path": "reference/community-questions/extract-values-from-tables.md"
                   },
                   {
+                    "label": "How do I delete historical data?",
+                    "path": "reference/community-questions/how-to-delete-historical-data.md"
+                  },
+                  {
+                    "label": "How do I extract a list of distinct dates from a table?",
+                    "path": "reference/community-questions/extract-distinct-dates-list.md"
+                  },
+                  {
                     "label": "How do I get the ISO week number from a datetime?",
                     "path": "reference/community-questions/iso-week-number.md"
                   },
@@ -2698,6 +2745,14 @@
                   {
                     "label": "When should I use `where_in` or `natural_join`?",
                     "path": "reference/community-questions/wherein-vs-naturaljoin.md"
+                  },
+                  {
+                    "label": "How can I capture the first row of the last N updates?",
+                    "path": "reference/community-questions/blink-ring.md"
+                  },
+                  {
+                    "label": "How do I filter by time of day across all dates?",
+                    "path": "reference/community-questions/filter-time-window-all-dates.md"
                   }
                 ]
               },
@@ -2723,6 +2778,10 @@
                   {
                     "label": "How do I import one Python script into another in the Deephaven IDE?",
                     "path": "reference/community-questions/import-python-script.md"
+                  },
+                  {
+                    "label": "Why am I getting a \"Java class not found\" error when starting deephaven-server?",
+                    "path": "reference/community-questions/java-class-not-found-error.md"
                   },
                   {
                     "label": "Why am I getting an UpdateGraphConflictException?",

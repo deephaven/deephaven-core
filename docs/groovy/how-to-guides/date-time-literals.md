@@ -61,9 +61,9 @@ A [`java.time.LocalDate`](https://docs.oracle.com/en/java/javase/17/docs/api/jav
 
 Where:
 
-- `YYYY` is the four-digit year
-- `MM` is the two-digit month (01-12)
-- `DD` is the two-digit day of the month (01-31)
+- `YYYY` is the four-digit year.
+- `MM` is the two-digit month (01-12).
+- `DD` is the two-digit day of the month (01-31).
 
 The following code block creates a `LocalDate` column using a literal:
 
@@ -79,10 +79,10 @@ A [`java.time.LocalTime`](https://docs.oracle.com/en/java/javase/17/docs/api/jav
 
 Where:
 
-- `hh` is the two-digit hour (00-23)
-- `mm` is the two-digit minute (00-59)
-- `ss` is the two-digit second (00-59)
-- `ddddddddd` is the optional fraction of a second in nanoseconds (0-999999999)
+- `hh` is the two-digit hour (00-23).
+- `mm` is the two-digit minute (00-59).
+- `ss` is the two-digit second (00-59).
+- `ddddddddd` is the optional fraction of a second in nanoseconds (0-999999999).
 
 The following code block creates a `LocalTime` column using a literal:
 
@@ -98,12 +98,12 @@ A [`java.time.Duration`](https://docs.oracle.com/en/java/javase/17/docs/api/java
 
 Where:
 
-- `P` indicates the literal is a period or duration
-- `T` indicates the literal is a duration
-- `H` is the number of hours (optional)
-- `M` is the number of minutes (optional)
-- `S` is the number of seconds (optional)
-- `n` is a non-negative number for each component
+- `P` indicates the literal is a period or duration.
+- `T` indicates the literal is a duration.
+- `H` is the number of hours (optional).
+- `M` is the number of minutes (optional).
+- `S` is the number of seconds (optional).
+- `n` is a non-negative number for each component.
 
 The following code block creates a Duration column with a value of 5 hours, 2 minutes, and 1.2 seconds using a literal:
 
@@ -119,11 +119,11 @@ A [`java.time.Period`](https://docs.oracle.com/en/java/javase/17/docs/api/java.b
 
 Where:
 
-- `P` indicates the period
-- `n` is a non-negative number for each component
-- `Y` is the number of years (optional)
-- `M` is the number of months (optional)
-- `D` is the number of days (optional)
+- `P` indicates the period.
+- `n` is a non-negative number for each component.
+- `Y` is the number of years (optional).
+- `M` is the number of months (optional).
+- `D` is the number of days (optional).
 
 The following code block creates a Period column with a value of 1 year, 4 months, and 5 days using a literal:
 

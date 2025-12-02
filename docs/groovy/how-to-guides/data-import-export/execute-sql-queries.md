@@ -37,13 +37,13 @@ The query references tables by their variable names in the script session (`sour
 
 Deephaven's SQL implementation supports:
 
-- **SELECT** statements with column selection and aliasing
-- **WHERE** clauses for filtering
-- **JOIN** operations (INNER, LEFT, RIGHT, FULL)
-- **GROUP BY** and aggregate functions (SUM, COUNT, AVG, MIN, MAX)
-- **ORDER BY** for sorting
-- **LIMIT** and **OFFSET** for pagination
-- Standard SQL expressions and operators
+- **SELECT** statements with column selection and aliasing.
+- **WHERE** clauses for filtering.
+- **JOIN** operations (INNER, LEFT, RIGHT, FULL).
+- **GROUP BY** and aggregate functions (SUM, COUNT, AVG, MIN, MAX).
+- **ORDER BY** for sorting.
+- **LIMIT** and **OFFSET** for pagination.
+- Standard SQL expressions and operators.
 
 ## Validate queries with `dryRun`
 

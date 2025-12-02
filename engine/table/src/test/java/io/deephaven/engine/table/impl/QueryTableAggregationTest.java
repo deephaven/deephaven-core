@@ -34,6 +34,7 @@ import io.deephaven.engine.testutil.generator.*;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.testutil.sources.TestColumnSource;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
+import io.deephaven.engine.util.PrintListener;
 import io.deephaven.engine.util.TableDiff;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
@@ -61,6 +62,7 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.nio.file.Files;
 import java.util.*;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -4061,6 +4063,108 @@ public class QueryTableAggregationTest {
         final IllegalArgumentException iae =
                 assertThrows(IllegalArgumentException.class, () -> arraySource.countBy("Count", "Key"));
         assertEquals("Cannot aggregate using an array column: Key, column type is an array of int", iae.getMessage());
+    }
+
+    @Test
+    public void testIssue5820() throws ExecutionException, InterruptedException, TimeoutException {
+        final Table x = newTable(
+                doubleCol("X", -0.0, 0.0, Double.NaN, Double.POSITIVE_INFINITY, Double.NEGATIVE_INFINITY, NULL_DOUBLE))
+                .updateView("XStr=Double.toString(X)");
+        final Table[] x_arr = new Table[1_000]; // need a lot of rows to trigger the issue
+        Arrays.fill(x_arr, x);
+        final Table merged = merge(x_arr).select();
+
+        final ExecutionContext executionContext = ExecutionContext.makeExecutionContext(true);
+        ThreadPoolExecutor executor = (ThreadPoolExecutor) Executors.newFixedThreadPool(1);
+
+        // This consistently resulted in an infinite loop prior to the fix for the issue.
+        final Table result = executor.submit(() -> {
+            try (final SafeCloseable ignored = executionContext.open()) {
+                // This might trigger an infinite loop in DoubleSegmentedSortedMultiSet
+                return merged.aggBy(AggCountDistinct(true, "CountDistinctWithNulls=X"));
+            }
+        }).get(10, TimeUnit.SECONDS);
+
+        final Table expected = newTable(
+                longCol("CountDistinctWithNulls", 5));
+
+        assertTableEquals(expected, result);
+    }
+
+    /**
+     * Test for DH-20997
+     * <p>
+     * Underlying issue is that SegmentedSortedMultiSet#clearDeltas() was not being called which resulting in the
+     * previous state for the underlying SSM to grow stale and return incorrect "prev" data.
+     * <p>
+     * The “Distinct” operators were not assigning prevFlusher unless exposeInternal==true. This is incorrect logic and
+     * the sibling operation “RollupDistinct” correctly initializes the prevFlusher. This test uses a TUV to ensure the
+     * previous state of the ungrouped distinct table is correct after simple updates.
+     */
+    @Test
+    public void testDH20997() {
+        final QueryTable table = testRefreshingTable(i(0).toTracking(), intCol("x", 0));
+        final Table distinct = table.aggBy(AggDistinct("x")).ungroup();
+
+        final PrintListener printListener = new PrintListener("distinct", (QueryTable) distinct, 10);
+        final TableUpdateValidator validator = TableUpdateValidator.make("multiJoin", (QueryTable) distinct);
+        final FailureListener failureListener = new FailureListener();
+        validator.getResultTable().addUpdateListener(failureListener);
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+
+        System.out.println("Adding key 1");
+        updateGraph.runWithinUnitTestCycle(() -> {
+            addToTable(table, i(1), intCol("x", 1));
+            table.notifyListeners(i(1), i(), i());
+        });
+
+        // prevValues for the SSM is latched after the previous update and will not update again.
+
+        System.out.println("Adding key 2");
+        updateGraph.runWithinUnitTestCycle(() -> {
+            addToTable(table, i(2), intCol("x", 2));
+            table.notifyListeners(i(2), i(), i());
+        });
+
+        // Without the fix, the prev state for the distinct table would be incorrect here and the TUV would fail.
+    }
+
+    /**
+     * Test for DH-20997
+     * <p>
+     * Underlying issue is that SegmentedSortedMultiSet#clearDeltas() was not being called which resulting in the
+     * previous state for the underlying SSM to grow stale and return incorrect "prev" data.
+     * <p>
+     * The “Distinct” operators were not assigning prevFlusher unless exposeInternal==true. This is incorrect logic and
+     * the sibling operation “RollupDistinct” correctly initializes the prevFlusher. This test uses a TUV to ensure the
+     * previous state of the ungrouped distinct table is correct after simple updates.
+     */
+    @Test
+    public void testDH20997v2() {
+        final QueryTable table = testRefreshingTable(i(0).toTracking(), intCol("x", 0));
+        final Table distinct = table.aggBy(AggCountDistinct("x")).ungroup();
+
+        final PrintListener printListener = new PrintListener("distinct", (QueryTable) distinct, 10);
+        final TableUpdateValidator validator = TableUpdateValidator.make("multiJoin", (QueryTable) distinct);
+        final FailureListener failureListener = new FailureListener();
+        validator.getResultTable().addUpdateListener(failureListener);
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+
+        System.out.println("Adding key 1");
+        updateGraph.runWithinUnitTestCycle(() -> {
+            addToTable(table, i(1), intCol("x", 1));
+            table.notifyListeners(i(1), i(), i());
+        });
+
+        System.out.println("Adding key 2");
+        updateGraph.runWithinUnitTestCycle(() -> {
+            addToTable(table, i(2), intCol("x", 2));
+            table.notifyListeners(i(2), i(), i());
+        });
+
+        // Without the fix, the prev state for the distinct table would be incorrect here and the TUV would fail.
     }
 
     private void diskBackedTestHarness(Consumer<Table> testFunction) throws IOException {

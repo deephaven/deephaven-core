@@ -8,7 +8,7 @@ description = 'The internal Deephaven ssl-kickstart integration'
 dependencies {
     api project(':ssl-config')
 
-    api libs.sslcontext.kickstart
+    api libs.ayza
 
     implementation platform(libs.grpc.bom)
     compileOnly(libs.grpc.util) {

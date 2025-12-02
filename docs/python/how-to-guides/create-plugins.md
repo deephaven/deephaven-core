@@ -42,9 +42,9 @@ All server-side plugin code will live in the `server` folder. This folder contai
 
 This example plugin can be broken into three parts, all of which go in `server/example_plugin_server/__init__.py`:
 
-- The plugin implementation
-- The object(s) it manages
-- The message stream handler
+- The plugin implementation.
+- The object(s) it manages.
+- The message stream handler.
 
 Let's start with the plugin implementation itself, which contains all of the required methods for any bidirectional plugins. This example manages only a single object, however, more complex plugins can manage an arbitrary number of objects. In such a case, those objects would be added to the relevant methods.
 

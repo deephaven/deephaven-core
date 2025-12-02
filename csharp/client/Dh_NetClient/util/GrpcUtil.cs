@@ -2,9 +2,9 @@
 // Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 
-using System.Net.Security;
 using Grpc.Core;
 using Grpc.Net.Client;
+using System.Net.Security;
 using System.Security.Cryptography.X509Certificates;
 
 namespace Deephaven.Dh_NetClient;
@@ -25,7 +25,10 @@ public static class GrpcUtil {
       throw new Exception("GrpcUtil.MakeChannelOptions: UseTls is false but pem provided");
     }
 
-    if (clientOptions.TlsRootCerts.IsEmpty() || clientOptions.OverrideAuthority == null) {
+    if (clientOptions.TlsRootCerts.IsEmpty()) {
+      if (clientOptions.OverrideAuthority != null) {
+        throw new Exception("GrpcUtil.MakeChannelOptions: TlsRootCerts empty but OverrideAuthority exists");
+      }
       return channelOptions;
     }
 
@@ -39,9 +42,11 @@ public static class GrpcUtil {
         return false;
       }
 
-      var subjectName = cert.GetNameInfo(X509NameType.SimpleName, false);
-      if (subjectName != clientOptions.OverrideAuthority) {
-        return false;
+      if (clientOptions.OverrideAuthority != null) {
+        var subjectName = cert.GetNameInfo(X509NameType.SimpleName, false);
+        if (subjectName != clientOptions.OverrideAuthority) {
+          return false;
+        }
       }
 
       var certColl = new X509Certificate2Collection();
@@ -59,7 +64,14 @@ public static class GrpcUtil {
       }
 
       try {
-        return chain.Build(cert);
+        if (chain.Build(cert)) {
+          return true;
+        }
+
+        // The chain has failed. However, if the only error is RevocationStatusUnknown
+        // (emphasis on "Unknown" rather than "Revoked"), then we allow it.
+        return chain.ChainStatus.All(cs =>
+          cs.Status is X509ChainStatusFlags.NoError or X509ChainStatusFlags.RevocationStatusUnknown);
       } catch (Exception) {
         return false;
       }

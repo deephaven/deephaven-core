@@ -82,7 +82,7 @@ By default, the Deephaven engine assumes that expressions are stateful (not stat
 > [!NOTE]
 > In a future version of Deephaven, filters and selectables will be stateless by default.
 
-The [`ConcurrencyControl`](https://docs.deephaven.io/core/pydoc/code/concurrency_control.html#deephaven.concurrency_control.ConcurrencyControl) interface allows you to control the behavior of [`Filter`](https://docs.deephaven.io/core/pydoc/code/deephaven.filters.html) (where clause) and [`Selectable`](https://docs.deephaven.io/core/pydoc/code/deephaven.table.html#deephaven.table.Selectable) objects (update and select table operations).
+The [`ConcurrencyControl`](https://docs.deephaven.io/core/pydoc/code/deephaven.concurrency_control.html#deephaven.concurrency_control.ConcurrencyControl) interface allows you to control the behavior of [`Filter`](https://docs.deephaven.io/core/pydoc/code/deephaven.filters.html) (where clause) and [`Selectable`](https://docs.deephaven.io/core/pydoc/code/deephaven.table.html#deephaven.table.Selectable) objects (update and select table operations).
 
 To explicitly mark a Selectable or Filter as stateful, use the `with_serial` method.
 

@@ -332,6 +332,12 @@ public class WorkerConnection {
 
                     return Promise.resolve((Object) null);
                 }, fail -> {
+                    // Connection was explicitly closed. We don't want to change
+                    // the status unless a `forceReconnect` is called.
+                    if (state == State.Disconnected) {
+                        return null;
+                    }
+
                     // this is non-recoverable, connection/auth/registration failed, but we'll let it start again when
                     // state changes
                     state = State.Failed;
@@ -909,8 +915,9 @@ public class WorkerConnection {
 
     public Promise<Object> whenServerReady(String operationName) {
         switch (state) {
-            case Failed:
             case Disconnected:
+                throw new IllegalStateException("Can't " + operationName + " while connection is closed");
+            case Failed:
                 state = State.Reconnecting;
                 newSessionReconnect.initialConnection();
                 // deliberate fall-through
@@ -1389,8 +1396,9 @@ public class WorkerConnection {
             case Connected:
                 LazyPromise.runLater(() -> callback.accept(null, null));
                 break;
-            case Failed:
             case Disconnected:
+                throw new IllegalStateException("Can't add onOpen callback when connection is closed");
+            case Failed:
                 state = State.Reconnecting;
                 newSessionReconnect.initialConnection();
                 // intentional fall-through

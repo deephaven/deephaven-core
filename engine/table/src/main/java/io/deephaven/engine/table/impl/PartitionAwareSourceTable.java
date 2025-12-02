@@ -307,7 +307,7 @@ public class PartitionAwareSourceTable extends SourceTable<PartitionAwareSourceT
             whereFilter.init(definition, compilationProcessor);
 
             // Test for user-mandated serial filters (e.g. FilterSerial.of() or Filter.serial())
-            if (!ExtractSerialFilters.of(whereFilter).isEmpty()) {
+            if (ExtractSerialFilters.hasAny(whereFilter)) {
                 serialFilterFound = true;
             }
 
