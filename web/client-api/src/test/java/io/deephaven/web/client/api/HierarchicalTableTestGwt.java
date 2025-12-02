@@ -799,16 +799,50 @@ public class HierarchicalTableTestGwt extends AbstractAsyncGwtTestCase {
                 .catch_(this::report);
     }
 
+    public void testTreeTableCopy() {
+        connect(tables)
+                .then(treeTable("static_tree"))
+                .then(treeTable -> {
+                    delayTestFinish(3500);
+                    return treeTable.copy().then(copy -> {
+                        // Check table and copy have same properties initially
+                        assertEquals(treeTable.getSize(), copy.getSize());
+                        assertEquals(treeTable.getColumns().length, copy.getColumns().length);
+                        assertEquals(treeTable.isIncludeConstituents(), copy.isIncludeConstituents());
+                        assertEquals(treeTable.isRefreshing(), copy.isRefreshing());
+
+                        copy.setViewport(0, 99, copy.getColumns(), null);
+                        return copy.<TreeViewportData>nextEvent(
+                                JsTreeTable.EVENT_UPDATED,
+                                2000.0)
+                                .then(ignore -> {
+                                    // Need to wait for updated before expanding so the subscription exists or expand
+                                    // throws
+                                    copy.expand(JsTreeTable.RowReferenceUnion.of(0), null);
+                                    return copy.<TreeViewportData>nextEvent(
+                                            JsTreeTable.EVENT_UPDATED,
+                                            2000.0);
+                                })
+                                .then(event -> {
+                                    // Check the size changed for the copy after expanding
+                                    assertFalse(treeTable.getSize() == copy.getSize());
+                                    assertEquals(copy.getSize(), event.getDetail().getTreeSize());
+                                    return null;
+                                });
+                    })
+                            .then(this::finish)
+                            .catch_(this::report);
+                });
+    }
+
     public void testTreeTableSortBeforeSubscribe() {
         connect(tables)
                 .then(treeTable("static_tree"))
                 .then(treeTable -> {
-                    treeTable.addEventListener(JsTreeTable.EVENT_REQUEST_FAILED, event -> {
-                        fail("Unexpected request failure: " + event.getDetail().toString());
-                    });
+                    delayTestFinish(3500);
                     treeTable.applySort(new Sort[] {});
-                    delayTestFinish(1500);
-                    return null;
+                    return treeTable.nextEvent(JsTreeTable.EVENT_REQUEST_FAILED, 2000.0)
+                            .then(err -> Promise.reject(err.getDetail()), Promise::resolve);
                 })
                 .then(this::finish)
                 .catch_(this::report);

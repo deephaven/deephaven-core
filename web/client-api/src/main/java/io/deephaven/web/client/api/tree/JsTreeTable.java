@@ -750,6 +750,10 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
                     return;
                 }
         }
+        if (firstRow == null || lastRow == null || columns == null) {
+            // no viewport to subscribe, don't build the rest of the operations
+            return;
+        }
         Promise<TreeSubscription> stream = Promise.resolve(defer())
                 .then(ignore -> {
                     makeKeyTable();
