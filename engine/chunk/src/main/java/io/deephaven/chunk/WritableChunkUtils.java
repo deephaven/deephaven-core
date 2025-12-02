@@ -73,7 +73,7 @@ final class WritableChunkUtils {
         }
         // We can start with fromIndexInclusive + 1 because we know that data[fromIndexInclusive] is NEGATIVE_INFINITY
         final int beginNullIdx = lowerBound(data, fromIndexInclusive + 1, toIndexExclusive, NULL_FLOAT);
-        if (data[beginNullIdx] != NULL_FLOAT) {
+        if (beginNullIdx >= toIndexExclusive || data[beginNullIdx] != NULL_FLOAT) {
             // No NULL_FLOAT
             return;
         }
@@ -110,7 +110,7 @@ final class WritableChunkUtils {
         }
         // We can start with fromIndexInclusive + 1 because we know that data[fromIndexInclusive] is NEGATIVE_INFINITY
         final int beginNullIdx = lowerBound(data, fromIndexInclusive + 1, toIndexExclusive, NULL_DOUBLE);
-        if (data[beginNullIdx] != NULL_DOUBLE) {
+        if (beginNullIdx >= toIndexExclusive || data[beginNullIdx] != NULL_DOUBLE) {
             // No NULL_DOUBLE
             return;
         }
@@ -136,7 +136,9 @@ final class WritableChunkUtils {
     }
 
     /**
-     * @return the smallest i in [begin, end) where a[i] >= key
+     * @return the smallest {@code i} in {@code [begin, end)} where {@code a[i] >= key} (or {@code end} if no value
+     *         matches). Uses {@code <} for comparison because this assumes {@code a} was sorted by
+     *         {@link Arrays#sort(char[])}.
      */
     private static int lowerBound(char[] a, int begin, int end, char key) {
         while (begin < end) {
@@ -151,8 +153,9 @@ final class WritableChunkUtils {
     }
 
     /**
-     * @return the smallest i in [begin, end) where a[i] >= key. Uses {@link Float#compare(float, float)} because this
-     *         assumes {@code a} was sorted by {@link Arrays#sort(float[])}.
+     * @return the smallest {@code i} in {@code [begin, end)} where {@code a[i] >= key} (or {@code end} if no value
+     *         matches). Uses {@link Float#compare(float, float)} because this assumes {@code a} was sorted by
+     *         {@link Arrays#sort(float[])}.
      */
     private static int lowerBound(float[] a, int begin, int end, float key) {
         while (begin < end) {
@@ -167,8 +170,9 @@ final class WritableChunkUtils {
     }
 
     /**
-     * @return the smallest i in [begin, end) where a[i] > key. Uses {@link Float#compare(float, float)} because this
-     *         assumes {@code a} was sorted by {@link Arrays#sort(float[])}.
+     * @return the smallest {@code i} in {@code [begin, end)} where {@code a[i] > key}. Uses
+     *         {@link Float#compare(float, float)} because this assumes {@code a} was sorted by
+     *         {@link Arrays#sort(float[])}.
      */
     private static int upperBound(float[] a, int begin, int end, float key) {
         while (begin < end) {
@@ -183,8 +187,9 @@ final class WritableChunkUtils {
     }
 
     /**
-     * @return the smallest i in [begin, end) where a[i] >= key. Uses {@link Double#compare(double, double)} because
-     *         this assumes {@code a} was sorted by {@link Arrays#sort(double[])}.
+     * @return the smallest {@code i} in {@code [begin, end)} where {@code a[i] >= key} (or {@code end} if no value
+     *         matches). Uses {@link Double#compare(double, double)} because this assumes {@code a} was sorted by
+     *         {@link Arrays#sort(double[])}.
      */
     private static int lowerBound(double[] a, int begin, int end, double key) {
         while (begin < end) {
@@ -199,8 +204,9 @@ final class WritableChunkUtils {
     }
 
     /**
-     * @return the smallest i in [begin, end) where a[i] > key. Uses {@link Double#compare(double, double)} because this
-     *         assumes {@code a} was sorted by {@link Arrays#sort(double[])}.
+     * @return the smallest {@code i} in {@code [begin, end)} where {@code a[i] > key}. Uses
+     *         {@link Double#compare(double, double)} because this assumes {@code a} was sorted by
+     *         {@link Arrays#sort(double[])}.
      */
     private static int upperBound(double[] a, int begin, int end, double key) {
         while (begin < end) {

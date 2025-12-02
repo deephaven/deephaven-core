@@ -3,10 +3,10 @@
 #
 
 """This module allows users to import Java classes or packages into the query library for the Deephaven query engine.
-These classes or packages can then be used in Deephaven queries. """
-from typing import List
+These classes or packages can then be used in Deephaven queries."""
 
 import jpy
+
 from deephaven import DHError
 
 _JPackage = jpy.get_type("java.lang.Package")
@@ -46,7 +46,10 @@ def import_static(name: str) -> None:
         j_class = _JClass.forName(name)
         _JExecutionContext.getContext().getQueryLibrary().importStatic(j_class)
     except Exception as e:
-        raise DHError(e, "failed to add the static members of the Java class to the Query Library.") from e
+        raise DHError(
+            e,
+            "failed to add the static members of the Java class to the Query Library.",
+        ) from e
 
 
 def import_package(name: str) -> None:
@@ -64,13 +67,17 @@ def import_package(name: str) -> None:
         j_package = _JPackage.getPackage(name)
         _JExecutionContext.getContext().getQueryLibrary().importPackage(j_package)
     except Exception as e:
-        raise DHError(e, "failed to add the Java package into to the Query Library.") from e
+        raise DHError(
+            e, "failed to add the Java package into to the Query Library."
+        ) from e
 
 
-def imports() -> List[str]:
+def imports() -> list[str]:
     """Returns all the Java import statements currently in the Query Library.
 
     Returns:
         a list of strings
     """
-    return list(_JExecutionContext.getContext().getQueryLibrary().getImportStrings().toArray())[1:]
+    return list(
+        _JExecutionContext.getContext().getQueryLibrary().getImportStrings().toArray()
+    )[1:]

@@ -8,7 +8,7 @@ from requests import get
 
 
 def download_file(url: str, file_name, reuse_existing=False):
-    """ download a file located at the supplied URL and store it in file_name.
+    """download a file located at the supplied URL and store it in file_name.
     However, if the file named file_name already exists, and reuse_existing is true,
     then return immediately.
     """
