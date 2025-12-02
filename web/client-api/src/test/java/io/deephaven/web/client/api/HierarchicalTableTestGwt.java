@@ -811,6 +811,10 @@ public class HierarchicalTableTestGwt extends AbstractAsyncGwtTestCase {
                         assertEquals(treeTable.isIncludeConstituents(), copy.isIncludeConstituents());
                         assertEquals(treeTable.isRefreshing(), copy.isRefreshing());
 
+                        treeTable.close();
+                        assertTrue(treeTable.isClosed());
+                        assertFalse(copy.isClosed());
+
                         copy.setViewport(0, 99, copy.getColumns(), null);
                         return copy.<TreeViewportData>nextEvent(
                                 JsTreeTable.EVENT_UPDATED,

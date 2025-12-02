@@ -199,14 +199,11 @@ public class JsWidget extends HasEventHandling implements ServerObject, WidgetMe
     public Promise<JsWidget> reexport() {
         Ticket reexportedTicket = connection.getTickets().newExportTicket();
 
-        // Future optimization - we could "race" these by running the export in the background, to avoid
-        // an extra round trip.
-        Callbacks.grpcUnaryPromise(c -> {
-            ExportRequest req = new ExportRequest();
-            req.setSourceId(getTicket());
-            req.setResultId(reexportedTicket);
-            connection.sessionServiceClient().exportFromTicket(req, connection.metadata(), c::apply);
-        });
+        // Race these calls so we avoid a round trip, server will do the synchronization for us
+        ExportRequest req = new ExportRequest();
+        req.setSourceId(getTicket());
+        req.setResultId(reexportedTicket);
+        connection.sessionServiceClient().exportFromTicket(req, connection.metadata(), null);
 
         TypedTicket typedTicket = new TypedTicket();
         typedTicket.setTicket(reexportedTicket);
