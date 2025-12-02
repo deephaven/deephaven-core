@@ -7,7 +7,8 @@ import jpy
 from typing import Dict, Union, Mapping, Optional, Any
 
 from deephaven import DHError
-from deephaven.table import Table, _j_py_script_session
+from deephaven.table import Table
+from deephaven._query_scope import _j_py_script_session
 
 _JSql = jpy.get_type("io.deephaven.engine.sql.Sql")
 
