@@ -253,6 +253,28 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
         };
     }
 
+    private Object maybeCaptureScope() {
+        if (executionContext.getQueryScope() instanceof ThreadLocalScope) {
+            final ThreadLocalScope tls = (ThreadLocalScope) executionContext.getQueryScope();
+            return tls.captureScope();
+        }
+        return null;
+    }
+
+    private void maybePushScope() {
+        if (tlScope != null) {
+            final ThreadLocalScope tls = (ThreadLocalScope) executionContext.getQueryScope();
+            tls.pushScope(tlScope);
+        }
+    }
+
+    private void maybePopScope() {
+        if (tlScope != null) {
+            final ThreadLocalScope tls = (ThreadLocalScope) executionContext.getQueryScope();
+            tls.popScope();
+        }
+    }
+
     private void prepareParallelUpdate(
             final JobScheduler jobScheduler,
             final TableUpdate upstream,
@@ -656,37 +678,5 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
     @Override
     public boolean allowCrossColumnParallelization() {
         return selectColumn.isStateless();
-    }
-
-    /**
-     * If the execution context uses a {@link ThreadLocalScope}, capture and return the current scope. Otherwise, return
-     * {@code null}.
-     */
-    private Object maybeCaptureScope() {
-        if (executionContext.getQueryScope() instanceof ThreadLocalScope) {
-            final ThreadLocalScope tls = (ThreadLocalScope) executionContext.getQueryScope();
-            return tls.captureScope();
-        }
-        return null;
-    }
-
-    /**
-     * If we have a captured scope, push it onto the current thread's scope stack. NOOP if we have no captured scope.
-     */
-    private void maybePushScope() {
-        if (tlScope != null) {
-            final ThreadLocalScope tls = (ThreadLocalScope) executionContext.getQueryScope();
-            tls.pushScope(tlScope);
-        }
-    }
-
-    /**
-     * Pop the current thread's scope from the stack. NOOP if we have no captured scope.
-     */
-    private void maybePopScope() {
-        if (tlScope != null) {
-            final ThreadLocalScope tls = (ThreadLocalScope) executionContext.getQueryScope();
-            tls.popScope();
-        }
     }
 }
