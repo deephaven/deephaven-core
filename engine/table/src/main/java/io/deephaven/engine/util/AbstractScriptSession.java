@@ -94,7 +94,7 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
 
         this.classCacheDirectory = classCacheDirectory;
 
-        queryScope = makeScriptSessionQueryScope();
+        queryScope = new ScriptSessionQueryScope();
         final QueryCompiler compilerContext = QueryCompilerImpl.create(classCacheDirectory, parentClassLoader);
 
         executionContext = ExecutionContext.newBuilder()
@@ -393,9 +393,5 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
         public Object unwrapObject(@Nullable Object object) {
             return AbstractScriptSession.this.unwrapObject(object);
         }
-    }
-
-    protected ScriptSessionQueryScope makeScriptSessionQueryScope() {
-        return new ScriptSessionQueryScope();
     }
 }

@@ -26,7 +26,6 @@ import io.deephaven.engine.table.impl.util.JobScheduler;
 import io.deephaven.engine.updategraph.DynamicNode;
 import io.deephaven.engine.updategraph.UpdateCommitterEx;
 import io.deephaven.engine.updategraph.UpdateGraph;
-import io.deephaven.engine.util.ThreadLocalScope;
 import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
 import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
@@ -63,9 +62,6 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
     private final boolean resultTypeIsLivenessReferent;
     private final boolean resultTypeIsTableOrRowSet;
 
-    // TODO: this is likely to leak resources (as a PyObject e.g.)
-    private final Object tlScope;
-
     private UpdateCommitterEx<SelectColumnLayer, LivenessNode> prevUnmanager;
     private List<WritableObjectChunk<? extends LivenessReferent, Values>> prevValueChunksToUnmanage;
 
@@ -93,14 +89,13 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
         this.isRedirected = isRedirected;
         this.sourcesAreInResultKeySpace = sourcesAreInResultKeySpace;
 
-        ExecutionContext tmpExecutionContext = ExecutionContext.getContextToRecord();
-        if (tmpExecutionContext == null) {
+        final ExecutionContext userSuppliedContext = ExecutionContext.getContextToRecord();
+        if (userSuppliedContext != null) {
+            this.executionContext = userSuppliedContext;
+        } else {
             // The job scheduler may require the auth context and update graph
-            tmpExecutionContext = ExecutionContext.newBuilder().markSystemic().setUpdateGraph(updateGraph).build();
+            this.executionContext = ExecutionContext.newBuilder().markSystemic().setUpdateGraph(updateGraph).build();
         }
-        this.executionContext = tmpExecutionContext;
-
-        tlScope = maybeCaptureScope();
 
         dependencyBitSet = new BitSet();
         Arrays.stream(recomputeDependencies)
@@ -290,12 +285,8 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
         }
         jobScheduler.iterateParallel(
                 executionContext, SelectColumnLayer.this, JobScheduler.DEFAULT_CONTEXT_FACTORY, 0,
-                numTasks, (ctx, ti, nec) -> {
-                    maybePushScope();
-                    doParallelApplyUpdate(splitUpdates.get(ti), helper, liveResultOwner,
-                            serialTableOperationsSafe, destinationOffsets[ti]);
-                    maybePopScope();
-                },
+                numTasks, (ctx, ti, nec) -> doParallelApplyUpdate(splitUpdates.get(ti), helper, liveResultOwner,
+                        serialTableOperationsSafe, destinationOffsets[ti]),
                 () -> {
                     if (!isRedirected) {
                         clearObjectsAtThisLevel(toClear);
@@ -317,10 +308,8 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
         doEnsureCapacity();
         final boolean oldSafe = updateGraph.setSerialTableOperationsSafe(serialTableOperationsSafe);
         try {
-            maybePushScope();
             SystemicObjectTracker.executeSystemically(isSystemic,
                     () -> doApplyUpdate(upstream, helper, liveResultOwner, 0));
-            maybePopScope();
         } finally {
             updateGraph.setSerialTableOperationsSafe(oldSafe);
         }
