@@ -8,7 +8,7 @@
 //
 // The Go API uses Records from the Apache Arrow package as tables.
 // The docs for the Arrow package can be found at the following link:
-// https://pkg.go.dev/github.com/apache/arrow/go/v8
+// https://pkg.go.dev/github.com/apache/arrow/go/v17
 //
 // All methods for all structs in this package are goroutine-safe unless otherwise specified.
 package client

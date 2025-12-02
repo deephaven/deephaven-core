@@ -7,9 +7,6 @@
 // @formatter:off
 package io.deephaven.chunk;
 
-import io.deephaven.util.compare.ObjectComparisons;
-import java.util.Comparator;
-
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.chunk.util.pools.MultiChunkPool;
 
@@ -179,12 +176,9 @@ public class WritableObjectChunk<T, ATTR extends Any> extends ObjectChunk<T, ATT
     }
 
     // region sort
-    private static final Comparator<Comparable<Object>> COMPARATOR = Comparator.nullsFirst(Comparator.naturalOrder());
-
     @Override
     public final void sort(int start, int length) {
-        //noinspection unchecked
-        Arrays.sort(data, offset + start, offset + start + length, (Comparator<? super T>) COMPARATOR);
+        WritableChunkUtils.sort(data, offset + start, offset + start + length);
     }
     // endregion sort
 

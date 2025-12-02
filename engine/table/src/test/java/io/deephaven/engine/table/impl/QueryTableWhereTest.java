@@ -2726,6 +2726,67 @@ public abstract class QueryTableWhereTest {
     }
 
     @Test
+    public void testMergedTableSourcesWithRenames() {
+        final Table source1 = testRefreshingTable(RowSetFactory.flat(100_000).toTracking())
+                .update("A = ii");
+        final Table source2 = testRefreshingTable(RowSetFactory.flat(100_000).toTracking())
+                .update("A = 42L"); // RowKeyAgnosticColumnSource
+
+        final RowSetCapturingFilter preFilter = new RowSetCapturingFilter();
+        final RowSetCapturingFilter filter0 = new ParallelizedRowSetCapturingFilter(RawString.of("B = 42"));
+        final RowSetCapturingFilter postFilter = new RowSetCapturingFilter();
+
+        final Table merged = TableTools.merge(source1, source2).renameColumns("B=A");
+
+        // force pre and post filters to run when expected using barriers
+        final Table res0 = merged.where(Filter.and(
+                preFilter.withDeclaredBarriers("1"),
+                filter0.withRespectedBarriers("1").withDeclaredBarriers("2"),
+                postFilter.withRespectedBarriers("2")));
+        assertEquals(200_000, preFilter.numRowsProcessed());
+        assertEquals(100_001, filter0.numRowsProcessed()); // 100_000 from source1, 1 from source2
+        assertEquals(100_001, postFilter.numRowsProcessed()); // 1 from source1, 100_000 from source2
+
+        assertEquals(100_001, res0.size()); // 1 from source1, 100_000 from source2
+
+        preFilter.reset();
+        postFilter.reset();
+    }
+
+    @Test
+    public void testMergedTableSourcesWithRenames2() {
+        final Table source1 = testRefreshingTable(RowSetFactory.flat(5).toTracking())
+                .update("A = 4", "B=42", "C=1");
+        final Table source2 = testRefreshingTable(RowSetFactory.flat(5).toTracking())
+                .update("A = 42", "B=2", "C=3");
+
+        final RowSetCapturingFilter preFilter = new RowSetCapturingFilter();
+        final RowSetCapturingFilter filter0 = new ParallelizedRowSetCapturingFilter(RawString.of("B = 42"));
+        final RowSetCapturingFilter postFilter = new RowSetCapturingFilter();
+
+        // flip around A and B
+        final Table merged = TableTools.merge(source1, source2).updateView("D=B", "B=A", "A=D").dropColumns("D");
+
+        // force pre and post filters to run when expected using barriers
+        final Table res0 = merged.where(Filter.and(
+                preFilter.withDeclaredBarriers("1"),
+                filter0.withRespectedBarriers("1").withDeclaredBarriers("2"),
+                postFilter.withRespectedBarriers("2")));
+
+        TableTools.showWithRowSet(res0);
+
+        assertEquals(10, preFilter.numRowsProcessed());
+        assertEquals(2, filter0.numRowsProcessed()); // 1 from source1, 1 from source2
+        assertEquals(5, postFilter.numRowsProcessed()); // 5 from source2
+        assertEquals(5, res0.size());
+
+        preFilter.reset();
+        postFilter.reset();
+
+        assertTableEquals(TableTools.emptyTable(5).update("A=2", "B=42", "C=3"), res0);
+    }
+
+    @Test
     public void testInterestingMergedTableSources() {
         // Filter the merged table sources before merging
         final Table source1 = testRefreshingTable(RowSetFactory.flat(100_000).toTracking())

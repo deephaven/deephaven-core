@@ -25,6 +25,7 @@ public class ReplicateSegmentedSortedMultiset {
     public static void main(String[] args) throws IOException {
         charToAllButBooleanAndLong(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/ssms/CharSegmentedSortedMultiset.java");
+
         insertInstantExtensions(charToLong(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/ssms/CharSegmentedSortedMultiset.java"));
 

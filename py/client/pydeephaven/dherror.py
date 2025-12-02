@@ -7,5 +7,5 @@
 class DHError(Exception):
     """A custom exception class used by pydeephaven."""
 
-    def __init__(self, message=""):
+    def __init__(self, message: str = ""):
         super().__init__(message)

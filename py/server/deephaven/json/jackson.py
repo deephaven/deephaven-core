@@ -4,9 +4,9 @@
 
 """A JSON processor provider implementation using Jackson (https://github.com/FasterXML/jackson)."""
 
-import jpy
-
 from typing import Optional
+
+import jpy
 
 from . import JsonValueType, json_val
 

@@ -5,7 +5,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
-	"github.com/apache/arrow/go/v8/arrow/flight"
+	"github.com/apache/arrow/go/v17/arrow/flight"
 	configpb2 "github.com/deephaven/deephaven-core/go/internal/proto/config"
 	sessionpb2 "github.com/deephaven/deephaven-core/go/internal/proto/session"
 	"google.golang.org/grpc/metadata"
