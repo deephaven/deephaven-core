@@ -49,6 +49,10 @@ class WhereFilterAdapter implements Filter.Visitor<WhereFilter> {
         return of(isNull, false);
     }
 
+    public static WhereFilter of(FilterIsNaN isNaN) {
+        return of(isNaN, false);
+    }
+
     public static WhereFilter of(FilterPattern pattern) {
         return WhereFilterPatternImpl.of(pattern);
     }
@@ -120,6 +124,10 @@ class WhereFilterAdapter implements Filter.Visitor<WhereFilter> {
         return isNull.expression().walk(new ExpressionIsNullAdapter(inverted));
     }
 
+    public static WhereFilter of(FilterIsNaN isNaN, boolean inverted) {
+        return isNaN.expression().walk(new ExpressionIsNullAdapter(inverted));
+    }
+
     public static WhereFilter of(FilterPattern pattern, boolean inverted) {
         final WhereFilter filter = of(pattern);
         return inverted ? WhereFilterInvertedImpl.of(filter) : filter;
@@ -152,8 +160,10 @@ class WhereFilterAdapter implements Filter.Visitor<WhereFilter> {
     }
 
     public static WhereFilter of(RawString rawString, boolean inverted) {
-        // TODO(deephaven-core#3740): Remove engine crutch on io.deephaven.api.Strings
-        return WhereFilterFactory.getExpression(Strings.of(rawString, inverted));
+        return inverted
+                ? WhereFilterInvertedImpl.of(
+                        WhereFilterFactory.getExpression(rawString.value()))
+                : WhereFilterFactory.getExpression(rawString.value());
     }
 
     private final boolean inverted;
@@ -180,6 +190,11 @@ class WhereFilterAdapter implements Filter.Visitor<WhereFilter> {
     @Override
     public WhereFilter visit(FilterIsNull isNull) {
         return of(isNull, inverted);
+    }
+
+    @Override
+    public WhereFilter visit(FilterIsNaN isNaN) {
+        return of(isNaN, inverted);
     }
 
     @Override
@@ -477,6 +492,67 @@ class WhereFilterAdapter implements Filter.Visitor<WhereFilter> {
                     inverted ? MatchType.Inverted : MatchType.Regular,
                     columnName.name(),
                     new Object[] {null});
+        }
+
+        // Note: it might be tempting to consolidate all of the following getExpression calls to a common function, but
+        // then we'd be losing the type information that allows us to call the more explicitly typed Strings#of(<type>)
+        // methods.
+
+        @Override
+        public WhereFilter visit(Literal literal) {
+            // Note: we _could_ try and optimize here, since a literal is never null.
+            // That said, this filter will be compiled and potentially JITted, so it might not matter.
+            // return inverted ? WhereAllFilter.INSTANCE : WhereNoneFilter.INSTANCE;
+            return getExpression(Strings.of(literal));
+        }
+
+        @Override
+        public WhereFilter visit(Filter filter) {
+            // Note: we _could_ try and optimize here, since a filter never returns null (always true or false).
+            // That said, this filter will be compiled and potentially JITted, so it might not matter.
+            // return inverted ? WhereAllFilter.INSTANCE : WhereNoneFilter.INSTANCE;
+            return getExpression(Strings.of(filter));
+        }
+
+        @Override
+        public WhereFilter visit(Function function) {
+            return getExpression(Strings.of(function));
+        }
+
+        @Override
+        public WhereFilter visit(Method method) {
+            return getExpression(Strings.of(method));
+        }
+
+        @Override
+        public WhereFilter visit(RawString rawString) {
+            return getExpression(Strings.of(rawString));
+        }
+    }
+
+    private static class ExpressionIsNaNAdapter implements Expression.Visitor<WhereFilter> {
+
+        public static WhereFilter of(Expression expression) {
+            return expression.walk(new ExpressionIsNaNAdapter(false));
+        }
+
+        private final boolean inverted;
+
+        ExpressionIsNaNAdapter(boolean inverted) {
+            this.inverted = inverted;
+        }
+
+        private WhereFilter getExpression(String x) {
+            // TODO(deephaven-core#3740): Remove engine crutch on io.deephaven.api.Strings
+            return WhereFilterFactory.getExpression((inverted ? "!isNaN" : "isNaN(") + x + ")");
+        }
+
+        @Override
+        public WhereFilter visit(ColumnName columnName) {
+            return new MatchFilter(
+                    inverted ? MatchType.Inverted : MatchType.Regular,
+                    columnName.name(),
+                    Float.NaN);
         }
 
         // Note: it might be tempting to consolidate all of the following getExpression calls to a common function, but

@@ -1211,6 +1211,8 @@ message Condition {
     ContainsCondition contains = 9;
 
     SearchCondition search = 10;
+
+    IsNaNCondition is_nan = 11;
   }
 }
 
@@ -1262,7 +1264,12 @@ message InvokeCondition {
   Value target = 2;
   repeated Value arguments = 3;
 }
+
 message IsNullCondition {
+  Reference reference = 1;
+}
+
+message IsNaNCondition {
   Reference reference = 1;
 }
 

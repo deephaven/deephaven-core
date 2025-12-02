@@ -38,6 +38,11 @@ enum FilterToListImpl implements Filter.Visitor<List<Filter>> {
     }
 
     @Override
+    public List<Filter> visit(FilterIsNaN isNaN) {
+        return List.of(isNaN);
+    }
+
+    @Override
     public List<Filter> visit(FilterComparison comparison) {
         return List.of(comparison);
     }
