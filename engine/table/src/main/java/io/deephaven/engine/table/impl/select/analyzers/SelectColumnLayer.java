@@ -253,28 +253,6 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
         };
     }
 
-    private Object maybeCaptureScope() {
-        if (executionContext.getQueryScope() instanceof ThreadLocalScope) {
-            final ThreadLocalScope tls = (ThreadLocalScope) executionContext.getQueryScope();
-            return tls.captureScope();
-        }
-        return null;
-    }
-
-    private void maybePushScope() {
-        if (tlScope != null) {
-            final ThreadLocalScope tls = (ThreadLocalScope) executionContext.getQueryScope();
-            tls.pushScope(tlScope);
-        }
-    }
-
-    private void maybePopScope() {
-        if (tlScope != null) {
-            final ThreadLocalScope tls = (ThreadLocalScope) executionContext.getQueryScope();
-            tls.popScope();
-        }
-    }
-
     private void prepareParallelUpdate(
             final JobScheduler jobScheduler,
             final TableUpdate upstream,
