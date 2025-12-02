@@ -16,6 +16,8 @@ public class ReplicateChunkFilters {
     private static final String CHAR_RANGE_COMPARATOR = CHUNK_FILTER_PATH + "CharRangeComparator.java";
     private static final String CHAR_CHUNK_MATCH_FILTER_FACTORY =
             CHUNK_FILTER_PATH + "CharChunkMatchFilterFactory.java";
+    private static final String FLOAT_CHUNK_MATCH_FILTER_FACTORY =
+            CHUNK_FILTER_PATH + "FloatChunkMatchFilterFactory.java";
 
     private static final String RANGE_FILTER_PATH =
             "engine/table/src/main/java/io/deephaven/engine/table/impl/select/";
@@ -30,7 +32,8 @@ public class ReplicateChunkFilters {
         charToAllButBoolean(TASK, CHAR_RANGE_COMPARATOR);
 
         // *ChunkMatchFilterFactory.java
-        charToAllButBoolean(TASK, CHAR_CHUNK_MATCH_FILTER_FACTORY);
+        charToAllButBooleanAndFloats(TASK, CHAR_CHUNK_MATCH_FILTER_FACTORY);
+        floatToAllFloatingPoints(TASK, FLOAT_CHUNK_MATCH_FILTER_FACTORY);
 
         // *RangeFilter.java
         charToShortAndByte(TASK, CHAR_RANGE_FILTER);
