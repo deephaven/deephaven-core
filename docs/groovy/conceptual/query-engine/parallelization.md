@@ -73,7 +73,7 @@ the `update()` and `where()`s for those three tables have been processed.
 
 ### Controlling Concurrency for `select`, `update` and `where`
 
-The `select`, `update`, and `where` operations can parallelize within a single where clause or column expression. This can greatly improve throughput by using multiple threads to read existing columns or compute functions. Deephaven can only parallelize an expression if it is _stateless_, meaning it does not depend on any mutable external inputs or the order in which rows are evaluated. Many operations, such as String manipulation or arithmetic on one or more input columns are always stateless. By default, the engine assumes that all user expressions are stateless and can be parallelized. 
+The `select`, `update`, and `where` operations can parallelize within a single where clause or column expression. This can greatly improve throughput by using multiple threads to read existing columns or compute functions. Deephaven can only parallelize an expression if it is _stateless_, meaning it does not depend on any mutable external inputs or the order in which rows are evaluated. Many operations, such as String manipulation or arithmetic on one or more input columns are always stateless. By default, the engine assumes that all user expressions are stateless and can be parallelized.
 
 To change the default behavior for `select` and `update`, you can change the configuration property `QueryTable.statelessSelectByDefault` to `false` to make columns stateful. For filters, change the property `QueryTable.statelessFiltersByDefault`.
 
