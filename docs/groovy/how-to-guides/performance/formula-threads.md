@@ -78,7 +78,7 @@ The value of `Thr` in `distinct_threads` is `DeephavenApiServer-Scheduler-Serial
 
 The `where` operation operates similarly to `select` and `update`, evaluating the formula eagerly. In the following snippet, we record the thread used by the evaluation and can see that the function was evaluated on the initialization thread pool:
 
-```groovy order=
+```groovy
 used_threads = new LinkedHashSet<>()
 record_thread = { int x -> 
     used_threads.add(java.lang.Thread.currentThread().getName())
@@ -89,7 +89,7 @@ emptyTable(5).update("Row=i").where("(boolean)record_thread(Row)")
 println(used_threads)
 ```
 
-```python order=null
+```python
 import jpy
 from deephaven import empty_table
 
