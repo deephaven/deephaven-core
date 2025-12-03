@@ -50,7 +50,6 @@ import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -1783,9 +1782,7 @@ public abstract class QueryTableWhereTest {
                         postFilter));
 
         assertEquals(100_000, numRowsFiltered(preFilter));
-        // This filter isn't prioritized because the engine doesn't apply
-        // filters to data indexes generally (only MatchFilter)
-        assertEquals(100_000, numRowsFiltered(preFilter2));
+        assertEquals(50_000, numRowsFiltered(preFilter2)); // raw-string prioritizes over prefilter2
         assertEquals(50_000, numRowsFiltered(postFilter));
         assertEquals(50_000, result.size());
 
