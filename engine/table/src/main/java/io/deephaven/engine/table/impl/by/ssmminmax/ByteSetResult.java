@@ -30,7 +30,9 @@ public class ByteSetResult implements SsmChunkedMinMaxOperator.SetResult {
             newResult = NULL_BYTE;
         } else {
             final ByteSegmentedSortedMultiset byteSsm = (ByteSegmentedSortedMultiset) ssm;
+            // region nan handling
             newResult = minimum ? byteSsm.getMinByte() : byteSsm.getMaxByte();
+            // endregion nan handling
         }
         return setResult(destination, newResult);
     }

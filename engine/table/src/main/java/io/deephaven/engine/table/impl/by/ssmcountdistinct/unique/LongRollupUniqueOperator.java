@@ -50,7 +50,7 @@ public class LongRollupUniqueOperator implements IterativeChunkedAggregationOper
     private final LongArraySource internalResult;
     private final ColumnSource<?> externalResult;
     private final Supplier<SegmentedSortedMultiSet.RemoveContext> removeContextFactory;
-    private final boolean countNull;
+    private final boolean countNullNaN;
     private final long onlyNullsSentinel;
     private final long nonUniqueSentinel;
 
@@ -62,11 +62,11 @@ public class LongRollupUniqueOperator implements IterativeChunkedAggregationOper
             Class<?> type,
             // endregion Constructor
             String name,
-            boolean countNulls,
+            boolean countNullNaN,
             long onlyNullsSentinel,
             long nonUniqueSentinel) {
         this.name = name;
-        this.countNull = countNulls;
+        this.countNullNaN = countNullNaN;
         this.nonUniqueSentinel = nonUniqueSentinel;
         this.onlyNullsSentinel = onlyNullsSentinel;
         // region SsmCreation
@@ -127,7 +127,7 @@ public class LongRollupUniqueOperator implements IterativeChunkedAggregationOper
                 bucketedContext.counts.ensureCapacityPreserve(currentPos + newLength);
                 bucketedContext.counts.get().setSize(currentPos + newLength);
                 newLength = LongCompactKernel.compactAndCount(bucketedContext.valueCopy.get().asWritableLongChunk(),
-                        bucketedContext.counts.get(), currentPos, newLength, countNull);
+                        bucketedContext.counts.get(), currentPos, newLength, countNullNaN, countNullNaN);
             }
 
             bucketedContext.lengthCopy.set(ii, newLength);
@@ -207,7 +207,7 @@ public class LongRollupUniqueOperator implements IterativeChunkedAggregationOper
                 context.counts.ensureCapacityPreserve(currentPos + newLength);
                 context.counts.get().setSize(currentPos + newLength);
                 newLength = LongCompactKernel.compactAndCount(context.valueCopy.get().asWritableLongChunk(),
-                        context.counts.get(), currentPos, newLength, countNull);
+                        context.counts.get(), currentPos, newLength, countNullNaN, countNullNaN);
             }
 
             context.lengthCopy.set(ii, newLength);
@@ -242,7 +242,7 @@ public class LongRollupUniqueOperator implements IterativeChunkedAggregationOper
             final WritableIntChunk<ChunkLengths> countSlice =
                     context.countResettable.resetFromChunk(context.counts.get(), startPosition, runLength);
             ssm.remove(removeContext, valueSlice, countSlice);
-            if (ssm.size() == 0) {
+            if (ssm.isEmpty()) {
                 clearSsm(destination);
             }
 
@@ -292,7 +292,7 @@ public class LongRollupUniqueOperator implements IterativeChunkedAggregationOper
                 context.counts.ensureCapacityPreserve(currentPos + newLength);
                 context.counts.get().setSize(currentPos + newLength);
                 newLength = LongCompactKernel.compactAndCount(context.valueCopy.get().asWritableLongChunk(),
-                        context.counts.get(), currentPos, newLength, countNull);
+                        context.counts.get(), currentPos, newLength, countNullNaN, countNullNaN);
             }
 
             context.lengthCopy.set(ii, newLength);
@@ -325,7 +325,7 @@ public class LongRollupUniqueOperator implements IterativeChunkedAggregationOper
             final WritableIntChunk<ChunkLengths> countSlice =
                     context.countResettable.resetFromChunk(context.counts.get(), startPosition, runLength);
             ssm.remove(removeContext, valueSlice, countSlice);
-            if (ssm.size() == 0) {
+            if (ssm.isEmpty()) {
                 context.ssmsToMaybeClear.set(ii, true);
             }
         }
@@ -392,7 +392,7 @@ public class LongRollupUniqueOperator implements IterativeChunkedAggregationOper
             context.counts.ensureCapacityPreserve(currentPos);
             context.counts.get().setSize(currentPos);
             LongCompactKernel.compactAndCount(context.valueCopy.get().asWritableLongChunk(), context.counts.get(),
-                    countNull);
+                    countNullNaN, countNullNaN);
         }
         return context;
     }
@@ -444,7 +444,7 @@ public class LongRollupUniqueOperator implements IterativeChunkedAggregationOper
             context.counts.ensureCapacityPreserve(currentPos);
             context.counts.get().setSize(currentPos);
             LongCompactKernel.compactAndCount(context.valueCopy.get().asWritableLongChunk(), context.counts.get(),
-                    countNull);
+                    countNullNaN, countNullNaN);
         }
         return context;
     }
@@ -461,7 +461,7 @@ public class LongRollupUniqueOperator implements IterativeChunkedAggregationOper
 
         final LongSegmentedSortedMultiset ssm = ssmForSlot(destination);
         ssm.remove(context.removeContext, updatedValues, context.counts.get());
-        if (ssm.size() == 0) {
+        if (ssm.isEmpty()) {
             clearSsm(destination);
         }
 
@@ -500,7 +500,7 @@ public class LongRollupUniqueOperator implements IterativeChunkedAggregationOper
             context.counts.ensureCapacityPreserve(currentPos);
             context.counts.get().setSize(currentPos);
             LongCompactKernel.compactAndCount(context.valueCopy.get().asWritableLongChunk(), context.counts.get(),
-                    countNull);
+                    countNullNaN, countNullNaN);
         }
     }
 
@@ -523,7 +523,7 @@ public class LongRollupUniqueOperator implements IterativeChunkedAggregationOper
                 ssm = ssmForSlot(destination);
             }
             ssm.insert(updatedValues, context.counts.get());
-        } else if (ssm != null && ssm.size() == 0) {
+        } else if (ssm != null && ssm.isEmpty()) {
             clearSsm(destination);
         } else if (ssm == null) {
             return false;

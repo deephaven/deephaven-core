@@ -43,7 +43,7 @@ public class FloatChunkedDistinctOperator implements IterativeChunkedAggregation
     private final FloatSsmBackedSource internalResult;
     private final ColumnSource<?> externalResult;
     private final Supplier<SegmentedSortedMultiSet.RemoveContext> removeContextFactory;
-    private final boolean countNull;
+    private final boolean countNullNaN;
     private final boolean exposeInternal;
     private WritableRowSet touchedStates;
     private UpdateCommitter<FloatChunkedDistinctOperator> prevFlusher = null;
@@ -51,9 +51,9 @@ public class FloatChunkedDistinctOperator implements IterativeChunkedAggregation
     public FloatChunkedDistinctOperator(
             // region Constructor
             // endregion Constructor
-            String name, boolean countNulls, boolean exposeInternal) {
+            String name, boolean countNullNaN, boolean exposeInternal) {
         this.name = name;
-        this.countNull = countNulls;
+        this.countNullNaN = countNullNaN;
         this.exposeInternal = exposeInternal;
         // region SsmCreation
         this.internalResult = new FloatSsmBackedSource();
@@ -78,7 +78,7 @@ public class FloatChunkedDistinctOperator implements IterativeChunkedAggregation
         context.lengthCopy.copyFromChunk(length, 0, 0, length.size());
 
         FloatCompactKernel.compactAndCount((WritableFloatChunk<? extends Values>) context.valueCopy, context.counts,
-                startPositions, context.lengthCopy, countNull);
+                startPositions, context.lengthCopy, countNullNaN, countNullNaN);
         return context;
     }
 
@@ -198,7 +198,7 @@ public class FloatChunkedDistinctOperator implements IterativeChunkedAggregation
         context.valueCopy.setSize(values.size());
         context.valueCopy.copyFromChunk(values, 0, 0, values.size());
         FloatCompactKernel.compactAndCount((WritableFloatChunk<? extends Values>) context.valueCopy, context.counts,
-                countNull);
+                countNullNaN, countNullNaN);
         return context;
     }
 
