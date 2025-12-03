@@ -3,9 +3,10 @@
 #
 import unittest
 from typing import Mapping
-from deephaven import dtypes, new_table, DHError
+
+from deephaven import DHError, dtypes, new_table
+from deephaven.column import bool_col, col_def, string_col
 from deephaven.table import TableDefinition
-from deephaven.column import col_def, string_col, bool_col
 from tests.testbase import BaseTestCase
 
 
@@ -75,9 +76,7 @@ class TableDefinitionTestCase(BaseTestCase):
         self.assertEqual(
             col_def("Bool", dtypes.bool_), self.test_definition.get("Bool")
         )
-        self.assertEqual(
-            col_def("Char", dtypes.char), self.test_definition.get("Char")
-        )
+        self.assertEqual(col_def("Char", dtypes.char), self.test_definition.get("Char"))
         self.assertEqual(
             col_def("Short", dtypes.short),
             self.test_definition.get("Short"),
