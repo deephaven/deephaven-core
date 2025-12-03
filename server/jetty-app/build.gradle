@@ -12,6 +12,7 @@ dependencies {
     implementation project(':server-jetty')
 
     implementation project(':extensions-flight-sql')
+    implementation project(':plugin-remotefilesource')
 
     implementation libs.dagger
     annotationProcessor libs.dagger.compiler

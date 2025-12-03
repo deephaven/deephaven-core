@@ -30,6 +30,7 @@ public class RemoteFileSourceCommandResolver implements CommandResolver, WantsTi
     private static final String FETCH_PLUGIN_TYPE_URL =
             "type.googleapis.com/" + RemoteFileSourcePluginFetchRequest.getDescriptor().getFullName();
 
+
     private static RemoteFileSourcePluginFetchRequest parseFetchRequest(final Any command) {
         if (!FETCH_PLUGIN_TYPE_URL.equals(command.getTypeUrl())) {
             throw new IllegalArgumentException("Not a valid remotefilesource command: " + command.getTypeUrl());

@@ -6,6 +6,7 @@ var application_pb = require("deephaven_core/proto/application_pb");
 var inputtable_pb = require("deephaven_core/proto/inputtable_pb");
 var object_pb = require("deephaven_core/proto/object_pb");
 var partitionedtable_pb = require("deephaven_core/proto/partitionedtable_pb");
+var remotefilesource_pb = require("deephaven_core/proto/remotefilesource_pb");
 var storage_pb = require("deephaven_core/proto/storage_pb");
 var config_pb = require("deephaven_core/proto/config_pb");
 var hierarchicaltable_pb = require("deephaven_core/proto/hierarchicaltable_pb");
@@ -46,6 +47,7 @@ var io = { deephaven_core: {
             object_pb_service,
             partitionedtable_pb,
             partitionedtable_pb_service,
+            remotefilesource_pb,
             storage_pb,
             storage_pb_service,
             config_pb,
