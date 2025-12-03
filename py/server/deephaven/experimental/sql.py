@@ -9,8 +9,8 @@ from typing import Any, Union
 import jpy
 
 from deephaven import DHError
-from deephaven.table import Table
 from deephaven._query_scope import _j_py_script_session
+from deephaven.table import Table
 
 _JSql = jpy.get_type("io.deephaven.engine.sql.Sql")
 
