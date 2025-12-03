@@ -876,6 +876,10 @@ public class TestNumeric extends BaseArrayTestCase {
         assertEquals(new ${pt.primitive}[]{3, 6, 12, ${pt.null}, ${pt.null}}, diff(2, new ${pt.vectorDirect}(new ${pt.primitive}[]{1, 2, 4, 8, 16})));
         assertEquals(new ${pt.primitive}[]{${pt.null}, -1, -2, -4, -8}, diff(-1, new ${pt.vectorDirect}(new ${pt.primitive}[]{1, 2, 4, 8, 16})));
         assertEquals(new ${pt.primitive}[]{${pt.null}, ${pt.null}, -3, -6, -12}, diff(-2, new ${pt.vectorDirect}(new ${pt.primitive}[]{1, 2, 4, 8, 16})));
+
+        // null and empty tests
+        assertEquals(null, diff(-1, (${pt.vectorDirect})null));
+        assertEquals(new ${pt.primitive}[0], diff(-2, new ${pt.vectorDirect}(new ${pt.primitive}[0])));
     }
 
     public void test${pt.boxed}CumMinArray() {
@@ -1360,16 +1364,15 @@ public class TestNumeric extends BaseArrayTestCase {
         assertEquals(Double.NaN, wsum(new ${pt.vectorDirect}(new ${pt.primitive}[]{1,2,3,${pt.null},Float.NaN}), new ${pt2.vectorDirect}(new ${pt2.primitive}[]{4,5,6,7,${pt2.null}})));
         assertEquals(Double.POSITIVE_INFINITY, wsum(new ${pt.vectorDirect}(new ${pt.primitive}[]{1,2,3,${pt.null},Float.POSITIVE_INFINITY}), new ${pt2.vectorDirect}(new ${pt2.primitive}[]{4,5,6,7,8})));
         assertEquals(Double.NEGATIVE_INFINITY, wsum(new ${pt.vectorDirect}(new ${pt.primitive}[]{1,2,3,${pt.null},Float.NEGATIVE_INFINITY}), new ${pt2.vectorDirect}(new ${pt2.primitive}[]{4,5,6,7,8})));
-        assertEquals(Double.NaN, wsum(new ${pt.vectorDirect}(new ${pt.primitive}[]{1,2,3,Float.POSITIVE_INFINITY,Float.NEGATIVE_INFINITY}), new ${pt2.vectorDirect}(new ${pt2.primitive}[]{4,5,6,7,8})));
+        assertEquals(Double.NaN, wsum(new ${pt.vectorDirect}(new ${pt.primitive}[]{1,2,3,${pt.boxed}.POSITIVE_INFINITY,${pt.boxed}.NEGATIVE_INFINITY}), new ${pt2.vectorDirect}(new ${pt2.primitive}[]{4,5,6,7,8})));
+        assertEquals(Double.NaN, wsum(new ${pt.vectorDirect}(new ${pt.primitive}[]{${pt.boxed}.POSITIVE_INFINITY,${pt.boxed}.NEGATIVE_INFINITY, 1,2,3}), new ${pt2.vectorDirect}(new ${pt2.primitive}[]{1,1,1,1,1})));
         </#if>
-
         <#if pt2.valueType.isFloat >
         assertEquals(Double.NaN, wsum(new ${pt.vectorDirect}(new ${pt.primitive}[]{1,2,3,${pt.null},5}), new ${pt2.vectorDirect}(new ${pt2.primitive}[]{4,5,6,Float.NaN,${pt2.null}})));
         assertEquals(Double.POSITIVE_INFINITY, wsum(new ${pt.vectorDirect}(new ${pt.primitive}[]{1,2,3,4,5}), new ${pt2.vectorDirect}(new ${pt2.primitive}[]{4,5,6,Float.POSITIVE_INFINITY,${pt2.null}})));
         assertEquals(Double.NEGATIVE_INFINITY, wsum(new ${pt.vectorDirect}(new ${pt.primitive}[]{1,2,3,4,5}), new ${pt2.vectorDirect}(new ${pt2.primitive}[]{4,5,6,Float.NEGATIVE_INFINITY,${pt2.null}})));
         assertEquals(Double.NaN, wsum(new ${pt.vectorDirect}(new ${pt.primitive}[]{1,2,3,4,5}), new ${pt2.vectorDirect}(new ${pt2.primitive}[]{4,5,6,Float.NEGATIVE_INFINITY,Float.POSITIVE_INFINITY})));
         </#if>
-
         try {
             wsum(new ${pt.vectorDirect}(new ${pt.primitive}[]{1,2,3,${pt.null},5}), new ${pt2.vectorDirect}(new ${pt2.primitive}[]{4,5}));
             fail("Mismatched arguments");
@@ -1405,7 +1408,12 @@ public class TestNumeric extends BaseArrayTestCase {
         assertEquals((1.0*4.0+2.0*5.0+3.0*6.0)/(4.0+5.0+6.0), wavg(new ${pt.vectorDirect}(new ${pt.primitive}[]{1,2,3,${pt.null},5}), new ${pt2.vectorDirect}(new ${pt2.primitive}[]{4,5,6,7,${pt2.null}})));
         assertEquals(NULL_DOUBLE, wavg((${pt.vector}) null, new ${pt2.vectorDirect}(new ${pt2.primitive}[]{4,5,6})));
         assertEquals(NULL_DOUBLE, wavg(new ${pt.vectorDirect}(new ${pt.primitive}[]{1,2,3}), (${pt2.vector}) null));
-
+        <#if pt.valueType.isFloat >
+        assertTrue(Double.isNaN(wavg(new ${pt.vectorDirect}(new ${pt.primitive}[]{${pt.boxed}.NaN,2,3}), new ${pt2.vectorDirect}(new ${pt2.primitive}[]{4,5,6}))));
+        </#if>
+        <#if pt2.valueType.isFloat >
+        assertTrue(Double.isNaN(wavg(new ${pt.vectorDirect}(new ${pt.primitive}[]{1,2,3}), new ${pt2.vectorDirect}(new ${pt2.primitive}[]{${pt2.boxed}.NaN,5,6}))));
+        </#if>
         try {
             wavg(new ${pt.vectorDirect}(new ${pt.primitive}[]{1,2,3,${pt.null},5}), new ${pt2.vectorDirect}(new ${pt2.primitive}[]{4,5}));
             fail("Mismatched arguments");

@@ -3634,6 +3634,7 @@ public class Numeric {
             return 1;
         }
 
+        <#if pt.valueType.isFloat>
         final boolean isNaN1 = isNaN(v1);
         final boolean isNaN2 = isNaN(v2);
 
@@ -3645,7 +3646,7 @@ public class Numeric {
         } else if (isNaN2) {
             return -1;
         }
-
+        </#if>
         return ${pt.boxed}.compare(v1, v2);
     }
 
