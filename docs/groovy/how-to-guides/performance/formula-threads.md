@@ -10,47 +10,49 @@ Most interaction with the Deephaven engine is via gRPC. When processing a gRPC r
 A query operation begins on one of these thread pools, but evaluation may move to another thread depending on the operation. Consider the following snippet executed from a code studio:
 
 ```groovy
-x=emptyTable(1).update([Selectable.parse("Thr=java.lang.Thread.currentThread()").withSerial()])
+thread_name=emptyTable(1).update([Selectable.parse("Thr=java.lang.Thread.currentThread().getName()").withSerial()])
 ```
 
 ```python
 from deephaven.table import Selectable
 from deephaven import empty_table
 
-x = empty_table(1).update(
-    [Selectable.parse("Thr=java.lang.Thread.currentThread()").with_serial()]
+thread_name = empty_table(1).update(
+    [Selectable.parse("Thr=java.lang.Thread.currentThread().getName()").with_serial()]
 )
 ```
 
-The `withSerial` method indicates to the Deephaven engine that the `Thr` column must be evaluated in order, and therefore it is not multi-threaded. The result is that the table contains `Thread[DeephavenApiServer-Scheduler-Serial-1,5,main]`, indicating that it has executed on the serial executor thread.
+The `withSerial` method indicates to the Deephaven engine that the `Thr` column must be evaluated in order, and therefore it is not multi-threaded. The result is that the table contains `DeephavenApiServer-Scheduler-Serial-1`, indicating that it has executed on the serial executor thread.
 
 To illustrate, we'll remove the `withSerial` method and execute the following query:
 
 ```groovy
-x=emptyTable(1).update("Thr=java.lang.Thread.currentThread()")
+thread_name=emptyTable(1).update("Thr=java.lang.Thread.currentThread().getName()")
 ```
 
 ```python
 from deephaven import empty_table
 
-x = empty_table(1).update(["Thr=java.lang.Thread.currentThread()"])
+thread_name = empty_table(1).update(["Thr=java.lang.Thread.currentThread().getName()"])
 ```
 
-The Deephaven engine may parallelize evaluation, thus resulting in a value of `Thr` of `Thread[OperationInitializationThreadPool-initializationExecutor-3,5,OperationInitializationThreadPool]`, indicating that the formula was evaluated on the operation initialization thread pool.
+The Deephaven engine may parallelize evaluation, thus resulting in a value of `Thr` of `OperationInitializationThreadPool-initializationExecutor-3`, indicating that the formula was evaluated on the operation initialization thread pool.
 
 Similarly, each time a source table updates, the downstream effects are evaluated by an Update Graph. The default Periodic Update Graph uses a thread pool that has the same number of threads as the machine has processors (the number of threads can be configured by the property `PeriodicUpdateGraph.updateThreads`).
 
-```groovy
-x=timeTable("PT1s").head(2).update("Thr=java.lang.Thread.currentThread()")
+```groovy order=null
+thread_name=timeTable("PT1s").head(2).update("Thr=java.lang.Thread.currentThread().getName()")
 ```
 
-```python
+```python order=null
 from deephaven import time_table
 
-x = time_table(1).head(2).update(["Thr=java.lang.Thread.currentThread()"])
+thread_name = (
+    time_table(1).head(2).update(["Thr=java.lang.Thread.currentThread().getName()"])
+)
 ```
 
-In this case, the formula is evaluated on one of the update executor threads (e.g., `Thread[PeriodicUpdateGraph-updateExecutor-6,5,PeriodicUpdateGraph-updateExecutors]`).
+In this case, the formula is evaluated on one of the update executor threads (e.g., `PeriodicUpdateGraph-updateExecutor-6`).
 
 The `select` and `update` operations behave identically to each other, eagerly computing the result during initialization or in response to a table update.
 
@@ -58,36 +60,36 @@ The `select` and `update` operations behave identically to each other, eagerly c
 
 The `view` and `updateView` operations, on the other hand, only compute the result when the result is accessed. This can happen on a variety of threads. For example, when performing another query operation, the results are read from the thread executing that operation. For example:
 
-```groovy order=x,sd
-x=emptyTable(1).view("Thr=java.lang.Thread.currentThread()")
-sd=x.selectDistinct()
+```groovy order=thread_name,distinct_threads
+thread_name=emptyTable(1).view("Thr=java.lang.Thread.currentThread().getName()")
+distinct_threads=thread_name.selectDistinct()
 ```
 
-```python order=x,sd
+```python order=thread_name,distinct_threads
 from deephaven import empty_table
 
-x = empty_table(1).view(["Thr=java.lang.Thread.currentThread()"])
-sd = x.select_distinct()
+thread_name = empty_table(1).view(["Thr=java.lang.Thread.currentThread().getName()"])
+distinct_threads = thread_name.select_distinct()
 ```
 
-The value of `Thr` in `y` is `Thread[DeephavenApiServer-Scheduler-Serial-1,5,main]` - the thread that executed the `selectDistinct` operation. However, when viewing the table `x`, the `Thr` column takes on a value like `Thread[DeephavenApiServer-Scheduler-Concurrent-4,5,main]` because that is the thread that the barrage snapshot operation read the value on. Each time a cell is accessed (e.g., by reloading or scrolling around a table), the value is recomputed potentially on another thread.
+The value of `Thr` in `distinct_threads` is `DeephavenApiServer-Scheduler-Serial-1` - the thread that executed the `selectDistinct` operation. However, when viewing the table `thread_name`, the `Thr` column takes on a value like `DeephavenApiServer-Scheduler-Concurrent-4` because that is the thread that the barrage snapshot operation read the value on. Each time a cell is accessed (e.g., by reloading or scrolling around a table), the value is recomputed potentially on another thread.
 
 ## `where`
 
 The `where` operation operates similarly to `select` and `update`, evaluating the formula eagerly. In the following snippet, we record the thread used by the evaluation and can see that the function was evaluated on the initialization thread pool:
 
-```groovy
+```groovy order=
 used_threads = new LinkedHashSet<>()
 record_thread = { int x -> 
     used_threads.add(java.lang.Thread.currentThread().getName())
     return true
 }
 
-x=emptyTable(5).update("Row=i").where("(boolean)record_thread(Row)")
+emptyTable(5).update("Row=i").where("(boolean)record_thread(Row)")
 println(used_threads)
 ```
 
-```python
+```python order=null
 import jpy
 from deephaven import empty_table
 
@@ -101,24 +103,23 @@ def record_thread(x: int) -> bool:
     return True
 
 
-x = empty_table(5).update("Row=i").where("(boolean)record_thread(Row)")
+empty_table(5).update("Row=i").where("(boolean)record_thread(Row)")
 print(used_threads)
 ```
 
 Similarly, a refreshing `where` operation is evaluated on the Update Graph thread pool:
 
-```groovy test-set=1
+```groovy test-set=1 order=null
 used_threads = new LinkedHashSet<>()
 record_thread = { int x -> 
     used_threads.add(java.lang.Thread.currentThread().getName())
     return true
 }
 
-x=timeTable("PT1s").head(2).update("Row=i").where("(boolean)record_thread(Row)")
-println(used_threads)
+recorded_threads=timeTable("PT1s").head(2).update("Row=i").where("(boolean)record_thread(Row)")
 ```
 
-```python test-set=2
+```python test-set=2 order=null
 import jpy
 from deephaven import time_table
 
@@ -132,7 +133,9 @@ def record_thread(x: int) -> bool:
     return True
 
 
-x = time_table("PT1s").head(2).update("Row=i").where("(boolean)record_thread(Row)")
+recorded_threads = (
+    time_table("PT1s").head(2).update("Row=i").where("(boolean)record_thread(Row)")
+)
 ```
 
 After waiting for the table to tick, we can print the value of `used_threads`:
