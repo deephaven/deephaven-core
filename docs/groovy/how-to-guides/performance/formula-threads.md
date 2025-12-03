@@ -58,7 +58,7 @@ The `select` and `update` operations behave identically to each other, eagerly c
 
 ## `view` and `updateView`
 
-The `view` and `updateView` operations, on the other hand, only compute the result when the result is accessed. This can happen on a variety of threads. For example, when performing another query operation, the results are read from the thread executing that operation. For example:
+Unlike `select` and `update`, the `view` and `updateView` operations only compute the result when the result is accessed. This can happen on a variety of threads. For example, when performing another query operation, the results are read from the thread executing that operation:
 
 ```groovy order=thread_name,distinct_threads
 thread_name=emptyTable(1).view("Thr=java.lang.Thread.currentThread().getName()")
