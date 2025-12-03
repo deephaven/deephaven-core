@@ -53,8 +53,6 @@ import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 import java.util.*;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 /**
  * Behaves like a {@link JsTable} externally, but data, state, and viewports are managed by an entirely different
@@ -752,6 +750,10 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
                     return;
                 }
         }
+        if (firstRow == null || lastRow == null || columns == null) {
+            // no viewport to subscribe, don't build the rest of the operations
+            return;
+        }
         Promise<TreeSubscription> stream = Promise.resolve(defer())
                 .then(ignore -> {
                     makeKeyTable();
@@ -1434,12 +1436,6 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
      * @return Promise of dh.TreeTable
      */
     public Promise<JsTreeTable> copy() {
-        return connection.newState((c, state, metadata) -> {
-            // connection.getServer().reexport(this.baseTable.getHandle(), state.getHandle(), c);
-            throw new UnsupportedOperationException("reexport");// probably not needed at all with new session
-                                                                // mechanism?
-        }, "reexport for tree.copy()")
-                .refetch(this, connection.metadata())
-                .then(state -> Promise.resolve(new JsTreeTable(connection, widget)));
+        return widget.reexport().then(exportedWidget -> Promise.resolve(new JsTreeTable(connection, exportedWidget)));
     }
 }
