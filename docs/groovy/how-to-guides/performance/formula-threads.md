@@ -7,7 +7,7 @@ The Deephaven query engine executes as a Java process and makes use of multiple 
 
 Most interaction with the Deephaven engine is via gRPC. When processing a gRPC request, it is initially handled on a web-server thread as part of the Java gRPC library. Depending on the request, it is then dispatched to one of two thread pools for request handling. The serial executor handles requests using a single thread. Evaluating script commands from a Code Studio and resolving scope tickets execute on the serial queue. Other requests are handled on the concurrent executor, which has four threads by default, but is user-configurable by setting the configuration property `scheduler.poolSize`. The single-threaded executor pool provides a well-defined order for script code execution and resolving variables. Other operations may execute concurrently, with necessary locking handled by the default [Periodic Update Graph](https://deephaven.io/core/groovy/docs/conceptual/periodic-update-graph-configuration/).
 
-A query operation begins on one of these thread pools, but evaluation may move to another thread depending on the operation. Consider the following snippet executed from a code studio:
+A query operation begins on one of these thread pools, but evaluation may move to another thread depending on the operation. Consider the following snippet executed from a Code Studio:
 
 ```groovy
 thread_name=emptyTable(1).update([Selectable.parse("Thr=java.lang.Thread.currentThread().getName()").withSerial()])
