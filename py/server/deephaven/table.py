@@ -8,7 +8,6 @@ instruments for working with Deephaven refreshing and static data."""
 from __future__ import annotations
 
 import contextlib
-import inspect
 import sys
 from collections.abc import Generator, Iterable, Mapping, Sequence
 from enum import Enum, auto
@@ -21,17 +20,14 @@ from typing import (
     Optional,
     Protocol,
     Union,
-    cast,
 )
 
 import jpy
 import numpy as np
 
 from deephaven import DHError, dtypes
-from deephaven._jpy import strict_cast
-from deephaven._wrapper import JObjectWrapper
-from deephaven._wrapper import unwrap
 from deephaven._query_scope import query_scope_ctx
+from deephaven._wrapper import JObjectWrapper, unwrap
 from deephaven.agg import Aggregation
 from deephaven.column import ColumnDefinition, col_def
 from deephaven.concurrency_control import Barrier, ConcurrencyControl
@@ -623,7 +619,11 @@ class TreeTable(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "with_filters operation on TreeTable failed.") from e
 
-def _query_scope_agg_ctx(aggs: Sequence[Aggregation]) -> contextlib.AbstractContextManager:
+
+def _query_scope_agg_ctx(
+    aggs: Sequence[Aggregation],
+) -> contextlib.AbstractContextManager:
+    cm: contextlib.AbstractContextManager
     has_agg_formula = any([agg.is_formula for agg in aggs])
     if has_agg_formula:
         cm = query_scope_ctx()
@@ -3643,7 +3643,9 @@ class PartitionedTableProxy(JObjectWrapper):
         try:
             filters = _to_sequence(filters)
             with query_scope_ctx(), auto_locking_ctx(self):
-                return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.where(and_(filters).j_filter))
+                return PartitionedTableProxy(
+                    j_pt_proxy=self.j_pt_proxy.where(and_(filters).j_filter)
+                )
         except Exception as e:
             raise DHError(
                 e, "where operation on the PartitionedTableProxy failed."
@@ -3745,7 +3747,9 @@ class PartitionedTableProxy(JObjectWrapper):
         try:
             formulas = _to_sequence(formulas)
             with query_scope_ctx(), auto_locking_ctx(self):
-                return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.updateView(*formulas))
+                return PartitionedTableProxy(
+                    j_pt_proxy=self.j_pt_proxy.updateView(*formulas)
+                )
         except Exception as e:
             raise DHError(
                 e, "update_view operation on the PartitionedTableProxy failed."
@@ -3808,7 +3812,9 @@ class PartitionedTableProxy(JObjectWrapper):
             formulas = _to_sequence(formulas)
             with query_scope_ctx(), auto_locking_ctx(self):
                 if isinstance(formulas[0], Selectable.j_object_type):
-                    return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.select(j_array_list(formulas)))
+                    return PartitionedTableProxy(
+                        j_pt_proxy=self.j_pt_proxy.select(j_array_list(formulas))
+                    )
                 else:
                     return PartitionedTableProxy(
                         j_pt_proxy=self.j_pt_proxy.select(*formulas)
@@ -3837,7 +3843,9 @@ class PartitionedTableProxy(JObjectWrapper):
         try:
             formulas = _to_sequence(formulas)
             with query_scope_ctx(), auto_locking_ctx(self):
-                return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.selectDistinct(*formulas))
+                return PartitionedTableProxy(
+                    j_pt_proxy=self.j_pt_proxy.selectDistinct(*formulas)
+                )
         except Exception as e:
             raise DHError(
                 e, "select_distinct operation on the PartitionedTableProxy failed."
@@ -4154,7 +4162,7 @@ class PartitionedTableProxy(JObjectWrapper):
         try:
             by = _to_sequence(by)
 
-            cm = _query_scope_agg_ctx([agg])
+            cm: contextlib.AbstractContextManager = _query_scope_agg_ctx([agg])
             with cm:
                 with auto_locking_ctx(self):
                     return PartitionedTableProxy(

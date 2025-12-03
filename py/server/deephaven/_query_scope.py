@@ -10,21 +10,35 @@ This can be called *only* from table.py or execution_context.py.  Using this fro
 
 import contextlib
 import inspect
+from typing import TYPE_CHECKING, Any, cast
+
 import jpy
+
+if TYPE_CHECKING:
+    from typing_extensions import TypeAlias  # novermin  # noqa
 
 from deephaven import DHError
 from deephaven._jpy import strict_cast
 
 _JExecutionContext = jpy.get_type("io.deephaven.engine.context.ExecutionContext")
-_JScriptSessionQueryScope = jpy.get_type("io.deephaven.engine.util.AbstractScriptSession$ScriptSessionQueryScope")
-_JPythonScriptSession = jpy.get_type("io.deephaven.integrations.python.PythonDeephavenSession")
+_JScriptSessionQueryScope = jpy.get_type(
+    "io.deephaven.engine.util.AbstractScriptSession$ScriptSessionQueryScope"
+)
+_JPythonScriptSession = cast(
+    type[Any], jpy.get_type("io.deephaven.integrations.python.PythonDeephavenSession")
+)  # type: TypeAlias
+
 
 def _j_py_script_session() -> _JPythonScriptSession:
     j_execution_context = _JExecutionContext.getContext()
     j_query_scope = j_execution_context.getQueryScope()
     try:
-        j_script_session_query_scope = strict_cast(j_query_scope, _JScriptSessionQueryScope)
-        return strict_cast(j_script_session_query_scope.scriptSession(), _JPythonScriptSession)
+        j_script_session_query_scope = strict_cast(
+            j_query_scope, _JScriptSessionQueryScope
+        )
+        return strict_cast(
+            j_script_session_query_scope.scriptSession(), _JPythonScriptSession
+        )
     except DHError:
         return None
 
