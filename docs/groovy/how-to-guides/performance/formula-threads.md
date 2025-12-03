@@ -38,7 +38,7 @@ x = empty_table(1).update(["Thr=java.lang.Thread.currentThread()"])
 
 The Deephaven engine may parallelize evaluation, thus resulting in a value of `Thr` of `Thread[OperationInitializationThreadPool-initializationExecutor-3,5,OperationInitializationThreadPool]`, indicating that the formula was evaluated on the operation initialization thread pool.
 
-Similarly, any time a source table updates, the downstream effects are evaluated by an Update Graph. The default Periodic Update Graph uses a thread pool that has the same number of threads as the machine has processors (the number of threads can be configured by the property `PeriodicUpdateGraph.updateThreads`).
+Similarly, each time a source table updates, the downstream effects are evaluated by an Update Graph. The default Periodic Update Graph uses a thread pool that has the same number of threads as the machine has processors (the number of threads can be configured by the property `PeriodicUpdateGraph.updateThreads`).
 
 ```groovy
 x=timeTable("PT1s").head(2).update("Thr=java.lang.Thread.currentThread()")
