@@ -20,11 +20,11 @@ public class RemoteFileSourceMetaRequest {
     public static native void serializeBinaryToWriter(
             RemoteFileSourceMetaRequest message, Object writer);
 
-    public static native Object toObject(boolean includeInstance, RemoteFileSourceMetaRequest msg);
+    public native void clearResourceName();
+
+    public native String getResourceName();
 
     public native Uint8Array serializeBinary();
 
-    public native Object toObject();
-
-    public native Object toObject(boolean includeInstance);
+    public native void setResourceName(String value);
 }
