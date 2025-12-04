@@ -19,9 +19,6 @@ message RemoteFileSourceServerRequest {
   oneof request {
     // Request source data/resource from the client
     RemoteFileSourceMetaRequest meta_request = 2;
-
-    // Acknowledgment that connection ID was set
-    RemoteFileSourceSetConnectionIdResponse set_connection_id_response = 3;
   }
 }
 
@@ -34,11 +31,8 @@ message RemoteFileSourceClientRequest {
     // Response to a resource request
     RemoteFileSourceMetaResponse meta_response = 2;
 
-    // Future: other client-initiated messages
-    RemoteFileSourceSetConnectionIdRequest set_connection_id = 3;
-
     // Test command (e.g., "TEST:com/example/Test.java") - client triggers server to request a resource back
-    string test_command = 4;
+    string test_command = 3;
   }
 }
 
@@ -60,21 +54,11 @@ message RemoteFileSourceMetaResponse {
   string error = 3;
 }
 
-message RemoteFileSourceSetConnectionIdRequest {
-  // The connection ID to set for the remote file source.
-  string connection_id = 1;
-}
-
-// Acknowledgment response for setting connection ID
-message RemoteFileSourceSetConnectionIdResponse {
-  // The connection ID that was set
-  string connection_id = 1;
-
-  // Whether the operation was successful
-  bool success = 2;
-}
 
 // Fetch the remote file source plugin into the specified ticket (Flight command, not MessageStream)
 message RemoteFileSourcePluginFetchRequest {
   io.deephaven.proto.backplane.grpc.Ticket result_id = 1;
+
+  // Optional client session ID to identify this client connection
+  string client_session_id = 2;
 }
