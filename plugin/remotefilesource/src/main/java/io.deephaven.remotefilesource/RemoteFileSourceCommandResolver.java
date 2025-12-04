@@ -1,3 +1,6 @@
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.remotefilesource;
 
 import com.google.protobuf.Any;
@@ -55,8 +58,8 @@ public class RemoteFileSourceCommandResolver implements CommandResolver, WantsTi
     }
 
     public SessionState.ExportObject<Flight.FlightInfo> fetchPlugin(@Nullable final SessionState session,
-                                                                    final Flight.FlightDescriptor descriptor,
-                                                                    final RemoteFileSourcePluginFetchRequest request) {
+            final Flight.FlightDescriptor descriptor,
+            final RemoteFileSourcePluginFetchRequest request) {
         final Ticket resultTicket = request.getResultId();
         final boolean hasResultId = !resultTicket.getTicket().isEmpty();
         if (!hasResultId) {
@@ -98,7 +101,8 @@ public class RemoteFileSourceCommandResolver implements CommandResolver, WantsTi
         final Any request = parseOrNull(descriptor.getCmd());
         if (request == null) {
             log.error().append("Could not parse remotefilesource command.").endl();
-            throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, "Could not parse remotefilesource command Any.");
+            throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
+                    "Could not parse remotefilesource command Any.");
         }
 
         if (FETCH_PLUGIN_TYPE_URL.equals(request.getTypeUrl())) {
