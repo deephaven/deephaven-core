@@ -116,12 +116,24 @@ public class ParsedProperties extends Properties {
      * @param context the {@link ConfigurationContext} for determining environment settings
      */
     public ParsedProperties(final boolean ignoreScopes, @NotNull final ConfigurationContext context) {
+        this(ignoreScopes, context, PropertyInputStreamLoaderFactory.newInstance());
+    }
+
+    /**
+     * A constructor that starts with no existing scoped or final properties.
+     *
+     * @param ignoreScopes True if this parser should ignore scope restrictions, false otherwise. Used by the
+     *        PropertyInspector when checking whether required or disallowed properties are present.
+     * @param context the {@link ConfigurationContext} for determining environment settings
+     * @param propertyInputStreamLoader the loader to use for retrieving property files
+     */
+    public ParsedProperties(final boolean ignoreScopes, @NotNull final ConfigurationContext context, @NotNull final PropertyInputStreamLoader propertyInputStreamLoader) {
         this.context = context;
         finalProperties = new HashSet<>();
         lineNumbers = new HashMap<>();
         props = new LinkedHashMap<>();
         this.ignoreScopes = ignoreScopes;
-        this.propertyInputStreamLoader = PropertyInputStreamLoaderFactory.newInstance();
+        this.propertyInputStreamLoader = propertyInputStreamLoader;
     }
 
     @Override
