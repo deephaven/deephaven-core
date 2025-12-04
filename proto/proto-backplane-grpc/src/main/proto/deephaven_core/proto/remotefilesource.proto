@@ -19,6 +19,9 @@ message RemoteFileSourceServerRequest {
   oneof request {
     // Request source data/resource from the client
     RemoteFileSourceMetaRequest meta_request = 2;
+
+    // Acknowledgment that connection ID was set
+    RemoteFileSourceSetConnectionIdResponse set_connection_id_response = 3;
   }
 }
 
@@ -60,6 +63,15 @@ message RemoteFileSourceMetaResponse {
 message RemoteFileSourceSetConnectionIdRequest {
   // The connection ID to set for the remote file source.
   string connection_id = 1;
+}
+
+// Acknowledgment response for setting connection ID
+message RemoteFileSourceSetConnectionIdResponse {
+  // The connection ID that was set
+  string connection_id = 1;
+
+  // Whether the operation was successful
+  bool success = 2;
 }
 
 // Fetch the remote file source plugin into the specified ticket (Flight command, not MessageStream)
