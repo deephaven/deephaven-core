@@ -1,40 +1,72 @@
 package io.deephaven.web.client.api.remotefilesource;
 
+import com.vertispan.tsdefs.annotations.TsInterface;
+import com.vertispan.tsdefs.annotations.TsName;
 import elemental2.core.Uint8Array;
+import elemental2.dom.DomGlobal;
 import elemental2.promise.Promise;
 import io.deephaven.javascript.proto.dhinternal.arrow.flight.protocol.flight_pb.FlightDescriptor;
 import io.deephaven.javascript.proto.dhinternal.arrow.flight.protocol.flight_pb.FlightInfo;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.object_pb.ConnectRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.object_pb.StreamRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.object_pb.StreamResponse;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.remotefilesource_pb.RemoteFileSourcePluginFetchRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.ticket_pb.Ticket;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.ticket_pb.TypedTicket;
 import io.deephaven.web.client.api.Callbacks;
-import io.deephaven.web.client.api.ServerObject;
 import io.deephaven.web.client.api.WorkerConnection;
+import io.deephaven.web.client.api.barrage.stream.BiDiStream;
 import io.deephaven.web.client.api.event.HasEventHandling;
-import io.deephaven.web.client.api.widget.JsWidgetExportedObject;
 import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsMethod;
-import jsinterop.annotations.JsType;
+import jsinterop.annotations.JsProperty;
+import jsinterop.base.Js;
+
+import java.util.function.Supplier;
 
 /**
- * JavaScript client for the RemoteFileSource service.
+ * JavaScript client for the RemoteFileSource service. Provides bidirectional communication with the server-side
+ * RemoteFileSourceServicePlugin via a message stream.
  */
-@JsType(namespace = "dh.remotefilesource", name = "RemoteFileSourceService")
+@TsInterface
+@TsName(namespace = "dh.remotefilesource", name = "RemoteFileSourceService")
 public class JsRemoteFileSourceService extends HasEventHandling {
+    @JsProperty(namespace = "dh.remotefilesource.RemoteFileSourceService")
+    public static final String EVENT_MESSAGE = "message";
+    @JsProperty(namespace = "dh.remotefilesource.RemoteFileSourceService")
+    public static final String EVENT_CLOSE = "close";
+
     private final WorkerConnection connection;
+    private final TypedTicket typedTicket;
+
+    private final Supplier<BiDiStream<StreamRequest, StreamResponse>> streamFactory;
+    private BiDiStream<StreamRequest, StreamResponse> messageStream;
+
+    private boolean hasFetched;
 
     @JsIgnore
-    public JsRemoteFileSourceService(WorkerConnection connection) {
+    private JsRemoteFileSourceService(WorkerConnection connection, TypedTicket typedTicket) {
         this.connection = connection;
+        this.typedTicket = typedTicket;
+        this.hasFetched = false;
+
+        // Set up the message stream factory
+        BiDiStream.Factory<StreamRequest, StreamResponse> factory = connection.streamFactory();
+        this.streamFactory = () -> factory.create(
+                connection.objectServiceClient()::messageStream,
+                (first, headers) -> connection.objectServiceClient().openMessageStream(first, headers),
+                (next, headers, c) -> connection.objectServiceClient().nextMessageStream(next, headers, c::apply),
+                new StreamRequest());
     }
 
     /**
-     * Fetches a RemoteFileSource plugin instance from the server.
+     * Fetches a RemoteFileSource plugin instance from the server and establishes a message stream connection.
      *
-     * @return a promise that resolves to a ServerObject representing the RemoteFileSource plugin instance
+     * @param connection the worker connection to use for communication
+     * @return a promise that resolves to a RemoteFileSourceService instance with an active message stream
      */
     @JsMethod
-    public Promise<ServerObject> fetchPlugin() {
+    public static Promise<JsRemoteFileSourceService> fetchPlugin(WorkerConnection connection) {
         // Create a new export ticket for the result
         Ticket resultTicket = connection.getTickets().newExportTicket();
 
@@ -75,12 +107,105 @@ public class JsRemoteFileSourceService extends HasEventHandling {
                 typedTicket.setTicket(dhTicket);
                 typedTicket.setType("RemoteFileSourceService");
 
-                // Return a ServerObject wrapper
-                return Promise.resolve(new JsWidgetExportedObject(connection, typedTicket));
+                // Create a new service instance with the typed ticket and connect to it
+                JsRemoteFileSourceService service = new JsRemoteFileSourceService(connection, typedTicket);
+                return service.connect();
             } else {
                 return Promise.reject("No endpoints returned from RemoteFileSource plugin fetch");
             }
         });
+    }
+
+    /**
+     * Establishes the message stream connection to the server-side plugin instance.
+     *
+     * @return a promise that resolves to this service instance when the connection is established
+     */
+    @JsIgnore
+    private Promise<JsRemoteFileSourceService> connect() {
+        if (messageStream != null) {
+            messageStream.end();
+        }
+
+        return new Promise<>((resolve, reject) -> {
+            messageStream = streamFactory.get();
+
+            messageStream.onData(res -> {
+                if (!hasFetched) {
+                    hasFetched = true;
+                    resolve.onInvoke(this);
+                } else {
+                    // Fire message event for subsequent messages
+                    DomGlobal.setTimeout(ignore -> {
+                        fireEvent(EVENT_MESSAGE, res.getData());
+                    }, 0);
+                }
+            });
+
+            messageStream.onStatus(status -> {
+                if (!status.isOk()) {
+                    reject.onInvoke(status.getDetails());
+                }
+                DomGlobal.setTimeout(ignore -> {
+                    fireEvent(EVENT_CLOSE);
+                }, 0);
+                closeStream();
+            });
+
+            messageStream.onEnd(status -> {
+                closeStream();
+            });
+
+            // First message establishes a connection w/ the plugin object instance we're talking to
+            StreamRequest req = new StreamRequest();
+            ConnectRequest data = new ConnectRequest();
+            data.setSourceId(typedTicket);
+            req.setConnect(data);
+            messageStream.send(req);
+        });
+    }
+
+    /**
+     * Sends a message to the server-side plugin.
+     *
+     * @param payload the message data to send (string, ArrayBuffer, or typed array)
+     */
+    @JsMethod
+    public void sendMessage(Object payload) {
+        if (messageStream == null) {
+            throw new IllegalStateException("Message stream not connected");
+        }
+
+        StreamRequest req = new StreamRequest();
+
+        // Convert the payload to Uint8Array
+        Uint8Array data;
+        if (payload instanceof String) {
+            data = stringToUtf8((String) payload);
+        } else if (payload instanceof Uint8Array) {
+            data = (Uint8Array) payload;
+        } else {
+            data = Js.uncheckedCast(payload);
+        }
+
+        req.getData().setPayload(data);
+        messageStream.send(req);
+    }
+
+    /**
+     * Closes the message stream connection to the server.
+     */
+    @JsMethod
+    public void close() {
+        closeStream();
+    }
+
+    @JsIgnore
+    private void closeStream() {
+        if (messageStream != null) {
+            messageStream.end();
+            messageStream = null;
+        }
     }
 
     /**
@@ -151,3 +276,4 @@ public class JsRemoteFileSourceService extends HasEventHandling {
         return pos;
     }
 }
+
