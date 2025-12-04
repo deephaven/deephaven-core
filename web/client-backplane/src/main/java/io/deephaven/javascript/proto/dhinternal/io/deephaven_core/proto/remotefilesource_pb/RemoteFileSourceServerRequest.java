@@ -24,11 +24,17 @@ public class RemoteFileSourceServerRequest {
 
     public native void clearMetaRequest();
 
+    public native void clearSetExecutionContextResponse();
+
     public native String getRequestId();
 
     public native RemoteFileSourceMetaRequest getMetaRequest();
 
+    public native SetExecutionContextResponse getSetExecutionContextResponse();
+
     public native boolean hasMetaRequest();
+
+    public native boolean hasSetExecutionContextResponse();
 
     public native Uint8Array serializeBinary();
 
@@ -37,5 +43,9 @@ public class RemoteFileSourceServerRequest {
     public native void setMetaRequest();
 
     public native void setMetaRequest(RemoteFileSourceMetaRequest value);
+
+    public native void setSetExecutionContextResponse();
+
+    public native void setSetExecutionContextResponse(SetExecutionContextResponse value);
 }
 

@@ -19,6 +19,8 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.remotefi
 import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.remotefilesource_pb.RemoteFileSourceMetaResponse;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.remotefilesource_pb.RemoteFileSourcePluginFetchRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.remotefilesource_pb.RemoteFileSourceServerRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.remotefilesource_pb.SetExecutionContextRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.remotefilesource_pb.SetExecutionContextResponse;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.ticket_pb.Ticket;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.ticket_pb.TypedTicket;
 import io.deephaven.web.client.api.Callbacks;
@@ -27,9 +29,12 @@ import io.deephaven.web.client.api.barrage.stream.BiDiStream;
 import io.deephaven.web.client.api.event.HasEventHandling;
 import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsMethod;
+import jsinterop.annotations.JsOptional;
 import jsinterop.annotations.JsProperty;
 import jsinterop.base.Js;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.function.Supplier;
 
 /**
@@ -52,6 +57,10 @@ public class JsRemoteFileSourceService extends HasEventHandling {
     private BiDiStream<StreamRequest, StreamResponse> messageStream;
 
     private boolean hasFetched;
+
+    // Track pending setExecutionContext requests
+    private final Map<String, Promise.PromiseExecutorCallbackFn.ResolveCallbackFn<Boolean>> pendingSetExecutionContextRequests = new HashMap<>();
+    private int requestIdCounter = 0;
 
     @JsIgnore
     private JsRemoteFileSourceService(WorkerConnection connection, TypedTicket typedTicket) {
@@ -161,6 +170,15 @@ public class JsRemoteFileSourceService extends HasEventHandling {
                             // Fire request event (include request_id from wrapper)
                             DomGlobal.setTimeout(ignore -> fireEvent(EVENT_REQUEST,
                                     new ResourceRequestEvent(message.getRequestId(), request)), 0);
+                        } else if (message.hasSetExecutionContextResponse()) {
+                            // Server acknowledged execution context
+                            String requestId = message.getRequestId();
+                            Promise.PromiseExecutorCallbackFn.ResolveCallbackFn<Boolean> resolveCallback =
+                                    pendingSetExecutionContextRequests.remove(requestId);
+                            if (resolveCallback != null) {
+                                SetExecutionContextResponse response = message.getSetExecutionContextResponse();
+                                resolveCallback.onInvoke(response.getSuccess());
+                            }
                         } else {
                             // Unknown message type
                             DomGlobal.setTimeout(ignore -> fireEvent(EVENT_MESSAGE, res.getData()), 0);
@@ -192,8 +210,8 @@ public class JsRemoteFileSourceService extends HasEventHandling {
     }
 
     /**
-     * Test method to verify bidirectional communication. Sends a test command to the server, which will request a
-     * resource back from the client.
+     * Test method to verify bidirectional communication.
+     * Sends a test command to the server, which will request a resource back from the client.
      *
      * @param resourceName the resource name to use for the test (e.g., "com/example/Test.java")
      */
@@ -203,6 +221,39 @@ public class JsRemoteFileSourceService extends HasEventHandling {
         clientRequest.setRequestId(""); // Empty request_id for test commands
         clientRequest.setTestCommand("TEST:" + resourceName);
         sendClientRequest(clientRequest);
+    }
+
+    /**
+     * Sets the execution context ID on the server to identify which client session should
+     * provide source files for script execution.
+     *
+     * @param executionContextId the execution context ID (typically matches the client session ID)
+     * @param topLevelPackages array of top-level package names to resolve from remote source (e.g., ["com.example", "org.mycompany"])
+     * @return a promise that resolves to true if the server successfully set the execution context, false otherwise
+     */
+    @JsMethod
+    public Promise<Boolean> setExecutionContext(String executionContextId, @JsOptional String[] topLevelPackages) {
+        return new Promise<>((resolve, reject) -> {
+            // Generate a unique request ID
+            String requestId = "setExecutionContext-" + (requestIdCounter++);
+
+            // Store the resolve callback to call when we get the acknowledgment
+            pendingSetExecutionContextRequests.put(requestId, resolve);
+
+            SetExecutionContextRequest setContextRequest = new SetExecutionContextRequest();
+            setContextRequest.setExecutionContextId(executionContextId);
+
+            if (topLevelPackages != null && topLevelPackages.length > 0) {
+                for (String pkg : topLevelPackages) {
+                    setContextRequest.addTopLevelPackages(pkg);
+                }
+            }
+
+            RemoteFileSourceClientRequest clientRequest = new RemoteFileSourceClientRequest();
+            clientRequest.setRequestId(requestId);
+            clientRequest.setSetExecutionContext(setContextRequest);
+            sendClientRequest(clientRequest);
+        });
     }
 
     /**

@@ -26,15 +26,21 @@ public class RemoteFileSourceClientRequest {
 
     public native void clearTestCommand();
 
+    public native void clearSetExecutionContext();
+
     public native String getRequestId();
 
     public native RemoteFileSourceMetaResponse getMetaResponse();
 
     public native String getTestCommand();
 
+    public native SetExecutionContextRequest getSetExecutionContext();
+
     public native boolean hasMetaResponse();
 
     public native boolean hasTestCommand();
+
+    public native boolean hasSetExecutionContext();
 
     public native Uint8Array serializeBinary();
 
@@ -46,5 +52,9 @@ public class RemoteFileSourceClientRequest {
 
 
     public native void setTestCommand(String value);
+
+    public native void setSetExecutionContext();
+
+    public native void setSetExecutionContext(SetExecutionContextRequest value);
 }
 
