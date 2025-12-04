@@ -1,3 +1,6 @@
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.web.client.api.remotefilesource;
 
 import com.vertispan.tsdefs.annotations.TsInterface;
@@ -88,9 +91,8 @@ public class JsRemoteFileSourceService extends HasEventHandling {
 
         // Wrap in google.protobuf.Any with the proper typeUrl
         Uint8Array anyWrappedBytes = wrapInAny(
-            "type.googleapis.com/io.deephaven.proto.backplane.grpc.RemoteFileSourcePluginFetchRequest",
-            innerRequestBytes
-        );
+                "type.googleapis.com/io.deephaven.proto.backplane.grpc.RemoteFileSourcePluginFetchRequest",
+                innerRequestBytes);
 
         // Create a FlightDescriptor with the command
         FlightDescriptor descriptor = new FlightDescriptor();
@@ -98,31 +100,31 @@ public class JsRemoteFileSourceService extends HasEventHandling {
         descriptor.setCmd(anyWrappedBytes);
 
         // Send the getFlightInfo request
-        return Callbacks.<FlightInfo, Object>grpcUnaryPromise(c ->
-            connection.flightServiceClient().getFlightInfo(descriptor, connection.metadata(), c::apply)
-        ).then(flightInfo -> {
-            // The first endpoint should contain the ticket for the plugin instance
-            if (flightInfo.getEndpointList().length > 0) {
-                // Get the Arrow Flight ticket from the endpoint
-                io.deephaven.javascript.proto.dhinternal.arrow.flight.protocol.flight_pb.Ticket flightTicket =
-                    flightInfo.getEndpointList().getAt(0).getTicket();
+        return Callbacks.<FlightInfo, Object>grpcUnaryPromise(
+                c -> connection.flightServiceClient().getFlightInfo(descriptor, connection.metadata(), c::apply))
+                .then(flightInfo -> {
+                    // The first endpoint should contain the ticket for the plugin instance
+                    if (flightInfo.getEndpointList().length > 0) {
+                        // Get the Arrow Flight ticket from the endpoint
+                        io.deephaven.javascript.proto.dhinternal.arrow.flight.protocol.flight_pb.Ticket flightTicket =
+                                flightInfo.getEndpointList().getAt(0).getTicket();
 
-                // Convert the Arrow Flight ticket to a Deephaven ticket
-                Ticket dhTicket = new Ticket();
-                dhTicket.setTicket(flightTicket.getTicket_asU8());
+                        // Convert the Arrow Flight ticket to a Deephaven ticket
+                        Ticket dhTicket = new Ticket();
+                        dhTicket.setTicket(flightTicket.getTicket_asU8());
 
-                // Create a TypedTicket for the plugin instance
-                TypedTicket typedTicket = new TypedTicket();
-                typedTicket.setTicket(dhTicket);
-                typedTicket.setType("RemoteFileSourceService");
+                        // Create a TypedTicket for the plugin instance
+                        TypedTicket typedTicket = new TypedTicket();
+                        typedTicket.setTicket(dhTicket);
+                        typedTicket.setType("RemoteFileSourceService");
 
-                // Create a new service instance with the typed ticket and connect to it
-                JsRemoteFileSourceService service = new JsRemoteFileSourceService(connection, typedTicket);
-                return service.connect();
-            } else {
-                return Promise.reject("No endpoints returned from RemoteFileSource plugin fetch");
-            }
-        });
+                        // Create a new service instance with the typed ticket and connect to it
+                        JsRemoteFileSourceService service = new JsRemoteFileSourceService(connection, typedTicket);
+                        return service.connect();
+                    } else {
+                        return Promise.reject("No endpoints returned from RemoteFileSource plugin fetch");
+                    }
+                });
     }
 
     /**
@@ -148,7 +150,8 @@ public class JsRemoteFileSourceService extends HasEventHandling {
                     Uint8Array payload = res.getData().getPayload_asU8();
 
                     try {
-                        RemoteFileSourceServerRequest message = RemoteFileSourceServerRequest.deserializeBinary(payload);
+                        RemoteFileSourceServerRequest message =
+                                RemoteFileSourceServerRequest.deserializeBinary(payload);
 
                         // Check which message type it is
                         if (message.hasMetaRequest()) {
@@ -156,17 +159,15 @@ public class JsRemoteFileSourceService extends HasEventHandling {
                             RemoteFileSourceMetaRequest request = message.getMetaRequest();
 
                             // Fire request event (include request_id from wrapper)
-                            DomGlobal.setTimeout(ignore ->
-                                fireEvent(EVENT_REQUEST, new ResourceRequestEvent(message.getRequestId(), request)), 0);
+                            DomGlobal.setTimeout(ignore -> fireEvent(EVENT_REQUEST,
+                                    new ResourceRequestEvent(message.getRequestId(), request)), 0);
                         } else {
                             // Unknown message type
-                            DomGlobal.setTimeout(ignore ->
-                                fireEvent(EVENT_MESSAGE, res.getData()), 0);
+                            DomGlobal.setTimeout(ignore -> fireEvent(EVENT_MESSAGE, res.getData()), 0);
                         }
                     } catch (Exception e) {
                         // Failed to parse as proto, fire generic message event
-                        DomGlobal.setTimeout(ignore ->
-                            fireEvent(EVENT_MESSAGE, res.getData()), 0);
+                        DomGlobal.setTimeout(ignore -> fireEvent(EVENT_MESSAGE, res.getData()), 0);
                     }
                 }
             });
@@ -175,13 +176,11 @@ public class JsRemoteFileSourceService extends HasEventHandling {
                 if (!status.isOk()) {
                     reject.onInvoke(status.getDetails());
                 }
-                DomGlobal.setTimeout(ignore ->
-                    fireEvent(EVENT_CLOSE), 0);
+                DomGlobal.setTimeout(ignore -> fireEvent(EVENT_CLOSE), 0);
                 closeStream();
             });
 
-            messageStream.onEnd(status ->
-                closeStream());
+            messageStream.onEnd(status -> closeStream());
 
             // First message establishes a connection w/ the plugin object instance we're talking to
             StreamRequest req = new StreamRequest();
@@ -193,8 +192,8 @@ public class JsRemoteFileSourceService extends HasEventHandling {
     }
 
     /**
-     * Test method to verify bidirectional communication.
-     * Sends a test command to the server, which will request a resource back from the client.
+     * Test method to verify bidirectional communication. Sends a test command to the server, which will request a
+     * resource back from the client.
      *
      * @param resourceName the resource name to use for the test (e.g., "com/example/Test.java")
      */
@@ -241,8 +240,8 @@ public class JsRemoteFileSourceService extends HasEventHandling {
     }
 
     /**
-     * Event details for a resource request from the server.
-     * Wraps the proto RemoteFileSourceMetaRequest and provides a respond() method.
+     * Event details for a resource request from the server. Wraps the proto RemoteFileSourceMetaRequest and provides a
+     * respond() method.
      */
     @TsInterface
     @TsName(namespace = "dh.remotefilesource", name = "ResourceRequest")
@@ -351,11 +350,16 @@ public class JsRemoteFileSourceService extends HasEventHandling {
     }
 
     private static int sizeOfVarint(int value) {
-        if (value < 0) return 10;
-        if (value < 128) return 1;
-        if (value < 16384) return 2;
-        if (value < 2097152) return 3;
-        if (value < 268435456) return 4;
+        if (value < 0)
+            return 10;
+        if (value < 128)
+            return 1;
+        if (value < 16384)
+            return 2;
+        if (value < 2097152)
+            return 3;
+        if (value < 268435456)
+            return 4;
         return 5;
     }
 
