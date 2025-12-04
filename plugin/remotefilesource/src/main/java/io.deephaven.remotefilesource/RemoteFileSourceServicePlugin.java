@@ -14,6 +14,7 @@ import io.deephaven.proto.backplane.grpc.RemoteFileSourceClientRequest;
 import io.deephaven.proto.backplane.grpc.RemoteFileSourceMetaRequest;
 import io.deephaven.proto.backplane.grpc.RemoteFileSourceMetaResponse;
 import io.deephaven.proto.backplane.grpc.RemoteFileSourceServerRequest;
+import io.deephaven.proto.backplane.grpc.SetExecutionContextResponse;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -26,6 +27,18 @@ import java.util.concurrent.TimeUnit;
 @AutoService(ObjectType.class)
 public class RemoteFileSourceServicePlugin extends ObjectTypeBase {
     private static final Logger log = LoggerFactory.getLogger(RemoteFileSourceServicePlugin.class);
+
+    /**
+     * The execution context ID that identifies the currently active RemoteFileSourceMessageStream.
+     * This corresponds to the clientSessionId of the most recent script execution.
+     */
+    private static volatile String executionContextId;
+
+    /**
+     * Top-level package names that should be resolved from the remote source
+     * (e.g., ["com.example", "org.mycompany"]).
+     */
+    private static volatile java.util.List<String> topLevelPackages = new java.util.ArrayList<>();
 
     private volatile RemoteFileSourceMessageStream messageStream;
     private final String clientSessionId;
@@ -40,6 +53,57 @@ public class RemoteFileSourceServicePlugin extends ObjectTypeBase {
             log.info().append("RemoteFileSourceServicePlugin created with clientSessionId: ").append(clientSessionId)
                     .endl();
         }
+    }
+
+    /**
+     * Gets the current execution context ID.
+     *
+     * @return the execution context ID, or null if not set
+     */
+    public static String getExecutionContextId() {
+        return executionContextId;
+    }
+
+    /**
+     * Gets the top-level package names that should be resolved from the remote source.
+     *
+     * @return the list of top-level package names
+     */
+    public static java.util.List<String> getTopLevelPackages() {
+        return new java.util.ArrayList<>(topLevelPackages);
+    }
+
+    /**
+     * Sets the execution context ID to identify the currently active RemoteFileSourceMessageStream.
+     * This should be called when a script execution begins to indicate which client session should
+     * provide source files.
+     *
+     * @param contextId the execution context ID (typically matches a clientSessionId)
+     * @param packages list of top-level package names to resolve from remote source
+     */
+    public static void setExecutionContextId(String contextId, java.util.List<String> packages) {
+        executionContextId = contextId;
+        topLevelPackages = packages != null ? new java.util.ArrayList<>(packages) : new java.util.ArrayList<>();
+        log.info().append("Execution context ID set to: ").append(contextId)
+                .append(" with packages: ").append(String.join(", ", topLevelPackages)).endl();
+    }
+
+    /**
+     * Sets the execution context ID without updating packages (backwards compatibility).
+     *
+     * @param contextId the execution context ID (typically matches a clientSessionId)
+     */
+    public static void setExecutionContextId(String contextId) {
+        setExecutionContextId(contextId, java.util.Collections.emptyList());
+    }
+
+    /**
+     * Clears the execution context ID and top-level packages.
+     */
+    public static void clearExecutionContextId() {
+        executionContextId = null;
+        topLevelPackages = new java.util.ArrayList<>();
+        log.info().append("Execution context ID cleared").endl();
     }
 
     @Override
@@ -80,7 +144,7 @@ public class RemoteFileSourceServicePlugin extends ObjectTypeBase {
     /**
      * A message stream for the RemoteFileSourceService.
      */
-    private static class RemoteFileSourceMessageStream implements MessageStream {
+    public static class RemoteFileSourceMessageStream implements MessageStream {
         private final MessageStream connection;
         private final Map<String, CompletableFuture<byte[]>> pendingRequests = new ConcurrentHashMap<>();
         private final String connectionId;
@@ -141,6 +205,30 @@ public class RemoteFileSourceServicePlugin extends ObjectTypeBase {
                         String resourceName = command.substring(5).trim();
                         log.info().append("Client initiated test for resource: ").append(resourceName).endl();
                         testRequestResource(resourceName);
+                    }
+                } else if (message.hasSetExecutionContext()) {
+                    // Client is setting the execution context ID
+                    String contextId = message.getSetExecutionContext().getExecutionContextId();
+                    java.util.List<String> packages = message.getSetExecutionContext().getTopLevelPackagesList();
+                    setExecutionContextId(contextId, packages);
+                    log.info().append("Client set execution context ID to: ").append(contextId)
+                            .append(" with ").append(packages.size()).append(" top-level packages").endl();
+
+                    // Send acknowledgment back to client
+                    SetExecutionContextResponse response = SetExecutionContextResponse.newBuilder()
+                            .setExecutionContextId(contextId)
+                            .setSuccess(true)
+                            .build();
+
+                    RemoteFileSourceServerRequest serverRequest = RemoteFileSourceServerRequest.newBuilder()
+                            .setRequestId(requestId)
+                            .setSetExecutionContextResponse(response)
+                            .build();
+
+                    try {
+                        connection.onData(ByteBuffer.wrap(serverRequest.toByteArray()));
+                    } catch (ObjectCommunicationException e) {
+                        log.error().append("Failed to send execution context acknowledgment: ").append(e).endl();
                     }
                 } else {
                     log.warn().append("Received unknown message type from client").endl();
