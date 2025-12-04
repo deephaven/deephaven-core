@@ -32,7 +32,9 @@ public class ObjectSetResult implements SsmChunkedMinMaxOperator.SetResult {
             newResult = null;
         } else {
             final ObjectSegmentedSortedMultiset ObjectSsm = (ObjectSegmentedSortedMultiset) ssm;
+            // region nan handling
             newResult = minimum ? ObjectSsm.getMinObject() : ObjectSsm.getMaxObject();
+            // endregion nan handling
         }
         return setResult(destination, newResult);
     }

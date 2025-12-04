@@ -43,6 +43,8 @@ public class ObjectPercentileTypeHelper implements SsmChunkedPercentileOperator.
         if (totalSize == 0) {
             return setResult(destination, null);
         } else {
+            // region maybeHandleNaN
+            // endregion maybeHandleNaN
             final long targetLo = Math.round((totalSize - 1) * percentile) + 1;
             if (loSize < targetLo) {
                 ssmHi.moveFrontToBack(ssmLo, targetLo - loSize);

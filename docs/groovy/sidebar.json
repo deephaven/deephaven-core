@@ -797,6 +797,10 @@
                     "path": "conceptual/query-engine/engine-locking.md"
                   },
                   {
+                    "label": "Formulas and threads",
+                    "path": "how-to-guides/performance/formula-threads.md"
+                  },
+                  {
                     "label": "Barrage metrics",
                     "path": "how-to-guides/performance/barrage-performance.md"
                   },

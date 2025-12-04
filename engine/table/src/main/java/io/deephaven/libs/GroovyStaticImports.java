@@ -123,6 +123,42 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#absAvg(io.deephaven.vector.ShortVector) */
     public static  double absAvg( io.deephaven.vector.ShortVector values ) {return Numeric.absAvg( values );}
 
+    /** @see io.deephaven.function.Numeric#absSum(byte[]) */
+    public static  long absSum( byte... values ) {return Numeric.absSum( values );}
+
+    /** @see io.deephaven.function.Numeric#absSum(double[]) */
+    public static  double absSum( double... values ) {return Numeric.absSum( values );}
+
+    /** @see io.deephaven.function.Numeric#absSum(float[]) */
+    public static  double absSum( float... values ) {return Numeric.absSum( values );}
+
+    /** @see io.deephaven.function.Numeric#absSum(int[]) */
+    public static  long absSum( int... values ) {return Numeric.absSum( values );}
+
+    /** @see io.deephaven.function.Numeric#absSum(long[]) */
+    public static  long absSum( long... values ) {return Numeric.absSum( values );}
+
+    /** @see io.deephaven.function.Numeric#absSum(short[]) */
+    public static  long absSum( short... values ) {return Numeric.absSum( values );}
+
+    /** @see io.deephaven.function.Numeric#absSum(io.deephaven.vector.ByteVector) */
+    public static  long absSum( io.deephaven.vector.ByteVector values ) {return Numeric.absSum( values );}
+
+    /** @see io.deephaven.function.Numeric#absSum(io.deephaven.vector.DoubleVector) */
+    public static  double absSum( io.deephaven.vector.DoubleVector values ) {return Numeric.absSum( values );}
+
+    /** @see io.deephaven.function.Numeric#absSum(io.deephaven.vector.FloatVector) */
+    public static  double absSum( io.deephaven.vector.FloatVector values ) {return Numeric.absSum( values );}
+
+    /** @see io.deephaven.function.Numeric#absSum(io.deephaven.vector.IntVector) */
+    public static  long absSum( io.deephaven.vector.IntVector values ) {return Numeric.absSum( values );}
+
+    /** @see io.deephaven.function.Numeric#absSum(io.deephaven.vector.LongVector) */
+    public static  long absSum( io.deephaven.vector.LongVector values ) {return Numeric.absSum( values );}
+
+    /** @see io.deephaven.function.Numeric#absSum(io.deephaven.vector.ShortVector) */
+    public static  long absSum( io.deephaven.vector.ShortVector values ) {return Numeric.absSum( values );}
+
     /** @see io.deephaven.function.Numeric#acos(byte) */
     public static  double acos( byte value ) {return Numeric.acos( value );}
 
