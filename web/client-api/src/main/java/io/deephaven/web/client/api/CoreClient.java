@@ -155,8 +155,8 @@ public class CoreClient extends HasEventHandling {
         return new JsStorageService(ideConnection.connection.get());
     }
 
-    public JsRemoteFileSourceService getRemoteFileSourceService() {
-        return new JsRemoteFileSourceService(ideConnection.connection.get());
+    public Promise<JsRemoteFileSourceService> getRemoteFileSourceService() {
+        return JsRemoteFileSourceService.fetchPlugin(ideConnection.connection.get());
     }
 
     public Promise<IdeConnection> getAsIdeConnection() {
