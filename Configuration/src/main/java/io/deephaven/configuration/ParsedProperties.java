@@ -127,7 +127,8 @@ public class ParsedProperties extends Properties {
      * @param context the {@link ConfigurationContext} for determining environment settings
      * @param propertyInputStreamLoader the loader to use for retrieving property files
      */
-    public ParsedProperties(final boolean ignoreScopes, @NotNull final ConfigurationContext context, @NotNull final PropertyInputStreamLoader propertyInputStreamLoader) {
+    public ParsedProperties(final boolean ignoreScopes, @NotNull final ConfigurationContext context,
+            @NotNull final PropertyInputStreamLoader propertyInputStreamLoader) {
         this.context = context;
         finalProperties = new HashSet<>();
         lineNumbers = new HashMap<>();
