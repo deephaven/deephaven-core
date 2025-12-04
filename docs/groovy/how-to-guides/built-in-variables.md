@@ -51,7 +51,7 @@ Each partition can then be processed independently, and operations within each p
 
 ### 2. By → update → ungroup pattern
 
-Group the data, perform the update operation within each group, then ungroup. This allows you to reference values within each group without relying on absolute row positions.
+[Group](../reference/table-operations/group-and-aggregate/groupBy.md) the data, perform the update operation within each group, then [ungroup](../reference/table-operations/group-and-aggregate/ungroup.md). This allows you to reference values within each group without relying on absolute row positions.
 
 ```groovy order=source,grouped,result
 source = emptyTable(10).update("Group = i % 3", "Value = i * 10")
@@ -64,11 +64,11 @@ result = grouped.ungroup().update("PrevValue = ii > 0 ? Value_[ii-1] : null")
 ```
 
 > [!NOTE]
-> Be aware that the by → update → ungroup pattern can cause tick expansion in ticking tables, where a single update to one row may trigger updates to multiple rows in the result.
+> Be aware that the groupBy → update → ungroup pattern can cause tick expansion in ticking tables, where a single update to one row may trigger updates to multiple rows in the result.
 
 ### 3. As-of joins
 
-If you have a matching column (such as a timestamp or sequence number) that can be reliably used instead of row position, use an as-of join.
+If you have a matching column (such as a timestamp or sequence number) that can be reliably used instead of row position, use an [as-of join](../reference/table-operations/join/aj.md).
 
 ```groovy order=source,shifted,result
 source = emptyTable(10).update("Timestamp = (long)i", "Value = i * 10")
@@ -84,8 +84,8 @@ result = shifted.aj(source, "ShiftedTimestamp >= Timestamp", "PrevValue = Value"
 
 The performance characteristics of these approaches depend on your data:
 
-- **As-of joins** require a hash table for each group, with the full set of timestamp and row key data stored individually.
-- **By → update → ungroup** requires a hash table and a rowset.
+- **[As-of joins](../reference/table-operations/join/aj.md)** require a hash table for each group, with the full set of timestamp and row key data stored individually.
+- **[`groupBy`](../reference/table-operations/group-and-aggregate/groupBy.md) → [`update`](../reference/table-operations/select/update.md) → [`ungroup`](../reference/table-operations/group-and-aggregate/ungroup.md)** requires a hash table and a rowset.
 - The relative performance depends on your specific data patterns and cannot be determined from first principles alone.
 
 Choose the approach that best fits your data structure and access patterns.
