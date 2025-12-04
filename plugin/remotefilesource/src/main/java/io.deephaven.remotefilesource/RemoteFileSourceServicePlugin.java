@@ -1,3 +1,6 @@
+//
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.remotefilesource;
 
 import com.google.auto.service.AutoService;
@@ -34,7 +37,8 @@ public class RemoteFileSourceServicePlugin extends ObjectTypeBase {
     public RemoteFileSourceServicePlugin(String clientSessionId) {
         this.clientSessionId = clientSessionId;
         if (clientSessionId != null) {
-            log.info().append("RemoteFileSourceServicePlugin created with clientSessionId: ").append(clientSessionId).endl();
+            log.info().append("RemoteFileSourceServicePlugin created with clientSessionId: ").append(clientSessionId)
+                    .endl();
         }
     }
 
@@ -49,22 +53,20 @@ public class RemoteFileSourceServicePlugin extends ObjectTypeBase {
     }
 
     @Override
-    public MessageStream compatibleClientConnection(Object object, MessageStream connection) throws ObjectCommunicationException {
+    public MessageStream compatibleClientConnection(Object object, MessageStream connection)
+            throws ObjectCommunicationException {
         connection.onData(ByteBuffer.allocate(0));
         messageStream = new RemoteFileSourceMessageStream(connection, clientSessionId);
         return messageStream;
     }
 
     /**
-     * Test method to trigger a resource request from the server to the client.
-     * Can be called from the console to test bidirectional communication.
-     *
-     * Usage from console:
+     * Test method to trigger a resource request from the server to the client. Can be called from the console to test
+     * bidirectional communication. Usage from console:
      * <pre>
      * service = remote_file_source_service  # The plugin instance
      * service.testRequestResource("com/example/MyClass.java")
      * </pre>
-     *
      * @param resourceName the resource to request from the client
      */
     public void testRequestResource(String resourceName) {
@@ -81,13 +83,14 @@ public class RemoteFileSourceServicePlugin extends ObjectTypeBase {
     private static class RemoteFileSourceMessageStream implements MessageStream {
         private final MessageStream connection;
         private final Map<String, CompletableFuture<byte[]>> pendingRequests = new ConcurrentHashMap<>();
-        private volatile String connectionId;
+        private final String connectionId;
 
         public RemoteFileSourceMessageStream(final MessageStream connection, final String clientSessionId) {
             this.connection = connection;
             this.connectionId = clientSessionId; // Initialize with the ID from the fetch request
             if (clientSessionId != null) {
-                log.info().append("RemoteFileSourceMessageStream initialized with clientSessionId: ").append(clientSessionId).endl();
+                log.info().append("RemoteFileSourceMessageStream initialized with clientSessionId: ")
+                        .append(clientSessionId).endl();
             }
         }
 
@@ -193,8 +196,8 @@ public class RemoteFileSourceServicePlugin extends ObjectTypeBase {
         }
 
         /**
-         * Test method to request a resource and log the result.
-         * This can be called from the server console to test the bidirectional communication.
+         * Test method to request a resource and log the result. This can be called from the server console to test the
+         * bidirectional communication.
          *
          * @param resourceName the resource to request
          */
