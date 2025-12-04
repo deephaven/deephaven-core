@@ -16,6 +16,8 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.remotefi
 import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.remotefilesource_pb.RemoteFileSourceMetaResponse;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.remotefilesource_pb.RemoteFileSourcePluginFetchRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.remotefilesource_pb.RemoteFileSourceServerRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.remotefilesource_pb.RemoteFileSourceSetConnectionIdRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.remotefilesource_pb.RemoteFileSourceSetConnectionIdResponse;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.ticket_pb.Ticket;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.ticket_pb.TypedTicket;
 import io.deephaven.web.client.api.Callbacks;
@@ -27,6 +29,8 @@ import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsProperty;
 import jsinterop.base.Js;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.function.Supplier;
 
 /**
@@ -43,7 +47,6 @@ public class JsRemoteFileSourceService extends HasEventHandling {
     @JsProperty(namespace = "dh.remotefilesource.RemoteFileSourceService")
     public static final String EVENT_REQUEST = "request";
 
-    private final WorkerConnection connection;
     private final TypedTicket typedTicket;
 
     private final Supplier<BiDiStream<StreamRequest, StreamResponse>> streamFactory;
@@ -51,9 +54,12 @@ public class JsRemoteFileSourceService extends HasEventHandling {
 
     private boolean hasFetched;
 
+    // Track pending setConnectionId requests
+    private final Map<String, Promise.PromiseExecutorCallbackFn.ResolveCallbackFn<Boolean>> pendingSetConnectionIdRequests = new HashMap<>();
+    private int requestIdCounter = 0;
+
     @JsIgnore
     private JsRemoteFileSourceService(WorkerConnection connection, TypedTicket typedTicket) {
-        this.connection = connection;
         this.typedTicket = typedTicket;
         this.hasFetched = false;
 
@@ -154,20 +160,26 @@ public class JsRemoteFileSourceService extends HasEventHandling {
                             RemoteFileSourceMetaRequest request = message.getMetaRequest();
 
                             // Fire request event (include request_id from wrapper)
-                            DomGlobal.setTimeout(ignore -> {
-                                fireEvent(EVENT_REQUEST, new ResourceRequestEvent(message.getRequestId(), request));
-                            }, 0);
+                            DomGlobal.setTimeout(ignore ->
+                                fireEvent(EVENT_REQUEST, new ResourceRequestEvent(message.getRequestId(), request)), 0);
+                        } else if (message.hasSetConnectionIdResponse()) {
+                            // Server acknowledged connection ID
+                            String requestId = message.getRequestId();
+                            Promise.PromiseExecutorCallbackFn.ResolveCallbackFn<Boolean> resolveCallback =
+                                    pendingSetConnectionIdRequests.remove(requestId);
+                            if (resolveCallback != null) {
+                                RemoteFileSourceSetConnectionIdResponse response = message.getSetConnectionIdResponse();
+                                resolveCallback.onInvoke(response.getSuccess());
+                            }
                         } else {
                             // Unknown message type
-                            DomGlobal.setTimeout(ignore -> {
-                                fireEvent(EVENT_MESSAGE, res.getData());
-                            }, 0);
+                            DomGlobal.setTimeout(ignore ->
+                                fireEvent(EVENT_MESSAGE, res.getData()), 0);
                         }
                     } catch (Exception e) {
                         // Failed to parse as proto, fire generic message event
-                        DomGlobal.setTimeout(ignore -> {
-                            fireEvent(EVENT_MESSAGE, res.getData());
-                        }, 0);
+                        DomGlobal.setTimeout(ignore ->
+                            fireEvent(EVENT_MESSAGE, res.getData()), 0);
                     }
                 }
             });
@@ -176,15 +188,13 @@ public class JsRemoteFileSourceService extends HasEventHandling {
                 if (!status.isOk()) {
                     reject.onInvoke(status.getDetails());
                 }
-                DomGlobal.setTimeout(ignore -> {
-                    fireEvent(EVENT_CLOSE);
-                }, 0);
+                DomGlobal.setTimeout(ignore ->
+                    fireEvent(EVENT_CLOSE), 0);
                 closeStream();
             });
 
-            messageStream.onEnd(status -> {
-                closeStream();
-            });
+            messageStream.onEnd(status ->
+                closeStream());
 
             // First message establishes a connection w/ the plugin object instance we're talking to
             StreamRequest req = new StreamRequest();
@@ -196,37 +206,6 @@ public class JsRemoteFileSourceService extends HasEventHandling {
     }
 
     /**
-     * Sends a message to the server-side plugin.
-     *
-     * @param payload the message data to send (string, ArrayBuffer, or typed array)
-     */
-    @JsMethod
-    public void sendMessage(Object payload) {
-        if (messageStream == null) {
-            throw new IllegalStateException("Message stream not connected");
-        }
-
-        StreamRequest req = new StreamRequest();
-        ClientData clientData = new ClientData();
-
-        // Convert the payload to Uint8Array
-        Uint8Array data;
-        if (payload instanceof String) {
-            // For now, just convert string to UTF-8 bytes
-            // In the future, we might want to wrap in a proper proto message
-            data = stringToUtf8((String) payload);
-        } else if (payload instanceof Uint8Array) {
-            data = (Uint8Array) payload;
-        } else {
-            data = Js.uncheckedCast(payload);
-        }
-
-        clientData.setPayload(data);
-        req.setData(clientData);
-        messageStream.send(req);
-    }
-
-    /**
      * Test method to verify bidirectional communication.
      * Sends a test command to the server, which will request a resource back from the client.
      *
@@ -234,16 +213,49 @@ public class JsRemoteFileSourceService extends HasEventHandling {
      */
     @JsMethod
     public void testBidirectionalCommunication(String resourceName) {
+        RemoteFileSourceClientRequest clientRequest = new RemoteFileSourceClientRequest();
+        clientRequest.setRequestId(""); // Empty request_id for test commands
+        clientRequest.setTestCommand("TEST:" + resourceName);
+        sendClientRequest(clientRequest);
+    }
+
+    /**
+     * Sets the connection ID for this service instance.
+     * This allows the server to identify and track this specific client connection.
+     *
+     * @param connectionId a unique identifier for this connection
+     * @return a promise that resolves to true if the server successfully set the connection ID, false otherwise
+     */
+    @JsMethod
+    public Promise<Boolean> setConnectionId(String connectionId) {
+        return new Promise<>((resolve, reject) -> {
+            // Generate a unique request ID
+            String requestId = "setConnectionId-" + (requestIdCounter++);
+
+            // Store the resolve callback to call when we get the acknowledgment
+            pendingSetConnectionIdRequests.put(requestId, resolve);
+
+            RemoteFileSourceSetConnectionIdRequest setConnIdRequest = new RemoteFileSourceSetConnectionIdRequest();
+            setConnIdRequest.setConnectionId(connectionId);
+
+            RemoteFileSourceClientRequest clientRequest = new RemoteFileSourceClientRequest();
+            clientRequest.setRequestId(requestId);
+            clientRequest.setSetConnectionId(setConnIdRequest);
+            sendClientRequest(clientRequest);
+        });
+    }
+
+    /**
+     * Helper method to send a RemoteFileSourceClientRequest to the server.
+     *
+     * @param clientRequest the client request to send
+     */
+    @JsIgnore
+    private void sendClientRequest(RemoteFileSourceClientRequest clientRequest) {
         if (messageStream == null) {
             throw new IllegalStateException("Message stream not connected");
         }
 
-        // Build RemoteFileSourceClientRequest with test_command
-        RemoteFileSourceClientRequest clientRequest = new RemoteFileSourceClientRequest();
-        clientRequest.setRequestId(""); // Empty request_id for test commands
-        clientRequest.setTestCommand("TEST:" + resourceName);
-
-        // Send via message stream
         StreamRequest req = new StreamRequest();
         ClientData clientData = new ClientData();
         clientData.setPayload(clientRequest.serializeBinary());
@@ -298,10 +310,6 @@ public class JsRemoteFileSourceService extends HasEventHandling {
          */
         @JsMethod
         public void respond(Object content) {
-            if (messageStream == null) {
-                throw new IllegalStateException("Message stream not connected");
-            }
-
             // Build RemoteFileSourceMetaResponse proto
             RemoteFileSourceMetaResponse response = new RemoteFileSourceMetaResponse();
 
@@ -327,12 +335,7 @@ public class JsRemoteFileSourceService extends HasEventHandling {
             clientRequest.setRequestId(requestId);
             clientRequest.setMetaResponse(response);
 
-            // Send via message stream
-            StreamRequest req = new StreamRequest();
-            ClientData clientData = new ClientData();
-            clientData.setPayload(clientRequest.serializeBinary());
-            req.setData(clientData);
-            messageStream.send(req);
+            sendClientRequest(clientRequest);
         }
     }
 
