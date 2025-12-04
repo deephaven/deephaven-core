@@ -11,18 +11,50 @@ option go_package = "github.com/deephaven/deephaven-core/go/internal/proto/remot
 
 import "deephaven_core/proto/ticket.proto";
 
-message RemoteFileSourcePluginRequest {
-  // A client-specified identifier used to identify the response for this request when multiple requests are in flight.
-  // This must be set to a unique value.
+// Server → Client: Requests sent from server to client via MessageStream
+message RemoteFileSourceServerRequest {
+  // Unique identifier for this request, used to correlate the response
   string request_id = 1;
+
   oneof request {
-    RemoteFileSourceMetaRequest meta = 2;
-    RemoteFileSourceSetConnectionIdRequest set_connection_id = 3;
+    // Request source data/resource from the client
+    RemoteFileSourceMetaRequest meta_request = 2;
   }
 }
 
-// Request meta info from the server plugin
+// Client → Server: Requests/responses sent from client to server via MessageStream
+message RemoteFileSourceClientRequest {
+  // The request_id from the ServerRequest this is responding to (if applicable)
+  string request_id = 1;
+
+  oneof request {
+    // Response to a resource request
+    RemoteFileSourceMetaResponse meta_response = 2;
+
+    // Future: other client-initiated messages
+    RemoteFileSourceSetConnectionIdRequest set_connection_id = 3;
+
+    // Test command (e.g., "TEST:com/example/Test.java") - client triggers server to request a resource back
+    string test_command = 4;
+  }
+}
+
+// Request source data/resource from the client
 message RemoteFileSourceMetaRequest {
+  // The name/path of the resource being requested (e.g., "com/example/MyClass.java")
+  string resource_name = 1;
+}
+
+// Response to a resource request
+message RemoteFileSourceMetaResponse {
+  // The content of the resource, or empty if not found
+  bytes content = 1;
+
+  // Indicates whether the resource was found
+  bool found = 2;
+
+  // Optional: error message if the resource could not be retrieved
+  string error = 3;
 }
 
 message RemoteFileSourceSetConnectionIdRequest {
@@ -30,7 +62,7 @@ message RemoteFileSourceSetConnectionIdRequest {
   string connection_id = 1;
 }
 
-// Fetch the remote file source plugin into the specified ticket
+// Fetch the remote file source plugin into the specified ticket (Flight command, not MessageStream)
 message RemoteFileSourcePluginFetchRequest {
   io.deephaven.proto.backplane.grpc.Ticket result_id = 1;
 }
