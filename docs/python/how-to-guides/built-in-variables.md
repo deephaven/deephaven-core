@@ -40,7 +40,7 @@ When working with append-only tables where you need to reference preceding or fo
 
 Partition an append-only source table into multiple smaller append-only tables. This can make operations more manageable and efficient.
 
-```python order=source,partitioned
+```python order=null
 from deephaven import empty_table
 
 source = empty_table(20).update(formulas=["GroupKey = i % 3", "Value = i * 10"])
@@ -48,6 +48,8 @@ source = empty_table(20).update(formulas=["GroupKey = i % 3", "Value = i * 10"])
 # Partition by a grouping column to create multiple append-only tables
 partitioned = source.partition_by(by=["GroupKey"])
 ```
+
+![The `source` and `partitioned` tables](../assets/reference/query-language/special-variables-source-partitioned.png)
 
 Each partition can then be processed independently, and operations within each partition can safely use `i` and `ii` since each partition is a separate table.
 

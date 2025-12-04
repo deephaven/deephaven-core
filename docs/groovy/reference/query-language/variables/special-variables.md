@@ -55,12 +55,14 @@ When working with append-only tables where you need to reference preceding or fo
 
 Partition an append-only source table into multiple smaller append-only tables. This can make operations more manageable and efficient.
 
-```groovy order=source,partitioned
+```groovy order=null
 source = emptyTable(20).update("GroupKey = i % 3", "Value = i * 10")
 
 // Partition by a grouping column to create multiple append-only tables
 partitioned = source.partitionBy("GroupKey")
 ```
+
+![The `source` and `partitioned` tables](../../../assets/reference/query-language/special-variables-source-partitioned.png)
 
 #### 2. By → update → ungroup pattern
 
