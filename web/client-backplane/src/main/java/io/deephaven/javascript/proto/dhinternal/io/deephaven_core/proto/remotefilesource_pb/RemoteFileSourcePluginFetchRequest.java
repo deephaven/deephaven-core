@@ -176,7 +176,11 @@ public class RemoteFileSourcePluginFetchRequest {
 
     public native void clearResultId();
 
+    public native void clearClientSessionId();
+
     public native Ticket getResultId();
+
+    public native String getClientSessionId();
 
     public native boolean hasResultId();
 
@@ -185,6 +189,8 @@ public class RemoteFileSourcePluginFetchRequest {
     public native void setResultId();
 
     public native void setResultId(Ticket value);
+
+    public native void setClientSessionId(String value);
 
     public native RemoteFileSourcePluginFetchRequest.ToObjectReturnType0 toObject();
 

@@ -16,8 +16,6 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.remotefi
 import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.remotefilesource_pb.RemoteFileSourceMetaResponse;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.remotefilesource_pb.RemoteFileSourcePluginFetchRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.remotefilesource_pb.RemoteFileSourceServerRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.remotefilesource_pb.RemoteFileSourceSetConnectionIdRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.remotefilesource_pb.RemoteFileSourceSetConnectionIdResponse;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.ticket_pb.Ticket;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.ticket_pb.TypedTicket;
 import io.deephaven.web.client.api.Callbacks;
@@ -29,8 +27,6 @@ import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsProperty;
 import jsinterop.base.Js;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.function.Supplier;
 
 /**
@@ -54,10 +50,6 @@ public class JsRemoteFileSourceService extends HasEventHandling {
 
     private boolean hasFetched;
 
-    // Track pending setConnectionId requests
-    private final Map<String, Promise.PromiseExecutorCallbackFn.ResolveCallbackFn<Boolean>> pendingSetConnectionIdRequests = new HashMap<>();
-    private int requestIdCounter = 0;
-
     @JsIgnore
     private JsRemoteFileSourceService(WorkerConnection connection, TypedTicket typedTicket) {
         this.typedTicket = typedTicket;
@@ -76,16 +68,20 @@ public class JsRemoteFileSourceService extends HasEventHandling {
      * Fetches a RemoteFileSource plugin instance from the server and establishes a message stream connection.
      *
      * @param connection the worker connection to use for communication
+     * @param clientSessionId optional unique identifier for this client session
      * @return a promise that resolves to a RemoteFileSourceService instance with an active message stream
      */
     @JsMethod
-    public static Promise<JsRemoteFileSourceService> fetchPlugin(WorkerConnection connection) {
+    public static Promise<JsRemoteFileSourceService> fetchPlugin(WorkerConnection connection, String clientSessionId) {
         // Create a new export ticket for the result
         Ticket resultTicket = connection.getTickets().newExportTicket();
 
         // Create the fetch request
         RemoteFileSourcePluginFetchRequest fetchRequest = new RemoteFileSourcePluginFetchRequest();
         fetchRequest.setResultId(resultTicket);
+        if (clientSessionId != null && !clientSessionId.isEmpty()) {
+            fetchRequest.setClientSessionId(clientSessionId);
+        }
 
         // Serialize the request to bytes
         Uint8Array innerRequestBytes = fetchRequest.serializeBinary();
@@ -162,15 +158,6 @@ public class JsRemoteFileSourceService extends HasEventHandling {
                             // Fire request event (include request_id from wrapper)
                             DomGlobal.setTimeout(ignore ->
                                 fireEvent(EVENT_REQUEST, new ResourceRequestEvent(message.getRequestId(), request)), 0);
-                        } else if (message.hasSetConnectionIdResponse()) {
-                            // Server acknowledged connection ID
-                            String requestId = message.getRequestId();
-                            Promise.PromiseExecutorCallbackFn.ResolveCallbackFn<Boolean> resolveCallback =
-                                    pendingSetConnectionIdRequests.remove(requestId);
-                            if (resolveCallback != null) {
-                                RemoteFileSourceSetConnectionIdResponse response = message.getSetConnectionIdResponse();
-                                resolveCallback.onInvoke(response.getSuccess());
-                            }
                         } else {
                             // Unknown message type
                             DomGlobal.setTimeout(ignore ->
@@ -217,32 +204,6 @@ public class JsRemoteFileSourceService extends HasEventHandling {
         clientRequest.setRequestId(""); // Empty request_id for test commands
         clientRequest.setTestCommand("TEST:" + resourceName);
         sendClientRequest(clientRequest);
-    }
-
-    /**
-     * Sets the connection ID for this service instance.
-     * This allows the server to identify and track this specific client connection.
-     *
-     * @param connectionId a unique identifier for this connection
-     * @return a promise that resolves to true if the server successfully set the connection ID, false otherwise
-     */
-    @JsMethod
-    public Promise<Boolean> setConnectionId(String connectionId) {
-        return new Promise<>((resolve, reject) -> {
-            // Generate a unique request ID
-            String requestId = "setConnectionId-" + (requestIdCounter++);
-
-            // Store the resolve callback to call when we get the acknowledgment
-            pendingSetConnectionIdRequests.put(requestId, resolve);
-
-            RemoteFileSourceSetConnectionIdRequest setConnIdRequest = new RemoteFileSourceSetConnectionIdRequest();
-            setConnIdRequest.setConnectionId(connectionId);
-
-            RemoteFileSourceClientRequest clientRequest = new RemoteFileSourceClientRequest();
-            clientRequest.setRequestId(requestId);
-            clientRequest.setSetConnectionId(setConnIdRequest);
-            sendClientRequest(clientRequest);
-        });
     }
 
     /**

@@ -63,12 +63,16 @@ public class RemoteFileSourceCommandResolver implements CommandResolver, WantsTi
             throw new StatusRuntimeException(Status.INVALID_ARGUMENT);
         }
 
+        // Extract optional client session ID from the request (empty string means not provided)
+        final String clientSessionId = request.getClientSessionId();
+
         final SessionState.ExportBuilder<RemoteFileSourceServicePlugin> pluginExportBuilder =
                 session.newExport(resultTicket, "RemoteFileSourcePluginFetchRequest.resultTicket");
         pluginExportBuilder.require();
 
         final SessionState.ExportObject<RemoteFileSourceServicePlugin> pluginExport =
-                pluginExportBuilder.submit(RemoteFileSourceServicePlugin::new);
+                pluginExportBuilder.submit(() -> new RemoteFileSourceServicePlugin(
+                        clientSessionId.isEmpty() ? null : clientSessionId));
 
         final Flight.FlightInfo flightInfo = Flight.FlightInfo.newBuilder()
                 .setFlightDescriptor(descriptor)

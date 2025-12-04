@@ -11,7 +11,6 @@ import io.deephaven.proto.backplane.grpc.RemoteFileSourceClientRequest;
 import io.deephaven.proto.backplane.grpc.RemoteFileSourceMetaRequest;
 import io.deephaven.proto.backplane.grpc.RemoteFileSourceMetaResponse;
 import io.deephaven.proto.backplane.grpc.RemoteFileSourceServerRequest;
-import io.deephaven.proto.backplane.grpc.RemoteFileSourceSetConnectionIdResponse;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -26,8 +25,18 @@ public class RemoteFileSourceServicePlugin extends ObjectTypeBase {
     private static final Logger log = LoggerFactory.getLogger(RemoteFileSourceServicePlugin.class);
 
     private volatile RemoteFileSourceMessageStream messageStream;
+    private final String clientSessionId;
 
-    public RemoteFileSourceServicePlugin() {}
+    public RemoteFileSourceServicePlugin() {
+        this(null);
+    }
+
+    public RemoteFileSourceServicePlugin(String clientSessionId) {
+        this.clientSessionId = clientSessionId;
+        if (clientSessionId != null) {
+            log.info().append("RemoteFileSourceServicePlugin created with clientSessionId: ").append(clientSessionId).endl();
+        }
+    }
 
     @Override
     public String name() {
@@ -42,7 +51,7 @@ public class RemoteFileSourceServicePlugin extends ObjectTypeBase {
     @Override
     public MessageStream compatibleClientConnection(Object object, MessageStream connection) throws ObjectCommunicationException {
         connection.onData(ByteBuffer.allocate(0));
-        messageStream = new RemoteFileSourceMessageStream(connection);
+        messageStream = new RemoteFileSourceMessageStream(connection, clientSessionId);
         return messageStream;
     }
 
@@ -74,8 +83,12 @@ public class RemoteFileSourceServicePlugin extends ObjectTypeBase {
         private final Map<String, CompletableFuture<byte[]>> pendingRequests = new ConcurrentHashMap<>();
         private volatile String connectionId;
 
-        public RemoteFileSourceMessageStream(final MessageStream connection) {
+        public RemoteFileSourceMessageStream(final MessageStream connection, final String clientSessionId) {
             this.connection = connection;
+            this.connectionId = clientSessionId; // Initialize with the ID from the fetch request
+            if (clientSessionId != null) {
+                log.info().append("RemoteFileSourceMessageStream initialized with clientSessionId: ").append(clientSessionId).endl();
+            }
         }
 
         /**
@@ -115,28 +128,6 @@ public class RemoteFileSourceServicePlugin extends ObjectTypeBase {
                         future.complete(content);
                     } else {
                         log.warn().append("Received response for unknown requestId: ").append(requestId).endl();
-                    }
-                } else if (message.hasSetConnectionId()) {
-                    // Client sent connection ID
-                    String newConnectionId = message.getSetConnectionId().getConnectionId();
-                    connectionId = newConnectionId;
-                    log.info().append("Set connection ID from client: ").append(newConnectionId).endl();
-
-                    // Send acknowledgment back to client
-                    RemoteFileSourceSetConnectionIdResponse response = RemoteFileSourceSetConnectionIdResponse.newBuilder()
-                            .setConnectionId(newConnectionId)
-                            .setSuccess(true)
-                            .build();
-
-                    RemoteFileSourceServerRequest serverRequest = RemoteFileSourceServerRequest.newBuilder()
-                            .setRequestId(requestId)
-                            .setSetConnectionIdResponse(response)
-                            .build();
-
-                    try {
-                        connection.onData(ByteBuffer.wrap(serverRequest.toByteArray()));
-                    } catch (ObjectCommunicationException e) {
-                        log.error().append("Failed to send connection ID acknowledgment: ").append(e).endl();
                     }
                 } else if (message.hasTestCommand()) {
                     // Client sent a test command

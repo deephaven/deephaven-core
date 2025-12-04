@@ -24,21 +24,15 @@ public class RemoteFileSourceClientRequest {
 
     public native void clearMetaResponse();
 
-    public native void clearSetConnectionId();
-
     public native void clearTestCommand();
 
     public native String getRequestId();
 
     public native RemoteFileSourceMetaResponse getMetaResponse();
 
-    public native RemoteFileSourceSetConnectionIdRequest getSetConnectionId();
-
     public native String getTestCommand();
 
     public native boolean hasMetaResponse();
-
-    public native boolean hasSetConnectionId();
 
     public native boolean hasTestCommand();
 
@@ -50,9 +44,6 @@ public class RemoteFileSourceClientRequest {
 
     public native void setMetaResponse(RemoteFileSourceMetaResponse value);
 
-    public native void setSetConnectionId();
-
-    public native void setSetConnectionId(RemoteFileSourceSetConnectionIdRequest value);
 
     public native void setTestCommand(String value);
 }
