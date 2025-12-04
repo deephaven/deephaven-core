@@ -19,6 +19,9 @@ message RemoteFileSourceServerRequest {
   oneof request {
     // Request source data/resource from the client
     RemoteFileSourceMetaRequest meta_request = 2;
+
+    // Acknowledgment that execution context was set
+    SetExecutionContextResponse set_execution_context_response = 3;
   }
 }
 
@@ -31,8 +34,11 @@ message RemoteFileSourceClientRequest {
     // Response to a resource request
     RemoteFileSourceMetaResponse meta_response = 2;
 
+    // Set the execution context ID for script execution
+    SetExecutionContextRequest set_execution_context = 3;
+
     // Test command (e.g., "TEST:com/example/Test.java") - client triggers server to request a resource back
-    string test_command = 3;
+    string test_command = 4;
   }
 }
 
@@ -54,6 +60,24 @@ message RemoteFileSourceMetaResponse {
   string error = 3;
 }
 
+// Request to set the execution context ID for script execution
+message SetExecutionContextRequest {
+  // The execution context ID to set (typically matches the clientSessionId)
+  string execution_context_id = 1;
+
+  // Top-level package names that should be resolved from the remote source
+  // (e.g., ["com.example", "org.mycompany"])
+  repeated string top_level_packages = 2;
+}
+
+// Response acknowledging execution context was set
+message SetExecutionContextResponse {
+  // The execution context ID that was set
+  string execution_context_id = 1;
+
+  // Whether the operation was successful
+  bool success = 2;
+}
 
 // Fetch the remote file source plugin into the specified ticket (Flight command, not MessageStream)
 message RemoteFileSourcePluginFetchRequest {
