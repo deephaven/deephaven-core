@@ -8,7 +8,6 @@ import com.github.javaparser.ast.expr.BinaryExpr;
 
 import java.io.*;
 import java.text.*;
-import java.time.LocalDate;
 
 public class QueryLanguageFunctionGenerator {
 
@@ -21,7 +20,7 @@ public class QueryLanguageFunctionGenerator {
         return ret;
     }
 
-    public static void main(String args[]) {
+    public static void main(String[] args) throws IOException {
         final long start = System.currentTimeMillis();
         // 0 - operation name
         // 1 - type of param 1
@@ -38,8 +37,8 @@ public class QueryLanguageFunctionGenerator {
         // 12 - optional nonzero literal value of param type 2 (for testing)
 
         MessageFormat varVarFormatter = new MessageFormat("" +
-                "    public static {3} {0}({1} a, {2} b)'{'\n" +
-                "        return a==QueryConstants.NULL_{4} || b==QueryConstants.NULL_{5} ? QueryConstants.NULL_{6} : a{7}{8}b;\n"
+                "    public static {3} {0}({1} a, {2} b)' {'\n" +
+                "        return a == QueryConstants.NULL_{4} || b == QueryConstants.NULL_{5} ? QueryConstants.NULL_{6} : a {7}{8} b;\n"
                 +
                 "    '}'");
 
@@ -149,32 +148,32 @@ public class QueryLanguageFunctionGenerator {
          * and "||"). To do so while maintaining their short-circuit behavior would require different parser changes.
          */
         MessageFormat varVarBooleanFormatter = new MessageFormat("" +
-                "    public static {3} {0}({1} a, {2} b)'{'\n" +
-                "        return a==QueryConstants.NULL_{4} || b==QueryConstants.NULL_{5} ? QueryConstants.NULL_{6} : Boolean.valueOf(a{7}{8}b);\n"
+                "    public static {3} {0}({1} a, {2} b)' {'\n" +
+                "        return a == QueryConstants.NULL_{4} || b == QueryConstants.NULL_{5} ? QueryConstants.NULL_{6} : Boolean.valueOf(a {7}{8} b);\n"
                 +
                 "    '}'");
 
 
         MessageFormat varVarCompareToFormatter = new MessageFormat("" +
                 "    public static int compareTo({1} a, {2} b) '{'\n" +
-                "        if (a==QueryConstants.NULL_{4})'{'\n" +
-                "            return (b==QueryConstants.NULL_{5}) ? 0 : -1;\n" +
+                "        if (a == QueryConstants.NULL_{4})' {'\n" +
+                "            return (b == QueryConstants.NULL_{5}) ? 0 : -1;\n" +
                 "        '}'\n" +
                 "        \n" +
-                "        if (b==QueryConstants.NULL_{5})'{'\n" +
+                "        if (b == QueryConstants.NULL_{5})' {'\n" +
                 "            return 1;\n" +
                 "        '}'\n" +
                 "\n" +
-                "        return a<b ? -1 : (a==b ? 0 : 1);\n" +
+                "        return a < b ? -1 : (a == b ? 0 : 1);\n" +
                 "    '}'");
 
         MessageFormat varFloatCompareToFormatter = new MessageFormat("" +
                 "    public static int compareTo({1} a, {2} b) '{'\n" +
-                "        if (a==QueryConstants.NULL_{4})'{'\n" +
-                "            return (b==QueryConstants.NULL_{5}) ? 0 : -1;\n" +
+                "        if (a == QueryConstants.NULL_{4})' {'\n" +
+                "            return (b == QueryConstants.NULL_{5}) ? 0 : -1;\n" +
                 "        '}'\n" +
                 "        \n" +
-                "        if (b==QueryConstants.NULL_{5})'{'\n" +
+                "        if (b == QueryConstants.NULL_{5})' {'\n" +
                 "            return 1;\n" +
                 "        '}'\n" +
                 "\n" +
@@ -183,11 +182,11 @@ public class QueryLanguageFunctionGenerator {
 
         MessageFormat varDoubleCompareToFormatter = new MessageFormat("" +
                 "    public static int compareTo({1} a, {2} b) '{'\n" +
-                "        if (a==QueryConstants.NULL_{4})'{'\n" +
-                "            return (b==QueryConstants.NULL_{5}) ? 0 : -1;\n" +
+                "        if (a == QueryConstants.NULL_{4})' {'\n" +
+                "            return (b == QueryConstants.NULL_{5}) ? 0 : -1;\n" +
                 "        '}'\n" +
                 "        \n" +
-                "        if (b==QueryConstants.NULL_{5})'{'\n" +
+                "        if (b == QueryConstants.NULL_{5}) '{'\n" +
                 "            return 1;\n" +
                 "        '}'\n" +
                 "\n" +
@@ -197,11 +196,11 @@ public class QueryLanguageFunctionGenerator {
         // should cover (long,double) and (long,float) args
         MessageFormat longDoubleCompareToFormatter = new MessageFormat("" +
                 "    public static int compareTo({1} a, {2} b) '{'\n" +
-                "        if (a==QueryConstants.NULL_{4})'{'\n" +
-                "            return (b==QueryConstants.NULL_{5}) ? 0 : -1;\n" +
+                "        if (a == QueryConstants.NULL_{4}) '{'\n" +
+                "            return (b == QueryConstants.NULL_{5}) ? 0 : -1;\n" +
                 "        '}'\n" +
                 "        \n" +
-                "        if (b==QueryConstants.NULL_{5})'{'\n" +
+                "        if (b == QueryConstants.NULL_{5}) '{'\n" +
                 "            return 1;\n" +
                 "        '}'\n\n" +
                 "        if(Double.isNaN(b)) '{'\n" +
@@ -232,17 +231,17 @@ public class QueryLanguageFunctionGenerator {
                 "    '}'");
 
         MessageFormat varVarCompareToUserFormatter = new MessageFormat("" +
-                "    public static boolean {0}({1} a, {2} b)'{'\n" +
-                "        return compareTo(a,b){9};\n" +
+                "    public static boolean {0}({1} a, {2} b) '{'\n" +
+                "        return compareTo(a, b) {9};\n" +
                 "    '}'");
 
         MessageFormat varVarEqualsFormatter = new MessageFormat("" +
                 "    public static boolean eq({1} a, {2} b) '{'\n" +
-                "        if (a==QueryConstants.NULL_{4})'{'\n" +
-                "            return (b==QueryConstants.NULL_{5});\n" +
+                "        if (a == QueryConstants.NULL_{4}) '{'\n" +
+                "            return (b == QueryConstants.NULL_{5});\n" +
                 "        '}'\n" +
                 "        \n" +
-                "        if (b==QueryConstants.NULL_{5})'{'\n" +
+                "        if (b == QueryConstants.NULL_{5}) '{'\n" +
                 "            return false;\n" +
                 "        '}'\n" +
                 "\n" +
@@ -250,42 +249,41 @@ public class QueryLanguageFunctionGenerator {
                 "    '}'");
 
         MessageFormat arrayArrayFormatter = new MessageFormat("" +
-                "    public static {3}[] {0}Array({1} a[], {2} b[])'{'\n" +
-                "        if (a.length != b.length) throw new IllegalArgumentException(\"Attempt to {10} two arrays ({1}, {2}) of different length\" +\n"
-                +
-                "                \" (a.length=\" + a.length + \", b.length=\" + b.length + '')'');\n" +
-                "        \n" +
+                "    public static {3}[] {0}Array({1} a[], {2} b[]) '{'\n" +
+                "        if (a.length != b.length) '{'\n" +
+                "            throw new IllegalArgumentException(\"Attempt to {10} two arrays ({1}, {2}) of different length (a.length=\" + a.length + \", b.length=\" + b.length + '')'');\n" +
+                "        '}'\n" +
                 "        {3}[] ret = new {3}[a.length];\n" +
                 "        for (int i = 0; i < a.length; i++) '{'\n" +
-                "            ret[i] = {0}(a[i],b[i]);\n" +
+                "            ret[i] = {0}(a[i], b[i]);\n" +
                 "        '}'\n" +
                 "        \n" +
                 "        return ret;\n" +
                 "    '}'");
 
         MessageFormat arrayVarFormatter = new MessageFormat("" +
-                "    public static {3}[] {0}Array({1} a[], {2} b)'{'\n" +
+                "    public static {3}[] {0}Array({1} a[], {2} b) '{'\n" +
                 "        {3}[] ret = new {3}[a.length];\n" +
                 "        for (int i = 0; i < a.length; i++) '{'\n" +
-                "            ret[i] = {0}(a[i],b);\n" +
+                "            ret[i] = {0}(a[i], b);\n" +
                 "        '}'\n" +
                 "\n" +
                 "        return ret;\n" +
                 "    '}'");
 
         MessageFormat varArrayFormatter = new MessageFormat("" +
-                "    public static {3}[] {0}Array({1} a, {2} b[])'{'\n" +
+                "    public static {3}[] {0}Array({1} a, {2} b[]) '{'\n" +
                 "        {3}[] ret = new {3}[b.length];\n" +
                 "        for (int i = 0; i < b.length; i++) '{'\n" +
-                "            ret[i] = {0}(a,b[i]);\n" +
+                "            ret[i] = {0}(a, b[i]);\n" +
                 "        '}'\n" +
                 "\n" +
                 "        return ret;\n" +
                 "    '}'");
 
         MessageFormat castFormatter = new MessageFormat("" +
-                "    public static {2} {2}Cast({1} a)'{'\n" +
-                "        return a==QueryConstants.NULL_{4} ? QueryConstants.NULL_{5} : ({2})a;\n" +
+                "    public static {2} {2}Cast({1} a) '{'\n" +
+                "        return a == QueryConstants.NULL_{4} ? QueryConstants.NULL_{5} : ({2})a;\n" +
                 "    '}'");
 
         /*
@@ -295,13 +293,13 @@ public class QueryLanguageFunctionGenerator {
          * See the language specification, or comments in the parser, for more details.
          */
         MessageFormat castFromObjFormatter = new MessageFormat("" +
-                "    public static {1} {1}Cast(Object a)'{'\n" +
+                "    public static {1} {1}Cast(Object a) '{'\n" +
                 "        return a==null ? QueryConstants.NULL_{4} : ({1})a;\n" +
                 "    '}'");
 
         MessageFormat negateFormatter = new MessageFormat("" +
-                "    public static {3} negate({1} a)'{'\n" +
-                "        return a==QueryConstants.NULL_{4} ? QueryConstants.NULL_{6} : -a;\n" +
+                "    public static {3} negate({1} a) '{'\n" +
+                "        return a == QueryConstants.NULL_{4} ? QueryConstants.NULL_{6} : -a;\n" +
                 "    '}'");
 
         final int sbCapacity = (int) Math.pow(2, 20);
@@ -329,30 +327,30 @@ public class QueryLanguageFunctionGenerator {
         // ------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
         buf.append("" +
-                "    public static boolean eq(Object obj1, Object obj2){\n" +
-                "        //noinspection SimplifiableBooleanExpression\n" +
-                "        return obj1==obj2 || (!(obj1==null ^ obj2==null) && obj1.equals(obj2));\n" +
+                "    public static boolean eq(Object obj1, Object obj2) {\n" +
+                "        // noinspection SimplifiableBooleanExpression\n" +
+                "        return obj1 == obj2 || (!(obj1 == null ^ obj2 == null) && obj1.equals(obj2));\n" +
                 "    }\n" +
                 "    \n" +
                 "    @SuppressWarnings({\"unchecked\"})\n" +
                 "    public static int compareTo(Comparable obj1, Comparable obj2) {\n" +
-                "        if (obj1==null){\n" +
-                "            return (obj2==null) ? 0 : -1;\n" +
+                "        if (obj1 == null) {\n" +
+                "            return (obj2 == null) ? 0 : -1;\n" +
                 "        }\n" +
                 "        \n" +
-                "        if (obj2==null){\n" +
+                "        if (obj2 == null) {\n" +
                 "            return 1;\n" +
                 "        }\n" +
                 "\n" +
                 "        return obj1.compareTo(obj2);\n" +
                 "    }\n" +
                 "\n" +
-                "    public static boolean not(boolean a){\n" +
+                "    public static boolean not(boolean a) {\n" +
                 "        return !a;\n" +
                 "    }\n" +
                 "\n" +
-                "    public static Boolean not(Boolean a){\n" +
-                "        return a==QueryConstants.NULL_BOOLEAN ? QueryConstants.NULL_BOOLEAN : Boolean.valueOf(!a);\n" +
+                "    public static Boolean not(Boolean a) {\n" +
+                "        return a == QueryConstants.NULL_BOOLEAN ? QueryConstants.NULL_BOOLEAN : Boolean.valueOf(!a);\n" +
                 "    }\n\n");
 
         // ------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -360,7 +358,7 @@ public class QueryLanguageFunctionGenerator {
 
         testBuf.append(String.join("\n",
                 "//",
-                "// Copyright (c) 2016-202 Deephaven Data Labs and Patent Pending",
+                "// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending",
                 "//",
                 "// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY",
                 "// ****** Run " + QueryLanguageFunctionGenerator.class.getSimpleName() + " to regenerate",
@@ -374,7 +372,7 @@ public class QueryLanguageFunctionGenerator {
         testBuf.append("import junit.framework.TestCase;\n\n");
 
         testBuf.append("@SuppressWarnings({\"unused\", \"WeakerAccess\", \"NumericOverflow\"})\n");
-        testBuf.append("public final class TestLanguageFunctionUtil extends TestCase {\n\n");
+        testBuf.append("public final class TestQueryLanguageFunctionUtils extends TestCase {\n\n");
 
         // ------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -692,9 +690,9 @@ public class QueryLanguageFunctionGenerator {
         testBuf.append("}\n");
 
         String fileName =
-                "./engine/table/src/main/java/io/deephaven/engine/tables/lang/QueryLanguageFunctionUtils.java";
+                "./engine/table/src/main/java/io/deephaven/engine/table/impl/lang/QueryLanguageFunctionUtils.java";
         String testFileName =
-                "./engine/table/src/test/java/io/deephaven/engine/tables/lang/TestLanguageFunctionUtil.java";
+                "./engine/table/src/test/java/io/deephaven/engine/table/impl/lang/TestQueryLanguageFunctionUtils.java";
         try {
             try (BufferedWriter out = new BufferedWriter(new FileWriter(fileName))) {
                 out.write(buf.toString());
@@ -710,7 +708,7 @@ public class QueryLanguageFunctionGenerator {
         System.out.println("Finished generating QueryLanguageFunctionUtils in "
                 + new DecimalFormat().format(System.currentTimeMillis() - start) + " millis");
         System.out.println("Wrote QueryLanguageFunctionUtils to: " + fileName);
-        System.out.println("Wrote TestLanguageFunctionUtil to: " + testFileName);
+        System.out.println("Wrote TestQueryLanguageFunctionUtils to: " + testFileName);
     }
 
     private static void append(StringBuilder buf, MessageFormat messageFormat, BinaryExpr.Operator op,
@@ -758,13 +756,13 @@ public class QueryLanguageFunctionGenerator {
         String compareTo = "";
 
         if (op == BinaryExpr.Operator.LESS) {
-            compareTo = "<0";
+            compareTo = "< 0";
         } else if (op == BinaryExpr.Operator.GREATER) {
-            compareTo = ">0";
+            compareTo = "> 0";
         } else if (op == BinaryExpr.Operator.LESS_EQUALS) {
-            compareTo = "<=0";
+            compareTo = "<= 0";
         } else if (op == BinaryExpr.Operator.GREATER_EQUALS) {
-            compareTo = ">=0";
+            compareTo = ">= 0";
         }
 
         Class<?> type1Unboxed = io.deephaven.util.type.TypeUtils.getUnboxedType(type1);
