@@ -21,17 +21,12 @@ public class SetExecutionContextRequest {
     public static native void serializeBinaryToWriter(
             SetExecutionContextRequest message, Object writer);
 
-    public native void clearExecutionContextId();
-
     public native void clearTopLevelPackagesList();
-
-    public native String getExecutionContextId();
 
     public native JsArray<String> getTopLevelPackagesList();
 
     public native Uint8Array serializeBinary();
 
-    public native void setExecutionContextId(String value);
 
     public native void setTopLevelPackagesList(JsArray<String> value);
 
