@@ -15,7 +15,7 @@ from deephaven._wrapper import JObjectWrapper
 from deephaven.column import InputColumn
 from deephaven.dtypes import DType
 from deephaven.execution_context import ExecutionContext
-from deephaven.jcompat import _to_sequence, j_lambda, j_list_to_list
+from deephaven.jcompat import j_lambda, j_list_to_list, to_sequence
 from deephaven.table import Table, TableDefinition, TableDefinitionLike
 from deephaven.time import DurationLike, InstantLike, to_j_duration, to_j_instant
 from deephaven.update_graph import auto_locking_ctx
@@ -258,7 +258,7 @@ class DynamicTableWriter(JObjectWrapper):
             DHError
         """
         try:
-            values = tuple(_to_sequence(values))
+            values = tuple(to_sequence(values))
             self._j_table_writer.logRowPermissive(values)
         except Exception as e:
             raise DHError(e, "failed to write a row.") from e
@@ -450,7 +450,7 @@ def input_table(
         else:
             j_arg_1 = TableDefinition(col_defs).j_table_definition
 
-        key_cols = _to_sequence(key_cols)
+        key_cols = to_sequence(key_cols)
         if key_cols:
             j_table = _JKeyedArrayBackedInputTable.make(j_arg_1, key_cols)
         else:

@@ -15,7 +15,7 @@ import jpy
 from deephaven import DHError
 from deephaven._wrapper import JObjectWrapper
 from deephaven.concurrency_control import Barrier, ConcurrencyControl
-from deephaven.jcompat import _to_sequence
+from deephaven.jcompat import to_sequence
 
 _JFilter = jpy.get_type("io.deephaven.api.filter.Filter")
 _JColumnName = jpy.get_type("io.deephaven.api.ColumnName")
@@ -54,7 +54,7 @@ class Filter(ConcurrencyControl["Filter"], JObjectWrapper):
             DHError
         """
         try:
-            barriers = _to_sequence(barriers)
+            barriers = to_sequence(barriers)
             return Filter(j_filter=self.j_filter.withDeclaredBarriers(*barriers))
         except Exception as e:
             raise DHError(e, "failed to create filter with declared barriers.") from e
@@ -74,7 +74,7 @@ class Filter(ConcurrencyControl["Filter"], JObjectWrapper):
             DHError
         """
         try:
-            barriers = _to_sequence(barriers)
+            barriers = to_sequence(barriers)
             return Filter(j_filter=self.j_filter.withRespectedBarriers(*barriers))
         except Exception as e:
             raise DHError(e, "failed to create filter with respected barriers.") from e
@@ -116,7 +116,7 @@ class Filter(ConcurrencyControl["Filter"], JObjectWrapper):
         Raises:
             DHError
         """
-        conditions = _to_sequence(conditions)
+        conditions = to_sequence(conditions)
         try:
             filters = [
                 cls(j_filter=j_filter)
@@ -138,7 +138,7 @@ def or_(filters: Union[str, Filter, Sequence[str], Sequence[Filter]]) -> Filter:
     """
     seq = [
         Filter.from_(f).j_filter if isinstance(f, str) else f  # type: ignore[union-attr]
-        for f in _to_sequence(filters)
+        for f in to_sequence(filters)
     ]
     return Filter(j_filter=getattr(_JFilter, "or")(*seq))
 
@@ -154,7 +154,7 @@ def and_(filters: Union[str, Filter, Sequence[str], Sequence[Filter]]) -> Filter
     """
     seq = [
         Filter.from_(f).j_filter if isinstance(f, str) else f  # type: ignore[union-attr]
-        for f in _to_sequence(filters)
+        for f in to_sequence(filters)
     ]
     return Filter(j_filter=getattr(_JFilter, "and")(*seq))
 
