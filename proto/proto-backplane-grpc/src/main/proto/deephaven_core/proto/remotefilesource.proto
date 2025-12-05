@@ -60,29 +60,20 @@ message RemoteFileSourceMetaResponse {
   string error = 3;
 }
 
-// Request to set the execution context ID for script execution
+// Request to set the execution context for script execution
 message SetExecutionContextRequest {
-  // The execution context ID to set (typically matches the clientSessionId)
-  string execution_context_id = 1;
-
   // Top-level package names that should be resolved from the remote source
-  // (e.g., ["com.example", "org.mycompany"])
-  repeated string top_level_packages = 2;
+  // (e.g., ["com", "org"])
+  repeated string top_level_packages = 1;
 }
 
 // Response acknowledging execution context was set
 message SetExecutionContextResponse {
-  // The execution context ID that was set
-  string execution_context_id = 1;
-
   // Whether the operation was successful
-  bool success = 2;
+  bool success = 1;
 }
 
 // Fetch the remote file source plugin into the specified ticket (Flight command, not MessageStream)
 message RemoteFileSourcePluginFetchRequest {
   io.deephaven.proto.backplane.grpc.Ticket result_id = 1;
-
-  // Optional client session ID to identify this client connection
-  string client_session_id = 2;
 }
