@@ -58,24 +58,20 @@ public class RemoteFileSourceCommandResolver implements CommandResolver, WantsTi
     }
 
     public SessionState.ExportObject<Flight.FlightInfo> fetchPlugin(@Nullable final SessionState session,
-            final Flight.FlightDescriptor descriptor,
-            final RemoteFileSourcePluginFetchRequest request) {
+                                                                    final Flight.FlightDescriptor descriptor,
+                                                                    final RemoteFileSourcePluginFetchRequest request) {
         final Ticket resultTicket = request.getResultId();
         final boolean hasResultId = !resultTicket.getTicket().isEmpty();
         if (!hasResultId) {
             throw new StatusRuntimeException(Status.INVALID_ARGUMENT);
         }
 
-        // Extract optional client session ID from the request (empty string means not provided)
-        final String clientSessionId = request.getClientSessionId();
-
         final SessionState.ExportBuilder<RemoteFileSourceServicePlugin> pluginExportBuilder =
                 session.newExport(resultTicket, "RemoteFileSourcePluginFetchRequest.resultTicket");
         pluginExportBuilder.require();
 
         final SessionState.ExportObject<RemoteFileSourceServicePlugin> pluginExport =
-                pluginExportBuilder.submit(() -> new RemoteFileSourceServicePlugin(
-                        clientSessionId.isEmpty() ? null : clientSessionId));
+                pluginExportBuilder.submit(RemoteFileSourceServicePlugin::new);
 
         final Flight.FlightInfo flightInfo = Flight.FlightInfo.newBuilder()
                 .setFlightDescriptor(descriptor)
