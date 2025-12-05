@@ -80,20 +80,16 @@ public class JsRemoteFileSourceService extends HasEventHandling {
      * Fetches a RemoteFileSource plugin instance from the server and establishes a message stream connection.
      *
      * @param connection the worker connection to use for communication
-     * @param clientSessionId optional unique identifier for this client session
      * @return a promise that resolves to a RemoteFileSourceService instance with an active message stream
      */
     @JsMethod
-    public static Promise<JsRemoteFileSourceService> fetchPlugin(WorkerConnection connection, String clientSessionId) {
+    public static Promise<JsRemoteFileSourceService> fetchPlugin(WorkerConnection connection) {
         // Create a new export ticket for the result
         Ticket resultTicket = connection.getTickets().newExportTicket();
 
         // Create the fetch request
         RemoteFileSourcePluginFetchRequest fetchRequest = new RemoteFileSourcePluginFetchRequest();
         fetchRequest.setResultId(resultTicket);
-        if (clientSessionId != null && !clientSessionId.isEmpty()) {
-            fetchRequest.setClientSessionId(clientSessionId);
-        }
 
         // Serialize the request to bytes
         Uint8Array innerRequestBytes = fetchRequest.serializeBinary();
@@ -224,15 +220,14 @@ public class JsRemoteFileSourceService extends HasEventHandling {
     }
 
     /**
-     * Sets the execution context ID on the server to identify which client session should
-     * provide source files for script execution.
+     * Sets the execution context on the server to identify this message stream as active
+     * for script execution.
      *
-     * @param executionContextId the execution context ID (typically matches the client session ID)
      * @param topLevelPackages array of top-level package names to resolve from remote source (e.g., ["com.example", "org.mycompany"])
      * @return a promise that resolves to true if the server successfully set the execution context, false otherwise
      */
     @JsMethod
-    public Promise<Boolean> setExecutionContext(String executionContextId, @JsOptional String[] topLevelPackages) {
+    public Promise<Boolean> setExecutionContext(@JsOptional String[] topLevelPackages) {
         return new Promise<>((resolve, reject) -> {
             // Generate a unique request ID
             String requestId = "setExecutionContext-" + (requestIdCounter++);
@@ -241,7 +236,6 @@ public class JsRemoteFileSourceService extends HasEventHandling {
             pendingSetExecutionContextRequests.put(requestId, resolve);
 
             SetExecutionContextRequest setContextRequest = new SetExecutionContextRequest();
-            setContextRequest.setExecutionContextId(executionContextId);
 
             if (topLevelPackages != null && topLevelPackages.length > 0) {
                 for (String pkg : topLevelPackages) {

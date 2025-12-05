@@ -20,17 +20,12 @@ public class SetExecutionContextResponse {
     public static native void serializeBinaryToWriter(
             SetExecutionContextResponse message, Object writer);
 
-    public native void clearExecutionContextId();
-
     public native void clearSuccess();
-
-    public native String getExecutionContextId();
 
     public native boolean getSuccess();
 
     public native Uint8Array serializeBinary();
 
-    public native void setExecutionContextId(String value);
 
     public native void setSuccess(boolean value);
 }

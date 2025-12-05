@@ -29,81 +29,48 @@ public class RemoteFileSourceServicePlugin extends ObjectTypeBase {
     private static final Logger log = LoggerFactory.getLogger(RemoteFileSourceServicePlugin.class);
 
     /**
-     * The execution context ID that identifies the currently active RemoteFileSourceMessageStream.
-     * This corresponds to the clientSessionId of the most recent script execution.
+     * The current execution context containing the active message stream and configuration.
+     * Null when no execution context is active.
      */
-    private static volatile String executionContextId;
-
-    /**
-     * Top-level package names that should be resolved from the remote source
-     * (e.g., ["com.example", "org.mycompany"]).
-     */
-    private static volatile java.util.List<String> topLevelPackages = new java.util.ArrayList<>();
+    private static volatile RemoteFileSourceExecutionContext executionContext;
 
     private volatile RemoteFileSourceMessageStream messageStream;
-    private final String clientSessionId;
 
     public RemoteFileSourceServicePlugin() {
-        this(null);
-    }
-
-    public RemoteFileSourceServicePlugin(String clientSessionId) {
-        this.clientSessionId = clientSessionId;
-        if (clientSessionId != null) {
-            log.info().append("RemoteFileSourceServicePlugin created with clientSessionId: ").append(clientSessionId)
-                    .endl();
-        }
     }
 
     /**
-     * Gets the current execution context ID.
+     * Sets the execution context with the active message stream and top-level packages.
+     * This should be called when a script execution begins.
      *
-     * @return the execution context ID, or null if not set
-     */
-    public static String getExecutionContextId() {
-        return executionContextId;
-    }
-
-    /**
-     * Gets the top-level package names that should be resolved from the remote source.
-     *
-     * @return the list of top-level package names
-     */
-    public static java.util.List<String> getTopLevelPackages() {
-        return new java.util.ArrayList<>(topLevelPackages);
-    }
-
-    /**
-     * Sets the execution context ID to identify the currently active RemoteFileSourceMessageStream.
-     * This should be called when a script execution begins to indicate which client session should
-     * provide source files.
-     *
-     * @param contextId the execution context ID (typically matches a clientSessionId)
+     * @param messageStream the message stream to set as active (must not be null)
      * @param packages list of top-level package names to resolve from remote source
+     * @throws IllegalArgumentException if messageStream is null (use clearExecutionContext() instead)
      */
-    public static void setExecutionContextId(String contextId, java.util.List<String> packages) {
-        executionContextId = contextId;
-        topLevelPackages = packages != null ? new java.util.ArrayList<>(packages) : new java.util.ArrayList<>();
-        log.info().append("Execution context ID set to: ").append(contextId)
-                .append(" with packages: ").append(String.join(", ", topLevelPackages)).endl();
+    public static void setExecutionContext(RemoteFileSourceMessageStream messageStream, java.util.List<String> packages) {
+        if (messageStream == null) {
+            throw new IllegalArgumentException("messageStream must not be null. Use clearExecutionContext() to clear the context.");
+        }
+        executionContext = new RemoteFileSourceExecutionContext(messageStream, packages);
+        log.info().append("Set execution context with ")
+                .append(packages != null ? packages.size() : 0).append(" top-level packages").endl();
     }
 
     /**
-     * Sets the execution context ID without updating packages (backwards compatibility).
+     * Clears the execution context.
+     */
+    public static void clearExecutionContext() {
+        executionContext = null;
+        log.info().append("Cleared execution context").endl();
+    }
+
+    /**
+     * Gets the current execution context.
      *
-     * @param contextId the execution context ID (typically matches a clientSessionId)
+     * @return the execution context
      */
-    public static void setExecutionContextId(String contextId) {
-        setExecutionContextId(contextId, java.util.Collections.emptyList());
-    }
-
-    /**
-     * Clears the execution context ID and top-level packages.
-     */
-    public static void clearExecutionContextId() {
-        executionContextId = null;
-        topLevelPackages = new java.util.ArrayList<>();
-        log.info().append("Execution context ID cleared").endl();
+    public static RemoteFileSourceExecutionContext getExecutionContext() {
+        return executionContext;
     }
 
     @Override
@@ -120,7 +87,7 @@ public class RemoteFileSourceServicePlugin extends ObjectTypeBase {
     public MessageStream compatibleClientConnection(Object object, MessageStream connection)
             throws ObjectCommunicationException {
         connection.onData(ByteBuffer.allocate(0));
-        messageStream = new RemoteFileSourceMessageStream(connection, clientSessionId);
+        messageStream = new RemoteFileSourceMessageStream(connection);
         return messageStream;
     }
 
@@ -147,22 +114,9 @@ public class RemoteFileSourceServicePlugin extends ObjectTypeBase {
     public static class RemoteFileSourceMessageStream implements MessageStream {
         private final MessageStream connection;
         private final Map<String, CompletableFuture<byte[]>> pendingRequests = new ConcurrentHashMap<>();
-        private final String connectionId;
 
-        public RemoteFileSourceMessageStream(final MessageStream connection, final String clientSessionId) {
+        public RemoteFileSourceMessageStream(final MessageStream connection) {
             this.connection = connection;
-            this.connectionId = clientSessionId; // Initialize with the ID from the fetch request
-            if (clientSessionId != null) {
-                log.info().append("RemoteFileSourceMessageStream initialized with clientSessionId: ")
-                        .append(clientSessionId).endl();
-            }
-        }
-
-        /**
-         * @return the connection ID set by the client, or null if not set
-         */
-        public String getConnectionId() {
-            return connectionId;
         }
 
         @Override
@@ -207,16 +161,14 @@ public class RemoteFileSourceServicePlugin extends ObjectTypeBase {
                         testRequestResource(resourceName);
                     }
                 } else if (message.hasSetExecutionContext()) {
-                    // Client is setting the execution context ID
-                    String contextId = message.getSetExecutionContext().getExecutionContextId();
+                    // Client is requesting this message stream to become active
                     java.util.List<String> packages = message.getSetExecutionContext().getTopLevelPackagesList();
-                    setExecutionContextId(contextId, packages);
-                    log.info().append("Client set execution context ID to: ").append(contextId)
-                            .append(" with ").append(packages.size()).append(" top-level packages").endl();
+                    setExecutionContext(this, packages);
+                    log.info().append("Client set execution context for this message stream with ")
+                            .append(packages.size()).append(" top-level packages").endl();
 
                     // Send acknowledgment back to client
                     SetExecutionContextResponse response = SetExecutionContextResponse.newBuilder()
-                            .setExecutionContextId(contextId)
                             .setSuccess(true)
                             .build();
 
@@ -241,6 +193,12 @@ public class RemoteFileSourceServicePlugin extends ObjectTypeBase {
 
         @Override
         public void onClose() {
+            // Clear execution context if this was the active stream
+            RemoteFileSourceExecutionContext context = executionContext;
+            if (context != null && context.getActiveMessageStream() == this) {
+                clearExecutionContext();
+            }
+
             // Cancel all pending requests
             pendingRequests.values().forEach(future -> future.cancel(true));
             pendingRequests.clear();
@@ -307,6 +265,47 @@ public class RemoteFileSourceServicePlugin extends ObjectTypeBase {
                             }
                         }
                     });
+        }
+    }
+
+    /**
+     * Encapsulates the execution context for remote file source operations.
+     * This includes the currently active message stream and the top-level packages
+     * that should be resolved from the remote source.
+     * This class is immutable - a new instance is created each time the context changes.
+     */
+    public static class RemoteFileSourceExecutionContext {
+        private final RemoteFileSourceMessageStream activeMessageStream;
+        private final java.util.List<String> topLevelPackages;
+
+        /**
+         * Creates a new execution context.
+         *
+         * @param activeMessageStream the active message stream
+         * @param topLevelPackages list of top-level package names to resolve from remote source
+         */
+        public RemoteFileSourceExecutionContext(RemoteFileSourceMessageStream activeMessageStream,
+                java.util.List<String> topLevelPackages) {
+            this.activeMessageStream = activeMessageStream;
+            this.topLevelPackages = topLevelPackages != null ? topLevelPackages : java.util.Collections.emptyList();
+        }
+
+        /**
+         * Gets the currently active message stream.
+         *
+         * @return the active message stream
+         */
+        public RemoteFileSourceMessageStream getActiveMessageStream() {
+            return activeMessageStream;
+        }
+
+        /**
+         * Gets the top-level package names that should be resolved from the remote source.
+         *
+         * @return a copy of the list of top-level package names
+         */
+        public java.util.List<String> getTopLevelPackages() {
+            return new java.util.ArrayList<>(topLevelPackages);
         }
     }
 }
