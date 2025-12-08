@@ -12,7 +12,7 @@ from typing import Optional, Union
 import jpy
 
 from deephaven import DHError
-from deephaven.jcompat import _to_sequence
+from deephaven.jcompat import to_sequence
 from deephaven.table import Table
 from deephaven.update_graph import auto_locking_ctx
 
@@ -46,8 +46,8 @@ def full_outer_join(
         DHError
     """
     try:
-        on = _to_sequence(on)
-        joins = _to_sequence(joins)
+        on = to_sequence(on)
+        joins = to_sequence(joins)
         with auto_locking_ctx(l_table, r_table):
             if joins:
                 return Table(
@@ -92,8 +92,8 @@ def left_outer_join(
         DHError
     """
     try:
-        on = _to_sequence(on)
-        joins = _to_sequence(joins)
+        on = to_sequence(on)
+        joins = to_sequence(joins)
         with auto_locking_ctx(l_table, r_table):
             if joins:
                 return Table(

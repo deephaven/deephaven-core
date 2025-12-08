@@ -11,7 +11,7 @@ import jpy
 from deephaven import DHError
 from deephaven._wrapper import JObjectWrapper
 from deephaven.filters import Filter, and_
-from deephaven.jcompat import _to_sequence
+from deephaven.jcompat import to_sequence
 
 _JUpdateByOperation = jpy.get_type("io.deephaven.api.updateby.UpdateByOperation")
 _JBadDataBehavior = jpy.get_type("io.deephaven.api.updateby.BadDataBehavior")
@@ -147,7 +147,7 @@ def ema_tick(
         DHError
     """
     try:
-        cols = _to_sequence(cols)
+        cols = to_sequence(cols)
         if op_control is None:
             return UpdateByOperation(
                 j_updateby_op=_JUpdateByOperation.Ema(decay_ticks, *cols)
@@ -199,7 +199,7 @@ def ema_time(
             if isinstance(decay_time, str)
             else decay_time
         )
-        cols = _to_sequence(cols)
+        cols = to_sequence(cols)
         if op_control is None:
             return UpdateByOperation(
                 j_updateby_op=_JUpdateByOperation.Ema(ts_col, decay_time, *cols)
@@ -242,7 +242,7 @@ def ems_tick(
         DHError
     """
     try:
-        cols = _to_sequence(cols)
+        cols = to_sequence(cols)
         if op_control is None:
             return UpdateByOperation(
                 j_updateby_op=_JUpdateByOperation.Ems(decay_ticks, *cols)
@@ -294,7 +294,7 @@ def ems_time(
             if isinstance(decay_time, str)
             else decay_time
         )
-        cols = _to_sequence(cols)
+        cols = to_sequence(cols)
         if op_control is None:
             return UpdateByOperation(
                 j_updateby_op=_JUpdateByOperation.Ems(ts_col, decay_time, *cols)
@@ -337,7 +337,7 @@ def emmin_tick(
         DHError
     """
     try:
-        cols = _to_sequence(cols)
+        cols = to_sequence(cols)
         if op_control is None:
             return UpdateByOperation(
                 j_updateby_op=_JUpdateByOperation.EmMin(decay_ticks, *cols)
@@ -391,7 +391,7 @@ def emmin_time(
             if isinstance(decay_time, str)
             else decay_time
         )
-        cols = _to_sequence(cols)
+        cols = to_sequence(cols)
         if op_control is None:
             return UpdateByOperation(
                 j_updateby_op=_JUpdateByOperation.EmMin(ts_col, decay_time, *cols)
@@ -436,7 +436,7 @@ def emmax_tick(
         DHError
     """
     try:
-        cols = _to_sequence(cols)
+        cols = to_sequence(cols)
         if op_control is None:
             return UpdateByOperation(
                 j_updateby_op=_JUpdateByOperation.EmMax(decay_ticks, *cols)
@@ -490,7 +490,7 @@ def emmax_time(
             if isinstance(decay_time, str)
             else decay_time
         )
-        cols = _to_sequence(cols)
+        cols = to_sequence(cols)
         if op_control is None:
             return UpdateByOperation(
                 j_updateby_op=_JUpdateByOperation.EmMax(ts_col, decay_time, *cols)
@@ -535,7 +535,7 @@ def emstd_tick(
         DHError
     """
     try:
-        cols = _to_sequence(cols)
+        cols = to_sequence(cols)
         if op_control is None:
             return UpdateByOperation(
                 j_updateby_op=_JUpdateByOperation.EmStd(decay_ticks, *cols)
@@ -590,7 +590,7 @@ def emstd_time(
             if isinstance(decay_time, str)
             else decay_time
         )
-        cols = _to_sequence(cols)
+        cols = to_sequence(cols)
         if op_control is None:
             return UpdateByOperation(
                 j_updateby_op=_JUpdateByOperation.EmStd(ts_col, decay_time, *cols)
@@ -623,7 +623,7 @@ def cum_sum(cols: Union[str, Sequence[str]]) -> UpdateByOperation:
         DHError
     """
     try:
-        cols = _to_sequence(cols)
+        cols = to_sequence(cols)
         return UpdateByOperation(j_updateby_op=_JUpdateByOperation.CumSum(cols))
     except Exception as e:
         raise DHError(e, "failed to create a cumulative sum UpdateByOperation.") from e
@@ -644,7 +644,7 @@ def cum_prod(cols: Union[str, Sequence[str]]) -> UpdateByOperation:
         DHError
     """
     try:
-        cols = _to_sequence(cols)
+        cols = to_sequence(cols)
         return UpdateByOperation(j_updateby_op=_JUpdateByOperation.CumProd(cols))
     except Exception as e:
         raise DHError(
@@ -667,7 +667,7 @@ def cum_min(cols: Union[str, Sequence[str]]) -> UpdateByOperation:
         DHError
     """
     try:
-        cols = _to_sequence(cols)
+        cols = to_sequence(cols)
         return UpdateByOperation(j_updateby_op=_JUpdateByOperation.CumMin(cols))
     except Exception as e:
         raise DHError(
@@ -690,7 +690,7 @@ def cum_max(cols: Union[str, Sequence[str]]) -> UpdateByOperation:
         DHError
     """
     try:
-        cols = _to_sequence(cols)
+        cols = to_sequence(cols)
         return UpdateByOperation(j_updateby_op=_JUpdateByOperation.CumMax(cols))
     except Exception as e:
         raise DHError(
@@ -719,7 +719,7 @@ def cum_count_where(
         raise DHError(
             message="count_where aggregation requires a string value for the 'col' argument."
         )
-    filters = _to_sequence(filters)  # type: ignore[arg-type]
+    filters = to_sequence(filters)  # type: ignore[arg-type]
 
     try:
         return UpdateByOperation(
@@ -746,7 +746,7 @@ def forward_fill(cols: Union[str, Sequence[str]]) -> UpdateByOperation:
         DHError
     """
     try:
-        cols = _to_sequence(cols)
+        cols = to_sequence(cols)
         return UpdateByOperation(j_updateby_op=_JUpdateByOperation.Fill(cols))
     except Exception as e:
         raise DHError(e, "failed to create a forward fill UpdateByOperation.") from e
@@ -779,7 +779,7 @@ def delta(
         DHError
     """
     try:
-        cols = _to_sequence(cols)
+        cols = to_sequence(cols)
         return UpdateByOperation(
             j_updateby_op=_JUpdateByOperation.Delta(delta_control.value, *cols)
         )
@@ -821,7 +821,7 @@ def rolling_sum_tick(
         DHError
     """
     try:
-        cols = _to_sequence(cols)
+        cols = to_sequence(cols)
         return UpdateByOperation(
             j_updateby_op=_JUpdateByOperation.RollingSum(rev_ticks, fwd_ticks, *cols)
         )
@@ -872,7 +872,7 @@ def rolling_sum_time(
         DHError
     """
     try:
-        cols = _to_sequence(cols)
+        cols = to_sequence(cols)
         rev_time = (
             _JDateTimeUtils.parseDurationNanos(rev_time)
             if isinstance(rev_time, str)
@@ -927,7 +927,7 @@ def rolling_group_tick(
         DHError
     """
     try:
-        cols = _to_sequence(cols)
+        cols = to_sequence(cols)
         return UpdateByOperation(
             j_updateby_op=_JUpdateByOperation.RollingGroup(rev_ticks, fwd_ticks, *cols)
         )
@@ -978,7 +978,7 @@ def rolling_group_time(
         DHError
     """
     try:
-        cols = _to_sequence(cols)
+        cols = to_sequence(cols)
         rev_time = (
             _JDateTimeUtils.parseDurationNanos(rev_time)
             if isinstance(rev_time, str)
@@ -1033,7 +1033,7 @@ def rolling_avg_tick(
         DHError
     """
     try:
-        cols = _to_sequence(cols)
+        cols = to_sequence(cols)
         return UpdateByOperation(
             j_updateby_op=_JUpdateByOperation.RollingAvg(rev_ticks, fwd_ticks, *cols)
         )
@@ -1084,7 +1084,7 @@ def rolling_avg_time(
         DHError
     """
     try:
-        cols = _to_sequence(cols)
+        cols = to_sequence(cols)
         rev_time = (
             _JDateTimeUtils.parseDurationNanos(rev_time)
             if isinstance(rev_time, str)
@@ -1139,7 +1139,7 @@ def rolling_min_tick(
         DHError
     """
     try:
-        cols = _to_sequence(cols)
+        cols = to_sequence(cols)
         return UpdateByOperation(
             j_updateby_op=_JUpdateByOperation.RollingMin(rev_ticks, fwd_ticks, *cols)
         )
@@ -1190,7 +1190,7 @@ def rolling_min_time(
         DHError
     """
     try:
-        cols = _to_sequence(cols)
+        cols = to_sequence(cols)
         rev_time = (
             _JDateTimeUtils.parseDurationNanos(rev_time)
             if isinstance(rev_time, str)
@@ -1245,7 +1245,7 @@ def rolling_max_tick(
         DHError
     """
     try:
-        cols = _to_sequence(cols)
+        cols = to_sequence(cols)
         return UpdateByOperation(
             j_updateby_op=_JUpdateByOperation.RollingMax(rev_ticks, fwd_ticks, *cols)
         )
@@ -1296,7 +1296,7 @@ def rolling_max_time(
         DHError
     """
     try:
-        cols = _to_sequence(cols)
+        cols = to_sequence(cols)
         rev_time = (
             _JDateTimeUtils.parseDurationNanos(rev_time)
             if isinstance(rev_time, str)
@@ -1351,7 +1351,7 @@ def rolling_prod_tick(
         DHError
     """
     try:
-        cols = _to_sequence(cols)
+        cols = to_sequence(cols)
         return UpdateByOperation(
             j_updateby_op=_JUpdateByOperation.RollingProduct(
                 rev_ticks, fwd_ticks, *cols
@@ -1404,7 +1404,7 @@ def rolling_prod_time(
         DHError
     """
     try:
-        cols = _to_sequence(cols)
+        cols = to_sequence(cols)
         rev_time = (
             _JDateTimeUtils.parseDurationNanos(rev_time)
             if isinstance(rev_time, str)
@@ -1459,7 +1459,7 @@ def rolling_count_tick(
         DHError
     """
     try:
-        cols = _to_sequence(cols)
+        cols = to_sequence(cols)
         return UpdateByOperation(
             j_updateby_op=_JUpdateByOperation.RollingCount(rev_ticks, fwd_ticks, *cols)
         )
@@ -1510,7 +1510,7 @@ def rolling_count_time(
         DHError
     """
     try:
-        cols = _to_sequence(cols)
+        cols = to_sequence(cols)
         rev_time = (
             _JDateTimeUtils.parseDurationNanos(rev_time)
             if isinstance(rev_time, str)
@@ -1568,7 +1568,7 @@ def rolling_std_tick(
         DHError
     """
     try:
-        cols = _to_sequence(cols)
+        cols = to_sequence(cols)
         return UpdateByOperation(
             j_updateby_op=_JUpdateByOperation.RollingStd(rev_ticks, fwd_ticks, *cols)
         )
@@ -1622,7 +1622,7 @@ def rolling_std_time(
         DHError
     """
     try:
-        cols = _to_sequence(cols)
+        cols = to_sequence(cols)
         rev_time = (
             _JDateTimeUtils.parseDurationNanos(rev_time)
             if isinstance(rev_time, str)
@@ -1678,7 +1678,7 @@ def rolling_wavg_tick(
         DHError
     """
     try:
-        cols = _to_sequence(cols)
+        cols = to_sequence(cols)
         return UpdateByOperation(
             j_updateby_op=_JUpdateByOperation.RollingWAvg(
                 rev_ticks, fwd_ticks, wcol, *cols
@@ -1733,7 +1733,7 @@ def rolling_wavg_time(
         DHError
     """
     try:
-        cols = _to_sequence(cols)
+        cols = to_sequence(cols)
         rev_time = (
             _JDateTimeUtils.parseDurationNanos(rev_time)
             if isinstance(rev_time, str)
@@ -1822,7 +1822,7 @@ def rolling_formula_tick(
                     rev_ticks, fwd_ticks, formula
                 )
             )
-        cols = _to_sequence(cols)
+        cols = to_sequence(cols)
         return UpdateByOperation(
             j_updateby_op=_JUpdateByOperation.RollingFormula(
                 rev_ticks, fwd_ticks, formula, formula_param, *cols
@@ -1918,7 +1918,7 @@ def rolling_formula_time(
                 )
             )
 
-        cols = _to_sequence(cols)
+        cols = to_sequence(cols)
         return UpdateByOperation(
             j_updateby_op=_JUpdateByOperation.RollingFormula(
                 ts_col, rev_time, fwd_time, formula, formula_param, *cols
@@ -1971,7 +1971,7 @@ def rolling_count_where_tick(
         raise DHError(
             message="count_where aggregation requires a string value for the 'col' argument."
         )
-    filters = _to_sequence(filters)  # type: ignore[arg-type]
+    filters = to_sequence(filters)  # type: ignore[arg-type]
 
     try:
         return UpdateByOperation(
@@ -2031,7 +2031,7 @@ def rolling_count_where_time(
         raise DHError(
             message="count_where aggregation requires a string value for the 'col' argument."
         )
-    filters = _to_sequence(filters)  # type: ignore[arg-type]
+    filters = to_sequence(filters)  # type: ignore[arg-type]
 
     try:
         rev_time = (

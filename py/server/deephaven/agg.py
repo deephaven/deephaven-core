@@ -9,7 +9,7 @@ from typing import Any, Optional, Union
 import jpy
 
 from deephaven.filters import Filter, and_
-from deephaven.jcompat import _to_sequence
+from deephaven.jcompat import to_sequence
 
 from .dherror import DHError
 
@@ -33,7 +33,7 @@ class Aggregation:
     ):
         self._j_agg_spec = j_agg_spec
         self._j_aggregation = j_aggregation
-        self._cols = _to_sequence(cols)
+        self._cols = to_sequence(cols)
 
     @property
     def j_aggregation(self):
@@ -158,7 +158,7 @@ def count_where(
         raise DHError(
             message="count_where aggregation requires a string value for the 'col' argument."
         )
-    filters = _to_sequence(filters)
+    filters = to_sequence(filters)
 
     return Aggregation(
         j_aggregation=_JAggregation.AggCountWhere(col, and_(filters).j_filter)

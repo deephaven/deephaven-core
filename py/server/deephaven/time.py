@@ -621,11 +621,7 @@ def to_j_duration(dt: Optional[DurationLike]) -> Optional[Duration]:
         elif isinstance(dt, str):
             return _JDateTimeUtils.parseDuration(dt)
         elif isinstance(dt, pandas.Timedelta):
-            nanos = (
-                int((dt / datetime.timedelta(microseconds=1)) * _NANOS_PER_MICRO)
-                + dt.nanoseconds
-            )
-            return _JDuration.ofNanos(nanos)
+            return _JDuration.ofNanos(dt.value)
         elif isinstance(dt, datetime.timedelta):
             nanos = int((dt / datetime.timedelta(microseconds=1)) * _NANOS_PER_MICRO)
             return _JDuration.ofNanos(nanos)

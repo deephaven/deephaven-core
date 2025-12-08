@@ -43,7 +43,7 @@ public class ObjectChunkedUniqueOperator implements IterativeChunkedAggregationO
     private final String name;
 
     private final Supplier<SegmentedSortedMultiSet.RemoveContext> removeContextFactory;
-    private final boolean countNull;
+    private final boolean countNullNaN;
     private final boolean exposeInternal;
     private WritableRowSet touchedStates;
     private UpdateCommitter<ObjectChunkedUniqueOperator> prevFlusher = null;
@@ -58,9 +58,9 @@ public class ObjectChunkedUniqueOperator implements IterativeChunkedAggregationO
             // region Constructor
             Class<?> type,
             // endregion Constructor
-            String name, boolean countNulls, boolean exposeInternal, Object onlyNullsSentinel, Object nonUniqueSentinel) {
+            String name, boolean countNullNaN, boolean exposeInternal, Object onlyNullsSentinel, Object nonUniqueSentinel) {
         this.name = name;
-        this.countNull = countNulls;
+        this.countNullNaN = countNullNaN;
         this.exposeInternal = exposeInternal;
         this.onlyNullsSentinel = onlyNullsSentinel;
         this.nonUniqueSentinel = nonUniqueSentinel;
@@ -91,7 +91,7 @@ public class ObjectChunkedUniqueOperator implements IterativeChunkedAggregationO
         context.lengthCopy.copyFromChunk(length, 0, 0, length.size());
 
         ObjectCompactKernel.compactAndCount((WritableObjectChunk<?, ? extends Values>) context.valueCopy, context.counts,
-                startPositions, context.lengthCopy, countNull);
+                startPositions, context.lengthCopy, countNullNaN, countNullNaN);
         return context;
     }
 
@@ -141,7 +141,7 @@ public class ObjectChunkedUniqueOperator implements IterativeChunkedAggregationO
             final WritableIntChunk<ChunkLengths> countSlice =
                     context.countResettable.resetFromChunk(context.counts, startPosition, runLength);
             ssm.remove(removeContext, valueSlice, countSlice);
-            if (ssm.size() == 0) {
+            if (ssm.isEmpty()) {
                 clearSsm(destination);
             }
 
@@ -172,7 +172,7 @@ public class ObjectChunkedUniqueOperator implements IterativeChunkedAggregationO
             final WritableIntChunk<ChunkLengths> countSlice =
                     context.countResettable.resetFromChunk(context.counts, startPosition, runLength);
             ssm.remove(removeContext, valueSlice, countSlice);
-            if (ssm.size() == 0) {
+            if (ssm.isEmpty()) {
                 context.ssmsToMaybeClear.set(ii, true);
             }
         }
@@ -211,7 +211,7 @@ public class ObjectChunkedUniqueOperator implements IterativeChunkedAggregationO
         context.valueCopy.setSize(values.size());
         context.valueCopy.copyFromChunk(values, 0, 0, values.size());
         ObjectCompactKernel.compactAndCount((WritableObjectChunk<?, ? extends Values>) context.valueCopy, context.counts,
-                countNull);
+                countNullNaN, countNullNaN);
         return context;
     }
 
@@ -236,7 +236,7 @@ public class ObjectChunkedUniqueOperator implements IterativeChunkedAggregationO
 
         final ObjectSegmentedSortedMultiset ssm = ssmForSlot(destination);
         ssm.remove(context.removeContext, context.valueCopy, context.counts);
-        if (ssm.size() == 0) {
+        if (ssm.isEmpty()) {
             clearSsm(destination);
         }
 
@@ -256,7 +256,7 @@ public class ObjectChunkedUniqueOperator implements IterativeChunkedAggregationO
         ObjectSegmentedSortedMultiset ssm = ssmForSlot(destination);
         if (context.valueCopy.size() > 0) {
             ssm.insert(context.valueCopy, context.counts);
-        } else if (ssm.size() == 0) {
+        } else if (ssm.isEmpty()) {
             clearSsm(destination);
         }
 
