@@ -22,7 +22,7 @@ Special variables inside the query language allow access to the row index of a t
 > These variables are unreliable within a ticking table. Inconsistent results occur since previously created row indexes do not automatically update.
 
 > [!CAUTION]
-> Do not use `i` and `ii` in append-only tables to access preceding or following column values using array notation (e.g., `ColA_[ii-1]`). As new rows are added, the row indices shift, causing previously computed values to reference different rows than originally intended. See [Alternatives to i and ii in append-only tables](../../../how-to-guides/built-in-variables.md) for recommended approaches.
+> Do not use `i` and `ii` in add-only tables to access preceding or following column values using array notation (e.g., `ColA_[ii-1]`). In add-only tables, rows can be inserted at any position, causing row indices to shift and previously computed values to reference different rows than originally intended. See [Alternatives for add-only tables](../../../how-to-guides/built-in-variables.md#alternatives-for-add-only-tables) for recommended approaches.
 
 Row numbers `i` and `ii` are frequently used with the [`_` and `[]`](../../query-language/types/arrays.md) operators to retrieve values from prior or future rows in the table. For example, `Column_[ii-1]` references the value in `Column` one row before the current row.
 

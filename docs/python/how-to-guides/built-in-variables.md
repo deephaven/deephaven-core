@@ -18,7 +18,9 @@ There are three special built-in query language variables worth noting. They cor
 > These built-in variables are not reliable in ticking tables. They should only be used in static cases.
 
 > [!WARNING]
-> Do not use `i` and `ii` in append-only tables to access preceding or following column values using array notation (e.g., `ColA_[ii-1]`). As new rows are added, the row indices shift, causing previously computed values to reference different rows than originally intended. See [Alternatives for append-only tables](#alternatives-for-append-only-tables) below.
+> Do not use `i` and `ii` in add-only tables to access preceding or following column values using array notation (e.g., `ColA_[ii-1]`). In add-only tables, rows can be inserted at any position, causing row indices to shift and previously computed values to reference different rows than originally intended. See [Alternatives for add-only tables](#alternatives-for-add-only-tables) below.
+>
+> Note: Append-only tables, which only add rows at the end, do not have this issue since existing row positions remain stable.
 
 ## Usage
 
@@ -32,24 +34,52 @@ source = empty_table(10).update(
 )
 ```
 
-## Alternatives for append-only tables
+## Alternatives for add-only tables
 
-When working with append-only tables where you need to reference preceding or following column values, avoid using `i` and `ii` with array notation. Instead, use one of the following approaches:
+When working with add-only tables where you need to reference preceding or following column values, avoid using `i` and `ii` with array notation. Instead, use one of the following approaches:
+
+The examples below use Iceberg tables with auto-refresh mode, which creates add-only tables in Deephaven. For information on setting up Iceberg, see the [Iceberg guide](../data-import-export/iceberg.md).
 
 ### 1. Source partitioned tables
 
-Partition an append-only source table into multiple smaller append-only tables. This can make operations more manageable and efficient.
+Partition a table into multiple smaller tables. This can make operations more manageable and efficient, especially when dealing with add-only tables.
 
-```python order=null
+```python docker-config=iceberg test-set=1 order=null
+from deephaven.experimental import iceberg
 from deephaven import empty_table
 
-source = empty_table(20).update(formulas=["GroupKey = i % 3", "Value = i * 10"])
+# Create and write an Iceberg table for demonstration
+source_data = empty_table(20).update(formulas=["GroupKey = i % 3", "Value = i * 10"])
 
-# Partition by a grouping column to create multiple append-only tables
-partitioned = source.partition_by(by=["GroupKey"])
+rest_adapter = iceberg.adapter_s3_rest(
+    name="minio-iceberg",
+    catalog_uri=catalog_uri,
+    warehouse_location=warehouse_location,
+    region_name=aws_region,
+    access_key_id=aws_access_key_id,
+    secret_access_key=aws_secret_access_key,
+    end_point_override=s3_endpoint,
+)
+
+source_adapter = rest_adapter.create_table(
+    table_identifier="examples.partition_source",
+    table_definition=source_data.definition,
+)
+
+writer_options = iceberg.TableParquetWriterOptions(
+    table_definition=source_data.definition
+)
+source_writer = source_adapter.table_writer(writer_options=writer_options)
+source_writer.append(iceberg.IcebergWriteInstructions([source_data]))
+
+# Load the Iceberg table with auto-refresh mode (creates an add-only table)
+add_only_source = source_adapter.table(
+    update_mode=iceberg.IcebergUpdateMode.auto_refresh()
+)
+
+# Partition by a grouping column to create multiple tables
+partitioned = add_only_source.partition_by(by=["GroupKey"])
 ```
-
-![The `source` and `partitioned` tables](../assets/reference/query-language/special-variables-source-partitioned.png)
 
 Each partition can then be processed independently, and operations within each partition can safely use `i` and `ii` since each partition is a separate table.
 
@@ -57,16 +87,36 @@ Each partition can then be processed independently, and operations within each p
 
 [Group](../reference/table-operations/group-and-aggregate/groupBy.md) the data, perform the update operation within each group, then [ungroup](../reference/table-operations/group-and-aggregate/ungroup.md). This allows you to reference values within each group without relying on absolute row positions.
 
-```python order=source,grouped,result
+```python docker-config=iceberg test-set=1 order=result
+from deephaven.experimental import iceberg
 from deephaven import empty_table
 
-source = empty_table(10).update(formulas=["Group = i % 3", "Value = i * 10"])
+# Create and write an Iceberg table for demonstration
+group_data = empty_table(10).update(formulas=["Group = i % 3", "Value = i * 10"])
 
-# Group by the grouping column
-grouped = source.group_by(by=["Group"])
+group_adapter = rest_adapter.create_table(
+    table_identifier="examples.group_source", table_definition=group_data.definition
+)
 
-# Ungroup to work with individual rows, compute previous value within each original group
-result = grouped.ungroup().update(formulas=["PrevValue = ii > 0 ? Value_[ii-1] : null"])
+group_writer_options = iceberg.TableParquetWriterOptions(
+    table_definition=group_data.definition
+)
+group_writer = group_adapter.table_writer(writer_options=group_writer_options)
+group_writer.append(iceberg.IcebergWriteInstructions([group_data]))
+
+# Load the Iceberg table with auto-refresh mode (creates an add-only table)
+add_only_group_source = group_adapter.table(
+    update_mode=iceberg.IcebergUpdateMode.auto_refresh()
+)
+
+# Group by the grouping column and compute previous values using array operations
+# Prepend null to match array sizes for ungroup
+grouped = add_only_group_source.group_by(by=["Group"]).update(
+    "PrevValue = concat(new int[]{NULL_INT}, Value.size() > 0 ? Value.subVector(0, Value.size() - 1).toArray() : new int[0])"
+)
+
+# Ungroup to work with individual rows
+result = grouped.ungroup()
 ```
 
 > [!NOTE]
@@ -76,17 +126,36 @@ result = grouped.ungroup().update(formulas=["PrevValue = ii > 0 ? Value_[ii-1] :
 
 If you have a matching column (such as a timestamp or sequence number) that can be reliably used instead of row position, use an [as-of join](../reference/table-operations/join/aj.md).
 
-```python order=source,shifted,result
+```python docker-config=iceberg test-set=1 order=aj_result
+from deephaven.experimental import iceberg
 from deephaven import empty_table
 
-source = empty_table(10).update(formulas=["Timestamp = (long)i", "Value = i * 10"])
+# Create and write an Iceberg table for demonstration
+aj_data = empty_table(10).update(formulas=["Timestamp = (long)i", "Value = i * 10"])
+
+aj_adapter = rest_adapter.create_table(
+    table_identifier="examples.aj_source", table_definition=aj_data.definition
+)
+
+aj_writer_options = iceberg.TableParquetWriterOptions(
+    table_definition=aj_data.definition
+)
+aj_writer = aj_adapter.table_writer(writer_options=aj_writer_options)
+aj_writer.append(iceberg.IcebergWriteInstructions([aj_data]))
+
+# Load the Iceberg table with auto-refresh mode (creates an add-only table)
+add_only_aj_source = aj_adapter.table(
+    update_mode=iceberg.IcebergUpdateMode.auto_refresh()
+)
 
 # Create a shifted version for the join
-shifted = source.update(formulas=["ShiftedTimestamp = Timestamp + 1"])
+shifted = add_only_aj_source.view("ShiftedTimestamp = Timestamp + 1")
 
 # Join to get the previous value based on timestamp
-result = shifted.aj(
-    table=source, on=["ShiftedTimestamp >= Timestamp"], joins=["PrevValue = Value"]
+aj_result = shifted.aj(
+    table=add_only_aj_source,
+    on=["ShiftedTimestamp >= Timestamp"],
+    joins=["PrevValue = Value"],
 )
 ```
 
