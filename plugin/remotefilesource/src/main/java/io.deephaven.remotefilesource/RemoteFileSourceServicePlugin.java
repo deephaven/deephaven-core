@@ -25,7 +25,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
 @AutoService(ObjectType.class)
-public class RemoteFileSourceServicePlugin extends ObjectTypeBase {
+public class RemoteFileSourceServicePlugin extends ObjectTypeBase implements io.deephaven.engine.util.RemoteFileSourceProvider {
     private static final Logger log = LoggerFactory.getLogger(RemoteFileSourceServicePlugin.class);
 
     /**
@@ -37,11 +37,65 @@ public class RemoteFileSourceServicePlugin extends ObjectTypeBase {
     private volatile RemoteFileSourceMessageStream messageStream;
 
     public RemoteFileSourceServicePlugin() {
+        log.info().append("🎯 RemoteFileSourceServicePlugin constructor called").endl();
+        // Register eagerly with the class loader
+        registerWithClassLoader();
+    }
+
+    // RemoteFileSourceProvider interface implementation - delegates to active message stream
+
+    @Override
+    public CompletableFuture<Boolean> canSourceResource(String resourceName) {
+        // Only handle .groovy source files, not compiled .class files
+        if (!resourceName.endsWith(".groovy")) {
+            return CompletableFuture.completedFuture(false);
+        }
+
+        RemoteFileSourceExecutionContext context = executionContext;
+        if (context == null) {
+            return CompletableFuture.completedFuture(false);
+        }
+
+        java.util.List<String> topLevelPackages = context.getTopLevelPackages();
+        if (topLevelPackages.isEmpty()) {
+            return CompletableFuture.completedFuture(false);
+        }
+
+        String resourcePath = resourceName.replace('\\', '/');
+
+        for (String topLevelPackage : topLevelPackages) {
+            String packagePath = topLevelPackage.replace('.', '/');
+            if (resourcePath.startsWith(packagePath + "/") || resourcePath.startsWith(packagePath)) {
+                log.info().append("✅ Can source: ").append(resourceName).endl();
+                return CompletableFuture.completedFuture(true);
+            }
+        }
+
+        return CompletableFuture.completedFuture(false);
+    }
+
+    @Override
+    public CompletableFuture<byte[]> requestResource(String resourceName) {
+        log.info().append("📥 Requesting resource: ").append(resourceName).endl();
+
+        RemoteFileSourceExecutionContext context = executionContext;
+        if (context == null) {
+            log.warn().append("No execution context when requesting resource").endl();
+            return CompletableFuture.completedFuture(null);
+        }
+
+        return context.getActiveMessageStream().requestResource(resourceName);
+    }
+
+    @Override
+    public boolean isActive() {
+        return executionContext != null;
     }
 
     /**
      * Sets the execution context with the active message stream and top-level packages.
      * This should be called when a script execution begins.
+     * The plugin (which is registered with the ClassLoader) will route requests to this message stream.
      *
      * @param messageStream the message stream to set as active (must not be null)
      * @param packages list of top-level package names to resolve from remote source
@@ -51,6 +105,8 @@ public class RemoteFileSourceServicePlugin extends ObjectTypeBase {
         if (messageStream == null) {
             throw new IllegalArgumentException("messageStream must not be null. Use clearExecutionContext() to clear the context.");
         }
+
+        // Set new context - the plugin will automatically route to this message stream
         executionContext = new RemoteFileSourceExecutionContext(messageStream, packages);
         log.info().append("Set execution context with ")
                 .append(packages != null ? packages.size() : 0).append(" top-level packages").endl();
@@ -60,9 +116,28 @@ public class RemoteFileSourceServicePlugin extends ObjectTypeBase {
      * Clears the execution context.
      */
     public static void clearExecutionContext() {
-        executionContext = null;
-        log.info().append("Cleared execution context").endl();
+        if (executionContext != null) {
+            executionContext = null;
+            log.info().append("Cleared execution context").endl();
+        }
     }
+
+    /**
+     * Register this plugin instance with the RemoteFileSourceClassLoader instance.
+     * Called once during plugin construction.
+     */
+    private void registerWithClassLoader() {
+        io.deephaven.engine.util.RemoteFileSourceClassLoader classLoader =
+                io.deephaven.engine.util.RemoteFileSourceClassLoader.getInstance();
+
+        if (classLoader != null) {
+            classLoader.registerProvider(this);
+            log.info().append("✅ Registered RemoteFileSourceServicePlugin with RemoteFileSourceClassLoader").endl();
+        } else {
+            log.warn().append("⚠️ RemoteFileSourceClassLoader instance not found - plugin not registered").endl();
+        }
+    }
+
 
     /**
      * Gets the current execution context.
@@ -240,6 +315,7 @@ public class RemoteFileSourceServicePlugin extends ObjectTypeBase {
 
             return future;
         }
+
 
         /**
          * Test method to request a resource and log the result. This can be called from the server console to test the

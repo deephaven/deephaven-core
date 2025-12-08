@@ -96,7 +96,7 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
             .getBooleanForClassWithDefault(GroovyDeephavenSession.class, "allowUnknownGroovyPackageImports", false);
 
     private static final ClassLoader STATIC_LOADER =
-            new URLClassLoader(new URL[0], Thread.currentThread().getContextClassLoader()) {
+    new URLClassLoader(new URL[0], new RemoteFileSourceClassLoader(Thread.currentThread().getContextClassLoader())) {
                 final ConcurrentHashMap<String, Object> mapping = new ConcurrentHashMap<>();
 
                 @Override
