@@ -36,7 +36,7 @@ source = emptyTable(10).update(
 
 When working with add-only tables where you need to reference preceding or following column values, avoid using `i` and `ii` with array notation. Instead, use one of the following approaches:
 
-The examples below use Iceberg tables with auto-refresh mode, which creates add-only tables in Deephaven. For information on setting up Iceberg, see the [Iceberg guide](../data-import-export/iceberg.md).
+The examples below use Iceberg tables with auto-refresh mode, which creates add-only tables in Deephaven. For information on setting up Iceberg, see the [Iceberg guide](./data-import-export/iceberg.md).
 
 ### 1. Source partitioned tables
 
