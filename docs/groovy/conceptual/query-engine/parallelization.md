@@ -19,7 +19,7 @@ when the method is called. Initialization produces a result table based on the d
 with a 100,000-row table called `myTable`, running `myTable.update("X = random()")` will run the `random()` method
 100,000 times (once per row).
 
-If an operation's source table is [refreshing](https://deephaven.io/core/javadoc/io/deephaven/engine/table/impl/BaseTable.html#isRefreshing()), then initialization will create a new node in the [update graph](../dag.md) as well.
+If an operation's source table is [refreshing](<https://deephaven.io/core/javadoc/io/deephaven/engine/table/impl/BaseTable.html#isRefreshing()>), then initialization will create a new node in the [update graph](../dag.md) as well.
 
 ### Query updates
 
@@ -71,12 +71,24 @@ the `update()` and `where()`s for those three tables have been processed.
 
 ### Controlling Concurrency for `select`, `update` and `where`
 
-The `select`, `update`, and `where` operations can parallelize within a single where clause or column expression. This can greatly improve throughput by using multiple threads to read existing columns or compute functions. Deephaven can only parallelize an expression if it is _stateless_, meaning it does not depend on any mutable external inputs or the order in which rows are evaluated. Many operations, such as String manipulation or arithmetic on one or more input columns are always stateless. By default, the engine assumes that all user expressions are stateless and can be parallelized.
+The `select`, `update`, and `where` operations can parallelize within a single where clause or column expression. This can greatly improve throughput by using multiple threads to read existing columns or compute functions.
 
-To change the default behavior for `select` and `update`, you can change the configuration property `QueryTable.statelessSelectByDefault` to `false` to make columns stateful. For filters, change the property `QueryTable.statelessFiltersByDefault`.
+Deephaven can only parallelize an expression if it is _stateless_, meaning it does not depend on any mutable external inputs or the order in which rows are evaluated. Many operations, such as String manipulation or arithmetic on one or more input columns, are stateless.
 
 > [!NOTE]
-> In Deephaven versions through 0.40, the engine assumed that all filters and selectables were _stateful_ by default. All later versions treat filters and selectables as _stateless_ by default.
+> In Deephaven versions through 0.40, the engine assumed that all filters and selectables were _stateful_ by default. **All later versions (0.41+) treat filters and selectables as _stateless_ by default**, which means they will be parallelized automatically.
+
+You can change the default behavior using configuration properties. For `select` and `update`, set `QueryTable.statelessSelectByDefault`. For filters, set `QueryTable.statelessFiltersByDefault`.
+
+> [!WARNING] > **Non-thread-safe formulas will break by default in Deephaven 0.41+**
+>
+> If your formula is not thread-safe, you **must** explicitly mark it for serial execution or it will produce incorrect results when parallelized. Formulas are non-thread-safe if they:
+>
+> - Use or modify mutable global state (e.g., global variables, static fields)
+> - Call non-thread-safe external functions or libraries
+> - Depend on the order of row evaluation
+>
+> **Solution**: Use `.withSerial()` on Filters or Selectables to force in-order, single-threaded evaluation. See examples below.
 
 The [`ConcurrencyControl`](https://docs.deephaven.io/core/javadoc/io/deephaven/api/ConcurrencyControl.html) interface allows you to control the behavior of [`Filter`](https://docs.deephaven.io/core/javadoc/io/deephaven/api/filter/Filter.html) (where clause) and [`Selectable`](https://docs.deephaven.io/core/javadoc/io/deephaven/api/Selectable.html) (column formula) objects.
 
@@ -196,7 +208,7 @@ described in the table below:
 
 Setting either of these properties to `-1` instructs Deephaven to use all available processors. The number of available
 processors is retrieved from the Java Virtual Machine at Deephaven startup,
-using [Runtime.availableProcessors()](https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/lang/Runtime.html#availableProcessors()).
+using [Runtime.availableProcessors()](<https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/lang/Runtime.html#availableProcessors()>).
 
 ### Related documentation
 
