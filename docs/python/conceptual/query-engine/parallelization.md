@@ -11,11 +11,9 @@ When considering Deephaven query performance, there are two distinct phases to c
 
 ### Query initialization
 
-Every table operation method — [`.where`](../../reference/table-operations/filter/where.md),
-[`.update`](../../reference/table-operations/select/update.md),
-[`.natural_join`](../../reference/table-operations/join/natural-join.md), etc. — undergoes an _initialization_ phase when the method is called. Initialization produces a result table based on the data in the source table. For example, with a 100,000-row table called `myTable`, running `myTable.update("X = random()")` will run the `random()` method 100,000 times (once per row).
+Every table operation method — [`.where`](../../reference/table-operations/filter/where.md), [`.update`](../../reference/table-operations/select/update.md), [`.natural_join`](../../reference/table-operations/join/natural-join.md), etc. — undergoes an _initialization_ phase when the method is called. Initialization produces a result table based on the data in the source table. For example, with a 100,000-row table called `myTable`, running `myTable.update("X = random()")` will run the `random()` method 100,000 times (once per row).
 
-If an operation's source table is [refreshing](https://deephaven.io/core/javadoc/io/deephaven/engine/table/impl/BaseTable.html#isRefreshing()), then initialization will create a new node in the [update graph](../dag.md) as well.
+If an operation's source table is [refreshing](<https://deephaven.io/core/javadoc/io/deephaven/engine/table/impl/BaseTable.html#isRefreshing()>), then initialization will create a new node in the [update graph](../dag.md) as well.
 
 ### Query updates
 
@@ -63,7 +61,7 @@ Deephaven can only parallelize an expression if it is _stateless_, meaning it do
 By default, the Deephaven engine assumes that expressions are stateful (not stateless). For [`select`](../../reference/table-operations/select/select.md) and [`update`](../../reference/table-operations/select/update.md), you can change the configuration property `QueryTable.statelessSelectByDefault` to `true` to make columns stateless by default. For filters, change the property `QueryTable.statelessFiltersByDefault`.
 
 > [!NOTE]
-> In a future version of Deephaven, filters and selectables will be stateless by default.
+> In Deephaven versions through 0.40, the engine assumed that all filters and selectables were _stateful_ by default. All later versions treat filters and selectables as _stateless_ by default.
 
 The [`ConcurrencyControl`](https://docs.deephaven.io/core/pydoc/code/deephaven.concurrency_control.html#deephaven.concurrency_control.ConcurrencyControl) interface allows you to control the behavior of [`Filter`](https://docs.deephaven.io/core/pydoc/code/deephaven.filters.html) (where clause) and [`Selectable`](https://docs.deephaven.io/core/pydoc/code/deephaven.table.html#deephaven.table.Selectable) objects (update and select table operations).
 
@@ -266,8 +264,7 @@ t = empty_table(1_000_000).update([col_a, col_b])
 
 ### Managing thread pool sizes
 
-The maximum parallelism of query initialization and update processing is determined by the Operation Initialization
-Thread Pool and the Update Graph Processor Thread Pool. The size of these values is controlled using the properties
+The maximum parallelism of query initialization and update processing is determined by the Operation Initialization Thread Pool and the Update Graph Processor Thread Pool. The size of these values is controlled using the properties
 described in the table below:
 
 | Thread Pool Property                      | Default Value | Description                                                                                                     |
@@ -275,7 +272,7 @@ described in the table below:
 | OperationInitializationThreadPool.threads | -1            | Determines the number of threads available for parallel processing of initialization operations.                |
 | PeriodicUpdateGraph.updateThreads         | -1            | Determines the number of threads available for parallel processing of the Update Graph Processor refresh cycle. |
 
-Setting either of these properties to `-1` instructs Deephaven to use all available processors. The number of available processors is retrieved from the Java Virtual Machine at Deephaven startup, using [Runtime.availableProcessors()](https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/lang/Runtime.html#availableProcessors()).
+Setting either of these properties to `-1` instructs Deephaven to use all available processors. The number of available processors is retrieved from the Java Virtual Machine at Deephaven startup, using [Runtime.availableProcessors()](<https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/lang/Runtime.html#availableProcessors()>).
 
 ### Related documentation
 
