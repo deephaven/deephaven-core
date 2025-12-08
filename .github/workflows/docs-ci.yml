@@ -62,7 +62,7 @@ jobs:
       group: core-docs-check-${{ github.workflow }}-${{ github.ref }}
       cancel-in-progress: true
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with: # Does not need lfs to validate since the header file existing is enough for the check
           sparse-checkout: /docs/
           sparse-checkout-cone-mode: false
@@ -84,7 +84,7 @@ jobs:
       cancel-in-progress: true
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           sparse-checkout: /docs/
           sparse-checkout-cone-mode: false
@@ -126,7 +126,7 @@ jobs:
       cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Setup JDK 11
         id: setup-java-11
@@ -188,7 +188,7 @@ jobs:
       cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Setup JDK 11
         id: setup-java-11
@@ -250,7 +250,7 @@ jobs:
       cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Setup JDK 11
         id: setup-java-11
@@ -339,7 +339,7 @@ jobs:
       cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Setup JDK 11
         id: setup-java-11
@@ -413,7 +413,7 @@ jobs:
       cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Setup JDK 11
         id: setup-java-11
@@ -471,7 +471,7 @@ jobs:
       cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Setup JDK 11
         id: setup-java-11
