@@ -11,6 +11,8 @@ import org.immutables.value.Value.Immutable;
 
 import java.time.ZoneId;
 import java.util.Map;
+import java.util.function.Function;
+import java.util.function.Supplier;
 
 /**
  * Immutable instructions for reading JDBC data.
@@ -25,23 +27,16 @@ public abstract class JdbcReadInstructions {
     public static final int NO_ROW_LIMIT = -1;
 
     /**
-     * The casing style to use for column names.
+     * A supplier for the column name mapping function that converts JDBC result set column names to output column
+     * names. The supplier is invoked once per read operation to obtain a possibly-fresh mapping function instance, thus
+     * allowing the mapping function to keep state.
      *
-     * @return the casing style, defaults to {@link CasingStyle#None}
+     * @return the column name mapping supplier, defaults to creating a new {@link StandardColumnNameMappingFunction}
+     *         with default naming parameters
      */
     @Default
-    public CasingStyle columnNameCasingStyle() {
-        return CasingStyle.None;
-    }
-
-    /**
-     * The replacement string for invalid characters in column names.
-     *
-     * @return the replacement string, defaults to "_"
-     */
-    @Default
-    public String columnNameInvalidCharacterReplacement() {
-        return "_";
+    public Supplier<Function<String, String>> columnNameMappingSupplier() {
+        return () -> new StandardColumnNameMappingFunction(StandardColumnNameMappingFunction.NamingParams.defaults());
     }
 
     /**
@@ -110,23 +105,42 @@ public abstract class JdbcReadInstructions {
      * Builder for {@link JdbcReadInstructions}.
      */
     public interface Builder {
-        /**
-         * Sets the casing style for column names.
-         *
-         * @param style the casing style, defaults to {@link CasingStyle#None}
-         * @return this builder
-         * @see JdbcReadInstructions#columnNameCasingStyle()
-         */
-        Builder columnNameCasingStyle(CasingStyle style);
 
         /**
-         * Sets the replacement string for invalid characters in column names.
+         * Sets the column name mapping supplier. The supplier should provide a fresh function instance for each
+         * invocation if the function may maintain internal state.
          *
-         * @param replacement the replacement string, defaults to "_"
+         * @param columnNameMappingSupplier the supplier for column name mapping functions
          * @return this builder
-         * @see JdbcReadInstructions#columnNameInvalidCharacterReplacement()
+         * @see JdbcReadInstructions#columnNameMappingSupplier()
          */
-        Builder columnNameInvalidCharacterReplacement(String replacement);
+        Builder columnNameMappingSupplier(Supplier<Function<String, String>> columnNameMappingSupplier);
+
+        /**
+         * Convenience method to configure column name mapping using {@link StandardColumnNameMappingFunction} with the
+         * specified casing style and invalid character replacement.
+         *
+         * @param casingStyle the casing style to use for column names
+         * @param invalidCharacterReplacement the replacement string for invalid characters in column names
+         * @return this builder
+         */
+        default Builder columnNameMapping(CasingStyle casingStyle, String invalidCharacterReplacement) {
+            return columnNameMapping(StandardColumnNameMappingFunction.NamingParams.builder()
+                    .casingStyle(casingStyle)
+                    .invalidCharacterReplacement(invalidCharacterReplacement)
+                    .build());
+        }
+
+        /**
+         * Convenience method to configure column name mapping using {@link StandardColumnNameMappingFunction} with the
+         * specified naming parameters.
+         *
+         * @param namingParams the naming parameters to use
+         * @return this builder
+         */
+        default Builder columnNameMapping(StandardColumnNameMappingFunction.NamingParams namingParams) {
+            return columnNameMappingSupplier(() -> new StandardColumnNameMappingFunction(namingParams));
+        }
 
         /**
          * Sets the maximum number of rows to read.

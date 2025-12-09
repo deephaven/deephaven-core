@@ -222,7 +222,7 @@ public class JdbcTools {
             final JdbcReadInstructions instructions,
             String... inputColumnsToInclude) throws SQLException {
         return readJdbc(resultSet, instructions,
-                (rs, nr, ri) -> new TableRowSink(rs, nr, ri, null, inputColumnsToInclude));
+                (rs, nr, ri) -> new TableRowSink(rs, nr, ri, inputColumnsToInclude));
     }
 
     // region Name Mapping
@@ -249,22 +249,6 @@ public class JdbcTools {
         return resultSetColumnNames;
     }
 
-    /**
-     * Ensure we have a result set column name to output column name mapping function, either from the supplied function
-     * or by creating a default one.
-     *
-     * @param instructions The {@link JdbcReadInstructions} to use when creating a default mapping function
-     * @param resultSetColumnNameToOutputColumnName The supplied mapping function
-     * @return The mapping function to use
-     */
-    private static @NotNull Function<String, String> ensureResultSetColumnNameToOutputColumnName(
-            @NotNull final JdbcReadInstructions instructions,
-            @Nullable final Function<String, String> resultSetColumnNameToOutputColumnName) {
-        return resultSetColumnNameToOutputColumnName != null
-                ? resultSetColumnNameToOutputColumnName
-                : new StandardColumnNameMappingFunction(instructions);
-    }
-
     // endregion Name Mapping
 
     private interface SourceFiller extends SafeCloseable {
@@ -289,13 +273,12 @@ public class JdbcTools {
                 @NotNull final ResultSet resultSet,
                 final int numRows,
                 @NotNull final JdbcReadInstructions instructions,
-                @Nullable Function<String, String> resultSetColumnNameToTableColumnName,
                 @NotNull String... resultSetColumnNames) throws SQLException {
             this.resultSet = resultSet;
 
             resultSetColumnNames = ensureResultSetColumnNames(resultSet, resultSetColumnNames);
-            resultSetColumnNameToTableColumnName =
-                    ensureResultSetColumnNameToOutputColumnName(instructions, resultSetColumnNameToTableColumnName);
+            final Function<String, String> resultSetColumnNameToTableColumnName =
+                    instructions.columnNameMappingSupplier().get();
 
             final int numColumns = resultSetColumnNames.length;
             final String[] outputColumnNames = Arrays.stream(resultSetColumnNames)

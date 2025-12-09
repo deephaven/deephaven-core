@@ -245,8 +245,9 @@ public class JdbcToTableAdapter {
         @Deprecated
         public JdbcReadInstructions toInstructions() {
             return JdbcReadInstructions.builder()
-                    .columnNameCasingStyle(convertCasingStyle(getColumnNameCasingStyle()))
-                    .columnNameInvalidCharacterReplacement(getColumnNameInvalidCharacterReplacement())
+                    .columnNameMapping(
+                            convertCasingStyle(getColumnNameCasingStyle()),
+                            getColumnNameInvalidCharacterReplacement())
                     .maxRows(getMaxRows())
                     .strict(isStrict())
                     .sourceTimeZone(getSourceTimeZone().toZoneId())

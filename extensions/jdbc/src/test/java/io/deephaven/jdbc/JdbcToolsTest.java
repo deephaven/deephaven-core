@@ -92,7 +92,7 @@ public class JdbcToolsTest {
     public void testLowerCamelCasing() throws SQLException {
         final ResultSet rs = stmt.executeQuery("SELECT * from TestTable LIMIT 0");
         final JdbcReadInstructions instructions = JdbcReadInstructions.builder()
-                .columnNameCasingStyle(CasingStyle.lowerCamel)
+                .columnNameMapping(CasingStyle.lowerCamel, "_")
                 .build();
         final Table result = JdbcTools.readTable(rs, instructions);
 
@@ -109,7 +109,7 @@ public class JdbcToolsTest {
     public void testLowercaseCasing() throws SQLException {
         final ResultSet rs = stmt.executeQuery("SELECT * from TestTable LIMIT 0");
         final JdbcReadInstructions instructions = JdbcReadInstructions.builder()
-                .columnNameCasingStyle(CasingStyle.lowercase)
+                .columnNameMapping(CasingStyle.lowercase, "_")
                 .build();
         final Table result = JdbcTools.readTable(rs, instructions);
 
@@ -126,7 +126,7 @@ public class JdbcToolsTest {
     public void testUpperCamelCasing() throws SQLException {
         final ResultSet rs = stmt.executeQuery("SELECT * from TestTable LIMIT 0");
         final JdbcReadInstructions instructions = JdbcReadInstructions.builder()
-                .columnNameCasingStyle(CasingStyle.UpperCamel)
+                .columnNameMapping(CasingStyle.UpperCamel, "_")
                 .build();
         final Table result = JdbcTools.readTable(rs, instructions);
 
@@ -143,7 +143,7 @@ public class JdbcToolsTest {
     public void testUppercaseCasing() throws SQLException {
         final ResultSet rs = stmt.executeQuery("SELECT * from TestTable LIMIT 0");
         final JdbcReadInstructions instructions = JdbcReadInstructions.builder()
-                .columnNameCasingStyle(CasingStyle.UPPERCASE)
+                .columnNameMapping(CasingStyle.UPPERCASE, "_")
                 .build();
         final Table result = JdbcTools.readTable(rs, instructions);
 
@@ -160,8 +160,7 @@ public class JdbcToolsTest {
     public void testAlternateReplacement() throws SQLException {
         final ResultSet rs = stmt.executeQuery("SELECT * from TestTable LIMIT 0");
         final JdbcReadInstructions instructions = JdbcReadInstructions.builder()
-                .columnNameCasingStyle(CasingStyle.UPPERCASE)
-                .columnNameInvalidCharacterReplacement("_Z_")
+                .columnNameMapping(CasingStyle.UPPERCASE, "_Z_")
                 .build();
         final Table result = JdbcTools.readTable(rs, instructions);
 
@@ -178,7 +177,7 @@ public class JdbcToolsTest {
     public void testDefaultResultTypes() throws SQLException {
         final ResultSet rs = stmt.executeQuery("SELECT * from TestTable");
         final JdbcReadInstructions instructions = JdbcReadInstructions.builder()
-                .columnNameCasingStyle(CasingStyle.lowercase)
+                .columnNameMapping(CasingStyle.lowercase, "_")
                 .build();
         final Table result = JdbcTools.readTable(rs, instructions);
 
@@ -533,7 +532,7 @@ public class JdbcToolsTest {
     @Test
     public void testBoxedTypeMapsToPrimitive() throws SQLException {
         JdbcReadInstructions instructions = JdbcReadInstructions.builder()
-                .columnNameCasingStyle(CasingStyle.lowerCamel)
+                .columnNameMapping(CasingStyle.lowerCamel, "_")
                 .putColumnTargetTypes("smallIntType", Short.class)
                 .putColumnTargetTypes("intType", Integer.class)
                 .putColumnTargetTypes("bigIntType", Long.class)
@@ -638,7 +637,7 @@ public class JdbcToolsTest {
     @Test
     public void testThrowsMapperException() throws SQLException {
         JdbcReadInstructions instructions = JdbcReadInstructions.builder()
-                .columnNameCasingStyle(CasingStyle.lowerCamel)
+                .columnNameMapping(CasingStyle.lowerCamel, "_")
                 .putColumnTargetTypes("smallIntType", Object.class)
                 .build();
 
