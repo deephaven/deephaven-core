@@ -77,6 +77,8 @@ class TestBackend(TableDataServiceBackend):
         self.sub_new_partition_cancelled: bool = False
         self.sub_new_partition_fail_test: bool = False
         self.sub_partition_size_fail_test: bool = False
+        self.table_location_no_partition_test: bool = False
+        self.sub_table_location_no_partition_test: bool = False
         self.partitions: dict[TableLocationKey, pa.Table] = {}
         self.partitions_size_subscriptions: dict[TableLocationKey, bool] = {}
         self.existing_partitions_called: int = 0
@@ -115,13 +117,16 @@ class TestBackend(TableDataServiceBackend):
             partition_key = TableLocationKeyImpl(f"{ticker}/NYSE")
             self.partitions[partition_key] = pa_table
 
-            expr = (pc.field("Ticker") == f"{ticker}") & (
-                pc.field("Exchange") == "NYSE"
-            )
-            location_cb(
-                partition_key,
-                pa_table.filter(expr).select(["Ticker", "Exchange"]).slice(0, 1),
-            )
+            if self.table_location_no_partition_test:
+                location_cb(partition_key, None)
+            else:
+                expr = (pc.field("Ticker") == f"{ticker}") & (
+                    pc.field("Exchange") == "NYSE"
+                )
+                location_cb(
+                    partition_key,
+                    pa_table.filter(expr).select(["Ticker", "Exchange"]).slice(0, 1),
+                )
             self.existing_partitions_called += 1
 
             # indicate that we've finished notifying existing table locations
@@ -185,10 +190,13 @@ class TestBackend(TableDataServiceBackend):
             expr = (pc.field("Ticker") == f"{ticker}") & (
                 pc.field("Exchange") == "NYSE"
             )
-            location_cb(
-                partition_key,
-                pa_table.filter(expr).select(["Ticker", "Exchange"]).slice(0, 1),
-            )
+            if self.sub_table_location_no_partition_test:
+                location_cb(partition_key, None)
+            else:
+                location_cb(
+                    partition_key,
+                    pa_table.filter(expr).select(["Ticker", "Exchange"]).slice(0, 1),
+                )
             if self.sub_new_partition_fail_test:
                 failure_cb(Exception("table location subscription failure"))
                 return
@@ -607,6 +615,35 @@ class TableDataServiceTestCase(BaseTestCase):
             self.wait_ticking_table_update(table, 1024, 2)
 
         self.assertTrue(table.is_failed)
+
+    def test_make_static_table_no_partition(self):
+        backend = TestBackend(self.gen_pa_table(), pt_schema=self.pa_table.schema)
+        backend.table_location_no_partition_test = True
+        data_service = TableDataService(backend)
+        table = data_service.make_table(TableKeyImpl("test"), refreshing=False)
+        self.assertIsNotNone(table)
+        self.assertFalse(table.columns[0].column_type == ColumnType.PARTITIONING)
+        self.assertFalse(table.columns[1].column_type == ColumnType.PARTITIONING)
+        self.assertEqual(table.columns[2:], self.test_table.columns[2:])
+        self.assertEqual(table.size, 2)
+        self.assertEqual(backend.existing_partitions_called, 1)
+        self.assertEqual(backend.partition_size_called, 1)
+
+    def test_make_live_table_with_no_partition(self):
+        backend = TestBackend(self.gen_pa_table(), pt_schema=self.pa_table.schema)
+        data_service = TableDataService(backend)
+        backend.sub_table_location_no_partition_test = True
+        table = data_service.make_table(TableKeyImpl("test"), refreshing=True)
+        self.assertIsNotNone(table)
+        self.assertFalse(table.columns[0].column_type == ColumnType.PARTITIONING)
+        self.assertFalse(table.columns[1].column_type == ColumnType.PARTITIONING)
+        self.assertEqual(table.columns[2:], self.test_table.columns[2:])
+
+        self.wait_ticking_table_update(table, 20, 5)
+
+        self.assertGreaterEqual(table.size, 20)
+        self.assertEqual(backend.existing_partitions_called, 0)
+        self.assertEqual(backend.partition_size_called, 0)
 
 
 if __name__ == "__main__":
