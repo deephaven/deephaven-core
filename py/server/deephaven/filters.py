@@ -2,7 +2,7 @@
 # Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 #
 
-"""This module implement various filters that can be used in deephaven table's filter operations."""
+"""This module implements various filters that can be used in deephaven table's filter operations."""
 
 from __future__ import annotations
 
@@ -18,6 +18,10 @@ from deephaven.concurrency_control import Barrier, ConcurrencyControl
 from deephaven.jcompat import to_sequence
 
 _JFilter = jpy.get_type("io.deephaven.api.filter.Filter")
+_JFilterNot = jpy.get_type("io.deephaven.api.filter.FilterNot")
+_JFilterIn = jpy.get_type("io.deephaven.api.filter.FilterIn")
+_JFilterComparison = jpy.get_type("io.deephaven.api.filter.FilterComparison")
+_JLiteral = jpy.get_type("io.deephaven.api.literal.Literal")
 _JColumnName = jpy.get_type("io.deephaven.api.ColumnName")
 _JFilterPattern = jpy.get_type("io.deephaven.api.filter.FilterPattern")
 _JPatternMode = jpy.get_type("io.deephaven.api.filter.FilterPattern$Mode")
@@ -27,10 +31,16 @@ _JIncrementalReleaseFilter = jpy.get_type(
 )
 
 
+class ColumnName(str):
+    """A string subclass representing a column name."""
+
+    __slots__ = ()
+
+
 class Filter(ConcurrencyControl["Filter"], JObjectWrapper):
     """A Filter object represents a filter that can be used in Table's filtering(where) operations.
     Explicit concurrency and ordering control can be specified on a Filter to affects the parallelization of its
-    evaluation during Table filtering operation.
+    evaluation during the Table filtering operation.
     """
 
     j_object_type = _JFilter
@@ -171,7 +181,7 @@ def not_(filter_: Filter) -> Filter:
     Returns:
         a new not Filter
     """
-    return filter_.not_()
+    return Filter(j_filter=getattr(_JFilter, "not")(filter_.j_filter))
 
 
 def is_null(col: str) -> Filter:
@@ -263,3 +273,143 @@ def incremental_release(initial_rows: int, increment: int) -> Filter:
         return Filter(j_filter=_JIncrementalReleaseFilter(initial_rows, increment))
     except Exception as e:
         raise DHError(e, "failed to create incremental release filter.") from e
+
+
+def in_(col: str, values: Sequence[Union[bool, int, float, str]]) -> Filter:
+    """Creates a new filter that evaluates to true when the column's value is in the given values.
+
+    Args:
+        col (str): the column name
+        values (Sequence[Union[bool, int, float, str]]): the values to check against
+
+    Returns:
+        a new in Filter
+
+    Raises:
+        DHError
+    """
+    try:
+        j_literals = [_JLiteral.of(v) for v in values]
+        return Filter(j_filter=_JFilterIn.of(_JColumnName.of(col), j_literals))
+    except Exception as e:
+        raise DHError(e, "failed to create a in filter.") from e
+
+
+_FILTER_COMPARISON_MAP: dict = {
+    "eq": _JFilterComparison.eq,
+    "ne": _JFilterComparison.neq,
+    "lt": _JFilterComparison.lt,
+    "le": _JFilterComparison.leq,
+    "gt": _JFilterComparison.gt,
+    "ge": _JFilterComparison.geq,
+}
+
+
+def _j_filter_comparison(
+    op: str,
+    left: Union[bool, int, float, str, ColumnName],
+    right: Union[bool, int, float, str, ColumnName],
+) -> jpy.JType:
+    j_left = (
+        _JColumnName.of(left) if isinstance(left, ColumnName) else _JLiteral.of(left)
+    )
+    j_right = (
+        _JColumnName.of(right) if isinstance(right, ColumnName) else _JLiteral.of(right)
+    )
+    return _FILTER_COMPARISON_MAP[op](j_left, j_right)
+
+
+def eq(
+    left: Union[bool, int, float, str, ColumnName],
+    right: Union[bool, int, float, str, ColumnName],
+) -> Filter:
+    """Creates a new filter that evaluates to true when the left operand is equal to the right operand.
+
+    Args:
+        left (Union[bool, int, float, str, ColumnName]): the left operand, either a literal value or a column name
+        right (Union[bool, int, float, str, ColumnName]): the right operand, either a literal value or a column name
+
+    Returns:
+        Filter: a new equality filter
+    """
+    return Filter(j_filter=_j_filter_comparison("eq", left=left, right=right))
+
+
+def ne(
+    left: Union[bool, int, float, str, ColumnName],
+    right: Union[bool, int, float, str, ColumnName],
+) -> Filter:
+    """Creates a new filter that evaluates to true when the left operand is not equal to the right operand.
+
+    Args:
+        left (Union[bool, int, float, str, ColumnName]): the left operand, either a literal value or a column name
+        right (Union[bool, int, float, str, ColumnName]): the right operand, either a literal value or a column name
+
+    Returns:
+        Filter: a new inequality filter
+    """
+    return Filter(j_filter=_j_filter_comparison("ne", left=left, right=right))
+
+
+def lt(
+    left: Union[bool, int, float, str, ColumnName],
+    right: Union[bool, int, float, str, ColumnName],
+) -> Filter:
+    """Creates a new filter that evaluates to true when the left operand is less than the right operand.
+
+    Args:
+        left (Union[bool, int, float, str, ColumnName]): the left operand, either a literal value or a column name
+        right (Union[bool, int, float, str, ColumnName]): the right operand, either a literal value or a column name
+
+    Returns:
+        Filter: a new less-than filter
+    """
+    return Filter(j_filter=_j_filter_comparison("lt", left=left, right=right))
+
+
+def le(
+    left: Union[bool, int, float, str, ColumnName],
+    right: Union[bool, int, float, str, ColumnName],
+) -> Filter:
+    """Creates a new filter that evaluates to true when the left operand is less than or equal to the right operand.
+
+    Args:
+        left (Union[bool, int, float, str, ColumnName]): the left operand, either a literal value or a column name
+        right (Union[bool, int, float, str, ColumnName]): the right operand, either a literal value or a column name
+
+    Returns:
+        Filter: a new less-than-or-equal filter
+    """
+    return Filter(j_filter=_j_filter_comparison("le", left=left, right=right))
+
+
+def gt(
+    left: Union[bool, int, float, str, ColumnName],
+    right: Union[bool, int, float, str, ColumnName],
+) -> Filter:
+    """Creates a new filter that evaluates to true when the left operand is greater than the right operand.
+
+    Args:
+        left (Union[bool, int, float, str, ColumnName]): the left operand, either a literal value or a column name
+        right (Union[bool, int, float, str, ColumnName]): the right operand, either a literal value or a column name
+
+    Returns:
+        Filter: a new greater-than filter
+    """
+    return Filter(j_filter=_j_filter_comparison("gt", left=left, right=right))
+
+
+def ge(
+    left: Union[bool, int, float, str, ColumnName],
+    right: Union[bool, int, float, str, ColumnName],
+) -> Filter:
+    """Creates a new filter that evaluates to true when the left operand is greater than or equal to the right operand.
+
+    Args:
+        left (Union[bool, int, float, str, ColumnName]): the left operand, either a literal value or a column name
+        right (Union[bool, int, float, str, ColumnName]): the right operand, either a literal value or a column name
+
+    Returns:
+        Filter: a new greater-than-or-equal filter
+    """
+    return Filter(j_filter=_j_filter_comparison("ge", left=left, right=right))
