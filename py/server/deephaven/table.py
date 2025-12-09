@@ -8,7 +8,6 @@ instruments for working with Deephaven refreshing and static data."""
 from __future__ import annotations
 
 import contextlib
-import inspect
 import sys
 from collections.abc import Generator, Iterable, Mapping, Sequence
 from enum import Enum, auto
@@ -21,26 +20,25 @@ from typing import (
     Optional,
     Protocol,
     Union,
-    cast,
 )
 
 import jpy
 import numpy as np
 
 from deephaven import DHError, dtypes
-from deephaven._jpy import strict_cast
+from deephaven._query_scope import query_scope_ctx
 from deephaven._wrapper import JObjectWrapper, unwrap
 from deephaven.agg import Aggregation
 from deephaven.column import ColumnDefinition, col_def
 from deephaven.concurrency_control import Barrier, ConcurrencyControl
 from deephaven.filters import Filter, and_, or_
 from deephaven.jcompat import (
-    _to_sequence,
     j_array_list,
     j_binary_operator,
     j_hashmap,
     j_map_to_dict,
     j_unary_operator,
+    to_sequence,
 )
 from deephaven.update_graph import UpdateGraph, auto_locking_ctx
 from deephaven.updateby import UpdateByOperation
@@ -78,15 +76,6 @@ _JJoinAddition = jpy.get_type("io.deephaven.api.JoinAddition")
 _JAsOfJoinRule = jpy.get_type("io.deephaven.api.AsOfJoinRule")
 _JNaturalJoinType = jpy.get_type("io.deephaven.api.NaturalJoinType")
 _JTableOperations = jpy.get_type("io.deephaven.api.TableOperations")
-
-# Dynamic Query Scope
-_JExecutionContext = jpy.get_type("io.deephaven.engine.context.ExecutionContext")
-_JScriptSessionQueryScope = jpy.get_type(
-    "io.deephaven.engine.util.AbstractScriptSession$ScriptSessionQueryScope"
-)
-_JPythonScriptSession = cast(
-    type[Any], jpy.get_type("io.deephaven.integrations.python.PythonDeephavenSession")
-)  # type: TypeAlias
 
 # Rollup Table and Tree Table
 _JRollupTable = jpy.get_type("io.deephaven.engine.table.hierarchical.RollupTable")
@@ -175,7 +164,7 @@ class Selectable(ConcurrencyControl["Selectable"], JObjectWrapper):
             DHError
         """
         try:
-            barriers = _to_sequence(barriers)
+            barriers = to_sequence(barriers)
             return Selectable(
                 j_selectable=self.j_selectable.withDeclaredBarriers(*barriers)
             )
@@ -199,7 +188,7 @@ class Selectable(ConcurrencyControl["Selectable"], JObjectWrapper):
             DHError
         """
         try:
-            barriers = _to_sequence(barriers)
+            barriers = to_sequence(barriers)
             return Selectable(
                 j_selectable=self.j_selectable.withRespectedBarriers(*barriers)
             )
@@ -285,7 +274,7 @@ class _FormatOperationsRecorder(Protocol):
 
     def format_column(self, formulas: Union[str, Sequence[str]]):
         """Returns a new recorder with the :meth:`~deephaven.table.Table.format_columns` operation applied to nodes."""
-        formulas = _to_sequence(formulas)
+        formulas = to_sequence(formulas)
         j_format_ops_recorder = jpy.cast(
             self.j_node_ops_recorder, _JFormatOperationsRecorder
         )
@@ -320,7 +309,7 @@ class _SortOperationsRecorder(Protocol):
 
     def sort(self, order_by: Union[str, Sequence[str]]):
         """Returns a new recorder with the :meth:`~deephaven.table.Table.sort` operation applied to nodes."""
-        order_by = _to_sequence(order_by)
+        order_by = to_sequence(order_by)
         j_sort_ops_recorder = jpy.cast(
             self.j_node_ops_recorder, _JSortOperationsRecorder
         )
@@ -328,7 +317,7 @@ class _SortOperationsRecorder(Protocol):
 
     def sort_descending(self, order_by: Union[str, Sequence[str]]):
         """Returns a new recorder with the :meth:`~deephaven.table.Table.sort_descending` applied to nodes."""
-        order_by = _to_sequence(order_by)
+        order_by = to_sequence(order_by)
         j_sort_ops_recorder = jpy.cast(
             self.j_node_ops_recorder, _JSortOperationsRecorder
         )
@@ -360,7 +349,7 @@ class _UpdateViewOperationsRecorder(Protocol):
 
     def update_view(self, formulas: Union[str, Sequence[str]]):
         """Returns a new recorder with the :meth:`~deephaven.table.Table.update_view` operation applied to nodes."""
-        formulas = _to_sequence(formulas)
+        formulas = to_sequence(formulas)
         j_update_view_ops_recorder = jpy.cast(
             self.j_node_ops_recorder, _JUpdateViewOperationsRecorder
         )
@@ -511,7 +500,7 @@ class RollupTable(JObjectWrapper):
             DHError
         """
         try:
-            formulas = _to_sequence(formulas)
+            formulas = to_sequence(formulas)
             return RollupTable(
                 j_rollup_table=self.j_rollup_table.withUpdateView(*formulas),
                 include_constituents=self.include_constituents,
@@ -631,54 +620,13 @@ class TreeTable(JObjectWrapper):
             raise DHError(e, "with_filters operation on TreeTable failed.") from e
 
 
-def _j_py_script_session() -> _JPythonScriptSession:
-    j_execution_context = _JExecutionContext.getContext()
-    j_query_scope = j_execution_context.getQueryScope()
-    try:
-        j_script_session_query_scope = strict_cast(
-            j_query_scope, _JScriptSessionQueryScope
-        )
-        return strict_cast(
-            j_script_session_query_scope.scriptSession(), _JPythonScriptSession
-        )
-    except DHError:
-        return None
-
-
-@contextlib.contextmanager
-def _query_scope_ctx() -> Generator[None, None, None]:
-    """A context manager to set/unset query scope based on the scope of the most immediate caller code that invokes
-    Table operations."""
-
-    # locate the innermost Deephaven frame (i.e. any of the table operation methods that use this context manager)
-    outer_frames = inspect.getouterframes(inspect.currentframe())[1:]
-    for i, (frame, filename, *_) in enumerate(outer_frames):
-        if filename and filename == __file__:
-            break
-
-    # combine the immediate caller's globals and locals into a single dict and use it as the query scope
-    caller_frame = outer_frames[i + 1].frame
-    function = outer_frames[i + 1].function
-    j_py_script_session = _j_py_script_session()
-    if j_py_script_session and (len(outer_frames) > i + 2 or function != "<module>"):
-        scope_dict = caller_frame.f_globals.copy()
-        scope_dict.update(caller_frame.f_locals)
-        j_py_script_session.pushScope(scope_dict)
-        try:
-            yield
-        finally:
-            j_py_script_session.popScope()
-    else:
-        # in the __main__ module, use the default main global scope
-        yield
-
-
 def _query_scope_agg_ctx(
     aggs: Sequence[Aggregation],
 ) -> contextlib.AbstractContextManager:
+    cm: contextlib.AbstractContextManager
     has_agg_formula = any([agg.is_formula for agg in aggs])
     if has_agg_formula:
-        cm: contextlib.AbstractContextManager = _query_scope_ctx()
+        cm = query_scope_ctx()
     else:
         cm = contextlib.nullcontext()
     return cm
@@ -1085,7 +1033,7 @@ class Table(JObjectWrapper):
         Returns:
             bool
         """
-        cols = _to_sequence(cols)
+        cols = to_sequence(cols)
         return self.j_table.hasColumns(cols)
 
     def attributes(self) -> dict[str, Any]:
@@ -1132,7 +1080,7 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
-            j_attrs = j_array_list(_to_sequence(attrs))
+            j_attrs = j_array_list(to_sequence(attrs))
             return Table(
                 j_table=jpy.cast(self.j_table, _JAttributeMap).withoutAttributes(
                     j_attrs
@@ -1157,7 +1105,7 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
-            cols = _to_sequence(cols)
+            cols = to_sequence(cols)
             return _JTableTools.string(self.j_table, num_rows, *cols)
         except Exception as e:
             raise DHError(e, "table to_string failed") from e
@@ -1229,7 +1177,7 @@ class Table(JObjectWrapper):
         """
         try:
             options = _JSnapshotWhenOptions.of(
-                initial, incremental, history, _to_sequence(stamp_cols)
+                initial, incremental, history, to_sequence(stamp_cols)
             )
             with auto_locking_ctx(self, trigger_table):
                 return Table(
@@ -1256,7 +1204,7 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
-            cols = _to_sequence(cols)
+            cols = to_sequence(cols)
             return Table(j_table=self.j_table.dropColumns(*cols))
         except Exception as e:
             raise DHError(e, "table drop_columns operation failed.") from e
@@ -1277,7 +1225,7 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
-            cols = _to_sequence(cols)
+            cols = to_sequence(cols)
             return Table(j_table=self.j_table.moveColumns(idx, *cols))
         except Exception as e:
             raise DHError(e, "table move_columns operation failed.") from e
@@ -1298,7 +1246,7 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
-            cols = _to_sequence(cols)
+            cols = to_sequence(cols)
             return Table(j_table=self.j_table.moveColumnsDown(*cols))
         except Exception as e:
             raise DHError(e, "table move_columns_down operation failed.") from e
@@ -1319,7 +1267,7 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
-            cols = _to_sequence(cols)
+            cols = to_sequence(cols)
             return Table(j_table=self.j_table.moveColumnsUp(*cols))
         except Exception as e:
             raise DHError(e, "table move_columns_up operation failed.") from e
@@ -1340,7 +1288,7 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
-            cols = _to_sequence(cols)
+            cols = to_sequence(cols)
             return Table(j_table=self.j_table.renameColumns(*cols))
         except Exception as e:
             raise DHError(e, "table rename_columns operation failed.") from e
@@ -1361,8 +1309,8 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
-            formulas = _to_sequence(formulas)
-            with _query_scope_ctx(), auto_locking_ctx(self):
+            formulas = to_sequence(formulas)
+            with query_scope_ctx(), auto_locking_ctx(self):
                 if isinstance(formulas[0], Selectable.j_object_type):
                     return Table(j_table=self.j_table.update(j_array_list(formulas)))
                 else:
@@ -1383,8 +1331,8 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
-            formulas = _to_sequence(formulas)
-            with _query_scope_ctx(), auto_locking_ctx(self):
+            formulas = to_sequence(formulas)
+            with query_scope_ctx(), auto_locking_ctx(self):
                 return Table(j_table=self.j_table.lazyUpdate(*formulas))
         except Exception as e:
             raise DHError(e, "table lazy_update operation failed.") from e
@@ -1402,8 +1350,8 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
-            formulas = _to_sequence(formulas)
-            with _query_scope_ctx():
+            formulas = to_sequence(formulas)
+            with query_scope_ctx():
                 return Table(j_table=self.j_table.view(*formulas))
         except Exception as e:
             raise DHError(e, "table view operation failed.") from e
@@ -1421,8 +1369,8 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
-            formulas = _to_sequence(formulas)
-            with _query_scope_ctx():
+            formulas = to_sequence(formulas)
+            with query_scope_ctx():
                 return Table(j_table=self.j_table.updateView(*formulas))
         except Exception as e:
             raise DHError(e, "table update_view operation failed.") from e
@@ -1447,11 +1395,11 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
-            with _query_scope_ctx(), auto_locking_ctx(self):
+            with query_scope_ctx(), auto_locking_ctx(self):
                 if not formulas:
                     return Table(j_table=self.j_table.select())
 
-                formulas = _to_sequence(formulas)
+                formulas = to_sequence(formulas)
                 if isinstance(formulas[0], Selectable.j_object_type):
                     return Table(j_table=self.j_table.select(j_array_list(formulas)))
                 else:
@@ -1476,8 +1424,8 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
-            formulas = _to_sequence(formulas)
-            with _query_scope_ctx():
+            formulas = to_sequence(formulas)
+            with query_scope_ctx():
                 return Table(j_table=self.j_table.selectDistinct(*formulas))
         except Exception as e:
             raise DHError(e, "table select_distinct operation failed.") from e
@@ -1507,8 +1455,8 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
-            filters = _to_sequence(filters)
-            with _query_scope_ctx():
+            filters = to_sequence(filters)
+            with query_scope_ctx():
                 return Table(j_table=self.j_table.where(and_(filters).j_filter))
         except Exception as e:
             raise DHError(e, "table where operation failed.") from e
@@ -1528,7 +1476,7 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
-            cols = _to_sequence(cols)
+            cols = to_sequence(cols)
             with auto_locking_ctx(self, filter_table):
                 return Table(j_table=self.j_table.whereIn(filter_table.j_table, *cols))
         except Exception as e:
@@ -1551,7 +1499,7 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
-            cols = _to_sequence(cols)
+            cols = to_sequence(cols)
             with auto_locking_ctx(self, filter_table):
                 return Table(
                     j_table=self.j_table.whereNotIn(filter_table.j_table, *cols)
@@ -1577,8 +1525,8 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
-            filters = _to_sequence(filters)
-            with _query_scope_ctx():
+            filters = to_sequence(filters)
+            with query_scope_ctx():
                 return Table(j_table=self.j_table.where(or_(filters).j_filter))
         except Exception as e:
             raise DHError(e, "table where_one_of operation failed.") from e
@@ -1672,7 +1620,7 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
-            cols = _to_sequence(cols)
+            cols = to_sequence(cols)
             return Table(self.j_table.restrictSortTo(*cols))
         except Exception as e:
             raise DHError(e, "table restrict_sort_to operation failed.") from e
@@ -1691,7 +1639,7 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
-            order_by = _to_sequence(order_by)
+            order_by = to_sequence(order_by)
             return Table(j_table=self.j_table.sortDescending(*order_by))
         except Exception as e:
             raise DHError(e, "table sort_descending operation failed.") from e
@@ -1730,11 +1678,11 @@ class Table(JObjectWrapper):
         """
 
         try:
-            order_by = _to_sequence(order_by)
+            order_by = to_sequence(order_by)
             if not order:
                 order = (SortDirection.ASCENDING,) * len(order_by)
             else:
-                order = _to_sequence(order)
+                order = to_sequence(order)
                 if any(
                     [
                         o not in (SortDirection.ASCENDING, SortDirection.DESCENDING)
@@ -1792,8 +1740,8 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
-            on = _to_sequence(on)
-            joins = _to_sequence(joins)
+            on = to_sequence(on)
+            joins = to_sequence(joins)
             with auto_locking_ctx(self, table):
                 if joins:
                     return Table(
@@ -1835,8 +1783,8 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
-            on = _to_sequence(on)
-            joins = _to_sequence(joins)
+            on = to_sequence(on)
+            joins = to_sequence(joins)
             with auto_locking_ctx(self, table):
                 if joins:
                     return Table(
@@ -1877,8 +1825,8 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
-            on = _to_sequence(on)
-            joins = _to_sequence(joins)
+            on = to_sequence(on)
+            joins = to_sequence(joins)
             with auto_locking_ctx(self, table):
                 if joins:
                     return Table(
@@ -1918,8 +1866,8 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
-            on = ",".join(_to_sequence(on))
-            joins = ",".join(_to_sequence(joins))
+            on = ",".join(to_sequence(on))
+            joins = ",".join(to_sequence(joins))
             table_op = jpy.cast(self.j_object, _JTableOperations)
             with auto_locking_ctx(self, table):
                 return Table(j_table=table_op.aj(table.j_table, on, joins))
@@ -1954,8 +1902,8 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
-            on = ",".join(_to_sequence(on))
-            joins = ",".join(_to_sequence(joins))
+            on = ",".join(to_sequence(on))
+            joins = ",".join(to_sequence(joins))
             table_op = jpy.cast(self.j_object, _JTableOperations)
             with auto_locking_ctx(self, table):
                 return Table(j_table=table_op.raj(table.j_table, on, joins))
@@ -2065,8 +2013,8 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
-            on = _to_sequence(on)
-            aggs = _to_sequence(aggs)
+            on = to_sequence(on)
+            aggs = to_sequence(aggs)
             j_agg_list = j_array_list([agg.j_aggregation for agg in aggs])
             return Table(
                 j_table=self.j_table.rangeJoin(
@@ -2098,7 +2046,7 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
-            by = _to_sequence(by)
+            by = to_sequence(by)
             with auto_locking_ctx(self):
                 return Table(j_table=self.j_table.headBy(num_rows, *by))
         except Exception as e:
@@ -2120,7 +2068,7 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
-            by = _to_sequence(by)
+            by = to_sequence(by)
             with auto_locking_ctx(self):
                 return Table(j_table=self.j_table.tailBy(num_rows, *by))
         except Exception as e:
@@ -2140,7 +2088,7 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
-            by = _to_sequence(by)
+            by = to_sequence(by)
             if by:
                 return Table(j_table=self.j_table.groupBy(*by))
             else:
@@ -2163,7 +2111,7 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
-            cols = _to_sequence(cols)
+            cols = to_sequence(cols)
             with auto_locking_ctx(self):
                 if cols:
                     return Table(j_table=self.j_table.ungroup(*cols))
@@ -2185,7 +2133,7 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
-            by = _to_sequence(by)
+            by = to_sequence(by)
             if by:
                 return Table(j_table=self.j_table.firstBy(*by))
             else:
@@ -2206,7 +2154,7 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
-            by = _to_sequence(by)
+            by = to_sequence(by)
             if by:
                 return Table(j_table=self.j_table.lastBy(*by))
             else:
@@ -2227,7 +2175,7 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
-            by = _to_sequence(by)
+            by = to_sequence(by)
             if by:
                 return Table(j_table=self.j_table.sumBy(*by))
             else:
@@ -2248,7 +2196,7 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
-            by = _to_sequence(by)
+            by = to_sequence(by)
             if by:
                 return Table(j_table=self.j_table.absSumBy(*by))
             else:
@@ -2272,7 +2220,7 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
-            by = _to_sequence(by)
+            by = to_sequence(by)
             if by:
                 return Table(j_table=self.j_table.wsumBy(wcol, *by))
             else:
@@ -2293,7 +2241,7 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
-            by = _to_sequence(by)
+            by = to_sequence(by)
             if by:
                 return Table(j_table=self.j_table.avgBy(*by))
             else:
@@ -2317,7 +2265,7 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
-            by = _to_sequence(by)
+            by = to_sequence(by)
             if by:
                 return Table(j_table=self.j_table.wavgBy(wcol, *by))
             else:
@@ -2342,7 +2290,7 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
-            by = _to_sequence(by)
+            by = to_sequence(by)
             if by:
                 return Table(j_table=self.j_table.stdBy(*by))
             else:
@@ -2366,7 +2314,7 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
-            by = _to_sequence(by)
+            by = to_sequence(by)
             if by:
                 return Table(j_table=self.j_table.varBy(*by))
             else:
@@ -2387,7 +2335,7 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
-            by = _to_sequence(by)
+            by = to_sequence(by)
             if by:
                 return Table(j_table=self.j_table.medianBy(*by))
             else:
@@ -2408,7 +2356,7 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
-            by = _to_sequence(by)
+            by = to_sequence(by)
             if by:
                 return Table(j_table=self.j_table.minBy(*by))
             else:
@@ -2429,7 +2377,7 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
-            by = _to_sequence(by)
+            by = to_sequence(by)
             if by:
                 return Table(j_table=self.j_table.maxBy(*by))
             else:
@@ -2453,7 +2401,7 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
-            by = _to_sequence(by)
+            by = to_sequence(by)
             if by:
                 return Table(j_table=self.j_table.countBy(col, *by))
             else:
@@ -2493,8 +2441,8 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
-            aggs = _to_sequence(aggs)
-            by = _to_sequence(by)
+            aggs = to_sequence(aggs)
+            by = to_sequence(by)
             if not by and initial_groups:
                 raise ValueError(
                     "missing group-by column names when initial_groups is provided."
@@ -2554,8 +2502,8 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
-            aggs = _to_sequence(aggs)
-            by = _to_sequence(by)
+            aggs = to_sequence(aggs)
+            by = to_sequence(by)
             j_agg_list = j_array_list([agg.j_aggregation for agg in aggs])
             initial_groups = unwrap(initial_groups)
 
@@ -2589,7 +2537,7 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
-            by = _to_sequence(by)
+            by = to_sequence(by)
             cm = _query_scope_agg_ctx([agg])
             with cm:
                 return Table(j_table=self.j_table.aggAllBy(agg.j_agg_spec, *by))
@@ -2612,8 +2560,8 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
-            formulas = _to_sequence(formulas)
-            with _query_scope_ctx():
+            formulas = to_sequence(formulas)
+            with query_scope_ctx():
                 return Table(j_table=self.j_table.formatColumns(formulas))
         except Exception as e:
             raise DHError(e, "failed to color format columns.") from e
@@ -2634,7 +2582,7 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
-            with _query_scope_ctx():
+            with query_scope_ctx():
                 return Table(j_table=self.j_table.formatColumnWhere(col, cond, formula))
         except Exception as e:
             raise DHError(e, "failed to color format column conditionally.") from e
@@ -2654,7 +2602,7 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
-            with _query_scope_ctx():
+            with query_scope_ctx():
                 return Table(j_table=self.j_table.formatRowWhere(cond, formula))
         except Exception as e:
             raise DHError(e, "failed to color format rows conditionally.") from e
@@ -2699,16 +2647,16 @@ class Table(JObjectWrapper):
             _j_layout_hint_builder = _JLayoutHintBuilder.get()
 
             if front is not None:
-                _j_layout_hint_builder.atFront(_to_sequence(front))
+                _j_layout_hint_builder.atFront(to_sequence(front))
 
             if back is not None:
-                _j_layout_hint_builder.atBack(_to_sequence(back))
+                _j_layout_hint_builder.atBack(to_sequence(back))
 
             if freeze is not None:
-                _j_layout_hint_builder.freeze(_to_sequence(freeze))
+                _j_layout_hint_builder.freeze(to_sequence(freeze))
 
             if hide is not None:
-                _j_layout_hint_builder.hide(_to_sequence(hide))
+                _j_layout_hint_builder.hide(to_sequence(hide))
 
             if column_groups is not None:
                 for group in column_groups:
@@ -2750,7 +2698,7 @@ class Table(JObjectWrapper):
             if not isinstance(drop_keys, bool):
                 raise DHError(message="drop_keys must be a boolean value.")
 
-            by = _to_sequence(by)
+            by = to_sequence(by)
             return PartitionedTable(
                 j_partitioned_table=self.j_table.partitionBy(drop_keys, *by)
             )
@@ -2778,8 +2726,8 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
-            ops = _to_sequence(ops)
-            by = _to_sequence(by)
+            ops = to_sequence(ops)
+            by = to_sequence(by)
             with auto_locking_ctx(self):
                 return Table(j_table=self.j_table.updateBy(j_array_list(ops), *by))
         except Exception as e:
@@ -2877,8 +2825,8 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
-            aggs = _to_sequence(aggs)
-            by = _to_sequence(by)
+            aggs = to_sequence(aggs)
+            by = to_sequence(by)
             j_agg_list = j_array_list([agg.j_aggregation for agg in aggs])
 
             cm = _query_scope_agg_ctx(aggs)
@@ -3059,7 +3007,7 @@ class PartitionedTable(JObjectWrapper):
                 ).j_table_definition
                 j_partitioned_table = _JPartitionedTableFactory.of(
                     table.j_table,
-                    j_array_list(_to_sequence(key_cols)),
+                    j_array_list(to_sequence(key_cols)),
                     unique_keys,
                     constituent_column,
                     table_def,
@@ -3102,7 +3050,7 @@ class PartitionedTable(JObjectWrapper):
             if not constituent_table_columns:
                 return PartitionedTable(
                     j_partitioned_table=_JPartitionedTableFactory.ofTables(
-                        _to_sequence(tables)
+                        to_sequence(tables)
                     )
                 )
             else:
@@ -3111,7 +3059,7 @@ class PartitionedTable(JObjectWrapper):
                 ).j_table_definition
                 return PartitionedTable(
                     j_partitioned_table=_JPartitionedTableFactory.ofTables(
-                        table_def, _to_sequence(tables)
+                        table_def, to_sequence(tables)
                     )
                 )
         except Exception as e:
@@ -3221,9 +3169,9 @@ class PartitionedTable(JObjectWrapper):
         Raises:
             DHError
         """
-        filters = _to_sequence(filters)
+        filters = to_sequence(filters)
         if isinstance(filters[0], str):
-            filters = _to_sequence(Filter.from_(filters))  # type: ignore[arg-type]
+            filters = to_sequence(Filter.from_(filters))  # type: ignore[arg-type]
 
         try:
             return PartitionedTable(
@@ -3255,10 +3203,10 @@ class PartitionedTable(JObjectWrapper):
         """
 
         try:
-            order_by = _to_sequence(order_by)
+            order_by = to_sequence(order_by)
             if not order:
                 order = (SortDirection.ASCENDING,) * len(order_by)
-            order = _to_sequence(order)
+            order = to_sequence(order)
             if len(order_by) != len(order):
                 raise DHError(
                     message="The number of sort columns must be the same as the number of sort directions."
@@ -3288,7 +3236,7 @@ class PartitionedTable(JObjectWrapper):
             DHError
         """
         try:
-            key_values = _to_sequence(key_values)
+            key_values = to_sequence(key_values)
             j_table = self.j_partitioned_table.constituentFor(key_values)
             if j_table:
                 return Table(j_table=j_table)
@@ -3329,7 +3277,7 @@ class PartitionedTable(JObjectWrapper):
                 func,
                 dtypes.from_jtype(Table.j_object_type.jclass),  # type: ignore[arg-type]
             )
-            dependencies = _to_sequence(dependencies, wrapped=True)
+            dependencies = to_sequence(dependencies, wrapped=True)
             j_dependencies = [
                 d.j_table
                 for d in dependencies
@@ -3382,7 +3330,7 @@ class PartitionedTable(JObjectWrapper):
                 func,
                 dtypes.from_jtype(Table.j_object_type.jclass),  # type: ignore[arg-type]
             )
-            dependencies = _to_sequence(dependencies, wrapped=True)
+            dependencies = to_sequence(dependencies, wrapped=True)
             j_dependencies = [
                 d.j_table
                 for d in dependencies
@@ -3584,7 +3532,7 @@ class PartitionedTableProxy(JObjectWrapper):
         """
         try:
             options = _JSnapshotWhenOptions.of(
-                initial, incremental, history, _to_sequence(stamp_cols)
+                initial, incremental, history, to_sequence(stamp_cols)
             )
             with auto_locking_ctx(self, trigger_table):
                 return PartitionedTableProxy(
@@ -3621,7 +3569,7 @@ class PartitionedTableProxy(JObjectWrapper):
             if not order:
                 order = (SortDirection.ASCENDING,) * len(order_by)
             else:
-                order = _to_sequence(order)
+                order = to_sequence(order)
                 if any(
                     [
                         o not in (SortDirection.ASCENDING, SortDirection.DESCENDING)
@@ -3664,7 +3612,7 @@ class PartitionedTableProxy(JObjectWrapper):
             DHError
         """
         try:
-            order_by = _to_sequence(order_by)
+            order_by = to_sequence(order_by)
             with auto_locking_ctx(self):
                 return PartitionedTableProxy(
                     j_pt_proxy=self.j_pt_proxy.sortDescending(*order_by)
@@ -3693,8 +3641,8 @@ class PartitionedTableProxy(JObjectWrapper):
             DHError
         """
         try:
-            filters = _to_sequence(filters)
-            with _query_scope_ctx(), auto_locking_ctx(self):
+            filters = to_sequence(filters)
+            with query_scope_ctx(), auto_locking_ctx(self):
                 return PartitionedTableProxy(
                     j_pt_proxy=self.j_pt_proxy.where(and_(filters).j_filter)
                 )
@@ -3721,7 +3669,7 @@ class PartitionedTableProxy(JObjectWrapper):
             DHError
         """
         try:
-            cols = _to_sequence(cols)
+            cols = to_sequence(cols)
             with auto_locking_ctx(self, filter_table):
                 return PartitionedTableProxy(
                     j_pt_proxy=self.j_pt_proxy.whereIn(filter_table.j_table, *cols)
@@ -3749,7 +3697,7 @@ class PartitionedTableProxy(JObjectWrapper):
             DHError
         """
         try:
-            cols = _to_sequence(cols)
+            cols = to_sequence(cols)
             with auto_locking_ctx(self, filter_table):
                 return PartitionedTableProxy(
                     j_pt_proxy=self.j_pt_proxy.whereNotIn(filter_table.j_table, *cols)
@@ -3774,8 +3722,8 @@ class PartitionedTableProxy(JObjectWrapper):
             DHError
         """
         try:
-            formulas = _to_sequence(formulas)
-            with _query_scope_ctx(), auto_locking_ctx(self):
+            formulas = to_sequence(formulas)
+            with query_scope_ctx(), auto_locking_ctx(self):
                 return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.view(*formulas))
         except Exception as e:
             raise DHError(
@@ -3797,8 +3745,8 @@ class PartitionedTableProxy(JObjectWrapper):
             DHError
         """
         try:
-            formulas = _to_sequence(formulas)
-            with _query_scope_ctx(), auto_locking_ctx(self):
+            formulas = to_sequence(formulas)
+            with query_scope_ctx(), auto_locking_ctx(self):
                 return PartitionedTableProxy(
                     j_pt_proxy=self.j_pt_proxy.updateView(*formulas)
                 )
@@ -3825,8 +3773,8 @@ class PartitionedTableProxy(JObjectWrapper):
             DHError
         """
         try:
-            formulas = _to_sequence(formulas)
-            with _query_scope_ctx(), auto_locking_ctx(self):
+            formulas = to_sequence(formulas)
+            with query_scope_ctx(), auto_locking_ctx(self):
                 if isinstance(formulas[0], Selectable.j_object_type):
                     return PartitionedTableProxy(
                         j_pt_proxy=self.j_pt_proxy.update(j_array_list(formulas))
@@ -3861,11 +3809,9 @@ class PartitionedTableProxy(JObjectWrapper):
             DHError
         """
         try:
-            formulas = _to_sequence(formulas)
-            with _query_scope_ctx(), auto_locking_ctx(self):
-                if not formulas:
-                    return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.select())
-                elif isinstance(formulas[0], Selectable.j_object_type):
+            formulas = to_sequence(formulas)
+            with query_scope_ctx(), auto_locking_ctx(self):
+                if isinstance(formulas[0], Selectable.j_object_type):
                     return PartitionedTableProxy(
                         j_pt_proxy=self.j_pt_proxy.select(j_array_list(formulas))
                     )
@@ -3895,8 +3841,8 @@ class PartitionedTableProxy(JObjectWrapper):
             DHError
         """
         try:
-            formulas = _to_sequence(formulas)
-            with _query_scope_ctx(), auto_locking_ctx(self):
+            formulas = to_sequence(formulas)
+            with query_scope_ctx(), auto_locking_ctx(self):
                 return PartitionedTableProxy(
                     j_pt_proxy=self.j_pt_proxy.selectDistinct(*formulas)
                 )
@@ -3932,8 +3878,8 @@ class PartitionedTableProxy(JObjectWrapper):
             DHError
         """
         try:
-            on = _to_sequence(on)
-            joins = _to_sequence(joins)
+            on = to_sequence(on)
+            joins = to_sequence(joins)
             table_op = jpy.cast(table.j_object, _JTableOperations)
             with auto_locking_ctx(self, table):
                 if joins:
@@ -3978,8 +3924,8 @@ class PartitionedTableProxy(JObjectWrapper):
             DHError
         """
         try:
-            on = _to_sequence(on)
-            joins = _to_sequence(joins)
+            on = to_sequence(on)
+            joins = to_sequence(joins)
             table_op = jpy.cast(table.j_object, _JTableOperations)
             with auto_locking_ctx(self, table):
                 if joins:
@@ -4025,8 +3971,8 @@ class PartitionedTableProxy(JObjectWrapper):
             DHError
         """
         try:
-            on = _to_sequence(on)
-            joins = _to_sequence(joins)
+            on = to_sequence(on)
+            joins = to_sequence(joins)
             table_op = jpy.cast(table.j_object, _JTableOperations)
             with auto_locking_ctx(self, table):
                 if joins:
@@ -4072,8 +4018,8 @@ class PartitionedTableProxy(JObjectWrapper):
             DHError
         """
         try:
-            on = ",".join(_to_sequence(on))
-            joins = ",".join(_to_sequence(joins))
+            on = ",".join(to_sequence(on))
+            joins = ",".join(to_sequence(joins))
             table_op = jpy.cast(self.j_object, _JTableOperations)
             r_table_op = jpy.cast(table.j_object, _JTableOperations)
 
@@ -4114,8 +4060,8 @@ class PartitionedTableProxy(JObjectWrapper):
             DHError
         """
         try:
-            on = ",".join(_to_sequence(on))
-            joins = ",".join(_to_sequence(joins))
+            on = ",".join(to_sequence(on))
+            joins = ",".join(to_sequence(joins))
             table_op = jpy.cast(self.j_object, _JTableOperations)
             r_table_op = jpy.cast(table.j_object, _JTableOperations)
 
@@ -4145,7 +4091,7 @@ class PartitionedTableProxy(JObjectWrapper):
             DHError
         """
         try:
-            by = _to_sequence(by)
+            by = to_sequence(by)
             with auto_locking_ctx(self):
                 if by:
                     return PartitionedTableProxy(
@@ -4178,8 +4124,8 @@ class PartitionedTableProxy(JObjectWrapper):
             DHError
         """
         try:
-            aggs = _to_sequence(aggs)
-            by = _to_sequence(by)
+            aggs = to_sequence(aggs)
+            by = to_sequence(by)
             j_agg_list = j_array_list([agg.j_aggregation for agg in aggs])
 
             cm = _query_scope_agg_ctx(aggs)
@@ -4214,9 +4160,9 @@ class PartitionedTableProxy(JObjectWrapper):
             DHError
         """
         try:
-            by = _to_sequence(by)
+            by = to_sequence(by)
 
-            cm = _query_scope_agg_ctx([agg])
+            cm: contextlib.AbstractContextManager = _query_scope_agg_ctx([agg])
             with cm:
                 with auto_locking_ctx(self):
                     return PartitionedTableProxy(
@@ -4245,7 +4191,7 @@ class PartitionedTableProxy(JObjectWrapper):
             DHError
         """
         try:
-            by = _to_sequence(by)
+            by = to_sequence(by)
             with auto_locking_ctx(self):
                 if by:
                     return PartitionedTableProxy(
@@ -4277,7 +4223,7 @@ class PartitionedTableProxy(JObjectWrapper):
             DHError
         """
         try:
-            by = _to_sequence(by)
+            by = to_sequence(by)
             with auto_locking_ctx(self):
                 if by:
                     return PartitionedTableProxy(
@@ -4307,7 +4253,7 @@ class PartitionedTableProxy(JObjectWrapper):
             DHError
         """
         try:
-            by = _to_sequence(by)
+            by = to_sequence(by)
             with auto_locking_ctx(self):
                 if by:
                     return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.lastBy(*by))
@@ -4335,7 +4281,7 @@ class PartitionedTableProxy(JObjectWrapper):
             DHError
         """
         try:
-            by = _to_sequence(by)
+            by = to_sequence(by)
             with auto_locking_ctx(self):
                 if by:
                     return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.minBy(*by))
@@ -4363,7 +4309,7 @@ class PartitionedTableProxy(JObjectWrapper):
             DHError
         """
         try:
-            by = _to_sequence(by)
+            by = to_sequence(by)
             with auto_locking_ctx(self):
                 if by:
                     return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.maxBy(*by))
@@ -4391,7 +4337,7 @@ class PartitionedTableProxy(JObjectWrapper):
             DHError
         """
         try:
-            by = _to_sequence(by)
+            by = to_sequence(by)
             with auto_locking_ctx(self):
                 if by:
                     return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.sumBy(*by))
@@ -4419,7 +4365,7 @@ class PartitionedTableProxy(JObjectWrapper):
             DHError
         """
         try:
-            by = _to_sequence(by)
+            by = to_sequence(by)
             with auto_locking_ctx(self):
                 if by:
                     return PartitionedTableProxy(
@@ -4451,7 +4397,7 @@ class PartitionedTableProxy(JObjectWrapper):
             DHError
         """
         try:
-            by = _to_sequence(by)
+            by = to_sequence(by)
             with auto_locking_ctx(self):
                 if by:
                     return PartitionedTableProxy(
@@ -4483,7 +4429,7 @@ class PartitionedTableProxy(JObjectWrapper):
             DHError
         """
         try:
-            by = _to_sequence(by)
+            by = to_sequence(by)
             with auto_locking_ctx(self):
                 if by:
                     return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.avgBy(*by))
@@ -4513,7 +4459,7 @@ class PartitionedTableProxy(JObjectWrapper):
             DHError
         """
         try:
-            by = _to_sequence(by)
+            by = to_sequence(by)
             with auto_locking_ctx(self):
                 if by:
                     return PartitionedTableProxy(
@@ -4543,7 +4489,7 @@ class PartitionedTableProxy(JObjectWrapper):
             DHError
         """
         try:
-            by = _to_sequence(by)
+            by = to_sequence(by)
             with auto_locking_ctx(self):
                 if by:
                     return PartitionedTableProxy(
@@ -4573,7 +4519,7 @@ class PartitionedTableProxy(JObjectWrapper):
             DHError
         """
         try:
-            by = _to_sequence(by)
+            by = to_sequence(by)
             with auto_locking_ctx(self):
                 if by:
                     return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.stdBy(*by))
@@ -4601,7 +4547,7 @@ class PartitionedTableProxy(JObjectWrapper):
             DHError
         """
         try:
-            by = _to_sequence(by)
+            by = to_sequence(by)
             with auto_locking_ctx(self):
                 if by:
                     return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.varBy(*by))
@@ -4632,8 +4578,8 @@ class PartitionedTableProxy(JObjectWrapper):
             DHError
         """
         try:
-            ops = _to_sequence(ops)
-            by = _to_sequence(by)
+            ops = to_sequence(ops)
+            by = to_sequence(by)
             with auto_locking_ctx(self):
                 return PartitionedTableProxy(
                     j_pt_proxy=self.j_pt_proxy.updateBy(j_array_list(ops), *by)
@@ -4677,8 +4623,8 @@ class MultiJoinInput(JObjectWrapper):
         """
         try:
             self.table = table
-            on = _to_sequence(on)
-            joins = _to_sequence(joins)
+            on = to_sequence(on)
+            joins = to_sequence(joins)
             self.j_multijoininput = _JMultiJoinInput.of(table.j_table, on, joins)
         except Exception as e:
             raise DHError(e, "failed to build a MultiJoinInput object.") from e
@@ -4720,9 +4666,9 @@ class MultiJoinTable(JObjectWrapper):
             if isinstance(input, Table) or (
                 isinstance(input, Sequence) and all(isinstance(t, Table) for t in input)
             ):
-                tables: Sequence = _to_sequence(input, wrapped=True)
+                tables: Sequence = to_sequence(input, wrapped=True)
                 with auto_locking_ctx(*tables):
-                    j_tables = _to_sequence(input)
+                    j_tables = to_sequence(input)
                     self.j_multijointable = _JMultiJoinFactory.of(on, *j_tables)
             elif isinstance(input, MultiJoinInput) or (
                 isinstance(input, Sequence)
@@ -4732,10 +4678,10 @@ class MultiJoinTable(JObjectWrapper):
                     raise DHError(
                         message="on parameter is not permitted when MultiJoinInput objects are provided."
                     )
-                wrapped_input = _to_sequence(input, wrapped=True)
+                wrapped_input = to_sequence(input, wrapped=True)
                 tables = [ji.table for ji in wrapped_input]
                 with auto_locking_ctx(*tables):
-                    input = _to_sequence(input)
+                    input = to_sequence(input)
                     self.j_multijointable = _JMultiJoinFactory.of(*input)
             else:
                 raise DHError(
@@ -4924,9 +4870,9 @@ def keyed_transpose(
     """
     try:
         j_source_table = unwrap(table)
-        aggs = _to_sequence(aggs)
-        row_by_cols = _to_sequence(row_by_cols)
-        col_by_cols = _to_sequence(col_by_cols)
+        aggs = to_sequence(aggs)
+        row_by_cols = to_sequence(row_by_cols)
+        col_by_cols = to_sequence(col_by_cols)
         j_agg_list = j_array_list([agg.j_aggregation for agg in aggs])
 
         with auto_locking_ctx(table):

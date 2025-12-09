@@ -43,7 +43,7 @@ public class ByteChunkedDistinctOperator implements IterativeChunkedAggregationO
     private final ByteSsmBackedSource internalResult;
     private final ColumnSource<?> externalResult;
     private final Supplier<SegmentedSortedMultiSet.RemoveContext> removeContextFactory;
-    private final boolean countNull;
+    private final boolean countNullNaN;
     private final boolean exposeInternal;
     private WritableRowSet touchedStates;
     private UpdateCommitter<ByteChunkedDistinctOperator> prevFlusher = null;
@@ -51,9 +51,9 @@ public class ByteChunkedDistinctOperator implements IterativeChunkedAggregationO
     public ByteChunkedDistinctOperator(
             // region Constructor
             // endregion Constructor
-            String name, boolean countNulls, boolean exposeInternal) {
+            String name, boolean countNullNaN, boolean exposeInternal) {
         this.name = name;
-        this.countNull = countNulls;
+        this.countNullNaN = countNullNaN;
         this.exposeInternal = exposeInternal;
         // region SsmCreation
         this.internalResult = new ByteSsmBackedSource();
@@ -78,7 +78,7 @@ public class ByteChunkedDistinctOperator implements IterativeChunkedAggregationO
         context.lengthCopy.copyFromChunk(length, 0, 0, length.size());
 
         ByteCompactKernel.compactAndCount((WritableByteChunk<? extends Values>) context.valueCopy, context.counts,
-                startPositions, context.lengthCopy, countNull);
+                startPositions, context.lengthCopy, countNullNaN, countNullNaN);
         return context;
     }
 
@@ -198,7 +198,7 @@ public class ByteChunkedDistinctOperator implements IterativeChunkedAggregationO
         context.valueCopy.setSize(values.size());
         context.valueCopy.copyFromChunk(values, 0, 0, values.size());
         ByteCompactKernel.compactAndCount((WritableByteChunk<? extends Values>) context.valueCopy, context.counts,
-                countNull);
+                countNullNaN, countNullNaN);
         return context;
     }
 

@@ -43,7 +43,7 @@ public class DoubleChunkedCountDistinctOperator implements IterativeChunkedAggre
     private final String name;
 
     private final Supplier<SegmentedSortedMultiSet.RemoveContext> removeContextFactory;
-    private final boolean countNull;
+    private final boolean countNullNan;
     private final boolean exposeInternal;
     private WritableRowSet touchedStates;
     private UpdateCommitter<DoubleChunkedCountDistinctOperator> prevFlusher = null;
@@ -53,9 +53,9 @@ public class DoubleChunkedCountDistinctOperator implements IterativeChunkedAggre
 
     public DoubleChunkedCountDistinctOperator(// region Constructor
                                             // endregion Constructor
-            String name, boolean countNulls, boolean exposeInternal) {
+            String name, boolean countNullNan, boolean exposeInternal) {
         this.name = name;
-        this.countNull = countNulls;
+        this.countNullNan = countNullNan;
         this.exposeInternal = exposeInternal;
 
         // region SsmCreation
@@ -79,7 +79,7 @@ public class DoubleChunkedCountDistinctOperator implements IterativeChunkedAggre
         context.lengthCopy.copyFromChunk(length, 0, 0, length.size());
 
         DoubleCompactKernel.compactAndCount((WritableDoubleChunk<? extends Values>) context.valueCopy, context.counts,
-                startPositions, context.lengthCopy, countNull);
+                startPositions, context.lengthCopy, countNullNan, countNullNan);
         return context;
     }
 
@@ -199,7 +199,7 @@ public class DoubleChunkedCountDistinctOperator implements IterativeChunkedAggre
         context.valueCopy.setSize(values.size());
         context.valueCopy.copyFromChunk(values, 0, 0, values.size());
         DoubleCompactKernel.compactAndCount((WritableDoubleChunk<? extends Values>) context.valueCopy, context.counts,
-                countNull);
+                countNullNan, countNullNan);
         return context;
     }
 

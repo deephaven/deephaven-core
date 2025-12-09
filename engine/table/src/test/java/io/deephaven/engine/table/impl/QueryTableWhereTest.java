@@ -50,7 +50,6 @@ import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -1760,7 +1759,6 @@ public abstract class QueryTableWhereTest {
     }
 
     @Test
-    @Ignore
     public void testDataIndexRespectBarrierPartialPrioritization() {
         QueryTable.PARALLEL_WHERE_SEGMENTS = 10;
         QueryTable.PARALLEL_WHERE_ROWS_PER_SEGMENT = 10_000;

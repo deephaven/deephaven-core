@@ -30,7 +30,9 @@ public class ShortSetResult implements SsmChunkedMinMaxOperator.SetResult {
             newResult = NULL_SHORT;
         } else {
             final ShortSegmentedSortedMultiset shortSsm = (ShortSegmentedSortedMultiset) ssm;
+            // region nan handling
             newResult = minimum ? shortSsm.getMinShort() : shortSsm.getMaxShort();
+            // endregion nan handling
         }
         return setResult(destination, newResult);
     }
