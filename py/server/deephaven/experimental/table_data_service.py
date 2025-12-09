@@ -402,7 +402,6 @@ class TableDataService(JObjectWrapper):
             j_tbl_location_key = _JTableLocationKeyImpl(pt_location_key)
             if pt_table is None or pt_table.to_batches() is None:
                 location_cb.accept(
-                    # location_cb.apply(
                     j_tbl_location_key,
                     jpy.array("java.nio.ByteBuffer", []),
                 )
@@ -459,7 +458,6 @@ class TableDataService(JObjectWrapper):
             j_tbl_location_key = _JTableLocationKeyImpl(pt_location_key)
             if pt_table is None:
                 location_cb.accept(
-                    # location_cb.apply(
                     j_tbl_location_key,
                     jpy.array("java.nio.ByteBuffer", []),
                 )

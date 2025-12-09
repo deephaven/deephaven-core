@@ -225,10 +225,14 @@ class TestBackend(TableDataServiceBackend):
             expr = (pc.field("Ticker") == f"{ticker}") & (
                 pc.field("Exchange") == "NYSE"
             )
-            location_cb(
-                partition_key,
-                pa_table.filter(expr).select(["Ticker", "Exchange"]).slice(0, 1),
-            )
+            if self.sub_table_location_no_partition_test:
+                location_cb(partition_key, None)
+            else:
+                location_cb(
+                    partition_key,
+                    pa_table.filter(expr).select(["Ticker", "Exchange"]).slice(0, 1),
+                )
+        success_cb()
 
         exec_ctx = get_exec_ctx()
         th = threading.Thread(
@@ -241,7 +245,6 @@ class TestBackend(TableDataServiceBackend):
             self.sub_new_partition_cancelled = True
             self.location_cb = None
 
-        success_cb()
         return _cancellation_callback
 
     def _th_partition_size_changes(
@@ -304,6 +307,7 @@ class TestBackend(TableDataServiceBackend):
 
         # need to initial size
         size_cb(self.partitions[table_location_key].num_rows)
+        success_cb()
 
         self.partitions_size_subscriptions[table_location_key] = True
         th = threading.Thread(
@@ -315,7 +319,6 @@ class TestBackend(TableDataServiceBackend):
         def _cancellation_callback():
             self.partitions_size_subscriptions[table_location_key] = False
 
-        success_cb()
         return _cancellation_callback
 
 
