@@ -5,6 +5,7 @@ package io.deephaven.web.client.api.remotefilesource;
 
 import com.vertispan.tsdefs.annotations.TsInterface;
 import com.vertispan.tsdefs.annotations.TsName;
+import com.vertispan.tsdefs.annotations.TsTypeRef;
 import elemental2.core.Uint8Array;
 import elemental2.dom.DomGlobal;
 import elemental2.promise.Promise;
@@ -26,31 +27,28 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.ticket_p
 import io.deephaven.web.client.api.Callbacks;
 import io.deephaven.web.client.api.WorkerConnection;
 import io.deephaven.web.client.api.barrage.stream.BiDiStream;
-import io.deephaven.web.client.api.event.EventFn;
 import io.deephaven.web.client.api.event.HasEventHandling;
-import io.deephaven.web.shared.fu.RemoverFn;
 import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsMethod;
+import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsOptional;
 import jsinterop.annotations.JsProperty;
+import jsinterop.annotations.JsType;
 import jsinterop.base.Js;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Supplier;
 
+
 /**
  * JavaScript client for the RemoteFileSource service. Provides bidirectional communication with the server-side
  * RemoteFileSourceServicePlugin via a message stream.
  */
-@TsInterface
-@TsName(namespace = "dh.remotefilesource", name = "RemoteFileSourceService")
+@JsType(namespace = "dh.remotefilesource", name = "RemoteFileSourceService")
 public class JsRemoteFileSourceService extends HasEventHandling {
-    @JsProperty(namespace = "dh.remotefilesource.RemoteFileSourceService")
     public static final String EVENT_MESSAGE = "message";
-    @JsProperty(namespace = "dh.remotefilesource.RemoteFileSourceService")
     public static final String EVENT_CLOSE = "close";
-    @JsProperty(namespace = "dh.remotefilesource.RemoteFileSourceService")
     public static final String EVENT_REQUEST = "request";
 
     private final TypedTicket typedTicket;
@@ -85,7 +83,7 @@ public class JsRemoteFileSourceService extends HasEventHandling {
      * @return a promise that resolves to a RemoteFileSourceService instance with an active message stream
      */
     @JsMethod
-    public static Promise<JsRemoteFileSourceService> fetchPlugin(WorkerConnection connection) {
+    public static Promise<JsRemoteFileSourceService> fetchPlugin(@TsTypeRef(Object.class) WorkerConnection connection) {
         // Create a new export ticket for the result
         Ticket resultTicket = connection.getTickets().newExportTicket();
 
@@ -271,18 +269,6 @@ public class JsRemoteFileSourceService extends HasEventHandling {
     }
 
     /**
-     * Registers a listener for resource requests from the server.
-     * The listener will be called when the server requests a resource from the client.
-     *
-     * @param callback the callback to invoke when a resource is requested
-     * @return a cleanup function that can be called to remove the listener
-     */
-    @JsMethod
-    public RemoverFn onResourceRequest(EventFn<ResourceRequestEvent> callback) {
-        return this.<ResourceRequestEvent>addEventListener(EVENT_REQUEST, callback);
-    }
-
-    /**
      * Closes the message stream connection to the server.
      */
     @JsMethod
@@ -303,7 +289,7 @@ public class JsRemoteFileSourceService extends HasEventHandling {
      * respond() method.
      */
     @TsInterface
-    @TsName(namespace = "dh.remotefilesource", name = "ResourceRequest")
+    @TsName(namespace = "dh.remotefilesource", name = "ResourceRequestEvent")
     public class ResourceRequestEvent {
         private final String requestId;
         private final RemoteFileSourceMetaRequest protoRequest;
@@ -328,7 +314,7 @@ public class JsRemoteFileSourceService extends HasEventHandling {
          * @param content the resource content (string, ArrayBuffer, or typed array), or null if not found
          */
         @JsMethod
-        public void respond(Object content) {
+        public void respond(@JsNullable Object content) {
             // Build RemoteFileSourceMetaResponse proto
             RemoteFileSourceMetaResponse response = new RemoteFileSourceMetaResponse();
 
