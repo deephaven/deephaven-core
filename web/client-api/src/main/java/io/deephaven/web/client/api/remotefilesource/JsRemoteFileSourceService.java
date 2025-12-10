@@ -26,7 +26,9 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.ticket_p
 import io.deephaven.web.client.api.Callbacks;
 import io.deephaven.web.client.api.WorkerConnection;
 import io.deephaven.web.client.api.barrage.stream.BiDiStream;
+import io.deephaven.web.client.api.event.EventFn;
 import io.deephaven.web.client.api.event.HasEventHandling;
+import io.deephaven.web.shared.fu.RemoverFn;
 import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsOptional;
@@ -266,6 +268,18 @@ public class JsRemoteFileSourceService extends HasEventHandling {
         clientData.setPayload(clientRequest.serializeBinary());
         req.setData(clientData);
         messageStream.send(req);
+    }
+
+    /**
+     * Registers a listener for resource requests from the server.
+     * The listener will be called when the server requests a resource from the client.
+     *
+     * @param callback the callback to invoke when a resource is requested
+     * @return a cleanup function that can be called to remove the listener
+     */
+    @JsMethod
+    public RemoverFn onResourceRequest(EventFn<ResourceRequestEvent> callback) {
+        return this.<ResourceRequestEvent>addEventListener(EVENT_REQUEST, callback);
     }
 
     /**
