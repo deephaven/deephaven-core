@@ -24,7 +24,7 @@ public interface AggregateColumnSource<VECTOR_TYPE extends Vector<VECTOR_TYPE>, 
 
     /**
      * Get the underlying source that is aggregated by this ColumnSource.
-     * 
+     *
      * @return the underlying source that is aggregated by this ColumnSource
      */
     ColumnSource<COMPONENT_TYPE> getAggregatedSource();
