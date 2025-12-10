@@ -27,10 +27,23 @@ import java.util.function.UnaryOperator;
 import static io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource.BLOCK_SIZE;
 
 /**
- * An {@link IterativeChunkedAggregationOperator} used in the implementation of {@link Table#groupBy},
- * {@link io.deephaven.api.agg.spec.AggSpecGroup}, and {@link io.deephaven.api.agg.Aggregation#AggGroup(String...)}.
+ * An {@link IterativeChunkedAggregationOperator} used to re-aggregate the results of an
+ * {@link io.deephaven.api.agg.Aggregation#AggGroup(String...) AggGroup} as part of a rollup.
+ *
+ * <p>
+ * The operator is fundamentally different than the {@link GroupByChunkedOperator}. Rather than examining row keys, it
+ * listens to the rollup's base (or intermediate) level and reads the exposed RowSet column. The relevant RowSets are
+ * added to a random builder for each state while processing an update (or initialization). At the end of the update
+ * cycle, it builds the rowsets and updates an internal ObjectArraySource of RowSets.
+ * </p>
+ *
+ * <p>
+ * The resulting column sources are once again {@link AggregateColumnSource}, which reuse the wrapped aggregated column
+ * source from the source table (thus each level of the rollup uses the original table's sources as the input to the
+ * AggregateColumnSources -- not the immediately prior level).
+ * </p>
  */
-public final class GroupByReaggreagateOperator implements IterativeChunkedAggregationOperator {
+public final class GroupByReaggregateOperator implements IterativeChunkedAggregationOperator {
 
     private final QueryTable inputTable;
     private final boolean registeredWithHelper;
@@ -43,19 +56,13 @@ public final class GroupByReaggreagateOperator implements IterativeChunkedAggreg
 
     private final String[] inputColumnNames;
 
-
-    private final Map<String, AggregateColumnSource<?, ?>> inputSources;
-
-    private final Map<String, AggregateColumnSource<?, ?>> inputAggregatedColumns;
     private final Map<String, AggregateColumnSource<?, ?>> resultAggregatedColumns;
-    private final ModifiedColumnSet aggregationInputsModifiedColumnSet;
 
     private RowSetBuilderRandom stepDestinationsModified;
 
-    private boolean stepValuesModified;
     private boolean initialized;
 
-    public GroupByReaggreagateOperator(
+    public GroupByReaggregateOperator(
             @NotNull final QueryTable inputTable,
             final boolean registeredWithHelper,
             @Nullable final String exposeRowSetsAs,
@@ -64,44 +71,33 @@ public final class GroupByReaggreagateOperator implements IterativeChunkedAggreg
         this.registeredWithHelper = registeredWithHelper;
         this.exposeRowSetsAs = exposeRowSetsAs;
 
+        if (exposeRowSetsAs == null) {
+            throw new IllegalArgumentException("Must exposing group RowSets for rollup.");
+        }
+
         live = inputTable.isRefreshing();
         rowSets = new ObjectArraySource<>(WritableRowSet.class);
         addedBuilders = new ObjectArraySource<>(Object.class);
 
-        inputSources = new LinkedHashMap<>(aggregatedColumnPairs.length);
-
-        inputAggregatedColumns = new LinkedHashMap<>(aggregatedColumnPairs.length);
         resultAggregatedColumns = new LinkedHashMap<>(aggregatedColumnPairs.length);
         Arrays.stream(aggregatedColumnPairs).forEach(pair -> {
             final ColumnSource<Object> source = inputTable.getColumnSource(pair.rightColumn());
-            final ColumnSource<?> realSource;
-            if (source instanceof AggregateColumnSource) {
-                final AggregateColumnSource aggregateSource = (AggregateColumnSource) source;
-                realSource = aggregateSource.getAggregatedSource();
-                inputSources.put(pair.rightColumn(), aggregateSource);
-            } else {
+            if (!(source instanceof AggregateColumnSource)) {
                 throw new IllegalStateException("Expect to reaggregate AggregateColumnSources for a group operation.");
             }
+            @SuppressWarnings("rawtypes")
+            final ColumnSource<?> realSource = ((AggregateColumnSource) source).getAggregatedSource();
             final AggregateColumnSource<?, ?> aggregateColumnSource = AggregateColumnSource.make(realSource, rowSets);
-            inputAggregatedColumns.put(pair.rightColumn(), aggregateColumnSource);
             resultAggregatedColumns.put(pair.leftColumn(), aggregateColumnSource);
         });
 
-        if (exposeRowSetsAs != null && resultAggregatedColumns.containsKey(exposeRowSetsAs)) {
+        if (resultAggregatedColumns.containsKey(exposeRowSetsAs)) {
             throw new IllegalArgumentException(String.format(
                     "Exposing group RowSets as %s, but this conflicts with a requested grouped output column name",
                     exposeRowSetsAs));
         }
         inputColumnNames = MatchPair.getRightColumns(aggregatedColumnPairs);
-        if (live) {
-            final String[] allInputs = Arrays.copyOf(inputColumnNames, inputColumnNames.length + 1);
-            allInputs[allInputs.length - 1] = exposeRowSetsAs;
-            aggregationInputsModifiedColumnSet = inputTable.newModifiedColumnSet(allInputs);
-            removedBuilders = new ObjectArraySource<>(Object.class);
-        } else {
-            aggregationInputsModifiedColumnSet = null;
-            removedBuilders = null;
-        }
+        removedBuilders = live ? new ObjectArraySource<>(Object.class) : null;
         initialized = false;
     }
 
@@ -160,7 +156,7 @@ public final class GroupByReaggreagateOperator implements IterativeChunkedAggreg
             @NotNull final LongChunk<? extends RowKeys> postShiftRowKeys,
             @NotNull final IntChunk<RowKeys> destinations, @NotNull final IntChunk<ChunkPositions> startPositions,
             @NotNull final IntChunk<ChunkLengths> length, @NotNull final WritableBooleanChunk<Values> stateModified) {
-        throw new IllegalStateException("GroupByReaggreagateOperator should never be called with shiftChunk");
+        throw new IllegalStateException("GroupByReaggregateOperator should never be called with shiftChunk");
     }
 
     @Override
@@ -221,7 +217,7 @@ public final class GroupByReaggreagateOperator implements IterativeChunkedAggreg
         stepDestinationsModified.addKey(destination);
     }
 
-    private <T> void modifyChunk(ObjectChunk<RowSet, ? extends Values> previousValues,
+    private void modifyChunk(ObjectChunk<RowSet, ? extends Values> previousValues,
             ObjectChunk<RowSet, ? extends Values> newValues,
             int start,
             int length,
@@ -282,14 +278,11 @@ public final class GroupByReaggreagateOperator implements IterativeChunkedAggreg
 
     @Override
     public Map<String, ? extends ColumnSource<?>> getResultColumns() {
-        if (exposeRowSetsAs != null) {
-            final Map<String, ColumnSource<?>> allResultColumns =
-                    new LinkedHashMap<>(resultAggregatedColumns.size() + 1);
-            allResultColumns.put(exposeRowSetsAs, rowSets);
-            allResultColumns.putAll(resultAggregatedColumns);
-            return allResultColumns;
-        }
-        return resultAggregatedColumns;
+        final Map<String, ColumnSource<?>> allResultColumns =
+                new LinkedHashMap<>(resultAggregatedColumns.size() + 1);
+        allResultColumns.put(exposeRowSetsAs, rowSets);
+        allResultColumns.putAll(resultAggregatedColumns);
+        return allResultColumns;
     }
 
     @Override
@@ -316,21 +309,12 @@ public final class GroupByReaggreagateOperator implements IterativeChunkedAggreg
     private class InputToResultModifiedColumnSetFactory implements UnaryOperator<ModifiedColumnSet> {
 
         private final ModifiedColumnSet updateModifiedColumnSet;
-        private final ModifiedColumnSet allResultColumns;
         private final ModifiedColumnSet.Transformer aggregatedColumnsTransformer;
 
         private InputToResultModifiedColumnSetFactory(
                 @NotNull final QueryTable resultTable,
                 @NotNull final String[] resultAggregatedColumnNames) {
             updateModifiedColumnSet = new ModifiedColumnSet(resultTable.getModifiedColumnSetForUpdates());
-
-            if (exposeRowSetsAs != null) {
-                // resultAggregatedColumnNames may be empty (e.g. when the row set is the only result column)
-                allResultColumns = resultTable.newModifiedColumnSet(exposeRowSetsAs);
-                allResultColumns.setAll(resultAggregatedColumnNames);
-            } else {
-                allResultColumns = resultTable.newModifiedColumnSet(resultAggregatedColumnNames);
-            }
 
             final String[] allInputs = Arrays.copyOf(inputColumnNames, inputColumnNames.length + 1);
             allInputs[allInputs.length - 1] = exposeRowSetsAs;
@@ -352,8 +336,6 @@ public final class GroupByReaggreagateOperator implements IterativeChunkedAggreg
 
     @Override
     public void resetForStep(@NotNull final TableUpdate upstream, final int startingDestinationsCount) {
-        stepValuesModified = upstream.modified().isNonempty() && upstream.modifiedColumnSet().nonempty()
-                && upstream.modifiedColumnSet().containsAny(aggregationInputsModifiedColumnSet);
         stepDestinationsModified = new BitmapRandomBuilder(startingDestinationsCount);
     }
 

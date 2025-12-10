@@ -1273,7 +1273,7 @@ public class AggregationProcessor implements AggregationContextFactory {
             for (int ii = 0; ii < resultPairs.size(); ++ii) {
                 pairs[ii] = new MatchPair(resultPairs.get(ii).output().name(), resultPairs.get(ii).output().name());
             }
-            addOperator(new GroupByReaggreagateOperator(table, true, EXPOSED_GROUP_ROW_SETS.name(), pairs), groupRowSet,
+            addOperator(new GroupByReaggregateOperator(table, true, EXPOSED_GROUP_ROW_SETS.name(), pairs), groupRowSet,
                     EXPOSED_GROUP_ROW_SETS.name());
         }
 
