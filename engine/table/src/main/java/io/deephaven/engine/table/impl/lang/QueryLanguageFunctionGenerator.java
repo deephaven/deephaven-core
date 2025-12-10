@@ -21,7 +21,6 @@ public class QueryLanguageFunctionGenerator {
 
         final int sbCapacity = (int) Math.pow(2, 20);
         StringBuilder buf = new StringBuilder(sbCapacity);
-        StringBuilder testBuf = new StringBuilder(sbCapacity);
 
         buf.append(String.join("\n",
                 "//",
@@ -481,47 +480,14 @@ public class QueryLanguageFunctionGenerator {
 
         // ------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-        // TODO: combine with prev loop after review
-
-        // //classes = new Class[] {int.class, double.class, long.class, float.class, char.class, byte.class,
-        // short.class, BigDecimal.class, BigInteger.class};
-        // classes = new Class[] {BigDecimal.class, BigInteger.class};
-        //
-        // operators = new BinaryExpr.Operator[] {
-        // BinaryExpr.Operator.LESS,
-        // BinaryExpr.Operator.GREATER,
-        // BinaryExpr.Operator.LESS_EQUALS,
-        // BinaryExpr.Operator.GREATER_EQUALS
-        // };
-        //
-        // for (int i = 0; i < operators.length; i++) {
-        // final BinaryExpr.Operator operator = operators[i];
-        // for (final Class<?> clazz : classes) {
-        // buf.append(generateArithmeticFunction(operator, clazz, clazz));
-        // buf.append(generateArrayArrayFunction(operator, clazz, clazz, "compare"));
-        // buf.append(generateArrayVarFunction(operator, clazz, clazz));
-        // buf.append(generateVarArrayFunction(operator, clazz, clazz));
-        // }
-        // }
-
-
-        // ------------------------------------------------------------------------------------------------------------------------------------------------------------------
-
         buf.append("}\n");
-        testBuf.append("}\n");
 
         String fileName =
                 "./engine/table/src/main/java/io/deephaven/engine/table/impl/lang/QueryLanguageFunctionUtils.java";
-        String testFileName =
-                "./engine/table/src/test/java/io/deephaven/engine/table/impl/lang/TestQueryLanguageFunctionUtils.java";
         try {
             try (BufferedWriter out = new BufferedWriter(new FileWriter(fileName))) {
                 out.write(buf.toString());
             }
-
-            // try (BufferedWriter testOut = new BufferedWriter(new FileWriter(testFileName))) {
-            // testOut.write(testBuf.toString());
-            // }
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -529,7 +495,6 @@ public class QueryLanguageFunctionGenerator {
         System.out.println("Finished generating QueryLanguageFunctionUtils in "
                 + new DecimalFormat().format(System.currentTimeMillis() - start) + " millis");
         System.out.println("Wrote QueryLanguageFunctionUtils to: " + fileName);
-        System.out.println("Wrote TestQueryLanguageFunctionUtils to: " + testFileName);
     }
 
     private static String generateArithmeticFunction(
@@ -592,15 +557,15 @@ public class QueryLanguageFunctionGenerator {
         final String nullB = nullForType(classB);
 
         sb.append(MessageFormat.format("" +
-                "        if (a == {0})' {'\n" +
+                "        if (a == {0}) '{'\n" +
                 "            return (b == {1}) ? 0 : -1;\n" +
                 "        '}'\n" +
-                "        if (b == {1})' {'\n" +
+                "        if (b == {1}) '{'\n" +
                 "            return 1;\n" +
                 "        '}'\n",
                 nullA, nullB));
 
-        // Hande special cases
+        // Handle special cases
         if (classA == BigDecimal.class || classB == BigDecimal.class) {
             // Always promote to BD
             final String a = maybePromote(classA, BigDecimal.class, "a");
@@ -719,10 +684,10 @@ public class QueryLanguageFunctionGenerator {
         final String nullB = nullForType(classB);
 
         sb.append(MessageFormat.format("" +
-                "        if (a == {0})' {'\n" +
+                "        if (a == {0}) '{'\n" +
                 "            return b == {1};\n" +
                 "        '}'\n" +
-                "        if (b == {1})' {'\n" +
+                "        if (b == {1}) '{'\n" +
                 "            return false;\n" +
                 "        '}'\n",
                 nullA, nullB));
