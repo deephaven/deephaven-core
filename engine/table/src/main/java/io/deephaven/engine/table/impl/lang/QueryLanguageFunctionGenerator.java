@@ -52,7 +52,8 @@ public class QueryLanguageFunctionGenerator {
         buf.append("" +
                 "    private static final String DEFAULT_SCALE_PROPERTY = \"defaultScale\";\n" +
                 "    public static final int DEFAULT_SCALE = Configuration.getInstance()\n" +
-                "            .getIntegerForClassWithDefault(QueryLanguageFunctionUtils.class, DEFAULT_SCALE_PROPERTY, 8);\n\n" +
+                "            .getIntegerForClassWithDefault(QueryLanguageFunctionUtils.class, DEFAULT_SCALE_PROPERTY, 8);\n\n"
+                +
                 "    public static final RoundingMode ROUNDING_MODE = RoundingMode.HALF_UP;\n\n");
 
         buf.append("" +
@@ -79,13 +80,15 @@ public class QueryLanguageFunctionGenerator {
                 "    }\n" +
                 "\n" +
                 "    public static Boolean not(Boolean a) {\n" +
-                "        return a == QueryConstants.NULL_BOOLEAN ? QueryConstants.NULL_BOOLEAN : Boolean.valueOf(!a);\n" +
+                "        return a == QueryConstants.NULL_BOOLEAN ? QueryConstants.NULL_BOOLEAN : Boolean.valueOf(!a);\n"
+                +
                 "    }\n\n");
 
         // ------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-//        Class<?>[] classes =
-//                new Class[] {int.class, double.class, long.class, float.class, char.class, byte.class, short.class, BigDecimal.class, BigInteger.class};
+        // Class<?>[] classes =
+        // new Class[] {int.class, double.class, long.class, float.class, char.class, byte.class, short.class,
+        // BigDecimal.class, BigInteger.class};
         Class<?>[] classes =
                 new Class[] {int.class, double.class, long.class, float.class, char.class, byte.class, short.class};
 
@@ -140,8 +143,9 @@ public class QueryLanguageFunctionGenerator {
 
         // ------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-//        classes =
-//                new Class[] {int.class, double.class, long.class, float.class, char.class, byte.class, short.class, BigDecimal.class, BigInteger.class};
+        // classes =
+        // new Class[] {int.class, double.class, long.class, float.class, char.class, byte.class, short.class,
+        // BigDecimal.class, BigInteger.class};
         classes =
                 new Class[] {int.class, double.class, long.class, float.class, char.class, byte.class, short.class};
 
@@ -155,7 +159,8 @@ public class QueryLanguageFunctionGenerator {
             }
         }
 
-        //classes = new Class[] {int.class, double.class, long.class, float.class, char.class, byte.class, short.class, BigDecimal.class, BigInteger.class};
+        // classes = new Class[] {int.class, double.class, long.class, float.class, char.class, byte.class, short.class,
+        // BigDecimal.class, BigInteger.class};
         classes = new Class[] {int.class, double.class, long.class, float.class, char.class, byte.class, short.class};
 
         operators = new BinaryExpr.Operator[] {
@@ -195,10 +200,14 @@ public class QueryLanguageFunctionGenerator {
 
         // ------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-        buf.append(generateArrayArrayFunction(BinaryExpr.Operator.EQUALS, Boolean.class, boolean.class, "check equality of"));
-        buf.append(generateArrayArrayFunction(BinaryExpr.Operator.EQUALS, boolean.class, Boolean.class, "check equality of"));
-        buf.append(generateArrayArrayFunction(BinaryExpr.Operator.EQUALS, boolean.class, boolean.class, "check equality of"));
-        buf.append(generateArrayArrayFunction(BinaryExpr.Operator.EQUALS, Object.class, Object.class, "check equality of"));
+        buf.append(generateArrayArrayFunction(BinaryExpr.Operator.EQUALS, Boolean.class, boolean.class,
+                "check equality of"));
+        buf.append(generateArrayArrayFunction(BinaryExpr.Operator.EQUALS, boolean.class, Boolean.class,
+                "check equality of"));
+        buf.append(generateArrayArrayFunction(BinaryExpr.Operator.EQUALS, boolean.class, boolean.class,
+                "check equality of"));
+        buf.append(generateArrayArrayFunction(BinaryExpr.Operator.EQUALS, Object.class, Object.class,
+                "check equality of"));
 
         buf.append(generateArrayVarFunction(BinaryExpr.Operator.EQUALS, boolean.class, Boolean.class));
         buf.append(generateArrayVarFunction(BinaryExpr.Operator.EQUALS, Object.class, Object.class));
@@ -354,7 +363,8 @@ public class QueryLanguageFunctionGenerator {
 
         // ------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-        //classes = new Class[] {int.class, double.class, long.class, float.class, char.class, byte.class, short.class, BigDecimal.class, BigInteger.class};
+        // classes = new Class[] {int.class, double.class, long.class, float.class, char.class, byte.class, short.class,
+        // BigDecimal.class, BigInteger.class};
         classes = new Class[] {int.class, double.class, long.class, float.class, char.class, byte.class, short.class};
 
         for (Class<?> clazz : classes) {
@@ -371,7 +381,8 @@ public class QueryLanguageFunctionGenerator {
                 "    // BigDecimal ops\n" +
                 "    //\n\n");
 
-        classes = new Class[] {BigInteger.class, long.class, int.class, short.class, byte.class, double.class, float.class, char.class};
+        classes = new Class[] {BigInteger.class, long.class, int.class, short.class, byte.class, double.class,
+                float.class, char.class};
 
         operators = new BinaryExpr.Operator[] {
                 BinaryExpr.Operator.PLUS,
@@ -381,7 +392,7 @@ public class QueryLanguageFunctionGenerator {
                 BinaryExpr.Operator.REMAINDER,
         };
 
-        for (final BinaryExpr.Operator operator: operators){
+        for (final BinaryExpr.Operator operator : operators) {
             buf.append(generateArithmeticFunction(operator, BigDecimal.class, BigDecimal.class));
             for (final Class<?> clazz : classes) {
                 buf.append(generateArithmeticFunction(operator, BigDecimal.class, clazz));
@@ -434,7 +445,7 @@ public class QueryLanguageFunctionGenerator {
                 BinaryExpr.Operator.REMAINDER,
         };
 
-        for (final BinaryExpr.Operator operator: operators){
+        for (final BinaryExpr.Operator operator : operators) {
             buf.append(generateArithmeticFunction(operator, BigInteger.class, BigInteger.class));
             for (final Class<?> clazz : classes) {
                 buf.append(generateArithmeticFunction(operator, BigInteger.class, clazz));
@@ -472,25 +483,26 @@ public class QueryLanguageFunctionGenerator {
 
         // TODO: combine with prev loop after review
 
-//        //classes = new Class[] {int.class, double.class, long.class, float.class, char.class, byte.class, short.class, BigDecimal.class, BigInteger.class};
-//        classes = new Class[] {BigDecimal.class, BigInteger.class};
-//
-//        operators = new BinaryExpr.Operator[] {
-//                BinaryExpr.Operator.LESS,
-//                BinaryExpr.Operator.GREATER,
-//                BinaryExpr.Operator.LESS_EQUALS,
-//                BinaryExpr.Operator.GREATER_EQUALS
-//        };
-//
-//        for (int i = 0; i < operators.length; i++) {
-//            final BinaryExpr.Operator operator = operators[i];
-//            for (final Class<?> clazz : classes) {
-//                buf.append(generateArithmeticFunction(operator, clazz, clazz));
-//                buf.append(generateArrayArrayFunction(operator, clazz, clazz, "compare"));
-//                buf.append(generateArrayVarFunction(operator, clazz, clazz));
-//                buf.append(generateVarArrayFunction(operator, clazz, clazz));
-//            }
-//        }
+        // //classes = new Class[] {int.class, double.class, long.class, float.class, char.class, byte.class,
+        // short.class, BigDecimal.class, BigInteger.class};
+        // classes = new Class[] {BigDecimal.class, BigInteger.class};
+        //
+        // operators = new BinaryExpr.Operator[] {
+        // BinaryExpr.Operator.LESS,
+        // BinaryExpr.Operator.GREATER,
+        // BinaryExpr.Operator.LESS_EQUALS,
+        // BinaryExpr.Operator.GREATER_EQUALS
+        // };
+        //
+        // for (int i = 0; i < operators.length; i++) {
+        // final BinaryExpr.Operator operator = operators[i];
+        // for (final Class<?> clazz : classes) {
+        // buf.append(generateArithmeticFunction(operator, clazz, clazz));
+        // buf.append(generateArrayArrayFunction(operator, clazz, clazz, "compare"));
+        // buf.append(generateArrayVarFunction(operator, clazz, clazz));
+        // buf.append(generateVarArrayFunction(operator, clazz, clazz));
+        // }
+        // }
 
 
         // ------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -507,9 +519,9 @@ public class QueryLanguageFunctionGenerator {
                 out.write(buf.toString());
             }
 
-//            try (BufferedWriter testOut = new BufferedWriter(new FileWriter(testFileName))) {
-//                testOut.write(testBuf.toString());
-//            }
+            // try (BufferedWriter testOut = new BufferedWriter(new FileWriter(testFileName))) {
+            // testOut.write(testBuf.toString());
+            // }
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -540,7 +552,7 @@ public class QueryLanguageFunctionGenerator {
         final String nullReturn = nullForType(returnType);
 
         sb.append(MessageFormat.format("" +
-                        "        return a == {0} || b == {1} ? {2} : {3};\n",
+                "        return a == {0} || b == {1} ? {2} : {3};\n",
                 nullA,
                 nullB,
                 nullReturn,
@@ -562,16 +574,16 @@ public class QueryLanguageFunctionGenerator {
             // NaN checks when converting to BigDecimal/BigInteger
             if (isFPNumber(classA)) {
                 sb.append(MessageFormat.format("" +
-                                "        if ({0}.isNaN(a)) '{'\n" +
-                                "            return 1; // even if b == null\n" +
-                                "        '}'\n",
+                        "        if ({0}.isNaN(a)) '{'\n" +
+                        "            return 1; // even if b == null\n" +
+                        "        '}'\n",
                         TypeUtils.getBoxedType(classA).getSimpleName()));
             }
             if (isFPNumber(classB)) {
                 sb.append(MessageFormat.format("" +
-                                "        if ({0}.isNaN(b)) '{'\n" +
-                                "            return -1; // even if a == null\n" +
-                                "        '}'\n",
+                        "        if ({0}.isNaN(b)) '{'\n" +
+                        "            return -1; // even if a == null\n" +
+                        "        '}'\n",
                         TypeUtils.getBoxedType(classB).getSimpleName()));
             }
         }
@@ -580,12 +592,12 @@ public class QueryLanguageFunctionGenerator {
         final String nullB = nullForType(classB);
 
         sb.append(MessageFormat.format("" +
-                        "        if (a == {0})' {'\n" +
-                        "            return (b == {1}) ? 0 : -1;\n" +
-                        "        '}'\n" +
-                        "        if (b == {1})' {'\n" +
-                        "            return 1;\n" +
-                        "        '}'\n",
+                "        if (a == {0})' {'\n" +
+                "            return (b == {1}) ? 0 : -1;\n" +
+                "        '}'\n" +
+                "        if (b == {1})' {'\n" +
+                "            return 1;\n" +
+                "        '}'\n",
                 nullA, nullB));
 
         // Hande special cases
@@ -594,7 +606,7 @@ public class QueryLanguageFunctionGenerator {
             final String a = maybePromote(classA, BigDecimal.class, "a");
             final String b = maybePromote(classB, BigDecimal.class, "b");
             sb.append(MessageFormat.format("" +
-                            "        return {0}.compareTo({1});\n",
+                    "        return {0}.compareTo({1});\n",
                     a, b));
 
         } else if ((classA == BigInteger.class && isFPNumber(classB))
@@ -603,14 +615,14 @@ public class QueryLanguageFunctionGenerator {
             final String a = maybePromote(classA, BigDecimal.class, "a");
             final String b = maybePromote(classB, BigDecimal.class, "b");
             sb.append(MessageFormat.format("" +
-                            "        return {0}.compareTo({1});\n",
+                    "        return {0}.compareTo({1});\n",
                     a, b));
         } else if ((classA == BigInteger.class || classB == BigInteger.class)) {
             // upcast both to BigInteger and compare
             final String a = maybePromote(classA, BigInteger.class, "a");
             final String b = maybePromote(classB, BigInteger.class, "b");
             sb.append(MessageFormat.format("" +
-                            "        return {0}.compareTo({1});\n",
+                    "        return {0}.compareTo({1});\n",
                     a, b));
         } else if (classA == long.class && isFPNumber(classB)) {
             // long must be compared as double
@@ -663,12 +675,12 @@ public class QueryLanguageFunctionGenerator {
         } else if (isFPNumber(classA) && isIntegralNumber(classB)) {
             final String boxType = TypeUtils.getBoxedType(classA).getSimpleName();
             sb.append(MessageFormat.format("" +
-                            "        return {0}.compare(a, b);\n",
+                    "        return {0}.compare(a, b);\n",
                     boxType));
         } else if (isIntegralNumber(classA) && isFPNumber(classB)) {
             final String boxType = TypeUtils.getBoxedType(classB).getSimpleName();
             sb.append(MessageFormat.format("" +
-                            "        return {0}.compare(a, b);\n",
+                    "        return {0}.compare(a, b);\n",
                     boxType));
         } else {
             sb.append("        return a < b ? -1 : (a == b ? 0 : 1);\n");
@@ -689,16 +701,16 @@ public class QueryLanguageFunctionGenerator {
             // NaN checks when converting to BigDecimal/BigInteger
             if (isFPNumber(classA)) {
                 sb.append(MessageFormat.format("" +
-                                "        if ({0}.isNaN(a)) '{'\n" +
-                                "            return false;\n" +
-                                "        '}'\n",
+                        "        if ({0}.isNaN(a)) '{'\n" +
+                        "            return false;\n" +
+                        "        '}'\n",
                         TypeUtils.getBoxedType(classA).getSimpleName()));
             }
             if (isFPNumber(classB)) {
                 sb.append(MessageFormat.format("" +
-                                "        if ({0}.isNaN(b)) '{'\n" +
-                                "            return false;\n" +
-                                "        '}'\n",
+                        "        if ({0}.isNaN(b)) '{'\n" +
+                        "            return false;\n" +
+                        "        '}'\n",
                         TypeUtils.getBoxedType(classB).getSimpleName()));
             }
         }
@@ -707,12 +719,12 @@ public class QueryLanguageFunctionGenerator {
         final String nullB = nullForType(classB);
 
         sb.append(MessageFormat.format("" +
-                        "        if (a == {0})' {'\n" +
-                        "            return b == {1};\n" +
-                        "        '}'\n" +
-                        "        if (b == {1})' {'\n" +
-                        "            return false;\n" +
-                        "        '}'\n",
+                "        if (a == {0})' {'\n" +
+                "            return b == {1};\n" +
+                "        '}'\n" +
+                "        if (b == {1})' {'\n" +
+                "            return false;\n" +
+                "        '}'\n",
                 nullA, nullB));
 
         if (isBigNumber(classA) || isBigNumber(classB)) {
@@ -720,9 +732,9 @@ public class QueryLanguageFunctionGenerator {
             final String a = maybePromote(classA, BigDecimal.class, "a");
             final String b = maybePromote(classB, BigDecimal.class, "b");
             sb.append(MessageFormat.format("" +
-                            "        return {0}.compareTo({1}) == 0;\n",
+                    "        return {0}.compareTo({1}) == 0;\n",
                     a, b));
-        }  else {
+        } else {
             sb.append("        return a == b;\n");
         }
         sb.append("    }\n\n");
@@ -775,7 +787,7 @@ public class QueryLanguageFunctionGenerator {
         final String nullB = nullForType(classB);
 
         sb.append(MessageFormat.format("" +
-                        "        return a == {0} ? {1} : ({2})a;\n",
+                "        return a == {0} ? {1} : ({2})a;\n",
                 nullA, nullB, classB.getSimpleName()));
         sb.append("    }\n\n");
 
@@ -792,11 +804,11 @@ public class QueryLanguageFunctionGenerator {
         final String nullA = nullForType(classA);
         if (classA == char.class) {
             sb.append(MessageFormat.format("" +
-                            "        return a == null ? {0} : (char)a;\n",
+                    "        return a == null ? {0} : (char)a;\n",
                     nullA));
         } else {
             sb.append(MessageFormat.format("" +
-                            "        return a == null ? {0} : ((Number) a).{1}Value();\n",
+                    "        return a == null ? {0} : ((Number) a).{1}Value();\n",
                     nullA, typeA));
         }
         sb.append("    }\n\n");
@@ -820,7 +832,7 @@ public class QueryLanguageFunctionGenerator {
         final String nullA = nullForType(classA);
         final String nullReturn = nullForType(returnType);
         sb.append(MessageFormat.format("" +
-                        "        return a == {0} ? {1} : -a;\n",
+                "        return a == {0} ? {1} : -a;\n",
                 nullA, nullReturn));
         sb.append("    }\n\n");
 
@@ -844,15 +856,16 @@ public class QueryLanguageFunctionGenerator {
                 classB.getSimpleName()));
 
         sb.append(MessageFormat.format("" +
-                        "        if (a.length != b.length) '{'\n" +
-                        "            throw new IllegalArgumentException(\"Attempt to {4} two arrays ({2}, {3}) of different length (a.length=\" + a.length + \", b.length=\" + b.length + '')'');\n" +
-                        "        '}'\n" +
-                        "        {0}[] ret = new {0}[a.length];\n" +
-                        "        for (int i = 0; i < a.length; i++) '{'\n" +
-                        "            ret[i] = {1}(a[i], b[i]);\n" +
-                        "        '}'\n" +
-                        "\n" +
-                        "        return ret;\n",
+                "        if (a.length != b.length) '{'\n" +
+                "            throw new IllegalArgumentException(\"Attempt to {4} two arrays ({2}, {3}) of different length (a.length=\" + a.length + \", b.length=\" + b.length + '')'');\n"
+                +
+                "        '}'\n" +
+                "        {0}[] ret = new {0}[a.length];\n" +
+                "        for (int i = 0; i < a.length; i++) '{'\n" +
+                "            ret[i] = {1}(a[i], b[i]);\n" +
+                "        '}'\n" +
+                "\n" +
+                "        return ret;\n",
                 returnType.getSimpleName(),
                 operatorName,
                 classA.getSimpleName(),
@@ -880,12 +893,12 @@ public class QueryLanguageFunctionGenerator {
                 classB.getSimpleName()));
 
         sb.append(MessageFormat.format("" +
-                        "        {0}[] ret = new {0}[a.length];\n" +
-                        "        for (int i = 0; i < a.length; i++) '{'\n" +
-                        "            ret[i] = {1}(a[i], b);\n" +
-                        "        '}'\n" +
-                        "\n" +
-                        "        return ret;\n",
+                "        {0}[] ret = new {0}[a.length];\n" +
+                "        for (int i = 0; i < a.length; i++) '{'\n" +
+                "            ret[i] = {1}(a[i], b);\n" +
+                "        '}'\n" +
+                "\n" +
+                "        return ret;\n",
                 returnType.getSimpleName(),
                 operatorName));
 
@@ -910,12 +923,12 @@ public class QueryLanguageFunctionGenerator {
                 classB.getSimpleName()));
 
         sb.append(MessageFormat.format("" +
-                        "        {0}[] ret = new {0}[b.length];\n" +
-                        "        for (int i = 0; i < b.length; i++) '{'\n" +
-                        "            ret[i] = {1}(a, b[i]);\n" +
-                        "        '}'\n" +
-                        "\n" +
-                        "        return ret;\n",
+                "        {0}[] ret = new {0}[b.length];\n" +
+                "        for (int i = 0; i < b.length; i++) '{'\n" +
+                "            ret[i] = {1}(a, b[i]);\n" +
+                "        '}'\n" +
+                "\n" +
+                "        return ret;\n",
                 returnType.getSimpleName(),
                 operatorName));
 
@@ -981,7 +994,8 @@ public class QueryLanguageFunctionGenerator {
         return "((" + toType.getSimpleName() + ") " + varName + ")";
     }
 
-    private static String operatorStringForTypes(Class<?> type1, Class<?> type2, Class<?> promotedType, BinaryExpr.Operator op) {
+    private static String operatorStringForTypes(Class<?> type1, Class<?> type2, Class<?> promotedType,
+            BinaryExpr.Operator op) {
         final String a = maybePromote(type1, promotedType, "a");
         final String b = maybePromote(type2, promotedType, "b");
 
@@ -1000,7 +1014,8 @@ public class QueryLanguageFunctionGenerator {
                     break;
                 case DIVIDE:
                     // this looks sketchy but DIVIDE requires BigDecimal promotion
-                    formatString = new MessageFormat("{0}.divide({1}, max(max({0}.scale(), {1}.scale()), DEFAULT_SCALE), ROUNDING_MODE)");
+                    formatString = new MessageFormat(
+                            "{0}.divide({1}, max(max({0}.scale(), {1}.scale()), DEFAULT_SCALE), ROUNDING_MODE)");
                     break;
                 case REMAINDER:
                     formatString = new MessageFormat("{0}.remainder({1})");
