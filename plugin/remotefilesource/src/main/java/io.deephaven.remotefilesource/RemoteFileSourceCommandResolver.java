@@ -33,22 +33,34 @@ public class RemoteFileSourceCommandResolver implements CommandResolver, WantsTi
     private static final String FETCH_PLUGIN_TYPE_URL =
             "type.googleapis.com/" + RemoteFileSourcePluginFetchRequest.getDescriptor().getFullName();
 
-
+    /**
+     * Parses a RemoteFileSourcePluginFetchRequest from the given Any command.
+     *
+     * @param command the Any command containing the fetch request
+     * @return the parsed RemoteFileSourcePluginFetchRequest
+     * @throws IllegalArgumentException if the command type URL doesn't match the expected fetch plugin type
+     * @throws UncheckedDeephavenException if the command cannot be parsed as a RemoteFileSourcePluginFetchRequest
+     */
     private static RemoteFileSourcePluginFetchRequest parseFetchRequest(final Any command) {
         if (!FETCH_PLUGIN_TYPE_URL.equals(command.getTypeUrl())) {
             throw new IllegalArgumentException("Not a valid remotefilesource command: " + command.getTypeUrl());
         }
 
-        final ByteString bytes = command.getValue();
-        final RemoteFileSourcePluginFetchRequest request;
         try {
-            request = RemoteFileSourcePluginFetchRequest.parseFrom(bytes);
+            return RemoteFileSourcePluginFetchRequest.parseFrom(command.getValue());
         } catch (InvalidProtocolBufferException e) {
             throw new UncheckedDeephavenException("Could not parse RemoteFileSourcePluginFetchRequest", e);
         }
-        return request;
     }
 
+    /**
+     * Attempts to parse ByteString data as a protobuf Any message.
+     * Returns null if parsing fails rather than throwing an exception, allowing callers to handle
+     * invalid data gracefully.
+     *
+     * @param data the ByteString data to parse
+     * @return the parsed Any message, or null if parsing fails
+     */
     private static Any parseOrNull(final ByteString data) {
         try {
             return Any.parseFrom(data);
@@ -57,6 +69,17 @@ public class RemoteFileSourceCommandResolver implements CommandResolver, WantsTi
         }
     }
 
+    /**
+     * Creates and exports a RemoteFileSourceServicePlugin instance based on the fetch request.
+     * The plugin is exported to the session using the result ticket specified in the request,
+     * and flight info is returned containing the endpoint for accessing the plugin.
+     *
+     * @param session the session state for the current request
+     * @param descriptor the flight descriptor containing the command
+     * @param request the parsed RemoteFileSourcePluginFetchRequest containing the result ticket
+     * @return a FlightInfo export object containing the plugin endpoint information
+     * @throws StatusRuntimeException if the request doesn't contain a valid result ID ticket
+     */
     public SessionState.ExportObject<Flight.FlightInfo> fetchPlugin(@Nullable final SessionState session,
                                                                     final Flight.FlightDescriptor descriptor,
                                                                     final RemoteFileSourcePluginFetchRequest request) {
@@ -86,6 +109,18 @@ public class RemoteFileSourceCommandResolver implements CommandResolver, WantsTi
         return SessionState.wrapAsExport(flightInfo);
     }
 
+    /**
+     * Resolves a flight descriptor to flight info for remote file source commands.
+     * Handles RemoteFileSourcePluginFetchRequest commands by parsing the descriptor and delegating to the
+     * appropriate handler method.
+     *
+     * @param session the session state for the current request
+     * @param descriptor the flight descriptor containing the command
+     * @param logId the log identifier for tracking
+     * @return a FlightInfo export object for the requested command
+     * @throws StatusRuntimeException if session is null (UNAUTHENTICATED), the command cannot be parsed,
+     *                                or the command type URL is not recognized
+     */
     @Override
     public SessionState.ExportObject<Flight.FlightInfo> flightInfoFor(@Nullable final SessionState session,
             final Flight.FlightDescriptor descriptor,
@@ -156,7 +191,8 @@ public class RemoteFileSourceCommandResolver implements CommandResolver, WantsTi
     public <T> SessionState.ExportObject<T> resolve(@Nullable final SessionState session,
             final Flight.FlightDescriptor descriptor,
             final String logId) {
-        return null;
+        // use flightInfoFor() instead of resolve() for descriptor handling
+        throw new UnsupportedOperationException();
     }
 
     @Override
