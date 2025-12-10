@@ -80,7 +80,7 @@ public class RemoteFileSourceCommandResolver implements CommandResolver, WantsTi
      * @return a FlightInfo export object containing the plugin endpoint information
      * @throws StatusRuntimeException if the request doesn't contain a valid result ID ticket
      */
-    public SessionState.ExportObject<Flight.FlightInfo> fetchPlugin(@Nullable final SessionState session,
+    private SessionState.ExportObject<Flight.FlightInfo> fetchPlugin(@Nullable final SessionState session,
                                                                     final Flight.FlightDescriptor descriptor,
                                                                     final RemoteFileSourcePluginFetchRequest request) {
         final Ticket resultTicket = request.getResultId();
