@@ -72,7 +72,7 @@ public final class GroupByReaggregateOperator implements IterativeChunkedAggrega
         this.exposeRowSetsAs = exposeRowSetsAs;
 
         if (exposeRowSetsAs == null) {
-            throw new IllegalArgumentException("Must exposing group RowSets for rollup.");
+            throw new IllegalArgumentException("Must expose group RowSets for rollup.");
         }
 
         live = inputTable.isRefreshing();
