@@ -8,10 +8,13 @@ import io.deephaven.api.SortColumn;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.RowSetShiftData;
+import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.hierarchical.HierarchicalTable;
 import io.deephaven.engine.table.hierarchical.RollupTable;
 import io.deephaven.engine.testutil.ColumnInfo;
+import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.EvalNuggetInterface;
 import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.generator.IntGenerator;
@@ -22,6 +25,7 @@ import io.deephaven.engine.util.TableTools;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.vector.IntVector;
 import io.deephaven.vector.IntVectorDirect;
+import org.jspecify.annotations.NonNull;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -62,7 +66,8 @@ public class TestRollupTable extends RefreshingTableTestCase {
             AggUnique("unique=intCol"),
             AggVar("var=intCol"),
             AggWAvg("intCol", "wavg=intCol"),
-            AggWSum("intCol", "wsum=intCol"));
+            AggWSum("intCol", "wsum=intCol"),
+            AggGroup("grp=intCol"));
 
     // Companion list of columns to compare between rollup root and the zero-key equivalent
     private final String[] columnsToCompare = new String[] {
@@ -83,7 +88,8 @@ public class TestRollupTable extends RefreshingTableTestCase {
             "unique",
             "var",
             "wavg",
-            "wsum"
+            "wsum",
+            "grp"
     };
 
     /**
@@ -338,5 +344,102 @@ public class TestRollupTable extends RefreshingTableTestCase {
                         longCol("Count", 3, 1, 1, 1)),
                 snapshot);
         freeSnapshotTableChunks(snapshot);
+    }
+
+    @Test
+    public void testRollupGroupStatic() {
+        final Table source = TableTools.newTable(
+                stringCol("Key1", "Alpha", "Bravo", "Alpha", "Charlie", "Charlie", "Bravo", "Bravo"),
+                stringCol("Key2", "Delta", "Delta", "Echo", "Echo", "Echo", "Echo", "Echo"),
+                intCol("Sentinel", 1, 2, 3, 4, 5, 6, 7));
+
+        final RollupTable rollup1 =
+                source.rollup(List.of(AggGroup("Sentinel"), AggSum("Sum=Sentinel")), "Key1", "Key2");
+
+        final String[] arrayWithNull = new String[1];
+        final Table keyTable = newTable(
+                intCol(rollup1.getRowDepthColumn().name(), 0),
+                stringCol("Key1", arrayWithNull),
+                stringCol("Key2", arrayWithNull),
+                byteCol("Action", HierarchicalTable.KEY_TABLE_ACTION_EXPAND_ALL));
+
+        final HierarchicalTable.SnapshotState ss1 = rollup1.makeSnapshotState();
+        final Table snapshot =
+                snapshotToTable(rollup1, ss1, keyTable, ColumnName.of("Action"), null, RowSetFactory.flat(30));
+        TableTools.showWithRowSet(snapshot);
+
+        final Table expected = initialExpectedGrouped(rollup1);
+        assertTableEquals(expected, snapshot.dropColumns("__EXPOSED_GROUP_ROW_SETS__"));
+        freeSnapshotTableChunks(snapshot);
+    }
+
+    private static Table initialExpectedGrouped(RollupTable rollup1) {
+        return TableTools.newTable(intCol(rollup1.getRowDepthColumn().name(), 1, 2, 3, 3, 2, 3, 3, 2, 3),
+                booleanCol(rollup1.getRowExpandedColumn().name(), true, true, null, null, true, null, null,
+                        true, null),
+                col("Key1", null, "Alpha", "Alpha", "Alpha", "Bravo", "Bravo", "Bravo", "Charlie", "Charlie"),
+                col("Key2", null, null, "Delta", "Echo", null, "Delta", "Echo", null, "Echo"),
+                col("Sentinel", iv(1, 2, 3, 4, 5, 6, 7), iv(1, 3), iv(1), iv(3), iv(2, 6, 7), iv(2), iv(6, 7),
+                        iv(4, 5), iv(4, 5)))
+                .update("Sum=sum(Sentinel)");
+    }
+
+    private static Table secondExpectedGrouped(RollupTable rollup1) {
+        return TableTools.newTable(intCol(rollup1.getRowDepthColumn().name(), 1, 2, 3, 3, 2, 3, 3, 2, 3),
+                booleanCol(rollup1.getRowExpandedColumn().name(), true, true, null, null, true, null, null,
+                        true, null),
+                col("Key1", null, "Alpha", "Alpha", "Alpha", "Bravo", "Bravo", "Bravo", "Charlie", "Charlie"),
+                col("Key2", null, null, "Delta", "Echo", null, "Delta", "Echo", null, "Echo"),
+                col("Sentinel", iv(1, 2, 3, 4, 5, 7, 8, 9), iv(1, 3, 8), iv(1), iv(3, 8), iv(2, 7), iv(2), iv(7),
+                        iv(4, 5, 9), iv(4, 5, 9)))
+                .update("Sum=sum(Sentinel)");
+    }
+
+    private static @NonNull IntVector iv(final int... ints) {
+        return new IntVectorDirect(ints);
+    }
+
+    @Test
+    public void testRollupGroupIncremental() {
+        final QueryTable source = TstUtils.testRefreshingTable(
+                stringCol("Key1", "Alpha", "Bravo", "Alpha", "Charlie", "Charlie", "Bravo", "Bravo"),
+                stringCol("Key2", "Delta", "Delta", "Echo", "Echo", "Echo", "Echo", "Echo"),
+                intCol("Sentinel", 1, 2, 3, 4, 5, 6, 7));
+
+        final RollupTable rollup1 =
+                source.rollup(List.of(AggGroup("Sentinel"), AggSum("Sum=Sentinel")), "Key1", "Key2");
+
+        final String[] arrayWithNull = new String[1];
+        final Table keyTable = newTable(
+                intCol(rollup1.getRowDepthColumn().name(), 0),
+                stringCol("Key1", arrayWithNull),
+                stringCol("Key2", arrayWithNull),
+                byteCol("Action", HierarchicalTable.KEY_TABLE_ACTION_EXPAND_ALL));
+
+        final HierarchicalTable.SnapshotState ss1 = rollup1.makeSnapshotState();
+        final Table snapshot =
+                snapshotToTable(rollup1, ss1, keyTable, ColumnName.of("Action"), null, RowSetFactory.flat(30));
+        TableTools.showWithRowSet(snapshot);
+
+        final Table expected = initialExpectedGrouped(rollup1);
+        assertTableEquals(expected, snapshot.dropColumns("__EXPOSED_GROUP_ROW_SETS__"));
+        freeSnapshotTableChunks(snapshot);
+
+        final ControlledUpdateGraph cug = source.getUpdateGraph().cast();
+        cug.runWithinUnitTestCycle(() -> {
+            addToTable(source, i(10, 11), stringCol("Key1", "Alpha", "Charlie"), stringCol("Key2", "Echo", "Echo"),
+                    intCol("Sentinel", 8, 9));
+            removeRows(source, i(5));
+            source.notifyListeners(
+                    new TableUpdateImpl(i(10, 11), i(5), i(), RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY));
+        });
+
+        final Table snapshot2 =
+                snapshotToTable(rollup1, ss1, keyTable, ColumnName.of("Action"), null, RowSetFactory.flat(30));
+        TableTools.showWithRowSet(snapshot2);
+        Table expected2 = secondExpectedGrouped(rollup1);
+        TableTools.showWithRowSet(expected2);
+        assertTableEquals(expected2, snapshot2.dropColumns("__EXPOSED_GROUP_ROW_SETS__"));
+        freeSnapshotTableChunks(snapshot2);
     }
 }

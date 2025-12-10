@@ -22,6 +22,8 @@ public interface AggregateColumnSource<VECTOR_TYPE extends Vector<VECTOR_TYPE>, 
 
     UngroupedColumnSource<COMPONENT_TYPE> ungrouped();
 
+    ColumnSource<COMPONENT_TYPE> getAggregatedSource();
+
     static <VECTOR_TYPE extends Vector<VECTOR_TYPE>, DATA_TYPE> AggregateColumnSource<VECTOR_TYPE, DATA_TYPE> make(
             @NotNull final ColumnSource<DATA_TYPE> aggregatedSource,
             @NotNull final ColumnSource<? extends RowSet> groupRowSetSource) {

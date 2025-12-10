@@ -1017,12 +1017,6 @@ public class AggregationProcessor implements AggregationContextFactory {
 
         @Override
         @FinalDefault
-        default void visit(@NotNull final AggSpecGroup group) {
-            rollupUnsupported("Group");
-        }
-
-        @Override
-        @FinalDefault
         default void visit(@NotNull final AggSpecFormula formula) {
             rollupUnsupported("Formula");
         }
@@ -1106,6 +1100,13 @@ public class AggregationProcessor implements AggregationContextFactory {
                     table, partition.column().name(), PARTITION_ATTRIBUTE_COPIER, groupByColumnNames);
 
             addNoInputOperator(partitionOperator);
+        }
+
+        @Override
+        public void visit(AggSpecGroup group) {
+            unsupportedForBlinkTables("Group for rollup");
+            addNoInputOperator(new GroupByChunkedOperator(table, true, EXPOSED_GROUP_ROW_SETS.name(),
+                    MatchPair.fromPairs(resultPairs)));
         }
 
         // -------------------------------------------------------------------------------------------------------------
@@ -1263,6 +1264,17 @@ public class AggregationProcessor implements AggregationContextFactory {
                     table, adjustedTable, partition.column().name(), PARTITION_ATTRIBUTE_COPIER, groupByColumnNames);
 
             addNoInputOperator(partitionOperator);
+        }
+
+        @Override
+        public void visit(AggSpecGroup group) {
+            final ColumnSource<?> groupRowSet = table.getColumnSource(EXPOSED_GROUP_ROW_SETS.name());
+            final MatchPair[] pairs = new MatchPair[resultPairs.size()];
+            for (int ii = 0; ii < resultPairs.size(); ++ii) {
+                pairs[ii] = new MatchPair(resultPairs.get(ii).output().name(), resultPairs.get(ii).output().name());
+            }
+            addOperator(new GroupByReaggreagateOperator(table, true, EXPOSED_GROUP_ROW_SETS.name(), pairs), groupRowSet,
+                    EXPOSED_GROUP_ROW_SETS.name());
         }
 
         // -------------------------------------------------------------------------------------------------------------
