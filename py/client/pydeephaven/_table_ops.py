@@ -12,6 +12,7 @@ import pyarrow as pa
 from deephaven_core.proto import table_pb2, table_pb2_grpc, ticket_pb2
 from pydeephaven._arrow import map_arrow_type
 from pydeephaven.agg import Aggregation
+from pydeephaven.filters import Filter
 from pydeephaven.updateby import UpdateByOperation
 
 if TYPE_CHECKING:
@@ -349,6 +350,35 @@ class UnstructuredFilterOp(TableOp):
             unstructured_filter=self.make_grpc_request(
                 result_id=result_id, source_id=source_id
             )
+        )
+
+
+class FilterOp(TableOp):
+    def __init__(self, filters: list[Filter]):
+        self.filters = filters
+
+    @classmethod
+    def get_stub_func(cls, table_service_stub: table_pb2_grpc.TableServiceStub) -> Any:
+        return table_service_stub.Filter
+
+    def make_grpc_request(
+        self,
+        result_id: Optional[ticket_pb2.Ticket],
+        source_id: Optional[table_pb2.TableReference],
+    ) -> Any:
+        return table_pb2.FilterTableRequest(
+            result_id=result_id,
+            source_id=source_id,
+            filters=[f.make_grpc_message() for f in self.filters],
+        )
+
+    def make_grpc_request_for_batch(
+        self,
+        result_id: Optional[ticket_pb2.Ticket],
+        source_id: table_pb2.TableReference,
+    ) -> Any:
+        return table_pb2.BatchTableRequest.Operation(
+            filter=self.make_grpc_request(result_id=result_id, source_id=source_id)
         )
 
 
