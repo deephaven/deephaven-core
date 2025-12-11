@@ -36,7 +36,12 @@ public class RemoteFileSourcePlugin extends ObjectTypeBase {
 
     @Override
     public boolean isType(Object object) {
-        return object instanceof PluginMarker;
+        // We need to check the pluginType
+        if (object instanceof PluginMarker) {
+            PluginMarker marker = (PluginMarker) object;
+            return name().equals(marker.getPluginType());
+        }
+        return false;
     }
 
     @Override

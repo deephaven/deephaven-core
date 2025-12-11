@@ -95,12 +95,20 @@ public class RemoteFileSourceCommandResolver implements CommandResolver, WantsTi
                     .withDescription("RemoteFileSourcePluginFetchRequest must contain a valid result_id"));
         }
 
+        final String pluginType = request.getPluginType();
+        if (pluginType == null || pluginType.isEmpty()) {
+            throw new StatusRuntimeException(Status.INVALID_ARGUMENT
+                    .withDescription("RemoteFileSourcePluginFetchRequest must contain a valid plugin_type"));
+        }
+
         final SessionState.ExportBuilder<Object> markerExportBuilder =
                 session.newExport(resultTicket, "RemoteFileSourcePluginFetchRequest.resultTicket");
 //        markerExportBuilder.require();
 
+        // Get singleton marker for this plugin type
+        // This ensures isType() routing works correctly when multiple plugins use PluginMarker
         final SessionState.ExportObject<Object> markerExport =
-                markerExportBuilder.submit(() -> PluginMarker.INSTANCE);
+                markerExportBuilder.submit(() -> PluginMarker.forPluginType(pluginType));
 
         final Flight.FlightInfo flightInfo = Flight.FlightInfo.newBuilder()
                 .setFlightDescriptor(descriptor)
