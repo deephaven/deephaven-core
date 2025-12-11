@@ -7,9 +7,9 @@ Deephaven parallelizes queries automatically, using multiple CPU cores to improv
 
 > [!IMPORTANT] > **Breaking change in Deephaven 0.41+**: Queries now run in parallel by default. Non-thread-safe code will produce incorrect results.
 >
-> **Quick check**: Does your code use global variables, depend on row order, or call non-thread-safe functions? If yes, the [crash course guide](../../getting-started/crash-course/parallelization.md) provides practical examples.
+> **Quick check**: Does your code use global variables, depend on row order, or call non-thread-safe functions? If yes, the [crash course guide](../../tutorials/crash-course/parallelization.md) provides practical examples.
 
-This guide provides comprehensive coverage of how parallelization works and when to control it. For a practical overview with examples, see the [crash course guide](../../getting-started/crash-course/parallelization.md).
+This guide provides comprehensive coverage of how parallelization works and when to control it. For a practical overview with examples, see the [crash course guide](../../tutorials/crash-course/parallelization.md).
 
 ## Deephaven does parallelization for you
 
@@ -51,7 +51,7 @@ Deephaven is a column-oriented engine that processes entire columns rather than 
 
 **What gets parallelized**:
 
-- Column calculations in [`update`](../../reference/table-operations/select/update.md), [`select`](../../reference/table-operations/select/select.md), [`view`](../../reference/table-operations/select/view.md), and [`updateView`](../../reference/table-operations/select/updateView.md).
+- Column calculations in [`update`](../../reference/table-operations/select/update.md), [`select`](../../reference/table-operations/select/select.md), [`view`](../../reference/table-operations/select/view.md), and [`updateView`](../../reference/table-operations/select/update-view.md).
 - Filters in [`where`](../../reference/table-operations/filter/where.md) clauses.
 - Aggregations and group-by operations.
 - Join operations.
@@ -71,11 +71,7 @@ A [`Selectable`](https://deephaven.io/core/javadoc/io/deephaven/api/Selectable.h
 
 When you write `.update("A = i * 2")`, Deephaven converts this string into a Selectable internally. You can create Selectables explicitly to apply concurrency controls:
 
-```groovy
-import io.deephaven.api.Selectable
-import io.deephaven.api.ColumnName
-import io.deephaven.api.RawString
-
+```groovy order=source,result
 // Create a Selectable from a formula string
 col = Selectable.of(ColumnName.of("A"), RawString.of("i * 2"))
 
@@ -275,7 +271,7 @@ Deephaven automatically parallelizes queries using all available CPU cores. Unde
 - Stateless operations provide better performance and safety
 - Thread pools use all available cores by default
 
-For practical examples, see the [parallelization crash course](../../getting-started/crash-course/parallelization.md).
+For practical examples, see the [parallelization crash course](../../tutorials/crash-course/parallelization.md).
 
 ### Related documentation
 
