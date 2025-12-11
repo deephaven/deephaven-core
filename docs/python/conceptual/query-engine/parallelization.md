@@ -1,109 +1,252 @@
 ---
-title: Parallelizing queries
+title: Parallelization
 sidebar_label: Parallelization
 ---
 
-Deephaven supports using multiple processors to speed up query evaluation. The extent to which Deephaven employs
-multiple processors depends on both the phase of operation and the query itself.
+Deephaven parallelizes table operations like [`select`](../../reference/table-operations/select/select.md), [`update`](../../reference/table-operations/select/update.md), and [`where`](../../reference/table-operations/filter/where.md) automatically, using multiple CPU cores to improve data processing performance. Understanding how parallelization works is essential for writing efficient queries and ensuring correct results.
 
-## Query initialization and updates
+> [!IMPORTANT] > **Breaking change in Deephaven 0.41+**: Queries now run in parallel by default. Non-thread-safe code will produce incorrect results.
+>
+> **Quick check**: Does your code use global variables, depend on row order, or call non-thread-safe functions? If yes, the [crash course guide](../../getting-started/crash-course/parallelization.md) provides practical examples.
 
-When considering Deephaven query performance, there are two distinct phases to consider: initialization and updates.
+This guide provides comprehensive coverage of how parallelization works and when to control it. For a practical overview with examples, see the [crash course guide](../../getting-started/crash-course/parallelization.md).
+
+## Deephaven does parallelization for you
+
+Deephaven automatically uses all available CPU cores to parallelize query processing. Parallelization is handled by the engine without requiring explicit configuration.
+
+Parallelization occurs at two levels:
+
+### Parallelizing multiple tables in the DAG
+
+When you have independent operations on the same source table, Deephaven processes them simultaneously. Consider this example:
+
+```python skip-test
+# Retrieve a live table
+market_data = get_market_feed()
+
+# Run independent transformations
+with_metrics = market_data.update("Value = Price * Volume")
+high_volume = market_data.where("Volume > 1000000")
+recent_trades = market_data.where("Timestamp > now() - 60 * SECOND")
+
+# Combine results
+from deephaven import merge
+
+analysis = merge([with_metrics, high_volume, recent_trades])
+```
+
+When new data arrives in `market_data`, Deephaven processes the three transformations (`with_metrics`, `high_volume`, `recent_trades`) simultaneously because they are independent. The `analysis` table updates only after all three transformations complete.
+
+The [update graph (DAG)](../dag.md) tracks dependencies between tables and automatically parallelizes independent operations.
+
+### Parallelizing individual table calculations
+
+Deephaven also parallelizes work within a single table operation. When you run `source.update("Total = Price * Quantity")`, Deephaven:
+
+1. Splits the `Price` and `Quantity` columns into chunks (typically 4096 rows each).
+2. Assigns chunks to available CPU cores.
+3. Each core calculates `Total` for its chunk independently.
+4. Combines results into the final `Total` column.
+
+Deephaven is a column-oriented engine that processes entire columns rather than individual rows, enabling efficient parallelization.
+
+**What gets parallelized**:
+
+- Column calculations in [`update`](../../reference/table-operations/select/update.md), [`select`](../../reference/table-operations/select/select.md), [`view`](../../reference/table-operations/select/view.md), and [`update_view`](../../reference/table-operations/select/update-view.md).
+- Filters in [`where`](../../reference/table-operations/filter/where.md) clauses.
+- Aggregations and group-by operations.
+- Join operations.
+
+**What doesn't get parallelized**:
+
+- Operations marked with `.with_serial()` (you control this).
+- Operations waiting for dependencies (automatic in the update graph).
+
+## Controlling parallelization
+
+When automatic parallelization isn't appropriate for your code, Deephaven provides mechanisms to control execution order and concurrency. Three concepts work together:
+
+### Selectable
+
+A [`Selectable`](https://docs.deephaven.io/core/pydoc/code/deephaven.table.html#deephaven.table.Selectable) is a column expression object that represents a formula to be evaluated in [`select`](../../reference/table-operations/select/select.md) or [`update`](../../reference/table-operations/select/update.md) operations.
+
+When you write `.update("A = i * 2")`, Deephaven converts this string into a Selectable internally. You can create Selectables explicitly to apply concurrency controls:
+
+```python order=source,result
+from deephaven import empty_table
+from deephaven.table import Selectable
+
+# Create a Selectable from a formula string
+col = Selectable.parse("A = i * 2")
+
+# Use it in table operations
+source = empty_table(10)
+result = source.update(col)
+```
+
+Creating explicit Selectables allows you to apply `.with_serial()` or use barriers to control when and how the formula executes.
+
+### Serial execution
+
+Serial execution forces rows to be processed one at a time, in order, on a single thread. This prevents race conditions when your code has dependencies between rows or accesses shared state.
+
+Applied using `.with_serial()` on a Selectable or Filter:
+
+```python syntax
+from deephaven.table import Selectable
+
+col = Selectable.parse("ID = get_next_id()").with_serial()
+```
+
+### Barriers
+
+Barriers create explicit ordering dependencies between operations. They ensure one operation completes before another begins:
+
+1. Operation A **declares** a barrier ("I'll signal when I'm done").
+2. Operation B **respects** the barrier ("I'll wait for A's signal").
+3. Deephaven ensures A completes before B starts.
+
+Barriers coordinate multiple operations that share state or have ordering requirements.
+
+## Query phases
+
+Query operations execute in two phases: initialization and updates.
 
 ### Query initialization
 
-Every table operation method — [`.where`](../../reference/table-operations/filter/where.md),
-[`.update`](../../reference/table-operations/select/update.md),
-[`.natural_join`](../../reference/table-operations/join/natural-join.md), etc. — undergoes an _initialization_ phase
-when the method is called. Initialization produces a result table based on the data in the source table. For example,
-with a 100,000-row table called `myTable`, running `myTable.update("X = random()")` will run the `random()` method
-100,000 times (once per row).
+When a table is first created, the initial state is computed using the available data. This happens when you call operations like [`.where()`](../../reference/table-operations/filter/where.md), [`.update()`](../../reference/table-operations/select/update.md), or [`.natural_join()`](../../reference/table-operations/join/natural-join.md).
 
-If an operation's source table is
-[refreshing](https://deephaven.io/core/javadoc/io/deephaven/engine/table/impl/BaseTable.html#isRefreshing()),
-then initialization will create a new node in the [update graph](../dag.md) as well.
+For [refreshing](https://deephaven.io/core/javadoc/io/deephaven/engine/table/impl/BaseTable.html#isRefreshing()) tables, Deephaven also adds a node to the [update graph](../dag.md) to track dependencies.
+
+**How parallelization works during initialization**: Deephaven splits the data into chunks and processes them on multiple cores simultaneously. Each core works on its assigned chunk independently.
 
 ### Query updates
 
-After initialization, the Update Graph Processor monitors source tables for changes and process _updates_ to any
-table. For example, if 25,000 rows are added to `myTable`, the Update Graph will run the `random()` method 25,000
-more times, calculating the value of column `X` for each of the new rows.
+After initialization, a table is updated as input data changes. This only applies to refreshing tables that receive new or modified data.
 
-## Parallelizing queries
+**How parallelization works during updates**: Deephaven parallelizes in two ways:
 
-### Parallelizing query initialization
+1. **Within operations**: Each operation splits its work into chunks processed on multiple cores.
+2. **Across operations**: Independent operations in the [update graph](../dag.md) run simultaneously on different cores.
 
-Deephaven is a column-oriented query engine — it focuses on handling data one column at a time, instead of one row at
-a time like many traditional databases. Since
-Deephaven [column sources](/core/javadoc/io/deephaven/engine/table/ColumnSource.html) support random
-access to data, different segments of a column can be processed in parallel. When possible, the Deephaven
-engine will do this automatically, based on the number of threads in the Operation Initialization Thread Pool.
+## Thread pools
 
-### Parallelizing query updates
+Deephaven uses two thread pools to manage parallelization. By default, both thread pools are configured to use all available CPU cores.
 
-As with query initialization, some operations can process different sections of a column in parallel. However, update
-processing can also be parallelized across independent nodes of the [DAG](../dag.md). Parallel processing
-of updates depends on the size of the Update Graph Processor Thread Pool.
+### Operation Initialization Thread Pool
 
-Consider the following hypothetical example:
+Handles parallel processing during query initialization (when you first create a table operation).
 
-```python skip-test
-## Retrieve a live table:
-my_table = get_my_kafka_feed_table()
+**Configuration**: `OperationInitializationThreadPool.threads`
 
-## Run several independent query operations on 'my_table':
-my_table_updated = my_table.update(
-    "MyCalculation = computeValue(Col1, Col2, ColRed, ColBlue)"
-)
-my_table_filtered1 = my_table.where("ColX < 10000")
-my_table_filtered2 = my_table.where("ColY > ColZ")
+- Default: `-1` (use all available cores)
+- Set to a specific number to limit parallelism during initialization
 
-## Create a result table that depends on the three prior tables:
-from deephaven import merge
+**When it's used**:
 
-merged_tables = merge(my_table_updated, my_table_filtered1, my_table_filtered2)
+- Initial calculation of [`update`](../../reference/table-operations/select/update.md), [`select`](../../reference/table-operations/select/select.md), [`where`](../../reference/table-operations/filter/where.md), etc.
+- Processing existing data when creating derived tables.
+- Join operations on static tables.
+
+### Update Graph Processor Thread Pool
+
+Handles parallel processing during update cycles (when live tables receive new data).
+
+**Configuration**: `PeriodicUpdateGraph.updateThreads`
+
+- Default: `-1` (use all available cores).
+- Set to a specific number to limit parallelism during updates.
+
+**When it's used**:
+
+- Processing new/modified rows in refreshing tables.
+- Propagating changes through the update graph.
+- Parallel execution of independent DAG nodes.
+
+Both thread pools use [Runtime.availableProcessors()](https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/lang/Runtime.html#availableProcessors()) to determine the number of available cores at startup.
+
+## Controlling concurrency
+
+Deephaven parallelizes operations by default. Concurrency control mechanisms are available for operations that require specific execution ordering or single-threaded processing.
+
+### Parallelization (default)
+
+Deephaven automatically parallelizes operations if they are stateless.
+
+**Stateless operations**:
+
+- Don't depend on mutable external inputs (no global variables).
+- Don't depend on row processing order.
+- Always produce the same output for the same input.
+- Are thread-safe.
+
+**Examples of stateless operations**:
+
+```python order=source1,result1,source2,result2,source3,result3,source4,result4
+from deephaven import empty_table
+
+# Pure column arithmetic
+source1 = empty_table(10).update(["Price = i * 10.0", "Quantity = i"])
+result1 = source1.update("Total = Price * Quantity")
+
+# String manipulation
+source2 = empty_table(10).update(["FirstName = `First` + i", "LastName = `Last` + i"])
+result2 = source2.update("FullName = FirstName + ' ' + LastName")
+
+# Conditional logic
+source3 = empty_table(10).update("Age = i + 18")
+result3 = source3.where("Age > 21")
+
+# Built-in functions
+source4 = empty_table(10).update("X = i * 2.0")
+result4 = source4.update("Squared = sqrt(X)")
 ```
 
-The three intermediate tables `my_table_updated`, `my_table_filtered1` and `my_table_filtered2` all depend on only one
-other table — the original `my_table`. Since they are independent of each other, when `my_table` is updated with new or
-modified rows it is possible for the query engine to process the new rows into `my_table_updated`, `my_table_filtered1`
-and `my_table_filtered2` at the same time. However, since `merged_tables` depends on those three tables, the query
-engine cannot update the result of the [`merge`](../../reference/table-operations/merge/merge.md) operation until after
-the [`update`](../../reference/table-operations/select/update.md) and [`where`](../../reference/table-operations/filter/where.md)s for those three tables have been processed.
+> [!WARNING] > **Breaking change in Deephaven 0.41+**
+>
+> **Deephaven 0.40 and earlier**: Assumed all formulas were stateful (serial) by default
+>
+> **Deephaven 0.41 and later**: Assumes all formulas are stateless (parallel) by default
+>
+> If your formula uses global state or depends on row order, you **must** mark it with `.with_serial()` or it will produce incorrect results.
 
-### Controlling Concurrency for `select`, `update` and `where`
+You can change the default behavior using configuration properties:
 
-The [`select`](../../reference/table-operations/select/select.md), [`update`](../../reference/table-operations/select/update.md), and [`where`](../../reference/table-operations/filter/where.md) operations can parallelize within a single where clause or column expression. This can greatly improve throughput by using multiple threads to read existing columns or compute functions.
+- For [`select`](../../reference/table-operations/select/select.md) and [`update`](../../reference/table-operations/select/update.md): set `QueryTable.statelessSelectByDefault`.
+- For filters: set `QueryTable.statelessFiltersByDefault`.
 
-Deephaven can only parallelize an expression if it is _stateless_, meaning it does not depend on any mutable external inputs or the order in which rows are evaluated. Many operations, such as string manipulation or arithmetic on one or more input columns, are stateless.
+### Serialization
 
-By default, the Deephaven engine assumes that expressions are stateful (not stateless). For [`select`](../../reference/table-operations/select/select.md) and [`update`](../../reference/table-operations/select/update.md), you can change the configuration property `QueryTable.statelessSelectByDefault` to `true` to make columns stateless by default. For filters, change the property `QueryTable.statelessFiltersByDefault`.
+Serialization forces single-threaded, in-order execution for operations that are not thread-safe.
+
+**When serialization is required**:
+
+- The formula uses or modifies global variables.
+- The formula calls non-thread-safe external functions.
+- The formula depends on rows being processed in a specific order.
+- Race conditions produce incorrect results.
 
 > [!NOTE]
-> In a future version of Deephaven, filters and selectables will be stateless by default.
+> Most queries don't need serial execution. Use `.with_serial()` only when parallelization causes incorrect results.
 
-The [`ConcurrencyControl`](https://docs.deephaven.io/core/pydoc/code/deephaven.concurrency_control.html#deephaven.concurrency_control.ConcurrencyControl) interface allows you to control the behavior of [`Filter`](https://docs.deephaven.io/core/pydoc/code/deephaven.filters.html) (where clause) and [`Selectable`](https://docs.deephaven.io/core/pydoc/code/deephaven.table.html#deephaven.table.Selectable) objects (update and select table operations).
+#### How serialization works
 
-To explicitly mark a Selectable or Filter as stateful, use the `with_serial` method.
+Marking an operation as serial tells Deephaven:
 
-- A serial Filter cannot be reordered with respect to other Filters. Every input row to a serial Filter is evaluated in order.
-- When a Selectable is serial, every row for that column is evaluated in order.
-- For Selectables, additional ordering constraints are controlled by `QueryTable.SERIAL_SELECT_IMPLICIT_BARRIERS`, which is set by the property `QueryTable.serialSelectImplicitBarriers`. The default value is the inverse of `QueryTable.statelessSelectByDefault`:
-  - When Selectables are stateless by default, no implicit barriers are added (`QueryTable.SERIAL_SELECT_IMPLICIT_BARRIERS` is false).
-  - When Selectables are stateful by default, implicit barriers are added (`QueryTable.SERIAL_SELECT_IMPLICIT_BARRIERS` is true).
-- If `QueryTable.SERIAL_SELECT_IMPLICIT_BARRIERS` is false, no additional ordering between expressions is imposed. As with every [`select`](../../reference/table-operations/select/select.md) or [`update`](../../reference/table-operations/select/update.md) call, if column B references column A, then column A is evaluated before column B. To impose further ordering constraints, use barriers.
-- If `QueryTable.SERIAL_SELECT_IMPLICIT_BARRIERS` is true, a serial Selectable acts as an absolute barrier with respect to all other serial Selectables. This prohibits serial Selectables from being evaluated concurrently, permitting them to access global state. Non-serial Selectables may be reordered with respect to a serial Selectable.
+- Process rows one at a time, in order.
+- Don't parallelize this operation across CPU cores.
+- Ensure thread-safe execution for stateful code.
 
-Filters and Selectables may declare a [`Barrier`](https://docs.deephaven.io/core/pydoc/code/deephaven.concurrency_control.html#deephaven.concurrency_control.Barrier). A barrier is an opaque object (compared using reference equality) used to control evaluation order between Filters or Selectables.
+The [`ConcurrencyControl`](https://docs.deephaven.io/core/pydoc/code/deephaven.concurrency_control.html#deephaven.concurrency_control.ConcurrencyControl) interface provides the `.with_serial()` method for [`Filter`](https://docs.deephaven.io/core/pydoc/code/deephaven.filters.html) ([`where`](../../reference/table-operations/filter/where.md) clause) and [`Selectable`](https://docs.deephaven.io/core/pydoc/code/deephaven.table.html#deephaven.table.Selectable) ([`update`](../../reference/table-operations/select/update.md) and [`select`](../../reference/table-operations/select/select.md) operations).
 
-Subsequent Filters or Selectables may respect a previously declared barrier:
+> [!IMPORTANT] > `ConcurrencyControl` cannot be applied to Selectables passed to [`view`](../../reference/table-operations/select/view.md) or [`update_view`](../../reference/table-operations/select/update-view.md). These operations compute results on demand and cannot enforce ordering constraints. Use [`select`](../../reference/table-operations/select/select.md) or [`update`](../../reference/table-operations/select/update.md) instead when serial evaluation is needed.
 
-- If a Filter respects a barrier, it cannot begin evaluation until the Filter that declared the barrier has been completely evaluated.
-- If a Selectable respects a barrier, it cannot begin evaluation until the Selectable that declared the barrier has been completely evaluated.
+#### Example: Global state requires serialization
 
-In this code block, two columns call a Python stateful function that is not thread-safe:
+This example demonstrates why some code needs serialization. A function maintains global state:
 
-```python order=null
+```python order=t
 from deephaven import empty_table
 
 counter = 0
@@ -121,17 +264,84 @@ t = empty_table(1_000_000).update(
 )
 ```
 
-Deephaven's default behavior is to treat both `A` and `B` statefully, therefore the table is equivalent to:
+Without serialization, parallel execution could cause race conditions where multiple threads read and update `counter` simultaneously, producing incorrect results.
 
-```python order=null
+#### Using `.with_serial()` for Selectables
+
+To force serial execution for a column calculation, create a `Selectable` object and apply `.with_serial()`:
+
+```python order=result
+from deephaven.table import Selectable
 from deephaven import empty_table
 
-t = empty_table(1_000_000).update(["A=i", "B=1_000_000 + i"])
+counter = 0
+
+
+def get_and_increment_counter() -> int:
+    global counter
+    counter += 1
+    return counter
+
+
+# Force serial execution - rows processed one at a time, in order
+col = Selectable.parse("ID = get_and_increment_counter()").with_serial()
+result = empty_table(1_000_000).update(col)
 ```
 
-However, if the columns were marked as stateless (e.g., if `QueryTable.statelessSelectByDefault` were `true`), the rows from either column could be evaluated in any order, potentially causing race conditions. To ensure that all rows of `A` are evaluated before any rows of `B` begin evaluation, use a barrier:
+When a Selectable is serial:
 
-```python order=null
+- Every row is evaluated in order (row 0, then row 1, then row 2, etc.).
+- Only one thread processes the column at a time.
+- Global state updates happen sequentially without race conditions.
+
+#### Using `.with_serial()` for Filters
+
+Serial filters are needed when filter evaluation has stateful side effects. String-based filters in [`where()`](../../reference/table-operations/filter/where.md) are parallelized by default, so construct Filter objects explicitly:
+
+```python order=result
+from deephaven import empty_table
+from deephaven.filters import is_null, not_
+
+# Create filters with serial evaluation
+filter1 = is_null("X").with_serial()
+filter2 = not_(is_null("Y")).with_serial()
+
+result = (
+    empty_table(1000)
+    .update(["X = i % 10 == 0 ? null : i", "Y = i % 5 == 0 ? null : i"])
+    .where([filter1, filter2])
+)
+```
+
+When a Filter is serial:
+
+- Every input row is evaluated in order.
+- Filter cannot be reordered with respect to other Filters.
+- Stateful side effects happen sequentially.
+
+### Barriers
+
+Barriers control the execution order between different operations. Use barriers when operation A must complete before operation B starts.
+
+**When you need barriers**:
+
+- One operation depends on side effects from another operation.
+- Multiple operations share resources that require coordinated access.
+- Fine-grained control over execution order is necessary.
+
+#### How barriers work
+
+A [`Barrier`](https://docs.deephaven.io/core/pydoc/code/deephaven.concurrency_control.html#deephaven.concurrency_control.Barrier) is an object that creates ordering dependencies:
+
+1. One operation **declares** the barrier ("I'll signal when I'm done").
+2. Another operation **respects** the barrier ("I'll wait for the signal").
+3. Deephaven ensures the declaring operation completes before the respecting operation starts.
+
+#### Barriers for Selectables
+
+To ensure that all rows of column `A` are evaluated before any rows of column `B` begin evaluation:
+
+```python order=t
 from deephaven.concurrency_control import Barrier
 from deephaven.table import Selectable
 from deephaven import empty_table
@@ -146,10 +356,15 @@ def get_and_increment_counter() -> int:
     return ret
 
 
+# Create a barrier
 barrier = Barrier()
+
+# Column A declares the barrier ("I'll signal when done")
 col_a = Selectable.parse(
     formula="A = get_and_increment_counter()"
 ).with_declared_barriers(barrier)
+
+# Column B respects the barrier ("I'll wait for A's signal")
 col_b = Selectable.parse(
     formula="B = get_and_increment_counter()"
 ).with_respected_barriers(barrier)
@@ -157,45 +372,195 @@ col_b = Selectable.parse(
 t = empty_table(1_000_000).update([col_a, col_b])
 ```
 
-Alternatively, you can ensure that values of `A` are evaluated in order by using `with_serial` on a Selectable:
+With this barrier:
 
-```python order=null
+- Column `A` processes all 1,000,000 rows completely.
+- Only after `A` finishes does column `B` start processing.
+- Both columns can still be parallelized internally (unless also marked serial).
+
+#### Barriers for Filters
+
+Barriers control evaluation order between filters when one depends on another's side effects:
+
+```python order=result
+from deephaven import empty_table
+from deephaven.filters import is_null
+from deephaven.concurrency_control import Barrier
+
+# Create a barrier
+barrier = Barrier()
+
+# Filter1 declares the barrier
+filter1 = is_null("X").with_declared_barriers(barrier)
+
+# Filter2 respects the barrier and won't start until filter1 completes
+filter2 = is_null("Y").with_respected_barriers(barrier)
+
+result = (
+    empty_table(1000)
+    .update(["X = i % 10 == 0 ? null : i", "Y = i % 5 == 0 ? null : i"])
+    .where([filter1, filter2])
+)
+```
+
+#### Implicit barriers
+
+Serial Selectables can create implicit barriers between each other, controlled by the `QueryTable.SERIAL_SELECT_IMPLICIT_BARRIERS` configuration property:
+
+**Stateful mode (default)**:
+
+- Serial Selectables act as barriers to other serial Selectables.
+- Prevents concurrent execution of serial operations.
+- Provides automatic coordination for shared state.
+
+**Stateless mode**:
+
+- Serial Selectables only enforce in-order row evaluation within themselves.
+- No automatic barriers between serial operations.
+- Use explicit barriers for cross-operation ordering.
+
+Most users can rely on the default stateful behavior.
+
+### Choosing the right approach
+
+Use this decision guide to pick the right concurrency control method:
+
+#### When to use parallelization (default)
+
+**Use default parallel execution when**:
+
+- The formula only uses values from the current row.
+- The formula has no side effects (doesn't modify global state).
+- The formula doesn't depend on row processing order.
+- The formula is thread-safe.
+
+**Examples**:
+
+```python order=source1,result1,source2,result2,source3,result3,source4,result4
+from deephaven import empty_table
+
+# These all parallelize safely by default
+source1 = empty_table(10).update(["Price = i * 10.0", "Quantity = i"])
+result1 = source1.update("Total = Price * Quantity")
+
+source2 = empty_table(10).update(["FirstName = `First` + i", "LastName = `Last` + i"])
+result2 = source2.update("FullName = FirstName + ' ' + LastName")
+
+source3 = empty_table(10).update("Age = i + 18")
+result3 = source3.where("Age > 21")
+
+source4 = empty_table(10).update("Value = i * 50")
+result4 = source4.update("Category = Value > 100 ? `High` : `Low`")
+```
+
+#### When to use `.with_serial()`
+
+**Use `.with_serial()` when**:
+
+- Rows must be processed in order within a single operation.
+- The formula updates global state sequentially.
+- The formula depends on row evaluation order.
+- A single Filter or Selectable has order-dependent logic.
+
+**Examples**:
+
+- Sequential numbering with a counter.
+- Processing events in chronological sequence.
+- Cumulative calculations within one column.
+- File I/O or logging operations.
+
+**Code example**:
+
+```python order=source,result
+from deephaven.table import Selectable
+from deephaven import empty_table
+
+# Global state requires serial execution
+counter = 0
+
+
+def get_next_id():
+    global counter
+    counter += 1
+    return counter
+
+
+col = Selectable.parse("ID = get_next_id()").with_serial()
+source = empty_table(10)
+result = source.update(col)
+```
+
+#### When to use barriers
+
+**Use explicit barriers when**:
+
+- You need to control ordering between different operations.
+- Operation A must finish before operation B starts.
+- Multiple Filters or Selectables have dependencies.
+- One operation populates state that another consumes.
+
+**Examples**:
+
+- Filter A populates a cache that Filter B reads from.
+- Column A initializes a resource that Column B uses.
+- Sequential operations with cross-dependencies.
+
+**Code example**:
+
+```python order=source,result
 from deephaven.concurrency_control import Barrier
 from deephaven.table import Selectable
 from deephaven import empty_table
 
-counter = 0
+cache = {}
 
 
-def get_and_increment_counter() -> int:
-    global counter
-    ret = counter
-    counter += 1
-    return ret
+def init_cache(key):
+    cache[key] = f"Value_{key}"
+    return key
+
+
+def use_cache(key):
+    return cache.get(key, "Not found")
 
 
 barrier = Barrier()
-col_a = Selectable.parse(formula="A = get_and_increment_counter()").with_serial()
-col_b = Selectable.parse(formula="B = get_and_increment_counter()")
 
-t = empty_table(1_000_000).update([col_a, col_b])
+# A must complete before B starts
+col_a = Selectable.parse("A = init_cache(Key)").with_declared_barriers(barrier)
+col_b = Selectable.parse("B = use_cache(Key)").with_respected_barriers(barrier)
+
+source = empty_table(10).update("Key = i")
+result = source.update([col_a, col_b])
 ```
 
-### Managing thread pool sizes
+#### Quick reference table
 
-The maximum parallelism of query initialization and update processing is determined by the Operation Initialization
-Thread Pool and the Update Graph Processor Thread Pool. The size of these values is controlled using the properties
-described in the table below:
+| Scenario                             | Solution                      | Why                                 |
+| ------------------------------------ | ----------------------------- | ----------------------------------- |
+| Pure column math                     | Default (parallel)            | Thread-safe, no shared state        |
+| Global counter                       | `.with_serial()`              | Needs sequential row processing     |
+| Column A must finish before Column B | Barriers                      | Controls cross-operation ordering   |
+| File I/O or logging                  | `.with_serial()`              | Serialize access to shared resource |
+| Multiple operations sharing state    | Barriers or implicit barriers | Coordinates access to shared state  |
+| Non-thread-safe library              | `.with_serial()`              | Forces single-threaded access       |
 
-| Thread Pool Property                      | Default Value | Description                                                                                                     |
-| ----------------------------------------- | ------------- | --------------------------------------------------------------------------------------------------------------- |
-| OperationInitializationThreadPool.threads | -1            | Determines the number of threads available for parallel processing of initialization operations.                |
-| PeriodicUpdateGraph.updateThreads         | -1            | Determines the number of threads available for parallel processing of the Update Graph Processor refresh cycle. |
+## Summary
 
-Setting either of these properties to `-1` instructs Deephaven to use all available processors. The number of available
-processors is retrieved from the Java Virtual Machine at Deephaven startup, using [Runtime.availableProcessors()](https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/lang/Runtime.html#availableProcessors()).
+Deephaven's automatic parallelization provides significant performance improvements by utilizing all available CPU cores. Understanding parallelization helps you write efficient, correct queries:
+
+**Key concepts**:
+
+- Parallelization is automatic for stateless operations in Deephaven 0.41+.
+- Use `.with_serial()` for operations with global state, order dependencies, or non-thread-safe code.
+- Use barriers to control ordering between different operations.
+- Stateless operations provide better performance and safety.
+- Thread pools use all available cores by default.
+
+For practical examples, see the [parallelization crash course](../../getting-started/crash-course/parallelization.md).
 
 ### Related documentation
 
 - [Deephaven’s Directed-Acyclic-Graph (DAG)](../dag.md)
 - [Multithreading: Synchronization, locks, and snapshots](./engine-locking.md)
+- [ConcurrencyControl Javadoc](https://deephaven.io/core/javadoc/io/deephaven/api/ConcurrencyControl.html)

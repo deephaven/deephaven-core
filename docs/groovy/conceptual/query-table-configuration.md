@@ -114,7 +114,7 @@ Parallel snapshotting is not enabled until the snapshot size exceeds `QueryTable
 
 ## Stateless by default
 
-In a future release of Deephaven, the flags in this category will change from a default of false to a default of true. These flags enable the engine to assume more often that a given Filter or Selectable can be executed in parallel (unless the Filter or Selectable is [marked serial or has barriers](./query-engine/parallelization.md#controlling-concurrency-for-select-update-and-where) interface).
+In a future release of Deephaven, the flags in this category will change from a default of false to a default of true. These flags enable the engine to assume more often that a given Filter or Selectable can be executed in parallel (unless the Filter or Selectable is [marked serial or has barriers](./query-engine/parallelization.md#controlling-concurrency) interface).
 
 | Property Name                          | Default Value | Description                                                                                             |
 | -------------------------------------- | ------------- | ------------------------------------------------------------------------------------------------------- |
