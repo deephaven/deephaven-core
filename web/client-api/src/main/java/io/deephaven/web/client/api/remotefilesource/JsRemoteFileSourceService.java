@@ -11,10 +11,6 @@ import elemental2.dom.DomGlobal;
 import elemental2.promise.Promise;
 import io.deephaven.javascript.proto.dhinternal.arrow.flight.protocol.flight_pb.FlightDescriptor;
 import io.deephaven.javascript.proto.dhinternal.arrow.flight.protocol.flight_pb.FlightInfo;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.object_pb.ClientData;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.object_pb.ConnectRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.object_pb.StreamRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.object_pb.StreamResponse;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.remotefilesource_pb.RemoteFileSourceClientRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.remotefilesource_pb.RemoteFileSourceMetaRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.remotefilesource_pb.RemoteFileSourceMetaResponse;
@@ -25,9 +21,11 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.remotefi
 import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.ticket_pb.Ticket;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.ticket_pb.TypedTicket;
 import io.deephaven.web.client.api.Callbacks;
+import io.deephaven.web.client.api.event.Event;
 import io.deephaven.web.client.api.WorkerConnection;
-import io.deephaven.web.client.api.barrage.stream.BiDiStream;
 import io.deephaven.web.client.api.event.HasEventHandling;
+import io.deephaven.web.client.api.widget.JsWidget;
+import io.deephaven.web.client.api.widget.WidgetMessageDetails;
 import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsNullable;
@@ -38,7 +36,6 @@ import jsinterop.base.Js;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.function.Supplier;
 
 
 /**
@@ -48,32 +45,17 @@ import java.util.function.Supplier;
 @JsType(namespace = "dh.remotefilesource", name = "RemoteFileSourceService")
 public class JsRemoteFileSourceService extends HasEventHandling {
     public static final String EVENT_MESSAGE = "message";
-    public static final String EVENT_CLOSE = "close";
     public static final String EVENT_REQUEST = "request";
 
-    private final TypedTicket typedTicket;
-
-    private final Supplier<BiDiStream<StreamRequest, StreamResponse>> streamFactory;
-    private BiDiStream<StreamRequest, StreamResponse> messageStream;
-
-    private boolean hasFetched;
+    private final JsWidget widget;
 
     // Track pending setExecutionContext requests
     private final Map<String, Promise.PromiseExecutorCallbackFn.ResolveCallbackFn<Boolean>> pendingSetExecutionContextRequests = new HashMap<>();
     private int requestIdCounter = 0;
 
     @JsIgnore
-    private JsRemoteFileSourceService(WorkerConnection connection, TypedTicket typedTicket) {
-        this.typedTicket = typedTicket;
-        this.hasFetched = false;
-
-        // Set up the message stream factory
-        BiDiStream.Factory<StreamRequest, StreamResponse> factory = connection.streamFactory();
-        this.streamFactory = () -> factory.create(
-                connection.objectServiceClient()::messageStream,
-                (first, headers) -> connection.objectServiceClient().openMessageStream(first, headers),
-                (next, headers, c) -> connection.objectServiceClient().nextMessageStream(next, headers, c::apply),
-                new StreamRequest());
+    private JsRemoteFileSourceService(JsWidget widget) {
+        this.widget = widget;
     }
 
     /**
@@ -82,7 +64,7 @@ public class JsRemoteFileSourceService extends HasEventHandling {
      * @param connection the worker connection to use for communication
      * @return a promise that resolves to a RemoteFileSourceService instance with an active message stream
      */
-    @JsMethod
+    @JsIgnore
     public static Promise<JsRemoteFileSourceService> fetchPlugin(@TsTypeRef(Object.class) WorkerConnection connection) {
         // Create a new export ticket for the result
         Ticket resultTicket = connection.getTickets().newExportTicket();
@@ -125,10 +107,11 @@ public class JsRemoteFileSourceService extends HasEventHandling {
                         // The type must match RemoteFileSourcePlugin.name()
                         TypedTicket typedTicket = new TypedTicket();
                         typedTicket.setTicket(dhTicket);
-                        typedTicket.setType("GroovyRemoteFileSourcePlugin");
+                        typedTicket.setType("DeephavenGroovyRemoteFileSourcePlugin");
 
-                        // Create a new service instance with the typed ticket and connect to it
-                        JsRemoteFileSourceService service = new JsRemoteFileSourceService(connection, typedTicket);
+                        JsWidget widget = new JsWidget(connection, typedTicket);
+
+                        JsRemoteFileSourceService service = new JsRemoteFileSourceService(widget);
                         return service.connect();
                     } else {
                         return Promise.reject("No endpoints returned from RemoteFileSource plugin fetch");
@@ -143,70 +126,40 @@ public class JsRemoteFileSourceService extends HasEventHandling {
      */
     @JsIgnore
     private Promise<JsRemoteFileSourceService> connect() {
-        if (messageStream != null) {
-            messageStream.end();
-        }
+        widget.addEventListener("message", (Event<WidgetMessageDetails> event) -> {
+            // Parse the message as RemoteFileSourceServerRequest proto (server→client)
+            Uint8Array payload = event.getDetail().getDataAsU8();
 
-        return new Promise<>((resolve, reject) -> {
-            messageStream = streamFactory.get();
+            try {
+                RemoteFileSourceServerRequest message =
+                        RemoteFileSourceServerRequest.deserializeBinary(payload);
 
-            messageStream.onData(res -> {
-                if (!hasFetched) {
-                    hasFetched = true;
-                    resolve.onInvoke(this);
-                } else {
-                    // Parse the message as RemoteFileSourceServerRequest proto (server→client)
-                    Uint8Array payload = res.getData().getPayload_asU8();
+                if (message.hasMetaRequest()) {
+                    // If server has requested a resource from the client, fire request event
+                    RemoteFileSourceMetaRequest request = message.getMetaRequest();
 
-                    try {
-                        RemoteFileSourceServerRequest message =
-                                RemoteFileSourceServerRequest.deserializeBinary(payload);
-
-                        // Check which message type it is
-                        if (message.hasMetaRequest()) {
-                            // Server is requesting a resource from the client
-                            RemoteFileSourceMetaRequest request = message.getMetaRequest();
-
-                            // Fire request event (include request_id from wrapper)
-                            DomGlobal.setTimeout(ignore -> fireEvent(EVENT_REQUEST,
-                                    new ResourceRequestEvent(message.getRequestId(), request)), 0);
-                        } else if (message.hasSetExecutionContextResponse()) {
-                            // Server acknowledged execution context
-                            String requestId = message.getRequestId();
-                            Promise.PromiseExecutorCallbackFn.ResolveCallbackFn<Boolean> resolveCallback =
-                                    pendingSetExecutionContextRequests.remove(requestId);
-                            if (resolveCallback != null) {
-                                SetExecutionContextResponse response = message.getSetExecutionContextResponse();
-                                resolveCallback.onInvoke(response.getSuccess());
-                            }
-                        } else {
-                            // Unknown message type
-                            DomGlobal.setTimeout(ignore -> fireEvent(EVENT_MESSAGE, res.getData()), 0);
-                        }
-                    } catch (Exception e) {
-                        // Failed to parse as proto, fire generic message event
-                        DomGlobal.setTimeout(ignore -> fireEvent(EVENT_MESSAGE, res.getData()), 0);
+                    DomGlobal.setTimeout(ignore -> fireEvent(EVENT_REQUEST,
+                            new ResourceRequestEvent(message.getRequestId(), request)), 0);
+                } else if (message.hasSetExecutionContextResponse()) {
+                    // Server acknowledged execution context was set
+                    String requestId = message.getRequestId();
+                    Promise.PromiseExecutorCallbackFn.ResolveCallbackFn<Boolean> resolveCallback =
+                            pendingSetExecutionContextRequests.remove(requestId);
+                    if (resolveCallback != null) {
+                        SetExecutionContextResponse response = message.getSetExecutionContextResponse();
+                        resolveCallback.onInvoke(response.getSuccess());
                     }
+                } else {
+                    // Unknown message type
+                    DomGlobal.setTimeout(ignore -> fireEvent(EVENT_MESSAGE, event.getDetail()), 0);
                 }
-            });
-
-            messageStream.onStatus(status -> {
-                if (!status.isOk()) {
-                    reject.onInvoke(status.getDetails());
-                }
-                DomGlobal.setTimeout(ignore -> fireEvent(EVENT_CLOSE), 0);
-                closeStream();
-            });
-
-            messageStream.onEnd(status -> closeStream());
-
-            // First message establishes a connection w/ the plugin object instance we're talking to
-            StreamRequest req = new StreamRequest();
-            ConnectRequest data = new ConnectRequest();
-            data.setSourceId(typedTicket);
-            req.setConnect(data);
-            messageStream.send(req);
+            } catch (Exception e) {
+                // Failed to parse as proto, fire generic message event
+                DomGlobal.setTimeout(ignore -> fireEvent(EVENT_MESSAGE, event.getDetail()), 0);
+            }
         });
+
+        return widget.refetch().then(w -> Promise.resolve(this));
     }
 
     /**
@@ -261,15 +214,11 @@ public class JsRemoteFileSourceService extends HasEventHandling {
      */
     @JsIgnore
     private void sendClientRequest(RemoteFileSourceClientRequest clientRequest) {
-        if (messageStream == null) {
-            throw new IllegalStateException("Message stream not connected");
-        }
+        // Serialize the protobuf message to bytes
+        Uint8Array messageBytes = clientRequest.serializeBinary();
 
-        StreamRequest req = new StreamRequest();
-        ClientData clientData = new ClientData();
-        clientData.setPayload(clientRequest.serializeBinary());
-        req.setData(clientData);
-        messageStream.send(req);
+        // Send as Uint8Array (which is an ArrayBufferView, compatible with MessageUnion)
+        widget.sendMessage(Js.uncheckedCast(messageBytes), null);
     }
 
     /**
@@ -277,15 +226,7 @@ public class JsRemoteFileSourceService extends HasEventHandling {
      */
     @JsMethod
     public void close() {
-        closeStream();
-    }
-
-    @JsIgnore
-    private void closeStream() {
-        if (messageStream != null) {
-            messageStream.end();
-            messageStream = null;
-        }
+        widget.close();
     }
 
     /**

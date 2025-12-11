@@ -97,7 +97,7 @@ public class RemoteFileSourceCommandResolver implements CommandResolver, WantsTi
 
         final SessionState.ExportBuilder<Object> markerExportBuilder =
                 session.newExport(resultTicket, "RemoteFileSourcePluginFetchRequest.resultTicket");
-        markerExportBuilder.require();
+//        markerExportBuilder.require();
 
         final SessionState.ExportObject<Object> markerExport =
                 markerExportBuilder.submit(() -> PluginMarker.INSTANCE);
