@@ -19,6 +19,7 @@ import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -34,11 +35,13 @@ class FormulaMultiColumnChunkedOperator implements IterativeChunkedAggregationOp
 
     private final QueryTable inputTable;
 
-    private final GroupByChunkedOperator groupBy;
+    private final GroupByOperator groupBy;
     private final boolean delegateToBy;
     private final SelectColumn selectColumn;
     private final WritableColumnSource<?> resultColumn;
     private final String[] inputKeyColumns;
+    @Nullable
+    private final ColumnSource<Integer> formulaDepthSource;
 
     private ChunkSource<Values> formulaDataSource;
 
@@ -63,15 +66,17 @@ class FormulaMultiColumnChunkedOperator implements IterativeChunkedAggregationOp
      */
     FormulaMultiColumnChunkedOperator(
             @NotNull final QueryTable inputTable,
-            @NotNull final GroupByChunkedOperator groupBy,
+            @NotNull final GroupByOperator groupBy,
             final boolean delegateToBy,
             @NotNull final SelectColumn selectColumn,
-            @NotNull final String[] inputKeyColumns) {
+            @NotNull final String[] inputKeyColumns,
+            @Nullable final ColumnSource<Integer> formulaDepthSource) {
         this.inputTable = inputTable;
         this.groupBy = groupBy;
         this.delegateToBy = delegateToBy;
         this.selectColumn = selectColumn;
         this.inputKeyColumns = inputKeyColumns;
+        this.formulaDepthSource = formulaDepthSource;
 
         resultColumn = ArrayBackedColumnSource.getMemoryColumnSource(
                 0, selectColumn.getReturnedType(), selectColumn.getReturnedComponentType());
@@ -199,7 +204,7 @@ class FormulaMultiColumnChunkedOperator implements IterativeChunkedAggregationOp
 
     @Override
     public boolean requiresRowKeys() {
-        return delegateToBy;
+        return delegateToBy && groupBy.requiresRowKeys();
     }
 
     @Override
@@ -222,13 +227,14 @@ class FormulaMultiColumnChunkedOperator implements IterativeChunkedAggregationOp
         }
 
         final Map<String, ColumnSource<?>> sourceColumns;
-        if (inputKeyColumns.length == 0) {
+        if (inputKeyColumns.length == 0 && formulaDepthSource == null) {
             // noinspection unchecked
             sourceColumns = (Map<String, ColumnSource<?>>) groupBy.getInputResultColumns();
         } else {
             final Map<String, ColumnSource<?>> columnSourceMap = resultTable.getColumnSourceMap();
             sourceColumns = new HashMap<>(groupBy.getInputResultColumns());
             Arrays.stream(inputKeyColumns).forEach(col -> sourceColumns.put(col, columnSourceMap.get(col)));
+            sourceColumns.put(AggregationProcessor.ROLLUP_FORMULA_DEPTH.name(), formulaDepthSource);
         }
         selectColumn.initInputs(resultTable.getRowSet(), sourceColumns);
         formulaDataSource = selectColumn.getDataView();
@@ -263,8 +269,7 @@ class FormulaMultiColumnChunkedOperator implements IterativeChunkedAggregationOp
         final String[] inputColumnNames = selectColumn.getColumns().toArray(String[]::new);
         final ModifiedColumnSet inputMCS = inputTable.newModifiedColumnSet(inputColumnNames);
         return inputToResultModifiedColumnSetFactory = input -> {
-            if (groupBy.getSomeKeyHasAddsOrRemoves() ||
-                    (groupBy.getSomeKeyHasModifies() && input.containsAny(inputMCS))) {
+            if (groupBy.hasModifications(input.containsAny(inputMCS))) {
                 return resultMCS;
             }
             return ModifiedColumnSet.EMPTY;

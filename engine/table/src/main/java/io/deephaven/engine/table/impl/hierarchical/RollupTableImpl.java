@@ -272,7 +272,7 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
         final AggregationRowLookup[] levelRowLookups = makeLevelRowLookupsArray(numLevels, filteredBaseLevelRowLookup);
         final ColumnSource<Table>[] levelNodeTableSources = makeLevelNodeTableSourcesArray(
                 numLevels, filteredBaseLevel.getColumnSource(ROLLUP_COLUMN.name(), Table.class));
-        rollupFromBase(levelTables, levelRowLookups, levelNodeTableSources, aggregations, groupByColumns);
+        rollupFromBase(levelTables, levelRowLookups, levelNodeTableSources, aggregations, groupByColumns, source);
 
         final WhereFilter[] newFilters;
         if (rollupKeyFilters == null) {
@@ -589,7 +589,7 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
         final AggregationRowLookup[] levelRowLookups = makeLevelRowLookupsArray(numLevels, getRowLookup(baseLevel));
         final ColumnSource<Table>[] levelNodeTableSources = makeLevelNodeTableSourcesArray(
                 numLevels, baseLevel.getColumnSource(ROLLUP_COLUMN.name(), Table.class));
-        rollupFromBase(levelTables, levelRowLookups, levelNodeTableSources, aggregations, groupByColumns);
+        rollupFromBase(levelTables, levelRowLookups, levelNodeTableSources, aggregations, groupByColumns, source);
 
         return new RollupTableImpl(
                 attributes,
@@ -670,13 +670,15 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
      *        already filled
      * @param aggregations The aggregations
      * @param groupByColumns The group-by columns
+     * @param source
      */
     private static void rollupFromBase(
             @NotNull final QueryTable[] levelTables,
             @NotNull final AggregationRowLookup[] levelRowLookups,
             @NotNull final ColumnSource<Table>[] levelNodeTableSources,
             @NotNull final Collection<? extends Aggregation> aggregations,
-            @NotNull final Collection<? extends ColumnName> groupByColumns) {
+            @NotNull final Collection<? extends ColumnName> groupByColumns,
+            @NotNull final QueryTable source) {
         final Deque<ColumnName> columnsToReaggregateBy = new ArrayDeque<>(groupByColumns);
         final Deque<String> nullColumnNames = new ArrayDeque<>(groupByColumns.size());
         int lastLevelIndex = levelTables.length - 1;
@@ -688,7 +690,7 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
                     nullColumnNames.stream().map(lastLevelDefinition::getColumn).collect(Collectors.toList());
 
             lastLevel = lastLevel.aggNoMemo(
-                    AggregationProcessor.forRollupReaggregated(aggregations, nullColumns, ROLLUP_COLUMN),
+                    AggregationProcessor.forRollupReaggregated(aggregations, nullColumns, ROLLUP_COLUMN, source),
                     false, null, new ArrayList<>(columnsToReaggregateBy));
             --lastLevelIndex;
             levelTables[lastLevelIndex] = lastLevel;

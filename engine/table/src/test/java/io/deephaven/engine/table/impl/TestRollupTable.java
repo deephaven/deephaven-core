@@ -373,6 +373,40 @@ public class TestRollupTable extends RefreshingTableTestCase {
         freeSnapshotTableChunks(snapshot);
     }
 
+    @Test
+    public void testRollupFormulaStatic() {
+        final Table source = TableTools.newTable(
+                stringCol("Key1", "Alpha", "Bravo", "Alpha", "Charlie", "Charlie", "Bravo", "Bravo"),
+                stringCol("Key2", "Delta", "Delta", "Echo", "Echo", "Echo", "Echo", "Echo"),
+                intCol("Sentinel", 1, 2, 3, 4, 5, 6, 7));
+        TableTools.show(source);
+
+        final RollupTable rollup1 =
+                source.rollup(
+                        List.of(AggGroup("Sentinel"), AggSum("Sum=Sentinel"),
+                                AggFormula("FSum", "__FORMULA_DEPTH__ == 0 ? max(Sentinel) : 1 + sum(Sentinel)")),
+                        "Key1", "Key2");
+
+        final String[] arrayWithNull = new String[1];
+        final Table keyTable = newTable(
+                intCol(rollup1.getRowDepthColumn().name(), 0),
+                stringCol("Key1", arrayWithNull),
+                stringCol("Key2", arrayWithNull),
+                byteCol("Action", HierarchicalTable.KEY_TABLE_ACTION_EXPAND_ALL));
+
+        final HierarchicalTable.SnapshotState ss1 = rollup1.makeSnapshotState();
+        final Table snapshot =
+                snapshotToTable(rollup1, ss1, keyTable, ColumnName.of("Action"), null, RowSetFactory.flat(30));
+        TableTools.showWithRowSet(snapshot);
+
+        TableTools.show(snapshot.view(rollup1.getRowDepthColumn().name(), rollup1.getRowExpandedColumn().name(), "Key1",
+                "Key2", "Sentinel", "Sum", "FSum"));
+
+        final Table expected = initialExpectedGrouped(rollup1).update("FSum=ii == 0 ? 7 : 1 + Sum");
+        assertTableEquals(expected, snapshot.dropColumns("__EXPOSED_GROUP_ROW_SETS__"));
+        freeSnapshotTableChunks(snapshot);
+    }
+
     private static Table initialExpectedGrouped(RollupTable rollup1) {
         return TableTools.newTable(intCol(rollup1.getRowDepthColumn().name(), 1, 2, 3, 3, 2, 3, 3, 2, 3),
                 booleanCol(rollup1.getRowExpandedColumn().name(), true, true, null, null, true, null, null,

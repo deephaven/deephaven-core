@@ -33,7 +33,7 @@ import static io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource.BLO
  * An {@link IterativeChunkedAggregationOperator} used in the implementation of {@link Table#groupBy},
  * {@link io.deephaven.api.agg.spec.AggSpecGroup}, and {@link io.deephaven.api.agg.Aggregation#AggGroup(String...)}.
  */
-public final class GroupByChunkedOperator implements IterativeChunkedAggregationOperator {
+public final class GroupByChunkedOperator implements GroupByOperator {
 
     private final QueryTable inputTable;
     private final boolean registeredWithHelper;
@@ -392,9 +392,7 @@ public final class GroupByChunkedOperator implements IterativeChunkedAggregation
         return resultAggregatedColumns;
     }
 
-    /**
-     * Get a map from input column names to the corresponding output {@link ColumnSource}.
-     */
+    @Override
     public Map<String, ? extends ColumnSource<?>> getInputResultColumns() {
         return inputAggregatedColumns;
     }
@@ -634,5 +632,10 @@ public final class GroupByChunkedOperator implements IterativeChunkedAggregation
 
     boolean getSomeKeyHasModifies() {
         return someKeyHasModifies;
+    }
+
+    @Override
+    public boolean hasModifications(boolean columnsModified) {
+        return getSomeKeyHasAddsOrRemoves() || (getSomeKeyHasModifies() && columnsModified);
     }
 }

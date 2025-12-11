@@ -43,7 +43,7 @@ import static io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource.BLO
  * AggregateColumnSources -- not the immediately prior level).
  * </p>
  */
-public final class GroupByReaggregateOperator implements IterativeChunkedAggregationOperator {
+public final class GroupByReaggregateOperator implements GroupByOperator {
 
     private final QueryTable inputTable;
     private final boolean registeredWithHelper;
@@ -56,6 +56,7 @@ public final class GroupByReaggregateOperator implements IterativeChunkedAggrega
 
     private final String[] inputColumnNames;
 
+    private final Map<String, AggregateColumnSource<?, ?>> inputAggregatedColumns;
     private final Map<String, AggregateColumnSource<?, ?>> resultAggregatedColumns;
 
     private RowSetBuilderRandom stepDestinationsModified;
@@ -79,6 +80,7 @@ public final class GroupByReaggregateOperator implements IterativeChunkedAggrega
         rowSets = new ObjectArraySource<>(WritableRowSet.class);
         addedBuilders = new ObjectArraySource<>(Object.class);
 
+        inputAggregatedColumns = new LinkedHashMap<>(aggregatedColumnPairs.length);
         resultAggregatedColumns = new LinkedHashMap<>(aggregatedColumnPairs.length);
         Arrays.stream(aggregatedColumnPairs).forEach(pair -> {
             final ColumnSource<Object> source = inputTable.getColumnSource(pair.rightColumn());
@@ -89,6 +91,7 @@ public final class GroupByReaggregateOperator implements IterativeChunkedAggrega
             final ColumnSource<?> realSource = ((AggregateColumnSource) source).getAggregatedSource();
             final AggregateColumnSource<?, ?> aggregateColumnSource = AggregateColumnSource.make(realSource, rowSets);
             resultAggregatedColumns.put(pair.leftColumn(), aggregateColumnSource);
+            inputAggregatedColumns.put(pair.rightColumn(), aggregateColumnSource);
         });
 
         if (resultAggregatedColumns.containsKey(exposeRowSetsAs)) {
@@ -304,6 +307,17 @@ public final class GroupByReaggregateOperator implements IterativeChunkedAggrega
                 ? new InputToResultModifiedColumnSetFactory(resultTable,
                         resultAggregatedColumns.keySet().toArray(String[]::new))
                 : null;
+    }
+
+    @Override
+    public Map<String, ? extends ColumnSource<?>> getInputResultColumns() {
+        return inputAggregatedColumns;
+    }
+
+    @Override
+    public boolean hasModifications(boolean columnsModified) {
+        /* TODO: FIX THIS. */
+        return true;
     }
 
     private class InputToResultModifiedColumnSetFactory implements UnaryOperator<ModifiedColumnSet> {
