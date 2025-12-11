@@ -18,8 +18,8 @@ public class HomeFilter implements Filter {
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
             throws IOException, ServletException {
         if (request instanceof HttpServletRequest && response instanceof HttpServletResponse) {
-            String contextPath = req.getContextPath(); // e.g. "/deephaven" or "" if root
-            String queryString = req.getQueryString();
+            String contextPath = request.getContextPath(); // e.g. "/deephaven" or "" if root
+            String queryString = request.getQueryString();
 
             StringBuilder location = new StringBuilder();
             location.append(contextPath.isEmpty() ? "" : contextPath).append("/ide/");
@@ -28,7 +28,7 @@ public class HomeFilter implements Filter {
                 location.append('?').append(queryString);
             }
 
-            resp.sendRedirect(location.toString());
+            response.sendRedirect(location.toString());
             return;
         }
         chain.doFilter(request, response);
