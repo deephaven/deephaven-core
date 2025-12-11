@@ -76,4 +76,7 @@ message SetExecutionContextResponse {
 // Fetch the remote file source plugin into the specified ticket (Flight command, not MessageStream)
 message RemoteFileSourcePluginFetchRequest {
   io.deephaven.proto.backplane.grpc.Ticket result_id = 1;
+
+  // The plugin type identifier to create the PluginMarker for.
+  string plugin_type = 2;
 }
