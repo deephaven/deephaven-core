@@ -5,9 +5,13 @@ package io.deephaven.plugin.type;
 
 /**
  * A generic marker object for plugin exports that can be shared across multiple plugin types.
- * The actual plugin routing is handled by TypedTicket.type, which is validated against
- * ObjectType.name() during the ConnectRequest phase. This marker simply indicates "this
- * exported object is a plugin placeholder" rather than containing actual plugin-specific data.
+ *
+ * IMPORTANT: The pluginType field is required because ObjectTypeLookup.findObjectType()
+ * returns the FIRST plugin where isType() returns true. Without plugin-specific identification
+ * in isType(), multiple plugins using PluginMarker would conflict, and whichever is registered
+ * first would intercept all PluginMarker instances.
+ *
+ * This class uses a singleton pattern - one instance per pluginType.
  */
 public class PluginMarker {
     /**
@@ -16,17 +20,31 @@ public class PluginMarker {
      */
     public static final String TYPE_ID = "io.deephaven.plugin.type.PluginMarker";
 
-    /**
-     * Singleton instance for all plugin marker exports.
-     * Since plugin-specific routing is handled by TypedTicket.type, we don't need
-     * per-plugin marker instances.
-     */
-    public static final PluginMarker INSTANCE = new PluginMarker();
+    private static final java.util.Map<String, PluginMarker> INSTANCES = new java.util.concurrent.ConcurrentHashMap<>();
+
+    private final String pluginType;
 
     /**
-     * Private constructor - use INSTANCE singleton.
+     * Private constructor - use forPluginType() to get singleton instances.
+     *
+     * @param pluginType the plugin type identifier (should match the plugin's name() method)
      */
-    private PluginMarker() {
+    private PluginMarker(String pluginType) {
+        this.pluginType = pluginType;
+    }
+
+    /**
+     * Gets the singleton PluginMarker instance for the specified plugin type.
+     *
+     * @param pluginType the plugin type identifier (should match the plugin's name() method)
+     * @return the singleton PluginMarker for this plugin type
+     * @throws IllegalArgumentException if pluginType is null or empty
+     */
+    public static PluginMarker forPluginType(String pluginType) {
+        if (pluginType == null || pluginType.isEmpty()) {
+            throw new IllegalArgumentException("pluginType cannot be null or empty");
+        }
+        return INSTANCES.computeIfAbsent(pluginType, PluginMarker::new);
     }
 
     /**
@@ -38,9 +56,19 @@ public class PluginMarker {
         return TYPE_ID;
     }
 
+    /**
+     * Gets the plugin type this marker is intended for.
+     * This should match the ObjectType.name() of the target plugin.
+     *
+     * @return the plugin type identifier
+     */
+    public String getPluginType() {
+        return pluginType;
+    }
+
     @Override
     public String toString() {
-        return "PluginMarker{typeId='" + TYPE_ID + "'}";
+        return "PluginMarker{typeId='" + TYPE_ID + "', pluginType='" + pluginType + "'}";
     }
 }
 
