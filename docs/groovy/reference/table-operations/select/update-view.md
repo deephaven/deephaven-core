@@ -82,4 +82,4 @@ irisWhereVirginica = iris.updateView(List.of(Selectable.of(ColumnName.of("IsVirg
 - [Create a new table](../../../how-to-guides/new-and-empty-table.md#newtable)
 - [Choose the right selection method for your query](../../../how-to-guides/use-select-view-update.md#choose-the-right-column-selection-method)
 - [How to select, view, and update data](../../../how-to-guides/use-select-view-update.md)
-- [Javadoc](<https://deephaven.io/core/javadoc/io/deephaven/api/TableOperations.html#updateView(java.lang.String...)>)
+- [Javadoc](https://deephaven.io/core/javadoc/io/deephaven/api/TableOperations.html#updateView(java.lang.String...))

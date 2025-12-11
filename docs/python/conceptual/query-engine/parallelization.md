@@ -3,7 +3,7 @@ title: Parallelization
 sidebar_label: Parallelization
 ---
 
-Deephaven parallelizes queries automatically, using multiple CPU cores to improve data processing performance. Understanding how parallelization works is essential for writing efficient queries and ensuring correct results.
+Deephaven parallelizes table operations like [`select`](../../reference/table-operations/select/select.md), [`update`](../../reference/table-operations/select/update.md), and [`where`](../../reference/table-operations/filter/where.md) automatically, using multiple CPU cores to improve data processing performance. Understanding how parallelization works is essential for writing efficient queries and ensuring correct results.
 
 > [!IMPORTANT] > **Breaking change in Deephaven 0.41+**: Queries now run in parallel by default. Non-thread-safe code will produce incorrect results.
 >
@@ -117,7 +117,7 @@ Query operations execute in two phases: initialization and updates.
 
 When a table is first created, the initial state is computed using the available data. This happens when you call operations like [`.where()`](../../reference/table-operations/filter/where.md), [`.update()`](../../reference/table-operations/select/update.md), or [`.natural_join()`](../../reference/table-operations/join/natural-join.md).
 
-For [refreshing](<https://deephaven.io/core/javadoc/io/deephaven/engine/table/impl/BaseTable.html#isRefreshing()>) tables, Deephaven also adds a node to the [update graph](../dag.md) to track dependencies.
+For [refreshing](https://deephaven.io/core/javadoc/io/deephaven/engine/table/impl/BaseTable.html#isRefreshing()) tables, Deephaven also adds a node to the [update graph](../dag.md) to track dependencies.
 
 **How parallelization works during initialization**: Deephaven splits the data into chunks and processes them on multiple cores simultaneously. Each core works on its assigned chunk independently.
 
@@ -164,7 +164,7 @@ Handles parallel processing during update cycles (when live tables receive new d
 - Propagating changes through the update graph.
 - Parallel execution of independent DAG nodes.
 
-Both thread pools use [Runtime.availableProcessors()](<https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/lang/Runtime.html#availableProcessors()>) to determine the number of available cores at startup.
+Both thread pools use [Runtime.availableProcessors()](https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/lang/Runtime.html#availableProcessors()) to determine the number of available cores at startup.
 
 ## Controlling concurrency
 

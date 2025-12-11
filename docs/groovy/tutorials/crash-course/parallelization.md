@@ -118,27 +118,32 @@ These operations are thread-safe because:
 
 ### Operations requiring serial execution
 
-> [!NOTE]
-> The Groovy API for `.withSerial()` is not yet available in the current release. For now, focus on writing stateless operations that parallelize safely by default.
+Some operations need rows to be processed in a specific order or access shared state. These require [`.withSerial()`](../../conceptual/query-engine/parallelization.md#using-withserial-for-selectables) to force sequential, single-threaded execution:
 
-<!-- TODO: Uncomment when Groovy functions accessible in formula context
 ```groovy
 import io.deephaven.api.Selectable
 import io.deephaven.api.ColumnName
 import io.deephaven.api.RawString
+import java.util.concurrent.atomic.AtomicInteger
 
 // This counter needs sequential processing
-counter = 0
-
-def getNextId() {
-    return counter++
-}
+counter = new AtomicInteger(0)
 
 // Use .withSerial() for ordered execution
-col = Selectable.of(ColumnName.of("ID"), RawString.of("getNextId()")).withSerial()
+col = Selectable.of(ColumnName.of("ID"), RawString.of("counter.getAndIncrement()")).withSerial()
 result = emptyTable(100).update([col])
 ```
--->
+
+Without [`.withSerial()`](../../conceptual/query-engine/parallelization.md#using-withserial-for-selectables), multiple cores might read and update `counter` simultaneously, producing incorrect results.
+
+**When to use `.withSerial()`**:
+
+- Sequential numbering or counters.
+- Operations that depend on row order.
+- Accessing non-thread-safe external resources.
+- File I/O or logging operations.
+
+**Performance trade-off**: Serial execution is slower because it uses only one core, but correctness comes first. Use serial execution when needed for correctness, and parallelization everywhere else for speed.
 
 ## Performance tips
 
