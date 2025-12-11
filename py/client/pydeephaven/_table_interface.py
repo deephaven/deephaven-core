@@ -5,6 +5,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Generic, Optional, TypeVar
 
+from pydeephaven.filters import Filter
+
 if TYPE_CHECKING:
     from pydeephaven import Table
 from abc import ABC, abstractmethod
@@ -18,6 +20,7 @@ from pydeephaven._table_ops import (
     CrossJoinOp,
     DropColumnsOp,
     ExactJoinOp,
+    FilterOp,
     HeadByOp,
     HeadOp,
     LazyUpdateOp,
@@ -191,12 +194,12 @@ class TableInterface(ABC, Generic[T]):
         table_op = SortOp(column_names=to_list(order_by), directions=to_list(order))
         return self.table_op_handler(table_op)
 
-    def where(self, filters: Union[str, list[str]]) -> T:
+    def where(self, filters: Union[str, list[str], Filter, list[Filter]]) -> T:
         """The where method creates a new table with only the rows meeting the filter criteria in the column(s) of
         the table.
 
         Args:
-            filters (Union[str, list[str]]): the filter condition expression(s)
+            filters (Union[str, list[str], Filter, list[Filter]]): the filter condition expression(s)
 
         Returns:
             a Table or Query object
@@ -204,7 +207,17 @@ class TableInterface(ABC, Generic[T]):
         Raises:
             DHError
         """
-        table_op = UnstructuredFilterOp(filters=to_list(filters))
+        filters_list = to_list(filters)
+
+        if not filters_list:
+            raise DHError("filters cannot be empty")
+
+        # Check if we have Filter objects or strings based on the first element
+        if isinstance(filters_list[0], Filter):
+            table_op = FilterOp(filters=filters_list)
+        else:
+            table_op = UnstructuredFilterOp(filters=filters_list)
+
         return self.table_op_handler(table_op)
 
     def head(self, num_rows: int) -> T:
