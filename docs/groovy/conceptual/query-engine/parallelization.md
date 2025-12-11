@@ -241,7 +241,7 @@ The [`ConcurrencyControl`](https://docs.deephaven.io/core/javadoc/io/deephaven/a
 
 This example demonstrates why some code needs serialization. A function maintains global state:
 
-```groovy order=null
+```groovy order=t
 import java.util.concurrent.atomic.AtomicInteger
 
 counter = new AtomicInteger(0)

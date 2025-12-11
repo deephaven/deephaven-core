@@ -43,8 +43,9 @@
                 "path": "tutorials/crash-course/query-strings.md"
               },
               {
+                "type": "doc",
                 "label": "Query Parallelization",
-                "path": "getting-started/crash-course/parallelization.md"
+                "id": "tutorials/crash-course/parallelization"
               },
               {
                 "label": "Real-time Plots",

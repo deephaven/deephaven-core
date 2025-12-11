@@ -246,7 +246,7 @@ The [`ConcurrencyControl`](https://docs.deephaven.io/core/pydoc/code/deephaven.c
 
 This example demonstrates why some code needs serialization. A function maintains global state:
 
-```python order=null
+```python order=t
 from deephaven import empty_table
 
 counter = 0
@@ -270,7 +270,7 @@ Without serialization, parallel execution could cause race conditions where mult
 
 To force serial execution for a column calculation, create a `Selectable` object and apply `.with_serial()`:
 
-```python order=null
+```python order=result
 from deephaven.table import Selectable
 from deephaven import empty_table
 
@@ -298,7 +298,7 @@ When a Selectable is serial:
 
 Serial filters are needed when filter evaluation has stateful side effects. String-based filters in [`where()`](../../reference/table-operations/filter/where.md) are parallelized by default, so construct Filter objects explicitly:
 
-```python order=null
+```python order=result
 from deephaven import empty_table
 from deephaven.filters import is_null, not_
 
@@ -341,7 +341,7 @@ A [`Barrier`](https://docs.deephaven.io/core/pydoc/code/deephaven.concurrency_co
 
 To ensure that all rows of column `A` are evaluated before any rows of column `B` begin evaluation:
 
-```python order=null
+```python order=t
 from deephaven.concurrency_control import Barrier
 from deephaven.table import Selectable
 from deephaven import empty_table
@@ -382,7 +382,7 @@ With this barrier:
 
 Barriers control evaluation order between filters when one depends on another's side effects:
 
-```python order=null
+```python order=result
 from deephaven import empty_table
 from deephaven.filters import is_null
 from deephaven.concurrency_control import Barrier
@@ -436,7 +436,7 @@ Use this decision guide to pick the right concurrency control method:
 
 **Examples**:
 
-```python order=null
+```python order=source,result
 from deephaven import empty_table
 
 # These all parallelize safely by default
@@ -471,7 +471,7 @@ result = source.update("Category = Value > 100 ? `High` : `Low`")
 
 **Code example**:
 
-```python order=null
+```python order=source,result
 from deephaven.table import Selectable
 from deephaven import empty_table
 
@@ -507,7 +507,7 @@ result = source.update(col)
 
 **Code example**:
 
-```python order=null
+```python order=source,result
 from deephaven.concurrency_control import Barrier
 from deephaven.table import Selectable
 from deephaven import empty_table

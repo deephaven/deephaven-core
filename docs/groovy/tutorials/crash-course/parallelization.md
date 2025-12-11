@@ -17,7 +17,7 @@ Deephaven parallelizes at two levels: across multiple table operations and withi
 
 When you have independent operations, Deephaven processes them in parallel. Consider this query that performs three independent calculations:
 
-```groovy test-set=parallel order=null
+```groovy test-set=parallel order=trades,highValue,bySymbol,recent
 import static io.deephaven.api.agg.Aggregation.*
 
 // Create a ticking data source
@@ -68,7 +68,7 @@ These patterns are always thread-safe and parallelize automatically:
 
 **Column arithmetic** with [`update`](../../reference/table-operations/select/update.md):
 
-```groovy test-set=safe order=null
+```groovy test-set=safe order=source
 source = emptyTable(100).update(
     "A = i * 2",
     "B = i + 10",
@@ -79,7 +79,7 @@ source = emptyTable(100).update(
 
 **String operations** with [`update`](../../reference/table-operations/select/update.md):
 
-```groovy test-set=safe order=null
+```groovy test-set=safe order=source
 source = emptyTable(100).update(
     "FirstName = `User` + i",
     "LastName = `Name` + (i % 10)",
@@ -89,7 +89,7 @@ source = emptyTable(100).update(
 
 **Conditional logic** with [`update`](../../reference/table-operations/select/update.md):
 
-```groovy test-set=safe order=null
+```groovy test-set=safe order=source
 source = emptyTable(100).update(
     "Value = i * 3.14",
     "Category = Value > 100 ? `High` : `Low`",
@@ -99,7 +99,7 @@ source = emptyTable(100).update(
 
 **Built-in functions**:
 
-```groovy test-set=safe order=null
+```groovy test-set=safe order=source,result
 source = emptyTable(100).update("Timestamp = '2024-01-01T00:00:00 ET' + 'PT1m' * i")
 
 result = source.update(
@@ -192,7 +192,7 @@ Different operations have different performance characteristics:
 - [`updateView`](../../reference/table-operations/select/updateView.md): Computes on demand, best for large tables where only subsets are accessed.
 - [`lazyUpdate`](../../reference/table-operations/select/lazyUpdate.md): Memoizes calculations, best when many rows share the same input values.
 
-```groovy test-set=perf order=null
+```groovy test-set=perf order=source,result1,result2,result3
 source = emptyTable(1_000_000).update("Group = i % 100")
 
 // update: Fast access, uses more memory
@@ -209,7 +209,7 @@ result3 = source.lazyUpdate("Squared = Group * Group")
 
 Structure queries so independent operations can run in parallel:
 
-```groovy test-set=dag order=null
+```groovy test-set=dag order=marketData,summary,highVolume,recent
 import static io.deephaven.api.agg.Aggregation.*
 
 marketData = timeTable("PT1s").update(

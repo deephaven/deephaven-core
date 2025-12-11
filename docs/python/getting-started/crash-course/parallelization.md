@@ -17,7 +17,7 @@ Deephaven parallelizes at two levels: across multiple table operations and withi
 
 When you have independent operations, Deephaven processes them in parallel. Consider this query that performs three independent calculations:
 
-```python test-set=parallel
+```python test-set=parallel order=trades,high_value,by_symbol,recent
 from deephaven import time_table, agg
 
 # Create a ticking data source
@@ -41,7 +41,7 @@ When new data arrives, Deephaven processes all three operations at the same time
 
 Within a single operation, Deephaven splits the data into chunks and processes them in parallel:
 
-```python test-set=parallel
+```python test-set=parallel order=large_table
 from deephaven import empty_table
 
 # Calculate prices for 1 million rows
@@ -68,7 +68,7 @@ These patterns are always thread-safe and parallelize automatically:
 
 **Column arithmetic** with [`update`](../../reference/table-operations/select/update.md):
 
-```python test-set=safe
+```python test-set=safe order=source
 from deephaven import empty_table
 
 source = empty_table(100).update(
@@ -78,7 +78,7 @@ source = empty_table(100).update(
 
 **String operations** with [`update`](../../reference/table-operations/select/update.md):
 
-```python test-set=safe
+```python test-set=safe order=source
 from deephaven import empty_table
 
 source = empty_table(100).update(
@@ -92,7 +92,7 @@ source = empty_table(100).update(
 
 **Conditional logic** with [`update`](../../reference/table-operations/select/update.md):
 
-```python test-set=safe
+```python test-set=safe order=source
 from deephaven import empty_table
 
 source = empty_table(100).update(
@@ -106,7 +106,7 @@ source = empty_table(100).update(
 
 **Built-in functions**:
 
-```python test-set=safe
+```python test-set=safe order=source,result
 from deephaven import empty_table
 
 source = empty_table(100).update("Timestamp = '2024-01-01T00:00:00 ET' + 'PT1m' * i")
@@ -131,7 +131,7 @@ These operations are thread-safe because:
 
 Some operations need rows to be processed in a specific order or access shared state. These require [`.with_serial()`](../../conceptual/query-engine/parallelization.md#using-with_serial-for-selectables) to force sequential, single-threaded execution:
 
-```python test-set=serial order=null
+```python test-set=serial order=result
 from deephaven import empty_table
 from deephaven.table import Selectable
 
@@ -167,7 +167,7 @@ Without [`.with_serial()`](../../conceptual/query-engine/parallelization.md#usin
 
 Stateless operations parallelize automatically and run faster:
 
-```python test-set=perf
+```python test-set=perf order=source,result
 from deephaven import empty_table
 
 source = empty_table(100).update(["Price = i * 10.0", "Quantity = i"])
@@ -189,7 +189,7 @@ def increment():
 
 Built-in operations are optimized for parallel execution:
 
-```python test-set=perf
+```python test-set=perf order=source,result
 from deephaven import agg, empty_table
 
 source = empty_table(100).update(["Symbol = `ABC`", "Value = i"])
@@ -208,7 +208,7 @@ Different operations have different performance characteristics:
 - [`update_view`](../../reference/table-operations/select/update-view.md): Computes on demand, best for large tables where only subsets are accessed.
 - [`lazy_update`](../../reference/table-operations/select/lazy-update.md): Memoizes calculations, best when many rows share the same input values.
 
-```python test-set=perf
+```python test-set=perf order=source,result1,result2,result3
 from deephaven import empty_table
 
 source = empty_table(1_000_000).update("Group = i % 100")
@@ -227,7 +227,7 @@ result3 = source.lazy_update("Squared = Group * Group")
 
 Structure queries so independent operations can run in parallel:
 
-```python test-set=dag order=null
+```python test-set=dag order=market_data,summary,high_volume,recent
 from deephaven import time_table, agg
 
 market_data = time_table("PT1s").update(
