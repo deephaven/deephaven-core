@@ -1,0 +1,227 @@
+<svg viewBox="0 0 1200 950" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <style>
+      .title { font: bold 18px sans-serif; fill: #1f2937; }
+      .label { font: 14px sans-serif; fill: #374151; }
+      .description { font: 10px sans-serif; fill: #6b7280; }
+      .engine { fill: #fef3c7; stroke: #f59e0b; stroke-width: 3; }
+      .dag { fill: #e0e7ff; stroke: #6366f1; stroke-width: 2.5; }
+      .data { fill: #dbeafe; stroke: #3b82f6; stroke-width: 2; }
+      .bridge { fill: #fce7f3; stroke: #ec4899; stroke-width: 2.5; }
+      .protocol { fill: #dcfce7; stroke: #22c55e; stroke-width: 2.5; }
+      .client { fill: #f3e8ff; stroke: #a855f7; stroke-width: 2.5; }
+      .arrow { stroke: #6b7280; stroke-width: 2.5; fill: none; marker-end: url(#arrowhead); }
+      .flow { stroke: #f59e0b; stroke-width: 2; fill: none; marker-end: url(#flow); }
+      .shadow { filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1)); }
+    </style>
+    
+    <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#6b7280" />
+    </marker>
+    
+    <marker id="flow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#f59e0b" />
+    </marker>
+  </defs>
+  
+  <!-- Title -->
+  <text class="title" x="600" y="30" text-anchor="middle">Deephaven Architecture Overview</text>
+  <text class="description" x="600" y="48" text-anchor="middle" font-size="12">From Python/Java code to real-time web UIs</text>
+  
+  <!-- CORE ENGINE -->
+  <g class="shadow" transform="translate(50, 70)">
+    <rect class="engine" x="0" y="0" width="1100" height="600" rx="12"/>
+    <text class="label" x="20" y="30" font-weight="bold" font-size="16">Deephaven Query Engine (Java)</text>
+    
+    <!-- DAG Layer -->
+    <g transform="translate(20, 50)">
+      <rect class="dag" x="0" y="0" width="1060" height="140" rx="8"/>
+      <text class="label" x="15" y="25" font-weight="bold">Directed Acyclic Graph (DAG)</text>
+      <text class="description" x="15" y="42">Tables and operations form a dependency graph with automatic update propagation</text>
+      
+      <g transform="translate(15, 55)">
+        <circle fill="#3b82f6" cx="30" cy="15" r="15"/>
+        <text class="description" x="22" y="20" fill="#fff" font-weight="bold">T1</text>
+        <text class="description" x="55" y="20">Source</text>
+        
+        <path class="arrow" d="M 50 15 L 90 15"/>
+        
+        <circle fill="#6366f1" cx="110" cy="15" r="15"/>
+        <text class="description" x="102" y="20" fill="#fff" font-weight="bold">T2</text>
+        <text class="description" x="135" y="20">Filter</text>
+        
+        <path class="arrow" d="M 130 15 L 170 15"/>
+        
+        <circle fill="#a855f7" cx="190" cy="15" r="15"/>
+        <text class="description" x="182" y="20" fill="#fff" font-weight="bold">T3</text>
+        <text class="description" x="215" y="20">Join</text>
+        
+        <text class="description" x="280" y="18" font-style="italic">• Incremental updates</text>
+        <text class="description" x="450" y="18" font-style="italic">• Logical clock for consistency</text>
+        <text class="description" x="650" y="18" font-style="italic">• Garbage collection</text>
+      </g>
+      
+      <g transform="translate(15, 95)">
+        <rect fill="#f0f9ff" stroke="#3b82f6" x="0" y="0" width="1030" height="30" rx="4"/>
+        <text class="description" x="10" y="18" font-weight="bold">Update Graph (UG) Cycles:</text>
+        <text class="description" x="180" y="18">Batch changes every 1000ms →</text>
+        <text class="description" x="370" y="18">Propagate in topological order →</text>
+        <text class="description" x="600" y="18">Notify dependents →</text>
+        <text class="description" x="780" y="18">UI updates</text>
+      </g>
+    </g>
+    
+    <!-- Data Structures Layer -->
+    <g transform="translate(20, 210)">
+      <rect class="data" x="0" y="0" width="520" height="160" rx="8"/>
+      <text class="label" x="15" y="25" font-weight="bold">Table Data Structures</text>
+      
+      <g transform="translate(15, 40)">
+        <rect fill="#e0e7ff" stroke="#6366f1" x="0" y="0" width="240" height="50" rx="4"/>
+        <text class="label" x="10" y="20" font-size="12">RowSet</text>
+        <text class="description" x="10" y="36">Sparse 64-bit keys</text>
+        <text class="description" x="10" y="48">RSP / Roaring Bitmaps</text>
+      </g>
+      
+      <g transform="translate(260, 40)">
+        <rect fill="#e0e7ff" stroke="#6366f1" x="0" y="0" width="240" height="50" rx="4"/>
+        <text class="label" x="10" y="20" font-size="12">ColumnSources</text>
+        <text class="description" x="10" y="36">Column data by row key</text>
+        <text class="description" x="10" y="48">Shared across tables</text>
+      </g>
+      
+      <g transform="translate(15, 100)">
+        <rect fill="#ffffff" stroke="#3b82f6" x="0" y="0" width="485" height="45" rx="4"/>
+        <text class="description" x="10" y="18" font-weight="bold">💾 Zero-copy optimization:</text>
+        <text class="description" x="10" y="33">Filters/views share ColumnSources → 50-90% memory savings</text>
+      </g>
+    </g>
+    
+    <!-- Processing Layer -->
+    <g transform="translate(560, 210)">
+      <rect class="data" x="0" y="0" width="520" height="160" rx="8"/>
+      <text class="label" x="15" y="25" font-weight="bold">Chunk-Oriented Processing</text>
+      
+      <g transform="translate(15, 40)">
+        <rect fill="#fef3c7" stroke="#f59e0b" x="0" y="0" width="490" height="50" rx="4"/>
+        <text class="label" x="10" y="20" font-size="12">Chunks (4096 elements)</text>
+        <text class="description" x="10" y="36">Bulk data transfer: getChunk(), fillChunk()</text>
+        <text class="description" x="10" y="48">Enables SIMD vectorization, reduces method calls 1000x</text>
+      </g>
+      
+      <g transform="translate(15, 100)">
+        <rect fill="#ffffff" stroke="#f59e0b" x="0" y="0" width="490" height="45" rx="4"/>
+        <text class="description" x="10" y="18" font-weight="bold">⚡ Performance:</text>
+        <text class="description" x="10" y="33">1M rows filtered with ~244 calls vs 1M individual calls</text>
+      </g>
+    </g>
+    
+    <!-- Formula Evaluation -->
+    <g transform="translate(20, 390)">
+      <rect class="data" x="0" y="0" width="350" height="90" rx="8"/>
+      <text class="label" x="15" y="25" font-weight="bold">Formula Engine</text>
+      <text class="description" x="15" y="45">JavaParser → Compiled classes</text>
+      <text class="description" x="15" y="60">Numba for Python expressions</text>
+      <text class="description" x="15" y="75">Parameter substitution & reuse</text>
+    </g>
+    
+    <!-- Operations -->
+    <g transform="translate(390, 390)">
+      <rect class="data" x="0" y="0" width="340" height="90" rx="8"/>
+      <text class="label" x="15" y="25" font-weight="bold">Table Operations</text>
+      <text class="description" x="15" y="45">Joins • Aggregations • Sorts</text>
+      <text class="description" x="15" y="60">Columnar hash tables</text>
+      <text class="description" x="15" y="75">Incremental algorithms</text>
+    </g>
+    
+    <!-- Data Sources -->
+    <g transform="translate(750, 390)">
+      <rect class="data" x="0" y="0" width="330" height="90" rx="8"/>
+      <text class="label" x="15" y="25" font-weight="bold">Data Sources</text>
+      <text class="description" x="15" y="45">Parquet • Kafka • CSV</text>
+      <text class="description" x="15" y="60">Streaming & Batch</text>
+      <text class="description" x="15" y="75">Unified API for both</text>
+    </g>
+    
+    <!-- Performance Note -->
+    <g transform="translate(20, 500)">
+      <rect fill="#f0fdf4" stroke="#22c55e" stroke-width="2" x="0" y="0" width="1060" height="80" rx="8"/>
+      <text class="label" x="15" y="25" font-weight="bold" fill="#166534">🎯 Key Performance Characteristics</text>
+      <text class="description" x="15" y="45" fill="#166534">• <tspan font-weight="bold">Incremental updates:</tspan> 1 row changed = 1 row recomputed (not full table)</text>
+      <text class="description" x="15" y="60" fill="#166534">• <tspan font-weight="bold">Shared structures:</tspan> 50-90% memory reduction for filtered/joined views</text>
+      <text class="description" x="15" y="75" fill="#166534">• <tspan font-weight="bold">Chunk processing:</tspan> ~1000x fewer method calls, 4-8x SIMD speedup</text>
+    </g>
+  </g>
+  
+  <!-- LANGUAGE BRIDGES -->
+  <g class="shadow" transform="translate(50, 690)">
+    <rect class="bridge" x="0" y="0" width="530" height="80" rx="8"/>
+    <text class="label" x="15" y="25" font-weight="bold">Language Integration</text>
+    
+    <g transform="translate(15, 35)">
+      <rect fill="#ffffff" stroke="#ec4899" x="0" y="0" width="240" height="35" rx="4"/>
+      <text class="label" x="10" y="20" font-size="12">JPY (Python ↔ Java)</text>
+      <text class="description" x="10" y="32">JNI bridge, minimal crossings</text>
+    </g>
+    
+    <g transform="translate(270, 35)">
+      <rect fill="#ffffff" stroke="#ec4899" x="0" y="0" width="240" height="35" rx="4"/>
+      <text class="label" x="10" y="20" font-size="12">Native Java API</text>
+      <text class="description" x="10" y="32">Direct engine access</text>
+    </g>
+  </g>
+  
+  <!-- PROTOCOLS -->
+  <g class="shadow" transform="translate(620, 690)">
+    <rect class="protocol" x="0" y="0" width="530" height="80" rx="8"/>
+    <text class="label" x="15" y="25" font-weight="bold">Network Protocols</text>
+    
+    <g transform="translate(15, 35)">
+      <rect fill="#ffffff" stroke="#22c55e" x="0" y="0" width="150" height="35" rx="4"/>
+      <text class="label" x="10" y="20" font-size="12">gRPC / Arrow</text>
+      <text class="description" x="10" y="32">Flight service</text>
+    </g>
+    
+    <g transform="translate(180, 35)">
+      <rect fill="#ffffff" stroke="#22c55e" x="0" y="0" width="150" height="35" rx="4"/>
+      <text class="label" x="10" y="20" font-size="12">Barrage</text>
+      <text class="description" x="10" y="32">Ticking data</text>
+    </g>
+    
+    <g transform="translate(345, 35)">
+      <rect fill="#ffffff" stroke="#22c55e" x="0" y="0" width="165" height="35" rx="4"/>
+      <text class="label" x="10" y="20" font-size="12">WebSocket</text>
+      <text class="description" x="10" y="32">Real-time updates</text>
+    </g>
+  </g>
+  
+  <!-- Arrows down -->
+  <path class="flow" d="M 315 770 L 315 810"/>
+  <path class="flow" d="M 885 770 L 885 810"/>
+  
+  <!-- CLIENTS -->
+  <g class="shadow" transform="translate(50, 810)">
+    <rect class="client" x="0" y="0" width="530" height="110" rx="8"/>
+    <text class="label" x="15" y="25" font-weight="bold">deephaven.ui (Python UI)</text>
+    <text class="description" x="15" y="45">Pure Python components</text>
+    <text class="description" x="15" y="60">@ui.component decorator</text>
+    <text class="description" x="15" y="75">Server-side rendering</text>
+    <text class="description" x="15" y="90">→ React in browser</text>
+    <text class="description" x="15" y="105" font-weight="bold">No JavaScript required</text>
+  </g>
+  
+  <g class="shadow" transform="translate(620, 810)">
+    <rect class="client" x="0" y="0" width="530" height="110" rx="8"/>
+    <text class="label" x="15" y="25" font-weight="bold">JavaScript / TypeScript Client</text>
+    <text class="description" x="15" y="45">web-client-ui components</text>
+    <text class="description" x="15" y="60">Direct gRPC-Web</text>
+    <text class="description" x="15" y="75">Grid, charts, dashboards</text>
+    <text class="description" x="15" y="90">Custom integration</text>
+    <text class="description" x="15" y="105" font-weight="bold">Maximum flexibility</text>
+  </g>
+  
+  <!-- Choice indicator -->
+  <text class="description" x="600" y="875" text-anchor="middle" font-style="italic" font-size="11">
+    Both approaches leverage same DAG engine, gRPC protocols, and real-time capabilities
+  </text>
+</svg>
