@@ -31,7 +31,7 @@ public class RemoteFileSourcePlugin extends ObjectTypeBase {
 
     @Override
     public String name() {
-        return "GroovyRemoteFileSourcePlugin";
+        return "DeephavenGroovyRemoteFileSourcePlugin";
     }
 
     @Override
