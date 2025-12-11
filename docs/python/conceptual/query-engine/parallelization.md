@@ -73,7 +73,7 @@ A [`Selectable`](https://docs.deephaven.io/core/pydoc/code/deephaven.table.html#
 
 When you write `.update("A = i * 2")`, Deephaven converts this string into a Selectable internally. You can create Selectables explicitly to apply concurrency controls:
 
-```python
+```python order=source,result
 from deephaven import empty_table
 from deephaven.table import Selectable
 
@@ -93,7 +93,7 @@ Serial execution forces rows to be processed one at a time, in order, on a singl
 
 Applied using `.with_serial()` on a Selectable or Filter:
 
-```python
+```python syntax
 from deephaven.table import Selectable
 
 col = Selectable.parse("ID = get_next_id()").with_serial()
@@ -183,24 +183,24 @@ Deephaven automatically parallelizes operations if they are stateless.
 
 **Examples of stateless operations**:
 
-```python order=null
+```python order=source1,result1,source2,result2,source3,result3,source4,result4
 from deephaven import empty_table
 
 # Pure column arithmetic
-source = empty_table(10).update(["Price = i * 10.0", "Quantity = i"])
-result = source.update("Total = Price * Quantity")
+source1 = empty_table(10).update(["Price = i * 10.0", "Quantity = i"])
+result1 = source1.update("Total = Price * Quantity")
 
 # String manipulation
-source = empty_table(10).update(["FirstName = `First` + i", "LastName = `Last` + i"])
-result = source.update("FullName = FirstName + ' ' + LastName")
+source2 = empty_table(10).update(["FirstName = `First` + i", "LastName = `Last` + i"])
+result2 = source2.update("FullName = FirstName + ' ' + LastName")
 
 # Conditional logic
-source = empty_table(10).update("Age = i + 18")
-result = source.where("Age > 21")
+source3 = empty_table(10).update("Age = i + 18")
+result3 = source3.where("Age > 21")
 
 # Built-in functions
-source = empty_table(10).update("X = i * 2.0")
-result = source.update("Squared = sqrt(X)")
+source4 = empty_table(10).update("X = i * 2.0")
+result4 = source4.update("Squared = sqrt(X)")
 ```
 
 > [!WARNING] > **Breaking change in Deephaven 0.41+**
@@ -321,7 +321,7 @@ When a Filter is serial:
 
 ### Barriers
 
-Barriers control the order between different operations. Use barriers when operation A must complete before operation B starts.
+Barriers control the execution order between different operations. Use barriers when operation A must complete before operation B starts.
 
 **When you need barriers**:
 
@@ -436,21 +436,21 @@ Use this decision guide to pick the right concurrency control method:
 
 **Examples**:
 
-```python order=source,result
+```python order=source1,result1,source2,result2,source3,result3,source4,result4
 from deephaven import empty_table
 
 # These all parallelize safely by default
-source = empty_table(10).update(["Price = i * 10.0", "Quantity = i"])
-result = source.update("Total = Price * Quantity")
+source1 = empty_table(10).update(["Price = i * 10.0", "Quantity = i"])
+result1 = source1.update("Total = Price * Quantity")
 
-source = empty_table(10).update(["FirstName = `First` + i", "LastName = `Last` + i"])
-result = source.update("FullName = FirstName + ' ' + LastName")
+source2 = empty_table(10).update(["FirstName = `First` + i", "LastName = `Last` + i"])
+result2 = source2.update("FullName = FirstName + ' ' + LastName")
 
-source = empty_table(10).update("Age = i + 18")
-result = source.where("Age > 21")
+source3 = empty_table(10).update("Age = i + 18")
+result3 = source3.where("Age > 21")
 
-source = empty_table(10).update("Value = i * 50")
-result = source.update("Category = Value > 100 ? `High` : `Low`")
+source4 = empty_table(10).update("Value = i * 50")
+result4 = source4.update("Category = Value > 100 ? `High` : `Low`")
 ```
 
 #### When to use `.with_serial()`
@@ -547,7 +547,7 @@ result = source.update([col_a, col_b])
 
 ## Summary
 
-Deephaven's automatic parallelization provides significant performance improvements by utilizing all available CPU cores. Understanding the key concepts helps you write efficient, correct queries:
+Deephaven's automatic parallelization provides significant performance improvements by utilizing all available CPU cores. Understanding parallelization helps you write efficient, correct queries:
 
 **Key concepts**:
 

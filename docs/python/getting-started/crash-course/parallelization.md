@@ -253,4 +253,4 @@ All three derived tables (`summary`, `high_volume`, `recent`) update simultaneou
 
 - [Comprehensive parallelization guide](../../conceptual/query-engine/parallelization.md) - Deep dive into parallelization concepts, thread pools, and advanced control
 - [Directed Acyclic Graph (DAG)](../../conceptual/dag.md) - Understanding how Deephaven tracks dependencies
-- [Table operations reference](../../reference/table-operations/index.md) - Complete reference for all table operations
+- [Table operations](../../reference/table-operations/) - Complete reference for all table operations

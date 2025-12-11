@@ -88,37 +88,7 @@ Creating explicit Selectables allows you to apply `.withSerial()` or use barrier
 
 ### Serial execution
 
-Serial execution forces rows to be processed one at a time, in order, on a single thread. This prevents race conditions when your code has dependencies between rows or accesses shared state.
-
-Applied using `.withSerial()` on a Selectable or Filter:
-
-```groovy
-col = Selectable.of(ColumnName.of("ID"), RawString.of("getNextId()")).withSerial()
-```
-
-### Barriers
-
-Barriers create explicit ordering dependencies between operations. They ensure one operation completes before another begins:
-
-1. Operation A **declares** a barrier ("I'll signal when I'm done").
-2. Operation B **respects** the barrier ("I'll wait for A's signal").
-3. Deephaven ensures A completes before B starts.
-
-Barriers coordinate multiple operations that share state or have ordering requirements.
-
-## Query phases
-
-Query operations execute in two phases: initialization and updates.
-
-### Query initialization
-
-When a table is first created, the initial state is computed using the available data. This happens when you call operations like [`.where()`](../../reference/table-operations/filter/where.md), [`.update()`](../../reference/table-operations/select/update.md), or [`.naturalJoin()`](../../reference/table-operations/join/natural-join.md).
-
-For [refreshing](<https://deephaven.io/core/javadoc/io/deephaven/engine/table/impl/BaseTable.html#isRefreshing()>) tables, Deephaven also adds a node to the [update graph](../dag.md) to track dependencies.
-
-**How parallelization works during initialization**: Deephaven splits the data into chunks and processes them on multiple cores simultaneously. Each core works on its assigned chunk independently.
-
-### Query updates
+Serial execution forces single-threaded, in-order execution for operations that are not thread-safe.
 
 After initialization, a table is updated as input data changes. This only applies to refreshing tables that receive new or modified data.
 
@@ -167,6 +137,19 @@ Both thread pools use [Runtime.availableProcessors()](<https://docs.oracle.com/e
 
 Deephaven parallelizes operations by default. Concurrency control mechanisms are available for operations that require specific execution ordering or single-threaded processing.
 
+### Key terms
+
+Three concepts work together to control parallelization:
+
+- **Selectable**: A column expression object used in `select` or `update` operations. Created using `Selectable.of()`.
+- **Serial**: A property applied to a Selectable or Filter that forces in-order row evaluation. Applied using `.withSerial()`.
+- **Barrier**: An explicit ordering mechanism that controls when Selectables or Filters can begin evaluation. One Selectable declares a barrier, and another respects it.
+
+You can control ordering in two ways:
+
+1. **Mark a Selectable as serial** - Ensures rows are evaluated in order; may also create implicit barriers between serial Selectables (config-dependent).
+2. **Use explicit barriers** - Provides fine-grained control over which Selectables must complete before others begin.
+
 ### Parallelization (default)
 
 Deephaven automatically parallelizes operations if they are stateless.
@@ -180,22 +163,22 @@ Deephaven automatically parallelizes operations if they are stateless.
 
 **Examples of stateless operations**:
 
-```groovy order=null
+```groovy order=source1,result1,source2,result2,source3,result3,source4,result4
 // Pure column arithmetic
-source = emptyTable(10).update("Price = i * 10.0", "Quantity = i")
-result = source.update("Total = Price * Quantity")
+source1 = emptyTable(10).update("Price = i * 10.0", "Quantity = i")
+result1 = source1.update("Total = Price * Quantity")
 
 // String manipulation
-source = emptyTable(10).update("FirstName = `First` + i", "LastName = `Last` + i")
-result = source.update("FullName = FirstName + ' ' + LastName")
+source2 = emptyTable(10).update("FirstName = `First` + i", "LastName = `Last` + i")
+result2 = source2.update("FullName = FirstName + ' ' + LastName")
 
 // Conditional logic
-source = emptyTable(10).update("Age = i + 18")
-result = source.where("Age > 21")
+source3 = emptyTable(10).update("Age = i + 18")
+result3 = source3.where("Age > 21")
 
 // Built-in functions
-source = emptyTable(10).update("X = i * 2.0")
-result = source.update("Squared = sqrt(X)")
+source4 = emptyTable(10).update("X = i * 2.0")
+result4 = source4.update("Squared = sqrt(X)")
 ```
 
 > [!WARNING] > **Breaking change in Deephaven 0.41+**
@@ -250,151 +233,6 @@ t = emptyTable(1_000_000).update("A = counter.getAndIncrement()", "B = counter.g
 
 Without serialization, parallel execution could cause race conditions where multiple threads read and update `counter` simultaneously, producing incorrect results.
 
-#### Using `.withSerial()` for Selectables
-
-To force serial execution for a column calculation, create a `Selectable` object and apply `.withSerial()`:
-
-<!-- TODO: Uncomment when Selectable API fully supports Groovy edge
-```groovy
-import io.deephaven.api.Selectable
-import io.deephaven.api.ColumnName
-import io.deephaven.api.RawString
-import java.util.concurrent.atomic.AtomicInteger
-
-counter = new AtomicInteger(0)
-
-// Force serial execution - rows processed one at a time, in order
-col = Selectable.of(ColumnName.of("ID"), RawString.of("counter.getAndIncrement()")).withSerial()
-result = emptyTable(1_000_000).update([col])
-```
--->
-
-When a Selectable is serial:
-
-- Every row is evaluated in order (row 0, then row 1, then row 2, etc.)
-- Only one thread processes the column at a time
-- Global state updates happen sequentially without race conditions
-
-#### Using `.withSerial()` for Filters
-
-Serial filters are needed when filter evaluation has stateful side effects. String-based filters in [`where()`](../../reference/table-operations/filter/where.md) are parallelized by default, so construct Filter objects explicitly:
-
-<!-- TODO: Uncomment when Filter.isNull() is available in Groovy edge
-```groovy
-import static io.deephaven.api.filter.Filter.isNull
-import static io.deephaven.api.filter.Filter.not
-
-// Create filters with serial evaluation
-filter1 = isNull("X").withSerial()
-filter2 = not(isNull("Y")).withSerial()
-
-result = emptyTable(1000)
-    .update("X = i % 10 == 0 ? null : i", "Y = i % 5 == 0 ? null : i")
-    .where(filter1, filter2)
-```
--->
-
-When a Filter is serial:
-
-- Every input row is evaluated in order
-- Filter cannot be reordered with respect to other Filters
-- Stateful side effects happen sequentially
-
-### Barriers
-
-Barriers control execution order between different operations. Barriers are required when operation A must complete before operation B starts.
-
-**When barriers are required**:
-
-- One operation depends on side effects from another operation
-- Multiple operations share resources that require coordinated access
-- Fine-grained control over execution order is necessary
-
-#### How barriers work
-
-A [`Barrier`](https://docs.deephaven.io/core/javadoc/io/deephaven/api/ConcurrencyControl.Barrier.html) is an object that creates ordering dependencies:
-
-1. One operation **declares** the barrier
-2. Another operation **respects** the barrier
-3. The declaring operation completes before the respecting operation starts
-
-#### Barriers for Selectables
-
-To ensure that all rows of column `A` are evaluated before any rows of column `B` begin evaluation:
-
-<!-- TODO: Uncomment when ConcurrencyControl.Barrier is accessible in Groovy edge
-```groovy
-import io.deephaven.api.Selectable
-import io.deephaven.api.ColumnName
-import io.deephaven.api.RawString
-import io.deephaven.api.ConcurrencyControl
-import java.util.concurrent.atomic.AtomicInteger
-
-counter = new AtomicInteger(0)
-
-// Create a barrier
-barrier = new ConcurrencyControl.Barrier()
-
-// Column A declares the barrier
-colA = Selectable.of(ColumnName.of("A"), RawString.of("counter.getAndIncrement()"))
-    .withDeclaredBarriers(barrier)
-
-// Column B respects the barrier
-colB = Selectable.of(ColumnName.of("B"), RawString.of("counter.getAndIncrement()"))
-    .withRespectedBarriers(barrier)
-
-t = emptyTable(1_000_000).update(colA, colB)
-```
--->
-
-With this barrier:
-
-- Column `A` processes all 1,000,000 rows completely
-- Only after `A` finishes does column `B` start processing
-- Both columns can still be parallelized internally (unless also marked serial)
-
-#### Barriers for Filters
-
-Barriers control evaluation order between filters when one depends on another's side effects:
-
-<!-- TODO: Uncomment when Barrier API is accessible in Groovy edge
-```groovy
-import static io.deephaven.api.filter.Filter.isNull
-import io.deephaven.api.ConcurrencyControl
-
-// Create a barrier
-barrier = new ConcurrencyControl.Barrier()
-
-// Filter1 declares the barrier
-filter1 = isNull("X").withDeclaredBarriers(barrier)
-
-// Filter2 respects the barrier and won't start until filter1 completes
-filter2 = isNull("Y").withRespectedBarriers(barrier)
-
-result = emptyTable(1000)
-    .update("X = i % 10 == 0 ? null : i", "Y = i % 5 == 0 ? null : i")
-    .where(filter1, filter2)
-```
--->
-
-#### Implicit barriers
-
-Serial Selectables can create implicit barriers between each other, controlled by the `QueryTable.SERIAL_SELECT_IMPLICIT_BARRIERS` configuration property:
-
-**Stateful mode (default)**:
-
-- Serial Selectables act as barriers to other serial Selectables
-- Prevents concurrent execution of serial operations
-- Provides automatic coordination for shared state
-
-**Stateless mode**:
-
-- Serial Selectables only enforce in-order row evaluation within themselves
-- No automatic barriers between serial operations
-- Use explicit barriers for cross-operation ordering
-
-Most users can rely on the default stateful behavior.
-
 ### Choosing the right approach
 
 The following guidelines determine which concurrency control method to use:
@@ -410,114 +248,20 @@ The following guidelines determine which concurrency control method to use:
 
 **Examples**:
 
-```groovy order=null
+```groovy order=source1,result1,source2,result2,source3,result3,source4,result4
 // These all parallelize safely by default
-source = emptyTable(10).update("Price = i * 10.0", "Quantity = i")
-result = source.update("Total = Price * Quantity")
+source1 = emptyTable(10).update("Price = i * 10.0", "Quantity = i")
+result1 = source1.update("Total = Price * Quantity")
 
-source = emptyTable(10).update("FirstName = `First` + i", "LastName = `Last` + i")
-result = source.update("FullName = FirstName + ' ' + LastName")
+source2 = emptyTable(10).update("FirstName = `First` + i", "LastName = `Last` + i")
+result2 = source2.update("FullName = FirstName + ' ' + LastName")
 
-source = emptyTable(10).update("Age = i + 18")
-result = source.where("Age > 21")
+source3 = emptyTable(10).update("Age = i + 18")
+result3 = source3.where("Age > 21")
 
-source = emptyTable(10).update("Value = i * 50")
-result = source.update("Category = Value > 100 ? `High` : `Low`")
+source4 = emptyTable(10).update("Value = i * 50")
+result4 = source4.update("Category = Value > 100 ? `High` : `Low`")
 ```
-
-#### When to use `.withSerial()`
-
-**Use `.withSerial()` when**:
-
-- Rows must be processed in order within a single operation
-- The formula updates global state sequentially
-- The formula depends on row evaluation order
-- A single Filter or Selectable has order-dependent logic
-
-**Examples**:
-
-- Sequential numbering with a counter
-- Processing events in chronological sequence
-- Cumulative calculations within one column
-- File I/O or logging operations
-
-**Code example**:
-
-<!-- TODO: Uncomment when Groovy functions accessible in formula context
-```groovy
-import io.deephaven.api.Selectable
-import io.deephaven.api.ColumnName
-import io.deephaven.api.RawString
-
-// Global state requires serial execution
-counter = 0
-
-def getNextId() {
-    return counter++
-}
-
-col = Selectable.of(ColumnName.of("ID"), RawString.of("getNextId()")).withSerial()
-source = emptyTable(10)
-result = source.update([col])
-```
--->
-
-#### When to use barriers
-
-**Use explicit barriers when**:
-
-- Ordering must be controlled between different operations
-- Operation A must finish before operation B starts
-- Multiple Filters or Selectables have dependencies
-- One operation populates state that another consumes
-
-**Examples**:
-
-- Filter A populates a cache that Filter B reads from
-- Column A initializes a resource that Column B uses
-- Sequential operations with cross-dependencies
-
-**Code example**:
-
-<!-- TODO: Uncomment when Barrier API and Groovy functions work in edge
-```groovy
-import io.deephaven.api.ConcurrencyControl
-import io.deephaven.api.Selectable
-import io.deephaven.api.ColumnName
-import io.deephaven.api.RawString
-
-cache = [:]
-
-def initCache(key) {
-    cache[key] = "Value_${key}"
-    return key
-}
-
-def useCache(key) {
-    return cache.get(key, "Not found")
-}
-
-barrier = new ConcurrencyControl.Barrier()
-
-// A must complete before B starts
-colA = Selectable.of(ColumnName.of("A"), RawString.of("initCache(Key)")).withDeclaredBarriers(barrier)
-colB = Selectable.of(ColumnName.of("B"), RawString.of("useCache(Key)")).withRespectedBarriers(barrier)
-
-source = emptyTable(10).update("Key = i")
-result = source.update(colA, colB)
-```
--->
-
-#### Quick reference table
-
-| Scenario                             | Solution                      | Why                                 |
-| ------------------------------------ | ----------------------------- | ----------------------------------- |
-| Pure column math                     | Default (parallel)            | Thread-safe, no shared state        |
-| Global counter                       | `.withSerial()`               | Needs sequential row processing     |
-| Column A must finish before Column B | Barriers                      | Controls cross-operation ordering   |
-| File I/O or logging                  | `.withSerial()`               | Serialize access to shared resource |
-| Multiple operations sharing state    | Barriers or implicit barriers | Coordinates access to shared state  |
-| Non-thread-safe library              | `.withSerial()`               | Forces single-threaded access       |
 
 ## Summary
 

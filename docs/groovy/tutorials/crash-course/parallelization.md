@@ -41,7 +41,7 @@ Methods used: [`timeTable`](../../reference/table-operations/create/timeTable.md
 
 Within a single operation, Deephaven splits the data into chunks and processes them in parallel:
 
-```groovy test-set=parallel
+```groovy test-set=parallel order=largeTable
 // Calculate prices for 1 million rows
 largeTable = emptyTable(1_000_000).update(
     "Price = i * 0.01",
@@ -118,7 +118,8 @@ These operations are thread-safe because:
 
 ### Operations requiring serial execution
 
-Some operations need rows to be processed in a specific order or access shared state. These require [`.withSerial()`](../../conceptual/query-engine/parallelization.md#using-withserial-for-selectables) to force sequential, single-threaded execution:
+> [!NOTE]
+> The Groovy API for `.withSerial()` is not yet available in the current release. For now, focus on writing stateless operations that parallelize safely by default.
 
 <!-- TODO: Uncomment when Groovy functions accessible in formula context
 ```groovy
@@ -139,24 +140,13 @@ result = emptyTable(100).update([col])
 ```
 -->
 
-Without [`.withSerial()`](../../conceptual/query-engine/parallelization.md#using-withserial-for-selectables), multiple cores might read and update `counter` simultaneously, producing incorrect results.
-
-**When to use `.withSerial()`**:
-
-- Sequential numbering or counters.
-- Operations that depend on row order.
-- Accessing non-thread-safe external resources.
-- File I/O or logging operations.
-
-**Performance trade-off**: Serial execution is slower because it uses only one core, but correctness comes first. Use serial execution when needed for correctness, and parallelization everywhere else for speed.
-
 ## Performance tips
 
 ### Prefer stateless operations
 
 Stateless operations parallelize automatically and run faster:
 
-```groovy test-set=perf
+```groovy test-set=perf order=source,result
 source = emptyTable(100).update("Price = i * 10.0", "Quantity = i")
 
 // ✓ Stateless - parallelizes automatically
@@ -173,7 +163,7 @@ def increment() {
 
 Built-in operations are optimized for parallel execution:
 
-```groovy test-set=perf
+```groovy test-set=perf order=source,result
 import static io.deephaven.api.agg.Aggregation.*
 
 source = emptyTable(100).update("Symbol = `ABC`", "Value = i")
@@ -189,8 +179,8 @@ result = source.aggBy([AggSum("Total = Value")], "Symbol")
 Different operations have different performance characteristics:
 
 - [`update`](../../reference/table-operations/select/update.md): Creates in-memory columns, best for frequently accessed data.
-- [`updateView`](../../reference/table-operations/select/updateView.md): Computes on demand, best for large tables where only subsets are accessed.
-- [`lazyUpdate`](../../reference/table-operations/select/lazyUpdate.md): Memoizes calculations, best when many rows share the same input values.
+- [`updateView`](../../reference/table-operations/select/update-view.md): Computes on demand, best for large tables where only subsets are accessed.
+- [`lazyUpdate`](../../reference/table-operations/select/lazy-update.md): Memoizes calculations, best when many rows share the same input values.
 
 ```groovy test-set=perf order=source,result1,result2,result3
 source = emptyTable(1_000_000).update("Group = i % 100")
@@ -234,4 +224,4 @@ All three derived tables (`summary`, `highVolume`, `recent`) update simultaneous
 
 - [Comprehensive parallelization guide](../../conceptual/query-engine/parallelization.md) - Deep dive into parallelization concepts, thread pools, and advanced control
 - [Directed Acyclic Graph (DAG)](../../conceptual/dag.md) - Understanding how Deephaven tracks dependencies
-- [Table operations reference](../../reference/table-operations/index.md) - Complete reference for all table operations
+- [Table operations](../../reference/table-operations/) - Complete reference for all table operations
