@@ -41,6 +41,10 @@ public class RemoteFileSourceClassLoader extends ClassLoader {
         providers.add(provider);
     }
 
+    public void unregisterProvider(RemoteFileSourceProvider provider) {
+        providers.remove(provider);
+    }
+
     @Override
     protected URL findResource(String name) {
         for (RemoteFileSourceProvider provider : providers) {
