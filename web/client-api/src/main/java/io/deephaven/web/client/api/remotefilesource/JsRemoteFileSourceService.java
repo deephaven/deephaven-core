@@ -108,7 +108,10 @@ public class JsRemoteFileSourceService extends HasEventHandling {
         return Callbacks.<FlightInfo, Object>grpcUnaryPromise(
                 c -> connection.flightServiceClient().getFlightInfo(descriptor, connection.metadata(), c::apply))
                 .then(flightInfo -> {
-                    // The first endpoint should contain the ticket for the plugin instance
+                    // The first endpoint contains the ticket for the plugin instance.
+                    // This is the standard Flight pattern: we passed resultTicket in the request,
+                    // the server exported the service to that ticket, and returned a FlightInfo
+                    // with an endpoint containing that same ticket for us to use.
                     if (flightInfo.getEndpointList().length > 0) {
                         // Get the Arrow Flight ticket from the endpoint
                         io.deephaven.javascript.proto.dhinternal.arrow.flight.protocol.flight_pb.Ticket flightTicket =
@@ -119,9 +122,10 @@ public class JsRemoteFileSourceService extends HasEventHandling {
                         dhTicket.setTicket(flightTicket.getTicket_asU8());
 
                         // Create a TypedTicket for the plugin instance
+                        // The type must match RemoteFileSourcePlugin.name()
                         TypedTicket typedTicket = new TypedTicket();
                         typedTicket.setTicket(dhTicket);
-                        typedTicket.setType("RemoteFileSourceService");
+                        typedTicket.setType("GroovyRemoteFileSourcePlugin");
 
                         // Create a new service instance with the typed ticket and connect to it
                         JsRemoteFileSourceService service = new JsRemoteFileSourceService(connection, typedTicket);

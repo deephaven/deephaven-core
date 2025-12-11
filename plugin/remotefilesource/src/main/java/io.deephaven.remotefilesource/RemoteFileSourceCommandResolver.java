@@ -11,6 +11,7 @@ import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
+import io.deephaven.plugin.type.PluginMarker;
 import io.deephaven.proto.backplane.grpc.RemoteFileSourcePluginFetchRequest;
 import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.proto.util.Exceptions;
@@ -70,9 +71,13 @@ public class RemoteFileSourceCommandResolver implements CommandResolver, WantsTi
     }
 
     /**
-     * Creates and exports a RemoteFileSourceServicePlugin instance based on the fetch request.
-     * The plugin is exported to the session using the result ticket specified in the request,
-     * and flight info is returned containing the endpoint for accessing the plugin.
+     * Exports a PluginMarker singleton based on the fetch request.
+     * The marker object is exported to the session using the result ticket specified in the request,
+     * and flight info is returned containing the endpoint for accessing it.
+     *
+     * Note: This exports PluginMarker.INSTANCE as a trusted marker. Plugin-specific routing
+     * is handled by TypedTicket.type in the ConnectRequest phase, which is validated against
+     * the plugin's name() method.
      *
      * @param session the session state for the current request
      * @param descriptor the flight descriptor containing the command
@@ -86,15 +91,16 @@ public class RemoteFileSourceCommandResolver implements CommandResolver, WantsTi
         final Ticket resultTicket = request.getResultId();
         final boolean hasResultId = !resultTicket.getTicket().isEmpty();
         if (!hasResultId) {
-            throw new StatusRuntimeException(Status.INVALID_ARGUMENT);
+            throw new StatusRuntimeException(Status.INVALID_ARGUMENT
+                    .withDescription("RemoteFileSourcePluginFetchRequest must contain a valid result_id"));
         }
 
-        final SessionState.ExportBuilder<RemoteFileSourceServicePlugin> pluginExportBuilder =
+        final SessionState.ExportBuilder<Object> markerExportBuilder =
                 session.newExport(resultTicket, "RemoteFileSourcePluginFetchRequest.resultTicket");
-        pluginExportBuilder.require();
+        markerExportBuilder.require();
 
-        final SessionState.ExportObject<RemoteFileSourceServicePlugin> pluginExport =
-                pluginExportBuilder.submit(RemoteFileSourceServicePlugin::new);
+        final SessionState.ExportObject<Object> markerExport =
+                markerExportBuilder.submit(() -> PluginMarker.INSTANCE);
 
         final Flight.FlightInfo flightInfo = Flight.FlightInfo.newBuilder()
                 .setFlightDescriptor(descriptor)
