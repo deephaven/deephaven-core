@@ -12,6 +12,7 @@ from pydeephaven._table_interface import TableInterface
 from pydeephaven._table_ops import NaturalJoinType, NoneOp, SortDirection, TableOp
 from pydeephaven.agg import Aggregation
 from pydeephaven.dherror import DHError
+from pydeephaven.filters import Filter
 from pydeephaven.table import Table
 from pydeephaven.updateby import UpdateByOperation
 
@@ -148,11 +149,11 @@ class Query(TableInterface["Query"]):
         """
         return super().sort(order_by, order)
 
-    def where(self, filters: Union[str, list[str]]) -> Query:
+    def where(self, filters: Union[str, list[str], Filter, list[Filter]]) -> Query:
         """Adds a filter operation to the query.
 
         Args:
-            filters (Union[str, list[str]]): the filter condition expression(s)
+            filters (Union[str, list[str], Filter, list[Filter]]): the filter condition expression(s)
 
         Returns:
             self
