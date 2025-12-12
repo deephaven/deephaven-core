@@ -9345,32 +9345,7 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static int compareTo(double a, long b) {
-        if (a == QueryConstants.NULL_DOUBLE) {
-            return (b == QueryConstants.NULL_LONG) ? 0 : -1;
-        }
-        if (b == QueryConstants.NULL_LONG) {
-            return 1;
-        }
-        if (Double.isNaN(a)) {
-            return 1;
-        }
-        if (a > Long.MAX_VALUE) {
-            return 1;
-        } else if (a < Long.MIN_VALUE) {
-            return -1;
-        } else {
-            final long longValue = (long) a;
-            if (longValue > b) {
-                return 1;
-            } else if (longValue == b) {
-                if (a - longValue == 0d) {
-                    return 0;
-                } else if (a - longValue > 0d) {
-                    return 1;
-                }
-            }
-            return -1;
-        }
+        return -compareTo(b, a);
     }
 
     public static boolean eq(double a, long b) {
@@ -10102,32 +10077,7 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static int compareTo(float a, long b) {
-        if (a == QueryConstants.NULL_FLOAT) {
-            return (b == QueryConstants.NULL_LONG) ? 0 : -1;
-        }
-        if (b == QueryConstants.NULL_LONG) {
-            return 1;
-        }
-        if (Double.isNaN(a)) {
-            return 1;
-        }
-        if (a > Long.MAX_VALUE) {
-            return 1;
-        } else if (a < Long.MIN_VALUE) {
-            return -1;
-        } else {
-            final long longValue = (long) a;
-            if (longValue > b) {
-                return 1;
-            } else if (longValue == b) {
-                if (a - longValue == 0d) {
-                    return 0;
-                } else if (a - longValue > 0d) {
-                    return 1;
-                }
-            }
-            return -1;
-        }
+        return -compareTo(b, a);
     }
 
     public static boolean eq(float a, long b) {

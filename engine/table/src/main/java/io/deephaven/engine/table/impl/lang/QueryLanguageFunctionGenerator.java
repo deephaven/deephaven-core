@@ -150,7 +150,7 @@ public class QueryLanguageFunctionGenerator {
 
         for (final Class<?> classA : classes) {
             for (final Class<?> classB : classes) {
-                buf.append(generateCompareFunction(classA, classB));
+                buf.append(generateCompareToFunction(classA, classB));
                 buf.append(generateEqualityFunction(classA, classB));
                 buf.append(generateArrayArrayFunction(BinaryExpr.Operator.EQUALS, classA, classB, "check equality of"));
                 buf.append(generateArrayVarFunction(BinaryExpr.Operator.EQUALS, classA, classB));
@@ -172,7 +172,7 @@ public class QueryLanguageFunctionGenerator {
         for (BinaryExpr.Operator operator : operators) {
             for (Class<?> classA : classes) {
                 for (Class<?> classB : classes) {
-                    buf.append(generateRelativeComparisonFunction(operator, classA, classB));
+                    buf.append(generateInequalityFunction(operator, classA, classB));
                     buf.append(generateArrayArrayFunction(operator, classA, classB, "compare"));
                     buf.append(generateArrayVarFunction(operator, classA, classB));
                     buf.append(generateVarArrayFunction(operator, classA, classB));
@@ -181,7 +181,7 @@ public class QueryLanguageFunctionGenerator {
         }
 
         for (BinaryExpr.Operator operator : operators) {
-            buf.append(generateRelativeComparisonFunction(operator, Comparable.class, Comparable.class));
+            buf.append(generateInequalityFunction(operator, Comparable.class, Comparable.class));
         }
 
         // ------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -405,10 +405,10 @@ public class QueryLanguageFunctionGenerator {
             buf.append(generateEqualityFunction(clazz, BigDecimal.class));
         }
 
-        buf.append(generateCompareFunction(BigDecimal.class, BigDecimal.class));
+        buf.append(generateCompareToFunction(BigDecimal.class, BigDecimal.class));
         for (final Class<?> clazz : classes) {
-            buf.append(generateCompareFunction(BigDecimal.class, clazz));
-            buf.append(generateCompareFunction(clazz, BigDecimal.class));
+            buf.append(generateCompareToFunction(BigDecimal.class, clazz));
+            buf.append(generateCompareToFunction(clazz, BigDecimal.class));
         }
 
         operators = new BinaryExpr.Operator[] {
@@ -420,8 +420,8 @@ public class QueryLanguageFunctionGenerator {
 
         for (BinaryExpr.Operator operator : operators) {
             for (final Class<?> clazz : classes) {
-                buf.append(generateRelativeComparisonFunction(operator, BigDecimal.class, clazz));
-                buf.append(generateRelativeComparisonFunction(operator, clazz, BigDecimal.class));
+                buf.append(generateInequalityFunction(operator, BigDecimal.class, clazz));
+                buf.append(generateInequalityFunction(operator, clazz, BigDecimal.class));
             }
         }
 
@@ -458,10 +458,10 @@ public class QueryLanguageFunctionGenerator {
             buf.append(generateEqualityFunction(clazz, BigInteger.class));
         }
 
-        buf.append(generateCompareFunction(BigInteger.class, BigInteger.class));
+        buf.append(generateCompareToFunction(BigInteger.class, BigInteger.class));
         for (final Class<?> clazz : classes) {
-            buf.append(generateCompareFunction(BigInteger.class, clazz));
-            buf.append(generateCompareFunction(clazz, BigInteger.class));
+            buf.append(generateCompareToFunction(BigInteger.class, clazz));
+            buf.append(generateCompareToFunction(clazz, BigInteger.class));
         }
 
         operators = new BinaryExpr.Operator[] {
@@ -473,8 +473,8 @@ public class QueryLanguageFunctionGenerator {
 
         for (BinaryExpr.Operator operator : operators) {
             for (final Class<?> clazz : classes) {
-                buf.append(generateRelativeComparisonFunction(operator, BigInteger.class, clazz));
-                buf.append(generateRelativeComparisonFunction(operator, clazz, BigInteger.class));
+                buf.append(generateInequalityFunction(operator, BigInteger.class, clazz));
+                buf.append(generateInequalityFunction(operator, clazz, BigInteger.class));
             }
         }
 
@@ -497,6 +497,11 @@ public class QueryLanguageFunctionGenerator {
         System.out.println("Wrote QueryLanguageFunctionUtils to: " + fileName);
     }
 
+    // region Generate Functions
+
+    /**
+     * Generate an arithmetic function for the given operator and argument types (e.g. plus/minus/multiply/divide).
+     */
     private static String generateArithmeticFunction(
             @NotNull final BinaryExpr.Operator op,
             @NotNull final Class<?> classA,
@@ -528,12 +533,22 @@ public class QueryLanguageFunctionGenerator {
         return sb.toString();
     }
 
-    private static String generateCompareFunction(@NotNull final Class<?> classA, @NotNull final Class<?> classB) {
+    /**
+     * Generate a compareTo() function for the given argument types.
+     */
+    private static String generateCompareToFunction(@NotNull final Class<?> classA, @NotNull final Class<?> classB) {
         final StringBuilder sb = new StringBuilder();
 
         sb.append(MessageFormat.format("    public static int compareTo({0} a, {1} b) '{'\n",
                 classA.getSimpleName(),
                 classB.getSimpleName()));
+
+        if (isFPNumber(classA) && classB == long.class) {
+            // re-use the existing compareTo()
+            sb.append("        return -compareTo(b, a);\n");
+            sb.append("    }\n\n");
+            return sb.toString();
+        }
 
         if (isBigNumber(classA) || isBigNumber(classB)) {
             // NaN checks when converting to BigDecimal/BigInteger
@@ -612,29 +627,6 @@ public class QueryLanguageFunctionGenerator {
                     "            }\n" +
                     "            return 1;\n" +
                     "        }\n");
-        } else if (isFPNumber(classA) && classB == long.class) {
-            // long must be compared as double
-            sb.append("" +
-                    "        if (Double.isNaN(a)) {\n" +
-                    "            return 1;\n" +
-                    "        }\n" +
-                    "        if (a > Long.MAX_VALUE) {\n" +
-                    "            return 1;\n" +
-                    "        } else if (a < Long.MIN_VALUE) {\n" +
-                    "            return -1;\n" +
-                    "        } else {\n" +
-                    "            final long longValue = (long) a;\n" +
-                    "            if (longValue > b) {\n" +
-                    "                return 1;\n" +
-                    "            } else if (longValue == b) {\n" +
-                    "                if (a - longValue == 0d) {\n" +
-                    "                    return 0;\n" +
-                    "                } else if (a - longValue > 0d) {\n" +
-                    "                    return 1;\n" +
-                    "                }\n" +
-                    "            }\n" +
-                    "            return -1;\n" +
-                    "        }\n");
         } else if (isFPNumber(classA) && isFPNumber(classB)) {
             sb.append("        return Double.compare(a, b);\n");
         } else if (isFPNumber(classA) && isIntegralNumber(classB)) {
@@ -655,6 +647,9 @@ public class QueryLanguageFunctionGenerator {
         return sb.toString();
     }
 
+    /**
+     * Generate an eq() function for the given argument types.
+     */
     private static String generateEqualityFunction(@NotNull final Class<?> classA, @NotNull final Class<?> classB) {
         final StringBuilder sb = new StringBuilder();
 
@@ -707,7 +702,10 @@ public class QueryLanguageFunctionGenerator {
         return sb.toString();
     }
 
-    private static String generateRelativeComparisonFunction(
+    /**
+     * Generate inequality functions for the given argument types (e.g. less than, greater than, etc.).
+     */
+    private static String generateInequalityFunction(
             @NotNull final BinaryExpr.Operator op,
             @NotNull final Class<?> classA,
             @NotNull final Class<?> classB) {
@@ -741,6 +739,9 @@ public class QueryLanguageFunctionGenerator {
         return sb.toString();
     }
 
+    /**
+     * Generate a null-safe cast function between the given argument types.
+     */
     private static String generateCastFunction(@NotNull final Class<?> classA, @NotNull final Class<?> classB) {
         final StringBuilder sb = new StringBuilder();
 
@@ -759,6 +760,9 @@ public class QueryLanguageFunctionGenerator {
         return sb.toString();
     }
 
+    /**
+     * Generate a null-safe cast function from Object to the given primitive type.
+     */
     private static String generateCastFromObjFunction(@NotNull final Class<?> classA) {
         final StringBuilder sb = new StringBuilder();
 
@@ -781,6 +785,9 @@ public class QueryLanguageFunctionGenerator {
         return sb.toString();
     }
 
+    /**
+     * Generate a negate() function for the given argument type.
+     */
     private static String generateNegateFunction(@NotNull final Class<?> classA) {
         final StringBuilder sb = new StringBuilder();
 
@@ -804,6 +811,9 @@ public class QueryLanguageFunctionGenerator {
         return sb.toString();
     }
 
+    /**
+     * Generate an array vs. array function for the given operator and argument types.
+     */
     private static String generateArrayArrayFunction(
             @NotNull final BinaryExpr.Operator op,
             @NotNull final Class<?> classA,
@@ -842,6 +852,9 @@ public class QueryLanguageFunctionGenerator {
         return sb.toString();
     }
 
+    /**
+     * Generate an array vs. variable function for the given operator and argument types.
+     */
     private static String generateArrayVarFunction(
             @NotNull final BinaryExpr.Operator op,
             @NotNull final Class<?> classA,
@@ -872,6 +885,9 @@ public class QueryLanguageFunctionGenerator {
         return sb.toString();
     }
 
+    /**
+     * Generate a variable vs. array function for the given operator and argument types.
+     */
     private static String generateVarArrayFunction(
             @NotNull final BinaryExpr.Operator op,
             @NotNull final Class<?> classA,
@@ -901,6 +917,10 @@ public class QueryLanguageFunctionGenerator {
 
         return sb.toString();
     }
+
+    // endregion Generate Functions
+
+    // region Helper Functions
 
     private static Class<?> getReturnType(
             @NotNull final BinaryExpr.Operator op,
@@ -1023,94 +1043,6 @@ public class QueryLanguageFunctionGenerator {
         }
     }
 
-    /**
-     * Returns a String of an example literal value of {@code type}. Used for generating tests.
-     */
-    private static String getLiteral(Class<?> type) {
-        if (type.equals(boolean.class)) {
-            return "false";
-        } else if (type.equals(char.class)) {
-            return "'0'";
-        } else if (type.equals(byte.class)) {
-            return "(byte)42";
-        } else if (type.equals(short.class)) {
-            return "(short)42";
-        } else if (type.equals(int.class)) {
-            return "42";
-        } else if (type.equals(long.class)) {
-            return "42L";
-        } else if (type.equals(float.class)) {
-            return "42f";
-        } else if (type.equals(double.class)) {
-            return "42d";
-        } else if (type.equals(BigDecimal.class)) {
-            return "BigDecimal.valueOf(42.0)";
-        } else if (type.equals(BigInteger.class)) {
-            return "BigInteger.valueOf(42L)";
-        } else {
-            throw new IllegalArgumentException("Unsupported type " + type);
-        }
-    }
-
-    /**
-     * Returns a String of an example small literal value of {@code type}. Used for generating comparison tests.
-     */
-    private static String getSmallLiteral(Class<?> type) {
-        if (type.equals(boolean.class)) {
-            return "false";
-        } else if (type.equals(char.class)) {
-            return "(char)1";
-        } else if (type.equals(byte.class)) {
-            return "(byte)1";
-        } else if (type.equals(short.class)) {
-            return "(short)1";
-        } else if (type.equals(int.class)) {
-            return "1";
-        } else if (type.equals(long.class)) {
-            return "1L";
-        } else if (type.equals(float.class)) {
-            return "0.01f";
-        } else if (type.equals(double.class)) {
-            return "0.01d";
-        } else if (type.equals(BigDecimal.class)) {
-            return "BigDecimal.valueOf(0.01)";
-        } else if (type.equals(BigInteger.class)) {
-            return "BigInteger.valueOf(1L)";
-        } else {
-            throw new IllegalArgumentException("Unsupported type " + type);
-        }
-    }
-
-    /**
-     * Returns a String of an example bigger literal value of {@code type}. Must be larger than the value produced by
-     * getSmallLiteral (across all types). Used for generating comparison tests.
-     */
-    private static String getBiggerLiteral(Class<?> type) {
-        if (type.equals(boolean.class)) {
-            return "true";
-        } else if (type.equals(char.class)) {
-            return "'1'";
-        } else if (type.equals(byte.class)) {
-            return "(byte)42";
-        } else if (type.equals(short.class)) {
-            return "(short)42";
-        } else if (type.equals(int.class)) {
-            return "42";
-        } else if (type.equals(long.class)) {
-            return "42L";
-        } else if (type.equals(float.class)) {
-            return "42.0f";
-        } else if (type.equals(double.class)) {
-            return "42.0d";
-        } else if (type.equals(BigDecimal.class)) {
-            return "BigDecimal.valueOf(42.0)";
-        } else if (type.equals(BigInteger.class)) {
-            return "BigInteger.valueOf(42L)";
-        } else {
-            throw new IllegalArgumentException("Unsupported type " + type);
-        }
-    }
-
     private static boolean isIntegralNumber(Class<?> type) {
         type = TypeUtils.getUnboxedType(type);
 
@@ -1137,4 +1069,6 @@ public class QueryLanguageFunctionGenerator {
     private static boolean isBigNumber(Class<?> type) {
         return type == BigDecimal.class || type == BigInteger.class;
     }
+
+    // endregion Helper Functions
 }
