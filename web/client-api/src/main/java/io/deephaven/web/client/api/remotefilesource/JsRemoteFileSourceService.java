@@ -66,7 +66,7 @@ public class JsRemoteFileSourceService extends HasEventHandling {
      */
     @JsIgnore
     public static Promise<JsRemoteFileSourceService> fetchPlugin(@TsTypeRef(Object.class) WorkerConnection connection) {
-        String pluginType = "DeephavenGroovyRemoteFileSourcePlugin";
+        String pluginName = "DeephavenPythonRemoteFileSourcePlugin";
 
         // Create a new export ticket for the result
         Ticket resultTicket = connection.getTickets().newExportTicket();
@@ -74,7 +74,7 @@ public class JsRemoteFileSourceService extends HasEventHandling {
         // Create the fetch request
         RemoteFileSourcePluginFetchRequest fetchRequest = new RemoteFileSourcePluginFetchRequest();
         fetchRequest.setResultId(resultTicket);
-        fetchRequest.setPluginType(pluginType);
+        fetchRequest.setPluginName(pluginName);
 
         // Serialize the request to bytes
         Uint8Array innerRequestBytes = fetchRequest.serializeBinary();
@@ -110,7 +110,7 @@ public class JsRemoteFileSourceService extends HasEventHandling {
                         // The type must match RemoteFileSourcePlugin.name()
                         TypedTicket typedTicket = new TypedTicket();
                         typedTicket.setTicket(dhTicket);
-                        typedTicket.setType(pluginType);
+                        typedTicket.setType(pluginName);
 
                         JsWidget widget = new JsWidget(connection, typedTicket);
 

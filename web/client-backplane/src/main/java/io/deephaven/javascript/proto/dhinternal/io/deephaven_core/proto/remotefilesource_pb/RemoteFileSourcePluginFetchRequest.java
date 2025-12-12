@@ -86,14 +86,14 @@ public class RemoteFileSourcePluginFetchRequest {
         RemoteFileSourcePluginFetchRequest.ToObjectReturnType.ResultIdFieldType getResultId();
 
         @JsProperty
-        String getPluginType();
+        String getPluginName();
 
         @JsProperty
         void setResultId(
                 RemoteFileSourcePluginFetchRequest.ToObjectReturnType.ResultIdFieldType resultId);
 
         @JsProperty
-        void setPluginType(String pluginType);
+        void setPluginName(String pluginName);
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -165,14 +165,14 @@ public class RemoteFileSourcePluginFetchRequest {
         RemoteFileSourcePluginFetchRequest.ToObjectReturnType0.ResultIdFieldType getResultId();
 
         @JsProperty
-        String getPluginType();
+        String getPluginName();
 
         @JsProperty
         void setResultId(
                 RemoteFileSourcePluginFetchRequest.ToObjectReturnType0.ResultIdFieldType resultId);
 
         @JsProperty
-        void setPluginType(String pluginType);
+        void setPluginName(String pluginName);
     }
 
     public static native RemoteFileSourcePluginFetchRequest deserializeBinary(Uint8Array bytes);
@@ -190,7 +190,7 @@ public class RemoteFileSourcePluginFetchRequest {
 
     public native Ticket getResultId();
 
-    public native String getPluginType();
+    public native String getPluginName();
 
     public native boolean hasResultId();
 
@@ -200,8 +200,7 @@ public class RemoteFileSourcePluginFetchRequest {
 
     public native void setResultId(Ticket value);
 
-
-    public native void setPluginType(String value);
+    public native void setPluginName(String value);
 
     public native RemoteFileSourcePluginFetchRequest.ToObjectReturnType0 toObject();
 
