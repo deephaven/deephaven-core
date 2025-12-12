@@ -66,7 +66,7 @@ public class JsRemoteFileSourceService extends HasEventHandling {
      */
     @JsIgnore
     public static Promise<JsRemoteFileSourceService> fetchPlugin(@TsTypeRef(Object.class) WorkerConnection connection) {
-        String pluginName = "DeephavenPythonRemoteFileSourcePlugin";
+        String pluginName = "DeephavenGroovyRemoteFileSourcePlugin";
 
         // Create a new export ticket for the result
         Ticket resultTicket = connection.getTickets().newExportTicket();
