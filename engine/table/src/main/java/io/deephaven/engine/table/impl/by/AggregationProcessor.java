@@ -800,6 +800,7 @@ public class AggregationProcessor implements AggregationContextFactory {
 
         @Override
         public void visit(@NotNull final Formula formula) {
+            validateFormulaIsNotReaggregating(formula);
             final SelectColumn selectColumn = SelectColumn.of(formula.selectable());
 
             // Get or create a column definition map composed of vectors of the original column types (or scalars when
@@ -965,6 +966,12 @@ public class AggregationProcessor implements AggregationContextFactory {
         }
         if (selectColumn.hasVirtualRowVariables()) {
             throw new IllegalArgumentException("AggFormula does not support virtual row variables");
+        }
+    }
+
+    private static void validateFormulaIsNotReaggregating(Formula formula) {
+        if (formula.reaggregateAggregatedValues()) {
+            throw new IllegalArgumentException("AggFormula does not support reaggregating except in a rollup.");
         }
     }
 
@@ -1160,8 +1167,15 @@ public class AggregationProcessor implements AggregationContextFactory {
 
             validateSelectColumnForFormula(selectColumn);
             // TODO: re-use shared groupBy operators (https://github.com/deephaven/deephaven-core/issues/6363)
-            final GroupByChunkedOperator groupByChunkedOperator =
-                    makeGroupByOperatorForFormula(inputNonKeyColumns, table, EXPOSED_GROUP_ROW_SETS.name());
+
+            final GroupByChunkedOperator groupByChunkedOperator;
+
+            if (formula.reaggregateAggregatedValues()) {
+                groupByChunkedOperator = makeGroupByOperatorForFormula(inputNonKeyColumns, table, null);
+            } else {
+                groupByChunkedOperator = makeGroupByOperatorForFormula(inputNonKeyColumns, table, EXPOSED_GROUP_ROW_SETS.name());
+                // TODO: the next level somehow needs access to the raw column sources so that we can continue the aggregation
+            }
 
             final IntegerSingleValueSource depthSource = new IntegerSingleValueSource();
             depthSource.set(groupByColumnNames.length);
@@ -1378,19 +1392,32 @@ public class AggregationProcessor implements AggregationContextFactory {
             // final GroupByChunkedOperator groupByChunkedOperator = makeGroupByOperatorForFormula(inputNonKeyColumns,
             // table);
 
-            final ColumnSource<?> groupRowSet = table.getColumnSource(EXPOSED_GROUP_ROW_SETS.name());
-
-            final MatchPair[] groupPairs = Arrays.stream(inputNonKeyColumns).map(col -> MatchPair.of(Pair.parse(col)))
+            final MatchPair[] groupPairs = Arrays.stream(inputNonKeyColumns).map(col -> {
+                // reagg uses the output name
+                        final Pair parse = Pair.parse(col);
+                        return MatchPair.of(Pair.of(parse.output(), parse.output()));
+                    })
                     .toArray(MatchPair[]::new);
-            GroupByReaggregateOperator groupByOperator =
-                    new GroupByReaggregateOperator(table, false, EXPOSED_GROUP_ROW_SETS.name(), groupPairs);
+
+            GroupByOperator groupByOperator;
 
             final IntegerSingleValueSource depthSource = new IntegerSingleValueSource();
             depthSource.set(groupByColumnNames.length);
 
-            final FormulaMultiColumnChunkedOperator op = new FormulaMultiColumnChunkedOperator(table, groupByOperator,
-                    true, selectColumn, inputKeyColumns, depthSource);
-            addOperator(op, groupRowSet, EXPOSED_GROUP_ROW_SETS.name());
+            if (formula.reaggregateAggregatedValues()) {
+                groupByOperator = new GroupByChunkedOperator(table, false, null, groupPairs);
+
+                final FormulaMultiColumnChunkedOperator op = new FormulaMultiColumnChunkedOperator(table, groupByOperator,
+                        true, selectColumn, inputKeyColumns, depthSource);
+
+                addOperator(op, null, inputNonKeyColumns);
+            } else {
+                final ColumnSource<?> groupRowSet = table.getColumnSource(EXPOSED_GROUP_ROW_SETS.name());
+                groupByOperator = new GroupByReaggregateOperator(table, false, EXPOSED_GROUP_ROW_SETS.name(), groupPairs);
+                final FormulaMultiColumnChunkedOperator op = new FormulaMultiColumnChunkedOperator(table, groupByOperator,
+                        true, selectColumn, inputKeyColumns, depthSource);
+                addOperator(op, groupRowSet, EXPOSED_GROUP_ROW_SETS.name());
+            }
         }
 
         // -------------------------------------------------------------------------------------------------------------

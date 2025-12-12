@@ -56,7 +56,6 @@ public final class GroupByReaggregateOperator implements GroupByOperator {
 
     private final String[] inputColumnNames;
 
-    private final Map<String, AggregateColumnSource<?, ?>> inputAggregatedColumns;
     private final Map<String, AggregateColumnSource<?, ?>> resultAggregatedColumns;
 
     private RowSetBuilderRandom stepDestinationsModified;
@@ -80,10 +79,10 @@ public final class GroupByReaggregateOperator implements GroupByOperator {
         rowSets = new ObjectArraySource<>(WritableRowSet.class);
         addedBuilders = new ObjectArraySource<>(Object.class);
 
-        inputAggregatedColumns = new LinkedHashMap<>(aggregatedColumnPairs.length);
         resultAggregatedColumns = new LinkedHashMap<>(aggregatedColumnPairs.length);
         Arrays.stream(aggregatedColumnPairs).forEach(pair -> {
-            final ColumnSource<Object> source = inputTable.getColumnSource(pair.rightColumn());
+            // we are reaggregationg so have to use the left column for everything
+            final ColumnSource<Object> source = inputTable.getColumnSource(pair.leftColumn());
             if (!(source instanceof AggregateColumnSource)) {
                 throw new IllegalStateException("Expect to reaggregate AggregateColumnSources for a group operation.");
             }
@@ -91,7 +90,6 @@ public final class GroupByReaggregateOperator implements GroupByOperator {
             final ColumnSource<?> realSource = ((AggregateColumnSource) source).getAggregatedSource();
             final AggregateColumnSource<?, ?> aggregateColumnSource = AggregateColumnSource.make(realSource, rowSets);
             resultAggregatedColumns.put(pair.leftColumn(), aggregateColumnSource);
-            inputAggregatedColumns.put(pair.rightColumn(), aggregateColumnSource);
         });
 
         if (resultAggregatedColumns.containsKey(exposeRowSetsAs)) {
@@ -311,7 +309,7 @@ public final class GroupByReaggregateOperator implements GroupByOperator {
 
     @Override
     public Map<String, ? extends ColumnSource<?>> getInputResultColumns() {
-        return inputAggregatedColumns;
+        return resultAggregatedColumns;
     }
 
     @Override
