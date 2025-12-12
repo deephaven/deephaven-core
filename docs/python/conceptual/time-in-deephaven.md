@@ -661,6 +661,7 @@ from deephaven.time import simple_date_format
 
 # pass the format of the input date-time
 input_format = simple_date_format("YYYYMMDD")
+input_format2 = simple_date_format("YYYYMMDD")
 ```
 
 Now, `input_format` is an object that can be used in a query to format the `BEGIN` and `END` columns. This is done with the [`parse`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/text/SimpleDateFormat.html#parse(java.lang.String,java.text.ParsePosition)) method, which accepts the input date-time columns as strings. So, the `int` values must be converted to strings before calling [`parse`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/text/SimpleDateFormat.html#parse(java.lang.String,java.text.ParsePosition)). Finally, call [`toInstant`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Date.html#toInstant()) on the result to get the formatted date-time as a Java [`Instant`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Instant.html):
@@ -670,7 +671,7 @@ Now, `input_format` is an object that can be used in a query to format the `BEGI
 format_gsod = gsod.update(
     formulas=[
         "BEGIN = input_format.parse(String.valueOf(BEGIN)).toInstant()",
-        "END = input_format.parse(String.valueOf(END)).toInstant()",
+        "END = input_format2.parse(String.valueOf(END)).toInstant()",
     ]
 )
 ```
