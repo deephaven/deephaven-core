@@ -2,7 +2,7 @@
 // Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
-// ****** Edit ReplicateQueryLanguageFunctions and run "./gradlew replicateQueryLanguageFunctions" to regenerate
+// ****** Edit GenerateQueryLanguageFunctions and run "./gradlew generateQueryLanguageFunctions" to regenerate
 //
 // @formatter:off
 package io.deephaven.engine.table.impl.lang;

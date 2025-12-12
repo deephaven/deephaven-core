@@ -17,8 +17,8 @@ import java.math.BigInteger;
 import java.text.DecimalFormat;
 import java.text.MessageFormat;
 
-public class ReplicateQueryLanguageFunctions {
-    private static final String TASK = "replicateQueryLanguageFunctions";
+public class GenerateQueryLanguageFunctions {
+    private static final String TASK = "generateQueryLanguageFunctions";
 
     private static final String OUTPUT_FILE =
             "./engine/table/src/main/java/io/deephaven/engine/table/impl/lang/QueryLanguageFunctionUtils.java";
@@ -29,7 +29,7 @@ public class ReplicateQueryLanguageFunctions {
         final int sbCapacity = (int) Math.pow(2, 20);
         StringBuilder buf = new StringBuilder(sbCapacity);
 
-        buf.append(ReplicationUtils.fileHeaderString(TASK, ReplicateQueryLanguageFunctions.class.getSimpleName()));
+        buf.append(ReplicationUtils.fileHeaderString(TASK, GenerateQueryLanguageFunctions.class.getSimpleName()));
 
         buf.append("package io.deephaven.engine.table.impl.lang;\n\n");
 
