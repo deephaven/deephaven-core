@@ -189,7 +189,6 @@ public class Numeric {
 
 
     <#list primitiveTypes as pt>
-    <#if pt.valueType.isNumber >
 
     //////////////////////////// ${pt.primitive} ////////////////////////////
 
@@ -4313,6 +4312,5 @@ public class Numeric {
     }
     </#if>
 
-    </#if>
     </#list>
 }
