@@ -1,9 +1,11 @@
 //
 // Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
-package io.deephaven.engine.table.impl.lang;
+package io.deephaven.replicators;
 
 import com.github.javaparser.ast.expr.BinaryExpr;
+import io.deephaven.engine.table.impl.lang.QueryLanguageParser;
+import io.deephaven.replication.ReplicationUtils;
 import io.deephaven.util.type.TypeUtils;
 import org.jetbrains.annotations.NotNull;
 
@@ -15,22 +17,19 @@ import java.math.BigInteger;
 import java.text.DecimalFormat;
 import java.text.MessageFormat;
 
-public class QueryLanguageFunctionGenerator {
+public class ReplicateQueryLanguageFunctions {
+    private static final String TASK = "replicateQueryLanguageFunctions";
+
+    private static final String OUTPUT_FILE =
+            "./engine/table/src/main/java/io/deephaven/engine/table/impl/lang/QueryLanguageFunctionUtils.java";
+
     public static void main(String[] args) throws IOException {
         final long start = System.currentTimeMillis();
 
         final int sbCapacity = (int) Math.pow(2, 20);
         StringBuilder buf = new StringBuilder(sbCapacity);
 
-        buf.append(String.join("\n",
-                "//",
-                "// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending",
-                "//",
-                "// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY",
-                "// ****** Run " + QueryLanguageFunctionGenerator.class.getSimpleName() + " to regenerate",
-                "//",
-                "// @formatter:off",
-                ""));
+        buf.append(ReplicationUtils.fileHeaderString(TASK, ReplicateQueryLanguageFunctions.class.getSimpleName()));
 
         buf.append("package io.deephaven.engine.table.impl.lang;\n\n");
 
@@ -363,10 +362,8 @@ public class QueryLanguageFunctionGenerator {
 
         buf.append("}\n");
 
-        String fileName =
-                "./engine/table/src/main/java/io/deephaven/engine/table/impl/lang/QueryLanguageFunctionUtils.java";
         try {
-            try (BufferedWriter out = new BufferedWriter(new FileWriter(fileName))) {
+            try (BufferedWriter out = new BufferedWriter(new FileWriter(OUTPUT_FILE))) {
                 out.write(buf.toString());
             }
         } catch (IOException e) {
@@ -375,7 +372,7 @@ public class QueryLanguageFunctionGenerator {
 
         System.out.println("Finished generating QueryLanguageFunctionUtils in "
                 + new DecimalFormat().format(System.currentTimeMillis() - start) + " millis");
-        System.out.println("Wrote QueryLanguageFunctionUtils to: " + fileName);
+        System.out.println("Wrote QueryLanguageFunctionUtils to: " + OUTPUT_FILE);
     }
 
     // region Generate Functions

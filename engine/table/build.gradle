@@ -85,11 +85,10 @@ dependencies {
     testImplementation platform(libs.junit.bom)
     testImplementation libs.assertj
 
+    testRuntimeOnly project(':log-to-slf4j')
     testRuntimeOnly project(':configs')
     testRuntimeOnly project(':test-configs')
-
-    runtimeOnly project(':log-to-slf4j')
-    runtimeOnly libs.slf4j.simple
+    testRuntimeOnly libs.slf4j.simple
 }
 
 spotless {
@@ -116,8 +115,6 @@ test {
 TestTools.addEngineParallelTest(project)
 TestTools.addEngineSerialTest(project)
 TestTools.addEngineOutOfBandTest(project)
-
-Tasks.registerMainExecTask(project, 'queryLanguageFunctionGenerator', 'io.deephaven.engine.table.impl.lang.QueryLanguageFunctionGenerator')
 
 // If changing, be sure to update .github/scripts/print-gradle-workers-max.sh
 def maxHeapSize = findProperty('maxHeapSize') as String ?: '6g'

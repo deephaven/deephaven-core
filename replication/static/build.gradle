@@ -11,6 +11,12 @@ dependencies {
     implementation project(':replication-util')
     implementation libs.trove
     implementation libs.commons.io
+    implementation libs.javaparser.core
+
+    // These are required for replicateQueryLanguageFunctions (to get access to QueryLanguageParser)
+    implementation project(':engine-table')
+    runtimeOnly project(':log-to-slf4j')
+    runtimeOnly libs.slf4j.simple
 }
 
 // These replicators do not require any manual fix-up and may be run without supervision
@@ -93,6 +99,8 @@ task replicateAllSafe {
     dependsOn Tasks.registerMainExecTask(project, 'replicateCachingSupplier', 'io.deephaven.replicators.ReplicateCachingSupplier')
 
     dependsOn Tasks.registerMainExecTask(project, 'replicateVectorChunkFilters', 'io.deephaven.replicators.ReplicateVectorChunkFilters')
+
+    dependsOn Tasks.registerMainExecTask(project, 'replicateQueryLanguageFunctions', 'io.deephaven.replicators.ReplicateQueryLanguageFunctions')
 }
 
 // These replicators need manual fix-up post replication and should not be run without supervision
