@@ -292,6 +292,74 @@ public final class QueryLanguageFunctionUtils {
         return ret;
     }
 
+    public static BigDecimal plus(int a, BigDecimal b) {
+        return a == QueryConstants.NULL_INT || b == null ? null : BigDecimal.valueOf(a).add(b);
+    }
+
+    public static BigDecimal[] plusArray(int[] a, BigDecimal[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to add two arrays (int, BigDecimal) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = plus(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] plusArray(int[] a, BigDecimal b) {
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = plus(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] plusArray(int a, BigDecimal[] b) {
+        BigDecimal[] ret = new BigDecimal[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = plus(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigInteger plus(int a, BigInteger b) {
+        return a == QueryConstants.NULL_INT || b == null ? null : BigInteger.valueOf(a).add(b);
+    }
+
+    public static BigInteger[] plusArray(int[] a, BigInteger[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to add two arrays (int, BigInteger) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigInteger[] ret = new BigInteger[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = plus(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigInteger[] plusArray(int[] a, BigInteger b) {
+        BigInteger[] ret = new BigInteger[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = plus(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigInteger[] plusArray(int a, BigInteger[] b) {
+        BigInteger[] ret = new BigInteger[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = plus(a, b[i]);
+        }
+
+        return ret;
+    }
+
     public static double plus(double a, int b) {
         return a == QueryConstants.NULL_DOUBLE || b == QueryConstants.NULL_INT ? QueryConstants.NULL_DOUBLE : a + ((double) b);
     }
@@ -523,6 +591,74 @@ public final class QueryLanguageFunctionUtils {
 
     public static double[] plusArray(double a, short[] b) {
         double[] ret = new double[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = plus(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal plus(double a, BigDecimal b) {
+        return a == QueryConstants.NULL_DOUBLE || b == null ? null : BigDecimal.valueOf(a).add(b);
+    }
+
+    public static BigDecimal[] plusArray(double[] a, BigDecimal[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to add two arrays (double, BigDecimal) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = plus(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] plusArray(double[] a, BigDecimal b) {
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = plus(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] plusArray(double a, BigDecimal[] b) {
+        BigDecimal[] ret = new BigDecimal[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = plus(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal plus(double a, BigInteger b) {
+        return a == QueryConstants.NULL_DOUBLE || b == null ? null : BigDecimal.valueOf(a).add((new BigDecimal(b)));
+    }
+
+    public static BigDecimal[] plusArray(double[] a, BigInteger[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to add two arrays (double, BigInteger) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = plus(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] plusArray(double[] a, BigInteger b) {
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = plus(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] plusArray(double a, BigInteger[] b) {
+        BigDecimal[] ret = new BigDecimal[b.length];
         for (int i = 0; i < b.length; i++) {
             ret[i] = plus(a, b[i]);
         }
@@ -768,6 +904,74 @@ public final class QueryLanguageFunctionUtils {
         return ret;
     }
 
+    public static BigDecimal plus(long a, BigDecimal b) {
+        return a == QueryConstants.NULL_LONG || b == null ? null : BigDecimal.valueOf(a).add(b);
+    }
+
+    public static BigDecimal[] plusArray(long[] a, BigDecimal[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to add two arrays (long, BigDecimal) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = plus(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] plusArray(long[] a, BigDecimal b) {
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = plus(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] plusArray(long a, BigDecimal[] b) {
+        BigDecimal[] ret = new BigDecimal[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = plus(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigInteger plus(long a, BigInteger b) {
+        return a == QueryConstants.NULL_LONG || b == null ? null : BigInteger.valueOf(a).add(b);
+    }
+
+    public static BigInteger[] plusArray(long[] a, BigInteger[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to add two arrays (long, BigInteger) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigInteger[] ret = new BigInteger[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = plus(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigInteger[] plusArray(long[] a, BigInteger b) {
+        BigInteger[] ret = new BigInteger[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = plus(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigInteger[] plusArray(long a, BigInteger[] b) {
+        BigInteger[] ret = new BigInteger[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = plus(a, b[i]);
+        }
+
+        return ret;
+    }
+
     public static float plus(float a, int b) {
         return a == QueryConstants.NULL_FLOAT || b == QueryConstants.NULL_INT ? QueryConstants.NULL_FLOAT : a + ((float) b);
     }
@@ -999,6 +1203,74 @@ public final class QueryLanguageFunctionUtils {
 
     public static float[] plusArray(float a, short[] b) {
         float[] ret = new float[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = plus(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal plus(float a, BigDecimal b) {
+        return a == QueryConstants.NULL_FLOAT || b == null ? null : BigDecimal.valueOf(a).add(b);
+    }
+
+    public static BigDecimal[] plusArray(float[] a, BigDecimal[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to add two arrays (float, BigDecimal) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = plus(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] plusArray(float[] a, BigDecimal b) {
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = plus(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] plusArray(float a, BigDecimal[] b) {
+        BigDecimal[] ret = new BigDecimal[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = plus(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal plus(float a, BigInteger b) {
+        return a == QueryConstants.NULL_FLOAT || b == null ? null : BigDecimal.valueOf(a).add((new BigDecimal(b)));
+    }
+
+    public static BigDecimal[] plusArray(float[] a, BigInteger[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to add two arrays (float, BigInteger) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = plus(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] plusArray(float[] a, BigInteger b) {
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = plus(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] plusArray(float a, BigInteger[] b) {
+        BigDecimal[] ret = new BigDecimal[b.length];
         for (int i = 0; i < b.length; i++) {
             ret[i] = plus(a, b[i]);
         }
@@ -1244,6 +1516,74 @@ public final class QueryLanguageFunctionUtils {
         return ret;
     }
 
+    public static BigDecimal plus(char a, BigDecimal b) {
+        return a == QueryConstants.NULL_CHAR || b == null ? null : BigDecimal.valueOf(a).add(b);
+    }
+
+    public static BigDecimal[] plusArray(char[] a, BigDecimal[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to add two arrays (char, BigDecimal) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = plus(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] plusArray(char[] a, BigDecimal b) {
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = plus(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] plusArray(char a, BigDecimal[] b) {
+        BigDecimal[] ret = new BigDecimal[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = plus(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigInteger plus(char a, BigInteger b) {
+        return a == QueryConstants.NULL_CHAR || b == null ? null : BigInteger.valueOf(a).add(b);
+    }
+
+    public static BigInteger[] plusArray(char[] a, BigInteger[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to add two arrays (char, BigInteger) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigInteger[] ret = new BigInteger[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = plus(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigInteger[] plusArray(char[] a, BigInteger b) {
+        BigInteger[] ret = new BigInteger[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = plus(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigInteger[] plusArray(char a, BigInteger[] b) {
+        BigInteger[] ret = new BigInteger[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = plus(a, b[i]);
+        }
+
+        return ret;
+    }
+
     public static int plus(byte a, int b) {
         return a == QueryConstants.NULL_BYTE || b == QueryConstants.NULL_INT ? QueryConstants.NULL_INT : ((int) a) + b;
     }
@@ -1475,6 +1815,74 @@ public final class QueryLanguageFunctionUtils {
 
     public static int[] plusArray(byte a, short[] b) {
         int[] ret = new int[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = plus(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal plus(byte a, BigDecimal b) {
+        return a == QueryConstants.NULL_BYTE || b == null ? null : BigDecimal.valueOf(a).add(b);
+    }
+
+    public static BigDecimal[] plusArray(byte[] a, BigDecimal[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to add two arrays (byte, BigDecimal) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = plus(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] plusArray(byte[] a, BigDecimal b) {
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = plus(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] plusArray(byte a, BigDecimal[] b) {
+        BigDecimal[] ret = new BigDecimal[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = plus(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigInteger plus(byte a, BigInteger b) {
+        return a == QueryConstants.NULL_BYTE || b == null ? null : BigInteger.valueOf(a).add(b);
+    }
+
+    public static BigInteger[] plusArray(byte[] a, BigInteger[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to add two arrays (byte, BigInteger) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigInteger[] ret = new BigInteger[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = plus(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigInteger[] plusArray(byte[] a, BigInteger b) {
+        BigInteger[] ret = new BigInteger[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = plus(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigInteger[] plusArray(byte a, BigInteger[] b) {
+        BigInteger[] ret = new BigInteger[b.length];
         for (int i = 0; i < b.length; i++) {
             ret[i] = plus(a, b[i]);
         }
@@ -1720,6 +2128,686 @@ public final class QueryLanguageFunctionUtils {
         return ret;
     }
 
+    public static BigDecimal plus(short a, BigDecimal b) {
+        return a == QueryConstants.NULL_SHORT || b == null ? null : BigDecimal.valueOf(a).add(b);
+    }
+
+    public static BigDecimal[] plusArray(short[] a, BigDecimal[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to add two arrays (short, BigDecimal) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = plus(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] plusArray(short[] a, BigDecimal b) {
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = plus(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] plusArray(short a, BigDecimal[] b) {
+        BigDecimal[] ret = new BigDecimal[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = plus(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigInteger plus(short a, BigInteger b) {
+        return a == QueryConstants.NULL_SHORT || b == null ? null : BigInteger.valueOf(a).add(b);
+    }
+
+    public static BigInteger[] plusArray(short[] a, BigInteger[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to add two arrays (short, BigInteger) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigInteger[] ret = new BigInteger[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = plus(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigInteger[] plusArray(short[] a, BigInteger b) {
+        BigInteger[] ret = new BigInteger[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = plus(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigInteger[] plusArray(short a, BigInteger[] b) {
+        BigInteger[] ret = new BigInteger[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = plus(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal plus(BigDecimal a, int b) {
+        return a == null || b == QueryConstants.NULL_INT ? null : a.add(BigDecimal.valueOf(b));
+    }
+
+    public static BigDecimal[] plusArray(BigDecimal[] a, int[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to add two arrays (BigDecimal, int) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = plus(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] plusArray(BigDecimal[] a, int b) {
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = plus(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] plusArray(BigDecimal a, int[] b) {
+        BigDecimal[] ret = new BigDecimal[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = plus(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal plus(BigDecimal a, double b) {
+        return a == null || b == QueryConstants.NULL_DOUBLE ? null : a.add(BigDecimal.valueOf(b));
+    }
+
+    public static BigDecimal[] plusArray(BigDecimal[] a, double[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to add two arrays (BigDecimal, double) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = plus(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] plusArray(BigDecimal[] a, double b) {
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = plus(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] plusArray(BigDecimal a, double[] b) {
+        BigDecimal[] ret = new BigDecimal[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = plus(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal plus(BigDecimal a, long b) {
+        return a == null || b == QueryConstants.NULL_LONG ? null : a.add(BigDecimal.valueOf(b));
+    }
+
+    public static BigDecimal[] plusArray(BigDecimal[] a, long[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to add two arrays (BigDecimal, long) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = plus(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] plusArray(BigDecimal[] a, long b) {
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = plus(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] plusArray(BigDecimal a, long[] b) {
+        BigDecimal[] ret = new BigDecimal[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = plus(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal plus(BigDecimal a, float b) {
+        return a == null || b == QueryConstants.NULL_FLOAT ? null : a.add(BigDecimal.valueOf(b));
+    }
+
+    public static BigDecimal[] plusArray(BigDecimal[] a, float[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to add two arrays (BigDecimal, float) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = plus(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] plusArray(BigDecimal[] a, float b) {
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = plus(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] plusArray(BigDecimal a, float[] b) {
+        BigDecimal[] ret = new BigDecimal[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = plus(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal plus(BigDecimal a, char b) {
+        return a == null || b == QueryConstants.NULL_CHAR ? null : a.add(BigDecimal.valueOf(b));
+    }
+
+    public static BigDecimal[] plusArray(BigDecimal[] a, char[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to add two arrays (BigDecimal, char) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = plus(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] plusArray(BigDecimal[] a, char b) {
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = plus(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] plusArray(BigDecimal a, char[] b) {
+        BigDecimal[] ret = new BigDecimal[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = plus(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal plus(BigDecimal a, byte b) {
+        return a == null || b == QueryConstants.NULL_BYTE ? null : a.add(BigDecimal.valueOf(b));
+    }
+
+    public static BigDecimal[] plusArray(BigDecimal[] a, byte[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to add two arrays (BigDecimal, byte) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = plus(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] plusArray(BigDecimal[] a, byte b) {
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = plus(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] plusArray(BigDecimal a, byte[] b) {
+        BigDecimal[] ret = new BigDecimal[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = plus(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal plus(BigDecimal a, short b) {
+        return a == null || b == QueryConstants.NULL_SHORT ? null : a.add(BigDecimal.valueOf(b));
+    }
+
+    public static BigDecimal[] plusArray(BigDecimal[] a, short[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to add two arrays (BigDecimal, short) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = plus(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] plusArray(BigDecimal[] a, short b) {
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = plus(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] plusArray(BigDecimal a, short[] b) {
+        BigDecimal[] ret = new BigDecimal[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = plus(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal plus(BigDecimal a, BigDecimal b) {
+        return a == null || b == null ? null : a.add(b);
+    }
+
+    public static BigDecimal[] plusArray(BigDecimal[] a, BigDecimal[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to add two arrays (BigDecimal, BigDecimal) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = plus(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] plusArray(BigDecimal[] a, BigDecimal b) {
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = plus(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] plusArray(BigDecimal a, BigDecimal[] b) {
+        BigDecimal[] ret = new BigDecimal[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = plus(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal plus(BigDecimal a, BigInteger b) {
+        return a == null || b == null ? null : a.add((new BigDecimal(b)));
+    }
+
+    public static BigDecimal[] plusArray(BigDecimal[] a, BigInteger[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to add two arrays (BigDecimal, BigInteger) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = plus(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] plusArray(BigDecimal[] a, BigInteger b) {
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = plus(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] plusArray(BigDecimal a, BigInteger[] b) {
+        BigDecimal[] ret = new BigDecimal[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = plus(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigInteger plus(BigInteger a, int b) {
+        return a == null || b == QueryConstants.NULL_INT ? null : a.add(BigInteger.valueOf(b));
+    }
+
+    public static BigInteger[] plusArray(BigInteger[] a, int[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to add two arrays (BigInteger, int) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigInteger[] ret = new BigInteger[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = plus(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigInteger[] plusArray(BigInteger[] a, int b) {
+        BigInteger[] ret = new BigInteger[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = plus(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigInteger[] plusArray(BigInteger a, int[] b) {
+        BigInteger[] ret = new BigInteger[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = plus(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal plus(BigInteger a, double b) {
+        return a == null || b == QueryConstants.NULL_DOUBLE ? null : (new BigDecimal(a)).add(BigDecimal.valueOf(b));
+    }
+
+    public static BigDecimal[] plusArray(BigInteger[] a, double[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to add two arrays (BigInteger, double) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = plus(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] plusArray(BigInteger[] a, double b) {
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = plus(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] plusArray(BigInteger a, double[] b) {
+        BigDecimal[] ret = new BigDecimal[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = plus(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigInteger plus(BigInteger a, long b) {
+        return a == null || b == QueryConstants.NULL_LONG ? null : a.add(BigInteger.valueOf(b));
+    }
+
+    public static BigInteger[] plusArray(BigInteger[] a, long[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to add two arrays (BigInteger, long) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigInteger[] ret = new BigInteger[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = plus(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigInteger[] plusArray(BigInteger[] a, long b) {
+        BigInteger[] ret = new BigInteger[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = plus(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigInteger[] plusArray(BigInteger a, long[] b) {
+        BigInteger[] ret = new BigInteger[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = plus(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal plus(BigInteger a, float b) {
+        return a == null || b == QueryConstants.NULL_FLOAT ? null : (new BigDecimal(a)).add(BigDecimal.valueOf(b));
+    }
+
+    public static BigDecimal[] plusArray(BigInteger[] a, float[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to add two arrays (BigInteger, float) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = plus(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] plusArray(BigInteger[] a, float b) {
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = plus(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] plusArray(BigInteger a, float[] b) {
+        BigDecimal[] ret = new BigDecimal[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = plus(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigInteger plus(BigInteger a, char b) {
+        return a == null || b == QueryConstants.NULL_CHAR ? null : a.add(BigInteger.valueOf(b));
+    }
+
+    public static BigInteger[] plusArray(BigInteger[] a, char[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to add two arrays (BigInteger, char) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigInteger[] ret = new BigInteger[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = plus(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigInteger[] plusArray(BigInteger[] a, char b) {
+        BigInteger[] ret = new BigInteger[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = plus(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigInteger[] plusArray(BigInteger a, char[] b) {
+        BigInteger[] ret = new BigInteger[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = plus(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigInteger plus(BigInteger a, byte b) {
+        return a == null || b == QueryConstants.NULL_BYTE ? null : a.add(BigInteger.valueOf(b));
+    }
+
+    public static BigInteger[] plusArray(BigInteger[] a, byte[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to add two arrays (BigInteger, byte) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigInteger[] ret = new BigInteger[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = plus(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigInteger[] plusArray(BigInteger[] a, byte b) {
+        BigInteger[] ret = new BigInteger[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = plus(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigInteger[] plusArray(BigInteger a, byte[] b) {
+        BigInteger[] ret = new BigInteger[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = plus(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigInteger plus(BigInteger a, short b) {
+        return a == null || b == QueryConstants.NULL_SHORT ? null : a.add(BigInteger.valueOf(b));
+    }
+
+    public static BigInteger[] plusArray(BigInteger[] a, short[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to add two arrays (BigInteger, short) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigInteger[] ret = new BigInteger[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = plus(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigInteger[] plusArray(BigInteger[] a, short b) {
+        BigInteger[] ret = new BigInteger[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = plus(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigInteger[] plusArray(BigInteger a, short[] b) {
+        BigInteger[] ret = new BigInteger[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = plus(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal plus(BigInteger a, BigDecimal b) {
+        return a == null || b == null ? null : (new BigDecimal(a)).add(b);
+    }
+
+    public static BigDecimal[] plusArray(BigInteger[] a, BigDecimal[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to add two arrays (BigInteger, BigDecimal) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = plus(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] plusArray(BigInteger[] a, BigDecimal b) {
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = plus(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] plusArray(BigInteger a, BigDecimal[] b) {
+        BigDecimal[] ret = new BigDecimal[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = plus(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigInteger plus(BigInteger a, BigInteger b) {
+        return a == null || b == null ? null : a.add(b);
+    }
+
+    public static BigInteger[] plusArray(BigInteger[] a, BigInteger[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to add two arrays (BigInteger, BigInteger) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigInteger[] ret = new BigInteger[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = plus(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigInteger[] plusArray(BigInteger[] a, BigInteger b) {
+        BigInteger[] ret = new BigInteger[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = plus(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigInteger[] plusArray(BigInteger a, BigInteger[] b) {
+        BigInteger[] ret = new BigInteger[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = plus(a, b[i]);
+        }
+
+        return ret;
+    }
+
     public static int minus(int a, int b) {
         return a == QueryConstants.NULL_INT || b == QueryConstants.NULL_INT ? QueryConstants.NULL_INT : a - b;
     }
@@ -1951,6 +3039,74 @@ public final class QueryLanguageFunctionUtils {
 
     public static int[] minusArray(int a, short[] b) {
         int[] ret = new int[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = minus(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal minus(int a, BigDecimal b) {
+        return a == QueryConstants.NULL_INT || b == null ? null : BigDecimal.valueOf(a).subtract(b);
+    }
+
+    public static BigDecimal[] minusArray(int[] a, BigDecimal[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to subtract two arrays (int, BigDecimal) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = minus(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] minusArray(int[] a, BigDecimal b) {
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = minus(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] minusArray(int a, BigDecimal[] b) {
+        BigDecimal[] ret = new BigDecimal[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = minus(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigInteger minus(int a, BigInteger b) {
+        return a == QueryConstants.NULL_INT || b == null ? null : BigInteger.valueOf(a).subtract(b);
+    }
+
+    public static BigInteger[] minusArray(int[] a, BigInteger[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to subtract two arrays (int, BigInteger) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigInteger[] ret = new BigInteger[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = minus(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigInteger[] minusArray(int[] a, BigInteger b) {
+        BigInteger[] ret = new BigInteger[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = minus(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigInteger[] minusArray(int a, BigInteger[] b) {
+        BigInteger[] ret = new BigInteger[b.length];
         for (int i = 0; i < b.length; i++) {
             ret[i] = minus(a, b[i]);
         }
@@ -2196,6 +3352,74 @@ public final class QueryLanguageFunctionUtils {
         return ret;
     }
 
+    public static BigDecimal minus(double a, BigDecimal b) {
+        return a == QueryConstants.NULL_DOUBLE || b == null ? null : BigDecimal.valueOf(a).subtract(b);
+    }
+
+    public static BigDecimal[] minusArray(double[] a, BigDecimal[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to subtract two arrays (double, BigDecimal) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = minus(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] minusArray(double[] a, BigDecimal b) {
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = minus(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] minusArray(double a, BigDecimal[] b) {
+        BigDecimal[] ret = new BigDecimal[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = minus(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal minus(double a, BigInteger b) {
+        return a == QueryConstants.NULL_DOUBLE || b == null ? null : BigDecimal.valueOf(a).subtract((new BigDecimal(b)));
+    }
+
+    public static BigDecimal[] minusArray(double[] a, BigInteger[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to subtract two arrays (double, BigInteger) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = minus(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] minusArray(double[] a, BigInteger b) {
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = minus(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] minusArray(double a, BigInteger[] b) {
+        BigDecimal[] ret = new BigDecimal[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = minus(a, b[i]);
+        }
+
+        return ret;
+    }
+
     public static long minus(long a, int b) {
         return a == QueryConstants.NULL_LONG || b == QueryConstants.NULL_INT ? QueryConstants.NULL_LONG : a - ((long) b);
     }
@@ -2427,6 +3651,74 @@ public final class QueryLanguageFunctionUtils {
 
     public static long[] minusArray(long a, short[] b) {
         long[] ret = new long[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = minus(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal minus(long a, BigDecimal b) {
+        return a == QueryConstants.NULL_LONG || b == null ? null : BigDecimal.valueOf(a).subtract(b);
+    }
+
+    public static BigDecimal[] minusArray(long[] a, BigDecimal[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to subtract two arrays (long, BigDecimal) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = minus(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] minusArray(long[] a, BigDecimal b) {
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = minus(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] minusArray(long a, BigDecimal[] b) {
+        BigDecimal[] ret = new BigDecimal[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = minus(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigInteger minus(long a, BigInteger b) {
+        return a == QueryConstants.NULL_LONG || b == null ? null : BigInteger.valueOf(a).subtract(b);
+    }
+
+    public static BigInteger[] minusArray(long[] a, BigInteger[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to subtract two arrays (long, BigInteger) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigInteger[] ret = new BigInteger[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = minus(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigInteger[] minusArray(long[] a, BigInteger b) {
+        BigInteger[] ret = new BigInteger[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = minus(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigInteger[] minusArray(long a, BigInteger[] b) {
+        BigInteger[] ret = new BigInteger[b.length];
         for (int i = 0; i < b.length; i++) {
             ret[i] = minus(a, b[i]);
         }
@@ -2672,6 +3964,74 @@ public final class QueryLanguageFunctionUtils {
         return ret;
     }
 
+    public static BigDecimal minus(float a, BigDecimal b) {
+        return a == QueryConstants.NULL_FLOAT || b == null ? null : BigDecimal.valueOf(a).subtract(b);
+    }
+
+    public static BigDecimal[] minusArray(float[] a, BigDecimal[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to subtract two arrays (float, BigDecimal) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = minus(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] minusArray(float[] a, BigDecimal b) {
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = minus(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] minusArray(float a, BigDecimal[] b) {
+        BigDecimal[] ret = new BigDecimal[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = minus(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal minus(float a, BigInteger b) {
+        return a == QueryConstants.NULL_FLOAT || b == null ? null : BigDecimal.valueOf(a).subtract((new BigDecimal(b)));
+    }
+
+    public static BigDecimal[] minusArray(float[] a, BigInteger[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to subtract two arrays (float, BigInteger) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = minus(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] minusArray(float[] a, BigInteger b) {
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = minus(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] minusArray(float a, BigInteger[] b) {
+        BigDecimal[] ret = new BigDecimal[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = minus(a, b[i]);
+        }
+
+        return ret;
+    }
+
     public static int minus(char a, int b) {
         return a == QueryConstants.NULL_CHAR || b == QueryConstants.NULL_INT ? QueryConstants.NULL_INT : ((int) a) - b;
     }
@@ -2903,6 +4263,74 @@ public final class QueryLanguageFunctionUtils {
 
     public static int[] minusArray(char a, short[] b) {
         int[] ret = new int[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = minus(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal minus(char a, BigDecimal b) {
+        return a == QueryConstants.NULL_CHAR || b == null ? null : BigDecimal.valueOf(a).subtract(b);
+    }
+
+    public static BigDecimal[] minusArray(char[] a, BigDecimal[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to subtract two arrays (char, BigDecimal) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = minus(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] minusArray(char[] a, BigDecimal b) {
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = minus(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] minusArray(char a, BigDecimal[] b) {
+        BigDecimal[] ret = new BigDecimal[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = minus(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigInteger minus(char a, BigInteger b) {
+        return a == QueryConstants.NULL_CHAR || b == null ? null : BigInteger.valueOf(a).subtract(b);
+    }
+
+    public static BigInteger[] minusArray(char[] a, BigInteger[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to subtract two arrays (char, BigInteger) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigInteger[] ret = new BigInteger[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = minus(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigInteger[] minusArray(char[] a, BigInteger b) {
+        BigInteger[] ret = new BigInteger[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = minus(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigInteger[] minusArray(char a, BigInteger[] b) {
+        BigInteger[] ret = new BigInteger[b.length];
         for (int i = 0; i < b.length; i++) {
             ret[i] = minus(a, b[i]);
         }
@@ -3148,6 +4576,74 @@ public final class QueryLanguageFunctionUtils {
         return ret;
     }
 
+    public static BigDecimal minus(byte a, BigDecimal b) {
+        return a == QueryConstants.NULL_BYTE || b == null ? null : BigDecimal.valueOf(a).subtract(b);
+    }
+
+    public static BigDecimal[] minusArray(byte[] a, BigDecimal[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to subtract two arrays (byte, BigDecimal) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = minus(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] minusArray(byte[] a, BigDecimal b) {
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = minus(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] minusArray(byte a, BigDecimal[] b) {
+        BigDecimal[] ret = new BigDecimal[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = minus(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigInteger minus(byte a, BigInteger b) {
+        return a == QueryConstants.NULL_BYTE || b == null ? null : BigInteger.valueOf(a).subtract(b);
+    }
+
+    public static BigInteger[] minusArray(byte[] a, BigInteger[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to subtract two arrays (byte, BigInteger) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigInteger[] ret = new BigInteger[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = minus(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigInteger[] minusArray(byte[] a, BigInteger b) {
+        BigInteger[] ret = new BigInteger[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = minus(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigInteger[] minusArray(byte a, BigInteger[] b) {
+        BigInteger[] ret = new BigInteger[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = minus(a, b[i]);
+        }
+
+        return ret;
+    }
+
     public static int minus(short a, int b) {
         return a == QueryConstants.NULL_SHORT || b == QueryConstants.NULL_INT ? QueryConstants.NULL_INT : ((int) a) - b;
     }
@@ -3379,6 +4875,686 @@ public final class QueryLanguageFunctionUtils {
 
     public static int[] minusArray(short a, short[] b) {
         int[] ret = new int[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = minus(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal minus(short a, BigDecimal b) {
+        return a == QueryConstants.NULL_SHORT || b == null ? null : BigDecimal.valueOf(a).subtract(b);
+    }
+
+    public static BigDecimal[] minusArray(short[] a, BigDecimal[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to subtract two arrays (short, BigDecimal) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = minus(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] minusArray(short[] a, BigDecimal b) {
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = minus(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] minusArray(short a, BigDecimal[] b) {
+        BigDecimal[] ret = new BigDecimal[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = minus(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigInteger minus(short a, BigInteger b) {
+        return a == QueryConstants.NULL_SHORT || b == null ? null : BigInteger.valueOf(a).subtract(b);
+    }
+
+    public static BigInteger[] minusArray(short[] a, BigInteger[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to subtract two arrays (short, BigInteger) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigInteger[] ret = new BigInteger[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = minus(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigInteger[] minusArray(short[] a, BigInteger b) {
+        BigInteger[] ret = new BigInteger[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = minus(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigInteger[] minusArray(short a, BigInteger[] b) {
+        BigInteger[] ret = new BigInteger[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = minus(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal minus(BigDecimal a, int b) {
+        return a == null || b == QueryConstants.NULL_INT ? null : a.subtract(BigDecimal.valueOf(b));
+    }
+
+    public static BigDecimal[] minusArray(BigDecimal[] a, int[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to subtract two arrays (BigDecimal, int) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = minus(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] minusArray(BigDecimal[] a, int b) {
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = minus(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] minusArray(BigDecimal a, int[] b) {
+        BigDecimal[] ret = new BigDecimal[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = minus(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal minus(BigDecimal a, double b) {
+        return a == null || b == QueryConstants.NULL_DOUBLE ? null : a.subtract(BigDecimal.valueOf(b));
+    }
+
+    public static BigDecimal[] minusArray(BigDecimal[] a, double[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to subtract two arrays (BigDecimal, double) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = minus(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] minusArray(BigDecimal[] a, double b) {
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = minus(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] minusArray(BigDecimal a, double[] b) {
+        BigDecimal[] ret = new BigDecimal[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = minus(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal minus(BigDecimal a, long b) {
+        return a == null || b == QueryConstants.NULL_LONG ? null : a.subtract(BigDecimal.valueOf(b));
+    }
+
+    public static BigDecimal[] minusArray(BigDecimal[] a, long[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to subtract two arrays (BigDecimal, long) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = minus(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] minusArray(BigDecimal[] a, long b) {
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = minus(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] minusArray(BigDecimal a, long[] b) {
+        BigDecimal[] ret = new BigDecimal[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = minus(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal minus(BigDecimal a, float b) {
+        return a == null || b == QueryConstants.NULL_FLOAT ? null : a.subtract(BigDecimal.valueOf(b));
+    }
+
+    public static BigDecimal[] minusArray(BigDecimal[] a, float[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to subtract two arrays (BigDecimal, float) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = minus(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] minusArray(BigDecimal[] a, float b) {
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = minus(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] minusArray(BigDecimal a, float[] b) {
+        BigDecimal[] ret = new BigDecimal[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = minus(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal minus(BigDecimal a, char b) {
+        return a == null || b == QueryConstants.NULL_CHAR ? null : a.subtract(BigDecimal.valueOf(b));
+    }
+
+    public static BigDecimal[] minusArray(BigDecimal[] a, char[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to subtract two arrays (BigDecimal, char) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = minus(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] minusArray(BigDecimal[] a, char b) {
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = minus(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] minusArray(BigDecimal a, char[] b) {
+        BigDecimal[] ret = new BigDecimal[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = minus(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal minus(BigDecimal a, byte b) {
+        return a == null || b == QueryConstants.NULL_BYTE ? null : a.subtract(BigDecimal.valueOf(b));
+    }
+
+    public static BigDecimal[] minusArray(BigDecimal[] a, byte[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to subtract two arrays (BigDecimal, byte) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = minus(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] minusArray(BigDecimal[] a, byte b) {
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = minus(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] minusArray(BigDecimal a, byte[] b) {
+        BigDecimal[] ret = new BigDecimal[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = minus(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal minus(BigDecimal a, short b) {
+        return a == null || b == QueryConstants.NULL_SHORT ? null : a.subtract(BigDecimal.valueOf(b));
+    }
+
+    public static BigDecimal[] minusArray(BigDecimal[] a, short[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to subtract two arrays (BigDecimal, short) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = minus(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] minusArray(BigDecimal[] a, short b) {
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = minus(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] minusArray(BigDecimal a, short[] b) {
+        BigDecimal[] ret = new BigDecimal[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = minus(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal minus(BigDecimal a, BigDecimal b) {
+        return a == null || b == null ? null : a.subtract(b);
+    }
+
+    public static BigDecimal[] minusArray(BigDecimal[] a, BigDecimal[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to subtract two arrays (BigDecimal, BigDecimal) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = minus(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] minusArray(BigDecimal[] a, BigDecimal b) {
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = minus(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] minusArray(BigDecimal a, BigDecimal[] b) {
+        BigDecimal[] ret = new BigDecimal[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = minus(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal minus(BigDecimal a, BigInteger b) {
+        return a == null || b == null ? null : a.subtract((new BigDecimal(b)));
+    }
+
+    public static BigDecimal[] minusArray(BigDecimal[] a, BigInteger[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to subtract two arrays (BigDecimal, BigInteger) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = minus(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] minusArray(BigDecimal[] a, BigInteger b) {
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = minus(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] minusArray(BigDecimal a, BigInteger[] b) {
+        BigDecimal[] ret = new BigDecimal[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = minus(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigInteger minus(BigInteger a, int b) {
+        return a == null || b == QueryConstants.NULL_INT ? null : a.subtract(BigInteger.valueOf(b));
+    }
+
+    public static BigInteger[] minusArray(BigInteger[] a, int[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to subtract two arrays (BigInteger, int) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigInteger[] ret = new BigInteger[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = minus(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigInteger[] minusArray(BigInteger[] a, int b) {
+        BigInteger[] ret = new BigInteger[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = minus(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigInteger[] minusArray(BigInteger a, int[] b) {
+        BigInteger[] ret = new BigInteger[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = minus(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal minus(BigInteger a, double b) {
+        return a == null || b == QueryConstants.NULL_DOUBLE ? null : (new BigDecimal(a)).subtract(BigDecimal.valueOf(b));
+    }
+
+    public static BigDecimal[] minusArray(BigInteger[] a, double[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to subtract two arrays (BigInteger, double) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = minus(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] minusArray(BigInteger[] a, double b) {
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = minus(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] minusArray(BigInteger a, double[] b) {
+        BigDecimal[] ret = new BigDecimal[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = minus(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigInteger minus(BigInteger a, long b) {
+        return a == null || b == QueryConstants.NULL_LONG ? null : a.subtract(BigInteger.valueOf(b));
+    }
+
+    public static BigInteger[] minusArray(BigInteger[] a, long[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to subtract two arrays (BigInteger, long) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigInteger[] ret = new BigInteger[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = minus(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigInteger[] minusArray(BigInteger[] a, long b) {
+        BigInteger[] ret = new BigInteger[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = minus(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigInteger[] minusArray(BigInteger a, long[] b) {
+        BigInteger[] ret = new BigInteger[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = minus(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal minus(BigInteger a, float b) {
+        return a == null || b == QueryConstants.NULL_FLOAT ? null : (new BigDecimal(a)).subtract(BigDecimal.valueOf(b));
+    }
+
+    public static BigDecimal[] minusArray(BigInteger[] a, float[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to subtract two arrays (BigInteger, float) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = minus(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] minusArray(BigInteger[] a, float b) {
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = minus(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] minusArray(BigInteger a, float[] b) {
+        BigDecimal[] ret = new BigDecimal[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = minus(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigInteger minus(BigInteger a, char b) {
+        return a == null || b == QueryConstants.NULL_CHAR ? null : a.subtract(BigInteger.valueOf(b));
+    }
+
+    public static BigInteger[] minusArray(BigInteger[] a, char[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to subtract two arrays (BigInteger, char) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigInteger[] ret = new BigInteger[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = minus(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigInteger[] minusArray(BigInteger[] a, char b) {
+        BigInteger[] ret = new BigInteger[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = minus(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigInteger[] minusArray(BigInteger a, char[] b) {
+        BigInteger[] ret = new BigInteger[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = minus(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigInteger minus(BigInteger a, byte b) {
+        return a == null || b == QueryConstants.NULL_BYTE ? null : a.subtract(BigInteger.valueOf(b));
+    }
+
+    public static BigInteger[] minusArray(BigInteger[] a, byte[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to subtract two arrays (BigInteger, byte) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigInteger[] ret = new BigInteger[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = minus(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigInteger[] minusArray(BigInteger[] a, byte b) {
+        BigInteger[] ret = new BigInteger[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = minus(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigInteger[] minusArray(BigInteger a, byte[] b) {
+        BigInteger[] ret = new BigInteger[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = minus(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigInteger minus(BigInteger a, short b) {
+        return a == null || b == QueryConstants.NULL_SHORT ? null : a.subtract(BigInteger.valueOf(b));
+    }
+
+    public static BigInteger[] minusArray(BigInteger[] a, short[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to subtract two arrays (BigInteger, short) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigInteger[] ret = new BigInteger[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = minus(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigInteger[] minusArray(BigInteger[] a, short b) {
+        BigInteger[] ret = new BigInteger[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = minus(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigInteger[] minusArray(BigInteger a, short[] b) {
+        BigInteger[] ret = new BigInteger[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = minus(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal minus(BigInteger a, BigDecimal b) {
+        return a == null || b == null ? null : (new BigDecimal(a)).subtract(b);
+    }
+
+    public static BigDecimal[] minusArray(BigInteger[] a, BigDecimal[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to subtract two arrays (BigInteger, BigDecimal) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = minus(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] minusArray(BigInteger[] a, BigDecimal b) {
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = minus(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] minusArray(BigInteger a, BigDecimal[] b) {
+        BigDecimal[] ret = new BigDecimal[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = minus(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigInteger minus(BigInteger a, BigInteger b) {
+        return a == null || b == null ? null : a.subtract(b);
+    }
+
+    public static BigInteger[] minusArray(BigInteger[] a, BigInteger[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to subtract two arrays (BigInteger, BigInteger) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigInteger[] ret = new BigInteger[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = minus(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigInteger[] minusArray(BigInteger[] a, BigInteger b) {
+        BigInteger[] ret = new BigInteger[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = minus(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigInteger[] minusArray(BigInteger a, BigInteger[] b) {
+        BigInteger[] ret = new BigInteger[b.length];
         for (int i = 0; i < b.length; i++) {
             ret[i] = minus(a, b[i]);
         }
@@ -3624,6 +5800,74 @@ public final class QueryLanguageFunctionUtils {
         return ret;
     }
 
+    public static BigDecimal multiply(int a, BigDecimal b) {
+        return a == QueryConstants.NULL_INT || b == null ? null : BigDecimal.valueOf(a).multiply(b);
+    }
+
+    public static BigDecimal[] multiplyArray(int[] a, BigDecimal[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to multiply two arrays (int, BigDecimal) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = multiply(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] multiplyArray(int[] a, BigDecimal b) {
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = multiply(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] multiplyArray(int a, BigDecimal[] b) {
+        BigDecimal[] ret = new BigDecimal[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = multiply(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigInteger multiply(int a, BigInteger b) {
+        return a == QueryConstants.NULL_INT || b == null ? null : BigInteger.valueOf(a).multiply(b);
+    }
+
+    public static BigInteger[] multiplyArray(int[] a, BigInteger[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to multiply two arrays (int, BigInteger) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigInteger[] ret = new BigInteger[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = multiply(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigInteger[] multiplyArray(int[] a, BigInteger b) {
+        BigInteger[] ret = new BigInteger[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = multiply(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigInteger[] multiplyArray(int a, BigInteger[] b) {
+        BigInteger[] ret = new BigInteger[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = multiply(a, b[i]);
+        }
+
+        return ret;
+    }
+
     public static double multiply(double a, int b) {
         return a == QueryConstants.NULL_DOUBLE || b == QueryConstants.NULL_INT ? QueryConstants.NULL_DOUBLE : a * ((double) b);
     }
@@ -3855,6 +6099,74 @@ public final class QueryLanguageFunctionUtils {
 
     public static double[] multiplyArray(double a, short[] b) {
         double[] ret = new double[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = multiply(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal multiply(double a, BigDecimal b) {
+        return a == QueryConstants.NULL_DOUBLE || b == null ? null : BigDecimal.valueOf(a).multiply(b);
+    }
+
+    public static BigDecimal[] multiplyArray(double[] a, BigDecimal[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to multiply two arrays (double, BigDecimal) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = multiply(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] multiplyArray(double[] a, BigDecimal b) {
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = multiply(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] multiplyArray(double a, BigDecimal[] b) {
+        BigDecimal[] ret = new BigDecimal[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = multiply(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal multiply(double a, BigInteger b) {
+        return a == QueryConstants.NULL_DOUBLE || b == null ? null : BigDecimal.valueOf(a).multiply((new BigDecimal(b)));
+    }
+
+    public static BigDecimal[] multiplyArray(double[] a, BigInteger[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to multiply two arrays (double, BigInteger) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = multiply(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] multiplyArray(double[] a, BigInteger b) {
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = multiply(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] multiplyArray(double a, BigInteger[] b) {
+        BigDecimal[] ret = new BigDecimal[b.length];
         for (int i = 0; i < b.length; i++) {
             ret[i] = multiply(a, b[i]);
         }
@@ -4100,6 +6412,74 @@ public final class QueryLanguageFunctionUtils {
         return ret;
     }
 
+    public static BigDecimal multiply(long a, BigDecimal b) {
+        return a == QueryConstants.NULL_LONG || b == null ? null : BigDecimal.valueOf(a).multiply(b);
+    }
+
+    public static BigDecimal[] multiplyArray(long[] a, BigDecimal[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to multiply two arrays (long, BigDecimal) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = multiply(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] multiplyArray(long[] a, BigDecimal b) {
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = multiply(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] multiplyArray(long a, BigDecimal[] b) {
+        BigDecimal[] ret = new BigDecimal[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = multiply(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigInteger multiply(long a, BigInteger b) {
+        return a == QueryConstants.NULL_LONG || b == null ? null : BigInteger.valueOf(a).multiply(b);
+    }
+
+    public static BigInteger[] multiplyArray(long[] a, BigInteger[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to multiply two arrays (long, BigInteger) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigInteger[] ret = new BigInteger[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = multiply(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigInteger[] multiplyArray(long[] a, BigInteger b) {
+        BigInteger[] ret = new BigInteger[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = multiply(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigInteger[] multiplyArray(long a, BigInteger[] b) {
+        BigInteger[] ret = new BigInteger[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = multiply(a, b[i]);
+        }
+
+        return ret;
+    }
+
     public static float multiply(float a, int b) {
         return a == QueryConstants.NULL_FLOAT || b == QueryConstants.NULL_INT ? QueryConstants.NULL_FLOAT : a * ((float) b);
     }
@@ -4331,6 +6711,74 @@ public final class QueryLanguageFunctionUtils {
 
     public static float[] multiplyArray(float a, short[] b) {
         float[] ret = new float[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = multiply(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal multiply(float a, BigDecimal b) {
+        return a == QueryConstants.NULL_FLOAT || b == null ? null : BigDecimal.valueOf(a).multiply(b);
+    }
+
+    public static BigDecimal[] multiplyArray(float[] a, BigDecimal[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to multiply two arrays (float, BigDecimal) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = multiply(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] multiplyArray(float[] a, BigDecimal b) {
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = multiply(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] multiplyArray(float a, BigDecimal[] b) {
+        BigDecimal[] ret = new BigDecimal[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = multiply(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal multiply(float a, BigInteger b) {
+        return a == QueryConstants.NULL_FLOAT || b == null ? null : BigDecimal.valueOf(a).multiply((new BigDecimal(b)));
+    }
+
+    public static BigDecimal[] multiplyArray(float[] a, BigInteger[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to multiply two arrays (float, BigInteger) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = multiply(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] multiplyArray(float[] a, BigInteger b) {
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = multiply(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] multiplyArray(float a, BigInteger[] b) {
+        BigDecimal[] ret = new BigDecimal[b.length];
         for (int i = 0; i < b.length; i++) {
             ret[i] = multiply(a, b[i]);
         }
@@ -4576,6 +7024,74 @@ public final class QueryLanguageFunctionUtils {
         return ret;
     }
 
+    public static BigDecimal multiply(char a, BigDecimal b) {
+        return a == QueryConstants.NULL_CHAR || b == null ? null : BigDecimal.valueOf(a).multiply(b);
+    }
+
+    public static BigDecimal[] multiplyArray(char[] a, BigDecimal[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to multiply two arrays (char, BigDecimal) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = multiply(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] multiplyArray(char[] a, BigDecimal b) {
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = multiply(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] multiplyArray(char a, BigDecimal[] b) {
+        BigDecimal[] ret = new BigDecimal[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = multiply(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigInteger multiply(char a, BigInteger b) {
+        return a == QueryConstants.NULL_CHAR || b == null ? null : BigInteger.valueOf(a).multiply(b);
+    }
+
+    public static BigInteger[] multiplyArray(char[] a, BigInteger[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to multiply two arrays (char, BigInteger) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigInteger[] ret = new BigInteger[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = multiply(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigInteger[] multiplyArray(char[] a, BigInteger b) {
+        BigInteger[] ret = new BigInteger[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = multiply(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigInteger[] multiplyArray(char a, BigInteger[] b) {
+        BigInteger[] ret = new BigInteger[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = multiply(a, b[i]);
+        }
+
+        return ret;
+    }
+
     public static int multiply(byte a, int b) {
         return a == QueryConstants.NULL_BYTE || b == QueryConstants.NULL_INT ? QueryConstants.NULL_INT : ((int) a) * b;
     }
@@ -4807,6 +7323,74 @@ public final class QueryLanguageFunctionUtils {
 
     public static int[] multiplyArray(byte a, short[] b) {
         int[] ret = new int[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = multiply(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal multiply(byte a, BigDecimal b) {
+        return a == QueryConstants.NULL_BYTE || b == null ? null : BigDecimal.valueOf(a).multiply(b);
+    }
+
+    public static BigDecimal[] multiplyArray(byte[] a, BigDecimal[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to multiply two arrays (byte, BigDecimal) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = multiply(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] multiplyArray(byte[] a, BigDecimal b) {
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = multiply(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] multiplyArray(byte a, BigDecimal[] b) {
+        BigDecimal[] ret = new BigDecimal[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = multiply(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigInteger multiply(byte a, BigInteger b) {
+        return a == QueryConstants.NULL_BYTE || b == null ? null : BigInteger.valueOf(a).multiply(b);
+    }
+
+    public static BigInteger[] multiplyArray(byte[] a, BigInteger[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to multiply two arrays (byte, BigInteger) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigInteger[] ret = new BigInteger[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = multiply(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigInteger[] multiplyArray(byte[] a, BigInteger b) {
+        BigInteger[] ret = new BigInteger[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = multiply(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigInteger[] multiplyArray(byte a, BigInteger[] b) {
+        BigInteger[] ret = new BigInteger[b.length];
         for (int i = 0; i < b.length; i++) {
             ret[i] = multiply(a, b[i]);
         }
@@ -5052,6 +7636,686 @@ public final class QueryLanguageFunctionUtils {
         return ret;
     }
 
+    public static BigDecimal multiply(short a, BigDecimal b) {
+        return a == QueryConstants.NULL_SHORT || b == null ? null : BigDecimal.valueOf(a).multiply(b);
+    }
+
+    public static BigDecimal[] multiplyArray(short[] a, BigDecimal[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to multiply two arrays (short, BigDecimal) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = multiply(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] multiplyArray(short[] a, BigDecimal b) {
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = multiply(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] multiplyArray(short a, BigDecimal[] b) {
+        BigDecimal[] ret = new BigDecimal[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = multiply(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigInteger multiply(short a, BigInteger b) {
+        return a == QueryConstants.NULL_SHORT || b == null ? null : BigInteger.valueOf(a).multiply(b);
+    }
+
+    public static BigInteger[] multiplyArray(short[] a, BigInteger[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to multiply two arrays (short, BigInteger) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigInteger[] ret = new BigInteger[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = multiply(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigInteger[] multiplyArray(short[] a, BigInteger b) {
+        BigInteger[] ret = new BigInteger[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = multiply(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigInteger[] multiplyArray(short a, BigInteger[] b) {
+        BigInteger[] ret = new BigInteger[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = multiply(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal multiply(BigDecimal a, int b) {
+        return a == null || b == QueryConstants.NULL_INT ? null : a.multiply(BigDecimal.valueOf(b));
+    }
+
+    public static BigDecimal[] multiplyArray(BigDecimal[] a, int[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to multiply two arrays (BigDecimal, int) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = multiply(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] multiplyArray(BigDecimal[] a, int b) {
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = multiply(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] multiplyArray(BigDecimal a, int[] b) {
+        BigDecimal[] ret = new BigDecimal[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = multiply(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal multiply(BigDecimal a, double b) {
+        return a == null || b == QueryConstants.NULL_DOUBLE ? null : a.multiply(BigDecimal.valueOf(b));
+    }
+
+    public static BigDecimal[] multiplyArray(BigDecimal[] a, double[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to multiply two arrays (BigDecimal, double) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = multiply(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] multiplyArray(BigDecimal[] a, double b) {
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = multiply(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] multiplyArray(BigDecimal a, double[] b) {
+        BigDecimal[] ret = new BigDecimal[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = multiply(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal multiply(BigDecimal a, long b) {
+        return a == null || b == QueryConstants.NULL_LONG ? null : a.multiply(BigDecimal.valueOf(b));
+    }
+
+    public static BigDecimal[] multiplyArray(BigDecimal[] a, long[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to multiply two arrays (BigDecimal, long) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = multiply(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] multiplyArray(BigDecimal[] a, long b) {
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = multiply(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] multiplyArray(BigDecimal a, long[] b) {
+        BigDecimal[] ret = new BigDecimal[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = multiply(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal multiply(BigDecimal a, float b) {
+        return a == null || b == QueryConstants.NULL_FLOAT ? null : a.multiply(BigDecimal.valueOf(b));
+    }
+
+    public static BigDecimal[] multiplyArray(BigDecimal[] a, float[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to multiply two arrays (BigDecimal, float) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = multiply(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] multiplyArray(BigDecimal[] a, float b) {
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = multiply(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] multiplyArray(BigDecimal a, float[] b) {
+        BigDecimal[] ret = new BigDecimal[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = multiply(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal multiply(BigDecimal a, char b) {
+        return a == null || b == QueryConstants.NULL_CHAR ? null : a.multiply(BigDecimal.valueOf(b));
+    }
+
+    public static BigDecimal[] multiplyArray(BigDecimal[] a, char[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to multiply two arrays (BigDecimal, char) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = multiply(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] multiplyArray(BigDecimal[] a, char b) {
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = multiply(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] multiplyArray(BigDecimal a, char[] b) {
+        BigDecimal[] ret = new BigDecimal[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = multiply(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal multiply(BigDecimal a, byte b) {
+        return a == null || b == QueryConstants.NULL_BYTE ? null : a.multiply(BigDecimal.valueOf(b));
+    }
+
+    public static BigDecimal[] multiplyArray(BigDecimal[] a, byte[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to multiply two arrays (BigDecimal, byte) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = multiply(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] multiplyArray(BigDecimal[] a, byte b) {
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = multiply(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] multiplyArray(BigDecimal a, byte[] b) {
+        BigDecimal[] ret = new BigDecimal[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = multiply(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal multiply(BigDecimal a, short b) {
+        return a == null || b == QueryConstants.NULL_SHORT ? null : a.multiply(BigDecimal.valueOf(b));
+    }
+
+    public static BigDecimal[] multiplyArray(BigDecimal[] a, short[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to multiply two arrays (BigDecimal, short) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = multiply(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] multiplyArray(BigDecimal[] a, short b) {
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = multiply(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] multiplyArray(BigDecimal a, short[] b) {
+        BigDecimal[] ret = new BigDecimal[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = multiply(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal multiply(BigDecimal a, BigDecimal b) {
+        return a == null || b == null ? null : a.multiply(b);
+    }
+
+    public static BigDecimal[] multiplyArray(BigDecimal[] a, BigDecimal[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to multiply two arrays (BigDecimal, BigDecimal) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = multiply(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] multiplyArray(BigDecimal[] a, BigDecimal b) {
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = multiply(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] multiplyArray(BigDecimal a, BigDecimal[] b) {
+        BigDecimal[] ret = new BigDecimal[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = multiply(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal multiply(BigDecimal a, BigInteger b) {
+        return a == null || b == null ? null : a.multiply((new BigDecimal(b)));
+    }
+
+    public static BigDecimal[] multiplyArray(BigDecimal[] a, BigInteger[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to multiply two arrays (BigDecimal, BigInteger) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = multiply(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] multiplyArray(BigDecimal[] a, BigInteger b) {
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = multiply(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] multiplyArray(BigDecimal a, BigInteger[] b) {
+        BigDecimal[] ret = new BigDecimal[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = multiply(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigInteger multiply(BigInteger a, int b) {
+        return a == null || b == QueryConstants.NULL_INT ? null : a.multiply(BigInteger.valueOf(b));
+    }
+
+    public static BigInteger[] multiplyArray(BigInteger[] a, int[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to multiply two arrays (BigInteger, int) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigInteger[] ret = new BigInteger[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = multiply(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigInteger[] multiplyArray(BigInteger[] a, int b) {
+        BigInteger[] ret = new BigInteger[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = multiply(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigInteger[] multiplyArray(BigInteger a, int[] b) {
+        BigInteger[] ret = new BigInteger[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = multiply(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal multiply(BigInteger a, double b) {
+        return a == null || b == QueryConstants.NULL_DOUBLE ? null : (new BigDecimal(a)).multiply(BigDecimal.valueOf(b));
+    }
+
+    public static BigDecimal[] multiplyArray(BigInteger[] a, double[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to multiply two arrays (BigInteger, double) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = multiply(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] multiplyArray(BigInteger[] a, double b) {
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = multiply(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] multiplyArray(BigInteger a, double[] b) {
+        BigDecimal[] ret = new BigDecimal[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = multiply(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigInteger multiply(BigInteger a, long b) {
+        return a == null || b == QueryConstants.NULL_LONG ? null : a.multiply(BigInteger.valueOf(b));
+    }
+
+    public static BigInteger[] multiplyArray(BigInteger[] a, long[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to multiply two arrays (BigInteger, long) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigInteger[] ret = new BigInteger[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = multiply(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigInteger[] multiplyArray(BigInteger[] a, long b) {
+        BigInteger[] ret = new BigInteger[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = multiply(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigInteger[] multiplyArray(BigInteger a, long[] b) {
+        BigInteger[] ret = new BigInteger[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = multiply(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal multiply(BigInteger a, float b) {
+        return a == null || b == QueryConstants.NULL_FLOAT ? null : (new BigDecimal(a)).multiply(BigDecimal.valueOf(b));
+    }
+
+    public static BigDecimal[] multiplyArray(BigInteger[] a, float[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to multiply two arrays (BigInteger, float) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = multiply(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] multiplyArray(BigInteger[] a, float b) {
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = multiply(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] multiplyArray(BigInteger a, float[] b) {
+        BigDecimal[] ret = new BigDecimal[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = multiply(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigInteger multiply(BigInteger a, char b) {
+        return a == null || b == QueryConstants.NULL_CHAR ? null : a.multiply(BigInteger.valueOf(b));
+    }
+
+    public static BigInteger[] multiplyArray(BigInteger[] a, char[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to multiply two arrays (BigInteger, char) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigInteger[] ret = new BigInteger[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = multiply(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigInteger[] multiplyArray(BigInteger[] a, char b) {
+        BigInteger[] ret = new BigInteger[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = multiply(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigInteger[] multiplyArray(BigInteger a, char[] b) {
+        BigInteger[] ret = new BigInteger[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = multiply(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigInteger multiply(BigInteger a, byte b) {
+        return a == null || b == QueryConstants.NULL_BYTE ? null : a.multiply(BigInteger.valueOf(b));
+    }
+
+    public static BigInteger[] multiplyArray(BigInteger[] a, byte[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to multiply two arrays (BigInteger, byte) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigInteger[] ret = new BigInteger[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = multiply(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigInteger[] multiplyArray(BigInteger[] a, byte b) {
+        BigInteger[] ret = new BigInteger[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = multiply(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigInteger[] multiplyArray(BigInteger a, byte[] b) {
+        BigInteger[] ret = new BigInteger[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = multiply(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigInteger multiply(BigInteger a, short b) {
+        return a == null || b == QueryConstants.NULL_SHORT ? null : a.multiply(BigInteger.valueOf(b));
+    }
+
+    public static BigInteger[] multiplyArray(BigInteger[] a, short[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to multiply two arrays (BigInteger, short) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigInteger[] ret = new BigInteger[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = multiply(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigInteger[] multiplyArray(BigInteger[] a, short b) {
+        BigInteger[] ret = new BigInteger[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = multiply(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigInteger[] multiplyArray(BigInteger a, short[] b) {
+        BigInteger[] ret = new BigInteger[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = multiply(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal multiply(BigInteger a, BigDecimal b) {
+        return a == null || b == null ? null : (new BigDecimal(a)).multiply(b);
+    }
+
+    public static BigDecimal[] multiplyArray(BigInteger[] a, BigDecimal[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to multiply two arrays (BigInteger, BigDecimal) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = multiply(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] multiplyArray(BigInteger[] a, BigDecimal b) {
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = multiply(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] multiplyArray(BigInteger a, BigDecimal[] b) {
+        BigDecimal[] ret = new BigDecimal[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = multiply(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigInteger multiply(BigInteger a, BigInteger b) {
+        return a == null || b == null ? null : a.multiply(b);
+    }
+
+    public static BigInteger[] multiplyArray(BigInteger[] a, BigInteger[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to multiply two arrays (BigInteger, BigInteger) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigInteger[] ret = new BigInteger[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = multiply(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigInteger[] multiplyArray(BigInteger[] a, BigInteger b) {
+        BigInteger[] ret = new BigInteger[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = multiply(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigInteger[] multiplyArray(BigInteger a, BigInteger[] b) {
+        BigInteger[] ret = new BigInteger[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = multiply(a, b[i]);
+        }
+
+        return ret;
+    }
+
     public static double divide(int a, int b) {
         return a == QueryConstants.NULL_INT || b == QueryConstants.NULL_INT ? QueryConstants.NULL_DOUBLE : ((double) a) / ((double) b);
     }
@@ -5283,6 +8547,74 @@ public final class QueryLanguageFunctionUtils {
 
     public static double[] divideArray(int a, short[] b) {
         double[] ret = new double[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = divide(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal divide(int a, BigDecimal b) {
+        return a == QueryConstants.NULL_INT || b == null ? null : BigDecimal.valueOf(a).divide(b, max(max(BigDecimal.valueOf(a).scale(), b.scale()), DEFAULT_SCALE), ROUNDING_MODE);
+    }
+
+    public static BigDecimal[] divideArray(int[] a, BigDecimal[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to divide two arrays (int, BigDecimal) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = divide(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] divideArray(int[] a, BigDecimal b) {
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = divide(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] divideArray(int a, BigDecimal[] b) {
+        BigDecimal[] ret = new BigDecimal[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = divide(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal divide(int a, BigInteger b) {
+        return a == QueryConstants.NULL_INT || b == null ? null : BigDecimal.valueOf(a).divide((new BigDecimal(b)), max(max(BigDecimal.valueOf(a).scale(), (new BigDecimal(b)).scale()), DEFAULT_SCALE), ROUNDING_MODE);
+    }
+
+    public static BigDecimal[] divideArray(int[] a, BigInteger[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to divide two arrays (int, BigInteger) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = divide(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] divideArray(int[] a, BigInteger b) {
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = divide(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] divideArray(int a, BigInteger[] b) {
+        BigDecimal[] ret = new BigDecimal[b.length];
         for (int i = 0; i < b.length; i++) {
             ret[i] = divide(a, b[i]);
         }
@@ -5528,6 +8860,74 @@ public final class QueryLanguageFunctionUtils {
         return ret;
     }
 
+    public static BigDecimal divide(double a, BigDecimal b) {
+        return a == QueryConstants.NULL_DOUBLE || b == null ? null : BigDecimal.valueOf(a).divide(b, max(max(BigDecimal.valueOf(a).scale(), b.scale()), DEFAULT_SCALE), ROUNDING_MODE);
+    }
+
+    public static BigDecimal[] divideArray(double[] a, BigDecimal[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to divide two arrays (double, BigDecimal) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = divide(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] divideArray(double[] a, BigDecimal b) {
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = divide(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] divideArray(double a, BigDecimal[] b) {
+        BigDecimal[] ret = new BigDecimal[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = divide(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal divide(double a, BigInteger b) {
+        return a == QueryConstants.NULL_DOUBLE || b == null ? null : BigDecimal.valueOf(a).divide((new BigDecimal(b)), max(max(BigDecimal.valueOf(a).scale(), (new BigDecimal(b)).scale()), DEFAULT_SCALE), ROUNDING_MODE);
+    }
+
+    public static BigDecimal[] divideArray(double[] a, BigInteger[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to divide two arrays (double, BigInteger) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = divide(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] divideArray(double[] a, BigInteger b) {
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = divide(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] divideArray(double a, BigInteger[] b) {
+        BigDecimal[] ret = new BigDecimal[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = divide(a, b[i]);
+        }
+
+        return ret;
+    }
+
     public static double divide(long a, int b) {
         return a == QueryConstants.NULL_LONG || b == QueryConstants.NULL_INT ? QueryConstants.NULL_DOUBLE : ((double) a) / ((double) b);
     }
@@ -5759,6 +9159,74 @@ public final class QueryLanguageFunctionUtils {
 
     public static double[] divideArray(long a, short[] b) {
         double[] ret = new double[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = divide(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal divide(long a, BigDecimal b) {
+        return a == QueryConstants.NULL_LONG || b == null ? null : BigDecimal.valueOf(a).divide(b, max(max(BigDecimal.valueOf(a).scale(), b.scale()), DEFAULT_SCALE), ROUNDING_MODE);
+    }
+
+    public static BigDecimal[] divideArray(long[] a, BigDecimal[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to divide two arrays (long, BigDecimal) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = divide(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] divideArray(long[] a, BigDecimal b) {
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = divide(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] divideArray(long a, BigDecimal[] b) {
+        BigDecimal[] ret = new BigDecimal[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = divide(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal divide(long a, BigInteger b) {
+        return a == QueryConstants.NULL_LONG || b == null ? null : BigDecimal.valueOf(a).divide((new BigDecimal(b)), max(max(BigDecimal.valueOf(a).scale(), (new BigDecimal(b)).scale()), DEFAULT_SCALE), ROUNDING_MODE);
+    }
+
+    public static BigDecimal[] divideArray(long[] a, BigInteger[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to divide two arrays (long, BigInteger) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = divide(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] divideArray(long[] a, BigInteger b) {
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = divide(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] divideArray(long a, BigInteger[] b) {
+        BigDecimal[] ret = new BigDecimal[b.length];
         for (int i = 0; i < b.length; i++) {
             ret[i] = divide(a, b[i]);
         }
@@ -6004,6 +9472,74 @@ public final class QueryLanguageFunctionUtils {
         return ret;
     }
 
+    public static BigDecimal divide(float a, BigDecimal b) {
+        return a == QueryConstants.NULL_FLOAT || b == null ? null : BigDecimal.valueOf(a).divide(b, max(max(BigDecimal.valueOf(a).scale(), b.scale()), DEFAULT_SCALE), ROUNDING_MODE);
+    }
+
+    public static BigDecimal[] divideArray(float[] a, BigDecimal[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to divide two arrays (float, BigDecimal) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = divide(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] divideArray(float[] a, BigDecimal b) {
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = divide(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] divideArray(float a, BigDecimal[] b) {
+        BigDecimal[] ret = new BigDecimal[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = divide(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal divide(float a, BigInteger b) {
+        return a == QueryConstants.NULL_FLOAT || b == null ? null : BigDecimal.valueOf(a).divide((new BigDecimal(b)), max(max(BigDecimal.valueOf(a).scale(), (new BigDecimal(b)).scale()), DEFAULT_SCALE), ROUNDING_MODE);
+    }
+
+    public static BigDecimal[] divideArray(float[] a, BigInteger[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to divide two arrays (float, BigInteger) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = divide(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] divideArray(float[] a, BigInteger b) {
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = divide(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] divideArray(float a, BigInteger[] b) {
+        BigDecimal[] ret = new BigDecimal[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = divide(a, b[i]);
+        }
+
+        return ret;
+    }
+
     public static double divide(char a, int b) {
         return a == QueryConstants.NULL_CHAR || b == QueryConstants.NULL_INT ? QueryConstants.NULL_DOUBLE : ((double) a) / ((double) b);
     }
@@ -6235,6 +9771,74 @@ public final class QueryLanguageFunctionUtils {
 
     public static double[] divideArray(char a, short[] b) {
         double[] ret = new double[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = divide(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal divide(char a, BigDecimal b) {
+        return a == QueryConstants.NULL_CHAR || b == null ? null : BigDecimal.valueOf(a).divide(b, max(max(BigDecimal.valueOf(a).scale(), b.scale()), DEFAULT_SCALE), ROUNDING_MODE);
+    }
+
+    public static BigDecimal[] divideArray(char[] a, BigDecimal[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to divide two arrays (char, BigDecimal) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = divide(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] divideArray(char[] a, BigDecimal b) {
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = divide(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] divideArray(char a, BigDecimal[] b) {
+        BigDecimal[] ret = new BigDecimal[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = divide(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal divide(char a, BigInteger b) {
+        return a == QueryConstants.NULL_CHAR || b == null ? null : BigDecimal.valueOf(a).divide((new BigDecimal(b)), max(max(BigDecimal.valueOf(a).scale(), (new BigDecimal(b)).scale()), DEFAULT_SCALE), ROUNDING_MODE);
+    }
+
+    public static BigDecimal[] divideArray(char[] a, BigInteger[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to divide two arrays (char, BigInteger) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = divide(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] divideArray(char[] a, BigInteger b) {
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = divide(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] divideArray(char a, BigInteger[] b) {
+        BigDecimal[] ret = new BigDecimal[b.length];
         for (int i = 0; i < b.length; i++) {
             ret[i] = divide(a, b[i]);
         }
@@ -6480,6 +10084,74 @@ public final class QueryLanguageFunctionUtils {
         return ret;
     }
 
+    public static BigDecimal divide(byte a, BigDecimal b) {
+        return a == QueryConstants.NULL_BYTE || b == null ? null : BigDecimal.valueOf(a).divide(b, max(max(BigDecimal.valueOf(a).scale(), b.scale()), DEFAULT_SCALE), ROUNDING_MODE);
+    }
+
+    public static BigDecimal[] divideArray(byte[] a, BigDecimal[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to divide two arrays (byte, BigDecimal) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = divide(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] divideArray(byte[] a, BigDecimal b) {
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = divide(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] divideArray(byte a, BigDecimal[] b) {
+        BigDecimal[] ret = new BigDecimal[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = divide(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal divide(byte a, BigInteger b) {
+        return a == QueryConstants.NULL_BYTE || b == null ? null : BigDecimal.valueOf(a).divide((new BigDecimal(b)), max(max(BigDecimal.valueOf(a).scale(), (new BigDecimal(b)).scale()), DEFAULT_SCALE), ROUNDING_MODE);
+    }
+
+    public static BigDecimal[] divideArray(byte[] a, BigInteger[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to divide two arrays (byte, BigInteger) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = divide(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] divideArray(byte[] a, BigInteger b) {
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = divide(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] divideArray(byte a, BigInteger[] b) {
+        BigDecimal[] ret = new BigDecimal[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = divide(a, b[i]);
+        }
+
+        return ret;
+    }
+
     public static double divide(short a, int b) {
         return a == QueryConstants.NULL_SHORT || b == QueryConstants.NULL_INT ? QueryConstants.NULL_DOUBLE : ((double) a) / ((double) b);
     }
@@ -6711,6 +10383,686 @@ public final class QueryLanguageFunctionUtils {
 
     public static double[] divideArray(short a, short[] b) {
         double[] ret = new double[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = divide(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal divide(short a, BigDecimal b) {
+        return a == QueryConstants.NULL_SHORT || b == null ? null : BigDecimal.valueOf(a).divide(b, max(max(BigDecimal.valueOf(a).scale(), b.scale()), DEFAULT_SCALE), ROUNDING_MODE);
+    }
+
+    public static BigDecimal[] divideArray(short[] a, BigDecimal[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to divide two arrays (short, BigDecimal) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = divide(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] divideArray(short[] a, BigDecimal b) {
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = divide(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] divideArray(short a, BigDecimal[] b) {
+        BigDecimal[] ret = new BigDecimal[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = divide(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal divide(short a, BigInteger b) {
+        return a == QueryConstants.NULL_SHORT || b == null ? null : BigDecimal.valueOf(a).divide((new BigDecimal(b)), max(max(BigDecimal.valueOf(a).scale(), (new BigDecimal(b)).scale()), DEFAULT_SCALE), ROUNDING_MODE);
+    }
+
+    public static BigDecimal[] divideArray(short[] a, BigInteger[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to divide two arrays (short, BigInteger) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = divide(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] divideArray(short[] a, BigInteger b) {
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = divide(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] divideArray(short a, BigInteger[] b) {
+        BigDecimal[] ret = new BigDecimal[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = divide(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal divide(BigDecimal a, int b) {
+        return a == null || b == QueryConstants.NULL_INT ? null : a.divide(BigDecimal.valueOf(b), max(max(a.scale(), BigDecimal.valueOf(b).scale()), DEFAULT_SCALE), ROUNDING_MODE);
+    }
+
+    public static BigDecimal[] divideArray(BigDecimal[] a, int[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to divide two arrays (BigDecimal, int) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = divide(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] divideArray(BigDecimal[] a, int b) {
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = divide(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] divideArray(BigDecimal a, int[] b) {
+        BigDecimal[] ret = new BigDecimal[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = divide(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal divide(BigDecimal a, double b) {
+        return a == null || b == QueryConstants.NULL_DOUBLE ? null : a.divide(BigDecimal.valueOf(b), max(max(a.scale(), BigDecimal.valueOf(b).scale()), DEFAULT_SCALE), ROUNDING_MODE);
+    }
+
+    public static BigDecimal[] divideArray(BigDecimal[] a, double[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to divide two arrays (BigDecimal, double) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = divide(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] divideArray(BigDecimal[] a, double b) {
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = divide(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] divideArray(BigDecimal a, double[] b) {
+        BigDecimal[] ret = new BigDecimal[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = divide(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal divide(BigDecimal a, long b) {
+        return a == null || b == QueryConstants.NULL_LONG ? null : a.divide(BigDecimal.valueOf(b), max(max(a.scale(), BigDecimal.valueOf(b).scale()), DEFAULT_SCALE), ROUNDING_MODE);
+    }
+
+    public static BigDecimal[] divideArray(BigDecimal[] a, long[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to divide two arrays (BigDecimal, long) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = divide(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] divideArray(BigDecimal[] a, long b) {
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = divide(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] divideArray(BigDecimal a, long[] b) {
+        BigDecimal[] ret = new BigDecimal[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = divide(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal divide(BigDecimal a, float b) {
+        return a == null || b == QueryConstants.NULL_FLOAT ? null : a.divide(BigDecimal.valueOf(b), max(max(a.scale(), BigDecimal.valueOf(b).scale()), DEFAULT_SCALE), ROUNDING_MODE);
+    }
+
+    public static BigDecimal[] divideArray(BigDecimal[] a, float[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to divide two arrays (BigDecimal, float) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = divide(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] divideArray(BigDecimal[] a, float b) {
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = divide(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] divideArray(BigDecimal a, float[] b) {
+        BigDecimal[] ret = new BigDecimal[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = divide(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal divide(BigDecimal a, char b) {
+        return a == null || b == QueryConstants.NULL_CHAR ? null : a.divide(BigDecimal.valueOf(b), max(max(a.scale(), BigDecimal.valueOf(b).scale()), DEFAULT_SCALE), ROUNDING_MODE);
+    }
+
+    public static BigDecimal[] divideArray(BigDecimal[] a, char[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to divide two arrays (BigDecimal, char) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = divide(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] divideArray(BigDecimal[] a, char b) {
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = divide(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] divideArray(BigDecimal a, char[] b) {
+        BigDecimal[] ret = new BigDecimal[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = divide(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal divide(BigDecimal a, byte b) {
+        return a == null || b == QueryConstants.NULL_BYTE ? null : a.divide(BigDecimal.valueOf(b), max(max(a.scale(), BigDecimal.valueOf(b).scale()), DEFAULT_SCALE), ROUNDING_MODE);
+    }
+
+    public static BigDecimal[] divideArray(BigDecimal[] a, byte[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to divide two arrays (BigDecimal, byte) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = divide(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] divideArray(BigDecimal[] a, byte b) {
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = divide(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] divideArray(BigDecimal a, byte[] b) {
+        BigDecimal[] ret = new BigDecimal[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = divide(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal divide(BigDecimal a, short b) {
+        return a == null || b == QueryConstants.NULL_SHORT ? null : a.divide(BigDecimal.valueOf(b), max(max(a.scale(), BigDecimal.valueOf(b).scale()), DEFAULT_SCALE), ROUNDING_MODE);
+    }
+
+    public static BigDecimal[] divideArray(BigDecimal[] a, short[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to divide two arrays (BigDecimal, short) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = divide(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] divideArray(BigDecimal[] a, short b) {
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = divide(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] divideArray(BigDecimal a, short[] b) {
+        BigDecimal[] ret = new BigDecimal[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = divide(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal divide(BigDecimal a, BigDecimal b) {
+        return a == null || b == null ? null : a.divide(b, max(max(a.scale(), b.scale()), DEFAULT_SCALE), ROUNDING_MODE);
+    }
+
+    public static BigDecimal[] divideArray(BigDecimal[] a, BigDecimal[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to divide two arrays (BigDecimal, BigDecimal) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = divide(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] divideArray(BigDecimal[] a, BigDecimal b) {
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = divide(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] divideArray(BigDecimal a, BigDecimal[] b) {
+        BigDecimal[] ret = new BigDecimal[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = divide(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal divide(BigDecimal a, BigInteger b) {
+        return a == null || b == null ? null : a.divide((new BigDecimal(b)), max(max(a.scale(), (new BigDecimal(b)).scale()), DEFAULT_SCALE), ROUNDING_MODE);
+    }
+
+    public static BigDecimal[] divideArray(BigDecimal[] a, BigInteger[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to divide two arrays (BigDecimal, BigInteger) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = divide(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] divideArray(BigDecimal[] a, BigInteger b) {
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = divide(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] divideArray(BigDecimal a, BigInteger[] b) {
+        BigDecimal[] ret = new BigDecimal[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = divide(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal divide(BigInteger a, int b) {
+        return a == null || b == QueryConstants.NULL_INT ? null : (new BigDecimal(a)).divide(BigDecimal.valueOf(b), max(max((new BigDecimal(a)).scale(), BigDecimal.valueOf(b).scale()), DEFAULT_SCALE), ROUNDING_MODE);
+    }
+
+    public static BigDecimal[] divideArray(BigInteger[] a, int[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to divide two arrays (BigInteger, int) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = divide(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] divideArray(BigInteger[] a, int b) {
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = divide(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] divideArray(BigInteger a, int[] b) {
+        BigDecimal[] ret = new BigDecimal[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = divide(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal divide(BigInteger a, double b) {
+        return a == null || b == QueryConstants.NULL_DOUBLE ? null : (new BigDecimal(a)).divide(BigDecimal.valueOf(b), max(max((new BigDecimal(a)).scale(), BigDecimal.valueOf(b).scale()), DEFAULT_SCALE), ROUNDING_MODE);
+    }
+
+    public static BigDecimal[] divideArray(BigInteger[] a, double[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to divide two arrays (BigInteger, double) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = divide(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] divideArray(BigInteger[] a, double b) {
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = divide(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] divideArray(BigInteger a, double[] b) {
+        BigDecimal[] ret = new BigDecimal[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = divide(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal divide(BigInteger a, long b) {
+        return a == null || b == QueryConstants.NULL_LONG ? null : (new BigDecimal(a)).divide(BigDecimal.valueOf(b), max(max((new BigDecimal(a)).scale(), BigDecimal.valueOf(b).scale()), DEFAULT_SCALE), ROUNDING_MODE);
+    }
+
+    public static BigDecimal[] divideArray(BigInteger[] a, long[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to divide two arrays (BigInteger, long) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = divide(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] divideArray(BigInteger[] a, long b) {
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = divide(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] divideArray(BigInteger a, long[] b) {
+        BigDecimal[] ret = new BigDecimal[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = divide(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal divide(BigInteger a, float b) {
+        return a == null || b == QueryConstants.NULL_FLOAT ? null : (new BigDecimal(a)).divide(BigDecimal.valueOf(b), max(max((new BigDecimal(a)).scale(), BigDecimal.valueOf(b).scale()), DEFAULT_SCALE), ROUNDING_MODE);
+    }
+
+    public static BigDecimal[] divideArray(BigInteger[] a, float[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to divide two arrays (BigInteger, float) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = divide(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] divideArray(BigInteger[] a, float b) {
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = divide(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] divideArray(BigInteger a, float[] b) {
+        BigDecimal[] ret = new BigDecimal[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = divide(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal divide(BigInteger a, char b) {
+        return a == null || b == QueryConstants.NULL_CHAR ? null : (new BigDecimal(a)).divide(BigDecimal.valueOf(b), max(max((new BigDecimal(a)).scale(), BigDecimal.valueOf(b).scale()), DEFAULT_SCALE), ROUNDING_MODE);
+    }
+
+    public static BigDecimal[] divideArray(BigInteger[] a, char[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to divide two arrays (BigInteger, char) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = divide(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] divideArray(BigInteger[] a, char b) {
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = divide(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] divideArray(BigInteger a, char[] b) {
+        BigDecimal[] ret = new BigDecimal[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = divide(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal divide(BigInteger a, byte b) {
+        return a == null || b == QueryConstants.NULL_BYTE ? null : (new BigDecimal(a)).divide(BigDecimal.valueOf(b), max(max((new BigDecimal(a)).scale(), BigDecimal.valueOf(b).scale()), DEFAULT_SCALE), ROUNDING_MODE);
+    }
+
+    public static BigDecimal[] divideArray(BigInteger[] a, byte[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to divide two arrays (BigInteger, byte) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = divide(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] divideArray(BigInteger[] a, byte b) {
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = divide(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] divideArray(BigInteger a, byte[] b) {
+        BigDecimal[] ret = new BigDecimal[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = divide(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal divide(BigInteger a, short b) {
+        return a == null || b == QueryConstants.NULL_SHORT ? null : (new BigDecimal(a)).divide(BigDecimal.valueOf(b), max(max((new BigDecimal(a)).scale(), BigDecimal.valueOf(b).scale()), DEFAULT_SCALE), ROUNDING_MODE);
+    }
+
+    public static BigDecimal[] divideArray(BigInteger[] a, short[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to divide two arrays (BigInteger, short) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = divide(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] divideArray(BigInteger[] a, short b) {
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = divide(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] divideArray(BigInteger a, short[] b) {
+        BigDecimal[] ret = new BigDecimal[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = divide(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal divide(BigInteger a, BigDecimal b) {
+        return a == null || b == null ? null : (new BigDecimal(a)).divide(b, max(max((new BigDecimal(a)).scale(), b.scale()), DEFAULT_SCALE), ROUNDING_MODE);
+    }
+
+    public static BigDecimal[] divideArray(BigInteger[] a, BigDecimal[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to divide two arrays (BigInteger, BigDecimal) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = divide(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] divideArray(BigInteger[] a, BigDecimal b) {
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = divide(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] divideArray(BigInteger a, BigDecimal[] b) {
+        BigDecimal[] ret = new BigDecimal[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = divide(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal divide(BigInteger a, BigInteger b) {
+        return a == null || b == null ? null : (new BigDecimal(a)).divide((new BigDecimal(b)), max(max((new BigDecimal(a)).scale(), (new BigDecimal(b)).scale()), DEFAULT_SCALE), ROUNDING_MODE);
+    }
+
+    public static BigDecimal[] divideArray(BigInteger[] a, BigInteger[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to divide two arrays (BigInteger, BigInteger) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = divide(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] divideArray(BigInteger[] a, BigInteger b) {
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = divide(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] divideArray(BigInteger a, BigInteger[] b) {
+        BigDecimal[] ret = new BigDecimal[b.length];
         for (int i = 0; i < b.length; i++) {
             ret[i] = divide(a, b[i]);
         }
@@ -6956,6 +11308,74 @@ public final class QueryLanguageFunctionUtils {
         return ret;
     }
 
+    public static BigDecimal remainder(int a, BigDecimal b) {
+        return a == QueryConstants.NULL_INT || b == null ? null : BigDecimal.valueOf(a).remainder(b);
+    }
+
+    public static BigDecimal[] remainderArray(int[] a, BigDecimal[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to calculate remainder of two arrays (int, BigDecimal) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = remainder(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] remainderArray(int[] a, BigDecimal b) {
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = remainder(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] remainderArray(int a, BigDecimal[] b) {
+        BigDecimal[] ret = new BigDecimal[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = remainder(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigInteger remainder(int a, BigInteger b) {
+        return a == QueryConstants.NULL_INT || b == null ? null : BigInteger.valueOf(a).remainder(b);
+    }
+
+    public static BigInteger[] remainderArray(int[] a, BigInteger[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to calculate remainder of two arrays (int, BigInteger) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigInteger[] ret = new BigInteger[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = remainder(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigInteger[] remainderArray(int[] a, BigInteger b) {
+        BigInteger[] ret = new BigInteger[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = remainder(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigInteger[] remainderArray(int a, BigInteger[] b) {
+        BigInteger[] ret = new BigInteger[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = remainder(a, b[i]);
+        }
+
+        return ret;
+    }
+
     public static double remainder(double a, int b) {
         return a == QueryConstants.NULL_DOUBLE || b == QueryConstants.NULL_INT ? QueryConstants.NULL_DOUBLE : a % ((double) b);
     }
@@ -7187,6 +11607,74 @@ public final class QueryLanguageFunctionUtils {
 
     public static double[] remainderArray(double a, short[] b) {
         double[] ret = new double[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = remainder(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal remainder(double a, BigDecimal b) {
+        return a == QueryConstants.NULL_DOUBLE || b == null ? null : BigDecimal.valueOf(a).remainder(b);
+    }
+
+    public static BigDecimal[] remainderArray(double[] a, BigDecimal[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to calculate remainder of two arrays (double, BigDecimal) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = remainder(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] remainderArray(double[] a, BigDecimal b) {
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = remainder(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] remainderArray(double a, BigDecimal[] b) {
+        BigDecimal[] ret = new BigDecimal[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = remainder(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal remainder(double a, BigInteger b) {
+        return a == QueryConstants.NULL_DOUBLE || b == null ? null : BigDecimal.valueOf(a).remainder((new BigDecimal(b)));
+    }
+
+    public static BigDecimal[] remainderArray(double[] a, BigInteger[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to calculate remainder of two arrays (double, BigInteger) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = remainder(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] remainderArray(double[] a, BigInteger b) {
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = remainder(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] remainderArray(double a, BigInteger[] b) {
+        BigDecimal[] ret = new BigDecimal[b.length];
         for (int i = 0; i < b.length; i++) {
             ret[i] = remainder(a, b[i]);
         }
@@ -7432,6 +11920,74 @@ public final class QueryLanguageFunctionUtils {
         return ret;
     }
 
+    public static BigDecimal remainder(long a, BigDecimal b) {
+        return a == QueryConstants.NULL_LONG || b == null ? null : BigDecimal.valueOf(a).remainder(b);
+    }
+
+    public static BigDecimal[] remainderArray(long[] a, BigDecimal[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to calculate remainder of two arrays (long, BigDecimal) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = remainder(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] remainderArray(long[] a, BigDecimal b) {
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = remainder(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] remainderArray(long a, BigDecimal[] b) {
+        BigDecimal[] ret = new BigDecimal[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = remainder(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigInteger remainder(long a, BigInteger b) {
+        return a == QueryConstants.NULL_LONG || b == null ? null : BigInteger.valueOf(a).remainder(b);
+    }
+
+    public static BigInteger[] remainderArray(long[] a, BigInteger[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to calculate remainder of two arrays (long, BigInteger) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigInteger[] ret = new BigInteger[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = remainder(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigInteger[] remainderArray(long[] a, BigInteger b) {
+        BigInteger[] ret = new BigInteger[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = remainder(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigInteger[] remainderArray(long a, BigInteger[] b) {
+        BigInteger[] ret = new BigInteger[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = remainder(a, b[i]);
+        }
+
+        return ret;
+    }
+
     public static float remainder(float a, int b) {
         return a == QueryConstants.NULL_FLOAT || b == QueryConstants.NULL_INT ? QueryConstants.NULL_FLOAT : a % ((float) b);
     }
@@ -7663,6 +12219,74 @@ public final class QueryLanguageFunctionUtils {
 
     public static float[] remainderArray(float a, short[] b) {
         float[] ret = new float[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = remainder(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal remainder(float a, BigDecimal b) {
+        return a == QueryConstants.NULL_FLOAT || b == null ? null : BigDecimal.valueOf(a).remainder(b);
+    }
+
+    public static BigDecimal[] remainderArray(float[] a, BigDecimal[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to calculate remainder of two arrays (float, BigDecimal) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = remainder(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] remainderArray(float[] a, BigDecimal b) {
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = remainder(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] remainderArray(float a, BigDecimal[] b) {
+        BigDecimal[] ret = new BigDecimal[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = remainder(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal remainder(float a, BigInteger b) {
+        return a == QueryConstants.NULL_FLOAT || b == null ? null : BigDecimal.valueOf(a).remainder((new BigDecimal(b)));
+    }
+
+    public static BigDecimal[] remainderArray(float[] a, BigInteger[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to calculate remainder of two arrays (float, BigInteger) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = remainder(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] remainderArray(float[] a, BigInteger b) {
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = remainder(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] remainderArray(float a, BigInteger[] b) {
+        BigDecimal[] ret = new BigDecimal[b.length];
         for (int i = 0; i < b.length; i++) {
             ret[i] = remainder(a, b[i]);
         }
@@ -7908,6 +12532,74 @@ public final class QueryLanguageFunctionUtils {
         return ret;
     }
 
+    public static BigDecimal remainder(char a, BigDecimal b) {
+        return a == QueryConstants.NULL_CHAR || b == null ? null : BigDecimal.valueOf(a).remainder(b);
+    }
+
+    public static BigDecimal[] remainderArray(char[] a, BigDecimal[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to calculate remainder of two arrays (char, BigDecimal) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = remainder(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] remainderArray(char[] a, BigDecimal b) {
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = remainder(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] remainderArray(char a, BigDecimal[] b) {
+        BigDecimal[] ret = new BigDecimal[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = remainder(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigInteger remainder(char a, BigInteger b) {
+        return a == QueryConstants.NULL_CHAR || b == null ? null : BigInteger.valueOf(a).remainder(b);
+    }
+
+    public static BigInteger[] remainderArray(char[] a, BigInteger[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to calculate remainder of two arrays (char, BigInteger) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigInteger[] ret = new BigInteger[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = remainder(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigInteger[] remainderArray(char[] a, BigInteger b) {
+        BigInteger[] ret = new BigInteger[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = remainder(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigInteger[] remainderArray(char a, BigInteger[] b) {
+        BigInteger[] ret = new BigInteger[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = remainder(a, b[i]);
+        }
+
+        return ret;
+    }
+
     public static int remainder(byte a, int b) {
         return a == QueryConstants.NULL_BYTE || b == QueryConstants.NULL_INT ? QueryConstants.NULL_INT : ((int) a) % b;
     }
@@ -8146,6 +12838,74 @@ public final class QueryLanguageFunctionUtils {
         return ret;
     }
 
+    public static BigDecimal remainder(byte a, BigDecimal b) {
+        return a == QueryConstants.NULL_BYTE || b == null ? null : BigDecimal.valueOf(a).remainder(b);
+    }
+
+    public static BigDecimal[] remainderArray(byte[] a, BigDecimal[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to calculate remainder of two arrays (byte, BigDecimal) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = remainder(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] remainderArray(byte[] a, BigDecimal b) {
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = remainder(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] remainderArray(byte a, BigDecimal[] b) {
+        BigDecimal[] ret = new BigDecimal[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = remainder(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigInteger remainder(byte a, BigInteger b) {
+        return a == QueryConstants.NULL_BYTE || b == null ? null : BigInteger.valueOf(a).remainder(b);
+    }
+
+    public static BigInteger[] remainderArray(byte[] a, BigInteger[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to calculate remainder of two arrays (byte, BigInteger) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigInteger[] ret = new BigInteger[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = remainder(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigInteger[] remainderArray(byte[] a, BigInteger b) {
+        BigInteger[] ret = new BigInteger[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = remainder(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigInteger[] remainderArray(byte a, BigInteger[] b) {
+        BigInteger[] ret = new BigInteger[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = remainder(a, b[i]);
+        }
+
+        return ret;
+    }
+
     public static int remainder(short a, int b) {
         return a == QueryConstants.NULL_SHORT || b == QueryConstants.NULL_INT ? QueryConstants.NULL_INT : ((int) a) % b;
     }
@@ -8377,6 +13137,686 @@ public final class QueryLanguageFunctionUtils {
 
     public static int[] remainderArray(short a, short[] b) {
         int[] ret = new int[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = remainder(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal remainder(short a, BigDecimal b) {
+        return a == QueryConstants.NULL_SHORT || b == null ? null : BigDecimal.valueOf(a).remainder(b);
+    }
+
+    public static BigDecimal[] remainderArray(short[] a, BigDecimal[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to calculate remainder of two arrays (short, BigDecimal) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = remainder(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] remainderArray(short[] a, BigDecimal b) {
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = remainder(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] remainderArray(short a, BigDecimal[] b) {
+        BigDecimal[] ret = new BigDecimal[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = remainder(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigInteger remainder(short a, BigInteger b) {
+        return a == QueryConstants.NULL_SHORT || b == null ? null : BigInteger.valueOf(a).remainder(b);
+    }
+
+    public static BigInteger[] remainderArray(short[] a, BigInteger[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to calculate remainder of two arrays (short, BigInteger) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigInteger[] ret = new BigInteger[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = remainder(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigInteger[] remainderArray(short[] a, BigInteger b) {
+        BigInteger[] ret = new BigInteger[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = remainder(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigInteger[] remainderArray(short a, BigInteger[] b) {
+        BigInteger[] ret = new BigInteger[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = remainder(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal remainder(BigDecimal a, int b) {
+        return a == null || b == QueryConstants.NULL_INT ? null : a.remainder(BigDecimal.valueOf(b));
+    }
+
+    public static BigDecimal[] remainderArray(BigDecimal[] a, int[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to calculate remainder of two arrays (BigDecimal, int) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = remainder(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] remainderArray(BigDecimal[] a, int b) {
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = remainder(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] remainderArray(BigDecimal a, int[] b) {
+        BigDecimal[] ret = new BigDecimal[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = remainder(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal remainder(BigDecimal a, double b) {
+        return a == null || b == QueryConstants.NULL_DOUBLE ? null : a.remainder(BigDecimal.valueOf(b));
+    }
+
+    public static BigDecimal[] remainderArray(BigDecimal[] a, double[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to calculate remainder of two arrays (BigDecimal, double) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = remainder(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] remainderArray(BigDecimal[] a, double b) {
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = remainder(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] remainderArray(BigDecimal a, double[] b) {
+        BigDecimal[] ret = new BigDecimal[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = remainder(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal remainder(BigDecimal a, long b) {
+        return a == null || b == QueryConstants.NULL_LONG ? null : a.remainder(BigDecimal.valueOf(b));
+    }
+
+    public static BigDecimal[] remainderArray(BigDecimal[] a, long[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to calculate remainder of two arrays (BigDecimal, long) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = remainder(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] remainderArray(BigDecimal[] a, long b) {
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = remainder(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] remainderArray(BigDecimal a, long[] b) {
+        BigDecimal[] ret = new BigDecimal[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = remainder(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal remainder(BigDecimal a, float b) {
+        return a == null || b == QueryConstants.NULL_FLOAT ? null : a.remainder(BigDecimal.valueOf(b));
+    }
+
+    public static BigDecimal[] remainderArray(BigDecimal[] a, float[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to calculate remainder of two arrays (BigDecimal, float) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = remainder(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] remainderArray(BigDecimal[] a, float b) {
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = remainder(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] remainderArray(BigDecimal a, float[] b) {
+        BigDecimal[] ret = new BigDecimal[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = remainder(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal remainder(BigDecimal a, char b) {
+        return a == null || b == QueryConstants.NULL_CHAR ? null : a.remainder(BigDecimal.valueOf(b));
+    }
+
+    public static BigDecimal[] remainderArray(BigDecimal[] a, char[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to calculate remainder of two arrays (BigDecimal, char) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = remainder(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] remainderArray(BigDecimal[] a, char b) {
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = remainder(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] remainderArray(BigDecimal a, char[] b) {
+        BigDecimal[] ret = new BigDecimal[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = remainder(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal remainder(BigDecimal a, byte b) {
+        return a == null || b == QueryConstants.NULL_BYTE ? null : a.remainder(BigDecimal.valueOf(b));
+    }
+
+    public static BigDecimal[] remainderArray(BigDecimal[] a, byte[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to calculate remainder of two arrays (BigDecimal, byte) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = remainder(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] remainderArray(BigDecimal[] a, byte b) {
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = remainder(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] remainderArray(BigDecimal a, byte[] b) {
+        BigDecimal[] ret = new BigDecimal[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = remainder(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal remainder(BigDecimal a, short b) {
+        return a == null || b == QueryConstants.NULL_SHORT ? null : a.remainder(BigDecimal.valueOf(b));
+    }
+
+    public static BigDecimal[] remainderArray(BigDecimal[] a, short[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to calculate remainder of two arrays (BigDecimal, short) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = remainder(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] remainderArray(BigDecimal[] a, short b) {
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = remainder(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] remainderArray(BigDecimal a, short[] b) {
+        BigDecimal[] ret = new BigDecimal[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = remainder(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal remainder(BigDecimal a, BigDecimal b) {
+        return a == null || b == null ? null : a.remainder(b);
+    }
+
+    public static BigDecimal[] remainderArray(BigDecimal[] a, BigDecimal[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to calculate remainder of two arrays (BigDecimal, BigDecimal) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = remainder(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] remainderArray(BigDecimal[] a, BigDecimal b) {
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = remainder(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] remainderArray(BigDecimal a, BigDecimal[] b) {
+        BigDecimal[] ret = new BigDecimal[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = remainder(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal remainder(BigDecimal a, BigInteger b) {
+        return a == null || b == null ? null : a.remainder((new BigDecimal(b)));
+    }
+
+    public static BigDecimal[] remainderArray(BigDecimal[] a, BigInteger[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to calculate remainder of two arrays (BigDecimal, BigInteger) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = remainder(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] remainderArray(BigDecimal[] a, BigInteger b) {
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = remainder(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] remainderArray(BigDecimal a, BigInteger[] b) {
+        BigDecimal[] ret = new BigDecimal[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = remainder(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigInteger remainder(BigInteger a, int b) {
+        return a == null || b == QueryConstants.NULL_INT ? null : a.remainder(BigInteger.valueOf(b));
+    }
+
+    public static BigInteger[] remainderArray(BigInteger[] a, int[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to calculate remainder of two arrays (BigInteger, int) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigInteger[] ret = new BigInteger[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = remainder(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigInteger[] remainderArray(BigInteger[] a, int b) {
+        BigInteger[] ret = new BigInteger[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = remainder(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigInteger[] remainderArray(BigInteger a, int[] b) {
+        BigInteger[] ret = new BigInteger[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = remainder(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal remainder(BigInteger a, double b) {
+        return a == null || b == QueryConstants.NULL_DOUBLE ? null : (new BigDecimal(a)).remainder(BigDecimal.valueOf(b));
+    }
+
+    public static BigDecimal[] remainderArray(BigInteger[] a, double[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to calculate remainder of two arrays (BigInteger, double) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = remainder(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] remainderArray(BigInteger[] a, double b) {
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = remainder(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] remainderArray(BigInteger a, double[] b) {
+        BigDecimal[] ret = new BigDecimal[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = remainder(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigInteger remainder(BigInteger a, long b) {
+        return a == null || b == QueryConstants.NULL_LONG ? null : a.remainder(BigInteger.valueOf(b));
+    }
+
+    public static BigInteger[] remainderArray(BigInteger[] a, long[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to calculate remainder of two arrays (BigInteger, long) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigInteger[] ret = new BigInteger[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = remainder(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigInteger[] remainderArray(BigInteger[] a, long b) {
+        BigInteger[] ret = new BigInteger[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = remainder(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigInteger[] remainderArray(BigInteger a, long[] b) {
+        BigInteger[] ret = new BigInteger[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = remainder(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal remainder(BigInteger a, float b) {
+        return a == null || b == QueryConstants.NULL_FLOAT ? null : (new BigDecimal(a)).remainder(BigDecimal.valueOf(b));
+    }
+
+    public static BigDecimal[] remainderArray(BigInteger[] a, float[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to calculate remainder of two arrays (BigInteger, float) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = remainder(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] remainderArray(BigInteger[] a, float b) {
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = remainder(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] remainderArray(BigInteger a, float[] b) {
+        BigDecimal[] ret = new BigDecimal[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = remainder(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigInteger remainder(BigInteger a, char b) {
+        return a == null || b == QueryConstants.NULL_CHAR ? null : a.remainder(BigInteger.valueOf(b));
+    }
+
+    public static BigInteger[] remainderArray(BigInteger[] a, char[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to calculate remainder of two arrays (BigInteger, char) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigInteger[] ret = new BigInteger[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = remainder(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigInteger[] remainderArray(BigInteger[] a, char b) {
+        BigInteger[] ret = new BigInteger[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = remainder(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigInteger[] remainderArray(BigInteger a, char[] b) {
+        BigInteger[] ret = new BigInteger[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = remainder(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigInteger remainder(BigInteger a, byte b) {
+        return a == null || b == QueryConstants.NULL_BYTE ? null : a.remainder(BigInteger.valueOf(b));
+    }
+
+    public static BigInteger[] remainderArray(BigInteger[] a, byte[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to calculate remainder of two arrays (BigInteger, byte) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigInteger[] ret = new BigInteger[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = remainder(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigInteger[] remainderArray(BigInteger[] a, byte b) {
+        BigInteger[] ret = new BigInteger[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = remainder(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigInteger[] remainderArray(BigInteger a, byte[] b) {
+        BigInteger[] ret = new BigInteger[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = remainder(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigInteger remainder(BigInteger a, short b) {
+        return a == null || b == QueryConstants.NULL_SHORT ? null : a.remainder(BigInteger.valueOf(b));
+    }
+
+    public static BigInteger[] remainderArray(BigInteger[] a, short[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to calculate remainder of two arrays (BigInteger, short) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigInteger[] ret = new BigInteger[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = remainder(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigInteger[] remainderArray(BigInteger[] a, short b) {
+        BigInteger[] ret = new BigInteger[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = remainder(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigInteger[] remainderArray(BigInteger a, short[] b) {
+        BigInteger[] ret = new BigInteger[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = remainder(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal remainder(BigInteger a, BigDecimal b) {
+        return a == null || b == null ? null : (new BigDecimal(a)).remainder(b);
+    }
+
+    public static BigDecimal[] remainderArray(BigInteger[] a, BigDecimal[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to calculate remainder of two arrays (BigInteger, BigDecimal) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = remainder(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] remainderArray(BigInteger[] a, BigDecimal b) {
+        BigDecimal[] ret = new BigDecimal[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = remainder(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigDecimal[] remainderArray(BigInteger a, BigDecimal[] b) {
+        BigDecimal[] ret = new BigDecimal[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = remainder(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigInteger remainder(BigInteger a, BigInteger b) {
+        return a == null || b == null ? null : a.remainder(b);
+    }
+
+    public static BigInteger[] remainderArray(BigInteger[] a, BigInteger[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to calculate remainder of two arrays (BigInteger, BigInteger) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        BigInteger[] ret = new BigInteger[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = remainder(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static BigInteger[] remainderArray(BigInteger[] a, BigInteger b) {
+        BigInteger[] ret = new BigInteger[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = remainder(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static BigInteger[] remainderArray(BigInteger a, BigInteger[] b) {
+        BigInteger[] ret = new BigInteger[b.length];
         for (int i = 0; i < b.length; i++) {
             ret[i] = remainder(a, b[i]);
         }
@@ -9244,6 +14684,106 @@ public final class QueryLanguageFunctionUtils {
         return ret;
     }
 
+    public static int compareTo(int a, BigDecimal b) {
+        if (a == QueryConstants.NULL_INT) {
+            return (b == null) ? 0 : -1;
+        }
+        if (b == null) {
+            return 1;
+        }
+        return BigDecimal.valueOf(a).compareTo(b);
+    }
+
+    public static boolean eq(int a, BigDecimal b) {
+        if (a == QueryConstants.NULL_INT) {
+            return b == null;
+        }
+        if (b == null) {
+            return false;
+        }
+        return BigDecimal.valueOf(a).compareTo(b) == 0;
+    }
+
+    public static boolean[] eqArray(int[] a, BigDecimal[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to check equality of two arrays (int, BigDecimal) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = eq(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] eqArray(int[] a, BigDecimal b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = eq(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] eqArray(int a, BigDecimal[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = eq(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static int compareTo(int a, BigInteger b) {
+        if (a == QueryConstants.NULL_INT) {
+            return (b == null) ? 0 : -1;
+        }
+        if (b == null) {
+            return 1;
+        }
+        return BigInteger.valueOf(a).compareTo(b);
+    }
+
+    public static boolean eq(int a, BigInteger b) {
+        if (a == QueryConstants.NULL_INT) {
+            return b == null;
+        }
+        if (b == null) {
+            return false;
+        }
+        return BigDecimal.valueOf(a).compareTo((new BigDecimal(b))) == 0;
+    }
+
+    public static boolean[] eqArray(int[] a, BigInteger[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to check equality of two arrays (int, BigInteger) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = eq(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] eqArray(int[] a, BigInteger b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = eq(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] eqArray(int a, BigInteger[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = eq(a, b[i]);
+        }
+
+        return ret;
+    }
+
     public static int compareTo(double a, int b) {
         if (a == QueryConstants.NULL_DOUBLE) {
             return (b == QueryConstants.NULL_INT) ? 0 : -1;
@@ -9580,6 +15120,118 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean[] eqArray(double a, short[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = eq(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static int compareTo(double a, BigDecimal b) {
+        if (Double.isNaN(a)) {
+            return 1; // even if b == null
+        }
+        if (a == QueryConstants.NULL_DOUBLE) {
+            return (b == null) ? 0 : -1;
+        }
+        if (b == null) {
+            return 1;
+        }
+        return BigDecimal.valueOf(a).compareTo(b);
+    }
+
+    public static boolean eq(double a, BigDecimal b) {
+        if (Double.isNaN(a)) {
+            return false;
+        }
+        if (a == QueryConstants.NULL_DOUBLE) {
+            return b == null;
+        }
+        if (b == null) {
+            return false;
+        }
+        return BigDecimal.valueOf(a).compareTo(b) == 0;
+    }
+
+    public static boolean[] eqArray(double[] a, BigDecimal[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to check equality of two arrays (double, BigDecimal) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = eq(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] eqArray(double[] a, BigDecimal b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = eq(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] eqArray(double a, BigDecimal[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = eq(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static int compareTo(double a, BigInteger b) {
+        if (Double.isNaN(a)) {
+            return 1; // even if b == null
+        }
+        if (a == QueryConstants.NULL_DOUBLE) {
+            return (b == null) ? 0 : -1;
+        }
+        if (b == null) {
+            return 1;
+        }
+        return BigDecimal.valueOf(a).compareTo((new BigDecimal(b)));
+    }
+
+    public static boolean eq(double a, BigInteger b) {
+        if (Double.isNaN(a)) {
+            return false;
+        }
+        if (a == QueryConstants.NULL_DOUBLE) {
+            return b == null;
+        }
+        if (b == null) {
+            return false;
+        }
+        return BigDecimal.valueOf(a).compareTo((new BigDecimal(b))) == 0;
+    }
+
+    public static boolean[] eqArray(double[] a, BigInteger[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to check equality of two arrays (double, BigInteger) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = eq(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] eqArray(double[] a, BigInteger b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = eq(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] eqArray(double a, BigInteger[] b) {
         boolean[] ret = new boolean[b.length];
         for (int i = 0; i < b.length; i++) {
             ret[i] = eq(a, b[i]);
@@ -9976,6 +15628,106 @@ public final class QueryLanguageFunctionUtils {
         return ret;
     }
 
+    public static int compareTo(long a, BigDecimal b) {
+        if (a == QueryConstants.NULL_LONG) {
+            return (b == null) ? 0 : -1;
+        }
+        if (b == null) {
+            return 1;
+        }
+        return BigDecimal.valueOf(a).compareTo(b);
+    }
+
+    public static boolean eq(long a, BigDecimal b) {
+        if (a == QueryConstants.NULL_LONG) {
+            return b == null;
+        }
+        if (b == null) {
+            return false;
+        }
+        return BigDecimal.valueOf(a).compareTo(b) == 0;
+    }
+
+    public static boolean[] eqArray(long[] a, BigDecimal[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to check equality of two arrays (long, BigDecimal) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = eq(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] eqArray(long[] a, BigDecimal b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = eq(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] eqArray(long a, BigDecimal[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = eq(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static int compareTo(long a, BigInteger b) {
+        if (a == QueryConstants.NULL_LONG) {
+            return (b == null) ? 0 : -1;
+        }
+        if (b == null) {
+            return 1;
+        }
+        return BigInteger.valueOf(a).compareTo(b);
+    }
+
+    public static boolean eq(long a, BigInteger b) {
+        if (a == QueryConstants.NULL_LONG) {
+            return b == null;
+        }
+        if (b == null) {
+            return false;
+        }
+        return BigDecimal.valueOf(a).compareTo((new BigDecimal(b))) == 0;
+    }
+
+    public static boolean[] eqArray(long[] a, BigInteger[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to check equality of two arrays (long, BigInteger) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = eq(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] eqArray(long[] a, BigInteger b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = eq(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] eqArray(long a, BigInteger[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = eq(a, b[i]);
+        }
+
+        return ret;
+    }
+
     public static int compareTo(float a, int b) {
         if (a == QueryConstants.NULL_FLOAT) {
             return (b == QueryConstants.NULL_INT) ? 0 : -1;
@@ -10312,6 +16064,118 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean[] eqArray(float a, short[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = eq(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static int compareTo(float a, BigDecimal b) {
+        if (Float.isNaN(a)) {
+            return 1; // even if b == null
+        }
+        if (a == QueryConstants.NULL_FLOAT) {
+            return (b == null) ? 0 : -1;
+        }
+        if (b == null) {
+            return 1;
+        }
+        return BigDecimal.valueOf(a).compareTo(b);
+    }
+
+    public static boolean eq(float a, BigDecimal b) {
+        if (Float.isNaN(a)) {
+            return false;
+        }
+        if (a == QueryConstants.NULL_FLOAT) {
+            return b == null;
+        }
+        if (b == null) {
+            return false;
+        }
+        return BigDecimal.valueOf(a).compareTo(b) == 0;
+    }
+
+    public static boolean[] eqArray(float[] a, BigDecimal[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to check equality of two arrays (float, BigDecimal) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = eq(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] eqArray(float[] a, BigDecimal b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = eq(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] eqArray(float a, BigDecimal[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = eq(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static int compareTo(float a, BigInteger b) {
+        if (Float.isNaN(a)) {
+            return 1; // even if b == null
+        }
+        if (a == QueryConstants.NULL_FLOAT) {
+            return (b == null) ? 0 : -1;
+        }
+        if (b == null) {
+            return 1;
+        }
+        return BigDecimal.valueOf(a).compareTo((new BigDecimal(b)));
+    }
+
+    public static boolean eq(float a, BigInteger b) {
+        if (Float.isNaN(a)) {
+            return false;
+        }
+        if (a == QueryConstants.NULL_FLOAT) {
+            return b == null;
+        }
+        if (b == null) {
+            return false;
+        }
+        return BigDecimal.valueOf(a).compareTo((new BigDecimal(b))) == 0;
+    }
+
+    public static boolean[] eqArray(float[] a, BigInteger[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to check equality of two arrays (float, BigInteger) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = eq(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] eqArray(float[] a, BigInteger b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = eq(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] eqArray(float a, BigInteger[] b) {
         boolean[] ret = new boolean[b.length];
         for (int i = 0; i < b.length; i++) {
             ret[i] = eq(a, b[i]);
@@ -10670,6 +16534,106 @@ public final class QueryLanguageFunctionUtils {
         return ret;
     }
 
+    public static int compareTo(char a, BigDecimal b) {
+        if (a == QueryConstants.NULL_CHAR) {
+            return (b == null) ? 0 : -1;
+        }
+        if (b == null) {
+            return 1;
+        }
+        return BigDecimal.valueOf(a).compareTo(b);
+    }
+
+    public static boolean eq(char a, BigDecimal b) {
+        if (a == QueryConstants.NULL_CHAR) {
+            return b == null;
+        }
+        if (b == null) {
+            return false;
+        }
+        return BigDecimal.valueOf(a).compareTo(b) == 0;
+    }
+
+    public static boolean[] eqArray(char[] a, BigDecimal[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to check equality of two arrays (char, BigDecimal) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = eq(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] eqArray(char[] a, BigDecimal b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = eq(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] eqArray(char a, BigDecimal[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = eq(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static int compareTo(char a, BigInteger b) {
+        if (a == QueryConstants.NULL_CHAR) {
+            return (b == null) ? 0 : -1;
+        }
+        if (b == null) {
+            return 1;
+        }
+        return BigInteger.valueOf(a).compareTo(b);
+    }
+
+    public static boolean eq(char a, BigInteger b) {
+        if (a == QueryConstants.NULL_CHAR) {
+            return b == null;
+        }
+        if (b == null) {
+            return false;
+        }
+        return BigDecimal.valueOf(a).compareTo((new BigDecimal(b))) == 0;
+    }
+
+    public static boolean[] eqArray(char[] a, BigInteger[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to check equality of two arrays (char, BigInteger) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = eq(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] eqArray(char[] a, BigInteger b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = eq(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] eqArray(char a, BigInteger[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = eq(a, b[i]);
+        }
+
+        return ret;
+    }
+
     public static int compareTo(byte a, int b) {
         if (a == QueryConstants.NULL_BYTE) {
             return (b == QueryConstants.NULL_INT) ? 0 : -1;
@@ -11012,6 +16976,106 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean[] eqArray(byte a, short[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = eq(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static int compareTo(byte a, BigDecimal b) {
+        if (a == QueryConstants.NULL_BYTE) {
+            return (b == null) ? 0 : -1;
+        }
+        if (b == null) {
+            return 1;
+        }
+        return BigDecimal.valueOf(a).compareTo(b);
+    }
+
+    public static boolean eq(byte a, BigDecimal b) {
+        if (a == QueryConstants.NULL_BYTE) {
+            return b == null;
+        }
+        if (b == null) {
+            return false;
+        }
+        return BigDecimal.valueOf(a).compareTo(b) == 0;
+    }
+
+    public static boolean[] eqArray(byte[] a, BigDecimal[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to check equality of two arrays (byte, BigDecimal) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = eq(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] eqArray(byte[] a, BigDecimal b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = eq(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] eqArray(byte a, BigDecimal[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = eq(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static int compareTo(byte a, BigInteger b) {
+        if (a == QueryConstants.NULL_BYTE) {
+            return (b == null) ? 0 : -1;
+        }
+        if (b == null) {
+            return 1;
+        }
+        return BigInteger.valueOf(a).compareTo(b);
+    }
+
+    public static boolean eq(byte a, BigInteger b) {
+        if (a == QueryConstants.NULL_BYTE) {
+            return b == null;
+        }
+        if (b == null) {
+            return false;
+        }
+        return BigDecimal.valueOf(a).compareTo((new BigDecimal(b))) == 0;
+    }
+
+    public static boolean[] eqArray(byte[] a, BigInteger[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to check equality of two arrays (byte, BigInteger) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = eq(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] eqArray(byte[] a, BigInteger b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = eq(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] eqArray(byte a, BigInteger[] b) {
         boolean[] ret = new boolean[b.length];
         for (int i = 0; i < b.length; i++) {
             ret[i] = eq(a, b[i]);
@@ -11370,6 +17434,1030 @@ public final class QueryLanguageFunctionUtils {
         return ret;
     }
 
+    public static int compareTo(short a, BigDecimal b) {
+        if (a == QueryConstants.NULL_SHORT) {
+            return (b == null) ? 0 : -1;
+        }
+        if (b == null) {
+            return 1;
+        }
+        return BigDecimal.valueOf(a).compareTo(b);
+    }
+
+    public static boolean eq(short a, BigDecimal b) {
+        if (a == QueryConstants.NULL_SHORT) {
+            return b == null;
+        }
+        if (b == null) {
+            return false;
+        }
+        return BigDecimal.valueOf(a).compareTo(b) == 0;
+    }
+
+    public static boolean[] eqArray(short[] a, BigDecimal[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to check equality of two arrays (short, BigDecimal) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = eq(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] eqArray(short[] a, BigDecimal b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = eq(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] eqArray(short a, BigDecimal[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = eq(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static int compareTo(short a, BigInteger b) {
+        if (a == QueryConstants.NULL_SHORT) {
+            return (b == null) ? 0 : -1;
+        }
+        if (b == null) {
+            return 1;
+        }
+        return BigInteger.valueOf(a).compareTo(b);
+    }
+
+    public static boolean eq(short a, BigInteger b) {
+        if (a == QueryConstants.NULL_SHORT) {
+            return b == null;
+        }
+        if (b == null) {
+            return false;
+        }
+        return BigDecimal.valueOf(a).compareTo((new BigDecimal(b))) == 0;
+    }
+
+    public static boolean[] eqArray(short[] a, BigInteger[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to check equality of two arrays (short, BigInteger) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = eq(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] eqArray(short[] a, BigInteger b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = eq(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] eqArray(short a, BigInteger[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = eq(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static int compareTo(BigDecimal a, int b) {
+        if (a == null) {
+            return (b == QueryConstants.NULL_INT) ? 0 : -1;
+        }
+        if (b == QueryConstants.NULL_INT) {
+            return 1;
+        }
+        return a.compareTo(BigDecimal.valueOf(b));
+    }
+
+    public static boolean eq(BigDecimal a, int b) {
+        if (a == null) {
+            return b == QueryConstants.NULL_INT;
+        }
+        if (b == QueryConstants.NULL_INT) {
+            return false;
+        }
+        return a.compareTo(BigDecimal.valueOf(b)) == 0;
+    }
+
+    public static boolean[] eqArray(BigDecimal[] a, int[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to check equality of two arrays (BigDecimal, int) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = eq(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] eqArray(BigDecimal[] a, int b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = eq(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] eqArray(BigDecimal a, int[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = eq(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static int compareTo(BigDecimal a, double b) {
+        if (Double.isNaN(b)) {
+            return -1; // even if a == null
+        }
+        if (a == null) {
+            return (b == QueryConstants.NULL_DOUBLE) ? 0 : -1;
+        }
+        if (b == QueryConstants.NULL_DOUBLE) {
+            return 1;
+        }
+        return a.compareTo(BigDecimal.valueOf(b));
+    }
+
+    public static boolean eq(BigDecimal a, double b) {
+        if (Double.isNaN(b)) {
+            return false;
+        }
+        if (a == null) {
+            return b == QueryConstants.NULL_DOUBLE;
+        }
+        if (b == QueryConstants.NULL_DOUBLE) {
+            return false;
+        }
+        return a.compareTo(BigDecimal.valueOf(b)) == 0;
+    }
+
+    public static boolean[] eqArray(BigDecimal[] a, double[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to check equality of two arrays (BigDecimal, double) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = eq(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] eqArray(BigDecimal[] a, double b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = eq(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] eqArray(BigDecimal a, double[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = eq(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static int compareTo(BigDecimal a, long b) {
+        if (a == null) {
+            return (b == QueryConstants.NULL_LONG) ? 0 : -1;
+        }
+        if (b == QueryConstants.NULL_LONG) {
+            return 1;
+        }
+        return a.compareTo(BigDecimal.valueOf(b));
+    }
+
+    public static boolean eq(BigDecimal a, long b) {
+        if (a == null) {
+            return b == QueryConstants.NULL_LONG;
+        }
+        if (b == QueryConstants.NULL_LONG) {
+            return false;
+        }
+        return a.compareTo(BigDecimal.valueOf(b)) == 0;
+    }
+
+    public static boolean[] eqArray(BigDecimal[] a, long[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to check equality of two arrays (BigDecimal, long) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = eq(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] eqArray(BigDecimal[] a, long b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = eq(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] eqArray(BigDecimal a, long[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = eq(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static int compareTo(BigDecimal a, float b) {
+        if (Float.isNaN(b)) {
+            return -1; // even if a == null
+        }
+        if (a == null) {
+            return (b == QueryConstants.NULL_FLOAT) ? 0 : -1;
+        }
+        if (b == QueryConstants.NULL_FLOAT) {
+            return 1;
+        }
+        return a.compareTo(BigDecimal.valueOf(b));
+    }
+
+    public static boolean eq(BigDecimal a, float b) {
+        if (Float.isNaN(b)) {
+            return false;
+        }
+        if (a == null) {
+            return b == QueryConstants.NULL_FLOAT;
+        }
+        if (b == QueryConstants.NULL_FLOAT) {
+            return false;
+        }
+        return a.compareTo(BigDecimal.valueOf(b)) == 0;
+    }
+
+    public static boolean[] eqArray(BigDecimal[] a, float[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to check equality of two arrays (BigDecimal, float) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = eq(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] eqArray(BigDecimal[] a, float b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = eq(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] eqArray(BigDecimal a, float[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = eq(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static int compareTo(BigDecimal a, char b) {
+        if (a == null) {
+            return (b == QueryConstants.NULL_CHAR) ? 0 : -1;
+        }
+        if (b == QueryConstants.NULL_CHAR) {
+            return 1;
+        }
+        return a.compareTo(BigDecimal.valueOf(b));
+    }
+
+    public static boolean eq(BigDecimal a, char b) {
+        if (a == null) {
+            return b == QueryConstants.NULL_CHAR;
+        }
+        if (b == QueryConstants.NULL_CHAR) {
+            return false;
+        }
+        return a.compareTo(BigDecimal.valueOf(b)) == 0;
+    }
+
+    public static boolean[] eqArray(BigDecimal[] a, char[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to check equality of two arrays (BigDecimal, char) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = eq(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] eqArray(BigDecimal[] a, char b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = eq(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] eqArray(BigDecimal a, char[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = eq(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static int compareTo(BigDecimal a, byte b) {
+        if (a == null) {
+            return (b == QueryConstants.NULL_BYTE) ? 0 : -1;
+        }
+        if (b == QueryConstants.NULL_BYTE) {
+            return 1;
+        }
+        return a.compareTo(BigDecimal.valueOf(b));
+    }
+
+    public static boolean eq(BigDecimal a, byte b) {
+        if (a == null) {
+            return b == QueryConstants.NULL_BYTE;
+        }
+        if (b == QueryConstants.NULL_BYTE) {
+            return false;
+        }
+        return a.compareTo(BigDecimal.valueOf(b)) == 0;
+    }
+
+    public static boolean[] eqArray(BigDecimal[] a, byte[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to check equality of two arrays (BigDecimal, byte) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = eq(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] eqArray(BigDecimal[] a, byte b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = eq(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] eqArray(BigDecimal a, byte[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = eq(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static int compareTo(BigDecimal a, short b) {
+        if (a == null) {
+            return (b == QueryConstants.NULL_SHORT) ? 0 : -1;
+        }
+        if (b == QueryConstants.NULL_SHORT) {
+            return 1;
+        }
+        return a.compareTo(BigDecimal.valueOf(b));
+    }
+
+    public static boolean eq(BigDecimal a, short b) {
+        if (a == null) {
+            return b == QueryConstants.NULL_SHORT;
+        }
+        if (b == QueryConstants.NULL_SHORT) {
+            return false;
+        }
+        return a.compareTo(BigDecimal.valueOf(b)) == 0;
+    }
+
+    public static boolean[] eqArray(BigDecimal[] a, short[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to check equality of two arrays (BigDecimal, short) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = eq(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] eqArray(BigDecimal[] a, short b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = eq(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] eqArray(BigDecimal a, short[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = eq(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static int compareTo(BigDecimal a, BigDecimal b) {
+        if (a == null) {
+            return (b == null) ? 0 : -1;
+        }
+        if (b == null) {
+            return 1;
+        }
+        return a.compareTo(b);
+    }
+
+    public static boolean eq(BigDecimal a, BigDecimal b) {
+        if (a == null) {
+            return b == null;
+        }
+        if (b == null) {
+            return false;
+        }
+        return a.compareTo(b) == 0;
+    }
+
+    public static boolean[] eqArray(BigDecimal[] a, BigDecimal[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to check equality of two arrays (BigDecimal, BigDecimal) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = eq(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] eqArray(BigDecimal[] a, BigDecimal b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = eq(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] eqArray(BigDecimal a, BigDecimal[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = eq(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static int compareTo(BigDecimal a, BigInteger b) {
+        if (a == null) {
+            return (b == null) ? 0 : -1;
+        }
+        if (b == null) {
+            return 1;
+        }
+        return a.compareTo((new BigDecimal(b)));
+    }
+
+    public static boolean eq(BigDecimal a, BigInteger b) {
+        if (a == null) {
+            return b == null;
+        }
+        if (b == null) {
+            return false;
+        }
+        return a.compareTo((new BigDecimal(b))) == 0;
+    }
+
+    public static boolean[] eqArray(BigDecimal[] a, BigInteger[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to check equality of two arrays (BigDecimal, BigInteger) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = eq(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] eqArray(BigDecimal[] a, BigInteger b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = eq(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] eqArray(BigDecimal a, BigInteger[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = eq(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static int compareTo(BigInteger a, int b) {
+        if (a == null) {
+            return (b == QueryConstants.NULL_INT) ? 0 : -1;
+        }
+        if (b == QueryConstants.NULL_INT) {
+            return 1;
+        }
+        return a.compareTo(BigInteger.valueOf(b));
+    }
+
+    public static boolean eq(BigInteger a, int b) {
+        if (a == null) {
+            return b == QueryConstants.NULL_INT;
+        }
+        if (b == QueryConstants.NULL_INT) {
+            return false;
+        }
+        return (new BigDecimal(a)).compareTo(BigDecimal.valueOf(b)) == 0;
+    }
+
+    public static boolean[] eqArray(BigInteger[] a, int[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to check equality of two arrays (BigInteger, int) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = eq(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] eqArray(BigInteger[] a, int b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = eq(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] eqArray(BigInteger a, int[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = eq(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static int compareTo(BigInteger a, double b) {
+        if (Double.isNaN(b)) {
+            return -1; // even if a == null
+        }
+        if (a == null) {
+            return (b == QueryConstants.NULL_DOUBLE) ? 0 : -1;
+        }
+        if (b == QueryConstants.NULL_DOUBLE) {
+            return 1;
+        }
+        return (new BigDecimal(a)).compareTo(BigDecimal.valueOf(b));
+    }
+
+    public static boolean eq(BigInteger a, double b) {
+        if (Double.isNaN(b)) {
+            return false;
+        }
+        if (a == null) {
+            return b == QueryConstants.NULL_DOUBLE;
+        }
+        if (b == QueryConstants.NULL_DOUBLE) {
+            return false;
+        }
+        return (new BigDecimal(a)).compareTo(BigDecimal.valueOf(b)) == 0;
+    }
+
+    public static boolean[] eqArray(BigInteger[] a, double[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to check equality of two arrays (BigInteger, double) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = eq(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] eqArray(BigInteger[] a, double b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = eq(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] eqArray(BigInteger a, double[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = eq(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static int compareTo(BigInteger a, long b) {
+        if (a == null) {
+            return (b == QueryConstants.NULL_LONG) ? 0 : -1;
+        }
+        if (b == QueryConstants.NULL_LONG) {
+            return 1;
+        }
+        return a.compareTo(BigInteger.valueOf(b));
+    }
+
+    public static boolean eq(BigInteger a, long b) {
+        if (a == null) {
+            return b == QueryConstants.NULL_LONG;
+        }
+        if (b == QueryConstants.NULL_LONG) {
+            return false;
+        }
+        return (new BigDecimal(a)).compareTo(BigDecimal.valueOf(b)) == 0;
+    }
+
+    public static boolean[] eqArray(BigInteger[] a, long[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to check equality of two arrays (BigInteger, long) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = eq(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] eqArray(BigInteger[] a, long b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = eq(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] eqArray(BigInteger a, long[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = eq(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static int compareTo(BigInteger a, float b) {
+        if (Float.isNaN(b)) {
+            return -1; // even if a == null
+        }
+        if (a == null) {
+            return (b == QueryConstants.NULL_FLOAT) ? 0 : -1;
+        }
+        if (b == QueryConstants.NULL_FLOAT) {
+            return 1;
+        }
+        return (new BigDecimal(a)).compareTo(BigDecimal.valueOf(b));
+    }
+
+    public static boolean eq(BigInteger a, float b) {
+        if (Float.isNaN(b)) {
+            return false;
+        }
+        if (a == null) {
+            return b == QueryConstants.NULL_FLOAT;
+        }
+        if (b == QueryConstants.NULL_FLOAT) {
+            return false;
+        }
+        return (new BigDecimal(a)).compareTo(BigDecimal.valueOf(b)) == 0;
+    }
+
+    public static boolean[] eqArray(BigInteger[] a, float[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to check equality of two arrays (BigInteger, float) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = eq(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] eqArray(BigInteger[] a, float b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = eq(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] eqArray(BigInteger a, float[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = eq(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static int compareTo(BigInteger a, char b) {
+        if (a == null) {
+            return (b == QueryConstants.NULL_CHAR) ? 0 : -1;
+        }
+        if (b == QueryConstants.NULL_CHAR) {
+            return 1;
+        }
+        return a.compareTo(BigInteger.valueOf(b));
+    }
+
+    public static boolean eq(BigInteger a, char b) {
+        if (a == null) {
+            return b == QueryConstants.NULL_CHAR;
+        }
+        if (b == QueryConstants.NULL_CHAR) {
+            return false;
+        }
+        return (new BigDecimal(a)).compareTo(BigDecimal.valueOf(b)) == 0;
+    }
+
+    public static boolean[] eqArray(BigInteger[] a, char[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to check equality of two arrays (BigInteger, char) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = eq(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] eqArray(BigInteger[] a, char b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = eq(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] eqArray(BigInteger a, char[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = eq(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static int compareTo(BigInteger a, byte b) {
+        if (a == null) {
+            return (b == QueryConstants.NULL_BYTE) ? 0 : -1;
+        }
+        if (b == QueryConstants.NULL_BYTE) {
+            return 1;
+        }
+        return a.compareTo(BigInteger.valueOf(b));
+    }
+
+    public static boolean eq(BigInteger a, byte b) {
+        if (a == null) {
+            return b == QueryConstants.NULL_BYTE;
+        }
+        if (b == QueryConstants.NULL_BYTE) {
+            return false;
+        }
+        return (new BigDecimal(a)).compareTo(BigDecimal.valueOf(b)) == 0;
+    }
+
+    public static boolean[] eqArray(BigInteger[] a, byte[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to check equality of two arrays (BigInteger, byte) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = eq(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] eqArray(BigInteger[] a, byte b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = eq(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] eqArray(BigInteger a, byte[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = eq(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static int compareTo(BigInteger a, short b) {
+        if (a == null) {
+            return (b == QueryConstants.NULL_SHORT) ? 0 : -1;
+        }
+        if (b == QueryConstants.NULL_SHORT) {
+            return 1;
+        }
+        return a.compareTo(BigInteger.valueOf(b));
+    }
+
+    public static boolean eq(BigInteger a, short b) {
+        if (a == null) {
+            return b == QueryConstants.NULL_SHORT;
+        }
+        if (b == QueryConstants.NULL_SHORT) {
+            return false;
+        }
+        return (new BigDecimal(a)).compareTo(BigDecimal.valueOf(b)) == 0;
+    }
+
+    public static boolean[] eqArray(BigInteger[] a, short[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to check equality of two arrays (BigInteger, short) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = eq(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] eqArray(BigInteger[] a, short b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = eq(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] eqArray(BigInteger a, short[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = eq(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static int compareTo(BigInteger a, BigDecimal b) {
+        if (a == null) {
+            return (b == null) ? 0 : -1;
+        }
+        if (b == null) {
+            return 1;
+        }
+        return (new BigDecimal(a)).compareTo(b);
+    }
+
+    public static boolean eq(BigInteger a, BigDecimal b) {
+        if (a == null) {
+            return b == null;
+        }
+        if (b == null) {
+            return false;
+        }
+        return (new BigDecimal(a)).compareTo(b) == 0;
+    }
+
+    public static boolean[] eqArray(BigInteger[] a, BigDecimal[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to check equality of two arrays (BigInteger, BigDecimal) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = eq(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] eqArray(BigInteger[] a, BigDecimal b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = eq(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] eqArray(BigInteger a, BigDecimal[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = eq(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static int compareTo(BigInteger a, BigInteger b) {
+        if (a == null) {
+            return (b == null) ? 0 : -1;
+        }
+        if (b == null) {
+            return 1;
+        }
+        return a.compareTo(b);
+    }
+
+    public static boolean eq(BigInteger a, BigInteger b) {
+        if (a == null) {
+            return b == null;
+        }
+        if (b == null) {
+            return false;
+        }
+        return (new BigDecimal(a)).compareTo((new BigDecimal(b))) == 0;
+    }
+
+    public static boolean[] eqArray(BigInteger[] a, BigInteger[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to check equality of two arrays (BigInteger, BigInteger) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = eq(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] eqArray(BigInteger[] a, BigInteger b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = eq(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] eqArray(BigInteger a, BigInteger[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = eq(a, b[i]);
+        }
+
+        return ret;
+    }
+
     public static boolean less(int a, int b) {
         return compareTo(a, b) < 0;
     }
@@ -11600,6 +18688,74 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean[] lessArray(int a, short[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = less(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean less(int a, BigDecimal b) {
+        return compareTo(a, b) < 0;
+    }
+
+    public static boolean[] lessArray(int[] a, BigDecimal[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to compare two arrays (int, BigDecimal) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = less(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] lessArray(int[] a, BigDecimal b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = less(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] lessArray(int a, BigDecimal[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = less(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean less(int a, BigInteger b) {
+        return compareTo(a, b) < 0;
+    }
+
+    public static boolean[] lessArray(int[] a, BigInteger[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to compare two arrays (int, BigInteger) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = less(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] lessArray(int[] a, BigInteger b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = less(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] lessArray(int a, BigInteger[] b) {
         boolean[] ret = new boolean[b.length];
         for (int i = 0; i < b.length; i++) {
             ret[i] = less(a, b[i]);
@@ -11846,6 +19002,74 @@ public final class QueryLanguageFunctionUtils {
         return ret;
     }
 
+    public static boolean less(double a, BigDecimal b) {
+        return compareTo(a, b) < 0;
+    }
+
+    public static boolean[] lessArray(double[] a, BigDecimal[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to compare two arrays (double, BigDecimal) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = less(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] lessArray(double[] a, BigDecimal b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = less(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] lessArray(double a, BigDecimal[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = less(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean less(double a, BigInteger b) {
+        return compareTo(a, b) < 0;
+    }
+
+    public static boolean[] lessArray(double[] a, BigInteger[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to compare two arrays (double, BigInteger) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = less(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] lessArray(double[] a, BigInteger b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = less(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] lessArray(double a, BigInteger[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = less(a, b[i]);
+        }
+
+        return ret;
+    }
+
     public static boolean less(long a, int b) {
         return compareTo(a, b) < 0;
     }
@@ -12076,6 +19300,74 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean[] lessArray(long a, short[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = less(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean less(long a, BigDecimal b) {
+        return compareTo(a, b) < 0;
+    }
+
+    public static boolean[] lessArray(long[] a, BigDecimal[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to compare two arrays (long, BigDecimal) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = less(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] lessArray(long[] a, BigDecimal b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = less(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] lessArray(long a, BigDecimal[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = less(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean less(long a, BigInteger b) {
+        return compareTo(a, b) < 0;
+    }
+
+    public static boolean[] lessArray(long[] a, BigInteger[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to compare two arrays (long, BigInteger) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = less(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] lessArray(long[] a, BigInteger b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = less(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] lessArray(long a, BigInteger[] b) {
         boolean[] ret = new boolean[b.length];
         for (int i = 0; i < b.length; i++) {
             ret[i] = less(a, b[i]);
@@ -12322,6 +19614,74 @@ public final class QueryLanguageFunctionUtils {
         return ret;
     }
 
+    public static boolean less(float a, BigDecimal b) {
+        return compareTo(a, b) < 0;
+    }
+
+    public static boolean[] lessArray(float[] a, BigDecimal[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to compare two arrays (float, BigDecimal) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = less(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] lessArray(float[] a, BigDecimal b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = less(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] lessArray(float a, BigDecimal[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = less(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean less(float a, BigInteger b) {
+        return compareTo(a, b) < 0;
+    }
+
+    public static boolean[] lessArray(float[] a, BigInteger[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to compare two arrays (float, BigInteger) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = less(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] lessArray(float[] a, BigInteger b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = less(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] lessArray(float a, BigInteger[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = less(a, b[i]);
+        }
+
+        return ret;
+    }
+
     public static boolean less(char a, int b) {
         return compareTo(a, b) < 0;
     }
@@ -12552,6 +19912,74 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean[] lessArray(char a, short[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = less(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean less(char a, BigDecimal b) {
+        return compareTo(a, b) < 0;
+    }
+
+    public static boolean[] lessArray(char[] a, BigDecimal[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to compare two arrays (char, BigDecimal) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = less(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] lessArray(char[] a, BigDecimal b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = less(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] lessArray(char a, BigDecimal[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = less(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean less(char a, BigInteger b) {
+        return compareTo(a, b) < 0;
+    }
+
+    public static boolean[] lessArray(char[] a, BigInteger[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to compare two arrays (char, BigInteger) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = less(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] lessArray(char[] a, BigInteger b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = less(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] lessArray(char a, BigInteger[] b) {
         boolean[] ret = new boolean[b.length];
         for (int i = 0; i < b.length; i++) {
             ret[i] = less(a, b[i]);
@@ -12798,6 +20226,74 @@ public final class QueryLanguageFunctionUtils {
         return ret;
     }
 
+    public static boolean less(byte a, BigDecimal b) {
+        return compareTo(a, b) < 0;
+    }
+
+    public static boolean[] lessArray(byte[] a, BigDecimal[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to compare two arrays (byte, BigDecimal) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = less(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] lessArray(byte[] a, BigDecimal b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = less(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] lessArray(byte a, BigDecimal[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = less(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean less(byte a, BigInteger b) {
+        return compareTo(a, b) < 0;
+    }
+
+    public static boolean[] lessArray(byte[] a, BigInteger[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to compare two arrays (byte, BigInteger) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = less(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] lessArray(byte[] a, BigInteger b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = less(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] lessArray(byte a, BigInteger[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = less(a, b[i]);
+        }
+
+        return ret;
+    }
+
     public static boolean less(short a, int b) {
         return compareTo(a, b) < 0;
     }
@@ -13028,6 +20524,686 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean[] lessArray(short a, short[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = less(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean less(short a, BigDecimal b) {
+        return compareTo(a, b) < 0;
+    }
+
+    public static boolean[] lessArray(short[] a, BigDecimal[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to compare two arrays (short, BigDecimal) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = less(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] lessArray(short[] a, BigDecimal b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = less(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] lessArray(short a, BigDecimal[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = less(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean less(short a, BigInteger b) {
+        return compareTo(a, b) < 0;
+    }
+
+    public static boolean[] lessArray(short[] a, BigInteger[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to compare two arrays (short, BigInteger) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = less(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] lessArray(short[] a, BigInteger b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = less(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] lessArray(short a, BigInteger[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = less(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean less(BigDecimal a, int b) {
+        return compareTo(a, b) < 0;
+    }
+
+    public static boolean[] lessArray(BigDecimal[] a, int[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to compare two arrays (BigDecimal, int) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = less(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] lessArray(BigDecimal[] a, int b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = less(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] lessArray(BigDecimal a, int[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = less(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean less(BigDecimal a, double b) {
+        return compareTo(a, b) < 0;
+    }
+
+    public static boolean[] lessArray(BigDecimal[] a, double[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to compare two arrays (BigDecimal, double) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = less(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] lessArray(BigDecimal[] a, double b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = less(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] lessArray(BigDecimal a, double[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = less(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean less(BigDecimal a, long b) {
+        return compareTo(a, b) < 0;
+    }
+
+    public static boolean[] lessArray(BigDecimal[] a, long[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to compare two arrays (BigDecimal, long) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = less(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] lessArray(BigDecimal[] a, long b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = less(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] lessArray(BigDecimal a, long[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = less(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean less(BigDecimal a, float b) {
+        return compareTo(a, b) < 0;
+    }
+
+    public static boolean[] lessArray(BigDecimal[] a, float[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to compare two arrays (BigDecimal, float) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = less(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] lessArray(BigDecimal[] a, float b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = less(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] lessArray(BigDecimal a, float[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = less(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean less(BigDecimal a, char b) {
+        return compareTo(a, b) < 0;
+    }
+
+    public static boolean[] lessArray(BigDecimal[] a, char[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to compare two arrays (BigDecimal, char) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = less(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] lessArray(BigDecimal[] a, char b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = less(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] lessArray(BigDecimal a, char[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = less(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean less(BigDecimal a, byte b) {
+        return compareTo(a, b) < 0;
+    }
+
+    public static boolean[] lessArray(BigDecimal[] a, byte[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to compare two arrays (BigDecimal, byte) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = less(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] lessArray(BigDecimal[] a, byte b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = less(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] lessArray(BigDecimal a, byte[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = less(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean less(BigDecimal a, short b) {
+        return compareTo(a, b) < 0;
+    }
+
+    public static boolean[] lessArray(BigDecimal[] a, short[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to compare two arrays (BigDecimal, short) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = less(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] lessArray(BigDecimal[] a, short b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = less(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] lessArray(BigDecimal a, short[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = less(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean less(BigDecimal a, BigDecimal b) {
+        return compareTo(a, b) < 0;
+    }
+
+    public static boolean[] lessArray(BigDecimal[] a, BigDecimal[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to compare two arrays (BigDecimal, BigDecimal) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = less(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] lessArray(BigDecimal[] a, BigDecimal b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = less(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] lessArray(BigDecimal a, BigDecimal[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = less(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean less(BigDecimal a, BigInteger b) {
+        return compareTo(a, b) < 0;
+    }
+
+    public static boolean[] lessArray(BigDecimal[] a, BigInteger[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to compare two arrays (BigDecimal, BigInteger) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = less(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] lessArray(BigDecimal[] a, BigInteger b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = less(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] lessArray(BigDecimal a, BigInteger[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = less(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean less(BigInteger a, int b) {
+        return compareTo(a, b) < 0;
+    }
+
+    public static boolean[] lessArray(BigInteger[] a, int[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to compare two arrays (BigInteger, int) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = less(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] lessArray(BigInteger[] a, int b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = less(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] lessArray(BigInteger a, int[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = less(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean less(BigInteger a, double b) {
+        return compareTo(a, b) < 0;
+    }
+
+    public static boolean[] lessArray(BigInteger[] a, double[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to compare two arrays (BigInteger, double) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = less(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] lessArray(BigInteger[] a, double b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = less(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] lessArray(BigInteger a, double[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = less(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean less(BigInteger a, long b) {
+        return compareTo(a, b) < 0;
+    }
+
+    public static boolean[] lessArray(BigInteger[] a, long[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to compare two arrays (BigInteger, long) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = less(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] lessArray(BigInteger[] a, long b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = less(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] lessArray(BigInteger a, long[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = less(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean less(BigInteger a, float b) {
+        return compareTo(a, b) < 0;
+    }
+
+    public static boolean[] lessArray(BigInteger[] a, float[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to compare two arrays (BigInteger, float) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = less(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] lessArray(BigInteger[] a, float b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = less(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] lessArray(BigInteger a, float[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = less(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean less(BigInteger a, char b) {
+        return compareTo(a, b) < 0;
+    }
+
+    public static boolean[] lessArray(BigInteger[] a, char[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to compare two arrays (BigInteger, char) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = less(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] lessArray(BigInteger[] a, char b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = less(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] lessArray(BigInteger a, char[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = less(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean less(BigInteger a, byte b) {
+        return compareTo(a, b) < 0;
+    }
+
+    public static boolean[] lessArray(BigInteger[] a, byte[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to compare two arrays (BigInteger, byte) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = less(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] lessArray(BigInteger[] a, byte b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = less(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] lessArray(BigInteger a, byte[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = less(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean less(BigInteger a, short b) {
+        return compareTo(a, b) < 0;
+    }
+
+    public static boolean[] lessArray(BigInteger[] a, short[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to compare two arrays (BigInteger, short) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = less(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] lessArray(BigInteger[] a, short b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = less(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] lessArray(BigInteger a, short[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = less(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean less(BigInteger a, BigDecimal b) {
+        return compareTo(a, b) < 0;
+    }
+
+    public static boolean[] lessArray(BigInteger[] a, BigDecimal[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to compare two arrays (BigInteger, BigDecimal) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = less(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] lessArray(BigInteger[] a, BigDecimal b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = less(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] lessArray(BigInteger a, BigDecimal[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = less(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean less(BigInteger a, BigInteger b) {
+        return compareTo(a, b) < 0;
+    }
+
+    public static boolean[] lessArray(BigInteger[] a, BigInteger[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to compare two arrays (BigInteger, BigInteger) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = less(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] lessArray(BigInteger[] a, BigInteger b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = less(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] lessArray(BigInteger a, BigInteger[] b) {
         boolean[] ret = new boolean[b.length];
         for (int i = 0; i < b.length; i++) {
             ret[i] = less(a, b[i]);
@@ -13274,6 +21450,74 @@ public final class QueryLanguageFunctionUtils {
         return ret;
     }
 
+    public static boolean greater(int a, BigDecimal b) {
+        return compareTo(a, b) > 0;
+    }
+
+    public static boolean[] greaterArray(int[] a, BigDecimal[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to compare two arrays (int, BigDecimal) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = greater(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] greaterArray(int[] a, BigDecimal b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = greater(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] greaterArray(int a, BigDecimal[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = greater(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean greater(int a, BigInteger b) {
+        return compareTo(a, b) > 0;
+    }
+
+    public static boolean[] greaterArray(int[] a, BigInteger[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to compare two arrays (int, BigInteger) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = greater(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] greaterArray(int[] a, BigInteger b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = greater(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] greaterArray(int a, BigInteger[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = greater(a, b[i]);
+        }
+
+        return ret;
+    }
+
     public static boolean greater(double a, int b) {
         return compareTo(a, b) > 0;
     }
@@ -13504,6 +21748,74 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean[] greaterArray(double a, short[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = greater(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean greater(double a, BigDecimal b) {
+        return compareTo(a, b) > 0;
+    }
+
+    public static boolean[] greaterArray(double[] a, BigDecimal[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to compare two arrays (double, BigDecimal) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = greater(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] greaterArray(double[] a, BigDecimal b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = greater(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] greaterArray(double a, BigDecimal[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = greater(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean greater(double a, BigInteger b) {
+        return compareTo(a, b) > 0;
+    }
+
+    public static boolean[] greaterArray(double[] a, BigInteger[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to compare two arrays (double, BigInteger) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = greater(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] greaterArray(double[] a, BigInteger b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = greater(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] greaterArray(double a, BigInteger[] b) {
         boolean[] ret = new boolean[b.length];
         for (int i = 0; i < b.length; i++) {
             ret[i] = greater(a, b[i]);
@@ -13750,6 +22062,74 @@ public final class QueryLanguageFunctionUtils {
         return ret;
     }
 
+    public static boolean greater(long a, BigDecimal b) {
+        return compareTo(a, b) > 0;
+    }
+
+    public static boolean[] greaterArray(long[] a, BigDecimal[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to compare two arrays (long, BigDecimal) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = greater(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] greaterArray(long[] a, BigDecimal b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = greater(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] greaterArray(long a, BigDecimal[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = greater(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean greater(long a, BigInteger b) {
+        return compareTo(a, b) > 0;
+    }
+
+    public static boolean[] greaterArray(long[] a, BigInteger[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to compare two arrays (long, BigInteger) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = greater(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] greaterArray(long[] a, BigInteger b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = greater(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] greaterArray(long a, BigInteger[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = greater(a, b[i]);
+        }
+
+        return ret;
+    }
+
     public static boolean greater(float a, int b) {
         return compareTo(a, b) > 0;
     }
@@ -13980,6 +22360,74 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean[] greaterArray(float a, short[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = greater(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean greater(float a, BigDecimal b) {
+        return compareTo(a, b) > 0;
+    }
+
+    public static boolean[] greaterArray(float[] a, BigDecimal[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to compare two arrays (float, BigDecimal) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = greater(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] greaterArray(float[] a, BigDecimal b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = greater(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] greaterArray(float a, BigDecimal[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = greater(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean greater(float a, BigInteger b) {
+        return compareTo(a, b) > 0;
+    }
+
+    public static boolean[] greaterArray(float[] a, BigInteger[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to compare two arrays (float, BigInteger) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = greater(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] greaterArray(float[] a, BigInteger b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = greater(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] greaterArray(float a, BigInteger[] b) {
         boolean[] ret = new boolean[b.length];
         for (int i = 0; i < b.length; i++) {
             ret[i] = greater(a, b[i]);
@@ -14226,6 +22674,74 @@ public final class QueryLanguageFunctionUtils {
         return ret;
     }
 
+    public static boolean greater(char a, BigDecimal b) {
+        return compareTo(a, b) > 0;
+    }
+
+    public static boolean[] greaterArray(char[] a, BigDecimal[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to compare two arrays (char, BigDecimal) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = greater(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] greaterArray(char[] a, BigDecimal b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = greater(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] greaterArray(char a, BigDecimal[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = greater(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean greater(char a, BigInteger b) {
+        return compareTo(a, b) > 0;
+    }
+
+    public static boolean[] greaterArray(char[] a, BigInteger[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to compare two arrays (char, BigInteger) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = greater(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] greaterArray(char[] a, BigInteger b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = greater(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] greaterArray(char a, BigInteger[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = greater(a, b[i]);
+        }
+
+        return ret;
+    }
+
     public static boolean greater(byte a, int b) {
         return compareTo(a, b) > 0;
     }
@@ -14456,6 +22972,74 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean[] greaterArray(byte a, short[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = greater(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean greater(byte a, BigDecimal b) {
+        return compareTo(a, b) > 0;
+    }
+
+    public static boolean[] greaterArray(byte[] a, BigDecimal[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to compare two arrays (byte, BigDecimal) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = greater(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] greaterArray(byte[] a, BigDecimal b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = greater(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] greaterArray(byte a, BigDecimal[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = greater(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean greater(byte a, BigInteger b) {
+        return compareTo(a, b) > 0;
+    }
+
+    public static boolean[] greaterArray(byte[] a, BigInteger[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to compare two arrays (byte, BigInteger) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = greater(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] greaterArray(byte[] a, BigInteger b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = greater(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] greaterArray(byte a, BigInteger[] b) {
         boolean[] ret = new boolean[b.length];
         for (int i = 0; i < b.length; i++) {
             ret[i] = greater(a, b[i]);
@@ -14702,6 +23286,686 @@ public final class QueryLanguageFunctionUtils {
         return ret;
     }
 
+    public static boolean greater(short a, BigDecimal b) {
+        return compareTo(a, b) > 0;
+    }
+
+    public static boolean[] greaterArray(short[] a, BigDecimal[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to compare two arrays (short, BigDecimal) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = greater(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] greaterArray(short[] a, BigDecimal b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = greater(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] greaterArray(short a, BigDecimal[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = greater(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean greater(short a, BigInteger b) {
+        return compareTo(a, b) > 0;
+    }
+
+    public static boolean[] greaterArray(short[] a, BigInteger[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to compare two arrays (short, BigInteger) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = greater(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] greaterArray(short[] a, BigInteger b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = greater(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] greaterArray(short a, BigInteger[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = greater(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean greater(BigDecimal a, int b) {
+        return compareTo(a, b) > 0;
+    }
+
+    public static boolean[] greaterArray(BigDecimal[] a, int[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to compare two arrays (BigDecimal, int) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = greater(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] greaterArray(BigDecimal[] a, int b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = greater(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] greaterArray(BigDecimal a, int[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = greater(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean greater(BigDecimal a, double b) {
+        return compareTo(a, b) > 0;
+    }
+
+    public static boolean[] greaterArray(BigDecimal[] a, double[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to compare two arrays (BigDecimal, double) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = greater(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] greaterArray(BigDecimal[] a, double b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = greater(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] greaterArray(BigDecimal a, double[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = greater(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean greater(BigDecimal a, long b) {
+        return compareTo(a, b) > 0;
+    }
+
+    public static boolean[] greaterArray(BigDecimal[] a, long[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to compare two arrays (BigDecimal, long) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = greater(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] greaterArray(BigDecimal[] a, long b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = greater(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] greaterArray(BigDecimal a, long[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = greater(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean greater(BigDecimal a, float b) {
+        return compareTo(a, b) > 0;
+    }
+
+    public static boolean[] greaterArray(BigDecimal[] a, float[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to compare two arrays (BigDecimal, float) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = greater(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] greaterArray(BigDecimal[] a, float b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = greater(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] greaterArray(BigDecimal a, float[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = greater(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean greater(BigDecimal a, char b) {
+        return compareTo(a, b) > 0;
+    }
+
+    public static boolean[] greaterArray(BigDecimal[] a, char[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to compare two arrays (BigDecimal, char) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = greater(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] greaterArray(BigDecimal[] a, char b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = greater(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] greaterArray(BigDecimal a, char[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = greater(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean greater(BigDecimal a, byte b) {
+        return compareTo(a, b) > 0;
+    }
+
+    public static boolean[] greaterArray(BigDecimal[] a, byte[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to compare two arrays (BigDecimal, byte) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = greater(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] greaterArray(BigDecimal[] a, byte b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = greater(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] greaterArray(BigDecimal a, byte[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = greater(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean greater(BigDecimal a, short b) {
+        return compareTo(a, b) > 0;
+    }
+
+    public static boolean[] greaterArray(BigDecimal[] a, short[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to compare two arrays (BigDecimal, short) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = greater(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] greaterArray(BigDecimal[] a, short b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = greater(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] greaterArray(BigDecimal a, short[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = greater(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean greater(BigDecimal a, BigDecimal b) {
+        return compareTo(a, b) > 0;
+    }
+
+    public static boolean[] greaterArray(BigDecimal[] a, BigDecimal[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to compare two arrays (BigDecimal, BigDecimal) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = greater(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] greaterArray(BigDecimal[] a, BigDecimal b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = greater(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] greaterArray(BigDecimal a, BigDecimal[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = greater(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean greater(BigDecimal a, BigInteger b) {
+        return compareTo(a, b) > 0;
+    }
+
+    public static boolean[] greaterArray(BigDecimal[] a, BigInteger[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to compare two arrays (BigDecimal, BigInteger) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = greater(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] greaterArray(BigDecimal[] a, BigInteger b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = greater(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] greaterArray(BigDecimal a, BigInteger[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = greater(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean greater(BigInteger a, int b) {
+        return compareTo(a, b) > 0;
+    }
+
+    public static boolean[] greaterArray(BigInteger[] a, int[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to compare two arrays (BigInteger, int) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = greater(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] greaterArray(BigInteger[] a, int b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = greater(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] greaterArray(BigInteger a, int[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = greater(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean greater(BigInteger a, double b) {
+        return compareTo(a, b) > 0;
+    }
+
+    public static boolean[] greaterArray(BigInteger[] a, double[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to compare two arrays (BigInteger, double) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = greater(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] greaterArray(BigInteger[] a, double b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = greater(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] greaterArray(BigInteger a, double[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = greater(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean greater(BigInteger a, long b) {
+        return compareTo(a, b) > 0;
+    }
+
+    public static boolean[] greaterArray(BigInteger[] a, long[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to compare two arrays (BigInteger, long) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = greater(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] greaterArray(BigInteger[] a, long b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = greater(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] greaterArray(BigInteger a, long[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = greater(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean greater(BigInteger a, float b) {
+        return compareTo(a, b) > 0;
+    }
+
+    public static boolean[] greaterArray(BigInteger[] a, float[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to compare two arrays (BigInteger, float) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = greater(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] greaterArray(BigInteger[] a, float b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = greater(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] greaterArray(BigInteger a, float[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = greater(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean greater(BigInteger a, char b) {
+        return compareTo(a, b) > 0;
+    }
+
+    public static boolean[] greaterArray(BigInteger[] a, char[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to compare two arrays (BigInteger, char) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = greater(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] greaterArray(BigInteger[] a, char b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = greater(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] greaterArray(BigInteger a, char[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = greater(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean greater(BigInteger a, byte b) {
+        return compareTo(a, b) > 0;
+    }
+
+    public static boolean[] greaterArray(BigInteger[] a, byte[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to compare two arrays (BigInteger, byte) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = greater(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] greaterArray(BigInteger[] a, byte b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = greater(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] greaterArray(BigInteger a, byte[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = greater(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean greater(BigInteger a, short b) {
+        return compareTo(a, b) > 0;
+    }
+
+    public static boolean[] greaterArray(BigInteger[] a, short[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to compare two arrays (BigInteger, short) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = greater(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] greaterArray(BigInteger[] a, short b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = greater(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] greaterArray(BigInteger a, short[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = greater(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean greater(BigInteger a, BigDecimal b) {
+        return compareTo(a, b) > 0;
+    }
+
+    public static boolean[] greaterArray(BigInteger[] a, BigDecimal[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to compare two arrays (BigInteger, BigDecimal) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = greater(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] greaterArray(BigInteger[] a, BigDecimal b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = greater(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] greaterArray(BigInteger a, BigDecimal[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = greater(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean greater(BigInteger a, BigInteger b) {
+        return compareTo(a, b) > 0;
+    }
+
+    public static boolean[] greaterArray(BigInteger[] a, BigInteger[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to compare two arrays (BigInteger, BigInteger) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = greater(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] greaterArray(BigInteger[] a, BigInteger b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = greater(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] greaterArray(BigInteger a, BigInteger[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = greater(a, b[i]);
+        }
+
+        return ret;
+    }
+
     public static boolean lessEquals(int a, int b) {
         return compareTo(a, b) <= 0;
     }
@@ -14932,6 +24196,74 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean[] lessEqualsArray(int a, short[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = lessEquals(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean lessEquals(int a, BigDecimal b) {
+        return compareTo(a, b) <= 0;
+    }
+
+    public static boolean[] lessEqualsArray(int[] a, BigDecimal[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to compare two arrays (int, BigDecimal) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = lessEquals(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] lessEqualsArray(int[] a, BigDecimal b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = lessEquals(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] lessEqualsArray(int a, BigDecimal[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = lessEquals(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean lessEquals(int a, BigInteger b) {
+        return compareTo(a, b) <= 0;
+    }
+
+    public static boolean[] lessEqualsArray(int[] a, BigInteger[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to compare two arrays (int, BigInteger) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = lessEquals(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] lessEqualsArray(int[] a, BigInteger b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = lessEquals(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] lessEqualsArray(int a, BigInteger[] b) {
         boolean[] ret = new boolean[b.length];
         for (int i = 0; i < b.length; i++) {
             ret[i] = lessEquals(a, b[i]);
@@ -15178,6 +24510,74 @@ public final class QueryLanguageFunctionUtils {
         return ret;
     }
 
+    public static boolean lessEquals(double a, BigDecimal b) {
+        return compareTo(a, b) <= 0;
+    }
+
+    public static boolean[] lessEqualsArray(double[] a, BigDecimal[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to compare two arrays (double, BigDecimal) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = lessEquals(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] lessEqualsArray(double[] a, BigDecimal b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = lessEquals(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] lessEqualsArray(double a, BigDecimal[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = lessEquals(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean lessEquals(double a, BigInteger b) {
+        return compareTo(a, b) <= 0;
+    }
+
+    public static boolean[] lessEqualsArray(double[] a, BigInteger[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to compare two arrays (double, BigInteger) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = lessEquals(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] lessEqualsArray(double[] a, BigInteger b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = lessEquals(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] lessEqualsArray(double a, BigInteger[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = lessEquals(a, b[i]);
+        }
+
+        return ret;
+    }
+
     public static boolean lessEquals(long a, int b) {
         return compareTo(a, b) <= 0;
     }
@@ -15408,6 +24808,74 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean[] lessEqualsArray(long a, short[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = lessEquals(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean lessEquals(long a, BigDecimal b) {
+        return compareTo(a, b) <= 0;
+    }
+
+    public static boolean[] lessEqualsArray(long[] a, BigDecimal[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to compare two arrays (long, BigDecimal) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = lessEquals(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] lessEqualsArray(long[] a, BigDecimal b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = lessEquals(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] lessEqualsArray(long a, BigDecimal[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = lessEquals(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean lessEquals(long a, BigInteger b) {
+        return compareTo(a, b) <= 0;
+    }
+
+    public static boolean[] lessEqualsArray(long[] a, BigInteger[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to compare two arrays (long, BigInteger) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = lessEquals(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] lessEqualsArray(long[] a, BigInteger b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = lessEquals(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] lessEqualsArray(long a, BigInteger[] b) {
         boolean[] ret = new boolean[b.length];
         for (int i = 0; i < b.length; i++) {
             ret[i] = lessEquals(a, b[i]);
@@ -15654,6 +25122,74 @@ public final class QueryLanguageFunctionUtils {
         return ret;
     }
 
+    public static boolean lessEquals(float a, BigDecimal b) {
+        return compareTo(a, b) <= 0;
+    }
+
+    public static boolean[] lessEqualsArray(float[] a, BigDecimal[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to compare two arrays (float, BigDecimal) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = lessEquals(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] lessEqualsArray(float[] a, BigDecimal b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = lessEquals(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] lessEqualsArray(float a, BigDecimal[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = lessEquals(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean lessEquals(float a, BigInteger b) {
+        return compareTo(a, b) <= 0;
+    }
+
+    public static boolean[] lessEqualsArray(float[] a, BigInteger[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to compare two arrays (float, BigInteger) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = lessEquals(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] lessEqualsArray(float[] a, BigInteger b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = lessEquals(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] lessEqualsArray(float a, BigInteger[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = lessEquals(a, b[i]);
+        }
+
+        return ret;
+    }
+
     public static boolean lessEquals(char a, int b) {
         return compareTo(a, b) <= 0;
     }
@@ -15884,6 +25420,74 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean[] lessEqualsArray(char a, short[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = lessEquals(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean lessEquals(char a, BigDecimal b) {
+        return compareTo(a, b) <= 0;
+    }
+
+    public static boolean[] lessEqualsArray(char[] a, BigDecimal[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to compare two arrays (char, BigDecimal) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = lessEquals(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] lessEqualsArray(char[] a, BigDecimal b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = lessEquals(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] lessEqualsArray(char a, BigDecimal[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = lessEquals(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean lessEquals(char a, BigInteger b) {
+        return compareTo(a, b) <= 0;
+    }
+
+    public static boolean[] lessEqualsArray(char[] a, BigInteger[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to compare two arrays (char, BigInteger) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = lessEquals(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] lessEqualsArray(char[] a, BigInteger b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = lessEquals(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] lessEqualsArray(char a, BigInteger[] b) {
         boolean[] ret = new boolean[b.length];
         for (int i = 0; i < b.length; i++) {
             ret[i] = lessEquals(a, b[i]);
@@ -16130,6 +25734,74 @@ public final class QueryLanguageFunctionUtils {
         return ret;
     }
 
+    public static boolean lessEquals(byte a, BigDecimal b) {
+        return compareTo(a, b) <= 0;
+    }
+
+    public static boolean[] lessEqualsArray(byte[] a, BigDecimal[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to compare two arrays (byte, BigDecimal) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = lessEquals(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] lessEqualsArray(byte[] a, BigDecimal b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = lessEquals(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] lessEqualsArray(byte a, BigDecimal[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = lessEquals(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean lessEquals(byte a, BigInteger b) {
+        return compareTo(a, b) <= 0;
+    }
+
+    public static boolean[] lessEqualsArray(byte[] a, BigInteger[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to compare two arrays (byte, BigInteger) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = lessEquals(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] lessEqualsArray(byte[] a, BigInteger b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = lessEquals(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] lessEqualsArray(byte a, BigInteger[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = lessEquals(a, b[i]);
+        }
+
+        return ret;
+    }
+
     public static boolean lessEquals(short a, int b) {
         return compareTo(a, b) <= 0;
     }
@@ -16360,6 +26032,686 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean[] lessEqualsArray(short a, short[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = lessEquals(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean lessEquals(short a, BigDecimal b) {
+        return compareTo(a, b) <= 0;
+    }
+
+    public static boolean[] lessEqualsArray(short[] a, BigDecimal[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to compare two arrays (short, BigDecimal) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = lessEquals(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] lessEqualsArray(short[] a, BigDecimal b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = lessEquals(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] lessEqualsArray(short a, BigDecimal[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = lessEquals(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean lessEquals(short a, BigInteger b) {
+        return compareTo(a, b) <= 0;
+    }
+
+    public static boolean[] lessEqualsArray(short[] a, BigInteger[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to compare two arrays (short, BigInteger) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = lessEquals(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] lessEqualsArray(short[] a, BigInteger b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = lessEquals(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] lessEqualsArray(short a, BigInteger[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = lessEquals(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean lessEquals(BigDecimal a, int b) {
+        return compareTo(a, b) <= 0;
+    }
+
+    public static boolean[] lessEqualsArray(BigDecimal[] a, int[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to compare two arrays (BigDecimal, int) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = lessEquals(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] lessEqualsArray(BigDecimal[] a, int b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = lessEquals(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] lessEqualsArray(BigDecimal a, int[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = lessEquals(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean lessEquals(BigDecimal a, double b) {
+        return compareTo(a, b) <= 0;
+    }
+
+    public static boolean[] lessEqualsArray(BigDecimal[] a, double[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to compare two arrays (BigDecimal, double) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = lessEquals(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] lessEqualsArray(BigDecimal[] a, double b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = lessEquals(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] lessEqualsArray(BigDecimal a, double[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = lessEquals(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean lessEquals(BigDecimal a, long b) {
+        return compareTo(a, b) <= 0;
+    }
+
+    public static boolean[] lessEqualsArray(BigDecimal[] a, long[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to compare two arrays (BigDecimal, long) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = lessEquals(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] lessEqualsArray(BigDecimal[] a, long b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = lessEquals(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] lessEqualsArray(BigDecimal a, long[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = lessEquals(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean lessEquals(BigDecimal a, float b) {
+        return compareTo(a, b) <= 0;
+    }
+
+    public static boolean[] lessEqualsArray(BigDecimal[] a, float[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to compare two arrays (BigDecimal, float) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = lessEquals(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] lessEqualsArray(BigDecimal[] a, float b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = lessEquals(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] lessEqualsArray(BigDecimal a, float[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = lessEquals(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean lessEquals(BigDecimal a, char b) {
+        return compareTo(a, b) <= 0;
+    }
+
+    public static boolean[] lessEqualsArray(BigDecimal[] a, char[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to compare two arrays (BigDecimal, char) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = lessEquals(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] lessEqualsArray(BigDecimal[] a, char b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = lessEquals(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] lessEqualsArray(BigDecimal a, char[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = lessEquals(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean lessEquals(BigDecimal a, byte b) {
+        return compareTo(a, b) <= 0;
+    }
+
+    public static boolean[] lessEqualsArray(BigDecimal[] a, byte[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to compare two arrays (BigDecimal, byte) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = lessEquals(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] lessEqualsArray(BigDecimal[] a, byte b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = lessEquals(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] lessEqualsArray(BigDecimal a, byte[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = lessEquals(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean lessEquals(BigDecimal a, short b) {
+        return compareTo(a, b) <= 0;
+    }
+
+    public static boolean[] lessEqualsArray(BigDecimal[] a, short[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to compare two arrays (BigDecimal, short) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = lessEquals(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] lessEqualsArray(BigDecimal[] a, short b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = lessEquals(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] lessEqualsArray(BigDecimal a, short[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = lessEquals(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean lessEquals(BigDecimal a, BigDecimal b) {
+        return compareTo(a, b) <= 0;
+    }
+
+    public static boolean[] lessEqualsArray(BigDecimal[] a, BigDecimal[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to compare two arrays (BigDecimal, BigDecimal) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = lessEquals(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] lessEqualsArray(BigDecimal[] a, BigDecimal b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = lessEquals(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] lessEqualsArray(BigDecimal a, BigDecimal[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = lessEquals(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean lessEquals(BigDecimal a, BigInteger b) {
+        return compareTo(a, b) <= 0;
+    }
+
+    public static boolean[] lessEqualsArray(BigDecimal[] a, BigInteger[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to compare two arrays (BigDecimal, BigInteger) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = lessEquals(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] lessEqualsArray(BigDecimal[] a, BigInteger b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = lessEquals(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] lessEqualsArray(BigDecimal a, BigInteger[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = lessEquals(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean lessEquals(BigInteger a, int b) {
+        return compareTo(a, b) <= 0;
+    }
+
+    public static boolean[] lessEqualsArray(BigInteger[] a, int[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to compare two arrays (BigInteger, int) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = lessEquals(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] lessEqualsArray(BigInteger[] a, int b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = lessEquals(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] lessEqualsArray(BigInteger a, int[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = lessEquals(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean lessEquals(BigInteger a, double b) {
+        return compareTo(a, b) <= 0;
+    }
+
+    public static boolean[] lessEqualsArray(BigInteger[] a, double[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to compare two arrays (BigInteger, double) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = lessEquals(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] lessEqualsArray(BigInteger[] a, double b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = lessEquals(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] lessEqualsArray(BigInteger a, double[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = lessEquals(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean lessEquals(BigInteger a, long b) {
+        return compareTo(a, b) <= 0;
+    }
+
+    public static boolean[] lessEqualsArray(BigInteger[] a, long[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to compare two arrays (BigInteger, long) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = lessEquals(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] lessEqualsArray(BigInteger[] a, long b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = lessEquals(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] lessEqualsArray(BigInteger a, long[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = lessEquals(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean lessEquals(BigInteger a, float b) {
+        return compareTo(a, b) <= 0;
+    }
+
+    public static boolean[] lessEqualsArray(BigInteger[] a, float[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to compare two arrays (BigInteger, float) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = lessEquals(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] lessEqualsArray(BigInteger[] a, float b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = lessEquals(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] lessEqualsArray(BigInteger a, float[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = lessEquals(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean lessEquals(BigInteger a, char b) {
+        return compareTo(a, b) <= 0;
+    }
+
+    public static boolean[] lessEqualsArray(BigInteger[] a, char[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to compare two arrays (BigInteger, char) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = lessEquals(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] lessEqualsArray(BigInteger[] a, char b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = lessEquals(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] lessEqualsArray(BigInteger a, char[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = lessEquals(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean lessEquals(BigInteger a, byte b) {
+        return compareTo(a, b) <= 0;
+    }
+
+    public static boolean[] lessEqualsArray(BigInteger[] a, byte[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to compare two arrays (BigInteger, byte) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = lessEquals(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] lessEqualsArray(BigInteger[] a, byte b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = lessEquals(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] lessEqualsArray(BigInteger a, byte[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = lessEquals(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean lessEquals(BigInteger a, short b) {
+        return compareTo(a, b) <= 0;
+    }
+
+    public static boolean[] lessEqualsArray(BigInteger[] a, short[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to compare two arrays (BigInteger, short) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = lessEquals(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] lessEqualsArray(BigInteger[] a, short b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = lessEquals(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] lessEqualsArray(BigInteger a, short[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = lessEquals(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean lessEquals(BigInteger a, BigDecimal b) {
+        return compareTo(a, b) <= 0;
+    }
+
+    public static boolean[] lessEqualsArray(BigInteger[] a, BigDecimal[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to compare two arrays (BigInteger, BigDecimal) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = lessEquals(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] lessEqualsArray(BigInteger[] a, BigDecimal b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = lessEquals(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] lessEqualsArray(BigInteger a, BigDecimal[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = lessEquals(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean lessEquals(BigInteger a, BigInteger b) {
+        return compareTo(a, b) <= 0;
+    }
+
+    public static boolean[] lessEqualsArray(BigInteger[] a, BigInteger[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to compare two arrays (BigInteger, BigInteger) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = lessEquals(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] lessEqualsArray(BigInteger[] a, BigInteger b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = lessEquals(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] lessEqualsArray(BigInteger a, BigInteger[] b) {
         boolean[] ret = new boolean[b.length];
         for (int i = 0; i < b.length; i++) {
             ret[i] = lessEquals(a, b[i]);
@@ -16606,6 +26958,74 @@ public final class QueryLanguageFunctionUtils {
         return ret;
     }
 
+    public static boolean greaterEquals(int a, BigDecimal b) {
+        return compareTo(a, b) >= 0;
+    }
+
+    public static boolean[] greaterEqualsArray(int[] a, BigDecimal[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to compare two arrays (int, BigDecimal) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = greaterEquals(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] greaterEqualsArray(int[] a, BigDecimal b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = greaterEquals(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] greaterEqualsArray(int a, BigDecimal[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = greaterEquals(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean greaterEquals(int a, BigInteger b) {
+        return compareTo(a, b) >= 0;
+    }
+
+    public static boolean[] greaterEqualsArray(int[] a, BigInteger[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to compare two arrays (int, BigInteger) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = greaterEquals(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] greaterEqualsArray(int[] a, BigInteger b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = greaterEquals(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] greaterEqualsArray(int a, BigInteger[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = greaterEquals(a, b[i]);
+        }
+
+        return ret;
+    }
+
     public static boolean greaterEquals(double a, int b) {
         return compareTo(a, b) >= 0;
     }
@@ -16836,6 +27256,74 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean[] greaterEqualsArray(double a, short[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = greaterEquals(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean greaterEquals(double a, BigDecimal b) {
+        return compareTo(a, b) >= 0;
+    }
+
+    public static boolean[] greaterEqualsArray(double[] a, BigDecimal[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to compare two arrays (double, BigDecimal) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = greaterEquals(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] greaterEqualsArray(double[] a, BigDecimal b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = greaterEquals(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] greaterEqualsArray(double a, BigDecimal[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = greaterEquals(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean greaterEquals(double a, BigInteger b) {
+        return compareTo(a, b) >= 0;
+    }
+
+    public static boolean[] greaterEqualsArray(double[] a, BigInteger[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to compare two arrays (double, BigInteger) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = greaterEquals(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] greaterEqualsArray(double[] a, BigInteger b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = greaterEquals(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] greaterEqualsArray(double a, BigInteger[] b) {
         boolean[] ret = new boolean[b.length];
         for (int i = 0; i < b.length; i++) {
             ret[i] = greaterEquals(a, b[i]);
@@ -17082,6 +27570,74 @@ public final class QueryLanguageFunctionUtils {
         return ret;
     }
 
+    public static boolean greaterEquals(long a, BigDecimal b) {
+        return compareTo(a, b) >= 0;
+    }
+
+    public static boolean[] greaterEqualsArray(long[] a, BigDecimal[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to compare two arrays (long, BigDecimal) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = greaterEquals(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] greaterEqualsArray(long[] a, BigDecimal b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = greaterEquals(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] greaterEqualsArray(long a, BigDecimal[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = greaterEquals(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean greaterEquals(long a, BigInteger b) {
+        return compareTo(a, b) >= 0;
+    }
+
+    public static boolean[] greaterEqualsArray(long[] a, BigInteger[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to compare two arrays (long, BigInteger) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = greaterEquals(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] greaterEqualsArray(long[] a, BigInteger b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = greaterEquals(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] greaterEqualsArray(long a, BigInteger[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = greaterEquals(a, b[i]);
+        }
+
+        return ret;
+    }
+
     public static boolean greaterEquals(float a, int b) {
         return compareTo(a, b) >= 0;
     }
@@ -17312,6 +27868,74 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean[] greaterEqualsArray(float a, short[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = greaterEquals(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean greaterEquals(float a, BigDecimal b) {
+        return compareTo(a, b) >= 0;
+    }
+
+    public static boolean[] greaterEqualsArray(float[] a, BigDecimal[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to compare two arrays (float, BigDecimal) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = greaterEquals(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] greaterEqualsArray(float[] a, BigDecimal b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = greaterEquals(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] greaterEqualsArray(float a, BigDecimal[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = greaterEquals(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean greaterEquals(float a, BigInteger b) {
+        return compareTo(a, b) >= 0;
+    }
+
+    public static boolean[] greaterEqualsArray(float[] a, BigInteger[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to compare two arrays (float, BigInteger) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = greaterEquals(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] greaterEqualsArray(float[] a, BigInteger b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = greaterEquals(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] greaterEqualsArray(float a, BigInteger[] b) {
         boolean[] ret = new boolean[b.length];
         for (int i = 0; i < b.length; i++) {
             ret[i] = greaterEquals(a, b[i]);
@@ -17558,6 +28182,74 @@ public final class QueryLanguageFunctionUtils {
         return ret;
     }
 
+    public static boolean greaterEquals(char a, BigDecimal b) {
+        return compareTo(a, b) >= 0;
+    }
+
+    public static boolean[] greaterEqualsArray(char[] a, BigDecimal[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to compare two arrays (char, BigDecimal) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = greaterEquals(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] greaterEqualsArray(char[] a, BigDecimal b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = greaterEquals(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] greaterEqualsArray(char a, BigDecimal[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = greaterEquals(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean greaterEquals(char a, BigInteger b) {
+        return compareTo(a, b) >= 0;
+    }
+
+    public static boolean[] greaterEqualsArray(char[] a, BigInteger[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to compare two arrays (char, BigInteger) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = greaterEquals(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] greaterEqualsArray(char[] a, BigInteger b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = greaterEquals(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] greaterEqualsArray(char a, BigInteger[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = greaterEquals(a, b[i]);
+        }
+
+        return ret;
+    }
+
     public static boolean greaterEquals(byte a, int b) {
         return compareTo(a, b) >= 0;
     }
@@ -17796,6 +28488,74 @@ public final class QueryLanguageFunctionUtils {
         return ret;
     }
 
+    public static boolean greaterEquals(byte a, BigDecimal b) {
+        return compareTo(a, b) >= 0;
+    }
+
+    public static boolean[] greaterEqualsArray(byte[] a, BigDecimal[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to compare two arrays (byte, BigDecimal) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = greaterEquals(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] greaterEqualsArray(byte[] a, BigDecimal b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = greaterEquals(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] greaterEqualsArray(byte a, BigDecimal[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = greaterEquals(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean greaterEquals(byte a, BigInteger b) {
+        return compareTo(a, b) >= 0;
+    }
+
+    public static boolean[] greaterEqualsArray(byte[] a, BigInteger[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to compare two arrays (byte, BigInteger) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = greaterEquals(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] greaterEqualsArray(byte[] a, BigInteger b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = greaterEquals(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] greaterEqualsArray(byte a, BigInteger[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = greaterEquals(a, b[i]);
+        }
+
+        return ret;
+    }
+
     public static boolean greaterEquals(short a, int b) {
         return compareTo(a, b) >= 0;
     }
@@ -18026,6 +28786,686 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean[] greaterEqualsArray(short a, short[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = greaterEquals(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean greaterEquals(short a, BigDecimal b) {
+        return compareTo(a, b) >= 0;
+    }
+
+    public static boolean[] greaterEqualsArray(short[] a, BigDecimal[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to compare two arrays (short, BigDecimal) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = greaterEquals(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] greaterEqualsArray(short[] a, BigDecimal b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = greaterEquals(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] greaterEqualsArray(short a, BigDecimal[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = greaterEquals(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean greaterEquals(short a, BigInteger b) {
+        return compareTo(a, b) >= 0;
+    }
+
+    public static boolean[] greaterEqualsArray(short[] a, BigInteger[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to compare two arrays (short, BigInteger) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = greaterEquals(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] greaterEqualsArray(short[] a, BigInteger b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = greaterEquals(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] greaterEqualsArray(short a, BigInteger[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = greaterEquals(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean greaterEquals(BigDecimal a, int b) {
+        return compareTo(a, b) >= 0;
+    }
+
+    public static boolean[] greaterEqualsArray(BigDecimal[] a, int[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to compare two arrays (BigDecimal, int) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = greaterEquals(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] greaterEqualsArray(BigDecimal[] a, int b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = greaterEquals(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] greaterEqualsArray(BigDecimal a, int[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = greaterEquals(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean greaterEquals(BigDecimal a, double b) {
+        return compareTo(a, b) >= 0;
+    }
+
+    public static boolean[] greaterEqualsArray(BigDecimal[] a, double[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to compare two arrays (BigDecimal, double) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = greaterEquals(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] greaterEqualsArray(BigDecimal[] a, double b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = greaterEquals(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] greaterEqualsArray(BigDecimal a, double[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = greaterEquals(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean greaterEquals(BigDecimal a, long b) {
+        return compareTo(a, b) >= 0;
+    }
+
+    public static boolean[] greaterEqualsArray(BigDecimal[] a, long[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to compare two arrays (BigDecimal, long) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = greaterEquals(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] greaterEqualsArray(BigDecimal[] a, long b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = greaterEquals(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] greaterEqualsArray(BigDecimal a, long[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = greaterEquals(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean greaterEquals(BigDecimal a, float b) {
+        return compareTo(a, b) >= 0;
+    }
+
+    public static boolean[] greaterEqualsArray(BigDecimal[] a, float[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to compare two arrays (BigDecimal, float) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = greaterEquals(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] greaterEqualsArray(BigDecimal[] a, float b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = greaterEquals(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] greaterEqualsArray(BigDecimal a, float[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = greaterEquals(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean greaterEquals(BigDecimal a, char b) {
+        return compareTo(a, b) >= 0;
+    }
+
+    public static boolean[] greaterEqualsArray(BigDecimal[] a, char[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to compare two arrays (BigDecimal, char) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = greaterEquals(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] greaterEqualsArray(BigDecimal[] a, char b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = greaterEquals(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] greaterEqualsArray(BigDecimal a, char[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = greaterEquals(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean greaterEquals(BigDecimal a, byte b) {
+        return compareTo(a, b) >= 0;
+    }
+
+    public static boolean[] greaterEqualsArray(BigDecimal[] a, byte[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to compare two arrays (BigDecimal, byte) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = greaterEquals(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] greaterEqualsArray(BigDecimal[] a, byte b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = greaterEquals(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] greaterEqualsArray(BigDecimal a, byte[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = greaterEquals(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean greaterEquals(BigDecimal a, short b) {
+        return compareTo(a, b) >= 0;
+    }
+
+    public static boolean[] greaterEqualsArray(BigDecimal[] a, short[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to compare two arrays (BigDecimal, short) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = greaterEquals(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] greaterEqualsArray(BigDecimal[] a, short b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = greaterEquals(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] greaterEqualsArray(BigDecimal a, short[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = greaterEquals(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean greaterEquals(BigDecimal a, BigDecimal b) {
+        return compareTo(a, b) >= 0;
+    }
+
+    public static boolean[] greaterEqualsArray(BigDecimal[] a, BigDecimal[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to compare two arrays (BigDecimal, BigDecimal) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = greaterEquals(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] greaterEqualsArray(BigDecimal[] a, BigDecimal b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = greaterEquals(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] greaterEqualsArray(BigDecimal a, BigDecimal[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = greaterEquals(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean greaterEquals(BigDecimal a, BigInteger b) {
+        return compareTo(a, b) >= 0;
+    }
+
+    public static boolean[] greaterEqualsArray(BigDecimal[] a, BigInteger[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to compare two arrays (BigDecimal, BigInteger) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = greaterEquals(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] greaterEqualsArray(BigDecimal[] a, BigInteger b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = greaterEquals(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] greaterEqualsArray(BigDecimal a, BigInteger[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = greaterEquals(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean greaterEquals(BigInteger a, int b) {
+        return compareTo(a, b) >= 0;
+    }
+
+    public static boolean[] greaterEqualsArray(BigInteger[] a, int[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to compare two arrays (BigInteger, int) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = greaterEquals(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] greaterEqualsArray(BigInteger[] a, int b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = greaterEquals(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] greaterEqualsArray(BigInteger a, int[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = greaterEquals(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean greaterEquals(BigInteger a, double b) {
+        return compareTo(a, b) >= 0;
+    }
+
+    public static boolean[] greaterEqualsArray(BigInteger[] a, double[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to compare two arrays (BigInteger, double) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = greaterEquals(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] greaterEqualsArray(BigInteger[] a, double b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = greaterEquals(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] greaterEqualsArray(BigInteger a, double[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = greaterEquals(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean greaterEquals(BigInteger a, long b) {
+        return compareTo(a, b) >= 0;
+    }
+
+    public static boolean[] greaterEqualsArray(BigInteger[] a, long[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to compare two arrays (BigInteger, long) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = greaterEquals(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] greaterEqualsArray(BigInteger[] a, long b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = greaterEquals(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] greaterEqualsArray(BigInteger a, long[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = greaterEquals(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean greaterEquals(BigInteger a, float b) {
+        return compareTo(a, b) >= 0;
+    }
+
+    public static boolean[] greaterEqualsArray(BigInteger[] a, float[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to compare two arrays (BigInteger, float) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = greaterEquals(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] greaterEqualsArray(BigInteger[] a, float b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = greaterEquals(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] greaterEqualsArray(BigInteger a, float[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = greaterEquals(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean greaterEquals(BigInteger a, char b) {
+        return compareTo(a, b) >= 0;
+    }
+
+    public static boolean[] greaterEqualsArray(BigInteger[] a, char[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to compare two arrays (BigInteger, char) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = greaterEquals(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] greaterEqualsArray(BigInteger[] a, char b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = greaterEquals(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] greaterEqualsArray(BigInteger a, char[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = greaterEquals(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean greaterEquals(BigInteger a, byte b) {
+        return compareTo(a, b) >= 0;
+    }
+
+    public static boolean[] greaterEqualsArray(BigInteger[] a, byte[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to compare two arrays (BigInteger, byte) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = greaterEquals(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] greaterEqualsArray(BigInteger[] a, byte b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = greaterEquals(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] greaterEqualsArray(BigInteger a, byte[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = greaterEquals(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean greaterEquals(BigInteger a, short b) {
+        return compareTo(a, b) >= 0;
+    }
+
+    public static boolean[] greaterEqualsArray(BigInteger[] a, short[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to compare two arrays (BigInteger, short) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = greaterEquals(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] greaterEqualsArray(BigInteger[] a, short b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = greaterEquals(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] greaterEqualsArray(BigInteger a, short[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = greaterEquals(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean greaterEquals(BigInteger a, BigDecimal b) {
+        return compareTo(a, b) >= 0;
+    }
+
+    public static boolean[] greaterEqualsArray(BigInteger[] a, BigDecimal[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to compare two arrays (BigInteger, BigDecimal) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = greaterEquals(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] greaterEqualsArray(BigInteger[] a, BigDecimal b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = greaterEquals(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] greaterEqualsArray(BigInteger a, BigDecimal[] b) {
+        boolean[] ret = new boolean[b.length];
+        for (int i = 0; i < b.length; i++) {
+            ret[i] = greaterEquals(a, b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean greaterEquals(BigInteger a, BigInteger b) {
+        return compareTo(a, b) >= 0;
+    }
+
+    public static boolean[] greaterEqualsArray(BigInteger[] a, BigInteger[] b) {
+        if (a.length != b.length) {
+            throw new IllegalArgumentException("Attempt to compare two arrays (BigInteger, BigInteger) of different length (a.length=" + a.length + ", b.length=" + b.length + ')');
+        }
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = greaterEquals(a[i], b[i]);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] greaterEqualsArray(BigInteger[] a, BigInteger b) {
+        boolean[] ret = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) {
+            ret[i] = greaterEquals(a[i], b);
+        }
+
+        return ret;
+    }
+
+    public static boolean[] greaterEqualsArray(BigInteger a, BigInteger[] b) {
         boolean[] ret = new boolean[b.length];
         for (int i = 0; i < b.length; i++) {
             ret[i] = greaterEquals(a, b[i]);
@@ -18600,1820 +30040,12 @@ public final class QueryLanguageFunctionUtils {
         return a == QueryConstants.NULL_SHORT ? QueryConstants.NULL_INT : -a;
     }
 
-    //
-    // BigDecimal ops
-    //
-
-    public static BigDecimal plus(BigDecimal a, BigDecimal b) {
-        return a == null || b == null ? null : a.add(b);
-    }
-
-    public static BigDecimal plus(BigDecimal a, BigInteger b) {
-        return a == null || b == null ? null : a.add((new BigDecimal(b)));
-    }
-
-    public static BigDecimal plus(BigInteger a, BigDecimal b) {
-        return a == null || b == null ? null : (new BigDecimal(a)).add(b);
-    }
-
-    public static BigDecimal plus(BigDecimal a, long b) {
-        return a == null || b == QueryConstants.NULL_LONG ? null : a.add(BigDecimal.valueOf(b));
-    }
-
-    public static BigDecimal plus(long a, BigDecimal b) {
-        return a == QueryConstants.NULL_LONG || b == null ? null : BigDecimal.valueOf(a).add(b);
-    }
-
-    public static BigDecimal plus(BigDecimal a, int b) {
-        return a == null || b == QueryConstants.NULL_INT ? null : a.add(BigDecimal.valueOf(b));
-    }
-
-    public static BigDecimal plus(int a, BigDecimal b) {
-        return a == QueryConstants.NULL_INT || b == null ? null : BigDecimal.valueOf(a).add(b);
-    }
-
-    public static BigDecimal plus(BigDecimal a, short b) {
-        return a == null || b == QueryConstants.NULL_SHORT ? null : a.add(BigDecimal.valueOf(b));
-    }
-
-    public static BigDecimal plus(short a, BigDecimal b) {
-        return a == QueryConstants.NULL_SHORT || b == null ? null : BigDecimal.valueOf(a).add(b);
-    }
-
-    public static BigDecimal plus(BigDecimal a, byte b) {
-        return a == null || b == QueryConstants.NULL_BYTE ? null : a.add(BigDecimal.valueOf(b));
-    }
-
-    public static BigDecimal plus(byte a, BigDecimal b) {
-        return a == QueryConstants.NULL_BYTE || b == null ? null : BigDecimal.valueOf(a).add(b);
-    }
-
-    public static BigDecimal plus(BigDecimal a, double b) {
-        return a == null || b == QueryConstants.NULL_DOUBLE ? null : a.add(BigDecimal.valueOf(b));
-    }
-
-    public static BigDecimal plus(double a, BigDecimal b) {
-        return a == QueryConstants.NULL_DOUBLE || b == null ? null : BigDecimal.valueOf(a).add(b);
-    }
-
-    public static BigDecimal plus(BigDecimal a, float b) {
-        return a == null || b == QueryConstants.NULL_FLOAT ? null : a.add(BigDecimal.valueOf(b));
-    }
-
-    public static BigDecimal plus(float a, BigDecimal b) {
-        return a == QueryConstants.NULL_FLOAT || b == null ? null : BigDecimal.valueOf(a).add(b);
-    }
-
-    public static BigDecimal plus(BigDecimal a, char b) {
-        return a == null || b == QueryConstants.NULL_CHAR ? null : a.add(BigDecimal.valueOf(b));
-    }
-
-    public static BigDecimal plus(char a, BigDecimal b) {
-        return a == QueryConstants.NULL_CHAR || b == null ? null : BigDecimal.valueOf(a).add(b);
-    }
-
-    public static BigDecimal minus(BigDecimal a, BigDecimal b) {
-        return a == null || b == null ? null : a.subtract(b);
-    }
-
-    public static BigDecimal minus(BigDecimal a, BigInteger b) {
-        return a == null || b == null ? null : a.subtract((new BigDecimal(b)));
-    }
-
-    public static BigDecimal minus(BigInteger a, BigDecimal b) {
-        return a == null || b == null ? null : (new BigDecimal(a)).subtract(b);
-    }
-
-    public static BigDecimal minus(BigDecimal a, long b) {
-        return a == null || b == QueryConstants.NULL_LONG ? null : a.subtract(BigDecimal.valueOf(b));
-    }
-
-    public static BigDecimal minus(long a, BigDecimal b) {
-        return a == QueryConstants.NULL_LONG || b == null ? null : BigDecimal.valueOf(a).subtract(b);
-    }
-
-    public static BigDecimal minus(BigDecimal a, int b) {
-        return a == null || b == QueryConstants.NULL_INT ? null : a.subtract(BigDecimal.valueOf(b));
-    }
-
-    public static BigDecimal minus(int a, BigDecimal b) {
-        return a == QueryConstants.NULL_INT || b == null ? null : BigDecimal.valueOf(a).subtract(b);
-    }
-
-    public static BigDecimal minus(BigDecimal a, short b) {
-        return a == null || b == QueryConstants.NULL_SHORT ? null : a.subtract(BigDecimal.valueOf(b));
-    }
-
-    public static BigDecimal minus(short a, BigDecimal b) {
-        return a == QueryConstants.NULL_SHORT || b == null ? null : BigDecimal.valueOf(a).subtract(b);
-    }
-
-    public static BigDecimal minus(BigDecimal a, byte b) {
-        return a == null || b == QueryConstants.NULL_BYTE ? null : a.subtract(BigDecimal.valueOf(b));
-    }
-
-    public static BigDecimal minus(byte a, BigDecimal b) {
-        return a == QueryConstants.NULL_BYTE || b == null ? null : BigDecimal.valueOf(a).subtract(b);
-    }
-
-    public static BigDecimal minus(BigDecimal a, double b) {
-        return a == null || b == QueryConstants.NULL_DOUBLE ? null : a.subtract(BigDecimal.valueOf(b));
-    }
-
-    public static BigDecimal minus(double a, BigDecimal b) {
-        return a == QueryConstants.NULL_DOUBLE || b == null ? null : BigDecimal.valueOf(a).subtract(b);
-    }
-
-    public static BigDecimal minus(BigDecimal a, float b) {
-        return a == null || b == QueryConstants.NULL_FLOAT ? null : a.subtract(BigDecimal.valueOf(b));
-    }
-
-    public static BigDecimal minus(float a, BigDecimal b) {
-        return a == QueryConstants.NULL_FLOAT || b == null ? null : BigDecimal.valueOf(a).subtract(b);
-    }
-
-    public static BigDecimal minus(BigDecimal a, char b) {
-        return a == null || b == QueryConstants.NULL_CHAR ? null : a.subtract(BigDecimal.valueOf(b));
-    }
-
-    public static BigDecimal minus(char a, BigDecimal b) {
-        return a == QueryConstants.NULL_CHAR || b == null ? null : BigDecimal.valueOf(a).subtract(b);
-    }
-
-    public static BigDecimal multiply(BigDecimal a, BigDecimal b) {
-        return a == null || b == null ? null : a.multiply(b);
-    }
-
-    public static BigDecimal multiply(BigDecimal a, BigInteger b) {
-        return a == null || b == null ? null : a.multiply((new BigDecimal(b)));
-    }
-
-    public static BigDecimal multiply(BigInteger a, BigDecimal b) {
-        return a == null || b == null ? null : (new BigDecimal(a)).multiply(b);
-    }
-
-    public static BigDecimal multiply(BigDecimal a, long b) {
-        return a == null || b == QueryConstants.NULL_LONG ? null : a.multiply(BigDecimal.valueOf(b));
-    }
-
-    public static BigDecimal multiply(long a, BigDecimal b) {
-        return a == QueryConstants.NULL_LONG || b == null ? null : BigDecimal.valueOf(a).multiply(b);
-    }
-
-    public static BigDecimal multiply(BigDecimal a, int b) {
-        return a == null || b == QueryConstants.NULL_INT ? null : a.multiply(BigDecimal.valueOf(b));
-    }
-
-    public static BigDecimal multiply(int a, BigDecimal b) {
-        return a == QueryConstants.NULL_INT || b == null ? null : BigDecimal.valueOf(a).multiply(b);
-    }
-
-    public static BigDecimal multiply(BigDecimal a, short b) {
-        return a == null || b == QueryConstants.NULL_SHORT ? null : a.multiply(BigDecimal.valueOf(b));
-    }
-
-    public static BigDecimal multiply(short a, BigDecimal b) {
-        return a == QueryConstants.NULL_SHORT || b == null ? null : BigDecimal.valueOf(a).multiply(b);
-    }
-
-    public static BigDecimal multiply(BigDecimal a, byte b) {
-        return a == null || b == QueryConstants.NULL_BYTE ? null : a.multiply(BigDecimal.valueOf(b));
-    }
-
-    public static BigDecimal multiply(byte a, BigDecimal b) {
-        return a == QueryConstants.NULL_BYTE || b == null ? null : BigDecimal.valueOf(a).multiply(b);
-    }
-
-    public static BigDecimal multiply(BigDecimal a, double b) {
-        return a == null || b == QueryConstants.NULL_DOUBLE ? null : a.multiply(BigDecimal.valueOf(b));
-    }
-
-    public static BigDecimal multiply(double a, BigDecimal b) {
-        return a == QueryConstants.NULL_DOUBLE || b == null ? null : BigDecimal.valueOf(a).multiply(b);
-    }
-
-    public static BigDecimal multiply(BigDecimal a, float b) {
-        return a == null || b == QueryConstants.NULL_FLOAT ? null : a.multiply(BigDecimal.valueOf(b));
-    }
-
-    public static BigDecimal multiply(float a, BigDecimal b) {
-        return a == QueryConstants.NULL_FLOAT || b == null ? null : BigDecimal.valueOf(a).multiply(b);
-    }
-
-    public static BigDecimal multiply(BigDecimal a, char b) {
-        return a == null || b == QueryConstants.NULL_CHAR ? null : a.multiply(BigDecimal.valueOf(b));
-    }
-
-    public static BigDecimal multiply(char a, BigDecimal b) {
-        return a == QueryConstants.NULL_CHAR || b == null ? null : BigDecimal.valueOf(a).multiply(b);
-    }
-
-    public static BigDecimal divide(BigDecimal a, BigDecimal b) {
-        return a == null || b == null ? null : a.divide(b, max(max(a.scale(), b.scale()), DEFAULT_SCALE), ROUNDING_MODE);
-    }
-
-    public static BigDecimal divide(BigDecimal a, BigInteger b) {
-        return a == null || b == null ? null : a.divide((new BigDecimal(b)), max(max(a.scale(), (new BigDecimal(b)).scale()), DEFAULT_SCALE), ROUNDING_MODE);
-    }
-
-    public static BigDecimal divide(BigInteger a, BigDecimal b) {
-        return a == null || b == null ? null : (new BigDecimal(a)).divide(b, max(max((new BigDecimal(a)).scale(), b.scale()), DEFAULT_SCALE), ROUNDING_MODE);
-    }
-
-    public static BigDecimal divide(BigDecimal a, long b) {
-        return a == null || b == QueryConstants.NULL_LONG ? null : a.divide(BigDecimal.valueOf(b), max(max(a.scale(), BigDecimal.valueOf(b).scale()), DEFAULT_SCALE), ROUNDING_MODE);
-    }
-
-    public static BigDecimal divide(long a, BigDecimal b) {
-        return a == QueryConstants.NULL_LONG || b == null ? null : BigDecimal.valueOf(a).divide(b, max(max(BigDecimal.valueOf(a).scale(), b.scale()), DEFAULT_SCALE), ROUNDING_MODE);
-    }
-
-    public static BigDecimal divide(BigDecimal a, int b) {
-        return a == null || b == QueryConstants.NULL_INT ? null : a.divide(BigDecimal.valueOf(b), max(max(a.scale(), BigDecimal.valueOf(b).scale()), DEFAULT_SCALE), ROUNDING_MODE);
-    }
-
-    public static BigDecimal divide(int a, BigDecimal b) {
-        return a == QueryConstants.NULL_INT || b == null ? null : BigDecimal.valueOf(a).divide(b, max(max(BigDecimal.valueOf(a).scale(), b.scale()), DEFAULT_SCALE), ROUNDING_MODE);
-    }
-
-    public static BigDecimal divide(BigDecimal a, short b) {
-        return a == null || b == QueryConstants.NULL_SHORT ? null : a.divide(BigDecimal.valueOf(b), max(max(a.scale(), BigDecimal.valueOf(b).scale()), DEFAULT_SCALE), ROUNDING_MODE);
-    }
-
-    public static BigDecimal divide(short a, BigDecimal b) {
-        return a == QueryConstants.NULL_SHORT || b == null ? null : BigDecimal.valueOf(a).divide(b, max(max(BigDecimal.valueOf(a).scale(), b.scale()), DEFAULT_SCALE), ROUNDING_MODE);
-    }
-
-    public static BigDecimal divide(BigDecimal a, byte b) {
-        return a == null || b == QueryConstants.NULL_BYTE ? null : a.divide(BigDecimal.valueOf(b), max(max(a.scale(), BigDecimal.valueOf(b).scale()), DEFAULT_SCALE), ROUNDING_MODE);
-    }
-
-    public static BigDecimal divide(byte a, BigDecimal b) {
-        return a == QueryConstants.NULL_BYTE || b == null ? null : BigDecimal.valueOf(a).divide(b, max(max(BigDecimal.valueOf(a).scale(), b.scale()), DEFAULT_SCALE), ROUNDING_MODE);
-    }
-
-    public static BigDecimal divide(BigDecimal a, double b) {
-        return a == null || b == QueryConstants.NULL_DOUBLE ? null : a.divide(BigDecimal.valueOf(b), max(max(a.scale(), BigDecimal.valueOf(b).scale()), DEFAULT_SCALE), ROUNDING_MODE);
-    }
-
-    public static BigDecimal divide(double a, BigDecimal b) {
-        return a == QueryConstants.NULL_DOUBLE || b == null ? null : BigDecimal.valueOf(a).divide(b, max(max(BigDecimal.valueOf(a).scale(), b.scale()), DEFAULT_SCALE), ROUNDING_MODE);
-    }
-
-    public static BigDecimal divide(BigDecimal a, float b) {
-        return a == null || b == QueryConstants.NULL_FLOAT ? null : a.divide(BigDecimal.valueOf(b), max(max(a.scale(), BigDecimal.valueOf(b).scale()), DEFAULT_SCALE), ROUNDING_MODE);
-    }
-
-    public static BigDecimal divide(float a, BigDecimal b) {
-        return a == QueryConstants.NULL_FLOAT || b == null ? null : BigDecimal.valueOf(a).divide(b, max(max(BigDecimal.valueOf(a).scale(), b.scale()), DEFAULT_SCALE), ROUNDING_MODE);
-    }
-
-    public static BigDecimal divide(BigDecimal a, char b) {
-        return a == null || b == QueryConstants.NULL_CHAR ? null : a.divide(BigDecimal.valueOf(b), max(max(a.scale(), BigDecimal.valueOf(b).scale()), DEFAULT_SCALE), ROUNDING_MODE);
-    }
-
-    public static BigDecimal divide(char a, BigDecimal b) {
-        return a == QueryConstants.NULL_CHAR || b == null ? null : BigDecimal.valueOf(a).divide(b, max(max(BigDecimal.valueOf(a).scale(), b.scale()), DEFAULT_SCALE), ROUNDING_MODE);
-    }
-
-    public static BigDecimal remainder(BigDecimal a, BigDecimal b) {
-        return a == null || b == null ? null : a.remainder(b);
-    }
-
-    public static BigDecimal remainder(BigDecimal a, BigInteger b) {
-        return a == null || b == null ? null : a.remainder((new BigDecimal(b)));
-    }
-
-    public static BigDecimal remainder(BigInteger a, BigDecimal b) {
-        return a == null || b == null ? null : (new BigDecimal(a)).remainder(b);
-    }
-
-    public static BigDecimal remainder(BigDecimal a, long b) {
-        return a == null || b == QueryConstants.NULL_LONG ? null : a.remainder(BigDecimal.valueOf(b));
-    }
-
-    public static BigDecimal remainder(long a, BigDecimal b) {
-        return a == QueryConstants.NULL_LONG || b == null ? null : BigDecimal.valueOf(a).remainder(b);
-    }
-
-    public static BigDecimal remainder(BigDecimal a, int b) {
-        return a == null || b == QueryConstants.NULL_INT ? null : a.remainder(BigDecimal.valueOf(b));
-    }
-
-    public static BigDecimal remainder(int a, BigDecimal b) {
-        return a == QueryConstants.NULL_INT || b == null ? null : BigDecimal.valueOf(a).remainder(b);
-    }
-
-    public static BigDecimal remainder(BigDecimal a, short b) {
-        return a == null || b == QueryConstants.NULL_SHORT ? null : a.remainder(BigDecimal.valueOf(b));
-    }
-
-    public static BigDecimal remainder(short a, BigDecimal b) {
-        return a == QueryConstants.NULL_SHORT || b == null ? null : BigDecimal.valueOf(a).remainder(b);
-    }
-
-    public static BigDecimal remainder(BigDecimal a, byte b) {
-        return a == null || b == QueryConstants.NULL_BYTE ? null : a.remainder(BigDecimal.valueOf(b));
-    }
-
-    public static BigDecimal remainder(byte a, BigDecimal b) {
-        return a == QueryConstants.NULL_BYTE || b == null ? null : BigDecimal.valueOf(a).remainder(b);
-    }
-
-    public static BigDecimal remainder(BigDecimal a, double b) {
-        return a == null || b == QueryConstants.NULL_DOUBLE ? null : a.remainder(BigDecimal.valueOf(b));
-    }
-
-    public static BigDecimal remainder(double a, BigDecimal b) {
-        return a == QueryConstants.NULL_DOUBLE || b == null ? null : BigDecimal.valueOf(a).remainder(b);
-    }
-
-    public static BigDecimal remainder(BigDecimal a, float b) {
-        return a == null || b == QueryConstants.NULL_FLOAT ? null : a.remainder(BigDecimal.valueOf(b));
-    }
-
-    public static BigDecimal remainder(float a, BigDecimal b) {
-        return a == QueryConstants.NULL_FLOAT || b == null ? null : BigDecimal.valueOf(a).remainder(b);
-    }
-
-    public static BigDecimal remainder(BigDecimal a, char b) {
-        return a == null || b == QueryConstants.NULL_CHAR ? null : a.remainder(BigDecimal.valueOf(b));
-    }
-
-    public static BigDecimal remainder(char a, BigDecimal b) {
-        return a == QueryConstants.NULL_CHAR || b == null ? null : BigDecimal.valueOf(a).remainder(b);
-    }
-
-    public static boolean eq(BigDecimal a, BigDecimal b) {
-        if (a == null) {
-            return b == null;
-        }
-        if (b == null) {
-            return false;
-        }
-        return a.compareTo(b) == 0;
-    }
-
-    public static boolean eq(BigDecimal a, BigInteger b) {
-        if (a == null) {
-            return b == null;
-        }
-        if (b == null) {
-            return false;
-        }
-        return a.compareTo((new BigDecimal(b))) == 0;
-    }
-
-    public static boolean eq(BigInteger a, BigDecimal b) {
-        if (a == null) {
-            return b == null;
-        }
-        if (b == null) {
-            return false;
-        }
-        return (new BigDecimal(a)).compareTo(b) == 0;
-    }
-
-    public static boolean eq(BigDecimal a, long b) {
-        if (a == null) {
-            return b == QueryConstants.NULL_LONG;
-        }
-        if (b == QueryConstants.NULL_LONG) {
-            return false;
-        }
-        return a.compareTo(BigDecimal.valueOf(b)) == 0;
-    }
-
-    public static boolean eq(long a, BigDecimal b) {
-        if (a == QueryConstants.NULL_LONG) {
-            return b == null;
-        }
-        if (b == null) {
-            return false;
-        }
-        return BigDecimal.valueOf(a).compareTo(b) == 0;
-    }
-
-    public static boolean eq(BigDecimal a, int b) {
-        if (a == null) {
-            return b == QueryConstants.NULL_INT;
-        }
-        if (b == QueryConstants.NULL_INT) {
-            return false;
-        }
-        return a.compareTo(BigDecimal.valueOf(b)) == 0;
-    }
-
-    public static boolean eq(int a, BigDecimal b) {
-        if (a == QueryConstants.NULL_INT) {
-            return b == null;
-        }
-        if (b == null) {
-            return false;
-        }
-        return BigDecimal.valueOf(a).compareTo(b) == 0;
-    }
-
-    public static boolean eq(BigDecimal a, short b) {
-        if (a == null) {
-            return b == QueryConstants.NULL_SHORT;
-        }
-        if (b == QueryConstants.NULL_SHORT) {
-            return false;
-        }
-        return a.compareTo(BigDecimal.valueOf(b)) == 0;
-    }
-
-    public static boolean eq(short a, BigDecimal b) {
-        if (a == QueryConstants.NULL_SHORT) {
-            return b == null;
-        }
-        if (b == null) {
-            return false;
-        }
-        return BigDecimal.valueOf(a).compareTo(b) == 0;
-    }
-
-    public static boolean eq(BigDecimal a, byte b) {
-        if (a == null) {
-            return b == QueryConstants.NULL_BYTE;
-        }
-        if (b == QueryConstants.NULL_BYTE) {
-            return false;
-        }
-        return a.compareTo(BigDecimal.valueOf(b)) == 0;
-    }
-
-    public static boolean eq(byte a, BigDecimal b) {
-        if (a == QueryConstants.NULL_BYTE) {
-            return b == null;
-        }
-        if (b == null) {
-            return false;
-        }
-        return BigDecimal.valueOf(a).compareTo(b) == 0;
-    }
-
-    public static boolean eq(BigDecimal a, double b) {
-        if (Double.isNaN(b)) {
-            return false;
-        }
-        if (a == null) {
-            return b == QueryConstants.NULL_DOUBLE;
-        }
-        if (b == QueryConstants.NULL_DOUBLE) {
-            return false;
-        }
-        return a.compareTo(BigDecimal.valueOf(b)) == 0;
-    }
-
-    public static boolean eq(double a, BigDecimal b) {
-        if (Double.isNaN(a)) {
-            return false;
-        }
-        if (a == QueryConstants.NULL_DOUBLE) {
-            return b == null;
-        }
-        if (b == null) {
-            return false;
-        }
-        return BigDecimal.valueOf(a).compareTo(b) == 0;
-    }
-
-    public static boolean eq(BigDecimal a, float b) {
-        if (Float.isNaN(b)) {
-            return false;
-        }
-        if (a == null) {
-            return b == QueryConstants.NULL_FLOAT;
-        }
-        if (b == QueryConstants.NULL_FLOAT) {
-            return false;
-        }
-        return a.compareTo(BigDecimal.valueOf(b)) == 0;
-    }
-
-    public static boolean eq(float a, BigDecimal b) {
-        if (Float.isNaN(a)) {
-            return false;
-        }
-        if (a == QueryConstants.NULL_FLOAT) {
-            return b == null;
-        }
-        if (b == null) {
-            return false;
-        }
-        return BigDecimal.valueOf(a).compareTo(b) == 0;
-    }
-
-    public static boolean eq(BigDecimal a, char b) {
-        if (a == null) {
-            return b == QueryConstants.NULL_CHAR;
-        }
-        if (b == QueryConstants.NULL_CHAR) {
-            return false;
-        }
-        return a.compareTo(BigDecimal.valueOf(b)) == 0;
-    }
-
-    public static boolean eq(char a, BigDecimal b) {
-        if (a == QueryConstants.NULL_CHAR) {
-            return b == null;
-        }
-        if (b == null) {
-            return false;
-        }
-        return BigDecimal.valueOf(a).compareTo(b) == 0;
-    }
-
-    public static int compareTo(BigDecimal a, BigDecimal b) {
-        if (a == null) {
-            return (b == null) ? 0 : -1;
-        }
-        if (b == null) {
-            return 1;
-        }
-        return a.compareTo(b);
-    }
-
-    public static int compareTo(BigDecimal a, BigInteger b) {
-        if (a == null) {
-            return (b == null) ? 0 : -1;
-        }
-        if (b == null) {
-            return 1;
-        }
-        return a.compareTo((new BigDecimal(b)));
-    }
-
-    public static int compareTo(BigInteger a, BigDecimal b) {
-        if (a == null) {
-            return (b == null) ? 0 : -1;
-        }
-        if (b == null) {
-            return 1;
-        }
-        return (new BigDecimal(a)).compareTo(b);
-    }
-
-    public static int compareTo(BigDecimal a, long b) {
-        if (a == null) {
-            return (b == QueryConstants.NULL_LONG) ? 0 : -1;
-        }
-        if (b == QueryConstants.NULL_LONG) {
-            return 1;
-        }
-        return a.compareTo(BigDecimal.valueOf(b));
-    }
-
-    public static int compareTo(long a, BigDecimal b) {
-        if (a == QueryConstants.NULL_LONG) {
-            return (b == null) ? 0 : -1;
-        }
-        if (b == null) {
-            return 1;
-        }
-        return BigDecimal.valueOf(a).compareTo(b);
-    }
-
-    public static int compareTo(BigDecimal a, int b) {
-        if (a == null) {
-            return (b == QueryConstants.NULL_INT) ? 0 : -1;
-        }
-        if (b == QueryConstants.NULL_INT) {
-            return 1;
-        }
-        return a.compareTo(BigDecimal.valueOf(b));
-    }
-
-    public static int compareTo(int a, BigDecimal b) {
-        if (a == QueryConstants.NULL_INT) {
-            return (b == null) ? 0 : -1;
-        }
-        if (b == null) {
-            return 1;
-        }
-        return BigDecimal.valueOf(a).compareTo(b);
-    }
-
-    public static int compareTo(BigDecimal a, short b) {
-        if (a == null) {
-            return (b == QueryConstants.NULL_SHORT) ? 0 : -1;
-        }
-        if (b == QueryConstants.NULL_SHORT) {
-            return 1;
-        }
-        return a.compareTo(BigDecimal.valueOf(b));
-    }
-
-    public static int compareTo(short a, BigDecimal b) {
-        if (a == QueryConstants.NULL_SHORT) {
-            return (b == null) ? 0 : -1;
-        }
-        if (b == null) {
-            return 1;
-        }
-        return BigDecimal.valueOf(a).compareTo(b);
-    }
-
-    public static int compareTo(BigDecimal a, byte b) {
-        if (a == null) {
-            return (b == QueryConstants.NULL_BYTE) ? 0 : -1;
-        }
-        if (b == QueryConstants.NULL_BYTE) {
-            return 1;
-        }
-        return a.compareTo(BigDecimal.valueOf(b));
-    }
-
-    public static int compareTo(byte a, BigDecimal b) {
-        if (a == QueryConstants.NULL_BYTE) {
-            return (b == null) ? 0 : -1;
-        }
-        if (b == null) {
-            return 1;
-        }
-        return BigDecimal.valueOf(a).compareTo(b);
-    }
-
-    public static int compareTo(BigDecimal a, double b) {
-        if (Double.isNaN(b)) {
-            return -1; // even if a == null
-        }
-        if (a == null) {
-            return (b == QueryConstants.NULL_DOUBLE) ? 0 : -1;
-        }
-        if (b == QueryConstants.NULL_DOUBLE) {
-            return 1;
-        }
-        return a.compareTo(BigDecimal.valueOf(b));
-    }
-
-    public static int compareTo(double a, BigDecimal b) {
-        if (Double.isNaN(a)) {
-            return 1; // even if b == null
-        }
-        if (a == QueryConstants.NULL_DOUBLE) {
-            return (b == null) ? 0 : -1;
-        }
-        if (b == null) {
-            return 1;
-        }
-        return BigDecimal.valueOf(a).compareTo(b);
-    }
-
-    public static int compareTo(BigDecimal a, float b) {
-        if (Float.isNaN(b)) {
-            return -1; // even if a == null
-        }
-        if (a == null) {
-            return (b == QueryConstants.NULL_FLOAT) ? 0 : -1;
-        }
-        if (b == QueryConstants.NULL_FLOAT) {
-            return 1;
-        }
-        return a.compareTo(BigDecimal.valueOf(b));
-    }
-
-    public static int compareTo(float a, BigDecimal b) {
-        if (Float.isNaN(a)) {
-            return 1; // even if b == null
-        }
-        if (a == QueryConstants.NULL_FLOAT) {
-            return (b == null) ? 0 : -1;
-        }
-        if (b == null) {
-            return 1;
-        }
-        return BigDecimal.valueOf(a).compareTo(b);
-    }
-
-    public static int compareTo(BigDecimal a, char b) {
-        if (a == null) {
-            return (b == QueryConstants.NULL_CHAR) ? 0 : -1;
-        }
-        if (b == QueryConstants.NULL_CHAR) {
-            return 1;
-        }
-        return a.compareTo(BigDecimal.valueOf(b));
-    }
-
-    public static int compareTo(char a, BigDecimal b) {
-        if (a == QueryConstants.NULL_CHAR) {
-            return (b == null) ? 0 : -1;
-        }
-        if (b == null) {
-            return 1;
-        }
-        return BigDecimal.valueOf(a).compareTo(b);
-    }
-
-    public static boolean less(BigDecimal a, BigInteger b) {
-        return compareTo(a, b) < 0;
-    }
-
-    public static boolean less(BigInteger a, BigDecimal b) {
-        return compareTo(a, b) < 0;
-    }
-
-    public static boolean less(BigDecimal a, long b) {
-        return compareTo(a, b) < 0;
-    }
-
-    public static boolean less(long a, BigDecimal b) {
-        return compareTo(a, b) < 0;
-    }
-
-    public static boolean less(BigDecimal a, int b) {
-        return compareTo(a, b) < 0;
-    }
-
-    public static boolean less(int a, BigDecimal b) {
-        return compareTo(a, b) < 0;
-    }
-
-    public static boolean less(BigDecimal a, short b) {
-        return compareTo(a, b) < 0;
-    }
-
-    public static boolean less(short a, BigDecimal b) {
-        return compareTo(a, b) < 0;
-    }
-
-    public static boolean less(BigDecimal a, byte b) {
-        return compareTo(a, b) < 0;
-    }
-
-    public static boolean less(byte a, BigDecimal b) {
-        return compareTo(a, b) < 0;
-    }
-
-    public static boolean less(BigDecimal a, double b) {
-        return compareTo(a, b) < 0;
-    }
-
-    public static boolean less(double a, BigDecimal b) {
-        return compareTo(a, b) < 0;
-    }
-
-    public static boolean less(BigDecimal a, float b) {
-        return compareTo(a, b) < 0;
-    }
-
-    public static boolean less(float a, BigDecimal b) {
-        return compareTo(a, b) < 0;
-    }
-
-    public static boolean less(BigDecimal a, char b) {
-        return compareTo(a, b) < 0;
-    }
-
-    public static boolean less(char a, BigDecimal b) {
-        return compareTo(a, b) < 0;
-    }
-
-    public static boolean greater(BigDecimal a, BigInteger b) {
-        return compareTo(a, b) > 0;
-    }
-
-    public static boolean greater(BigInteger a, BigDecimal b) {
-        return compareTo(a, b) > 0;
-    }
-
-    public static boolean greater(BigDecimal a, long b) {
-        return compareTo(a, b) > 0;
-    }
-
-    public static boolean greater(long a, BigDecimal b) {
-        return compareTo(a, b) > 0;
-    }
-
-    public static boolean greater(BigDecimal a, int b) {
-        return compareTo(a, b) > 0;
-    }
-
-    public static boolean greater(int a, BigDecimal b) {
-        return compareTo(a, b) > 0;
-    }
-
-    public static boolean greater(BigDecimal a, short b) {
-        return compareTo(a, b) > 0;
-    }
-
-    public static boolean greater(short a, BigDecimal b) {
-        return compareTo(a, b) > 0;
-    }
-
-    public static boolean greater(BigDecimal a, byte b) {
-        return compareTo(a, b) > 0;
-    }
-
-    public static boolean greater(byte a, BigDecimal b) {
-        return compareTo(a, b) > 0;
-    }
-
-    public static boolean greater(BigDecimal a, double b) {
-        return compareTo(a, b) > 0;
-    }
-
-    public static boolean greater(double a, BigDecimal b) {
-        return compareTo(a, b) > 0;
-    }
-
-    public static boolean greater(BigDecimal a, float b) {
-        return compareTo(a, b) > 0;
-    }
-
-    public static boolean greater(float a, BigDecimal b) {
-        return compareTo(a, b) > 0;
-    }
-
-    public static boolean greater(BigDecimal a, char b) {
-        return compareTo(a, b) > 0;
-    }
-
-    public static boolean greater(char a, BigDecimal b) {
-        return compareTo(a, b) > 0;
-    }
-
-    public static boolean lessEquals(BigDecimal a, BigInteger b) {
-        return compareTo(a, b) <= 0;
-    }
-
-    public static boolean lessEquals(BigInteger a, BigDecimal b) {
-        return compareTo(a, b) <= 0;
-    }
-
-    public static boolean lessEquals(BigDecimal a, long b) {
-        return compareTo(a, b) <= 0;
-    }
-
-    public static boolean lessEquals(long a, BigDecimal b) {
-        return compareTo(a, b) <= 0;
-    }
-
-    public static boolean lessEquals(BigDecimal a, int b) {
-        return compareTo(a, b) <= 0;
-    }
-
-    public static boolean lessEquals(int a, BigDecimal b) {
-        return compareTo(a, b) <= 0;
-    }
-
-    public static boolean lessEquals(BigDecimal a, short b) {
-        return compareTo(a, b) <= 0;
-    }
-
-    public static boolean lessEquals(short a, BigDecimal b) {
-        return compareTo(a, b) <= 0;
-    }
-
-    public static boolean lessEquals(BigDecimal a, byte b) {
-        return compareTo(a, b) <= 0;
-    }
-
-    public static boolean lessEquals(byte a, BigDecimal b) {
-        return compareTo(a, b) <= 0;
-    }
-
-    public static boolean lessEquals(BigDecimal a, double b) {
-        return compareTo(a, b) <= 0;
-    }
-
-    public static boolean lessEquals(double a, BigDecimal b) {
-        return compareTo(a, b) <= 0;
-    }
-
-    public static boolean lessEquals(BigDecimal a, float b) {
-        return compareTo(a, b) <= 0;
-    }
-
-    public static boolean lessEquals(float a, BigDecimal b) {
-        return compareTo(a, b) <= 0;
-    }
-
-    public static boolean lessEquals(BigDecimal a, char b) {
-        return compareTo(a, b) <= 0;
-    }
-
-    public static boolean lessEquals(char a, BigDecimal b) {
-        return compareTo(a, b) <= 0;
-    }
-
-    public static boolean greaterEquals(BigDecimal a, BigInteger b) {
-        return compareTo(a, b) >= 0;
-    }
-
-    public static boolean greaterEquals(BigInteger a, BigDecimal b) {
-        return compareTo(a, b) >= 0;
-    }
-
-    public static boolean greaterEquals(BigDecimal a, long b) {
-        return compareTo(a, b) >= 0;
-    }
-
-    public static boolean greaterEquals(long a, BigDecimal b) {
-        return compareTo(a, b) >= 0;
-    }
-
-    public static boolean greaterEquals(BigDecimal a, int b) {
-        return compareTo(a, b) >= 0;
-    }
-
-    public static boolean greaterEquals(int a, BigDecimal b) {
-        return compareTo(a, b) >= 0;
-    }
-
-    public static boolean greaterEquals(BigDecimal a, short b) {
-        return compareTo(a, b) >= 0;
-    }
-
-    public static boolean greaterEquals(short a, BigDecimal b) {
-        return compareTo(a, b) >= 0;
-    }
-
-    public static boolean greaterEquals(BigDecimal a, byte b) {
-        return compareTo(a, b) >= 0;
-    }
-
-    public static boolean greaterEquals(byte a, BigDecimal b) {
-        return compareTo(a, b) >= 0;
-    }
-
-    public static boolean greaterEquals(BigDecimal a, double b) {
-        return compareTo(a, b) >= 0;
-    }
-
-    public static boolean greaterEquals(double a, BigDecimal b) {
-        return compareTo(a, b) >= 0;
-    }
-
-    public static boolean greaterEquals(BigDecimal a, float b) {
-        return compareTo(a, b) >= 0;
-    }
-
-    public static boolean greaterEquals(float a, BigDecimal b) {
-        return compareTo(a, b) >= 0;
-    }
-
-    public static boolean greaterEquals(BigDecimal a, char b) {
-        return compareTo(a, b) >= 0;
-    }
-
-    public static boolean greaterEquals(char a, BigDecimal b) {
-        return compareTo(a, b) >= 0;
-    }
-
-    //
-    // BigInteger ops
-    //
-
-    public static BigInteger plus(BigInteger a, BigInteger b) {
-        return a == null || b == null ? null : a.add(b);
-    }
-
-    public static BigInteger plus(BigInteger a, long b) {
-        return a == null || b == QueryConstants.NULL_LONG ? null : a.add(BigInteger.valueOf(b));
-    }
-
-    public static BigInteger plus(long a, BigInteger b) {
-        return a == QueryConstants.NULL_LONG || b == null ? null : BigInteger.valueOf(a).add(b);
-    }
-
-    public static BigInteger plus(BigInteger a, int b) {
-        return a == null || b == QueryConstants.NULL_INT ? null : a.add(BigInteger.valueOf(b));
-    }
-
-    public static BigInteger plus(int a, BigInteger b) {
-        return a == QueryConstants.NULL_INT || b == null ? null : BigInteger.valueOf(a).add(b);
-    }
-
-    public static BigInteger plus(BigInteger a, short b) {
-        return a == null || b == QueryConstants.NULL_SHORT ? null : a.add(BigInteger.valueOf(b));
-    }
-
-    public static BigInteger plus(short a, BigInteger b) {
-        return a == QueryConstants.NULL_SHORT || b == null ? null : BigInteger.valueOf(a).add(b);
-    }
-
-    public static BigInteger plus(BigInteger a, byte b) {
-        return a == null || b == QueryConstants.NULL_BYTE ? null : a.add(BigInteger.valueOf(b));
-    }
-
-    public static BigInteger plus(byte a, BigInteger b) {
-        return a == QueryConstants.NULL_BYTE || b == null ? null : BigInteger.valueOf(a).add(b);
-    }
-
-    public static BigDecimal plus(BigInteger a, double b) {
-        return a == null || b == QueryConstants.NULL_DOUBLE ? null : (new BigDecimal(a)).add(BigDecimal.valueOf(b));
-    }
-
-    public static BigDecimal plus(double a, BigInteger b) {
-        return a == QueryConstants.NULL_DOUBLE || b == null ? null : BigDecimal.valueOf(a).add((new BigDecimal(b)));
-    }
-
-    public static BigDecimal plus(BigInteger a, float b) {
-        return a == null || b == QueryConstants.NULL_FLOAT ? null : (new BigDecimal(a)).add(BigDecimal.valueOf(b));
-    }
-
-    public static BigDecimal plus(float a, BigInteger b) {
-        return a == QueryConstants.NULL_FLOAT || b == null ? null : BigDecimal.valueOf(a).add((new BigDecimal(b)));
-    }
-
-    public static BigInteger plus(BigInteger a, char b) {
-        return a == null || b == QueryConstants.NULL_CHAR ? null : a.add(BigInteger.valueOf(b));
-    }
-
-    public static BigInteger plus(char a, BigInteger b) {
-        return a == QueryConstants.NULL_CHAR || b == null ? null : BigInteger.valueOf(a).add(b);
-    }
-
-    public static BigInteger minus(BigInteger a, BigInteger b) {
-        return a == null || b == null ? null : a.subtract(b);
-    }
-
-    public static BigInteger minus(BigInteger a, long b) {
-        return a == null || b == QueryConstants.NULL_LONG ? null : a.subtract(BigInteger.valueOf(b));
-    }
-
-    public static BigInteger minus(long a, BigInteger b) {
-        return a == QueryConstants.NULL_LONG || b == null ? null : BigInteger.valueOf(a).subtract(b);
-    }
-
-    public static BigInteger minus(BigInteger a, int b) {
-        return a == null || b == QueryConstants.NULL_INT ? null : a.subtract(BigInteger.valueOf(b));
-    }
-
-    public static BigInteger minus(int a, BigInteger b) {
-        return a == QueryConstants.NULL_INT || b == null ? null : BigInteger.valueOf(a).subtract(b);
-    }
-
-    public static BigInteger minus(BigInteger a, short b) {
-        return a == null || b == QueryConstants.NULL_SHORT ? null : a.subtract(BigInteger.valueOf(b));
-    }
-
-    public static BigInteger minus(short a, BigInteger b) {
-        return a == QueryConstants.NULL_SHORT || b == null ? null : BigInteger.valueOf(a).subtract(b);
-    }
-
-    public static BigInteger minus(BigInteger a, byte b) {
-        return a == null || b == QueryConstants.NULL_BYTE ? null : a.subtract(BigInteger.valueOf(b));
-    }
-
-    public static BigInteger minus(byte a, BigInteger b) {
-        return a == QueryConstants.NULL_BYTE || b == null ? null : BigInteger.valueOf(a).subtract(b);
-    }
-
-    public static BigDecimal minus(BigInteger a, double b) {
-        return a == null || b == QueryConstants.NULL_DOUBLE ? null : (new BigDecimal(a)).subtract(BigDecimal.valueOf(b));
-    }
-
-    public static BigDecimal minus(double a, BigInteger b) {
-        return a == QueryConstants.NULL_DOUBLE || b == null ? null : BigDecimal.valueOf(a).subtract((new BigDecimal(b)));
-    }
-
-    public static BigDecimal minus(BigInteger a, float b) {
-        return a == null || b == QueryConstants.NULL_FLOAT ? null : (new BigDecimal(a)).subtract(BigDecimal.valueOf(b));
-    }
-
-    public static BigDecimal minus(float a, BigInteger b) {
-        return a == QueryConstants.NULL_FLOAT || b == null ? null : BigDecimal.valueOf(a).subtract((new BigDecimal(b)));
-    }
-
-    public static BigInteger minus(BigInteger a, char b) {
-        return a == null || b == QueryConstants.NULL_CHAR ? null : a.subtract(BigInteger.valueOf(b));
-    }
-
-    public static BigInteger minus(char a, BigInteger b) {
-        return a == QueryConstants.NULL_CHAR || b == null ? null : BigInteger.valueOf(a).subtract(b);
-    }
-
-    public static BigInteger multiply(BigInteger a, BigInteger b) {
-        return a == null || b == null ? null : a.multiply(b);
-    }
-
-    public static BigInteger multiply(BigInteger a, long b) {
-        return a == null || b == QueryConstants.NULL_LONG ? null : a.multiply(BigInteger.valueOf(b));
-    }
-
-    public static BigInteger multiply(long a, BigInteger b) {
-        return a == QueryConstants.NULL_LONG || b == null ? null : BigInteger.valueOf(a).multiply(b);
-    }
-
-    public static BigInteger multiply(BigInteger a, int b) {
-        return a == null || b == QueryConstants.NULL_INT ? null : a.multiply(BigInteger.valueOf(b));
-    }
-
-    public static BigInteger multiply(int a, BigInteger b) {
-        return a == QueryConstants.NULL_INT || b == null ? null : BigInteger.valueOf(a).multiply(b);
-    }
-
-    public static BigInteger multiply(BigInteger a, short b) {
-        return a == null || b == QueryConstants.NULL_SHORT ? null : a.multiply(BigInteger.valueOf(b));
-    }
-
-    public static BigInteger multiply(short a, BigInteger b) {
-        return a == QueryConstants.NULL_SHORT || b == null ? null : BigInteger.valueOf(a).multiply(b);
-    }
-
-    public static BigInteger multiply(BigInteger a, byte b) {
-        return a == null || b == QueryConstants.NULL_BYTE ? null : a.multiply(BigInteger.valueOf(b));
-    }
-
-    public static BigInteger multiply(byte a, BigInteger b) {
-        return a == QueryConstants.NULL_BYTE || b == null ? null : BigInteger.valueOf(a).multiply(b);
-    }
-
-    public static BigDecimal multiply(BigInteger a, double b) {
-        return a == null || b == QueryConstants.NULL_DOUBLE ? null : (new BigDecimal(a)).multiply(BigDecimal.valueOf(b));
-    }
-
-    public static BigDecimal multiply(double a, BigInteger b) {
-        return a == QueryConstants.NULL_DOUBLE || b == null ? null : BigDecimal.valueOf(a).multiply((new BigDecimal(b)));
-    }
-
-    public static BigDecimal multiply(BigInteger a, float b) {
-        return a == null || b == QueryConstants.NULL_FLOAT ? null : (new BigDecimal(a)).multiply(BigDecimal.valueOf(b));
-    }
-
-    public static BigDecimal multiply(float a, BigInteger b) {
-        return a == QueryConstants.NULL_FLOAT || b == null ? null : BigDecimal.valueOf(a).multiply((new BigDecimal(b)));
-    }
-
-    public static BigInteger multiply(BigInteger a, char b) {
-        return a == null || b == QueryConstants.NULL_CHAR ? null : a.multiply(BigInteger.valueOf(b));
-    }
-
-    public static BigInteger multiply(char a, BigInteger b) {
-        return a == QueryConstants.NULL_CHAR || b == null ? null : BigInteger.valueOf(a).multiply(b);
-    }
-
-    public static BigDecimal divide(BigInteger a, BigInteger b) {
-        return a == null || b == null ? null : (new BigDecimal(a)).divide((new BigDecimal(b)), max(max((new BigDecimal(a)).scale(), (new BigDecimal(b)).scale()), DEFAULT_SCALE), ROUNDING_MODE);
-    }
-
-    public static BigDecimal divide(BigInteger a, long b) {
-        return a == null || b == QueryConstants.NULL_LONG ? null : (new BigDecimal(a)).divide(BigDecimal.valueOf(b), max(max((new BigDecimal(a)).scale(), BigDecimal.valueOf(b).scale()), DEFAULT_SCALE), ROUNDING_MODE);
-    }
-
-    public static BigDecimal divide(long a, BigInteger b) {
-        return a == QueryConstants.NULL_LONG || b == null ? null : BigDecimal.valueOf(a).divide((new BigDecimal(b)), max(max(BigDecimal.valueOf(a).scale(), (new BigDecimal(b)).scale()), DEFAULT_SCALE), ROUNDING_MODE);
-    }
-
-    public static BigDecimal divide(BigInteger a, int b) {
-        return a == null || b == QueryConstants.NULL_INT ? null : (new BigDecimal(a)).divide(BigDecimal.valueOf(b), max(max((new BigDecimal(a)).scale(), BigDecimal.valueOf(b).scale()), DEFAULT_SCALE), ROUNDING_MODE);
-    }
-
-    public static BigDecimal divide(int a, BigInteger b) {
-        return a == QueryConstants.NULL_INT || b == null ? null : BigDecimal.valueOf(a).divide((new BigDecimal(b)), max(max(BigDecimal.valueOf(a).scale(), (new BigDecimal(b)).scale()), DEFAULT_SCALE), ROUNDING_MODE);
-    }
-
-    public static BigDecimal divide(BigInteger a, short b) {
-        return a == null || b == QueryConstants.NULL_SHORT ? null : (new BigDecimal(a)).divide(BigDecimal.valueOf(b), max(max((new BigDecimal(a)).scale(), BigDecimal.valueOf(b).scale()), DEFAULT_SCALE), ROUNDING_MODE);
-    }
-
-    public static BigDecimal divide(short a, BigInteger b) {
-        return a == QueryConstants.NULL_SHORT || b == null ? null : BigDecimal.valueOf(a).divide((new BigDecimal(b)), max(max(BigDecimal.valueOf(a).scale(), (new BigDecimal(b)).scale()), DEFAULT_SCALE), ROUNDING_MODE);
-    }
-
-    public static BigDecimal divide(BigInteger a, byte b) {
-        return a == null || b == QueryConstants.NULL_BYTE ? null : (new BigDecimal(a)).divide(BigDecimal.valueOf(b), max(max((new BigDecimal(a)).scale(), BigDecimal.valueOf(b).scale()), DEFAULT_SCALE), ROUNDING_MODE);
-    }
-
-    public static BigDecimal divide(byte a, BigInteger b) {
-        return a == QueryConstants.NULL_BYTE || b == null ? null : BigDecimal.valueOf(a).divide((new BigDecimal(b)), max(max(BigDecimal.valueOf(a).scale(), (new BigDecimal(b)).scale()), DEFAULT_SCALE), ROUNDING_MODE);
-    }
-
-    public static BigDecimal divide(BigInteger a, double b) {
-        return a == null || b == QueryConstants.NULL_DOUBLE ? null : (new BigDecimal(a)).divide(BigDecimal.valueOf(b), max(max((new BigDecimal(a)).scale(), BigDecimal.valueOf(b).scale()), DEFAULT_SCALE), ROUNDING_MODE);
-    }
-
-    public static BigDecimal divide(double a, BigInteger b) {
-        return a == QueryConstants.NULL_DOUBLE || b == null ? null : BigDecimal.valueOf(a).divide((new BigDecimal(b)), max(max(BigDecimal.valueOf(a).scale(), (new BigDecimal(b)).scale()), DEFAULT_SCALE), ROUNDING_MODE);
-    }
-
-    public static BigDecimal divide(BigInteger a, float b) {
-        return a == null || b == QueryConstants.NULL_FLOAT ? null : (new BigDecimal(a)).divide(BigDecimal.valueOf(b), max(max((new BigDecimal(a)).scale(), BigDecimal.valueOf(b).scale()), DEFAULT_SCALE), ROUNDING_MODE);
-    }
-
-    public static BigDecimal divide(float a, BigInteger b) {
-        return a == QueryConstants.NULL_FLOAT || b == null ? null : BigDecimal.valueOf(a).divide((new BigDecimal(b)), max(max(BigDecimal.valueOf(a).scale(), (new BigDecimal(b)).scale()), DEFAULT_SCALE), ROUNDING_MODE);
-    }
-
-    public static BigDecimal divide(BigInteger a, char b) {
-        return a == null || b == QueryConstants.NULL_CHAR ? null : (new BigDecimal(a)).divide(BigDecimal.valueOf(b), max(max((new BigDecimal(a)).scale(), BigDecimal.valueOf(b).scale()), DEFAULT_SCALE), ROUNDING_MODE);
-    }
-
-    public static BigDecimal divide(char a, BigInteger b) {
-        return a == QueryConstants.NULL_CHAR || b == null ? null : BigDecimal.valueOf(a).divide((new BigDecimal(b)), max(max(BigDecimal.valueOf(a).scale(), (new BigDecimal(b)).scale()), DEFAULT_SCALE), ROUNDING_MODE);
-    }
-
-    public static BigInteger remainder(BigInteger a, BigInteger b) {
-        return a == null || b == null ? null : a.remainder(b);
-    }
-
-    public static BigInteger remainder(BigInteger a, long b) {
-        return a == null || b == QueryConstants.NULL_LONG ? null : a.remainder(BigInteger.valueOf(b));
-    }
-
-    public static BigInteger remainder(long a, BigInteger b) {
-        return a == QueryConstants.NULL_LONG || b == null ? null : BigInteger.valueOf(a).remainder(b);
-    }
-
-    public static BigInteger remainder(BigInteger a, int b) {
-        return a == null || b == QueryConstants.NULL_INT ? null : a.remainder(BigInteger.valueOf(b));
-    }
-
-    public static BigInteger remainder(int a, BigInteger b) {
-        return a == QueryConstants.NULL_INT || b == null ? null : BigInteger.valueOf(a).remainder(b);
-    }
-
-    public static BigInteger remainder(BigInteger a, short b) {
-        return a == null || b == QueryConstants.NULL_SHORT ? null : a.remainder(BigInteger.valueOf(b));
-    }
-
-    public static BigInteger remainder(short a, BigInteger b) {
-        return a == QueryConstants.NULL_SHORT || b == null ? null : BigInteger.valueOf(a).remainder(b);
-    }
-
-    public static BigInteger remainder(BigInteger a, byte b) {
-        return a == null || b == QueryConstants.NULL_BYTE ? null : a.remainder(BigInteger.valueOf(b));
-    }
-
-    public static BigInteger remainder(byte a, BigInteger b) {
-        return a == QueryConstants.NULL_BYTE || b == null ? null : BigInteger.valueOf(a).remainder(b);
-    }
-
-    public static BigDecimal remainder(BigInteger a, double b) {
-        return a == null || b == QueryConstants.NULL_DOUBLE ? null : (new BigDecimal(a)).remainder(BigDecimal.valueOf(b));
-    }
-
-    public static BigDecimal remainder(double a, BigInteger b) {
-        return a == QueryConstants.NULL_DOUBLE || b == null ? null : BigDecimal.valueOf(a).remainder((new BigDecimal(b)));
-    }
-
-    public static BigDecimal remainder(BigInteger a, float b) {
-        return a == null || b == QueryConstants.NULL_FLOAT ? null : (new BigDecimal(a)).remainder(BigDecimal.valueOf(b));
-    }
-
-    public static BigDecimal remainder(float a, BigInteger b) {
-        return a == QueryConstants.NULL_FLOAT || b == null ? null : BigDecimal.valueOf(a).remainder((new BigDecimal(b)));
-    }
-
-    public static BigInteger remainder(BigInteger a, char b) {
-        return a == null || b == QueryConstants.NULL_CHAR ? null : a.remainder(BigInteger.valueOf(b));
-    }
-
-    public static BigInteger remainder(char a, BigInteger b) {
-        return a == QueryConstants.NULL_CHAR || b == null ? null : BigInteger.valueOf(a).remainder(b);
-    }
-
-    public static boolean eq(BigInteger a, BigInteger b) {
-        if (a == null) {
-            return b == null;
-        }
-        if (b == null) {
-            return false;
-        }
-        return (new BigDecimal(a)).compareTo((new BigDecimal(b))) == 0;
-    }
-
-    public static boolean eq(BigInteger a, long b) {
-        if (a == null) {
-            return b == QueryConstants.NULL_LONG;
-        }
-        if (b == QueryConstants.NULL_LONG) {
-            return false;
-        }
-        return (new BigDecimal(a)).compareTo(BigDecimal.valueOf(b)) == 0;
-    }
-
-    public static boolean eq(long a, BigInteger b) {
-        if (a == QueryConstants.NULL_LONG) {
-            return b == null;
-        }
-        if (b == null) {
-            return false;
-        }
-        return BigDecimal.valueOf(a).compareTo((new BigDecimal(b))) == 0;
-    }
-
-    public static boolean eq(BigInteger a, int b) {
-        if (a == null) {
-            return b == QueryConstants.NULL_INT;
-        }
-        if (b == QueryConstants.NULL_INT) {
-            return false;
-        }
-        return (new BigDecimal(a)).compareTo(BigDecimal.valueOf(b)) == 0;
-    }
-
-    public static boolean eq(int a, BigInteger b) {
-        if (a == QueryConstants.NULL_INT) {
-            return b == null;
-        }
-        if (b == null) {
-            return false;
-        }
-        return BigDecimal.valueOf(a).compareTo((new BigDecimal(b))) == 0;
-    }
-
-    public static boolean eq(BigInteger a, short b) {
-        if (a == null) {
-            return b == QueryConstants.NULL_SHORT;
-        }
-        if (b == QueryConstants.NULL_SHORT) {
-            return false;
-        }
-        return (new BigDecimal(a)).compareTo(BigDecimal.valueOf(b)) == 0;
-    }
-
-    public static boolean eq(short a, BigInteger b) {
-        if (a == QueryConstants.NULL_SHORT) {
-            return b == null;
-        }
-        if (b == null) {
-            return false;
-        }
-        return BigDecimal.valueOf(a).compareTo((new BigDecimal(b))) == 0;
-    }
-
-    public static boolean eq(BigInteger a, byte b) {
-        if (a == null) {
-            return b == QueryConstants.NULL_BYTE;
-        }
-        if (b == QueryConstants.NULL_BYTE) {
-            return false;
-        }
-        return (new BigDecimal(a)).compareTo(BigDecimal.valueOf(b)) == 0;
-    }
-
-    public static boolean eq(byte a, BigInteger b) {
-        if (a == QueryConstants.NULL_BYTE) {
-            return b == null;
-        }
-        if (b == null) {
-            return false;
-        }
-        return BigDecimal.valueOf(a).compareTo((new BigDecimal(b))) == 0;
-    }
-
-    public static boolean eq(BigInteger a, double b) {
-        if (Double.isNaN(b)) {
-            return false;
-        }
-        if (a == null) {
-            return b == QueryConstants.NULL_DOUBLE;
-        }
-        if (b == QueryConstants.NULL_DOUBLE) {
-            return false;
-        }
-        return (new BigDecimal(a)).compareTo(BigDecimal.valueOf(b)) == 0;
-    }
-
-    public static boolean eq(double a, BigInteger b) {
-        if (Double.isNaN(a)) {
-            return false;
-        }
-        if (a == QueryConstants.NULL_DOUBLE) {
-            return b == null;
-        }
-        if (b == null) {
-            return false;
-        }
-        return BigDecimal.valueOf(a).compareTo((new BigDecimal(b))) == 0;
-    }
-
-    public static boolean eq(BigInteger a, float b) {
-        if (Float.isNaN(b)) {
-            return false;
-        }
-        if (a == null) {
-            return b == QueryConstants.NULL_FLOAT;
-        }
-        if (b == QueryConstants.NULL_FLOAT) {
-            return false;
-        }
-        return (new BigDecimal(a)).compareTo(BigDecimal.valueOf(b)) == 0;
-    }
-
-    public static boolean eq(float a, BigInteger b) {
-        if (Float.isNaN(a)) {
-            return false;
-        }
-        if (a == QueryConstants.NULL_FLOAT) {
-            return b == null;
-        }
-        if (b == null) {
-            return false;
-        }
-        return BigDecimal.valueOf(a).compareTo((new BigDecimal(b))) == 0;
-    }
-
-    public static boolean eq(BigInteger a, char b) {
-        if (a == null) {
-            return b == QueryConstants.NULL_CHAR;
-        }
-        if (b == QueryConstants.NULL_CHAR) {
-            return false;
-        }
-        return (new BigDecimal(a)).compareTo(BigDecimal.valueOf(b)) == 0;
-    }
-
-    public static boolean eq(char a, BigInteger b) {
-        if (a == QueryConstants.NULL_CHAR) {
-            return b == null;
-        }
-        if (b == null) {
-            return false;
-        }
-        return BigDecimal.valueOf(a).compareTo((new BigDecimal(b))) == 0;
-    }
-
-    public static int compareTo(BigInteger a, BigInteger b) {
-        if (a == null) {
-            return (b == null) ? 0 : -1;
-        }
-        if (b == null) {
-            return 1;
-        }
-        return a.compareTo(b);
-    }
-
-    public static int compareTo(BigInteger a, long b) {
-        if (a == null) {
-            return (b == QueryConstants.NULL_LONG) ? 0 : -1;
-        }
-        if (b == QueryConstants.NULL_LONG) {
-            return 1;
-        }
-        return a.compareTo(BigInteger.valueOf(b));
-    }
-
-    public static int compareTo(long a, BigInteger b) {
-        if (a == QueryConstants.NULL_LONG) {
-            return (b == null) ? 0 : -1;
-        }
-        if (b == null) {
-            return 1;
-        }
-        return BigInteger.valueOf(a).compareTo(b);
-    }
-
-    public static int compareTo(BigInteger a, int b) {
-        if (a == null) {
-            return (b == QueryConstants.NULL_INT) ? 0 : -1;
-        }
-        if (b == QueryConstants.NULL_INT) {
-            return 1;
-        }
-        return a.compareTo(BigInteger.valueOf(b));
-    }
-
-    public static int compareTo(int a, BigInteger b) {
-        if (a == QueryConstants.NULL_INT) {
-            return (b == null) ? 0 : -1;
-        }
-        if (b == null) {
-            return 1;
-        }
-        return BigInteger.valueOf(a).compareTo(b);
-    }
-
-    public static int compareTo(BigInteger a, short b) {
-        if (a == null) {
-            return (b == QueryConstants.NULL_SHORT) ? 0 : -1;
-        }
-        if (b == QueryConstants.NULL_SHORT) {
-            return 1;
-        }
-        return a.compareTo(BigInteger.valueOf(b));
-    }
-
-    public static int compareTo(short a, BigInteger b) {
-        if (a == QueryConstants.NULL_SHORT) {
-            return (b == null) ? 0 : -1;
-        }
-        if (b == null) {
-            return 1;
-        }
-        return BigInteger.valueOf(a).compareTo(b);
-    }
-
-    public static int compareTo(BigInteger a, byte b) {
-        if (a == null) {
-            return (b == QueryConstants.NULL_BYTE) ? 0 : -1;
-        }
-        if (b == QueryConstants.NULL_BYTE) {
-            return 1;
-        }
-        return a.compareTo(BigInteger.valueOf(b));
-    }
-
-    public static int compareTo(byte a, BigInteger b) {
-        if (a == QueryConstants.NULL_BYTE) {
-            return (b == null) ? 0 : -1;
-        }
-        if (b == null) {
-            return 1;
-        }
-        return BigInteger.valueOf(a).compareTo(b);
-    }
-
-    public static int compareTo(BigInteger a, double b) {
-        if (Double.isNaN(b)) {
-            return -1; // even if a == null
-        }
-        if (a == null) {
-            return (b == QueryConstants.NULL_DOUBLE) ? 0 : -1;
-        }
-        if (b == QueryConstants.NULL_DOUBLE) {
-            return 1;
-        }
-        return (new BigDecimal(a)).compareTo(BigDecimal.valueOf(b));
-    }
-
-    public static int compareTo(double a, BigInteger b) {
-        if (Double.isNaN(a)) {
-            return 1; // even if b == null
-        }
-        if (a == QueryConstants.NULL_DOUBLE) {
-            return (b == null) ? 0 : -1;
-        }
-        if (b == null) {
-            return 1;
-        }
-        return BigDecimal.valueOf(a).compareTo((new BigDecimal(b)));
-    }
-
-    public static int compareTo(BigInteger a, float b) {
-        if (Float.isNaN(b)) {
-            return -1; // even if a == null
-        }
-        if (a == null) {
-            return (b == QueryConstants.NULL_FLOAT) ? 0 : -1;
-        }
-        if (b == QueryConstants.NULL_FLOAT) {
-            return 1;
-        }
-        return (new BigDecimal(a)).compareTo(BigDecimal.valueOf(b));
-    }
-
-    public static int compareTo(float a, BigInteger b) {
-        if (Float.isNaN(a)) {
-            return 1; // even if b == null
-        }
-        if (a == QueryConstants.NULL_FLOAT) {
-            return (b == null) ? 0 : -1;
-        }
-        if (b == null) {
-            return 1;
-        }
-        return BigDecimal.valueOf(a).compareTo((new BigDecimal(b)));
-    }
-
-    public static int compareTo(BigInteger a, char b) {
-        if (a == null) {
-            return (b == QueryConstants.NULL_CHAR) ? 0 : -1;
-        }
-        if (b == QueryConstants.NULL_CHAR) {
-            return 1;
-        }
-        return a.compareTo(BigInteger.valueOf(b));
-    }
-
-    public static int compareTo(char a, BigInteger b) {
-        if (a == QueryConstants.NULL_CHAR) {
-            return (b == null) ? 0 : -1;
-        }
-        if (b == null) {
-            return 1;
-        }
-        return BigInteger.valueOf(a).compareTo(b);
-    }
-
-    public static boolean less(BigInteger a, long b) {
-        return compareTo(a, b) < 0;
-    }
-
-    public static boolean less(long a, BigInteger b) {
-        return compareTo(a, b) < 0;
-    }
-
-    public static boolean less(BigInteger a, int b) {
-        return compareTo(a, b) < 0;
-    }
-
-    public static boolean less(int a, BigInteger b) {
-        return compareTo(a, b) < 0;
-    }
-
-    public static boolean less(BigInteger a, short b) {
-        return compareTo(a, b) < 0;
-    }
-
-    public static boolean less(short a, BigInteger b) {
-        return compareTo(a, b) < 0;
-    }
-
-    public static boolean less(BigInteger a, byte b) {
-        return compareTo(a, b) < 0;
-    }
-
-    public static boolean less(byte a, BigInteger b) {
-        return compareTo(a, b) < 0;
-    }
-
-    public static boolean less(BigInteger a, double b) {
-        return compareTo(a, b) < 0;
-    }
-
-    public static boolean less(double a, BigInteger b) {
-        return compareTo(a, b) < 0;
-    }
-
-    public static boolean less(BigInteger a, float b) {
-        return compareTo(a, b) < 0;
-    }
-
-    public static boolean less(float a, BigInteger b) {
-        return compareTo(a, b) < 0;
-    }
-
-    public static boolean less(BigInteger a, char b) {
-        return compareTo(a, b) < 0;
-    }
-
-    public static boolean less(char a, BigInteger b) {
-        return compareTo(a, b) < 0;
-    }
-
-    public static boolean greater(BigInteger a, long b) {
-        return compareTo(a, b) > 0;
-    }
-
-    public static boolean greater(long a, BigInteger b) {
-        return compareTo(a, b) > 0;
-    }
-
-    public static boolean greater(BigInteger a, int b) {
-        return compareTo(a, b) > 0;
-    }
-
-    public static boolean greater(int a, BigInteger b) {
-        return compareTo(a, b) > 0;
-    }
-
-    public static boolean greater(BigInteger a, short b) {
-        return compareTo(a, b) > 0;
-    }
-
-    public static boolean greater(short a, BigInteger b) {
-        return compareTo(a, b) > 0;
-    }
-
-    public static boolean greater(BigInteger a, byte b) {
-        return compareTo(a, b) > 0;
-    }
-
-    public static boolean greater(byte a, BigInteger b) {
-        return compareTo(a, b) > 0;
-    }
-
-    public static boolean greater(BigInteger a, double b) {
-        return compareTo(a, b) > 0;
-    }
-
-    public static boolean greater(double a, BigInteger b) {
-        return compareTo(a, b) > 0;
-    }
-
-    public static boolean greater(BigInteger a, float b) {
-        return compareTo(a, b) > 0;
-    }
-
-    public static boolean greater(float a, BigInteger b) {
-        return compareTo(a, b) > 0;
-    }
-
-    public static boolean greater(BigInteger a, char b) {
-        return compareTo(a, b) > 0;
-    }
-
-    public static boolean greater(char a, BigInteger b) {
-        return compareTo(a, b) > 0;
-    }
-
-    public static boolean lessEquals(BigInteger a, long b) {
-        return compareTo(a, b) <= 0;
-    }
-
-    public static boolean lessEquals(long a, BigInteger b) {
-        return compareTo(a, b) <= 0;
-    }
-
-    public static boolean lessEquals(BigInteger a, int b) {
-        return compareTo(a, b) <= 0;
-    }
-
-    public static boolean lessEquals(int a, BigInteger b) {
-        return compareTo(a, b) <= 0;
-    }
-
-    public static boolean lessEquals(BigInteger a, short b) {
-        return compareTo(a, b) <= 0;
-    }
-
-    public static boolean lessEquals(short a, BigInteger b) {
-        return compareTo(a, b) <= 0;
-    }
-
-    public static boolean lessEquals(BigInteger a, byte b) {
-        return compareTo(a, b) <= 0;
-    }
-
-    public static boolean lessEquals(byte a, BigInteger b) {
-        return compareTo(a, b) <= 0;
-    }
-
-    public static boolean lessEquals(BigInteger a, double b) {
-        return compareTo(a, b) <= 0;
-    }
-
-    public static boolean lessEquals(double a, BigInteger b) {
-        return compareTo(a, b) <= 0;
-    }
-
-    public static boolean lessEquals(BigInteger a, float b) {
-        return compareTo(a, b) <= 0;
-    }
-
-    public static boolean lessEquals(float a, BigInteger b) {
-        return compareTo(a, b) <= 0;
-    }
-
-    public static boolean lessEquals(BigInteger a, char b) {
-        return compareTo(a, b) <= 0;
-    }
-
-    public static boolean lessEquals(char a, BigInteger b) {
-        return compareTo(a, b) <= 0;
-    }
-
-    public static boolean greaterEquals(BigInteger a, long b) {
-        return compareTo(a, b) >= 0;
-    }
-
-    public static boolean greaterEquals(long a, BigInteger b) {
-        return compareTo(a, b) >= 0;
-    }
-
-    public static boolean greaterEquals(BigInteger a, int b) {
-        return compareTo(a, b) >= 0;
-    }
-
-    public static boolean greaterEquals(int a, BigInteger b) {
-        return compareTo(a, b) >= 0;
-    }
-
-    public static boolean greaterEquals(BigInteger a, short b) {
-        return compareTo(a, b) >= 0;
-    }
-
-    public static boolean greaterEquals(short a, BigInteger b) {
-        return compareTo(a, b) >= 0;
-    }
-
-    public static boolean greaterEquals(BigInteger a, byte b) {
-        return compareTo(a, b) >= 0;
-    }
-
-    public static boolean greaterEquals(byte a, BigInteger b) {
-        return compareTo(a, b) >= 0;
-    }
-
-    public static boolean greaterEquals(BigInteger a, double b) {
-        return compareTo(a, b) >= 0;
-    }
-
-    public static boolean greaterEquals(double a, BigInteger b) {
-        return compareTo(a, b) >= 0;
-    }
-
-    public static boolean greaterEquals(BigInteger a, float b) {
-        return compareTo(a, b) >= 0;
-    }
-
-    public static boolean greaterEquals(float a, BigInteger b) {
-        return compareTo(a, b) >= 0;
-    }
-
-    public static boolean greaterEquals(BigInteger a, char b) {
-        return compareTo(a, b) >= 0;
+    public static BigDecimal negate(BigDecimal a) {
+        return a == null ? null : a.negate();
     }
 
-    public static boolean greaterEquals(char a, BigInteger b) {
-        return compareTo(a, b) >= 0;
+    public static BigInteger negate(BigInteger a) {
+        return a == null ? null : a.negate();
     }
 
 }

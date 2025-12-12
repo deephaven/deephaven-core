@@ -85,11 +85,8 @@ public class QueryLanguageFunctionGenerator {
 
         // ------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-        // Class<?>[] classes =
-        // new Class[] {int.class, double.class, long.class, float.class, char.class, byte.class, short.class,
-        // BigDecimal.class, BigInteger.class};
-        Class<?>[] classes =
-                new Class[] {int.class, double.class, long.class, float.class, char.class, byte.class, short.class};
+        Class<?>[] classes = new Class[] {int.class, double.class, long.class, float.class, char.class, byte.class,
+                short.class, BigDecimal.class, BigInteger.class};
 
         BinaryExpr.Operator[] operators = new BinaryExpr.Operator[] {
                 BinaryExpr.Operator.PLUS,
@@ -142,11 +139,8 @@ public class QueryLanguageFunctionGenerator {
 
         // ------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-        // classes =
-        // new Class[] {int.class, double.class, long.class, float.class, char.class, byte.class, short.class,
-        // BigDecimal.class, BigInteger.class};
-        classes =
-                new Class[] {int.class, double.class, long.class, float.class, char.class, byte.class, short.class};
+        classes = new Class[] {int.class, double.class, long.class, float.class, char.class, byte.class, short.class,
+                BigDecimal.class, BigInteger.class};
 
         for (final Class<?> classA : classes) {
             for (final Class<?> classB : classes) {
@@ -157,10 +151,6 @@ public class QueryLanguageFunctionGenerator {
                 buf.append(generateVarArrayFunction(BinaryExpr.Operator.EQUALS, classA, classB));
             }
         }
-
-        // classes = new Class[] {int.class, double.class, long.class, float.class, char.class, byte.class, short.class,
-        // BigDecimal.class, BigInteger.class};
-        classes = new Class[] {int.class, double.class, long.class, float.class, char.class, byte.class, short.class};
 
         operators = new BinaryExpr.Operator[] {
                 BinaryExpr.Operator.LESS,
@@ -362,120 +352,11 @@ public class QueryLanguageFunctionGenerator {
 
         // ------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-        // classes = new Class[] {int.class, double.class, long.class, float.class, char.class, byte.class, short.class,
-        // BigDecimal.class, BigInteger.class};
-        classes = new Class[] {int.class, double.class, long.class, float.class, char.class, byte.class, short.class};
+        classes = new Class[] {int.class, double.class, long.class, float.class, char.class, byte.class, short.class,
+                BigDecimal.class, BigInteger.class};
 
         for (Class<?> clazz : classes) {
-            // the plus is just so we don't get a npe
             buf.append(generateNegateFunction(clazz));
-        }
-
-        // ------------------------------------------------------------------------------------------------------------------------------------------------------------------
-
-        // TODO: BigDecimal - combine with earlier loop after review
-
-        buf.append("" +
-                "    //\n" +
-                "    // BigDecimal ops\n" +
-                "    //\n\n");
-
-        classes = new Class[] {BigInteger.class, long.class, int.class, short.class, byte.class, double.class,
-                float.class, char.class};
-
-        operators = new BinaryExpr.Operator[] {
-                BinaryExpr.Operator.PLUS,
-                BinaryExpr.Operator.MINUS,
-                BinaryExpr.Operator.MULTIPLY,
-                BinaryExpr.Operator.DIVIDE,
-                BinaryExpr.Operator.REMAINDER,
-        };
-
-        for (final BinaryExpr.Operator operator : operators) {
-            buf.append(generateArithmeticFunction(operator, BigDecimal.class, BigDecimal.class));
-            for (final Class<?> clazz : classes) {
-                buf.append(generateArithmeticFunction(operator, BigDecimal.class, clazz));
-                buf.append(generateArithmeticFunction(operator, clazz, BigDecimal.class));
-            }
-        }
-
-        buf.append(generateEqualityFunction(BigDecimal.class, BigDecimal.class));
-        for (final Class<?> clazz : classes) {
-            buf.append(generateEqualityFunction(BigDecimal.class, clazz));
-            buf.append(generateEqualityFunction(clazz, BigDecimal.class));
-        }
-
-        buf.append(generateCompareToFunction(BigDecimal.class, BigDecimal.class));
-        for (final Class<?> clazz : classes) {
-            buf.append(generateCompareToFunction(BigDecimal.class, clazz));
-            buf.append(generateCompareToFunction(clazz, BigDecimal.class));
-        }
-
-        operators = new BinaryExpr.Operator[] {
-                BinaryExpr.Operator.LESS,
-                BinaryExpr.Operator.GREATER,
-                BinaryExpr.Operator.LESS_EQUALS,
-                BinaryExpr.Operator.GREATER_EQUALS
-        };
-
-        for (BinaryExpr.Operator operator : operators) {
-            for (final Class<?> clazz : classes) {
-                buf.append(generateInequalityFunction(operator, BigDecimal.class, clazz));
-                buf.append(generateInequalityFunction(operator, clazz, BigDecimal.class));
-            }
-        }
-
-        // ------------------------------------------------------------------------------------------------------------------------------------------------------------------
-
-        // TODO: BigInteger - combine with earlier loops after review
-
-        buf.append("" +
-                "    //\n" +
-                "    // BigInteger ops\n" +
-                "    //\n\n");
-
-        classes = new Class[] {long.class, int.class, short.class, byte.class, double.class, float.class, char.class};
-
-        operators = new BinaryExpr.Operator[] {
-                BinaryExpr.Operator.PLUS,
-                BinaryExpr.Operator.MINUS,
-                BinaryExpr.Operator.MULTIPLY,
-                BinaryExpr.Operator.DIVIDE,
-                BinaryExpr.Operator.REMAINDER,
-        };
-
-        for (final BinaryExpr.Operator operator : operators) {
-            buf.append(generateArithmeticFunction(operator, BigInteger.class, BigInteger.class));
-            for (final Class<?> clazz : classes) {
-                buf.append(generateArithmeticFunction(operator, BigInteger.class, clazz));
-                buf.append(generateArithmeticFunction(operator, clazz, BigInteger.class));
-            }
-        }
-
-        buf.append(generateEqualityFunction(BigInteger.class, BigInteger.class));
-        for (final Class<?> clazz : classes) {
-            buf.append(generateEqualityFunction(BigInteger.class, clazz));
-            buf.append(generateEqualityFunction(clazz, BigInteger.class));
-        }
-
-        buf.append(generateCompareToFunction(BigInteger.class, BigInteger.class));
-        for (final Class<?> clazz : classes) {
-            buf.append(generateCompareToFunction(BigInteger.class, clazz));
-            buf.append(generateCompareToFunction(clazz, BigInteger.class));
-        }
-
-        operators = new BinaryExpr.Operator[] {
-                BinaryExpr.Operator.LESS,
-                BinaryExpr.Operator.GREATER,
-                BinaryExpr.Operator.LESS_EQUALS,
-                BinaryExpr.Operator.GREATER_EQUALS
-        };
-
-        for (BinaryExpr.Operator operator : operators) {
-            for (final Class<?> clazz : classes) {
-                buf.append(generateInequalityFunction(operator, BigInteger.class, clazz));
-                buf.append(generateInequalityFunction(operator, clazz, BigInteger.class));
-            }
         }
 
         // ------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -803,9 +684,17 @@ public class QueryLanguageFunctionGenerator {
 
         final String nullA = nullForType(classA);
         final String nullReturn = nullForType(returnType);
-        sb.append(MessageFormat.format("" +
-                "        return a == {0} ? {1} : -a;\n",
-                nullA, nullReturn));
+
+        if (isBigNumber(classA)) {
+            sb.append(MessageFormat.format("" +
+                    "        return a == {0} ? {1} : a.negate();\n",
+                    nullA, nullReturn));
+        } else {
+
+            sb.append(MessageFormat.format("" +
+                    "        return a == {0} ? {1} : -a;\n",
+                    nullA, nullReturn));
+        }
         sb.append("    }\n\n");
 
         return sb.toString();
