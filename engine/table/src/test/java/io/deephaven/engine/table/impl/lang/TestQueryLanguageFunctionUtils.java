@@ -14082,6 +14082,15 @@ public final class TestQueryLanguageFunctionUtils extends TestCase {
         TestCase.assertTrue(greaterEquals(dv11, bv10));
     }
 
+
+    public static void test_bigdecimal_negate() {
+        final BigDecimal bv10 = BigDecimal.valueOf(10.5);
+        final BigDecimal bv11 = BigDecimal.valueOf(-11.5);
+
+        TestCase.assertEquals(BigDecimal.valueOf(-10.5), negate(bv10));
+        TestCase.assertEquals(BigDecimal.valueOf(11.5), negate(bv11));
+    }
+
     public static void sameBiOrBd(final Object expected, final Object result) {
         if (expected instanceof BigDecimal) {
             TestCase.assertTrue(result instanceof BigDecimal);
@@ -14785,5 +14794,13 @@ public final class TestQueryLanguageFunctionUtils extends TestCase {
         TestCase.assertTrue(greaterEquals(lv11, bv10));
         TestCase.assertTrue(greaterEquals(fv11, bv10));
         TestCase.assertTrue(greaterEquals(dv11, bv10));
+    }
+
+    public static void test_biginteger_negate() {
+        final BigInteger bv10 = BigInteger.valueOf(10);
+        final BigInteger bv11 = BigInteger.valueOf(-11);
+
+        TestCase.assertEquals(BigInteger.valueOf(-10), negate(bv10));
+        TestCase.assertEquals(BigInteger.valueOf(11), negate(bv11));
     }
 }
