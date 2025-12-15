@@ -98,7 +98,7 @@ junit = "5.12.1"
 junit4 = "4.13.2"
 testcontainers = "1.21.3"
 jmh = "1.37"
-spockframework = "2.3-groovy-3.0"
+spockframework = "2.4-groovy-5.0"
 
 [libraries]
 adbc-flight-sql = { module = "org.apache.arrow.adbc:adbc-driver-flight-sql", version.ref = "adbc" }
