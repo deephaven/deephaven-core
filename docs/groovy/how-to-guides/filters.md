@@ -174,6 +174,22 @@ Disjunctive filters return only rows that match _any_ of the specified filters. 
   - [`whereNotIn`](../reference/table-operations/filter/where-not-in.md)
 - Pass multiple query strings into the following table operation:
 
+## Filter utilities
+
+Deephaven provides several advanced filter utilities that can improve performance in specific scenarios:
+
+### `TailInitializationFilter`
+
+[`TailInitializationFilter`](https://docs.deephaven.io/core/javadoc/io/deephaven/engine/table/impl/util/TailInitializationFilter.html) optimizes the initialization of filtered tables when you only need the most recent rows. This is particularly useful when working with large historical datasets where you're primarily interested in the tail of the data. See the [`TailInitializationFilter`](../reference/table-operations/filter/TailInitializationFilter.md) reference page for usage examples.
+
+### `SyncTableFilter` and `LeaderTableFilter`
+
+[`SyncTableFilter`](https://docs.deephaven.io/core/javadoc/io/deephaven/engine/table/impl/util/SyncTableFilter.html) and [`LeaderTableFilter`](https://docs.deephaven.io/core/javadoc/io/deephaven/engine/util/LeaderTableFilter.html) help synchronize table updates across multiple dependent tables. These utilities ensure that filtered results stay consistent when dealing with related tables that update at different rates. See [Synchronize multiple tables](./synchronizing-tables.md) for usage examples and guidance on choosing between these utilities.
+
+### `WindowCheck`
+
+[`WindowCheck`](https://docs.deephaven.io/core/javadoc/io/deephaven/engine/util/WindowCheck.html) provides time-window filtering capabilities. For practical usage, see the [`addTimeWindow`](../reference/time/add-time-window.md) reference page, which demonstrates how to add Boolean columns that indicate whether rows fall within a specified time window.
+
 ## Related documentation
 
 - [Built-in constants](./built-in-constants.md)
