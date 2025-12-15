@@ -214,7 +214,7 @@ class TableInterface(ABC, Generic[T]):
 
         # Check if we have Filter objects or strings based on the first element
         if isinstance(filters_list[0], Filter):
-            table_op = FilterOp(filters=filters_list)
+            table_op: TableOp = FilterOp(filters=filters_list)
         else:
             table_op = UnstructuredFilterOp(filters=filters_list)
 

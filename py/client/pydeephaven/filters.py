@@ -5,30 +5,83 @@
 
 from __future__ import annotations
 
+import datetime
 from abc import ABC, abstractmethod
-from typing import Union
+from typing import Sequence, Union
+
+import numpy as np
+import pandas as pd
 
 from deephaven_core.proto.table_pb2 import (
+    AndCondition,
+    CaseSensitivity,
     CompareCondition,
     Condition,
+    ContainsCondition,
+    InCondition,
+    IsNullCondition,
     Literal,
+    MatchesCondition,
+    MatchType,
+    NotCondition,
+    OrCondition,
     Reference,
     Value,
 )
 
+# Type alias for datetime-like types
+DatetimeLike = Union[
+    datetime.datetime,
+    datetime.date,
+    np.datetime64,
+    pd.Timestamp,
+]
 
-# TODO datetime
-def _to_proto_value(v: Union[bool, int, float, str, ColumnName]) -> Value:
+
+def _datetime_to_nanos(dt: DatetimeLike) -> int:
+    """Convert a datetime-like object to nanoseconds since the Unix epoch (UTC).
+
+    Args:
+        dt: A datetime-like object (datetime.datetime, datetime.date, np.datetime64, pd.Timestamp)
+
+    Returns:
+        Nanoseconds since Unix epoch (1970-01-01 00:00:00 UTC)
+    """
+    if isinstance(dt, pd.Timestamp):
+        # pandas Timestamp - use built-in value property (nanoseconds)
+        return dt.value
+    elif isinstance(dt, np.datetime64):
+        # numpy datetime64 - convert to nanoseconds
+        return dt.astype("datetime64[ns]").astype(int)
+    elif isinstance(dt, datetime.datetime):
+        # Python datetime - convert to nanoseconds
+        # timestamp() returns seconds since epoch (as float)
+        return int(dt.timestamp() * 1_000_000_000)
+    elif isinstance(dt, datetime.date):
+        # Python date - convert to datetime at midnight UTC, then to nanos
+        dt_obj = datetime.datetime.combine(
+            dt, datetime.time.min, tzinfo=datetime.timezone.utc
+        )
+        return int(dt_obj.timestamp() * 1_000_000_000)
+    else:
+        raise TypeError(f"Unsupported datetime type: {type(dt)}")
+
+
+def _to_proto_value(v: Union[bool, int, float, str, DatetimeLike, ColumnName]) -> Value:
     if isinstance(v, ColumnName):
         return Value(reference=Reference(column_name=v))
     elif isinstance(v, str):
         return Value(literal=Literal(string_value=v))
     elif isinstance(v, bool):
         return Value(literal=Literal(bool_value=v))
-    elif isinstance(v, int):
-        return Value(literal=Literal(long_value=v))
-    elif isinstance(v, float):
-        return Value(literal=Literal(double_value=v))
+    elif isinstance(v, (datetime.datetime, datetime.date, np.datetime64, pd.Timestamp)):
+        # Handle datetime types - convert to nanoseconds since epoch
+        nanos = _datetime_to_nanos(v)
+        return Value(literal=Literal(nano_time_value=nanos))
+    elif isinstance(v, (int, np.integer)):
+        return Value(literal=Literal(long_value=int(v)))
+    elif isinstance(v, (float, np.floating)):
+        return Value(literal=Literal(double_value=float(v)))
     else:
         raise TypeError(f"Unsupported type for proto value: {type(v)}")
 
@@ -47,289 +100,470 @@ class Filter(ABC):
         pass
 
 
-class CompareFilter(Filter):
+class _CompareFilter(Filter):
     """A filter that compares a column value to a literal value."""
 
     def __init__(
         self,
         op: CompareCondition.CompareOperation.ValueType,
-        left: Union[bool, int, float, str, ColumnName],
-        right: Union[bool, int, float, str, ColumnName],
+        left: Union[bool, int, float, str, DatetimeLike, ColumnName],
+        right: Union[bool, int, float, str, DatetimeLike, ColumnName],
+        case_sensitive: bool = True,
     ):
         self._lhs = _to_proto_value(left)
         self._rhs = _to_proto_value(right)
         self._op = op
+        self._case_sensitivity = (
+            CaseSensitivity.MATCH_CASE
+            if case_sensitive
+            else CaseSensitivity.IGNORE_CASE
+        )
 
     def make_grpc_message(self) -> Condition:
         compare_condition = CompareCondition(
-            operation=self._op, lhs=self._lhs, rhs=self._rhs
+            operation=self._op,
+            case_sensitivity=self._case_sensitivity,
+            lhs=self._lhs,
+            rhs=self._rhs,
         )
         return Condition(compare=compare_condition)
 
 
-# def or_(filters: Union[str, Filter, Sequence[str], Sequence[Filter]]) -> Filter:
-#     """Creates a new filter that evaluates to true when any of the given filters evaluates to true.
-#
-#     Args:
-#         filters (Union[str, Filter, Sequence[str], Sequence[Filter]]): the component filter(s)
-#
-#     Returns:
-#         a new or Filter
-#     """
-#     seq = [
-#         Filter.from_(f).j_filter if isinstance(f, str) else f  # type: ignore[union-attr]
-#         for f in _to_sequence(filters)
-#     ]
-#     return Filter(j_filter=getattr(_JFilter, "or")(*seq))
-#
-#
-# def and_(filters: Union[str, Filter, Sequence[str], Sequence[Filter]]) -> Filter:
-#     """Creates a new filter that evaluates to true when all the given filters evaluates to true.
-#
-#     Args:
-#         filters (Union[str, Filter, Sequence[str], Sequence[Filter]]): the component filters
-#
-#     Returns:
-#         a new and Filter
-#     """
-#     seq = [
-#         Filter.from_(f).j_filter if isinstance(f, str) else f  # type: ignore[union-attr]
-#         for f in _to_sequence(filters)
-#     ]
-#     return Filter(j_filter=getattr(_JFilter, "and")(*seq))
-#
-#
-# def not_(filter_: Filter) -> Filter:
-#     """Creates a new filter that evaluates to the opposite of what filter_ evaluates to.
-#
-#     Args:
-#         filter_ (Filter): the filter to negate with
-#
-#     Returns:
-#         a new not Filter
-#     """
-#     return Filter(j_filter=getattr(_JFilter, "not")(filter_.j_filter))
-#
-#
-# def is_null(col: str) -> Filter:
-#     """Creates a new filter that evaluates to true when the col is null, and evaluates to false when col is not null.
-#
-#     Args:
-#         col (str): the column name
-#
-#     Returns:
-#         a new is-null Filter
-#     """
-#     return Filter(j_filter=_JFilter.isNull(_JColumnName.of(col)))
-#
-#
-# def is_not_null(col: str) -> Filter:
-#     """Creates a new filter that evaluates to true when the col is not null, and evaluates to false when col is null.
-#
-#     Args:
-#         col (str): the column name
-#
-#     Returns:
-#         a new is-not-null Filter
-#     """
-#     return Filter(j_filter=_JFilter.isNotNull(_JColumnName.of(col)))
-#
-#
-# class PatternMode(Enum):
-#     """The regex mode to use"""
-#
-#     MATCHES = _JPatternMode.MATCHES
-#     """Matches the entire input against the pattern"""
-#
-#     FIND = _JPatternMode.FIND
-#     """Matches any subsequence of the input against the pattern"""
-#
-#
-# def pattern(
-#     mode: PatternMode, col: str, regex: str, invert_pattern: bool = False
-# ) -> Filter:
-#     """Creates a regular-expression pattern filter.
-#
-#     See https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/util/regex/Pattern.html for documentation on
-#     the regex pattern.
-#
-#     This filter will never match ``null`` values.
-#
-#     Args:
-#         mode (PatternMode): the mode
-#         col (str): the column name
-#         regex (str): the regex pattern
-#         invert_pattern (bool): if the pattern matching logic should be inverted
-#
-#     Returns:
-#         a new pattern filter
-#
-#     Raises:
-#         DHError
-#     """
-#     try:
-#         return Filter(
-#             j_filter=_JFilterPattern.of(
-#                 _JColumnName.of(col),
-#                 _JPattern.compile(regex),
-#                 mode.value,
-#                 invert_pattern,
-#             )
-#         )
-#     except Exception as e:
-#         raise DHError(e, "failed to create a pattern filter.") from e
-#
-#
-# def in_(col: str, values: Sequence[Union[bool, int, float, str]]) -> Filter:
-#     """Creates a new filter that evaluates to true when the column's value is in the given values.
-#
-#     Args:
-#         col (str): the column name
-#         values (Sequence[Union[bool, int, float, str]]): the values to check against
-#
-#     Returns:
-#         a new in Filter
-#
-#     Raises:
-#         DHError
-#     """
-#     try:
-#         j_literals = [_JLiteral.of(v) for v in values]
-#         return Filter(j_filter=_JFilterIn.of(_JColumnName.of(col), j_literals))
-#     except Exception as e:
-#         raise DHError(e, "failed to create a in filter.") from e
-#
-#
-# _FILTER_COMPARISON_MAP: dict = {
-#     "eq": _JFilterComparison.eq,
-#     "ne": _JFilterComparison.neq,
-#     "lt": _JFilterComparison.lt,
-#     "le": _JFilterComparison.leq,
-#     "gt": _JFilterComparison.gt,
-#     "ge": _JFilterComparison.geq,
-# }
-#
-#
-# def _j_filter_comparison(
-#     op: str,
-#     left: Union[bool, int, float, str, ColumnName],
-#     right: Union[bool, int, float, str, ColumnName],
-# ) -> jpy.JType:
-#     j_left = (
-#         _JColumnName.of(left) if isinstance(left, ColumnName) else _JLiteral.of(left)
-#     )
-#     j_right = (
-#         _JColumnName.of(right) if isinstance(right, ColumnName) else _JLiteral.of(right)
-#     )
-#     return _FILTER_COMPARISON_MAP[op](j_left, j_right)
-#
-#
-# TODO what about bytes, date/time types or generic object?
+class _InFilter(Filter):
+    """A filter that checks if a column value is in a list of values."""
+
+    def __init__(
+        self,
+        col: str,
+        values: Sequence[Union[bool, int, float, str]],
+        case_sensitive: bool = True,
+    ):
+        self._col = col
+        self._values = values
+        self._case_sensitivity = (
+            CaseSensitivity.MATCH_CASE
+            if case_sensitive
+            else CaseSensitivity.IGNORE_CASE
+        )
+
+    def make_grpc_message(self) -> Condition:
+        proto_values = [_to_proto_value(v) for v in self._values]
+        in_condition = InCondition(
+            target=_to_proto_value(ColumnName(self._col)),
+            candidates=proto_values,
+            case_sensitivity=self._case_sensitivity,
+        )
+        cond = Condition(**{"in": in_condition})  # type: ignore[arg-type]
+        return cond
+
+
+class _OrFilter(Filter):
+    """A filter that evaluates to true when any of the given filters evaluates to true."""
+
+    def __init__(self, filters: Sequence[Filter]):
+        self._filters = filters
+
+    def make_grpc_message(self) -> Condition:
+        or_conditions = [f.make_grpc_message() for f in self._filters]
+        return Condition(**{"or": OrCondition(filters=or_conditions)})  # type: ignore[arg-type]
+
+
+class _AndFilter(Filter):
+    """A filter that evaluates to true when all the given filters evaluates to true."""
+
+    def __init__(self, filters: Sequence[Filter]):
+        self._filters = filters
+
+    def make_grpc_message(self) -> Condition:
+        and_conditions = [f.make_grpc_message() for f in self._filters]
+        return Condition(**{"and": AndCondition(filters=and_conditions)})  # type: ignore[arg-type]
+
+
+class _NotFilter(Filter):
+    """A filter that negates the given filter."""
+
+    def __init__(self, filter_: Filter):
+        self._filter = filter_
+
+    def make_grpc_message(self) -> Condition:
+        return Condition(
+            **{"not": NotCondition(filter=self._filter.make_grpc_message())}  # type: ignore[arg-type]
+        )
+
+
+class _IsNullFilter(Filter):
+    """A filter that evaluates to true when the column is null."""
+
+    def __init__(self, col: str):
+        self._col = col
+
+    def make_grpc_message(self) -> Condition:
+        isnull_condition = IsNullCondition(reference=Reference(column_name=self._col))
+        return Condition(is_null=isnull_condition)
+
+
+def or_(filters: Sequence[Filter]) -> Filter:
+    """Creates a new filter that evaluates to true when any of the given filters evaluates to true.
+
+    Args:
+        filters (Sequence[Filter]): the component filter(s)
+
+    Returns:
+        a new or Filter
+    """
+    return _OrFilter(filters=filters)
+
+
+def and_(filters: Sequence[Filter]) -> Filter:
+    """Creates a new filter that evaluates to true when all the given filters evaluates to true.
+
+    Args:
+        filters (Sequence[Filter]): the component filters
+
+    Returns:
+        a new and Filter
+    """
+    return _AndFilter(filters=filters)
+
+
+def not_(filter_: Filter) -> Filter:
+    """Creates a new filter that evaluates to the opposite of what filter_ evaluates to.
+
+    Args:
+        filter_ (Filter): the filter to negate with
+
+    Returns:
+        a new not Filter
+    """
+    return _NotFilter(filter_=filter_)
+
+
+def is_null(col: str) -> Filter:
+    """Creates a new filter that evaluates to true when the col is null, and evaluates to false when col is not null.
+
+    Args:
+        col (str): the column name
+
+    Returns:
+        a new is-null Filter
+    """
+    return _IsNullFilter(col=col)
+
+
+def is_not_null(col: str) -> Filter:
+    """Creates a new filter that evaluates to true when the col is not null, and evaluates to false when col is null.
+
+    Args:
+        col (str): the column name
+
+    Returns:
+        a new is-not-null Filter
+    """
+    return not_(is_null(col))
+
+
+class _MatchesFilter(Filter):
+    """A filter that applies a regex pattern to a column."""
+
+    def __init__(
+        self,
+        col: str,
+        regex: str,
+        match_type: MatchType.ValueType,
+        case_sensitive: bool = True,
+    ):
+        self._col = col
+        self._regex = regex
+        self._match_type = match_type
+        self._case_sensitivity = (
+            CaseSensitivity.MATCH_CASE
+            if case_sensitive
+            else CaseSensitivity.IGNORE_CASE
+        )
+
+    def make_grpc_message(self) -> Condition:
+        matches_condition = MatchesCondition(
+            reference=Reference(column_name=self._col),
+            regex=self._regex,
+            match_type=self._match_type,
+            case_sensitivity=self._case_sensitivity,
+        )
+        return Condition(matches=matches_condition)
+
+
+class _ContainsFilter(Filter):
+    """A filter that checks if a column contains a search string."""
+
+    def __init__(
+        self,
+        col: str,
+        search_string: str,
+        match_type: MatchType.ValueType,
+        case_sensitive: bool = True,
+    ):
+        self._col = col
+        self._search_string = search_string
+        self._match_type = match_type
+        self._case_sensitivity = (
+            CaseSensitivity.MATCH_CASE
+            if case_sensitive
+            else CaseSensitivity.IGNORE_CASE
+        )
+
+    def make_grpc_message(self) -> Condition:
+        contains_condition = ContainsCondition(
+            reference=Reference(column_name=self._col),
+            search_string=self._search_string,
+            match_type=self._match_type,
+            case_sensitivity=self._case_sensitivity,
+        )
+        return Condition(contains=contains_condition)
+
+
+def matches(
+    col: str, regex: str, invert: bool = False, case_sensitive: bool = True
+) -> Filter:
+    """Creates a regular-expression matches filter.
+
+    See https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/util/regex/Pattern.html for documentation on
+    the regex pattern.
+
+    This filter will never match ``null`` values.
+
+    Args:
+        col (str): the column name
+        regex (str): the regex pattern
+        invert (bool): if the pattern matching logic should be inverted (default is False)
+        case_sensitive (bool): whether the pattern matching is case-sensitive (default is True)
+
+    Returns:
+        Filter: a new matches filter
+    """
+    match_type = MatchType.INVERTED if invert else MatchType.REGULAR
+    return _MatchesFilter(
+        col=col, regex=regex, match_type=match_type, case_sensitive=case_sensitive
+    )
+
+
+def contains(
+    col: str, search_string: str, invert: bool = False, case_sensitive: bool = True
+) -> Filter:
+    """Creates a contains filter that checks if a column contains a search string.
+
+    This filter will never match ``null`` values.
+
+    Args:
+        col: the column name
+        search_string: the string to search for
+        invert: if the contains logic should be inverted (default is False)
+        case_sensitive: whether the search is case-sensitive (default is True)
+
+    Returns:
+        Filter: a new contains filter
+    """
+    match_type = MatchType.INVERTED if invert else MatchType.REGULAR
+    return _ContainsFilter(
+        col=col,
+        search_string=search_string,
+        match_type=match_type,
+        case_sensitive=case_sensitive,
+    )
+
+
+def in_(
+    col: str,
+    values: Sequence[Union[bool, int, float, str]],
+    case_sensitive: bool = True,
+) -> Filter:
+    """Creates a new filter that evaluates to true when the column's value is in the given values.
+
+    Args:
+        col (str): the column name
+        values (Sequence[Union[bool, int, float, str]]): the values to check against
+        case_sensitive (bool): whether the comparison is case-sensitive (default is True)
+
+    Returns:
+        a new in Filter
+
+    Raises:
+        DHError
+    """
+    return _InFilter(col=col, values=values, case_sensitive=case_sensitive)
+
+
 def eq(
-    left: Union[bool, int, float, str, ColumnName],
-    right: Union[bool, int, float, str, ColumnName],
+    left: Union[bool, int, float, str, DatetimeLike, ColumnName],
+    right: Union[bool, int, float, str, DatetimeLike, ColumnName],
+    case_sensitive: bool = True,
 ) -> Filter:
     """Creates a new filter that evaluates to true when the left operand is equal to the right operand.
 
     Args:
-        left (Union[bool, int, float, str, ColumnName]): the left operand, either a literal value or a column name
-        right (Union[bool, int, float, str, ColumnName]): the right operand, either a literal value or a column name
+        left (Union[bool, int, float, str, DatetimeLike, ColumnName]): the left operand, either a literal value or a column name
+        right (Union[bool, int, float, str, DatetimeLike, ColumnName]): the right operand, either a literal value or a column name
+        case_sensitive (bool): whether the comparison is case-sensitive (default is True)
 
     Returns:
         Filter: a new equality filter
     """
-    return CompareFilter(
-        op=CompareCondition.CompareOperation.EQUALS, left=left, right=right
+    return _CompareFilter(
+        op=CompareCondition.CompareOperation.EQUALS,
+        left=left,
+        right=right,
+        case_sensitive=case_sensitive,
     )
 
 
 def ne(
-    left: Union[bool, int, float, str, ColumnName],
-    right: Union[bool, int, float, str, ColumnName],
+    left: Union[bool, int, float, str, DatetimeLike, ColumnName],
+    right: Union[bool, int, float, str, DatetimeLike, ColumnName],
+    case_sensitive: bool = True,
 ) -> Filter:
     """Creates a new filter that evaluates to true when the left operand is not equal to the right operand.
 
     Args:
-        left (Union[bool, int, float, str, ColumnName]): the left operand, either a literal value or a column name
-        right (Union[bool, int, float, str, ColumnName]): the right operand, either a literal value or a column name
+        left (Union[bool, int, float, str, DatetimeLike, ColumnName]): the left operand, either a literal value or a column name
+        right (Union[bool, int, float, str, DatetimeLike, ColumnName]): the right operand, either a literal value or a column name
+        case_sensitive (bool): whether the comparison is case-sensitive (default is True)
 
     Returns:
         Filter: a new inequality filter
     """
-    return CompareFilter(
-        op=CompareCondition.CompareOperation.NOT_EQUALS, left=left, right=right
+    return _CompareFilter(
+        op=CompareCondition.CompareOperation.NOT_EQUALS,
+        left=left,
+        right=right,
+        case_sensitive=case_sensitive,
     )
 
 
 def lt(
-    left: Union[bool, int, float, str, ColumnName],
-    right: Union[bool, int, float, str, ColumnName],
+    left: Union[int, float, str, DatetimeLike, ColumnName],
+    right: Union[int, float, str, DatetimeLike, ColumnName],
+    case_sensitive: bool = True,
 ) -> Filter:
     """Creates a new filter that evaluates to true when the left operand is less than the right operand.
 
     Args:
-        left (Union[bool, int, float, str, ColumnName]): the left operand, either a literal value or a column name
-        right (Union[bool, int, float, str, ColumnName]): the right operand, either a literal value or a column name
+        left (Union[int, float, str, DatetimeLike, ColumnName]): the left operand, either a literal value or a column name
+        right (Union[int, float, str, DatetimeLike, ColumnName]): the right operand, either a literal value or a column name
+        case_sensitive (bool): whether the comparison is case-sensitive (default is True)
+            Note: case_sensitive=False is not supported by the server for string ordering comparisons.
+            For case-insensitive string ordering, consider normalizing strings first (e.g., using toLowerCase()).
 
     Returns:
         Filter: a new less-than filter
+
+    Raises:
+        ValueError: if case_sensitive=False (not supported for ordering operators)
     """
-    return CompareFilter(
-        op=CompareCondition.CompareOperation.LESS_THAN, left=left, right=right
-    )
-
-
-def le(
-    left: Union[bool, int, float, str, ColumnName],
-    right: Union[bool, int, float, str, ColumnName],
-) -> Filter:
-    """Creates a new filter that evaluates to true when the left operand is less than or equal to the right operand.
-
-    Args:
-        left (Union[bool, int, float, str, ColumnName]): the left operand, either a literal value or a column name
-        right (Union[bool, int, float, str, ColumnName]): the right operand, either a literal value or a column name
-
-    Returns:
-        Filter: a new less-than-or-equal filter
-    """
-    return CompareFilter(
-        op=CompareCondition.CompareOperation.LESS_THAN_OR_EQUAL, left=left, right=right
+    if not case_sensitive:
+        raise ValueError(
+            "case_sensitive=False is not supported for lt() operator. "
+            "For case-insensitive string comparisons, normalize strings first using toLowerCase() or toUpperCase()."
+        )
+    return _CompareFilter(
+        op=CompareCondition.CompareOperation.LESS_THAN,
+        left=left,
+        right=right,
+        case_sensitive=case_sensitive,
     )
 
 
 def gt(
-    left: Union[bool, int, float, str, ColumnName],
-    right: Union[bool, int, float, str, ColumnName],
+    left: Union[int, float, str, DatetimeLike, ColumnName],
+    right: Union[int, float, str, DatetimeLike, ColumnName],
+    case_sensitive: bool = True,
 ) -> Filter:
     """Creates a new filter that evaluates to true when the left operand is greater than the right operand.
 
     Args:
-        left (Union[bool, int, float, str, ColumnName]): the left operand, either a literal value or a column name
-        right (Union[bool, int, float, str, ColumnName]): the right operand, either a literal value or a column name
+        left (Union[int, float, str, DatetimeLike, ColumnName]): the left operand, either a literal value or a column name
+        right (Union[int, float, str, DatetimeLike, ColumnName]): the right operand, either a literal value or a column name
+        case_sensitive (bool): whether the comparison is case-sensitive (default is True)
+            Note: case_sensitive=False is not supported by the server for string ordering comparisons.
+            For case-insensitive string ordering, consider normalizing strings first (e.g., using toLowerCase()).
 
     Returns:
         Filter: a new greater-than filter
+
+    Raises:
+        ValueError: if case_sensitive=False (not supported for ordering operators)
     """
-    return CompareFilter(
-        op=CompareCondition.CompareOperation.GREATER_THAN, left=left, right=right
+    if not case_sensitive:
+        raise ValueError(
+            "case_sensitive=False is not supported for gt() operator. "
+            "For case-insensitive string comparisons, normalize strings first using toLowerCase() or toUpperCase()."
+        )
+    return _CompareFilter(
+        op=CompareCondition.CompareOperation.GREATER_THAN,
+        left=left,
+        right=right,
+        case_sensitive=case_sensitive,
+    )
+
+
+def le(
+    left: Union[int, float, str, DatetimeLike, ColumnName],
+    right: Union[int, float, str, DatetimeLike, ColumnName],
+    case_sensitive: bool = True,
+) -> Filter:
+    """Creates a new filter that evaluates to true when the left operand is less than or equal to the right operand.
+
+    Args:
+        left (Union[int, float, str, DatetimeLike, ColumnName]): the left operand, either a literal value or a column name
+        right (Union[int, float, str, DatetimeLike, ColumnName]): the right operand, either a literal value or a column name
+        case_sensitive (bool): whether the comparison is case-sensitive (default is True)
+            Note: case_sensitive=False is not supported by the server for string ordering comparisons.
+            For case-insensitive string ordering, consider normalizing strings first (e.g., using toLowerCase()).
+
+    Returns:
+        Filter: a new less-than-or-equal filter
+
+    Raises:
+        ValueError: if case_sensitive=False (not supported for ordering operators)
+    """
+    if not case_sensitive:
+        raise ValueError(
+            "case_sensitive=False is not supported for le() operator. "
+            "For case-insensitive string comparisons, normalize strings first using toLowerCase() or toUpperCase()."
+        )
+    return _CompareFilter(
+        op=CompareCondition.CompareOperation.LESS_THAN_OR_EQUAL,
+        left=left,
+        right=right,
+        case_sensitive=case_sensitive,
     )
 
 
 def ge(
-    left: Union[bool, int, float, str, ColumnName],
-    right: Union[bool, int, float, str, ColumnName],
+    left: Union[int, float, str, DatetimeLike, ColumnName],
+    right: Union[int, float, str, DatetimeLike, ColumnName],
+    case_sensitive: bool = True,
 ) -> Filter:
     """Creates a new filter that evaluates to true when the left operand is greater than or equal to the right operand.
 
     Args:
-        left (Union[bool, int, float, str, ColumnName]): the left operand, either a literal value or a column name
-        right (Union[bool, int, float, str, ColumnName]): the right operand, either a literal value or a column name
+        left (Union[int, float, str, DatetimeLike, ColumnName]): the left operand, either a literal value or a column name
+        right (Union[int, float, str, DatetimeLike, ColumnName]): the right operand, either a literal value or a column name
+        case_sensitive (bool): whether the comparison is case-sensitive (default is True)
+            Note: case_sensitive=False is not supported by the server for string ordering comparisons.
+            For case-insensitive string ordering, consider normalizing strings first (e.g., using toLowerCase()).
 
     Returns:
         Filter: a new greater-than-or-equal filter
+
+    Raises:
+        ValueError: if case_sensitive=False (not supported for ordering operators)
     """
-    return CompareFilter(
+    if not case_sensitive:
+        raise ValueError(
+            "case_sensitive=False is not supported for ge() operator. "
+            "For case-insensitive string comparisons, normalize strings first using toLowerCase() or toUpperCase()."
+        )
+    return _CompareFilter(
         op=CompareCondition.CompareOperation.GREATER_THAN_OR_EQUAL,
         left=left,
         right=right,
+        case_sensitive=case_sensitive,
     )
