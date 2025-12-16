@@ -1,6 +1,5 @@
 ---
-title: Vectorization
-sidebar_label: Vectorization
+title: Recipes, not loops!
 ---
 
 If you're coming from pandas, traditional Python, or other data processing tools, you're likely accustomed to writing loops to transform data. **Stop!** Deephaven works fundamentally differently, and understanding this difference early will save you countless hours of frustration and help you write better, faster code.
