@@ -575,7 +575,7 @@ session.close()
 
 ## Share plugin objects between sessions
 
-Plugin objects created in one session can be shared with other sessions using the [`publish`](/core/docs/reference/client-api/session/publish/) and [`fetch`](/core/docs/reference/client-api/session/fetch/) methods. This is useful when you want multiple client sessions to interact with the same server-side plugin object.
+Plugin objects created in one session can be shared with other sessions using the [`publish`](../reference/client-api/session/publish.md) and [`fetch`](../reference/client-api/session/fetch.md) methods. This is useful when you want multiple client sessions to interact with the same server-side plugin object.
 
 ### Publishing a plugin object
 
@@ -650,5 +650,5 @@ sub_session.close()
 ## Related documentation
 
 - [Install and use plugins](./install-use-plugins.md)
-- [`publish`](/core/docs/reference/client-api/session/publish/) - Publish server objects to shared tickets
-- [`fetch`](/core/docs/reference/client-api/session/fetch/) - Fetch server objects by ticket
+- [`publish`](../reference/client-api/session/publish.md) - Publish server objects to shared tickets
+- [`fetch`](../reference/client-api/session/fetch.md) - Fetch server objects by ticket
