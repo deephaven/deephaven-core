@@ -59,15 +59,14 @@ public class JsRemoteFileSourceService extends HasEventHandling {
     }
 
     /**
-     * Fetches a RemoteFileSource plugin instance from the server and establishes a message stream connection.
+     * Fetches the FlightInfo for the plugin fetch command.
      *
-     * @param connection the worker connection to use for communication
-     * @return a promise that resolves to a RemoteFileSourceService instance with an active message stream
+     * @param connection the worker connection to use
+     * @param pluginName the name of the plugin to fetch
+     * @return a promise that resolves to the FlightInfo for the plugin fetch
      */
     @JsIgnore
-    public static Promise<JsRemoteFileSourceService> fetchPlugin(@TsTypeRef(Object.class) WorkerConnection connection) {
-        String pluginName = "DeephavenGroovyRemoteFileSourcePlugin";
-
+    private static Promise<FlightInfo> fetchPluginFlightInfo(WorkerConnection connection, String pluginName) {
         // Create a new export ticket for the result
         Ticket resultTicket = connection.getTickets().newExportTicket();
 
@@ -91,7 +90,19 @@ public class JsRemoteFileSourceService extends HasEventHandling {
 
         // Send the getFlightInfo request
         return Callbacks.<FlightInfo, Object>grpcUnaryPromise(
-                c -> connection.flightServiceClient().getFlightInfo(descriptor, connection.metadata(), c::apply))
+                c -> connection.flightServiceClient().getFlightInfo(descriptor, connection.metadata(), c::apply));
+    }
+
+    /**
+     * Fetches a RemoteFileSource plugin instance from the server and establishes a message stream connection.
+     *
+     * @param connection the worker connection to use for communication
+     * @return a promise that resolves to a RemoteFileSourceService instance with an active message stream
+     */
+    @JsIgnore
+    public static Promise<JsRemoteFileSourceService> fetchPlugin(@TsTypeRef(Object.class) WorkerConnection connection) {
+        String pluginName = "DeephavenGroovyRemoteFileSourcePlugin";
+        return fetchPluginFlightInfo(connection, pluginName)
                 .then(flightInfo -> {
                     // The first endpoint contains the ticket for the plugin instance.
                     // This is the standard Flight pattern: we passed resultTicket in the request,
@@ -365,4 +376,3 @@ public class JsRemoteFileSourceService extends HasEventHandling {
         return pos;
     }
 }
-
