@@ -11,9 +11,9 @@ Deephaven does not provide cross-table or cross-partition transactions. The syst
 
 This independence can cause consistency issues when you have multiple tables that contain correlated data. For example:
 
-- A trading system might have separate tables for orders, executions, and messages that all share a common transaction ID
-- A data pipeline might split events across multiple tables, each tagged with a sequence number
-- A multi-source system might need to wait until all sources report data for a given timestamp
+- A trading system might have separate tables for orders, executions, and messages that all share a common transaction ID.
+- A data pipeline might split events across multiple tables, each tagged with a sequence number.
+- A multi-source system might need to wait until all sources report data for a given timestamp.
 
 Both `SyncTableFilter` and `LeaderTableFilter` solve this problem by ensuring that only coordinated rows appear in the filtered results.
 
@@ -82,10 +82,10 @@ syncedBidAsk = result.get("bidAsk")
 
 In this example:
 
-- For `AAPL`, all three tables have `SeqNum` 1 and 2, so those rows appear in the synchronized results
-- For `AAPL`, only `priceData` has `SeqNum` 3, so that row is filtered out
-- For `GOOGL`, only `bidAskData` is missing `SeqNum` 2, so only rows with `SeqNum` 1 appear
-- When `bidAskData` receives `SeqNum` 2 for `GOOGL`, the filter will advance to show those rows
+- For `AAPL`, all three tables have `SeqNum` 1 and 2, so those rows appear in the synchronized results.
+- For `AAPL`, only `priceData` has `SeqNum` 3, so that row is filtered out.
+- For `GOOGL`, only `bidAskData` is missing `SeqNum` 2, so only rows with `SeqNum` 1 appear.
+- When `bidAskData` receives `SeqNum` 2 for `GOOGL`, the filter will advance to show those rows.
 
 ### API
 
@@ -110,7 +110,7 @@ syncedTable = result.get(tableName)
 
 ## `LeaderTableFilter`
 
-`LeaderTableFilter` synchronizes multiple tables using a leader-follower pattern. The leader table contains ID columns that specify which rows from each follower table should be shown.
+`LeaderTableFilter` synchronizes multiple tables using a leader-follower pattern. The leader table contains ID columns that specify which rows from each follower table to show.
 
 ### How it works
 
@@ -158,10 +158,10 @@ filteredMessages = result.get("messages")
 
 In this example:
 
-- The `syncLog` leader table controls which trades and messages appear
-- For `ClientA/S1`, the leader shows `TradeId` 100 and 101, and `MessageId` 1 and 2
-- Even though `tradeLog` has `Id` 102 and `messageLog` has `MsgId` 3, they don't appear because the leader hasn't referenced them yet
-- For `ClientB/S2`, only trade 200 and message 5 appear
+- The `syncLog` leader table controls which trades and messages appear.
+- For `ClientA/S1`, the leader shows `TradeId` 100 and 101, and `MessageId` 1 and 2.
+- Even though `tradeLog` has `Id` 102 and `messageLog` has `MsgId` 3, they don't appear because the leader hasn't referenced them yet.
+- For `ClientB/S2`, only trade 200 and message 5 appear.
 
 ### API
 
