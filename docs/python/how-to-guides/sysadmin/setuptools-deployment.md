@@ -57,7 +57,7 @@ my_dh_tool/
 - **`__init__.py`**: Makes the directory a Python package.
 - **`__main__.py`**: Enables running as `python -m my_dh_tool`.
 - **`cli.py`**: Contains the entry point function for your command-line script.
-- **`pyproject.toml`**: Defines package metadata, dependencies, and scripts (replaces setup.py).
+- **`pyproject.toml`**: Defines package metadata, dependencies, and scripts (replaces [setup.py](https://packaging.python.org/en/latest/guides/distributing-packages-using-setuptools/#setup-py)).
 
 ## Create the command-line script
 
@@ -126,7 +126,7 @@ if __name__ == "__main__":
 
 ## Create pyproject.toml
 
-The `pyproject.toml` file is the modern standard for Python package configuration. It replaces `setup.py` and defines your package metadata, dependencies, and command-line scripts.
+The `pyproject.toml` file is the modern standard for Python package configuration. It replaces [`setup.py`](https://packaging.python.org/en/latest/guides/distributing-packages-using-setuptools/#setup-py) and defines your package metadata, dependencies, and command-line scripts.
 
 Here's an example `pyproject.toml`:
 
