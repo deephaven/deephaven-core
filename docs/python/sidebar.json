@@ -64,6 +64,10 @@
                 "path": "getting-started/crash-course/query-strings.md"
               },
               {
+                "label": "Vectorization",
+                "path": "getting-started/crash-course/vectorization-vs-loops.md"
+              },
+              {
                 "label": "Python Integrations",
                 "path": "getting-started/crash-course/py-integrations.md"
               },
@@ -121,6 +125,10 @@
               {
                 "label": "Deephaven's design",
                 "path": "conceptual/deephaven-design.md"
+              },
+              {
+                "label": "Vectorization",
+                "path": "conceptual/vectorization-and-recipes.md"
               },
               {
                 "label": "Incremental update model",
