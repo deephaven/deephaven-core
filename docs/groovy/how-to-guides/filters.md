@@ -166,13 +166,11 @@ Conjunctive filters return only rows that match _all_ of the specified filters. 
 
 ### Disjunctive
 
-Disjunctive filters return only rows that match _any_ of the specified filters. There are two ways to disjunctively combine filters:
+Disjunctive filters return only rows that match _any_ of the specified filters. To disjunctively combine filters, pass a single query string with multiple filters separated by the `||` operator into one of the following table operations:
 
-- Pass a single query string with multiple filters separated by the `||` operator into one of the following table operations:
-  - [`where`](../reference/table-operations/filter/where.md)
-  - [`whereIn`](../reference/table-operations/filter/where-in.md)
-  - [`whereNotIn`](../reference/table-operations/filter/where-not-in.md)
-- Pass multiple query strings into [`whereOneOf`](../reference/table-operations/filter/where-one-of.md).
+- [`where`](../reference/table-operations/filter/where.md)
+- [`whereIn`](../reference/table-operations/filter/where-in.md)
+- [`whereNotIn`](../reference/table-operations/filter/where-not-in.md)
 
 ## Filter utilities
 
