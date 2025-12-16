@@ -172,7 +172,7 @@ Disjunctive filters return only rows that match _any_ of the specified filters. 
   - [`where`](../reference/table-operations/filter/where.md)
   - [`whereIn`](../reference/table-operations/filter/where-in.md)
   - [`whereNotIn`](../reference/table-operations/filter/where-not-in.md)
-- Pass multiple query strings into the following table operation:
+- Pass multiple query strings into [`whereOneOf`](../reference/table-operations/filter/where-one-of.md).
 
 ## Filter utilities
 
@@ -180,7 +180,7 @@ Deephaven provides several advanced filter utilities that can improve performanc
 
 ### `TailInitializationFilter`
 
-[`TailInitializationFilter`](https://docs.deephaven.io/core/javadoc/io/deephaven/engine/table/impl/util/TailInitializationFilter.html) optimizes the initialization of filtered tables when you only need the most recent rows. This is particularly useful when working with large historical datasets where you're primarily interested in the tail of the data. See the [`TailInitializationFilter`](../reference/table-operations/filter/TailInitializationFilter.md) reference page for usage examples.
+[`TailInitializationFilter`](https://docs.deephaven.io/core/javadoc/io/deephaven/engine/table/impl/util/TailInitializationFilter.html) reduces the input size for downstream operations by limiting initialization to only the most recent rows. This is particularly useful when working with large historical datasets where you're primarily interested in the tail of the data. See the [`TailInitializationFilter`](../reference/table-operations/filter/TailInitializationFilter.md) reference page for usage examples.
 
 ### `SyncTableFilter` and `LeaderTableFilter`
 
@@ -197,6 +197,5 @@ Deephaven provides several advanced filter utilities that can improve performanc
 - [Built-in functions](./built-in-functions.md)
 - [Query strings](./query-string-overview.md)
 - [Formulas](./formulas.md)
-- [How to filter table data](./filters.md)
 - [`emptyTable`](../reference/table-operations/create/emptyTable.md)
 - [`newTable`](../reference/table-operations/create/newTable.md)
