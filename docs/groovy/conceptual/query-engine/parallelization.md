@@ -114,7 +114,7 @@ Query operations execute in two phases: initialization and updates.
 
 When a table is first created, the initial state is computed using the available data. This happens when you call operations like [`.where()`](../../reference/table-operations/filter/where.md), [`.update()`](../../reference/table-operations/select/update.md), or [`.naturalJoin()`](../../reference/table-operations/join/natural-join.md).
 
-For [refreshing](https://deephaven.io/core/javadoc/io/deephaven/engine/table/impl/BaseTable.html#isRefreshing()) tables, Deephaven also adds a node to the [update graph](../dag.md) to track dependencies.
+For [refreshing](<https://deephaven.io/core/javadoc/io/deephaven/engine/table/impl/BaseTable.html#isRefreshing()>) tables, Deephaven also adds a node to the [update graph](../dag.md) to track dependencies.
 
 **How parallelization works during initialization**: Deephaven splits the data into chunks and processes them on multiple cores simultaneously. Each core works on its assigned chunk independently.
 
@@ -152,16 +152,16 @@ Handles parallel processing during update cycles (when live tables receive new d
 
 **Configuration**: `PeriodicUpdateGraph.updateThreads`
 
-- Default: `-1` (use all available cores)
-- Set to a specific number to limit parallelism during updates
+- Default: `-1` (use all available cores).
+- Set to a specific number to limit parallelism during updates.
 
 **When it's used**:
 
-- Processing new/modified rows in refreshing tables
-- Propagating changes through the update graph
-- Parallel execution of independent DAG nodes
+- Processing new/modified rows in refreshing tables.
+- Propagating changes through the update graph.
+- Parallel execution of independent DAG nodes.
 
-Both thread pools use [Runtime.availableProcessors()](https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/lang/Runtime.html#availableProcessors()) to determine the number of available cores at startup.
+Both thread pools use [Runtime.availableProcessors()](<https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/lang/Runtime.html#availableProcessors()>) to determine the number of available cores at startup.
 
 ## Controlling concurrency
 
@@ -290,19 +290,17 @@ When a Selectable is serial:
 
 Serial filters are needed when filter evaluation has stateful side effects. String-based filters in [`where()`](../../reference/table-operations/filter/where.md) are parallelized by default, so construct Filter objects explicitly:
 
-<!-- TODO: Fix Groovy syntax - MissingMethodException: No signature of method: static io.deephaven.api.filter.Filter.isNull() is applicable for argument types: (String). Need correct import/method call syntax for Groovy. -->
-
 ```groovy order=result
-import static io.deephaven.api.filter.Filter.isNull
-import static io.deephaven.api.filter.Filter.not
+import io.deephaven.api.filter.Filter
+import io.deephaven.api.ColumnName
 
 // Create filters with serial evaluation
-filter1 = isNull("X").withSerial()
-filter2 = not(isNull("Y")).withSerial()
+filter1 = Filter.isNull(ColumnName.of("X")).withSerial()
+filter2 = Filter.isNotNull(ColumnName.of("Y")).withSerial()
 
 result = emptyTable(1000)
     .update("X = i % 10 == 0 ? null : i", "Y = i % 5 == 0 ? null : i")
-    .where(filter1, filter2)
+    .where(Filter.and(filter1, filter2))
 ```
 
 When a Filter is serial:
@@ -333,10 +331,7 @@ A [`Barrier`](https://docs.deephaven.io/core/javadoc/io/deephaven/api/Concurrenc
 
 To ensure that all rows of column `A` are evaluated before any rows of column `B` begin evaluation:
 
-<!-- TODO: Fix Groovy syntax - Unable to resolve class ConcurrencyControl.Barrier. Inner class instantiation 'new ConcurrencyControl.Barrier()' fails in Groovy. Need correct syntax for accessing inner Barrier class. -->
-
 ```groovy order=t
-import io.deephaven.api.ConcurrencyControl
 import io.deephaven.api.Selectable
 import io.deephaven.api.ColumnName
 import io.deephaven.api.RawString
@@ -344,8 +339,8 @@ import java.util.concurrent.atomic.AtomicInteger
 
 counter = new AtomicInteger(0)
 
-// Create a barrier
-barrier = new ConcurrencyControl.Barrier()
+// Create a barrier - any Java object works
+barrier = new Object()
 
 // Column A declares the barrier ("I'll signal when done")
 colA = Selectable.of(ColumnName.of("A"), RawString.of("counter.getAndIncrement()"))
@@ -368,24 +363,22 @@ With this barrier:
 
 Barriers control evaluation order between filters when one depends on another's side effects:
 
-<!-- TODO: Fix Groovy syntax - Unable to resolve class ConcurrencyControl.Barrier. Inner class instantiation fails. Need correct Groovy syntax. -->
-
 ```groovy order=result
-import static io.deephaven.api.filter.Filter.isNull
-import io.deephaven.api.ConcurrencyControl
+import io.deephaven.api.filter.Filter
+import io.deephaven.api.ColumnName
 
-// Create a barrier
-barrier = new ConcurrencyControl.Barrier()
+// Create a barrier - any Java object works
+barrier = new Object()
 
 // Filter1 declares the barrier
-filter1 = isNull("X").withDeclaredBarriers(barrier)
+filter1 = Filter.isNull(ColumnName.of("X")).withDeclaredBarriers(barrier)
 
 // Filter2 respects the barrier and won't start until filter1 completes
-filter2 = isNull("Y").withRespectedBarriers(barrier)
+filter2 = Filter.isNull(ColumnName.of("Y")).withRespectedBarriers(barrier)
 
 result = emptyTable(1000)
     .update("X = i % 10 == 0 ? null : i", "Y = i % 5 == 0 ? null : i")
-    .where(filter1, filter2)
+    .where(Filter.and(filter1, filter2))
 ```
 
 #### Implicit barriers
@@ -414,10 +407,10 @@ Use this decision guide to pick the right concurrency control method:
 
 **Use default parallel execution when**:
 
-- The formula only uses values from the current row
-- The formula has no side effects (doesn't modify global state)
-- The formula doesn't depend on row processing order
-- The formula is thread-safe
+- The formula only uses values from the current row.
+- The formula has no side effects (doesn't modify global state).
+- The formula doesn't depend on row processing order.
+- The formula is thread-safe.
 
 **Examples**:
 
@@ -485,32 +478,22 @@ result = source.update([col])
 
 **Code example**:
 
-<!-- TODO: Fix Groovy syntax - Unable to resolve class ConcurrencyControl.Barrier. Inner class instantiation fails. Need correct Groovy syntax. -->
-
 ```groovy order=source,result
-import io.deephaven.api.ConcurrencyControl
 import io.deephaven.api.Selectable
 import io.deephaven.api.ColumnName
 import io.deephaven.api.RawString
+import java.util.concurrent.atomic.AtomicInteger
 
-cache = [:]
+counter = new AtomicInteger(0)
 
-def initCache(key) {
-    cache[key] = "Value_${key}"
-    return key
-}
+// Create a barrier - any Java object works
+barrier = new Object()
 
-def useCache(key) {
-    return cache.get(key, "Not found")
-}
+// A must complete before B starts - A sets values, B uses them
+colA = Selectable.of(ColumnName.of("A"), RawString.of("counter.getAndIncrement()")).withDeclaredBarriers(barrier)
+colB = Selectable.of(ColumnName.of("B"), RawString.of("counter.get()")).withRespectedBarriers(barrier)
 
-barrier = new ConcurrencyControl.Barrier()
-
-// A must complete before B starts
-colA = Selectable.of(ColumnName.of("A"), RawString.of("initCache(Key)")).withDeclaredBarriers(barrier)
-colB = Selectable.of(ColumnName.of("B"), RawString.of("useCache(Key)")).withRespectedBarriers(barrier)
-
-source = emptyTable(10).update("Key = i")
+source = emptyTable(10)
 result = source.update([colA, colB])
 ```
 
