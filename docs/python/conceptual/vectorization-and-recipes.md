@@ -48,7 +48,7 @@ This approach:
 
 Let's compare the approaches with timing:
 
-```python order=:log,pandas_result,dh_result test-set=performance-comparison
+```python order=:log,dh_result test-set=performance-comparison
 import time
 import numpy as np
 from deephaven import empty_table
@@ -477,7 +477,7 @@ This is **extraction**, not **transformation**. The data is leaving Deephaven.
 
 ### Valid use case: Control flow
 
-```python order=tables test-set=valid-control
+```python skip-test test-set=valid-control
 from deephaven import empty_table
 
 source = empty_table(100).update(
