@@ -573,6 +573,82 @@ print(table_result.to_arrow().to_pandas())
 session.close()
 ```
 
+## Share plugin objects between sessions
+
+Plugin objects created in one session can be shared with other sessions using the [`publish`](/core/docs/reference/client-api/session/publish/) and [`fetch`](/core/docs/reference/client-api/session/fetch/) methods. This is useful when you want multiple client sessions to interact with the same server-side plugin object.
+
+### Publishing a plugin object
+
+To share a plugin object, first fetch it to get an export ticket, then publish it to a shared ticket:
+
+```python skip-test
+from pydeephaven import Session
+from pydeephaven.ticket import SharedTicket
+
+# Connect to the server
+session = Session(
+    auth_type="io.deephaven.authentication.psk.PskAuthenticationHandler",
+    auth_token="YOUR_PASSWORD_HERE",
+)
+
+# Get the plugin object ticket
+example_service_ticket = session.exportable_objects["example_service"]
+
+# Create a plugin client
+plugin_client = session.plugin_client(example_service_ticket)
+
+# Fetch the plugin object to get an export ticket
+export_ticket = session.fetch(plugin_client)
+
+# Publish to a shared ticket
+shared_ticket = SharedTicket.random_ticket()
+session.publish(export_ticket, shared_ticket)
+
+# Now other sessions can use this shared_ticket to access the same plugin object
+```
+
+### Fetching a shared plugin object
+
+Another session can fetch the shared plugin object using the shared ticket:
+
+```python skip-test
+from pydeephaven import Session
+from pydeephaven.ticket import ServerObject, SharedTicket
+
+# Connect to the server
+sub_session = Session(
+    auth_type="io.deephaven.authentication.psk.PskAuthenticationHandler",
+    auth_token="YOUR_PASSWORD_HERE",
+)
+
+# Use the shared ticket from the publishing session
+# (In practice, you would pass this ticket between sessions)
+shared_ticket = SharedTicket.random_ticket()  # Use the actual shared ticket
+
+# Create a ServerObject reference with the appropriate type
+server_obj = ServerObject(
+    type="example_plugin_server.ExampleService", ticket=shared_ticket
+)
+
+# Create a plugin client to interact with the shared object
+sub_plugin_client = sub_session.plugin_client(server_obj)
+
+# Now you can use the plugin client as usual
+from example_plugin_client import ExampleServiceProxy
+
+example_service = ExampleServiceProxy(sub_plugin_client)
+
+result = example_service.hello_string("Hello from another session!")
+print(result)
+
+sub_session.close()
+```
+
+> [!IMPORTANT]
+> Shared tickets remain valid only as long as the publishing session keeps the object alive. When the publishing session closes or releases the object, the shared ticket becomes invalid.
+
 ## Related documentation
 
 - [Install and use plugins](./install-use-plugins.md)
+- [`publish`](/core/docs/reference/client-api/session/publish/) - Publish server objects to shared tickets
+- [`fetch`](/core/docs/reference/client-api/session/fetch/) - Fetch server objects by ticket
