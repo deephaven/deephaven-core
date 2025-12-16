@@ -114,7 +114,7 @@ Query operations execute in two phases: initialization and updates.
 
 When a table is first created, the initial state is computed using the available data. This happens when you call operations like [`.where()`](../../reference/table-operations/filter/where.md), [`.update()`](../../reference/table-operations/select/update.md), or [`.naturalJoin()`](../../reference/table-operations/join/natural-join.md).
 
-For [refreshing](<https://deephaven.io/core/javadoc/io/deephaven/engine/table/impl/BaseTable.html#isRefreshing()>) tables, Deephaven also adds a node to the [update graph](../dag.md) to track dependencies.
+For [refreshing](https://deephaven.io/core/javadoc/io/deephaven/engine/table/impl/BaseTable.html#isRefreshing()) tables, Deephaven also adds a node to the [update graph](../dag.md) to track dependencies.
 
 **How parallelization works during initialization**: Deephaven splits the data into chunks and processes them on multiple cores simultaneously. Each core works on its assigned chunk independently.
 
@@ -161,7 +161,7 @@ Handles parallel processing during update cycles (when live tables receive new d
 - Propagating changes through the update graph.
 - Parallel execution of independent DAG nodes.
 
-Both thread pools use [Runtime.availableProcessors()](<https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/lang/Runtime.html#availableProcessors()>) to determine the number of available cores at startup.
+Both thread pools use [Runtime.availableProcessors()](https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/lang/Runtime.html#availableProcessors()) to determine the number of available cores at startup.
 
 ## Controlling concurrency
 
