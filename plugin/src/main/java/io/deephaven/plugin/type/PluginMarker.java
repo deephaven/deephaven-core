@@ -5,12 +5,10 @@ package io.deephaven.plugin.type;
 
 /**
  * A generic marker object for plugin exports that can be shared across multiple plugin types.
- *
  * IMPORTANT: The pluginName field is required because ObjectTypeLookup.findObjectType()
  * returns the FIRST plugin where isType() returns true. Without plugin-specific identification
  * in isType(), multiple plugins using PluginMarker would conflict, and whichever is registered
  * first would intercept all PluginMarker instances.
- *
  * This class uses a singleton pattern - one instance per pluginName.
  */
 public class PluginMarker {
