@@ -65,49 +65,14 @@ Deephaven is a column-oriented engine that processes entire columns rather than 
 
 ## Controlling parallelization
 
-When automatic parallelization isn't appropriate for your code, Deephaven provides mechanisms to control execution order and concurrency. Three concepts work together:
+When automatic parallelization isn't appropriate for your code, Deephaven provides mechanisms to control execution order and concurrency:
 
-### Selectable
+- **Serialization**: Force single-threaded, in-order execution using `.with_serial()` for operations with global state or non-thread-safe code.
+- **Barriers**: Create explicit ordering dependencies between operations. One operation declares a barrier ("I'll signal when I'm done"), another respects it ("I'll wait for the signal"), ensuring proper execution order.
 
-A [`Selectable`](https://docs.deephaven.io/core/pydoc/code/deephaven.table.html#deephaven.table.Selectable) is a column expression object that represents a formula to be evaluated in [`select`](../../reference/table-operations/select/select.md) or [`update`](../../reference/table-operations/select/update.md) operations.
+Most queries don't need these controls. Use them only when parallelization causes incorrect results.
 
-When you write `.update("A = i * 2")`, Deephaven converts this string into a Selectable internally. You can create Selectables explicitly to apply concurrency controls:
-
-```python order=source,result
-from deephaven import empty_table
-from deephaven.table import Selectable
-
-# Create a Selectable from a formula string
-col = Selectable.parse("A = i * 2")
-
-# Use it in table operations
-source = empty_table(10)
-result = source.update(col)
-```
-
-Creating explicit Selectables allows you to apply `.with_serial()` or use barriers to control when and how the formula executes.
-
-### Serial execution
-
-Serial execution forces rows to be processed one at a time, in order, on a single thread. This prevents race conditions when your code has dependencies between rows or accesses shared state.
-
-Applied using `.with_serial()` on a Selectable or Filter:
-
-```python syntax
-from deephaven.table import Selectable
-
-col = Selectable.parse("ID = get_next_id()").with_serial()
-```
-
-### Barriers
-
-Barriers create explicit ordering dependencies between operations. They ensure one operation completes before another begins:
-
-1. Operation A **declares** a barrier ("I'll signal when I'm done").
-2. Operation B **respects** the barrier ("I'll wait for A's signal").
-3. Deephaven ensures A completes before B starts.
-
-Barriers coordinate multiple operations that share state or have ordering requirements.
+For detailed information and examples, see [Controlling concurrency](#controlling-concurrency) below.
 
 ## Query phases
 
@@ -168,7 +133,13 @@ Both thread pools use [Runtime.availableProcessors()](https://docs.oracle.com/en
 
 ## Controlling concurrency
 
-Deephaven parallelizes operations by default. Concurrency control mechanisms are available for operations that require specific execution ordering or single-threaded processing.
+Deephaven parallelizes operations by default. This section covers when and how to control concurrency for operations that require specific execution ordering or single-threaded processing.
+
+**Key concepts**:
+
+- **[`Selectable`](https://docs.deephaven.io/core/pydoc/code/deephaven.table.html#deephaven.table.Selectable)**: A column expression object used in `select` or `update` operations.
+- **Serial execution**: Forces in-order row evaluation using `.with_serial()`.
+- **[`Barrier`](https://docs.deephaven.io/core/pydoc/code/deephaven.concurrency_control.html#deephaven.concurrency_control.Barrier)**: Controls when operations can begin evaluation relative to each other.
 
 ### Parallelization (default)
 
@@ -205,9 +176,9 @@ result4 = source4.update("Squared = sqrt(X)")
 
 > [!WARNING] > **Breaking change in Deephaven 0.41+**
 >
-> **Deephaven 0.40 and earlier**: Assumed all formulas were stateful (serial) by default
+> **Deephaven 0.40 and earlier**: Assumed all formulas were stateful (serial) by default.
 >
-> **Deephaven 0.41 and later**: Assumes all formulas are stateless (parallel) by default
+> **Deephaven 0.41 and later**: Assumes all formulas are stateless (parallel) by default.
 >
 > If your formula uses global state or depends on row order, you **must** mark it with `.with_serial()` or it will produce incorrect results.
 
@@ -264,7 +235,27 @@ t = empty_table(1_000_000).update(
 )
 ```
 
-Without serialization, parallel execution could cause race conditions where multiple threads read and update `counter` simultaneously, producing incorrect results.
+Without serialization, parallel execution causes race conditions where multiple threads read and update `counter` simultaneously. This produces incorrect results:
+
+```python skip-test
+from deephaven import empty_table
+
+counter = 0
+
+
+def get_and_increment_counter() -> int:
+    global counter
+    ret = counter
+    counter += 1
+    return ret
+
+
+bad_result = empty_table(10).update(
+    ["A = get_and_increment_counter()", "B = get_and_increment_counter()"]
+)
+```
+
+The output shows inconsistent values because multiple threads are incrementing `counter` concurrently. You might see gaps in the sequence or values that don't follow the expected pattern where `B = A + 1`.
 
 #### Using `.with_serial()` for Selectables
 
@@ -313,7 +304,7 @@ result = (
 )
 ```
 
-When a Filter is serial:
+When a [`Filter`](https://docs.deephaven.io/core/pydoc/code/deephaven.filters.html) is serial:
 
 - Every input row is evaluated in order.
 - Filter cannot be reordered with respect to other Filters.
@@ -321,7 +312,7 @@ When a Filter is serial:
 
 ### Barriers
 
-Barriers control the execution order between different operations. Use barriers when operation A must complete before operation B starts.
+[`Barriers`](https://docs.deephaven.io/core/pydoc/code/deephaven.concurrency_control.html#deephaven.concurrency_control.Barrier) control the execution order between different operations. Use barriers when operation A must complete before operation B starts.
 
 **When you need barriers**:
 
