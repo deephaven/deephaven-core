@@ -3,14 +3,14 @@ title: Filter table data
 sidebar_label: Filter
 ---
 
-This guide covers filtering table data in Deephaven. Many different table operations can be used to filter unwanted data out of a table. Some remove data based on conditional formulas, whereas others remove data based on row indices or columns.
+This guide covers filtering table data in Deephaven. Many different table operations can be used to filter unwanted data out of a table. Some remove data based on conditional formulas, whereas others remove data based on row positions or columns.
 
 The following table operations remove data that does not meet the conditions set forth by one or more conditional filter formulas:
 
 - [`where`](../reference/table-operations/filter/where.md)
 - [`where_one_of`](../reference/table-operations/filter/where-one-of.md)
 
-The following table operations remove data based on row indices:
+The following table operations remove data based on row positions:
 
 - [`head`](../reference/table-operations/filter/head.md)
 - [`tail`](../reference/table-operations/filter/tail.md)
@@ -173,9 +173,9 @@ virginica_non_matching_petal_widths = virginica.where_not_in(
 >
 > [`where_in`](../reference/table-operations/filter/where-in.md) only provides filtering and does not allow columns to be added from the right table. In some cases, it may be desirable to use [`where_in`](../reference/table-operations/filter/where-in.md) to filter and then [`join`](../reference/table-operations/join/join.md) to add columns from the right table. This provides similar performance to [`natural_join`](../reference/table-operations/join/natural-join.md) while still allowing matches from the right table.
 
-## Filter by row index
+## Filter by row position
 
-Filtering by row index removes unwanted data at the top, middle, or end of a table. Row indices can be chosen on their own or by percentage of the total size of a table.
+Filtering by row position removes unwanted data at the top, middle, or end of a table. Row positions can be chosen on their own or by percentage of the total size of a table.
 
 The following example uses [`head`](../reference/table-operations/filter/head.md), [`tail`](../reference/table-operations/filter/tail.md), and [`slice`](../reference/table-operations/filter/slice.md) to keep only the first, middle, and last 10 rows of `iris`, respectively.
 
@@ -191,6 +191,22 @@ The following example uses [`head_pct`](../reference/table-operations/filter/hea
 iris_head_pct = iris.head_pct(0.1)
 iris_slice_pct = iris.slice_pct(0.45, 0.55)
 iris_tail_pct = iris.tail_pct(0.1)
+```
+
+### Incremental Release Filter
+
+The [IncrementalReleaseFilter](https://docs.deephaven.io/core/javadoc/io/deephaven/engine/table/impl/select/IncrementalReleaseFilter.html), available from Java and Groovy, converts a static or add-only table into a ticking table that parcels out rows over time. This can be useful to simulate ticking data for development; or to limit the number of rows that a complex query processes at one time. The incremental release filter takes two parameters:
+
+- The initial number of rows to present in the resulting table.
+- The number of rows to release at the beginning of each update graph cycle.
+
+```groovy order=iris_incremental
+import io.deephaven.csv.CsvTools
+import io.deephaven.engine.table.impl.select.IncrementalReleaseFilter
+
+iris = CsvTools.readCsv("https://media.githubusercontent.com/media/deephaven/examples/main/Iris/csv/iris.csv")
+// release 10 rows initially, then release 5 rows at the beginning of each update graph cycle
+iris_incremental = iris.where(new IncrementalReleaseFilter(10, 5))
 ```
 
 ## Related documentation
