@@ -3,13 +3,13 @@ title: Filter table data
 sidebar_label: Filter
 ---
 
-This guide covers filtering table data in Deephaven. Many different table operations can be used to filter data in a table. Some keep data based on conditional formulas, whereas others keep data based on row position.
+This guide covers filtering table data in Deephaven. Many different table operations filter data in a table. Some keep data based on conditional formulas, whereas others keep data based on row position.
 
-The following table operations remove data that does not meet the conditions set forth by one or more conditional filter formulas:
+These table operations keep rows that match one or more conditional filter formulas:
 
 - [`where`](../reference/table-operations/filter/where.md)
 
-The following table operations remove data based on row indices:
+These table operations keep rows based on row position:
 
 - [`head`](../reference/table-operations/filter/head.md)
 - [`tail`](../reference/table-operations/filter/tail.md)
@@ -18,14 +18,14 @@ The following table operations remove data based on row indices:
 - [`tailPct`](../reference/table-operations/filter/tail-pct.md)
 - [`slicePct`](../reference/table-operations/filter/slice-pct.md)
 
-The following table operations remove data based on equality in one or more columns of a separate table:
+These table operations keep rows based on matching values in one or more columns of a separate table:
 
 - [`whereIn`](../reference/table-operations/filter/where-in.md)
 - [`whereNotIn`](../reference/table-operations/filter/where-not-in.md)
 
 ## Conditional filtering
 
-Conditional filtering applies one or more [filters](./filters.md) to keep rows that meet the specified criteria. Comparison formulas can use [match filters](#match-filters), [range filters](#range-filters), [string filters](#string-filters), and [regular expression filters](#regular-expression-regex-filters). The comparison formulas used in conditional filtering must equate to either `true` or `false`. When `true`, the row is kept. When `false`, the row is excluded.
+Conditional filtering applies one or more [filters](./filters.md) to keep rows that meet the specified criteria. Comparison formulas can use [match filters](#match-filters), [range filters](#range-filters), [string filters](#string-filters), and [regular expression filters](#regular-expression-regex-filters). Comparison formulas must equate to either `true` or `false`. When `true`, Deephaven keeps the row. When `false`, Deephaven excludes the row.
 
 The following code block imports the [Iris dataset](https://en.wikipedia.org/wiki/Iris_flower_data_set) found in [Deephaven's example repository](https://github.com/deephaven/examples). Subsequent examples filter this data using comparison formulas:
 
@@ -43,8 +43,8 @@ Match filters set forth one of the following criteria:
 - Inequality (`!=`): If a value is _not_ equal to another value, the result is `true`. Otherwise, the result is `false`.
 - `in`: If a value exists within a set of values, the result is `true`. Otherwise, the result is `false`.
 - `not in`: If a value does _not_ exist within a set of values, the result is `true`. Otherwise, the result is `false`.
-- `icase in`: The same as `in`, but capitalization of letters is ignored. This should only be used to filter string columns.
-- `icase not in`: The same as `not in`, but capitalization of letters is ignored. This should only be used to filter string columns.
+- `icase in`: The same as `in`, but ignores capitalization of letters. Only use this to filter string columns.
+- `icase not in`: The same as `not in`, but ignores capitalization of letters. Only use this to filter string columns.
 
 The following code block applies an equality filter and an inequality filter:
 
@@ -84,7 +84,7 @@ petalwidthInrange = iris.where("inRange(PetalWidthCM, 0, 1)")
 
 ### String filters
 
-Strings in Deephaven tables are stored as [Java strings](https://docs.oracle.com/en/java/javase/17/docs//api/java.base/java/lang/String.html). Any method that can be called on a Java string can be used to filter string data. Methods such as [`startsWith`](https://docs.oracle.com/en/java/javase/17/docs//api/java.base/java/lang/String.html#startsWith(java.lang.String)), [`endswith`](https://docs.oracle.com/en/java/javase/17/docs//api/java.base/java/lang/String.html#endsWith(java.lang.String)), [`contains`](https://docs.oracle.com/en/java/javase/17/docs//api/java.base/java/lang/String.html#contains(java.lang.CharSequence)), and [`matches`](https://docs.oracle.com/en/java/javase/17/docs//api/java.base/java/lang/String.html#matches(java.lang.String)) are particularly useful.
+Deephaven stores strings as [Java strings](https://docs.oracle.com/en/java/javase/17/docs//api/java.base/java/lang/String.html). Any method you can call on a Java string can filter string data. Methods such as [`startsWith`](https://docs.oracle.com/en/java/javase/17/docs//api/java.base/java/lang/String.html#startsWith(java.lang.String)), [`endswith`](https://docs.oracle.com/en/java/javase/17/docs//api/java.base/java/lang/String.html#endsWith(java.lang.String)), [`contains`](https://docs.oracle.com/en/java/javase/17/docs//api/java.base/java/lang/String.html#contains(java.lang.CharSequence)), and [`matches`](https://docs.oracle.com/en/java/javase/17/docs//api/java.base/java/lang/String.html#matches(java.lang.String)) are particularly useful.
 
 The following code block applies these methods to filter the `iris` table on its String column, `Class`:
 
@@ -99,7 +99,7 @@ classMatches = iris.where("Class.matches(`Iris-versicolor`)")
 
 Regular expression filtering is another type of string filtering that uses [regular expressions](https://en.wikipedia.org/wiki/Regular_expression) to match patterns in string data. Deephaven's [`FilterPattern`](https://docs.deephaven.io/core/javadoc/io/deephaven/api/filter/FilterPattern.html) class enables the use of regex in filtering operations.
 
-When performing regex filtering with `FilterPattern`, the filters are applied with a specific pattern mode. Two pattern modes are available:
+When performing regex filtering with `FilterPattern`, you apply a specific pattern mode. Two pattern modes exist:
 
 - `FIND` looks for a subsequence match in the string.
 - `MATCHES` matches an entire string against the given pattern.
@@ -119,13 +119,13 @@ irisVirginica = iris.where(filterRegexMatch)
 
 ## Combine filters
 
-Multiple match and/or conditional statements can be combined to filter data in a table. These combinations can be either conjunctive or disjunctive.
+You can combine multiple match and/or conditional statements to filter data in a table. These combinations can be either conjunctive or disjunctive.
 
 ### Conjunctive
 
-Conjunctive filtering is used to return a table where _all_ conditional filters in a [`where`](../reference/table-operations/filter/where.md) clause return `true`. Conjunctive filtering can be achieved by passing multiple filters into [`where`](../reference/table-operations/filter/where.md) via multiple parameters, or by using the `&&` operator in a single filter.
+Conjunctive filtering returns a table where _all_ conditional filters in a [`where`](../reference/table-operations/filter/where.md) clause return `true`. Achieve conjunctive filtering by passing multiple filters into [`where`](../reference/table-operations/filter/where.md) via multiple parameters, or by using the `&&` operator in a single filter.
 
-In the following example, a conjunctive filter is applied to the `iris` table to produce a new table of only Iris setosa flowers with a petal length in a specific range.
+The following example applies a conjunctive filter to the `iris` table to produce a new table of only Iris setosa flowers with a petal length in a specific range.
 
 ```groovy test-set=1 order=conjunctiveFilteredIris
 conjunctiveFilteredIris = iris.where("Class in `Iris-setosa`", "PetalLengthCM >= 1.3 && PetalLengthCM <= 1.6")
@@ -133,7 +133,7 @@ conjunctiveFilteredIris = iris.where("Class in `Iris-setosa`", "PetalLengthCM >=
 
 ### Disjunctive
 
-Disjunctive filtering is used to return a table where _one or more_ of the statements return `true`. This can be achieved using the `||` operator in a [`where`](../reference/table-operations/filter/where.md) statement, or by using [`Filter.or`](https://docs.deephaven.io/core/javadoc/io/deephaven/api/filter/Filter.html#or(io.deephaven.api.filter.Filter...)) to combine multiple filters.
+Disjunctive filtering returns a table where _one or more_ of the statements return `true`. You can accomplish this by using the `||` operator in a [`where`](../reference/table-operations/filter/where.md) statement, or by using [`Filter.or`](https://docs.deephaven.io/core/javadoc/io/deephaven/api/filter/Filter.html#or(io.deephaven.api.filter.Filter...)) to combine multiple filters.
 
 In the following example, two filters work disjunctively to return a new table where the petal length is greater than 1.9 cm or the petal width is less than 1.3 cm.
 
@@ -144,7 +144,7 @@ irisFilterOr = iris.where(Filter.or(Filter.from("PetalLengthCM > 1.9", "PetalWid
 
 ## Filter one table based on another
 
-The [`whereIn`](../reference/table-operations/filter/where-in.md) and [`whereNotIn`](../reference/table-operations/filter/where-not-in.md) methods enable filtering of one table based on another table. These two methods are evaluated whenever either table changes, whereas [`where`](../reference/table-operations/filter/where.md) is only evaluated when the filtered table ticks. ​In the example below, the [`whereIn`](../reference/table-operations/filter/where.md) and [`whereNotIn`](../reference/table-operations/filter/where-not-in.md) methods are used to find Iris virginica sepal widths that match and do not match Iris versicolor sepal widths:
+The [`whereIn`](../reference/table-operations/filter/where-in.md) and [`whereNotIn`](../reference/table-operations/filter/where-not-in.md) methods filter one table based on another table. Deephaven evaluates these two methods whenever either table changes, whereas it only evaluates [`where`](../reference/table-operations/filter/where.md) when the filtered table ticks. ​The following example uses [`whereIn`](../reference/table-operations/filter/where.md) and [`whereNotIn`](../reference/table-operations/filter/where-not-in.md) to find Iris virginica sepal widths that match and do not match Iris versicolor sepal widths:
 
 ```groovy test-set=1 order=virginica,versicolor,virginicaMatchingPetalWidths,virginicaNonMatchingPetalWidths
 virginica = iris.where("Class in `Iris-virginica`")
@@ -156,13 +156,13 @@ virginicaNonMatchingPetalWidths = virginica.whereNotIn(versicolor, "PetalWidthCM
 > [!CAUTION] > [`whereIn`](../reference/table-operations/filter/where-in.md) and [`whereNotIn`](../reference/table-operations/filter/where-not-in.md) are inefficient if the filter table updates frequently.
 
 > [!TIP]
-> Unlike [`naturalJoin`](../reference/table-operations/join/natural-join.md), [`whereIn`](../reference/table-operations/filter/where-in.md) can be used when there is more than one matching value in the right table for values in the left table. This is true of [`join`](../reference/table-operations/join/join.md) as well, but [`whereIn`](../reference/table-operations/filter/where.md) is faster at returning matching rows than [`join`](../reference/table-operations/join/join.md).
+> Unlike [`naturalJoin`](../reference/table-operations/join/natural-join.md), [`whereIn`](../reference/table-operations/filter/where-in.md) works when more than one value in the right table matches values in the left table. [`join`](../reference/table-operations/join/join.md) also handles this, but [`whereIn`](../reference/table-operations/filter/where.md) returns matching rows faster than [`join`](../reference/table-operations/join/join.md).
 >
-> [`whereIn`](../reference/table-operations/filter/where-in.md) only provides filtering and does not allow columns to be added from the right table. In some cases, it may be desirable to use [`whereIn`](../reference/table-operations/filter/where-in.md) to filter and then [`join`](../reference/table-operations/join/join.md) to add columns from the right table. This provides similar performance to [`naturalJoin`](../reference/table-operations/join/natural-join.md) while still allowing matches from the right table.
+> [`whereIn`](../reference/table-operations/filter/where-in.md) only provides filtering and does not allow adding columns from the right table. You may want to use [`whereIn`](../reference/table-operations/filter/where-in.md) to filter and then [`join`](../reference/table-operations/join/join.md) to add columns from the right table. This provides similar performance to [`naturalJoin`](../reference/table-operations/join/natural-join.md) while still allowing matches from the right table.
 
 ## Filter by row position
 
-Filtering by row position removes unwanted data at the beginning, middle, or end of a table. Row positions can be specified as absolute values or as a percentage of the total table size.
+Filtering by row position removes unwanted data at the beginning, middle, or end of a table. You can specify row positions as absolute values or as a percentage of the total table size.
 
 The following example uses [`head`](../reference/table-operations/filter/head.md), [`tail`](../reference/table-operations/filter/tail.md), and [`slice`](../reference/table-operations/filter/slice.md) to keep only the first, middle, and last 10 rows of `iris`, respectively.
 
