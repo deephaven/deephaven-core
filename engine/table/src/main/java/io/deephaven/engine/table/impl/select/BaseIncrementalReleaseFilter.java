@@ -8,6 +8,7 @@ import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.util.QueryConstants;
@@ -33,7 +34,7 @@ public abstract class BaseIncrementalReleaseFilter
     private long expectedSize;
 
     private RecomputeListener listener;
-    private boolean releaseMoreEntries = false;
+    private boolean releaseMoreRows = false;
 
     transient private boolean addedToUpdateGraph = false;
 
@@ -76,10 +77,33 @@ public abstract class BaseIncrementalReleaseFilter
         addToUpdateGraph();
     }
 
-    private void addToUpdateGraph() {
+    /**
+     * If this filter is not part of the update graph's sources, then add it.
+     */
+    protected void addToUpdateGraph() {
+        if (addedToUpdateGraph) {
+            return;
+        }
+        updateGraph.addSource(this);
+        addedToUpdateGraph = true;
+    }
+
+    /**
+     * If this filter is part of the update graph's sources, then remove it.
+     * <p>
+     * Additionally, if the table we are filtering is not refreshing; we drop the reference to our recompute listener.
+     * The reference to the recompute listener is dropped, because there are never going to be any more rows to add to
+     * the result table.
+     * </p>
+     */
+    protected void removeFromUpdateGraph(@NotNull Table table) {
         if (!addedToUpdateGraph) {
-            updateGraph.addSource(this);
-            addedToUpdateGraph = true;
+            return;
+        }
+        updateGraph.removeSource(this);
+        addedToUpdateGraph = false;
+        if (!table.isRefreshing()) {
+            listener = null;
         }
     }
 
@@ -90,23 +114,48 @@ public abstract class BaseIncrementalReleaseFilter
             @NotNull final RowSet fullSet,
             @NotNull final Table table,
             final boolean usePrev) {
+        if (table.isRefreshing()) {
+            // we cannot handle anything but append-only tables, because we do not know the complete index of rows
+            // that have been released, we only track the count (which must be a prefix of the table
+            Assert.assertion(((BaseTable<?>) table).isAppendOnly(), "table.isAppendOnly()");
+        }
         if (usePrev) {
-            Assert.eqZero(releasedSize, "releasedSize");
-            Assert.eq(fullSet.size(), "fullSet.size()", selection.size(), "selection.size()");
-            return fullSet.subSetByPositionRange(0, releasedSize).intersect(selection);
+            // the selection could be an older version of fullset, which means it must be a prefix for things to work
+            // out correctly in the end
+            try (final RowSet.RangeIterator sit = selection.rangeIterator();
+                    final RowSet.RangeIterator fit = fullSet.rangeIterator()) {
+                while (sit.hasNext()) {
+                    if (!fit.hasNext()) {
+                        throw new IllegalStateException("selection is not a prefix of fullSet");
+                    }
+                    sit.next();
+                    fit.next();
+                    if (sit.currentRangeStart() != fit.currentRangeStart()) {
+                        throw new IllegalStateException("selection is not a prefix of fullSet");
+                    }
+                    if (sit.currentRangeEnd() != fit.currentRangeEnd()) {
+                        if (sit.hasNext()) {
+                            throw new IllegalStateException("selection is not a prefix of fullSet");
+                        }
+                    }
+                }
+            }
+            return selection.subSetByPositionRange(0, releasedSize);
         }
 
-        expectedSize = fullSet.size();
+        setExpectedSize(fullSet.size());
 
-        if (releaseMoreEntries) {
-            releasedSize += getSizeIncrement();
+        if (getReleaseMoreRows()) {
+            incrementReleasedSize(getSizeIncrement());
         }
 
         if (fullSet.size() <= releasedSize) {
+            setReleasedSize(fullSet.size());
             onReleaseAll();
-            releasedSize = fullSet.size();
-            updateGraph.removeSource(this);
-            listener = null;
+            removeFromUpdateGraph(table);
+        } else {
+            // add it back for a refreshing table that has not been completely released
+            addToUpdateGraph();
         }
 
         return fullSet.subSetByPositionRange(0, releasedSize).intersect(selection);
@@ -114,6 +163,10 @@ public abstract class BaseIncrementalReleaseFilter
 
     /**
      * Callback that is executed when all of our expected rows have been released.
+     *
+     * <p>
+     * Note that for a refreshing talbe, this may be executed more than once.
+     * </p>
      */
     void onReleaseAll() {
         releaseAllNanos = System.nanoTime();
@@ -207,14 +260,55 @@ public abstract class BaseIncrementalReleaseFilter
         return initialSize;
     }
 
+    /**
+     * @return the number of rows released
+     */
     long getReleasedSize() {
         return releasedSize;
     }
 
+    /**
+     * @return true if {@link #filter(RowSet, RowSet, Table, boolean)} should release more entries
+     */
+    boolean getReleaseMoreRows() {
+        return releaseMoreRows;
+    }
+
+    /**
+     * @return the expected size of the table, or QueryConstants.NULL_LONG if the table is not known
+     */
     public long getExpectedSize() {
         return expectedSize;
     }
 
+    /**
+     * Set the expected size of the table.
+     * 
+     * @param expectedSize the expected size of the table
+     */
+    void setExpectedSize(long expectedSize) {
+        this.expectedSize = expectedSize;
+    }
+
+    /**
+     * Increment the released size by the specified amount.
+     */
+    void incrementReleasedSize(long increment) {
+        releasedSize += increment;
+    }
+
+    /**
+     * Set the released size.
+     * 
+     * @param releasedSize the size that has been released
+     */
+    void setReleasedSize(long releasedSize) {
+        this.releasedSize = releasedSize;
+    }
+
+    /**
+     * @return the number of rows to release at this step
+     */
     abstract long getSizeIncrement();
 
     @Override
@@ -248,7 +342,7 @@ public abstract class BaseIncrementalReleaseFilter
         if (firstReleaseNanos == QueryConstants.NULL_LONG) {
             firstReleaseNanos = System.nanoTime();
         }
-        releaseMoreEntries = true;
+        releaseMoreRows = true;
         listener.requestRecompute();
     }
 

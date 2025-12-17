@@ -17,6 +17,10 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static io.deephaven.engine.testutil.TstUtils.assertTableEquals;
+import static io.deephaven.engine.testutil.TstUtils.i;
+import static io.deephaven.engine.util.TableTools.intCol;
+import io.deephaven.engine.table.impl.QueryTable;
+import io.deephaven.engine.testutil.TstUtils;
 
 public class TestIncrementalReleaseFilter extends RefreshingTableTestCase {
     public void testSimple() {
@@ -38,6 +42,100 @@ public class TestIncrementalReleaseFilter extends RefreshingTableTestCase {
             if (filtered.size() == source.size()) {
                 break;
             }
+        }
+        assertEquals(source.size(), filtered.size());
+    }
+
+    public void testSimpleRefreshingAppend() {
+        final Table source =
+                TstUtils.testRefreshingTable(intCol("Sentinel", 1, 2, 3, 4, 5, 6, 7, 8, 9, 10)).assertAppendOnly();
+        TableTools.show(source);
+
+        final IncrementalReleaseFilter incrementalReleaseFilter = new IncrementalReleaseFilter(2, 1);
+        final Table filtered = source.where(incrementalReleaseFilter);
+
+        TableTools.show(filtered);
+        assertEquals(2, filtered.size());
+
+        long lastSize = 2;
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        for (int step = 0; step <= 25; ++step) {
+            final int iteration = step;
+            updateGraph.runWithinUnitTestCycle(() -> {
+                incrementalReleaseFilter.run();
+
+                if (iteration == 6) {
+                    TstUtils.addToTable(source, i(10, 11, 12, 13, 14), intCol("Sentinel", 11, 12, 13, 14, 15));
+                    ((QueryTable) source).notifyListeners(i(10, 11, 12, 13, 14), i(), i());
+                }
+
+                if (iteration == 15) {
+                    assertEquals(filtered.size(), source.size());
+                    TstUtils.addToTable(source, i(15, 16, 17, 18, 19), intCol("Sentinel", 16, 17, 18, 19, 20));
+                    ((QueryTable) source).notifyListeners(i(15, 16, 17, 18, 19), i(), i());
+                }
+
+                if (iteration == 16) {
+                    TstUtils.addToTable(source, i(20, 21), intCol("Sentinel", 21, 22));
+                    ((QueryTable) source).notifyListeners(i(20, 21), i(), i());
+                }
+
+                if (iteration == 23) {
+                    TstUtils.addToTable(source, i(22, 23), intCol("Sentinel", 23, 24));
+                    ((QueryTable) source).notifyListeners(i(22, 23), i(), i());
+                }
+            });
+
+            System.out.println("Step = " + step + ", source=" + source.size() + ", filtered=" + filtered.size());
+            final long expectedSize = Math.min(lastSize + 1, source.size());
+            assertEquals(expectedSize, filtered.size());
+            lastSize = filtered.size();
+        }
+        assertEquals(source.size(), filtered.size());
+    }
+
+    public void testSimpleRefreshingAddOnly() {
+        final QueryTable source = TstUtils.testRefreshingTable(
+                i(0, 1, 2, 3, 4, 10, 11, 12, 13, 14).toTracking(),
+                intCol("Sentinel", 1, 2, 3, 4, 5, 11, 12, 13, 14, 15));
+        TableTools.show(source);
+
+        final IncrementalReleaseFilter incrementalReleaseFilter = new IncrementalReleaseFilter(2, 1);
+        final Table filtered = source.where(incrementalReleaseFilter);
+
+        TableTools.show(filtered);
+        assertEquals(2, filtered.size());
+
+        long lastSize = 2;
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        for (int step = 0; step <= 25; ++step) {
+            final int iteration = step;
+            updateGraph.runWithinUnitTestCycle(() -> {
+                incrementalReleaseFilter.run();
+
+                if (iteration == 6) {
+                    TstUtils.addToTable(source, i(5, 6, 7, 15, 16), intCol("Sentinel", 6, 7, 8, 16, 17));
+                    source.notifyListeners(i(5, 6, 7, 15, 16), i(), i());
+                }
+
+                if (iteration == 15) {
+                    assertEquals(filtered.size(), source.size());
+                    TstUtils.addToTable(source, i(17, 18, 19, 20, 21), intCol("Sentinel", 18, 19, 20, 21, 22));
+                    source.notifyListeners(i(17, 18, 19, 20, 21), i(), i());
+                }
+
+                if (iteration == 23) {
+                    TstUtils.addToTable(source, i(8, 25), intCol("Sentinel", 9, 26));
+                    source.notifyListeners(i(8, 25), i(), i());
+                }
+            });
+
+            System.out.println("Step = " + step + ", source=" + source.size() + ", filtered=" + filtered.size());
+            final long expectedSize = Math.min(lastSize + 1, source.size());
+            assertEquals(expectedSize, filtered.size());
+            lastSize = filtered.size();
         }
         assertEquals(source.size(), filtered.size());
     }
