@@ -116,7 +116,7 @@ public abstract class BaseIncrementalReleaseFilter
             final boolean usePrev) {
         if (table.isRefreshing()) {
             // we cannot handle anything but append-only tables, because we do not know the complete index of rows
-            // that have been released, we only track the count (which must be a prefix of the table
+            // that have been released (which must be a prefix of the table), we only track the count
             Assert.assertion(((BaseTable<?>) table).isAppendOnly(), "table.isAppendOnly()");
         }
         if (usePrev) {

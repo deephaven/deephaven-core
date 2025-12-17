@@ -510,7 +510,6 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         final WritableRowSet addRows = addOnly ? i(1, 9) : i(7, 8);
         TstUtils.addToTable(table, addRows, col("x", 0, 5));
 
-
         final Table filter2 =
                 pool.submit(() -> toFilter.where(releaseFilterSupplier.get())).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
 
