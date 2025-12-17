@@ -84,7 +84,7 @@ petalwidthInrange = iris.where("inRange(PetalWidthCM, 0, 1)")
 
 ### String filters
 
-Strings in Deephaven tables are stored as [Java strings](https://docs.oracle.com/en/java/javase/17/docs//api/java.base/java/lang/String.html). Any method that can be called on a Java string can be used to filter string data. Methods such as [`startsWith`](<https://docs.oracle.com/en/java/javase/17/docs//api/java.base/java/lang/String.html#startsWith(java.lang.String)>), [`endswith`](<https://docs.oracle.com/en/java/javase/17/docs//api/java.base/java/lang/String.html#endsWith(java.lang.String)>), [`contains`](<https://docs.oracle.com/en/java/javase/17/docs//api/java.base/java/lang/String.html#contains(java.lang.CharSequence)>), and [`matches`](<https://docs.oracle.com/en/java/javase/17/docs//api/java.base/java/lang/String.html#matches(java.lang.String)>) are particularly useful.
+Strings in Deephaven tables are stored as [Java strings](https://docs.oracle.com/en/java/javase/17/docs//api/java.base/java/lang/String.html). Any method that can be called on a Java string can be used to filter string data. Methods such as [`startsWith`](https://docs.oracle.com/en/java/javase/17/docs//api/java.base/java/lang/String.html#startsWith(java.lang.String)), [`endswith`](https://docs.oracle.com/en/java/javase/17/docs//api/java.base/java/lang/String.html#endsWith(java.lang.String)), [`contains`](https://docs.oracle.com/en/java/javase/17/docs//api/java.base/java/lang/String.html#contains(java.lang.CharSequence)), and [`matches`](https://docs.oracle.com/en/java/javase/17/docs//api/java.base/java/lang/String.html#matches(java.lang.String)) are particularly useful.
 
 The following code block applies these methods to filter the `iris` table on its String column, `Class`:
 
@@ -97,7 +97,7 @@ classMatches = iris.where("Class.matches(`Iris-versicolor`)")
 
 ### Regular expression (regex) filters
 
-Regular expression filtering is another type of string filtering that uses [regular expressions](https://en.wikipedia.org/wiki/Regular_expression) to remove unwanted data. You can use the Java String [`matches()`](<https://docs.oracle.com/en/java/javase/17/docs//api/java.base/java/lang/String.html#matches(java.lang.String)>) method to apply regex patterns.
+Regular expression filtering is another type of string filtering that uses [regular expressions](https://en.wikipedia.org/wiki/Regular_expression) to remove unwanted data. You can use the Java String [`matches()`](https://docs.oracle.com/en/java/javase/17/docs//api/java.base/java/lang/String.html#matches(java.lang.String)) method to apply regex patterns.
 
 The following code block performs regular expression filtering on the `iris` table. The regex patterns match strings that start with "Iris-v" (for "virginica" and "versicolor") or exactly match "Iris-setosa":
 
