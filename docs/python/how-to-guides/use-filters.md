@@ -193,6 +193,22 @@ iris_slice_pct = iris.slice_pct(0.45, 0.55)
 iris_tail_pct = iris.tail_pct(0.1)
 ```
 
+### Incremental Release Filter
+
+The incremental release filter, converts a static or add-only table into a ticking table that parcels out rows over time. This can be useful to simulate ticking data for development or to limit the number of rows that a complex query processes at one time. The incremental release filter takes two parameters:
+
+- The initial number of rows to present in the resulting table.
+- The number of rows to release at the beginning of each update graph cycle.
+
+The [IncrementalReleaseFilter javadoc](https://docs.deephaven.io/core/javadoc/io/deephaven/engine/table/impl/select/IncrementalReleaseFilter.html) contains more details.
+
+```python test-set=1 order=iris_incremental
+from deephaven.filters import incremental_release
+
+# release 10 rows initially, then release 5 rows at the beginning of each update graph cycle
+iris_incremental = iris.where(incremental_release(10, 5))
+```
+
 ## Related documentation
 
 - [Filters in query strings](./filters.md)
