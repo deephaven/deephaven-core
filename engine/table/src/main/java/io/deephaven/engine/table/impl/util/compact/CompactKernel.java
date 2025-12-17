@@ -21,14 +21,15 @@ public interface CompactKernel {
 
     /**
      * Sort valuesChunk, eliminate duplicates, and write the number of times a value occurred into the parallel slot
-     * within counts. null values are removed from the chunk.
+     * within counts. null/NaN values are removed from the chunk.
      *
      * @param valueChunk a chunk of values, input and output
      * @param counts an output chunk parallel to valueChunk with the number of times a value occurred
      */
-    default void compactAndCount(WritableChunk<? extends Values> valueChunk,
+    default void compactAndCount(
+            WritableChunk<? extends Values> valueChunk,
             WritableIntChunk<ChunkLengths> counts) {
-        compactAndCount(valueChunk, counts, false);
+        compactAndCount(valueChunk, counts, false, false);
     }
 
     /**
@@ -38,23 +39,29 @@ public interface CompactKernel {
      * @param valueChunk a chunk of values, input and output
      * @param counts an output chunk parallel to valueChunk with the number of times a value occurred
      * @param countNull if the compaction should count nulls or not
+     * @param countNaN if the compaction should count NaN or not (only applies to float/double)
      */
-    void compactAndCount(WritableChunk<? extends Values> valueChunk,
-            WritableIntChunk<ChunkLengths> counts, boolean countNull);
+    void compactAndCount(
+            WritableChunk<? extends Values> valueChunk,
+            WritableIntChunk<ChunkLengths> counts,
+            boolean countNull,
+            boolean countNaN);
 
     /**
      * For each run in valuesChunk, sort it, eliminate duplicates, and write the number of times a value occurred into
-     * the parallel slot within counts. null values are removed from the chunk.
+     * the parallel slot within counts. null/NaN values are removed from the chunk.
      *
      * @param valueChunk a chunk of values, input and output
      * @param counts an output chunk parallel to valueChunk with the number of times a value occurred
      * @param startPositions the start of each run
      * @param lengths the length of each run, input and output
      */
-    default void compactAndCount(WritableChunk<? extends Values> valueChunk,
-            WritableIntChunk<ChunkLengths> counts, IntChunk<ChunkPositions> startPositions,
+    default void compactAndCount(
+            WritableChunk<? extends Values> valueChunk,
+            WritableIntChunk<ChunkLengths> counts,
+            IntChunk<ChunkPositions> startPositions,
             WritableIntChunk<ChunkLengths> lengths) {
-        compactAndCount(valueChunk, counts, startPositions, lengths, false);
+        compactAndCount(valueChunk, counts, startPositions, lengths, false, false);
     }
 
     /**
@@ -66,10 +73,15 @@ public interface CompactKernel {
      * @param startPositions the start of each run
      * @param lengths the length of each run, input and output
      * @param countNull if the compaction should count nulls or not
+     * @param countNaN if the compaction should count NaN or not (only applies to float/double)
      */
-    void compactAndCount(WritableChunk<? extends Values> valueChunk,
-            WritableIntChunk<ChunkLengths> counts, IntChunk<ChunkPositions> startPositions,
-            WritableIntChunk<ChunkLengths> lengths, boolean countNull);
+    void compactAndCount(
+            WritableChunk<? extends Values> valueChunk,
+            WritableIntChunk<ChunkLengths> counts,
+            IntChunk<ChunkPositions> startPositions,
+            WritableIntChunk<ChunkLengths> lengths,
+            boolean countNull,
+            boolean countNaN);
 
     static CompactKernel makeCompact(ChunkType chunkType) {
         switch (chunkType) {

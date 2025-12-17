@@ -441,12 +441,24 @@ public class TestNumeric extends BaseArrayTestCase {
         assertTrue(Double.isNaN(wste(normal, normalWithNaN)));
         assertTrue(Double.isNaN(wtstat(normal, normalWithNaN)));
 
+        assertEquals(NULL_LONG, indexOfMin(normalWithNaN));
+        assertEquals(NULL_LONG, indexOfMax(normalWithNaN));
+
+        assertTrue(Double.isNaN(min(normalWithNaN)));
+        assertTrue(Double.isNaN(max(normalWithNaN)));
+        assertTrue(Double.isNaN(sum(normalWithNaN)));
+        assertTrue(Double.isNaN(absSum(normalWithNaN)));
+        assertTrue(Double.isNaN(median(normalWithNaN)));
+        assertTrue(Double.isNaN(percentile(0.1, normalWithNaN)));
+        assertTrue(Double.isNaN(percentile(0.5, normalWithNaN)));
+
+        //////////////////////////////////////////////
+
         final ${pt.primitive}[] normalWithInf = new ${pt.primitive}[]{1, 2, 3, ${pt.boxed}.POSITIVE_INFINITY, 4, 5};
         result = avg(normalWithInf);
         assertTrue(Double.isInfinite(result) && result > 0); // positive infinity
         result = absAvg(normalWithInf);
         assertTrue(Double.isInfinite(result) && result > 0); // positive infinity
-
         assertTrue(Double.isNaN(var(normalWithInf)));
         assertTrue(Double.isNaN(std(normalWithInf)));
         assertTrue(Double.isNaN(ste(normalWithInf)));
@@ -468,6 +480,8 @@ public class TestNumeric extends BaseArrayTestCase {
         assertTrue(Double.isNaN(wstd(normal, normalWithInf)));
         assertTrue(Double.isNaN(wste(normal, normalWithInf)));
         assertTrue(Double.isNaN(wtstat(normal, normalWithInf)));
+
+        //////////////////////////////////////////////
 
         final ${pt.primitive}[] normalWithNegInf = new ${pt.primitive}[]{1, 2, 3, ${pt.boxed}.NEGATIVE_INFINITY, 4, 5};
         result = avg(normalWithNegInf);
@@ -678,6 +692,46 @@ public class TestNumeric extends BaseArrayTestCase {
         assertEquals(NULL_LONG, sum(new ${pt.primitive}[]{${pt.null}, ${pt.null}}));
     </#if>
     }
+    
+    public void test${pt.boxed}AbsSum1() {
+        assertTrue(Math.abs(15 - absSum(new ${pt.vectorDirect}(new ${pt.primitive}[]{4, -5, 6}))) == 0.0);
+        assertTrue(Math.abs(20 - absSum(new ${pt.vectorDirect}(new ${pt.primitive}[]{5, ${pt.null}, -15}))) == 0.0);
+    <#if pt.valueType.isFloat >
+        assertEquals(NULL_DOUBLE, absSum((${pt.vector}) null));
+        assertEquals(NULL_DOUBLE, absSum(new ${pt.vectorDirect}(new ${pt.primitive}[]{})));
+        assertEquals(NULL_DOUBLE, absSum(new ${pt.vectorDirect}(new ${pt.primitive}[]{${pt.null}, ${pt.null}})));
+        assertEquals(Double.POSITIVE_INFINITY, absSum(new ${pt.vectorDirect}(new ${pt.primitive}[]{4, Float.POSITIVE_INFINITY, 6})));
+        assertEquals(Double.POSITIVE_INFINITY, absSum(new ${pt.vectorDirect}(new ${pt.primitive}[]{4, Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY})));
+        assertEquals(Double.POSITIVE_INFINITY, absSum(new ${pt.vectorDirect}(new ${pt.primitive}[]{4, Float.NEGATIVE_INFINITY, 6})));
+        assertEquals(Double.POSITIVE_INFINITY, absSum(new ${pt.vectorDirect}(new ${pt.primitive}[]{4, Float.NEGATIVE_INFINITY, Float.NEGATIVE_INFINITY})));
+        assertEquals(Double.POSITIVE_INFINITY, absSum(new ${pt.vectorDirect}(new ${pt.primitive}[]{4, Float.POSITIVE_INFINITY, Float.NEGATIVE_INFINITY})));
+        assertEquals(Double.NaN, absSum(new ${pt.vectorDirect}(new ${pt.primitive}[]{4, Float.NaN, 6})));
+    <#else>
+        assertEquals(NULL_LONG, absSum((${pt.vector}) null));
+        assertEquals(NULL_LONG, absSum(new ${pt.vectorDirect}(new ${pt.primitive}[]{})));
+        assertEquals(NULL_LONG, absSum(new ${pt.vectorDirect}(new ${pt.primitive}[]{${pt.null}, ${pt.null}})));
+    </#if>
+    }
+
+    public void test${pt.boxed}AbsSum2() {
+        assertTrue(Math.abs(15 - absSum(new ${pt.primitive}[]{4, -5, 6})) == 0.0);
+        assertTrue(Math.abs(20 - absSum(new ${pt.primitive}[]{5, ${pt.null}, -15})) == 0.0);
+    <#if pt.valueType.isFloat >
+        assertEquals(NULL_DOUBLE, absSum((${pt.primitive}[]) null));
+        assertEquals(NULL_DOUBLE, absSum(new ${pt.primitive}[]{}));
+        assertEquals(NULL_DOUBLE, absSum(new ${pt.primitive}[]{${pt.null}, ${pt.null}}));
+        assertEquals(Double.POSITIVE_INFINITY, absSum(new ${pt.primitive}[]{4, Float.POSITIVE_INFINITY, 6}));
+        assertEquals(Double.POSITIVE_INFINITY, absSum(new ${pt.primitive}[]{4, Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY}));
+        assertEquals(Double.POSITIVE_INFINITY, absSum(new ${pt.primitive}[]{4, Float.NEGATIVE_INFINITY, 6}));
+        assertEquals(Double.POSITIVE_INFINITY, absSum(new ${pt.primitive}[]{4, Float.NEGATIVE_INFINITY, Float.NEGATIVE_INFINITY}));
+        assertEquals(Double.POSITIVE_INFINITY, absSum(new ${pt.primitive}[]{4, Float.POSITIVE_INFINITY, Float.NEGATIVE_INFINITY}));
+        assertEquals(Double.NaN, absSum(new ${pt.primitive}[]{4, Float.NaN, 6}));
+    <#else>
+        assertEquals(NULL_LONG, absSum((${pt.primitive}[]) null));
+        assertEquals(NULL_LONG, absSum(new ${pt.primitive}[]{}));
+        assertEquals(NULL_LONG, absSum(new ${pt.primitive}[]{${pt.null}, ${pt.null}}));
+    </#if>
+    }    
 
 //    public void test${pt.boxed}SumObjectVector() {
 //        assertEquals(new ${pt.primitive}[]{4, 15}, sum(new ObjectVectorDirect<>(new ${pt.primitive}[][]{{5, 4}, {-3, 5}, {2, 6}})));
@@ -822,6 +876,10 @@ public class TestNumeric extends BaseArrayTestCase {
         assertEquals(new ${pt.primitive}[]{3, 6, 12, ${pt.null}, ${pt.null}}, diff(2, new ${pt.vectorDirect}(new ${pt.primitive}[]{1, 2, 4, 8, 16})));
         assertEquals(new ${pt.primitive}[]{${pt.null}, -1, -2, -4, -8}, diff(-1, new ${pt.vectorDirect}(new ${pt.primitive}[]{1, 2, 4, 8, 16})));
         assertEquals(new ${pt.primitive}[]{${pt.null}, ${pt.null}, -3, -6, -12}, diff(-2, new ${pt.vectorDirect}(new ${pt.primitive}[]{1, 2, 4, 8, 16})));
+
+        // null and empty tests
+        assertEquals(null, diff(-1, (${pt.vectorDirect})null));
+        assertEquals(new ${pt.primitive}[0], diff(-2, new ${pt.vectorDirect}(new ${pt.primitive}[0])));
     }
 
     public void test${pt.boxed}CumMinArray() {
@@ -1306,16 +1364,15 @@ public class TestNumeric extends BaseArrayTestCase {
         assertEquals(Double.NaN, wsum(new ${pt.vectorDirect}(new ${pt.primitive}[]{1,2,3,${pt.null},Float.NaN}), new ${pt2.vectorDirect}(new ${pt2.primitive}[]{4,5,6,7,${pt2.null}})));
         assertEquals(Double.POSITIVE_INFINITY, wsum(new ${pt.vectorDirect}(new ${pt.primitive}[]{1,2,3,${pt.null},Float.POSITIVE_INFINITY}), new ${pt2.vectorDirect}(new ${pt2.primitive}[]{4,5,6,7,8})));
         assertEquals(Double.NEGATIVE_INFINITY, wsum(new ${pt.vectorDirect}(new ${pt.primitive}[]{1,2,3,${pt.null},Float.NEGATIVE_INFINITY}), new ${pt2.vectorDirect}(new ${pt2.primitive}[]{4,5,6,7,8})));
-        assertEquals(Double.NaN, wsum(new ${pt.vectorDirect}(new ${pt.primitive}[]{1,2,3,Float.POSITIVE_INFINITY,Float.NEGATIVE_INFINITY}), new ${pt2.vectorDirect}(new ${pt2.primitive}[]{4,5,6,7,8})));
+        assertEquals(Double.NaN, wsum(new ${pt.vectorDirect}(new ${pt.primitive}[]{1,2,3,${pt.boxed}.POSITIVE_INFINITY,${pt.boxed}.NEGATIVE_INFINITY}), new ${pt2.vectorDirect}(new ${pt2.primitive}[]{4,5,6,7,8})));
+        assertEquals(Double.NaN, wsum(new ${pt.vectorDirect}(new ${pt.primitive}[]{${pt.boxed}.POSITIVE_INFINITY,${pt.boxed}.NEGATIVE_INFINITY, 1,2,3}), new ${pt2.vectorDirect}(new ${pt2.primitive}[]{1,1,1,1,1})));
         </#if>
-
         <#if pt2.valueType.isFloat >
         assertEquals(Double.NaN, wsum(new ${pt.vectorDirect}(new ${pt.primitive}[]{1,2,3,${pt.null},5}), new ${pt2.vectorDirect}(new ${pt2.primitive}[]{4,5,6,Float.NaN,${pt2.null}})));
         assertEquals(Double.POSITIVE_INFINITY, wsum(new ${pt.vectorDirect}(new ${pt.primitive}[]{1,2,3,4,5}), new ${pt2.vectorDirect}(new ${pt2.primitive}[]{4,5,6,Float.POSITIVE_INFINITY,${pt2.null}})));
         assertEquals(Double.NEGATIVE_INFINITY, wsum(new ${pt.vectorDirect}(new ${pt.primitive}[]{1,2,3,4,5}), new ${pt2.vectorDirect}(new ${pt2.primitive}[]{4,5,6,Float.NEGATIVE_INFINITY,${pt2.null}})));
         assertEquals(Double.NaN, wsum(new ${pt.vectorDirect}(new ${pt.primitive}[]{1,2,3,4,5}), new ${pt2.vectorDirect}(new ${pt2.primitive}[]{4,5,6,Float.NEGATIVE_INFINITY,Float.POSITIVE_INFINITY})));
         </#if>
-
         try {
             wsum(new ${pt.vectorDirect}(new ${pt.primitive}[]{1,2,3,${pt.null},5}), new ${pt2.vectorDirect}(new ${pt2.primitive}[]{4,5}));
             fail("Mismatched arguments");
@@ -1351,7 +1408,12 @@ public class TestNumeric extends BaseArrayTestCase {
         assertEquals((1.0*4.0+2.0*5.0+3.0*6.0)/(4.0+5.0+6.0), wavg(new ${pt.vectorDirect}(new ${pt.primitive}[]{1,2,3,${pt.null},5}), new ${pt2.vectorDirect}(new ${pt2.primitive}[]{4,5,6,7,${pt2.null}})));
         assertEquals(NULL_DOUBLE, wavg((${pt.vector}) null, new ${pt2.vectorDirect}(new ${pt2.primitive}[]{4,5,6})));
         assertEquals(NULL_DOUBLE, wavg(new ${pt.vectorDirect}(new ${pt.primitive}[]{1,2,3}), (${pt2.vector}) null));
-
+        <#if pt.valueType.isFloat >
+        assertTrue(Double.isNaN(wavg(new ${pt.vectorDirect}(new ${pt.primitive}[]{${pt.boxed}.NaN,2,3}), new ${pt2.vectorDirect}(new ${pt2.primitive}[]{4,5,6}))));
+        </#if>
+        <#if pt2.valueType.isFloat >
+        assertTrue(Double.isNaN(wavg(new ${pt.vectorDirect}(new ${pt.primitive}[]{1,2,3}), new ${pt2.vectorDirect}(new ${pt2.primitive}[]{${pt2.boxed}.NaN,5,6}))));
+        </#if>
         try {
             wavg(new ${pt.vectorDirect}(new ${pt.primitive}[]{1,2,3,${pt.null},5}), new ${pt2.vectorDirect}(new ${pt2.primitive}[]{4,5}));
             fail("Mismatched arguments");
@@ -1404,6 +1466,10 @@ public class TestNumeric extends BaseArrayTestCase {
         assertEquals(NULL_DOUBLE, wvar(new ${pt.primitive}[]{${pt.null}, ${pt.null}, ${pt.null}}, new ${pt2.primitive}[]{1, 2, 3}));
         assertEquals(NULL_DOUBLE, wvar(new ${pt.primitive}[]{${pt.null}, ${pt.null}, ${pt.null}}, new ${pt2.primitive}[]{${pt2.null}, ${pt2.null}, ${pt2.null}}));
 
+        <#if pt.valueType.isFloat >
+        // verify the NaN value case return NaN
+        assertTrue(Double.isNaN(wvar(new ${pt.primitive}[]{1, ${pt.boxed}.NaN, 3}, new ${pt2.primitive}[]{1, 1, 1})));
+        </#if>
         // verify size==1
         assertEquals(Double.NaN, wvar(new ${pt.primitive}[]{1}, new ${pt2.primitive}[]{4}));
 

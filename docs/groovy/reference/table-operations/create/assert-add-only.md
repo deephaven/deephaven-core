@@ -22,6 +22,23 @@ This method takes no arguments.
 
 A new Table with the add-only attribute set.
 
+## Example
+
+The following example creates a simple table using `timeTable` and asserts that it is add-only. This enables optimizations and safe use of the `k` variable in formulas.
+
+```groovy skip-test
+import io.deephaven.engine.table.impl.TimeTable.Builder
+
+builder = new Builder().period("PT1S")
+t = builder.build()
+
+// Assert that it is add-only to enable optimizations
+tAddOnly = t.assertAddOnly()
+
+// Verify the attribute is set
+println(tAddOnly.isAddOnly())
+```
+
 ## Related documentation
 
 - [assertBlink](assert-blink.md)

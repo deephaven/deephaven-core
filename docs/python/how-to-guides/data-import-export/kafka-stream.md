@@ -451,40 +451,9 @@ result_append = kc.consume_to_partitioned_table(
 
 ### Custom Kafka parser
 
-Some use cases will call for custom parsing of Kafka streams. In such cases, it's common to extend Deephaven's library to match requirements. The following example shows how to create a `Person` class containing `name` and `age` attributes derived from a binary Kafka stream of JSON strings. It then calls [`update`](../../reference/table-operations/select/update.md) to create a new column containing the value of the parsed stream.
+Some use cases call for custom parsing of Kafka streams, such as when payloads use non-standard encodings or need complex transformation.
 
-```python docker-config=kafka order=null
-from deephaven.stream.kafka import consumer as ck
-from deephaven import dtypes as dht
-from dataclasses import dataclass
-import json
-
-
-@dataclass
-class Person:
-    age: int
-    name: str
-
-
-def my_parser(raw_bytes) -> Person:
-    json_object = json.loads(bytes(raw_bytes))
-    return Person(age=json_object["age"], name=json_object["name"])
-
-
-my_raw_table = ck.consume(
-    {
-        "bootstrap.servers": "redpanda:9092",
-    },
-    "test.topic",
-    table_type=ck.TableType.append(),
-    key_spec=ck.KeyValueSpec.IGNORE,
-    value_spec=ck.simple_spec("Bytes", dht.byte_array),
-    offsets=ck.ALL_PARTITIONS_SEEK_TO_END,
-)
-my_parsed_table = my_raw_table.update(
-    ["Person = (org.jpy.PyObject) my_parser(Bytes)"]
-).view(["Age = (int) Person.age", "Name = (String) Person.name"])
-```
+See the dedicated guide, [Write your own custom parser for Kafka](./write-your-own-custom-parser-for-kafka.md), for a step-by-step walkthrough and complete examples.
 
 ## Write to a Kafka stream
 
@@ -536,6 +505,7 @@ write_topic_group = pk.produce(
 
 - [Kafka basic terminology](../../conceptual/kafka-in-deephaven.md)
 - [Kafka in Deephaven](../../conceptual/kafka-in-deephaven.md)
+- [Custom parser for Kafka](./write-your-own-custom-parser-for-kafka.md)
 - [`consume`](../../reference/data-import-export/Kafka/consume.md)
 - [`time_table`](../../reference/table-operations/create/timeTable.md)
 - [`last_by`](../../reference/table-operations/group-and-aggregate/lastBy.md)

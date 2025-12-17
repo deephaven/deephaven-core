@@ -2,7 +2,7 @@
 # Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 #
 
-""" This module provides support for replaying historical data. """
+"""This module provides support for replaying historical data."""
 
 import jpy
 

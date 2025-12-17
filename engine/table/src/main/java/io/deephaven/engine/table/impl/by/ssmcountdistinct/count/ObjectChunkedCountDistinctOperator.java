@@ -43,7 +43,7 @@ public class ObjectChunkedCountDistinctOperator implements IterativeChunkedAggre
     private final String name;
 
     private final Supplier<SegmentedSortedMultiSet.RemoveContext> removeContextFactory;
-    private final boolean countNull;
+    private final boolean countNullNan;
     private final boolean exposeInternal;
     private WritableRowSet touchedStates;
     private UpdateCommitter<ObjectChunkedCountDistinctOperator> prevFlusher = null;
@@ -54,9 +54,9 @@ public class ObjectChunkedCountDistinctOperator implements IterativeChunkedAggre
     public ObjectChunkedCountDistinctOperator(// region Constructor
             Class<?> type,
                                             // endregion Constructor
-            String name, boolean countNulls, boolean exposeInternal) {
+            String name, boolean countNullNan, boolean exposeInternal) {
         this.name = name;
-        this.countNull = countNulls;
+        this.countNullNan = countNullNan;
         this.exposeInternal = exposeInternal;
 
         // region SsmCreation
@@ -80,7 +80,7 @@ public class ObjectChunkedCountDistinctOperator implements IterativeChunkedAggre
         context.lengthCopy.copyFromChunk(length, 0, 0, length.size());
 
         ObjectCompactKernel.compactAndCount((WritableObjectChunk<?, ? extends Values>) context.valueCopy, context.counts,
-                startPositions, context.lengthCopy, countNull);
+                startPositions, context.lengthCopy, countNullNan, countNullNan);
         return context;
     }
 
@@ -130,7 +130,7 @@ public class ObjectChunkedCountDistinctOperator implements IterativeChunkedAggre
             final WritableIntChunk<ChunkLengths> countSlice =
                     context.countResettable.resetFromChunk(context.counts, startPosition, runLength);
             ssm.remove(removeContext, valueSlice, countSlice);
-            if (ssm.size() == 0) {
+            if (ssm.isEmpty()) {
                 clearSsm(destination);
             }
 
@@ -161,7 +161,7 @@ public class ObjectChunkedCountDistinctOperator implements IterativeChunkedAggre
             final WritableIntChunk<ChunkLengths> countSlice =
                     context.countResettable.resetFromChunk(context.counts, startPosition, runLength);
             ssm.remove(removeContext, valueSlice, countSlice);
-            if (ssm.size() == 0) {
+            if (ssm.isEmpty()) {
                 context.ssmsToMaybeClear.set(ii, true);
             }
         }
@@ -200,7 +200,7 @@ public class ObjectChunkedCountDistinctOperator implements IterativeChunkedAggre
         context.valueCopy.setSize(values.size());
         context.valueCopy.copyFromChunk(values, 0, 0, values.size());
         ObjectCompactKernel.compactAndCount((WritableObjectChunk<?, ? extends Values>) context.valueCopy, context.counts,
-                countNull);
+                countNullNan, countNullNan);
         return context;
     }
 
@@ -225,7 +225,7 @@ public class ObjectChunkedCountDistinctOperator implements IterativeChunkedAggre
 
         final ObjectSegmentedSortedMultiset ssm = ssmForSlot(destination);
         ssm.remove(context.removeContext, context.valueCopy, context.counts);
-        if (ssm.size() == 0) {
+        if (ssm.isEmpty()) {
             clearSsm(destination);
         }
 
@@ -245,7 +245,7 @@ public class ObjectChunkedCountDistinctOperator implements IterativeChunkedAggre
         ObjectSegmentedSortedMultiset ssm = ssmForSlot(destination);
         if (context.valueCopy.size() > 0) {
             ssm.insert(context.valueCopy, context.counts);
-        } else if (ssm.size() == 0) {
+        } else if (ssm.isEmpty()) {
             clearSsm(destination);
         }
 
@@ -296,17 +296,15 @@ public class ObjectChunkedCountDistinctOperator implements IterativeChunkedAggre
     public void startTrackingPrevValues() {
         resultColumn.startTrackingPrevValues();
 
-        if (exposeInternal) {
-            if (prevFlusher != null) {
-                throw new IllegalStateException("startTrackingPrevValues must only be called once");
-            }
-
-            ssms.startTrackingPrevValues();
-            prevFlusher = new UpdateCommitter<>(this,
-                    ExecutionContext.getContext().getUpdateGraph(),
-                    ObjectChunkedCountDistinctOperator::flushPrevious);
-            touchedStates = RowSetFactory.empty();
+        if (prevFlusher != null) {
+            throw new IllegalStateException("startTrackingPrevValues must only be called once");
         }
+
+        ssms.startTrackingPrevValues();
+        prevFlusher = new UpdateCommitter<>(this,
+                ExecutionContext.getContext().getUpdateGraph(),
+                ObjectChunkedCountDistinctOperator::flushPrevious);
+        touchedStates = RowSetFactory.empty();
     }
 
     @Override
@@ -326,7 +324,7 @@ public class ObjectChunkedCountDistinctOperator implements IterativeChunkedAggre
     }
 
     private boolean setResult(ObjectSegmentedSortedMultiset ssm, long destination) {
-        final long expectedResult = ssm.size() == 0 ? QueryConstants.NULL_LONG : ssm.size();
+        final long expectedResult = ssm.isEmpty() ? QueryConstants.NULL_LONG : ssm.size();
         final boolean countChanged = resultColumn.getAndSetUnsafe(destination, expectedResult) != expectedResult;
         return countChanged || (exposeInternal && (ssm.getAddedSize() > 0 || ssm.getRemovedSize() > 0));
     }
