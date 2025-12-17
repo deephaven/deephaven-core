@@ -33,7 +33,6 @@ import static io.deephaven.engine.testutil.testcase.RefreshingTableTestCase.simu
 import static io.deephaven.engine.testutil.TstUtils.assertTableEquals;
 import static io.deephaven.engine.testutil.TstUtils.testTable;
 import static io.deephaven.engine.util.TableTools.*;
-import static io.deephaven.function.Basic.isNull;
 import static io.deephaven.util.QueryConstants.*;
 import static org.junit.Assert.assertArrayEquals;
 
@@ -218,89 +217,6 @@ public class TestCumProd extends BaseUpdateByTest {
 
     // endregion
 
-    public static long[] cumprod(byte[] values) {
-        if (values == null) {
-            return null;
-        }
-
-        if (values.length == 0) {
-            return new long[0];
-        }
-
-        long[] result = new long[values.length];
-        result[0] = isNull(values[0]) ? NULL_LONG : values[0];
-
-        for (int i = 1; i < values.length; i++) {
-            final boolean curValNull = isNull(values[i]);
-            if (isNull(result[i - 1])) {
-                result[i] = curValNull ? NULL_LONG : values[i];
-            } else {
-                if (curValNull) {
-                    result[i] = result[i - 1];
-                } else {
-                    result[i] = result[i - 1] * values[i];
-                }
-            }
-        }
-
-        return result;
-    }
-
-    public static long[] cumprod(short[] values) {
-        if (values == null) {
-            return null;
-        }
-
-        if (values.length == 0) {
-            return new long[0];
-        }
-
-        long[] result = new long[values.length];
-        result[0] = isNull(values[0]) ? NULL_LONG : values[0];
-
-        for (int i = 1; i < values.length; i++) {
-            final boolean curValNull = isNull(values[i]);
-            if (isNull(result[i - 1])) {
-                result[i] = curValNull ? NULL_LONG : values[i];
-            } else {
-                if (curValNull) {
-                    result[i] = result[i - 1];
-                } else {
-                    result[i] = result[i - 1] * values[i];
-                }
-            }
-        }
-
-        return result;
-    }
-
-    public static long[] cumprod(int[] values) {
-        if (values == null) {
-            return null;
-        }
-
-        if (values.length == 0) {
-            return new long[0];
-        }
-
-        long[] result = new long[values.length];
-        result[0] = isNull(values[0]) ? NULL_LONG : values[0];
-
-        for (int i = 1; i < values.length; i++) {
-            final boolean curValNull = isNull(values[i]);
-            if (isNull(result[i - 1])) {
-                result[i] = curValNull ? NULL_LONG : values[i];
-            } else {
-                if (curValNull) {
-                    result[i] = result[i - 1];
-                } else {
-                    result[i] = result[i - 1] * values[i];
-                }
-            }
-        }
-
-        return result;
-    }
 
     public static Object[] cumprod(Object[] values, final boolean isBD) {
         if (values == null) {
@@ -332,17 +248,19 @@ public class TestCumProd extends BaseUpdateByTest {
 
     final void assertWithCumProd(@NotNull final Object expected, @NotNull final Object actual, Class<?> type) {
         if (expected instanceof byte[]) {
-            assertArrayEquals(cumprod((byte[]) expected), (long[]) actual);
+            assertArrayEquals(Numeric.cumprod((byte[]) expected), (long[]) actual);
         } else if (expected instanceof short[]) {
-            assertArrayEquals(cumprod((short[]) expected), (long[]) actual);
+            assertArrayEquals(Numeric.cumprod((short[]) expected), (long[]) actual);
         } else if (expected instanceof int[]) {
-            assertArrayEquals(cumprod((int[]) expected), (long[]) actual);
+            assertArrayEquals(Numeric.cumprod((int[]) expected), (long[]) actual);
         } else if (expected instanceof long[]) {
             assertArrayEquals(Numeric.cumprod((long[]) expected), (long[]) actual);
         } else if (expected instanceof float[]) {
             assertArrayEquals(Numeric.cumprod((float[]) expected), (double[]) actual, .001f);
         } else if (expected instanceof double[]) {
             assertArrayEquals(Numeric.cumprod((double[]) expected), (double[]) actual, .001d);
+        } else if (expected instanceof char[]) {
+            assertArrayEquals(Numeric.cumprod((char[]) expected), (long[]) actual);
         } else {
             assertArrayEquals(cumprod((Object[]) expected, type == BigDecimal.class), (Object[]) actual);
         }
