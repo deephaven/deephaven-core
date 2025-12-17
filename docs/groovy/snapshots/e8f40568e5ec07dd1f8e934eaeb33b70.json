@@ -1,0 +1,1 @@
+{"file":"core_versioned_docs/version-groovy/docs/reference/engine/getDataIndex.md","objects":{":log":{"type":"Log","data":"Has index on Symbol BEFORE: false\nIndex on Symbol (create): TableBackedDataIndex-1122768650[1]\nHas index on Symbol AFTER: true\n"}}}

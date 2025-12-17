@@ -210,10 +210,7 @@ public class WritableFloatChunk<ATTR extends Any> extends FloatChunk<ATTR> imple
     // region sort
     @Override
     public final void sort(int start, int length) {
-        Arrays.sort(data, offset + start, offset + start + length);
-
-        // region SortFixup
-        // endregion SortFixup
+        WritableChunkUtils.sort(data, offset + start, offset + start + length);
     }
     // endregion sort
 

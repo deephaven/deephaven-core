@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/apache/arrow/go/v8/arrow"
-	"github.com/apache/arrow/go/v8/arrow/array"
+	"github.com/apache/arrow/go/v17/arrow"
+	"github.com/apache/arrow/go/v17/arrow/array"
 	"github.com/deephaven/deephaven-core/go/internal/test_tools"
 	"github.com/deephaven/deephaven-core/go/pkg/client"
 )

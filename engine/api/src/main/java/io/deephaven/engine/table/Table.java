@@ -345,6 +345,9 @@ public interface Table extends
      * simultaneous and unordered, enabling direct swaps between column names. The resulting table retains the original
      * column ordering after applying the specified renames.
      * <p>
+     * NOTE: If a new column name conflicts with an existing column name in the table, the existing column will be
+     * silently replaced.
+     * <p>
      * {@link IllegalArgumentException} will be thrown:
      * <ul>
      * <li>if a source column does not exist</li>
@@ -363,6 +366,9 @@ public interface Table extends
      * The renames are simultaneous and unordered, enabling direct swaps between column names. The resulting table
      * retains the original column ordering after applying the specified renames.
      * <p>
+     * NOTE: If a new column name conflicts with an existing column name in the table, the existing column will be
+     * silently replaced.
+     * <p>
      * {@link IllegalArgumentException} will be thrown:
      * <ul>
      * <li>if a source column does not exist</li>
@@ -380,6 +386,9 @@ public interface Table extends
      * Produce a new table with the specified columns renamed using the provided function. The renames are simultaneous
      * and unordered, enabling direct swaps between column names. The resulting table retains the original column
      * ordering after applying the specified renames.
+     * <p>
+     * NOTE: If a new column name conflicts with an existing column name in the table, the existing column will be
+     * silently replaced.
      * <p>
      * {@link IllegalArgumentException} will be thrown:
      * <ul>

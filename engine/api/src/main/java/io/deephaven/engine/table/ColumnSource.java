@@ -41,8 +41,6 @@ public interface ColumnSource<T>
      * @param invertMatch Whether to invert the match, i.e. return the rows where the values do not match the given keys
      * @param usePrev Whether to use the previous values for the ColumnSource
      * @param caseInsensitive Whether to perform a case insensitive match
-     * @param dataIndex An optional data index that can be used to accelerate the match (the index table must be
-     *        included in snapshot controls or otherwise guaranteed to be current)
      * @param mapper Restrict results to this row set
      * @param keys The keys to match in the column
      *
@@ -52,7 +50,6 @@ public interface ColumnSource<T>
             boolean invertMatch,
             boolean usePrev,
             boolean caseInsensitive,
-            @Nullable final DataIndex dataIndex,
             @NotNull RowSet mapper,
             Object... keys);
 

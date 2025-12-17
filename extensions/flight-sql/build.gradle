@@ -32,6 +32,11 @@ dependencies {
     // :sql does not expose calcite as a dependency (maybe it should?); in the meantime, we want to make sure we can
     // provide reasonable error messages to the client
     implementation libs.calcite.core
+    constraints {
+        implementation(libs.json.smart) {
+            because 'CVE-2024-57699'
+        }
+    }
 
     implementation libs.dagger
     implementation libs.arrow.flight.sql

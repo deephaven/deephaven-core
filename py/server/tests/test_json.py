@@ -3,12 +3,11 @@
 #
 
 import unittest
-
 from datetime import datetime
-from tests.testbase import BaseTestCase
 
 from deephaven import dtypes
 from deephaven.json import *
+from tests.testbase import BaseTestCase
 
 
 def all_equals(items) -> bool:

@@ -1,21 +1,22 @@
 #
 # Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 #
+from unittest.mock import Mock
+
 import jpy
 
 from deephaven import dtypes
-from deephaven.column import col_def, ColumnType
-
+from deephaven.column import ColumnType, col_def
+from deephaven.experimental import iceberg, s3
+from deephaven.experimental.iceberg import IcebergCatalogAdapter
+from deephaven.jcompat import j_list_to_list
 from tests.testbase import BaseTestCase
-from deephaven.experimental import s3, iceberg
-
-from deephaven.jcompat import j_map_to_dict, j_list_to_list
 
 _JTableDefinition = jpy.get_type("io.deephaven.engine.table.TableDefinition")
 
 
 class IcebergTestCase(BaseTestCase):
-    """ Test cases for the deephaven.iceberg module (performed locally) """
+    """Test cases for the deephaven.iceberg module (performed locally)"""
 
     def setUp(self):
         super().setUp()
@@ -27,30 +28,39 @@ class IcebergTestCase(BaseTestCase):
         iceberg_read_instructions = iceberg.IcebergReadInstructions()
 
     def test_instruction_create_with_s3_instructions(self):
-        s3_instructions = s3.S3Instructions(region_name="us-east-1",
-                                            access_key_id="some_access_key_id",
-                                            secret_access_key="som_secret_access_key"
-                                            )
-        iceberg_read_instructions = iceberg.IcebergReadInstructions(data_instructions=s3_instructions)
+        s3_instructions = s3.S3Instructions(
+            region_name="us-east-1",
+            access_key_id="some_access_key_id",
+            secret_access_key="som_secret_access_key",
+        )
+        iceberg_read_instructions = iceberg.IcebergReadInstructions(
+            data_instructions=s3_instructions
+        )
 
     def test_instruction_create_with_snapshot_id(self):
         iceberg_read_instructions = iceberg.IcebergReadInstructions(snapshot_id=12345)
-        self.assertTrue(iceberg_read_instructions.j_object.snapshotId().getAsLong() == 12345)
+        self.assertTrue(
+            iceberg_read_instructions.j_object.snapshotId().getAsLong() == 12345
+        )
 
     def test_writer_options_create_default(self):
-        writer_options = iceberg.TableParquetWriterOptions(table_definition={"x": dtypes.int32})
+        writer_options = iceberg.TableParquetWriterOptions(
+            table_definition={"x": dtypes.int32}
+        )
         self.assertEqual(writer_options.j_object.compressionCodecName(), "SNAPPY")
         self.assertEqual(writer_options.j_object.maximumDictionaryKeys(), 1048576)
         self.assertEqual(writer_options.j_object.maximumDictionarySize(), 1048576)
         self.assertEqual(writer_options.j_object.targetPageSize(), 65536)
 
     def test_writer_options_create_with_s3_instructions(self):
-        s3_instructions = s3.S3Instructions(region_name="us-east-1",
-                                            access_key_id="some_access_key_id",
-                                            secret_access_key="some_secret_access_key"
-                                            )
-        writer_options = iceberg.TableParquetWriterOptions(table_definition={"x": dtypes.int32},
-                                                           data_instructions=s3_instructions)
+        s3_instructions = s3.S3Instructions(
+            region_name="us-east-1",
+            access_key_id="some_access_key_id",
+            secret_access_key="some_secret_access_key",
+        )
+        writer_options = iceberg.TableParquetWriterOptions(
+            table_definition={"x": dtypes.int32}, data_instructions=s3_instructions
+        )
 
     def test_writer_options_create_with_table_definition_dict(self):
         table_def = {
@@ -59,7 +69,9 @@ class IcebergTestCase(BaseTestCase):
             "z": dtypes.double,
         }
         writer_options = iceberg.TableParquetWriterOptions(table_def)
-        col_names = j_list_to_list(writer_options.j_object.tableDefinition().getColumnNames())
+        col_names = j_list_to_list(
+            writer_options.j_object.tableDefinition().getColumnNames()
+        )
         self.assertTrue(col_names[0] == "x")
         self.assertTrue(col_names[1] == "y")
         self.assertTrue(col_names[2] == "z")
@@ -73,30 +85,36 @@ class IcebergTestCase(BaseTestCase):
         ]
 
         writer_options = iceberg.TableParquetWriterOptions(table_def)
-        col_names = j_list_to_list(writer_options.j_object.tableDefinition().getColumnNames())
+        col_names = j_list_to_list(
+            writer_options.j_object.tableDefinition().getColumnNames()
+        )
         self.assertTrue(col_names[0] == "Partition")
         self.assertTrue(col_names[1] == "x")
         self.assertTrue(col_names[2] == "y")
         self.assertTrue(col_names[3] == "z")
 
     def test_writer_options_create_with_compression_codec(self):
-        writer_options = iceberg.TableParquetWriterOptions(table_definition={"x": dtypes.int32},
-                                                           compression_codec_name="GZIP")
+        writer_options = iceberg.TableParquetWriterOptions(
+            table_definition={"x": dtypes.int32}, compression_codec_name="GZIP"
+        )
         self.assertEqual(writer_options.j_object.compressionCodecName(), "GZIP")
 
     def test_writer_options_create_with_max_dictionary_keys(self):
-        writer_options = iceberg.TableParquetWriterOptions(table_definition={"x": dtypes.int32},
-                                                           maximum_dictionary_keys=1024)
+        writer_options = iceberg.TableParquetWriterOptions(
+            table_definition={"x": dtypes.int32}, maximum_dictionary_keys=1024
+        )
         self.assertEqual(writer_options.j_object.maximumDictionaryKeys(), 1024)
 
     def test_writer_options_create_with_max_dictionary_size(self):
-        writer_options = iceberg.TableParquetWriterOptions(table_definition={"x": dtypes.int32},
-                                                           maximum_dictionary_size=8192)
+        writer_options = iceberg.TableParquetWriterOptions(
+            table_definition={"x": dtypes.int32}, maximum_dictionary_size=8192
+        )
         self.assertEqual(writer_options.j_object.maximumDictionarySize(), 8192)
 
     def test_writer_options_create_with_target_page_size(self):
-        writer_options = iceberg.TableParquetWriterOptions(table_definition={"x": dtypes.int32},
-                                                           target_page_size=4096)
+        writer_options = iceberg.TableParquetWriterOptions(
+            table_definition={"x": dtypes.int32}, target_page_size=4096
+        )
         self.assertEqual(writer_options.j_object.targetPageSize(), 4096)
 
     def test_schema_provider(self):
@@ -182,3 +200,10 @@ class IcebergTestCase(BaseTestCase):
             column_instructions={"Partition": 42, "x": 1, "y": "y"},
             schema_provider=iceberg.SchemaProvider.from_schema_id(99),
         )
+
+    def test_catalog_close(self):
+        mock_j = Mock()
+        adapter = IcebergCatalogAdapter(mock_j)
+        with adapter:
+            pass
+        mock_j.close.assert_called_once()

@@ -227,23 +227,23 @@ public class TimeTableTest extends RefreshingTableTestCase {
                 .map(l -> l == null ? null : DateTimeUtils.epochNanosToInstant(l))
                 .toArray(Instant[]::new);
         try (final RowSet match =
-                dtColumn.match(false, false, false, null, RowSetFactory.fromRange(100, 110),
+                dtColumn.match(false, false, false, RowSetFactory.fromRange(100, 110),
                         (Object[]) keys)) {
             Assert.assertEquals(match, RowSetFactory.fromKeys(100, 105, 110));
         }
         try (final RowSet match =
-                column.match(false, false, false, null, RowSetFactory.fromRange(100, 110),
+                column.match(false, false, false, RowSetFactory.fromRange(100, 110),
                         (Object[]) longKeys)) {
             Assert.assertEquals(match, RowSetFactory.fromKeys(100, 105, 110));
         }
         // inverted
         try (final RowSet match =
-                dtColumn.match(true, false, false, null, RowSetFactory.fromRange(100, 110),
+                dtColumn.match(true, false, false, RowSetFactory.fromRange(100, 110),
                         (Object[]) keys)) {
             Assert.assertEquals(match, RowSetFactory.fromKeys(101, 102, 103, 104, 106, 107, 108, 109));
         }
         try (final RowSet match =
-                column.match(true, false, false, null, RowSetFactory.fromRange(100, 110),
+                column.match(true, false, false, RowSetFactory.fromRange(100, 110),
                         (Object[]) longKeys)) {
             Assert.assertEquals(match, RowSetFactory.fromKeys(101, 102, 103, 104, 106, 107, 108, 109));
         }

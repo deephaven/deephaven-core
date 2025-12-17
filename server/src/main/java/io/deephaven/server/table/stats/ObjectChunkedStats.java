@@ -9,6 +9,7 @@ package io.deephaven.server.table.stats;
 
 import java.util.Set;
 import java.util.HashSet;
+import io.deephaven.util.type.ArrayTypeUtils;
 
 import gnu.trove.map.TObjectLongMap;
 import gnu.trove.map.hash.TObjectLongHashMap;
@@ -21,7 +22,6 @@ import io.deephaven.engine.table.iterators.ChunkedObjectColumnIterator;
 import io.deephaven.engine.util.TableTools;
 
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -83,10 +83,19 @@ public class ObjectChunkedStats implements ChunkedStatsKernel {
         }
         List<Map.Entry<String, Long>> sorted = new ArrayList<>(countValues.size());
 
-        countValues.forEachEntry((o, c) -> {
-            sorted.add(Map.entry(Objects.toString(o), c));
-            return true;
-        });
+        // region add_entries
+        if (columnSource.getType().isArray()) {
+            countValues.forEachEntry((o, c) -> {
+                sorted.add(Map.entry(ArrayTypeUtils.toString(o), c));
+                return true;
+            });
+        } else {
+            countValues.forEachEntry((o, c) -> {
+                sorted.add(Map.entry(Objects.toString(o), c));
+                return true;
+            });
+        }
+        // endregion add_entries
         sorted.sort(Map.Entry.<String, Long>comparingByValue().reversed());
 
         int resultCount = Math.min(maxUniqueToDisplay, sorted.size());

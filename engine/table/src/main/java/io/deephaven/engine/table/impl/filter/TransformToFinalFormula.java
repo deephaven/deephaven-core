@@ -7,63 +7,62 @@ import io.deephaven.engine.table.impl.select.AbstractConditionFilter;
 import io.deephaven.engine.table.impl.select.ConjunctiveFilter;
 import io.deephaven.engine.table.impl.select.DisjunctiveFilter;
 import io.deephaven.engine.table.impl.select.WhereFilter;
-import io.deephaven.engine.table.impl.select.WhereFilterBarrierImpl;
+import io.deephaven.engine.table.impl.select.WhereFilterWithDeclaredBarriersImpl;
 import io.deephaven.engine.table.impl.select.WhereFilterFactory;
 import io.deephaven.engine.table.impl.select.WhereFilterInvertedImpl;
-import io.deephaven.engine.table.impl.select.WhereFilterRespectsBarrierImpl;
+import io.deephaven.engine.table.impl.select.WhereFilterWithRespectedBarriersImpl;
 import io.deephaven.engine.table.impl.select.WhereFilterSerialImpl;
 
-public class TransformToFinalFormula implements WhereFilter.Visitor<WhereFilter> {
-    public static final TransformToFinalFormula INSTANCE = new TransformToFinalFormula();
+public enum TransformToFinalFormula implements WhereFilter.Visitor<WhereFilter> {
+    TRANSFORM_TO_FINAL_FORMULA;
 
     public static WhereFilter of(final WhereFilter filter) {
-        return filter.walkWhereFilter(INSTANCE);
+        return filter.walk(TRANSFORM_TO_FINAL_FORMULA);
     }
 
     @Override
-    public WhereFilter visitWhereFilter(final WhereFilter filter) {
+    public WhereFilter visitOther(WhereFilter filter) {
         if (filter instanceof AbstractConditionFilter
                 && ((AbstractConditionFilter) filter).hasConstantArrayAccess()) {
             return WhereFilterFactory
                     .getExpression(((AbstractConditionFilter) filter).getFormulaShiftedColumnDefinitions().getFirst());
         }
-        WhereFilter other = WhereFilter.Visitor.super.visitWhereFilter(filter);
-        return other == null ? filter : other;
+        return filter;
     }
 
     @Override
-    public WhereFilter visitWhereFilter(final WhereFilterInvertedImpl filter) {
-        return WhereFilterInvertedImpl.of(visitWhereFilter(filter.getWrappedFilter()));
+    public WhereFilter visit(final WhereFilterInvertedImpl filter) {
+        return WhereFilterInvertedImpl.of(of(filter.getWrappedFilter()));
     }
 
     @Override
-    public WhereFilter visitWhereFilter(final WhereFilterSerialImpl filter) {
-        return visitWhereFilter(filter.getWrappedFilter()).withSerial();
+    public WhereFilter visit(final WhereFilterSerialImpl filter) {
+        return of(filter.getWrappedFilter()).withSerial();
     }
 
     @Override
-    public WhereFilter visitWhereFilter(final WhereFilterBarrierImpl filter) {
-        return visitWhereFilter(filter.getWrappedFilter()).withBarriers(filter.barriers());
+    public WhereFilter visit(final WhereFilterWithDeclaredBarriersImpl filter) {
+        return of(filter.getWrappedFilter()).withDeclaredBarriers(filter.declaredBarriers());
     }
 
     @Override
-    public WhereFilter visitWhereFilter(final WhereFilterRespectsBarrierImpl filter) {
-        return visitWhereFilter(filter.getWrappedFilter()).respectsBarriers(filter.respectedBarriers());
+    public WhereFilter visit(final WhereFilterWithRespectedBarriersImpl filter) {
+        return of(filter.getWrappedFilter()).withRespectedBarriers(filter.respectedBarriers());
     }
 
     @Override
-    public WhereFilter visitWhereFilter(final DisjunctiveFilter filter) {
+    public WhereFilter visit(final DisjunctiveFilter filter) {
         return DisjunctiveFilter.of(
                 filter.getFilters().stream()
-                        .map(f -> f.walkWhereFilter(this))
+                        .map(TransformToFinalFormula::of)
                         .toArray(WhereFilter[]::new));
     }
 
     @Override
-    public WhereFilter visitWhereFilter(final ConjunctiveFilter filter) {
+    public WhereFilter visit(final ConjunctiveFilter filter) {
         return ConjunctiveFilter.of(
                 filter.getFilters().stream()
-                        .map(f -> f.walkWhereFilter(this))
+                        .map(TransformToFinalFormula::of)
                         .toArray(WhereFilter[]::new));
     }
 }

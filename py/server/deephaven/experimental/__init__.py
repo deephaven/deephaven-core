@@ -2,9 +2,10 @@
 # Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 #
 
-""" This package is a place for Deephaven experimental features. """
+"""This package is a place for Deephaven experimental features."""
 
 import jpy
+
 from deephaven import DHError
 from deephaven.table import Table
 from deephaven.update_graph import auto_locking_ctx
@@ -36,6 +37,10 @@ def time_window(table: Table, ts_col: str, window: int, bool_col: str) -> Table:
     """
     try:
         with auto_locking_ctx(table):
-            return Table(j_table=_JWindowCheck.addTimeWindow(table.j_table, ts_col, window, bool_col))
+            return Table(
+                j_table=_JWindowCheck.addTimeWindow(
+                    table.j_table, ts_col, window, bool_col
+                )
+            )
     except Exception as e:
         raise DHError(e, "failed to create a time window table.") from e

@@ -1,0 +1,1 @@
+{"file":"core_versioned_docs/version-groovy/docs/tutorials/crash-course/7-export-data.md","objects":{"source":{"type":"Table","data":{"columns":[{"name":"Timestamp","type":"java.time.Instant"},{"name":"X","type":"int"}],"rows":[[{"value":"2024-07-25 12:45:37.000"},{"value":"0"}]]}}}}

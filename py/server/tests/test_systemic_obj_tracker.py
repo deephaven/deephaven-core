@@ -3,12 +3,12 @@
 #
 import unittest
 from unittest.mock import patch
-from deephaven import DHError, empty_table
+
 import deephaven.systemic_obj_tracker as tracker
+from deephaven import DHError, empty_table
 
 
 class TestSystemicObjectTracker(unittest.TestCase):
-
     def test_is_systemic_object_marking_enabled(self):
         self.assertTrue(tracker.is_systemic_object_marking_enabled())
 
@@ -27,7 +27,9 @@ class TestSystemicObjectTracker(unittest.TestCase):
         t = empty_table(10)
         self.assertFalse(t.j_object.isSystemicObject())
 
-        with patch("deephaven.systemic_obj_tracker._JSystemicObjectTracker") as mock_tracker:
+        with patch(
+            "deephaven.systemic_obj_tracker._JSystemicObjectTracker"
+        ) as mock_tracker:
             mock_tracker.isSystemicObjectMarkingEnabled.return_value = False
             with self.assertRaises(DHError) as cm:
                 tracker.set_systemic(True)
@@ -40,7 +42,9 @@ class TestSystemicObjectTracker(unittest.TestCase):
         self.assertTrue(t.j_object.isSystemicObject())
 
     def test_systemic_object_marking_error(self):
-        with patch("deephaven.systemic_obj_tracker._JSystemicObjectTracker") as mock_tracker:
+        with patch(
+            "deephaven.systemic_obj_tracker._JSystemicObjectTracker"
+        ) as mock_tracker:
             mock_tracker.isSystemicObjectMarkingEnabled.return_value = False
             with self.assertRaises(DHError) as cm:
                 with tracker.systemic_object_marking():
@@ -54,5 +58,5 @@ class TestSystemicObjectTracker(unittest.TestCase):
         self.assertFalse(t.j_object.isSystemicObject())
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

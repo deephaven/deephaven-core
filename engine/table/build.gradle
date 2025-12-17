@@ -23,6 +23,9 @@ dependencies {
     api project(':IO')
     api project(':codec-api')
 
+    compileOnly project(':util-immutables')
+    annotationProcessor libs.immutables.value
+
     implementation project(':util-processenvironment')
     implementation project(':util-thread')
     implementation project(':DHProcess')
@@ -91,8 +94,7 @@ dependencies {
 spotless {
     java {
         // Exclude these codegen sample files from here so we don't even need a comment to disable formatting
-        targetExclude 'src/test/java/io/deephaven/engine/table/impl/select/FilterKernel*Sample.java',
-                'src/test/java/io/deephaven/engine/table/impl/select/Formula*Sample.java'
+        targetExclude 'src/test/java/io/deephaven/engine/table/impl/select/sample*/**/*.java'
     }
 }
 

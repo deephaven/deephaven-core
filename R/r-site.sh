@@ -18,7 +18,7 @@ status = tryCatch(
      pkgdown::build_site(preview=FALSE)
      0
   },
-  error=function(e) 1
+  error=function(e) { print(paste0('ERROR: ', e)); 1 }
 )
 print(paste0('status=', status))
 quit(save='no', status=status)

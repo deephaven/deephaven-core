@@ -1,0 +1,1 @@
+{"file":"core/docs/reference/table-operations/create/boolCol.md","objects":{"result":{"type":"Table","data":{"columns":[{"name":"Booleans","type":"java.lang.Boolean"}],"rows":[[{"value":"true"}],[{"value":"false"}],[{"value":"true"}]]}}}}

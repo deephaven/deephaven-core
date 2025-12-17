@@ -534,53 +534,6 @@ class ResolverTest {
     }
 
     @Test
-    void partitionFieldContainedWithinList() {
-        final Schema schema = new Schema(NestedField.optional(1, "S1", Types.ListType.ofOptional(2, IT)));
-        // https://iceberg.apache.org/spec/#partitioning
-        // > The source columns ... cannot be contained in a list
-        // Iceberg does *not* currently guard against this (may open up a PR later for this)
-        final PartitionSpec spec = PartitionSpec.builderFor(schema).identity("S1.element").build();
-        try {
-            Resolver.builder()
-                    .schema(schema)
-                    .spec(spec)
-                    .definition(TableDefinition.of(
-                            ColumnDefinition.ofInt("S1").withPartitioning()))
-                    .putColumnInstructions("S1", partitionField(spec.fields().get(0).fieldId()))
-                    .build();
-            failBecauseExceptionWasNotThrown(Resolver.MappingException.class);
-        } catch (Resolver.MappingException e) {
-            assertThat(e).hasMessageContaining("Unable to map Deephaven column S1");
-            assertThat(e).cause().hasMessageContaining("Partition fields may not be contained in a list");
-        }
-    }
-
-    @Test
-    void partitionFieldContainedWithinMap() {
-        final Schema schema = new Schema(NestedField.optional(1, "S1", Types.MapType.ofOptional(2, 3, IT, IT)));
-        // https://iceberg.apache.org/spec/#partitioning
-        // > The source columns ... cannot be contained in a map
-        // Iceberg does *not* currently guard against this (may open up a PR later for this)
-        for (final PartitionSpec spec : List.of(
-                PartitionSpec.builderFor(schema).identity("S1.key").build(),
-                PartitionSpec.builderFor(schema).identity("S1.value").build())) {
-            try {
-                Resolver.builder()
-                        .schema(schema)
-                        .spec(spec)
-                        .definition(TableDefinition.of(
-                                ColumnDefinition.ofInt("S1").withPartitioning()))
-                        .putColumnInstructions("S1", partitionField(spec.fields().get(0).fieldId()))
-                        .build();
-                failBecauseExceptionWasNotThrown(Resolver.MappingException.class);
-            } catch (Resolver.MappingException e) {
-                assertThat(e).hasMessageContaining("Unable to map Deephaven column S1");
-                assertThat(e).cause().hasMessageContaining("Partition fields may not be contained in a map");
-            }
-        }
-    }
-
-    @Test
     void listType() {
         final Schema schema = new Schema(NestedField.optional(1, "MyListField", Types.ListType.ofOptional(2, IT)));
         final TableDefinition definition = TableDefinition.of(
@@ -991,5 +944,33 @@ class ResolverTest {
                 }
             }
         }
+    }
+
+    @Test
+    void equalityWithDifferentSchemaInstances() {
+        final Schema s1 = simpleSchema(IT);
+        final Schema s2 = simpleSchema(IT);
+
+        // This is Iceberg implementation decision
+        assertThat(s1).isNotEqualTo(s2);
+        assertThat(s2).isNotEqualTo(s1);
+
+        final Resolver r1 = Resolver.builder()
+                .schema(s1)
+                .definition(simpleDefinition(Type.intType()))
+                .putColumnInstructions("F1", schemaField(42))
+                .putColumnInstructions("F2", schemaField(43))
+                .build();
+
+        final Resolver r2 = Resolver.builder()
+                .schema(s2)
+                .definition(simpleDefinition(Type.intType()))
+                .putColumnInstructions("F1", schemaField(42))
+                .putColumnInstructions("F2", schemaField(43))
+                .build();
+
+        assertThat(r1).isEqualTo(r2);
+        assertThat(r2).isEqualTo(r1);
+        assertThat(r1).hasSameHashCodeAs(r2);
     }
 }

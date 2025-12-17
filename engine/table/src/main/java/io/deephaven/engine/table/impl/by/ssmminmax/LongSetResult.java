@@ -30,7 +30,9 @@ public class LongSetResult implements SsmChunkedMinMaxOperator.SetResult {
             newResult = NULL_LONG;
         } else {
             final LongSegmentedSortedMultiset longSsm = (LongSegmentedSortedMultiset) ssm;
+            // region nan handling
             newResult = minimum ? longSsm.getMinLong() : longSsm.getMaxLong();
+            // endregion nan handling
         }
         return setResult(destination, newResult);
     }

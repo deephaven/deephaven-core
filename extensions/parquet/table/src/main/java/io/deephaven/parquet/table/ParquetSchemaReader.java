@@ -197,7 +197,7 @@ public class ParquetSchemaReader {
                 consumer.accept(colDef);
                 continue;
             }
-            if (logicalTypeAnnotation == null) {
+            if (logicalTypeAnnotation == null || logicalTypeAnnotation == LogicalTypeAnnotation.unknownType()) {
                 colDef.noLogicalType = true;
                 final PrimitiveType.PrimitiveTypeName typeName = primitiveType.getPrimitiveTypeName();
                 switch (typeName) {

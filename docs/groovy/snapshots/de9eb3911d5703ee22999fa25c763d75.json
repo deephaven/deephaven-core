@@ -1,0 +1,1 @@
+{"file":"core_versioned_docs/version-groovy/docs/reference/table-operations/create/doubleCol.md","objects":{"result":{"type":"Table","data":{"columns":[{"name":"Doubles","type":"double"}],"rows":[[{"value":"0.1000"}],[{"value":"0.2000"}],[{"value":"0.3000"}]]}}}}

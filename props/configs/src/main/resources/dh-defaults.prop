@@ -115,3 +115,21 @@ http.add.header.Cross-Origin-Embedder-Policy.enabled = true
 http.add.header.Cross-Origin-Embedder-Policy.value = require-corp
 http.add.header.Cross-Origin-Opener-Policy.enabled = true
 http.add.header.Cross-Origin-Opener-Policy.value = same-origin
+
+# As of Core 0.40.0, the ColumnExpressionValidator defaults to "parsed", which is configured below.  In versions 0.39.0
+# and earlier, the "method_name" validator was used.  To restore the older behavior, set ColumnExpressionValidator to
+# "method_name".    
+#ColumnExpressionValidator=method_name
+
+# Permit any instance methods on boxed types
+ColumnExpressionValidator.allowedMethods.primitives=java.lang.Character *(..);java.lang.Byte *(..);java.lang.Short *(..);java.lang.Integer *(..);java.lang.Long *(..);java.lang.Float *(..);java.lang.Double *(..);java.lang.Boolean *(..)
+# Permit any instance methods on immutable types (e.g. Strings; Instants; BigInteger; and Decimal)
+ColumnExpressionValidator.allowedMethods.basic=java.lang.String *(..)
+ColumnExpressionValidator.allowedMethods.numbers=java.math.BigInteger *(..);java.math.BigDecimal *(..);java.lang.Number *(..)
+ColumnExpressionValidator.allowedMethods.time=java.time.Instant *(..);java.time.LocalTime *(..);java.time.LocalDate *(..);java.time.ZonedDateTime *(..)
+# Permit converting any value to a String, comparing equality, or using a hashCode
+ColumnExpressionValidator.allowedMethods.toString=java.lang.Object toString()
+ColumnExpressionValidator.allowedMethods.equals=java.lang.Object equals(java.lang.Object)
+ColumnExpressionValidator.allowedMethods.hashCode=java.lang.Object hashCode()
+
+ColumnExpressionValidator.annotationSets.default=base,vector,function_library

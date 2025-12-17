@@ -9,6 +9,7 @@ import io.deephaven.util.compare.CharComparisons;
 import io.deephaven.util.compare.DoubleComparisons;
 import io.deephaven.util.compare.FloatComparisons;
 
+import java.util.Comparator;
 import java.util.function.Predicate;
 
 import static io.deephaven.util.QueryConstants.*;
@@ -98,7 +99,8 @@ public class ColumnComparatorFactory {
      * @return An AbstractColumnSource.IComparator designed to compare elements from the two column sources.
      */
     public static IComparator createComparatorLeftCurrRightPrev(
-            final ColumnSource lcs, final ColumnSource rcs) {
+            final ColumnSource lcs, final ColumnSource rcs,
+            final Comparator comparator) {
         final Class lType = lcs.getType();
         final Class rType = rcs.getType();
         Assert.eq(lType, "lType", rType, "rType");
@@ -153,6 +155,13 @@ public class ColumnComparatorFactory {
                 final double l = lcs.getDouble(lKey);
                 final double r = rcs.getPrevDouble(rKey);
                 return l == r ? 0 : (l == NULL_DOUBLE ? -1 : (r == NULL_DOUBLE ? 1 : Double.compare(l, r)));
+            };
+        }
+        if (comparator != null) {
+            return (lKey, rKey) -> {
+                final Object l = lcs.get(lKey);
+                final Object r = rcs.getPrev(rKey);
+                return comparator.compare(l, r);
             };
         }
         // fall through to Object interface

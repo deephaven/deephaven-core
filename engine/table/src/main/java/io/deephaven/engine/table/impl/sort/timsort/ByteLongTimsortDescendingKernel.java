@@ -21,13 +21,13 @@ import io.deephaven.util.annotations.VisibleForTesting;
  * <a href="https://bugs.python.org/file4451/timsort.txt">bugs.python.org</a> and
  * <a href="https://en.wikipedia.org/wiki/Timsort">Wikipedia</a> do a decent job of describing the algorithm.
  */
-public class ByteLongTimsortDescendingKernel {
-    private ByteLongTimsortDescendingKernel() {
-        throw new UnsupportedOperationException();
-    }
+public final class ByteLongTimsortDescendingKernel {
+    // region constructor
+    private ByteLongTimsortDescendingKernel() {}
+    // endregion constructor
 
     // region Context
-    public static class ByteLongSortKernelContext<SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any>
+    public class ByteLongSortKernelContext<SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any>
             implements LongSortKernel<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> {
 
         int minGallop;
@@ -49,7 +49,7 @@ public class ByteLongTimsortDescendingKernel {
         public void sort(
                 WritableLongChunk<PERMUTE_VALUES_ATTR> valuesToPermute,
                 WritableChunk<SORT_VALUES_ATTR> valuesToSort) {
-            ByteLongTimsortDescendingKernel.sort(this, valuesToPermute, valuesToSort.asWritableByteChunk());
+            ByteLongTimsortDescendingKernel.this.sort(this, valuesToPermute, valuesToSort.asWritableByteChunk());
         }
 
         @Override
@@ -58,7 +58,8 @@ public class ByteLongTimsortDescendingKernel {
                 WritableChunk<SORT_VALUES_ATTR> valuesToSort,
                 IntChunk<? extends ChunkPositions> offsetsIn,
                 IntChunk<? extends ChunkLengths> lengthsIn) {
-            ByteLongTimsortDescendingKernel.sort(this, valuesToPermute, valuesToSort.asWritableByteChunk(), offsetsIn, lengthsIn);
+            ByteLongTimsortDescendingKernel.this.sort(this, valuesToPermute, valuesToSort.asWritableByteChunk(), offsetsIn,
+                    lengthsIn);
         }
 
         @Override
@@ -66,13 +67,28 @@ public class ByteLongTimsortDescendingKernel {
             temporaryKeys.close();
             temporaryValues.close();
         }
+
+        private ByteLongTimsortDescendingKernel kernel() {
+            return ByteLongTimsortDescendingKernel.this;
+        }
     }
     // endregion Context
 
-    public static <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> ByteLongSortKernelContext<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> createContext(
+    // region createContextInstance
+    public <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> ByteLongSortKernelContext<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> createContextInstance(
             int size) {
         return new ByteLongSortKernelContext<>(size);
     }
+    // endregion createContextInstance
+
+    // region createContextStatic
+
+    public static <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> ByteLongSortKernelContext<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> createContext(
+            final int size) {
+        return new ByteLongTimsortDescendingKernel().createContextInstance(size);
+    }
+
+    // endregion createContextStatic
 
     /**
      * Sort the values in valuesToSort permuting the valuesToPermute chunk in the same way.
@@ -92,7 +108,7 @@ public class ByteLongTimsortDescendingKernel {
             final int offset = offsetsIn.get(run);
             final int length = lengthsIn.get(run);
 
-            timSort(context, valuesToPermute, valuesToSort, offset, length);
+            context.kernel().timSort(context, valuesToPermute, valuesToSort, offset, length);
         }
     }
 
@@ -107,10 +123,10 @@ public class ByteLongTimsortDescendingKernel {
             ByteLongSortKernelContext<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> context,
             WritableLongChunk<PERMUTE_VALUES_ATTR> valuesToPermute,
             WritableByteChunk<SORT_VALUES_ATTR> valuesToSort) {
-        timSort(context, valuesToPermute, valuesToSort, 0, valuesToPermute.size());
+        context.kernel().timSort(context, valuesToPermute, valuesToSort, 0, valuesToPermute.size());
     }
 
-    static private <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> void timSort(
+    private <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> void timSort(
             ByteLongSortKernelContext<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> context,
             WritableLongChunk<PERMUTE_VALUES_ATTR> valuesToPermute,
             WritableByteChunk<SORT_VALUES_ATTR> valuesToSort,
@@ -206,6 +222,7 @@ public class ByteLongTimsortDescendingKernel {
     }
     // endregion comparison functions
 
+    // region compare ops
     @VisibleForTesting
     static boolean gt(byte lhs, byte rhs) {
         return doComparison(lhs, rhs) > 0;
@@ -225,6 +242,7 @@ public class ByteLongTimsortDescendingKernel {
     static boolean leq(byte lhs, byte rhs) {
         return doComparison(lhs, rhs) <= 0;
     }
+    // endregion compare ops
 
     /**
      * <p>
@@ -249,7 +267,7 @@ public class ByteLongTimsortDescendingKernel {
      * as being approximately balanced while maintaining a compromise between delaying merging for balance, exploiting
      * fresh occurrence of runs in cache memory and making merge decisions relatively simple.
      */
-    private static <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> void ensureMergeInvariants(
+    private <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> void ensureMergeInvariants(
             ByteLongSortKernelContext<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> context,
             WritableLongChunk<PERMUTE_VALUES_ATTR> valuesToPermute,
             WritableByteChunk<SORT_VALUES_ATTR> valuesToSort) {
@@ -297,7 +315,7 @@ public class ByteLongTimsortDescendingKernel {
         }
     }
 
-    private static <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> void merge(
+    private <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> void merge(
             ByteLongSortKernelContext<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> context,
             WritableLongChunk<PERMUTE_VALUES_ATTR> valuesToPermute,
             WritableByteChunk<SORT_VALUES_ATTR> valuesToSort,
@@ -347,7 +365,7 @@ public class ByteLongTimsortDescendingKernel {
      * <p>
      * We eventually need to do galloping here, but are skipping that for now
      */
-    private static <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> void frontMerge(
+    private <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> void frontMerge(
             ByteLongSortKernelContext<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> context,
             WritableLongChunk<PERMUTE_VALUES_ATTR> valuesToPermute,
             WritableByteChunk<SORT_VALUES_ATTR> valuesToSort,
@@ -457,7 +475,7 @@ public class ByteLongTimsortDescendingKernel {
      * <p>
      * We eventually need to do galloping here, but are skipping that for now
      */
-    private static <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> void backMerge(
+    private <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> void backMerge(
             ByteLongSortKernelContext<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> context,
             WritableLongChunk<PERMUTE_VALUES_ATTR> valuesToPermute,
             WritableByteChunk<SORT_VALUES_ATTR> valuesToSort,
@@ -596,17 +614,17 @@ public class ByteLongTimsortDescendingKernel {
     // lo is inclusive, hi is exclusive
     //
     // returns the position of the first element that is > searchValue or hi if there is no such element
-    private static int upperBound(ByteChunk<?> valuesToSort, int lo, int hi, byte searchValue) {
+    private int upperBound(ByteChunk<?> valuesToSort, int lo, int hi, byte searchValue) {
         return bound(valuesToSort, lo, hi, searchValue, false);
     }
 
     // when we binary search in 2, we must identify a position for search value that is *before* our test values;
     // because the values from run 1 may never be inserted after an equal value from run 2
-    private static int lowerBound(ByteChunk<?> valuesToSort, int lo, int hi, byte searchValue) {
+    private int lowerBound(ByteChunk<?> valuesToSort, int lo, int hi, byte searchValue) {
         return bound(valuesToSort, lo, hi, searchValue, true);
     }
 
-    private static int bound(ByteChunk<?> valuesToSort, int lo, int hi, byte searchValue, final boolean lower) {
+    private int bound(ByteChunk<?> valuesToSort, int lo, int hi, byte searchValue, final boolean lower) {
         final int compareLimit = lower ? -1 : 0; // lt or leq
 
         while (lo < hi) {
@@ -624,7 +642,7 @@ public class ByteLongTimsortDescendingKernel {
         return lo;
     }
 
-    private static void insertionSort(
+    private void insertionSort(
             WritableLongChunk<?> valuesToPermute,
             WritableByteChunk<?> valuesToSort,
             int offset,

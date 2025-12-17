@@ -313,9 +313,22 @@ message FetchTableRequest {
   Ticket result_id = 2;
 }
 
+// Transforms the source table to avoid complex objects in columns. If no unpreviewed types are defined, this
+// defaults to legacy behavior of:
+//  - Limiting string columns to a server-defined max length
+//  - Converting arrays/vectors to comma separated strings of the first N elements (again, server defined)
+//  - Converting all non-string, non-number, non-date types to their string representation
 message ApplyPreviewColumnsRequest {
   TableReference source_id = 1;
   Ticket result_id = 2;
+
+  // True to convert all arrays to strings, limiting to a server-defined max length. Expected to be unset if
+  // unpreviewed_types is empty.
+  bool convert_arrays = 3;
+
+  // Java types to leave unconverted - all other types will be converted to strings. If empty, the server's
+  // legacy behavior will be used.
+  repeated string unpreviewed_types = 4;
 }
 
 message ExportedTableUpdatesRequest {

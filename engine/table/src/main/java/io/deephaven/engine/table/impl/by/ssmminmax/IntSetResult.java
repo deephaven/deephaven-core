@@ -30,7 +30,9 @@ public class IntSetResult implements SsmChunkedMinMaxOperator.SetResult {
             newResult = NULL_INT;
         } else {
             final IntSegmentedSortedMultiset intSsm = (IntSegmentedSortedMultiset) ssm;
+            // region nan handling
             newResult = minimum ? intSsm.getMinInt() : intSsm.getMaxInt();
+            // endregion nan handling
         }
         return setResult(destination, newResult);
     }

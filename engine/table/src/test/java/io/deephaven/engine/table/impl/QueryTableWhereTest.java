@@ -6,9 +6,7 @@ package io.deephaven.engine.table.impl;
 import com.google.common.collect.Lists;
 import gnu.trove.list.TLongList;
 import gnu.trove.list.array.TLongArrayList;
-import io.deephaven.api.ColumnName;
 import io.deephaven.api.RawString;
-import io.deephaven.api.Selectable;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.*;
@@ -27,17 +25,17 @@ import io.deephaven.engine.table.impl.chunkfilter.ChunkFilter;
 import io.deephaven.engine.table.impl.chunkfilter.IntRangeComparator;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.select.*;
+import io.deephaven.engine.table.impl.select.vectorchunkfilter.VectorComponentFilterWrapper;
 import io.deephaven.engine.table.impl.sources.*;
 import io.deephaven.engine.table.impl.util.JobScheduler;
 import io.deephaven.engine.table.impl.verify.TableAssertions;
-import io.deephaven.engine.table.vectors.ColumnVectors;
 import io.deephaven.engine.testutil.*;
 import io.deephaven.engine.testutil.QueryTableTestBase.TableComparator;
+import io.deephaven.engine.testutil.filters.ParallelizedRowSetCapturingFilter;
 import io.deephaven.engine.testutil.filters.RowSetCapturingFilter;
 import io.deephaven.engine.testutil.generator.*;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.testutil.sources.IntTestSource;
-import io.deephaven.engine.util.PrintListener;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.gui.table.filters.Condition;
 import io.deephaven.internal.log.LoggerFactory;
@@ -52,7 +50,6 @@ import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -68,7 +65,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.function.IntUnaryOperator;
 import java.util.function.LongConsumer;
-import java.util.stream.IntStream;
 
 import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.engine.testutil.testcase.RefreshingTableTestCase.printTableUpdates;
@@ -279,551 +275,6 @@ public abstract class QueryTableWhereTest {
         final Table usingStringArray = table.where(Filter.or(Filter.from("x%3 == 0", "y=='f'")));
         assertTableEquals(usingStringArray, testRefreshingTable(
                 i(4, 6, 8).toTracking(), col("x", 21, 3, 4), col("y", 'x', 'c', 'f')));
-    }
-
-    @Test
-    public void testWhereInDependency() {
-        testWhereInDependencyInternal(false, false, true, true);
-        testWhereInDependencyInternal(false, false, true, false);
-        testWhereInDependencyInternal(false, false, false, true);
-        testWhereInDependencyInternal(false, false, false, false);
-    }
-
-    @Test
-    public void testWhereInDependencyIndexed() {
-        testWhereInDependencyInternal(true, false, true, true);
-        testWhereInDependencyInternal(true, false, true, false);
-        testWhereInDependencyInternal(true, false, false, true);
-        testWhereInDependencyInternal(true, false, false, false);
-
-        testWhereInDependencyInternal(false, true, true, true);
-        testWhereInDependencyInternal(false, true, true, false);
-        testWhereInDependencyInternal(false, true, false, true);
-        testWhereInDependencyInternal(false, true, false, false);
-
-        testWhereInDependencyInternal(true, true, true, true);
-        testWhereInDependencyInternal(true, true, true, false);
-        testWhereInDependencyInternal(true, true, false, true);
-        testWhereInDependencyInternal(true, true, false, false);
-    }
-
-    private void testWhereInDependencyInternal(
-            boolean filterIndexed,
-            boolean setIndexed,
-            boolean sourceRefreshing,
-            boolean setRefreshing) {
-
-        final QueryTable tableToFilter = sourceRefreshing
-                ? testRefreshingTable(i(10, 11, 12, 13, 14, 15).toTracking(), col("A", 1, 2, 3, 4, 5, 6),
-                        col("B", 2, 4, 6, 8, 10, 12), col("C", 'a', 'b', 'c', 'd', 'e', 'f'))
-                : testTable(i(10, 11, 12, 13, 14, 15).toTracking(), col("A", 1, 2, 3, 4, 5, 6),
-                        col("B", 2, 4, 6, 8, 10, 12), col("C", 'a', 'b', 'c', 'd', 'e', 'f'));
-        if (filterIndexed) {
-            DataIndexer.getOrCreateDataIndex(tableToFilter, "A");
-            DataIndexer.getOrCreateDataIndex(tableToFilter, "B");
-        }
-
-        final QueryTable setTable = setRefreshing
-                ? testRefreshingTable(i(100, 101, 102).toTracking(), col("A", 1, 2, 3), col("B", 2, 4, 6))
-                : testTable(i(100, 101, 102).toTracking(), col("A", 1, 2, 3), col("B", 2, 4, 6));
-        final Table setTable1 = setTable.where("A > 2");
-        final Table setTable2 = setTable.where("B > 6");
-        if (setIndexed) {
-            DataIndexer.getOrCreateDataIndex(setTable, "A");
-            DataIndexer.getOrCreateDataIndex(setTable, "B");
-
-            DataIndexer.getOrCreateDataIndex(setTable1, "A");
-            DataIndexer.getOrCreateDataIndex(setTable1, "B");
-
-            DataIndexer.getOrCreateDataIndex(setTable2, "A");
-            DataIndexer.getOrCreateDataIndex(setTable2, "B");
-        }
-
-        final DynamicWhereFilter dynamicFilter1 =
-                new DynamicWhereFilter((QueryTable) setTable1, true, MatchPairFactory.getExpressions("A"));
-        final DynamicWhereFilter dynamicFilter2 =
-                new DynamicWhereFilter((QueryTable) setTable2, true, MatchPairFactory.getExpressions("B"));
-
-        final WhereFilter composedFilter = DisjunctiveFilter.makeDisjunctiveFilter(dynamicFilter1, dynamicFilter2);
-        final Table composed = tableToFilter.where(composedFilter);
-
-        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
-        updateGraph.runWithinUnitTestCycle(() -> {
-            TestCase.assertTrue(dynamicFilter1.satisfied(updateGraph.clock().currentStep()));
-            TestCase.assertTrue(dynamicFilter2.satisfied(updateGraph.clock().currentStep()));
-            TestCase.assertTrue(composed.satisfied(updateGraph.clock().currentStep()));
-        });
-
-        if (setRefreshing) {
-            updateGraph.runWithinUnitTestCycle(() -> {
-                addToTable(setTable, i(103), col("A", 5), col("B", 8));
-                setTable.notifyListeners(i(103), i(), i());
-            });
-
-            TableTools.show(composed);
-
-            final Table expected =
-                    TableTools.newTable(intCol("A", 3, 4, 5), intCol("B", 6, 8, 10), charCol("C", 'c', 'd', 'e'));
-
-            assertTableEquals(composed, expected);
-        }
-    }
-
-    @Test
-    public void testWhereInOptimalIndexSelectionWithNoneAvailable() {
-        final Table lhs = emptyTable(10).update("Part=ii % 2 == 0 ? `Apple` : `Pie`", "Hello=ii", "Goodbye = `A`+ii");
-        DataIndexer.getOrCreateDataIndex(lhs, "Part");
-        final Table rhs = emptyTable(2).update("Hello=ii", "Goodbye = `A`+ii");
-        final Table result = lhs.whereIn(rhs, "Goodbye");
-        assertTableEquals(lhs.head(2), result);
-    }
-
-    @Test
-    public void testWhereDynamicIn() {
-        final QueryTable setTable = testRefreshingTable(i(2, 4, 6, 8).toTracking(), col("X", "A", "B", "C", "B"));
-        final QueryTable filteredTable = testRefreshingTable(i(1, 2, 3, 4, 5).toTracking(),
-                col("X", "A", "B", "C", "D", "E"));
-
-        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
-
-        final Table result = updateGraph.exclusiveLock().computeLocked(
-                () -> filteredTable.whereIn(setTable, "X"));
-        final Table resultInverse = updateGraph.exclusiveLock().computeLocked(
-                () -> filteredTable.whereNotIn(setTable, "X"));
-        show(result);
-        assertEquals(3, result.size());
-        assertArrayEquals(new String[] {"A", "B", "C"}, ColumnVectors.ofObject(result, "X", String.class).toArray());
-        assertEquals(2, resultInverse.size());
-        assertArrayEquals(new String[] {"D", "E"}, ColumnVectors.ofObject(resultInverse, "X", String.class).toArray());
-
-        updateGraph.runWithinUnitTestCycle(() -> {
-            addToTable(filteredTable, i(6), col("X", "A"));
-            filteredTable.notifyListeners(i(6), i(), i());
-        });
-        show(result);
-        assertEquals(4, result.size());
-        assertArrayEquals(new String[] {"A", "B", "C", "A"},
-                ColumnVectors.ofObject(result, "X", String.class).toArray());
-        assertEquals(2, resultInverse.size());
-        assertArrayEquals(new String[] {"D", "E"}, ColumnVectors.ofObject(resultInverse, "X", String.class).toArray());
-
-        updateGraph.runWithinUnitTestCycle(() -> {
-            addToTable(setTable, i(7), col("X", "D"));
-            setTable.notifyListeners(i(7), i(), i());
-        });
-        showWithRowSet(result);
-        assertEquals(5, result.size());
-        assertArrayEquals(new String[] {"A", "B", "C", "D", "A"},
-                ColumnVectors.ofObject(result, "X", String.class).toArray());
-        assertEquals(1, resultInverse.size());
-        assertArrayEquals(new String[] {"E"}, ColumnVectors.ofObject(resultInverse, "X", String.class).toArray());
-
-        // Real modification to set table, followed by spurious modification to set table
-        IntStream.range(0, 2).forEach(ri -> {
-            updateGraph.runWithinUnitTestCycle(() -> {
-                addToTable(setTable, i(7), col("X", "C"));
-                setTable.notifyListeners(i(), i(), i(7));
-            });
-            showWithRowSet(result);
-            assertEquals(4, result.size());
-            assertArrayEquals(new String[] {"A", "B", "C", "A"},
-                    ColumnVectors.ofObject(result, "X", String.class).toArray());
-            assertEquals(2, resultInverse.size());
-            assertArrayEquals(new String[] {"D", "E"},
-                    ColumnVectors.ofObject(resultInverse, "X", String.class).toArray());
-        });
-    }
-
-    @Test
-    public void testWhereDynamicInIncremental() {
-        testWhereDynamicIncrementalInternal(false, false, true, true);
-        testWhereDynamicIncrementalInternal(false, false, true, false);
-        testWhereDynamicIncrementalInternal(false, false, false, true);
-        testWhereDynamicIncrementalInternal(false, false, false, false);
-    }
-
-    @Test
-    public void testWhereDynamicInIncrementalIndexed() {
-        testWhereDynamicIncrementalInternal(true, false, true, true);
-        testWhereDynamicIncrementalInternal(true, false, true, false);
-        testWhereDynamicIncrementalInternal(true, false, false, true);
-        testWhereDynamicIncrementalInternal(true, false, false, false);
-
-        testWhereDynamicIncrementalInternal(false, true, true, true);
-        testWhereDynamicIncrementalInternal(false, true, true, false);
-        testWhereDynamicIncrementalInternal(false, true, false, true);
-        testWhereDynamicIncrementalInternal(false, true, false, false);
-
-        testWhereDynamicIncrementalInternal(true, true, true, true);
-        testWhereDynamicIncrementalInternal(true, true, true, false);
-        testWhereDynamicIncrementalInternal(true, true, false, true);
-        testWhereDynamicIncrementalInternal(true, true, false, false);
-    }
-
-    private static void testWhereDynamicIncrementalInternal(
-            boolean filterIndexed,
-            boolean setIndexed,
-            boolean sourceRefreshing,
-            boolean setRefreshing) {
-        final ColumnInfo<?, ?>[] setInfo;
-        final ColumnInfo<?, ?>[] filteredInfo;
-
-        final int setSize = 100;
-        final int filteredSize = 5000;
-        final Random random = new Random(0);
-
-        final String[] columnNames =
-                new String[] {"Sym", "intCol", "doubleCol", "charCol", "byteCol", "floatCol", "longCol", "shortCol"};
-
-        final QueryTable setTable = getTable(setRefreshing, setSize, random, setInfo = initColumnInfos(
-                columnNames,
-                new SetGenerator<>("aa", "bb"),
-                new IntGenerator(0, 10),
-                new DoubleGenerator(0, 100),
-                new SetGenerator<>('a', 'b', 'c', 'd', 'e', 'f'),
-                new ByteGenerator((byte) 0, (byte) 64),
-                new SetGenerator<>(1.0f, 2.0f, 3.3f, null),
-                new LongGenerator(0, 1000),
-                new ShortGenerator((short) 500, (short) 600)));
-        if (setIndexed) {
-            // Add an index on every column but "doubleCol"
-            for (final String columnName : columnNames) {
-                if (!columnName.equals("doubleCol")) {
-                    DataIndexer.getOrCreateDataIndex(setTable, columnName);
-                }
-            }
-            // Add the multi-column index for "Sym", "intCol"
-            DataIndexer.getOrCreateDataIndex(setTable, "Sym", "intCol");
-        }
-
-        final QueryTable filteredTable = getTable(sourceRefreshing, filteredSize, random,
-                filteredInfo = initColumnInfos(
-                        columnNames,
-                        new SetGenerator<>("aa", "bb", "cc", "dd"),
-                        new IntGenerator(0, 20),
-                        new DoubleGenerator(0, 100),
-                        new CharGenerator('a', 'z'),
-                        new ByteGenerator((byte) 0, (byte) 127),
-                        new SetGenerator<>(1.0f, 2.0f, 3.3f, null, 4.4f, 5.5f, 6.6f),
-                        new LongGenerator(1500, 2500),
-                        new ShortGenerator((short) 400, (short) 700)));
-
-        if (filterIndexed) {
-            // Add an index on every column but "doubleCol"
-            for (final String columnName : columnNames) {
-                if (!columnName.equals("doubleCol")) {
-                    DataIndexer.getOrCreateDataIndex(filteredTable, columnName);
-                }
-            }
-            // Add the multi-column index for "Sym", "intCol"
-            DataIndexer.getOrCreateDataIndex(filteredTable, "Sym", "intCol");
-        }
-
-        final EvalNugget[] en = new EvalNugget[] {
-                EvalNugget.from(() -> filteredTable.whereIn(setTable, "Sym")),
-                EvalNugget.from(() -> filteredTable.whereNotIn(setTable, "Sym")),
-                EvalNugget.from(() -> filteredTable.whereIn(setTable, "Sym", "intCol")),
-                EvalNugget.from(() -> filteredTable.whereIn(setTable, "intCol", "Sym")),
-                EvalNugget.from(() -> filteredTable.whereIn(setTable, "charCol")),
-                EvalNugget.from(() -> filteredTable.whereIn(setTable, "byteCol")),
-                EvalNugget.from(() -> filteredTable.whereIn(setTable, "shortCol")),
-                EvalNugget.from(() -> filteredTable.whereIn(setTable, "intCol")),
-                EvalNugget.from(() -> filteredTable.whereIn(setTable, "longCol")),
-                EvalNugget.from(() -> filteredTable.whereIn(setTable, "floatCol")),
-                EvalNugget.from(() -> filteredTable.whereNotIn(setTable, "Sym", "intCol")),
-                EvalNugget.from(() -> filteredTable.whereNotIn(setTable, "intCol", "Sym")),
-                EvalNugget.from(() -> filteredTable.whereNotIn(setTable, "charCol")),
-                EvalNugget.from(() -> filteredTable.whereNotIn(setTable, "byteCol")),
-                EvalNugget.from(() -> filteredTable.whereNotIn(setTable, "shortCol")),
-                EvalNugget.from(() -> filteredTable.whereNotIn(setTable, "intCol")),
-                EvalNugget.from(() -> filteredTable.whereNotIn(setTable, "longCol")),
-                EvalNugget.from(() -> filteredTable.whereNotIn(setTable, "floatCol")),
-        };
-
-        validate(en);
-
-        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
-        for (int step = 0; step < 100; step++) {
-            final boolean modSet = random.nextInt(10) < 1;
-            final boolean modFiltered = random.nextBoolean();
-
-            if (setRefreshing) {
-                updateGraph.runWithinUnitTestCycle(() -> {
-                    if (modSet) {
-                        GenerateTableUpdates.generateShiftAwareTableUpdates(GenerateTableUpdates.DEFAULT_PROFILE,
-                                setSize, random, setTable, setInfo);
-                    }
-                });
-                validate(en);
-            }
-
-            if (sourceRefreshing) {
-                updateGraph.runWithinUnitTestCycle(() -> {
-                    if (modFiltered) {
-                        GenerateTableUpdates.generateShiftAwareTableUpdates(GenerateTableUpdates.DEFAULT_PROFILE,
-                                filteredSize, random, filteredTable, filteredInfo);
-                    }
-                });
-                validate(en);
-            }
-        }
-    }
-
-    @Test
-    public void testWhereInDynamicPartial() {
-        testWhereInDynamicPartialIndexedInternal(true);
-        testWhereInDynamicPartialIndexedInternal(false);
-    }
-
-    private void testWhereInDynamicPartialIndexedInternal(final boolean setRefreshing) {
-        final ColumnInfo<?, ?>[] setInfo;
-        final ColumnInfo<?, ?>[] filteredInfo;
-
-        final int setSize = 100;
-        final int filteredSize = 5000;
-        final Random random = new Random(0);
-
-        final String[] columnNames =
-                new String[] {"Sym", "intCol", "doubleCol", "charCol", "byteCol", "floatCol", "longCol", "shortCol"};
-
-        final QueryTable setTable = getTable(setRefreshing, setSize, random, setInfo = initColumnInfos(
-                columnNames,
-                new SetGenerator<>("aa", "bb"),
-                new IntGenerator(0, 10),
-                new DoubleGenerator(0, 100),
-                new SetGenerator<>('a', 'b', 'c', 'd', 'e', 'f'),
-                new ByteGenerator((byte) 0, (byte) 64),
-                new SetGenerator<>(1.0f, 2.0f, 3.3f, null),
-                new LongGenerator(0, 1000),
-                new ShortGenerator((short) 500, (short) 600)));
-
-        final QueryTable filteredTable = getTable(filteredSize, random, filteredInfo = initColumnInfos(
-                columnNames,
-                new SetGenerator<>("aa", "bb", "cc", "dd"),
-                new IntGenerator(0, 20),
-                new DoubleGenerator(0, 100),
-                new CharGenerator('a', 'z'),
-                new ByteGenerator((byte) 0, (byte) 127),
-                new SetGenerator<>(1.0f, 2.0f, 3.3f, null, 4.4f, 5.5f, 6.6f),
-                new LongGenerator(1500, 2500),
-                new ShortGenerator((short) 400, (short) 700)));
-
-        DataIndexer.getOrCreateDataIndex(filteredTable, "Sym");
-        DataIndexer.getOrCreateDataIndex(filteredTable, "Sym", "charCol");
-        DataIndexer.getOrCreateDataIndex(filteredTable, "Sym", "charCol", "longCol");
-        DataIndexer.getOrCreateDataIndex(filteredTable, "Sym", "charCol", "longCol", "shortCol");
-
-        final EvalNugget[] en = new EvalNugget[] {
-                EvalNugget.from(() -> filteredTable.whereIn(setTable, "Sym", "intCol")),
-                EvalNugget.from(() -> filteredTable.whereNotIn(setTable, "Sym", "intCol")),
-
-                EvalNugget.from(() -> filteredTable.whereIn(setTable, "intCol", "Sym")),
-                EvalNugget.from(() -> filteredTable.whereNotIn(setTable, "intCol", "Sym")),
-
-                EvalNugget.from(() -> filteredTable.whereIn(setTable, "Sym", "charCol", "intCol")),
-                EvalNugget.from(() -> filteredTable.whereNotIn(setTable, "Sym", "charCol", "intCol")),
-
-                EvalNugget.from(() -> filteredTable.whereIn(setTable, "intCol", "charCol", "Sym")),
-                EvalNugget.from(() -> filteredTable.whereNotIn(setTable, "intCol", "charCol", "Sym")),
-
-                EvalNugget.from(() -> filteredTable.whereIn(setTable, "Sym", "charCol", "longCol", "byteCol")),
-                EvalNugget.from(() -> filteredTable.whereNotIn(setTable, "Sym", "charCol", "longCol", "byteCol")),
-
-                EvalNugget.from(() -> filteredTable.whereIn(setTable, "charCol", "Sym", "byteCol", "longCol")),
-                EvalNugget.from(() -> filteredTable.whereNotIn(setTable, "charCol", "Sym", "byteCol", "longCol")),
-
-                EvalNugget.from(
-                        () -> filteredTable.whereIn(setTable, "Sym", "charCol", "longCol", "shortCol", "byteCol")),
-                EvalNugget.from(
-                        () -> filteredTable.whereNotIn(setTable, "Sym", "charCol", "longCol", "shortCol", "byteCol")),
-
-                EvalNugget.from(
-                        () -> filteredTable.whereIn(setTable, "charCol", "Sym", "byteCol", "longCol", "shortCol")),
-                EvalNugget.from(
-                        () -> filteredTable.whereNotIn(setTable, "charCol", "Sym", "byteCol", "longCol", "shortCol")),
-
-        };
-
-        validate(en);
-
-        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
-        for (int step = 0; step < 100; step++) {
-            final boolean modSet = random.nextInt(10) < 1;
-            final boolean modFiltered = random.nextBoolean();
-
-            if (setRefreshing) {
-                updateGraph.runWithinUnitTestCycle(() -> {
-                    if (modSet) {
-                        GenerateTableUpdates.generateShiftAwareTableUpdates(GenerateTableUpdates.DEFAULT_PROFILE,
-                                setSize, random, setTable, setInfo);
-                    }
-                });
-                validate(en);
-            }
-
-            updateGraph.runWithinUnitTestCycle(() -> {
-                if (modFiltered) {
-                    GenerateTableUpdates.generateShiftAwareTableUpdates(GenerateTableUpdates.DEFAULT_PROFILE,
-                            filteredSize, random, filteredTable, filteredInfo);
-                }
-            });
-            validate(en);
-        }
-    }
-
-    @Test
-    public void testWhereRefresh() {
-        final Table t1 = TableTools.newTable(col("A", "b", "c", "d"));
-        assertFalse(t1.isRefreshing());
-        final Table t2 = ExecutionContext.getContext().getUpdateGraph().exclusiveLock()
-                .computeLocked(() -> t1.where("A in `b`"));
-        assertFalse(t2.isRefreshing());
-        final Table t3 =
-                ExecutionContext.getContext().getUpdateGraph().exclusiveLock().computeLocked(() -> t1.whereIn(t1, "A"));
-        assertFalse(t3.isRefreshing());
-
-        final Random random = new Random(0);
-        final QueryTable t4 = getTable(10, random, initColumnInfos(new String[] {"B"}, new SetGenerator<>("a", "b")));
-        assertTrue(t4.isRefreshing());
-        final Table t5 = ExecutionContext.getContext().getUpdateGraph().exclusiveLock()
-                .computeLocked(() -> t4.where("B in `b`"));
-        assertTrue(t5.isRefreshing());
-        final Table t6 = ExecutionContext.getContext().getUpdateGraph().exclusiveLock()
-                .computeLocked(() -> t4.whereIn(t1, "B=A"));
-        assertTrue(t6.isRefreshing());
-
-        final Table t7 = ExecutionContext.getContext().getUpdateGraph().exclusiveLock()
-                .computeLocked(() -> t1.whereIn(t4, "A=B"));
-        assertTrue(t7.isRefreshing());
-    }
-
-    @Test
-    public void testWhereInDiamond() {
-        final ColumnInfo<?, ?>[] filteredInfo;
-
-        final int size = 500;
-        final Random random = new Random(0);
-
-        final QueryTable table = getTable(size, random,
-                filteredInfo = initColumnInfos(new String[] {"Sym", "intCol", "intCol2"},
-                        new SetGenerator<>("aa", "bb", "bc", "cc", "dd", "ee", "ff", "gg", "hh", "ii"),
-                        new IntGenerator(0, 100),
-                        new IntGenerator(0, 100)));
-
-        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
-        final EvalNugget[] en = new EvalNugget[] {
-                EvalNugget.from(() -> updateGraph.exclusiveLock().computeLocked(
-                        () -> table.whereIn(table.where("intCol % 25 == 0"), "intCol2=intCol"))),
-        };
-
-        try {
-            for (int step = 0; step < 1000; step++) {
-                updateGraph.runWithinUnitTestCycle(() -> GenerateTableUpdates.generateShiftAwareTableUpdates(
-                        GenerateTableUpdates.DEFAULT_PROFILE, size, random, table, filteredInfo));
-                validate(en);
-            }
-        } catch (Exception e) {
-            TestCase.fail(e.getClass().getName() + ": " + e.getMessage());
-        }
-    }
-
-    @Test
-    public void testWhereInDiamond2() {
-        final QueryTable table = testRefreshingTable(i(1, 2, 3).toTracking(), col("x", 1, 2, 3), col("y", 2, 4, 6));
-        final Table setTable = table.where("x % 2 == 0").dropColumns("y");
-        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
-        final Table filteredTable = updateGraph.exclusiveLock().computeLocked(
-                () -> table.whereIn(setTable, "y=x"));
-
-        TableTools.show(filteredTable);
-
-        updateGraph.runWithinUnitTestCycle(() -> {
-            addToTable(table, i(4), col("x", 4), col("y", 8));
-            table.notifyListeners(i(4), i(), i());
-        });
-
-        TableTools.show(setTable);
-        TableTools.show(filteredTable);
-    }
-
-    private static class TestUncoalescedTable extends UncoalescedTable<TestUncoalescedTable> {
-        private final Table delegate;
-        private final List<Collection<? extends Selectable>> selectDistinctColumns = new ArrayList<>();
-
-        public TestUncoalescedTable(final Table delegate) {
-            super(delegate.getDefinition(), "TestUncoalescedTable");
-            this.delegate = delegate;
-        }
-
-        @Override
-        protected Table doCoalesce() {
-            return delegate.coalesce();
-        }
-
-        @Override
-        protected TestUncoalescedTable copy() {
-            return this;
-        }
-
-        @Override
-        public Table selectDistinct(final Collection<? extends Selectable> columns) {
-            selectDistinctColumns.add(columns);
-            return super.selectDistinct(columns);
-        }
-    }
-
-    @Test
-    public void testWhereInUncoalesced() {
-        final Table table = TableTools.newTable(intCol("x", 1, 2, 3), intCol("y", 2, 4, 6));
-        final Table setTable = TableTools.newTable(intCol("x", 3));
-
-        final Table expected = table.whereIn(setTable, "x");
-        final Table result = table.whereIn(new TestUncoalescedTable(setTable), "x");
-        assertTableEquals(expected, result);
-    }
-
-    @Test
-    public void testWhereInUncoalescedPartitioned() {
-        final Table table = TableTools.newTable(intCol("x", 1, 2, 3), intCol("y", 2, 4, 6));
-        final Table setTableRaw = TableTools.newTable(intCol("x", 3), intCol("y", 2));
-        final TableDefinition definition =
-                TableDefinition.of(setTableRaw.getDefinition().getColumn("x").withPartitioning(),
-                        setTableRaw.getDefinition().getColumn("y"));
-        final Table setTable = new QueryTable(definition, setTableRaw.getRowSet(), setTableRaw.getColumnSourceMap());
-
-        final Table expected1 = table.whereIn(setTable, "x");
-        final Table expected2 = table.whereIn(setTable, "y");
-
-        final TestUncoalescedTable uncoalesced = new TestUncoalescedTable(setTable);
-        final Table resultPart = table.whereIn(uncoalesced, "x");
-        assertTableEquals(expected1, resultPart);
-        assertEquals(1, uncoalesced.selectDistinctColumns.size());
-        assertEquals(List.of(ColumnName.of("x")), uncoalesced.selectDistinctColumns.get(0));
-        uncoalesced.selectDistinctColumns.clear();
-
-        final Table resultNoPart = table.whereIn(uncoalesced, "y");
-        assertTableEquals(expected2, resultNoPart);
-        assertEquals(0, uncoalesced.selectDistinctColumns.size());
-    }
-
-    @Test
-    public void testWhereNotInEmpty() {
-        final Table x = newTable(intCol("X", 1, 2, 3));
-        final Table emptyX = newTable(intCol("X"));
-        final Table xWhereNotIn = x.whereNotIn(emptyX, "X");
-        assertTableEquals(x, xWhereNotIn);
-
-        final int[] emptyArray = new int[0];
-        QueryScope.addParam("emptyArray", emptyArray);
-        final Table expressionNot = x.where("X not in emptyArray");
-        assertTableEquals(x, expressionNot);
-
-        final Table xWhereIn = x.whereIn(emptyX, "X");
-        assertTableEquals(emptyX, xWhereIn);
-
-        final Table expressionIn = x.where("X in emptyArray");
-        assertTableEquals(emptyX, expressionIn);
-        QueryScope.addParam("emptyArray", null);
     }
 
     @Test
@@ -1878,36 +1329,6 @@ public abstract class QueryTableWhereTest {
     }
 
     @Test
-    public void testAddAndRemoveRefilter() {
-        final QueryTable source = testRefreshingTable(i(10, 20, 30).toTracking(), stringCol("FV", "A", "B", "C"),
-                intCol("Sentinel", 10, 20, 30));
-        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
-
-        final QueryTable setTable = testRefreshingTable(i(10, 30).toTracking(), stringCol("FV", "A", "C"));
-
-        final Table result = source.whereIn(setTable, "FV");
-        final SimpleListener listener = new SimpleListener(result);
-        result.addUpdateListener(listener);
-
-        final PrintListener plResult = new PrintListener("testAddAndRemoveRefilter-result", result);
-        assertTableEquals(source.where("FV in `A`, `C`"), result);
-
-        updateGraph.runWithinUnitTestCycle(() -> {
-            TstUtils.addToTable(setTable, i(20), stringCol("FV", "B"));
-            TstUtils.removeRows(setTable, i(30));
-            setTable.notifyListeners(i(20), i(30), i());
-            TstUtils.addToTable(source, i(10), stringCol("FV", "A"), intCol("Sentinel", 40));
-            source.notifyListeners(i(10), i(10), i());
-        });
-
-        assertEquals(i(10, 20), listener.update.added());
-        assertEquals(i(10, 30), listener.update.removed());
-        assertEquals(i(), listener.update.modified());
-
-        assertTableEquals(source.where("FV in `A`, `B`"), result);
-    }
-
-    @Test
     public void testWhereFilterEquality() {
         final Table x = TableTools.newTable(intCol("A", 1, 2, 3), intCol("B", 4, 2, 1), stringCol("S", "A", "B", "C"));
 
@@ -2268,19 +1689,23 @@ public abstract class QueryTableWhereTest {
         QueryTable.PARALLEL_WHERE_SEGMENTS = 10;
         QueryTable.PARALLEL_WHERE_ROWS_PER_SEGMENT = 10_000;
         final QueryTable source = testRefreshingTable(RowSetFactory.flat(100_000).toTracking());
-        final QueryTable sourceWithData = (QueryTable) source.update("A = ii");
-        DataIndexer.getOrCreateDataIndex(sourceWithData, "A");
+        final QueryTable sourceWithData = (QueryTable) source.update("A = ii % 100");
+        final DataIndex dataIndex = DataIndexer.getOrCreateDataIndex(sourceWithData, "A");
 
         final RowSetCapturingFilter preFilter = new RowSetCapturingFilter();
         final RowSetCapturingFilter postFilter = new RowSetCapturingFilter();
 
-        final Table result = sourceWithData.where(
-                Filter.and(preFilter, RawString.of("A < 50000"), postFilter));
+        final RowSetCapturingFilter filter = new RowSetCapturingFilter(RawString.of("A < 50"));
 
-        // we expect the pre-filter to see after the raw-string filter
-        assertEquals(50_000, numRowsFiltered(preFilter));
-        assertEquals(50_000, numRowsFiltered(postFilter));
+        final Table result = sourceWithData.where(
+                Filter.and(preFilter, filter, postFilter));
+
+        // we expect the pre-filter to run after the raw-string filter
+        assertEquals(50_000, preFilter.numRowsProcessed());
+        assertEquals(50_000, postFilter.numRowsProcessed());
         assertEquals(50_000, result.size());
+
+        assertEquals(100, filter.numRowsProcessed()); // index table size
     }
 
     @Test
@@ -2288,18 +1713,22 @@ public abstract class QueryTableWhereTest {
         QueryTable.PARALLEL_WHERE_SEGMENTS = 10;
         QueryTable.PARALLEL_WHERE_ROWS_PER_SEGMENT = 10_000;
         final QueryTable source = testRefreshingTable(RowSetFactory.flat(100_000).toTracking());
-        final QueryTable sourceWithData = (QueryTable) source.update("A = ii");
-        DataIndexer.getOrCreateDataIndex(sourceWithData, "A");
+        final QueryTable sourceWithData = (QueryTable) source.update("A = ii % 100");
+        final DataIndex dataIndex = DataIndexer.getOrCreateDataIndex(sourceWithData, "A");
 
         final RowSetCapturingFilter preFilter = new RowSetCapturingFilter();
         final RowSetCapturingFilter postFilter = new RowSetCapturingFilter();
 
+        final RowSetCapturingFilter filter = new RowSetCapturingFilter(RawString.of("A < 50"));
+
         final Table result = sourceWithData.where(
-                Filter.and(preFilter, RawString.of("A < 50000").withSerial(), postFilter));
+                Filter.and(preFilter, filter.withSerial(), postFilter));
 
         assertEquals(100_000, numRowsFiltered(preFilter));
         assertEquals(50_000, numRowsFiltered(postFilter));
         assertEquals(50_000, result.size());
+
+        assertEquals(100_000, filter.numRowsProcessed()); // serial so index table ignored
     }
 
     @Test
@@ -2307,50 +1736,57 @@ public abstract class QueryTableWhereTest {
         QueryTable.PARALLEL_WHERE_SEGMENTS = 10;
         QueryTable.PARALLEL_WHERE_ROWS_PER_SEGMENT = 10_000;
         final QueryTable source = testRefreshingTable(RowSetFactory.flat(100_000).toTracking());
-        final QueryTable sourceWithData = (QueryTable) source.update("A = ii");
-        DataIndexer.getOrCreateDataIndex(sourceWithData, "A");
+        final QueryTable sourceWithData = (QueryTable) source.update("A = ii % 100");
+        final DataIndex dataIndex = DataIndexer.getOrCreateDataIndex(sourceWithData, "A");
 
         final RowSetCapturingFilter preFilter = new RowSetCapturingFilter();
         final RowSetCapturingFilter postFilter = new RowSetCapturingFilter();
 
+        final RowSetCapturingFilter filter = new RowSetCapturingFilter(RawString.of("A < 50"));
+
         final Object barrier = new Object(); // dummy barrier object for testing
         final Table result = sourceWithData.where(
                 Filter.and(
-                        preFilter.withBarriers(barrier),
-                        RawString.of("A < 50000").respectsBarriers(barrier),
+                        preFilter.withDeclaredBarriers(barrier),
+                        filter.withRespectedBarriers(barrier),
                         postFilter));
 
         assertEquals(100_000, numRowsFiltered(preFilter));
         assertEquals(50_000, numRowsFiltered(postFilter));
         assertEquals(50_000, result.size());
+
+        assertEquals(100, filter.numRowsProcessed()); // index table size
     }
 
     @Test
-    @Ignore
     public void testDataIndexRespectBarrierPartialPrioritization() {
         QueryTable.PARALLEL_WHERE_SEGMENTS = 10;
         QueryTable.PARALLEL_WHERE_ROWS_PER_SEGMENT = 10_000;
         final QueryTable source = testRefreshingTable(RowSetFactory.flat(100_000).toTracking());
-        final QueryTable sourceWithData = (QueryTable) source.update("A = ii");
+        final QueryTable sourceWithData = (QueryTable) source.update("A = ii % 100");
         final DataIndex dataIndex = DataIndexer.getOrCreateDataIndex(sourceWithData, "A");
 
         final RowSetCapturingFilter preFilter = new RowSetCapturingFilter();
         final RowSetCapturingFilter preFilter2 = new RowSetCapturingFilter();
         final RowSetCapturingFilter postFilter = new RowSetCapturingFilter();
 
+        final RowSetCapturingFilter filter = new RowSetCapturingFilter(RawString.of("A < 50"));
+
         final Object barrier = new Object(); // dummy barrier object for testing
         // we are looking to see the RawString prioritize over preFilter2
         final Table result = sourceWithData.where(
                 Filter.and(
-                        preFilter.withBarriers(barrier),
+                        preFilter.withDeclaredBarriers(barrier),
                         preFilter2,
-                        RawString.of("A < 50000").respectsBarriers(barrier),
+                        filter.withRespectedBarriers(barrier),
                         postFilter));
 
         assertEquals(100_000, numRowsFiltered(preFilter));
         assertEquals(50_000, numRowsFiltered(preFilter2)); // raw-string prioritizes over prefilter2
         assertEquals(50_000, numRowsFiltered(postFilter));
         assertEquals(50_000, result.size());
+
+        assertEquals(100, filter.numRowsProcessed()); // index table size
     }
 
     @Test
@@ -2358,11 +1794,13 @@ public abstract class QueryTableWhereTest {
         QueryTable.PARALLEL_WHERE_SEGMENTS = 10;
         QueryTable.PARALLEL_WHERE_ROWS_PER_SEGMENT = 10_000;
         final QueryTable source = testRefreshingTable(RowSetFactory.flat(100_000).toTracking());
-        final QueryTable sourceWithData = (QueryTable) source.update("A = ii");
-        DataIndexer.getOrCreateDataIndex(sourceWithData, "A");
+        final QueryTable sourceWithData = (QueryTable) source.update("A = ii % 100");
+        final DataIndex dataIndex = DataIndexer.getOrCreateDataIndex(sourceWithData, "A");
 
         final RowSetCapturingFilter preFilter = new RowSetCapturingFilter();
         final RowSetCapturingFilter postFilter = new RowSetCapturingFilter();
+
+        final RowSetCapturingFilter filter = new RowSetCapturingFilter(RawString.of("A < 50"));
 
         final class DeepEqBarrier {
             final String name;
@@ -2389,13 +1827,15 @@ public abstract class QueryTableWhereTest {
 
         final Table result = sourceWithData.where(
                 Filter.and(
-                        preFilter.withBarriers(new DeepEqBarrier("my_test_barrier")),
-                        RawString.of("A < 50000").respectsBarriers(new DeepEqBarrier("my_test_barrier")),
+                        preFilter.withDeclaredBarriers(new DeepEqBarrier("my_test_barrier")),
+                        filter.withRespectedBarriers(new DeepEqBarrier("my_test_barrier")),
                         postFilter));
 
         assertEquals(100_000, numRowsFiltered(preFilter));
         assertEquals(50_000, numRowsFiltered(postFilter));
         assertEquals(50_000, result.size());
+
+        assertEquals(100, filter.numRowsProcessed()); // index table size
     }
 
     @Test
@@ -2403,16 +1843,18 @@ public abstract class QueryTableWhereTest {
         QueryTable.PARALLEL_WHERE_SEGMENTS = 10;
         QueryTable.PARALLEL_WHERE_ROWS_PER_SEGMENT = 10_000;
         final QueryTable source = testRefreshingTable(RowSetFactory.flat(100_000).toTracking());
-        final QueryTable sourceWithData = (QueryTable) source.update("A = ii");
-        DataIndexer.getOrCreateDataIndex(sourceWithData, "A");
+        final QueryTable sourceWithData = (QueryTable) source.update("A = ii % 100");
+        final DataIndex dataIndex = DataIndexer.getOrCreateDataIndex(sourceWithData, "A");
 
         final RowSetCapturingFilter preFilter = new RowSetCapturingFilter();
         final RowSetCapturingFilter postFilter = new RowSetCapturingFilter();
 
+        final RowSetCapturingFilter filter = new RowSetCapturingFilter(RawString.of("A < 50"));
+
         final IllegalArgumentException err = assertThrows(IllegalArgumentException.class, () -> {
             sourceWithData.where(Filter.and(
-                    preFilter.withBarriers(new Object()),
-                    RawString.of("A < 50000").respectsBarriers(new Object()),
+                    preFilter.withDeclaredBarriers(new Object()),
+                    filter.withRespectedBarriers(new Object()),
                     postFilter));
         });
         assertTrue(err.getMessage().contains("respects barrier"));
@@ -2421,6 +1863,8 @@ public abstract class QueryTableWhereTest {
         // filters should not have run at all
         assertEquals(0, getAndSortSizes(preFilter).size());
         assertEquals(0, getAndSortSizes(postFilter).size());
+
+        assertEquals(0, filter.numRowsProcessed());
     }
 
     @Test
@@ -2428,17 +1872,19 @@ public abstract class QueryTableWhereTest {
         QueryTable.PARALLEL_WHERE_SEGMENTS = 10;
         QueryTable.PARALLEL_WHERE_ROWS_PER_SEGMENT = 10_000;
         final QueryTable source = testRefreshingTable(RowSetFactory.flat(100_000).toTracking());
-        final QueryTable sourceWithData = (QueryTable) source.update("A = ii");
-        DataIndexer.getOrCreateDataIndex(sourceWithData, "A");
+        final QueryTable sourceWithData = (QueryTable) source.update("A = ii % 100");
+        final DataIndex dataIndex = DataIndexer.getOrCreateDataIndex(sourceWithData, "A");
 
         final Object barrier = new Object(); // dummy barrier object for testing
         final RowSetCapturingFilter preFilter = new RowSetCapturingFilter();
         final RowSetCapturingFilter postFilter = new RowSetCapturingFilter();
 
+        final RowSetCapturingFilter filter = new RowSetCapturingFilter(RawString.of("A < 50"));
+
         final IllegalArgumentException err = assertThrows(IllegalArgumentException.class, () -> {
             sourceWithData.where(Filter.and(
-                    preFilter.withBarriers(barrier),
-                    RawString.of("A < 50000").withBarriers(barrier),
+                    preFilter.withDeclaredBarriers(barrier),
+                    filter.withDeclaredBarriers(barrier),
                     postFilter));
         });
         assertTrue(err.getMessage().contains("Filter Barriers must be unique!"));
@@ -2446,6 +1892,8 @@ public abstract class QueryTableWhereTest {
         // filters should not have run at all
         assertEquals(0, getAndSortSizes(preFilter).size());
         assertEquals(0, getAndSortSizes(postFilter).size());
+
+        assertEquals(0, filter.numRowsProcessed());
     }
 
     @Test
@@ -2453,26 +1901,33 @@ public abstract class QueryTableWhereTest {
         QueryTable.PARALLEL_WHERE_SEGMENTS = 10;
         QueryTable.PARALLEL_WHERE_ROWS_PER_SEGMENT = 10_000;
         final QueryTable source = testRefreshingTable(RowSetFactory.flat(100_000).toTracking());
-        final QueryTable sourceWithData = (QueryTable) source.update("A = ii");
-        DataIndexer.getOrCreateDataIndex(sourceWithData, "A");
+        final QueryTable sourceWithData = (QueryTable) source.update("A = ii % 100");
+        final DataIndex dataIndex = DataIndexer.getOrCreateDataIndex(sourceWithData, "A");
 
         final Object barrier = new Object();
         final RowSetCapturingFilter preFilter = new RowSetCapturingFilter();
         final RowSetCapturingFilter midFilter = new RowSetCapturingFilter();
         final RowSetCapturingFilter postFilter = new RowSetCapturingFilter();
 
+        final RowSetCapturingFilter filter1 = new RowSetCapturingFilter(RawString.of("A < 50"));
+        final RowSetCapturingFilter filter2 = new RowSetCapturingFilter(RawString.of("A < 25"));
+
+
         final Table result = sourceWithData.where(
                 Filter.and(
                         preFilter,
-                        RawString.of("A < 50000").withBarriers(barrier),
-                        midFilter.respectsBarriers(barrier),
-                        RawString.of("A < 25000").respectsBarriers(barrier),
+                        filter1.withDeclaredBarriers(barrier),
+                        midFilter.withRespectedBarriers(barrier),
+                        filter2.withRespectedBarriers(barrier),
                         postFilter));
 
         // note that while the mid-filter respects the barrier, but will not be prioritized
         assertEquals(25_000, numRowsFiltered(preFilter));
         assertEquals(25_000, numRowsFiltered(midFilter));
         assertEquals(25_000, numRowsFiltered(postFilter));
+
+        assertEquals(100, filter1.numRowsProcessed()); // index table size
+        assertEquals(100, filter2.numRowsProcessed()); // index table size
     }
 
     @Test
@@ -2480,31 +1935,240 @@ public abstract class QueryTableWhereTest {
         QueryTable.PARALLEL_WHERE_SEGMENTS = 10;
         QueryTable.PARALLEL_WHERE_ROWS_PER_SEGMENT = 10_000;
         final QueryTable source = testRefreshingTable(RowSetFactory.flat(100_000).toTracking());
-        final QueryTable sourceWithData = (QueryTable) source.update("A = ii");
-        DataIndexer.getOrCreateDataIndex(sourceWithData, "A");
+        final QueryTable sourceWithData = (QueryTable) source.update("A = ii % 100");
+        final DataIndex dataIndex = DataIndexer.getOrCreateDataIndex(sourceWithData, "A");
 
         final Object barrier = new Object();
         final RowSetCapturingFilter preFilter = new RowSetCapturingFilter();
         final RowSetCapturingFilter midFilter = new RowSetCapturingFilter();
         final RowSetCapturingFilter postFilter = new RowSetCapturingFilter();
 
-        final RowSetCapturingFilter filter1 = new RowSetCapturingFilter(RawString.of("A < 50000"));
-        final RowSetCapturingFilter filter2 = new RowSetCapturingFilter(RawString.of("A < 25000"));
+        final RowSetCapturingFilter filter1 = new RowSetCapturingFilter(RawString.of("A < 50"));
+        final RowSetCapturingFilter filter2 = new RowSetCapturingFilter(RawString.of("A < 25"));
 
         final Table result = sourceWithData.where(
                 Filter.and(
                         preFilter,
-                        filter1.withSerial().withBarriers(barrier),
-                        midFilter.withBarriers("mid_barrier").respectsBarriers(barrier),
-                        filter2.respectsBarriers("mid_barrier"),
+                        filter1.withSerial().withDeclaredBarriers(barrier),
+                        midFilter.withDeclaredBarriers("mid_barrier").withRespectedBarriers(barrier),
+                        filter2.withRespectedBarriers("mid_barrier"),
                         postFilter));
 
         // note that while the mid-filter respects the barrier, but will not be prioritized
         assertEquals(100_000, numRowsFiltered(preFilter));
-        assertEquals(100_000, numRowsFiltered(filter1));
+        assertEquals(100_000, numRowsFiltered(filter1)); // forced to be serial
         assertEquals(50_000, numRowsFiltered(midFilter));
-        assertEquals(50_000, numRowsFiltered(filter2));
+        assertEquals(100, numRowsFiltered(filter2)); // index table size
         assertEquals(25_000, numRowsFiltered(postFilter));
+    }
+
+    private Table getMultiColumnTestSourceTable() {
+        final QueryTable source = testRefreshingTable(RowSetFactory.flat(100_000).toTracking());
+        return source.update("A = ii % 97", "B = ii % 11", "C = ii");
+    }
+
+    private void testMultiColumnDataIndexInternal(
+            final Table source,
+            final String columnA,
+            final String columnB,
+            final String columnC) {
+        QueryTable.PARALLEL_WHERE_SEGMENTS = 10;
+        QueryTable.PARALLEL_WHERE_ROWS_PER_SEGMENT = 10_000;
+
+        final RowSetCapturingFilter preFilter = new RowSetCapturingFilter();
+        final RowSetCapturingFilter postFilter = new RowSetCapturingFilter();
+
+        final RowSetCapturingFilter filterA = new ParallelizedRowSetCapturingFilter(RawString.of(columnA + " < 50"));
+        final RowSetCapturingFilter filterB = new ParallelizedRowSetCapturingFilter(RawString.of(columnB + " < 3"));
+        final RowSetCapturingFilter filterAConditional =
+                new ParallelizedRowSetCapturingFilter(RawString.of(columnA + " < (49 + 1)"));
+        final RowSetCapturingFilter filterBConditional =
+                new ParallelizedRowSetCapturingFilter(RawString.of(columnB + " < (2 + 1)"));
+        final RowSetCapturingFilter filterABConditional =
+                new ParallelizedRowSetCapturingFilter(RawString.of(columnA + " < 50 && " + columnB + " < 3"));
+
+        final ArrayList<RowSetCapturingFilter> allFilters = Lists.newArrayList(preFilter, postFilter, filterA, filterB,
+                filterAConditional, filterBConditional, filterABConditional);
+
+        Table result;
+
+        // Single column filter
+        result = source.where(Filter.and(preFilter.withSerial(), filterA, postFilter));
+
+        assertEquals(100_000, preFilter.numRowsProcessed());
+        assertEquals(97, filterA.numRowsProcessed()); // indexA table size
+        assertEquals(51550, postFilter.numRowsProcessed());
+        assertEquals(51550, result.size());
+
+        allFilters.forEach(RowSetCapturingFilter::reset);
+
+        // Single column filter
+        result = source.where(Filter.and(preFilter.withSerial(), filterB, postFilter));
+
+        assertEquals(100_000, preFilter.numRowsProcessed());
+        assertEquals(1_067, filterB.numRowsProcessed()); // indexAB table size
+        assertEquals(27273, postFilter.numRowsProcessed());
+        assertEquals(27273, result.size());
+
+        allFilters.forEach(RowSetCapturingFilter::reset);
+
+        // Conjunctive filter
+        result = source.where(Filter.and(preFilter.withSerial(), Filter.and(filterA, filterB), postFilter));
+
+        assertEquals(100_000, preFilter.numRowsProcessed());
+        assertEquals(97, filterA.numRowsProcessed()); // indexA table size
+        assertEquals(1_067, filterB.numRowsProcessed()); // indexAB table size
+        assertEquals(14062, postFilter.numRowsProcessed());
+        assertEquals(14062, result.size());
+
+        allFilters.forEach(RowSetCapturingFilter::reset);
+
+        // Conditional multi-column filter
+        result = source.where(Filter.and(preFilter.withSerial(), filterABConditional, postFilter));
+
+        assertEquals(100_000, preFilter.numRowsProcessed());
+        assertEquals(1_067, filterABConditional.numRowsProcessed()); // indexAB table size
+        assertEquals(14062, postFilter.numRowsProcessed());
+        assertEquals(14062, result.size());
+
+        allFilters.forEach(RowSetCapturingFilter::reset);
+
+        // Conditional single column filter
+        result = source.where(Filter.and(preFilter.withSerial(), filterAConditional, postFilter));
+
+        assertEquals(100_000, preFilter.numRowsProcessed());
+        assertEquals(97, filterAConditional.numRowsProcessed()); // indexA table size
+        assertEquals(51550, postFilter.numRowsProcessed());
+        assertEquals(51550, result.size());
+
+        allFilters.forEach(RowSetCapturingFilter::reset);
+
+        // Conditional single column filter
+        result = source.where(Filter.and(preFilter.withSerial(), filterBConditional, postFilter));
+
+        assertEquals(100_000, preFilter.numRowsProcessed());
+        assertEquals(1_067, filterBConditional.numRowsProcessed()); // indexAB table size
+        assertEquals(27273, postFilter.numRowsProcessed());
+        assertEquals(27273, result.size());
+
+        allFilters.forEach(RowSetCapturingFilter::reset);
+
+        // Disjunctive filter
+        result = source.where(Filter.and(preFilter.withSerial(), Filter.or(filterA, filterB), postFilter));
+
+        assertEquals(100_000, preFilter.numRowsProcessed());
+        // NOTE: the disjunctive filter is executed completely against the indexAB table, running A first
+        // then B against the A == false results
+        assertEquals(1_067, filterA.numRowsProcessed()); // indexAB table size
+        assertEquals(517, filterB.numRowsProcessed()); // indexAB minus A == true
+        assertEquals(64761, postFilter.numRowsProcessed());
+        assertEquals(64761, result.size());
+
+        allFilters.forEach(RowSetCapturingFilter::reset);
+
+        // Complex filter with internal barriers
+        RowSetCapturingFilter tmpFilter = new ParallelizedRowSetCapturingFilter(RawString.of(columnA + " > 10"));
+        result = source.where(Filter.and(preFilter.withSerial(),
+                Filter.and(
+                        filterB.withDeclaredBarriers("b1"),
+                        Filter.and(
+                                tmpFilter.withDeclaredBarriers("b2"),
+                                filterA.withRespectedBarriers("b1", "b2"))),
+                postFilter));
+
+        assertEquals(100_000, preFilter.numRowsProcessed());
+        assertEquals(97, filterA.numRowsProcessed()); // indexA table size
+        assertEquals(1_067, filterB.numRowsProcessed()); // indexAB table size
+        assertEquals(97, tmpFilter.numRowsProcessed()); // indexA table size
+        assertEquals(10969, postFilter.numRowsProcessed());
+        assertEquals(10969, result.size());
+
+        allFilters.forEach(RowSetCapturingFilter::reset);
+
+        // Ensure data-index-capable filters are prioritized over other filters (when no barriers are present)
+        tmpFilter = new RowSetCapturingFilter(RawString.of(columnC + " > 50000")); // non-indexed column
+
+        // force the pre-filter to run before the user filters
+        result = source.where(Filter.and(
+                preFilter.withSerial(),
+                tmpFilter, // user order puts this before filterA
+                filterABConditional,
+                postFilter));
+
+        assertEquals(100_000, preFilter.numRowsProcessed());
+        assertEquals(1_067, filterABConditional.numRowsProcessed()); // indexAB table size
+        assertEquals(14062, tmpFilter.numRowsProcessed()); // only rows that passed through indexed filter
+        assertEquals(7025, postFilter.numRowsProcessed());
+        assertEquals(7025, result.size());
+
+        allFilters.forEach(RowSetCapturingFilter::reset);
+
+        // Ensure data-index-capable filters honor barriers
+        tmpFilter = new RowSetCapturingFilter(RawString.of(columnC + " > 50000")); // non-indexed column
+
+        result = source.where(Filter.and(
+                preFilter.withSerial(),
+                tmpFilter.withDeclaredBarriers("b1"),
+                filterABConditional.withRespectedBarriers("b1"),
+                postFilter));
+
+        assertEquals(100_000, preFilter.numRowsProcessed());
+        assertEquals(100_000, tmpFilter.numRowsProcessed()); // processes all rows
+        assertEquals(1_067, filterABConditional.numRowsProcessed()); // indexAB table size
+        assertEquals(7025, postFilter.numRowsProcessed());
+        assertEquals(7025, result.size());
+
+        allFilters.forEach(RowSetCapturingFilter::reset);
+
+        // make the non-data-index-capable filter serial
+        tmpFilter = new RowSetCapturingFilter(RawString.of(columnC + " > 50000")); // non-indexed column
+
+        result = source.where(Filter.and(
+                preFilter.withSerial(),
+                tmpFilter.withSerial(),
+                filterABConditional,
+                postFilter));
+
+        assertEquals(100_000, preFilter.numRowsProcessed());
+        assertEquals(100_000, tmpFilter.numRowsProcessed()); // processes all rows
+        assertEquals(1_067, filterABConditional.numRowsProcessed()); // indexAB table size
+        assertEquals(7025, postFilter.numRowsProcessed());
+        assertEquals(7025, result.size());
+
+        allFilters.forEach(RowSetCapturingFilter::reset);
+    }
+
+    @Test
+    public void testMultiColumnDataIndex() {
+        final Table source = getMultiColumnTestSourceTable();
+
+        final DataIndex dataIndexA = DataIndexer.getOrCreateDataIndex(source, "A");
+        final DataIndex dataIndexAB = DataIndexer.getOrCreateDataIndex(source, "A", "B");
+
+        testMultiColumnDataIndexInternal(source, "A", "B", "C");
+    }
+
+    @Test
+    public void testMultiColumnDataIndexRenamedColumns() {
+        final Table source = getMultiColumnTestSourceTable();
+
+        final DataIndex dataIndexA = DataIndexer.getOrCreateDataIndex(source, "A");
+        final DataIndex dataIndexAB = DataIndexer.getOrCreateDataIndex(source, "A", "B");
+
+        final Table renamedTable = source.renameColumns("A_renamed=A", "B_renamed=B", "C_renamed=C");
+
+        testMultiColumnDataIndexInternal(renamedTable, "A_renamed", "B_renamed", "C_renamed");
+    }
+
+    @Test
+    public void testMultiColumnDataIndexOnRenamedColumns() {
+        final Table source = getMultiColumnTestSourceTable();
+        final DataIndex dataIndexA = DataIndexer.getOrCreateDataIndex(source, "A");
+
+        final Table renamedTable = source.renameColumns("A_renamed=A", "B_renamed=B", "C_renamed=C");
+        final DataIndex dataIndexAB = DataIndexer.getOrCreateDataIndex(renamedTable, "A_renamed", "B_renamed");
+
+        testMultiColumnDataIndexInternal(renamedTable, "A_renamed", "B_renamed", "C_renamed");
     }
 
     @Test
@@ -2556,9 +2220,9 @@ public abstract class QueryTableWhereTest {
         allFilters.forEach(RowSetCapturingFilter::reset);
         sourceWithData.where(Filter.and(
                 preFilter,
-                filter1.withBarriers(barrier),
+                filter1.withDeclaredBarriers(barrier),
                 midFilter,
-                filter2.respectsBarriers(barrier),
+                filter2.withRespectedBarriers(barrier),
                 postFilter));
         // should bubble up filter1, then filter2, finally remaining three filters
         assertEquals(5_000, numRowsFiltered(preFilter));
@@ -2571,10 +2235,10 @@ public abstract class QueryTableWhereTest {
         allFilters.forEach(RowSetCapturingFilter::reset);
         sourceWithData.where(Filter.and(
                 preFilter,
-                filter1.withBarriers(barrier),
+                filter1.withDeclaredBarriers(barrier),
                 midFilter.withSerial(),
                 postFilter,
-                filter2.respectsBarriers(barrier)));
+                filter2.withRespectedBarriers(barrier)));
         // should bubble up filter 1, preFilter, midFilter, then filter2 and postFilter
         assertEquals(80_000, numRowsFiltered(preFilter));
         assertEquals(100_000, numRowsFiltered(filter1));
@@ -2585,11 +2249,11 @@ public abstract class QueryTableWhereTest {
         // partial reorder where filter 1 cannot move, and filter 2 bumps up to the serial filter
         allFilters.forEach(RowSetCapturingFilter::reset);
         sourceWithData.where(Filter.and(
-                preFilter.withBarriers(preFilter),
-                filter1.respectsBarriers(preFilter).withBarriers(barrier),
+                preFilter.withDeclaredBarriers(preFilter),
+                filter1.withRespectedBarriers(preFilter).withDeclaredBarriers(barrier),
                 midFilter.withSerial(),
                 postFilter,
-                filter2.respectsBarriers(barrier)));
+                filter2.withRespectedBarriers(barrier)));
         // should bubble up preFilter, filter 1, midFilter, then filter2 and postFilter
         assertEquals(100_000, numRowsFiltered(preFilter));
         assertEquals(100_000, numRowsFiltered(filter1));
@@ -2627,9 +2291,9 @@ public abstract class QueryTableWhereTest {
 
         sourceWithData.where(Filter.and(
                 preFilter,
-                filter1.withBarriers("1"),
-                filter2.respectsBarriers("1").withBarriers("2"),
-                filter3.respectsBarriers("2"),
+                filter1.withDeclaredBarriers("1"),
+                filter2.withRespectedBarriers("1").withDeclaredBarriers("2"),
+                filter3.withRespectedBarriers("2"),
                 postFilter));
         // should be f1, f2, f3, pre, then post
         assertEquals(5_000, numRowsFiltered(preFilter));
@@ -2674,8 +2338,8 @@ public abstract class QueryTableWhereTest {
 
         final Table res0 = sourceWithData.where(Filter.and(
                 filter0,
-                RawString.of("A_[ii - 1] < 25000").withBarriers(barrier),
-                filter1.respectsBarriers(barrier)));
+                RawString.of("A_[ii - 1] < 25000").withDeclaredBarriers(barrier),
+                filter1.withRespectedBarriers(barrier)));
         assertEquals(filter0.numRowsProcessed(), 100000);
         assertEquals(10_000, res0.size());
         assertEquals(filter1.numRowsProcessed(), 25001);
@@ -2695,7 +2359,7 @@ public abstract class QueryTableWhereTest {
 
         // ensure that we get what we expect without the respectsBarrier first
         final Table res0 = sourceWithData.where(Filter.and(
-                filter0.withBarriers(barrier),
+                filter0.withDeclaredBarriers(barrier),
                 preFilter,
                 RawString.of("A_[ii - 1] < 25000")));
         assertEquals(filter0.numRowsProcessed(), 100000);
@@ -2707,9 +2371,9 @@ public abstract class QueryTableWhereTest {
 
         // TODO: this respectsBarrier could be lost and we wouldn't know it!
         final Table res1 = sourceWithData.where(Filter.and(
-                filter0.withBarriers(barrier),
+                filter0.withDeclaredBarriers(barrier),
                 preFilter,
-                RawString.of("A_[ii - 1] < 25000").respectsBarriers(barrier)));
+                RawString.of("A_[ii - 1] < 25000").withRespectedBarriers(barrier)));
         assertEquals(filter0.numRowsProcessed(), 100000);
         assertEquals(preFilter.numRowsProcessed(), 50000);
         assertEquals(25_001, res1.size());
@@ -2972,20 +2636,6 @@ public abstract class QueryTableWhereTest {
                 "A", "A = null", "A != null");
     }
 
-    /**
-     * Private helper to force parallelization of the RowSetCapturingFilter.
-     */
-    private class ParallelizedRowSetCapturingFilter extends RowSetCapturingFilter {
-        public ParallelizedRowSetCapturingFilter(Filter filter) {
-            super(filter);
-        }
-
-        @Override
-        public boolean permitParallelization() {
-            return true;
-        }
-    }
-
     private void testRowKeyAgnosticColumnSource(
             final ColumnSource<?> columnSource,
             final String columnName,
@@ -3002,9 +2652,9 @@ public abstract class QueryTableWhereTest {
 
         // force pre and post filters to run when expected using barriers
         final Table res0 = source.where(Filter.and(
-                preFilter.withBarriers("1"),
-                filter0.respectsBarriers("1").withBarriers("2"),
-                postFilter.respectsBarriers("2")));
+                preFilter.withDeclaredBarriers("1"),
+                filter0.withRespectedBarriers("1").withDeclaredBarriers("2"),
+                postFilter.withRespectedBarriers("2")));
         assertEquals(100_000, preFilter.numRowsProcessed());
         assertEquals(1, filter0.numRowsProcessed());
         assertEquals(100_000, postFilter.numRowsProcessed()); // All rows passed
@@ -3018,9 +2668,9 @@ public abstract class QueryTableWhereTest {
 
         // force pre and post filters to run when expected using barriers
         final Table res1 = source.where(Filter.and(
-                preFilter.withBarriers("1"),
-                filter1.respectsBarriers("1").withBarriers("2"),
-                postFilter.respectsBarriers("2")));
+                preFilter.withDeclaredBarriers("1"),
+                filter1.withRespectedBarriers("1").withDeclaredBarriers("2"),
+                postFilter.withRespectedBarriers("2")));
         assertEquals(100_000, preFilter.numRowsProcessed());
         assertEquals(1, filter1.numRowsProcessed());
         assertEquals(0, postFilter.numRowsProcessed()); // No rows passed
@@ -3046,9 +2696,9 @@ public abstract class QueryTableWhereTest {
 
         // force pre and post filters to run when expected using barriers
         final Table res0 = merged.where(Filter.and(
-                preFilter.withBarriers("1"),
-                filter0.respectsBarriers("1").withBarriers("2"),
-                postFilter.respectsBarriers("2")));
+                preFilter.withDeclaredBarriers("1"),
+                filter0.withRespectedBarriers("1").withDeclaredBarriers("2"),
+                postFilter.withRespectedBarriers("2")));
         assertEquals(200_000, preFilter.numRowsProcessed());
         assertEquals(100_001, filter0.numRowsProcessed()); // 100_000 from source1, 1 from source2
         assertEquals(100_001, postFilter.numRowsProcessed()); // 1 from source1, 100_000 from source2
@@ -3060,9 +2710,9 @@ public abstract class QueryTableWhereTest {
 
         // force pre and post filters to run when expected using barriers
         final Table res1 = merged.where(Filter.and(
-                preFilter.withBarriers("1"),
-                filter1.respectsBarriers("1").withBarriers("2"),
-                postFilter.respectsBarriers("2")));
+                preFilter.withDeclaredBarriers("1"),
+                filter1.withRespectedBarriers("1").withDeclaredBarriers("2"),
+                postFilter.withRespectedBarriers("2")));
         assertEquals(200_000, preFilter.numRowsProcessed());
         assertEquals(100_001, filter1.numRowsProcessed()); // 100_000 from source1, 1 from source2
         assertEquals(99_999, postFilter.numRowsProcessed()); // 99_000 from source1, 0 from source2
@@ -3071,6 +2721,67 @@ public abstract class QueryTableWhereTest {
 
         preFilter.reset();
         postFilter.reset();
+    }
+
+    @Test
+    public void testMergedTableSourcesWithRenames() {
+        final Table source1 = testRefreshingTable(RowSetFactory.flat(100_000).toTracking())
+                .update("A = ii");
+        final Table source2 = testRefreshingTable(RowSetFactory.flat(100_000).toTracking())
+                .update("A = 42L"); // RowKeyAgnosticColumnSource
+
+        final RowSetCapturingFilter preFilter = new RowSetCapturingFilter();
+        final RowSetCapturingFilter filter0 = new ParallelizedRowSetCapturingFilter(RawString.of("B = 42"));
+        final RowSetCapturingFilter postFilter = new RowSetCapturingFilter();
+
+        final Table merged = TableTools.merge(source1, source2).renameColumns("B=A");
+
+        // force pre and post filters to run when expected using barriers
+        final Table res0 = merged.where(Filter.and(
+                preFilter.withDeclaredBarriers("1"),
+                filter0.withRespectedBarriers("1").withDeclaredBarriers("2"),
+                postFilter.withRespectedBarriers("2")));
+        assertEquals(200_000, preFilter.numRowsProcessed());
+        assertEquals(100_001, filter0.numRowsProcessed()); // 100_000 from source1, 1 from source2
+        assertEquals(100_001, postFilter.numRowsProcessed()); // 1 from source1, 100_000 from source2
+
+        assertEquals(100_001, res0.size()); // 1 from source1, 100_000 from source2
+
+        preFilter.reset();
+        postFilter.reset();
+    }
+
+    @Test
+    public void testMergedTableSourcesWithRenames2() {
+        final Table source1 = testRefreshingTable(RowSetFactory.flat(5).toTracking())
+                .update("A = 4", "B=42", "C=1");
+        final Table source2 = testRefreshingTable(RowSetFactory.flat(5).toTracking())
+                .update("A = 42", "B=2", "C=3");
+
+        final RowSetCapturingFilter preFilter = new RowSetCapturingFilter();
+        final RowSetCapturingFilter filter0 = new ParallelizedRowSetCapturingFilter(RawString.of("B = 42"));
+        final RowSetCapturingFilter postFilter = new RowSetCapturingFilter();
+
+        // flip around A and B
+        final Table merged = TableTools.merge(source1, source2).updateView("D=B", "B=A", "A=D").dropColumns("D");
+
+        // force pre and post filters to run when expected using barriers
+        final Table res0 = merged.where(Filter.and(
+                preFilter.withDeclaredBarriers("1"),
+                filter0.withRespectedBarriers("1").withDeclaredBarriers("2"),
+                postFilter.withRespectedBarriers("2")));
+
+        TableTools.showWithRowSet(res0);
+
+        assertEquals(10, preFilter.numRowsProcessed());
+        assertEquals(2, filter0.numRowsProcessed()); // 1 from source1, 1 from source2
+        assertEquals(5, postFilter.numRowsProcessed()); // 5 from source2
+        assertEquals(5, res0.size());
+
+        preFilter.reset();
+        postFilter.reset();
+
+        assertTableEquals(TableTools.emptyTable(5).update("A=2", "B=42", "C=3"), res0);
     }
 
     @Test
@@ -3091,9 +2802,9 @@ public abstract class QueryTableWhereTest {
 
         // force pre and post filters to run when expected using barriers
         final Table res0 = merged.where(Filter.and(
-                preFilter.withBarriers("1"),
-                filter.respectsBarriers("1").withBarriers("2"),
-                postFilter.respectsBarriers("2")));
+                preFilter.withDeclaredBarriers("1"),
+                filter.withRespectedBarriers("1").withDeclaredBarriers("2"),
+                postFilter.withRespectedBarriers("2")));
         assertEquals(47620, preFilter.numRowsProcessed()); // 33334 from source1, 14286 from source2
         assertEquals(33335, filter.numRowsProcessed()); // 33334 from source1, 1 from source2
         assertEquals(14287, postFilter.numRowsProcessed()); // 1 from source1, 14286 from source2
@@ -3143,9 +2854,9 @@ public abstract class QueryTableWhereTest {
 
         // force pre and post filters to run when expected using barriers
         final Table res0 = merged.where(Filter.and(
-                preFilter.withBarriers("1"),
-                filter0.respectsBarriers("1").withBarriers("2"),
-                postFilter.respectsBarriers("2")));
+                preFilter.withDeclaredBarriers("1"),
+                filter0.withRespectedBarriers("1").withDeclaredBarriers("2"),
+                postFilter.withRespectedBarriers("2")));
         assertEquals(400_000, preFilter.numRowsProcessed());
         // 100_000 from source1, 1 from source2, 100_000 from source3, 1 from source4
         assertEquals(200_002, filter0.numRowsProcessed());
@@ -3158,9 +2869,9 @@ public abstract class QueryTableWhereTest {
 
         // force pre and post filters to run when expected using barriers
         final Table res1 = merged.where(Filter.and(
-                preFilter.withBarriers("1"),
-                filter1.respectsBarriers("1").withBarriers("2"),
-                postFilter.respectsBarriers("2")));
+                preFilter.withDeclaredBarriers("1"),
+                filter1.withRespectedBarriers("1").withDeclaredBarriers("2"),
+                postFilter.withRespectedBarriers("2")));
         assertEquals(400_000, preFilter.numRowsProcessed());
         // 100_000 from source1, 1 from source2, 100_000 from source3, 1 from source4
         assertEquals(200_002, filter1.numRowsProcessed());
@@ -3203,9 +2914,9 @@ public abstract class QueryTableWhereTest {
 
         // force pre and post filters to run when expected using barriers
         final Table res0 = merged.where(Filter.and(
-                preFilter.withBarriers("1"),
-                filter0.respectsBarriers("1").withBarriers("2"),
-                postFilter.respectsBarriers("2")));
+                preFilter.withDeclaredBarriers("1"),
+                filter0.withRespectedBarriers("1").withDeclaredBarriers("2"),
+                postFilter.withRespectedBarriers("2")));
         assertEquals(300_000, preFilter.numRowsProcessed());
         assertEquals(200_001, filter0.numRowsProcessed()); // 100_000 source1, 100_000 source2, 1 source3
         assertEquals(100_001, postFilter.numRowsProcessed()); // 1 source1, 100_000 source2, 0 source3
@@ -3217,9 +2928,9 @@ public abstract class QueryTableWhereTest {
 
         // force pre and post filters to run when expected using barriers
         final Table res1 = merged.where(Filter.and(
-                preFilter.withBarriers("1"),
-                RawString.of("A != 42").respectsBarriers("1").withBarriers("2"),
-                postFilter.respectsBarriers("2")));
+                preFilter.withDeclaredBarriers("1"),
+                RawString.of("A != 42").withRespectedBarriers("1").withDeclaredBarriers("2"),
+                postFilter.withRespectedBarriers("2")));
         assertEquals(300_000, preFilter.numRowsProcessed());
         assertEquals(200_001, filter0.numRowsProcessed()); // 100_000 source1, 1 source2, 100_000 source3
         assertEquals(199_999, postFilter.numRowsProcessed()); // 99_999 source1, 0 source2, 100_000 source3
@@ -3244,5 +2955,62 @@ public abstract class QueryTableWhereTest {
         return filter.rowSets().stream()
                 .mapToLong(RowSet::size)
                 .sum();
+    }
+
+    @Test
+    public void testQuickFilterVector() {
+        final Table v1 = emptyTable(10).update("X=Long.toString(ii)", "Y=ii%2").groupBy("Y");
+        final WhereFilter[] whereFilters = WhereFilterFactory.expandQuickFilter(v1.getDefinition(), "6", Set.of());
+        final Table f1 = v1.where(Filter.or(whereFilters));
+        assertTableEquals(v1.where("Y in 0"), f1);
+
+        final Table v2 = emptyTable(10).update("X=ii", "Y=ii%2").groupBy("Y");
+        final WhereFilter[] whereFilters2 = WhereFilterFactory.expandQuickFilter(v2.getDefinition(), "7", Set.of());
+        final Table f2 = v2.where(Filter.or(whereFilters2));
+        assertTableEquals(v2.where("Y in 1"), f2);
+
+        final Table a2 = v2.update("X=X.toArray()");
+        final WhereFilter[] whereFilters3 = WhereFilterFactory.expandQuickFilter(a2.getDefinition(), "7", Set.of());
+        final Table fa2 = a2.where(Filter.or(whereFilters3));
+        assertTableEquals(a2.where("Y in 1"), fa2);
+
+    }
+
+    /**
+     * Use fairly large chunks so that we can validate cases that span more than one input chunk are handled as
+     * expected.
+     */
+    @Test
+    public void testVectorWrapperChunking() {
+        for (final int testRow : List.of(0, 300, 3000, 2047 * 3, 2048 * 3, 3332 * 3)) {
+            for (final boolean breakTyping : new boolean[] {true, false}) {
+                testVectorWrapperChunking(3, 10000, Integer.toString(testRow), 0, breakTyping);
+                testVectorWrapperChunking(3, 10000, Integer.toString(testRow + 1), 1, breakTyping);
+                testVectorWrapperChunking(3, 10000, Integer.toString(testRow + 2), 2, breakTyping);
+            }
+        }
+    }
+
+    private void testVectorWrapperChunking(int nGroups, int tableSize, String quickFilter, long expectedMatches,
+            boolean breakTyping) {
+        final Table v1 = emptyTable(tableSize).update("X=ii", "Y=ii % " + nGroups).groupBy("Y");
+        final WhereFilter[] vectorFilters =
+                WhereFilterFactory.expandQuickFilter(v1.getDefinition(), quickFilter, Set.of("X"));
+        final Table f1 = v1.where(Filter.or(breakTyping ? breakChunkType(vectorFilters) : vectorFilters));
+        assertTableEquals(v1.where("Y in " + expectedMatches), f1);
+
+        final Table a1 = v1.update("X=X.toArray()");
+        final WhereFilter[] arrayFilters =
+                WhereFilterFactory.expandQuickFilter(a1.getDefinition(), quickFilter, Set.of("X"));
+        final Table fa1 = a1.where(Filter.or(breakTyping ? breakChunkType(arrayFilters) : arrayFilters));
+        assertTableEquals(fa1.where("Y in " + expectedMatches), fa1);
+    }
+
+    final WhereFilter[] breakChunkType(final WhereFilter[] filters) {
+        if (filters.length != 1) {
+            throw new IllegalArgumentException("Filters must contain exactly one filter");
+        }
+        final VectorComponentFilterWrapper vectorComponentFilterWrapper = (VectorComponentFilterWrapper) filters[0];
+        return new WhereFilter[] {vectorComponentFilterWrapper.breakChunkType()};
     }
 }

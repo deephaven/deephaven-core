@@ -3,6 +3,8 @@
 //
 package io.deephaven.gen;
 
+import io.deephaven.util.annotations.UserInvocationPermitted;
+
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.lang.reflect.Method;
@@ -113,14 +115,20 @@ public abstract class AbstractBasicJavaGenerator {
         String code = GenUtils.javaHeader(this.getClass(), gradleTask);
         code += "package " + packageName + ";\n\n";
 
+        final String annotation = generateInvocationAnnotation();
+
         Set<String> imports = GenUtils.typesToImport(functions.keySet());
 
         for (String imp : imports) {
             code += "import " + imp + ";\n";
         }
+        if (!annotation.isEmpty()) {
+            code += "import " + UserInvocationPermitted.class.getCanonicalName() + ";\n";
+        }
 
         code += "\n";
         code += generateClassJavadoc();
+        code += annotation;
         code += "public class " + className + " {\n";
 
         for (JavaFunction f : functions.keySet()) {
@@ -141,6 +149,10 @@ public abstract class AbstractBasicJavaGenerator {
         code += "}\n\n";
 
         return code;
+    }
+
+    protected String generateInvocationAnnotation() {
+        return "@" + UserInvocationPermitted.class.getSimpleName() + "(\"function_library\")\n";
     }
 
     /**

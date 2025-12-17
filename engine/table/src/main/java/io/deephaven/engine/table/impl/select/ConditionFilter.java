@@ -25,7 +25,6 @@ import io.deephaven.time.TimeLiteralReplacedExpression;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.chunk.*;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
-import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.SafeCloseableList;
 import io.deephaven.util.text.Indenter;
 import io.deephaven.util.type.TypeUtils;
@@ -51,6 +50,8 @@ import static io.deephaven.engine.table.impl.select.DhFormulaColumn.COLUMN_SUFFI
 public class ConditionFilter extends AbstractConditionFilter {
 
     public static final int CHUNK_SIZE = 4096;
+    protected static final String CLASS_NAME = "GeneratedFilterKernel";
+
     private Future<Class<?>> filterKernelClassFuture = null;
     private List<Pair<String, Class<?>>> usedInputs; // that is columns and special variables
     private String classBody;
@@ -80,8 +81,24 @@ public class ConditionFilter extends AbstractConditionFilter {
         return createConditionFilter(formula, FormulaParserConfiguration.parser);
     }
 
+    public static WhereFilter createStateless(@NotNull String formula) {
+        return new ConditionFilter(formula) {
+            @Override
+            public boolean permitParallelization() {
+                return true;
+            }
+        };
+    }
+
     String getClassBodyStr() {
         return classBody;
+    }
+
+    /**
+     * Get the number of inputs (columns and special variables) used by this filter.
+     */
+    public int getNumInputsUsed() {
+        return usedInputs.size();
     }
 
     public interface FilterKernel<CONTEXT extends FilterKernel.Context> {
@@ -457,7 +474,7 @@ public class ConditionFilter extends AbstractConditionFilter {
 
         filterKernelClassFuture = compilationProcessor.submit(QueryCompilerRequest.builder()
                 .description("Filter Expression: " + formula)
-                .className("GeneratedFilterKernel")
+                .className(CLASS_NAME)
                 .classBody(this.classBody)
                 .packageNameRoot(QueryCompilerImpl.FORMULA_CLASS_PREFIX)
                 .putAllParameterClasses(QueryScopeParamTypeUtil.expandParameterClasses(paramClasses))
@@ -492,8 +509,7 @@ public class ConditionFilter extends AbstractConditionFilter {
         classBody
                 .append(CodeGenerator
                         .create(ExecutionContext.getContext().getQueryLibrary().getImportStrings().toArray()).build())
-                .append(
-                        "\n\npublic class $CLASSNAME$ implements ")
+                .append("\n\npublic class ").append(CLASS_NAME).append(" implements ")
                 .append(FilterKernel.class.getCanonicalName()).append("<FilterKernel.Context>{\n");
         classBody.append("\n").append(timeConversionResult.getInstanceVariablesString()).append("\n");
         final Indenter indenter = new Indenter();
@@ -533,8 +549,8 @@ public class ConditionFilter extends AbstractConditionFilter {
             classBody.append("\n");
         }
 
-        classBody.append("\n").append(indenter)
-                .append("public $CLASSNAME$(Table __table, RowSet __fullSet, QueryScopeParam... __params) {\n");
+        classBody.append("\n").append(indenter).append("public ").append(CLASS_NAME)
+                .append("(Table __table, RowSet __fullSet, QueryScopeParam... __params) {\n");
         indenter.increaseLevel();
         for (int i = 0; i < params.length; i++) {
             final QueryScopeParam<?> param = params[i];

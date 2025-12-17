@@ -7,6 +7,7 @@
 // @formatter:off
 package io.deephaven.engine.table.impl.sources.regioned.kernel;
 
+import io.deephaven.api.SortSpec;
 import io.deephaven.api.SortColumn;
 import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.attributes.Any;
@@ -39,16 +40,16 @@ public class LongRegionBinarySearchKernel {
             final long lastKey,
             @NotNull final SortColumn sortColumn,
             @NotNull final Object[] searchValues) {
-        final SortColumn.Order order = sortColumn.order();
+        final SortSpec.Order order = sortColumn.order();
         final long[] unboxed = ArrayTypeUtils.getUnboxedLongArray(searchValues);
-        if (order == SortColumn.Order.DESCENDING) {
-            try (final LongTimsortDescendingKernel.LongSortKernelContext<Any> context =
-                    LongTimsortDescendingKernel.createContext(unboxed.length)) {
+        if (sortColumn.isAscending()) {
+            try (final LongTimsortKernel.LongSortKernelContext<Any> context =
+                    LongTimsortKernel.createContext(unboxed.length)) {
                 context.sort(WritableLongChunk.writableChunkWrap(unboxed));
             }
         } else {
-            try (final LongTimsortKernel.LongSortKernelContext<Any> context =
-                    LongTimsortKernel.createContext(unboxed.length)) {
+            try (final LongTimsortDescendingKernel.LongSortKernelContext<Any> context =
+                    LongTimsortDescendingKernel.createContext(unboxed.length)) {
                 context.sort(WritableLongChunk.writableChunkWrap(unboxed));
             }
         }
@@ -80,7 +81,7 @@ public class LongRegionBinarySearchKernel {
             @NotNull final RowSetBuilderSequential builder,
             final long firstKey,
             final long lastKey,
-            SortColumn.Order sortDirection,
+            SortSpec.Order sortDirection,
             final long toFind) {
         // Find the beginning of the range
         long matchStart = binarySearchRange(region, toFind, firstKey, lastKey, sortDirection, -1);
@@ -117,9 +118,9 @@ public class LongRegionBinarySearchKernel {
             final long toFind,
             long start,
             long end,
-            final SortColumn.Order sortDirection,
+            final SortSpec.Order sortDirection,
             final int rangeDirection) {
-        final int sortDirectionInt = sortDirection == SortColumn.Order.ASCENDING ? 1 : -1;
+        final int sortDirectionInt = sortDirection.isAscending() ? 1 : -1;
         long matchStart = -1;
         while (start <= end) {
             long pivot = (start + end) >>> 1;

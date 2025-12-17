@@ -7,6 +7,7 @@
 // @formatter:off
 package io.deephaven.engine.table.impl.sources.regioned.kernel;
 
+import io.deephaven.api.SortSpec;
 import io.deephaven.api.SortColumn;
 import io.deephaven.chunk.WritableDoubleChunk;
 import io.deephaven.chunk.attributes.Any;
@@ -39,16 +40,16 @@ public class DoubleRegionBinarySearchKernel {
             final long lastKey,
             @NotNull final SortColumn sortColumn,
             @NotNull final Object[] searchValues) {
-        final SortColumn.Order order = sortColumn.order();
+        final SortSpec.Order order = sortColumn.order();
         final double[] unboxed = ArrayTypeUtils.getUnboxedDoubleArray(searchValues);
-        if (order == SortColumn.Order.DESCENDING) {
-            try (final DoubleTimsortDescendingKernel.DoubleSortKernelContext<Any> context =
-                    DoubleTimsortDescendingKernel.createContext(unboxed.length)) {
+        if (sortColumn.isAscending()) {
+            try (final DoubleTimsortKernel.DoubleSortKernelContext<Any> context =
+                    DoubleTimsortKernel.createContext(unboxed.length)) {
                 context.sort(WritableDoubleChunk.writableChunkWrap(unboxed));
             }
         } else {
-            try (final DoubleTimsortKernel.DoubleSortKernelContext<Any> context =
-                    DoubleTimsortKernel.createContext(unboxed.length)) {
+            try (final DoubleTimsortDescendingKernel.DoubleSortKernelContext<Any> context =
+                    DoubleTimsortDescendingKernel.createContext(unboxed.length)) {
                 context.sort(WritableDoubleChunk.writableChunkWrap(unboxed));
             }
         }
@@ -80,7 +81,7 @@ public class DoubleRegionBinarySearchKernel {
             @NotNull final RowSetBuilderSequential builder,
             final long firstKey,
             final long lastKey,
-            SortColumn.Order sortDirection,
+            SortSpec.Order sortDirection,
             final double toFind) {
         // Find the beginning of the range
         long matchStart = binarySearchRange(region, toFind, firstKey, lastKey, sortDirection, -1);
@@ -117,9 +118,9 @@ public class DoubleRegionBinarySearchKernel {
             final double toFind,
             long start,
             long end,
-            final SortColumn.Order sortDirection,
+            final SortSpec.Order sortDirection,
             final int rangeDirection) {
-        final int sortDirectionInt = sortDirection == SortColumn.Order.ASCENDING ? 1 : -1;
+        final int sortDirectionInt = sortDirection.isAscending() ? 1 : -1;
         long matchStart = -1;
         while (start <= end) {
             long pivot = (start + end) >>> 1;

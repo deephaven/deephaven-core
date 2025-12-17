@@ -17,7 +17,7 @@ def _get_encoding_or_utf8(stream) -> str:
     :param stream: the stream to ask for its encoding
     :return: the encoding to use
     """
-    return getattr(stream, 'encoding', 'UTF-8') or 'UTF-8'
+    return getattr(stream, "encoding", "UTF-8") or "UTF-8"
 
 
 class TeeStream(io.TextIOBase):
@@ -36,7 +36,7 @@ class TeeStream(io.TextIOBase):
             should_write_to_orig_stream=True,
             write_func=lambda t: java_stream.write(bytes(t, encoding)),
             flush_func=lambda: java_stream.flush(),
-            close_func=lambda: java_stream.close()
+            close_func=lambda: java_stream.close(),
         )
 
     @classmethod
@@ -47,10 +47,17 @@ class TeeStream(io.TextIOBase):
             should_write_to_orig_stream=False,
             write_func=lambda t: java_stream.write(bytes(t, encoding)),
             flush_func=lambda: java_stream.flush(),
-            close_func=lambda: java_stream.close()
+            close_func=lambda: java_stream.close(),
         )
 
-    def __init__(self, orig_stream, should_write_to_orig_stream, write_func, flush_func, close_func):
+    def __init__(
+        self,
+        orig_stream,
+        should_write_to_orig_stream,
+        write_func,
+        flush_func,
+        close_func,
+    ):
         """Creates a new TeeStream to let output be written from out place, but be sent to multiple places.
 
         Ideally, the stream would be passed as more funcs, but we have to manage correctly propagating certain non-java

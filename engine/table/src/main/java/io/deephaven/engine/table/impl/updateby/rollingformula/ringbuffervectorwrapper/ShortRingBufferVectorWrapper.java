@@ -53,4 +53,9 @@ public class ShortRingBufferVectorWrapper implements ShortVector, RingBufferVect
     public ShortVector getDirect() {
         return new ShortVectorDirect(ringBuffer.getAll());
     }
+
+    @Override
+    public boolean equals(Object obj) {
+        return ShortVector.equals(this, obj);
+    }
 }
