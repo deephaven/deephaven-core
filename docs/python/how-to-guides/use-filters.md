@@ -195,7 +195,7 @@ iris_tail_pct = iris.tail_pct(0.1)
 
 ### Incremental Release Filter
 
-The incremental release filter, converts a static or add-only table into a ticking table that parcels out rows over time. This can be useful to simulate ticking data for development or to limit the number of rows that a complex query processes at one time. The incremental release filter takes two parameters:
+The incremental release filter converts a static or add-only table into a ticking table that parcels out rows over time. This can be useful to simulate ticking data for development or to limit the number of rows that a complex query processes at one time. The incremental release filter takes two parameters:
 
 - The initial number of rows to present in the resulting table.
 - The number of rows to release at the beginning of each update graph cycle.
