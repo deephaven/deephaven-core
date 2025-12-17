@@ -45,7 +45,7 @@ import java.util.Map;
 @JsType(namespace = "dh.remotefilesource", name = "RemoteFileSourceService")
 public class JsRemoteFileSourceService extends HasEventHandling {
     public static final String EVENT_MESSAGE = "message";
-    public static final String EVENT_REQUEST = "request";
+    public static final String EVENT_REQUEST_SOURCE = "requestsource";
 
     private final JsWidget widget;
 
@@ -152,7 +152,7 @@ public class JsRemoteFileSourceService extends HasEventHandling {
                     // If server has requested a resource from the client, fire request event
                     RemoteFileSourceMetaRequest request = message.getMetaRequest();
 
-                    DomGlobal.setTimeout(ignore -> fireEvent(EVENT_REQUEST,
+                    DomGlobal.setTimeout(ignore -> fireEvent(EVENT_REQUEST_SOURCE,
                             new ResourceRequestEvent(message.getRequestId(), request)), 0);
                 } else if (message.hasSetExecutionContextResponse()) {
                     // Server acknowledged execution context was set

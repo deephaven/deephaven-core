@@ -55,6 +55,7 @@ public class RemoteFileSourceClassLoader extends ClassLoader {
                 Boolean canSource = provider.canSourceResource(name)
                         .orTimeout(5, TimeUnit.SECONDS)
                         .get();
+
                 if (Boolean.TRUE.equals(canSource)) {
                     return new URL(null, "remotefile://" + name, new RemoteFileURLStreamHandler(provider, name));
                 }
