@@ -89,12 +89,13 @@ public class TestNumeric extends BaseArrayTestCase {
 
 
     <#list primitiveTypes as pt>
-    <#if pt.valueType.isNumber >
 
     public void test${pt.boxed}Signum() {
         assertEquals(1, signum((${pt.primitive}) 5));
         assertEquals( 0, signum((${pt.primitive}) 0));
+    <#if !pt.valueType.isChar >
         assertEquals( -1, signum((${pt.primitive}) -5));
+    </#if>
         assertEquals(NULL_INT, signum(${pt.null}));
     }
 
@@ -186,6 +187,30 @@ public class TestNumeric extends BaseArrayTestCase {
         assertEquals(4, countPos((${pt.primitive})40, (${pt.primitive})50, (${pt.primitive})60, (${pt.primitive})1, (${pt.primitive})0));
     }
 
+    <#if pt.valueType.isChar >
+    public void test${pt.boxed}CountNeg() {
+        assertEquals(0, countNeg(new ${pt.primitive}[]{40, (${pt.primitive}) 50, 60, (${pt.primitive}) 1, 0}));
+        assertEquals(0, countNeg(new ${pt.primitive}[]{}));
+        assertEquals(0, countNeg(new ${pt.primitive}[]{${pt.null}}));
+        assertEquals(0, countNeg(new ${pt.primitive}[]{5, ${pt.null}, 15, (${pt.primitive}) 1, 0}));
+        assertEquals(NULL_LONG, countNeg((${pt.primitive}[])null));
+
+        assertEquals(0, countNeg(new ${pt.boxed}[]{(${pt.primitive})40, (${pt.primitive}) 50, (${pt.primitive})60, (${pt.primitive}) 1, (${pt.primitive})0}));
+        assertEquals(0, countNeg(new ${pt.boxed}[]{}));
+        assertEquals(0, countNeg(new ${pt.boxed}[]{${pt.null}}));
+        assertEquals(0, countNeg(new ${pt.boxed}[]{(${pt.primitive})5, ${pt.null}, (${pt.primitive})15, (${pt.primitive}) 1, (${pt.primitive})0}));
+        assertEquals(NULL_LONG, countNeg((${pt.boxed}[])null));
+
+        assertEquals(0, countNeg(new ${pt.vectorDirect}(new ${pt.primitive}[]{40, (${pt.primitive}) 50, 60, (${pt.primitive}) 1, 0})));
+        assertEquals(0, countNeg(new ${pt.vectorDirect}()));
+        assertEquals(0, countNeg(new ${pt.vectorDirect}(${pt.null})));
+        assertEquals(0, countNeg(new ${pt.vectorDirect}(new ${pt.primitive}[]{5, ${pt.null}, 15, (${pt.primitive}) 1, 0})));
+        assertEquals(NULL_LONG, countNeg((${pt.vectorDirect})null));
+
+        // check that functions can be resolved with varargs
+        assertEquals(0, countNeg((${pt.primitive})40, (${pt.primitive})50, (${pt.primitive})60, (${pt.primitive})1, (${pt.primitive})0));
+    }
+    <#else >
     public void test${pt.boxed}CountNeg() {
         assertEquals(2, countNeg(new ${pt.primitive}[]{40, (${pt.primitive}) -50, 60, (${pt.primitive}) -1, 0}));
         assertEquals(0, countNeg(new ${pt.primitive}[]{}));
@@ -208,6 +233,7 @@ public class TestNumeric extends BaseArrayTestCase {
         // check that functions can be resolved with varargs
         assertEquals(2, countNeg((${pt.primitive})40, (${pt.primitive})-50, (${pt.primitive})60, (${pt.primitive})-1, (${pt.primitive})0));
     }
+    </#if>
 
     public void test${pt.boxed}CountZero() {
         assertEquals(2, countZero(new ${pt.primitive}[]{0, 40, 50, 60, (${pt.primitive}) -1, 0}));
@@ -252,15 +278,27 @@ public class TestNumeric extends BaseArrayTestCase {
 
     public void test${pt.boxed}Min() {
         assertEquals((${pt.primitive}) 0, min(new ${pt.vectorDirect}(new ${pt.primitive}[]{0, 40, ${pt.null}, 50, 60, (${pt.primitive}) 1, 0})));
+    <#if pt.valueType.isChar >
+        assertEquals((${pt.primitive}) 0, min(new ${pt.vectorDirect}((${pt.primitive}) 40, ${pt.null}, (${pt.primitive}) 50, (${pt.primitive}) 60, (${pt.primitive}) 0)));
+    <#else >
         assertEquals((${pt.primitive}) -1, min(new ${pt.vectorDirect}((${pt.primitive}) 40, ${pt.null}, (${pt.primitive}) 50, (${pt.primitive}) 60, (${pt.primitive}) -1)));
+    </#if>
         assertEquals(${pt.null}, min(new ${pt.vectorDirect}()));
         assertEquals(${pt.null}, min(new ${pt.vectorDirect}(${pt.null})));
         assertEquals(${pt.null}, min((${pt.vector}) null));
 
         assertEquals((${pt.primitive}) 0, min((${pt.primitive}) 0, (${pt.primitive}) 40, ${pt.null}, (${pt.primitive}) 50, (${pt.primitive}) 60, (${pt.primitive}) 1, (${pt.primitive}) 0));
+    <#if pt.valueType.isChar >
+        assertEquals((${pt.primitive}) 0, min((${pt.primitive}) 40, ${pt.null}, (${pt.primitive}) 50, (${pt.primitive}) 60, (${pt.primitive}) 0));
+    <#else >
         assertEquals((${pt.primitive}) -1, min((${pt.primitive}) 40, ${pt.null}, (${pt.primitive}) 50, (${pt.primitive}) 60, (${pt.primitive}) -1));
+    </#if>
         assertEquals((${pt.primitive}) 0, min(new ${pt.boxed}[]{(${pt.primitive}) 0, (${pt.primitive}) 40, ${pt.null}, (${pt.primitive}) 50, (${pt.primitive}) 60, (${pt.primitive}) 1, (${pt.primitive}) 0}));
+    <#if pt.valueType.isChar >
+        assertEquals((${pt.primitive}) 0, min(new ${pt.boxed}[]{(${pt.primitive}) 40, ${pt.null}, (${pt.primitive}) 50, (${pt.primitive}) 60, (${pt.primitive}) 0}));
+    <#else >
         assertEquals((${pt.primitive}) -1, min(new ${pt.boxed}[]{(${pt.primitive}) 40, ${pt.null}, (${pt.primitive}) 50, (${pt.primitive}) 60, (${pt.primitive}) -1}));
+    </#if>
         assertEquals(${pt.null}, min(new ${pt.primitive}[0]));
         assertEquals(${pt.null}, min(new ${pt.boxed}[0]));
         assertEquals(${pt.null}, min(${pt.null}));
@@ -293,19 +331,22 @@ public class TestNumeric extends BaseArrayTestCase {
 
     public void test${pt.boxed}IndexOfMin() {
         assertEquals(1, indexOfMin(new ${pt.primitive}[]{40, 0, ${pt.null}, 50, 60, (${pt.primitive}) 1, 0}));
+    <#if !pt.valueType.isChar >
         assertEquals(4, indexOfMin(new ${pt.primitive}[]{(${pt.primitive}) 40, ${pt.null}, (${pt.primitive}) 50, (${pt.primitive}) 60, (${pt.primitive}) -1}));
+    </#if>
         assertEquals(NULL_LONG, indexOfMin(new ${pt.primitive}[]{}));
         assertEquals(NULL_LONG, indexOfMin(new ${pt.primitive}[]{${pt.null}}));
         assertEquals(NULL_LONG, indexOfMin((${pt.primitive}[])null));
 
         assertEquals(1, indexOfMin(new ${pt.boxed}[]{(${pt.primitive})40, (${pt.primitive})0, ${pt.null}, (${pt.primitive})50, (${pt.primitive})60, (${pt.primitive}) 1, (${pt.primitive})0}));
-        assertEquals(4, indexOfMin(new ${pt.boxed}[]{(${pt.primitive}) 40, ${pt.null}, (${pt.primitive}) 50, (${pt.primitive}) 60, (${pt.primitive}) -1}));
         assertEquals(NULL_LONG, indexOfMin(new ${pt.boxed}[]{}));
         assertEquals(NULL_LONG, indexOfMin(new ${pt.boxed}[]{${pt.null}}));
         assertEquals(NULL_LONG, indexOfMin((${pt.boxed}[])null));
 
         assertEquals(1, indexOfMin(new ${pt.vectorDirect}(new ${pt.primitive}[]{40, 0, ${pt.null}, 50, 60, (${pt.primitive}) 1, 0})));
+    <#if !pt.valueType.isChar >
         assertEquals(4, indexOfMin(new ${pt.vectorDirect}((${pt.primitive}) 40, ${pt.null}, (${pt.primitive}) 50, (${pt.primitive}) 60, (${pt.primitive}) -1)));
+    </#if>
         assertEquals(NULL_LONG, indexOfMin(new ${pt.vectorDirect}()));
         assertEquals(NULL_LONG, indexOfMin(new ${pt.vectorDirect}(${pt.null})));
         assertEquals(NULL_LONG, indexOfMin((${pt.vectorDirect})null));
@@ -316,12 +357,23 @@ public class TestNumeric extends BaseArrayTestCase {
 
 
     public void test${pt.boxed}Var() {
+    <#if pt.valueType.isChar >
+        ${pt.primitive}[] v = {0, 40, ${pt.null}, 50, 60, (${pt.primitive}) 1, 0};
+    <#else >
         ${pt.primitive}[] v = {0, 40, ${pt.null}, 50, 60, (${pt.primitive}) -1, 0};
+    </#if>
+    <#if pt.valueType.isChar >
+        ${pt.boxed}[] V = {(${pt.primitive})0, (${pt.primitive})40, ${pt.null}, (${pt.primitive})50, (${pt.primitive})60, (${pt.primitive}) 1, (${pt.primitive})0};
+    <#else >
         ${pt.boxed}[] V = {(${pt.primitive})0, (${pt.primitive})40, ${pt.null}, (${pt.primitive})50, (${pt.primitive})60, (${pt.primitive}) -1, (${pt.primitive})0};
-        double count = 6;
-        double sum = v[0] + v[1] + v[3] + v[4] + v[5] + v[6];
-        double sumsq = v[0] * v[0] + v[1] * v[1] + v[3] * v[3] + v[4] * v[4] + v[5] * v[5] + v[6] * v[6];
-        double var = sumsq / (count - 1) - sum * sum / count / (count - 1);
+    </#if>
+        final double count = 6;
+        final double sum = v[0] + v[1] + v[3] + v[4] + v[5] + v[6];
+        final double sumsq = v[0] * v[0] + v[1] * v[1] + v[3] * v[3] + v[4] * v[4] + v[5] * v[5] + v[6] * v[6];
+
+        final double vs2bar = sum * (sum / (double)count);
+        final double delta = sumsq - vs2bar;
+        final double var = delta / ((double)count - 1);
 
         assertEquals(var, var(v));
         assertEquals(NULL_DOUBLE, var((${pt.primitive}[])null));
@@ -345,7 +397,11 @@ public class TestNumeric extends BaseArrayTestCase {
 
         </#if>
         // check that functions can be resolved with varargs
+    <#if pt.valueType.isChar >
+        assertEquals(var, var((${pt.primitive})0, (${pt.primitive})40, ${pt.null}, (${pt.primitive})50, (${pt.primitive})60, (${pt.primitive}) 1, (${pt.primitive})0));
+    <#else >
         assertEquals(var, var((${pt.primitive})0, (${pt.primitive})40, ${pt.null}, (${pt.primitive})50, (${pt.primitive})60, (${pt.primitive}) -1, (${pt.primitive})0));
+    </#if>
     }
 
     public void test${pt.boxed}Std() {
@@ -538,12 +594,18 @@ public class TestNumeric extends BaseArrayTestCase {
 </#if>
 
     <#list primitiveTypes as pt2>
-    <#if pt2.valueType.isNumber >
 
     public void test${pt.boxed}${pt2.boxed}Cov() {
-
+        <#if pt.valueType.isChar >
+        ${pt.primitive}[] a = {10, 40, ${pt.null}, 50, ${pt.null}, (${pt.primitive}) 1, 0, (${pt.primitive}) 7};
+        <#else >
         ${pt.primitive}[] a = {10, 40, ${pt.null}, 50, ${pt.null}, (${pt.primitive}) -1, 0, (${pt.primitive}) -7};
+        </#if>
+        <#if pt2.valueType.isChar >
+        ${pt2.primitive}[] b = {0, (${pt2.primitive}) 40, ${pt2.null}, ${pt2.null}, 6, (${pt2.primitive}) 1, 11, 3};
+        <#else >
         ${pt2.primitive}[] b = {0, (${pt2.primitive}) -40, ${pt2.null}, ${pt2.null}, 6, (${pt2.primitive}) -1, 11, 3};
+        </#if>
         double count = 5;
         double sumA = a[0] + a[1] + a[5] + a[6] + a[7];
         double sumB = b[0] + b[1] + b[5] + b[6] + b[7];
@@ -593,8 +655,16 @@ public class TestNumeric extends BaseArrayTestCase {
     }
 
     public void test${pt.boxed}${pt2.boxed}Cor() {
+        <#if pt.valueType.isChar >
+        ${pt.primitive}[] a = {10, 40, ${pt.null}, 50, ${pt.null}, (${pt.primitive}) 1, 0, (${pt.primitive}) 7};
+        <#else >
         ${pt.primitive}[] a = {10, 40, ${pt.null}, 50, ${pt.null}, (${pt.primitive}) -1, 0, (${pt.primitive}) -7};
+        </#if>
+        <#if pt2.valueType.isChar >
+        ${pt2.primitive}[] b = {0, (${pt2.primitive}) 40, ${pt2.null}, ${pt2.null}, 6, (${pt2.primitive}) 1, 11, 3};
+        <#else >
         ${pt2.primitive}[] b = {0, (${pt2.primitive}) -40, ${pt2.null}, ${pt2.null}, 6, (${pt2.primitive}) -1, 11, 3};
+        </#if>
         double count = 5;
         double sumA = a[0] + a[1] + a[5] + a[6] + a[7];
         double sumsqA = a[0] * a[0] + a[1] * a[1] + a[5] * a[5] + a[6] * a[6] + a[7] * a[7];
@@ -648,8 +718,6 @@ public class TestNumeric extends BaseArrayTestCase {
         }
     }
 
-
-    </#if>
     </#list>
 
 
@@ -694,8 +762,16 @@ public class TestNumeric extends BaseArrayTestCase {
     }
     
     public void test${pt.boxed}AbsSum1() {
+    <#if pt.valueType.isChar >
+        // chars are unsigned, can't have negative values
+        assertTrue(Math.abs(15 - absSum(new ${pt.vectorDirect}(new ${pt.primitive}[]{4, 5, 6}))) == 0.0);
+        assertTrue(Math.abs(20 - absSum(new ${pt.vectorDirect}(new ${pt.primitive}[]{5, ${pt.null}, 15}))) == 0.0);
+        // ensure it matches sum()
+        assertEquals(absSum(new ${pt.vectorDirect}(new ${pt.primitive}[]{4, 5, 6})), sum(new ${pt.vectorDirect}(new ${pt.primitive}[]{4, 5, 6})));
+    <#else>
         assertTrue(Math.abs(15 - absSum(new ${pt.vectorDirect}(new ${pt.primitive}[]{4, -5, 6}))) == 0.0);
         assertTrue(Math.abs(20 - absSum(new ${pt.vectorDirect}(new ${pt.primitive}[]{5, ${pt.null}, -15}))) == 0.0);
+    </#if>
     <#if pt.valueType.isFloat >
         assertEquals(NULL_DOUBLE, absSum((${pt.vector}) null));
         assertEquals(NULL_DOUBLE, absSum(new ${pt.vectorDirect}(new ${pt.primitive}[]{})));
@@ -714,8 +790,16 @@ public class TestNumeric extends BaseArrayTestCase {
     }
 
     public void test${pt.boxed}AbsSum2() {
+    <#if pt.valueType.isChar >
+        // chars are unsigned, can't have negative values
+        assertTrue(Math.abs(15 - absSum(new ${pt.vectorDirect}(new ${pt.primitive}[]{4, 5, 6}))) == 0.0);
+        assertTrue(Math.abs(20 - absSum(new ${pt.vectorDirect}(new ${pt.primitive}[]{5, ${pt.null}, 15}))) == 0.0);
+        // ensure it matches sum()
+        assertEquals(absSum(new ${pt.vectorDirect}(new ${pt.primitive}[]{4, 5, 6})), sum(new ${pt.vectorDirect}(new ${pt.primitive}[]{4, 5, 6})));
+    <#else>
         assertTrue(Math.abs(15 - absSum(new ${pt.primitive}[]{4, -5, 6})) == 0.0);
         assertTrue(Math.abs(20 - absSum(new ${pt.primitive}[]{5, ${pt.null}, -15})) == 0.0);
+    </#if>
     <#if pt.valueType.isFloat >
         assertEquals(NULL_DOUBLE, absSum((${pt.primitive}[]) null));
         assertEquals(NULL_DOUBLE, absSum(new ${pt.primitive}[]{}));
@@ -861,6 +945,8 @@ public class TestNumeric extends BaseArrayTestCase {
 //        }
 //    }
 
+
+    <#if !pt.valueType.isChar >
     public void test${pt.boxed}Diff() {
         assertEquals(new ${pt.primitive}[]{1, 2, 4, 8, ${pt.null}}, diff(1, new ${pt.primitive}[]{1, 2, 4, 8, 16}));
         assertEquals(new ${pt.primitive}[]{3, 6, 12, ${pt.null}, ${pt.null}}, diff(2, new ${pt.primitive}[]{1, 2, 4, 8, 16}));
@@ -881,6 +967,7 @@ public class TestNumeric extends BaseArrayTestCase {
         assertEquals(null, diff(-1, (${pt.vectorDirect})null));
         assertEquals(new ${pt.primitive}[0], diff(-2, new ${pt.vectorDirect}(new ${pt.primitive}[0])));
     }
+    </#if>
 
     public void test${pt.boxed}CumMinArray() {
         assertEquals(new ${pt.primitive}[]{1, 1, 1, 1, 1}, cummin(new ${pt.primitive}[]{1, 2, 3, 4, 5}));
@@ -1035,8 +1122,12 @@ public class TestNumeric extends BaseArrayTestCase {
 </#if>
 
     public void test${pt.boxed}Abs() {
-        ${pt.primitive} value = -5;
-        assertEquals((${pt.primitive}) Math.abs(value), abs(value), 1e-10);
+    <#if !pt.valueType.isChar >
+        ${pt.primitive} negValue = -5;
+        assertEquals((${pt.primitive}) Math.abs(negValue), abs(negValue), 1e-10);
+    </#if>
+        ${pt.primitive} posValue = 5;
+        assertEquals((${pt.primitive}) Math.abs(posValue), abs(posValue), 1e-10);
         assertEquals(${pt.null}, abs(${pt.null}), 1e-10);
     }
 
@@ -1053,32 +1144,52 @@ public class TestNumeric extends BaseArrayTestCase {
     }
 
     public void test${pt.boxed}Atan() {
-        ${pt.primitive} value = -5;
-        assertEquals(Math.atan(value), atan(value), 1e-10);
+    <#if !pt.valueType.isChar >
+        ${pt.primitive} negValue = -5;
+        assertEquals(Math.atan(negValue), atan(negValue), 1e-10);
+    </#if>
+        ${pt.primitive} posValue = 5;
+        assertEquals(Math.atan(posValue), atan(posValue), 1e-10);
         assertEquals(NULL_DOUBLE, atan(${pt.null}), 1e-10);
     }
 
     public void test${pt.boxed}Ceil() {
-        ${pt.primitive} value = -5;
-        assertEquals(Math.ceil(value), ceil(value), 1e-10);
+    <#if !pt.valueType.isChar >
+        ${pt.primitive} negValue = -5;
+        assertEquals(Math.ceil(negValue), ceil(negValue), 1e-10);
+    </#if>
+        ${pt.primitive} posValue = 5;
+        assertEquals(Math.ceil(posValue), ceil(posValue), 1e-10);
         assertEquals(NULL_DOUBLE, ceil(${pt.null}), 1e-10);
     }
 
     public void test${pt.boxed}Cos() {
-        ${pt.primitive} value = -5;
-        assertEquals(Math.cos(value), cos(value), 1e-10);
+    <#if !pt.valueType.isChar >
+        ${pt.primitive} negValue = -5;
+        assertEquals(Math.cos(negValue), cos(negValue), 1e-10);
+    </#if>
+        ${pt.primitive} posValue = 5;
+        assertEquals(Math.cos(posValue), cos(posValue), 1e-10);
         assertEquals(NULL_DOUBLE, cos(${pt.null}), 1e-10);
     }
 
     public void test${pt.boxed}Exp() {
-        ${pt.primitive} value = -5;
-        assertEquals(Math.exp(value), exp(value), 1e-10);
+    <#if !pt.valueType.isChar >
+        ${pt.primitive} negValue = -5;
+        assertEquals(Math.exp(negValue), exp(negValue), 1e-10);
+    </#if>
+        ${pt.primitive} posValue = 5;
+        assertEquals(Math.exp(posValue), exp(posValue), 1e-10);
         assertEquals(NULL_DOUBLE, exp(${pt.null}), 1e-10);
     }
 
     public void test${pt.boxed}Floor() {
-        ${pt.primitive} value = -5;
-        assertEquals(Math.floor(value), floor(value), 1e-10);
+    <#if !pt.valueType.isChar >
+        ${pt.primitive} negValue = -5;
+        assertEquals(Math.floor(negValue), floor(negValue), 1e-10);
+    </#if>
+        ${pt.primitive} posValue = 5;
+        assertEquals(Math.floor(posValue), floor(posValue), 1e-10);
         assertEquals(NULL_DOUBLE, floor(${pt.null}), 1e-10);
     }
 
@@ -1092,7 +1203,11 @@ public class TestNumeric extends BaseArrayTestCase {
     <#if pt2.valueType.isNumber >
 
     public void test${pt.boxed}${pt2.boxed}Pow() {
+    <#if pt.valueType.isChar >
+        ${pt.primitive} value0 = 5;
+    <#else >
         ${pt.primitive} value0 = -5;
+    </#if>
         ${pt2.primitive} value1 = 2;
         assertEquals(Math.pow(value0, value1), pow(value0, value1), 1e-10);
         assertEquals(NULL_DOUBLE, pow(${pt.null}, value1), 1e-10);
@@ -1103,20 +1218,32 @@ public class TestNumeric extends BaseArrayTestCase {
     </#list>
 
     public void test${pt.boxed}Rint() {
-        ${pt.primitive} value = -5;
-        assertEquals(Math.rint(value), rint(value), 1e-10);
+    <#if !pt.valueType.isChar >
+        ${pt.primitive} negValue = -5;
+        assertEquals(Math.rint(negValue), rint(negValue), 1e-10);
+    </#if>
+        ${pt.primitive} posValue = 5;
+        assertEquals(Math.rint(posValue), rint(posValue), 1e-10);
         assertEquals(NULL_DOUBLE, rint(${pt.null}), 1e-10);
     }
 
     public void test${pt.boxed}Round() {
-        ${pt.primitive} value = -5;
-        assertEquals(Math.round(value), round(value), 1e-10);
+    <#if !pt.valueType.isChar >
+        ${pt.primitive} negValue = -5;
+        assertEquals(Math.round(negValue), round(negValue), 1e-10);
+    </#if>
+        ${pt.primitive} posValue = 5;
+        assertEquals(Math.round(posValue), round(posValue), 1e-10);
         assertEquals(NULL_LONG, round(${pt.null}), 1e-10);
     }
 
     public void test${pt.boxed}Sin() {
-        ${pt.primitive} value = -5;
-        assertEquals(Math.sin(value), sin(value), 1e-10);
+    <#if !pt.valueType.isChar >
+        ${pt.primitive} negValue = -5;
+        assertEquals(Math.sin(negValue), sin(negValue), 1e-10);
+    </#if>
+        ${pt.primitive} posValue = 5;
+        assertEquals(Math.sin(posValue), sin(posValue), 1e-10);
         assertEquals(NULL_DOUBLE, sin(${pt.null}), 1e-10);
     }
 
@@ -1127,8 +1254,12 @@ public class TestNumeric extends BaseArrayTestCase {
     }
 
     public void test${pt.boxed}Tan() {
-        ${pt.primitive} value = -5;
-        assertEquals(Math.tan(value), tan(value), 1e-10);
+    <#if !pt.valueType.isChar >
+        ${pt.primitive} negValue = -5;
+        assertEquals(Math.tan(negValue), tan(negValue), 1e-10);
+    </#if>
+        ${pt.primitive} posValue = 5;
+        assertEquals(Math.tan(posValue), tan(posValue), 1e-10);
         assertEquals(NULL_DOUBLE, tan(${pt.null}), 1e-10);
     }
 
@@ -1148,10 +1279,15 @@ public class TestNumeric extends BaseArrayTestCase {
         } catch( IllegalArgumentException e ){
             // pass
         }
-
+    <#if pt.valueType.isChar >
+        for(int i=0; i<20; i++) {
+            assertEquals((double) lowerBin((double)i, (double) 3), (double) lowerBin((${pt.primitive})i, (${pt.primitive}) 3), 0.0);
+        }
+    <#else >
         for(int i=-10; i<10; i++) {
             assertEquals((double) lowerBin((double)i, (double) 3), (double) lowerBin((${pt.primitive})i, (${pt.primitive}) 3), 0.0);
         }
+    </#if>
     }
 
     public void test${pt.boxed}LowerBinWithOffset() {
@@ -1184,9 +1320,15 @@ public class TestNumeric extends BaseArrayTestCase {
             // pass
         }
 
+    <#if pt.valueType.isChar >
+        for(int i=0; i<20; i++) {
+            assertEquals((double) upperBin((double)i, (double) 3), (double) upperBin((${pt.primitive})i, (${pt.primitive}) 3), 0.0);
+        }
+    <#else >
         for(int i=-10; i<10; i++) {
             assertEquals((double) upperBin((double)i, (double) 3), (double) upperBin((${pt.primitive})i, (${pt.primitive}) 3), 0.0);
         }
+    </#if>
     }
 
     public void test${pt.boxed}UpperBinWithOffset() {
@@ -1203,12 +1345,20 @@ public class TestNumeric extends BaseArrayTestCase {
     }
 
     public void test${pt.boxed}Clamp() {
+    <#if pt.valueType.isChar >
+        assertEquals((${pt.primitive}) 3, clamp((${pt.primitive}) 3, (${pt.primitive}) 1, (${pt.primitive}) 5));
+        assertEquals((${pt.primitive}) 1, clamp((${pt.primitive}) 0, (${pt.primitive}) 1, (${pt.primitive}) 5));
+        assertEquals((${pt.primitive}) 5, clamp((${pt.primitive}) 7, (${pt.primitive}) 1, (${pt.primitive}) 5));
+        assertEquals(${pt.null}, clamp(${pt.null}, (${pt.primitive}) 1, (${pt.primitive}) 5));
+    <#else >
         assertEquals((${pt.primitive}) 3, clamp((${pt.primitive}) 3, (${pt.primitive}) -6, (${pt.primitive}) 5));
         assertEquals((${pt.primitive}) -6, clamp((${pt.primitive}) -7, (${pt.primitive}) -6, (${pt.primitive}) 5));
         assertEquals((${pt.primitive}) 5, clamp((${pt.primitive}) 7, (${pt.primitive}) -6, (${pt.primitive}) 5));
         assertEquals(${pt.null}, clamp(${pt.null}, (${pt.primitive}) -6, (${pt.primitive}) 5));
+    </#if>
     }
 
+    <#if !pt.valueType.isChar >
     public void test${pt.boxed}Sequence(){
         assertEquals(new ${pt.primitive}[]{0,1,2,3,4,5}, Numeric.sequence((${pt.primitive})0, (${pt.primitive})5, (${pt.primitive})1));
         assertEquals(new ${pt.primitive}[]{-5,-4,-3,-2,-1,0}, Numeric.sequence((${pt.primitive})-5, (${pt.primitive})0, (${pt.primitive})1));
@@ -1222,6 +1372,7 @@ public class TestNumeric extends BaseArrayTestCase {
         assertEquals(new ${pt.primitive}[]{}, Numeric.sequence((${pt.primitive})0, (${pt.primitive})5, (${pt.primitive})0));
         assertEquals(new ${pt.primitive}[]{}, Numeric.sequence((${pt.primitive})5, (${pt.primitive})0, (${pt.primitive})1));
     }
+    </#if>
 
     public void test${pt.boxed}Median() {
         assertEquals(NULL_DOUBLE, median(new ${pt.primitive}[]{}));
@@ -1310,9 +1461,7 @@ public class TestNumeric extends BaseArrayTestCase {
 
     public void test${pt.boxed}Wsum() {
         <#list primitiveTypes as pt2>
-        <#if pt2.valueType.isNumber >
-
-        <#if pt.valueType.isInteger && pt2.valueType.isInteger >
+        <#if (pt.valueType.isInteger || pt.valueType.isChar) && (pt2.valueType.isInteger || pt2.valueType.isChar) >
         assertEquals(1*4+2*5+3*6, wsum(new ${pt.primitive}[]{1,2,3,${pt.null},5}, new ${pt2.primitive}[]{4,5,6,7,${pt2.null}}));
         assertEquals(NULL_LONG, wsum((${pt.primitive}[])null, new ${pt2.primitive}[]{4,5,6}));
         assertEquals(NULL_LONG, wsum(new ${pt.primitive}[]{1,2,3}, (${pt2.primitive}[])null));
@@ -1381,7 +1530,6 @@ public class TestNumeric extends BaseArrayTestCase {
         }
         </#if>
 
-        </#if>
         </#list>
     }
 
@@ -1755,26 +1903,36 @@ public class TestNumeric extends BaseArrayTestCase {
     public void test${pt.boxed}IsFinite() {
         assertTrue(isFinite((${pt.primitive})0));
         assertTrue(isFinite((${pt.primitive})1));
+    <#if !pt.valueType.isChar >
         assertTrue(isFinite((${pt.primitive})-1));
+    </#if>
         assertFalse(isFinite(${pt.null}));
 
         assertTrue(isFinite(new ${pt.boxed}((${pt.primitive})0)));
         assertTrue(isFinite(new ${pt.boxed}((${pt.primitive})1)));
+    <#if !pt.valueType.isChar >
         assertTrue(isFinite(new ${pt.boxed}((${pt.primitive})-1)));
+    </#if>
         assertFalse(isFinite((${pt.boxed})null));
     }
 
     public void test${pt.boxed}ContainsNonFinite() {
         assertFalse(containsNonFinite((${pt.primitive})0, (${pt.primitive})0, (${pt.primitive})0));
+    <#if !pt.valueType.isChar >
         assertFalse(containsNonFinite((${pt.primitive})-1, (${pt.primitive})0, (${pt.primitive})1));
+    </#if>
         assertTrue(containsNonFinite((${pt.primitive})0, (${pt.primitive})0, ${pt.null}));
 
         assertFalse(containsNonFinite(new ${pt.primitive}[]{(${pt.primitive})0, (${pt.primitive})0, (${pt.primitive})0}));
+    <#if !pt.valueType.isChar >
         assertFalse(containsNonFinite(new ${pt.primitive}[]{(${pt.primitive})-1, (${pt.primitive})0, (${pt.primitive})1}));
+    </#if>
         assertTrue(containsNonFinite(new ${pt.primitive}[]{(${pt.primitive})0, (${pt.primitive})0, ${pt.null}}));
 
         assertFalse(containsNonFinite(new ${pt.boxed}[]{(${pt.primitive})0, (${pt.primitive})0, (${pt.primitive})0}));
+    <#if !pt.valueType.isChar >
         assertFalse(containsNonFinite(new ${pt.boxed}[]{(${pt.primitive})-1, (${pt.primitive})0, (${pt.primitive})1}));
+    </#if>
         assertTrue(containsNonFinite(new ${pt.boxed}[]{(${pt.primitive})0, (${pt.primitive})0, ${pt.null}}));
     }
 
@@ -1878,17 +2036,19 @@ public class TestNumeric extends BaseArrayTestCase {
     }
 
     public void test${pt.boxed}CopySign() {
+    <#if !pt.valueType.isChar >
         assertEquals((${pt.primitive})-9, copySign((${pt.primitive})9, (${pt.primitive})-2));
-        assertEquals((${pt.primitive})9, copySign((${pt.primitive})9, (${pt.primitive})2));
-        assertEquals((${pt.primitive})9, copySign((${pt.primitive})9, (${pt.primitive})0));
         assertEquals((${pt.primitive})-9, copySign((${pt.primitive})-9, (${pt.primitive})-2));
         assertEquals((${pt.primitive})9, copySign((${pt.primitive})-9, (${pt.primitive})2));
         assertEquals((${pt.primitive})9, copySign((${pt.primitive})-9, (${pt.primitive})0));
         assertEquals((${pt.null}), copySign(${pt.null}, (${pt.primitive})-2));
+    </#if>
+        assertEquals((${pt.primitive})9, copySign((${pt.primitive})9, (${pt.primitive})2));
+        assertEquals((${pt.primitive})9, copySign((${pt.primitive})9, (${pt.primitive})0));
         assertEquals((${pt.null}), copySign((${pt.primitive})1, ${pt.null}));
     }
 
-    <#if pt.valueType.isInteger >
+    <#if pt.valueType.isInteger || pt.valueType.isChar>
     public void test${pt.boxed}AddExact(){
         assertEquals((${pt.primitive})3, addExact((${pt.primitive})1, (${pt.primitive})2));
         assertEquals(${pt.null}, addExact(${pt.null}, (${pt.primitive})2));
@@ -1903,7 +2063,7 @@ public class TestNumeric extends BaseArrayTestCase {
     }
     </#if>
 
-    <#if pt.valueType.isInteger >
+    <#if pt.valueType.isInteger || pt.valueType.isChar>
     public void test${pt.boxed}SubtractExact(){
         assertEquals((${pt.primitive})1, subtractExact((${pt.primitive})3, (${pt.primitive})2));
         assertEquals(${pt.null}, subtractExact(${pt.null}, (${pt.primitive})2));
@@ -1918,7 +2078,7 @@ public class TestNumeric extends BaseArrayTestCase {
     }
     </#if>
 
-    <#if pt.valueType.isInteger >
+    <#if pt.valueType.isInteger || pt.valueType.isChar>
     public void test${pt.boxed}MultiplyExact(){
         assertEquals((${pt.primitive})6, multiplyExact((${pt.primitive})3, (${pt.primitive})2));
         assertEquals(${pt.null}, multiplyExact(${pt.null}, (${pt.primitive})2));
@@ -1933,7 +2093,7 @@ public class TestNumeric extends BaseArrayTestCase {
     }
     </#if>
 
-    <#if pt.valueType.isInteger >
+    <#if pt.valueType.isInteger || pt.valueType.isChar>
     public void test${pt.boxed}IncrementExact(){
         assertEquals((${pt.primitive})3, incrementExact((${pt.primitive})2));
         assertEquals(${pt.null}, incrementExact(${pt.null}));
@@ -1947,7 +2107,7 @@ public class TestNumeric extends BaseArrayTestCase {
     }
     </#if>
 
-    <#if pt.valueType.isInteger >
+    <#if pt.valueType.isInteger || pt.valueType.isChar>
     public void test${pt.boxed}DecrementExact(){
         assertEquals((${pt.primitive})1, decrementExact((${pt.primitive})2));
         assertEquals(${pt.null}, decrementExact(${pt.null}));
@@ -1961,14 +2121,23 @@ public class TestNumeric extends BaseArrayTestCase {
     }
     </#if>
 
-    <#if pt.valueType.isInteger >
+    <#if pt.valueType.isInteger || pt.valueType.isChar>
     public void test${pt.boxed}NegateExact(){
+    <#if pt.valueType.isChar>
+        try {
+            negateExact((char)7);
+            fail("Overflow");
+        } catch(ArithmeticException e){
+            // pass
+        }
+    <#else>
         assertEquals(Math.negateExact(7), negateExact((${pt.primitive})7));
+    </#if>
         assertEquals(${pt.null}, negateExact(${pt.null}));
     }
     </#if>
 
-    <#if pt.valueType.isInteger >
+    <#if pt.valueType.isInteger || pt.valueType.isChar>
     public void test${pt.boxed}FloorDiv(){
         assertEquals(Math.floorDiv(7, 2), floorDiv((${pt.primitive})7, (${pt.primitive})2));
         assertEquals(${pt.null}, floorDiv(${pt.null}, (${pt.primitive})2));
@@ -1976,7 +2145,7 @@ public class TestNumeric extends BaseArrayTestCase {
     }
     </#if>
 
-    <#if pt.valueType.isInteger >
+    <#if pt.valueType.isInteger || pt.valueType.isChar>
     public void test${pt.boxed}FloorMod(){
         assertEquals(Math.floorMod(7, 2), floorMod((${pt.primitive})7, (${pt.primitive})2));
         assertEquals(${pt.null}, floorMod(${pt.null}, (${pt.primitive})2));
@@ -2038,7 +2207,7 @@ public class TestNumeric extends BaseArrayTestCase {
         assertEquals(NULL_DOUBLE, toRadians(${pt.null}));
     }
 
-    <#if pt.valueType.isInteger >
+    <#if pt.valueType.isInteger || pt.valueType.isChar>
     public void test${pt.boxed}ToIntExact(){
         assertEquals(Math.toIntExact((${pt.primitive})7), toIntExact((${pt.primitive})7));
         assertEquals(NULL_INT, toIntExact(${pt.null}));
@@ -2054,7 +2223,7 @@ public class TestNumeric extends BaseArrayTestCase {
     }
     </#if>
 
-    <#if pt.valueType.isInteger >
+    <#if pt.valueType.isInteger || pt.valueType.isChar>
     public void test${pt.boxed}ToShortExact(){
         assertEquals((short)7, toShortExact((${pt.primitive})7));
         assertEquals(NULL_SHORT, toShortExact(${pt.null}));
@@ -2070,7 +2239,7 @@ public class TestNumeric extends BaseArrayTestCase {
     }
     </#if>
 
-    <#if pt.valueType.isInteger >
+    <#if pt.valueType.isInteger || pt.valueType.isChar>
     public void test${pt.boxed}ToByteExact(){
         assertEquals((byte)3, toByteExact((${pt.primitive})3));
         assertEquals(NULL_BYTE, toByteExact(${pt.null}));
@@ -2093,6 +2262,5 @@ public class TestNumeric extends BaseArrayTestCase {
     }
     </#if>
 
-    </#if>
     </#list>
 }
