@@ -91,7 +91,8 @@ public class JsonRecordAdapterGenerator {
     private CodeGenerator generateClassBody() {
         final CodeGenerator g = CodeGenerator.create(
                 getImportStatements(), "",
-                "public class $CLASSNAME$ extends [[BASE_JSON_RECORD_ADAPTER_CANONICAL]]", CodeGenerator.block(
+                "public class " + COMPILED_CLASS_NAME + " extends [[BASE_JSON_RECORD_ADAPTER_CANONICAL]]",
+                CodeGenerator.block(
                         "",
                         generateConstructor(), "",
                         generatePopulateRecords(), ""));
@@ -121,7 +122,7 @@ public class JsonRecordAdapterGenerator {
 
     private CodeGenerator generateConstructor() {
         final CodeGenerator g = CodeGenerator.create(
-                "public $CLASSNAME$(Table sourceTable, RecordAdapterDescriptor<ObjectNode> descriptor)",
+                "public " + COMPILED_CLASS_NAME + "(Table sourceTable, RecordAdapterDescriptor<ObjectNode> descriptor)",
                 CodeGenerator.block(
                         "super(",
                         "descriptor,",
@@ -129,7 +130,8 @@ public class JsonRecordAdapterGenerator {
                         CodeGenerator.repeated("columnName", "\"[[COL_NAME]]\"[[TRAILING_COMMA]]"),
                         ");"),
                 "",
-                "public $CLASSNAME$(PartitionedTable sourceTable, RecordAdapterDescriptor<ObjectNode> descriptor)",
+                "public " + COMPILED_CLASS_NAME
+                        + "(PartitionedTable sourceTable, RecordAdapterDescriptor<ObjectNode> descriptor)",
                 CodeGenerator.block(
                         "super(",
                         "descriptor,",
