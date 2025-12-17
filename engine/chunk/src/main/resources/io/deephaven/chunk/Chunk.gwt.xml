@@ -1,6 +1,7 @@
 <module>
     <inherits name="io.deephaven.base.Base" />
     <inherits name="io.deephaven.Util" />
+    <inherits name="io.deephaven.function.Function" />
     <source path="" />
     <source path="util/pools" excludes="ChunkPoolReleaseTracking.java" />
 </module>
