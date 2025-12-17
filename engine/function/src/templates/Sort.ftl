@@ -280,7 +280,7 @@ public class Sort {
         }
 
         final ${pt.primitive}[] result = values.copyToArray();
-        ArraySortUtils.sort(result, 0, result.length);
+        ArraySort.sort(result, 0, result.length);
         return result;
     }
 
@@ -295,8 +295,8 @@ public class Sort {
             return null;
         }
 
-        final ${pt.primitive}[] result = Arrays.copyOf(values, values.length);
-        ArraySortUtils.sort(result, 0, result.length);
+        final ${pt.primitive}[] result = values.clone();
+        ArraySort.sort(result, 0, result.length);
         return result;
     }
 
@@ -316,7 +316,7 @@ public class Sort {
         }
 
         final ${pt.primitive}[] result = ArrayUtils.toPrimitive(values);
-        ArraySortUtils.sort(result, 0, result.length);
+        ArraySort.sort(result, 0, result.length);
         return result;
     }
 

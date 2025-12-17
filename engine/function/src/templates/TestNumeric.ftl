@@ -339,9 +339,7 @@ public class TestNumeric extends BaseArrayTestCase {
         assertEquals(NULL_LONG, indexOfMin((${pt.primitive}[])null));
 
         assertEquals(1, indexOfMin(new ${pt.boxed}[]{(${pt.primitive})40, (${pt.primitive})0, ${pt.null}, (${pt.primitive})50, (${pt.primitive})60, (${pt.primitive}) 1, (${pt.primitive})0}));
-    <#if !pt.valueType.isChar >
         assertEquals(NULL_LONG, indexOfMin(new ${pt.boxed}[]{}));
-    </#if>
         assertEquals(NULL_LONG, indexOfMin(new ${pt.boxed}[]{${pt.null}}));
         assertEquals(NULL_LONG, indexOfMin((${pt.boxed}[])null));
 
@@ -1221,7 +1219,7 @@ public class TestNumeric extends BaseArrayTestCase {
 
     public void test${pt.boxed}Rint() {
     <#if !pt.valueType.isChar >
-        ${pt.primitive} negValue = 5;
+        ${pt.primitive} negValue = -5;
         assertEquals(Math.rint(negValue), rint(negValue), 1e-10);
     </#if>
         ${pt.primitive} posValue = 5;

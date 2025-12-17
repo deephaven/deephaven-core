@@ -3906,7 +3906,7 @@ public class Numeric {
         int val = (int)x - (int)y;
 
         if ( val > ${pt.maxValue} || val < ${pt.minValue} || isNull(val) ) {
-            throw new ArithmeticException("Overflow: " + x + " + " + y);
+            throw new ArithmeticException("Overflow: " + x + " - " + y);
         }
 
         return (${pt.primitive}) val;
@@ -3948,7 +3948,7 @@ public class Numeric {
         int val = (int)x * (int)y;
 
         if ( val > ${pt.maxValue} || val < ${pt.minValue} || isNull(val) ) {
-            throw new ArithmeticException("Overflow: " + x + " + " + y);
+            throw new ArithmeticException("Overflow: " + x + " * " + y);
         }
 
         return (${pt.primitive}) val;
