@@ -200,7 +200,7 @@ The incremental release filter converts a static or add-only table into a tickin
 - The initial number of rows to present in the resulting table.
 - The number of rows to release at the beginning of each update graph cycle.
 
-The [IncrementalReleaseFilter javadoc](https://docs.deephaven.io/core/javadoc/io/deephaven/engine/table/impl/select/IncrementalReleaseFilter.html) contains more details.
+The [IncrementalReleaseFilter Javadoc](https://docs.deephaven.io/core/javadoc/io/deephaven/engine/table/impl/select/IncrementalReleaseFilter.html) contains more details.
 
 ```python test-set=1 order=iris_incremental
 from deephaven.filters import incremental_release
