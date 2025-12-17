@@ -25,19 +25,16 @@ import io.deephaven.engine.testutil.TstUtils;
 public class TestIncrementalReleaseFilter extends RefreshingTableTestCase {
     public void testSimple() {
         final Table source = TableTools.newTable(TableTools.intCol("Sentinel", 1, 2, 3, 4, 5, 6, 7, 8, 9, 10));
-        TableTools.show(source);
 
         final IncrementalReleaseFilter incrementalReleaseFilter = new IncrementalReleaseFilter(2, 1);
         final Table filtered = source.where(incrementalReleaseFilter);
 
-        TableTools.show(filtered);
         assertEquals(2, filtered.size());
 
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         for (int ii = 0; ii <= 10; ++ii) {
             updateGraph.runWithinUnitTestCycle(incrementalReleaseFilter::run);
 
-            TableTools.show(filtered);
             assertEquals(Math.min(3 + ii, 10), filtered.size());
             if (filtered.size() == source.size()) {
                 break;
@@ -49,12 +46,10 @@ public class TestIncrementalReleaseFilter extends RefreshingTableTestCase {
     public void testSimpleRefreshingAppend() {
         final Table source =
                 TstUtils.testRefreshingTable(intCol("Sentinel", 1, 2, 3, 4, 5, 6, 7, 8, 9, 10)).assertAppendOnly();
-        TableTools.show(source);
 
         final IncrementalReleaseFilter incrementalReleaseFilter = new IncrementalReleaseFilter(2, 1);
         final Table filtered = source.where(incrementalReleaseFilter);
 
-        TableTools.show(filtered);
         assertEquals(2, filtered.size());
 
         long lastSize = 2;
@@ -99,12 +94,10 @@ public class TestIncrementalReleaseFilter extends RefreshingTableTestCase {
         final QueryTable source = TstUtils.testRefreshingTable(
                 i(0, 1, 2, 3, 4, 10, 11, 12, 13, 14).toTracking(),
                 intCol("Sentinel", 1, 2, 3, 4, 5, 11, 12, 13, 14, 15));
-        TableTools.show(source);
 
         final IncrementalReleaseFilter incrementalReleaseFilter = new IncrementalReleaseFilter(2, 1);
         final Table filtered = source.where(incrementalReleaseFilter);
 
-        TableTools.show(filtered);
         assertEquals(2, filtered.size());
 
         long lastSize = 2;
@@ -144,7 +137,6 @@ public class TestIncrementalReleaseFilter extends RefreshingTableTestCase {
         final Table sourcePart = TableTools.emptyTable(1_000_000_000L);
         final List<Table> sourceParts = IntStream.range(0, 20).mapToObj(x -> sourcePart).collect(Collectors.toList());
         final Table source = TableTools.merge(sourceParts);
-        TableTools.show(source);
 
         final IncrementalReleaseFilter incrementalReleaseFilter = new IncrementalReleaseFilter(2, 10_000_000);
         final Table filtered = source.where(incrementalReleaseFilter);
@@ -217,7 +209,6 @@ public class TestIncrementalReleaseFilter extends RefreshingTableTestCase {
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         updateGraph.setTargetCycleDurationMillis(cycleTime);
         final Table source = TableTools.emptyTable(10_000);
-        TableTools.show(source);
 
         final AutoTuningIncrementalReleaseFilter incrementalReleaseFilter =
                 new AutoTuningIncrementalReleaseFilter(0, 100, 1.1, true);

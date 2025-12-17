@@ -165,7 +165,7 @@ public abstract class BaseIncrementalReleaseFilter
      * Callback that is executed when all of our expected rows have been released.
      *
      * <p>
-     * Note that for a refreshing talbe, this may be executed more than once.
+     * Note that for a refreshing table, this may be executed more than once.
      * </p>
      */
     void onReleaseAll() {
@@ -283,7 +283,7 @@ public abstract class BaseIncrementalReleaseFilter
 
     /**
      * Set the expected size of the table.
-     * 
+     *
      * @param expectedSize the expected size of the table
      */
     void setExpectedSize(long expectedSize) {
@@ -299,7 +299,7 @@ public abstract class BaseIncrementalReleaseFilter
 
     /**
      * Set the released size.
-     * 
+     *
      * @param releasedSize the size that has been released
      */
     void setReleasedSize(long releasedSize) {

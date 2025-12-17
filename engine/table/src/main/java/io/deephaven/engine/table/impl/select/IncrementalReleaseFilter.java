@@ -19,7 +19,7 @@ import org.jetbrains.annotations.NotNull;
  * The source table must be {@link Table#ADD_ONLY_TABLE_ATTRIBUTE add only}. If the source table is static or
  * {@link Table#APPEND_ONLY_TABLE_ATTRIBUTE append-only}, then the result table starts with the first
  * {@code initialSize} rows of the table. On the next cycle, it contains the first {@code initialSize + sizeIncrement}
- * rows. On the {nth} cycle, it contains the first {@code initialSize + (n * sizeIncrement)} rows until the entire table
+ * rows. On the n-th cycle, it contains the first {@code initialSize + (n * sizeIncrement)} rows until the entire table
  * has been released. Once the entire table has been released, an append-only table permits no more than
  * {@code sizeIncrement} rows to be added each cycle. If more than {@code sizeIncrement} rows are added to the source,
  * then those rows are split across subsequent cycles until the full table is released. The released rows are always a
@@ -66,8 +66,9 @@ public class IncrementalReleaseFilter extends BaseIncrementalReleaseFilter {
 
         if (usePrev) {
             Assert.eqZero(previouslyReleased.size(), "previouslyReleased.size()");
-            final WritableRowSet releasedOnFirstStep = selection.subSetByPositionRange(0, getReleasedSize());
-            previouslyReleased.insert(releasedOnFirstStep);
+            try (final WritableRowSet releasedOnFirstStep = selection.subSetByPositionRange(0, getReleasedSize())) {
+                previouslyReleased.insert(releasedOnFirstStep);
+            }
             return previouslyReleased;
         }
 
@@ -90,9 +91,10 @@ public class IncrementalReleaseFilter extends BaseIncrementalReleaseFilter {
         final long releasedSize = getReleasedSize();
         if (previousSize < releasedSize) {
             final long newlyReleasedRows = releasedSize - previousSize;
-            final WritableRowSet toRelease =
-                    fullSet.minus(previouslyReleased).subSetByPositionRange(0, newlyReleasedRows);
-            previouslyReleased.insert(toRelease);
+            try (final WritableRowSet relevantRows = fullSet.minus(previouslyReleased);
+                    final WritableRowSet toRelease = relevantRows.subSetByPositionRange(0, newlyReleasedRows)) {
+                previouslyReleased.insert(toRelease);
+            }
         }
 
         return previouslyReleased.intersect(selection);
