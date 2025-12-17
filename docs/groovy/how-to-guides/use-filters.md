@@ -84,7 +84,7 @@ petalwidthInrange = iris.where("inRange(PetalWidthCM, 0, 1)")
 
 ### String filters
 
-Strings in Deephaven tables are stored as [Java strings](https://docs.oracle.com/en/java/javase/17/docs//api/java.base/java/lang/String.html). Any method that can be called on a Java string can be used to filter string data. Methods such as [`startsWith`](<https://docs.oracle.com/en/java/javase/17/docs//api/java.base/java/lang/String.html#startsWith(java.lang.String)>), [`endswith`](<https://docs.oracle.com/en/java/javase/17/docs//api/java.base/java/lang/String.html#endsWith(java.lang.String)>), [`contains`](<https://docs.oracle.com/en/java/javase/17/docs//api/java.base/java/lang/String.html#contains(java.lang.CharSequence)>), and [`matches`](<https://docs.oracle.com/en/java/javase/17/docs//api/java.base/java/lang/String.html#matches(java.lang.String)>) are particularly useful.
+Strings in Deephaven tables are stored as [Java strings](https://docs.oracle.com/en/java/javase/17/docs//api/java.base/java/lang/String.html). Any method that can be called on a Java string can be used to filter string data. Methods such as [`startsWith`](https://docs.oracle.com/en/java/javase/17/docs//api/java.base/java/lang/String.html#startsWith(java.lang.String)), [`endswith`](https://docs.oracle.com/en/java/javase/17/docs//api/java.base/java/lang/String.html#endsWith(java.lang.String)), [`contains`](https://docs.oracle.com/en/java/javase/17/docs//api/java.base/java/lang/String.html#contains(java.lang.CharSequence)), and [`matches`](https://docs.oracle.com/en/java/javase/17/docs//api/java.base/java/lang/String.html#matches(java.lang.String)) are particularly useful.
 
 The following code block applies these methods to filter the `iris` table on its String column, `Class`:
 
@@ -133,7 +133,7 @@ conjunctiveFilteredIris = iris.where("Class in `Iris-setosa`", "PetalLengthCM >=
 
 ### Disjunctive
 
-Disjunctive filtering is used to return a table where _one or more_ of the statements return `true`. This can be achieved using the `||` operator in a [`where`](../reference/table-operations/filter/where.md) statement, or by using [`Filter.or`](<https://docs.deephaven.io/core/javadoc/io/deephaven/api/filter/Filter.html#or(io.deephaven.api.filter.Filter...)>) to combine multiple filters.
+Disjunctive filtering is used to return a table where _one or more_ of the statements return `true`. This can be achieved using the `||` operator in a [`where`](../reference/table-operations/filter/where.md) statement, or by using [`Filter.or`](https://docs.deephaven.io/core/javadoc/io/deephaven/api/filter/Filter.html#or(io.deephaven.api.filter.Filter...)) to combine multiple filters.
 
 In the following example, two filters work disjunctively to return a new table where the petal length is greater than 1.9 cm or the petal width is less than 1.3 cm.
 
