@@ -14,14 +14,14 @@ The following table operations remove data based on row indices:
 - [`head`](../reference/table-operations/filter/head.md)
 - [`tail`](../reference/table-operations/filter/tail.md)
 - [`slice`](../reference/table-operations/filter/slice.md)
-- [`headPct`](../reference/table-operations/filter/headPct.md)
-- [`tailPct`](../reference/table-operations/filter/tailPct.md)
-- [`slicePct`](../reference/table-operations/filter/slicePct.md)
+- [`headPct`](../reference/table-operations/filter/head-pct.md)
+- [`tailPct`](../reference/table-operations/filter/tail-pct.md)
+- [`slicePct`](../reference/table-operations/filter/slice-pct.md)
 
 The following table operations remove data based on equality in one or more columns of a separate table:
 
-- [`whereIn`](../reference/table-operations/filter/whereIn.md)
-- [`whereNotIn`](../reference/table-operations/filter/whereNotIn.md)
+- [`whereIn`](../reference/table-operations/filter/where-in.md)
+- [`whereNotIn`](../reference/table-operations/filter/where-not-in.md)
 
 ## Conditional filtering
 
@@ -84,7 +84,7 @@ petalwidthInrange = iris.where("inRange(PetalWidthCM, 0, 1)")
 
 ### String filters
 
-Strings in Deephaven tables are stored as [Java strings](https://docs.oracle.com/en/java/javase/17/docs//api/java.base/java/lang/String.html). Any method that can be called on a Java string can be used to filter string data. Methods such as [`startsWith`](https://docs.oracle.com/en/java/javase/17/docs//api/java.base/java/lang/String.html#startsWith(java.lang.String)), [`endswith`](https://docs.oracle.com/en/java/javase/17/docs//api/java.base/java/lang/String.html#endsWith(java.lang.String)), [`contains`](https://docs.oracle.com/en/java/javase/17/docs//api/java.base/java/lang/String.html#contains(java.lang.CharSequence)), and [`matches`](https://docs.oracle.com/en/java/javase/17/docs//api/java.base/java/lang/String.html#matches(java.lang.String)) are particularly useful.
+Strings in Deephaven tables are stored as [Java strings](https://docs.oracle.com/en/java/javase/17/docs//api/java.base/java/lang/String.html). Any method that can be called on a Java string can be used to filter string data. Methods such as [`startsWith`](<https://docs.oracle.com/en/java/javase/17/docs//api/java.base/java/lang/String.html#startsWith(java.lang.String)>), [`endswith`](<https://docs.oracle.com/en/java/javase/17/docs//api/java.base/java/lang/String.html#endsWith(java.lang.String)>), [`contains`](<https://docs.oracle.com/en/java/javase/17/docs//api/java.base/java/lang/String.html#contains(java.lang.CharSequence)>), and [`matches`](<https://docs.oracle.com/en/java/javase/17/docs//api/java.base/java/lang/String.html#matches(java.lang.String)>) are particularly useful.
 
 The following code block applies these methods to filter the `iris` table on its String column, `Class`:
 
@@ -97,7 +97,7 @@ classMatches = iris.where("Class.matches(`Iris-versicolor`)")
 
 ### Regular expression (regex) filters
 
-Regular expression filtering is another type of string filtering that uses [regular expressions](https://en.wikipedia.org/wiki/Regular_expression) to remove unwanted data. You can use the Java String [`matches()`](https://docs.oracle.com/en/java/javase/17/docs//api/java.base/java/lang/String.html#matches(java.lang.String)) method to apply regex patterns.
+Regular expression filtering is another type of string filtering that uses [regular expressions](https://en.wikipedia.org/wiki/Regular_expression) to remove unwanted data. You can use the Java String [`matches()`](<https://docs.oracle.com/en/java/javase/17/docs//api/java.base/java/lang/String.html#matches(java.lang.String)>) method to apply regex patterns.
 
 The following code block performs regular expression filtering on the `iris` table. The regex patterns match strings that start with "Iris-v" (for "virginica" and "versicolor") or exactly match "Iris-setosa":
 
@@ -133,7 +133,7 @@ irisWhereMultiple = iris.where("PetalLengthCM > 1.9", "PetalWidthCM < 1.3")
 
 ## Filter one table based on another
 
-The [`whereIn`](../reference/table-operations/filter/whereIn.md) and [`whereNotIn`](../reference/table-operations/filter/whereNotIn.md) methods enable filtering of one table based on another table. These two methods are evaluated whenever either table changes, whereas [`where`](../reference/table-operations/filter/where.md) is only evaluated when the filtered table ticks. ​In the example below, the [`whereIn`](../reference/table-operations/filter/where.md) and [`whereNotIn`](../reference/table-operations/filter/whereNotIn.md) methods are used to find Iris virginica sepal widths that match and do not match Iris versicolor sepal widths:
+The [`whereIn`](../reference/table-operations/filter/where-in.md) and [`whereNotIn`](../reference/table-operations/filter/where-not-in.md) methods enable filtering of one table based on another table. These two methods are evaluated whenever either table changes, whereas [`where`](../reference/table-operations/filter/where.md) is only evaluated when the filtered table ticks. ​In the example below, the [`whereIn`](../reference/table-operations/filter/where.md) and [`whereNotIn`](../reference/table-operations/filter/where-not-in.md) methods are used to find Iris virginica sepal widths that match and do not match Iris versicolor sepal widths:
 
 ```groovy test-set=1 order=virginica,versicolor,virginicaMatchingPetalWidths,virginicaNonMatchingPetalWidths
 virginica = iris.where("Class in `Iris-virginica`")
@@ -142,12 +142,12 @@ virginicaMatchingPetalWidths = virginica.whereIn(versicolor, "PetalWidthCM")
 virginicaNonMatchingPetalWidths = virginica.whereNotIn(versicolor, "PetalWidthCM")
 ```
 
-> [!CAUTION] > [`whereIn`](../reference/table-operations/filter/whereIn.md) and [`whereNotIn`](../reference/table-operations/filter/whereNotIn.md) are inefficient if the filter table updates frequently.
+> [!CAUTION] > [`whereIn`](../reference/table-operations/filter/where-in.md) and [`whereNotIn`](../reference/table-operations/filter/where-not-in.md) are inefficient if the filter table updates frequently.
 
 > [!TIP]
-> Unlike [`naturalJoin`](../reference/table-operations/join/naturalJoin.md), [`whereIn`](../reference/table-operations/filter/whereIn.md) can be used when there is more than one matching value in the right table for values in the left table. This is true of [`join`](../reference/table-operations/join/join.md) as well, but [`whereIn`](../reference/table-operations/filter/where.md) is faster at returning matching rows than [`join`](../reference/table-operations/join/join.md).
+> Unlike [`naturalJoin`](../reference/table-operations/join/natural-join.md), [`whereIn`](../reference/table-operations/filter/where-in.md) can be used when there is more than one matching value in the right table for values in the left table. This is true of [`join`](../reference/table-operations/join/join.md) as well, but [`whereIn`](../reference/table-operations/filter/where.md) is faster at returning matching rows than [`join`](../reference/table-operations/join/join.md).
 >
-> [`whereIn`](../reference/table-operations/filter/whereIn.md) only provides filtering and does not allow columns to be added from the right table. In some cases, it may be desirable to use [`whereIn`](../reference/table-operations/filter/whereIn.md) to filter and then [`join`](../reference/table-operations/join/join.md) to add columns from the right table. This provides similar performance to [`naturalJoin`](../reference/table-operations/join/naturalJoin.md) while still allowing matches from the right table.
+> [`whereIn`](../reference/table-operations/filter/where-in.md) only provides filtering and does not allow columns to be added from the right table. In some cases, it may be desirable to use [`whereIn`](../reference/table-operations/filter/where-in.md) to filter and then [`join`](../reference/table-operations/join/join.md) to add columns from the right table. This provides similar performance to [`naturalJoin`](../reference/table-operations/join/natural-join.md) while still allowing matches from the right table.
 
 ## Filter by row index
 
@@ -161,7 +161,7 @@ irisSlice = iris.slice(70, 80)
 irisTail = iris.tail(10)
 ```
 
-The following example uses [`headPct`](../reference/table-operations/filter/headPct.md), [`slicePct`](../reference/table-operations/filter/slicePct.md), and [`tailPct`](../reference/table-operations/filter/tailPct.md) to keep only 10% of the rows at the top, middle, and end of the table, respectively.
+The following example uses [`headPct`](../reference/table-operations/filter/head-pct.md), [`slicePct`](../reference/table-operations/filter/slice-pct.md), and [`tailPct`](../reference/table-operations/filter/tail-pct.md) to keep only 10% of the rows at the top, middle, and end of the table, respectively.
 
 ```groovy test-set=1 order=irisHeadPct,irisSlicePct,irisTailPct
 irisHeadPct = iris.headPct(0.1)
@@ -176,15 +176,15 @@ irisTailPct = iris.tailPct(0.1)
 - [Operators in query strings](./operators.md)
 - [equals](../reference/query-language/match-filters/equals.md)
 - [`head`](../reference/table-operations/filter/head.md)
-- [`headPct`](../reference/table-operations/filter/headPct.md)
+- [`headPct`](../reference/table-operations/filter/head-pct.md)
 - [`icase in`](../reference/query-language/match-filters/icase-in.md)
 - [`icase not in`](../reference/query-language/match-filters/icase-not-in.md)
 - [`in`](../reference/query-language/match-filters/in.md)
 - [`join`](../reference/table-operations/join/join.md)
-- [`naturalJoin`](../reference/table-operations/join/naturalJoin.md)
+- [`naturalJoin`](../reference/table-operations/join/natural-join.md)
 - [`not in`](../reference/query-language/match-filters/not-in.md)
 - [`slice`](../reference/table-operations/filter/slice.md)
 - [`tail`](../reference/table-operations/filter/tail.md)
-- [`tailPct`](../reference/table-operations/filter/tailPct.md)
+- [`tailPct`](../reference/table-operations/filter/tail-pct.md)
 - [`where`](../reference/table-operations/filter/where.md)
-- [`whereIn`](../reference/table-operations/filter/whereIn.md)
+- [`whereIn`](../reference/table-operations/filter/where-in.md)
