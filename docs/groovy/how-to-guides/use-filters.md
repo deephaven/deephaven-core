@@ -3,7 +3,7 @@ title: Filter table data
 sidebar_label: Filter
 ---
 
-This guide covers filtering table data in Deephaven. Many different table operations can be used to filter unwanted data out of a table. Some remove data based on conditional formulas, whereas others remove data based on row indices or columns.
+This guide covers filtering table data in Deephaven. Many different table operations can be used to filter data in a table. Some keep data based on conditional formulas, whereas others keep data based on row position.
 
 The following table operations remove data that does not meet the conditions set forth by one or more conditional filter formulas:
 
@@ -25,7 +25,7 @@ The following table operations remove data based on equality in one or more colu
 
 ## Conditional filtering
 
-Conditional filtering applies one or more [filters](./filters.md) to remove data that does not meet the specified criteria. Comparison formulas can use [match filters](#match-filters), [range filters](#range-filters), [string filters](#string-filters), and [regular expression filters](#regular-expression-regex-filters) to remove unwanted data. The comparison formulas used in conditional filtering must equate to either `true` or `false`. When `true`, the data is kept in the table. When `false`, the data is removed.
+Conditional filtering applies one or more [filters](./filters.md) to keep rows that meet the specified criteria. Comparison formulas can use [match filters](#match-filters), [range filters](#range-filters), [string filters](#string-filters), and [regular expression filters](#regular-expression-regex-filters). The comparison formulas used in conditional filtering must equate to either `true` or `false`. When `true`, the row is kept. When `false`, the row is excluded.
 
 The following code block imports the [Iris dataset](https://en.wikipedia.org/wiki/Iris_flower_data_set) found in [Deephaven's example repository](https://github.com/deephaven/examples). Subsequent examples filter this data using comparison formulas:
 
@@ -64,7 +64,7 @@ notVersicolor = iris.where("Class icase not in `iris-versicolor`")
 
 ### Range filters
 
-Range filters remove data that does not fall into a range of values. Range filters use any of the following operators:
+Range filters keep rows where values fall within a specified range. Range filters use any of the following operators:
 
 - `<`: Less than
 - `<=`: Less than or equal to
@@ -72,7 +72,7 @@ Range filters remove data that does not fall into a range of values. Range filte
 - `>=`: Greater than or equal to
 - `inRange`: Checks if a value is in a given range
 
-The following code block applies each operator to remove unwanted data:
+The following code block applies each operator to filter data:
 
 ```groovy test-set=1 order=sepalwidthLessthan3,petallenthGreaterThan2,sepallengthGreaterThanOrEqualTo6,petalwidthLessThanOrEqualTo1,petalwidthInrange
 sepalwidthLessthan3 = iris.where("SepalWidthCM < 3.0")
@@ -84,7 +84,7 @@ petalwidthInrange = iris.where("inRange(PetalWidthCM, 0, 1)")
 
 ### String filters
 
-Strings in Deephaven tables are stored as [Java strings](https://docs.oracle.com/en/java/javase/17/docs//api/java.base/java/lang/String.html). Any method that can be called on a Java string can be used to filter string data. Methods such as [`startsWith`](https://docs.oracle.com/en/java/javase/17/docs//api/java.base/java/lang/String.html#startsWith(java.lang.String)), [`endswith`](https://docs.oracle.com/en/java/javase/17/docs//api/java.base/java/lang/String.html#endsWith(java.lang.String)), [`contains`](https://docs.oracle.com/en/java/javase/17/docs//api/java.base/java/lang/String.html#contains(java.lang.CharSequence)), and [`matches`](https://docs.oracle.com/en/java/javase/17/docs//api/java.base/java/lang/String.html#matches(java.lang.String)) are particularly useful.
+Strings in Deephaven tables are stored as [Java strings](https://docs.oracle.com/en/java/javase/17/docs//api/java.base/java/lang/String.html). Any method that can be called on a Java string can be used to filter string data. Methods such as [`startsWith`](<https://docs.oracle.com/en/java/javase/17/docs//api/java.base/java/lang/String.html#startsWith(java.lang.String)>), [`endswith`](<https://docs.oracle.com/en/java/javase/17/docs//api/java.base/java/lang/String.html#endsWith(java.lang.String)>), [`contains`](<https://docs.oracle.com/en/java/javase/17/docs//api/java.base/java/lang/String.html#contains(java.lang.CharSequence)>), and [`matches`](<https://docs.oracle.com/en/java/javase/17/docs//api/java.base/java/lang/String.html#matches(java.lang.String)>) are particularly useful.
 
 The following code block applies these methods to filter the `iris` table on its String column, `Class`:
 
@@ -97,7 +97,7 @@ classMatches = iris.where("Class.matches(`Iris-versicolor`)")
 
 ### Regular expression (regex) filters
 
-Regular expression filtering is another type of string filtering that uses [regular expressions](https://en.wikipedia.org/wiki/Regular_expression) to remove unwanted data. Deephaven's [`FilterPattern`](https://docs.deephaven.io/core/javadoc/io/deephaven/api/filter/FilterPattern.html) class enables the use of regex in filtering operations.
+Regular expression filtering is another type of string filtering that uses [regular expressions](https://en.wikipedia.org/wiki/Regular_expression) to match patterns in string data. Deephaven's [`FilterPattern`](https://docs.deephaven.io/core/javadoc/io/deephaven/api/filter/FilterPattern.html) class enables the use of regex in filtering operations.
 
 When performing regex filtering with `FilterPattern`, the filters are applied with a specific pattern mode. Two pattern modes are available:
 
@@ -133,13 +133,13 @@ conjunctiveFilteredIris = iris.where("Class in `Iris-setosa`", "PetalLengthCM >=
 
 ### Disjunctive
 
-Disjunctive filtering is used to return a table where _one or more_ of the statements return `true`. This can be achieved using the `||` operator in a [`where`](../reference/table-operations/filter/where.md) statement, or by passing multiple filter strings as separate parameters to [`where`](../reference/table-operations/filter/where.md).
+Disjunctive filtering is used to return a table where _one or more_ of the statements return `true`. This can be achieved using the `||` operator in a [`where`](../reference/table-operations/filter/where.md) statement, or by using [`Filter.or`](<https://docs.deephaven.io/core/javadoc/io/deephaven/api/filter/Filter.html#or(io.deephaven.api.filter.Filter...)>) to combine multiple filters.
 
 In the following example, two filters work disjunctively to return a new table where the petal length is greater than 1.9 cm or the petal width is less than 1.3 cm.
 
-```groovy test-set=1 order=orFilteredIris,irisWhereMultiple
+```groovy test-set=1 order=orFilteredIris,irisFilterOr
 orFilteredIris = iris.where("PetalLengthCM > 1.9 || PetalWidthCM < 1.3")
-irisWhereMultiple = iris.where("PetalLengthCM > 1.9", "PetalWidthCM < 1.3")
+irisFilterOr = iris.where(Filter.or(Filter.from("PetalLengthCM > 1.9", "PetalWidthCM < 1.3")))
 ```
 
 ## Filter one table based on another
@@ -160,9 +160,9 @@ virginicaNonMatchingPetalWidths = virginica.whereNotIn(versicolor, "PetalWidthCM
 >
 > [`whereIn`](../reference/table-operations/filter/where-in.md) only provides filtering and does not allow columns to be added from the right table. In some cases, it may be desirable to use [`whereIn`](../reference/table-operations/filter/where-in.md) to filter and then [`join`](../reference/table-operations/join/join.md) to add columns from the right table. This provides similar performance to [`naturalJoin`](../reference/table-operations/join/natural-join.md) while still allowing matches from the right table.
 
-## Filter by row index
+## Filter by row position
 
-Filtering by row index removes unwanted data at the top, middle, or end of a table. Row indices can be chosen on their own or by percentage of the total size of a table.
+Filtering by row position removes unwanted data at the beginning, middle, or end of a table. Row positions can be specified as absolute values or as a percentage of the total table size.
 
 The following example uses [`head`](../reference/table-operations/filter/head.md), [`tail`](../reference/table-operations/filter/tail.md), and [`slice`](../reference/table-operations/filter/slice.md) to keep only the first, middle, and last 10 rows of `iris`, respectively.
 
