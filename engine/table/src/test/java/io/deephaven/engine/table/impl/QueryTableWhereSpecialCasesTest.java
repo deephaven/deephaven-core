@@ -1605,4 +1605,68 @@ public class QueryTableWhereSpecialCasesTest {
                 val -> val != NULL_DOUBLE || Double.isNaN(val),
                 val -> val == NULL_DOUBLE && !Double.isNaN(val));
     }
+
+    @Test
+    public void testConditionalNanEquality() {
+        final Table source = getStaticTable();
+
+        // Testing val = NaN, nothing should match (including NaN)
+        validateFloatFilter(
+                source,
+                "floatCol",
+                RawString.of("floatCol = Float.NaN && true"),
+                val -> false,
+                val -> true);
+        validateFloatFilter(
+                source,
+                "floatCol",
+                new MatchFilter(MatchFilter.MatchType.Regular, "floatCol", Float.NaN),
+                val -> false,
+                val -> true);
+
+        validateDoubleFilter(
+                source,
+                "doubleCol",
+                RawString.of("doubleCol = Double.NaN && true"),
+                val -> false,
+                val -> true);
+        validateDoubleFilter(
+                source,
+                "doubleCol",
+                new MatchFilter(MatchFilter.MatchType.Regular, "doubleCol", Double.NaN),
+                val -> false,
+                val -> true);
+    }
+
+    @Test
+    public void testConditionalNanInequality() {
+        final Table source = getStaticTable();
+
+        // Testing val != NaN, everything should match (including NULL / NaN)
+        validateFloatFilter(
+                source,
+                "floatCol",
+                RawString.of("floatCol != Float.NaN && true"),
+                val -> true,
+                val -> false);
+        validateFloatFilter(
+                source,
+                "floatCol",
+                new MatchFilter(MatchFilter.MatchType.Inverted, "floatCol", Float.NaN),
+                val -> true,
+                val -> false);
+
+        validateDoubleFilter(
+                source,
+                "doubleCol",
+                RawString.of("doubleCol != Double.NaN && true"),
+                val -> true,
+                val -> false);
+        validateDoubleFilter(
+                source,
+                "doubleCol",
+                new MatchFilter(MatchFilter.MatchType.Inverted, "doubleCol", Double.NaN),
+                val -> true,
+                val -> false);
+    }
 }
