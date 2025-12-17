@@ -61,7 +61,9 @@ public class ExpressionTest {
 
     @Test
     void filter() {
-        stringsOf(or(gt(FOO, BAR), gt(FOO, BAZ), and(isNull(FOO), isNaN(FOO), isNotNull(BAR), isNotNull(BAZ), isNotNaN(BAR), isNotNaN(BAZ))),
+        stringsOf(
+                or(gt(FOO, BAR), gt(FOO, BAZ),
+                        and(isNull(FOO), isNaN(FOO), isNotNull(BAR), isNotNull(BAZ), isNotNaN(BAR), isNotNaN(BAZ))),
                 "(Foo > Bar) || (Foo > Baz) || (isNull(Foo) && isNaN(Foo) && !isNull(Bar) && !isNull(Baz) && !isNaN(Bar) && !isNaN(Baz))");
     }
 

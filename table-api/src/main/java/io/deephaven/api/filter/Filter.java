@@ -105,7 +105,7 @@ public interface Filter extends Expression, ConcurrencyControl<Filter> {
      * Creates an is-not-nan-filter.
      *
      * <p>
- *     Equivalent to {@code not(isNaN(expression))}.
+     * Equivalent to {@code not(isNaN(expression))}.
      *
      * @param expression the expression
      * @return the is-not-nan-filter
