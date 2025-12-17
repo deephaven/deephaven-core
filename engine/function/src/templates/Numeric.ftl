@@ -274,6 +274,9 @@ public class Numeric {
         if (values == null) {
             return NULL_LONG;
         }
+    <#if pt.valueType.isChar >
+        return 0;
+    <#else>
 
         long count = 0;
         final long n = values.size();
@@ -288,6 +291,7 @@ public class Numeric {
         }
 
         return count;
+    </#if>
     }
 
     /**
@@ -433,6 +437,9 @@ public class Numeric {
      * @return mean of the absolute value of non-null values.
      */
     public static double absAvg(${pt.vector} values) {
+    <#if pt.valueType.isChar >
+        return avg(values);
+    <#else>
         if (values == null) {
             return NULL_DOUBLE;
         }
@@ -466,6 +473,7 @@ public class Numeric {
         }
 
         return sum / count;
+    </#if>
     }
 
 
@@ -514,6 +522,9 @@ public class Numeric {
      * @return sum of the absolute value of non-null values.
      */
     public static long absSum(${pt.vector} values) {
+    <#if pt.valueType.isChar >
+        return sum(values);
+    <#else>
         if (values == null) {
             return NULL_LONG;
         }
@@ -538,6 +549,7 @@ public class Numeric {
         }
 
         return sum;
+    </#if>
     }
     </#if>
 
