@@ -13,6 +13,7 @@ import io.deephaven.engine.table.impl.select.IncrementalReleaseFilter;
 import junit.framework.TestCase;
 
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -154,6 +155,52 @@ public class TestIncrementalReleaseFilter extends RefreshingTableTestCase {
         assertTableEquals(flattened, filtered);
         System.out.println("Cycles: " + cycles);
     }
+
+    public void testWaitForCompletion() throws InterruptedException {
+        final Table source = TableTools.emptyTable(1000).update("Sentinel=ii");
+
+        final IncrementalReleaseFilter incrementalReleaseFilter = new IncrementalReleaseFilter(10, 1);
+        final Table filtered = source.where(incrementalReleaseFilter);
+
+        assertEquals(10, filtered.size());
+
+        final CountDownLatch latch = new CountDownLatch(1);
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+
+        new Thread(() -> {
+            try {
+                latch.await();
+            } catch (InterruptedException e) {
+            }
+            while (filtered.size() < source.size()) {
+                updateGraph.runWithinUnitTestCycle(incrementalReleaseFilter::run);
+            }
+        }).start();
+
+        if (source.size() == filtered.size()) {
+            TestCase.fail("Released rows before expected.");
+        }
+
+        long start1 = System.currentTimeMillis();
+        incrementalReleaseFilter.waitForCompletion(100);
+        long end1 = System.currentTimeMillis();
+        if (end1 - start1 < 100) {
+            TestCase.fail("Did not wait long enough.");
+        }
+
+        latch.countDown();
+
+        long start2 = System.currentTimeMillis();
+        incrementalReleaseFilter.waitForCompletion(10000);
+        long end2 = System.currentTimeMillis();
+        assertEquals(source.size(), filtered.size());
+        System.out.println("Waited " + (end2 - start2) + " ms");
+
+        // test the path where we don't wait at all
+        incrementalReleaseFilter.waitForCompletion();
+    }
+
 
     @SuppressWarnings("unused") // used by testAutoTuneCycle via an update query
     static public <T> T sleepValue(long duration, T retVal) {

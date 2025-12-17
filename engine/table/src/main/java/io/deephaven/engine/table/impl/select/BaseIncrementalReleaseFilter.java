@@ -181,20 +181,7 @@ public abstract class BaseIncrementalReleaseFilter
      */
     @ScriptApi
     public void waitForCompletion() throws InterruptedException {
-        if (updateGraph.currentThreadProcessesUpdates()) {
-            throw new IllegalStateException(
-                    "Can not wait for completion while on PeriodicUpdateGraph refresh thread, updates would block.");
-        }
-        if (releaseAllNanos != QueryConstants.NULL_LONG) {
-            return;
-        }
-        updateGraph.exclusiveLock().doLocked(() -> {
-            while (releaseAllNanos == QueryConstants.NULL_LONG) {
-                // this only works because we will never actually filter out a row from the result; in the general
-                // WhereFilter case, the result table may not update. We could await on the source table, but
-                listener.getTable().awaitUpdate();
-            }
-        });
+        waitForCompletion(Long.MAX_VALUE, false);
     }
 
     /**
@@ -202,6 +189,10 @@ public abstract class BaseIncrementalReleaseFilter
      */
     @ScriptApi
     public void waitForCompletion(long timeoutMillis) throws InterruptedException {
+        waitForCompletion(timeoutMillis, true);
+    }
+
+    private void waitForCompletion(long timeoutMillis, final boolean hasTimeout) throws InterruptedException {
         if (updateGraph.currentThreadProcessesUpdates()) {
             throw new IllegalStateException(
                     "Can not wait for completion while on PeriodicUpdateGraph refresh thread, updates would block.");
@@ -212,13 +203,17 @@ public abstract class BaseIncrementalReleaseFilter
         final long end = System.currentTimeMillis() + timeoutMillis;
         updateGraph.exclusiveLock().doLocked(() -> {
             while (releaseAllNanos == QueryConstants.NULL_LONG) {
-                // this only works because we will never actually filter out a row from the result; in the general
-                // WhereFilter case, the result table may not update. We could await on the source table, but
-                final long remainingTimeout = Math.max(0, end - System.currentTimeMillis());
-                if (remainingTimeout == 0) {
-                    return;
+                // This only works because we will never actually filter out a row from the result; in the general
+                // WhereFilter case, the result table may not update if not all rows are passed through
+                if (hasTimeout) {
+                    final long remainingTimeout = Math.max(0, end - System.currentTimeMillis());
+                    if (remainingTimeout == 0) {
+                        return;
+                    }
+                    listener.getTable().awaitUpdate(remainingTimeout);
+                } else {
+                    listener.getTable().awaitUpdate();
                 }
-                listener.getTable().awaitUpdate(remainingTimeout);
             }
         });
     }
