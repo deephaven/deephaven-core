@@ -7,7 +7,6 @@ import java.util.Arrays;
 import java.util.Comparator;
 
 import static io.deephaven.util.QueryConstants.*;
-import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
 
 /**
  * Perform array sorts that respect Deephaven null values as the lowest possible values.

@@ -13,10 +13,8 @@ import io.deephaven.util.datastructures.LongSizedDataStructure;
 import java.util.Arrays;
 import java.lang.Math;
 
-import static io.deephaven.base.CompareUtils.compare;
 import static io.deephaven.util.QueryConstants.*;
 import static io.deephaven.function.Basic.*;
-import static io.deephaven.function.Sort.*;
 import static io.deephaven.function.Cast.castDouble;
 
 /**
@@ -1573,7 +1571,7 @@ public class Numeric {
         }
 
         ${pt.primitive}[] sorted = values.copyToArray();
-        Arrays.sort(sorted);
+        ArraySort.sort(sorted, 0, sorted.length);
 
         <#if pt.valueType.isFloat >
         if (isNaN(sorted[sorted.length - 1])) {
@@ -1667,7 +1665,7 @@ public class Numeric {
         int n = values.intSize("percentile");
 
         ${pt.primitive}[] sorted = values.copyToArray();
-        Arrays.sort(sorted);
+        ArraySort.sort(sorted, 0, sorted.length);
 
         <#if pt.valueType.isFloat >
         if (isNaN(sorted[sorted.length - 1])) {
