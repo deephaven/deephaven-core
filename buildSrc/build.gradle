@@ -36,7 +36,7 @@ dependencies {
 
     implementation "com.gradleup.shadow:shadow-gradle-plugin:8.3.8"
 
-    implementation('com.vanniktech.maven.publish:com.vanniktech.maven.publish.gradle.plugin:0.34.0') {
+    implementation('com.vanniktech.maven.publish:com.vanniktech.maven.publish.gradle.plugin:0.35.0') {
         because('needed by plugin java-publishing-conventions')
     }
 }
