@@ -79,8 +79,8 @@ public class IncrementalReleaseFilter extends BaseIncrementalReleaseFilter {
         }
 
         if (fullSet.size() <= getReleasedSize()) {
-            onReleaseAll();
             setReleasedSize(fullSet.size());
+            onReleaseAll();
             removeFromUpdateGraph(table);
         } else {
             // add it back for a refreshing table that has not been completely released
