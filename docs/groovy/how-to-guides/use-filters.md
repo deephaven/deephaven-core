@@ -97,13 +97,24 @@ classMatches = iris.where("Class.matches(`Iris-versicolor`)")
 
 ### Regular expression (regex) filters
 
-Regular expression filtering is another type of string filtering that uses [regular expressions](https://en.wikipedia.org/wiki/Regular_expression) to remove unwanted data. You can use the Java String [`matches()`](https://docs.oracle.com/en/java/javase/17/docs//api/java.base/java/lang/String.html#matches(java.lang.String)) method to apply regex patterns.
+Regular expression filtering is another type of string filtering that uses [regular expressions](https://en.wikipedia.org/wiki/Regular_expression) to remove unwanted data. Deephaven's [`FilterPattern`](https://docs.deephaven.io/core/javadoc/io/deephaven/api/filter/FilterPattern.html) class enables the use of regex in filtering operations.
 
-The following code block performs regular expression filtering on the `iris` table. The regex patterns match strings that start with "Iris-v" (for "virginica" and "versicolor") or exactly match "Iris-setosa":
+When performing regex filtering with `FilterPattern`, the filters are applied with a specific pattern mode. Two pattern modes are available:
 
-```groovy test-set=1 order=irisVPattern,irisExactMatch
-irisVPattern = iris.where("Class.matches(`Iris-v.*`)")
-irisExactMatch = iris.where("Class.matches(`Iris-setosa`)")
+- `FIND` looks for a subsequence match in the string.
+- `MATCHES` matches an entire string against the given pattern.
+
+The following code block performs regular expression filtering on the `iris` table with both pattern modes. The first finds strings that are eleven characters long, whereas the second looks for the subsequence `virginica` in the `Class` column:
+
+```groovy test-set=1 order=irisElevenChars,irisVirginica
+import io.deephaven.api.filter.FilterPattern
+import java.util.regex.Pattern
+
+filterElevenChars = FilterPattern.of(ColumnName.of("Class"), Pattern.compile("..........."), FilterPattern.Mode.MATCHES, false)
+filterRegexMatch = FilterPattern.of(ColumnName.of("Class"), Pattern.compile("virginica"), FilterPattern.Mode.FIND, false)
+
+irisElevenChars = iris.where(filterElevenChars)
+irisVirginica = iris.where(filterRegexMatch)
 ```
 
 ## Combine filters
