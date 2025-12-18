@@ -33,6 +33,7 @@ import jsinterop.annotations.JsOptional;
 import jsinterop.annotations.JsProperty;
 import jsinterop.annotations.JsType;
 import jsinterop.base.Js;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -194,11 +195,11 @@ public class JsRemoteFileSourceService extends HasEventHandling {
      * Sets the execution context on the server to identify this message stream as active
      * for script execution.
      *
-     * @param topLevelPackages array of top-level package names to resolve from remote source (e.g., ["com.example", "org.mycompany"])
+     * @param resourcePaths array of resource paths to resolve from remote source (e.g., ["com/example/Test.groovy", "org/mycompany/Utils.groovy"])
      * @return a promise that resolves to true if the server successfully set the execution context, false otherwise
      */
     @JsMethod
-    public Promise<Boolean> setExecutionContext(@JsOptional String[] topLevelPackages) {
+    public Promise<Boolean> setExecutionContext(@JsOptional String[] resourcePaths) {
         return new Promise<>((resolve, reject) -> {
             // Generate a unique request ID
             String requestId = "setExecutionContext-" + (requestIdCounter++);
@@ -206,19 +207,31 @@ public class JsRemoteFileSourceService extends HasEventHandling {
             // Store the resolve callback to call when we get the acknowledgment
             pendingSetExecutionContextRequests.put(requestId, resolve);
 
-            SetExecutionContextRequest setContextRequest = new SetExecutionContextRequest();
-
-            if (topLevelPackages != null && topLevelPackages.length > 0) {
-                for (String pkg : topLevelPackages) {
-                    setContextRequest.addTopLevelPackages(pkg);
-                }
-            }
-
-            RemoteFileSourceClientRequest clientRequest = new RemoteFileSourceClientRequest();
-            clientRequest.setRequestId(requestId);
-            clientRequest.setSetExecutionContext(setContextRequest);
+            RemoteFileSourceClientRequest clientRequest = getSetExecutionContextRequest(resourcePaths, requestId);
             sendClientRequest(clientRequest);
         });
+    }
+
+    /**
+     * Helper method to build a RemoteFileSourceClientRequest for setting execution context.
+     *
+     * @param resourcePaths array of resource paths to resolve
+     * @param requestId unique request ID
+     * @return the constructed RemoteFileSourceClientRequest
+     */
+    private static @NotNull RemoteFileSourceClientRequest getSetExecutionContextRequest(String[] resourcePaths, String requestId) {
+        SetExecutionContextRequest setContextRequest = new SetExecutionContextRequest();
+
+        if (resourcePaths != null) {
+            for (String resourcePath : resourcePaths) {
+                setContextRequest.addResourcePaths(resourcePath);
+            }
+        }
+
+        RemoteFileSourceClientRequest clientRequest = new RemoteFileSourceClientRequest();
+        clientRequest.setRequestId(requestId);
+        clientRequest.setSetExecutionContext(setContextRequest);
+        return clientRequest;
     }
 
     /**

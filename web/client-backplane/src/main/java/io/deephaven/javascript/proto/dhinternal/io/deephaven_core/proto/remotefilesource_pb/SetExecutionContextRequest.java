@@ -21,17 +21,16 @@ public class SetExecutionContextRequest {
     public static native void serializeBinaryToWriter(
             SetExecutionContextRequest message, Object writer);
 
-    public native void clearTopLevelPackagesList();
+    public native void clearResourcePathsList();
 
-    public native JsArray<String> getTopLevelPackagesList();
+    public native JsArray<String> getResourcePathsList();
 
     public native Uint8Array serializeBinary();
 
+    public native void setResourcePathsList(JsArray<String> value);
 
-    public native void setTopLevelPackagesList(JsArray<String> value);
+    public native String addResourcePaths(String value);
 
-    public native void addTopLevelPackages(String value);
-
-    public native void addTopLevelPackages(String value, double index);
+    public native String addResourcePaths(String value, double index);
 }
 
