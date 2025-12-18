@@ -85,7 +85,7 @@ public class WhereFilterFactory {
 
                 log.debug().append("WhereFilterFactory creating MatchFilter for expression: ").append(expression)
                         .endl();
-                // When given an explicit list of values, we must match NaN (dodge IEEE 754 strict equality rules)
+                // When given an explicit list of values, we allow NaN-matching (skip IEEE 754 strict equality rules)
                 final MatchOptions matchOptions = MatchOptions.builder()
                         .inverted(inverted)
                         .caseInsensitive(icase)
@@ -427,11 +427,11 @@ public class WhereFilterFactory {
     public static WhereFilter stringContainsFilter(
             @NotNull final MatchOptions matchOptions,
             @NotNull String columnName,
-            boolean internalDisjunctive,
-            boolean removeQuotes,
-            String... values) {
+            final boolean internalDisjunctive,
+            final boolean removeQuotes,
+            final String... values) {
         final String value =
-                constructStringContainsRegex(values, matchOptions.inverted(), internalDisjunctive, removeQuotes);
+                constructStringContainsRegex(values, matchOptions, internalDisjunctive, removeQuotes);
         return WhereFilterAdapter.of(FilterPattern.of(
                 ColumnName.of(columnName),
                 Pattern.compile(value, matchOptions.caseInsensitive() ? Pattern.CASE_INSENSITIVE : 0),
@@ -440,10 +440,10 @@ public class WhereFilterFactory {
     }
 
     private static String constructStringContainsRegex(
-            String[] values,
-            boolean inverted,
-            boolean internalDisjunctive,
-            boolean removeQuotes) {
+            final String[] values,
+            final MatchOptions matchOptions,
+            final boolean internalDisjunctive,
+            final boolean removeQuotes) {
         if (values == null || values.length == 0) {
             throw new IllegalArgumentException(
                     "constructStringContainsRegex must be called with at least one value parameter");
@@ -462,8 +462,8 @@ public class WhereFilterFactory {
                 });
         // If the match is simple, includes -any- or includes -none- we can just use a simple
         // regex of or'd values
-        if ((!inverted && internalDisjunctive) ||
-                (inverted && !internalDisjunctive)) {
+        if ((!matchOptions.inverted() && internalDisjunctive) ||
+                (matchOptions.inverted() && !internalDisjunctive)) {
             regex = valueStream.collect(Collectors.joining("|"));
         } else {
             // If we need to match -all of- or -not one of- then we must use forward matching

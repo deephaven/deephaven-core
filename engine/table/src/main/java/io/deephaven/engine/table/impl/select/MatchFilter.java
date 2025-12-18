@@ -62,7 +62,7 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
     private boolean initialized;
 
     /**
-     * Create a new MatchFilter with values to match.
+     * Create a new MatchFilter with a list of values to match.
      *
      * @param matchOptions options controlling how the match is performed
      * @param columnName the column name to match against
@@ -76,7 +76,8 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
     }
 
     /**
-     * Create a new MatchFilter with either string values (converted at init time) or values to match.
+     * Create a new MatchFilter with either string values (which may be converted to actual values) or a list of values
+     * to match.
      *
      * @param failoverFilter a fail-over WhereFilter supplier should the match filter initialization fail
      * @param matchOptions options controlling how the match is performed

@@ -4,7 +4,9 @@
 // @formatter:off
 package io.deephaven.engine.table.impl.chunkfilter;
 
-import gnu.trove.set.hash.TFloatHashSet;import gnu.trove.set.hash.TIntHashSet;import io.deephaven.engine.table.MatchOptions;
+import gnu.trove.set.hash.TFloatHashSet;
+import gnu.trove.set.hash.TIntHashSet;
+import io.deephaven.engine.table.MatchOptions;
 
 /**
  * Creates chunk filters for float values.

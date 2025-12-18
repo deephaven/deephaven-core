@@ -8,8 +8,8 @@ import org.immutables.value.Value.Immutable;
 import org.immutables.value.Value.Default;
 
 /**
- * An object for controlling the behavior of a {@code match} operation. This includes {@link ColumnSource#match} and
- * creating {@code MatchFilters}.
+ * An object for controlling the behavior of a {@code match} operation. Used by {@code ColumnSource#match} and when
+ * creating {@code MatchFilter}.
  */
 @Immutable
 @BuildableStyle
@@ -26,7 +26,7 @@ public abstract class MatchOptions {
     }
 
     /**
-     * In the case of string matching, whether the match should be case-sensitive.
+     * In the case of string matching, whether the match should ignore case.
      */
     @Default
     public boolean caseInsensitive() {
@@ -41,6 +41,9 @@ public abstract class MatchOptions {
         return false;
     }
 
+    /**
+     * Return a clone of this {@link MatchOptions} with {@link #inverted()} set to the supplied value.
+     */
     public MatchOptions withInverted(boolean inverted) {
         return builder()
                 .caseInsensitive(caseInsensitive())
@@ -49,9 +52,7 @@ public abstract class MatchOptions {
     }
 
     /**
-     * Get a new {@link Builder} for construction {@link MatchOptions} objects.
-     *
-     * @return a new {@link Builder}
+     * Get a new {@link Builder} for constructing {@link MatchOptions} objects.
      */
     public static Builder builder() {
         return ImmutableMatchOptions.builder();
@@ -62,23 +63,17 @@ public abstract class MatchOptions {
      */
     public interface Builder {
         /**
-         * Set the {@link #inverted()} for the result to the supplied value
-         *
-         * @return this builder.
+         * Set {@link #inverted()} to the supplied value
          */
         Builder inverted(boolean inverted);
 
         /**
-         * Set the {@link #caseInsensitive()} for the result to the supplied value
-         *
-         * @return this builder.
+         * Set {@link #caseInsensitive()} to the supplied value
          */
         Builder caseInsensitive(boolean caseInsensitive);
 
         /**
-         * Set the {@link #nanMatch()} for the result to the supplied value
-         *
-         * @return this builder.
+         * Set {@link #nanMatch()} to the supplied value
          */
         Builder nanMatch(boolean nanMatch);
 

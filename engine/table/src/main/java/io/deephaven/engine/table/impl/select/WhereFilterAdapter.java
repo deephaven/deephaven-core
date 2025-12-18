@@ -556,23 +556,13 @@ class WhereFilterAdapter implements Filter.Visitor<WhereFilter> {
             return new MatchFilter(matchOptions, columnName.name(), Float.NaN);
         }
 
-        // Note: it might be tempting to consolidate all of the following getExpression calls to a common function, but
-        // then we'd be losing the type information that allows us to call the more explicitly typed Strings#of(<type>)
-        // methods.
-
         @Override
         public WhereFilter visit(Literal literal) {
-            // Note: we _could_ try and optimize here, since a literal is never null.
-            // That said, this filter will be compiled and potentially JITted, so it might not matter.
-            // return inverted ? WhereAllFilter.INSTANCE : WhereNoneFilter.INSTANCE;
             return getExpression(Strings.of(literal));
         }
 
         @Override
         public WhereFilter visit(Filter filter) {
-            // Note: we _could_ try and optimize here, since a filter never returns null (always true or false).
-            // That said, this filter will be compiled and potentially JITted, so it might not matter.
-            // return inverted ? WhereAllFilter.INSTANCE : WhereNoneFilter.INSTANCE;
             return getExpression(Strings.of(filter));
         }
 

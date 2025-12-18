@@ -2818,6 +2818,7 @@ class Condition(google.protobuf.message.Message):
     MATCHES_FIELD_NUMBER: builtins.int
     CONTAINS_FIELD_NUMBER: builtins.int
     SEARCH_FIELD_NUMBER: builtins.int
+    IS_NAN_FIELD_NUMBER: builtins.int
     @property
     def compare(self) -> global___CompareCondition: ...
     @property
@@ -2830,6 +2831,8 @@ class Condition(google.protobuf.message.Message):
     def contains(self) -> global___ContainsCondition: ...
     @property
     def search(self) -> global___SearchCondition: ...
+    @property
+    def is_nan(self) -> global___IsNaNCondition: ...
     def __init__(
         self,
         *,
@@ -2839,10 +2842,11 @@ class Condition(google.protobuf.message.Message):
         matches: global___MatchesCondition | None = ...,
         contains: global___ContainsCondition | None = ...,
         search: global___SearchCondition | None = ...,
+        is_nan: global___IsNaNCondition | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing.Literal["and", b"and", "compare", b"compare", "contains", b"contains", "data", b"data", "in", b"in", "invoke", b"invoke", "is_null", b"is_null", "matches", b"matches", "not", b"not", "or", b"or", "search", b"search"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing.Literal["and", b"and", "compare", b"compare", "contains", b"contains", "data", b"data", "in", b"in", "invoke", b"invoke", "is_null", b"is_null", "matches", b"matches", "not", b"not", "or", b"or", "search", b"search"]) -> None: ...
-    def WhichOneof(self, oneof_group: typing.Literal["data", b"data"]) -> typing.Literal["and", "or", "not", "compare", "in", "invoke", "is_null", "matches", "contains", "search"] | None: ...
+    def HasField(self, field_name: typing.Literal["and", b"and", "compare", b"compare", "contains", b"contains", "data", b"data", "in", b"in", "invoke", b"invoke", "is_nan", b"is_nan", "is_null", b"is_null", "matches", b"matches", "not", b"not", "or", b"or", "search", b"search"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing.Literal["and", b"and", "compare", b"compare", "contains", b"contains", "data", b"data", "in", b"in", "invoke", b"invoke", "is_nan", b"is_nan", "is_null", b"is_null", "matches", b"matches", "not", b"not", "or", b"or", "search", b"search"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing.Literal["data", b"data"]) -> typing.Literal["and", "or", "not", "compare", "in", "invoke", "is_null", "matches", "contains", "search", "is_nan"] | None: ...
 
 global___Condition = Condition
 
@@ -3012,6 +3016,23 @@ class IsNullCondition(google.protobuf.message.Message):
     def ClearField(self, field_name: typing.Literal["reference", b"reference"]) -> None: ...
 
 global___IsNullCondition = IsNullCondition
+
+@typing.final
+class IsNaNCondition(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    REFERENCE_FIELD_NUMBER: builtins.int
+    @property
+    def reference(self) -> global___Reference: ...
+    def __init__(
+        self,
+        *,
+        reference: global___Reference | None = ...,
+    ) -> None: ...
+    def HasField(self, field_name: typing.Literal["reference", b"reference"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing.Literal["reference", b"reference"]) -> None: ...
+
+global___IsNaNCondition = IsNaNCondition
 
 @typing.final
 class MatchesCondition(google.protobuf.message.Message):
