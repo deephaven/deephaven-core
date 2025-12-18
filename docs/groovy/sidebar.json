@@ -730,15 +730,6 @@
                 "path": "how-to-guides/flight-sql.md"
               },
               {
-                "label": "Excel",
-                "items": [
-                  {
-                    "label": "Excel Client",
-                    "path": "how-to-guides/excel/excel-client.md"
-                  }
-                ]
-              },
-              {
                 "label": "Protobuf",
                 "items": [
                   {
