@@ -1255,18 +1255,6 @@
                   {
                     "label": "removeBlink",
                     "path": "reference/table-operations/create/remove-blink.md"
-                  },
-                  {
-                    "label": "assertAddOnly",
-                    "path": "reference/table-operations/create/assert-add-only.md"
-                  },
-                  {
-                    "label": "assertAppendOnly",
-                    "path": "reference/table-operations/create/assert-append-only.md"
-                  },
-                  {
-                    "label": "assertBlink",
-                    "path": "reference/table-operations/create/assert-blink.md"
                   }
                 ]
               },
