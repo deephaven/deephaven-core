@@ -867,3 +867,9 @@ Again, the resulting tables are identical, but the execution times are quite dif
 | [`pandas.TimedeltaIndex`](https://pandas.pydata.org/docs/reference/api/pandas.TimedeltaIndex.html)     | NA                                                                                                            | NA                                                                                           | NA                                                                                       |
 | [`pandas.Period`](https://pandas.pydata.org/docs/reference/api/pandas.Period.html)                     | NA                                                                                                            | NA                                                                                           | NA                                                                                       |
 | [`pandas.PeriodIndex`](https://pandas.pydata.org/docs/reference/api/pandas.PeriodIndex.html)           | NA                                                                                                            | NA                                                                                           | NA                                                                                       |
+
+## Related documentation
+
+- [`deephaven.time` Pydoc](/core/pydoc/code/deephaven.time.html)
+- [Date-time literals in query strings](../how-to-guides/date-time-literals.md)
+- [Business calendars](../how-to-guides/business-calendar.md)
