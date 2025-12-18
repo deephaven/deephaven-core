@@ -62,7 +62,7 @@ There are four important tools provided by DQL that are relevant to the discussi
 
 ### 1. Built-in Java functions
 
-Deephaven has a collection of [built-in functions](../reference/query-language/query-library/auto-imported-functions.md) that are useful for working with date-time types. For the sake of performance, these functions are implemented in Java. DQL supports calling these functions directly in query strings, opening up all of Deephaven's [built-in Java functions](../reference/query-language/query-library/auto-imported-functions.md) to the Python interface. The following example uses the built-in Deephaven function [`now`](<https://deephaven.io/core/javadoc/io/deephaven/time/DateTimeUtils.html#now()>) to get the current system time as a Java [`Instant`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Instant.html):
+Deephaven has a collection of [built-in functions](../reference/query-language/query-library/auto-imported-functions.md) that are useful for working with date-time types. For the sake of performance, these functions are implemented in Java. DQL supports calling these functions directly in query strings, opening up all of Deephaven's [built-in Java functions](../reference/query-language/query-library/auto-imported-functions.md) to the Python interface. The following example uses the built-in Deephaven function [`now`](https://deephaven.io/core/javadoc/io/deephaven/time/DateTimeUtils.html#now()) to get the current system time as a Java [`Instant`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Instant.html):
 
 ```python test-set=2
 from deephaven import empty_table
@@ -71,9 +71,9 @@ t = empty_table(5).update("CurrentTime = now()")
 ```
 
 > [!NOTE]
-> The [`now`](<https://deephaven.io/core/javadoc/io/deephaven/time/DateTimeUtils.html#now()>) function uses the [current clock](<https://deephaven.io/core/javadoc/io/deephaven/time/DateTimeUtils.html#currentClock()>) of the Deephaven engine. This clock is typically the system clock, but it may be set to a simulated clock when replaying tables.
+> The [`now`](https://deephaven.io/core/javadoc/io/deephaven/time/DateTimeUtils.html#now()) function uses the [current clock](https://deephaven.io/core/javadoc/io/deephaven/time/DateTimeUtils.html#currentClock()) of the Deephaven engine. This clock is typically the system clock, but it may be set to a simulated clock when replaying tables.
 
-These [functions](../reference/query-language/query-library/auto-imported-functions.md) can also be applied to columns, constants, and variables. This slightly more complex example uses the built-in Deephaven function [`epochDaysToLocalDate`](<https://deephaven.io/core/javadoc/io/deephaven/time/DateTimeUtils.html#epochDaysToLocalDate(long)>) to create a [`LocalDate`](https://docs.oracle.com/en/java/javase/17/docs//api/java.base/java/time/LocalDate.html) from a long that represents the number of days since the [Unix epoch](https://en.wikipedia.org/wiki/Unix_time):
+These [functions](../reference/query-language/query-library/auto-imported-functions.md) can also be applied to columns, constants, and variables. This slightly more complex example uses the built-in Deephaven function [`epochDaysToLocalDate`](https://deephaven.io/core/javadoc/io/deephaven/time/DateTimeUtils.html#epochDaysToLocalDate(long)) to create a [`LocalDate`](https://docs.oracle.com/en/java/javase/17/docs//api/java.base/java/time/LocalDate.html) from a long that represents the number of days since the [Unix epoch](https://en.wikipedia.org/wiki/Unix_time):
 
 ```python test-set=3
 from deephaven import empty_table
@@ -102,7 +102,7 @@ t = empty_table(1).update(
 
 ### 2. Java object methods
 
-Java is an [object-oriented programming language](https://docs.oracle.com/javase/tutorial/java/concepts/). As such, all Java objects have associated methods. These methods can be called in query strings. Here is an example that builds upon the previous example, and uses the [`getDayOfWeek`](<https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/time/LocalDate.html#getDayOfWeek()>) method bound to each [`LocalDate`](https://docs.oracle.com/en/java/javase/17/docs//api/java.base/java/time/LocalDate.html) object to extract the day of the week for each [`LocalDate`](https://docs.oracle.com/en/java/javase/17/docs//api/java.base/java/time/LocalDate.html):
+Java is an [object-oriented programming language](https://docs.oracle.com/javase/tutorial/java/concepts/). As such, all Java objects have associated methods. These methods can be called in query strings. Here is an example that builds upon the previous example, and uses the [`getDayOfWeek`](https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/time/LocalDate.html#getDayOfWeek()) method bound to each [`LocalDate`](https://docs.oracle.com/en/java/javase/17/docs//api/java.base/java/time/LocalDate.html) object to extract the day of the week for each [`LocalDate`](https://docs.oracle.com/en/java/javase/17/docs//api/java.base/java/time/LocalDate.html):
 
 ```python test-set=4
 from deephaven import empty_table
@@ -120,14 +120,14 @@ To be clear:
 
 - `DaysSinceEpoch` is a 64-bit integer.
 - `LocalDateColumn` is a Java [`LocalDate`](https://docs.oracle.com/en/java/javase/17/docs//api/java.base/java/time/LocalDate.html) object.
-- [`epochDaysToLocalDate`](<https://deephaven.io/core/javadoc/io/deephaven/time/DateTimeUtils.html#epochDaysToLocalDate(long)>) is a Java function from the [built-in Deephaven library](../reference/query-language/query-library/auto-imported-functions.md).
-- `DayOfWeek` is the return value of [`getDayOfWeek`](<https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/time/LocalDate.html#getDayOfWeek()>), a Java method bound to the [`LocalDate`](https://docs.oracle.com/en/java/javase/17/docs//api/java.base/java/time/LocalDate.html) class.
+- [`epochDaysToLocalDate`](https://deephaven.io/core/javadoc/io/deephaven/time/DateTimeUtils.html#epochDaysToLocalDate(long)) is a Java function from the [built-in Deephaven library](../reference/query-language/query-library/auto-imported-functions.md).
+- `DayOfWeek` is the return value of [`getDayOfWeek`](https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/time/LocalDate.html#getDayOfWeek()), a Java method bound to the [`LocalDate`](https://docs.oracle.com/en/java/javase/17/docs//api/java.base/java/time/LocalDate.html) class.
 
 DQL enables them all to be used seamlessly from the Python API!
 
 ### 3. Arithmetic and inequality operators
 
-Query strings support syntactic sugar for special operators such as `+`, `-`, `>`, `<`, `>=`, etc. for Java time types! For instance, it makes sense to add a [`Period`](https://docs.oracle.com/en/java/javase/17/docs//api/java.base/java/time/Period.html) to an [`Instant`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Instant.html), or a [`Duration`](https://docs.oracle.com/en/java/javase/17/docs//api/java.base/java/time/Duration.html) to an [`Instant`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Instant.html), or to multiply a [`Duration`](https://docs.oracle.com/en/java/javase/17/docs//api/java.base/java/time/Duration.html) by an integer. This example uses the built-in [`parsePeriod`](<https://deephaven.io/core/javadoc/io/deephaven/time/DateTimeUtils.html#parsePeriod(java.lang.String)>) and [`parseDuration`](<https://deephaven.io/core/javadoc/io/deephaven/time/DateTimeUtils.html#parseDuration(java.lang.String)>) functions to create period and duration columns from strings. Then, the overloaded addition operator `+` is used to add them to the `Timestamp` column, and the overloaded multiplication operator `*` is used to create a column with timestamps that increment daily:
+Query strings support syntactic sugar for special operators such as `+`, `-`, `>`, `<`, `>=`, etc. for Java time types! For instance, it makes sense to add a [`Period`](https://docs.oracle.com/en/java/javase/17/docs//api/java.base/java/time/Period.html) to an [`Instant`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Instant.html), or a [`Duration`](https://docs.oracle.com/en/java/javase/17/docs//api/java.base/java/time/Duration.html) to an [`Instant`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Instant.html), or to multiply a [`Duration`](https://docs.oracle.com/en/java/javase/17/docs//api/java.base/java/time/Duration.html) by an integer. This example uses the built-in [`parsePeriod`](https://deephaven.io/core/javadoc/io/deephaven/time/DateTimeUtils.html#parsePeriod(java.lang.String)) and [`parseDuration`](https://deephaven.io/core/javadoc/io/deephaven/time/DateTimeUtils.html#parseDuration(java.lang.String)) functions to create period and duration columns from strings. Then, the overloaded addition operator `+` is used to add them to the `Timestamp` column, and the overloaded multiplication operator `*` is used to create a column with timestamps that increment daily:
 
 ```python test-set=5
 from deephaven import empty_table
@@ -149,12 +149,12 @@ t = empty_table(5).update(
 
 ### 4. Date-times using DQL
 
-In Deephaven, date-time values can be expressed using very simple [literal](<https://en.wikipedia.org/wiki/Literal_(computer_programming)>) syntax. These literal values can be used directly in query strings or as string inputs to [built-in functions](../reference/query-language/query-library/auto-imported-functions.md).
+In Deephaven, date-time values can be expressed using very simple [literal](https://en.wikipedia.org/wiki/Literal_(computer_programming)) syntax. These literal values can be used directly in query strings or as string inputs to [built-in functions](../reference/query-language/query-library/auto-imported-functions.md).
 
 > [!TIP]
 > In query strings, time literals are denoted with _single quotes_.
 
-This example creates [`Duration`](https://docs.oracle.com/en/java/javase/17/docs//api/java.base/java/time/Duration.html) columns from a time literal as well as from a string parsed by [`parseDuration`](<https://deephaven.io/core/javadoc/io/deephaven/time/DateTimeUtils.html#parseDuration(java.lang.String)>):
+This example creates [`Duration`](https://docs.oracle.com/en/java/javase/17/docs//api/java.base/java/time/Duration.html) columns from a time literal as well as from a string parsed by [`parseDuration`](https://deephaven.io/core/javadoc/io/deephaven/time/DateTimeUtils.html#parseDuration(java.lang.String)):
 
 ```python test-set=6
 from deephaven import empty_table
@@ -167,7 +167,7 @@ t = empty_table(5).update(
 > [!NOTE]
 > Note the difference in single quotes for the time literal and back quotes for the string.
 
-Using query string time literals can yield more compact and more efficient code. In the prior example, `` parseDuration(`PT24h`) `` is evaluated for every single row in the table, but here `'PT24h'` is only evaluated once for the entire table. This can lead to massive performance differences for large tables:
+Using query string time literals can yield more compact and more efficient code. In the prior example, ``parseDuration(`PT24h`)`` is evaluated for every single row in the table, but here `'PT24h'` is only evaluated once for the entire table. This can lead to massive performance differences for large tables:
 
 ```python test-set=7, order=t1,t2 default=:log
 from deephaven import empty_table
@@ -187,7 +187,7 @@ print("Using built-in parse function: ", t1_time)
 print("Using literal: ", t2_time)
 ```
 
-Most of the seven key Java types can be created using literals or functions like [`parseDuration`](<https://deephaven.io/core/javadoc/io/deephaven/time/DateTimeUtils.html#parseDuration(java.lang.String)>):
+Most of the seven key Java types can be created using literals or functions like [`parseDuration`](https://deephaven.io/core/javadoc/io/deephaven/time/DateTimeUtils.html#parseDuration(java.lang.String)):
 
 ```python test-set=7 order=t1,t2,t3,t4,t5,t6,t7
 from deephaven import empty_table
@@ -664,7 +664,7 @@ input_format = simple_date_format("YYYYMMDD")
 input_format2 = simple_date_format("YYYYMMDD")
 ```
 
-Now, `input_format` is an object that can be used in a query to format the `BEGIN` and `END` columns. This is done with the [`parse`](<https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/text/SimpleDateFormat.html#parse(java.lang.String,java.text.ParsePosition)>) method, which accepts the input date-time columns as strings. So, the `int` values must be converted to strings before calling [`parse`](<https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/text/SimpleDateFormat.html#parse(java.lang.String,java.text.ParsePosition)>). Finally, call [`toInstant`](<https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Date.html#toInstant()>) on the result to get the formatted date-time as a Java [`Instant`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Instant.html):
+Now, `input_format` is an object that can be used in a query to format the `BEGIN` and `END` columns. This is done with the [`parse`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/text/SimpleDateFormat.html#parse(java.lang.String,java.text.ParsePosition)) method, which accepts the input date-time columns as strings. So, the `int` values must be converted to strings before calling [`parse`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/text/SimpleDateFormat.html#parse(java.lang.String,java.text.ParsePosition)). Finally, call [`toInstant`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Date.html#toInstant()) on the result to get the formatted date-time as a Java [`Instant`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Instant.html):
 
 ```python test-set=17
 # use String.valueOf() to get int as string, then pass to input_format.parse(), finally call toInstant()
@@ -676,7 +676,7 @@ format_gsod = gsod.update(
 )
 ```
 
-The resulting columns can then be converted to any of the desired Java date-time types using Deephaven's built-in functions. This example converts `BEGIN` and `END` to [`LocalDate`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/LocalDate.html) columns using [`toLocalDate`](<https://deephaven.io/core/javadoc/io/deephaven/time/DateTimeUtils.html#toLocalDate(java.time.Instant,java.time.ZoneId)>):
+The resulting columns can then be converted to any of the desired Java date-time types using Deephaven's built-in functions. This example converts `BEGIN` and `END` to [`LocalDate`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/LocalDate.html) columns using [`toLocalDate`](https://deephaven.io/core/javadoc/io/deephaven/time/DateTimeUtils.html#toLocalDate(java.time.Instant,java.time.ZoneId)):
 
 ```python test-set=17
 format_gsod_local_date = format_gsod.update(
