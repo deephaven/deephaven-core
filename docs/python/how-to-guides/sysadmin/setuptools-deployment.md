@@ -1,13 +1,13 @@
 ---
-title: Packaging custom code and dependencies
+title: Build and distribute Python packages
 sidebar_label: Python packaging
 ---
 
 This guide shows how to create and deploy Python packages that use Deephaven. By combining pip-installable Deephaven packages with modern Python packaging tools, you can create distributable packages containing:
 
-- **Command-line scripts** - Executable tools installed as system commands
-- **Importable libraries** - Reusable code modules for other Python projects
-- **Managed dependencies** - Automatic installation of required packages
+- **Command-line scripts** - Executable tools installed as system commands.
+- **Importable libraries** - Reusable code modules for other Python projects.
+- **Managed dependencies** - Automatic installation of required packages.
 
 This guide follows the official [Python Packaging User Guide](https://packaging.python.org/en/latest/guides/writing-pyproject-toml/) recommendations.
 
@@ -34,12 +34,14 @@ Before creating a deployable Python package with Deephaven you must have:
 Here's the minimal workflow to create and install a Deephaven CLI package:
 
 1. **Create the project structure:**
+
    ```shell
    mkdir -p my_dh_project/src/my_dh_package
    cd my_dh_project
    ```
 
 2. **Create `src/my_dh_package/__init__.py`:**
+
    ```python syntax
    """My Deephaven package."""
 
@@ -47,6 +49,7 @@ Here's the minimal workflow to create and install a Deephaven CLI package:
    ```
 
 3. **Create `src/my_dh_package/cli.py`:**
+
    ```python syntax
    import click
 
@@ -62,6 +65,7 @@ Here's the minimal workflow to create and install a Deephaven CLI package:
    ```
 
 4. **Create `pyproject.toml`:**
+
    ```toml
    [build-system]
    requires = ["setuptools>=61.0", "wheel"]
@@ -86,6 +90,64 @@ Here's the minimal workflow to create and install a Deephaven CLI package:
    ```
 
 For detailed explanations and advanced features, continue reading the sections below.
+
+## Choose your packaging approach
+
+Different projects have different needs. Before diving into the details, identify which approach fits your use case:
+
+### Library-only package
+
+**Use case:** Package reusable code that other projects import. No command-line interface.
+
+**What you'll create:**
+
+- Importable modules with Deephaven query functions and utilities
+- No `[project.scripts]` section in `pyproject.toml`
+- No `__main__.py` file needed
+
+**Example usage after installation:**
+
+```python syntax
+from my_dh_library.queries import filter_by_threshold
+```
+
+### CLI-only package
+
+**Use case:** Build command-line tools for end users. Code is executed, not imported.
+
+**What you'll create:**
+
+- Entry point scripts defined in `[project.scripts]`
+- CLI modules with Click decorators
+- Optionally `__main__.py` for `python -m` execution
+
+**Example usage after installation:**
+
+```shell
+my-dh-query input_data.csv
+```
+
+### Combined library and CLI
+
+**Use case:** Provide both reusable library code and command-line tools.
+
+**What you'll create:**
+
+- Library modules for importing
+- CLI modules with entry points
+- Public API exported in `__init__.py`
+
+**Example usage:**
+
+```python syntax
+# Import as a library
+from my_dh_toolkit.queries import filter_by_threshold
+```
+
+```shell
+# Run as a CLI tool
+my-dh-query input_data.csv
+```
 
 ## Package structure
 
@@ -165,7 +227,7 @@ my-dh-process = "my_dh_package.processor:process"
 where = ["src"]
 ```
 
-### Dependencies configuration explained
+### Dependencies configuration
 
 The `dependencies` field specifies packages that will be automatically installed when your package is installed:
 
@@ -176,14 +238,42 @@ dependencies = [
 ]
 ```
 
-In this example:
+When users install your package with `pip install my_dh_cli`, both Deephaven and Click will be automatically installed. This ensures your package has all required libraries.
 
-- **`deephaven-server>=0.35.0`** - The Deephaven package with a minimum version requirement
-- **`click>=8.0.0`** - A third-party CLI framework used for command-line argument parsing
+#### Version specifiers
 
-When users install your package with `pip install my_dh_cli`, both Deephaven and Click will be automatically installed if they're not already present. This ensures your package has all the libraries it needs to run.
+Use version specifiers to control which versions are acceptable:
 
-### Script configuration explained
+- `>=0.35.0` - Minimum version (0.35.0 or higher)
+- `>=2.0.0,<3.0.0` - Version range (2.x only)
+- `~=1.24.0` - Compatible release (>=1.24.0, <1.25.0)
+- `==1.0.0` - Exact version (not recommended for libraries)
+
+#### Optional dependencies
+
+Define optional feature sets that users can install separately:
+
+```toml
+[project.optional-dependencies]
+visualization = [
+  "matplotlib>=3.7.0",
+  "seaborn>=0.12.0",
+]
+dev = [
+  "pytest>=7.0.0",
+  "black>=23.0.0",
+  "mypy>=1.0.0",
+]
+```
+
+Users install optional dependencies with:
+
+```shell
+pip install my_dh_package[visualization]
+pip install -e ".[dev]"  # For development
+```
+
+### Script configuration
 
 The key configuration for command-line scripts is in the `[project.scripts]` section:
 
@@ -209,13 +299,19 @@ You can configure multiple scripts in the `[project.scripts]` section. Each scri
 Each command name should clearly indicate its purpose, making it obvious what gets called when you run the command.
 :::
 
-## Create the command-line scripts
+## Create source modules
 
-Create your main script files that will serve as entry points for your command-line tools. This section shows how to create multiple CLI commands in one package:
+Create the Python modules for your package. The modules you need depend on your [packaging approach](#choose-your-packaging-approach):
 
-### `cli.py`
+- **CLI packages**: Entry point modules (`cli.py`, `processor.py`).
+- **Library packages**: Reusable function modules (`queries.py`, `utils.py`).
+- **Both**: Combination of the above.
 
-This file is a python module that contains the main application logic - a library function and a function that is the entry point for a cli script:
+### CLI modules
+
+#### `cli.py`
+
+A CLI module contains the entry point function for a command-line tool:
 
 ```python syntax
 import click
@@ -254,9 +350,9 @@ if __name__ == "__main__":
     app()
 ```
 
-### `processor.py`
+#### `processor.py`
 
-This file contains a batch processing command that demonstrates a second entry point:
+A second CLI module demonstrating multiple entry points:
 
 ```python syntax
 import click
@@ -303,9 +399,11 @@ if __name__ == "__main__":
     process()
 ```
 
-### `__init__.py`
+### Package files
 
-This file makes the directory a Python package. It's required for Python to recognize the directory as importable. While it can be empty, it's good practice to include package-level documentation and metadata.
+#### `__init__.py`
+
+Required to make the directory a Python package. Can be minimal or export a public API:
 
 **Basic example:**
 
@@ -350,11 +448,9 @@ from my_dh_package.cli import my_dh_query
 - **CLI-only packages**: Keep it minimal (just version and docstring)
 - **Mixed packages**: Export library functions but not CLI entry points
 
-### `__main__.py` (optional)
+#### `__main__.py` (optional)
 
-This file is **optional** and only needed if you want to support the **module execution pattern** (`python -m my_dh_package`). See [Execution patterns](#execution-patterns) for when to include this file.
-
-If included, it typically calls the same entry point function used in `[project.scripts]`:
+Enables `python -m my_dh_package` execution. Calls the same entry point as `[project.scripts]`:
 
 ```python syntax
 from my_dh_package.cli import app
@@ -368,79 +464,11 @@ This allows users to run the package both ways:
 - `my_dh_cli` (after installation via entry point)
 - `python -m my_dh_package` (from source without installation)
 
-## Execution patterns
+### Library modules
 
-Python packages can be executed in two different ways, each serving different purposes:
+Library modules contain reusable functions that other projects can import:
 
-### Entry point scripts (installed commands)
-
-**What it is:** Define commands in `[project.scripts]` that become available after installation.
-
-**How it works:**
-
-- Configure in `pyproject.toml`: `my-dh-query = "my_dh_package.cli:app"`
-- After `pip install`, run as: `my-dh-query`
-- Requires installation (regular or editable mode)
-- Creates a standalone command in your PATH
-
-**When to use:**
-
-- Building command-line tools for end users
-- Want a clean command name (e.g., `my-dh-query` instead of `python -m my_dh_package`)
-- Package will be installed system-wide or in virtual environments
-
-**Files needed:** `cli.py` (or any module with an entry point function)
-
-### Module execution (python -m)
-
-**What it is:** Run a package directly as a module without installation.
-
-**How it works:**
-
-- Add a `__main__.py` file to your package
-- Run as: `python -m my_dh_package`
-- Works from source directory without installation
-- Useful for development and testing
-
-**When to use:**
-
-- Development and testing before installation
-- Running from source without installing
-- Scripts that are part of a larger library package
-
-**Files needed:** `__main__.py`
-
-### Using both patterns
-
-You can support both execution methods. A common pattern is to have `__main__.py` call the same entry point function used in `[project.scripts]`:
-
-```python syntax
-# __main__.py
-from my_dh_package.cli import app
-
-if __name__ == "__main__":
-    app()
-```
-
-This allows users to run either:
-
-- `my-dh-query` (after installation)
-- `python -m my_dh_package` (from source)
-
-### Which pattern to choose
-
-- **Library-only packages**: Neither pattern needed (users import your modules)
-- **CLI tools for end users**: Use entry point scripts (`[project.scripts]`)
-- **Development tools or scripts**: Consider module execution (`__main__.py`)
-- **Both**: Include both for maximum flexibility
-
-## Create library modules
-
-Beyond CLI scripts, you can package reusable library code that other projects can import. Library modules contain functions, classes, and utilities that don't require command-line execution.
-
-### Example library module: `queries.py`
-
-Create reusable Deephaven query functions:
+#### `queries.py`
 
 ```python syntax
 """Reusable Deephaven query functions."""
@@ -475,7 +503,7 @@ def summarize_by_group(table: Table, group_col: str, value_col: str) -> Table:
     )
 ```
 
-### Using library modules
+#### Using library modules
 
 Other projects can import and use your library:
 
@@ -487,134 +515,6 @@ from deephaven import read_csv
 data = read_csv("data.csv")
 filtered = filter_by_threshold(data, "Score", 75.0)
 enhanced = add_computed_columns(filtered)
-```
-
-## Managing dependencies
-
-The `dependencies` field in `pyproject.toml` specifies packages that must be installed when your package is installed. This ensures users have all required libraries.
-
-### Basic dependencies
-
-Required packages are listed in the `dependencies` field:
-
-```toml
-[project]
-dependencies = [
-  "deephaven-server>=0.35.0",
-  "click>=8.0.0",
-]
-```
-
-When users install your package with `pip install my_dh_package`, these dependencies are automatically installed.
-
-### Version constraints
-
-Use version specifiers to control which versions of dependencies are acceptable:
-
-```toml
-[project]
-dependencies = [
-  "deephaven-server>=0.35.0", # Minimum version
-  "pandas>=2.0.0,<3.0.0", # Version range
-  "numpy~=1.24.0", # Compatible release (>=1.24.0, <1.25.0)
-  "pyarrow", # Any version
-]
-```
-
-**Common version specifiers:**
-
-- `>=0.35.0` - Minimum version (0.35.0 or higher)
-- `>=2.0.0,<3.0.0` - Version range (2.x only, excludes 3.0.0+)
-- `~=1.24.0` - Compatible release (>=1.24.0, <1.25.0)
-- `==1.0.0` - Exact version (not recommended for libraries)
-- No specifier - Any version (use cautiously)
-
-### Optional dependencies
-
-Define optional feature sets that users can install separately:
-
-```toml
-[project.optional-dependencies]
-visualization = [
-  "matplotlib>=3.7.0",
-  "seaborn>=0.12.0",
-]
-testing = [
-  "pytest>=7.0.0",
-  "pytest-cov>=4.0.0",
-]
-dev = [
-  "black>=23.0.0",
-  "ruff>=0.1.0",
-  "mypy>=1.0.0",
-]
-```
-
-Users can install optional dependencies:
-
-```shell
-# Install with visualization support
-pip install my_dh_package[visualization]
-
-# Install with multiple optional groups
-pip install my_dh_package[visualization,testing]
-
-# Install all optional dependencies
-pip install my_dh_package[visualization,testing,dev]
-```
-
-### Development dependencies
-
-For development-only dependencies (testing, linting, formatting), use the `dev` optional dependency group:
-
-```toml
-[project.optional-dependencies]
-dev = [
-  "pytest>=7.0.0",
-  "pytest-cov>=4.0.0",
-  "black>=23.0.0",
-  "mypy>=1.0.0",
-  "ruff>=0.1.0",
-]
-```
-
-Install for development:
-
-```shell
-pip install -e ".[dev]"
-```
-
-### Common dependency patterns
-
-**For data processing packages:**
-
-```toml
-dependencies = [
-  "deephaven-server>=0.35.0",
-  "pandas>=2.0.0",
-  "pyarrow>=10.0.0",
-  "numpy>=1.24.0",
-]
-```
-
-**For CLI tools:**
-
-```toml
-dependencies = [
-  "deephaven-server>=0.35.0",
-  "click>=8.0.0",
-  "rich>=13.0.0", # For beautiful terminal output
-]
-```
-
-**For web applications:**
-
-```toml
-dependencies = [
-  "deephaven-server>=0.35.0",
-  "flask>=3.0.0",
-  "requests>=2.31.0",
-]
 ```
 
 ## Build the package
@@ -641,21 +541,36 @@ This creates two files in the `dist/` directory:
 
 The wheel file can be distributed and installed on other systems.
 
-## Install the package
+## Install and run
 
-### For development
+### Development installation
 
-Install your package in editable mode for development:
+Install in editable mode for development:
 
 ```shell
 pip install -e .
 ```
 
-This allows you to make changes to your code without reinstalling.
+This allows you to modify code without reinstalling. After installation, run your CLI tools:
 
-### For regular use
+```shell
+my-dh-query input_data.csv
+my-dh-process data/ --output results/
+```
 
-Install from the built wheel:
+### Run without installing
+
+Run directly from source using `python -m`:
+
+```shell
+python -m my_dh_package input_data.csv
+```
+
+This requires `__main__.py` in your package.
+
+### Production installation
+
+Install from a built wheel:
 
 ```shell
 pip install dist/my_dh_package-0.1.0-py3-none-any.whl
@@ -663,212 +578,25 @@ pip install dist/my_dh_package-0.1.0-py3-none-any.whl
 
 ## Distribute the package
 
-### Distribute via PyPI
-
-Once your package is ready, you can publish it to the Python Package Index (PyPI):
+### Publish to PyPI
 
 ```shell
 python -m pip install twine
 python -m twine upload dist/*
 ```
 
-Users can then install your package with:
+Users can then install with:
 
 ```shell
 pip install my_dh_cli
 ```
 
-### Distribute as wheel files
+### Distribute wheel files directly
 
-Alternatively, distribute the `.whl` file directly to users who can install it with:
+Share the `.whl` file for direct installation:
 
 ```shell
 pip install my_dh_package-0.1.0-py3-none-any.whl
-```
-
-### Run without installing
-
-You can run your package directly from the source directory using `python -m` with the package name (not the command name):
-
-```shell
-python -m my_dh_package input_data.csv
-```
-
-This executes the `__main__.py` file, which calls the `app()` function.
-
-## Run the command-line tools
-
-Once installed, the commands defined in `[project.scripts]` become available. You can run them from any directory using the command names:
-
-```shell
-# Process a single file
-my-dh-query input_data.csv
-
-# Batch process multiple files
-my-dh-process data/ --output results/
-```
-
-Note: `my-dh-query` and `my-dh-process` are command names (defined in `pyproject.toml`), while `my_dh_package` is the package name (the directory under `src/`). Each command executes its respective function from the specified module.
-
-## Packaging scenarios
-
-Different projects have different needs. Here are three common packaging scenarios:
-
-### Scenario 1: Library-only package
-
-Package reusable code without CLI tools. Other projects import your modules.
-
-**Execution pattern:** None (library code is imported, not executed)
-
-**Package structure:**
-
-```
-my_dh_project/
-├── src/
-│   └── my_dh_package/
-│       ├── __init__.py
-│       ├── queries.py
-│       └── utils.py
-├── pyproject.toml
-└── README.md
-```
-
-**`pyproject.toml` (no scripts section):**
-
-```toml
-[build-system]
-requires = ["setuptools>=61.0", "wheel"]
-build-backend = "setuptools.build_meta"
-
-[project]
-name = "my_dh_library"
-version = "0.1.0"
-description = "Reusable Deephaven query functions"
-readme = "README.md"
-requires-python = ">=3.8"
-dependencies = [
-  "deephaven-server>=0.35.0",
-]
-
-[tool.setuptools.packages.find]
-where = ["src"]
-```
-
-**Usage:**
-
-```python syntax
-# Other projects import your library
-from my_dh_library.queries import filter_by_threshold
-```
-
-### Scenario 2: CLI-only package
-
-Package executable command-line tools without exposing library code.
-
-**Execution pattern:** Entry point scripts only (no `__main__.py`)
-
-**Package structure:**
-
-```
-my_dh_project/
-├── src/
-│   └── my_dh_package/
-│       ├── __init__.py
-│       ├── __main__.py
-│       └── cli.py
-├── pyproject.toml
-└── README.md
-```
-
-**`pyproject.toml` (with scripts section):**
-
-```toml
-[build-system]
-requires = ["setuptools>=61.0", "wheel"]
-build-backend = "setuptools.build_meta"
-
-[project]
-name = "my_dh_cli"
-version = "0.1.0"
-description = "Command-line tool for data processing"
-readme = "README.md"
-requires-python = ">=3.8"
-dependencies = [
-  "deephaven-server>=0.35.0",
-]
-
-[project.scripts]
-my-dh-query = "my_dh_package.cli:app"
-
-[tool.setuptools.packages.find]
-where = ["src"]
-```
-
-**Usage:**
-
-```shell
-# After installation, run via entry point script
-my-dh-query input_data.csv
-```
-
-### Scenario 3: Combined library and CLI
-
-Package both reusable library code and command-line tools.
-
-**Package structure:**
-
-```
-my_dh_project/
-├── src/
-│   └── my_dh_package/
-│       ├── __init__.py
-│       ├── __main__.py
-│       ├── cli.py
-│       ├── queries.py
-│       └── utils.py
-├── pyproject.toml
-└── README.md
-```
-
-**`pyproject.toml` (library + scripts):**
-
-```toml
-[build-system]
-requires = ["setuptools>=61.0", "wheel"]
-build-backend = "setuptools.build_meta"
-
-[project]
-name = "my_dh_toolkit"
-version = "0.1.0"
-description = "Deephaven library and CLI tools"
-readme = "README.md"
-requires-python = ">=3.8"
-dependencies = [
-  "deephaven-server>=0.35.0",
-]
-
-[project.scripts]
-my-dh-query = "my_dh_package.cli:app"
-my-dh-process = "my_dh_package.processor:process"
-
-[tool.setuptools.packages.find]
-where = ["src"]
-```
-
-**Usage:**
-
-```python syntax
-# Import as a library
-from my_dh_toolkit.queries import filter_by_threshold
-```
-
-```shell
-# Run via entry point scripts (after installation)
-my-dh-query input_data.csv
-my-dh-process data/ --output results/
-
-# Optionally add __main__.py to also support:
-# python -m my_dh_package input_data.csv
 ```
 
 ## Troubleshooting
