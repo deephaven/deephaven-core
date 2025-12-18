@@ -388,6 +388,10 @@
                     "path": "how-to-guides/filters.md"
                   },
                   {
+                    "label": "Synchronize multiple tables",
+                    "path": "how-to-guides/synchronizing-tables.md"
+                  },
+                  {
                     "label": "Operators",
                     "path": "how-to-guides/operators.md"
                   },
@@ -1528,6 +1532,10 @@
                   {
                     "label": "tailPct",
                     "path": "reference/table-operations/filter/tail-pct.md"
+                  },
+                  {
+                    "label": "TailInitializationFilter",
+                    "path": "reference/table-operations/filter/TailInitializationFilter.md"
                   },
                   {
                     "label": "where",
