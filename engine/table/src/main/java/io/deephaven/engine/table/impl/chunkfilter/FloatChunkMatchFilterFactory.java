@@ -4,7 +4,7 @@
 // @formatter:off
 package io.deephaven.engine.table.impl.chunkfilter;
 
-import gnu.trove.set.hash.TFloatHashSet;
+import gnu.trove.set.hash.TFloatHashSet;import gnu.trove.set.hash.TIntHashSet;import io.deephaven.engine.table.MatchOptions;
 
 /**
  * Creates chunk filters for float values.
@@ -17,95 +17,55 @@ import gnu.trove.set.hash.TFloatHashSet;
 public class FloatChunkMatchFilterFactory {
     private FloatChunkMatchFilterFactory() {} // static use only
 
-    /**
-     * If NaN values are present, return a copy of the array with the NaN values skipped. Otherwise returns the
-     * original array.
-     */
-    private static float[] removeNan(final float[] values) {
-        // First pass: count non-NaN elements
-        int count = 0;
-        for (float v : values) {
-            if (!Float.isNaN(v)) {
-                count++;
-            }
-        }
-
-        // If no NaN values, return a copy of the original
-        if (count == values.length) {
-            return values;
-        }
-
-        // Second pass: fill the result array
-        float[] result = new float[count];
-        int index = 0;
-        for (float v : values) {
-            if (!Float.isNaN(v)) {
-                result[index++] = v;
-            }
-        }
-
-        return result;
-    }
-
-
-    public static FloatChunkFilter makeFilter(boolean invertMatch, float... values) {
-        final float[] valuesWithoutNaN = removeNan(values);
-        
-        // If no NaN values were present, we can use the regular filters
-        if (values.length == valuesWithoutNaN.length) {
-            if (invertMatch) {
+    public static FloatChunkFilter makeFilter(final MatchOptions matchOptions, final float... values) {
+        if (matchOptions.nanMatch()) {
+            if (matchOptions.inverted()) {
                 if (values.length == 1) {
-                    return new InverseSingleValueFloatChunkFilter(values[0]);
+                    return new InverseSingleValueNaNFloatChunkFilter(values[0]);
                 }
                 if (values.length == 2) {
-                    return new InverseTwoValueFloatChunkFilter(values[0], values[1]);
+                    return new InverseTwoValueNaNFloatChunkFilter(values[0], values[1]);
                 }
                 if (values.length == 3) {
-                    return new InverseThreeValueFloatChunkFilter(values[0], values[1], values[2]);
+                    return new InverseThreeValueNaNFloatChunkFilter(values[0], values[1], values[2]);
                 }
-                return new InverseMultiValueFloatChunkFilter(values);
+                return new InverseMultiValueNaNFloatChunkFilter(values);
             } else {
                 if (values.length == 1) {
-                    return new SingleValueFloatChunkFilter(values[0]);
+                    return new SingleValueNaNFloatChunkFilter(values[0]);
                 }
                 if (values.length == 2) {
-                    return new TwoValueFloatChunkFilter(values[0], values[1]);
+                    return new TwoValueNaNFloatChunkFilter(values[0], values[1]);
                 }
                 if (values.length == 3) {
-                    return new ThreeValueFloatChunkFilter(values[0], values[1], values[2]);
+                    return new ThreeValueNaNFloatChunkFilter(values[0], values[1], values[2]);
                 }
-                return new MultiValueFloatChunkFilter(values);
+                return new MultiValueNaNFloatChunkFilter(values);
             }
+        }
+
+        if (matchOptions.inverted()) {
+            if (values.length == 1) {
+                return new InverseSingleValueFloatChunkFilter(values[0]);
+            }
+            if (values.length == 2) {
+                return new InverseTwoValueFloatChunkFilter(values[0], values[1]);
+            }
+            if (values.length == 3) {
+                return new InverseThreeValueFloatChunkFilter(values[0], values[1], values[2]);
+            }
+            return new InverseMultiValueFloatChunkFilter(values);
         } else {
-            if (invertMatch) {
-                if (valuesWithoutNaN.length == 0) {
-                    return new TrueFloatChunkFilter(); // all != NaN -> True
-                }
-                if (valuesWithoutNaN.length == 1) {
-                    return new InverseSingleValueNaNFloatChunkFilter(valuesWithoutNaN[0]);
-                }
-                if (valuesWithoutNaN.length == 2) {
-                    return new InverseTwoValueNaNFloatChunkFilter(valuesWithoutNaN[0], valuesWithoutNaN[1]);
-                }
-                if (valuesWithoutNaN.length == 3) {
-                    return new InverseThreeValueNaNFloatChunkFilter(valuesWithoutNaN[0], valuesWithoutNaN[1], valuesWithoutNaN[2]);
-                }
-                return new InverseMultiValueNaNFloatChunkFilter(valuesWithoutNaN);
-            } else {
-                if (valuesWithoutNaN.length == 0) {
-                    return new FalseFloatChunkFilter(); // all == NaN -> False
-                }
-                if (valuesWithoutNaN.length == 1) {
-                    return new SingleValueNaNFloatChunkFilter(valuesWithoutNaN[0]);
-                }
-                if (valuesWithoutNaN.length == 2) {
-                    return new TwoValueNaNFloatChunkFilter(valuesWithoutNaN[0], valuesWithoutNaN[1]);
-                }
-                if (valuesWithoutNaN.length == 3) {
-                    return new ThreeValueNaNFloatChunkFilter(valuesWithoutNaN[0], valuesWithoutNaN[1], valuesWithoutNaN[2]);
-                }
-                return new MultiValueNaNFloatChunkFilter(valuesWithoutNaN);
+            if (values.length == 1) {
+                return new SingleValueFloatChunkFilter(values[0]);
             }
+            if (values.length == 2) {
+                return new TwoValueFloatChunkFilter(values[0], values[1]);
+            }
+            if (values.length == 3) {
+                return new ThreeValueFloatChunkFilter(values[0], values[1], values[2]);
+            }
+            return new MultiValueFloatChunkFilter(values);
         }
     }
 
@@ -225,133 +185,145 @@ public class FloatChunkMatchFilterFactory {
         }
     }
 
-    private final static class TrueFloatChunkFilter extends FloatChunkFilter {
-        @Override
-        public boolean matches(float value) {
-            return true;
+    /**
+     * Handle -0.0 vs. 0.0 correctly in value comparison. This leverages the fact that the library conversion
+     * to bits returns different values for 0.0 and -0.0 but the same value for NaN.
+     */
+    // region getBits
+    private static final Float NEG_ZERO = -0.0F;
+    private static int getBits(float value) {
+        if (NEG_ZERO.equals(value)) {
+            return Float.floatToIntBits(0.0f);
         }
+        return Float.floatToIntBits(value);
     }
-
-    private final static class FalseFloatChunkFilter extends FloatChunkFilter {
-        @Override
-        public boolean matches(float value) {
-            return false;
-        }
-    }
+    // endregion getBits
 
     private final static class SingleValueNaNFloatChunkFilter extends FloatChunkFilter {
-        private final float value;
+        private final int valueBits;
 
         private SingleValueNaNFloatChunkFilter(float value) {
-            this.value = value;
+            valueBits = getBits(value);
         }
 
         @Override
         public boolean matches(float value) {
-            return Float.isNaN(value) || value == this.value;
+            return valueBits == getBits(value);
         }
     }
 
     private final static class InverseSingleValueNaNFloatChunkFilter extends FloatChunkFilter {
-        private final float value;
+        private final int valueBits;
 
         private InverseSingleValueNaNFloatChunkFilter(float value) {
-            this.value = value;
+            valueBits = getBits(value);
         }
 
         @Override
         public boolean matches(float value) {
-            return !Float.isNaN(value) && value != this.value;
+            return valueBits != getBits(value);
         }
     }
 
     private final static class TwoValueNaNFloatChunkFilter extends FloatChunkFilter {
-        private final float value1;
-        private final float value2;
+        private final int valueBits1;
+        private final int valueBits2;
 
         private TwoValueNaNFloatChunkFilter(float value1, float value2) {
-            this.value1 = value1;
-            this.value2 = value2;
+            this.valueBits1 = getBits(value1);
+            this.valueBits2 = getBits(value2);
         }
 
         @Override
         public boolean matches(float value) {
-            return Float.isNaN(value) || value == value1 || value == value2;
+            final int valueBits = getBits(value);
+            return valueBits == valueBits1 || valueBits == valueBits2;
         }
     }
 
     private final static class InverseTwoValueNaNFloatChunkFilter extends FloatChunkFilter {
-        private final float value1;
-        private final float value2;
+        private final int valueBits1;
+        private final int valueBits2;
 
         private InverseTwoValueNaNFloatChunkFilter(float value1, float value2) {
-            this.value1 = value1;
-            this.value2 = value2;
+            this.valueBits1 = getBits(value1);
+            this.valueBits2 = getBits(value2);
         }
 
         @Override
         public boolean matches(float value) {
-            return !Float.isNaN(value) && value != value1 && value != value2;
+            final int valueBits = getBits(value);
+            return valueBits != valueBits1 && valueBits != valueBits2;
         }
     }
 
     private final static class ThreeValueNaNFloatChunkFilter extends FloatChunkFilter {
-        private final float value1;
-        private final float value2;
-        private final float value3;
+        private final int valueBits1;
+        private final int valueBits2;
+        private final int valueBits3;
 
         private ThreeValueNaNFloatChunkFilter(float value1, float value2, float value3) {
-            this.value1 = value1;
-            this.value2 = value2;
-            this.value3 = value3;
+            this.valueBits1 = getBits(value1);
+            this.valueBits2 = getBits(value2);
+            this.valueBits3 = getBits(value3);
         }
 
         @Override
         public boolean matches(float value) {
-            return Float.isNaN(value) || value == value1 || value == value2 || value == value3;
+            final int valueBits = getBits(value);
+            return valueBits == valueBits1 || valueBits == valueBits2 || valueBits == valueBits3;
         }
     }
 
     private final static class InverseThreeValueNaNFloatChunkFilter extends FloatChunkFilter {
-        private final float value1;
-        private final float value2;
-        private final float value3;
+        private final int valueBits1;
+        private final int valueBits2;
+        private final int valueBits3;
 
         private InverseThreeValueNaNFloatChunkFilter(float value1, float value2, float value3) {
-            this.value1 = value1;
-            this.value2 = value2;
-            this.value3 = value3;
+            this.valueBits1 = getBits(value1);
+            this.valueBits2 = getBits(value2);
+            this.valueBits3 = getBits(value3);
         }
 
         @Override
         public boolean matches(float value) {
-            return !Float.isNaN(value) && value != value1 && value != value2 && value != value3;
+            final int valueBits = Float.floatToIntBits(value);
+            return valueBits != valueBits1 && valueBits != valueBits2 && valueBits != valueBits3;
         }
     }
 
     private final static class MultiValueNaNFloatChunkFilter extends FloatChunkFilter {
-        private final TFloatHashSet values;
+        private final TIntHashSet values;
 
         private MultiValueNaNFloatChunkFilter(float... values) {
-            this.values = new TFloatHashSet(values);
+            this.values = new TIntHashSet(values.length);
+            for (float v : values) {
+                this.values.add(getBits(v));
+            }
         }
 
         @Override
         public boolean matches(float value) {
-            return Float.isNaN(value) || this.values.contains(value);
+            final int valueBits = getBits(value);
+            return this.values.contains(valueBits);
         }
     }
 
     private final static class InverseMultiValueNaNFloatChunkFilter extends FloatChunkFilter {
-        private final TFloatHashSet values;
+        private final TIntHashSet values;
 
         private InverseMultiValueNaNFloatChunkFilter(float... values) {
-            this.values = new TFloatHashSet(values);
+            this.values = new TIntHashSet(values.length);
+            for (float v : values) {
+                this.values.add(getBits(v));
+            }
         }
 
         @Override
         public boolean matches(float value) {
-            return !Float.isNaN(value) && !this.values.contains(value);
+            final int valueBits = getBits(value);
+            return !values.contains(valueBits);
         }
     }
 }

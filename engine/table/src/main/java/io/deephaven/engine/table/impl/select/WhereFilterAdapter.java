@@ -11,7 +11,7 @@ import io.deephaven.api.expression.Function;
 import io.deephaven.api.expression.Method;
 import io.deephaven.api.filter.*;
 import io.deephaven.api.literal.Literal;
-import io.deephaven.engine.table.impl.select.MatchFilter.MatchType;
+import io.deephaven.engine.table.MatchOptions;
 import io.deephaven.gui.table.filters.Condition;
 
 import java.util.Objects;
@@ -125,7 +125,7 @@ class WhereFilterAdapter implements Filter.Visitor<WhereFilter> {
     }
 
     public static WhereFilter of(FilterIsNaN isNaN, boolean inverted) {
-        return isNaN.expression().walk(new ExpressionIsNullAdapter(inverted));
+        return isNaN.expression().walk(new ExpressionIsNaNAdapter(inverted));
     }
 
     public static WhereFilter of(FilterPattern pattern, boolean inverted) {
@@ -289,9 +289,9 @@ class WhereFilterAdapter implements Filter.Visitor<WhereFilter> {
                 // TODO(deephaven-core#3730): More efficient io.deephaven.api.filter.FilterComparison to RangeFilter
                 switch (preferred.operator()) {
                     case EQUALS:
-                        return new MatchFilter(MatchType.Regular, lhs.name(), rhsLiteral);
+                        return new MatchFilter(MatchOptions.REGULAR, lhs.name(), rhsLiteral);
                     case NOT_EQUALS:
-                        return new MatchFilter(MatchType.Inverted, lhs.name(), rhsLiteral);
+                        return new MatchFilter(MatchOptions.INVERTED, lhs.name(), rhsLiteral);
                     case LESS_THAN:
                     case LESS_THAN_OR_EQUAL:
                     case GREATER_THAN:
@@ -306,9 +306,9 @@ class WhereFilterAdapter implements Filter.Visitor<WhereFilter> {
                 // TODO(deephaven-core#3730): More efficient io.deephaven.api.filter.FilterComparison to RangeFilter
                 switch (preferred.operator()) {
                     case EQUALS:
-                        return new MatchFilter(MatchType.Regular, lhs.name(), rhsLiteral);
+                        return new MatchFilter(MatchOptions.REGULAR, lhs.name(), rhsLiteral);
                     case NOT_EQUALS:
-                        return new MatchFilter(MatchType.Inverted, lhs.name(), rhsLiteral);
+                        return new MatchFilter(MatchOptions.INVERTED, lhs.name(), rhsLiteral);
                     case LESS_THAN:
                     case LESS_THAN_OR_EQUAL:
                     case GREATER_THAN:
@@ -369,9 +369,9 @@ class WhereFilterAdapter implements Filter.Visitor<WhereFilter> {
             public WhereFilter visit(boolean rhs) {
                 switch (preferred.operator()) {
                     case EQUALS:
-                        return new MatchFilter(MatchType.Regular, lhs.name(), rhs);
+                        return new MatchFilter(MatchOptions.REGULAR, lhs.name(), rhs);
                     case NOT_EQUALS:
-                        return new MatchFilter(MatchType.Inverted, lhs.name(), rhs);
+                        return new MatchFilter(MatchOptions.INVERTED, lhs.name(), rhs);
                     case LESS_THAN:
                     case LESS_THAN_OR_EQUAL:
                     case GREATER_THAN:
@@ -489,7 +489,7 @@ class WhereFilterAdapter implements Filter.Visitor<WhereFilter> {
         @Override
         public WhereFilter visit(ColumnName columnName) {
             return new MatchFilter(
-                    inverted ? MatchType.Inverted : MatchType.Regular,
+                    inverted ? MatchOptions.INVERTED : MatchOptions.REGULAR,
                     columnName.name(),
                     new Object[] {null});
         }
@@ -549,10 +549,11 @@ class WhereFilterAdapter implements Filter.Visitor<WhereFilter> {
 
         @Override
         public WhereFilter visit(ColumnName columnName) {
-            return new MatchFilter(
-                    inverted ? MatchType.Inverted : MatchType.Regular,
-                    columnName.name(),
-                    Float.NaN);
+            final MatchOptions matchOptions = MatchOptions.builder()
+                    .inverted(inverted)
+                    .nanMatch(true)
+                    .build();
+            return new MatchFilter(matchOptions, columnName.name(), Float.NaN);
         }
 
         // Note: it might be tempting to consolidate all of the following getExpression calls to a common function, but

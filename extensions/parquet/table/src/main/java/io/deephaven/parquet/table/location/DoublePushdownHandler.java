@@ -41,7 +41,7 @@ final class DoublePushdownHandler {
             return true;
         }
         return maybeOverlapsRangeImpl(
-                mutableMin.getValue(), mutableMax.getValue(),
+                mutableMin.get(), mutableMax.get(),
                 dhLower, doubleRangeFilter.isLowerInclusive(),
                 dhUpper, doubleRangeFilter.isUpperInclusive());
     }
@@ -71,7 +71,7 @@ final class DoublePushdownHandler {
             @NotNull final MatchFilter matchFilter,
             @NotNull final Statistics<?> statistics) {
         final Object[] values = matchFilter.getValues();
-        final boolean invertMatch = matchFilter.getInvertMatch();
+        final boolean invertMatch = matchFilter.getMatchOptions().inverted();
         if (values == null || values.length == 0) {
             // No values to check against
             return invertMatch;
@@ -92,9 +92,9 @@ final class DoublePushdownHandler {
             return true;
         }
         if (!invertMatch) {
-            return maybeMatches(mutableMin.getValue(), mutableMax.getValue(), unboxedValues);
+            return maybeMatches(mutableMin.get(), mutableMax.get(), unboxedValues);
         }
-        return maybeMatchesInverse(mutableMin.getValue(), mutableMax.getValue(), unboxedValues);
+        return maybeMatchesInverse(mutableMin.get(), mutableMax.get(), unboxedValues);
     }
 
     /**
@@ -137,9 +137,6 @@ final class DoublePushdownHandler {
                 return true;
             }
         }
-        if (max > values[numValues - 1]) {
-            return true;
-        }
-        return false;
+        return max > values[numValues - 1];
     }
 }

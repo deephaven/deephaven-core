@@ -8,6 +8,7 @@
 package io.deephaven.engine.table.impl.chunkfilter;
 
 import gnu.trove.set.hash.TByteHashSet;
+import io.deephaven.engine.table.MatchOptions;
 
 /**
  * Creates chunk filters for byte values.
@@ -20,8 +21,8 @@ import gnu.trove.set.hash.TByteHashSet;
 public class ByteChunkMatchFilterFactory {
     private ByteChunkMatchFilterFactory() {} // static use only
 
-    public static ByteChunkFilter makeFilter(boolean invertMatch, byte... values) {
-        if (invertMatch) {
+    public static ByteChunkFilter makeFilter(final MatchOptions matchOptions, final byte... values) {
+        if (matchOptions.inverted()) {
             if (values.length == 1) {
                 return new InverseSingleValueByteChunkFilter(values[0]);
             }

@@ -6,6 +6,7 @@ package io.deephaven.server.table.ops.filter;
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.filter.FilterPattern;
 import io.deephaven.api.filter.FilterPattern.Mode;
+import io.deephaven.engine.table.MatchOptions;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.select.ConjunctiveFilter;
 import io.deephaven.engine.table.impl.select.DisjunctiveFilter;
@@ -36,6 +37,14 @@ import java.util.stream.Collectors;
 
 public class FilterFactory implements FilterVisitor<WhereFilter> {
     private final TableDefinition tableDefinition;
+
+    private enum LocalMatchType {
+        Regular, Inverted,
+    }
+
+    private enum LocalCaseSensitivity {
+        MatchCase, IgnoreCase
+    }
 
     private FilterFactory(@NotNull final TableDefinition tableDefinition) {
         this.tableDefinition = tableDefinition;
@@ -189,28 +198,33 @@ public class FilterFactory implements FilterVisitor<WhereFilter> {
                 values[i] = FilterPrinter.printNoEscape(literal);
             }
         }
-        return new MatchFilter(caseSensitivity(caseSensitivity), matchType(matchType), reference.getColumnName(),
-                values);
+        final LocalCaseSensitivity fcs = caseSensitivity(caseSensitivity);
+        final LocalMatchType fmt = matchType(matchType);
+        final MatchOptions matchOptions = MatchOptions.builder()
+                .inverted(fmt == LocalMatchType.Inverted)
+                .caseInsensitive(fcs == LocalCaseSensitivity.IgnoreCase)
+                .build();
+        return new MatchFilter(null, matchOptions, reference.getColumnName(), values, null);
     }
 
-    private MatchFilter.CaseSensitivity caseSensitivity(CaseSensitivity caseSensitivity) {
+    private LocalCaseSensitivity caseSensitivity(CaseSensitivity caseSensitivity) {
         switch (caseSensitivity) {
             case MATCH_CASE:
-                return MatchFilter.CaseSensitivity.MatchCase;
+                return LocalCaseSensitivity.MatchCase;
             case IGNORE_CASE:
-                return MatchFilter.CaseSensitivity.IgnoreCase;
+                return LocalCaseSensitivity.IgnoreCase;
             case UNRECOGNIZED:
             default:
                 throw new IllegalStateException("Can't handle compare case sensitivity " + caseSensitivity);
         }
     }
 
-    private MatchFilter.MatchType matchType(MatchType matchType) {
+    private LocalMatchType matchType(MatchType matchType) {
         switch (matchType) {
             case REGULAR:
-                return MatchFilter.MatchType.Regular;
+                return LocalMatchType.Regular;
             case INVERTED:
-                return MatchFilter.MatchType.Inverted;
+                return LocalMatchType.Inverted;
             case UNRECOGNIZED:
             default:
                 throw new IllegalStateException("Can't handle compare match type " + matchType);

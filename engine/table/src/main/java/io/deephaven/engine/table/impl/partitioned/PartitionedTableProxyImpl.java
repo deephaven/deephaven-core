@@ -18,7 +18,6 @@ import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.*;
 import io.deephaven.engine.table.impl.select.MatchFilter;
-import io.deephaven.engine.table.impl.select.MatchFilter.MatchType;
 import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.engine.table.impl.select.SourceColumn;
 import io.deephaven.engine.table.impl.select.WhereFilter;
@@ -340,7 +339,8 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
         final Table rhsKeys = rhs.table().updateView(rhsKeyColumnRenames).selectDistinct(lhsKeyColumnNames);
         final Table unionedKeys = TableTools.merge(lhsKeys, rhsKeys);
         final Table countedKeys = unionedKeys.countBy(FOUND_IN.name(), lhs.keyColumnNames());
-        final Table nonMatchingKeys = countedKeys.where(new MatchFilter(MatchType.Regular, FOUND_IN.name(), 1));
+        final Table nonMatchingKeys =
+                countedKeys.where(new MatchFilter(MatchOptions.REGULAR, FOUND_IN.name(), 1));
         final Table nonMatchingKeysOnly = nonMatchingKeys.view(lhsKeyColumnNames);
         checkNonMatchingKeys(nonMatchingKeysOnly);
         return new DependentValidation("Matching Partition Keys", nonMatchingKeysOnly,

@@ -968,7 +968,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
                     maybeOverlaps = FloatPushdownHandler.maybeOverlaps(matchFilter, statistics);
                 } else if (dhColumnType == double.class || dhColumnType == Double.class) {
                     maybeOverlaps = DoublePushdownHandler.maybeOverlaps(matchFilter, statistics);
-                } else if (dhColumnType == String.class && matchFilter.isCaseInsensitive()) {
+                } else if (dhColumnType == String.class && matchFilter.getMatchOptions().caseInsensitive()) {
                     maybeOverlaps = CaseInsensitiveStringMatchPushdownHandler.maybeOverlaps(matchFilter, statistics);
                 } else if (dhColumnType == Instant.class) {
                     maybeOverlaps = InstantPushdownHandler.maybeOverlaps(matchFilter, statistics);
@@ -1087,7 +1087,8 @@ public class ParquetTableLocation extends AbstractTableLocation {
 
                 // Make a MatchFilter with the matching dictionary key IDs. This will accept any encoded value whose
                 // dictionary index is in keyMatchArray
-                final ChunkFilter matchChunkFilter = LongChunkMatchFilterFactory.makeFilter(false, keyMatchArray);
+                final ChunkFilter matchChunkFilter =
+                        LongChunkMatchFilterFactory.makeFilter(MatchOptions.REGULAR, keyMatchArray);
 
                 // Now we need to apply this filter to the encoded values in the row group. We can do this by
                 // iterating the "maybe" rows in chunks, getting the encoded values for those rows, and applying the

@@ -3,8 +3,10 @@
 //
 package io.deephaven.engine.table.impl;
 
+import io.deephaven.api.ColumnName;
 import io.deephaven.api.RawString;
 import io.deephaven.api.filter.Filter;
+import io.deephaven.engine.table.MatchOptions;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.select.*;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
@@ -435,7 +437,7 @@ public class QueryTableWhereSpecialCasesTest {
         validateCharFilter(
                 source,
                 "charCol",
-                new MatchFilter(MatchFilter.MatchType.Regular, "charCol", (char) 0),
+                new MatchFilter(MatchOptions.REGULAR, "charCol", (char) 0),
                 val -> val == 0,
                 val -> val != 0);
         validateByteFilter(
@@ -447,7 +449,7 @@ public class QueryTableWhereSpecialCasesTest {
         validateByteFilter(
                 source,
                 "byteCol",
-                new MatchFilter(MatchFilter.MatchType.Regular, "byteCol", (byte) 0),
+                new MatchFilter(MatchOptions.REGULAR, "byteCol", (byte) 0),
                 val -> val == 0,
                 val -> val != 0);
         validateShortFilter(
@@ -459,7 +461,7 @@ public class QueryTableWhereSpecialCasesTest {
         validateShortFilter(
                 source,
                 "shortCol",
-                new MatchFilter(MatchFilter.MatchType.Regular, "shortCol", (short) 0),
+                new MatchFilter(MatchOptions.REGULAR, "shortCol", (short) 0),
                 val -> val == 0,
                 val -> val != 0);
         validateIntFilter(
@@ -471,7 +473,7 @@ public class QueryTableWhereSpecialCasesTest {
         validateIntFilter(
                 source,
                 "intCol",
-                new MatchFilter(MatchFilter.MatchType.Regular, "intCol", 0),
+                new MatchFilter(MatchOptions.REGULAR, "intCol", 0),
                 val -> val == 0,
                 val -> val != 0);
         validateLongFilter(
@@ -483,7 +485,7 @@ public class QueryTableWhereSpecialCasesTest {
         validateLongFilter(
                 source,
                 "longCol",
-                new MatchFilter(MatchFilter.MatchType.Regular, "longCol", 0L),
+                new MatchFilter(MatchOptions.REGULAR, "longCol", 0L),
                 val -> val == 0L,
                 val -> val != 0L);
         validateFloatFilter(
@@ -495,7 +497,7 @@ public class QueryTableWhereSpecialCasesTest {
         validateFloatFilter(
                 source,
                 "floatCol",
-                new MatchFilter(MatchFilter.MatchType.Regular, "floatCol", 0.0f),
+                new MatchFilter(MatchOptions.REGULAR, "floatCol", 0.0f),
                 val -> val == 0.0f,
                 val -> val != 0.0f);
         validateDoubleFilter(
@@ -507,7 +509,7 @@ public class QueryTableWhereSpecialCasesTest {
         validateDoubleFilter(
                 source,
                 "doubleCol",
-                new MatchFilter(MatchFilter.MatchType.Regular, "doubleCol", 0.0),
+                new MatchFilter(MatchOptions.REGULAR, "doubleCol", 0.0),
                 val -> val == 0.0,
                 val -> val != 0.0);
     }
@@ -526,7 +528,7 @@ public class QueryTableWhereSpecialCasesTest {
         validateCharFilter(
                 source,
                 "charCol",
-                new MatchFilter(MatchFilter.MatchType.Inverted, "charCol", (char) 0),
+                new MatchFilter(MatchOptions.INVERTED, "charCol", (char) 0),
                 val -> val != 0 || val == NULL_CHAR,
                 val -> val == 0 && val != NULL_CHAR);
 
@@ -539,7 +541,7 @@ public class QueryTableWhereSpecialCasesTest {
         validateByteFilter(
                 source,
                 "byteCol",
-                new MatchFilter(MatchFilter.MatchType.Inverted, "byteCol", (byte) 0),
+                new MatchFilter(MatchOptions.INVERTED, "byteCol", (byte) 0),
                 val -> val != 0 || val == NULL_BYTE,
                 val -> val == 0 && val != NULL_BYTE);
 
@@ -552,7 +554,7 @@ public class QueryTableWhereSpecialCasesTest {
         validateShortFilter(
                 source,
                 "shortCol",
-                new MatchFilter(MatchFilter.MatchType.Inverted, "shortCol", (short) 0),
+                new MatchFilter(MatchOptions.INVERTED, "shortCol", (short) 0),
                 val -> val != 0 || val == NULL_SHORT,
                 val -> val == 0 && val != NULL_SHORT);
 
@@ -565,7 +567,7 @@ public class QueryTableWhereSpecialCasesTest {
         validateIntFilter(
                 source,
                 "intCol",
-                new MatchFilter(MatchFilter.MatchType.Inverted, "intCol", 0),
+                new MatchFilter(MatchOptions.INVERTED, "intCol", 0),
                 val -> val != 0 || val == NULL_INT,
                 val -> val == 0 && val != NULL_INT);
 
@@ -578,7 +580,7 @@ public class QueryTableWhereSpecialCasesTest {
         validateLongFilter(
                 source,
                 "longCol",
-                new MatchFilter(MatchFilter.MatchType.Inverted, "longCol", 0L),
+                new MatchFilter(MatchOptions.INVERTED, "longCol", 0L),
                 val -> val != 0L || val == NULL_LONG,
                 val -> val == 0L && val != NULL_LONG);
 
@@ -592,7 +594,7 @@ public class QueryTableWhereSpecialCasesTest {
         validateFloatFilter(
                 source,
                 "floatCol",
-                new MatchFilter(MatchFilter.MatchType.Inverted, "floatCol", 0.0f),
+                new MatchFilter(MatchOptions.INVERTED, "floatCol", 0.0f),
                 val -> val != 0.0f || val == NULL_FLOAT || Float.isNaN(val),
                 val -> val == 0.0f && val != NULL_FLOAT && !Float.isNaN(val));
 
@@ -605,7 +607,7 @@ public class QueryTableWhereSpecialCasesTest {
         validateDoubleFilter(
                 source,
                 "doubleCol",
-                new MatchFilter(MatchFilter.MatchType.Inverted, "doubleCol", 0.0),
+                new MatchFilter(MatchOptions.INVERTED, "doubleCol", 0.0),
                 val -> val != 0.0 || val == NULL_DOUBLE || Double.isNaN(val),
                 val -> val == 0.0 && val != NULL_DOUBLE && !Double.isNaN(val));
     }
@@ -624,7 +626,7 @@ public class QueryTableWhereSpecialCasesTest {
         validateCharFilter(
                 source,
                 "charCol",
-                new MatchFilter(MatchFilter.MatchType.Regular, "charCol", NULL_CHAR),
+                new MatchFilter(MatchOptions.REGULAR, "charCol", NULL_CHAR),
                 val -> val == NULL_CHAR,
                 val -> val != NULL_CHAR);
         validateByteFilter(
@@ -636,7 +638,7 @@ public class QueryTableWhereSpecialCasesTest {
         validateByteFilter(
                 source,
                 "byteCol",
-                new MatchFilter(MatchFilter.MatchType.Regular, "byteCol", NULL_BYTE),
+                new MatchFilter(MatchOptions.REGULAR, "byteCol", NULL_BYTE),
                 val -> val == NULL_BYTE,
                 val -> val != NULL_BYTE);
         validateShortFilter(
@@ -648,7 +650,7 @@ public class QueryTableWhereSpecialCasesTest {
         validateShortFilter(
                 source,
                 "shortCol",
-                new MatchFilter(MatchFilter.MatchType.Regular, "shortCol", NULL_SHORT),
+                new MatchFilter(MatchOptions.REGULAR, "shortCol", NULL_SHORT),
                 val -> val == NULL_SHORT,
                 val -> val != NULL_SHORT);
         validateIntFilter(
@@ -660,7 +662,7 @@ public class QueryTableWhereSpecialCasesTest {
         validateIntFilter(
                 source,
                 "intCol",
-                new MatchFilter(MatchFilter.MatchType.Regular, "intCol", NULL_INT),
+                new MatchFilter(MatchOptions.REGULAR, "intCol", NULL_INT),
                 val -> val == NULL_INT,
                 val -> val != NULL_INT);
         validateLongFilter(
@@ -672,7 +674,7 @@ public class QueryTableWhereSpecialCasesTest {
         validateLongFilter(
                 source,
                 "longCol",
-                new MatchFilter(MatchFilter.MatchType.Regular, "longCol", NULL_LONG),
+                new MatchFilter(MatchOptions.REGULAR, "longCol", NULL_LONG),
                 val -> val == NULL_LONG,
                 val -> val != NULL_LONG);
         validateFloatFilter(
@@ -684,7 +686,7 @@ public class QueryTableWhereSpecialCasesTest {
         validateFloatFilter(
                 source,
                 "floatCol",
-                new MatchFilter(MatchFilter.MatchType.Regular, "floatCol", NULL_FLOAT),
+                new MatchFilter(MatchOptions.REGULAR, "floatCol", NULL_FLOAT),
                 val -> val == NULL_FLOAT,
                 val -> val != NULL_FLOAT);
         validateDoubleFilter(
@@ -696,7 +698,7 @@ public class QueryTableWhereSpecialCasesTest {
         validateDoubleFilter(
                 source,
                 "doubleCol",
-                new MatchFilter(MatchFilter.MatchType.Regular, "doubleCol", NULL_DOUBLE),
+                new MatchFilter(MatchOptions.REGULAR, "doubleCol", NULL_DOUBLE),
                 val -> val == NULL_DOUBLE,
                 val -> val != NULL_DOUBLE);
     }
@@ -715,7 +717,7 @@ public class QueryTableWhereSpecialCasesTest {
         validateCharFilter(
                 source,
                 "charCol",
-                new MatchFilter(MatchFilter.MatchType.Inverted, "charCol", NULL_CHAR),
+                new MatchFilter(MatchOptions.INVERTED, "charCol", NULL_CHAR),
                 val -> val != NULL_CHAR,
                 val -> val == NULL_CHAR);
 
@@ -728,7 +730,7 @@ public class QueryTableWhereSpecialCasesTest {
         validateByteFilter(
                 source,
                 "byteCol",
-                new MatchFilter(MatchFilter.MatchType.Inverted, "byteCol", NULL_BYTE),
+                new MatchFilter(MatchOptions.INVERTED, "byteCol", NULL_BYTE),
                 val -> val != NULL_BYTE,
                 val -> val == NULL_BYTE);
 
@@ -741,7 +743,7 @@ public class QueryTableWhereSpecialCasesTest {
         validateShortFilter(
                 source,
                 "shortCol",
-                new MatchFilter(MatchFilter.MatchType.Inverted, "shortCol", NULL_SHORT),
+                new MatchFilter(MatchOptions.INVERTED, "shortCol", NULL_SHORT),
                 val -> val != NULL_SHORT,
                 val -> val == NULL_SHORT);
 
@@ -754,7 +756,7 @@ public class QueryTableWhereSpecialCasesTest {
         validateIntFilter(
                 source,
                 "intCol",
-                new MatchFilter(MatchFilter.MatchType.Inverted, "intCol", NULL_INT),
+                new MatchFilter(MatchOptions.INVERTED, "intCol", NULL_INT),
                 val -> val != NULL_INT,
                 val -> val == NULL_INT);
 
@@ -767,7 +769,7 @@ public class QueryTableWhereSpecialCasesTest {
         validateLongFilter(
                 source,
                 "longCol",
-                new MatchFilter(MatchFilter.MatchType.Inverted, "longCol", NULL_LONG),
+                new MatchFilter(MatchOptions.INVERTED, "longCol", NULL_LONG),
                 val -> val != NULL_LONG,
                 val -> val == NULL_LONG);
 
@@ -781,7 +783,7 @@ public class QueryTableWhereSpecialCasesTest {
         validateFloatFilter(
                 source,
                 "floatCol",
-                new MatchFilter(MatchFilter.MatchType.Inverted, "floatCol", NULL_FLOAT),
+                new MatchFilter(MatchOptions.INVERTED, "floatCol", NULL_FLOAT),
                 val -> val != NULL_FLOAT || Float.isNaN(val),
                 val -> val == NULL_FLOAT && !Float.isNaN(val));
 
@@ -794,7 +796,7 @@ public class QueryTableWhereSpecialCasesTest {
         validateDoubleFilter(
                 source,
                 "doubleCol",
-                new MatchFilter(MatchFilter.MatchType.Inverted, "doubleCol", NULL_DOUBLE),
+                new MatchFilter(MatchOptions.INVERTED, "doubleCol", NULL_DOUBLE),
                 val -> val != NULL_DOUBLE || Double.isNaN(val),
                 val -> val == NULL_DOUBLE && !Double.isNaN(val));
     }
@@ -813,7 +815,7 @@ public class QueryTableWhereSpecialCasesTest {
         validateFloatFilter(
                 source,
                 "floatCol",
-                new MatchFilter(MatchFilter.MatchType.Regular, "floatCol", Float.NaN),
+                new MatchFilter(MatchOptions.REGULAR, "floatCol", Float.NaN),
                 val -> false,
                 val -> true);
 
@@ -826,7 +828,7 @@ public class QueryTableWhereSpecialCasesTest {
         validateDoubleFilter(
                 source,
                 "doubleCol",
-                new MatchFilter(MatchFilter.MatchType.Regular, "doubleCol", Double.NaN),
+                new MatchFilter(MatchOptions.REGULAR, "doubleCol", Double.NaN),
                 val -> false,
                 val -> true);
     }
@@ -845,7 +847,7 @@ public class QueryTableWhereSpecialCasesTest {
         validateFloatFilter(
                 source,
                 "floatCol",
-                new MatchFilter(MatchFilter.MatchType.Inverted, "floatCol", Float.NaN),
+                new MatchFilter(MatchOptions.INVERTED, "floatCol", Float.NaN),
                 val -> true,
                 val -> false);
 
@@ -858,7 +860,7 @@ public class QueryTableWhereSpecialCasesTest {
         validateDoubleFilter(
                 source,
                 "doubleCol",
-                new MatchFilter(MatchFilter.MatchType.Inverted, "doubleCol", Double.NaN),
+                new MatchFilter(MatchOptions.INVERTED, "doubleCol", Double.NaN),
                 val -> true,
                 val -> false);
     }
@@ -877,7 +879,7 @@ public class QueryTableWhereSpecialCasesTest {
         validateCharFilter(
                 source,
                 "charCol",
-                new MatchFilter(MatchFilter.MatchType.Regular, "charCol", (char) 0, (char) 1),
+                new MatchFilter(MatchOptions.REGULAR, "charCol", (char) 0, (char) 1),
                 val -> val == 0 || val == 1,
                 val -> val != 0 && val != 1);
         validateByteFilter(
@@ -889,7 +891,7 @@ public class QueryTableWhereSpecialCasesTest {
         validateByteFilter(
                 source,
                 "byteCol",
-                new MatchFilter(MatchFilter.MatchType.Regular, "byteCol", (byte) 0, (byte) 1),
+                new MatchFilter(MatchOptions.REGULAR, "byteCol", (byte) 0, (byte) 1),
                 val -> val == 0 || val == 1,
                 val -> val != 0 && val != 1);
         validateShortFilter(
@@ -901,7 +903,7 @@ public class QueryTableWhereSpecialCasesTest {
         validateShortFilter(
                 source,
                 "shortCol",
-                new MatchFilter(MatchFilter.MatchType.Regular, "shortCol", (short) 0, (short) 1),
+                new MatchFilter(MatchOptions.REGULAR, "shortCol", (short) 0, (short) 1),
                 val -> val == 0 || val == 1,
                 val -> val != 0 && val != 1);
         validateIntFilter(
@@ -913,7 +915,7 @@ public class QueryTableWhereSpecialCasesTest {
         validateIntFilter(
                 source,
                 "intCol",
-                new MatchFilter(MatchFilter.MatchType.Regular, "intCol", 0, 1),
+                new MatchFilter(MatchOptions.REGULAR, "intCol", 0, 1),
                 val -> val == 0 || val == 1,
                 val -> val != 0 && val != 1);
         validateLongFilter(
@@ -925,9 +927,10 @@ public class QueryTableWhereSpecialCasesTest {
         validateLongFilter(
                 source,
                 "longCol",
-                new MatchFilter(MatchFilter.MatchType.Regular, "longCol", 0L, 1L),
+                new MatchFilter(MatchOptions.REGULAR, "longCol", 0L, 1L),
                 val -> val == 0 || val == 1,
                 val -> val != 0 && val != 1);
+
         validateFloatFilter(
                 source,
                 "floatCol",
@@ -937,9 +940,16 @@ public class QueryTableWhereSpecialCasesTest {
         validateFloatFilter(
                 source,
                 "floatCol",
-                new MatchFilter(MatchFilter.MatchType.Regular, "floatCol", 0.0f, 1.0f),
+                new MatchFilter(MatchOptions.REGULAR, "floatCol", 0.0f, 1.0f),
                 val -> val == 0.0f || val == 1.0f,
                 val -> val != 0.0f && val != 1.0f);
+        validateFloatFilter(
+                source,
+                "floatCol",
+                new MatchFilter(MatchOptions.REGULAR, "floatCol", -0.0f, 1.0f),
+                val -> val == 0.0f || val == 1.0f,
+                val -> val != 0.0f && val != 1.0f);
+
         validateDoubleFilter(
                 source,
                 "doubleCol",
@@ -949,7 +959,13 @@ public class QueryTableWhereSpecialCasesTest {
         validateDoubleFilter(
                 source,
                 "doubleCol",
-                new MatchFilter(MatchFilter.MatchType.Regular, "doubleCol", 0.0, 1.0),
+                new MatchFilter(MatchOptions.REGULAR, "doubleCol", 0.0, 1.0),
+                val -> val == 0.0 || val == 1.0,
+                val -> val != 0.0 && val != 1.0);
+        validateDoubleFilter(
+                source,
+                "doubleCol",
+                new MatchFilter(MatchOptions.REGULAR, "doubleCol", -0.0, 1.0),
                 val -> val == 0.0 || val == 1.0,
                 val -> val != 0.0 && val != 1.0);
     }
@@ -968,7 +984,7 @@ public class QueryTableWhereSpecialCasesTest {
         validateCharFilter(
                 source,
                 "charCol",
-                new MatchFilter(MatchFilter.MatchType.Inverted, "charCol", (char) 0, (char) 1),
+                new MatchFilter(MatchOptions.INVERTED, "charCol", (char) 0, (char) 1),
                 val -> val != 0 && val != 1,
                 val -> val == 0 || val == 1);
 
@@ -981,7 +997,7 @@ public class QueryTableWhereSpecialCasesTest {
         validateByteFilter(
                 source,
                 "byteCol",
-                new MatchFilter(MatchFilter.MatchType.Inverted, "byteCol", (byte) 0, (byte) 1),
+                new MatchFilter(MatchOptions.INVERTED, "byteCol", (byte) 0, (byte) 1),
                 val -> val != 0 && val != 1,
                 val -> val == 0 || val == 1);
 
@@ -994,7 +1010,7 @@ public class QueryTableWhereSpecialCasesTest {
         validateShortFilter(
                 source,
                 "shortCol",
-                new MatchFilter(MatchFilter.MatchType.Inverted, "shortCol", (short) 0, (short) 1),
+                new MatchFilter(MatchOptions.INVERTED, "shortCol", (short) 0, (short) 1),
                 val -> val != 0 && val != 1,
                 val -> val == 0 || val == 1);
 
@@ -1007,7 +1023,7 @@ public class QueryTableWhereSpecialCasesTest {
         validateIntFilter(
                 source,
                 "intCol",
-                new MatchFilter(MatchFilter.MatchType.Inverted, "intCol", 0, 1),
+                new MatchFilter(MatchOptions.INVERTED, "intCol", 0, 1),
                 val -> val != 0 && val != 1,
                 val -> val == 0 || val == 1);
 
@@ -1020,7 +1036,7 @@ public class QueryTableWhereSpecialCasesTest {
         validateLongFilter(
                 source,
                 "longCol",
-                new MatchFilter(MatchFilter.MatchType.Inverted, "longCol", 0L, 1L),
+                new MatchFilter(MatchOptions.INVERTED, "longCol", 0L, 1L),
                 val -> val != 0 && val != 1,
                 val -> val == 0 || val == 1);
 
@@ -1033,7 +1049,13 @@ public class QueryTableWhereSpecialCasesTest {
         validateFloatFilter(
                 source,
                 "floatCol",
-                new MatchFilter(MatchFilter.MatchType.Inverted, "floatCol", 0.0f, 1.0f),
+                new MatchFilter(MatchOptions.INVERTED, "floatCol", 0.0f, 1.0f),
+                val -> val != 0.0f && val != 1.0f,
+                val -> val == 0.0f || val == 1.0f);
+        validateFloatFilter(
+                source,
+                "floatCol",
+                new MatchFilter(MatchOptions.INVERTED, "floatCol", -0.0f, 1.0f),
                 val -> val != 0.0f && val != 1.0f,
                 val -> val == 0.0f || val == 1.0f);
 
@@ -1046,10 +1068,15 @@ public class QueryTableWhereSpecialCasesTest {
         validateDoubleFilter(
                 source,
                 "doubleCol",
-                new MatchFilter(MatchFilter.MatchType.Inverted, "doubleCol", 0.0, 1.0),
+                new MatchFilter(MatchOptions.INVERTED, "doubleCol", 0.0, 1.0),
                 val -> val != 0.0 && val != 1.0,
                 val -> val == 0.0 || val == 1.0);
-
+        validateDoubleFilter(
+                source,
+                "doubleCol",
+                new MatchFilter(MatchOptions.INVERTED, "doubleCol", -0.0, 1.0),
+                val -> val != 0.0 && val != 1.0,
+                val -> val == 0.0 || val == 1.0);
     }
 
     @Test
@@ -1066,7 +1093,7 @@ public class QueryTableWhereSpecialCasesTest {
         validateCharFilter(
                 source,
                 "charCol",
-                new MatchFilter(MatchFilter.MatchType.Regular, "charCol", (char) 0, NULL_CHAR),
+                new MatchFilter(MatchOptions.REGULAR, "charCol", (char) 0, NULL_CHAR),
                 val -> val == 0 || val == NULL_CHAR,
                 val -> val != 0 && val != NULL_CHAR);
         validateByteFilter(
@@ -1078,7 +1105,7 @@ public class QueryTableWhereSpecialCasesTest {
         validateByteFilter(
                 source,
                 "byteCol",
-                new MatchFilter(MatchFilter.MatchType.Regular, "byteCol", (byte) 0, NULL_BYTE),
+                new MatchFilter(MatchOptions.REGULAR, "byteCol", (byte) 0, NULL_BYTE),
                 val -> val == 0 || val == NULL_BYTE,
                 val -> val != 0 && val != NULL_BYTE);
         validateShortFilter(
@@ -1090,7 +1117,7 @@ public class QueryTableWhereSpecialCasesTest {
         validateShortFilter(
                 source,
                 "shortCol",
-                new MatchFilter(MatchFilter.MatchType.Regular, "shortCol", (short) 0, NULL_SHORT),
+                new MatchFilter(MatchOptions.REGULAR, "shortCol", (short) 0, NULL_SHORT),
                 val -> val == 0 || val == NULL_SHORT,
                 val -> val != 0 && val != NULL_SHORT);
         validateIntFilter(
@@ -1102,7 +1129,7 @@ public class QueryTableWhereSpecialCasesTest {
         validateIntFilter(
                 source,
                 "intCol",
-                new MatchFilter(MatchFilter.MatchType.Regular, "intCol", 0, NULL_INT),
+                new MatchFilter(MatchOptions.REGULAR, "intCol", 0, NULL_INT),
                 val -> val == 0 || val == NULL_INT,
                 val -> val != 0 && val != NULL_INT);
         validateLongFilter(
@@ -1114,9 +1141,10 @@ public class QueryTableWhereSpecialCasesTest {
         validateLongFilter(
                 source,
                 "longCol",
-                new MatchFilter(MatchFilter.MatchType.Regular, "longCol", 0L, NULL_LONG),
+                new MatchFilter(MatchOptions.REGULAR, "longCol", 0L, NULL_LONG),
                 val -> val == 0L || val == NULL_LONG,
                 val -> val != 0L && val != NULL_LONG);
+
         validateFloatFilter(
                 source,
                 "floatCol",
@@ -1126,9 +1154,16 @@ public class QueryTableWhereSpecialCasesTest {
         validateFloatFilter(
                 source,
                 "floatCol",
-                new MatchFilter(MatchFilter.MatchType.Regular, "floatCol", 0.0f, NULL_FLOAT),
+                new MatchFilter(MatchOptions.REGULAR, "floatCol", 0.0f, NULL_FLOAT),
                 val -> val == 0.0f || val == NULL_FLOAT,
                 val -> val != 0.0f && val != NULL_FLOAT);
+        validateFloatFilter(
+                source,
+                "floatCol",
+                new MatchFilter(MatchOptions.REGULAR, "floatCol", -0.0f, NULL_FLOAT),
+                val -> val == 0.0f || val == NULL_FLOAT,
+                val -> val != 0.0f && val != NULL_FLOAT);
+
         validateDoubleFilter(
                 source,
                 "doubleCol",
@@ -1138,7 +1173,13 @@ public class QueryTableWhereSpecialCasesTest {
         validateDoubleFilter(
                 source,
                 "doubleCol",
-                new MatchFilter(MatchFilter.MatchType.Regular, "doubleCol", 0.0, NULL_DOUBLE),
+                new MatchFilter(MatchOptions.REGULAR, "doubleCol", 0.0, NULL_DOUBLE),
+                val -> val == 0.0 || val == NULL_DOUBLE,
+                val -> val != 0.0 && val != NULL_DOUBLE);
+        validateDoubleFilter(
+                source,
+                "doubleCol",
+                new MatchFilter(MatchOptions.REGULAR, "doubleCol", -0.0, NULL_DOUBLE),
                 val -> val == 0.0 || val == NULL_DOUBLE,
                 val -> val != 0.0 && val != NULL_DOUBLE);
     }
@@ -1157,7 +1198,7 @@ public class QueryTableWhereSpecialCasesTest {
         validateCharFilter(
                 source,
                 "charCol",
-                new MatchFilter(MatchFilter.MatchType.Inverted, "charCol", (char) 0, NULL_CHAR),
+                new MatchFilter(MatchOptions.INVERTED, "charCol", (char) 0, NULL_CHAR),
                 val -> val != 0 && val != NULL_CHAR,
                 val -> val == 0 || val == NULL_CHAR);
 
@@ -1170,7 +1211,7 @@ public class QueryTableWhereSpecialCasesTest {
         validateByteFilter(
                 source,
                 "byteCol",
-                new MatchFilter(MatchFilter.MatchType.Inverted, "byteCol", (byte) 0, NULL_BYTE),
+                new MatchFilter(MatchOptions.INVERTED, "byteCol", (byte) 0, NULL_BYTE),
                 val -> val != 0 && val != NULL_BYTE,
                 val -> val == 0 || val == NULL_BYTE);
 
@@ -1183,7 +1224,7 @@ public class QueryTableWhereSpecialCasesTest {
         validateShortFilter(
                 source,
                 "shortCol",
-                new MatchFilter(MatchFilter.MatchType.Inverted, "shortCol", (short) 0, NULL_SHORT),
+                new MatchFilter(MatchOptions.INVERTED, "shortCol", (short) 0, NULL_SHORT),
                 val -> val != 0 && val != NULL_SHORT,
                 val -> val == 0 || val == NULL_SHORT);
 
@@ -1196,7 +1237,7 @@ public class QueryTableWhereSpecialCasesTest {
         validateIntFilter(
                 source,
                 "intCol",
-                new MatchFilter(MatchFilter.MatchType.Inverted, "intCol", 0, NULL_INT),
+                new MatchFilter(MatchOptions.INVERTED, "intCol", 0, NULL_INT),
                 val -> val != 0 && val != NULL_INT,
                 val -> val == 0 || val == NULL_INT);
 
@@ -1209,7 +1250,7 @@ public class QueryTableWhereSpecialCasesTest {
         validateLongFilter(
                 source,
                 "longCol",
-                new MatchFilter(MatchFilter.MatchType.Inverted, "longCol", 0L, NULL_LONG),
+                new MatchFilter(MatchOptions.INVERTED, "longCol", 0L, NULL_LONG),
                 val -> val != 0L && val != NULL_LONG,
                 val -> val == 0L || val == NULL_LONG);
 
@@ -1222,7 +1263,13 @@ public class QueryTableWhereSpecialCasesTest {
         validateFloatFilter(
                 source,
                 "floatCol",
-                new MatchFilter(MatchFilter.MatchType.Inverted, "floatCol", 0.0f, NULL_FLOAT),
+                new MatchFilter(MatchOptions.INVERTED, "floatCol", 0.0f, NULL_FLOAT),
+                val -> val != 0.0f && val != NULL_FLOAT,
+                val -> val == 0.0f || val == NULL_FLOAT);
+        validateFloatFilter(
+                source,
+                "floatCol",
+                new MatchFilter(MatchOptions.INVERTED, "floatCol", -0.0f, NULL_FLOAT),
                 val -> val != 0.0f && val != NULL_FLOAT,
                 val -> val == 0.0f || val == NULL_FLOAT);
 
@@ -1235,7 +1282,13 @@ public class QueryTableWhereSpecialCasesTest {
         validateDoubleFilter(
                 source,
                 "doubleCol",
-                new MatchFilter(MatchFilter.MatchType.Inverted, "doubleCol", 0.0, NULL_DOUBLE),
+                new MatchFilter(MatchOptions.INVERTED, "doubleCol", 0.0, NULL_DOUBLE),
+                val -> val != 0.0 && val != NULL_DOUBLE,
+                val -> val == 0.0 || val == NULL_DOUBLE);
+        validateDoubleFilter(
+                source,
+                "doubleCol",
+                new MatchFilter(MatchOptions.INVERTED, "doubleCol", -0.0, NULL_DOUBLE),
                 val -> val != 0.0 && val != NULL_DOUBLE,
                 val -> val == 0.0 || val == NULL_DOUBLE);
     }
@@ -1254,9 +1307,16 @@ public class QueryTableWhereSpecialCasesTest {
         validateFloatFilter(
                 source,
                 "floatCol",
-                new MatchFilter(MatchFilter.MatchType.Regular, "floatCol", 0.0f, Float.NaN),
+                new MatchFilter(MatchOptions.builder().nanMatch(true).build(), "floatCol", 0.0f, Float.NaN),
                 val -> val == 0.0f || Float.isNaN(val),
                 val -> val != 0.0f && !Float.isNaN(val));
+        validateFloatFilter(
+                source,
+                "floatCol",
+                new MatchFilter(MatchOptions.builder().nanMatch(true).build(), "floatCol", -0.0f, Float.NaN),
+                val -> val == 0.0f || Float.isNaN(val),
+                val -> val != 0.0f && !Float.isNaN(val));
+
         validateDoubleFilter(
                 source,
                 "doubleCol",
@@ -1266,7 +1326,13 @@ public class QueryTableWhereSpecialCasesTest {
         validateDoubleFilter(
                 source,
                 "doubleCol",
-                new MatchFilter(MatchFilter.MatchType.Regular, "doubleCol", 0.0, Double.NaN),
+                new MatchFilter(MatchOptions.builder().nanMatch(true).build(), "doubleCol", 0.0, Double.NaN),
+                val -> val == 0.0 || Double.isNaN(val),
+                val -> val != 0.0 && !Double.isNaN(val));
+        validateDoubleFilter(
+                source,
+                "doubleCol",
+                new MatchFilter(MatchOptions.builder().nanMatch(true).build(), "doubleCol", -0.0, Double.NaN),
                 val -> val == 0.0 || Double.isNaN(val),
                 val -> val != 0.0 && !Double.isNaN(val));
     }
@@ -1284,7 +1350,15 @@ public class QueryTableWhereSpecialCasesTest {
         validateFloatFilter(
                 source,
                 "floatCol",
-                new MatchFilter(MatchFilter.MatchType.Inverted, "floatCol", 0.0f, Float.NaN),
+                new MatchFilter(MatchOptions.builder().inverted(true).nanMatch(true).build(), "floatCol", 0.0f,
+                        Float.NaN),
+                val -> val != 0.0f && !Float.isNaN(val),
+                val -> val == 0.0f || Float.isNaN(val));
+        validateFloatFilter(
+                source,
+                "floatCol",
+                new MatchFilter(MatchOptions.builder().inverted(true).nanMatch(true).build(), "floatCol", -0.0f,
+                        Float.NaN),
                 val -> val != 0.0f && !Float.isNaN(val),
                 val -> val == 0.0f || Float.isNaN(val));
 
@@ -1297,7 +1371,15 @@ public class QueryTableWhereSpecialCasesTest {
         validateDoubleFilter(
                 source,
                 "doubleCol",
-                new MatchFilter(MatchFilter.MatchType.Inverted, "doubleCol", 0.0, Double.NaN),
+                new MatchFilter(MatchOptions.builder().inverted(true).nanMatch(true).build(), "doubleCol", 0.0,
+                        Double.NaN),
+                val -> val != 0.0 && !Double.isNaN(val),
+                val -> val == 0.0 || Double.isNaN(val));
+        validateDoubleFilter(
+                source,
+                "doubleCol",
+                new MatchFilter(MatchOptions.builder().inverted(true).nanMatch(true).build(), "doubleCol", -0.0,
+                        Double.NaN),
                 val -> val != 0.0 && !Double.isNaN(val),
                 val -> val == 0.0 || Double.isNaN(val));
     }
@@ -1620,7 +1702,7 @@ public class QueryTableWhereSpecialCasesTest {
         validateFloatFilter(
                 source,
                 "floatCol",
-                new MatchFilter(MatchFilter.MatchType.Regular, "floatCol", Float.NaN),
+                new MatchFilter(MatchOptions.REGULAR, "floatCol", Float.NaN),
                 val -> false,
                 val -> true);
 
@@ -1633,7 +1715,7 @@ public class QueryTableWhereSpecialCasesTest {
         validateDoubleFilter(
                 source,
                 "doubleCol",
-                new MatchFilter(MatchFilter.MatchType.Regular, "doubleCol", Double.NaN),
+                new MatchFilter(MatchOptions.REGULAR, "doubleCol", Double.NaN),
                 val -> false,
                 val -> true);
     }
@@ -1652,7 +1734,7 @@ public class QueryTableWhereSpecialCasesTest {
         validateFloatFilter(
                 source,
                 "floatCol",
-                new MatchFilter(MatchFilter.MatchType.Inverted, "floatCol", Float.NaN),
+                new MatchFilter(MatchOptions.INVERTED, "floatCol", Float.NaN),
                 val -> true,
                 val -> false);
 
@@ -1665,8 +1747,48 @@ public class QueryTableWhereSpecialCasesTest {
         validateDoubleFilter(
                 source,
                 "doubleCol",
-                new MatchFilter(MatchFilter.MatchType.Inverted, "doubleCol", Double.NaN),
+                new MatchFilter(MatchOptions.INVERTED, "doubleCol", Double.NaN),
                 val -> true,
                 val -> false);
+    }
+
+    @Test
+    public void testFilterIsNaN() {
+        final Table source = getStaticTable();
+
+        // Testing Filter.isNaN, only NaN should match
+        validateFloatFilter(
+                source,
+                "floatCol",
+                Filter.isNaN(ColumnName.of("floatCol")),
+                val -> Float.isNaN(val),
+                val -> !Float.isNaN(val));
+
+        validateDoubleFilter(
+                source,
+                "doubleCol",
+                Filter.isNaN(ColumnName.of("doubleCol")),
+                val -> Double.isNaN(val),
+                val -> !Double.isNaN(val));
+    }
+
+    @Test
+    public void testFilterIsNotNaN() {
+        final Table source = getStaticTable();
+
+        // Testing Filter.isNaN, nothing should match (including NaN)
+        validateFloatFilter(
+                source,
+                "floatCol",
+                Filter.isNotNaN(ColumnName.of("floatCol")),
+                val -> !Float.isNaN(val),
+                val -> Float.isNaN(val));
+
+        validateDoubleFilter(
+                source,
+                "doubleCol",
+                Filter.isNotNaN(ColumnName.of("doubleCol")),
+                val -> !Double.isNaN(val),
+                val -> Double.isNaN(val));
     }
 }

@@ -3,7 +3,13 @@
 //
 package io.deephaven.replicators;
 
+import io.deephaven.replication.ReplicationUtils;
+import org.apache.commons.io.FileUtils;
+
+import java.io.File;
 import java.io.IOException;
+import java.nio.charset.Charset;
+import java.util.List;
 
 import static io.deephaven.replication.ReplicatePrimitiveCode.*;
 
@@ -34,6 +40,22 @@ public class ReplicateChunkFilters {
         // *ChunkMatchFilterFactory.java
         charToAllButBooleanAndFloats(TASK, CHAR_CHUNK_MATCH_FILTER_FACTORY);
         floatToAllFloatingPoints(TASK, FLOAT_CHUNK_MATCH_FILTER_FACTORY);
+
+        final File objectFile = new File(CHUNK_FILTER_PATH + "DoubleChunkMatchFilterFactory.java");
+        List<String> lines = FileUtils.readLines(objectFile, Charset.defaultCharset());
+        lines = ReplicationUtils.replaceRegion(lines, "getBits", List.of("" +
+                "    private static final Double NEG_ZERO = -0.0;\n" +
+                "    private static long getBits(double value) {\n" +
+                "        if (NEG_ZERO.equals(value)) {\n" +
+                "            return Double.doubleToLongBits(0.0f);\n" +
+                "        }\n" +
+                "        return Double.doubleToLongBits(value);\n" +
+                "    }\n"));
+        lines = ReplicationUtils.globalReplacements(lines,
+                "int valueBits", "long valueBits",
+                "doubleToIntBits", "doubleToLongBits",
+                "TIntHashSet", "TLongHashSet");
+        FileUtils.writeLines(objectFile, lines);
 
         // *RangeFilter.java
         charToShortAndByte(TASK, CHAR_RANGE_FILTER);
