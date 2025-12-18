@@ -67,16 +67,14 @@ public class RemoteFileSourceMessageStream implements ObjectType.MessageStream, 
             return java.util.concurrent.CompletableFuture.completedFuture(false);
         }
 
-        java.util.List<String> topLevelPackages = context.getTopLevelPackages();
-        if (topLevelPackages.isEmpty()) {
+        java.util.List<String> resourcePaths = context.getResourcePaths();
+        if (resourcePaths.isEmpty()) {
             return java.util.concurrent.CompletableFuture.completedFuture(false);
         }
 
-        String resourcePath = resourceName.replace('\\', '/');
-
-        for (String topLevelPackage : topLevelPackages) {
-            String packagePath = topLevelPackage.replace('.', '/');
-            if (resourcePath.startsWith(packagePath + "/") || resourcePath.startsWith(packagePath)) {
+        // Resource names from ClassLoader always use forward slashes, not backslashes
+        for (String contextResourcePath : resourcePaths) {
+            if (resourceName.equals(contextResourcePath)) {
                 log.info().append("✅ Can source: ").append(resourceName).endl();
                 return java.util.concurrent.CompletableFuture.completedFuture(true);
             }
@@ -137,11 +135,11 @@ public class RemoteFileSourceMessageStream implements ObjectType.MessageStream, 
     // Static methods for execution context management
 
     /**
-     * Sets the execution context with the active message stream and top-level packages.
+     * Sets the execution context with the active message stream and resource paths.
      * This should be called when a script execution begins.
      *
      * @param messageStream the message stream to set as active (must not be null)
-     * @param packages list of top-level package names to resolve from remote source
+     * @param packages list of resource paths to resolve from remote source
      * @throws IllegalArgumentException if messageStream is null (use clearExecutionContext() instead)
      */
     public static void setExecutionContext(RemoteFileSourceMessageStream messageStream, java.util.List<String> packages) {
@@ -151,7 +149,7 @@ public class RemoteFileSourceMessageStream implements ObjectType.MessageStream, 
 
         executionContext = new RemoteFileSourceExecutionContext(messageStream, packages);
         log.info().append("Set execution context with ")
-                .append(packages != null ? packages.size() : 0).append(" top-level packages").endl();
+                .append(packages != null ? packages.size() : 0).append(" resource paths").endl();
     }
 
     /**
@@ -217,10 +215,10 @@ public class RemoteFileSourceMessageStream implements ObjectType.MessageStream, 
                 }
             } else if (message.hasSetExecutionContext()) {
                 // Client is requesting this message stream to become active
-                java.util.List<String> packages = message.getSetExecutionContext().getTopLevelPackagesList();
+                java.util.List<String> packages = message.getSetExecutionContext().getResourcePathsList();
                 setExecutionContext(this, packages);
                 log.info().append("Client set execution context for this message stream with ")
-                        .append(packages.size()).append(" top-level packages").endl();
+                        .append(packages.size()).append(" resource paths").endl();
 
                 // Send acknowledgment back to client
                 SetExecutionContextResponse response = SetExecutionContextResponse.newBuilder()
@@ -318,24 +316,24 @@ public class RemoteFileSourceMessageStream implements ObjectType.MessageStream, 
 
     /**
      * Encapsulates the execution context for remote file source operations.
-     * This includes the currently active message stream and the top-level packages
+     * This includes the currently active message stream and the resource paths
      * that should be resolved from the remote source.
      * This class is immutable - a new instance is created each time the context changes.
      */
     public static class RemoteFileSourceExecutionContext {
         private final RemoteFileSourceMessageStream activeMessageStream;
-        private final java.util.List<String> topLevelPackages;
+        private final java.util.List<String> resourcePaths;
 
         /**
          * Creates a new execution context.
          *
          * @param activeMessageStream the active message stream
-         * @param topLevelPackages list of top-level package names to resolve from remote source
+         * @param resourcePaths list of resource paths to resolve from remote source
          */
         public RemoteFileSourceExecutionContext(RemoteFileSourceMessageStream activeMessageStream,
-                java.util.List<String> topLevelPackages) {
+                java.util.List<String> resourcePaths) {
             this.activeMessageStream = activeMessageStream;
-            this.topLevelPackages = topLevelPackages != null ? topLevelPackages : java.util.Collections.emptyList();
+            this.resourcePaths = resourcePaths != null ? resourcePaths : java.util.Collections.emptyList();
         }
 
         /**
@@ -348,12 +346,12 @@ public class RemoteFileSourceMessageStream implements ObjectType.MessageStream, 
         }
 
         /**
-         * Gets the top-level package names that should be resolved from the remote source.
+         * Gets the resource paths that should be resolved from the remote source.
          *
-         * @return a copy of the list of top-level package names
+         * @return a copy of the list of resource paths
          */
-        public java.util.List<String> getTopLevelPackages() {
-            return new java.util.ArrayList<>(topLevelPackages);
+        public java.util.List<String> getResourcePaths() {
+            return new java.util.ArrayList<>(resourcePaths);
         }
     }
 }
