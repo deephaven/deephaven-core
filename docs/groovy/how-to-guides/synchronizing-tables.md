@@ -23,7 +23,7 @@ Choose the synchronization utility based on your table relationships:
 
 - **Use `SyncTableFilter`** when all tables are peers. Each table contributes equally to determining which rows to show. The filter passes through rows where all tables have matching ID values.
 
-- **Use `LeaderTableFilter`** when one table should control synchronization. The leader table contains ID values that dictate which rows from follower tables should be shown. This is useful when one table acts as a coordination log or contains the authoritative sequence of events.
+- **Use `LeaderTableFilter`** when one table should control synchronization. The leader table contains ID values that dictate which rows from follower tables to show. This is useful when one table acts as a coordination log or contains the authoritative sequence of events.
 
 ## Requirements
 
