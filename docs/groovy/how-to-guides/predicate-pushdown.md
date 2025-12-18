@@ -43,7 +43,11 @@ Parquet metadata is optional, and not all Parquet files will have it. If the met
 
 ## Deephaven data indexes
 
-Deephaven allows users to create data indexes when writing data to storage as Parquet files. These indexes can be used to speed up filtering operations by applying the filter to the index instead of the larger table. This technique is effective even if only a subset of the data files are indexed. The engine will filter non-indexed files using the standard method.
+Deephaven allows users to create data indexes when writing data to storage as Parquet files. These indexes can speed up filtering operations by applying the filter to the index instead of the larger table.
+
+Starting in Deephaven v0.40.0, the predicate pushdown framework enables data indexes to be used with most filter types (not just exact matches). When a materialized (in-memory) data index exists, the engine can leverage it during `where` operations. To avoid unexpected memory usage, filter operations do not automatically materialize deferred (disk-based) data indexes.
+
+This technique is effective even if only a subset of the data files are indexed. The engine will filter non-indexed files using the standard method.
 
 ```groovy order=source,disk_table,filtered_1,filtered_2
 import io.deephaven.parquet.table.ParquetTools

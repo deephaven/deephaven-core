@@ -1,16 +1,17 @@
 //
 // Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
-package io.deephaven.chunk;
+package io.deephaven.function;
 
 import java.util.Arrays;
 import java.util.Comparator;
 
-import static io.deephaven.util.QueryConstants.NULL_CHAR;
-import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
-import static io.deephaven.util.QueryConstants.NULL_FLOAT;
+import static io.deephaven.util.QueryConstants.*;
 
-final class WritableChunkUtils {
+/**
+ * Perform array sorts that respect Deephaven null values as the lowest possible values.
+ */
+public class ArraySort {
     public static void sort(char[] data, int fromIndexInclusive, int toIndexExclusive) {
         Arrays.sort(data, fromIndexInclusive, toIndexExclusive);
         // Arrays.sort() places Deephaven NULL_CHAR (Character.MAX_VALUE) at the end of the slice. This code moves
