@@ -62,9 +62,9 @@ message RemoteFileSourceMetaResponse {
 
 // Request to set the execution context for script execution
 message SetExecutionContextRequest {
-  // Top-level package names that should be resolved from the remote source
-  // (e.g., ["com", "org"])
-  repeated string top_level_packages = 1;
+  // Resource paths that should be resolved from the remote source
+  // (e.g., ["com/example/Test.groovy", "org/mycompany/Utils.groovy"])
+  repeated string resource_paths = 1;
 }
 
 // Response acknowledging execution context was set
