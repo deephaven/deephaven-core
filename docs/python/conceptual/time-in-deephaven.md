@@ -660,7 +660,8 @@ To use [`simple_date_format`](/core/pydoc/code/deephaven.time.html#deephaven.tim
 from deephaven.time import simple_date_format
 
 # pass the format of the input date-time
-input_format = simple_date_format("yyyyMMdd")
+input_format = simple_date_format("YYYYMMDD")
+input_format2 = simple_date_format("YYYYMMDD")
 ```
 
 Now, `input_format` is an object that can be used in a query to format the `BEGIN` and `END` columns. This is done with the [`parse`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/text/SimpleDateFormat.html#parse(java.lang.String,java.text.ParsePosition)) method, which accepts the input date-time columns as strings. So, the `int` values must be converted to strings before calling [`parse`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/text/SimpleDateFormat.html#parse(java.lang.String,java.text.ParsePosition)). Finally, call [`toInstant`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Date.html#toInstant()) on the result to get the formatted date-time as a Java [`Instant`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Instant.html):
@@ -668,9 +669,9 @@ Now, `input_format` is an object that can be used in a query to format the `BEGI
 ```python test-set=17
 # use String.valueOf() to get int as string, then pass to input_format.parse(), finally call toInstant()
 format_gsod = gsod.update(
-    [
+    formulas=[
         "BEGIN = input_format.parse(String.valueOf(BEGIN)).toInstant()",
-        "END = input_format.parse(String.valueOf(END)).toInstant()",
+        "END = input_format2.parse(String.valueOf(END)).toInstant()",
     ]
 )
 ```
@@ -679,7 +680,7 @@ The resulting columns can then be converted to any of the desired Java date-time
 
 ```python test-set=17
 format_gsod_local_date = format_gsod.update(
-    ["BEGIN = toLocalDate(BEGIN, 'UTC')", "END = toLocalDate(END, 'UTC')"]
+    formulas=["BEGIN = toLocalDate(BEGIN, 'UTC')", "END = toLocalDate(END, 'UTC')"]
 )
 ```
 
