@@ -141,3 +141,9 @@ The [`LivenessScopeStack`](/core/javadoc/io/deephaven/engine/liveness/LivenessSc
 - [`LivenessScopeStack.pop(scope)`](https://deephaven.io/core/javadoc/io/deephaven/engine/liveness/LivenessScopeStack.html#pop(io.deephaven.engine.liveness.LivenessManager)) - Pop the scope from the top of the current thread's scope stack.
 - [`LivenessScopeStack.open(scope, true)`](https://deephaven.io/core/javadoc/io/deephaven/engine/liveness/LivenessScopeStack.html#open(io.deephaven.engine.liveness.ReleasableLivenessManager,boolean)) - Push a scope onto the scope stack, and get a SafeCloseable that pops it. The first parameter specifies the scope; the second boolean parameter determines whether the scope should release when the result is closed. This is useful for enclosing scope usage in a try-with-resources block.
 - [`LivenessScopeStack.open()`](https://deephaven.io/core/javadoc/io/deephaven/engine/liveness/LivenessScopeStack.html#open()) - Push an anonymous scope onto the scope stack, and get a SafeCloseable that pops it and then uses LivenessScope.release(). This is useful enclosing a series of query engine actions whose results must be explicitly retained externally in order to preserve liveness.
+
+## Related documentation
+
+- [`LivenessScope`](/core/javadoc/io/deephaven/engine/liveness/LivenessScope.html)
+- [`LivenessScopeStack`](/core/javadoc/io/deephaven/engine/liveness/LivenessScopeStack.html)
+- [Table Update Model](./table-update-model.md)

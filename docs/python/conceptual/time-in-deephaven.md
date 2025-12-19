@@ -71,7 +71,7 @@ t = empty_table(5).update("CurrentTime = now()")
 ```
 
 > [!NOTE]
-> [`now`](https://deephaven.io/core/javadoc/io/deephaven/time/DateTimeUtils.html#now()) uses the [current clock](https://deephaven.io/core/javadoc/io/deephaven/time/DateTimeUtils.html#currentClock()) of the Deephaven engine. This clock is typically the system clock, but it may be set to a simulated clock when replaying tables.
+> The [`now`](https://deephaven.io/core/javadoc/io/deephaven/time/DateTimeUtils.html#now()) function uses the [current clock](https://deephaven.io/core/javadoc/io/deephaven/time/DateTimeUtils.html#currentClock()) of the Deephaven engine. This clock is typically the system clock, but it may be set to a simulated clock when replaying tables.
 
 These [functions](../reference/query-language/query-library/auto-imported-functions.md) can also be applied to columns, constants, and variables. This slightly more complex example uses the built-in Deephaven function [`epochDaysToLocalDate`](https://deephaven.io/core/javadoc/io/deephaven/time/DateTimeUtils.html#epochDaysToLocalDate(long)) to create a [`LocalDate`](https://docs.oracle.com/en/java/javase/17/docs//api/java.base/java/time/LocalDate.html) from a long that represents the number of days since the [Unix epoch](https://en.wikipedia.org/wiki/Unix_time):
 
@@ -867,3 +867,10 @@ Again, the resulting tables are identical, but the execution times are quite dif
 | [`pandas.TimedeltaIndex`](https://pandas.pydata.org/docs/reference/api/pandas.TimedeltaIndex.html)     | NA                                                                                                            | NA                                                                                           | NA                                                                                       |
 | [`pandas.Period`](https://pandas.pydata.org/docs/reference/api/pandas.Period.html)                     | NA                                                                                                            | NA                                                                                           | NA                                                                                       |
 | [`pandas.PeriodIndex`](https://pandas.pydata.org/docs/reference/api/pandas.PeriodIndex.html)           | NA                                                                                                            | NA                                                                                           | NA                                                                                       |
+
+## Related documentation
+
+- [`deephaven.time` Pydoc](/core/pydoc/code/deephaven.time.html)
+- [Date-time literals in query strings](../how-to-guides/date-time-literals.md)
+- [Business calendars](../how-to-guides/business-calendar.md)
+- [The Python-Java boundary](python-java-boundary.md)

@@ -94,7 +94,7 @@ write_csv(source_with_nulls, "/data/Cosine.csv", cols=["X", "CosX"])
 
 ![The newly written CSV file](../../assets/how-to/TrigFunctions_NullsCosineOnly.png)
 
-## Related Documentation
+## Related documentation
 
 - [Create an empty table](../new-and-empty-table.md#empty_table)
 - [How to import CSV files](./csv-import.md)

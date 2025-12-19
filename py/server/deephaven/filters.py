@@ -22,6 +22,9 @@ _JColumnName = jpy.get_type("io.deephaven.api.ColumnName")
 _JFilterPattern = jpy.get_type("io.deephaven.api.filter.FilterPattern")
 _JPatternMode = jpy.get_type("io.deephaven.api.filter.FilterPattern$Mode")
 _JPattern = jpy.get_type("java.util.regex.Pattern")
+_JIncrementalReleaseFilter = jpy.get_type(
+    "io.deephaven.engine.table.impl.select.IncrementalReleaseFilter"
+)
 
 
 class Filter(ConcurrencyControl["Filter"], JObjectWrapper):
@@ -238,3 +241,25 @@ def pattern(
         )
     except Exception as e:
         raise DHError(e, "failed to create a pattern filter.") from e
+
+
+def incremental_release(initial_rows: int, increment: int) -> Filter:
+    """Creates an incremental release filter that progressively releases rows from a table.
+
+    This filter gradually releases data, starting with an initial number of rows and then
+    incrementally adding more rows over time.  The input table must be an add-only table.
+
+    Args:
+        initial_rows (int): the initial number of rows to release
+        increment (int): the number of additional rows to release in each subsequent step
+
+    Returns:
+        a new incremental release filter
+
+    Raises:
+        DHError
+    """
+    try:
+        return Filter(j_filter=_JIncrementalReleaseFilter(initial_rows, increment))
+    except Exception as e:
+        raise DHError(e, "failed to create incremental release filter.") from e

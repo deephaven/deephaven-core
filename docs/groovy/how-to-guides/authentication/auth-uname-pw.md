@@ -68,3 +68,10 @@ services:
 ### Start Deephaven
 
 Start Deephaven with `docker compose up --build`, head to `https://localhost:10000/ide`, and enter the username/password combo to start writing queries.
+
+## Related documentation
+
+- [Pre-shared key authentication](./auth-psk.md)
+- [Anonymous authentication](./auth-anon.md)
+- [Keycloak authentication](./auth-keycloak.md)
+- [mTLS authentication](./auth-mtls.md)
