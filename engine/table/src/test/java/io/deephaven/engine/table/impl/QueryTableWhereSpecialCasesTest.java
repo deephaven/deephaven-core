@@ -6,6 +6,7 @@ package io.deephaven.engine.table.impl;
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.RawString;
 import io.deephaven.api.filter.Filter;
+import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.table.MatchOptions;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.select.*;
@@ -1790,5 +1791,159 @@ public class QueryTableWhereSpecialCasesTest {
                 Filter.isNotNaN(ColumnName.of("doubleCol")),
                 val -> !Double.isNaN(val),
                 val -> Double.isNaN(val));
+    }
+
+    @Test
+    public void testQueryScopeMatching() {
+        final Table source = getStaticTable();
+        QueryScope.addParam("float_nan", Float.NaN);
+        QueryScope.addParam("double_nan", Double.NaN);
+
+        // Testing == scoped_nan, nothing should match (including NaN)
+        validateFloatFilter(
+                source,
+                "floatCol",
+                RawString.of("floatCol == float_nan"),
+                val -> false,
+                val -> true);
+        validateDoubleFilter(
+                source,
+                "doubleCol",
+                RawString.of("doubleCol == double_nan"),
+                val -> false,
+                val -> true);
+
+        // Testing != scoped_nan, everything should match (including NaN)
+        validateFloatFilter(
+                source,
+                "floatCol",
+                RawString.of("floatCol != float_nan"),
+                val -> true,
+                val -> false);
+        validateDoubleFilter(
+                source,
+                "doubleCol",
+                RawString.of("doubleCol != double_nan"),
+                val -> true,
+                val -> false);
+
+        // Testing scoped_nan == scoped_nan, nothing should match (including NaN)
+        validateFloatFilter(
+                source,
+                "floatCol",
+                RawString.of("float_nan == float_nan"),
+                val -> false,
+                val -> true);
+        validateDoubleFilter(
+                source,
+                "doubleCol",
+                RawString.of("double_nan == double_nan"),
+                val -> false,
+                val -> true);
+
+        // Testing scoped_nan != scoped_nan, everything should match (including NaN)
+        validateFloatFilter(
+                source,
+                "floatCol",
+                RawString.of("float_nan != float_nan"),
+                val -> true,
+                val -> false);
+        validateDoubleFilter(
+                source,
+                "doubleCol",
+                RawString.of("double_nan != double_nan"),
+                val -> true,
+                val -> false);
+
+        // Testing in 0,scoped_nan (NaN will match)
+        validateFloatFilter(
+                source,
+                "floatCol",
+                RawString.of("floatCol in 0, float_nan"),
+                val -> Float.isNaN(val) || val == 0.0f,
+                val -> !Float.isNaN(val) && val != 0.0f);
+        validateDoubleFilter(
+                source,
+                "doubleCol",
+                RawString.of("doubleCol in 0, double_nan"),
+                val -> Double.isNaN(val) || val == 0.0,
+                val -> !Double.isNaN(val) && val != 0.0);
+
+        // Testing not in 0,scoped_nan (NaN not match)
+        validateFloatFilter(
+                source,
+                "floatCol",
+                RawString.of("floatCol not in 0, float_nan"),
+                val -> !Float.isNaN(val) && val != 0.0f,
+                val -> Float.isNaN(val) || val == 0.0f);
+        validateDoubleFilter(
+                source,
+                "doubleCol",
+                RawString.of("doubleCol not in 0, double_nan"),
+                val -> !Double.isNaN(val) && val != 0.0,
+                val -> Double.isNaN(val) || val == 0.0);
+    }
+
+    @Test
+    public void testColumnComparisons() {
+        final Table source = getStaticTable();
+
+        final Table updated = source.update("floatCol2 = floatCol", "doubleCol2 = doubleCol");
+
+        // Direct equality follows IEEE rules, NaN != NaN so this excludes the NaN row
+        validateFloatFilter(
+                updated,
+                "floatCol",
+                RawString.of("floatCol == floatCol2"),
+                val -> !Float.isNaN(val),
+                val -> Float.isNaN(val));
+        validateDoubleFilter(
+                updated,
+                "doubleCol",
+                RawString.of("doubleCol == doubleCol2"),
+                val -> !Double.isNaN(val),
+                val -> Double.isNaN(val));
+
+        // Reverse the columnns
+        validateFloatFilter(
+                updated,
+                "floatCol",
+                RawString.of("floatCol2 == floatCol"),
+                val -> !Float.isNaN(val),
+                val -> Float.isNaN(val));
+        validateDoubleFilter(
+                updated,
+                "doubleCol",
+                RawString.of("doubleCol2 == doubleCol"),
+                val -> !Double.isNaN(val),
+                val -> Double.isNaN(val));
+
+        // NaN != NaN -> true so this only includes the NaN row
+        validateFloatFilter(
+                updated,
+                "floatCol",
+                RawString.of("floatCol != floatCol2"),
+                val -> Float.isNaN(val),
+                val -> !Float.isNaN(val));
+        validateDoubleFilter(
+                updated,
+                "doubleCol",
+                RawString.of("doubleCol != doubleCol2"),
+                val -> Double.isNaN(val),
+                val -> !Double.isNaN(val));
+
+        // Reverse the columnns
+        validateFloatFilter(
+                updated,
+                "floatCol",
+                RawString.of("floatCol2 != floatCol"),
+                val -> Float.isNaN(val),
+                val -> !Float.isNaN(val));
+        validateDoubleFilter(
+                updated,
+                "doubleCol",
+                RawString.of("doubleCol2 != doubleCol"),
+                val -> Double.isNaN(val),
+                val -> !Double.isNaN(val));
     }
 }
