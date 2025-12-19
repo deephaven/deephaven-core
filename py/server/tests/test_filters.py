@@ -127,7 +127,7 @@ class FilterTestCase(BaseTestCase):
         with self.subTest("mixed values"):
             with self.assertRaises(DHError) as cm:
                 filter_in = in_("A", [2, "3"])
-                rt = t.where(filter_in)
+                t.where(filter_in)
             print(cm.exception)
 
             # inconsistent behavior observed, should fail with https://deephaven.atlassian.net/browse/DH-21232 fixed
