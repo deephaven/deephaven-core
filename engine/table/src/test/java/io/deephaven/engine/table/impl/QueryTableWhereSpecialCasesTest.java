@@ -130,8 +130,7 @@ public class QueryTableWhereSpecialCasesTest {
             final Table table,
             final String charColName,
             final Filter charFilter,
-            final CharPredicate predicate,
-            final CharPredicate invertPredicate) {
+            final CharPredicate predicate) {
         final Table result = table.where(charFilter);
         try (final var it = result.characterColumnIterator(charColName)) {
             while (it.hasNext()) {
@@ -145,7 +144,7 @@ public class QueryTableWhereSpecialCasesTest {
         try (final var it = resultInvert.characterColumnIterator(charColName)) {
             while (it.hasNext()) {
                 final char value = it.nextChar();
-                if (!invertPredicate.apply(value)) {
+                if (predicate.apply(value)) {
                     throw new AssertionError("Value failed invert predicate test: " + value);
                 }
             }
@@ -158,8 +157,7 @@ public class QueryTableWhereSpecialCasesTest {
             final Table table,
             final String byteColName,
             final Filter byteFilter,
-            final BytePredicate predicate,
-            final BytePredicate invertPredicate) {
+            final BytePredicate predicate) {
         final Table result = table.where(byteFilter);
         try (final var it = result.byteColumnIterator(byteColName)) {
             while (it.hasNext()) {
@@ -173,7 +171,7 @@ public class QueryTableWhereSpecialCasesTest {
         try (final var it = resultInvert.byteColumnIterator(byteColName)) {
             while (it.hasNext()) {
                 final byte value = it.nextByte();
-                if (!invertPredicate.apply(value)) {
+                if (predicate.apply(value)) {
                     throw new AssertionError("Value failed invert predicate test: " + value);
                 }
             }
@@ -186,8 +184,7 @@ public class QueryTableWhereSpecialCasesTest {
             final Table table,
             final String shortColName,
             final Filter shortFilter,
-            final ShortPredicate predicate,
-            final ShortPredicate invertPredicate) {
+            final ShortPredicate predicate) {
         final Table result = table.where(shortFilter);
         try (final var it = result.shortColumnIterator(shortColName)) {
             while (it.hasNext()) {
@@ -201,7 +198,7 @@ public class QueryTableWhereSpecialCasesTest {
         try (final var it = resultInvert.shortColumnIterator(shortColName)) {
             while (it.hasNext()) {
                 final short value = it.nextShort();
-                if (!invertPredicate.apply(value)) {
+                if (predicate.apply(value)) {
                     throw new AssertionError("Value failed invert predicate test: " + value);
                 }
             }
@@ -214,8 +211,7 @@ public class QueryTableWhereSpecialCasesTest {
             final Table table,
             final String intColName,
             final Filter intFilter,
-            final IntPredicate predicate,
-            final IntPredicate invertPredicate) {
+            final IntPredicate predicate) {
         final Table result = table.where(intFilter);
         try (final var it = result.integerColumnIterator(intColName)) {
             while (it.hasNext()) {
@@ -229,7 +225,7 @@ public class QueryTableWhereSpecialCasesTest {
         try (final var it = resultInvert.integerColumnIterator(intColName)) {
             while (it.hasNext()) {
                 final int value = it.nextInt();
-                if (!invertPredicate.apply(value)) {
+                if (predicate.apply(value)) {
                     throw new AssertionError("Value failed invert predicate test: " + value);
                 }
             }
@@ -242,8 +238,7 @@ public class QueryTableWhereSpecialCasesTest {
             final Table table,
             final String longColName,
             final Filter longFilter,
-            final LongPredicate predicate,
-            final LongPredicate invertPredicate) {
+            final LongPredicate predicate) {
         final Table result = table.where(longFilter);
         try (final var it = result.longColumnIterator(longColName)) {
             while (it.hasNext()) {
@@ -257,7 +252,7 @@ public class QueryTableWhereSpecialCasesTest {
         try (final var it = resultInvert.longColumnIterator(longColName)) {
             while (it.hasNext()) {
                 final long value = it.nextLong();
-                if (!invertPredicate.apply(value)) {
+                if (predicate.apply(value)) {
                     throw new AssertionError("Value failed invert predicate test: " + value);
                 }
             }
@@ -270,8 +265,7 @@ public class QueryTableWhereSpecialCasesTest {
             final Table table,
             final String floatColName,
             final Filter floatFilter,
-            final FloatPredicate predicate,
-            final FloatPredicate invertPredicate) {
+            final FloatPredicate predicate) {
         final Table result = table.where(floatFilter);
         try (final var it = result.floatColumnIterator(floatColName)) {
             while (it.hasNext()) {
@@ -285,7 +279,7 @@ public class QueryTableWhereSpecialCasesTest {
         try (final var it = resultInvert.floatColumnIterator(floatColName)) {
             while (it.hasNext()) {
                 final float value = it.nextFloat();
-                if (!invertPredicate.apply(value)) {
+                if (predicate.apply(value)) {
                     throw new AssertionError("Value failed invert predicate test: " + value);
                 }
             }
@@ -298,8 +292,7 @@ public class QueryTableWhereSpecialCasesTest {
             final Table table,
             final String doubleColName,
             final Filter doubleFilter,
-            final DoublePredicate predicate,
-            final DoublePredicate invertPredicate) {
+            final DoublePredicate predicate) {
         final Table result = table.where(doubleFilter);
         try (final var it = result.doubleColumnIterator(doubleColName)) {
             while (it.hasNext()) {
@@ -313,7 +306,7 @@ public class QueryTableWhereSpecialCasesTest {
         try (final var it = resultInvert.doubleColumnIterator(doubleColName)) {
             while (it.hasNext()) {
                 final double value = it.nextDouble();
-                if (!invertPredicate.apply(value)) {
+                if (predicate.apply(value)) {
                     throw new AssertionError("Value failed invert predicate test: " + value);
                 }
             }
@@ -333,87 +326,73 @@ public class QueryTableWhereSpecialCasesTest {
                 source,
                 "charCol",
                 CharRangeFilter.gt("charCol", (char) 0),
-                val -> val > 0 && val != NULL_CHAR,
-                val -> val <= 0 || val == NULL_CHAR);
+                val -> val > 0 && val != NULL_CHAR);
         validateCharFilter(
                 source,
                 "charCol",
                 RawString.of("charCol > '\u0000'"),
-                val -> val > 0 && val != NULL_CHAR,
-                val -> val <= 0 || val == NULL_CHAR);
+                val -> val > 0 && val != NULL_CHAR);
         validateByteFilter(
                 source,
                 "byteCol",
                 ByteRangeFilter.gt("byteCol", (byte) 0),
-                val -> val > 0 && val != NULL_BYTE,
-                val -> val <= 0 || val == NULL_BYTE);
+                val -> val > 0 && val != NULL_BYTE);
         validateByteFilter(
                 source,
                 "byteCol",
                 RawString.of("byteCol > 0"),
-                val -> val > 0 && val != NULL_BYTE,
-                val -> val <= 0 || val == NULL_BYTE);
+                val -> val > 0 && val != NULL_BYTE);
         validateShortFilter(
                 source,
                 "shortCol",
                 ShortRangeFilter.gt("shortCol", (short) 0),
-                val -> val > 0 && val != NULL_SHORT,
-                val -> val <= 0 || val == NULL_SHORT);
+                val -> val > 0 && val != NULL_SHORT);
         validateShortFilter(
                 source,
                 "shortCol",
                 RawString.of("shortCol > 0"),
-                val -> val > 0 && val != NULL_SHORT,
-                val -> val <= 0 || val == NULL_SHORT);
+                val -> val > 0 && val != NULL_SHORT);
         validateIntFilter(
                 source,
                 "intCol",
                 IntRangeFilter.gt("intCol", 0),
-                val -> val > 0 && val != NULL_INT,
-                val -> val <= 0 || val == NULL_INT);
+                val -> val > 0 && val != NULL_INT);
         validateIntFilter(
                 source,
                 "intCol",
                 RawString.of("intCol > 0"),
-                val -> val > 0 && val != NULL_INT,
-                val -> val <= 0 || val == NULL_INT);
+                val -> val > 0 && val != NULL_INT);
         validateLongFilter(
                 source,
                 "longCol",
                 LongRangeFilter.gt("longCol", 0L),
-                val -> val > 0 && val != NULL_LONG,
-                val -> val <= 0 || val == NULL_LONG);
+                val -> val > 0 && val != NULL_LONG);
         validateLongFilter(
                 source,
                 "longCol",
                 RawString.of("longCol > 0"),
-                val -> val > 0 && val != NULL_LONG,
-                val -> val <= 0 || val == NULL_LONG);
+                val -> val > 0 && val != NULL_LONG);
         // NaN also excluded for float/double
         validateFloatFilter(
                 source,
                 "floatCol",
                 FloatRangeFilter.gt("floatCol", 0.0f),
-                val -> val > 0 && val != NULL_FLOAT && !Float.isNaN(val),
-                val -> val <= 0 || val == NULL_FLOAT || Float.isNaN(val));
+                val -> val > 0 && val != NULL_FLOAT && !Float.isNaN(val));
         validateFloatFilter(
                 source,
                 "floatCol",
                 RawString.of("floatCol > 0.0f"),
-                val -> val > 0 && val != NULL_FLOAT && !Float.isNaN(val),
-                val -> val <= 0 || val == NULL_FLOAT || Float.isNaN(val));
+                val -> val > 0 && val != NULL_FLOAT && !Float.isNaN(val));
         validateDoubleFilter(
                 source,
                 "doubleCol",
                 DoubleRangeFilter.gt("doubleCol", 0.0),
-                val -> val > 0 && val != NULL_DOUBLE && !Double.isNaN(val),
-                val -> val <= 0 || val == NULL_DOUBLE || Double.isNaN(val));
+                val -> val > 0 && val != NULL_DOUBLE && !Double.isNaN(val));
         validateDoubleFilter(
                 source,
                 "doubleCol",
                 RawString.of("doubleCol > 0.0"),
-                val -> val > 0 && val != NULL_DOUBLE && !Double.isNaN(val),
-                val -> val <= 0 || val == NULL_DOUBLE || Double.isNaN(val));
+                val -> val > 0 && val != NULL_DOUBLE && !Double.isNaN(val));
     }
 
     @Test
@@ -425,87 +404,73 @@ public class QueryTableWhereSpecialCasesTest {
                 source,
                 "charCol",
                 CharRangeFilter.leq("charCol", (char) 0),
-                val -> val <= 0 || val == NULL_CHAR,
-                val -> val > 0 && val != NULL_CHAR);
+                val -> val <= 0 || val == NULL_CHAR);
         validateCharFilter(
                 source,
                 "charCol",
                 RawString.of("charCol <= '\u0000'"),
-                val -> val <= 0 || val == NULL_CHAR,
-                val -> val > 0 && val != NULL_CHAR);
+                val -> val <= 0 || val == NULL_CHAR);
         validateByteFilter(
                 source,
                 "byteCol",
                 ByteRangeFilter.leq("byteCol", (byte) 0),
-                val -> val <= 0 || val == NULL_BYTE,
-                val -> val > 0 && val != NULL_BYTE);
+                val -> val <= 0 || val == NULL_BYTE);
         validateByteFilter(
                 source,
                 "byteCol",
                 RawString.of("byteCol <= 0"),
-                val -> val <= 0 || val == NULL_BYTE,
-                val -> val > 0 && val != NULL_BYTE);
+                val -> val <= 0 || val == NULL_BYTE);
         validateShortFilter(
                 source,
                 "shortCol",
                 ShortRangeFilter.leq("shortCol", (short) 0),
-                val -> val <= 0 || val == NULL_SHORT,
-                val -> val > 0 && val != NULL_SHORT);
+                val -> val <= 0 || val == NULL_SHORT);
         validateShortFilter(
                 source,
                 "shortCol",
                 RawString.of("shortCol <= 0"),
-                val -> val <= 0 || val == NULL_SHORT,
-                val -> val > 0 && val != NULL_SHORT);
+                val -> val <= 0 || val == NULL_SHORT);
         validateIntFilter(
                 source,
                 "intCol",
                 IntRangeFilter.leq("intCol", 0),
-                val -> val <= 0 || val == NULL_INT,
-                val -> val > 0 && val != NULL_INT);
+                val -> val <= 0 || val == NULL_INT);
         validateIntFilter(
                 source,
                 "intCol",
                 RawString.of("intCol <= 0"),
-                val -> val <= 0 || val == NULL_INT,
-                val -> val > 0 && val != NULL_INT);
+                val -> val <= 0 || val == NULL_INT);
         validateLongFilter(
                 source,
                 "longCol",
                 LongRangeFilter.leq("longCol", 0L),
-                val -> val <= 0 || val == NULL_LONG,
-                val -> val > 0 && val != NULL_LONG);
+                val -> val <= 0 || val == NULL_LONG);
         validateLongFilter(
                 source,
                 "longCol",
                 RawString.of("longCol <= 0"),
-                val -> val <= 0 || val == NULL_LONG,
-                val -> val > 0 && val != NULL_LONG);
+                val -> val <= 0 || val == NULL_LONG);
         // NaN also excluded for float/double
         validateFloatFilter(
                 source,
                 "floatCol",
                 FloatRangeFilter.leq("floatCol", 0.0f),
-                val -> (val <= 0 || val == NULL_FLOAT) && !Float.isNaN(val),
-                val -> (val > 0 || val != NULL_FLOAT) || Float.isNaN(val));
+                val -> (val <= 0 || val == NULL_FLOAT) && !Float.isNaN(val));
         validateFloatFilter(
                 source,
                 "floatCol",
                 RawString.of("floatCol <= 0.0f"),
-                val -> (val <= 0 || val == NULL_FLOAT) && !Float.isNaN(val),
-                val -> (val > 0 || val != NULL_FLOAT) || Float.isNaN(val));
+                val -> (val <= 0 || val == NULL_FLOAT) && !Float.isNaN(val));
         validateDoubleFilter(
                 source,
                 "doubleCol",
                 DoubleRangeFilter.leq("doubleCol", 0.0),
-                val -> (val <= 0 || val == NULL_DOUBLE) && !Double.isNaN(val),
-                val -> (val > 0 && val != NULL_DOUBLE) || Double.isNaN(val));
+                val -> (val <= 0 || val == NULL_DOUBLE) && !Double.isNaN(val));
         validateDoubleFilter(
                 source,
                 "doubleCol",
                 RawString.of("doubleCol <= 0.0"),
-                val -> (val <= 0 || val == NULL_DOUBLE) && !Double.isNaN(val),
-                val -> (val > 0 && val != NULL_DOUBLE) || Double.isNaN(val));
+                val -> (val <= 0 || val == NULL_DOUBLE) && !Double.isNaN(val));
     }
 
     @Test
@@ -517,86 +482,72 @@ public class QueryTableWhereSpecialCasesTest {
                 source,
                 "charCol",
                 RawString.of("charCol = '\u0000'"),
-                val -> val == 0,
-                val -> val != 0);
+                val -> val == 0);
         validateCharFilter(
                 source,
                 "charCol",
                 new MatchFilter(MatchOptions.REGULAR, "charCol", (char) 0),
-                val -> val == 0,
-                val -> val != 0);
+                val -> val == 0);
         validateByteFilter(
                 source,
                 "byteCol",
                 RawString.of("byteCol = 0"),
-                val -> val == 0,
-                val -> val != 0);
+                val -> val == 0);
         validateByteFilter(
                 source,
                 "byteCol",
                 new MatchFilter(MatchOptions.REGULAR, "byteCol", (byte) 0),
-                val -> val == 0,
-                val -> val != 0);
+                val -> val == 0);
         validateShortFilter(
                 source,
                 "shortCol",
                 RawString.of("shortCol = 0"),
-                val -> val == 0,
-                val -> val != 0);
+                val -> val == 0);
         validateShortFilter(
                 source,
                 "shortCol",
                 new MatchFilter(MatchOptions.REGULAR, "shortCol", (short) 0),
-                val -> val == 0,
-                val -> val != 0);
+                val -> val == 0);
         validateIntFilter(
                 source,
                 "intCol",
                 RawString.of("intCol = 0"),
-                val -> val == 0,
-                val -> val != 0);
+                val -> val == 0);
         validateIntFilter(
                 source,
                 "intCol",
                 new MatchFilter(MatchOptions.REGULAR, "intCol", 0),
-                val -> val == 0,
-                val -> val != 0);
+                val -> val == 0);
         validateLongFilter(
                 source,
                 "longCol",
                 RawString.of("longCol = 0"),
-                val -> val == 0L,
-                val -> val != 0L);
+                val -> val == 0L);
         validateLongFilter(
                 source,
                 "longCol",
                 new MatchFilter(MatchOptions.REGULAR, "longCol", 0L),
-                val -> val == 0L,
-                val -> val != 0L);
+                val -> val == 0L);
         validateFloatFilter(
                 source,
                 "floatCol",
                 RawString.of("floatCol = 0.0f"),
-                val -> val == 0.0f,
-                val -> val != 0.0f);
+                val -> val == 0.0f);
         validateFloatFilter(
                 source,
                 "floatCol",
                 new MatchFilter(MatchOptions.REGULAR, "floatCol", 0.0f),
-                val -> val == 0.0f,
-                val -> val != 0.0f);
+                val -> val == 0.0f);
         validateDoubleFilter(
                 source,
                 "doubleCol",
                 RawString.of("doubleCol = 0.0"),
-                val -> val == 0.0,
-                val -> val != 0.0);
+                val -> val == 0.0);
         validateDoubleFilter(
                 source,
                 "doubleCol",
                 new MatchFilter(MatchOptions.REGULAR, "doubleCol", 0.0),
-                val -> val == 0.0,
-                val -> val != 0.0);
+                val -> val == 0.0);
     }
 
     @Test
@@ -608,93 +559,79 @@ public class QueryTableWhereSpecialCasesTest {
                 source,
                 "charCol",
                 RawString.of("charCol != '\u0000'"),
-                val -> val != 0 || val == NULL_CHAR,
-                val -> val == 0 && val != NULL_CHAR);
+                val -> val != 0 || val == NULL_CHAR);
         validateCharFilter(
                 source,
                 "charCol",
                 new MatchFilter(MatchOptions.INVERTED, "charCol", (char) 0),
-                val -> val != 0 || val == NULL_CHAR,
-                val -> val == 0 && val != NULL_CHAR);
+                val -> val != 0 || val == NULL_CHAR);
 
         validateByteFilter(
                 source,
                 "byteCol",
                 RawString.of("byteCol != 0"),
-                val -> val != 0 || val == NULL_BYTE,
-                val -> val == 0 && val != NULL_BYTE);
+                val -> val != 0 || val == NULL_BYTE);
         validateByteFilter(
                 source,
                 "byteCol",
                 new MatchFilter(MatchOptions.INVERTED, "byteCol", (byte) 0),
-                val -> val != 0 || val == NULL_BYTE,
-                val -> val == 0 && val != NULL_BYTE);
+                val -> val != 0 || val == NULL_BYTE);
 
         validateShortFilter(
                 source,
                 "shortCol",
                 RawString.of("shortCol != 0"),
-                val -> val != 0 || val == NULL_SHORT,
-                val -> val == 0 && val != NULL_SHORT);
+                val -> val != 0 || val == NULL_SHORT);
         validateShortFilter(
                 source,
                 "shortCol",
                 new MatchFilter(MatchOptions.INVERTED, "shortCol", (short) 0),
-                val -> val != 0 || val == NULL_SHORT,
-                val -> val == 0 && val != NULL_SHORT);
+                val -> val != 0 || val == NULL_SHORT);
 
         validateIntFilter(
                 source,
                 "intCol",
                 RawString.of("intCol != 0"),
-                val -> val != 0 || val == NULL_INT,
-                val -> val == 0 && val != NULL_INT);
+                val -> val != 0 || val == NULL_INT);
         validateIntFilter(
                 source,
                 "intCol",
                 new MatchFilter(MatchOptions.INVERTED, "intCol", 0),
-                val -> val != 0 || val == NULL_INT,
-                val -> val == 0 && val != NULL_INT);
+                val -> val != 0 || val == NULL_INT);
 
         validateLongFilter(
                 source,
                 "longCol",
                 RawString.of("longCol != 0"),
-                val -> val != 0L || val == NULL_LONG,
-                val -> val == 0L && val != NULL_LONG);
+                val -> val != 0L || val == NULL_LONG);
         validateLongFilter(
                 source,
                 "longCol",
                 new MatchFilter(MatchOptions.INVERTED, "longCol", 0L),
-                val -> val != 0L || val == NULL_LONG,
-                val -> val == 0L && val != NULL_LONG);
+                val -> val != 0L || val == NULL_LONG);
 
         // NaN also included for float/double (because NaN != all values)
         validateFloatFilter(
                 source,
                 "floatCol",
                 RawString.of("floatCol != 0.0f"),
-                val -> val != 0.0f || val == NULL_FLOAT || Float.isNaN(val),
-                val -> val == 0.0f && val != NULL_FLOAT && !Float.isNaN(val));
+                val -> val != 0.0f || val == NULL_FLOAT || Float.isNaN(val));
         validateFloatFilter(
                 source,
                 "floatCol",
                 new MatchFilter(MatchOptions.INVERTED, "floatCol", 0.0f),
-                val -> val != 0.0f || val == NULL_FLOAT || Float.isNaN(val),
-                val -> val == 0.0f && val != NULL_FLOAT && !Float.isNaN(val));
+                val -> val != 0.0f || val == NULL_FLOAT || Float.isNaN(val));
 
         validateDoubleFilter(
                 source,
                 "doubleCol",
                 RawString.of("doubleCol != 0.0"),
-                val -> val != 0.0 || val == NULL_DOUBLE || Double.isNaN(val),
-                val -> val == 0.0 && val != NULL_DOUBLE && !Double.isNaN(val));
+                val -> val != 0.0 || val == NULL_DOUBLE || Double.isNaN(val));
         validateDoubleFilter(
                 source,
                 "doubleCol",
                 new MatchFilter(MatchOptions.INVERTED, "doubleCol", 0.0),
-                val -> val != 0.0 || val == NULL_DOUBLE || Double.isNaN(val),
-                val -> val == 0.0 && val != NULL_DOUBLE && !Double.isNaN(val));
+                val -> val != 0.0 || val == NULL_DOUBLE || Double.isNaN(val));
     }
 
     @Test
@@ -706,86 +643,72 @@ public class QueryTableWhereSpecialCasesTest {
                 source,
                 "charCol",
                 RawString.of("charCol = null"),
-                val -> val == NULL_CHAR,
-                val -> val != NULL_CHAR);
+                val -> val == NULL_CHAR);
         validateCharFilter(
                 source,
                 "charCol",
                 new MatchFilter(MatchOptions.REGULAR, "charCol", NULL_CHAR),
-                val -> val == NULL_CHAR,
-                val -> val != NULL_CHAR);
+                val -> val == NULL_CHAR);
         validateByteFilter(
                 source,
                 "byteCol",
                 RawString.of("byteCol = null"),
-                val -> val == NULL_BYTE,
-                val -> val != NULL_BYTE);
+                val -> val == NULL_BYTE);
         validateByteFilter(
                 source,
                 "byteCol",
                 new MatchFilter(MatchOptions.REGULAR, "byteCol", NULL_BYTE),
-                val -> val == NULL_BYTE,
-                val -> val != NULL_BYTE);
+                val -> val == NULL_BYTE);
         validateShortFilter(
                 source,
                 "shortCol",
                 RawString.of("shortCol = null"),
-                val -> val == NULL_SHORT,
-                val -> val != NULL_SHORT);
+                val -> val == NULL_SHORT);
         validateShortFilter(
                 source,
                 "shortCol",
                 new MatchFilter(MatchOptions.REGULAR, "shortCol", NULL_SHORT),
-                val -> val == NULL_SHORT,
-                val -> val != NULL_SHORT);
+                val -> val == NULL_SHORT);
         validateIntFilter(
                 source,
                 "intCol",
                 RawString.of("intCol = null"),
-                val -> val == NULL_INT,
-                val -> val != NULL_INT);
+                val -> val == NULL_INT);
         validateIntFilter(
                 source,
                 "intCol",
                 new MatchFilter(MatchOptions.REGULAR, "intCol", NULL_INT),
-                val -> val == NULL_INT,
-                val -> val != NULL_INT);
+                val -> val == NULL_INT);
         validateLongFilter(
                 source,
                 "longCol",
                 RawString.of("longCol = null"),
-                val -> val == NULL_LONG,
-                val -> val != NULL_LONG);
+                val -> val == NULL_LONG);
         validateLongFilter(
                 source,
                 "longCol",
                 new MatchFilter(MatchOptions.REGULAR, "longCol", NULL_LONG),
-                val -> val == NULL_LONG,
-                val -> val != NULL_LONG);
+                val -> val == NULL_LONG);
         validateFloatFilter(
                 source,
                 "floatCol",
                 RawString.of("floatCol = null"),
-                val -> val == NULL_FLOAT,
-                val -> val != NULL_FLOAT);
+                val -> val == NULL_FLOAT);
         validateFloatFilter(
                 source,
                 "floatCol",
                 new MatchFilter(MatchOptions.REGULAR, "floatCol", NULL_FLOAT),
-                val -> val == NULL_FLOAT,
-                val -> val != NULL_FLOAT);
+                val -> val == NULL_FLOAT);
         validateDoubleFilter(
                 source,
                 "doubleCol",
                 RawString.of("doubleCol = null"),
-                val -> val == NULL_DOUBLE,
-                val -> val != NULL_DOUBLE);
+                val -> val == NULL_DOUBLE);
         validateDoubleFilter(
                 source,
                 "doubleCol",
                 new MatchFilter(MatchOptions.REGULAR, "doubleCol", NULL_DOUBLE),
-                val -> val == NULL_DOUBLE,
-                val -> val != NULL_DOUBLE);
+                val -> val == NULL_DOUBLE);
     }
 
     @Test
@@ -797,93 +720,79 @@ public class QueryTableWhereSpecialCasesTest {
                 source,
                 "charCol",
                 RawString.of("charCol != null"),
-                val -> val != NULL_CHAR,
-                val -> val == NULL_CHAR);
+                val -> val != NULL_CHAR);
         validateCharFilter(
                 source,
                 "charCol",
                 new MatchFilter(MatchOptions.INVERTED, "charCol", NULL_CHAR),
-                val -> val != NULL_CHAR,
-                val -> val == NULL_CHAR);
+                val -> val != NULL_CHAR);
 
         validateByteFilter(
                 source,
                 "byteCol",
                 RawString.of("byteCol != null"),
-                val -> val != NULL_BYTE,
-                val -> val == NULL_BYTE);
+                val -> val != NULL_BYTE);
         validateByteFilter(
                 source,
                 "byteCol",
                 new MatchFilter(MatchOptions.INVERTED, "byteCol", NULL_BYTE),
-                val -> val != NULL_BYTE,
-                val -> val == NULL_BYTE);
+                val -> val != NULL_BYTE);
 
         validateShortFilter(
                 source,
                 "shortCol",
                 RawString.of("shortCol != null"),
-                val -> val != NULL_SHORT,
-                val -> val == NULL_SHORT);
+                val -> val != NULL_SHORT);
         validateShortFilter(
                 source,
                 "shortCol",
                 new MatchFilter(MatchOptions.INVERTED, "shortCol", NULL_SHORT),
-                val -> val != NULL_SHORT,
-                val -> val == NULL_SHORT);
+                val -> val != NULL_SHORT);
 
         validateIntFilter(
                 source,
                 "intCol",
                 RawString.of("intCol != null"),
-                val -> val != NULL_INT,
-                val -> val == NULL_INT);
+                val -> val != NULL_INT);
         validateIntFilter(
                 source,
                 "intCol",
                 new MatchFilter(MatchOptions.INVERTED, "intCol", NULL_INT),
-                val -> val != NULL_INT,
-                val -> val == NULL_INT);
+                val -> val != NULL_INT);
 
         validateLongFilter(
                 source,
                 "longCol",
                 RawString.of("longCol != null"),
-                val -> val != NULL_LONG,
-                val -> val == NULL_LONG);
+                val -> val != NULL_LONG);
         validateLongFilter(
                 source,
                 "longCol",
                 new MatchFilter(MatchOptions.INVERTED, "longCol", NULL_LONG),
-                val -> val != NULL_LONG,
-                val -> val == NULL_LONG);
+                val -> val != NULL_LONG);
 
         // NaN also included for float/double
         validateFloatFilter(
                 source,
                 "floatCol",
                 RawString.of("floatCol != null"),
-                val -> val != NULL_FLOAT || Float.isNaN(val),
-                val -> val == NULL_FLOAT && !Float.isNaN(val));
+                val -> val != NULL_FLOAT || Float.isNaN(val));
         validateFloatFilter(
                 source,
                 "floatCol",
                 new MatchFilter(MatchOptions.INVERTED, "floatCol", NULL_FLOAT),
-                val -> val != NULL_FLOAT || Float.isNaN(val),
-                val -> val == NULL_FLOAT && !Float.isNaN(val));
+                val -> val != NULL_FLOAT || Float.isNaN(val));
 
         validateDoubleFilter(
                 source,
                 "doubleCol",
                 RawString.of("doubleCol != null"),
-                val -> val != NULL_DOUBLE || Double.isNaN(val),
-                val -> val == NULL_DOUBLE && !Double.isNaN(val));
+                val -> val != NULL_DOUBLE || Double.isNaN(val));
         validateDoubleFilter(
                 source,
                 "doubleCol",
                 new MatchFilter(MatchOptions.INVERTED, "doubleCol", NULL_DOUBLE),
-                val -> val != NULL_DOUBLE || Double.isNaN(val),
-                val -> val == NULL_DOUBLE && !Double.isNaN(val));
+                val -> val != NULL_DOUBLE || Double.isNaN(val));
     }
 
     @Test
@@ -895,27 +804,23 @@ public class QueryTableWhereSpecialCasesTest {
                 source,
                 "floatCol",
                 RawString.of("floatCol = NaN"),
-                val -> false,
-                val -> true);
+                val -> false);
         validateFloatFilter(
                 source,
                 "floatCol",
                 new MatchFilter(MatchOptions.REGULAR, "floatCol", Float.NaN),
-                val -> false,
-                val -> true);
+                val -> false);
 
         validateDoubleFilter(
                 source,
                 "doubleCol",
                 RawString.of("doubleCol = NaN"),
-                val -> false,
-                val -> true);
+                val -> false);
         validateDoubleFilter(
                 source,
                 "doubleCol",
                 new MatchFilter(MatchOptions.REGULAR, "doubleCol", Double.NaN),
-                val -> false,
-                val -> true);
+                val -> false);
     }
 
     @Test
@@ -927,27 +832,23 @@ public class QueryTableWhereSpecialCasesTest {
                 source,
                 "floatCol",
                 RawString.of("floatCol != NaN"),
-                val -> true,
-                val -> false);
+                val -> true);
         validateFloatFilter(
                 source,
                 "floatCol",
                 new MatchFilter(MatchOptions.INVERTED, "floatCol", Float.NaN),
-                val -> true,
-                val -> false);
+                val -> true);
 
         validateDoubleFilter(
                 source,
                 "doubleCol",
                 RawString.of("doubleCol != NaN"),
-                val -> true,
-                val -> false);
+                val -> true);
         validateDoubleFilter(
                 source,
                 "doubleCol",
                 new MatchFilter(MatchOptions.INVERTED, "doubleCol", Double.NaN),
-                val -> true,
-                val -> false);
+                val -> true);
     }
 
     @Test
@@ -959,100 +860,84 @@ public class QueryTableWhereSpecialCasesTest {
                 source,
                 "charCol",
                 RawString.of("charCol in '\u0000', '\u0001'"),
-                val -> val == 0 || val == 1,
-                val -> val != 0 && val != 1);
+                val -> val == 0 || val == 1);
         validateCharFilter(
                 source,
                 "charCol",
                 new MatchFilter(MatchOptions.REGULAR, "charCol", (char) 0, (char) 1),
-                val -> val == 0 || val == 1,
-                val -> val != 0 && val != 1);
+                val -> val == 0 || val == 1);
         validateByteFilter(
                 source,
                 "byteCol",
                 RawString.of("byteCol in 0, 1"),
-                val -> val == 0 || val == 1,
-                val -> val != 0 && val != 1);
+                val -> val == 0 || val == 1);
         validateByteFilter(
                 source,
                 "byteCol",
                 new MatchFilter(MatchOptions.REGULAR, "byteCol", (byte) 0, (byte) 1),
-                val -> val == 0 || val == 1,
-                val -> val != 0 && val != 1);
+                val -> val == 0 || val == 1);
         validateShortFilter(
                 source,
                 "shortCol",
                 RawString.of("shortCol in 0, 1"),
-                val -> val == 0 || val == 1,
-                val -> val != 0 && val != 1);
+                val -> val == 0 || val == 1);
         validateShortFilter(
                 source,
                 "shortCol",
                 new MatchFilter(MatchOptions.REGULAR, "shortCol", (short) 0, (short) 1),
-                val -> val == 0 || val == 1,
-                val -> val != 0 && val != 1);
+                val -> val == 0 || val == 1);
         validateIntFilter(
                 source,
                 "intCol",
                 RawString.of("intCol in 0, 1"),
-                val -> val == 0 || val == 1,
-                val -> val != 0 && val != 1);
+                val -> val == 0 || val == 1);
         validateIntFilter(
                 source,
                 "intCol",
                 new MatchFilter(MatchOptions.REGULAR, "intCol", 0, 1),
-                val -> val == 0 || val == 1,
-                val -> val != 0 && val != 1);
+                val -> val == 0 || val == 1);
         validateLongFilter(
                 source,
                 "longCol",
                 RawString.of("longCol in 0, 1"),
-                val -> val == 0 || val == 1,
-                val -> val != 0 && val != 1);
+                val -> val == 0 || val == 1);
         validateLongFilter(
                 source,
                 "longCol",
                 new MatchFilter(MatchOptions.REGULAR, "longCol", 0L, 1L),
-                val -> val == 0 || val == 1,
-                val -> val != 0 && val != 1);
+                val -> val == 0 || val == 1);
 
         validateFloatFilter(
                 source,
                 "floatCol",
                 RawString.of("floatCol in 0.0f, 1.0f"),
-                val -> val == 0.0f || val == 1.0f,
-                val -> val != 0.0f && val != 1.0f);
+                val -> val == 0.0f || val == 1.0f);
         validateFloatFilter(
                 source,
                 "floatCol",
                 new MatchFilter(MatchOptions.REGULAR, "floatCol", 0.0f, 1.0f),
-                val -> val == 0.0f || val == 1.0f,
-                val -> val != 0.0f && val != 1.0f);
+                val -> val == 0.0f || val == 1.0f);
         validateFloatFilter(
                 source,
                 "floatCol",
                 new MatchFilter(MatchOptions.REGULAR, "floatCol", -0.0f, 1.0f),
-                val -> val == 0.0f || val == 1.0f,
-                val -> val != 0.0f && val != 1.0f);
+                val -> val == 0.0f || val == 1.0f);
 
         validateDoubleFilter(
                 source,
                 "doubleCol",
                 RawString.of("doubleCol in 0.0, 1.0"),
-                val -> val == 0.0 || val == 1.0,
-                val -> val != 0.0 && val != 1.0);
+                val -> val == 0.0 || val == 1.0);
         validateDoubleFilter(
                 source,
                 "doubleCol",
                 new MatchFilter(MatchOptions.REGULAR, "doubleCol", 0.0, 1.0),
-                val -> val == 0.0 || val == 1.0,
-                val -> val != 0.0 && val != 1.0);
+                val -> val == 0.0 || val == 1.0);
         validateDoubleFilter(
                 source,
                 "doubleCol",
                 new MatchFilter(MatchOptions.REGULAR, "doubleCol", -0.0, 1.0),
-                val -> val == 0.0 || val == 1.0,
-                val -> val != 0.0 && val != 1.0);
+                val -> val == 0.0 || val == 1.0);
     }
 
     @Test
@@ -1064,104 +949,88 @@ public class QueryTableWhereSpecialCasesTest {
                 source,
                 "charCol",
                 RawString.of("charCol not in '\u0000', '\u0001'"),
-                val -> val != 0 && val != 1,
-                val -> val == 0 || val == 1);
+                val -> val != 0 && val != 1);
         validateCharFilter(
                 source,
                 "charCol",
                 new MatchFilter(MatchOptions.INVERTED, "charCol", (char) 0, (char) 1),
-                val -> val != 0 && val != 1,
-                val -> val == 0 || val == 1);
+                val -> val != 0 && val != 1);
 
         validateByteFilter(
                 source,
                 "byteCol",
                 RawString.of("byteCol not in 0, 1"),
-                val -> val != 0 && val != 1,
-                val -> val == 0 || val == 1);
+                val -> val != 0 && val != 1);
         validateByteFilter(
                 source,
                 "byteCol",
                 new MatchFilter(MatchOptions.INVERTED, "byteCol", (byte) 0, (byte) 1),
-                val -> val != 0 && val != 1,
-                val -> val == 0 || val == 1);
+                val -> val != 0 && val != 1);
 
         validateShortFilter(
                 source,
                 "shortCol",
                 RawString.of("shortCol not in 0, 1"),
-                val -> val != 0 && val != 1,
-                val -> val == 0 || val == 1);
+                val -> val != 0 && val != 1);
         validateShortFilter(
                 source,
                 "shortCol",
                 new MatchFilter(MatchOptions.INVERTED, "shortCol", (short) 0, (short) 1),
-                val -> val != 0 && val != 1,
-                val -> val == 0 || val == 1);
+                val -> val != 0 && val != 1);
 
         validateIntFilter(
                 source,
                 "intCol",
                 RawString.of("intCol not in 0, 1"),
-                val -> val != 0 && val != 1,
-                val -> val == 0 || val == 1);
+                val -> val != 0 && val != 1);
         validateIntFilter(
                 source,
                 "intCol",
                 new MatchFilter(MatchOptions.INVERTED, "intCol", 0, 1),
-                val -> val != 0 && val != 1,
-                val -> val == 0 || val == 1);
+                val -> val != 0 && val != 1);
 
         validateLongFilter(
                 source,
                 "longCol",
                 RawString.of("longCol not in 0, 1"),
-                val -> val != 0 && val != 1,
-                val -> val == 0 || val == 1);
+                val -> val != 0 && val != 1);
         validateLongFilter(
                 source,
                 "longCol",
                 new MatchFilter(MatchOptions.INVERTED, "longCol", 0L, 1L),
-                val -> val != 0 && val != 1,
-                val -> val == 0 || val == 1);
+                val -> val != 0 && val != 1);
 
         validateFloatFilter(
                 source,
                 "floatCol",
                 RawString.of("floatCol not in 0.0f, 1.0f"),
-                val -> val != 0.0f && val != 1.0f,
-                val -> val == 0.0f || val == 1.0f);
+                val -> val != 0.0f && val != 1.0f);
         validateFloatFilter(
                 source,
                 "floatCol",
                 new MatchFilter(MatchOptions.INVERTED, "floatCol", 0.0f, 1.0f),
-                val -> val != 0.0f && val != 1.0f,
-                val -> val == 0.0f || val == 1.0f);
+                val -> val != 0.0f && val != 1.0f);
         validateFloatFilter(
                 source,
                 "floatCol",
                 new MatchFilter(MatchOptions.INVERTED, "floatCol", -0.0f, 1.0f),
-                val -> val != 0.0f && val != 1.0f,
-                val -> val == 0.0f || val == 1.0f);
+                val -> val != 0.0f && val != 1.0f);
 
         validateDoubleFilter(
                 source,
                 "doubleCol",
                 RawString.of("doubleCol not in 0.0, 1.0"),
-                val -> val != 0.0 && val != 1.0,
-                val -> val == 0.0 || val == 1.0);
+                val -> val != 0.0 && val != 1.0);
         validateDoubleFilter(
                 source,
                 "doubleCol",
                 new MatchFilter(MatchOptions.INVERTED, "doubleCol", 0.0, 1.0),
-                val -> val != 0.0 && val != 1.0,
-                val -> val == 0.0 || val == 1.0);
+                val -> val != 0.0 && val != 1.0);
         validateDoubleFilter(
                 source,
                 "doubleCol",
                 new MatchFilter(MatchOptions.INVERTED, "doubleCol", -0.0, 1.0),
-                val -> val != 0.0 && val != 1.0,
-                val -> val == 0.0 || val == 1.0);
+                val -> val != 0.0 && val != 1.0);
     }
 
     @Test
@@ -1173,100 +1042,84 @@ public class QueryTableWhereSpecialCasesTest {
                 source,
                 "charCol",
                 RawString.of("charCol in '\u0000', null"),
-                val -> val == 0 || val == NULL_CHAR,
-                val -> val != 0 && val != NULL_CHAR);
+                val -> val == 0 || val == NULL_CHAR);
         validateCharFilter(
                 source,
                 "charCol",
                 new MatchFilter(MatchOptions.REGULAR, "charCol", (char) 0, NULL_CHAR),
-                val -> val == 0 || val == NULL_CHAR,
-                val -> val != 0 && val != NULL_CHAR);
+                val -> val == 0 || val == NULL_CHAR);
         validateByteFilter(
                 source,
                 "byteCol",
                 RawString.of("byteCol in 0, null"),
-                val -> val == 0 || val == NULL_BYTE,
-                val -> val != 0 && val != NULL_BYTE);
+                val -> val == 0 || val == NULL_BYTE);
         validateByteFilter(
                 source,
                 "byteCol",
                 new MatchFilter(MatchOptions.REGULAR, "byteCol", (byte) 0, NULL_BYTE),
-                val -> val == 0 || val == NULL_BYTE,
-                val -> val != 0 && val != NULL_BYTE);
+                val -> val == 0 || val == NULL_BYTE);
         validateShortFilter(
                 source,
                 "shortCol",
                 RawString.of("shortCol in 0, null"),
-                val -> val == 0 || val == NULL_SHORT,
-                val -> val != 0 && val != NULL_SHORT);
+                val -> val == 0 || val == NULL_SHORT);
         validateShortFilter(
                 source,
                 "shortCol",
                 new MatchFilter(MatchOptions.REGULAR, "shortCol", (short) 0, NULL_SHORT),
-                val -> val == 0 || val == NULL_SHORT,
-                val -> val != 0 && val != NULL_SHORT);
+                val -> val == 0 || val == NULL_SHORT);
         validateIntFilter(
                 source,
                 "intCol",
                 RawString.of("intCol in 0, null"),
-                val -> val == 0 || val == NULL_INT,
-                val -> val != 0 && val != NULL_INT);
+                val -> val == 0 || val == NULL_INT);
         validateIntFilter(
                 source,
                 "intCol",
                 new MatchFilter(MatchOptions.REGULAR, "intCol", 0, NULL_INT),
-                val -> val == 0 || val == NULL_INT,
-                val -> val != 0 && val != NULL_INT);
+                val -> val == 0 || val == NULL_INT);
         validateLongFilter(
                 source,
                 "longCol",
                 RawString.of("longCol in 0, null"),
-                val -> val == 0L || val == NULL_LONG,
-                val -> val != 0L && val != NULL_LONG);
+                val -> val == 0L || val == NULL_LONG);
         validateLongFilter(
                 source,
                 "longCol",
                 new MatchFilter(MatchOptions.REGULAR, "longCol", 0L, NULL_LONG),
-                val -> val == 0L || val == NULL_LONG,
-                val -> val != 0L && val != NULL_LONG);
+                val -> val == 0L || val == NULL_LONG);
 
         validateFloatFilter(
                 source,
                 "floatCol",
                 RawString.of("floatCol in 0.0f, null"),
-                val -> val == 0.0f || val == NULL_FLOAT,
-                val -> val != 0.0f && val != NULL_FLOAT);
+                val -> val == 0.0f || val == NULL_FLOAT);
         validateFloatFilter(
                 source,
                 "floatCol",
                 new MatchFilter(MatchOptions.REGULAR, "floatCol", 0.0f, NULL_FLOAT),
-                val -> val == 0.0f || val == NULL_FLOAT,
-                val -> val != 0.0f && val != NULL_FLOAT);
+                val -> val == 0.0f || val == NULL_FLOAT);
         validateFloatFilter(
                 source,
                 "floatCol",
                 new MatchFilter(MatchOptions.REGULAR, "floatCol", -0.0f, NULL_FLOAT),
-                val -> val == 0.0f || val == NULL_FLOAT,
-                val -> val != 0.0f && val != NULL_FLOAT);
+                val -> val == 0.0f || val == NULL_FLOAT);
 
         validateDoubleFilter(
                 source,
                 "doubleCol",
                 RawString.of("doubleCol in 0.0, null"),
-                val -> val == 0.0 || val == NULL_DOUBLE,
-                val -> val != 0.0 && val != NULL_DOUBLE);
+                val -> val == 0.0 || val == NULL_DOUBLE);
         validateDoubleFilter(
                 source,
                 "doubleCol",
                 new MatchFilter(MatchOptions.REGULAR, "doubleCol", 0.0, NULL_DOUBLE),
-                val -> val == 0.0 || val == NULL_DOUBLE,
-                val -> val != 0.0 && val != NULL_DOUBLE);
+                val -> val == 0.0 || val == NULL_DOUBLE);
         validateDoubleFilter(
                 source,
                 "doubleCol",
                 new MatchFilter(MatchOptions.REGULAR, "doubleCol", -0.0, NULL_DOUBLE),
-                val -> val == 0.0 || val == NULL_DOUBLE,
-                val -> val != 0.0 && val != NULL_DOUBLE);
+                val -> val == 0.0 || val == NULL_DOUBLE);
     }
 
     @Test
@@ -1278,104 +1131,88 @@ public class QueryTableWhereSpecialCasesTest {
                 source,
                 "charCol",
                 RawString.of("charCol not in '\u0000', null"),
-                val -> val != 0 && val != NULL_CHAR,
-                val -> val == 0 || val == NULL_CHAR);
+                val -> val != 0 && val != NULL_CHAR);
         validateCharFilter(
                 source,
                 "charCol",
                 new MatchFilter(MatchOptions.INVERTED, "charCol", (char) 0, NULL_CHAR),
-                val -> val != 0 && val != NULL_CHAR,
-                val -> val == 0 || val == NULL_CHAR);
+                val -> val != 0 && val != NULL_CHAR);
 
         validateByteFilter(
                 source,
                 "byteCol",
                 RawString.of("byteCol not in 0, null"),
-                val -> val != 0 && val != NULL_BYTE,
-                val -> val == 0 || val == NULL_BYTE);
+                val -> val != 0 && val != NULL_BYTE);
         validateByteFilter(
                 source,
                 "byteCol",
                 new MatchFilter(MatchOptions.INVERTED, "byteCol", (byte) 0, NULL_BYTE),
-                val -> val != 0 && val != NULL_BYTE,
-                val -> val == 0 || val == NULL_BYTE);
+                val -> val != 0 && val != NULL_BYTE);
 
         validateShortFilter(
                 source,
                 "shortCol",
                 RawString.of("shortCol not in 0, null"),
-                val -> val != 0 && val != NULL_SHORT,
-                val -> val == 0 || val == NULL_SHORT);
+                val -> val != 0 && val != NULL_SHORT);
         validateShortFilter(
                 source,
                 "shortCol",
                 new MatchFilter(MatchOptions.INVERTED, "shortCol", (short) 0, NULL_SHORT),
-                val -> val != 0 && val != NULL_SHORT,
-                val -> val == 0 || val == NULL_SHORT);
+                val -> val != 0 && val != NULL_SHORT);
 
         validateIntFilter(
                 source,
                 "intCol",
                 RawString.of("intCol not in 0, null"),
-                val -> val != 0 && val != NULL_INT,
-                val -> val == 0 || val == NULL_INT);
+                val -> val != 0 && val != NULL_INT);
         validateIntFilter(
                 source,
                 "intCol",
                 new MatchFilter(MatchOptions.INVERTED, "intCol", 0, NULL_INT),
-                val -> val != 0 && val != NULL_INT,
-                val -> val == 0 || val == NULL_INT);
+                val -> val != 0 && val != NULL_INT);
 
         validateLongFilter(
                 source,
                 "longCol",
                 RawString.of("longCol not in 0, null"),
-                val -> val != 0L && val != NULL_LONG,
-                val -> val == 0L || val == NULL_LONG);
+                val -> val != 0L && val != NULL_LONG);
         validateLongFilter(
                 source,
                 "longCol",
                 new MatchFilter(MatchOptions.INVERTED, "longCol", 0L, NULL_LONG),
-                val -> val != 0L && val != NULL_LONG,
-                val -> val == 0L || val == NULL_LONG);
+                val -> val != 0L && val != NULL_LONG);
 
         validateFloatFilter(
                 source,
                 "floatCol",
                 RawString.of("floatCol not in 0.0f, null"),
-                val -> val != 0.0f && val != NULL_FLOAT,
-                val -> val == 0.0f || val == NULL_FLOAT);
+                val -> val != 0.0f && val != NULL_FLOAT);
         validateFloatFilter(
                 source,
                 "floatCol",
                 new MatchFilter(MatchOptions.INVERTED, "floatCol", 0.0f, NULL_FLOAT),
-                val -> val != 0.0f && val != NULL_FLOAT,
-                val -> val == 0.0f || val == NULL_FLOAT);
+                val -> val != 0.0f && val != NULL_FLOAT);
         validateFloatFilter(
                 source,
                 "floatCol",
                 new MatchFilter(MatchOptions.INVERTED, "floatCol", -0.0f, NULL_FLOAT),
-                val -> val != 0.0f && val != NULL_FLOAT,
-                val -> val == 0.0f || val == NULL_FLOAT);
+                val -> val != 0.0f && val != NULL_FLOAT);
 
         validateDoubleFilter(
                 source,
                 "doubleCol",
                 RawString.of("doubleCol not in 0.0, null"),
-                val -> val != 0.0 && val != NULL_DOUBLE,
-                val -> val == 0.0 || val == NULL_DOUBLE);
+                val -> val != 0.0 && val != NULL_DOUBLE);
         validateDoubleFilter(
                 source,
                 "doubleCol",
                 new MatchFilter(MatchOptions.INVERTED, "doubleCol", 0.0, NULL_DOUBLE),
-                val -> val != 0.0 && val != NULL_DOUBLE,
-                val -> val == 0.0 || val == NULL_DOUBLE);
+                val -> val != 0.0 && val != NULL_DOUBLE);
         validateDoubleFilter(
                 source,
                 "doubleCol",
                 new MatchFilter(MatchOptions.INVERTED, "doubleCol", -0.0, NULL_DOUBLE),
-                val -> val != 0.0 && val != NULL_DOUBLE,
-                val -> val == 0.0 || val == NULL_DOUBLE);
+                val -> val != 0.0 && val != NULL_DOUBLE);
     }
 
     @Test
@@ -1387,39 +1224,33 @@ public class QueryTableWhereSpecialCasesTest {
                 source,
                 "floatCol",
                 RawString.of("floatCol in 0.0f, NaN"),
-                val -> val == 0.0f || Float.isNaN(val),
-                val -> val != 0.0f && !Float.isNaN(val));
+                val -> val == 0.0f || Float.isNaN(val));
         validateFloatFilter(
                 source,
                 "floatCol",
                 new MatchFilter(MatchOptions.builder().nanMatch(true).build(), "floatCol", 0.0f, Float.NaN),
-                val -> val == 0.0f || Float.isNaN(val),
-                val -> val != 0.0f && !Float.isNaN(val));
+                val -> val == 0.0f || Float.isNaN(val));
         validateFloatFilter(
                 source,
                 "floatCol",
                 new MatchFilter(MatchOptions.builder().nanMatch(true).build(), "floatCol", -0.0f, Float.NaN),
-                val -> val == 0.0f || Float.isNaN(val),
-                val -> val != 0.0f && !Float.isNaN(val));
+                val -> val == 0.0f || Float.isNaN(val));
 
         validateDoubleFilter(
                 source,
                 "doubleCol",
                 RawString.of("doubleCol in 0.0, NaN"),
-                val -> val == 0.0 || Double.isNaN(val),
-                val -> val != 0.0 && !Double.isNaN(val));
+                val -> val == 0.0 || Double.isNaN(val));
         validateDoubleFilter(
                 source,
                 "doubleCol",
                 new MatchFilter(MatchOptions.builder().nanMatch(true).build(), "doubleCol", 0.0, Double.NaN),
-                val -> val == 0.0 || Double.isNaN(val),
-                val -> val != 0.0 && !Double.isNaN(val));
+                val -> val == 0.0 || Double.isNaN(val));
         validateDoubleFilter(
                 source,
                 "doubleCol",
                 new MatchFilter(MatchOptions.builder().nanMatch(true).build(), "doubleCol", -0.0, Double.NaN),
-                val -> val == 0.0 || Double.isNaN(val),
-                val -> val != 0.0 && !Double.isNaN(val));
+                val -> val == 0.0 || Double.isNaN(val));
     }
 
     @Test
@@ -1430,43 +1261,37 @@ public class QueryTableWhereSpecialCasesTest {
                 source,
                 "floatCol",
                 RawString.of("floatCol not in 0.0f, NaN"),
-                val -> val != 0.0f && !Float.isNaN(val),
-                val -> val == 0.0f || Float.isNaN(val));
+                val -> val != 0.0f && !Float.isNaN(val));
         validateFloatFilter(
                 source,
                 "floatCol",
                 new MatchFilter(MatchOptions.builder().inverted(true).nanMatch(true).build(), "floatCol", 0.0f,
                         Float.NaN),
-                val -> val != 0.0f && !Float.isNaN(val),
-                val -> val == 0.0f || Float.isNaN(val));
+                val -> val != 0.0f && !Float.isNaN(val));
         validateFloatFilter(
                 source,
                 "floatCol",
                 new MatchFilter(MatchOptions.builder().inverted(true).nanMatch(true).build(), "floatCol", -0.0f,
                         Float.NaN),
-                val -> val != 0.0f && !Float.isNaN(val),
-                val -> val == 0.0f || Float.isNaN(val));
+                val -> val != 0.0f && !Float.isNaN(val));
 
         validateDoubleFilter(
                 source,
                 "doubleCol",
                 RawString.of("doubleCol not in 0.0, NaN"),
-                val -> val != 0.0 && !Double.isNaN(val),
-                val -> val == 0.0 || Double.isNaN(val));
+                val -> val != 0.0 && !Double.isNaN(val));
         validateDoubleFilter(
                 source,
                 "doubleCol",
                 new MatchFilter(MatchOptions.builder().inverted(true).nanMatch(true).build(), "doubleCol", 0.0,
                         Double.NaN),
-                val -> val != 0.0 && !Double.isNaN(val),
-                val -> val == 0.0 || Double.isNaN(val));
+                val -> val != 0.0 && !Double.isNaN(val));
         validateDoubleFilter(
                 source,
                 "doubleCol",
                 new MatchFilter(MatchOptions.builder().inverted(true).nanMatch(true).build(), "doubleCol", -0.0,
                         Double.NaN),
-                val -> val != 0.0 && !Double.isNaN(val),
-                val -> val == 0.0 || Double.isNaN(val));
+                val -> val != 0.0 && !Double.isNaN(val));
     }
 
     @Test
@@ -1478,46 +1303,39 @@ public class QueryTableWhereSpecialCasesTest {
                 source,
                 "charCol",
                 RawString.of("charCol > 0 && true"),
-                val -> val > 0 && val != NULL_CHAR,
-                val -> val <= 0 || val == NULL_CHAR);
+                val -> val > 0 && val != NULL_CHAR);
         validateByteFilter(
                 source,
                 "byteCol",
                 RawString.of("byteCol > 0 && true"),
-                val -> val > 0 && val != NULL_BYTE,
-                val -> val <= 0 || val == NULL_BYTE);
+                val -> val > 0 && val != NULL_BYTE);
         validateShortFilter(
                 source,
                 "shortCol",
                 RawString.of("shortCol > 0 && true"),
-                val -> val > 0 && val != NULL_SHORT,
-                val -> val <= 0 || val == NULL_SHORT);
+                val -> val > 0 && val != NULL_SHORT);
         validateIntFilter(
                 source,
                 "intCol",
                 RawString.of("intCol > 0 && true"),
-                val -> val > 0 && val != NULL_INT,
-                val -> val <= 0 || val == NULL_INT);
+                val -> val > 0 && val != NULL_INT);
         validateLongFilter(
                 source,
                 "longCol",
                 RawString.of("longCol > 0 && true"),
-                val -> val > 0 && val != NULL_LONG,
-                val -> val <= 0 || val == NULL_LONG);
+                val -> val > 0 && val != NULL_LONG);
 
         // NaN should be excluded for float/double
         validateFloatFilter(
                 source,
                 "floatCol",
                 RawString.of("floatCol > 0.0f && true"),
-                val -> val > 0 && val != NULL_FLOAT && !Float.isNaN(val),
-                val -> val <= 0 || val == NULL_FLOAT || Float.isNaN(val));
+                val -> val > 0 && val != NULL_FLOAT && !Float.isNaN(val));
         validateDoubleFilter(
                 source,
                 "doubleCol",
                 RawString.of("doubleCol > 0.0 && true"),
-                val -> val > 0 && val != NULL_DOUBLE && !Double.isNaN(val),
-                val -> val <= 0 || val == NULL_DOUBLE || Double.isNaN(val));
+                val -> val > 0 && val != NULL_DOUBLE && !Double.isNaN(val));
     }
 
     @Test
@@ -1529,46 +1347,39 @@ public class QueryTableWhereSpecialCasesTest {
                 source,
                 "charCol",
                 RawString.of("charCol <= 0 && true"),
-                val -> val <= 0 || val == NULL_CHAR,
-                val -> val > 0 && val != NULL_CHAR);
+                val -> val <= 0 || val == NULL_CHAR);
         validateByteFilter(
                 source,
                 "byteCol",
                 RawString.of("byteCol <= 0 && true"),
-                val -> val <= 0 || val == NULL_BYTE,
-                val -> val > 0 && val != NULL_BYTE);
+                val -> val <= 0 || val == NULL_BYTE);
         validateShortFilter(
                 source,
                 "shortCol",
                 RawString.of("shortCol <= 0 && true"),
-                val -> val <= 0 || val == NULL_SHORT,
-                val -> val > 0 && val != NULL_SHORT);
+                val -> val <= 0 || val == NULL_SHORT);
         validateIntFilter(
                 source,
                 "intCol",
                 RawString.of("intCol <= 0 && true"),
-                val -> val <= 0 || val == NULL_INT,
-                val -> val > 0 && val != NULL_INT);
+                val -> val <= 0 || val == NULL_INT);
         validateLongFilter(
                 source,
                 "longCol",
                 RawString.of("longCol <= 0 && true"),
-                val -> val <= 0 || val == NULL_LONG,
-                val -> val > 0 && val != NULL_LONG);
+                val -> val <= 0 || val == NULL_LONG);
 
         // NaN also excluded for float/double
         validateFloatFilter(
                 source,
                 "floatCol",
                 RawString.of("floatCol <= 0.0f && true"),
-                val -> (val <= 0.0f || val == NULL_FLOAT) && !Float.isNaN(val),
-                val -> (val > 0.0f && val != NULL_FLOAT) || Float.isNaN(val));
+                val -> (val <= 0.0f || val == NULL_FLOAT) && !Float.isNaN(val));
         validateDoubleFilter(
                 source,
                 "doubleCol",
                 RawString.of("doubleCol <= 0.0 && true"),
-                val -> (val <= 0.0 || val == NULL_DOUBLE) && !Double.isNaN(val),
-                val -> (val > 0.0 || val != NULL_DOUBLE) || Double.isNaN(val));
+                val -> (val <= 0.0 || val == NULL_DOUBLE) && !Double.isNaN(val));
     }
 
     @Test
@@ -1579,46 +1390,39 @@ public class QueryTableWhereSpecialCasesTest {
                 source,
                 "charCol",
                 RawString.of("charCol = 0 && true"),
-                val -> val == 0 && val != NULL_CHAR,
-                val -> val != 0 || val == NULL_CHAR);
+                val -> val == 0 && val != NULL_CHAR);
         validateByteFilter(
                 source,
                 "byteCol",
                 RawString.of("byteCol = 0 && true"),
-                val -> val == 0 && val != NULL_BYTE,
-                val -> val != 0 || val == NULL_BYTE);
+                val -> val == 0 && val != NULL_BYTE);
         validateShortFilter(
                 source,
                 "shortCol",
                 RawString.of("shortCol = 0 && true"),
-                val -> val == 0 && val != NULL_SHORT,
-                val -> val != 0 || val == NULL_SHORT);
+                val -> val == 0 && val != NULL_SHORT);
         validateIntFilter(
                 source,
                 "intCol",
                 RawString.of("intCol = 0 && true"),
-                val -> val == 0 && val != NULL_INT,
-                val -> val != 0 || val == NULL_INT);
+                val -> val == 0 && val != NULL_INT);
         validateLongFilter(
                 source,
                 "longCol",
                 RawString.of("longCol = 0 && true"),
-                val -> val == 0L && val != NULL_LONG,
-                val -> val != 0L || val == NULL_LONG);
+                val -> val == 0L && val != NULL_LONG);
 
         // Float/Double must exclude NaN
         validateFloatFilter(
                 source,
                 "floatCol",
                 RawString.of("floatCol = 0.0f && true"),
-                val -> val == 0.0f && val != NULL_FLOAT && !Float.isNaN(val),
-                val -> val != 0.0f || val == NULL_FLOAT || Float.isNaN(val));
+                val -> val == 0.0f && val != NULL_FLOAT && !Float.isNaN(val));
         validateDoubleFilter(
                 source,
                 "doubleCol",
                 RawString.of("doubleCol = 0.0 && true"),
-                val -> val == 0.0 && val != NULL_DOUBLE && !Double.isNaN(val),
-                val -> val != 0.0 || val == NULL_DOUBLE || Double.isNaN(val));
+                val -> val == 0.0 && val != NULL_DOUBLE && !Double.isNaN(val));
     }
 
     @Test
@@ -1629,46 +1433,39 @@ public class QueryTableWhereSpecialCasesTest {
                 source,
                 "charCol",
                 RawString.of("charCol != 0 && true"),
-                val -> val != 0 || val == NULL_CHAR,
-                val -> val == 0 && val != NULL_CHAR);
+                val -> val != 0 || val == NULL_CHAR);
         validateByteFilter(
                 source,
                 "byteCol",
                 RawString.of("byteCol != 0 && true"),
-                val -> val != 0 || val == NULL_BYTE,
-                val -> val == 0 && val != NULL_BYTE);
+                val -> val != 0 || val == NULL_BYTE);
         validateShortFilter(
                 source,
                 "shortCol",
                 RawString.of("shortCol != 0 && true"),
-                val -> val != 0 || val == NULL_SHORT,
-                val -> val == 0 && val != NULL_SHORT);
+                val -> val != 0 || val == NULL_SHORT);
         validateIntFilter(
                 source,
                 "intCol",
                 RawString.of("intCol != 0 && true"),
-                val -> val != 0 || val == NULL_INT,
-                val -> val == 0 && val != NULL_INT);
+                val -> val != 0 || val == NULL_INT);
         validateLongFilter(
                 source,
                 "longCol",
                 RawString.of("longCol != 0 && true"),
-                val -> val != 0L || val == NULL_LONG,
-                val -> val == 0L && val != NULL_LONG);
+                val -> val != 0L || val == NULL_LONG);
 
         // Float/Double must exclude NaN
         validateFloatFilter(
                 source,
                 "floatCol",
                 RawString.of("floatCol != 0.0f && true"),
-                val -> val != 0.0f || val == NULL_FLOAT || Float.isNaN(val),
-                val -> val == 0.0f && val != NULL_FLOAT && !Float.isNaN(val));
+                val -> val != 0.0f || val == NULL_FLOAT || Float.isNaN(val));
         validateDoubleFilter(
                 source,
                 "doubleCol",
                 RawString.of("doubleCol != 0.0 && true"),
-                val -> val != 0.0 || val == NULL_DOUBLE || Double.isNaN(val),
-                val -> val == 0.0 && val != NULL_DOUBLE && !Double.isNaN(val));
+                val -> val != 0.0 || val == NULL_DOUBLE || Double.isNaN(val));
     }
 
     @Test
@@ -1680,46 +1477,39 @@ public class QueryTableWhereSpecialCasesTest {
                 source,
                 "charCol",
                 RawString.of("charCol = null && true"),
-                val -> val == NULL_CHAR,
-                val -> val != NULL_CHAR);
+                val -> val == NULL_CHAR);
         validateByteFilter(
                 source,
                 "byteCol",
                 RawString.of("byteCol = null && true"),
-                val -> val == NULL_BYTE,
-                val -> val != NULL_BYTE);
+                val -> val == NULL_BYTE);
         validateShortFilter(
                 source,
                 "shortCol",
                 RawString.of("shortCol = null && true"),
-                val -> val == NULL_SHORT,
-                val -> val != NULL_SHORT);
+                val -> val == NULL_SHORT);
         validateIntFilter(
                 source,
                 "intCol",
                 RawString.of("intCol = null && true"),
-                val -> val == NULL_INT,
-                val -> val != NULL_INT);
+                val -> val == NULL_INT);
         validateLongFilter(
                 source,
                 "longCol",
                 RawString.of("longCol = null && true"),
-                val -> val == NULL_LONG,
-                val -> val != NULL_LONG);
+                val -> val == NULL_LONG);
 
         // Float/Double must exclude NaN
         validateFloatFilter(
                 source,
                 "floatCol",
                 RawString.of("floatCol = null && true"),
-                val -> val == NULL_FLOAT && !Float.isNaN(val),
-                val -> val != NULL_FLOAT || Float.isNaN(val));
+                val -> val == NULL_FLOAT && !Float.isNaN(val));
         validateDoubleFilter(
                 source,
                 "doubleCol",
                 RawString.of("doubleCol = null && true"),
-                val -> val == NULL_DOUBLE && !Double.isNaN(val),
-                val -> val != NULL_DOUBLE || Double.isNaN(val));
+                val -> val == NULL_DOUBLE && !Double.isNaN(val));
     }
 
     @Test
@@ -1731,46 +1521,39 @@ public class QueryTableWhereSpecialCasesTest {
                 source,
                 "charCol",
                 RawString.of("charCol != null && true"),
-                val -> val != NULL_CHAR,
-                val -> val == NULL_CHAR);
+                val -> val != NULL_CHAR);
         validateByteFilter(
                 source,
                 "byteCol",
                 RawString.of("byteCol != null && true"),
-                val -> val != NULL_BYTE,
-                val -> val == NULL_BYTE);
+                val -> val != NULL_BYTE);
         validateShortFilter(
                 source,
                 "shortCol",
                 RawString.of("shortCol != null && true"),
-                val -> val != NULL_SHORT,
-                val -> val == NULL_SHORT);
+                val -> val != NULL_SHORT);
         validateIntFilter(
                 source,
                 "intCol",
                 RawString.of("intCol != null && true"),
-                val -> val != NULL_INT,
-                val -> val == NULL_INT);
+                val -> val != NULL_INT);
         validateLongFilter(
                 source,
                 "longCol",
                 RawString.of("longCol != null && true"),
-                val -> val != NULL_LONG,
-                val -> val == NULL_LONG);
+                val -> val != NULL_LONG);
 
         // Float/Double must include NaN
         validateFloatFilter(
                 source,
                 "floatCol",
                 RawString.of("floatCol != null && true"),
-                val -> val != NULL_FLOAT || Float.isNaN(val),
-                val -> val == NULL_FLOAT && !Float.isNaN(val));
+                val -> val != NULL_FLOAT || Float.isNaN(val));
         validateDoubleFilter(
                 source,
                 "doubleCol",
                 RawString.of("doubleCol != null && true"),
-                val -> val != NULL_DOUBLE || Double.isNaN(val),
-                val -> val == NULL_DOUBLE && !Double.isNaN(val));
+                val -> val != NULL_DOUBLE || Double.isNaN(val));
     }
 
     @Test
@@ -1782,27 +1565,23 @@ public class QueryTableWhereSpecialCasesTest {
                 source,
                 "floatCol",
                 RawString.of("floatCol = Float.NaN && true"),
-                val -> false,
-                val -> true);
+                val -> false);
         validateFloatFilter(
                 source,
                 "floatCol",
                 new MatchFilter(MatchOptions.REGULAR, "floatCol", Float.NaN),
-                val -> false,
-                val -> true);
+                val -> false);
 
         validateDoubleFilter(
                 source,
                 "doubleCol",
                 RawString.of("doubleCol = Double.NaN && true"),
-                val -> false,
-                val -> true);
+                val -> false);
         validateDoubleFilter(
                 source,
                 "doubleCol",
                 new MatchFilter(MatchOptions.REGULAR, "doubleCol", Double.NaN),
-                val -> false,
-                val -> true);
+                val -> false);
     }
 
     @Test
@@ -1814,27 +1593,23 @@ public class QueryTableWhereSpecialCasesTest {
                 source,
                 "floatCol",
                 RawString.of("floatCol != Float.NaN && true"),
-                val -> true,
-                val -> false);
+                val -> true);
         validateFloatFilter(
                 source,
                 "floatCol",
                 new MatchFilter(MatchOptions.INVERTED, "floatCol", Float.NaN),
-                val -> true,
-                val -> false);
+                val -> true);
 
         validateDoubleFilter(
                 source,
                 "doubleCol",
                 RawString.of("doubleCol != Double.NaN && true"),
-                val -> true,
-                val -> false);
+                val -> true);
         validateDoubleFilter(
                 source,
                 "doubleCol",
                 new MatchFilter(MatchOptions.INVERTED, "doubleCol", Double.NaN),
-                val -> true,
-                val -> false);
+                val -> true);
     }
 
     @Test
@@ -1846,15 +1621,13 @@ public class QueryTableWhereSpecialCasesTest {
                 source,
                 "floatCol",
                 Filter.isNaN(ColumnName.of("floatCol")),
-                val -> Float.isNaN(val),
-                val -> !Float.isNaN(val));
+                val -> Float.isNaN(val));
 
         validateDoubleFilter(
                 source,
                 "doubleCol",
                 Filter.isNaN(ColumnName.of("doubleCol")),
-                val -> Double.isNaN(val),
-                val -> !Double.isNaN(val));
+                val -> Double.isNaN(val));
     }
 
     @Test
@@ -1866,15 +1639,13 @@ public class QueryTableWhereSpecialCasesTest {
                 source,
                 "floatCol",
                 Filter.isNotNaN(ColumnName.of("floatCol")),
-                val -> !Float.isNaN(val),
-                val -> Float.isNaN(val));
+                val -> !Float.isNaN(val));
 
         validateDoubleFilter(
                 source,
                 "doubleCol",
                 Filter.isNotNaN(ColumnName.of("doubleCol")),
-                val -> !Double.isNaN(val),
-                val -> Double.isNaN(val));
+                val -> !Double.isNaN(val));
     }
 
     @Test
@@ -1888,84 +1659,72 @@ public class QueryTableWhereSpecialCasesTest {
                 source,
                 "floatCol",
                 RawString.of("floatCol == float_nan"),
-                val -> false,
-                val -> true);
+                val -> false);
         validateDoubleFilter(
                 source,
                 "doubleCol",
                 RawString.of("doubleCol == double_nan"),
-                val -> false,
-                val -> true);
+                val -> false);
 
         // Testing != scoped_nan, everything should match (including NaN)
         validateFloatFilter(
                 source,
                 "floatCol",
                 RawString.of("floatCol != float_nan"),
-                val -> true,
-                val -> false);
+                val -> true);
         validateDoubleFilter(
                 source,
                 "doubleCol",
                 RawString.of("doubleCol != double_nan"),
-                val -> true,
-                val -> false);
+                val -> true);
 
         // Testing scoped_nan == scoped_nan, nothing should match (including NaN)
         validateFloatFilter(
                 source,
                 "floatCol",
                 RawString.of("float_nan == float_nan"),
-                val -> false,
-                val -> true);
+                val -> false);
         validateDoubleFilter(
                 source,
                 "doubleCol",
                 RawString.of("double_nan == double_nan"),
-                val -> false,
-                val -> true);
+                val -> false);
 
         // Testing scoped_nan != scoped_nan, everything should match (including NaN)
         validateFloatFilter(
                 source,
                 "floatCol",
                 RawString.of("float_nan != float_nan"),
-                val -> true,
-                val -> false);
+                val -> true);
         validateDoubleFilter(
                 source,
                 "doubleCol",
                 RawString.of("double_nan != double_nan"),
-                val -> true,
-                val -> false);
+                val -> true);
 
         // Testing in 0,scoped_nan (NaN will match)
         validateFloatFilter(
                 source,
                 "floatCol",
                 RawString.of("floatCol in 0, float_nan"),
-                val -> Float.isNaN(val) || val == 0.0f,
-                val -> !Float.isNaN(val) && val != 0.0f);
+                val -> Float.isNaN(val) || val == 0.0f);
         validateDoubleFilter(
                 source,
                 "doubleCol",
                 RawString.of("doubleCol in 0, double_nan"),
-                val -> Double.isNaN(val) || val == 0.0,
-                val -> !Double.isNaN(val) && val != 0.0);
+                val -> Double.isNaN(val) || val == 0.0);
 
         // Testing not in 0,scoped_nan (NaN not match)
         validateFloatFilter(
                 source,
                 "floatCol",
                 RawString.of("floatCol not in 0, float_nan"),
-                val -> !Float.isNaN(val) && val != 0.0f,
-                val -> Float.isNaN(val) || val == 0.0f);
+                val -> !Float.isNaN(val) && val != 0.0f);
         validateDoubleFilter(
                 source,
                 "doubleCol",
                 RawString.of("doubleCol not in 0, double_nan"),
-                val -> !Double.isNaN(val) && val != 0.0,
-                val -> Double.isNaN(val) || val == 0.0);
+                val -> !Double.isNaN(val) && val != 0.0);
     }
 
     @Test
@@ -1979,69 +1738,59 @@ public class QueryTableWhereSpecialCasesTest {
                 updated,
                 "floatCol",
                 RawString.of("floatCol == floatCol2"),
-                val -> !Float.isNaN(val),
-                val -> Float.isNaN(val));
+                val -> !Float.isNaN(val));
         validateDoubleFilter(
                 updated,
                 "doubleCol",
                 RawString.of("doubleCol == doubleCol2"),
-                val -> !Double.isNaN(val),
-                val -> Double.isNaN(val));
+                val -> !Double.isNaN(val));
 
         // Reverse the columnns
         validateFloatFilter(
                 updated,
                 "floatCol",
                 RawString.of("floatCol2 == floatCol"),
-                val -> !Float.isNaN(val),
-                val -> Float.isNaN(val));
+                val -> !Float.isNaN(val));
         validateDoubleFilter(
                 updated,
                 "doubleCol",
                 RawString.of("doubleCol2 == doubleCol"),
-                val -> !Double.isNaN(val),
-                val -> Double.isNaN(val));
+                val -> !Double.isNaN(val));
 
         // NaN != NaN -> true so this only includes the NaN row
         validateFloatFilter(
                 updated,
                 "floatCol",
                 RawString.of("floatCol != floatCol2"),
-                val -> Float.isNaN(val),
-                val -> !Float.isNaN(val));
+                val -> Float.isNaN(val));
         validateDoubleFilter(
                 updated,
                 "doubleCol",
                 RawString.of("doubleCol != doubleCol2"),
-                val -> Double.isNaN(val),
-                val -> !Double.isNaN(val));
+                val -> Double.isNaN(val));
 
         // Reverse the columnns
         validateFloatFilter(
                 updated,
                 "floatCol",
                 RawString.of("floatCol2 != floatCol"),
-                val -> Float.isNaN(val),
-                val -> !Float.isNaN(val));
+                val -> Float.isNaN(val));
         validateDoubleFilter(
                 updated,
                 "doubleCol",
                 RawString.of("doubleCol2 != doubleCol"),
-                val -> Double.isNaN(val),
-                val -> !Double.isNaN(val));
+                val -> Double.isNaN(val));
 
         // Compare float to double
         validateFloatFilter(
                 updated,
                 "floatCol",
                 RawString.of("floatCol == doubleCol"),
-                val -> !Float.isNaN(val),
-                val -> Float.isNaN(val));
+                val -> !Float.isNaN(val));
         validateDoubleFilter(
                 updated,
                 "doubleCol",
                 RawString.of("doubleCol == floatCol"),
-                val -> !Double.isNaN(val),
-                val -> Double.isNaN(val));
+                val -> !Double.isNaN(val));
     }
 }
