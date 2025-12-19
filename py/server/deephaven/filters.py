@@ -39,7 +39,7 @@ class ColumnName(str):
 
 class Filter(ConcurrencyControl["Filter"], JObjectWrapper):
     """A Filter object represents a filter that can be used in Table's filtering(where) operations.
-    Explicit concurrency and ordering control can be specified on a Filter to affects the parallelization of its
+    Explicit concurrency and ordering control can be specified on a Filter to affect the parallelization of its
     evaluation during the Table filtering operation.
     """
 
