@@ -267,7 +267,7 @@ def in_(col: str, values: Sequence[Union[bool, int, float, str]]) -> Filter:
         j_literals = [_JLiteral.of(v) for v in values]
         return Filter(j_filter=_JFilterIn.of(_JColumnName.of(col), j_literals))
     except Exception as e:
-        raise DHError(e, "failed to create a in filter.") from e
+        raise DHError(e, "failed to create an in filter.") from e
 
 
 _FILTER_COMPARISON_MAP: dict = {
@@ -294,7 +294,6 @@ def _j_filter_comparison(
     return _FILTER_COMPARISON_MAP[op](j_left, j_right)
 
 
-# TODO what about bytes, date/time types or generic object?
 def eq(
     left: Union[bool, int, float, str, ColumnName],
     right: Union[bool, int, float, str, ColumnName],
