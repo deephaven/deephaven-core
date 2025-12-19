@@ -283,7 +283,7 @@ public class JsRemoteFileSourceService extends HasEventHandling {
         /**
          * Responds to this resource request with the given content.
          *
-         * @param content the resource content (string, ArrayBuffer, or typed array), or null if not found
+         * @param content the resource content (string or Uint8Array), or null if not found
          */
         @JsMethod
         public void respond(@JsNullable Object content) {
@@ -299,11 +299,11 @@ public class JsRemoteFileSourceService extends HasEventHandling {
 
                 // Convert content to bytes
                 if (content instanceof String) {
-                    response.setContent(stringToUtf8((String) content));
+                    response.setContent((String) content);
                 } else if (content instanceof Uint8Array) {
                     response.setContent((Uint8Array) content);
                 } else {
-                    response.setContent(Js.uncheckedCast(content));
+                    throw new IllegalArgumentException("Content must be a String, Uint8Array, or null");
                 }
             }
 
