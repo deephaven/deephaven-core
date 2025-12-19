@@ -6,8 +6,10 @@ Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
 """
 
 import builtins
+import collections.abc
 import deephaven_core.proto.ticket_pb2
 import google.protobuf.descriptor
+import google.protobuf.internal.containers
 import google.protobuf.message
 import typing
 
@@ -33,6 +35,55 @@ class AddTableRequest(google.protobuf.message.Message):
     def ClearField(self, field_name: typing.Literal["input_table", b"input_table", "table_to_add", b"table_to_add"]) -> None: ...
 
 global___AddTableRequest = AddTableRequest
+
+@typing.final
+class InputTableValidationError(google.protobuf.message.Message):
+    """An error indicating invalid values were passed to AddTableRequest, optionally annotated with the input row and column
+    that caused the error.
+    """
+
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    MESSAGE_FIELD_NUMBER: builtins.int
+    ROW_FIELD_NUMBER: builtins.int
+    COLUMN_FIELD_NUMBER: builtins.int
+    message: builtins.str
+    """the error message"""
+    row: builtins.int
+    """the row position in the table_to_add that caused this error, not present when unknown"""
+    column: builtins.str
+    """the column name in the table_to_add that caused this error, not present when unknown"""
+    def __init__(
+        self,
+        *,
+        message: builtins.str = ...,
+        row: builtins.int | None = ...,
+        column: builtins.str | None = ...,
+    ) -> None: ...
+    def HasField(self, field_name: typing.Literal["_column", b"_column", "_row", b"_row", "column", b"column", "row", b"row"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing.Literal["_column", b"_column", "_row", b"_row", "column", b"column", "message", b"message", "row", b"row"]) -> None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing.Literal["_column", b"_column"]) -> typing.Literal["column"] | None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing.Literal["_row", b"_row"]) -> typing.Literal["row"] | None: ...
+
+global___InputTableValidationError = InputTableValidationError
+
+@typing.final
+class InputTableValidationErrorList(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    VALIDATION_ERRORS_FIELD_NUMBER: builtins.int
+    @property
+    def validation_errors(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___InputTableValidationError]: ...
+    def __init__(
+        self,
+        *,
+        validation_errors: collections.abc.Iterable[global___InputTableValidationError] | None = ...,
+    ) -> None: ...
+    def ClearField(self, field_name: typing.Literal["validation_errors", b"validation_errors"]) -> None: ...
+
+global___InputTableValidationErrorList = InputTableValidationErrorList
 
 @typing.final
 class AddTableResponse(google.protobuf.message.Message):
