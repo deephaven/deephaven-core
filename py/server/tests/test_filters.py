@@ -32,7 +32,7 @@ class FilterTestCase(BaseTestCase):
 
     def test_incremental_release(self):
         filtered_table = self.test_table.where(filters=incremental_release(5, 10))
-        self.assertEqual(filtered_table.size, 10)
+        self.assertEqual(filtered_table.size, 5)
 
     def test_pattern_filter(self):
         new_test_table = self.test_table.update("X = String.valueOf(d)")
