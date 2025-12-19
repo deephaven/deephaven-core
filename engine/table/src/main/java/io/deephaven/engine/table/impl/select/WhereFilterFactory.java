@@ -162,6 +162,7 @@ public class WhereFilterFactory {
                 final MatchOptions matchOptions = MatchOptions.builder()
                         .inverted(inverted)
                         .caseInsensitive(false)
+                        .nanMatch(false) // follow IEEE 754, NaN == NaN -> false
                         .build();
                 return new MatchFilter(
                         new CachingSupplier<>(() -> (ConditionFilter) ConditionFilter.createConditionFilter(expression,

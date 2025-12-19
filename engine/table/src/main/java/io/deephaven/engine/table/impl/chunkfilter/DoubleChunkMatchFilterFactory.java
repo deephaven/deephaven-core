@@ -7,7 +7,9 @@
 // @formatter:off
 package io.deephaven.engine.table.impl.chunkfilter;
 
-import gnu.trove.set.hash.TDoubleHashSet;import gnu.trove.set.hash.TLongHashSet;import io.deephaven.engine.table.MatchOptions;
+import gnu.trove.set.hash.TDoubleHashSet;
+import gnu.trove.set.hash.TLongHashSet;
+import io.deephaven.engine.table.MatchOptions;
 
 /**
  * Creates chunk filters for double values.

@@ -125,6 +125,21 @@ REGULAR: MatchType.ValueType  # 0
 INVERTED: MatchType.ValueType  # 1
 global___MatchType = MatchType
 
+class _NanComparison:
+    ValueType = typing.NewType("ValueType", builtins.int)
+    V: typing_extensions.TypeAlias = ValueType
+
+class _NanComparisonEnumTypeWrapper(google.protobuf.internal.enum_type_wrapper._EnumTypeWrapper[_NanComparison.ValueType], builtins.type):
+    DESCRIPTOR: google.protobuf.descriptor.EnumDescriptor
+    NAN_NOT_EQUALS_NAN: _NanComparison.ValueType  # 0
+    NAN_EQUALS_NAN: _NanComparison.ValueType  # 1
+
+class NanComparison(_NanComparison, metaclass=_NanComparisonEnumTypeWrapper): ...
+
+NAN_NOT_EQUALS_NAN: NanComparison.ValueType  # 0
+NAN_EQUALS_NAN: NanComparison.ValueType  # 1
+global___NanComparison = NanComparison
+
 @typing.final
 class TableReference(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
@@ -2957,8 +2972,10 @@ class InCondition(google.protobuf.message.Message):
     CANDIDATES_FIELD_NUMBER: builtins.int
     CASE_SENSITIVITY_FIELD_NUMBER: builtins.int
     MATCH_TYPE_FIELD_NUMBER: builtins.int
+    NAN_COMPARISON_FIELD_NUMBER: builtins.int
     case_sensitivity: global___CaseSensitivity.ValueType
     match_type: global___MatchType.ValueType
+    nan_comparison: global___NanComparison.ValueType
     @property
     def target(self) -> global___Value: ...
     @property
@@ -2970,9 +2987,10 @@ class InCondition(google.protobuf.message.Message):
         candidates: collections.abc.Iterable[global___Value] | None = ...,
         case_sensitivity: global___CaseSensitivity.ValueType = ...,
         match_type: global___MatchType.ValueType = ...,
+        nan_comparison: global___NanComparison.ValueType = ...,
     ) -> None: ...
     def HasField(self, field_name: typing.Literal["target", b"target"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing.Literal["candidates", b"candidates", "case_sensitivity", b"case_sensitivity", "match_type", b"match_type", "target", b"target"]) -> None: ...
+    def ClearField(self, field_name: typing.Literal["candidates", b"candidates", "case_sensitivity", b"case_sensitivity", "match_type", b"match_type", "nan_comparison", b"nan_comparison", "target", b"target"]) -> None: ...
 
 global___InCondition = InCondition
 

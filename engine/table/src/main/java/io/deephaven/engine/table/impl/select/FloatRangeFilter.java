@@ -25,10 +25,12 @@ public class FloatRangeFilter extends AbstractRangeFilter {
     }
 
     public static FloatRangeFilter gt(String columnName, float x) {
+        // NaN used as upper bound, but explicitly excluded from the results (matching IEEE 754 comparison rules)
         return new FloatRangeFilter(columnName, x, Float.NaN, false, false);
     }
 
     public static FloatRangeFilter geq(String columnName, float x) {
+        // NaN used as upper bound, but explicitly excluded from the results (matching IEEE 754 comparison rules)
         return new FloatRangeFilter(columnName, x, Float.NaN, true, false);
     }
 

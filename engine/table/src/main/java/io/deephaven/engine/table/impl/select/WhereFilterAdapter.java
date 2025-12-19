@@ -553,6 +553,7 @@ class WhereFilterAdapter implements Filter.Visitor<WhereFilter> {
                     .inverted(inverted)
                     .nanMatch(true)
                     .build();
+            // Float.NaN is auto-cast to Double.NaN for double columns
             return new MatchFilter(matchOptions, columnName.name(), Float.NaN);
         }
 

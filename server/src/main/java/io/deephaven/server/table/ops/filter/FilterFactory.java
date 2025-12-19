@@ -23,6 +23,7 @@ import io.deephaven.proto.backplane.grpc.InvokeCondition;
 import io.deephaven.proto.backplane.grpc.IsNullCondition;
 import io.deephaven.proto.backplane.grpc.Literal;
 import io.deephaven.proto.backplane.grpc.MatchType;
+import io.deephaven.proto.backplane.grpc.NanComparison;
 import io.deephaven.proto.backplane.grpc.NotCondition;
 import io.deephaven.proto.backplane.grpc.Reference;
 import io.deephaven.proto.backplane.grpc.Value;
@@ -37,14 +38,6 @@ import java.util.stream.Collectors;
 
 public class FilterFactory implements FilterVisitor<WhereFilter> {
     private final TableDefinition tableDefinition;
-
-    private enum LocalMatchType {
-        Regular, Inverted,
-    }
-
-    private enum LocalCaseSensitivity {
-        MatchCase, IgnoreCase
-    }
 
     private FilterFactory(@NotNull final TableDefinition tableDefinition) {
         this.tableDefinition = tableDefinition;
@@ -183,7 +176,7 @@ public class FilterFactory implements FilterVisitor<WhereFilter> {
 
     @Override
     public WhereFilter onIn(Value target, List<Value> candidatesList, CaseSensitivity caseSensitivity,
-            MatchType matchType) {
+            MatchType matchType, NanComparison nanComparison) {
         assert target.getDataCase() == Value.DataCase.REFERENCE;
         Reference reference = target.getReference();
         String[] values = new String[candidatesList.size()];
@@ -198,36 +191,47 @@ public class FilterFactory implements FilterVisitor<WhereFilter> {
                 values[i] = FilterPrinter.printNoEscape(literal);
             }
         }
-        final LocalCaseSensitivity fcs = caseSensitivity(caseSensitivity);
-        final LocalMatchType fmt = matchType(matchType);
         final MatchOptions matchOptions = MatchOptions.builder()
-                .inverted(fmt == LocalMatchType.Inverted)
-                .caseInsensitive(fcs == LocalCaseSensitivity.IgnoreCase)
+                .inverted(inverted(matchType))
+                .caseInsensitive(caseInsensitive(caseSensitivity))
+                .nanMatch(nanMatch(nanComparison))
                 .build();
         return new MatchFilter(null, matchOptions, reference.getColumnName(), values, null);
     }
 
-    private LocalCaseSensitivity caseSensitivity(CaseSensitivity caseSensitivity) {
+    private boolean caseInsensitive(CaseSensitivity caseSensitivity) {
         switch (caseSensitivity) {
             case MATCH_CASE:
-                return LocalCaseSensitivity.MatchCase;
+                return false;
             case IGNORE_CASE:
-                return LocalCaseSensitivity.IgnoreCase;
+                return true;
             case UNRECOGNIZED:
             default:
                 throw new IllegalStateException("Can't handle compare case sensitivity " + caseSensitivity);
         }
     }
 
-    private LocalMatchType matchType(MatchType matchType) {
+    private boolean inverted(MatchType matchType) {
         switch (matchType) {
             case REGULAR:
-                return LocalMatchType.Regular;
+                return false;
             case INVERTED:
-                return LocalMatchType.Inverted;
+                return true;
             case UNRECOGNIZED:
             default:
                 throw new IllegalStateException("Can't handle compare match type " + matchType);
+        }
+    }
+
+    private boolean nanMatch(NanComparison nanComparison) {
+        switch (nanComparison) {
+            case NAN_NOT_EQUALS_NAN:
+                return false;
+            case NAN_EQUALS_NAN:
+                return true;
+            case UNRECOGNIZED:
+            default:
+                throw new IllegalStateException("Can't handle nan comparison type " + nanComparison);
         }
     }
 

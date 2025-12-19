@@ -15074,6 +15074,12 @@ public final class TestQueryLanguageFunctionUtils extends TestCase {
         TestCase.assertFalse(eq(Double.NaN, NULL_DOUBLE));
         TestCase.assertFalse(eq(NULL_DOUBLE, Double.NaN));
 
+        TestCase.assertFalse(eq(Float.NaN, Double.NaN));
+        TestCase.assertFalse(eq(Double.NaN, Float.NaN));
+
+        TestCase.assertFalse(eq(Float.NaN, Float.NaN));
+        TestCase.assertFalse(eq(Double.NaN, Double.NaN));
+
         // less - float/double vs all supported types
         TestCase.assertFalse(less(Float.NaN, NULL_BYTE));
         TestCase.assertFalse(less(NULL_BYTE, Float.NaN));
