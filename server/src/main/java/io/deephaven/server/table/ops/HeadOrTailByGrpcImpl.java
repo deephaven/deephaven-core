@@ -65,7 +65,7 @@ public abstract class HeadOrTailByGrpcImpl extends GrpcTableOperation<HeadOrTail
 
         // note: we don't use the output from validateColumnExpressions because the headBy/tailBy
         // overloads that take SelectColumn arrays throw UnsupportedOperationException, but we validate anyway
-        columnExpressionValidator.validateColumnExpressions(expressions, columnSpecs, parent);
+        columnExpressionValidator.validateColumnExpressions(expressions, columnSpecs, parent.getDefinition());
 
         // note that headBy/tailBy use ungroup which currently requires the UGP lock
         try (final SafeCloseable ignored = lock(parent)) {

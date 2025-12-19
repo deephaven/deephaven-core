@@ -160,7 +160,7 @@ public class PrimitiveType {
                 new PrimitiveType("char", "Character",
                         "CharVector", "CharVectorDirect",
                         "CloseablePrimitiveIteratorOfChar", "nextChar",
-                        "NULL_CHAR", null, null,
+                        "NULL_CHAR", "MAX_CHAR", "MIN_CHAR",
                         ValueType.CHARACTER),
                 new PrimitiveType("byte", "Byte",
                         "ByteVector", "ByteVectorDirect",

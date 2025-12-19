@@ -7,7 +7,7 @@ import gc
 
 import jpy
 
-from deephaven import DHError
+from .dherror import DHError
 
 
 def garbage_collect() -> None:

@@ -6,26 +6,19 @@ package io.deephaven.engine.table.impl.select;
 import io.deephaven.api.literal.Literal;
 import io.deephaven.base.string.cache.CompressedString;
 import io.deephaven.base.verify.Assert;
-import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.DataIndex;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.QueryCompilerRequestProcessor;
-import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.chunkfilter.ChunkFilter;
 import io.deephaven.engine.table.impl.chunkfilter.ChunkMatchFilterFactory;
 import io.deephaven.engine.table.impl.lang.QueryLanguageFunctionUtils;
 import io.deephaven.engine.table.impl.preview.DisplayWrapper;
-import io.deephaven.engine.table.impl.DependencyStreamProvider;
-import io.deephaven.engine.table.impl.indexer.DataIndexer;
-import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.QueryConstants;
-import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.InternalUseOnly;
 import io.deephaven.util.datastructures.CachingSupplier;
 import io.deephaven.util.type.ArrayTypeUtils;
@@ -43,9 +36,8 @@ import java.time.LocalTime;
 import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.function.Consumer;
-import java.util.stream.Stream;
 
-public class MatchFilter extends WhereFilterImpl implements DependencyStreamProvider, ExposesChunkFilter {
+public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
 
     private static final long serialVersionUID = 1L;
 
@@ -71,18 +63,6 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
     private final boolean caseInsensitive;
 
     private boolean initialized;
-
-    /**
-     * The {@link DataIndex} for this filter, if any. Only ever non-{@code null} during operation initialization.
-     */
-    private DataIndex dataIndex;
-    /**
-     * Whether our dependencies have been gathered at least once. We expect dependencies to be gathered one time after
-     * {@link #beginOperation(Table)} (when we know if we're using a {@link DataIndex}), and then again after for every
-     * instantiation attempt when initializing the listener. Since we only use the DataIndex during instantiation, we
-     * don't need the listener to depend on it.
-     */
-    private boolean initialDependenciesGathered;
 
     public enum MatchType {
         Regular, Inverted,
@@ -259,44 +239,6 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
         initialized = true;
     }
 
-    @Override
-    public SafeCloseable beginOperation(@NotNull final Table sourceTable) {
-        if (initialDependenciesGathered || dataIndex != null) {
-            throw new IllegalStateException("Inputs already initialized, use copy() instead of re-using a WhereFilter");
-        }
-        if (!QueryTable.USE_DATA_INDEX_FOR_WHERE) {
-            return () -> {
-            };
-        }
-        try (final SafeCloseable ignored = sourceTable.isRefreshing() ? LivenessScopeStack.open() : null) {
-            dataIndex = DataIndexer.getDataIndex(sourceTable, columnName);
-            if (dataIndex != null && dataIndex.isRefreshing()) {
-                dataIndex.retainReference();
-            }
-        }
-        return dataIndex != null ? this::completeOperation : () -> {
-        };
-    }
-
-    private void completeOperation() {
-        if (dataIndex.isRefreshing()) {
-            dataIndex.dropReference();
-        }
-        dataIndex = null;
-    }
-
-    @Override
-    public Stream<NotificationQueue.Dependency> getDependencyStream() {
-        if (initialDependenciesGathered) {
-            return Stream.empty();
-        }
-        initialDependenciesGathered = true;
-        if (dataIndex == null || !dataIndex.isRefreshing()) {
-            return Stream.empty();
-        }
-        return Stream.of(dataIndex.table());
-    }
-
     @NotNull
     @Override
     public WritableRowSet filter(
@@ -307,7 +249,7 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
         }
 
         final ColumnSource<?> columnSource = table.getColumnSource(columnName);
-        return columnSource.match(invertMatch, usePrev, caseInsensitive, dataIndex, selection, values);
+        return columnSource.match(invertMatch, usePrev, caseInsensitive, selection, values);
     }
 
     @NotNull
@@ -320,7 +262,7 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
         }
 
         final ColumnSource<?> columnSource = table.getColumnSource(columnName);
-        return columnSource.match(!invertMatch, usePrev, caseInsensitive, dataIndex, selection, values);
+        return columnSource.match(!invertMatch, usePrev, caseInsensitive, selection, values);
     }
 
     private ChunkFilter chunkFilter;

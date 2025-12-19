@@ -49,8 +49,8 @@ public class DoubleObjectTuple implements Comparable<DoubleObjectTuple>, Externa
         this.element1 = element1;
         this.element2 = element2;
         cachedHashCode = (31 +
-                Double.hashCode(element1)) * 31 +
-                Objects.hashCode(element2);
+                DoubleComparisons.hashCode(element1)) * 31 +
+                ObjectComparisons.hashCode(element2);
     }
 
     public final double getFirstElement() {
@@ -76,7 +76,7 @@ public class DoubleObjectTuple implements Comparable<DoubleObjectTuple>, Externa
         }
         final DoubleObjectTuple typedOther = (DoubleObjectTuple) other;
         // @formatter:off
-        return element1 == typedOther.element1 &&
+        return DoubleComparisons.eq(element1, typedOther.element1) &&
                ObjectComparisons.eq(element2, typedOther.element2);
         // @formatter:on
     }

@@ -53,9 +53,9 @@ public class CharLongCharTuple implements Comparable<CharLongCharTuple>, Externa
         this.element2 = element2;
         this.element3 = element3;
         cachedHashCode = ((31 +
-                Character.hashCode(element1)) * 31 +
-                Long.hashCode(element2)) * 31 +
-                Character.hashCode(element3);
+                CharComparisons.hashCode(element1)) * 31 +
+                LongComparisons.hashCode(element2)) * 31 +
+                CharComparisons.hashCode(element3);
     }
 
     public final char getFirstElement() {
@@ -85,9 +85,9 @@ public class CharLongCharTuple implements Comparable<CharLongCharTuple>, Externa
         }
         final CharLongCharTuple typedOther = (CharLongCharTuple) other;
         // @formatter:off
-        return element1 == typedOther.element1 &&
-               element2 == typedOther.element2 &&
-               element3 == typedOther.element3;
+        return CharComparisons.eq(element1, typedOther.element1) &&
+               LongComparisons.eq(element2, typedOther.element2) &&
+               CharComparisons.eq(element3, typedOther.element3);
         // @formatter:on
     }
 

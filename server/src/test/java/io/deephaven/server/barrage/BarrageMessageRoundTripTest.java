@@ -20,9 +20,6 @@ import io.deephaven.engine.table.impl.InstrumentedTableUpdateListener;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.table.impl.TableUpdateValidator;
-import io.deephaven.engine.table.impl.select.FunctionalColumn;
-import io.deephaven.engine.table.impl.select.SelectColumnFactory;
-import io.deephaven.engine.table.impl.select.WhereFilterFactory;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
 import io.deephaven.engine.table.vectors.IntVectorColumnWrapper;
 import io.deephaven.engine.testutil.*;
@@ -56,9 +53,9 @@ import org.junit.experimental.categories.Category;
 
 import javax.inject.Singleton;
 import java.io.ByteArrayInputStream;
-import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.time.ZoneId;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -68,7 +65,6 @@ import java.util.stream.Collectors;
 import static io.deephaven.engine.table.impl.remote.ConstructSnapshot.SNAPSHOT_CHUNK_SIZE;
 import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.engine.util.TableTools.col;
-import static io.deephaven.engine.util.TableTools.emptyTable;
 
 @Category(OutOfBandTest.class)
 public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
@@ -206,8 +202,8 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
                     .useDeephavenNulls(useDeephavenNulls)
                     .build();
             final BarrageDataMarshaller marshaller = new BarrageDataMarshaller(
-                    options, barrageTable.getWireChunkTypes(), barrageTable.getWireTypes(),
-                    barrageTable.getWireComponentTypes(),
+                    options, schema.computeWireChunkTypes(), schema.computeWireTypes(),
+                    schema.computeWireComponentTypes(),
                     new BarrageMessageReaderImpl(barrageTable.getDeserializationTmConsumer()));
             this.dummyObserver = new DummyObserver(marshaller, commandQueue);
 
@@ -1393,7 +1389,8 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
                             // note we use column name `Sym` instead of `objCol` for the groupBy op in #createNuggets
                             columnInfo = initColumnInfos(
                                     new String[] {"longCol", "intCol", "Sym", "byteCol", "doubleCol", "floatCol",
-                                            "shortCol", "charCol", "boolCol", "strCol", "strArrCol", "datetimeCol"},
+                                            "shortCol", "charCol", "boolCol", "strCol", "strArrCol", "datetimeCol",
+                                            "zdtCol"},
                                     new SortedLongGenerator(0, Long.MAX_VALUE - 1),
                                     new IntGenerator(10, 100, 0.1),
                                     new SetGenerator<>("a", "b", "c", "d"), // covers strings
@@ -1408,7 +1405,13 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
                                             new String[] {}, null),
                                     new UnsortedInstantGenerator(
                                             DateTimeUtils.parseInstant("2020-02-14T00:00:00 NY"),
-                                            DateTimeUtils.parseInstant("2020-02-25T00:00:00 NY")));
+                                            DateTimeUtils.parseInstant("2020-02-25T00:00:00 NY")),
+                                    new SetGenerator<>(
+                                            DateTimeUtils.parseInstant("2025-11-13T00:00:00 NY")
+                                                    .atZone(ZoneId.of("UTC")),
+                                            DateTimeUtils.parseInstant("2025-11-14T00:00:00 NY")
+                                                    .atZone(ZoneId.of("UTC")),
+                                            null));
                             sourceTable = getTable(size / 4, random, columnInfo);
                         }
                     };

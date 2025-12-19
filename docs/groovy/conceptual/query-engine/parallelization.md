@@ -73,10 +73,12 @@ the `update()` and `where()`s for those three tables have been processed.
 
 ### Controlling Concurrency for `select`, `update` and `where`
 
-The `select`, `update`, and `where` operations can parallelize within a single where clause or column expression. This can greatly improve throughput by using multiple threads to read existing columns or compute functions. Deephaven can only parallelize an expression if it is _stateless_, meaning it does not depend on any mutable external inputs or the order in which rows are evaluated. Many operations, such as String manipulation or arithmetic on one or more input columns are stateless. By default, the Deephaven engine assumes that expressions are not stateless. For `select` and `update`, you can change the configuration property `QueryTable.statelessSelectByDefault` to `true` to make columns stateless by default. For filters, change the property `QueryTable.statelessFiltersByDefault`.
+The `select`, `update`, and `where` operations can parallelize within a single where clause or column expression. This can greatly improve throughput by using multiple threads to read existing columns or compute functions. Deephaven can only parallelize an expression if it is _stateless_, meaning it does not depend on any mutable external inputs or the order in which rows are evaluated. Many operations, such as String manipulation or arithmetic on one or more input columns are always stateless. By default, the engine assumes that all user expressions are stateless and can be parallelized.
+
+To change the default behavior for `select` and `update`, you can change the configuration property `QueryTable.statelessSelectByDefault` to `false` to make columns stateful. For filters, change the property `QueryTable.statelessFiltersByDefault`.
 
 > [!NOTE]
-> In a future version of Deephaven, filters and selectables will be stateless by default.
+> In Deephaven versions through 0.40, the engine assumed that all filters and selectables were _stateful_ by default. All later versions treat filters and selectables as _stateless_ by default.
 
 The [`ConcurrencyControl`](https://docs.deephaven.io/core/javadoc/io/deephaven/api/ConcurrencyControl.html) interface allows you to control the behavior of [`Filter`](https://docs.deephaven.io/core/javadoc/io/deephaven/api/filter/Filter.html) (where clause) and [`Selectable`](https://docs.deephaven.io/core/javadoc/io/deephaven/api/Selectable.html) (column formula) objects.
 
@@ -86,7 +88,7 @@ To explicitly mark a Selectable or Filter as stateful, use the `withSerial` meth
 
 - A serial Filter cannot be reordered with respect to other Filters. Every input row to a stateful Filter is evaluated in order.
 - When a Selectable is serial, then every row for that column is evaluated in order.
-- For Selectables, additional ordering constraints are controlled by the value of the `QueryTable.SERIAL_SELECT_IMPLICIT_BARRIERS`. This is set by the property `QueryTable.serialSelectImplicitBarriers` (defaulting to the value of `QueryTable.statelessSelectByDefault`).
+- For Selectables, additional ordering constraints are controlled by the value of the `QueryTable.SERIAL_SELECT_IMPLICIT_BARRIERS`. This is set by the property `QueryTable.serialSelectImplicitBarriers`. The default value is the inverse of `QueryTable.statelessSelectByDefault`. When `Selectables` are stateless by default, no implicit barriers are added (i.e., `QueryTable.SERIAL_SELECT_IMPLICIT_BARRIERS` is false). When `Selectables` are stateful by default, then implicit barriers are added (i.e. `QueryTable.SERIAL_SELECT_IMPLICIT_BARRIERS` is true).
 - If `QueryTable.SERIAL_SELECT_IMPLICIT_BARRIERS` is false, no additional ordering between expressions is imposed. As with every `select` or `update` call, if column B references column A, then the necessary inputs to column B from column A are evaluated before column B is evaluated. To impose further ordering constraints, use barriers.
 - If `QueryTable.SERIAL_SELECT_IMPLICIT_BARRIERS` is true, then a serial selectable is an absolute barrier with respect to all other serial selectables. This prohibits serial selectables from being evaluated concurrently, permitting them to access global state. Selectables that are not serial may be reordered with respect to a serial selectable.
 

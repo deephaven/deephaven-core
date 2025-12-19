@@ -240,13 +240,15 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
             final SourceColumn realColumn = sc.maybeGetSourceColumn().orElse(null);
             if (realColumn != null) {
                 if (shouldPreserve(sc.getDataView())) {
-                    context.addLayer(new PreserveColumnLayer(context, sc, sc.getDataView(), distinctDeps, mcsBuilder));
+                    addDeclaredBarriersToMap(sc, barrierToLayerIndex,
+                            new PreserveColumnLayer(context, sc, sc.getDataView(), distinctDeps, mcsBuilder), context);
                     continue;
                 }
                 // look for an existing alias that can be preserved instead
                 final ColumnSource<?> alias = resultAlias.get(realColumn.getSourceName());
                 if (alias != null) {
-                    context.addLayer(new PreserveColumnLayer(context, sc, alias, distinctDeps, mcsBuilder));
+                    addDeclaredBarriersToMap(sc, barrierToLayerIndex,
+                            new PreserveColumnLayer(context, sc, alias, distinctDeps, mcsBuilder), context);
                     continue;
                 }
             }

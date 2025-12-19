@@ -16,6 +16,10 @@ jobs:
     outputs:
       non-docs: ${{ steps.filter.outputs.non-docs }}
     steps:
+      # Must checkout for push, but not pull_request according to the action
+      - name: Checkout
+        if: github.event_name != 'pull_request'
+        uses: actions/checkout@v5
       - name: Check for non-docs changes
         id: filter
         uses: dorny/paths-filter@v3
@@ -43,7 +47,7 @@ jobs:
           java-version: '11'
 
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v4
+        uses: gradle/actions/setup-gradle@v5
 
       - name: Set JAVA_HOME
         run: echo "JAVA_HOME=${{ steps.setup-java-11.outputs.path }}" >> $GITHUB_ENV
@@ -80,4 +84,4 @@ jobs:
         run: pip install vermin==1.6.0
 
       - name: Verify minimum version support
-        run: vermin -t=3.8 --no-tips --eval-annotations --violations --feature fstring-self-doc --feature union-types py/server/deephaven py/client py/client-ticking py/embedded-server
+        run: vermin -t=3.9 --no-tips --eval-annotations --violations --feature fstring-self-doc --feature union-types --exclude-regex '\.pyi$' py/server/deephaven py/client py/client-ticking py/embedded-server

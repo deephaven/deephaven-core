@@ -33,7 +33,6 @@ import it.unimi.dsi.fastutil.longs.Long2ObjectAVLTreeMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.longs.LongBidirectionalIterator;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import javax.annotation.OverridingMethodsMustInvokeSuper;
 import java.util.*;
@@ -1068,7 +1067,7 @@ public class WindowCheck {
 
         @Override
         public WritableRowSet match(boolean invertMatch, boolean usePrev, boolean caseInsensitive,
-                @Nullable DataIndex dataIndex, @NotNull RowSet mapper, Object... keys) {
+                @NotNull RowSet mapper, Object... keys) {
             final List<Object> keysList = Arrays.asList(keys);
             final boolean includeNull = keysList.contains(null) ^ invertMatch;
             final boolean includeTrue = keysList.contains(true) ^ invertMatch;

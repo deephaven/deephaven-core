@@ -43,6 +43,13 @@ public class QueryTableSelectBarrierTest {
     private static final int REPEATS_FOR_CONFIDENCE = 1;
 
     @Test
+    public void testPropertyDefaults() {
+        assertTrue(QueryTable.STATELESS_FILTERS_BY_DEFAULT);
+        assertTrue(QueryTable.STATELESS_SELECT_BY_DEFAULT);
+        assertFalse(QueryTable.SERIAL_SELECT_IMPLICIT_BARRIERS);
+    }
+
+    @Test
     public void testRepeatedBarrierSelectColumn() {
         for (int ii = 0; ii < REPEATS_FOR_CONFIDENCE; ++ii) {
             System.out.println("Repetition " + ii);
@@ -640,6 +647,74 @@ public class QueryTableSelectBarrierTest {
         assertEquals(Set.of(ss2.respectedBarriers()), Set.of(ss2.withRespectedBarriers(c, c).respectedBarriers()));
         assertEquals(ss2.respectedBarriers().length, ss2.withRespectedBarriers(c, c).respectedBarriers().length);
     }
+
+    @Test
+    public void testDH20625() {
+        final Table source = TableTools.emptyTable(1_000)
+                .update("a = ii % 5", "b = ii % 11", "c = ii % 17", "d = ii");
+
+        final Object b1 = new Object();
+        final Object b2 = new Object();
+
+        Table result;
+
+        // update with a, c passed as real columns
+        result = source.update(List.of(
+                Selectable.parse("a").withDeclaredBarriers(b1, b2),
+                Selectable.parse("c").withRespectedBarriers(b2).withSerial(),
+                Selectable.parse("Sum = a + b + c").withRespectedBarriers(b1)));
+        // simple test, verify we have the same number of rows
+        assertEquals(source.size(), result.size());
+
+        // select with a, c passed as real columns
+        result = source.select(List.of(
+                Selectable.parse("a").withDeclaredBarriers(b1, b2),
+                Selectable.parse("c").withRespectedBarriers(b2).withSerial(),
+                Selectable.parse("Sum = a + b + c").withRespectedBarriers(b1)));
+        // simple test, verify we have the same number of rows
+        assertEquals(source.size(), result.size());
+    }
+
+    @Test
+    public void testDH20625_proxy() {
+        // Create a partitioned table with 4 partitions
+        final Table source = TableTools.emptyTable(1_000)
+                .update("a = ii % 5", "b = ii % 11", "c = ii % 17", "d = ii");
+        final PartitionedTable pt = source.partitionBy("a");
+
+        final Object b1 = new Object();
+        final Object b2 = new Object();
+
+        PartitionedTable.Proxy result_proxy;
+        // update test
+        result_proxy = pt.proxy().update(List.of(
+                Selectable.parse("a").withDeclaredBarriers(b1, b2),
+                Selectable.parse("c").withRespectedBarriers(b2).withSerial(),
+                Selectable.parse("Sum = a + b + c").withRespectedBarriers(b1)));
+        assertEquals(pt.constituents().length, result_proxy.target().constituents().length);
+        for (int i = 0; i < pt.constituents().length; i++) {
+            final Table ct = pt.constituents()[i];
+            final Table rct = result_proxy.target().constituents()[i];
+
+            // simple test, verify we have the same number of rows
+            assertEquals(ct.size(), rct.size());
+        }
+
+        // select test
+        result_proxy = pt.proxy().select(List.of(
+                Selectable.parse("a").withDeclaredBarriers(b1, b2),
+                Selectable.parse("c").withRespectedBarriers(b2).withSerial(),
+                Selectable.parse("Sum = a + b + c").withRespectedBarriers(b1)));
+        assertEquals(pt.constituents().length, result_proxy.target().constituents().length);
+        for (int i = 0; i < pt.constituents().length; i++) {
+            final Table ct = pt.constituents()[i];
+            final Table rct = result_proxy.target().constituents()[i];
+
+            // simple test, verify we have the same number of rows
+            assertEquals(ct.size(), rct.size());
+        }
+    }
+
 
     private static void checkIndividualSums(int size, Table u) {
         final long expectedSumA = (((long) size - 1) * size) / 2;

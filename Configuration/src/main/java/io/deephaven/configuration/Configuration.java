@@ -34,6 +34,8 @@ public abstract class Configuration extends PropertyFile {
     // This should never be null to meet the contract for getContextKeyValues()
     private Collection<String> contextKeys = Collections.emptySet();
 
+    private final PropertyInputStreamLoader propertyInputStreamLoader;
+
     /**
      * The default Configuration implementation, which loads properties from the default property file in addition to
      * System properties.
@@ -178,7 +180,19 @@ public abstract class Configuration extends PropertyFile {
     }
 
     protected Configuration(@NotNull final Supplier<ConfigurationContext> contextSupplier) {
+        this(contextSupplier, PropertyInputStreamLoaderFactory.newInstance());
+    }
+
+    /**
+     * Create a new Configuration instance.
+     * 
+     * @param contextSupplier the supplier for {@link ConfigurationContext}
+     * @param propertyInputStreamLoader the property input stream loader for loading named property files.
+     */
+    protected Configuration(@NotNull final Supplier<ConfigurationContext> contextSupplier,
+            @NotNull final PropertyInputStreamLoader propertyInputStreamLoader) {
         this.contextSupplier = contextSupplier;
+        this.propertyInputStreamLoader = propertyInputStreamLoader;
     }
 
     /**
@@ -209,7 +223,8 @@ public abstract class Configuration extends PropertyFile {
      * @throws ConfigurationException if the property stream cannot be opened
      */
     private void load(String fileName, boolean ignoreScope) throws IOException, ConfigurationException {
-        final ParsedProperties temp = new ParsedProperties(ignoreScope, contextSupplier.get());
+        final ParsedProperties temp =
+                new ParsedProperties(ignoreScope, contextSupplier.get(), propertyInputStreamLoader);
         // we explicitly want to set 'properties' here so that if we get an error while loading, anything before that
         // error shows up.
         // That is very helpful in debugging.

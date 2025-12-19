@@ -34,7 +34,7 @@ Deephaven has [built-in functionalities for converting to and from these data ty
 
 ### Create data
 
-Before we can demonstrate the use of business calendars in queries, we'll need to create a table with some data. The following code block creates a month's worth of date-time data spaced 3 hours apart.
+Before we can demonstrate the use of business calendars in queries, we'll need to create a table with some data. The following code block creates a month's worth of date-time data spaced 3 minutes apart.
 
 ```python test-set=1 order=source
 from deephaven import empty_table

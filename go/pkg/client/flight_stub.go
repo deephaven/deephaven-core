@@ -7,9 +7,9 @@ import (
 	"net"
 	"strconv"
 
-	"github.com/apache/arrow/go/v8/arrow"
-	"github.com/apache/arrow/go/v8/arrow/flight"
-	"github.com/apache/arrow/go/v8/arrow/ipc"
+	"github.com/apache/arrow/go/v17/arrow"
+	"github.com/apache/arrow/go/v17/arrow/flight"
+	"github.com/apache/arrow/go/v17/arrow/ipc"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"

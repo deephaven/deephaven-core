@@ -306,6 +306,11 @@ class PartitioningColumnDataIndex<KEY_TYPE> extends AbstractDataIndex implements
     }
 
     @Override
+    public boolean tableIsCached() {
+        return true;
+    }
+
+    @Override
     @NotNull
     public Table table(final DataIndexOptions unused) {
         return indexTable;

@@ -91,7 +91,7 @@ def runInDocker = { String name, String sourcePath, List<String> command, Closur
             // set up the container, env vars - things that aren't likely to change
             from Docker.localImageName('server-jetty')
             runCommand '''set -eux; \\
-                      pip3 install unittest-xml-reporting==3.0.4; \\
+                      pip3 install unittest-xml-reporting==3.2.0; \\
                       mkdir -p /out/report; \\
 					  echo "[PostgreSQL]" > /etc/odbcinst.ini; \\
 					  echo "Driver      = /usr/lib/x86_64-linux-gnu/odbc/psqlodbcw.so" >> /etc/odbcinst.ini; \\

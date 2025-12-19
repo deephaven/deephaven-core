@@ -45,21 +45,16 @@ public class ClientOptions {
   public string ClientPrivateKey { get; set; } = "";
 
   /// <summary>
-  /// Integer-valued channel options set for server connections.
+  /// This value indicates that we want to override the default SSL authentication algorithm.
+  /// The value specifies the target name override. It is used in a similar manner as the
+  /// C++ GRPC client's GRPC_SSL_TARGET_NAME_OVERRIDE_ARG flag.
   /// </summary>
-  public IReadOnlyList<(string, int)> IntOptions => _intOptions;
-
-  /// <summary>
-  /// String-valued channel options set for server connections.
-  /// </summary>
-  public IReadOnlyList<(string, string)> StringOptions => _stringOptions;
+  public string? OverrideAuthority { get; set; } = null;
 
   /// <summary>
   /// Extra headers that should be sent with each outgoing server request.
   /// </summary>
   public IReadOnlyList<(string, string)> ExtraHeaders => _extraHeaders;
-  private readonly List<(string, int)> _intOptions = [];
-  private readonly List<(string, string)> _stringOptions = [];
   private readonly List<(string, string)> _extraHeaders = [];
 
   /// <summary>
@@ -153,31 +148,6 @@ public class ClientOptions {
   /// <returns>this, so that methods can be chained.</returns>
   public ClientOptions SetClientPrivateKey(string clientPrivateKey) {
     ClientPrivateKey = clientPrivateKey;
-    return this;
-  }
-
-  /// <summary>
-  /// Adds an int-valued option for the configuration of the underlying gRPC channels.
-  /// See https://grpc.github.io/grpc/cpp/group__grpc__arg__keys.html for a list of available options.
-  /// </summary>
-  /// <example>copt.setIntOption("grpc.min_reconnect_backoff_ms", 2000)</example>
-  /// <param name="opt">The option key</param>
-  /// <param name="val">The option value</param>
-  /// <returns>this, so that methods can be chained.</returns>
-  public ClientOptions AddIntOption(string opt, int val) {
-    _intOptions.Add((opt, val));
-    return this;
-  }
-
-  /// <summary>
-  /// Adds a string-valued option for the configuration of the underlying gRPC channels.
-  /// See https://grpc.github.io/grpc/cpp/group__grpc__arg__keys.html for a list of available options.
-  /// </summary>
-  /// <param name="opt">The option key</param>
-  /// <param name="val">The option value</param>
-  /// <returns>this, so that methods can be chained.</returns>
-  public ClientOptions AddStringOption(string opt, string val) {
-    _stringOptions.Add((opt, val));
     return this;
   }
 

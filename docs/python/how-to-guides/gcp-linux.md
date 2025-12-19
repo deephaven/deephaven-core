@@ -44,15 +44,26 @@ For this demo, we will be using:
 
 Another option is [confidential computing](https://cloud.google.com/confidential-computing), which encrypts your data while it's being processed. If you are working with sensitive data, this option is likely important to enable. For this guide, we will _not_ be enabling confidential computing.
 
-### Docker Container
+### OS and storage
 
-A Google Cloud VM can be configured to run Docker containers on startup. Since Deephaven can be [launched from pre-built Docker images](../getting-started/quickstart.md), that will make running Deephaven in the cloud a breeze.
+Next, navigate to **OS and storage** on the left of the page, then click **Change**.
 
-Click on **DEPLOY CONTAINER** in the **Containers** option.
+![The **OS and storage** window](../assets/how-to/os-and-storage.png)
 
-![The **Containers** option with **DEPLOY CONTAINER** highlighted](../assets/how-to/deploy-container.png)
+For the operating system, select **Container-Optimized OS**, which is a Linux distribution created by Google that comes with Docker pre-installed and is optimized for running containers:
 
-It's here that the VM can be configured to build and run containers from pre-built Docker images without having to manually do anything on the VM itself. Deephaven has several pre-built Docker images to choose from. Your choice should depend on your needs.
+- Look for the **Boot disk** section and click **CHANGE**.
+- Select **Container-Optimized OS** from the operating system list.
+- Select the latest stable version.
+- Click **SELECT** to confirm.
+
+Alternatively, you can use other Linux distributions like Ubuntu or Debian. The startup script will automatically install Docker if it's not already present.
+
+### Startup script for Docker container
+
+A Google Cloud VM can be configured to run Docker containers on startup using a script. Since Deephaven can be [launched from pre-built Docker images](../getting-started/quickstart.md), we'll create a startup script that automatically pulls and runs the Deephaven container when the VM starts.
+
+Deephaven has several pre-built Docker images to choose from. Your choice should depend on your needs.
 
 > [!NOTE]
 > `{VERSION}` in the list below is the Deephaven Core version number. Version numbers can be found [here](https://github.com/deephaven/deephaven-core/releases). Additionally, `{VERSION}` can be `latest`, which will always pull the latest version number.
@@ -65,20 +76,64 @@ It's here that the VM can be configured to build and run containers from pre-bui
 - Python with all of the above: `ghcr.io/deephaven/server-all-ai:{VERSION}`
 - Basic Groovy: `ghcr.io/deephaven/server-slim:{VERSION}`
 
-Choose your preferred image. For this guide, we'll use the basic Python image `ghcr.io.deephaven/server:latest`.
+For this guide, we'll use the basic Python image `ghcr.io/deephaven/server:latest`.
 
-We want two other options: `Restart policy` and `Environment variables`.
+To configure the startup script:
 
-- The restart policy is defined by [Docker's restart policies](https://docs.docker.com/reference/cli/docker/container/run/#restart). We will use the `On failure` option so that the container restarts if it crashes.
-- In the `Environment variables` section, add one: `START_OPTS`. Set `-Xmx4g` to tell Deephaven to start with 4GB of memory. If you choose a VM with more memory, increase this to whatever amount suits your needs.
+1. Expand the **Advanced options** section at the bottom of the VM creation page.
+2. Expand the **Management** section.
+3. In the **Automation** section, find the **Startup script** text box.
+4. Paste the following script:
 
-The image below shows the container configuration.
+```bash
+#!/bin/bash
 
-![The **Configure container** window](../assets/how-to/gcloud-container-opts.jpg)
+# Install Docker if not already installed
+if ! command -v docker &> /dev/null; then
+    echo "Installing Docker..."
+    curl -fsSL https://get.docker.com -o get-docker.sh
+    sh get-docker.sh
+    rm get-docker.sh
+fi
+
+# Container configuration
+CONTAINER_NAME="deephaven-server"
+CONTAINER_IMAGE="ghcr.io/deephaven/server:latest"
+START_OPTS="-Xmx4g"
+
+# Stop and remove the container if it exists
+docker stop $CONTAINER_NAME || true
+docker rm $CONTAINER_NAME || true
+
+# Pull the latest version of the container image
+docker pull $CONTAINER_IMAGE
+
+# Run the Deephaven container
+docker run \
+  --name=$CONTAINER_NAME \
+  --restart=always \
+  --detach \
+  --publish 10000:10000 \
+  --env START_OPTS="$START_OPTS" \
+  $CONTAINER_IMAGE
+```
+
+This startup script will:
+
+- Install Docker if it's not already present (using Docker's official installation script).
+- Stop and remove any existing Deephaven container (useful for VM restarts).
+- Pull the latest Deephaven image.
+- Run the container with:
+  - `--restart=always`: Automatically restart if the container crashes.
+  - `--publish 10000:10000`: Expose Deephaven's web UI port.
+  - `--env START_OPTS="-Xmx4g"`: Configure Deephaven to use 4GB of memory (adjust based on your VM's memory).
+
+> [!NOTE]
+> If you choose a VM with more memory, increase the `-Xmx4g` value in the `START_OPTS` variable to whatever amount suits your needs. For example, use `-Xmx8g` for 8GB of memory.
 
 ### Remaining options
 
-For the remaining options, we will use the defaults. These include `Allow default access`, `Firewall`, and `Advanced options`. Take some time to review each option and ensure the default options (or otherwise) are right for your needs.
+For the remaining options, we will use the defaults. These include `Allow default access` and `Firewall`. Take some time to review each option and ensure the default options (or otherwise) are right for your needs.
 
 > [!NOTE]
 > This guide will not cover persistent storage in the cloud. There are several options, including [Docker data volumes](../conceptual/docker-data-volumes.md) and [gcloud storage](https://cloud.google.com/sdk/gcloud/reference/storage), for workflows that require storage of large datasets.

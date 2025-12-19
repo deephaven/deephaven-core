@@ -1,12 +1,12 @@
 ---
-title: Import CSV or other delimited files
-sidebar_label: Import CSV files
+title: Read CSV or other delimited files
+sidebar_label: Read CSV files
 ---
 
-This guide will show you how to import data from CSV (and other delimited) files into Deephaven tables by using the [`readCsv`](../reference/data-import-export/CSV/readCsv.md) method.
+This guide will show you how to read data from CSV (and other delimited) files into in-memory Deephaven tables by using the [`readCsv`](../reference/data-import-export/CSV/readCsv.md) method.
 
 > [!TIP]
-> CSV files can also be imported into Deephaven with drag-and-drop uploading in the UI.
+> CSV files can also be uploaded into Deephaven with drag-and-drop in the UI.
 
 ## `readCsv`
 
@@ -23,13 +23,11 @@ readCsv(path, csvSpecs)
 readCsv(url, csvSpecs)
 ```
 
-<!-- TODO: https://github.com/deephaven/deephaven.io/issues/489 Update CSV documentation when CsvHelpers goes live -->
-
 Let's dive into some simple examples. So that we don't have to create a new CSV file from scratch, we'll use some CSV files from [Deephaven's examples repository](https://github.com/deephaven/examples). We encourage you to use your own files by replacing the file paths in our queries.
 
 ### `readCsv` with a file path
 
-The `readCsv` method can be used to import a CSV file from a file path. In this example, we will import a CSV file containing R.A. Fisher's classic iris flower dataset commonly used in machine learning applications.
+The `readCsv` method can be used to read a CSV file from a file path. In this example, we will read a CSV file containing R.A. Fisher's classic iris flower dataset commonly used in machine learning applications.
 
 ```groovy order=iris
 import static io.deephaven.csv.CsvTools.readCsv
@@ -51,7 +49,7 @@ See [Docker data volumes](../conceptual/docker-data-volumes.md) to learn more ab
 
 ### `readCsv` with a URL
 
-Now, we will import the same CSV file, but this time we will use a URL instead of a file path.
+Now, we will read the same CSV file, but this time we will use a URL instead of a file path.
 
 ```groovy order=iris
 import static io.deephaven.csv.CsvTools.readCsv
@@ -96,7 +94,7 @@ deniroHeader = readCsv("https://media.githubusercontent.com/media/deephaven/exam
 
 #### Tab-delimited data
 
-Deephaven allows you to specify other delimiters if your file is not comma-delimited. In the example below, we import a tab-delimited file, which requires the use of `CsvSpecs.tsv()`.
+Deephaven allows you to specify other delimiters if your file is not comma-delimited. In the example below, we read a tab-delimited file, which requires the use of `CsvSpecs.tsv()`.
 
 ```groovy order=deniroTSV
 import static io.deephaven.csv.CsvTools.readCsv

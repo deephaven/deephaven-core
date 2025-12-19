@@ -55,9 +55,9 @@ public class CharObjectByteTuple implements Comparable<CharObjectByteTuple>, Ext
         this.element2 = element2;
         this.element3 = element3;
         cachedHashCode = ((31 +
-                Character.hashCode(element1)) * 31 +
-                Objects.hashCode(element2)) * 31 +
-                Byte.hashCode(element3);
+                CharComparisons.hashCode(element1)) * 31 +
+                ObjectComparisons.hashCode(element2)) * 31 +
+                ByteComparisons.hashCode(element3);
     }
 
     public final char getFirstElement() {
@@ -87,9 +87,9 @@ public class CharObjectByteTuple implements Comparable<CharObjectByteTuple>, Ext
         }
         final CharObjectByteTuple typedOther = (CharObjectByteTuple) other;
         // @formatter:off
-        return element1 == typedOther.element1 &&
+        return CharComparisons.eq(element1, typedOther.element1) &&
                ObjectComparisons.eq(element2, typedOther.element2) &&
-               element3 == typedOther.element3;
+               ByteComparisons.eq(element3, typedOther.element3);
         // @formatter:on
     }
 

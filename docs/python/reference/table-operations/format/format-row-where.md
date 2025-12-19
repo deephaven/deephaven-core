@@ -4,6 +4,9 @@ title: format_row_where
 
 The `format_row_where` method applies color formatting to rows of the source table, based on user-specified conditions.
 
+> [!NOTE]
+> [Formatting rows](/core/ui/docs/components/table/#formatting-rows-and-columns) can also be accomplished using the [`deephaven.ui`](/core/ui/docs/) Python package.
+
 ## Syntax
 
 ```python syntax

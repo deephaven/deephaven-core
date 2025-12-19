@@ -240,9 +240,9 @@ This will print out a date and time in the default format, such as `2021-09-09T1
 - `T` - the separator between the date and time
 - `hh` - the hour of the day
 - `mm` - the minute of the hour
-- `ss` - the second of the minute
-- `ffffff` - the fraction of a second
-- `TZ` - the time zone
+- `ss` - the second of the minute.
+- `ffffff` - the fraction of a second.
+- `TZ` - the time zone.
 
 Deephaven stores [dates-times](../reference/query-language/types/date-time.md) using the [`java.time.Instant`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Instant.html) class. Internally, this stores the date-time as a signed 64-bit long, which contains the number of nanoseconds since the Unix epoch (January 1, 1970, 00:00:00 GMT). You can create these directly (like in the code [above](#specific-date-times)) and use dates and times directly in the query language, including adding and subtracting them.
 

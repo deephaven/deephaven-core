@@ -13,6 +13,7 @@ import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
+import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.hierarchical.TreeTable;
 import io.deephaven.engine.table.impl.hierarchical.TreeTableFilter;
@@ -48,6 +49,7 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 
 import static io.deephaven.api.agg.Aggregation.*;
@@ -315,8 +317,6 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         final Table tableStart =
                 TstUtils.testRefreshingTable(i(2, 6).toTracking(),
                         col("x", 1, 3), col("y", "a", "c"), col("z", true, true));
-        final Table tableUpdate = TstUtils.testRefreshingTable(i(2, 3, 6).toTracking(),
-                col("x", 1, 4, 3), col("y", "a", "d", "c"), col("z", true, true, true));
 
         updateGraph.startCycleForUnitTests(false);
 
@@ -334,12 +334,26 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         table.notifyListeners(i(3), i(), i());
         updateGraph.markSourcesRefreshedForUnitTests();
 
+        if (indexed) {
+            final Table indexTable = DataIndexer.getDataIndex(table, "z").table();
+            Assert.eqFalse(indexTable.satisfied(updateGraph.clock().currentStep()), "indexTable.satisfied");
+
+            // The next where() call will depend on the index table. Make sure it is satisfied before proceeding.
+            while (!indexTable.satisfied(updateGraph.clock().currentStep())) {
+                updateGraph.flushOneNotificationForUnitTests();
+            }
+            Assert.eqTrue(indexTable.satisfied(updateGraph.clock().currentStep()), "indexTable.satisfied");
+        }
+
         final Table filter3 = pool.submit(() -> table.where("z")).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
 
         TstUtils.assertTableEquals(tableStart, prevTable(filter1));
         TstUtils.assertTableEquals(tableStart, prevTable(filter2));
 
         updateGraph.completeCycleForUnitTests();
+
+        final Table tableUpdate = TstUtils.testRefreshingTable(i(2, 3, 6).toTracking(),
+                col("x", 1, 4, 3), col("y", "a", "d", "c"), col("z", true, true, true));
 
         TstUtils.assertTableEquals(tableUpdate, filter1);
         TstUtils.assertTableEquals(tableUpdate, filter2);
@@ -465,6 +479,57 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         final Table filter1 = future1.get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
         TstUtils.assertTableEquals(testUpdate, filter1);
         TstUtils.assertTableEquals(filter2, filter1);
+    }
+
+    public void testIncrementalReleaseFilter() throws ExecutionException, InterruptedException, TimeoutException {
+        testIncrementalReleaseFilter(false);
+        testIncrementalReleaseFilter(true);
+    }
+
+    private void testIncrementalReleaseFilter(final boolean addOnly)
+            throws ExecutionException, InterruptedException, TimeoutException {
+        final QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6).toTracking(), intCol("x", 1, 2, 3));
+        final Table toFilter;
+        if (addOnly) {
+            toFilter = table.assertAddOnly();
+        } else {
+            toFilter = table.assertAppendOnly();
+        }
+
+        final Table tableStart = table.slice(0, 1).snapshot();
+
+        final Supplier<IncrementalReleaseFilter> releaseFilterSupplier = () -> new IncrementalReleaseFilter(1, 1);
+
+        updateGraph.startCycleForUnitTests(false);
+
+        final Table filter1 =
+                pool.submit(() -> toFilter.where(releaseFilterSupplier.get())).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
+
+        assertTableEquals(filter1, table.slice(0, 1));
+
+        final WritableRowSet addRows = addOnly ? i(1, 9) : i(7, 8);
+        TstUtils.addToTable(table, addRows, col("x", 0, 5));
+
+        final Table filter2 =
+                pool.submit(() -> toFilter.where(releaseFilterSupplier.get())).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
+
+        TstUtils.assertTableEquals(tableStart, prevTable(filter1));
+        TstUtils.assertTableEquals(tableStart, prevTable(filter2));
+
+        table.notifyListeners(addRows, i(), i());
+        updateGraph.markSourcesRefreshedForUnitTests();
+
+        final Table filter3 =
+                pool.submit(() -> table.where(releaseFilterSupplier.get())).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
+
+        TstUtils.assertTableEquals(tableStart, prevTable(filter1));
+        TstUtils.assertTableEquals(tableStart, prevTable(filter2));
+
+        updateGraph.completeCycleForUnitTests();
+
+        TstUtils.assertTableEquals(tableStart, filter1);
+        TstUtils.assertTableEquals(tableStart, filter2);
+        TstUtils.assertTableEquals(table.slice(0, 1), filter3);
     }
 
     public void testSort() throws ExecutionException, InterruptedException, TimeoutException {

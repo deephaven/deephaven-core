@@ -39,4 +39,4 @@ println partitionedTable.constituentChangesPermitted()
 
 ## Related documentation
 
-[Javadoc](https://deephaven.io/core/javadoc/io/deephaven/engine/table/PartitionedTable.html#constituentChangesPermitted())
+- [Javadoc](https://deephaven.io/core/javadoc/io/deephaven/engine/table/PartitionedTable.html#constituentChangesPermitted())

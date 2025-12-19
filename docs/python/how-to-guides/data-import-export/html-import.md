@@ -1,5 +1,5 @@
 ---
-title: Import HTML files
+title: Read HTML files into Deephaven tables
 ---
 
 While Deephaven does not have its own methods for reading HTML tables, it's easy to do with [`pandas`](https://pandas.pydata.org/pandas-docs/stable/index.html) or [BeautifulSoup](https://www.crummy.com/software/BeautifulSoup/bs4/doc/). This guide will demonstrate multiple ways to pull data from online HTML tables into Deephaven tables.

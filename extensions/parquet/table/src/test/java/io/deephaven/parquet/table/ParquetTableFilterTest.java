@@ -3,22 +3,22 @@
 //
 package io.deephaven.parquet.table;
 
+import com.google.common.collect.Lists;
+import io.deephaven.api.RawString;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.base.FileUtils;
-import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.table.impl.PushdownFilterContext;
+import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
-import io.deephaven.engine.table.impl.select.ConditionFilter;
-import io.deephaven.engine.table.impl.select.DoubleRangeFilter;
-import io.deephaven.engine.table.impl.select.FloatRangeFilter;
-import io.deephaven.engine.table.impl.select.MatchFilter;
-import io.deephaven.engine.table.impl.select.WhereFilter;
+import io.deephaven.engine.table.impl.select.*;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
 import io.deephaven.engine.table.impl.util.ImmediateJobScheduler;
+import io.deephaven.engine.testutil.filters.ParallelizedRowSetCapturingFilter;
+import io.deephaven.engine.testutil.filters.RowSetCapturingFilter;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.parquet.table.location.ParquetColumnResolverMap;
@@ -44,6 +44,7 @@ import java.nio.file.Path;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
@@ -135,6 +136,10 @@ public final class ParquetTableFilterTest {
 
     private static void filterAndVerifyResults(Table diskTable, Table memTable, String... filters) {
         verifyResults(diskTable.where(filters).coalesce(), memTable.where(filters).coalesce());
+    }
+
+    private static void filterAndVerifyResults(Table diskTable, Table memTable, Filter filter) {
+        verifyResults(diskTable.where(filter).coalesce(), memTable.where(filter).coalesce());
     }
 
     private static void filterAndVerifyResults(Table diskTable, Table memTable, WhereFilter filter) {
@@ -436,6 +441,83 @@ public final class ParquetTableFilterTest {
         filterAndVerifyResultsAllowEmpty(diskTable, memTable, "boolean_col = true");
     }
 
+    // New test with custom function counting invocations
+    @Test
+    public void partitionedDataSerialFilterTest() {
+        final String destPath = Path.of(rootFile.getPath(), "ParquetTest_kvPartitionsSerialTest").toString();
+        final int tableSize = 1_000_000;
+
+        final Instant baseTime = parseInstant("2023-01-01T00:00:00 NY");
+        QueryScope.addParam("baseTime", baseTime);
+
+        final Table largeTable = TableTools.emptyTable(tableSize).update(
+                "symbol = ii % 100",
+                "sequential_val = ii");
+
+        final PartitionedTable partitionedTable = largeTable.partitionBy("symbol");
+        ParquetTools.writeKeyValuePartitionedTable(partitionedTable, destPath, EMPTY);
+
+        final Table diskTable = ParquetTools.readTable(destPath);
+        final Table memTable = diskTable.select();
+
+        assertTableEquals(diskTable, memTable);
+
+        final AtomicLong invocationCount = new AtomicLong();
+        QueryScope.addParam("invocationCount", invocationCount);
+
+        final Filter partitionFilter = RawString.of("symbol >= 0 && invocationCount.incrementAndGet() >= 0");
+        final Filter serialPartitionFilter = partitionFilter.withSerial();
+
+        final Filter nonPartitionFilter =
+                RawString.of("sequential_val >= 0 && invocationCount.incrementAndGet() >= 0");
+        final Filter serialNonPartitionFilter = nonPartitionFilter.withSerial();
+
+        Table result;
+
+        // Test non-serial partition filter
+        assertEquals(0L, invocationCount.get());
+        result = diskTable.where(partitionFilter).coalesce();
+        assertEquals(100L, invocationCount.get()); // one per partition
+        // Verify the table contents are equivalent
+        assertTableEquals(result, diskTable.coalesce().where(partitionFilter));
+
+        // Test serial partition filter
+        invocationCount.set(0);
+        assertEquals(0L, invocationCount.get());
+        result = diskTable.where(serialPartitionFilter).coalesce();
+        assertEquals(1_000_000L, invocationCount.get()); // one per row
+        // Verify the table contents are equivalent
+        assertTableEquals(result, diskTable.coalesce().where(serialPartitionFilter));
+
+        // Test non-serial non-partition filter
+        invocationCount.set(0);
+        assertEquals(0L, invocationCount.get());
+        result = diskTable.where(nonPartitionFilter).coalesce();
+        assertEquals(1_000_000L, invocationCount.get()); // one per row
+        // Verify the table contents are equivalent
+        assertTableEquals(result, diskTable.coalesce().where(nonPartitionFilter));
+
+        // Test serial non-partition filter
+        invocationCount.set(0);
+        assertEquals(0L, invocationCount.get());
+        result = diskTable.where(serialNonPartitionFilter).coalesce();
+        assertEquals(1_000_000L, invocationCount.get()); // one per row
+        // Verify the table contents are equivalent
+        assertTableEquals(result, diskTable.coalesce().where(serialNonPartitionFilter));
+
+        // Test stateless partition filter
+        final RowSetCapturingFilter statelessPartitionFilter =
+                new ParallelizedRowSetCapturingFilter(RawString.of("symbol >= 0"));
+        result = diskTable.where(statelessPartitionFilter).coalesce();
+        assertEquals(100, statelessPartitionFilter.numRowsProcessed()); // one per partition
+
+        // Test stateless non-partition filter
+        final RowSetCapturingFilter statelessNonPartitionFilter =
+                new ParallelizedRowSetCapturingFilter(RawString.of("sequential_val >= 0"));
+        result = diskTable.where(statelessNonPartitionFilter).coalesce();
+        assertEquals(1_000_000, statelessNonPartitionFilter.numRowsProcessed()); // one per row
+    }
+
     @Test
     public void partitionedNoDataIndexTest() {
         final String destPath = Path.of(rootFile.getPath(), "ParquetTest_kvPartitionsTest").toString();
@@ -465,6 +547,18 @@ public final class ParquetTableFilterTest {
         filterAndVerifyResultsAllowEmpty(diskTable, memTable, "symbol = `s100`");
         filterAndVerifyResults(diskTable, memTable, "symbol < `s100`");
         filterAndVerifyResults(diskTable, memTable, "symbol = `s500`");
+
+        // Conditional on partition column
+        filterAndVerifyResults(diskTable, memTable, "symbol = `s` + `500`");
+        // Serial conditional on partition column
+        filterAndVerifyResults(diskTable, memTable,
+                Filter.serial(Filter.and(Filter.from("symbol = `s` + `500`"))));
+
+        // Conditional on non-partition column
+        filterAndVerifyResults(diskTable, memTable, "sequential_val >= 50 + 1");
+        // Serial conditional on non-partition column
+        filterAndVerifyResults(diskTable, memTable,
+                Filter.serial(Filter.and(Filter.from("sequential_val >= 50 + 1"))));
 
         // Timestamp range and match filters
         filterAndVerifyResults(diskTable, memTable, "Timestamp < '2023-01-02T00:00:00 NY'");
@@ -760,6 +854,110 @@ public final class ParquetTableFilterTest {
 
         complexFilter = Filter.or(Filter.from("symbol < `1000`", "symbol > `0900`"));
         verifyResults(diskTable.where(complexFilter), memTable.where(complexFilter));
+    }
+
+    @Test
+    public void flatPartitionsLoadedDataIndexTest() {
+        final String destPath = Path.of(rootFile.getPath(), "ParquetTest_flatPartitionsTest").toString();
+        final int tableSize = 1_000_000;
+
+        final Instant baseTime = parseInstant("2023-01-01T00:00:00 NY");
+        QueryScope.addParam("baseTime", baseTime);
+
+        final Table largeTable = TableTools.emptyTable(tableSize).update(
+                "symbol = ii % 119 == 0 ? null : String.format(`%04d`, randomInt(0,97))",
+                "exchange = randomInt(0,11)",
+                "price = randomInt(0,10000) * 0.01");
+        final int partitionCount = 11;
+
+        final Table[] randomPartitions = splitTable(largeTable, partitionCount, true);
+
+        final ParquetInstructions instructions = ParquetInstructions.builder()
+                .addIndexColumns("symbol", "exchange")
+                .addIndexColumns("symbol")
+                .addIndexColumns("exchange")
+                .build();
+
+        writeTables(destPath, randomPartitions, instructions);
+
+        final Table diskTable = ParquetTools.readTable(destPath);
+        final Table memTable = diskTable.select();
+
+        assertTableEquals(diskTable, memTable);
+
+        // Turn off memoization on the tables to we get accurate results.
+        QueryTable.setMemoizeResults(false);
+
+        final List<RowSetCapturingFilter> filters = Lists.newArrayList(
+                new ParallelizedRowSetCapturingFilter(RawString.of("symbol = null")),
+                new ParallelizedRowSetCapturingFilter(RawString.of("symbol < `0050`")),
+                new ParallelizedRowSetCapturingFilter(Filter.and(RawString.of("symbol < `0050`"),
+                        RawString.of("symbol >= `0049`"))),
+                new ParallelizedRowSetCapturingFilter(RawString.of("symbol = `0050`")),
+                new ParallelizedRowSetCapturingFilter(RawString.of("symbol != null && symbol.startsWith(`002`)")),
+
+                new ParallelizedRowSetCapturingFilter(RawString.of("exchange <= 10")),
+                new ParallelizedRowSetCapturingFilter(Filter.and(RawString.of("exchange <= 10"),
+                        RawString.of("exchange >= 9"))),
+                new ParallelizedRowSetCapturingFilter(RawString.of("exchange = 10")),
+                new ParallelizedRowSetCapturingFilter(RawString.of("exchange % 10 == 0")),
+
+                new ParallelizedRowSetCapturingFilter(
+                        Filter.and(RawString.of("symbol < `0050`"), RawString.of("exchange <= 10"))),
+                new ParallelizedRowSetCapturingFilter(Filter.and(RawString.of("symbol < `0050`"),
+                        RawString.of("exchange <= 10"), RawString.of("exchange >= 9"))),
+
+                new ParallelizedRowSetCapturingFilter(
+                        Filter.or(Filter.from("symbol < `1000`", "symbol > `0900`", "exchange = 10"))),
+                new ParallelizedRowSetCapturingFilter(Filter.or(RawString.of("symbol < `1000`"),
+                        RawString.of("exchange <= 10"), RawString.of("exchange >= 9"))));
+
+        // Collect the mem table baseline results.
+        final List<Long> memRowsProcessed = new ArrayList<>(filters.size());
+        for (final RowSetCapturingFilter filter : filters) {
+            filter.reset();
+            memTable.where(filter).coalesce();
+            memRowsProcessed.add(filter.numRowsProcessed());
+        }
+
+        // Collect the disk table baseline results.
+        final List<Long> diskRowsProcessedLocationIndexes = new ArrayList<>(filters.size());
+        for (final RowSetCapturingFilter filter : filters) {
+            filter.reset();
+            diskTable.where(filter).coalesce();
+            diskRowsProcessedLocationIndexes.add(filter.numRowsProcessed());
+        }
+
+        // Verify that the disk table with location indexes processed strictly fewer rows than the mem table.
+        for (int i = 0; i < filters.size(); i++) {
+            Assert.assertTrue(
+                    "Disk table with location indexes did not process fewer rows than the mem table for filter: "
+                            + i + ", Disk rows processed: " + diskRowsProcessedLocationIndexes.get(i)
+                            + ", Mem rows processed: " + memRowsProcessed.get(i),
+                    diskRowsProcessedLocationIndexes.get(i) < memRowsProcessed.get(i));
+        }
+
+        // Create the merged in-memory index tables.
+        final Table symbolIndexTable = DataIndexer.getDataIndex(diskTable, "symbol").table();
+        final Table exchangeIndexTable = DataIndexer.getDataIndex(diskTable, "exchange").table();
+        final Table symbolExchangeIndexTable = DataIndexer.getDataIndex(diskTable, "symbol", "exchange").table();
+
+        // Collect the disk table baseline results.
+        final List<Long> diskRowsProcessedMergedIndex = new ArrayList<>(filters.size());
+        for (final RowSetCapturingFilter filter : filters) {
+            filter.reset();
+            diskTable.where(filter).coalesce();
+            diskRowsProcessedMergedIndex.add(filter.numRowsProcessed());
+        }
+
+        // Verify that the merged indexes processed strictly fewer rows the disk table with location indexes.
+        for (int i = 0; i < filters.size(); i++) {
+            Assert.assertTrue(
+                    "Merged indexes did not process fewer rows than Location indexes: "
+                            + i + ", Merged index rows processed: " + diskRowsProcessedMergedIndex.get(i)
+                            + ", Location index rows processed: " + diskRowsProcessedLocationIndexes.get(i),
+                    diskRowsProcessedMergedIndex.get(i) < diskRowsProcessedLocationIndexes.get(i));
+        }
     }
 
     @Test
@@ -1799,7 +1997,6 @@ public final class ParquetTableFilterTest {
                 ConditionFilter.createStateless("StringCol = null || StringCol != null"));
     }
 
-
     @Test
     public void testNonDictionaryEncodingStrings() {
         final Table source = TableTools.newTable(
@@ -1833,5 +2030,68 @@ public final class ParquetTableFilterTest {
                 ConditionFilter.createStateless("StringCol = null"));
         filterAndVerifyResults(diskTable, memTable,
                 ConditionFilter.createStateless("StringCol = null || StringCol != null"));
+    }
+
+    @Test
+    public void testLocationDataIndexWithFilterBarriers() {
+        final Table memTable = TableTools.emptyTable(100_000).update("A = ii % 97", "B = ii % 11", "C = ii");
+        final String destPath = Path.of(rootFile.getPath(), "locationDataIndexWithFilterBarriers") + ".parquet";
+        final ParquetInstructions writeInstructions = new ParquetInstructions.Builder()
+                .addIndexColumns("A")
+                .build();
+        writeTable(memTable, destPath, writeInstructions);
+
+        final Table diskTable = ParquetTools.readTable(destPath);
+        assertTableEquals(memTable, diskTable);
+
+        // Create some capturing filters to verify the row sets being passed through the filter chain.
+        final RowSetCapturingFilter filterA = new ParallelizedRowSetCapturingFilter(RawString.of("A < 50"));
+        final RowSetCapturingFilter filterB = new ParallelizedRowSetCapturingFilter(RawString.of("B < 5"));
+
+        final List<RowSetCapturingFilter> allFilters = List.of(filterA, filterB);
+
+        Table result;
+
+        // Test with no barrier, expect A then B
+        result = diskTable.where(Filter.and(filterA, filterB));
+        assertEquals(97, filterA.numRowsProcessed()); // only indexA rows
+        assertEquals(51550, filterB.numRowsProcessed());
+
+        assertEquals(23435, result.size());
+        allFilters.forEach(RowSetCapturingFilter::reset);
+
+        // Test with no barrier, expect A then B despite user ordering
+        result = diskTable.where(Filter.and(filterB, filterA));
+        assertEquals(97, filterA.numRowsProcessed()); // only indexA rows
+        assertEquals(51550, filterB.numRowsProcessed());
+
+        assertEquals(23435, result.size());
+        allFilters.forEach(RowSetCapturingFilter::reset);
+
+        // Barrier to force B then A
+        result = diskTable.where(Filter.and(filterB.withDeclaredBarriers("b1"), filterA.withRespectedBarriers("b1")));
+        assertEquals(97, filterA.numRowsProcessed()); // only indexA rows
+        assertEquals(100_000, filterB.numRowsProcessed());
+
+        assertEquals(23435, result.size());
+        allFilters.forEach(RowSetCapturingFilter::reset);
+
+        // Barrier to force B then A
+        result = diskTable.where(Filter.and(filterB.withSerial(), filterA));
+        assertEquals(97, filterA.numRowsProcessed()); // only indexA rows
+        assertEquals(100_000, filterB.numRowsProcessed());
+
+        assertEquals(23435, result.size());
+        allFilters.forEach(RowSetCapturingFilter::reset);
+
+        // Inverted - Barrier to force B then A
+        result = diskTable.where(Filter.and(
+                WhereFilterInvertedImpl.of(filterB.withDeclaredBarriers("b1")),
+                WhereFilterInvertedImpl.of(filterA.withRespectedBarriers("b1"))));
+        assertEquals(97, filterA.numRowsProcessed()); // only indexA rows
+        assertEquals(100_000, filterB.numRowsProcessed());
+
+        assertEquals(26430, result.size());
+        allFilters.forEach(RowSetCapturingFilter::reset);
     }
 }

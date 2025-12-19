@@ -2,7 +2,8 @@
 # Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 #
 
-from deephaven.plugin import Registration, Callback
+from deephaven.plugin import Callback, Registration
+
 from . import pandas_as_table
 
 
