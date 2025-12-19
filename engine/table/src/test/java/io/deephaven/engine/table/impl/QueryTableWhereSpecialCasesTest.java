@@ -1622,11 +1622,21 @@ public class QueryTableWhereSpecialCasesTest {
                 "floatCol",
                 Filter.isNaN(ColumnName.of("floatCol")),
                 val -> Float.isNaN(val));
+        validateFloatFilter(
+                source,
+                "floatCol",
+                RawString.of("floatCol in NaN"),
+                val -> Float.isNaN(val));
 
         validateDoubleFilter(
                 source,
                 "doubleCol",
                 Filter.isNaN(ColumnName.of("doubleCol")),
+                val -> Double.isNaN(val));
+        validateDoubleFilter(
+                source,
+                "doubleCol",
+                RawString.of("doubleCol in NaN"),
                 val -> Double.isNaN(val));
     }
 
@@ -1646,6 +1656,298 @@ public class QueryTableWhereSpecialCasesTest {
                 "doubleCol",
                 Filter.isNotNaN(ColumnName.of("doubleCol")),
                 val -> !Double.isNaN(val));
+    }
+
+    @Test
+    public void testFilterIsNull() {
+        final Table source = getStaticTable();
+
+        validateCharFilter(
+                source,
+                "charCol",
+                Filter.isNull(ColumnName.of("charCol")),
+                val -> val == NULL_CHAR);
+        validateCharFilter(
+                source,
+                "charCol",
+                RawString.of("charCol == null"),
+                val -> val == NULL_CHAR);
+        validateCharFilter(
+                source,
+                "charCol",
+                RawString.of("isNull(charCol)"),
+                val -> val == NULL_CHAR);
+        validateCharFilter(
+                source,
+                "charCol",
+                RawString.of("charCol in null"),
+                val -> val == NULL_CHAR);
+        validateByteFilter(
+                source,
+                "byteCol",
+                Filter.isNull(ColumnName.of("byteCol")),
+                val -> val == NULL_BYTE);
+        validateByteFilter(
+                source,
+                "byteCol",
+                RawString.of("byteCol == null"),
+                val -> val == NULL_BYTE);
+        validateByteFilter(
+                source,
+                "byteCol",
+                RawString.of("isNull(byteCol)"),
+                val -> val == NULL_BYTE);
+        validateByteFilter(
+                source,
+                "byteCol",
+                RawString.of("byteCol in null"),
+                val -> val == NULL_BYTE);
+        validateShortFilter(
+                source,
+                "shortCol",
+                Filter.isNull(ColumnName.of("shortCol")),
+                val -> val == NULL_SHORT);
+        validateShortFilter(
+                source,
+                "shortCol",
+                RawString.of("shortCol == null"),
+                val -> val == NULL_SHORT);
+        validateShortFilter(
+                source,
+                "shortCol",
+                RawString.of("isNull(shortCol)"),
+                val -> val == NULL_SHORT);
+        validateShortFilter(
+                source,
+                "shortCol",
+                RawString.of("shortCol in null"),
+                val -> val == NULL_SHORT);
+        validateIntFilter(
+                source,
+                "intCol",
+                Filter.isNull(ColumnName.of("intCol")),
+                val -> val == NULL_INT);
+        validateIntFilter(
+                source,
+                "intCol",
+                RawString.of("intCol == null"),
+                val -> val == NULL_INT);
+        validateIntFilter(
+                source,
+                "intCol",
+                RawString.of("isNull(intCol)"),
+                val -> val == NULL_INT);
+        validateIntFilter(
+                source,
+                "intCol",
+                RawString.of("intCol in null"),
+                val -> val == NULL_INT);
+        validateLongFilter(
+                source,
+                "longCol",
+                Filter.isNull(ColumnName.of("longCol")),
+                val -> val == NULL_LONG);
+        validateLongFilter(
+                source,
+                "longCol",
+                RawString.of("longCol == null"),
+                val -> val == NULL_LONG);
+        validateLongFilter(
+                source,
+                "longCol",
+                RawString.of("isNull(longCol)"),
+                val -> val == NULL_LONG);
+        validateLongFilter(
+                source,
+                "longCol",
+                RawString.of("longCol in null"),
+                val -> val == NULL_LONG);
+        validateFloatFilter(
+                source,
+                "floatCol",
+                Filter.isNull(ColumnName.of("floatCol")),
+                val -> val == NULL_FLOAT);
+        validateFloatFilter(
+                source,
+                "floatCol",
+                RawString.of("floatCol == null"),
+                val -> val == NULL_FLOAT);
+        validateFloatFilter(
+                source,
+                "floatCol",
+                RawString.of("isNull(floatCol)"),
+                val -> val == NULL_FLOAT);
+        validateFloatFilter(
+                source,
+                "floatCol",
+                RawString.of("floatCol in null"),
+                val -> val == NULL_FLOAT);
+        validateDoubleFilter(
+                source,
+                "doubleCol",
+                Filter.isNull(ColumnName.of("doubleCol")),
+                val -> val == NULL_DOUBLE);
+        validateDoubleFilter(
+                source,
+                "doubleCol",
+                RawString.of("doubleCol == null"),
+                val -> val == NULL_DOUBLE);
+        validateDoubleFilter(
+                source,
+                "doubleCol",
+                RawString.of("isNull(doubleCol)"),
+                val -> val == NULL_DOUBLE);
+        validateDoubleFilter(
+                source,
+                "doubleCol",
+                RawString.of("doubleCol in null"),
+                val -> val == NULL_DOUBLE);
+    }
+
+    @Test
+    public void testFilterIsNotNull() {
+        final Table source = getStaticTable();
+
+        validateCharFilter(
+                source,
+                "charCol",
+                Filter.isNotNull(ColumnName.of("charCol")),
+                val -> val != NULL_CHAR);
+        validateCharFilter(
+                source,
+                "charCol",
+                RawString.of("charCol != null"),
+                val -> val != NULL_CHAR);
+        validateCharFilter(
+                source,
+                "charCol",
+                RawString.of("!isNull(charCol)"),
+                val -> val != NULL_CHAR);
+        validateCharFilter(
+                source,
+                "charCol",
+                RawString.of("charCol not in null"),
+                val -> val != NULL_CHAR);
+        validateByteFilter(
+                source,
+                "byteCol",
+                Filter.isNotNull(ColumnName.of("byteCol")),
+                val -> val != NULL_BYTE);
+        validateByteFilter(
+                source,
+                "byteCol",
+                RawString.of("byteCol != null"),
+                val -> val != NULL_BYTE);
+        validateByteFilter(
+                source,
+                "byteCol",
+                RawString.of("!isNull(byteCol)"),
+                val -> val != NULL_BYTE);
+        validateByteFilter(
+                source,
+                "byteCol",
+                RawString.of("byteCol not in null"),
+                val -> val != NULL_BYTE);
+        validateShortFilter(
+                source,
+                "shortCol",
+                Filter.isNotNull(ColumnName.of("shortCol")),
+                val -> val != NULL_SHORT);
+        validateShortFilter(
+                source,
+                "shortCol",
+                RawString.of("shortCol != null"),
+                val -> val != NULL_SHORT);
+        validateShortFilter(
+                source,
+                "shortCol",
+                RawString.of("!isNull(shortCol)"),
+                val -> val != NULL_SHORT);
+        validateShortFilter(
+                source,
+                "shortCol",
+                RawString.of("shortCol not in null"),
+                val -> val != NULL_SHORT);
+        validateIntFilter(
+                source,
+                "intCol",
+                Filter.isNotNull(ColumnName.of("intCol")),
+                val -> val != NULL_INT);
+        validateIntFilter(
+                source,
+                "intCol",
+                RawString.of("intCol != null"),
+                val -> val != NULL_INT);
+        validateIntFilter(
+                source,
+                "intCol",
+                RawString.of("!isNull(intCol)"),
+                val -> val != NULL_INT);
+        validateIntFilter(
+                source,
+                "intCol",
+                RawString.of("intCol not in null"),
+                val -> val != NULL_INT);
+        validateLongFilter(
+                source,
+                "longCol",
+                Filter.isNotNull(ColumnName.of("longCol")),
+                val -> val != NULL_LONG);
+        validateLongFilter(
+                source,
+                "longCol",
+                RawString.of("longCol != null"),
+                val -> val != NULL_LONG);
+        validateLongFilter(
+                source,
+                "longCol",
+                RawString.of("!isNull(longCol)"),
+                val -> val != NULL_LONG);
+        validateLongFilter(
+                source,
+                "longCol",
+                RawString.of("longCol not in null"),
+                val -> val != NULL_LONG);
+        validateFloatFilter(
+                source,
+                "floatCol",
+                Filter.isNotNull(ColumnName.of("floatCol")),
+                val -> val != NULL_FLOAT);
+        validateFloatFilter(
+                source,
+                "floatCol",
+                RawString.of("floatCol != null"),
+                val -> val != NULL_FLOAT);
+        validateFloatFilter(
+                source,
+                "floatCol",
+                RawString.of("!isNull(floatCol)"),
+                val -> val != NULL_FLOAT);
+        validateFloatFilter(
+                source,
+                "floatCol",
+                RawString.of("floatCol not in null"),
+                val -> val != NULL_FLOAT);
+        validateDoubleFilter(
+                source,
+                "doubleCol",
+                Filter.isNotNull(ColumnName.of("doubleCol")),
+                val -> val != NULL_DOUBLE);
+        validateDoubleFilter(
+                source,
+                "doubleCol",
+                RawString.of("doubleCol != null"),
+                val -> val != NULL_DOUBLE);
+        validateDoubleFilter(
+                source,
+                "doubleCol",
+                RawString.of("!isNull(doubleCol)"),
+                val -> val != NULL_DOUBLE);
+        validateDoubleFilter(
+                source,
+                "doubleCol",
+                RawString.of("doubleCol not in null"),
+                val -> val != NULL_DOUBLE);
     }
 
     @Test
