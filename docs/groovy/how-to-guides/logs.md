@@ -113,7 +113,7 @@ To send the browser logs to support, right-click within the **Console** to save 
 
 You can also get help by asking questions in our [GitHub Discussions](https://github.com/deephaven/deephaven-core/discussions/categories/q-a) forum or join our [Slack Community](/slack).
 
-# Related documentation
+## Related documentation
 
 - [Create a new table](./new-and-empty-table.md#newtable)
 - [How to handle null, infinity, and not-a-number values](./null-inf-nan.md)
