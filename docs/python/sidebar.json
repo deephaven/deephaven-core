@@ -64,7 +64,7 @@
                 "path": "getting-started/crash-course/query-strings.md"
               },
               {
-                "label": "Vectorization",
+                "label": "Recipes, not loops!",
                 "path": "getting-started/crash-course/vectorization-vs-loops.md"
               },
               {
@@ -127,7 +127,7 @@
                 "path": "conceptual/deephaven-design.md"
               },
               {
-                "label": "Vectorization",
+                "label": "Vectorization and the recipe paradigm",
                 "path": "conceptual/vectorization-and-recipes.md"
               },
               {

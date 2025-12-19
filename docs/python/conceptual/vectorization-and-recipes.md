@@ -4,6 +4,8 @@ title: Vectorization and the recipe paradigm
 
 Deephaven's query engine uses vectorized operations and a declarative "recipe" paradigm to achieve high performance on both static and real-time data. This guide explains the technical foundations of this approach and why it matters for your queries.
 
+**The recipe paradigm**: Instead of writing step-by-step instructions that process data one element at a time, you define _what_ result you want — like a recipe that describes the finished dish. Deephaven's engine then figures out _how_ to compute it efficiently, processing data in optimized batches.
+
 ## The paradigm shift: Imperative vs declarative
 
 ### Traditional programming: Imperative SISD
@@ -146,7 +148,7 @@ This approach:
 
 When you write a Deephaven query:
 
-```python order=t1,t2 test-set=recipe-spec
+```python order=null test-set=recipe-spec
 from deephaven import time_table
 
 t1 = time_table("PT1s").update("X = i")
@@ -186,6 +188,8 @@ source = time_table("PT1s").update(["X = i", "XSquared = X * X"])
 # Add a cumulative sum - updates automatically!
 result = source.update_by(cum_sum("SumX = X"))
 ```
+
+<!--TODO: gif-->
 
 Watch this table in the UI. Every second:
 

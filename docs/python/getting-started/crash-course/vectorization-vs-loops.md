@@ -22,11 +22,8 @@ df = pd.DataFrame(
     }
 )
 
-# Converting time with list comprehension - WRONG for Deephaven!
-from deephaven.column import datetime_col
-
-# This is what you would do in pandas/Python:
-datetime_col("TsDT", [_to_jinst_from_ns(r["TsEpochNs"]) for r in rows])
+# Converting values with a list comprehension - WRONG for Deephaven!
+df["value_squared"] = [v * v for v in df["value"]]
 ```
 
 This list comprehension loops over every row, processes it, and builds a new list. You're giving **step-by-step instructions** for how to process the data.
@@ -36,10 +33,13 @@ This list comprehension loops over every row, processes it, and builds a new lis
 In Deephaven, you specify **what** you want, not **how** to compute it. You write a **recipe** that describes the transformation, and the Deephaven engine figures out the optimal way to execute it:
 
 ```python order=t1,t2,t3 test-set=recipe-example
-from deephaven import time_table
+from deephaven import empty_table
 
-# Create a table that ticks every second
-t1 = time_table("PT1s").update(["TsEpochNs = epochNanos(Timestamp)"])
+# Create a table with 5 rows of timestamps
+t1 = empty_table(5).update([
+    "Timestamp = now() + i * SECOND",
+    "TsEpochNs = epochNanos(Timestamp)"
+])
 
 # Add a column using a Deephaven recipe - NO LOOP!
 t2 = t1.update("TS2 = epochNanosToInstant(TsEpochNs)")
@@ -122,18 +122,16 @@ You're saying:
 
 The engine decides:
 
-- How to chunk the data for optimal performance
-- Whether to parallelize the operation
-- How to handle updates efficiently
-- What rows need recomputation when data changes
+- How to chunk the data for optimal performance.
+- Whether to parallelize the operation.
+- How to handle updates efficiently.
+- What rows need recomputation when data changes.
 
 ### The engine is smart about updates
 
-When data ticks in real-time, the engine:
-
-1. **Tracks dependencies** - It knows that `Y` depends on `X`
-2. **Computes incrementally** - Only new or changed rows are processed
-3. **Updates automatically** - Results update without you doing anything
+1. **Tracks dependencies** - It knows that `Y` depends on `X`.
+2. **Computes incrementally** - Only new or changed rows are processed.
+3. **Updates automatically** - Results update without you doing anything.
 
 This is fundamentally impossible with loops!
 
@@ -311,4 +309,4 @@ result = empty_table(10).update("X = i").update_by(cum_sum("SumX = X"))
 - [Table operations](./table-ops.md)
 - [Query strings](./query-strings.md)
 - [Table iteration (for extraction only!)](../../how-to-guides/iterate-table-data.md)
-- [Update_by for rolling calculations](../../how-to-guides/rolling-aggregations.md)
+- [update_by for rolling calculations](../../how-to-guides/rolling-aggregations.md)
