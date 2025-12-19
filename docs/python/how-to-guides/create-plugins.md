@@ -25,7 +25,7 @@ ExampleServicePlugin/
     └── pyproject.toml
     └── example_plugin_server/
         └── __init__.py
-└── server/
+└── client/
     └── pyproject.toml
     └── example_plugin_client/
         └── __init__.py
@@ -86,7 +86,7 @@ class ExampleService:
 
     def hello_string(self, data: str) -> str:
         """Returns a string containing the input data."""
-        return f"Hello client.  You said: {data}"
+        return f"Hello client. You said: {data}"
 
     def hello_table(self, table: Table, data: str) -> Table:
         """Returns a table generated from the input table and the input data."""
@@ -201,7 +201,7 @@ class ExampleService:
 
     def hello_string(self, data: str) -> str:
         """Returns a string containing the input data."""
-        return f"Hello client.  You said: {data}"
+        return f"Hello client. You said: {data}"
 
     def hello_table(self, table: Table, data: str) -> Table:
         """Returns a table generated from the input table and the input data."""
@@ -427,7 +427,7 @@ dependencies = ["pydeephaven>=0.36.1", "pandas"]
 
 ## Use the plugin
 
-Once you have completed all of the client—and server-side wiring, you can test the plugin. The following subsections cover testing the server using different launch methods.
+Once you have completed all of the client- and server-side wiring, you can test the plugin. The following subsections cover testing the server using different launch methods.
 
 ### Installation
 
@@ -463,7 +463,7 @@ RUN pip install /server
 The following Docker Compose file runs Deephaven using the image built by the above Dockerfile:
 
 > [!IMPORTANT]
-> The Dockerfile below sets the pre-shared key to `YOUR_PASSWORD_HERE` for demonstration purposes. The client needs this key when connecting to the server. It is recommended that this key be changed to something more secure.
+> The Docker Compose file below sets the pre-shared key to `YOUR_PASSWORD_HERE` for demonstration purposes. The client needs this key when connecting to the server. It is recommended that this key be changed to something more secure.
 
 ```yaml
 services:
@@ -487,8 +487,12 @@ If running Deephaven from Python, the following Python script will start a Deeph
 
 ```python skip-test
 import sys
+from deephaven_server import Server
 from example_plugin_server import ExampleService
 
+# Start the Deephaven server
+server = Server(port=10000)
+server.start()
 
 example_service = ExampleService()
 

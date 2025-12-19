@@ -34,9 +34,6 @@ A Table object.
 The following example fetches a table that was published to a shared ticket by another session.
 
 ```python skip-test
-import os
-
-os.system("pip install pydeephaven")
 from pydeephaven import Session
 from pydeephaven.ticket import SharedTicket
 
@@ -55,8 +52,8 @@ For a complete example showing how to use `fetch_table` with tables published fr
 
 ## Related documentation
 
-- [`publish_table`](./publish-table.md) - Publish a table to a shared ticket
-- [`fetch`](./fetch.md) - Generic method to fetch any server object
-- [`publish`](./publish.md) - Generic method to publish any server object
-- [`subscribe`](../../data-import-export/barrage/subscribe.md) - Subscribe to a published table in real-time
+- [`publish_table`](./publish-table.md)
+- [`fetch`](./fetch.md)
+- [`publish`](./publish.md)
+- [`subscribe`](../../data-import-export/barrage/subscribe.md)
 - [Session API](/core/client-api/python/code/pydeephaven.session.html#pydeephaven.session.Session.fetch_table)

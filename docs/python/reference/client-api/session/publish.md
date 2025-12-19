@@ -46,9 +46,6 @@ This method returns `None`.
 The following example publishes a Figure (plot) object to a shared ticket so it can be accessed by another session.
 
 ```python skip-test
-import os
-
-os.system("pip install pydeephaven")
 from pydeephaven import Session
 from pydeephaven.ticket import SharedTicket, ServerObject
 
@@ -127,7 +124,7 @@ session.close()
 
 ## Related documentation
 
-- [`fetch`](./fetch.md) - Fetch a server object by ticket
-- [`publish_table`](./publish-table.md) - Publish a table specifically (higher-level method)
-- [`fetch_table`](./fetch-table.md) - Fetch a table by shared ticket
-- [Session API](/core/client-api/python/code/pydeephaven.session.html#pydeephaven.session.Session.publish)
+- [`fetch`](./fetch.md)
+- [`publish_table`](./publish-table.md)
+- [`fetch_table`](./fetch-table.md)
+- [Session API](/core/client-api/python/code/pydeephaven.session.html)

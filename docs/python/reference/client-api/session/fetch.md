@@ -36,9 +36,6 @@ An [`ExportTicket`](/core/client-api/python/code/pydeephaven.ticket.html#pydeeph
 The following example fetches a Figure (plot) object and publishes it to a shared ticket.
 
 ```python skip-test
-import os
-
-os.system("pip install pydeephaven")
 from pydeephaven import Session
 from pydeephaven.ticket import SharedTicket, ServerObject
 
@@ -128,7 +125,7 @@ session.close()
 
 ## Related documentation
 
-- [`publish`](./publish.md) - Publish a server object to a shared ticket
-- [`fetch_table`](./fetch-table.md) - Fetch a table specifically (higher-level method)
-- [`publish_table`](./publish-table.md) - Publish a table to a shared ticket
+- [`publish`](./publish.md)
+- [`fetch_table`](./fetch-table.md)
+- [`publish_table`](./publish-table.md)
 - [Session API](/core/client-api/python/code/pydeephaven.session.html#pydeephaven.session.Session.fetch)

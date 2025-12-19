@@ -38,9 +38,6 @@ This method returns `None`.
 The following example creates a table and publishes it to a shared ticket so that other sessions can access it.
 
 ```python skip-test
-import os
-
-os.system("pip install pydeephaven")
 from pydeephaven import Session
 from pydeephaven.ticket import SharedTicket
 
@@ -64,8 +61,8 @@ For a complete example showing how to use `publish_table` with Barrage sessions,
 
 ## Related documentation
 
-- [`fetch_table`](./fetch-table.md) - Fetch a table by shared ticket
-- [`publish`](./publish.md) - Generic method to publish any server object
-- [`fetch`](./fetch.md) - Generic method to fetch any server object
-- [`subscribe`](../../data-import-export/barrage/subscribe.md) - Subscribe to a published table in real-time
-- [Session API](/core/client-api/python/code/pydeephaven.session.html#pydeephaven.session.Session.publish_table)
+- [`fetch_table`](./fetch-table.md)
+- [`publish`](./publish.md)
+- [`fetch`](./fetch.md)
+- [`subscribe`](../../data-import-export/barrage/subscribe.md)
+- [`Session`](/core/client-api/python/code/pydeephaven.session.html#pydeephaven.session.Session)
