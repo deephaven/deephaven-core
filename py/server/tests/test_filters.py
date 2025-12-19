@@ -130,7 +130,7 @@ class FilterTestCase(BaseTestCase):
                 rt = t.where(filter_in)
             print(cm.exception)
 
-            # inconsistent ?
+            # inconsistent behavior observed, should fail with https://deephaven.atlassian.net/browse/DH-21232 fixed
             filter_in = in_("B", [2, "3"])
             rt = t.where(filter_in)
             self.assertEqual(1, rt.size)
