@@ -84,5 +84,6 @@ class FilterTestCase(BaseTestCase):
         self.assert_table_equals(x.where(is_not_null("X")), x_is_not_null)
         self.assert_table_equals(x.where(not_(is_not_null("X"))), x_not_is_not_null)
 
+
 if __name__ == "__main__":
     unittest.main()
