@@ -16,6 +16,7 @@ dependencies {
     implementation project(':Configuration')
     implementation project(':log-factory')
     implementation project(":util-thread")
+    implementation project(':data-adapter')
     implementation libs.commons.lang3
     implementation libs.google.findbugs.jsr305
 

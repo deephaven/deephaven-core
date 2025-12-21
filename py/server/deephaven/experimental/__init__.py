@@ -9,6 +9,9 @@ import jpy
 from deephaven import DHError
 from deephaven.table import Table
 from deephaven.update_graph import auto_locking_ctx
+from .keyed_record_adapter import KeyedRecordAdapter
+from .keyed_record_adapter import make_record_adapter
+from .keyed_record_adapter import make_record_adapter_with_constructor
 
 _JWindowCheck = jpy.get_type("io.deephaven.engine.util.WindowCheck")
 
