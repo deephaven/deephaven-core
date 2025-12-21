@@ -2,7 +2,8 @@
 # Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 #
 
-""" This module implement various filters that can be used in deephaven table's filter operations."""
+"""This module implement various filters that can be used in deephaven table's filter operations."""
+
 from __future__ import annotations
 
 from enum import Enum
@@ -147,10 +148,7 @@ class PatternMode(Enum):
 
 
 def pattern(
-    mode: PatternMode,
-    col: str,
-    regex: str,
-    invert_pattern: bool = False
+    mode: PatternMode, col: str, regex: str, invert_pattern: bool = False
 ) -> Filter:
     """Creates a regular-expression pattern filter.
 

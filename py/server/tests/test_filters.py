@@ -6,7 +6,6 @@ import unittest
 
 from deephaven import DHError, new_table, read_csv
 from deephaven.column import string_col
-from deephaven.concurrency_control import Barrier
 from deephaven.filters import (
     Filter,
     PatternMode,
@@ -62,7 +61,9 @@ class FilterTestCase(BaseTestCase):
 
         filter_not = not_(filter_or)
         filtered_table_not = self.test_table.where(filter_not)
-        self.assertEqual(filtered_table_or.size + filtered_table_not.size, self.test_table.size)
+        self.assertEqual(
+            filtered_table_or.size + filtered_table_not.size, self.test_table.size
+        )
 
         filtered_table_mixed = self.test_table.where(
             ["a > 100", "b < 1000", Filter.from_("c < 0")]
@@ -83,5 +84,6 @@ class FilterTestCase(BaseTestCase):
         self.assert_table_equals(x.where(is_not_null("X")), x_is_not_null)
         self.assert_table_equals(x.where(not_(is_not_null("X"))), x_not_is_not_null)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()
