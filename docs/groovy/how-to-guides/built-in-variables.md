@@ -17,6 +17,11 @@ There are three special built-in query language variables worth noting. They cor
 > [!WARNING]
 > These built-in variables are not reliable in ticking tables. They should only be used in static cases.
 
+> [!WARNING]
+> Do not use `i` and `ii` in add-only tables to access preceding or following column values using array notation (e.g., `ColA_[ii-1]`). In add-only tables, rows can be inserted at any position, causing row indices to shift and previously computed values to reference different rows than originally intended. See [Alternatives for add-only tables](#alternatives-for-add-only-tables) below.
+>
+> Note: Append-only tables, which only add rows at the end, do not have this issue since existing row positions remain stable.
+
 ## Usage
 
 The following code block shows how to use `i` and `ii` in a query:
@@ -26,6 +31,127 @@ source = emptyTable(10).update(
     "RowIndex32Bit = i", "RowIndex64Bit = ii", "EngineIndex64Bit = k"
 )
 ```
+
+## Alternatives for add-only tables
+
+When working with add-only tables where you need to reference preceding or following column values, avoid using `i` and `ii` with array notation. Instead, use one of the following approaches:
+
+The examples below use Iceberg tables with auto-refresh mode, which creates add-only tables in Deephaven. For information on setting up Iceberg, see the [Iceberg guide](./data-import-export/iceberg.md).
+
+### 1. Source partitioned tables
+
+Partition a table into multiple smaller tables. This can make operations more manageable and efficient, especially when dealing with add-only tables.
+
+```groovy docker-config=iceberg test-set=1 order=null
+import io.deephaven.iceberg.util.*
+
+// Create and write an Iceberg table for demonstration
+sourceData = emptyTable(20).update("GroupKey = i % 3", "Value = i * 10")
+
+restAdapter = IcebergToolsS3.createS3Rest(
+    "minio-iceberg",
+    catalogUri,
+    warehouseLocation,
+    awsRegion,
+    awsAccessKeyId,
+    awsSecretAccessKey,
+    s3Endpoint
+)
+
+sourceAdapter = restAdapter.createTable("examples.partitionSource", sourceData.getDefinition())
+
+writerOptions = TableParquetWriterOptions.builder()
+    .tableDefinition(sourceData.getDefinition())
+    .build()
+
+sourceWriter = sourceAdapter.tableWriter(writerOptions)
+sourceWriter.append(IcebergWriteInstructions.builder().addTables(sourceData).build())
+
+// Load the Iceberg table with auto-refresh mode (creates an add-only table)
+autoRefreshInstructions = IcebergReadInstructions.builder()
+    .updateMode(IcebergUpdateMode.autoRefreshingMode())
+    .build()
+addOnlySource = sourceAdapter.table(autoRefreshInstructions)
+
+// Partition by a grouping column to create multiple tables
+partitioned = addOnlySource.partitionBy("GroupKey")
+```
+
+Each partition can then be processed independently, and operations within each partition can safely use `i` and `ii` since each partition is a separate table.
+
+### 2. By → update → ungroup pattern
+
+[Group](../reference/table-operations/group-and-aggregate/groupBy.md) the data, perform the update operation within each group, then [ungroup](../reference/table-operations/group-and-aggregate/ungroup.md). This allows you to reference values within each group without relying on absolute row positions.
+
+```groovy docker-config=iceberg test-set=1 order=result
+import io.deephaven.iceberg.util.*
+
+// Create and write an Iceberg table for demonstration
+groupData = emptyTable(10).update("Group = i % 3", "Value = i * 10")
+
+groupAdapter = restAdapter.createTable("examples.groupSource", groupData.getDefinition())
+
+groupWriterOptions = TableParquetWriterOptions.builder()
+    .tableDefinition(groupData.getDefinition())
+    .build()
+
+groupWriter = groupAdapter.tableWriter(groupWriterOptions)
+groupWriter.append(IcebergWriteInstructions.builder().addTables(groupData).build())
+
+// Load the Iceberg table with auto-refresh mode (creates an add-only table)
+addOnlyGroupSource = groupAdapter.table(autoRefreshInstructions)
+
+// Group by the grouping column and compute previous values using array operations
+// Prepend null to match array sizes for ungroup
+grouped = addOnlyGroupSource.groupBy("Group").update(
+    "PrevValue = concat(new int[]{NULL_INT}, Value.size() > 0 ? Value.subVector(0, Value.size() - 1).toArray() : new int[0])"
+)
+
+// Ungroup to work with individual rows
+result = grouped.ungroup()
+```
+
+> [!NOTE]
+> Be aware that the groupBy → update → ungroup pattern can cause tick expansion in ticking tables, where a single update to one row may trigger updates to multiple rows in the result.
+
+### 3. As-of joins
+
+If you have a matching column (such as a timestamp or sequence number) that can be reliably used instead of row position, use an [as-of join](../reference/table-operations/join/aj.md).
+
+```groovy docker-config=iceberg test-set=1 order=ajResult
+import io.deephaven.iceberg.util.*
+
+// Create and write an Iceberg table for demonstration
+ajData = emptyTable(10).update("Timestamp = (long)i", "Value = i * 10")
+
+ajAdapter = restAdapter.createTable("examples.ajSource", ajData.getDefinition())
+
+ajWriterOptions = TableParquetWriterOptions.builder()
+    .tableDefinition(ajData.getDefinition())
+    .build()
+
+ajWriter = ajAdapter.tableWriter(ajWriterOptions)
+ajWriter.append(IcebergWriteInstructions.builder().addTables(ajData).build())
+
+// Load the Iceberg table with auto-refresh mode (creates an add-only table)
+addOnlyAjSource = ajAdapter.table(autoRefreshInstructions)
+
+// Create a shifted version for the join
+shifted = addOnlyAjSource.view("ShiftedTimestamp = Timestamp + 1")
+
+// Join to get the previous value based on timestamp
+ajResult = shifted.aj(addOnlyAjSource, "ShiftedTimestamp >= Timestamp", "PrevValue = Value")
+```
+
+### Performance considerations
+
+The performance characteristics of these approaches depend on your data:
+
+- **[As-of joins](../reference/table-operations/join/aj.md)** require a hash table for each group, with the full set of timestamp and row key data stored individually.
+- **[`groupBy`](../reference/table-operations/group-and-aggregate/groupBy.md) → [`update`](../reference/table-operations/select/update.md) → [`ungroup`](../reference/table-operations/group-and-aggregate/ungroup.md)** requires a hash table and a rowset.
+- The relative performance depends on your specific data patterns and cannot be determined from first principles alone.
+
+Choose the approach that best fits your data structure and access patterns.
 
 ## Related documentation
 
