@@ -330,6 +330,10 @@
                 "path": "how-to-guides/partitioned-tables.md"
               },
               {
+                "label": "Synchronize tables",
+                "path": "how-to-guides/synchronizing-tables.md"
+              },
+              {
                 "label": "Snapshot",
                 "path": "how-to-guides/capture-table-history.md"
               },
@@ -386,10 +390,6 @@
                   {
                     "label": "Filters",
                     "path": "how-to-guides/filters.md"
-                  },
-                  {
-                    "label": "Synchronize multiple tables",
-                    "path": "how-to-guides/synchronizing-tables.md"
                   },
                   {
                     "label": "Operators",
