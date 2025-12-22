@@ -78,9 +78,9 @@ resultNotIn = source.where("X not in 2,4,6")
 ```
 
 > [!NOTE]
-> Match filters with a single value on floating point columns follow standard IEEE 754 rules for handling `NaN` values. Any comparison involving `NaN` returns `false`, except for `!=`, which returns `true` for all values.
+> Match filters created using the equality operators (`=`, `==` or `!=`) follow standard IEEE 754 rules for handling `NaN` values. Any comparison involving `NaN` returns `false`, except for `!=`, which returns `true` for all values.
 > 
-> In contrast, match filters with multiple values are considered to be testing set inclusion. For example: `value in NaN, 10.0` will return `true` if `value` is `NaN` or `10.0`. Alternatively, you can use the `isNaN(value)` function to explicitly test for NaN values such as `isNaN(value) || value < 10.0`.
+> In contrast, match filters created with set inclusion syntax (`in`, `not in`) *will* match `NaN` values. For example: `value in NaN, 10.0` will return `true` if `value` is `NaN` or `10.0`. Alternatively, you can use the `isNaN(value)` function to explicitly test for NaN values such as `isNaN(value) || value < 10.0`.
 
 ### Range filters
 
