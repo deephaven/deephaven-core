@@ -77,6 +77,11 @@ resultIn = source.where("X in 2,4,6")
 resultNotIn = source.where("X not in 2,4,6")
 ```
 
+> [!NOTE]
+> Match filters with a single value on floating point columns follow standard IEEE 754 rules for handling `NaN` values. Any comparison involving `NaN` returns `false`, except for `!=`, which returns `true` for all values.
+> 
+> In contrast, match filters with multiple values are considered to be testing set inclusion. For example: `value in NaN, 10.0` will return `true` if `value` is `NaN` or `10.0`. Alternatively, you can use the `isNaN(value)` function to explicitly test for NaN values such as `isNaN(value) || value < 10.0`.
+
 ### Range filters
 
 Range filters evaluate to true if the column value is within a specified range. This type of filter is typically applied to numeric columns but can be applied to any column that supports comparison operators.
@@ -88,6 +93,12 @@ resultLessThan = source.where("X < 5")
 resultRange = source.where("X >= 2 && X < 6")
 resultInRange = source.where("inRange(X, 2, 6)")
 ```
+
+> [!NOTE]
+> Null values are considered less than any non-null value for sorting and comparison purposes. Therefore `<` and `<=` comparisons will always include `null`. To prevent this behavior, you can add an explicit null check, for example: `!isNull(value) && value < 10`.
+
+> [!NOTE]
+> Comparison operators on floating point values follow standard IEEE 754 rules for handling `NaN` values. Any comparison involving `NaN` returns `false`, except for `!=`, which returns `true` for all values. To include `NaN` values in your comparisons, you can use the `isNaN(value)` function to explicitly test for NaN values such as `isNaN(value) || value < 10.0`.
 
 Both `resultRange` and `resultInRange` can instead be implemented by [conjunctively](#conjunctive) combining two separate range filters:
 
