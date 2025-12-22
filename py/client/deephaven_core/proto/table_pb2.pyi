@@ -131,13 +131,19 @@ class _NanComparison:
 
 class _NanComparisonEnumTypeWrapper(google.protobuf.internal.enum_type_wrapper._EnumTypeWrapper[_NanComparison.ValueType], builtins.type):
     DESCRIPTOR: google.protobuf.descriptor.EnumDescriptor
-    NAN_NOT_EQUALS_NAN: _NanComparison.ValueType  # 0
-    NAN_EQUALS_NAN: _NanComparison.ValueType  # 1
+    NAN_COMPARISON_TYPE_NOT_SPECIFIED: _NanComparison.ValueType  # 0
+    NAN_NOT_EQUALS_NAN: _NanComparison.ValueType  # 1
+    """NaN in match list: NaN values wil NOT match (follows IEEE 754 equality semantics)."""
+    NAN_EQUALS_NAN: _NanComparison.ValueType  # 2
+    """NaN in match list: NaN values will matches."""
 
 class NanComparison(_NanComparison, metaclass=_NanComparisonEnumTypeWrapper): ...
 
-NAN_NOT_EQUALS_NAN: NanComparison.ValueType  # 0
-NAN_EQUALS_NAN: NanComparison.ValueType  # 1
+NAN_COMPARISON_TYPE_NOT_SPECIFIED: NanComparison.ValueType  # 0
+NAN_NOT_EQUALS_NAN: NanComparison.ValueType  # 1
+"""NaN in match list: NaN values wil NOT match (follows IEEE 754 equality semantics)."""
+NAN_EQUALS_NAN: NanComparison.ValueType  # 2
+"""NaN in match list: NaN values will matches."""
 global___NanComparison = NanComparison
 
 @typing.final

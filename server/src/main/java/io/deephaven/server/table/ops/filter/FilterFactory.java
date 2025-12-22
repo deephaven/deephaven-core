@@ -225,6 +225,7 @@ public class FilterFactory implements FilterVisitor<WhereFilter> {
 
     private boolean nanMatch(NanComparison nanComparison) {
         switch (nanComparison) {
+            case NAN_COMPARISON_TYPE_NOT_SPECIFIED:
             case NAN_NOT_EQUALS_NAN:
                 return false;
             case NAN_EQUALS_NAN:

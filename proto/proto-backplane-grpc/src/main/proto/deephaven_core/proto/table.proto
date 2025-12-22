@@ -1251,8 +1251,11 @@ enum MatchType {
   INVERTED = 1;
 }
 enum NanComparison {
-  NAN_NOT_EQUALS_NAN = 0;
-  NAN_EQUALS_NAN = 1;
+  NAN_COMPARISON_TYPE_NOT_SPECIFIED = 0;
+  // NaN in match list: NaN values wil NOT match (follows IEEE 754 equality semantics).
+  NAN_NOT_EQUALS_NAN = 1;
+  // NaN in match list: NaN values will matches.
+  NAN_EQUALS_NAN = 2;
 }
 
 message InCondition {
