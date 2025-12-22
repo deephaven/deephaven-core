@@ -62,7 +62,7 @@ jobs:
         run: ./gradlew --scan spotlessCheck quick
 
       - name: Upload JVM Error Logs
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         if: failure()
         with:
           name: quick-ci-jvm-err
