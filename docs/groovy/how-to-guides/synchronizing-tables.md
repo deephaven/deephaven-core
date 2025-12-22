@@ -31,7 +31,7 @@ Both utilities require:
 
 - **Add-only tables**: Tables must not modify, shift, or remove rows. If you filter an add-only source table, the result remains add-only.
 - **Monotonically increasing IDs**: ID values must increase for each key. IDs cannot decrease or repeat.
-- **Atomic updates**: All rows for a given ID must appear in the table at once (requires transactions).
+- **Atomic updates**: All rows for a given ID of a given table must appear in the same update.
 - **Shared keys**: Tables must have common key columns for grouping.
 
 ## `SyncTableFilter`
