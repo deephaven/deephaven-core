@@ -71,11 +71,18 @@ global___InputTableValidationError = InputTableValidationError
 
 @typing.final
 class InputTableValidationErrorList(google.protobuf.message.Message):
+    """A list of validation errors encountered when processing an AddTableRequest or DeleteTableRequest.  This message is
+    not directly used in the service definition, but may be packed in the headers of error responses using a googlerpc
+    status.
+    """
+
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
     VALIDATION_ERRORS_FIELD_NUMBER: builtins.int
     @property
-    def validation_errors(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___InputTableValidationError]: ...
+    def validation_errors(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___InputTableValidationError]:
+        """The errors encountered when processing the request."""
+
     def __init__(
         self,
         *,
