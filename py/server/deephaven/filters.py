@@ -2,7 +2,8 @@
 # Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 #
 
-""" This module implement various filters that can be used in deephaven table's filter operations."""
+"""This module implement various filters that can be used in deephaven table's filter operations."""
+
 from __future__ import annotations
 
 from enum import Enum
@@ -19,6 +20,9 @@ _JColumnName = jpy.get_type("io.deephaven.api.ColumnName")
 _JFilterPattern = jpy.get_type("io.deephaven.api.filter.FilterPattern")
 _JPatternMode = jpy.get_type("io.deephaven.api.filter.FilterPattern$Mode")
 _JPattern = jpy.get_type("java.util.regex.Pattern")
+_JIncrementalReleaseFilter = jpy.get_type(
+    "io.deephaven.engine.table.impl.select.IncrementalReleaseFilter"
+)
 
 
 class Filter(JObjectWrapper):
@@ -144,10 +148,7 @@ class PatternMode(Enum):
 
 
 def pattern(
-    mode: PatternMode,
-    col: str,
-    regex: str,
-    invert_pattern: bool = False
+    mode: PatternMode, col: str, regex: str, invert_pattern: bool = False
 ) -> Filter:
     """Creates a regular-expression pattern filter.
 
@@ -179,3 +180,25 @@ def pattern(
         )
     except Exception as e:
         raise DHError(e, "failed to create a pattern filter.") from e
+
+
+def incremental_release(initial_rows: int, increment: int) -> Filter:
+    """Creates an incremental release filter that progressively releases rows from a table.
+
+    This filter gradually releases data, starting with an initial number of rows and then
+    incrementally adding more rows over time.  The input table must be an add-only table.
+
+    Args:
+        initial_rows (int): the initial number of rows to release
+        increment (int): the number of additional rows to release in each subsequent step
+
+    Returns:
+        a new incremental release filter
+
+    Raises:
+        DHError
+    """
+    try:
+        return Filter(j_filter=_JIncrementalReleaseFilter(initial_rows, increment))
+    except Exception as e:
+        raise DHError(e, "failed to create incremental release filter.") from e

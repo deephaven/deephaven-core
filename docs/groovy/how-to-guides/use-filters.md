@@ -236,6 +236,22 @@ irisSlicePct = iris.slicePct(0.45, 0.55)
 irisTailPct = iris.tailPct(0.1)
 ```
 
+### Incremental Release Filter
+
+The [IncrementalReleaseFilter](https://docs.deephaven.io/core/javadoc/io/deephaven/engine/table/impl/select/IncrementalReleaseFilter.html), available from Java and Groovy, converts a static or add-only table into a ticking table that parcels out rows over time. This can be useful to simulate ticking data for development or to limit the number of rows that a complex query processes at one time. The incremental release filter takes two parameters:
+
+- The initial number of rows to present in the resulting table.
+- The number of rows to release at the beginning of each update graph cycle.
+
+```groovy order=iris_incremental
+import io.deephaven.csv.CsvTools
+import io.deephaven.engine.table.impl.select.IncrementalReleaseFilter
+
+iris = CsvTools.readCsv("https://media.githubusercontent.com/media/deephaven/examples/main/Iris/csv/iris.csv")
+// release 10 rows initially, then release 5 rows at the beginning of each update graph cycle
+iris_incremental = iris.where(new IncrementalReleaseFilter(10, 5))
+```
+
 ## Related documentation
 
 - [`equals`](../reference/query-language/match-filters/equals.md)
