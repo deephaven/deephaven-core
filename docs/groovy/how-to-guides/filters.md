@@ -98,7 +98,7 @@ resultInRange = source.where("inRange(X, 2, 6)")
 > Null values are considered less than any non-null value for sorting and comparison purposes. Therefore, `<` and `<=` comparisons will always include `null`. To prevent this behavior, you can add an explicit null check; for example: `!isNull(value) && value < 10`.
 
 > [!NOTE]
-> Comparison operators on floating point values follow standard IEEE 754 rules for handling `NaN` values. Any comparison involving `NaN` returns `false`, except for `!=`, which returns `true` for all values. To include `NaN` values in your comparisons, you can use the `isNaN(value)` function to explicitly test for NaN values such as `isNaN(value) || value < 10.0`.
+> Comparison operators on floating-point values follow standard IEEE 754 rules for handling `NaN` values. Any comparison involving `NaN` returns `false`, except for `!=`, which returns `true` for all values. To include `NaN` values in your comparisons, use the `isNaN(value)` function to explicitly test for NaN values, such as `isNaN(value) || value < 10.0`.
 
 Both `resultRange` and `resultInRange` can instead be implemented by [conjunctively](#conjunctive) combining two separate range filters:
 
