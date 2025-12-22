@@ -18,7 +18,9 @@ dependencies {
     // version, but has a different version to make it easier to keep confluent dependencies aligned.
     api libs.confluent.kafka.clients
     api libs.confluent.avro.serializer
-    api libs.confluent.protobuf.serializer
+    api (libs.confluent.protobuf.serializer) {
+        exclude group: 'com.google.protobuf'
+    }
 
     // When updating the kafka implementation, it may be useful to test out the minimum kafka version that our code
     // compiles, tests, and runs with. If we want to offer more strict guarantees in these regards in the future, at
