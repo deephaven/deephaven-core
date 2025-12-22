@@ -135,7 +135,8 @@ public class InputTableServiceGrpcImpl extends InputTableServiceGrpc.InputTableS
                                                 .addDetails(Any.pack(convertErrors(errors)))
                                                 .build();
 
-                                        GrpcUtil.safelyError(responseObserver, StatusProto.toStatusRuntimeException(status));
+                                        GrpcUtil.safelyError(responseObserver,
+                                                StatusProto.toStatusRuntimeException(status));
                                     }
                                 } else {
                                     GrpcUtil.safelyError(responseObserver,
