@@ -1253,7 +1253,8 @@ enum MatchType {
 
 // Controls how NaN values are treated in InCondition (i.e. MatchFilter) filters.
 enum NanComparison {
-  NAN_COMPARISON_TYPE_NOT_SPECIFIED = 0; // defaults to NAN_NOT_EQUALS_NAN
+  // defaults to NAN_NOT_EQUALS_NAN
+  NAN_COMPARISON_TYPE_NOT_SPECIFIED = 0;
   // NaN in match list: NaN values wil NOT match (follows IEEE 754 equality semantics)
   NAN_NOT_EQUALS_NAN = 1;
   // NaN in match list: NaN values will match

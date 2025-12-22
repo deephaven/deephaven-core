@@ -277,13 +277,15 @@ func (MatchType) EnumDescriptor() ([]byte, []int) {
 	return file_deephaven_core_proto_table_proto_rawDescGZIP(), []int{4}
 }
 
+// Controls how NaN values are treated in InCondition (i.e. MatchFilter) filters.
 type NanComparison int32
 
 const (
+	// defaults to NAN_NOT_EQUALS_NAN
 	NanComparison_NAN_COMPARISON_TYPE_NOT_SPECIFIED NanComparison = 0
-	// NaN in match list: NaN values wil NOT match (follows IEEE 754 equality semantics).
+	// NaN in match list: NaN values wil NOT match (follows IEEE 754 equality semantics)
 	NanComparison_NAN_NOT_EQUALS_NAN NanComparison = 1
-	// NaN in match list: NaN values will matches.
+	// NaN in match list: NaN values will match
 	NanComparison_NAN_EQUALS_NAN NanComparison = 2
 )
 
