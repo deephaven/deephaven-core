@@ -3,10 +3,7 @@
 //
 package io.deephaven.server.table.ops.filter;
 
-import io.deephaven.proto.backplane.grpc.CaseSensitivity;
-import io.deephaven.proto.backplane.grpc.Condition;
-import io.deephaven.proto.backplane.grpc.MatchType;
-import io.deephaven.proto.backplane.grpc.Value;
+import io.deephaven.proto.backplane.grpc.*;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -37,7 +34,7 @@ public class FlipNonReferenceMatchExpression extends AbstractNormalizeFilters {
 
     @Override
     public Condition onIn(Value target, List<Value> candidatesList, CaseSensitivity caseSensitivity,
-            MatchType matchType) {
+            MatchType matchType, NanComparison nanComparison) {
         // check each child - if we pass all checks we will give up
         boolean rewrite = target.hasLiteral();
         if (!rewrite) {
@@ -49,13 +46,13 @@ public class FlipNonReferenceMatchExpression extends AbstractNormalizeFilters {
             }
         }
         if (!rewrite) {
-            return NormalizeFilterUtil.doIn(target, candidatesList, caseSensitivity, matchType);
+            return NormalizeFilterUtil.doIn(target, candidatesList, caseSensitivity, matchType, nanComparison);
         }
 
         if (candidatesList.size() == 1) {
             // make a single node to replace with, just swap the order of the two children
             return NormalizeFilterUtil.doIn(candidatesList.get(0), Collections.singletonList(target), caseSensitivity,
-                    matchType);
+                    matchType, nanComparison);
         }
 
         // make a AND/OR to join each of the new children with
@@ -63,7 +60,8 @@ public class FlipNonReferenceMatchExpression extends AbstractNormalizeFilters {
 
         for (Value candidate : candidatesList) {
             replacementChildren.add(
-                    NormalizeFilterUtil.doIn(candidate, Collections.singletonList(target), caseSensitivity, matchType));
+                    NormalizeFilterUtil.doIn(candidate, Collections.singletonList(target), caseSensitivity, matchType,
+                            nanComparison));
         }
 
         // wrap each of the new operations in an AND or OR as necessary
