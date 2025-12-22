@@ -147,11 +147,15 @@ func (x *InputTableValidationError) GetColumn() string {
 	return ""
 }
 
+// A list of validation errors encountered when processing an AddTableRequest or DeleteTableRequest.  This message is
+// not directly used in the service definition, but may be packed in the headers of error responses using a googlerpc
+// status.
 type InputTableValidationErrorList struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// The errors encountered when processing the request.
 	ValidationErrors []*InputTableValidationError `protobuf:"bytes,1,rep,name=validation_errors,json=validationErrors,proto3" json:"validation_errors,omitempty"`
 }
 
