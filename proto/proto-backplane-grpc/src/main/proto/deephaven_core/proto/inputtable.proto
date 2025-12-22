@@ -45,7 +45,11 @@ message InputTableValidationError {
     optional string column = 3;
 }
 
+// A list of validation errors encountered when processing an AddTableRequest or DeleteTableRequest.  This message is
+// not directly used in the service definition, but may be packed in the headers of error responses using a googlerpc
+// status.
 message InputTableValidationErrorList {
+    // The errors encountered when processing the request.
     repeated InputTableValidationError validation_errors = 1;
 }
 
