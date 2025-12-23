@@ -38,7 +38,7 @@ class RollupNodeType(_RollupNodeType, metaclass=_RollupNodeTypeEnumTypeWrapper):
 TYPE_NOT_SPECIFIED: RollupNodeType.ValueType  # 0
 AGGREGATED: RollupNodeType.ValueType  # 1
 CONSTITUENT: RollupNodeType.ValueType  # 2
-global___RollupNodeType = RollupNodeType
+Global___RollupNodeType: typing_extensions.TypeAlias = RollupNodeType
 
 @typing.final
 class RollupRequest(google.protobuf.message.Message):
@@ -79,7 +79,7 @@ class RollupRequest(google.protobuf.message.Message):
     def HasField(self, field_name: typing.Literal["result_rollup_table_id", b"result_rollup_table_id", "source_table_id", b"source_table_id"]) -> builtins.bool: ...
     def ClearField(self, field_name: typing.Literal["aggregations", b"aggregations", "group_by_columns", b"group_by_columns", "include_constituents", b"include_constituents", "result_rollup_table_id", b"result_rollup_table_id", "source_table_id", b"source_table_id"]) -> None: ...
 
-global___RollupRequest = RollupRequest
+Global___RollupRequest: typing_extensions.TypeAlias = RollupRequest
 
 @typing.final
 class RollupResponse(google.protobuf.message.Message):
@@ -93,7 +93,7 @@ class RollupResponse(google.protobuf.message.Message):
         self,
     ) -> None: ...
 
-global___RollupResponse = RollupResponse
+Global___RollupResponse: typing_extensions.TypeAlias = RollupResponse
 
 @typing.final
 class TreeRequest(google.protobuf.message.Message):
@@ -132,7 +132,7 @@ class TreeRequest(google.protobuf.message.Message):
     def HasField(self, field_name: typing.Literal["result_tree_table_id", b"result_tree_table_id", "source_table_id", b"source_table_id"]) -> builtins.bool: ...
     def ClearField(self, field_name: typing.Literal["identifier_column", b"identifier_column", "parent_identifier_column", b"parent_identifier_column", "promote_orphans", b"promote_orphans", "result_tree_table_id", b"result_tree_table_id", "source_table_id", b"source_table_id"]) -> None: ...
 
-global___TreeRequest = TreeRequest
+Global___TreeRequest: typing_extensions.TypeAlias = TreeRequest
 
 @typing.final
 class TreeResponse(google.protobuf.message.Message):
@@ -146,7 +146,7 @@ class TreeResponse(google.protobuf.message.Message):
         self,
     ) -> None: ...
 
-global___TreeResponse = TreeResponse
+Global___TreeResponse: typing_extensions.TypeAlias = TreeResponse
 
 @typing.final
 class UpdateViewRequest(google.protobuf.message.Message):
@@ -154,7 +154,7 @@ class UpdateViewRequest(google.protobuf.message.Message):
 
     COLUMN_SPEC_FIELD_NUMBER: builtins.int
     NODE_TYPE_FIELD_NUMBER: builtins.int
-    node_type: global___RollupNodeType.ValueType
+    node_type: Global___RollupNodeType.ValueType
     """The node types that will have this update_view applied. Ignored for TreeTable."""
     @property
     def column_spec(self) -> deephaven_core.proto.table_pb2.Selectable: ...
@@ -162,12 +162,12 @@ class UpdateViewRequest(google.protobuf.message.Message):
         self,
         *,
         column_spec: deephaven_core.proto.table_pb2.Selectable | None = ...,
-        node_type: global___RollupNodeType.ValueType = ...,
+        node_type: Global___RollupNodeType.ValueType = ...,
     ) -> None: ...
     def HasField(self, field_name: typing.Literal["column_spec", b"column_spec"]) -> builtins.bool: ...
     def ClearField(self, field_name: typing.Literal["column_spec", b"column_spec", "node_type", b"node_type"]) -> None: ...
 
-global___UpdateViewRequest = UpdateViewRequest
+Global___UpdateViewRequest: typing_extensions.TypeAlias = UpdateViewRequest
 
 @typing.final
 class HierarchicalTableApplyRequest(google.protobuf.message.Message):
@@ -208,14 +208,14 @@ class HierarchicalTableApplyRequest(google.protobuf.message.Message):
         """
 
     @property
-    def format_views(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___UpdateViewRequest]:
+    def format_views(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[Global___UpdateViewRequest]:
         """Format operations to apply to the nodes of the table.
         For RollupTables, the update is applied only to the specified node types.
         For TreeTables, the node type is ignored and the update is applied to all nodes.
         """
 
     @property
-    def update_views(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___UpdateViewRequest]:
+    def update_views(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[Global___UpdateViewRequest]:
         """User-supplied update_view operations to apply to the nodes of the table.
         For RollupTables, the update is applied only to the specified node types.
         For TreeTables, the node type is ignored and the update is applied to all nodes.
@@ -228,13 +228,13 @@ class HierarchicalTableApplyRequest(google.protobuf.message.Message):
         input_hierarchical_table_id: deephaven_core.proto.ticket_pb2.Ticket | None = ...,
         filters: collections.abc.Iterable[deephaven_core.proto.table_pb2.Condition] | None = ...,
         sorts: collections.abc.Iterable[deephaven_core.proto.table_pb2.SortDescriptor] | None = ...,
-        format_views: collections.abc.Iterable[global___UpdateViewRequest] | None = ...,
-        update_views: collections.abc.Iterable[global___UpdateViewRequest] | None = ...,
+        format_views: collections.abc.Iterable[Global___UpdateViewRequest] | None = ...,
+        update_views: collections.abc.Iterable[Global___UpdateViewRequest] | None = ...,
     ) -> None: ...
     def HasField(self, field_name: typing.Literal["input_hierarchical_table_id", b"input_hierarchical_table_id", "result_hierarchical_table_id", b"result_hierarchical_table_id"]) -> builtins.bool: ...
     def ClearField(self, field_name: typing.Literal["filters", b"filters", "format_views", b"format_views", "input_hierarchical_table_id", b"input_hierarchical_table_id", "result_hierarchical_table_id", b"result_hierarchical_table_id", "sorts", b"sorts", "update_views", b"update_views"]) -> None: ...
 
-global___HierarchicalTableApplyRequest = HierarchicalTableApplyRequest
+Global___HierarchicalTableApplyRequest: typing_extensions.TypeAlias = HierarchicalTableApplyRequest
 
 @typing.final
 class HierarchicalTableApplyResponse(google.protobuf.message.Message):
@@ -248,7 +248,7 @@ class HierarchicalTableApplyResponse(google.protobuf.message.Message):
         self,
     ) -> None: ...
 
-global___HierarchicalTableApplyResponse = HierarchicalTableApplyResponse
+Global___HierarchicalTableApplyResponse: typing_extensions.TypeAlias = HierarchicalTableApplyResponse
 
 @typing.final
 class HierarchicalTableDescriptor(google.protobuf.message.Message):
@@ -314,7 +314,7 @@ class HierarchicalTableDescriptor(google.protobuf.message.Message):
     ) -> None: ...
     def ClearField(self, field_name: typing.Literal["is_static", b"is_static", "snapshot_schema", b"snapshot_schema"]) -> None: ...
 
-global___HierarchicalTableDescriptor = HierarchicalTableDescriptor
+Global___HierarchicalTableDescriptor: typing_extensions.TypeAlias = HierarchicalTableDescriptor
 
 @typing.final
 class HierarchicalTableViewRequest(google.protobuf.message.Message):
@@ -341,7 +341,7 @@ class HierarchicalTableViewRequest(google.protobuf.message.Message):
         """
 
     @property
-    def expansions(self) -> global___HierarchicalTableViewKeyTableDescriptor:
+    def expansions(self) -> Global___HierarchicalTableViewKeyTableDescriptor:
         """Description for the expansions that define this view of the HierarchicalTable. If not present, the result will
         have default expansions, For RollupTables this will be the root (single row, top-level aggregation) and the next
         level if one exists (that is, if there are one or more group-by columns, or constituents are included). For
@@ -354,13 +354,13 @@ class HierarchicalTableViewRequest(google.protobuf.message.Message):
         result_view_id: deephaven_core.proto.ticket_pb2.Ticket | None = ...,
         hierarchical_table_id: deephaven_core.proto.ticket_pb2.Ticket | None = ...,
         existing_view_id: deephaven_core.proto.ticket_pb2.Ticket | None = ...,
-        expansions: global___HierarchicalTableViewKeyTableDescriptor | None = ...,
+        expansions: Global___HierarchicalTableViewKeyTableDescriptor | None = ...,
     ) -> None: ...
     def HasField(self, field_name: typing.Literal["existing_view_id", b"existing_view_id", "expansions", b"expansions", "hierarchical_table_id", b"hierarchical_table_id", "result_view_id", b"result_view_id", "target", b"target"]) -> builtins.bool: ...
     def ClearField(self, field_name: typing.Literal["existing_view_id", b"existing_view_id", "expansions", b"expansions", "hierarchical_table_id", b"hierarchical_table_id", "result_view_id", b"result_view_id", "target", b"target"]) -> None: ...
     def WhichOneof(self, oneof_group: typing.Literal["target", b"target"]) -> typing.Literal["hierarchical_table_id", "existing_view_id"] | None: ...
 
-global___HierarchicalTableViewRequest = HierarchicalTableViewRequest
+Global___HierarchicalTableViewRequest: typing_extensions.TypeAlias = HierarchicalTableViewRequest
 
 @typing.final
 class HierarchicalTableViewKeyTableDescriptor(google.protobuf.message.Message):
@@ -393,7 +393,7 @@ class HierarchicalTableViewKeyTableDescriptor(google.protobuf.message.Message):
     def ClearField(self, field_name: typing.Literal["_key_table_action_column", b"_key_table_action_column", "key_table_action_column", b"key_table_action_column", "key_table_id", b"key_table_id"]) -> None: ...
     def WhichOneof(self, oneof_group: typing.Literal["_key_table_action_column", b"_key_table_action_column"]) -> typing.Literal["key_table_action_column"] | None: ...
 
-global___HierarchicalTableViewKeyTableDescriptor = HierarchicalTableViewKeyTableDescriptor
+Global___HierarchicalTableViewKeyTableDescriptor: typing_extensions.TypeAlias = HierarchicalTableViewKeyTableDescriptor
 
 @typing.final
 class HierarchicalTableViewResponse(google.protobuf.message.Message):
@@ -407,7 +407,7 @@ class HierarchicalTableViewResponse(google.protobuf.message.Message):
         self,
     ) -> None: ...
 
-global___HierarchicalTableViewResponse = HierarchicalTableViewResponse
+Global___HierarchicalTableViewResponse: typing_extensions.TypeAlias = HierarchicalTableViewResponse
 
 @typing.final
 class HierarchicalTableSourceExportRequest(google.protobuf.message.Message):
@@ -432,4 +432,4 @@ class HierarchicalTableSourceExportRequest(google.protobuf.message.Message):
     def HasField(self, field_name: typing.Literal["hierarchical_table_id", b"hierarchical_table_id", "result_table_id", b"result_table_id"]) -> builtins.bool: ...
     def ClearField(self, field_name: typing.Literal["hierarchical_table_id", b"hierarchical_table_id", "result_table_id", b"result_table_id"]) -> None: ...
 
-global___HierarchicalTableSourceExportRequest = HierarchicalTableSourceExportRequest
+Global___HierarchicalTableSourceExportRequest: typing_extensions.TypeAlias = HierarchicalTableSourceExportRequest

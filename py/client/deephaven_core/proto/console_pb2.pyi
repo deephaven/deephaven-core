@@ -33,7 +33,7 @@ class GetConsoleTypesRequest(google.protobuf.message.Message):
         self,
     ) -> None: ...
 
-global___GetConsoleTypesRequest = GetConsoleTypesRequest
+Global___GetConsoleTypesRequest: typing_extensions.TypeAlias = GetConsoleTypesRequest
 
 @typing.final
 class GetConsoleTypesResponse(google.protobuf.message.Message):
@@ -49,7 +49,7 @@ class GetConsoleTypesResponse(google.protobuf.message.Message):
     ) -> None: ...
     def ClearField(self, field_name: typing.Literal["console_types", b"console_types"]) -> None: ...
 
-global___GetConsoleTypesResponse = GetConsoleTypesResponse
+Global___GetConsoleTypesResponse: typing_extensions.TypeAlias = GetConsoleTypesResponse
 
 @typing.final
 class StartConsoleRequest(google.protobuf.message.Message):
@@ -69,7 +69,7 @@ class StartConsoleRequest(google.protobuf.message.Message):
     def HasField(self, field_name: typing.Literal["result_id", b"result_id"]) -> builtins.bool: ...
     def ClearField(self, field_name: typing.Literal["result_id", b"result_id", "session_type", b"session_type"]) -> None: ...
 
-global___StartConsoleRequest = StartConsoleRequest
+Global___StartConsoleRequest: typing_extensions.TypeAlias = StartConsoleRequest
 
 @typing.final
 class StartConsoleResponse(google.protobuf.message.Message):
@@ -86,7 +86,7 @@ class StartConsoleResponse(google.protobuf.message.Message):
     def HasField(self, field_name: typing.Literal["result_id", b"result_id"]) -> builtins.bool: ...
     def ClearField(self, field_name: typing.Literal["result_id", b"result_id"]) -> None: ...
 
-global___StartConsoleResponse = StartConsoleResponse
+Global___StartConsoleResponse: typing_extensions.TypeAlias = StartConsoleResponse
 
 @typing.final
 class GetHeapInfoRequest(google.protobuf.message.Message):
@@ -98,7 +98,7 @@ class GetHeapInfoRequest(google.protobuf.message.Message):
         self,
     ) -> None: ...
 
-global___GetHeapInfoRequest = GetHeapInfoRequest
+Global___GetHeapInfoRequest: typing_extensions.TypeAlias = GetHeapInfoRequest
 
 @typing.final
 class GetHeapInfoResponse(google.protobuf.message.Message):
@@ -130,7 +130,7 @@ class GetHeapInfoResponse(google.protobuf.message.Message):
     ) -> None: ...
     def ClearField(self, field_name: typing.Literal["free_memory", b"free_memory", "max_memory", b"max_memory", "total_memory", b"total_memory"]) -> None: ...
 
-global___GetHeapInfoResponse = GetHeapInfoResponse
+Global___GetHeapInfoResponse: typing_extensions.TypeAlias = GetHeapInfoResponse
 
 @typing.final
 class LogSubscriptionRequest(google.protobuf.message.Message):
@@ -159,7 +159,7 @@ class LogSubscriptionRequest(google.protobuf.message.Message):
     ) -> None: ...
     def ClearField(self, field_name: typing.Literal["last_seen_log_timestamp", b"last_seen_log_timestamp", "levels", b"levels"]) -> None: ...
 
-global___LogSubscriptionRequest = LogSubscriptionRequest
+Global___LogSubscriptionRequest: typing_extensions.TypeAlias = LogSubscriptionRequest
 
 @typing.final
 class LogSubscriptionData(google.protobuf.message.Message):
@@ -180,7 +180,7 @@ class LogSubscriptionData(google.protobuf.message.Message):
     ) -> None: ...
     def ClearField(self, field_name: typing.Literal["log_level", b"log_level", "message", b"message", "micros", b"micros"]) -> None: ...
 
-global___LogSubscriptionData = LogSubscriptionData
+Global___LogSubscriptionData: typing_extensions.TypeAlias = LogSubscriptionData
 
 @typing.final
 class ExecuteCommandRequest(google.protobuf.message.Message):
@@ -205,7 +205,7 @@ class ExecuteCommandRequest(google.protobuf.message.Message):
     CODE_FIELD_NUMBER: builtins.int
     SYSTEMIC_FIELD_NUMBER: builtins.int
     code: builtins.str
-    systemic: global___ExecuteCommandRequest.SystemicType.ValueType
+    systemic: Global___ExecuteCommandRequest.SystemicType.ValueType
     """If set to `EXECUTE_SYSTEMIC` the command will be executed systemically.  Failures in systemic code
     are treated as important failures and cause errors to be reported to the io.deephaven.engine.table.impl.util.AsyncClientErrorNotifier.
     If this is unset it is treated as `EXECUTE_NOT_SYSTEMIC`
@@ -217,13 +217,13 @@ class ExecuteCommandRequest(google.protobuf.message.Message):
         *,
         console_id: deephaven_core.proto.ticket_pb2.Ticket | None = ...,
         code: builtins.str = ...,
-        systemic: global___ExecuteCommandRequest.SystemicType.ValueType | None = ...,
+        systemic: Global___ExecuteCommandRequest.SystemicType.ValueType | None = ...,
     ) -> None: ...
     def HasField(self, field_name: typing.Literal["_systemic", b"_systemic", "console_id", b"console_id", "systemic", b"systemic"]) -> builtins.bool: ...
     def ClearField(self, field_name: typing.Literal["_systemic", b"_systemic", "code", b"code", "console_id", b"console_id", "systemic", b"systemic"]) -> None: ...
     def WhichOneof(self, oneof_group: typing.Literal["_systemic", b"_systemic"]) -> typing.Literal["systemic"] | None: ...
 
-global___ExecuteCommandRequest = ExecuteCommandRequest
+Global___ExecuteCommandRequest: typing_extensions.TypeAlias = ExecuteCommandRequest
 
 @typing.final
 class ExecuteCommandResponse(google.protobuf.message.Message):
@@ -251,7 +251,7 @@ class ExecuteCommandResponse(google.protobuf.message.Message):
     def HasField(self, field_name: typing.Literal["changes", b"changes"]) -> builtins.bool: ...
     def ClearField(self, field_name: typing.Literal["changes", b"changes", "end_timestamp", b"end_timestamp", "error_message", b"error_message", "start_timestamp", b"start_timestamp"]) -> None: ...
 
-global___ExecuteCommandResponse = ExecuteCommandResponse
+Global___ExecuteCommandResponse: typing_extensions.TypeAlias = ExecuteCommandResponse
 
 @typing.final
 class BindTableToVariableRequest(google.protobuf.message.Message):
@@ -275,7 +275,7 @@ class BindTableToVariableRequest(google.protobuf.message.Message):
     def HasField(self, field_name: typing.Literal["console_id", b"console_id", "table_id", b"table_id"]) -> builtins.bool: ...
     def ClearField(self, field_name: typing.Literal["console_id", b"console_id", "table_id", b"table_id", "variable_name", b"variable_name"]) -> None: ...
 
-global___BindTableToVariableRequest = BindTableToVariableRequest
+Global___BindTableToVariableRequest: typing_extensions.TypeAlias = BindTableToVariableRequest
 
 @typing.final
 class BindTableToVariableResponse(google.protobuf.message.Message):
@@ -285,7 +285,7 @@ class BindTableToVariableResponse(google.protobuf.message.Message):
         self,
     ) -> None: ...
 
-global___BindTableToVariableResponse = BindTableToVariableResponse
+Global___BindTableToVariableResponse: typing_extensions.TypeAlias = BindTableToVariableResponse
 
 @typing.final
 class CancelCommandRequest(google.protobuf.message.Message):
@@ -306,7 +306,7 @@ class CancelCommandRequest(google.protobuf.message.Message):
     def HasField(self, field_name: typing.Literal["command_id", b"command_id", "console_id", b"console_id"]) -> builtins.bool: ...
     def ClearField(self, field_name: typing.Literal["command_id", b"command_id", "console_id", b"console_id"]) -> None: ...
 
-global___CancelCommandRequest = CancelCommandRequest
+Global___CancelCommandRequest: typing_extensions.TypeAlias = CancelCommandRequest
 
 @typing.final
 class CancelCommandResponse(google.protobuf.message.Message):
@@ -316,7 +316,7 @@ class CancelCommandResponse(google.protobuf.message.Message):
         self,
     ) -> None: ...
 
-global___CancelCommandResponse = CancelCommandResponse
+Global___CancelCommandResponse: typing_extensions.TypeAlias = CancelCommandResponse
 
 @typing.final
 class CancelAutoCompleteRequest(google.protobuf.message.Message):
@@ -336,7 +336,7 @@ class CancelAutoCompleteRequest(google.protobuf.message.Message):
     def HasField(self, field_name: typing.Literal["console_id", b"console_id"]) -> builtins.bool: ...
     def ClearField(self, field_name: typing.Literal["console_id", b"console_id", "request_id", b"request_id"]) -> None: ...
 
-global___CancelAutoCompleteRequest = CancelAutoCompleteRequest
+Global___CancelAutoCompleteRequest: typing_extensions.TypeAlias = CancelAutoCompleteRequest
 
 @typing.final
 class CancelAutoCompleteResponse(google.protobuf.message.Message):
@@ -346,7 +346,7 @@ class CancelAutoCompleteResponse(google.protobuf.message.Message):
         self,
     ) -> None: ...
 
-global___CancelAutoCompleteResponse = CancelAutoCompleteResponse
+Global___CancelAutoCompleteResponse: typing_extensions.TypeAlias = CancelAutoCompleteResponse
 
 @typing.final
 class AutoCompleteRequest(google.protobuf.message.Message):
@@ -365,31 +365,31 @@ class AutoCompleteRequest(google.protobuf.message.Message):
     @property
     def console_id(self) -> deephaven_core.proto.ticket_pb2.Ticket: ...
     @property
-    def open_document(self) -> global___OpenDocumentRequest:
+    def open_document(self) -> Global___OpenDocumentRequest:
         """Starts a document in a given console - to end, just close the stream, the server will hang up right away"""
 
     @property
-    def change_document(self) -> global___ChangeDocumentRequest:
+    def change_document(self) -> Global___ChangeDocumentRequest:
         """Modifies the document that autocomplete can be requested on"""
 
     @property
-    def get_completion_items(self) -> global___GetCompletionItemsRequest:
+    def get_completion_items(self) -> Global___GetCompletionItemsRequest:
         """Requests that a response be sent back with completion items"""
 
     @property
-    def get_signature_help(self) -> global___GetSignatureHelpRequest:
+    def get_signature_help(self) -> Global___GetSignatureHelpRequest:
         """Request for help about the method signature at the cursor"""
 
     @property
-    def get_hover(self) -> global___GetHoverRequest:
+    def get_hover(self) -> Global___GetHoverRequest:
         """Request for help about what the user is hovering over"""
 
     @property
-    def get_diagnostic(self) -> global___GetDiagnosticRequest:
+    def get_diagnostic(self) -> Global___GetDiagnosticRequest:
         """Request to perform file diagnostics"""
 
     @property
-    def close_document(self) -> global___CloseDocumentRequest:
+    def close_document(self) -> Global___CloseDocumentRequest:
         """Closes the document, indicating that it will not be referenced again"""
 
     def __init__(
@@ -397,19 +397,19 @@ class AutoCompleteRequest(google.protobuf.message.Message):
         *,
         console_id: deephaven_core.proto.ticket_pb2.Ticket | None = ...,
         request_id: builtins.int = ...,
-        open_document: global___OpenDocumentRequest | None = ...,
-        change_document: global___ChangeDocumentRequest | None = ...,
-        get_completion_items: global___GetCompletionItemsRequest | None = ...,
-        get_signature_help: global___GetSignatureHelpRequest | None = ...,
-        get_hover: global___GetHoverRequest | None = ...,
-        get_diagnostic: global___GetDiagnosticRequest | None = ...,
-        close_document: global___CloseDocumentRequest | None = ...,
+        open_document: Global___OpenDocumentRequest | None = ...,
+        change_document: Global___ChangeDocumentRequest | None = ...,
+        get_completion_items: Global___GetCompletionItemsRequest | None = ...,
+        get_signature_help: Global___GetSignatureHelpRequest | None = ...,
+        get_hover: Global___GetHoverRequest | None = ...,
+        get_diagnostic: Global___GetDiagnosticRequest | None = ...,
+        close_document: Global___CloseDocumentRequest | None = ...,
     ) -> None: ...
     def HasField(self, field_name: typing.Literal["change_document", b"change_document", "close_document", b"close_document", "console_id", b"console_id", "get_completion_items", b"get_completion_items", "get_diagnostic", b"get_diagnostic", "get_hover", b"get_hover", "get_signature_help", b"get_signature_help", "open_document", b"open_document", "request", b"request"]) -> builtins.bool: ...
     def ClearField(self, field_name: typing.Literal["change_document", b"change_document", "close_document", b"close_document", "console_id", b"console_id", "get_completion_items", b"get_completion_items", "get_diagnostic", b"get_diagnostic", "get_hover", b"get_hover", "get_signature_help", b"get_signature_help", "open_document", b"open_document", "request", b"request", "request_id", b"request_id"]) -> None: ...
     def WhichOneof(self, oneof_group: typing.Literal["request", b"request"]) -> typing.Literal["open_document", "change_document", "get_completion_items", "get_signature_help", "get_hover", "get_diagnostic", "close_document"] | None: ...
 
-global___AutoCompleteRequest = AutoCompleteRequest
+Global___AutoCompleteRequest: typing_extensions.TypeAlias = AutoCompleteRequest
 
 @typing.final
 class AutoCompleteResponse(google.protobuf.message.Message):
@@ -425,31 +425,31 @@ class AutoCompleteResponse(google.protobuf.message.Message):
     request_id: builtins.int
     success: builtins.bool
     @property
-    def completion_items(self) -> global___GetCompletionItemsResponse: ...
+    def completion_items(self) -> Global___GetCompletionItemsResponse: ...
     @property
-    def signatures(self) -> global___GetSignatureHelpResponse: ...
+    def signatures(self) -> Global___GetSignatureHelpResponse: ...
     @property
-    def hover(self) -> global___GetHoverResponse: ...
+    def hover(self) -> Global___GetHoverResponse: ...
     @property
-    def diagnostic(self) -> global___GetPullDiagnosticResponse: ...
+    def diagnostic(self) -> Global___GetPullDiagnosticResponse: ...
     @property
-    def diagnostic_publish(self) -> global___GetPublishDiagnosticResponse: ...
+    def diagnostic_publish(self) -> Global___GetPublishDiagnosticResponse: ...
     def __init__(
         self,
         *,
         request_id: builtins.int = ...,
         success: builtins.bool = ...,
-        completion_items: global___GetCompletionItemsResponse | None = ...,
-        signatures: global___GetSignatureHelpResponse | None = ...,
-        hover: global___GetHoverResponse | None = ...,
-        diagnostic: global___GetPullDiagnosticResponse | None = ...,
-        diagnostic_publish: global___GetPublishDiagnosticResponse | None = ...,
+        completion_items: Global___GetCompletionItemsResponse | None = ...,
+        signatures: Global___GetSignatureHelpResponse | None = ...,
+        hover: Global___GetHoverResponse | None = ...,
+        diagnostic: Global___GetPullDiagnosticResponse | None = ...,
+        diagnostic_publish: Global___GetPublishDiagnosticResponse | None = ...,
     ) -> None: ...
     def HasField(self, field_name: typing.Literal["completion_items", b"completion_items", "diagnostic", b"diagnostic", "diagnostic_publish", b"diagnostic_publish", "hover", b"hover", "response", b"response", "signatures", b"signatures"]) -> builtins.bool: ...
     def ClearField(self, field_name: typing.Literal["completion_items", b"completion_items", "diagnostic", b"diagnostic", "diagnostic_publish", b"diagnostic_publish", "hover", b"hover", "request_id", b"request_id", "response", b"response", "signatures", b"signatures", "success", b"success"]) -> None: ...
     def WhichOneof(self, oneof_group: typing.Literal["response", b"response"]) -> typing.Literal["completion_items", "signatures", "hover", "diagnostic", "diagnostic_publish"] | None: ...
 
-global___AutoCompleteResponse = AutoCompleteResponse
+Global___AutoCompleteResponse: typing_extensions.TypeAlias = AutoCompleteResponse
 
 @typing.final
 class BrowserNextResponse(google.protobuf.message.Message):
@@ -459,7 +459,7 @@ class BrowserNextResponse(google.protobuf.message.Message):
         self,
     ) -> None: ...
 
-global___BrowserNextResponse = BrowserNextResponse
+Global___BrowserNextResponse: typing_extensions.TypeAlias = BrowserNextResponse
 
 @typing.final
 class OpenDocumentRequest(google.protobuf.message.Message):
@@ -470,17 +470,17 @@ class OpenDocumentRequest(google.protobuf.message.Message):
     @property
     def console_id(self) -> deephaven_core.proto.ticket_pb2.Ticket: ...
     @property
-    def text_document(self) -> global___TextDocumentItem: ...
+    def text_document(self) -> Global___TextDocumentItem: ...
     def __init__(
         self,
         *,
         console_id: deephaven_core.proto.ticket_pb2.Ticket | None = ...,
-        text_document: global___TextDocumentItem | None = ...,
+        text_document: Global___TextDocumentItem | None = ...,
     ) -> None: ...
     def HasField(self, field_name: typing.Literal["console_id", b"console_id", "text_document", b"text_document"]) -> builtins.bool: ...
     def ClearField(self, field_name: typing.Literal["console_id", b"console_id", "text_document", b"text_document"]) -> None: ...
 
-global___OpenDocumentRequest = OpenDocumentRequest
+Global___OpenDocumentRequest: typing_extensions.TypeAlias = OpenDocumentRequest
 
 @typing.final
 class TextDocumentItem(google.protobuf.message.Message):
@@ -504,7 +504,7 @@ class TextDocumentItem(google.protobuf.message.Message):
     ) -> None: ...
     def ClearField(self, field_name: typing.Literal["language_id", b"language_id", "text", b"text", "uri", b"uri", "version", b"version"]) -> None: ...
 
-global___TextDocumentItem = TextDocumentItem
+Global___TextDocumentItem: typing_extensions.TypeAlias = TextDocumentItem
 
 @typing.final
 class CloseDocumentRequest(google.protobuf.message.Message):
@@ -515,17 +515,17 @@ class CloseDocumentRequest(google.protobuf.message.Message):
     @property
     def console_id(self) -> deephaven_core.proto.ticket_pb2.Ticket: ...
     @property
-    def text_document(self) -> global___VersionedTextDocumentIdentifier: ...
+    def text_document(self) -> Global___VersionedTextDocumentIdentifier: ...
     def __init__(
         self,
         *,
         console_id: deephaven_core.proto.ticket_pb2.Ticket | None = ...,
-        text_document: global___VersionedTextDocumentIdentifier | None = ...,
+        text_document: Global___VersionedTextDocumentIdentifier | None = ...,
     ) -> None: ...
     def HasField(self, field_name: typing.Literal["console_id", b"console_id", "text_document", b"text_document"]) -> builtins.bool: ...
     def ClearField(self, field_name: typing.Literal["console_id", b"console_id", "text_document", b"text_document"]) -> None: ...
 
-global___CloseDocumentRequest = CloseDocumentRequest
+Global___CloseDocumentRequest: typing_extensions.TypeAlias = CloseDocumentRequest
 
 @typing.final
 class ChangeDocumentRequest(google.protobuf.message.Message):
@@ -541,11 +541,11 @@ class ChangeDocumentRequest(google.protobuf.message.Message):
         range_length: builtins.int
         text: builtins.str
         @property
-        def range(self) -> global___DocumentRange: ...
+        def range(self) -> Global___DocumentRange: ...
         def __init__(
             self,
             *,
-            range: global___DocumentRange | None = ...,
+            range: Global___DocumentRange | None = ...,
             range_length: builtins.int = ...,
             text: builtins.str = ...,
         ) -> None: ...
@@ -558,20 +558,20 @@ class ChangeDocumentRequest(google.protobuf.message.Message):
     @property
     def console_id(self) -> deephaven_core.proto.ticket_pb2.Ticket: ...
     @property
-    def text_document(self) -> global___VersionedTextDocumentIdentifier: ...
+    def text_document(self) -> Global___VersionedTextDocumentIdentifier: ...
     @property
-    def content_changes(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___ChangeDocumentRequest.TextDocumentContentChangeEvent]: ...
+    def content_changes(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[Global___ChangeDocumentRequest.TextDocumentContentChangeEvent]: ...
     def __init__(
         self,
         *,
         console_id: deephaven_core.proto.ticket_pb2.Ticket | None = ...,
-        text_document: global___VersionedTextDocumentIdentifier | None = ...,
-        content_changes: collections.abc.Iterable[global___ChangeDocumentRequest.TextDocumentContentChangeEvent] | None = ...,
+        text_document: Global___VersionedTextDocumentIdentifier | None = ...,
+        content_changes: collections.abc.Iterable[Global___ChangeDocumentRequest.TextDocumentContentChangeEvent] | None = ...,
     ) -> None: ...
     def HasField(self, field_name: typing.Literal["console_id", b"console_id", "text_document", b"text_document"]) -> builtins.bool: ...
     def ClearField(self, field_name: typing.Literal["console_id", b"console_id", "content_changes", b"content_changes", "text_document", b"text_document"]) -> None: ...
 
-global___ChangeDocumentRequest = ChangeDocumentRequest
+Global___ChangeDocumentRequest: typing_extensions.TypeAlias = ChangeDocumentRequest
 
 @typing.final
 class DocumentRange(google.protobuf.message.Message):
@@ -580,19 +580,19 @@ class DocumentRange(google.protobuf.message.Message):
     START_FIELD_NUMBER: builtins.int
     END_FIELD_NUMBER: builtins.int
     @property
-    def start(self) -> global___Position: ...
+    def start(self) -> Global___Position: ...
     @property
-    def end(self) -> global___Position: ...
+    def end(self) -> Global___Position: ...
     def __init__(
         self,
         *,
-        start: global___Position | None = ...,
-        end: global___Position | None = ...,
+        start: Global___Position | None = ...,
+        end: Global___Position | None = ...,
     ) -> None: ...
     def HasField(self, field_name: typing.Literal["end", b"end", "start", b"start"]) -> builtins.bool: ...
     def ClearField(self, field_name: typing.Literal["end", b"end", "start", b"start"]) -> None: ...
 
-global___DocumentRange = DocumentRange
+Global___DocumentRange: typing_extensions.TypeAlias = DocumentRange
 
 @typing.final
 class VersionedTextDocumentIdentifier(google.protobuf.message.Message):
@@ -610,7 +610,7 @@ class VersionedTextDocumentIdentifier(google.protobuf.message.Message):
     ) -> None: ...
     def ClearField(self, field_name: typing.Literal["uri", b"uri", "version", b"version"]) -> None: ...
 
-global___VersionedTextDocumentIdentifier = VersionedTextDocumentIdentifier
+Global___VersionedTextDocumentIdentifier: typing_extensions.TypeAlias = VersionedTextDocumentIdentifier
 
 @typing.final
 class Position(google.protobuf.message.Message):
@@ -628,7 +628,7 @@ class Position(google.protobuf.message.Message):
     ) -> None: ...
     def ClearField(self, field_name: typing.Literal["character", b"character", "line", b"line"]) -> None: ...
 
-global___Position = Position
+Global___Position: typing_extensions.TypeAlias = Position
 
 @typing.final
 class MarkupContent(google.protobuf.message.Message):
@@ -646,7 +646,7 @@ class MarkupContent(google.protobuf.message.Message):
     ) -> None: ...
     def ClearField(self, field_name: typing.Literal["kind", b"kind", "value", b"value"]) -> None: ...
 
-global___MarkupContent = MarkupContent
+Global___MarkupContent: typing_extensions.TypeAlias = MarkupContent
 
 @typing.final
 class GetCompletionItemsRequest(google.protobuf.message.Message):
@@ -661,24 +661,24 @@ class GetCompletionItemsRequest(google.protobuf.message.Message):
     @property
     def console_id(self) -> deephaven_core.proto.ticket_pb2.Ticket: ...
     @property
-    def context(self) -> global___CompletionContext: ...
+    def context(self) -> Global___CompletionContext: ...
     @property
-    def text_document(self) -> global___VersionedTextDocumentIdentifier: ...
+    def text_document(self) -> Global___VersionedTextDocumentIdentifier: ...
     @property
-    def position(self) -> global___Position: ...
+    def position(self) -> Global___Position: ...
     def __init__(
         self,
         *,
         console_id: deephaven_core.proto.ticket_pb2.Ticket | None = ...,
-        context: global___CompletionContext | None = ...,
-        text_document: global___VersionedTextDocumentIdentifier | None = ...,
-        position: global___Position | None = ...,
+        context: Global___CompletionContext | None = ...,
+        text_document: Global___VersionedTextDocumentIdentifier | None = ...,
+        position: Global___Position | None = ...,
         request_id: builtins.int = ...,
     ) -> None: ...
     def HasField(self, field_name: typing.Literal["console_id", b"console_id", "context", b"context", "position", b"position", "text_document", b"text_document"]) -> builtins.bool: ...
     def ClearField(self, field_name: typing.Literal["console_id", b"console_id", "context", b"context", "position", b"position", "request_id", b"request_id", "text_document", b"text_document"]) -> None: ...
 
-global___GetCompletionItemsRequest = GetCompletionItemsRequest
+Global___GetCompletionItemsRequest: typing_extensions.TypeAlias = GetCompletionItemsRequest
 
 @typing.final
 class CompletionContext(google.protobuf.message.Message):
@@ -696,7 +696,7 @@ class CompletionContext(google.protobuf.message.Message):
     ) -> None: ...
     def ClearField(self, field_name: typing.Literal["trigger_character", b"trigger_character", "trigger_kind", b"trigger_kind"]) -> None: ...
 
-global___CompletionContext = CompletionContext
+Global___CompletionContext: typing_extensions.TypeAlias = CompletionContext
 
 @typing.final
 class GetCompletionItemsResponse(google.protobuf.message.Message):
@@ -710,17 +710,17 @@ class GetCompletionItemsResponse(google.protobuf.message.Message):
     success: builtins.bool
     """Maintained for backwards compatibility. Use the same field on AutoCompleteResponse instead"""
     @property
-    def items(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___CompletionItem]: ...
+    def items(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[Global___CompletionItem]: ...
     def __init__(
         self,
         *,
-        items: collections.abc.Iterable[global___CompletionItem] | None = ...,
+        items: collections.abc.Iterable[Global___CompletionItem] | None = ...,
         request_id: builtins.int = ...,
         success: builtins.bool = ...,
     ) -> None: ...
     def ClearField(self, field_name: typing.Literal["items", b"items", "request_id", b"request_id", "success", b"success"]) -> None: ...
 
-global___GetCompletionItemsResponse = GetCompletionItemsResponse
+Global___GetCompletionItemsResponse: typing_extensions.TypeAlias = GetCompletionItemsResponse
 
 @typing.final
 class CompletionItem(google.protobuf.message.Message):
@@ -751,13 +751,13 @@ class CompletionItem(google.protobuf.message.Message):
     filter_text: builtins.str
     insert_text_format: builtins.int
     @property
-    def text_edit(self) -> global___TextEdit: ...
+    def text_edit(self) -> Global___TextEdit: ...
     @property
-    def additional_text_edits(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___TextEdit]: ...
+    def additional_text_edits(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[Global___TextEdit]: ...
     @property
     def commit_characters(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.str]: ...
     @property
-    def documentation(self) -> global___MarkupContent: ...
+    def documentation(self) -> Global___MarkupContent: ...
     def __init__(
         self,
         *,
@@ -768,18 +768,18 @@ class CompletionItem(google.protobuf.message.Message):
         detail: builtins.str = ...,
         deprecated: builtins.bool = ...,
         preselect: builtins.bool = ...,
-        text_edit: global___TextEdit | None = ...,
+        text_edit: Global___TextEdit | None = ...,
         sort_text: builtins.str = ...,
         filter_text: builtins.str = ...,
         insert_text_format: builtins.int = ...,
-        additional_text_edits: collections.abc.Iterable[global___TextEdit] | None = ...,
+        additional_text_edits: collections.abc.Iterable[Global___TextEdit] | None = ...,
         commit_characters: collections.abc.Iterable[builtins.str] | None = ...,
-        documentation: global___MarkupContent | None = ...,
+        documentation: Global___MarkupContent | None = ...,
     ) -> None: ...
     def HasField(self, field_name: typing.Literal["documentation", b"documentation", "text_edit", b"text_edit"]) -> builtins.bool: ...
     def ClearField(self, field_name: typing.Literal["additional_text_edits", b"additional_text_edits", "commit_characters", b"commit_characters", "deprecated", b"deprecated", "detail", b"detail", "documentation", b"documentation", "filter_text", b"filter_text", "insert_text_format", b"insert_text_format", "kind", b"kind", "label", b"label", "length", b"length", "preselect", b"preselect", "sort_text", b"sort_text", "start", b"start", "text_edit", b"text_edit"]) -> None: ...
 
-global___CompletionItem = CompletionItem
+Global___CompletionItem: typing_extensions.TypeAlias = CompletionItem
 
 @typing.final
 class TextEdit(google.protobuf.message.Message):
@@ -789,17 +789,17 @@ class TextEdit(google.protobuf.message.Message):
     TEXT_FIELD_NUMBER: builtins.int
     text: builtins.str
     @property
-    def range(self) -> global___DocumentRange: ...
+    def range(self) -> Global___DocumentRange: ...
     def __init__(
         self,
         *,
-        range: global___DocumentRange | None = ...,
+        range: Global___DocumentRange | None = ...,
         text: builtins.str = ...,
     ) -> None: ...
     def HasField(self, field_name: typing.Literal["range", b"range"]) -> builtins.bool: ...
     def ClearField(self, field_name: typing.Literal["range", b"range", "text", b"text"]) -> None: ...
 
-global___TextEdit = TextEdit
+Global___TextEdit: typing_extensions.TypeAlias = TextEdit
 
 @typing.final
 class GetSignatureHelpRequest(google.protobuf.message.Message):
@@ -809,22 +809,22 @@ class GetSignatureHelpRequest(google.protobuf.message.Message):
     TEXT_DOCUMENT_FIELD_NUMBER: builtins.int
     POSITION_FIELD_NUMBER: builtins.int
     @property
-    def context(self) -> global___SignatureHelpContext: ...
+    def context(self) -> Global___SignatureHelpContext: ...
     @property
-    def text_document(self) -> global___VersionedTextDocumentIdentifier: ...
+    def text_document(self) -> Global___VersionedTextDocumentIdentifier: ...
     @property
-    def position(self) -> global___Position: ...
+    def position(self) -> Global___Position: ...
     def __init__(
         self,
         *,
-        context: global___SignatureHelpContext | None = ...,
-        text_document: global___VersionedTextDocumentIdentifier | None = ...,
-        position: global___Position | None = ...,
+        context: Global___SignatureHelpContext | None = ...,
+        text_document: Global___VersionedTextDocumentIdentifier | None = ...,
+        position: Global___Position | None = ...,
     ) -> None: ...
     def HasField(self, field_name: typing.Literal["context", b"context", "position", b"position", "text_document", b"text_document"]) -> builtins.bool: ...
     def ClearField(self, field_name: typing.Literal["context", b"context", "position", b"position", "text_document", b"text_document"]) -> None: ...
 
-global___GetSignatureHelpRequest = GetSignatureHelpRequest
+Global___GetSignatureHelpRequest: typing_extensions.TypeAlias = GetSignatureHelpRequest
 
 @typing.final
 class SignatureHelpContext(google.protobuf.message.Message):
@@ -838,20 +838,20 @@ class SignatureHelpContext(google.protobuf.message.Message):
     trigger_character: builtins.str
     is_retrigger: builtins.bool
     @property
-    def active_signature_help(self) -> global___GetSignatureHelpResponse: ...
+    def active_signature_help(self) -> Global___GetSignatureHelpResponse: ...
     def __init__(
         self,
         *,
         trigger_kind: builtins.int = ...,
         trigger_character: builtins.str | None = ...,
         is_retrigger: builtins.bool = ...,
-        active_signature_help: global___GetSignatureHelpResponse | None = ...,
+        active_signature_help: Global___GetSignatureHelpResponse | None = ...,
     ) -> None: ...
     def HasField(self, field_name: typing.Literal["_trigger_character", b"_trigger_character", "active_signature_help", b"active_signature_help", "trigger_character", b"trigger_character"]) -> builtins.bool: ...
     def ClearField(self, field_name: typing.Literal["_trigger_character", b"_trigger_character", "active_signature_help", b"active_signature_help", "is_retrigger", b"is_retrigger", "trigger_character", b"trigger_character", "trigger_kind", b"trigger_kind"]) -> None: ...
     def WhichOneof(self, oneof_group: typing.Literal["_trigger_character", b"_trigger_character"]) -> typing.Literal["trigger_character"] | None: ...
 
-global___SignatureHelpContext = SignatureHelpContext
+Global___SignatureHelpContext: typing_extensions.TypeAlias = SignatureHelpContext
 
 @typing.final
 class GetSignatureHelpResponse(google.protobuf.message.Message):
@@ -863,11 +863,11 @@ class GetSignatureHelpResponse(google.protobuf.message.Message):
     active_signature: builtins.int
     active_parameter: builtins.int
     @property
-    def signatures(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___SignatureInformation]: ...
+    def signatures(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[Global___SignatureInformation]: ...
     def __init__(
         self,
         *,
-        signatures: collections.abc.Iterable[global___SignatureInformation] | None = ...,
+        signatures: collections.abc.Iterable[Global___SignatureInformation] | None = ...,
         active_signature: builtins.int | None = ...,
         active_parameter: builtins.int | None = ...,
     ) -> None: ...
@@ -878,7 +878,7 @@ class GetSignatureHelpResponse(google.protobuf.message.Message):
     @typing.overload
     def WhichOneof(self, oneof_group: typing.Literal["_active_signature", b"_active_signature"]) -> typing.Literal["active_signature"] | None: ...
 
-global___GetSignatureHelpResponse = GetSignatureHelpResponse
+Global___GetSignatureHelpResponse: typing_extensions.TypeAlias = GetSignatureHelpResponse
 
 @typing.final
 class SignatureInformation(google.protobuf.message.Message):
@@ -891,22 +891,22 @@ class SignatureInformation(google.protobuf.message.Message):
     label: builtins.str
     active_parameter: builtins.int
     @property
-    def documentation(self) -> global___MarkupContent: ...
+    def documentation(self) -> Global___MarkupContent: ...
     @property
-    def parameters(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___ParameterInformation]: ...
+    def parameters(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[Global___ParameterInformation]: ...
     def __init__(
         self,
         *,
         label: builtins.str = ...,
-        documentation: global___MarkupContent | None = ...,
-        parameters: collections.abc.Iterable[global___ParameterInformation] | None = ...,
+        documentation: Global___MarkupContent | None = ...,
+        parameters: collections.abc.Iterable[Global___ParameterInformation] | None = ...,
         active_parameter: builtins.int | None = ...,
     ) -> None: ...
     def HasField(self, field_name: typing.Literal["_active_parameter", b"_active_parameter", "active_parameter", b"active_parameter", "documentation", b"documentation"]) -> builtins.bool: ...
     def ClearField(self, field_name: typing.Literal["_active_parameter", b"_active_parameter", "active_parameter", b"active_parameter", "documentation", b"documentation", "label", b"label", "parameters", b"parameters"]) -> None: ...
     def WhichOneof(self, oneof_group: typing.Literal["_active_parameter", b"_active_parameter"]) -> typing.Literal["active_parameter"] | None: ...
 
-global___SignatureInformation = SignatureInformation
+Global___SignatureInformation: typing_extensions.TypeAlias = SignatureInformation
 
 @typing.final
 class ParameterInformation(google.protobuf.message.Message):
@@ -916,17 +916,17 @@ class ParameterInformation(google.protobuf.message.Message):
     DOCUMENTATION_FIELD_NUMBER: builtins.int
     label: builtins.str
     @property
-    def documentation(self) -> global___MarkupContent: ...
+    def documentation(self) -> Global___MarkupContent: ...
     def __init__(
         self,
         *,
         label: builtins.str = ...,
-        documentation: global___MarkupContent | None = ...,
+        documentation: Global___MarkupContent | None = ...,
     ) -> None: ...
     def HasField(self, field_name: typing.Literal["documentation", b"documentation"]) -> builtins.bool: ...
     def ClearField(self, field_name: typing.Literal["documentation", b"documentation", "label", b"label"]) -> None: ...
 
-global___ParameterInformation = ParameterInformation
+Global___ParameterInformation: typing_extensions.TypeAlias = ParameterInformation
 
 @typing.final
 class GetHoverRequest(google.protobuf.message.Message):
@@ -935,19 +935,19 @@ class GetHoverRequest(google.protobuf.message.Message):
     TEXT_DOCUMENT_FIELD_NUMBER: builtins.int
     POSITION_FIELD_NUMBER: builtins.int
     @property
-    def text_document(self) -> global___VersionedTextDocumentIdentifier: ...
+    def text_document(self) -> Global___VersionedTextDocumentIdentifier: ...
     @property
-    def position(self) -> global___Position: ...
+    def position(self) -> Global___Position: ...
     def __init__(
         self,
         *,
-        text_document: global___VersionedTextDocumentIdentifier | None = ...,
-        position: global___Position | None = ...,
+        text_document: Global___VersionedTextDocumentIdentifier | None = ...,
+        position: Global___Position | None = ...,
     ) -> None: ...
     def HasField(self, field_name: typing.Literal["position", b"position", "text_document", b"text_document"]) -> builtins.bool: ...
     def ClearField(self, field_name: typing.Literal["position", b"position", "text_document", b"text_document"]) -> None: ...
 
-global___GetHoverRequest = GetHoverRequest
+Global___GetHoverRequest: typing_extensions.TypeAlias = GetHoverRequest
 
 @typing.final
 class GetHoverResponse(google.protobuf.message.Message):
@@ -956,19 +956,19 @@ class GetHoverResponse(google.protobuf.message.Message):
     CONTENTS_FIELD_NUMBER: builtins.int
     RANGE_FIELD_NUMBER: builtins.int
     @property
-    def contents(self) -> global___MarkupContent: ...
+    def contents(self) -> Global___MarkupContent: ...
     @property
-    def range(self) -> global___DocumentRange: ...
+    def range(self) -> Global___DocumentRange: ...
     def __init__(
         self,
         *,
-        contents: global___MarkupContent | None = ...,
-        range: global___DocumentRange | None = ...,
+        contents: Global___MarkupContent | None = ...,
+        range: Global___DocumentRange | None = ...,
     ) -> None: ...
     def HasField(self, field_name: typing.Literal["contents", b"contents", "range", b"range"]) -> builtins.bool: ...
     def ClearField(self, field_name: typing.Literal["contents", b"contents", "range", b"range"]) -> None: ...
 
-global___GetHoverResponse = GetHoverResponse
+Global___GetHoverResponse: typing_extensions.TypeAlias = GetHoverResponse
 
 @typing.final
 class GetDiagnosticRequest(google.protobuf.message.Message):
@@ -980,11 +980,11 @@ class GetDiagnosticRequest(google.protobuf.message.Message):
     identifier: builtins.str
     previous_result_id: builtins.str
     @property
-    def text_document(self) -> global___VersionedTextDocumentIdentifier: ...
+    def text_document(self) -> Global___VersionedTextDocumentIdentifier: ...
     def __init__(
         self,
         *,
-        text_document: global___VersionedTextDocumentIdentifier | None = ...,
+        text_document: Global___VersionedTextDocumentIdentifier | None = ...,
         identifier: builtins.str | None = ...,
         previous_result_id: builtins.str | None = ...,
     ) -> None: ...
@@ -995,7 +995,7 @@ class GetDiagnosticRequest(google.protobuf.message.Message):
     @typing.overload
     def WhichOneof(self, oneof_group: typing.Literal["_previous_result_id", b"_previous_result_id"]) -> typing.Literal["previous_result_id"] | None: ...
 
-global___GetDiagnosticRequest = GetDiagnosticRequest
+Global___GetDiagnosticRequest: typing_extensions.TypeAlias = GetDiagnosticRequest
 
 @typing.final
 class GetPullDiagnosticResponse(google.protobuf.message.Message):
@@ -1007,19 +1007,19 @@ class GetPullDiagnosticResponse(google.protobuf.message.Message):
     kind: builtins.str
     result_id: builtins.str
     @property
-    def items(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___Diagnostic]: ...
+    def items(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[Global___Diagnostic]: ...
     def __init__(
         self,
         *,
         kind: builtins.str = ...,
         result_id: builtins.str | None = ...,
-        items: collections.abc.Iterable[global___Diagnostic] | None = ...,
+        items: collections.abc.Iterable[Global___Diagnostic] | None = ...,
     ) -> None: ...
     def HasField(self, field_name: typing.Literal["_result_id", b"_result_id", "result_id", b"result_id"]) -> builtins.bool: ...
     def ClearField(self, field_name: typing.Literal["_result_id", b"_result_id", "items", b"items", "kind", b"kind", "result_id", b"result_id"]) -> None: ...
     def WhichOneof(self, oneof_group: typing.Literal["_result_id", b"_result_id"]) -> typing.Literal["result_id"] | None: ...
 
-global___GetPullDiagnosticResponse = GetPullDiagnosticResponse
+Global___GetPullDiagnosticResponse: typing_extensions.TypeAlias = GetPullDiagnosticResponse
 
 @typing.final
 class GetPublishDiagnosticResponse(google.protobuf.message.Message):
@@ -1031,19 +1031,19 @@ class GetPublishDiagnosticResponse(google.protobuf.message.Message):
     uri: builtins.str
     version: builtins.int
     @property
-    def diagnostics(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___Diagnostic]: ...
+    def diagnostics(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[Global___Diagnostic]: ...
     def __init__(
         self,
         *,
         uri: builtins.str = ...,
         version: builtins.int | None = ...,
-        diagnostics: collections.abc.Iterable[global___Diagnostic] | None = ...,
+        diagnostics: collections.abc.Iterable[Global___Diagnostic] | None = ...,
     ) -> None: ...
     def HasField(self, field_name: typing.Literal["_version", b"_version", "version", b"version"]) -> builtins.bool: ...
     def ClearField(self, field_name: typing.Literal["_version", b"_version", "diagnostics", b"diagnostics", "uri", b"uri", "version", b"version"]) -> None: ...
     def WhichOneof(self, oneof_group: typing.Literal["_version", b"_version"]) -> typing.Literal["version"] | None: ...
 
-global___GetPublishDiagnosticResponse = GetPublishDiagnosticResponse
+Global___GetPublishDiagnosticResponse: typing_extensions.TypeAlias = GetPublishDiagnosticResponse
 
 @typing.final
 class Diagnostic(google.protobuf.message.Message):
@@ -1104,27 +1104,27 @@ class Diagnostic(google.protobuf.message.Message):
     MESSAGE_FIELD_NUMBER: builtins.int
     TAGS_FIELD_NUMBER: builtins.int
     DATA_FIELD_NUMBER: builtins.int
-    severity: global___Diagnostic.DiagnosticSeverity.ValueType
+    severity: Global___Diagnostic.DiagnosticSeverity.ValueType
     code: builtins.str
     source: builtins.str
     message: builtins.str
     data: builtins.bytes
     @property
-    def range(self) -> global___DocumentRange: ...
+    def range(self) -> Global___DocumentRange: ...
     @property
-    def code_description(self) -> global___Diagnostic.CodeDescription: ...
+    def code_description(self) -> Global___Diagnostic.CodeDescription: ...
     @property
-    def tags(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[global___Diagnostic.DiagnosticTag.ValueType]: ...
+    def tags(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[Global___Diagnostic.DiagnosticTag.ValueType]: ...
     def __init__(
         self,
         *,
-        range: global___DocumentRange | None = ...,
-        severity: global___Diagnostic.DiagnosticSeverity.ValueType = ...,
+        range: Global___DocumentRange | None = ...,
+        severity: Global___Diagnostic.DiagnosticSeverity.ValueType = ...,
         code: builtins.str | None = ...,
-        code_description: global___Diagnostic.CodeDescription | None = ...,
+        code_description: Global___Diagnostic.CodeDescription | None = ...,
         source: builtins.str | None = ...,
         message: builtins.str = ...,
-        tags: collections.abc.Iterable[global___Diagnostic.DiagnosticTag.ValueType] | None = ...,
+        tags: collections.abc.Iterable[Global___Diagnostic.DiagnosticTag.ValueType] | None = ...,
         data: builtins.bytes | None = ...,
     ) -> None: ...
     def HasField(self, field_name: typing.Literal["_code", b"_code", "_code_description", b"_code_description", "_data", b"_data", "_source", b"_source", "code", b"code", "code_description", b"code_description", "data", b"data", "range", b"range", "source", b"source"]) -> builtins.bool: ...
@@ -1138,7 +1138,7 @@ class Diagnostic(google.protobuf.message.Message):
     @typing.overload
     def WhichOneof(self, oneof_group: typing.Literal["_source", b"_source"]) -> typing.Literal["source"] | None: ...
 
-global___Diagnostic = Diagnostic
+Global___Diagnostic: typing_extensions.TypeAlias = Diagnostic
 
 @typing.final
 class FigureDescriptor(google.protobuf.message.Message):
@@ -1268,7 +1268,7 @@ class FigureDescriptor(google.protobuf.message.Message):
         ROW_FIELD_NUMBER: builtins.int
         colspan: builtins.int
         rowspan: builtins.int
-        chart_type: global___FigureDescriptor.ChartDescriptor.ChartType.ValueType
+        chart_type: Global___FigureDescriptor.ChartDescriptor.ChartType.ValueType
         title: builtins.str
         title_font: builtins.str
         title_color: builtins.str
@@ -1279,20 +1279,20 @@ class FigureDescriptor(google.protobuf.message.Message):
         column: builtins.int
         row: builtins.int
         @property
-        def series(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___FigureDescriptor.SeriesDescriptor]: ...
+        def series(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[Global___FigureDescriptor.SeriesDescriptor]: ...
         @property
-        def multi_series(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___FigureDescriptor.MultiSeriesDescriptor]: ...
+        def multi_series(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[Global___FigureDescriptor.MultiSeriesDescriptor]: ...
         @property
-        def axes(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___FigureDescriptor.AxisDescriptor]: ...
+        def axes(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[Global___FigureDescriptor.AxisDescriptor]: ...
         def __init__(
             self,
             *,
             colspan: builtins.int = ...,
             rowspan: builtins.int = ...,
-            series: collections.abc.Iterable[global___FigureDescriptor.SeriesDescriptor] | None = ...,
-            multi_series: collections.abc.Iterable[global___FigureDescriptor.MultiSeriesDescriptor] | None = ...,
-            axes: collections.abc.Iterable[global___FigureDescriptor.AxisDescriptor] | None = ...,
-            chart_type: global___FigureDescriptor.ChartDescriptor.ChartType.ValueType = ...,
+            series: collections.abc.Iterable[Global___FigureDescriptor.SeriesDescriptor] | None = ...,
+            multi_series: collections.abc.Iterable[Global___FigureDescriptor.MultiSeriesDescriptor] | None = ...,
+            axes: collections.abc.Iterable[Global___FigureDescriptor.AxisDescriptor] | None = ...,
+            chart_type: Global___FigureDescriptor.ChartDescriptor.ChartType.ValueType = ...,
             title: builtins.str | None = ...,
             title_font: builtins.str = ...,
             title_color: builtins.str = ...,
@@ -1325,7 +1325,7 @@ class FigureDescriptor(google.protobuf.message.Message):
         SHAPE_COLOR_FIELD_NUMBER: builtins.int
         SHAPE_FIELD_NUMBER: builtins.int
         DATA_SOURCES_FIELD_NUMBER: builtins.int
-        plot_style: global___FigureDescriptor.SeriesPlotStyle.ValueType
+        plot_style: Global___FigureDescriptor.SeriesPlotStyle.ValueType
         name: builtins.str
         lines_visible: builtins.bool
         shapes_visible: builtins.bool
@@ -1339,11 +1339,11 @@ class FigureDescriptor(google.protobuf.message.Message):
         shape_color: builtins.str
         shape: builtins.str
         @property
-        def data_sources(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___FigureDescriptor.SourceDescriptor]: ...
+        def data_sources(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[Global___FigureDescriptor.SourceDescriptor]: ...
         def __init__(
             self,
             *,
-            plot_style: global___FigureDescriptor.SeriesPlotStyle.ValueType = ...,
+            plot_style: Global___FigureDescriptor.SeriesPlotStyle.ValueType = ...,
             name: builtins.str = ...,
             lines_visible: builtins.bool | None = ...,
             shapes_visible: builtins.bool | None = ...,
@@ -1356,7 +1356,7 @@ class FigureDescriptor(google.protobuf.message.Message):
             shape_size: builtins.float | None = ...,
             shape_color: builtins.str = ...,
             shape: builtins.str = ...,
-            data_sources: collections.abc.Iterable[global___FigureDescriptor.SourceDescriptor] | None = ...,
+            data_sources: collections.abc.Iterable[Global___FigureDescriptor.SourceDescriptor] | None = ...,
         ) -> None: ...
         def HasField(self, field_name: typing.Literal["_lines_visible", b"_lines_visible", "_point_label_format", b"_point_label_format", "_shape_size", b"_shape_size", "_shapes_visible", b"_shapes_visible", "_x_tool_tip_pattern", b"_x_tool_tip_pattern", "_y_tool_tip_pattern", b"_y_tool_tip_pattern", "lines_visible", b"lines_visible", "point_label_format", b"point_label_format", "shape_size", b"shape_size", "shapes_visible", b"shapes_visible", "x_tool_tip_pattern", b"x_tool_tip_pattern", "y_tool_tip_pattern", b"y_tool_tip_pattern"]) -> builtins.bool: ...
         def ClearField(self, field_name: typing.Literal["_lines_visible", b"_lines_visible", "_point_label_format", b"_point_label_format", "_shape_size", b"_shape_size", "_shapes_visible", b"_shapes_visible", "_x_tool_tip_pattern", b"_x_tool_tip_pattern", "_y_tool_tip_pattern", b"_y_tool_tip_pattern", "data_sources", b"data_sources", "gradient_visible", b"gradient_visible", "line_color", b"line_color", "lines_visible", b"lines_visible", "name", b"name", "plot_style", b"plot_style", "point_label_format", b"point_label_format", "shape", b"shape", "shape_color", b"shape_color", "shape_label", b"shape_label", "shape_size", b"shape_size", "shapes_visible", b"shapes_visible", "x_tool_tip_pattern", b"x_tool_tip_pattern", "y_tool_tip_pattern", b"y_tool_tip_pattern"]) -> None: ...
@@ -1391,49 +1391,49 @@ class FigureDescriptor(google.protobuf.message.Message):
         POINT_SIZE_FIELD_NUMBER: builtins.int
         POINT_SHAPE_FIELD_NUMBER: builtins.int
         DATA_SOURCES_FIELD_NUMBER: builtins.int
-        plot_style: global___FigureDescriptor.SeriesPlotStyle.ValueType
+        plot_style: Global___FigureDescriptor.SeriesPlotStyle.ValueType
         name: builtins.str
         @property
-        def line_color(self) -> global___FigureDescriptor.StringMapWithDefault: ...
+        def line_color(self) -> Global___FigureDescriptor.StringMapWithDefault: ...
         @property
-        def point_color(self) -> global___FigureDescriptor.StringMapWithDefault: ...
+        def point_color(self) -> Global___FigureDescriptor.StringMapWithDefault: ...
         @property
-        def lines_visible(self) -> global___FigureDescriptor.BoolMapWithDefault: ...
+        def lines_visible(self) -> Global___FigureDescriptor.BoolMapWithDefault: ...
         @property
-        def points_visible(self) -> global___FigureDescriptor.BoolMapWithDefault: ...
+        def points_visible(self) -> Global___FigureDescriptor.BoolMapWithDefault: ...
         @property
-        def gradient_visible(self) -> global___FigureDescriptor.BoolMapWithDefault: ...
+        def gradient_visible(self) -> Global___FigureDescriptor.BoolMapWithDefault: ...
         @property
-        def point_label_format(self) -> global___FigureDescriptor.StringMapWithDefault: ...
+        def point_label_format(self) -> Global___FigureDescriptor.StringMapWithDefault: ...
         @property
-        def x_tool_tip_pattern(self) -> global___FigureDescriptor.StringMapWithDefault: ...
+        def x_tool_tip_pattern(self) -> Global___FigureDescriptor.StringMapWithDefault: ...
         @property
-        def y_tool_tip_pattern(self) -> global___FigureDescriptor.StringMapWithDefault: ...
+        def y_tool_tip_pattern(self) -> Global___FigureDescriptor.StringMapWithDefault: ...
         @property
-        def point_label(self) -> global___FigureDescriptor.StringMapWithDefault: ...
+        def point_label(self) -> Global___FigureDescriptor.StringMapWithDefault: ...
         @property
-        def point_size(self) -> global___FigureDescriptor.DoubleMapWithDefault: ...
+        def point_size(self) -> Global___FigureDescriptor.DoubleMapWithDefault: ...
         @property
-        def point_shape(self) -> global___FigureDescriptor.StringMapWithDefault: ...
+        def point_shape(self) -> Global___FigureDescriptor.StringMapWithDefault: ...
         @property
-        def data_sources(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___FigureDescriptor.MultiSeriesSourceDescriptor]: ...
+        def data_sources(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[Global___FigureDescriptor.MultiSeriesSourceDescriptor]: ...
         def __init__(
             self,
             *,
-            plot_style: global___FigureDescriptor.SeriesPlotStyle.ValueType = ...,
+            plot_style: Global___FigureDescriptor.SeriesPlotStyle.ValueType = ...,
             name: builtins.str = ...,
-            line_color: global___FigureDescriptor.StringMapWithDefault | None = ...,
-            point_color: global___FigureDescriptor.StringMapWithDefault | None = ...,
-            lines_visible: global___FigureDescriptor.BoolMapWithDefault | None = ...,
-            points_visible: global___FigureDescriptor.BoolMapWithDefault | None = ...,
-            gradient_visible: global___FigureDescriptor.BoolMapWithDefault | None = ...,
-            point_label_format: global___FigureDescriptor.StringMapWithDefault | None = ...,
-            x_tool_tip_pattern: global___FigureDescriptor.StringMapWithDefault | None = ...,
-            y_tool_tip_pattern: global___FigureDescriptor.StringMapWithDefault | None = ...,
-            point_label: global___FigureDescriptor.StringMapWithDefault | None = ...,
-            point_size: global___FigureDescriptor.DoubleMapWithDefault | None = ...,
-            point_shape: global___FigureDescriptor.StringMapWithDefault | None = ...,
-            data_sources: collections.abc.Iterable[global___FigureDescriptor.MultiSeriesSourceDescriptor] | None = ...,
+            line_color: Global___FigureDescriptor.StringMapWithDefault | None = ...,
+            point_color: Global___FigureDescriptor.StringMapWithDefault | None = ...,
+            lines_visible: Global___FigureDescriptor.BoolMapWithDefault | None = ...,
+            points_visible: Global___FigureDescriptor.BoolMapWithDefault | None = ...,
+            gradient_visible: Global___FigureDescriptor.BoolMapWithDefault | None = ...,
+            point_label_format: Global___FigureDescriptor.StringMapWithDefault | None = ...,
+            x_tool_tip_pattern: Global___FigureDescriptor.StringMapWithDefault | None = ...,
+            y_tool_tip_pattern: Global___FigureDescriptor.StringMapWithDefault | None = ...,
+            point_label: Global___FigureDescriptor.StringMapWithDefault | None = ...,
+            point_size: Global___FigureDescriptor.DoubleMapWithDefault | None = ...,
+            point_shape: Global___FigureDescriptor.StringMapWithDefault | None = ...,
+            data_sources: collections.abc.Iterable[Global___FigureDescriptor.MultiSeriesSourceDescriptor] | None = ...,
         ) -> None: ...
         def HasField(self, field_name: typing.Literal["gradient_visible", b"gradient_visible", "line_color", b"line_color", "lines_visible", b"lines_visible", "point_color", b"point_color", "point_label", b"point_label", "point_label_format", b"point_label_format", "point_shape", b"point_shape", "point_size", b"point_size", "points_visible", b"points_visible", "x_tool_tip_pattern", b"x_tool_tip_pattern", "y_tool_tip_pattern", b"y_tool_tip_pattern"]) -> builtins.bool: ...
         def ClearField(self, field_name: typing.Literal["data_sources", b"data_sources", "gradient_visible", b"gradient_visible", "line_color", b"line_color", "lines_visible", b"lines_visible", "name", b"name", "plot_style", b"plot_style", "point_color", b"point_color", "point_label", b"point_label", "point_label_format", b"point_label_format", "point_shape", b"point_shape", "point_size", b"point_size", "points_visible", b"points_visible", "x_tool_tip_pattern", b"x_tool_tip_pattern", "y_tool_tip_pattern", b"y_tool_tip_pattern"]) -> None: ...
@@ -1586,9 +1586,9 @@ class FigureDescriptor(google.protobuf.message.Message):
         IS_TIME_AXIS_FIELD_NUMBER: builtins.int
         BUSINESS_CALENDAR_DESCRIPTOR_FIELD_NUMBER: builtins.int
         id: builtins.str
-        format_type: global___FigureDescriptor.AxisDescriptor.AxisFormatType.ValueType
-        type: global___FigureDescriptor.AxisDescriptor.AxisType.ValueType
-        position: global___FigureDescriptor.AxisDescriptor.AxisPosition.ValueType
+        format_type: Global___FigureDescriptor.AxisDescriptor.AxisFormatType.ValueType
+        type: Global___FigureDescriptor.AxisDescriptor.AxisType.ValueType
+        position: Global___FigureDescriptor.AxisDescriptor.AxisPosition.ValueType
         log: builtins.bool
         label: builtins.str
         label_font: builtins.str
@@ -1607,14 +1607,14 @@ class FigureDescriptor(google.protobuf.message.Message):
         @property
         def major_tick_locations(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.float]: ...
         @property
-        def business_calendar_descriptor(self) -> global___FigureDescriptor.BusinessCalendarDescriptor: ...
+        def business_calendar_descriptor(self) -> Global___FigureDescriptor.BusinessCalendarDescriptor: ...
         def __init__(
             self,
             *,
             id: builtins.str = ...,
-            format_type: global___FigureDescriptor.AxisDescriptor.AxisFormatType.ValueType = ...,
-            type: global___FigureDescriptor.AxisDescriptor.AxisType.ValueType = ...,
-            position: global___FigureDescriptor.AxisDescriptor.AxisPosition.ValueType = ...,
+            format_type: Global___FigureDescriptor.AxisDescriptor.AxisFormatType.ValueType = ...,
+            type: Global___FigureDescriptor.AxisDescriptor.AxisType.ValueType = ...,
+            position: Global___FigureDescriptor.AxisDescriptor.AxisPosition.ValueType = ...,
             log: builtins.bool = ...,
             label: builtins.str = ...,
             label_font: builtins.str = ...,
@@ -1631,7 +1631,7 @@ class FigureDescriptor(google.protobuf.message.Message):
             tick_label_angle: builtins.float = ...,
             invert: builtins.bool = ...,
             is_time_axis: builtins.bool = ...,
-            business_calendar_descriptor: global___FigureDescriptor.BusinessCalendarDescriptor | None = ...,
+            business_calendar_descriptor: Global___FigureDescriptor.BusinessCalendarDescriptor | None = ...,
         ) -> None: ...
         def HasField(self, field_name: typing.Literal["_format_pattern", b"_format_pattern", "_gap_between_major_ticks", b"_gap_between_major_ticks", "business_calendar_descriptor", b"business_calendar_descriptor", "format_pattern", b"format_pattern", "gap_between_major_ticks", b"gap_between_major_ticks"]) -> builtins.bool: ...
         def ClearField(self, field_name: typing.Literal["_format_pattern", b"_format_pattern", "_gap_between_major_ticks", b"_gap_between_major_ticks", "business_calendar_descriptor", b"business_calendar_descriptor", "color", b"color", "format_pattern", b"format_pattern", "format_type", b"format_type", "gap_between_major_ticks", b"gap_between_major_ticks", "id", b"id", "invert", b"invert", "is_time_axis", b"is_time_axis", "label", b"label", "label_font", b"label_font", "log", b"log", "major_tick_locations", b"major_tick_locations", "major_ticks_visible", b"major_ticks_visible", "max_range", b"max_range", "min_range", b"min_range", "minor_tick_count", b"minor_tick_count", "minor_ticks_visible", b"minor_ticks_visible", "position", b"position", "tick_label_angle", b"tick_label_angle", "ticks_font", b"ticks_font", "type", b"type"]) -> None: ...
@@ -1690,14 +1690,14 @@ class FigureDescriptor(google.protobuf.message.Message):
             DATE_FIELD_NUMBER: builtins.int
             BUSINESS_PERIODS_FIELD_NUMBER: builtins.int
             @property
-            def date(self) -> global___FigureDescriptor.BusinessCalendarDescriptor.LocalDate: ...
+            def date(self) -> Global___FigureDescriptor.BusinessCalendarDescriptor.LocalDate: ...
             @property
-            def business_periods(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___FigureDescriptor.BusinessCalendarDescriptor.BusinessPeriod]: ...
+            def business_periods(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[Global___FigureDescriptor.BusinessCalendarDescriptor.BusinessPeriod]: ...
             def __init__(
                 self,
                 *,
-                date: global___FigureDescriptor.BusinessCalendarDescriptor.LocalDate | None = ...,
-                business_periods: collections.abc.Iterable[global___FigureDescriptor.BusinessCalendarDescriptor.BusinessPeriod] | None = ...,
+                date: Global___FigureDescriptor.BusinessCalendarDescriptor.LocalDate | None = ...,
+                business_periods: collections.abc.Iterable[Global___FigureDescriptor.BusinessCalendarDescriptor.BusinessPeriod] | None = ...,
             ) -> None: ...
             def HasField(self, field_name: typing.Literal["date", b"date"]) -> builtins.bool: ...
             def ClearField(self, field_name: typing.Literal["business_periods", b"business_periods", "date", b"date"]) -> None: ...
@@ -1729,19 +1729,19 @@ class FigureDescriptor(google.protobuf.message.Message):
         name: builtins.str
         time_zone: builtins.str
         @property
-        def business_days(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[global___FigureDescriptor.BusinessCalendarDescriptor.DayOfWeek.ValueType]: ...
+        def business_days(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[Global___FigureDescriptor.BusinessCalendarDescriptor.DayOfWeek.ValueType]: ...
         @property
-        def business_periods(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___FigureDescriptor.BusinessCalendarDescriptor.BusinessPeriod]: ...
+        def business_periods(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[Global___FigureDescriptor.BusinessCalendarDescriptor.BusinessPeriod]: ...
         @property
-        def holidays(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___FigureDescriptor.BusinessCalendarDescriptor.Holiday]: ...
+        def holidays(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[Global___FigureDescriptor.BusinessCalendarDescriptor.Holiday]: ...
         def __init__(
             self,
             *,
             name: builtins.str = ...,
             time_zone: builtins.str = ...,
-            business_days: collections.abc.Iterable[global___FigureDescriptor.BusinessCalendarDescriptor.DayOfWeek.ValueType] | None = ...,
-            business_periods: collections.abc.Iterable[global___FigureDescriptor.BusinessCalendarDescriptor.BusinessPeriod] | None = ...,
-            holidays: collections.abc.Iterable[global___FigureDescriptor.BusinessCalendarDescriptor.Holiday] | None = ...,
+            business_days: collections.abc.Iterable[Global___FigureDescriptor.BusinessCalendarDescriptor.DayOfWeek.ValueType] | None = ...,
+            business_periods: collections.abc.Iterable[Global___FigureDescriptor.BusinessCalendarDescriptor.BusinessPeriod] | None = ...,
+            holidays: collections.abc.Iterable[Global___FigureDescriptor.BusinessCalendarDescriptor.Holiday] | None = ...,
         ) -> None: ...
         def ClearField(self, field_name: typing.Literal["business_days", b"business_days", "business_periods", b"business_periods", "holidays", b"holidays", "name", b"name", "time_zone", b"time_zone"]) -> None: ...
 
@@ -1754,14 +1754,14 @@ class FigureDescriptor(google.protobuf.message.Message):
         PARTITIONED_TABLE_ID_FIELD_NUMBER: builtins.int
         COLUMN_NAME_FIELD_NUMBER: builtins.int
         axis_id: builtins.str
-        type: global___FigureDescriptor.SourceType.ValueType
+        type: Global___FigureDescriptor.SourceType.ValueType
         partitioned_table_id: builtins.int
         column_name: builtins.str
         def __init__(
             self,
             *,
             axis_id: builtins.str = ...,
-            type: global___FigureDescriptor.SourceType.ValueType = ...,
+            type: Global___FigureDescriptor.SourceType.ValueType = ...,
             partitioned_table_id: builtins.int = ...,
             column_name: builtins.str = ...,
         ) -> None: ...
@@ -1779,23 +1779,23 @@ class FigureDescriptor(google.protobuf.message.Message):
         COLUMN_TYPE_FIELD_NUMBER: builtins.int
         ONE_CLICK_FIELD_NUMBER: builtins.int
         axis_id: builtins.str
-        type: global___FigureDescriptor.SourceType.ValueType
+        type: Global___FigureDescriptor.SourceType.ValueType
         table_id: builtins.int
         partitioned_table_id: builtins.int
         column_name: builtins.str
         column_type: builtins.str
         @property
-        def one_click(self) -> global___FigureDescriptor.OneClickDescriptor: ...
+        def one_click(self) -> Global___FigureDescriptor.OneClickDescriptor: ...
         def __init__(
             self,
             *,
             axis_id: builtins.str = ...,
-            type: global___FigureDescriptor.SourceType.ValueType = ...,
+            type: Global___FigureDescriptor.SourceType.ValueType = ...,
             table_id: builtins.int = ...,
             partitioned_table_id: builtins.int = ...,
             column_name: builtins.str = ...,
             column_type: builtins.str = ...,
-            one_click: global___FigureDescriptor.OneClickDescriptor | None = ...,
+            one_click: Global___FigureDescriptor.OneClickDescriptor | None = ...,
         ) -> None: ...
         def HasField(self, field_name: typing.Literal["one_click", b"one_click"]) -> builtins.bool: ...
         def ClearField(self, field_name: typing.Literal["axis_id", b"axis_id", "column_name", b"column_name", "column_type", b"column_type", "one_click", b"one_click", "partitioned_table_id", b"partitioned_table_id", "table_id", b"table_id", "type", b"type"]) -> None: ...
@@ -1836,7 +1836,7 @@ class FigureDescriptor(google.protobuf.message.Message):
     cols: builtins.int
     rows: builtins.int
     @property
-    def charts(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___FigureDescriptor.ChartDescriptor]: ...
+    def charts(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[Global___FigureDescriptor.ChartDescriptor]: ...
     @property
     def errors(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.str]: ...
     def __init__(
@@ -1848,11 +1848,11 @@ class FigureDescriptor(google.protobuf.message.Message):
         update_interval: builtins.int = ...,
         cols: builtins.int = ...,
         rows: builtins.int = ...,
-        charts: collections.abc.Iterable[global___FigureDescriptor.ChartDescriptor] | None = ...,
+        charts: collections.abc.Iterable[Global___FigureDescriptor.ChartDescriptor] | None = ...,
         errors: collections.abc.Iterable[builtins.str] | None = ...,
     ) -> None: ...
     def HasField(self, field_name: typing.Literal["_title", b"_title", "title", b"title"]) -> builtins.bool: ...
     def ClearField(self, field_name: typing.Literal["_title", b"_title", "charts", b"charts", "cols", b"cols", "errors", b"errors", "rows", b"rows", "title", b"title", "title_color", b"title_color", "title_font", b"title_font", "update_interval", b"update_interval"]) -> None: ...
     def WhichOneof(self, oneof_group: typing.Literal["_title", b"_title"]) -> typing.Literal["title"] | None: ...
 
-global___FigureDescriptor = FigureDescriptor
+Global___FigureDescriptor: typing_extensions.TypeAlias = FigureDescriptor
