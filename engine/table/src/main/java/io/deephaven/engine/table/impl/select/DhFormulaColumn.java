@@ -895,7 +895,7 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
 
             if (usesPython) {
                 if (!IsPythonFreeThreaded.isPythonFreeThreaded()) {
-                    // If we are not free-threaded, then we must to be stateful for performance reasons. If we are free
+                    // If we are not free-threaded, then we must be stateful for performance reasons. If we are free
                     // threaded, then we can use the default value
                     return false;
                 }
