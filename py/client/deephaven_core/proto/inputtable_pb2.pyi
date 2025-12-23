@@ -9,13 +9,7 @@ import builtins
 import deephaven_core.proto.ticket_pb2
 import google.protobuf.descriptor
 import google.protobuf.message
-import sys
 import typing
-
-if sys.version_info >= (3, 10):
-    import typing as typing_extensions
-else:
-    import typing_extensions
 
 DESCRIPTOR: google.protobuf.descriptor.FileDescriptor
 
@@ -38,7 +32,7 @@ class AddTableRequest(google.protobuf.message.Message):
     def HasField(self, field_name: typing.Literal["input_table", b"input_table", "table_to_add", b"table_to_add"]) -> builtins.bool: ...
     def ClearField(self, field_name: typing.Literal["input_table", b"input_table", "table_to_add", b"table_to_add"]) -> None: ...
 
-Global___AddTableRequest: typing_extensions.TypeAlias = AddTableRequest
+global___AddTableRequest = AddTableRequest
 
 @typing.final
 class AddTableResponse(google.protobuf.message.Message):
@@ -48,7 +42,7 @@ class AddTableResponse(google.protobuf.message.Message):
         self,
     ) -> None: ...
 
-Global___AddTableResponse: typing_extensions.TypeAlias = AddTableResponse
+global___AddTableResponse = AddTableResponse
 
 @typing.final
 class DeleteTableRequest(google.protobuf.message.Message):
@@ -69,7 +63,7 @@ class DeleteTableRequest(google.protobuf.message.Message):
     def HasField(self, field_name: typing.Literal["input_table", b"input_table", "table_to_remove", b"table_to_remove"]) -> builtins.bool: ...
     def ClearField(self, field_name: typing.Literal["input_table", b"input_table", "table_to_remove", b"table_to_remove"]) -> None: ...
 
-Global___DeleteTableRequest: typing_extensions.TypeAlias = DeleteTableRequest
+global___DeleteTableRequest = DeleteTableRequest
 
 @typing.final
 class DeleteTableResponse(google.protobuf.message.Message):
@@ -79,4 +73,4 @@ class DeleteTableResponse(google.protobuf.message.Message):
         self,
     ) -> None: ...
 
-Global___DeleteTableResponse: typing_extensions.TypeAlias = DeleteTableResponse
+global___DeleteTableResponse = DeleteTableResponse

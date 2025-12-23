@@ -48,7 +48,7 @@ class PartitionByRequest(google.protobuf.message.Message):
     def HasField(self, field_name: typing.Literal["result_id", b"result_id", "table_id", b"table_id"]) -> builtins.bool: ...
     def ClearField(self, field_name: typing.Literal["drop_keys", b"drop_keys", "key_column_names", b"key_column_names", "result_id", b"result_id", "table_id", b"table_id"]) -> None: ...
 
-Global___PartitionByRequest: typing_extensions.TypeAlias = PartitionByRequest
+global___PartitionByRequest = PartitionByRequest
 
 @typing.final
 class PartitionByResponse(google.protobuf.message.Message):
@@ -60,7 +60,7 @@ class PartitionByResponse(google.protobuf.message.Message):
         self,
     ) -> None: ...
 
-Global___PartitionByResponse: typing_extensions.TypeAlias = PartitionByResponse
+global___PartitionByResponse = PartitionByResponse
 
 @typing.final
 class MergeRequest(google.protobuf.message.Message):
@@ -85,7 +85,7 @@ class MergeRequest(google.protobuf.message.Message):
     def HasField(self, field_name: typing.Literal["partitioned_table", b"partitioned_table", "result_id", b"result_id"]) -> builtins.bool: ...
     def ClearField(self, field_name: typing.Literal["partitioned_table", b"partitioned_table", "result_id", b"result_id"]) -> None: ...
 
-Global___MergeRequest: typing_extensions.TypeAlias = MergeRequest
+global___MergeRequest = MergeRequest
 
 @typing.final
 class GetTableRequest(google.protobuf.message.Message):
@@ -116,7 +116,7 @@ class GetTableRequest(google.protobuf.message.Message):
     KEY_TABLE_TICKET_FIELD_NUMBER: builtins.int
     RESULT_ID_FIELD_NUMBER: builtins.int
     UNIQUE_BEHAVIOR_FIELD_NUMBER: builtins.int
-    unique_behavior: Global___GetTableRequest.UniqueBehavior.ValueType
+    unique_behavior: global___GetTableRequest.UniqueBehavior.ValueType
     """The behavior for handling result Tables that do not have a unique result."""
     @property
     def partitioned_table(self) -> deephaven_core.proto.ticket_pb2.Ticket:
@@ -136,12 +136,12 @@ class GetTableRequest(google.protobuf.message.Message):
         partitioned_table: deephaven_core.proto.ticket_pb2.Ticket | None = ...,
         key_table_ticket: deephaven_core.proto.ticket_pb2.Ticket | None = ...,
         result_id: deephaven_core.proto.ticket_pb2.Ticket | None = ...,
-        unique_behavior: Global___GetTableRequest.UniqueBehavior.ValueType = ...,
+        unique_behavior: global___GetTableRequest.UniqueBehavior.ValueType = ...,
     ) -> None: ...
     def HasField(self, field_name: typing.Literal["key_table_ticket", b"key_table_ticket", "partitioned_table", b"partitioned_table", "result_id", b"result_id"]) -> builtins.bool: ...
     def ClearField(self, field_name: typing.Literal["key_table_ticket", b"key_table_ticket", "partitioned_table", b"partitioned_table", "result_id", b"result_id", "unique_behavior", b"unique_behavior"]) -> None: ...
 
-Global___GetTableRequest: typing_extensions.TypeAlias = GetTableRequest
+global___GetTableRequest = GetTableRequest
 
 @typing.final
 class PartitionedTableDescriptor(google.protobuf.message.Message):
@@ -187,4 +187,4 @@ class PartitionedTableDescriptor(google.protobuf.message.Message):
     ) -> None: ...
     def ClearField(self, field_name: typing.Literal["constituent_changes_permitted", b"constituent_changes_permitted", "constituent_column_name", b"constituent_column_name", "constituent_definition_schema", b"constituent_definition_schema", "key_column_names", b"key_column_names", "unique_keys", b"unique_keys"]) -> None: ...
 
-Global___PartitionedTableDescriptor: typing_extensions.TypeAlias = PartitionedTableDescriptor
+global___PartitionedTableDescriptor = PartitionedTableDescriptor

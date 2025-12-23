@@ -8,13 +8,7 @@ Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
 import builtins
 import google.protobuf.descriptor
 import google.protobuf.message
-import sys
 import typing
-
-if sys.version_info >= (3, 10):
-    import typing as typing_extensions
-else:
-    import typing_extensions
 
 DESCRIPTOR: google.protobuf.descriptor.FileDescriptor
 
@@ -43,7 +37,7 @@ class Ticket(google.protobuf.message.Message):
     ) -> None: ...
     def ClearField(self, field_name: typing.Literal["ticket", b"ticket"]) -> None: ...
 
-Global___Ticket: typing_extensions.TypeAlias = Ticket
+global___Ticket = Ticket
 
 @typing.final
 class TypedTicket(google.protobuf.message.Message):
@@ -56,14 +50,14 @@ class TypedTicket(google.protobuf.message.Message):
     The type. An empty string means that it is not known, not that the server chose to not set it.
     """
     @property
-    def ticket(self) -> Global___Ticket: ...
+    def ticket(self) -> global___Ticket: ...
     def __init__(
         self,
         *,
-        ticket: Global___Ticket | None = ...,
+        ticket: global___Ticket | None = ...,
         type: builtins.str = ...,
     ) -> None: ...
     def HasField(self, field_name: typing.Literal["ticket", b"ticket"]) -> builtins.bool: ...
     def ClearField(self, field_name: typing.Literal["ticket", b"ticket", "type", b"type"]) -> None: ...
 
-Global___TypedTicket: typing_extensions.TypeAlias = TypedTicket
+global___TypedTicket = TypedTicket

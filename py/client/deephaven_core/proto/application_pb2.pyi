@@ -11,13 +11,7 @@ import deephaven_core.proto.ticket_pb2
 import google.protobuf.descriptor
 import google.protobuf.internal.containers
 import google.protobuf.message
-import sys
 import typing
-
-if sys.version_info >= (3, 10):
-    import typing as typing_extensions
-else:
-    import typing_extensions
 
 DESCRIPTOR: google.protobuf.descriptor.FileDescriptor
 
@@ -31,7 +25,7 @@ class ListFieldsRequest(google.protobuf.message.Message):
         self,
     ) -> None: ...
 
-Global___ListFieldsRequest: typing_extensions.TypeAlias = ListFieldsRequest
+global___ListFieldsRequest = ListFieldsRequest
 
 @typing.final
 class FieldsChangeUpdate(google.protobuf.message.Message):
@@ -45,21 +39,21 @@ class FieldsChangeUpdate(google.protobuf.message.Message):
     UPDATED_FIELD_NUMBER: builtins.int
     REMOVED_FIELD_NUMBER: builtins.int
     @property
-    def created(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[Global___FieldInfo]: ...
+    def created(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___FieldInfo]: ...
     @property
-    def updated(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[Global___FieldInfo]: ...
+    def updated(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___FieldInfo]: ...
     @property
-    def removed(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[Global___FieldInfo]: ...
+    def removed(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___FieldInfo]: ...
     def __init__(
         self,
         *,
-        created: collections.abc.Iterable[Global___FieldInfo] | None = ...,
-        updated: collections.abc.Iterable[Global___FieldInfo] | None = ...,
-        removed: collections.abc.Iterable[Global___FieldInfo] | None = ...,
+        created: collections.abc.Iterable[global___FieldInfo] | None = ...,
+        updated: collections.abc.Iterable[global___FieldInfo] | None = ...,
+        removed: collections.abc.Iterable[global___FieldInfo] | None = ...,
     ) -> None: ...
     def ClearField(self, field_name: typing.Literal["created", b"created", "removed", b"removed", "updated", b"updated"]) -> None: ...
 
-Global___FieldsChangeUpdate: typing_extensions.TypeAlias = FieldsChangeUpdate
+global___FieldsChangeUpdate = FieldsChangeUpdate
 
 @typing.final
 class FieldInfo(google.protobuf.message.Message):
@@ -94,4 +88,4 @@ class FieldInfo(google.protobuf.message.Message):
     def HasField(self, field_name: typing.Literal["typed_ticket", b"typed_ticket"]) -> builtins.bool: ...
     def ClearField(self, field_name: typing.Literal["application_id", b"application_id", "application_name", b"application_name", "field_description", b"field_description", "field_name", b"field_name", "typed_ticket", b"typed_ticket"]) -> None: ...
 
-Global___FieldInfo: typing_extensions.TypeAlias = FieldInfo
+global___FieldInfo = FieldInfo
