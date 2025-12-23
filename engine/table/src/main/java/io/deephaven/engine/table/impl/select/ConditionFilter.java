@@ -32,7 +32,6 @@ import io.deephaven.util.type.TypeUtils;
 import groovy.json.StringEscapeUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.jpy.PyLib;
 import org.jpy.PyObject;
 
 import java.lang.reflect.InvocationTargetException;
@@ -780,7 +779,7 @@ public class ConditionFilter extends AbstractConditionFilter {
                 || usedInputs.stream().anyMatch(pp -> PyCallableWrapper.class.isAssignableFrom(pp.second)
                         || PyObject.class.isAssignableFrom(pp.second));
         if (usesPython) {
-            if (!IsPythonFreeThreaded.isPythonFreeThreaded()) {
+            if (!PythonFreeThreadUtil.isPythonFreeThreaded()) {
                 return false;
             }
         }

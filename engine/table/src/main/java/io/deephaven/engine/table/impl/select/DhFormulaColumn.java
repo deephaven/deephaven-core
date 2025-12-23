@@ -894,7 +894,7 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
                     .anyMatch(x -> x.getValue() instanceof PyObject || x.getValue() instanceof PyCallableWrapper);
 
             if (usesPython) {
-                if (!IsPythonFreeThreaded.isPythonFreeThreaded()) {
+                if (!PythonFreeThreadUtil.isPythonFreeThreaded()) {
                     // If we are not free-threaded, then we must be stateful for performance reasons. If we are free
                     // threaded, then we can use the default value
                     return false;

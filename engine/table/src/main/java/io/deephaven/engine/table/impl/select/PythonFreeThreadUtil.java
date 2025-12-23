@@ -8,10 +8,16 @@ import io.deephaven.io.logger.Logger;
 import io.deephaven.util.annotations.InternalUseOnly;
 import org.jpy.PyLib;
 
+/**
+ * Static utility function to determine if we are running a free threaded version of Python.
+ */
 @InternalUseOnly
-public class IsPythonFreeThreaded {
-    private static final Logger logger = LoggerFactory.getLogger(IsPythonFreeThreaded.class);
+public class PythonFreeThreadUtil {
+    private static final Logger logger = LoggerFactory.getLogger(PythonFreeThreadUtil.class);
     private static Boolean isFreeThreaded = null;
+
+    // static use only
+    private PythonFreeThreadUtil() {}
 
     /**
      * Return true if the version of Python we are executing is free threaded.
@@ -28,7 +34,7 @@ public class IsPythonFreeThreaded {
         if (isFreeThreaded != null) {
             return isFreeThreaded;
         }
-        synchronized (IsPythonFreeThreaded.class) {
+        synchronized (PythonFreeThreadUtil.class) {
             if (isFreeThreaded != null) {
                 return isFreeThreaded;
             }
