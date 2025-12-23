@@ -125,6 +125,30 @@ REGULAR: MatchType.ValueType  # 0
 INVERTED: MatchType.ValueType  # 1
 global___MatchType = MatchType
 
+class _NanComparison:
+    ValueType = typing.NewType("ValueType", builtins.int)
+    V: typing_extensions.TypeAlias = ValueType
+
+class _NanComparisonEnumTypeWrapper(google.protobuf.internal.enum_type_wrapper._EnumTypeWrapper[_NanComparison.ValueType], builtins.type):
+    DESCRIPTOR: google.protobuf.descriptor.EnumDescriptor
+    NAN_COMPARISON_TYPE_NOT_SPECIFIED: _NanComparison.ValueType  # 0
+    """defaults to NAN_NOT_EQUALS_NAN"""
+    NAN_NOT_EQUALS_NAN: _NanComparison.ValueType  # 1
+    """NaN in match list: NaN values wil NOT match (follows IEEE 754 equality semantics)"""
+    NAN_EQUALS_NAN: _NanComparison.ValueType  # 2
+    """NaN in match list: NaN values will match"""
+
+class NanComparison(_NanComparison, metaclass=_NanComparisonEnumTypeWrapper):
+    """Controls how NaN values are treated in InCondition (i.e. MatchFilter) filters."""
+
+NAN_COMPARISON_TYPE_NOT_SPECIFIED: NanComparison.ValueType  # 0
+"""defaults to NAN_NOT_EQUALS_NAN"""
+NAN_NOT_EQUALS_NAN: NanComparison.ValueType  # 1
+"""NaN in match list: NaN values wil NOT match (follows IEEE 754 equality semantics)"""
+NAN_EQUALS_NAN: NanComparison.ValueType  # 2
+"""NaN in match list: NaN values will match"""
+global___NanComparison = NanComparison
+
 @typing.final
 class TableReference(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
@@ -2818,6 +2842,7 @@ class Condition(google.protobuf.message.Message):
     MATCHES_FIELD_NUMBER: builtins.int
     CONTAINS_FIELD_NUMBER: builtins.int
     SEARCH_FIELD_NUMBER: builtins.int
+    IS_NAN_FIELD_NUMBER: builtins.int
     @property
     def compare(self) -> global___CompareCondition: ...
     @property
@@ -2830,6 +2855,8 @@ class Condition(google.protobuf.message.Message):
     def contains(self) -> global___ContainsCondition: ...
     @property
     def search(self) -> global___SearchCondition: ...
+    @property
+    def is_nan(self) -> global___IsNaNCondition: ...
     def __init__(
         self,
         *,
@@ -2839,10 +2866,11 @@ class Condition(google.protobuf.message.Message):
         matches: global___MatchesCondition | None = ...,
         contains: global___ContainsCondition | None = ...,
         search: global___SearchCondition | None = ...,
+        is_nan: global___IsNaNCondition | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing.Literal["and", b"and", "compare", b"compare", "contains", b"contains", "data", b"data", "in", b"in", "invoke", b"invoke", "is_null", b"is_null", "matches", b"matches", "not", b"not", "or", b"or", "search", b"search"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing.Literal["and", b"and", "compare", b"compare", "contains", b"contains", "data", b"data", "in", b"in", "invoke", b"invoke", "is_null", b"is_null", "matches", b"matches", "not", b"not", "or", b"or", "search", b"search"]) -> None: ...
-    def WhichOneof(self, oneof_group: typing.Literal["data", b"data"]) -> typing.Literal["and", "or", "not", "compare", "in", "invoke", "is_null", "matches", "contains", "search"] | None: ...
+    def HasField(self, field_name: typing.Literal["and", b"and", "compare", b"compare", "contains", b"contains", "data", b"data", "in", b"in", "invoke", b"invoke", "is_nan", b"is_nan", "is_null", b"is_null", "matches", b"matches", "not", b"not", "or", b"or", "search", b"search"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing.Literal["and", b"and", "compare", b"compare", "contains", b"contains", "data", b"data", "in", b"in", "invoke", b"invoke", "is_nan", b"is_nan", "is_null", b"is_null", "matches", b"matches", "not", b"not", "or", b"or", "search", b"search"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing.Literal["data", b"data"]) -> typing.Literal["and", "or", "not", "compare", "in", "invoke", "is_null", "matches", "contains", "search", "is_nan"] | None: ...
 
 global___Condition = Condition
 
@@ -2953,8 +2981,10 @@ class InCondition(google.protobuf.message.Message):
     CANDIDATES_FIELD_NUMBER: builtins.int
     CASE_SENSITIVITY_FIELD_NUMBER: builtins.int
     MATCH_TYPE_FIELD_NUMBER: builtins.int
+    NAN_COMPARISON_FIELD_NUMBER: builtins.int
     case_sensitivity: global___CaseSensitivity.ValueType
     match_type: global___MatchType.ValueType
+    nan_comparison: global___NanComparison.ValueType
     @property
     def target(self) -> global___Value: ...
     @property
@@ -2966,9 +2996,10 @@ class InCondition(google.protobuf.message.Message):
         candidates: collections.abc.Iterable[global___Value] | None = ...,
         case_sensitivity: global___CaseSensitivity.ValueType = ...,
         match_type: global___MatchType.ValueType = ...,
+        nan_comparison: global___NanComparison.ValueType = ...,
     ) -> None: ...
     def HasField(self, field_name: typing.Literal["target", b"target"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing.Literal["candidates", b"candidates", "case_sensitivity", b"case_sensitivity", "match_type", b"match_type", "target", b"target"]) -> None: ...
+    def ClearField(self, field_name: typing.Literal["candidates", b"candidates", "case_sensitivity", b"case_sensitivity", "match_type", b"match_type", "nan_comparison", b"nan_comparison", "target", b"target"]) -> None: ...
 
 global___InCondition = InCondition
 
@@ -3012,6 +3043,23 @@ class IsNullCondition(google.protobuf.message.Message):
     def ClearField(self, field_name: typing.Literal["reference", b"reference"]) -> None: ...
 
 global___IsNullCondition = IsNullCondition
+
+@typing.final
+class IsNaNCondition(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    REFERENCE_FIELD_NUMBER: builtins.int
+    @property
+    def reference(self) -> global___Reference: ...
+    def __init__(
+        self,
+        *,
+        reference: global___Reference | None = ...,
+    ) -> None: ...
+    def HasField(self, field_name: typing.Literal["reference", b"reference"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing.Literal["reference", b"reference"]) -> None: ...
+
+global___IsNaNCondition = IsNaNCondition
 
 @typing.final
 class MatchesCondition(google.protobuf.message.Message):

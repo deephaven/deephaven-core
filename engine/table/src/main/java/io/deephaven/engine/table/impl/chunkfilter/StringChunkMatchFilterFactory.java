@@ -3,10 +3,11 @@
 //
 package io.deephaven.engine.table.impl.chunkfilter;
 
+import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.table.MatchOptions;
 import io.deephaven.hash.KeyedObjectHashSet;
 import io.deephaven.hash.KeyedObjectKey;
 import io.deephaven.base.string.cache.CharSequenceUtils;
-import io.deephaven.util.annotations.InternalUseOnly;
 
 class StringChunkMatchFilterFactory {
     private static final class CIStringKey implements KeyedObjectKey<String, String> {
@@ -30,9 +31,14 @@ class StringChunkMatchFilterFactory {
 
     private StringChunkMatchFilterFactory() {} // static use only
 
+    /**
+     * Create a case-insensitive filter for the provided values. Assumes that matchOptions.caseInsensitive() is true and
+     * all provided values are {@link String}.
+     */
     @SuppressWarnings("rawtypes")
-    static ObjectChunkFilter makeCaseInsensitiveFilter(boolean invert, Object... values) {
-        if (invert) {
+    static ObjectChunkFilter makeCaseInsensitiveFilter(final MatchOptions matchOptions, final Object... values) {
+        Assert.eqTrue(matchOptions.caseInsensitive(), "matchOptions.caseInsensitive()");
+        if (matchOptions.inverted()) {
             if (values.length == 1) {
                 return new InverseSingleValueStringChunkFilter((String) values[0]);
             }

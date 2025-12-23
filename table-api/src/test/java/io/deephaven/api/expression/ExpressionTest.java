@@ -20,6 +20,8 @@ import static io.deephaven.api.Strings.of;
 import static io.deephaven.api.filter.Filter.and;
 import static io.deephaven.api.filter.Filter.isNotNull;
 import static io.deephaven.api.filter.Filter.isNull;
+import static io.deephaven.api.filter.Filter.isNotNaN;
+import static io.deephaven.api.filter.Filter.isNaN;
 import static io.deephaven.api.filter.Filter.ofFalse;
 import static io.deephaven.api.filter.Filter.ofTrue;
 import static io.deephaven.api.filter.Filter.or;
@@ -59,8 +61,10 @@ public class ExpressionTest {
 
     @Test
     void filter() {
-        stringsOf(or(gt(FOO, BAR), gt(FOO, BAZ), and(isNull(FOO), isNotNull(BAR), isNotNull(BAZ))),
-                "(Foo > Bar) || (Foo > Baz) || (isNull(Foo) && !isNull(Bar) && !isNull(Baz))");
+        stringsOf(
+                or(gt(FOO, BAR), gt(FOO, BAZ),
+                        and(isNull(FOO), isNaN(FOO), isNotNull(BAR), isNotNull(BAZ), isNotNaN(BAR), isNotNaN(BAZ))),
+                "(Foo > Bar) || (Foo > Baz) || (isNull(Foo) && isNaN(Foo) && !isNull(Bar) && !isNull(Baz) && !isNaN(Bar) && !isNaN(Baz))");
     }
 
     @Test

@@ -1062,7 +1062,8 @@ public abstract class QueryTableWhereTest {
                     called.setValue(true);
                     return (ConditionFilter) ConditionFilter.createConditionFilter("var1 != var2");
                 }),
-                MatchFilter.CaseSensitivity.IgnoreCase, MatchFilter.MatchType.Inverted, "var1", "var2");
+                MatchOptions.builder().caseInsensitive(true).inverted(true).build(),
+                "var1", new String[] {"var2"}, null);
 
         final Table result = table.where(filter);
         assertTableEquals(table, result);

@@ -7,10 +7,10 @@ import io.deephaven.api.filter.Filter;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.liveness.SingletonLivenessManager;
+import io.deephaven.engine.table.MatchOptions;
 import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.hierarchical.RollupTable;
-import io.deephaven.engine.table.impl.select.MatchFilter.MatchType;
 import io.deephaven.engine.table.vectors.ColumnVectors;
 import io.deephaven.engine.testutil.*;
 import io.deephaven.engine.testutil.generator.IntGenerator;
@@ -80,11 +80,12 @@ public class TestPartitionBy extends QueryTableTestBase {
 
                 final Table whereTable;
                 if (groupByColumnSources.length == 1) {
-                    whereTable = originalTable.where(new MatchFilter(MatchType.Regular, groupByColumns[0], key));
+                    whereTable =
+                            originalTable.where(new MatchFilter(MatchOptions.REGULAR, groupByColumns[0], key));
                 } else {
                     final MatchFilter[] filters = new MatchFilter[groupByColumnSources.length];
                     for (int ii = 0; ii < groupByColumns.length; ++ii) {
-                        filters[ii] = new MatchFilter(MatchType.Regular, groupByColumns[ii], key[ii]);
+                        filters[ii] = new MatchFilter(MatchOptions.REGULAR, groupByColumns[ii], key[ii]);
                     }
                     whereTable = originalTable.where(Filter.and(filters));
                 }
@@ -467,7 +468,7 @@ public class TestPartitionBy extends QueryTableTestBase {
         System.out.println("Completion took: " + (System.currentTimeMillis() - start.get()));
 
         try {
-            mutableFuture.getValue().get();
+            mutableFuture.get().get();
         } catch (InterruptedException | ExecutionException e) {
             TestCase.fail(e.getMessage());
         }

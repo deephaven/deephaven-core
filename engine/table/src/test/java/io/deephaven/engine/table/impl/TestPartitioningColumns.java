@@ -10,8 +10,6 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.dataindex.DataIndexUtils;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
-import io.deephaven.engine.table.impl.locations.TableLocationProvider;
-import io.deephaven.engine.table.impl.select.MatchFilter.MatchType;
 import io.deephaven.engine.table.iterators.ChunkedColumnIterator;
 import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
@@ -123,7 +121,7 @@ public class TestPartitioningColumns {
         TstUtils.assertTableEquals(expected, result);
 
         final List<WhereFilter> filters = input.getDefinition().getColumnStream()
-                .map(cd -> new MatchFilter(MatchType.Regular, cd.getName(), (Object) null))
+                .map(cd -> new MatchFilter(MatchOptions.REGULAR, cd.getName(), (Object) null))
                 .collect(Collectors.toList());
         TstUtils.assertTableEquals(expected.where(Filter.and(filters)), result.where(Filter.and(filters)));
 

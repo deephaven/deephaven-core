@@ -595,6 +595,22 @@ public class GenerateQueryLanguageFunctions {
                 classA.getSimpleName(),
                 classB.getSimpleName()));
 
+        // We need to enforce the IEE NaN comparison rules: any comparison with NaN is false
+        if (isFPNumber(classA)) {
+            sb.append(MessageFormat.format("" +
+                    "        if ({0}.isNaN(a)) '{'\n" +
+                    "            return false; // follows IEEE 754   \n" +
+                    "        '}'\n",
+                    TypeUtils.getBoxedType(classA).getSimpleName()));
+        }
+        if (isFPNumber(classB)) {
+            sb.append(MessageFormat.format("" +
+                    "        if ({0}.isNaN(b)) '{'\n" +
+                    "            return false; // follows IEEE 754   \n" +
+                    "        '}'\n",
+                    TypeUtils.getBoxedType(classB).getSimpleName()));
+        }
+
         switch (op) {
             case LESS:
                 sb.append("        return compareTo(a, b) < 0;\n");
