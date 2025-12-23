@@ -890,9 +890,8 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
     @Override
     public boolean isStateless() {
         if (QueryTable.STATELESS_SELECT_BY_DEFAULT) {
-            final boolean usesPython = Arrays.stream(params).anyMatch(x -> {
-                return x.getValue() instanceof PyObject || x.getValue() instanceof PyCallableWrapper;
-            });
+            final boolean usesPython = Arrays.stream(params)
+                    .anyMatch(x -> x.getValue() instanceof PyObject || x.getValue() instanceof PyCallableWrapper);
 
             if (usesPython) {
                 if (!IsPythonFreeThreaded.isPythonFreeThreaded()) {
