@@ -21,6 +21,7 @@ import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.lang.QueryLanguageParser;
 import io.deephaven.engine.table.impl.util.codegen.CodeGenerator;
 import io.deephaven.engine.context.QueryScopeParam;
+import io.deephaven.engine.util.PyCallableWrapper;
 import io.deephaven.time.TimeLiteralReplacedExpression;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.chunk.*;
@@ -31,6 +32,8 @@ import io.deephaven.util.type.TypeUtils;
 import groovy.json.StringEscapeUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.jpy.PyLib;
+import org.jpy.PyObject;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
@@ -771,6 +774,16 @@ public class ConditionFilter extends AbstractConditionFilter {
 
     @Override
     public boolean permitParallelization() {
+        // The filter member is only set for vectorizable Python functions; otherwise if we have any Python callables,
+        // then we must check for free-threaded Python before using the default value of statelessness.
+        final boolean usesPython = filter != null
+                || usedInputs.stream().anyMatch(pp -> PyCallableWrapper.class.isAssignableFrom(pp.second)
+                        || PyObject.class.isAssignableFrom(pp.second));
+        if (usesPython) {
+            if (!IsPythonFreeThreaded.isPythonFreeThreaded()) {
+                return false;
+            }
+        }
         return QueryTable.STATELESS_FILTERS_BY_DEFAULT;
     }
 }

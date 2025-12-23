@@ -29,6 +29,7 @@ import io.deephaven.engine.table.impl.select.python.DeephavenCompatibleFunction;
 import io.deephaven.engine.table.impl.select.python.FormulaColumnPython;
 import io.deephaven.engine.table.impl.util.codegen.CodeGenerator;
 import io.deephaven.engine.table.impl.util.codegen.TypeAnalyzer;
+import io.deephaven.engine.util.PyCallableWrapper;
 import io.deephaven.engine.util.PyCallableWrapperJpyImpl;
 import io.deephaven.engine.util.caching.C14nUtil;
 import io.deephaven.internal.log.LoggerFactory;
@@ -889,6 +890,18 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
     @Override
     public boolean isStateless() {
         if (QueryTable.STATELESS_SELECT_BY_DEFAULT) {
+            final boolean usesPython = Arrays.stream(params).anyMatch(x -> {
+                return x.getValue() instanceof PyObject || x.getValue() instanceof PyCallableWrapper;
+            });
+
+            if (usesPython) {
+                if (!IsPythonFreeThreaded.isPythonFreeThreaded()) {
+                    // If we are not free-threaded, then we must to be stateful for performance reasons. If we are free
+                    // threaded, then we can use the default value
+                    return false;
+                }
+            }
+
             return true;
         }
         return Arrays.stream(params).allMatch(DhFormulaColumn::isImmutableType)
