@@ -57,6 +57,7 @@ public class ConditionFilter extends AbstractConditionFilter {
     private List<Pair<String, Class<?>>> usedInputs; // that is columns and special variables
     private String classBody;
     private Filter filter = null;
+    private boolean pythonFilter = false;
     private boolean filterValidForCopy = true;
 
     private ConditionFilter(@NotNull String formula) {
@@ -747,8 +748,9 @@ public class ConditionFilter extends AbstractConditionFilter {
     }
 
     @Override
-    protected void setFilter(Filter filter) {
+    protected void setPythonFilter(Filter filter) {
         this.filter = filter;
+        this.pythonFilter = true;
     }
 
     @Override
@@ -773,10 +775,10 @@ public class ConditionFilter extends AbstractConditionFilter {
 
     @Override
     public boolean permitParallelization() {
-        // The filter member is only set for vectorizable Python functions; otherwise if we have any Python callables,
-        // then we must check for free-threaded Python before using the default value of statelessness.
-        final boolean usesPython = filter != null
-                || usedInputs.stream().anyMatch(pp -> PyCallableWrapper.class.isAssignableFrom(pp.second)
+        // If we have a vectorizable Python function or any Python inputs, then we must check for free-threaded Python
+        // before using the default value of statelessness.
+        final boolean usesPython =
+                pythonFilter || usedInputs.stream().anyMatch(pp -> PyCallableWrapper.class.isAssignableFrom(pp.second)
                         || PyObject.class.isAssignableFrom(pp.second));
         if (usesPython) {
             if (!PythonFreeThreadUtil.isPythonFreeThreaded()) {
