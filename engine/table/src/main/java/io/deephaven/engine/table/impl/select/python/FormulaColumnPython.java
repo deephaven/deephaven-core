@@ -55,8 +55,8 @@ public class FormulaColumnPython extends AbstractFormulaColumn implements Formul
 
     @Override
     public boolean isStateless() {
-        // If we are not free-threaded, then we must prefer to be stateful for performance reasons. If we are free
-        // threaded, then we can use the default value
+        // If we are not free-threaded, then we must prefer to be stateful for performance reasons; otherwise we use
+        // the default setting.
         if (!IsPythonFreeThreaded.isPythonFreeThreaded()) {
             return false;
         }
