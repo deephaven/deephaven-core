@@ -8,6 +8,7 @@ import com.vertispan.tsdefs.annotations.TsName;
 import com.vertispan.tsdefs.annotations.TsTypeRef;
 import elemental2.core.Uint8Array;
 import elemental2.dom.DomGlobal;
+import elemental2.dom.TextEncoder;
 import elemental2.promise.Promise;
 import io.deephaven.javascript.proto.dhinternal.arrow.flight.protocol.flight_pb.FlightDescriptor;
 import io.deephaven.javascript.proto.dhinternal.arrow.flight.protocol.flight_pb.FlightInfo;
@@ -299,7 +300,8 @@ public class JsRemoteFileSourceService extends HasEventHandling {
 
                 // Convert content to bytes
                 if (content instanceof String) {
-                    response.setContent((String) content);
+                    TextEncoder textEncoder = new TextEncoder();
+                    response.setContent(textEncoder.encode((String) content));
                 } else if (content instanceof Uint8Array) {
                     response.setContent((Uint8Array) content);
                 } else {
@@ -325,7 +327,8 @@ public class JsRemoteFileSourceService extends HasEventHandling {
      */
     private static Uint8Array wrapInAny(String typeUrl, Uint8Array messageBytes) {
         // Encode the type_url string to UTF-8 bytes
-        Uint8Array typeUrlBytes = stringToUtf8(typeUrl);
+        TextEncoder textEncoder = new TextEncoder();
+        Uint8Array typeUrlBytes = textEncoder.encode(typeUrl);
 
         // Calculate sizes for protobuf encoding
         // Field 1 (type_url): tag + length + data
@@ -355,15 +358,6 @@ public class JsRemoteFileSourceService extends HasEventHandling {
         }
 
         return result;
-    }
-
-    private static Uint8Array stringToUtf8(String str) {
-        // Simple UTF-8 encoding for ASCII-compatible strings
-        Uint8Array bytes = new Uint8Array(str.length());
-        for (int i = 0; i < str.length(); i++) {
-            bytes.setAt(i, (double) str.charAt(i));
-        }
-        return bytes;
     }
 
     private static int sizeOfVarint(int value) {
