@@ -51,36 +51,36 @@ public class RemoteFileSourceMessageStream implements ObjectType.MessageStream, 
     // RemoteFileSourceProvider interface implementation - each instance is a provider
 
     @Override
-    public java.util.concurrent.CompletableFuture<Boolean> canSourceResource(String resourceName) {
+    public boolean canSourceResource(String resourceName) {
         // Only active if this instance is the currently active message stream
         if (!isActive()) {
-            return java.util.concurrent.CompletableFuture.completedFuture(false);
+            return false;
         }
 
         // Only handle .groovy source files, not compiled .class files
         if (!resourceName.endsWith(".groovy")) {
-            return java.util.concurrent.CompletableFuture.completedFuture(false);
+            return false;
         }
 
         RemoteFileSourceExecutionContext context = executionContext;
         if (context == null || context.getActiveMessageStream() != this) {
-            return java.util.concurrent.CompletableFuture.completedFuture(false);
+            return false;
         }
 
         java.util.List<String> resourcePaths = context.getResourcePaths();
         if (resourcePaths.isEmpty()) {
-            return java.util.concurrent.CompletableFuture.completedFuture(false);
+            return false;
         }
 
         // Resource names from ClassLoader always use forward slashes, not backslashes
         for (String contextResourcePath : resourcePaths) {
             if (resourceName.equals(contextResourcePath)) {
                 log.info().append("✅ Can source: ").append(resourceName).endl();
-                return java.util.concurrent.CompletableFuture.completedFuture(true);
+                return true;
             }
         }
 
-        return java.util.concurrent.CompletableFuture.completedFuture(false);
+        return false;
     }
 
     @Override
