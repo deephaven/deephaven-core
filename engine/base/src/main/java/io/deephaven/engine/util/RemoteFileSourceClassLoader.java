@@ -24,7 +24,8 @@ import java.util.concurrent.TimeUnit;
  * </ol>
  */
 public class RemoteFileSourceClassLoader extends ClassLoader {
-    private static final boolean DEBUG = Boolean.getBoolean("RemoteFileSourceClassLoader.debug");
+    private static final long RESOURCE_TIMEOUT_SECONDS = 5;
+
     private static volatile RemoteFileSourceClassLoader instance;
     private final CopyOnWriteArrayList<RemoteFileSourceProvider> providers = new CopyOnWriteArrayList<>();
 
@@ -52,15 +53,11 @@ public class RemoteFileSourceClassLoader extends ClassLoader {
                 continue;
             }
             try {
-                Boolean canSource = provider.canSourceResource(name)
-                        .orTimeout(5, TimeUnit.SECONDS)
-                        .get();
-
-                if (Boolean.TRUE.equals(canSource)) {
+                if (provider.canSourceResource(name)) {
                     return new URL(null, "remotefile://" + name, new RemoteFileURLStreamHandler(provider, name));
                 }
-            } catch (Exception e) {
-                // Continue to next provider
+            } catch (java.net.MalformedURLException e) {
+                // Continue to next provider if URL creation fails
             }
         }
         return super.findResource(name);
@@ -103,7 +100,7 @@ public class RemoteFileSourceClassLoader extends ClassLoader {
             if (!connected) {
                 try {
                     content = provider.requestResource(resourceName)
-                            .orTimeout(5, TimeUnit.SECONDS)
+                            .orTimeout(RESOURCE_TIMEOUT_SECONDS, TimeUnit.SECONDS)
                             .get();
                     connected = true;
                 } catch (Exception e) {

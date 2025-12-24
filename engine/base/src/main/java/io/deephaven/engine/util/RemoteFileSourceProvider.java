@@ -15,9 +15,9 @@ public interface RemoteFileSourceProvider {
      * Check if this provider can source the given resource.
      *
      * @param resourceName the name of the resource to check (e.g., "com/example/MyClass.groovy")
-     * @return a CompletableFuture that resolves to true if this provider can handle the resource, false otherwise
+     * @return true if this provider can handle the resource, false otherwise
      */
-    CompletableFuture<Boolean> canSourceResource(String resourceName);
+    boolean canSourceResource(String resourceName);
 
     /**
      * Request a resource from the remote source.
