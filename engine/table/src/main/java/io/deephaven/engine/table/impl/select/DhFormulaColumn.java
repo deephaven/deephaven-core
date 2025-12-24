@@ -899,17 +899,12 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
 
     @Override
     public boolean isParallelizable() {
-        if (!isStateless()) {
-            return false;
-        }
-
         final boolean usesPython = Arrays.stream(params)
                 .anyMatch(x -> x.getValue() instanceof PyObject || x.getValue() instanceof PyCallableWrapper);
 
         // If we are not free-threaded, then we must be stateful for performance reasons. If we are free
         // threaded, then we can use the default value
         return !usesPython || PythonFreeThreadUtil.isPythonFreeThreaded();
-
     }
 
     public FormulaMethodInvocations getFormulaMethodInvocations() {

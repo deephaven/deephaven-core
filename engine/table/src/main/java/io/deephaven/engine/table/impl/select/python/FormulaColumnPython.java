@@ -62,7 +62,7 @@ public class FormulaColumnPython extends AbstractFormulaColumn implements Formul
     @Override
     public boolean isParallelizable() {
         // If we are not free-threaded, then we cannot be parallelized for performance reasons
-        return isStateless() && PythonFreeThreadUtil.isPythonFreeThreaded();
+        return PythonFreeThreadUtil.isPythonFreeThreaded();
     }
 
     @Override
