@@ -151,6 +151,11 @@ public class SwitchColumn implements SelectColumn {
     }
 
     @Override
+    public boolean isParallelizable() {
+        return getRealColumn().isParallelizable();
+    }
+
+    @Override
     public boolean hasVirtualRowVariables() {
         return getRealColumn().hasVirtualRowVariables();
     }
