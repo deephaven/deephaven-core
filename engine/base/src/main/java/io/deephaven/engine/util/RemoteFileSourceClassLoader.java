@@ -76,8 +76,8 @@ public class RemoteFileSourceClassLoader extends ClassLoader {
         }
 
         @Override
-        protected URLConnection openConnection(URL u) {
-            return new RemoteFileURLConnection(u, provider, resourceName);
+        protected URLConnection openConnection(URL url) {
+            return new RemoteFileURLConnection(url, provider, resourceName);
         }
     }
 
