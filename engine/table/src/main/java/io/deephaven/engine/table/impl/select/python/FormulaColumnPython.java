@@ -6,6 +6,7 @@ package io.deephaven.engine.table.impl.select.python;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.context.QueryScopeParam;
 import io.deephaven.engine.table.impl.QueryTable;
+import io.deephaven.engine.table.impl.select.PythonFreeThreadUtil;
 import io.deephaven.util.CompletionStageFuture;
 import io.deephaven.util.type.ArrayTypeUtils;
 import io.deephaven.vector.Vector;
@@ -54,9 +55,14 @@ public class FormulaColumnPython extends AbstractFormulaColumn implements Formul
 
     @Override
     public boolean isStateless() {
-        // We don't actually have any insight into whether Python is stateful or stateless, we always use the default
-        // setting.
+        // We don't actually have any insight into whether Python is stateful, we use the default setting.
         return QueryTable.STATELESS_SELECT_BY_DEFAULT;
+    }
+
+    @Override
+    public boolean isParallelizable() {
+        // If we are not free-threaded, then we cannot be parallelized for performance reasons
+        return PythonFreeThreadUtil.isPythonFreeThreaded();
     }
 
     @Override

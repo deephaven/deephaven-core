@@ -78,7 +78,7 @@ The `select`, `update`, and `where` operations can parallelize within a single w
 To change the default behavior for `select` and `update`, you can change the configuration property `QueryTable.statelessSelectByDefault` to `false` to make columns stateful. For filters, change the property `QueryTable.statelessFiltersByDefault`.
 
 > [!NOTE]
-> In Deephaven versions through 0.40, the engine assumed that all filters and selectables were _stateful_ by default. All later versions treat filters and selectables as _stateless_ by default.
+> In Deephaven 41.0 and later, filters and selectables are _stateless_ by default. In previous versions, filters and selectables were _stateful_ by default.
 
 The [`ConcurrencyControl`](https://docs.deephaven.io/core/javadoc/io/deephaven/api/ConcurrencyControl.html) interface allows you to control the behavior of [`Filter`](https://docs.deephaven.io/core/javadoc/io/deephaven/api/filter/Filter.html) (where clause) and [`Selectable`](https://docs.deephaven.io/core/javadoc/io/deephaven/api/Selectable.html) (column formula) objects.
 

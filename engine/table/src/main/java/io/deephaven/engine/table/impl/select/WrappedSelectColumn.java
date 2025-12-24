@@ -119,6 +119,11 @@ abstract class WrappedSelectColumn implements SelectColumn {
     }
 
     @Override
+    public boolean isParallelizable() {
+        return inner.isParallelizable();
+    }
+
+    @Override
     public boolean hasVirtualRowVariables() {
         return inner.hasVirtualRowVariables();
     }

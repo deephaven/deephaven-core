@@ -227,7 +227,7 @@ public abstract class AbstractConditionFilter extends WhereFilterImpl {
             DeephavenCompatibleFunction dcf = DeephavenCompatibleFunction.create(vectorized,
                     pyCallableWrapper.getSignature().getReturnType(), usedColumns.toArray(new String[0]),
                     argumentsChunked, true);
-            setFilter(new ConditionFilter.ChunkFilter(
+            setPythonFilter(new ConditionFilter.ChunkFilter(
                     dcf.toFilterKernel(),
                     dcf.getColumnNames().toArray(new String[0]),
                     ConditionFilter.CHUNK_SIZE));
@@ -293,7 +293,7 @@ public abstract class AbstractConditionFilter extends WhereFilterImpl {
      *
      * @param filter the filter to set
      */
-    protected abstract void setFilter(Filter filter);
+    protected abstract void setPythonFilter(Filter filter);
 
     @Override
     public void setRecomputeListener(RecomputeListener listener) {}
