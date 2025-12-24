@@ -180,20 +180,6 @@ public class JsRemoteFileSourceService extends HasEventHandling {
     }
 
     /**
-     * Test method to verify bidirectional communication.
-     * Sends a test command to the server, which will request a resource back from the client.
-     *
-     * @param resourceName the resource name to use for the test (e.g., "com/example/Test.java")
-     */
-    @JsMethod
-    public void testBidirectionalCommunication(String resourceName) {
-        RemoteFileSourceClientRequest clientRequest = new RemoteFileSourceClientRequest();
-        clientRequest.setRequestId(""); // Empty request_id for test commands
-        clientRequest.setTestCommand("TEST:" + resourceName);
-        sendClientRequest(clientRequest);
-    }
-
-    /**
      * Sets the execution context on the server to identify this message stream as active
      * for script execution.
      *
