@@ -10,7 +10,13 @@ import collections.abc
 import google.protobuf.descriptor
 import google.protobuf.internal.containers
 import google.protobuf.message
+import sys
 import typing
+
+if sys.version_info >= (3, 10):
+    import typing as typing_extensions
+else:
+    import typing_extensions
 
 DESCRIPTOR: google.protobuf.descriptor.FileDescriptor
 
@@ -22,7 +28,7 @@ class AuthenticationConstantsRequest(google.protobuf.message.Message):
         self,
     ) -> None: ...
 
-global___AuthenticationConstantsRequest = AuthenticationConstantsRequest
+Global___AuthenticationConstantsRequest: typing_extensions.TypeAlias = AuthenticationConstantsRequest
 
 @typing.final
 class ConfigurationConstantsRequest(google.protobuf.message.Message):
@@ -32,7 +38,7 @@ class ConfigurationConstantsRequest(google.protobuf.message.Message):
         self,
     ) -> None: ...
 
-global___ConfigurationConstantsRequest = ConfigurationConstantsRequest
+Global___ConfigurationConstantsRequest: typing_extensions.TypeAlias = ConfigurationConstantsRequest
 
 @typing.final
 class AuthenticationConstantsResponse(google.protobuf.message.Message):
@@ -46,27 +52,27 @@ class AuthenticationConstantsResponse(google.protobuf.message.Message):
         VALUE_FIELD_NUMBER: builtins.int
         key: builtins.str
         @property
-        def value(self) -> global___ConfigValue: ...
+        def value(self) -> Global___ConfigValue: ...
         def __init__(
             self,
             *,
             key: builtins.str = ...,
-            value: global___ConfigValue | None = ...,
+            value: Global___ConfigValue | None = ...,
         ) -> None: ...
         def HasField(self, field_name: typing.Literal["value", b"value"]) -> builtins.bool: ...
         def ClearField(self, field_name: typing.Literal["key", b"key", "value", b"value"]) -> None: ...
 
     CONFIG_VALUES_FIELD_NUMBER: builtins.int
     @property
-    def config_values(self) -> google.protobuf.internal.containers.MessageMap[builtins.str, global___ConfigValue]: ...
+    def config_values(self) -> google.protobuf.internal.containers.MessageMap[builtins.str, Global___ConfigValue]: ...
     def __init__(
         self,
         *,
-        config_values: collections.abc.Mapping[builtins.str, global___ConfigValue] | None = ...,
+        config_values: collections.abc.Mapping[builtins.str, Global___ConfigValue] | None = ...,
     ) -> None: ...
     def ClearField(self, field_name: typing.Literal["config_values", b"config_values"]) -> None: ...
 
-global___AuthenticationConstantsResponse = AuthenticationConstantsResponse
+Global___AuthenticationConstantsResponse: typing_extensions.TypeAlias = AuthenticationConstantsResponse
 
 @typing.final
 class ConfigurationConstantsResponse(google.protobuf.message.Message):
@@ -80,27 +86,27 @@ class ConfigurationConstantsResponse(google.protobuf.message.Message):
         VALUE_FIELD_NUMBER: builtins.int
         key: builtins.str
         @property
-        def value(self) -> global___ConfigValue: ...
+        def value(self) -> Global___ConfigValue: ...
         def __init__(
             self,
             *,
             key: builtins.str = ...,
-            value: global___ConfigValue | None = ...,
+            value: Global___ConfigValue | None = ...,
         ) -> None: ...
         def HasField(self, field_name: typing.Literal["value", b"value"]) -> builtins.bool: ...
         def ClearField(self, field_name: typing.Literal["key", b"key", "value", b"value"]) -> None: ...
 
     CONFIG_VALUES_FIELD_NUMBER: builtins.int
     @property
-    def config_values(self) -> google.protobuf.internal.containers.MessageMap[builtins.str, global___ConfigValue]: ...
+    def config_values(self) -> google.protobuf.internal.containers.MessageMap[builtins.str, Global___ConfigValue]: ...
     def __init__(
         self,
         *,
-        config_values: collections.abc.Mapping[builtins.str, global___ConfigValue] | None = ...,
+        config_values: collections.abc.Mapping[builtins.str, Global___ConfigValue] | None = ...,
     ) -> None: ...
     def ClearField(self, field_name: typing.Literal["config_values", b"config_values"]) -> None: ...
 
-global___ConfigurationConstantsResponse = ConfigurationConstantsResponse
+Global___ConfigurationConstantsResponse: typing_extensions.TypeAlias = ConfigurationConstantsResponse
 
 @typing.final
 class ConfigValue(google.protobuf.message.Message):
@@ -117,4 +123,4 @@ class ConfigValue(google.protobuf.message.Message):
     def ClearField(self, field_name: typing.Literal["kind", b"kind", "string_value", b"string_value"]) -> None: ...
     def WhichOneof(self, oneof_group: typing.Literal["kind", b"kind"]) -> typing.Literal["string_value"] | None: ...
 
-global___ConfigValue = ConfigValue
+Global___ConfigValue: typing_extensions.TypeAlias = ConfigValue

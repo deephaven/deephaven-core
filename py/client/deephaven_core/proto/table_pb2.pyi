@@ -20,6 +20,11 @@ if sys.version_info >= (3, 10):
 else:
     import typing_extensions
 
+if sys.version_info >= (3, 13):
+    from warnings import deprecated
+else:
+    from typing_extensions import deprecated
+
 DESCRIPTOR: google.protobuf.descriptor.FileDescriptor
 
 class _BadDataBehavior:
@@ -52,7 +57,7 @@ SKIP: BadDataBehavior.ValueType  # 3
 """Skip and do not process the invalid data without changing state."""
 POISON: BadDataBehavior.ValueType  # 4
 """Allow the bad data to poison the result. This is only valid for use with NaN."""
-global___BadDataBehavior = BadDataBehavior
+Global___BadDataBehavior: typing_extensions.TypeAlias = BadDataBehavior
 
 class _UpdateByNullBehavior:
     ValueType = typing.NewType("ValueType", builtins.int)
@@ -80,7 +85,7 @@ VALUE_DOMINATES: UpdateByNullBehavior.ValueType  # 2
 """In the case of Current - null, the current value dominates so Column[i] - null = Column[i]"""
 ZERO_DOMINATES: UpdateByNullBehavior.ValueType  # 3
 """In the case of Current - null, return zero so Column[i] - null = 0"""
-global___UpdateByNullBehavior = UpdateByNullBehavior
+Global___UpdateByNullBehavior: typing_extensions.TypeAlias = UpdateByNullBehavior
 
 class _NullValue:
     ValueType = typing.NewType("ValueType", builtins.int)
@@ -93,7 +98,7 @@ class _NullValueEnumTypeWrapper(google.protobuf.internal.enum_type_wrapper._Enum
 class NullValue(_NullValue, metaclass=_NullValueEnumTypeWrapper): ...
 
 NULL_VALUE: NullValue.ValueType  # 0
-global___NullValue = NullValue
+Global___NullValue: typing_extensions.TypeAlias = NullValue
 
 class _CaseSensitivity:
     ValueType = typing.NewType("ValueType", builtins.int)
@@ -108,7 +113,7 @@ class CaseSensitivity(_CaseSensitivity, metaclass=_CaseSensitivityEnumTypeWrappe
 
 MATCH_CASE: CaseSensitivity.ValueType  # 0
 IGNORE_CASE: CaseSensitivity.ValueType  # 1
-global___CaseSensitivity = CaseSensitivity
+Global___CaseSensitivity: typing_extensions.TypeAlias = CaseSensitivity
 
 class _MatchType:
     ValueType = typing.NewType("ValueType", builtins.int)
@@ -123,7 +128,7 @@ class MatchType(_MatchType, metaclass=_MatchTypeEnumTypeWrapper): ...
 
 REGULAR: MatchType.ValueType  # 0
 INVERTED: MatchType.ValueType  # 1
-global___MatchType = MatchType
+Global___MatchType: typing_extensions.TypeAlias = MatchType
 
 class _NanComparison:
     ValueType = typing.NewType("ValueType", builtins.int)
@@ -147,7 +152,7 @@ NAN_NOT_EQUALS_NAN: NanComparison.ValueType  # 1
 """NaN in match list: NaN values wil NOT match (follows IEEE 754 equality semantics)"""
 NAN_EQUALS_NAN: NanComparison.ValueType  # 2
 """NaN in match list: NaN values will match"""
-global___NanComparison = NanComparison
+Global___NanComparison: typing_extensions.TypeAlias = NanComparison
 
 @typing.final
 class TableReference(google.protobuf.message.Message):
@@ -176,7 +181,7 @@ class TableReference(google.protobuf.message.Message):
     def ClearField(self, field_name: typing.Literal["batch_offset", b"batch_offset", "ref", b"ref", "ticket", b"ticket"]) -> None: ...
     def WhichOneof(self, oneof_group: typing.Literal["ref", b"ref"]) -> typing.Literal["ticket", "batch_offset"] | None: ...
 
-global___TableReference = TableReference
+Global___TableReference: typing_extensions.TypeAlias = TableReference
 
 @typing.final
 class ExportedTableCreationResponse(google.protobuf.message.Message):
@@ -202,11 +207,11 @@ class ExportedTableCreationResponse(google.protobuf.message.Message):
     partitioning columns first.
     """
     @property
-    def result_id(self) -> global___TableReference: ...
+    def result_id(self) -> Global___TableReference: ...
     def __init__(
         self,
         *,
-        result_id: global___TableReference | None = ...,
+        result_id: Global___TableReference | None = ...,
         success: builtins.bool = ...,
         error_info: builtins.str = ...,
         schema_header: builtins.bytes = ...,
@@ -216,7 +221,7 @@ class ExportedTableCreationResponse(google.protobuf.message.Message):
     def HasField(self, field_name: typing.Literal["result_id", b"result_id"]) -> builtins.bool: ...
     def ClearField(self, field_name: typing.Literal["error_info", b"error_info", "is_static", b"is_static", "result_id", b"result_id", "schema_header", b"schema_header", "size", b"size", "success", b"success"]) -> None: ...
 
-global___ExportedTableCreationResponse = ExportedTableCreationResponse
+Global___ExportedTableCreationResponse: typing_extensions.TypeAlias = ExportedTableCreationResponse
 
 @typing.final
 class FetchTableRequest(google.protobuf.message.Message):
@@ -225,19 +230,19 @@ class FetchTableRequest(google.protobuf.message.Message):
     SOURCE_ID_FIELD_NUMBER: builtins.int
     RESULT_ID_FIELD_NUMBER: builtins.int
     @property
-    def source_id(self) -> global___TableReference: ...
+    def source_id(self) -> Global___TableReference: ...
     @property
     def result_id(self) -> deephaven_core.proto.ticket_pb2.Ticket: ...
     def __init__(
         self,
         *,
-        source_id: global___TableReference | None = ...,
+        source_id: Global___TableReference | None = ...,
         result_id: deephaven_core.proto.ticket_pb2.Ticket | None = ...,
     ) -> None: ...
     def HasField(self, field_name: typing.Literal["result_id", b"result_id", "source_id", b"source_id"]) -> builtins.bool: ...
     def ClearField(self, field_name: typing.Literal["result_id", b"result_id", "source_id", b"source_id"]) -> None: ...
 
-global___FetchTableRequest = FetchTableRequest
+Global___FetchTableRequest: typing_extensions.TypeAlias = FetchTableRequest
 
 @typing.final
 class ApplyPreviewColumnsRequest(google.protobuf.message.Message):
@@ -259,7 +264,7 @@ class ApplyPreviewColumnsRequest(google.protobuf.message.Message):
     unpreviewed_types is empty.
     """
     @property
-    def source_id(self) -> global___TableReference: ...
+    def source_id(self) -> Global___TableReference: ...
     @property
     def result_id(self) -> deephaven_core.proto.ticket_pb2.Ticket: ...
     @property
@@ -271,7 +276,7 @@ class ApplyPreviewColumnsRequest(google.protobuf.message.Message):
     def __init__(
         self,
         *,
-        source_id: global___TableReference | None = ...,
+        source_id: Global___TableReference | None = ...,
         result_id: deephaven_core.proto.ticket_pb2.Ticket | None = ...,
         convert_arrays: builtins.bool = ...,
         unpreviewed_types: collections.abc.Iterable[builtins.str] | None = ...,
@@ -279,7 +284,7 @@ class ApplyPreviewColumnsRequest(google.protobuf.message.Message):
     def HasField(self, field_name: typing.Literal["result_id", b"result_id", "source_id", b"source_id"]) -> builtins.bool: ...
     def ClearField(self, field_name: typing.Literal["convert_arrays", b"convert_arrays", "result_id", b"result_id", "source_id", b"source_id", "unpreviewed_types", b"unpreviewed_types"]) -> None: ...
 
-global___ApplyPreviewColumnsRequest = ApplyPreviewColumnsRequest
+Global___ApplyPreviewColumnsRequest: typing_extensions.TypeAlias = ApplyPreviewColumnsRequest
 
 @typing.final
 class ExportedTableUpdatesRequest(google.protobuf.message.Message):
@@ -291,7 +296,7 @@ class ExportedTableUpdatesRequest(google.protobuf.message.Message):
         self,
     ) -> None: ...
 
-global___ExportedTableUpdatesRequest = ExportedTableUpdatesRequest
+Global___ExportedTableUpdatesRequest: typing_extensions.TypeAlias = ExportedTableUpdatesRequest
 
 @typing.final
 class ExportedTableUpdateMessage(google.protobuf.message.Message):
@@ -314,7 +319,7 @@ class ExportedTableUpdateMessage(google.protobuf.message.Message):
     def HasField(self, field_name: typing.Literal["export_id", b"export_id"]) -> builtins.bool: ...
     def ClearField(self, field_name: typing.Literal["export_id", b"export_id", "size", b"size", "update_failure_message", b"update_failure_message"]) -> None: ...
 
-global___ExportedTableUpdateMessage = ExportedTableUpdateMessage
+Global___ExportedTableUpdateMessage: typing_extensions.TypeAlias = ExportedTableUpdateMessage
 
 @typing.final
 class EmptyTableRequest(google.protobuf.message.Message):
@@ -334,7 +339,7 @@ class EmptyTableRequest(google.protobuf.message.Message):
     def HasField(self, field_name: typing.Literal["result_id", b"result_id"]) -> builtins.bool: ...
     def ClearField(self, field_name: typing.Literal["result_id", b"result_id", "size", b"size"]) -> None: ...
 
-global___EmptyTableRequest = EmptyTableRequest
+Global___EmptyTableRequest: typing_extensions.TypeAlias = EmptyTableRequest
 
 @typing.final
 class TimeTableRequest(google.protobuf.message.Message):
@@ -370,7 +375,7 @@ class TimeTableRequest(google.protobuf.message.Message):
     @typing.overload
     def WhichOneof(self, oneof_group: typing.Literal["start_time", b"start_time"]) -> typing.Literal["start_time_nanos", "start_time_string"] | None: ...
 
-global___TimeTableRequest = TimeTableRequest
+Global___TimeTableRequest: typing_extensions.TypeAlias = TimeTableRequest
 
 @typing.final
 class SelectOrUpdateRequest(google.protobuf.message.Message):
@@ -382,20 +387,20 @@ class SelectOrUpdateRequest(google.protobuf.message.Message):
     @property
     def result_id(self) -> deephaven_core.proto.ticket_pb2.Ticket: ...
     @property
-    def source_id(self) -> global___TableReference: ...
+    def source_id(self) -> Global___TableReference: ...
     @property
     def column_specs(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.str]: ...
     def __init__(
         self,
         *,
         result_id: deephaven_core.proto.ticket_pb2.Ticket | None = ...,
-        source_id: global___TableReference | None = ...,
+        source_id: Global___TableReference | None = ...,
         column_specs: collections.abc.Iterable[builtins.str] | None = ...,
     ) -> None: ...
     def HasField(self, field_name: typing.Literal["result_id", b"result_id", "source_id", b"source_id"]) -> builtins.bool: ...
     def ClearField(self, field_name: typing.Literal["column_specs", b"column_specs", "result_id", b"result_id", "source_id", b"source_id"]) -> None: ...
 
-global___SelectOrUpdateRequest = SelectOrUpdateRequest
+Global___SelectOrUpdateRequest: typing_extensions.TypeAlias = SelectOrUpdateRequest
 
 @typing.final
 class Selectable(google.protobuf.message.Message):
@@ -413,7 +418,7 @@ class Selectable(google.protobuf.message.Message):
     def ClearField(self, field_name: typing.Literal["raw", b"raw", "type", b"type"]) -> None: ...
     def WhichOneof(self, oneof_group: typing.Literal["type", b"type"]) -> typing.Literal["raw"] | None: ...
 
-global___Selectable = Selectable
+Global___Selectable: typing_extensions.TypeAlias = Selectable
 
 @typing.final
 class MathContext(google.protobuf.message.Message):
@@ -449,16 +454,16 @@ class MathContext(google.protobuf.message.Message):
     PRECISION_FIELD_NUMBER: builtins.int
     ROUNDING_MODE_FIELD_NUMBER: builtins.int
     precision: builtins.int
-    rounding_mode: global___MathContext.RoundingMode.ValueType
+    rounding_mode: Global___MathContext.RoundingMode.ValueType
     def __init__(
         self,
         *,
         precision: builtins.int = ...,
-        rounding_mode: global___MathContext.RoundingMode.ValueType = ...,
+        rounding_mode: Global___MathContext.RoundingMode.ValueType = ...,
     ) -> None: ...
     def ClearField(self, field_name: typing.Literal["precision", b"precision", "rounding_mode", b"rounding_mode"]) -> None: ...
 
-global___MathContext = MathContext
+Global___MathContext: typing_extensions.TypeAlias = MathContext
 
 @typing.final
 class UpdateByWindowScale(google.protobuf.message.Message):
@@ -503,20 +508,20 @@ class UpdateByWindowScale(google.protobuf.message.Message):
     TICKS_FIELD_NUMBER: builtins.int
     TIME_FIELD_NUMBER: builtins.int
     @property
-    def ticks(self) -> global___UpdateByWindowScale.UpdateByWindowTicks: ...
+    def ticks(self) -> Global___UpdateByWindowScale.UpdateByWindowTicks: ...
     @property
-    def time(self) -> global___UpdateByWindowScale.UpdateByWindowTime: ...
+    def time(self) -> Global___UpdateByWindowScale.UpdateByWindowTime: ...
     def __init__(
         self,
         *,
-        ticks: global___UpdateByWindowScale.UpdateByWindowTicks | None = ...,
-        time: global___UpdateByWindowScale.UpdateByWindowTime | None = ...,
+        ticks: Global___UpdateByWindowScale.UpdateByWindowTicks | None = ...,
+        time: Global___UpdateByWindowScale.UpdateByWindowTime | None = ...,
     ) -> None: ...
     def HasField(self, field_name: typing.Literal["ticks", b"ticks", "time", b"time", "type", b"type"]) -> builtins.bool: ...
     def ClearField(self, field_name: typing.Literal["ticks", b"ticks", "time", b"time", "type", b"type"]) -> None: ...
     def WhichOneof(self, oneof_group: typing.Literal["type", b"type"]) -> typing.Literal["ticks", "time"] | None: ...
 
-global___UpdateByWindowScale = UpdateByWindowScale
+Global___UpdateByWindowScale: typing_extensions.TypeAlias = UpdateByWindowScale
 
 @typing.final
 class UpdateByEmOptions(google.protobuf.message.Message):
@@ -530,27 +535,27 @@ class UpdateByEmOptions(google.protobuf.message.Message):
     ON_NEGATIVE_DELTA_TIME_FIELD_NUMBER: builtins.int
     ON_ZERO_DELTA_TIME_FIELD_NUMBER: builtins.int
     BIG_VALUE_CONTEXT_FIELD_NUMBER: builtins.int
-    on_null_value: global___BadDataBehavior.ValueType
-    on_nan_value: global___BadDataBehavior.ValueType
-    on_null_time: global___BadDataBehavior.ValueType
-    on_negative_delta_time: global___BadDataBehavior.ValueType
-    on_zero_delta_time: global___BadDataBehavior.ValueType
+    on_null_value: Global___BadDataBehavior.ValueType
+    on_nan_value: Global___BadDataBehavior.ValueType
+    on_null_time: Global___BadDataBehavior.ValueType
+    on_negative_delta_time: Global___BadDataBehavior.ValueType
+    on_zero_delta_time: Global___BadDataBehavior.ValueType
     @property
-    def big_value_context(self) -> global___MathContext: ...
+    def big_value_context(self) -> Global___MathContext: ...
     def __init__(
         self,
         *,
-        on_null_value: global___BadDataBehavior.ValueType = ...,
-        on_nan_value: global___BadDataBehavior.ValueType = ...,
-        on_null_time: global___BadDataBehavior.ValueType = ...,
-        on_negative_delta_time: global___BadDataBehavior.ValueType = ...,
-        on_zero_delta_time: global___BadDataBehavior.ValueType = ...,
-        big_value_context: global___MathContext | None = ...,
+        on_null_value: Global___BadDataBehavior.ValueType = ...,
+        on_nan_value: Global___BadDataBehavior.ValueType = ...,
+        on_null_time: Global___BadDataBehavior.ValueType = ...,
+        on_negative_delta_time: Global___BadDataBehavior.ValueType = ...,
+        on_zero_delta_time: Global___BadDataBehavior.ValueType = ...,
+        big_value_context: Global___MathContext | None = ...,
     ) -> None: ...
     def HasField(self, field_name: typing.Literal["big_value_context", b"big_value_context"]) -> builtins.bool: ...
     def ClearField(self, field_name: typing.Literal["big_value_context", b"big_value_context", "on_nan_value", b"on_nan_value", "on_negative_delta_time", b"on_negative_delta_time", "on_null_time", b"on_null_time", "on_null_value", b"on_null_value", "on_zero_delta_time", b"on_zero_delta_time"]) -> None: ...
 
-global___UpdateByEmOptions = UpdateByEmOptions
+Global___UpdateByEmOptions: typing_extensions.TypeAlias = UpdateByEmOptions
 
 @typing.final
 class UpdateByDeltaOptions(google.protobuf.message.Message):
@@ -559,15 +564,15 @@ class UpdateByDeltaOptions(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
     NULL_BEHAVIOR_FIELD_NUMBER: builtins.int
-    null_behavior: global___UpdateByNullBehavior.ValueType
+    null_behavior: Global___UpdateByNullBehavior.ValueType
     def __init__(
         self,
         *,
-        null_behavior: global___UpdateByNullBehavior.ValueType = ...,
+        null_behavior: Global___UpdateByNullBehavior.ValueType = ...,
     ) -> None: ...
     def ClearField(self, field_name: typing.Literal["null_behavior", b"null_behavior"]) -> None: ...
 
-global___UpdateByDeltaOptions = UpdateByDeltaOptions
+Global___UpdateByDeltaOptions: typing_extensions.TypeAlias = UpdateByDeltaOptions
 
 @typing.final
 class UpdateByRequest(google.protobuf.message.Message):
@@ -617,7 +622,7 @@ class UpdateByRequest(google.protobuf.message.Message):
         If unset, defaults to server-provided defaults.
         """
         @property
-        def math_context(self) -> global___MathContext:
+        def math_context(self) -> Global___MathContext:
             """The math context."""
 
         def __init__(
@@ -629,7 +634,7 @@ class UpdateByRequest(google.protobuf.message.Message):
             initial_hash_table_size: builtins.int | None = ...,
             maximum_load_factor: builtins.float | None = ...,
             target_load_factor: builtins.float | None = ...,
-            math_context: global___MathContext | None = ...,
+            math_context: Global___MathContext | None = ...,
         ) -> None: ...
         def HasField(self, field_name: typing.Literal["_chunk_capacity", b"_chunk_capacity", "_initial_hash_table_size", b"_initial_hash_table_size", "_max_static_sparse_memory_overhead", b"_max_static_sparse_memory_overhead", "_maximum_load_factor", b"_maximum_load_factor", "_target_load_factor", b"_target_load_factor", "_use_redirection", b"_use_redirection", "chunk_capacity", b"chunk_capacity", "initial_hash_table_size", b"initial_hash_table_size", "math_context", b"math_context", "max_static_sparse_memory_overhead", b"max_static_sparse_memory_overhead", "maximum_load_factor", b"maximum_load_factor", "target_load_factor", b"target_load_factor", "use_redirection", b"use_redirection"]) -> builtins.bool: ...
         def ClearField(self, field_name: typing.Literal["_chunk_capacity", b"_chunk_capacity", "_initial_hash_table_size", b"_initial_hash_table_size", "_max_static_sparse_memory_overhead", b"_max_static_sparse_memory_overhead", "_maximum_load_factor", b"_maximum_load_factor", "_target_load_factor", b"_target_load_factor", "_use_redirection", b"_use_redirection", "chunk_capacity", b"chunk_capacity", "initial_hash_table_size", b"initial_hash_table_size", "math_context", b"math_context", "max_static_sparse_memory_overhead", b"max_static_sparse_memory_overhead", "maximum_load_factor", b"maximum_load_factor", "target_load_factor", b"target_load_factor", "use_redirection", b"use_redirection"]) -> None: ...
@@ -705,14 +710,14 @@ class UpdateByRequest(google.protobuf.message.Message):
                     OPTIONS_FIELD_NUMBER: builtins.int
                     WINDOW_SCALE_FIELD_NUMBER: builtins.int
                     @property
-                    def options(self) -> global___UpdateByEmOptions: ...
+                    def options(self) -> Global___UpdateByEmOptions: ...
                     @property
-                    def window_scale(self) -> global___UpdateByWindowScale: ...
+                    def window_scale(self) -> Global___UpdateByWindowScale: ...
                     def __init__(
                         self,
                         *,
-                        options: global___UpdateByEmOptions | None = ...,
-                        window_scale: global___UpdateByWindowScale | None = ...,
+                        options: Global___UpdateByEmOptions | None = ...,
+                        window_scale: Global___UpdateByWindowScale | None = ...,
                     ) -> None: ...
                     def HasField(self, field_name: typing.Literal["options", b"options", "window_scale", b"window_scale"]) -> builtins.bool: ...
                     def ClearField(self, field_name: typing.Literal["options", b"options", "window_scale", b"window_scale"]) -> None: ...
@@ -724,14 +729,14 @@ class UpdateByRequest(google.protobuf.message.Message):
                     OPTIONS_FIELD_NUMBER: builtins.int
                     WINDOW_SCALE_FIELD_NUMBER: builtins.int
                     @property
-                    def options(self) -> global___UpdateByEmOptions: ...
+                    def options(self) -> Global___UpdateByEmOptions: ...
                     @property
-                    def window_scale(self) -> global___UpdateByWindowScale: ...
+                    def window_scale(self) -> Global___UpdateByWindowScale: ...
                     def __init__(
                         self,
                         *,
-                        options: global___UpdateByEmOptions | None = ...,
-                        window_scale: global___UpdateByWindowScale | None = ...,
+                        options: Global___UpdateByEmOptions | None = ...,
+                        window_scale: Global___UpdateByWindowScale | None = ...,
                     ) -> None: ...
                     def HasField(self, field_name: typing.Literal["options", b"options", "window_scale", b"window_scale"]) -> builtins.bool: ...
                     def ClearField(self, field_name: typing.Literal["options", b"options", "window_scale", b"window_scale"]) -> None: ...
@@ -743,14 +748,14 @@ class UpdateByRequest(google.protobuf.message.Message):
                     OPTIONS_FIELD_NUMBER: builtins.int
                     WINDOW_SCALE_FIELD_NUMBER: builtins.int
                     @property
-                    def options(self) -> global___UpdateByEmOptions: ...
+                    def options(self) -> Global___UpdateByEmOptions: ...
                     @property
-                    def window_scale(self) -> global___UpdateByWindowScale: ...
+                    def window_scale(self) -> Global___UpdateByWindowScale: ...
                     def __init__(
                         self,
                         *,
-                        options: global___UpdateByEmOptions | None = ...,
-                        window_scale: global___UpdateByWindowScale | None = ...,
+                        options: Global___UpdateByEmOptions | None = ...,
+                        window_scale: Global___UpdateByWindowScale | None = ...,
                     ) -> None: ...
                     def HasField(self, field_name: typing.Literal["options", b"options", "window_scale", b"window_scale"]) -> builtins.bool: ...
                     def ClearField(self, field_name: typing.Literal["options", b"options", "window_scale", b"window_scale"]) -> None: ...
@@ -762,14 +767,14 @@ class UpdateByRequest(google.protobuf.message.Message):
                     OPTIONS_FIELD_NUMBER: builtins.int
                     WINDOW_SCALE_FIELD_NUMBER: builtins.int
                     @property
-                    def options(self) -> global___UpdateByEmOptions: ...
+                    def options(self) -> Global___UpdateByEmOptions: ...
                     @property
-                    def window_scale(self) -> global___UpdateByWindowScale: ...
+                    def window_scale(self) -> Global___UpdateByWindowScale: ...
                     def __init__(
                         self,
                         *,
-                        options: global___UpdateByEmOptions | None = ...,
-                        window_scale: global___UpdateByWindowScale | None = ...,
+                        options: Global___UpdateByEmOptions | None = ...,
+                        window_scale: Global___UpdateByWindowScale | None = ...,
                     ) -> None: ...
                     def HasField(self, field_name: typing.Literal["options", b"options", "window_scale", b"window_scale"]) -> builtins.bool: ...
                     def ClearField(self, field_name: typing.Literal["options", b"options", "window_scale", b"window_scale"]) -> None: ...
@@ -781,14 +786,14 @@ class UpdateByRequest(google.protobuf.message.Message):
                     OPTIONS_FIELD_NUMBER: builtins.int
                     WINDOW_SCALE_FIELD_NUMBER: builtins.int
                     @property
-                    def options(self) -> global___UpdateByEmOptions: ...
+                    def options(self) -> Global___UpdateByEmOptions: ...
                     @property
-                    def window_scale(self) -> global___UpdateByWindowScale: ...
+                    def window_scale(self) -> Global___UpdateByWindowScale: ...
                     def __init__(
                         self,
                         *,
-                        options: global___UpdateByEmOptions | None = ...,
-                        window_scale: global___UpdateByWindowScale | None = ...,
+                        options: Global___UpdateByEmOptions | None = ...,
+                        window_scale: Global___UpdateByWindowScale | None = ...,
                     ) -> None: ...
                     def HasField(self, field_name: typing.Literal["options", b"options", "window_scale", b"window_scale"]) -> builtins.bool: ...
                     def ClearField(self, field_name: typing.Literal["options", b"options", "window_scale", b"window_scale"]) -> None: ...
@@ -799,11 +804,11 @@ class UpdateByRequest(google.protobuf.message.Message):
 
                     OPTIONS_FIELD_NUMBER: builtins.int
                     @property
-                    def options(self) -> global___UpdateByDeltaOptions: ...
+                    def options(self) -> Global___UpdateByDeltaOptions: ...
                     def __init__(
                         self,
                         *,
-                        options: global___UpdateByDeltaOptions | None = ...,
+                        options: Global___UpdateByDeltaOptions | None = ...,
                     ) -> None: ...
                     def HasField(self, field_name: typing.Literal["options", b"options"]) -> builtins.bool: ...
                     def ClearField(self, field_name: typing.Literal["options", b"options"]) -> None: ...
@@ -815,14 +820,14 @@ class UpdateByRequest(google.protobuf.message.Message):
                     REVERSE_WINDOW_SCALE_FIELD_NUMBER: builtins.int
                     FORWARD_WINDOW_SCALE_FIELD_NUMBER: builtins.int
                     @property
-                    def reverse_window_scale(self) -> global___UpdateByWindowScale: ...
+                    def reverse_window_scale(self) -> Global___UpdateByWindowScale: ...
                     @property
-                    def forward_window_scale(self) -> global___UpdateByWindowScale: ...
+                    def forward_window_scale(self) -> Global___UpdateByWindowScale: ...
                     def __init__(
                         self,
                         *,
-                        reverse_window_scale: global___UpdateByWindowScale | None = ...,
-                        forward_window_scale: global___UpdateByWindowScale | None = ...,
+                        reverse_window_scale: Global___UpdateByWindowScale | None = ...,
+                        forward_window_scale: Global___UpdateByWindowScale | None = ...,
                     ) -> None: ...
                     def HasField(self, field_name: typing.Literal["forward_window_scale", b"forward_window_scale", "reverse_window_scale", b"reverse_window_scale"]) -> builtins.bool: ...
                     def ClearField(self, field_name: typing.Literal["forward_window_scale", b"forward_window_scale", "reverse_window_scale", b"reverse_window_scale"]) -> None: ...
@@ -834,14 +839,14 @@ class UpdateByRequest(google.protobuf.message.Message):
                     REVERSE_WINDOW_SCALE_FIELD_NUMBER: builtins.int
                     FORWARD_WINDOW_SCALE_FIELD_NUMBER: builtins.int
                     @property
-                    def reverse_window_scale(self) -> global___UpdateByWindowScale: ...
+                    def reverse_window_scale(self) -> Global___UpdateByWindowScale: ...
                     @property
-                    def forward_window_scale(self) -> global___UpdateByWindowScale: ...
+                    def forward_window_scale(self) -> Global___UpdateByWindowScale: ...
                     def __init__(
                         self,
                         *,
-                        reverse_window_scale: global___UpdateByWindowScale | None = ...,
-                        forward_window_scale: global___UpdateByWindowScale | None = ...,
+                        reverse_window_scale: Global___UpdateByWindowScale | None = ...,
+                        forward_window_scale: Global___UpdateByWindowScale | None = ...,
                     ) -> None: ...
                     def HasField(self, field_name: typing.Literal["forward_window_scale", b"forward_window_scale", "reverse_window_scale", b"reverse_window_scale"]) -> builtins.bool: ...
                     def ClearField(self, field_name: typing.Literal["forward_window_scale", b"forward_window_scale", "reverse_window_scale", b"reverse_window_scale"]) -> None: ...
@@ -853,14 +858,14 @@ class UpdateByRequest(google.protobuf.message.Message):
                     REVERSE_WINDOW_SCALE_FIELD_NUMBER: builtins.int
                     FORWARD_WINDOW_SCALE_FIELD_NUMBER: builtins.int
                     @property
-                    def reverse_window_scale(self) -> global___UpdateByWindowScale: ...
+                    def reverse_window_scale(self) -> Global___UpdateByWindowScale: ...
                     @property
-                    def forward_window_scale(self) -> global___UpdateByWindowScale: ...
+                    def forward_window_scale(self) -> Global___UpdateByWindowScale: ...
                     def __init__(
                         self,
                         *,
-                        reverse_window_scale: global___UpdateByWindowScale | None = ...,
-                        forward_window_scale: global___UpdateByWindowScale | None = ...,
+                        reverse_window_scale: Global___UpdateByWindowScale | None = ...,
+                        forward_window_scale: Global___UpdateByWindowScale | None = ...,
                     ) -> None: ...
                     def HasField(self, field_name: typing.Literal["forward_window_scale", b"forward_window_scale", "reverse_window_scale", b"reverse_window_scale"]) -> builtins.bool: ...
                     def ClearField(self, field_name: typing.Literal["forward_window_scale", b"forward_window_scale", "reverse_window_scale", b"reverse_window_scale"]) -> None: ...
@@ -872,14 +877,14 @@ class UpdateByRequest(google.protobuf.message.Message):
                     REVERSE_WINDOW_SCALE_FIELD_NUMBER: builtins.int
                     FORWARD_WINDOW_SCALE_FIELD_NUMBER: builtins.int
                     @property
-                    def reverse_window_scale(self) -> global___UpdateByWindowScale: ...
+                    def reverse_window_scale(self) -> Global___UpdateByWindowScale: ...
                     @property
-                    def forward_window_scale(self) -> global___UpdateByWindowScale: ...
+                    def forward_window_scale(self) -> Global___UpdateByWindowScale: ...
                     def __init__(
                         self,
                         *,
-                        reverse_window_scale: global___UpdateByWindowScale | None = ...,
-                        forward_window_scale: global___UpdateByWindowScale | None = ...,
+                        reverse_window_scale: Global___UpdateByWindowScale | None = ...,
+                        forward_window_scale: Global___UpdateByWindowScale | None = ...,
                     ) -> None: ...
                     def HasField(self, field_name: typing.Literal["forward_window_scale", b"forward_window_scale", "reverse_window_scale", b"reverse_window_scale"]) -> builtins.bool: ...
                     def ClearField(self, field_name: typing.Literal["forward_window_scale", b"forward_window_scale", "reverse_window_scale", b"reverse_window_scale"]) -> None: ...
@@ -891,14 +896,14 @@ class UpdateByRequest(google.protobuf.message.Message):
                     REVERSE_WINDOW_SCALE_FIELD_NUMBER: builtins.int
                     FORWARD_WINDOW_SCALE_FIELD_NUMBER: builtins.int
                     @property
-                    def reverse_window_scale(self) -> global___UpdateByWindowScale: ...
+                    def reverse_window_scale(self) -> Global___UpdateByWindowScale: ...
                     @property
-                    def forward_window_scale(self) -> global___UpdateByWindowScale: ...
+                    def forward_window_scale(self) -> Global___UpdateByWindowScale: ...
                     def __init__(
                         self,
                         *,
-                        reverse_window_scale: global___UpdateByWindowScale | None = ...,
-                        forward_window_scale: global___UpdateByWindowScale | None = ...,
+                        reverse_window_scale: Global___UpdateByWindowScale | None = ...,
+                        forward_window_scale: Global___UpdateByWindowScale | None = ...,
                     ) -> None: ...
                     def HasField(self, field_name: typing.Literal["forward_window_scale", b"forward_window_scale", "reverse_window_scale", b"reverse_window_scale"]) -> builtins.bool: ...
                     def ClearField(self, field_name: typing.Literal["forward_window_scale", b"forward_window_scale", "reverse_window_scale", b"reverse_window_scale"]) -> None: ...
@@ -910,14 +915,14 @@ class UpdateByRequest(google.protobuf.message.Message):
                     REVERSE_WINDOW_SCALE_FIELD_NUMBER: builtins.int
                     FORWARD_WINDOW_SCALE_FIELD_NUMBER: builtins.int
                     @property
-                    def reverse_window_scale(self) -> global___UpdateByWindowScale: ...
+                    def reverse_window_scale(self) -> Global___UpdateByWindowScale: ...
                     @property
-                    def forward_window_scale(self) -> global___UpdateByWindowScale: ...
+                    def forward_window_scale(self) -> Global___UpdateByWindowScale: ...
                     def __init__(
                         self,
                         *,
-                        reverse_window_scale: global___UpdateByWindowScale | None = ...,
-                        forward_window_scale: global___UpdateByWindowScale | None = ...,
+                        reverse_window_scale: Global___UpdateByWindowScale | None = ...,
+                        forward_window_scale: Global___UpdateByWindowScale | None = ...,
                     ) -> None: ...
                     def HasField(self, field_name: typing.Literal["forward_window_scale", b"forward_window_scale", "reverse_window_scale", b"reverse_window_scale"]) -> builtins.bool: ...
                     def ClearField(self, field_name: typing.Literal["forward_window_scale", b"forward_window_scale", "reverse_window_scale", b"reverse_window_scale"]) -> None: ...
@@ -929,14 +934,14 @@ class UpdateByRequest(google.protobuf.message.Message):
                     REVERSE_WINDOW_SCALE_FIELD_NUMBER: builtins.int
                     FORWARD_WINDOW_SCALE_FIELD_NUMBER: builtins.int
                     @property
-                    def reverse_window_scale(self) -> global___UpdateByWindowScale: ...
+                    def reverse_window_scale(self) -> Global___UpdateByWindowScale: ...
                     @property
-                    def forward_window_scale(self) -> global___UpdateByWindowScale: ...
+                    def forward_window_scale(self) -> Global___UpdateByWindowScale: ...
                     def __init__(
                         self,
                         *,
-                        reverse_window_scale: global___UpdateByWindowScale | None = ...,
-                        forward_window_scale: global___UpdateByWindowScale | None = ...,
+                        reverse_window_scale: Global___UpdateByWindowScale | None = ...,
+                        forward_window_scale: Global___UpdateByWindowScale | None = ...,
                     ) -> None: ...
                     def HasField(self, field_name: typing.Literal["forward_window_scale", b"forward_window_scale", "reverse_window_scale", b"reverse_window_scale"]) -> builtins.bool: ...
                     def ClearField(self, field_name: typing.Literal["forward_window_scale", b"forward_window_scale", "reverse_window_scale", b"reverse_window_scale"]) -> None: ...
@@ -948,14 +953,14 @@ class UpdateByRequest(google.protobuf.message.Message):
                     REVERSE_WINDOW_SCALE_FIELD_NUMBER: builtins.int
                     FORWARD_WINDOW_SCALE_FIELD_NUMBER: builtins.int
                     @property
-                    def reverse_window_scale(self) -> global___UpdateByWindowScale: ...
+                    def reverse_window_scale(self) -> Global___UpdateByWindowScale: ...
                     @property
-                    def forward_window_scale(self) -> global___UpdateByWindowScale: ...
+                    def forward_window_scale(self) -> Global___UpdateByWindowScale: ...
                     def __init__(
                         self,
                         *,
-                        reverse_window_scale: global___UpdateByWindowScale | None = ...,
-                        forward_window_scale: global___UpdateByWindowScale | None = ...,
+                        reverse_window_scale: Global___UpdateByWindowScale | None = ...,
+                        forward_window_scale: Global___UpdateByWindowScale | None = ...,
                     ) -> None: ...
                     def HasField(self, field_name: typing.Literal["forward_window_scale", b"forward_window_scale", "reverse_window_scale", b"reverse_window_scale"]) -> builtins.bool: ...
                     def ClearField(self, field_name: typing.Literal["forward_window_scale", b"forward_window_scale", "reverse_window_scale", b"reverse_window_scale"]) -> None: ...
@@ -970,14 +975,14 @@ class UpdateByRequest(google.protobuf.message.Message):
                     weight_column: builtins.str
                     """Column name for the source of input weights."""
                     @property
-                    def reverse_window_scale(self) -> global___UpdateByWindowScale: ...
+                    def reverse_window_scale(self) -> Global___UpdateByWindowScale: ...
                     @property
-                    def forward_window_scale(self) -> global___UpdateByWindowScale: ...
+                    def forward_window_scale(self) -> Global___UpdateByWindowScale: ...
                     def __init__(
                         self,
                         *,
-                        reverse_window_scale: global___UpdateByWindowScale | None = ...,
-                        forward_window_scale: global___UpdateByWindowScale | None = ...,
+                        reverse_window_scale: Global___UpdateByWindowScale | None = ...,
+                        forward_window_scale: Global___UpdateByWindowScale | None = ...,
                         weight_column: builtins.str = ...,
                     ) -> None: ...
                     def HasField(self, field_name: typing.Literal["forward_window_scale", b"forward_window_scale", "reverse_window_scale", b"reverse_window_scale"]) -> builtins.bool: ...
@@ -994,14 +999,14 @@ class UpdateByRequest(google.protobuf.message.Message):
                     formula: builtins.str
                     param_token: builtins.str
                     @property
-                    def reverse_window_scale(self) -> global___UpdateByWindowScale: ...
+                    def reverse_window_scale(self) -> Global___UpdateByWindowScale: ...
                     @property
-                    def forward_window_scale(self) -> global___UpdateByWindowScale: ...
+                    def forward_window_scale(self) -> Global___UpdateByWindowScale: ...
                     def __init__(
                         self,
                         *,
-                        reverse_window_scale: global___UpdateByWindowScale | None = ...,
-                        forward_window_scale: global___UpdateByWindowScale | None = ...,
+                        reverse_window_scale: Global___UpdateByWindowScale | None = ...,
+                        forward_window_scale: Global___UpdateByWindowScale | None = ...,
                         formula: builtins.str = ...,
                         param_token: builtins.str = ...,
                     ) -> None: ...
@@ -1019,11 +1024,11 @@ class UpdateByRequest(google.protobuf.message.Message):
                     result_column: builtins.str
                     """The output column name"""
                     @property
-                    def reverse_window_scale(self) -> global___UpdateByWindowScale:
+                    def reverse_window_scale(self) -> Global___UpdateByWindowScale:
                         """The reverse window for the rolling operation, may be in ticks or time-based."""
 
                     @property
-                    def forward_window_scale(self) -> global___UpdateByWindowScale:
+                    def forward_window_scale(self) -> Global___UpdateByWindowScale:
                         """The forward window for the rolling operation, may be in ticks or time-based."""
 
                     @property
@@ -1033,8 +1038,8 @@ class UpdateByRequest(google.protobuf.message.Message):
                     def __init__(
                         self,
                         *,
-                        reverse_window_scale: global___UpdateByWindowScale | None = ...,
-                        forward_window_scale: global___UpdateByWindowScale | None = ...,
+                        reverse_window_scale: Global___UpdateByWindowScale | None = ...,
+                        forward_window_scale: Global___UpdateByWindowScale | None = ...,
                         result_column: builtins.str = ...,
                         filters: collections.abc.Iterable[builtins.str] | None = ...,
                     ) -> None: ...
@@ -1085,77 +1090,77 @@ class UpdateByRequest(google.protobuf.message.Message):
                 ROLLING_COUNT_WHERE_FIELD_NUMBER: builtins.int
                 COUNT_WHERE_FIELD_NUMBER: builtins.int
                 @property
-                def sum(self) -> global___UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByCumulativeSum: ...
+                def sum(self) -> Global___UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByCumulativeSum: ...
                 @property
-                def min(self) -> global___UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByCumulativeMin: ...
+                def min(self) -> Global___UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByCumulativeMin: ...
                 @property
-                def max(self) -> global___UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByCumulativeMax: ...
+                def max(self) -> Global___UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByCumulativeMax: ...
                 @property
-                def product(self) -> global___UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByCumulativeProduct: ...
+                def product(self) -> Global___UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByCumulativeProduct: ...
                 @property
-                def fill(self) -> global___UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByFill: ...
+                def fill(self) -> Global___UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByFill: ...
                 @property
-                def ema(self) -> global___UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEma: ...
+                def ema(self) -> Global___UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEma: ...
                 @property
-                def rolling_sum(self) -> global___UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingSum: ...
+                def rolling_sum(self) -> Global___UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingSum: ...
                 @property
-                def rolling_group(self) -> global___UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingGroup: ...
+                def rolling_group(self) -> Global___UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingGroup: ...
                 @property
-                def rolling_avg(self) -> global___UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingAvg: ...
+                def rolling_avg(self) -> Global___UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingAvg: ...
                 @property
-                def rolling_min(self) -> global___UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingMin: ...
+                def rolling_min(self) -> Global___UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingMin: ...
                 @property
-                def rolling_max(self) -> global___UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingMax: ...
+                def rolling_max(self) -> Global___UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingMax: ...
                 @property
-                def rolling_product(self) -> global___UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingProduct: ...
+                def rolling_product(self) -> Global___UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingProduct: ...
                 @property
-                def delta(self) -> global___UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByDelta: ...
+                def delta(self) -> Global___UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByDelta: ...
                 @property
-                def ems(self) -> global___UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEms: ...
+                def ems(self) -> Global___UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEms: ...
                 @property
-                def em_min(self) -> global___UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEmMin: ...
+                def em_min(self) -> Global___UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEmMin: ...
                 @property
-                def em_max(self) -> global___UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEmMax: ...
+                def em_max(self) -> Global___UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEmMax: ...
                 @property
-                def em_std(self) -> global___UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEmStd: ...
+                def em_std(self) -> Global___UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEmStd: ...
                 @property
-                def rolling_count(self) -> global___UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingCount: ...
+                def rolling_count(self) -> Global___UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingCount: ...
                 @property
-                def rolling_std(self) -> global___UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingStd: ...
+                def rolling_std(self) -> Global___UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingStd: ...
                 @property
-                def rolling_wavg(self) -> global___UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingWAvg: ...
+                def rolling_wavg(self) -> Global___UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingWAvg: ...
                 @property
-                def rolling_formula(self) -> global___UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingFormula: ...
+                def rolling_formula(self) -> Global___UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingFormula: ...
                 @property
-                def rolling_count_where(self) -> global___UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingCountWhere: ...
+                def rolling_count_where(self) -> Global___UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingCountWhere: ...
                 @property
-                def count_where(self) -> global___UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByCumulativeCountWhere: ...
+                def count_where(self) -> Global___UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByCumulativeCountWhere: ...
                 def __init__(
                     self,
                     *,
-                    sum: global___UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByCumulativeSum | None = ...,
-                    min: global___UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByCumulativeMin | None = ...,
-                    max: global___UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByCumulativeMax | None = ...,
-                    product: global___UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByCumulativeProduct | None = ...,
-                    fill: global___UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByFill | None = ...,
-                    ema: global___UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEma | None = ...,
-                    rolling_sum: global___UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingSum | None = ...,
-                    rolling_group: global___UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingGroup | None = ...,
-                    rolling_avg: global___UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingAvg | None = ...,
-                    rolling_min: global___UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingMin | None = ...,
-                    rolling_max: global___UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingMax | None = ...,
-                    rolling_product: global___UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingProduct | None = ...,
-                    delta: global___UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByDelta | None = ...,
-                    ems: global___UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEms | None = ...,
-                    em_min: global___UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEmMin | None = ...,
-                    em_max: global___UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEmMax | None = ...,
-                    em_std: global___UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEmStd | None = ...,
-                    rolling_count: global___UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingCount | None = ...,
-                    rolling_std: global___UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingStd | None = ...,
-                    rolling_wavg: global___UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingWAvg | None = ...,
-                    rolling_formula: global___UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingFormula | None = ...,
-                    rolling_count_where: global___UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingCountWhere | None = ...,
-                    count_where: global___UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByCumulativeCountWhere | None = ...,
+                    sum: Global___UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByCumulativeSum | None = ...,
+                    min: Global___UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByCumulativeMin | None = ...,
+                    max: Global___UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByCumulativeMax | None = ...,
+                    product: Global___UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByCumulativeProduct | None = ...,
+                    fill: Global___UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByFill | None = ...,
+                    ema: Global___UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEma | None = ...,
+                    rolling_sum: Global___UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingSum | None = ...,
+                    rolling_group: Global___UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingGroup | None = ...,
+                    rolling_avg: Global___UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingAvg | None = ...,
+                    rolling_min: Global___UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingMin | None = ...,
+                    rolling_max: Global___UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingMax | None = ...,
+                    rolling_product: Global___UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingProduct | None = ...,
+                    delta: Global___UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByDelta | None = ...,
+                    ems: Global___UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEms | None = ...,
+                    em_min: Global___UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEmMin | None = ...,
+                    em_max: Global___UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEmMax | None = ...,
+                    em_std: Global___UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEmStd | None = ...,
+                    rolling_count: Global___UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingCount | None = ...,
+                    rolling_std: Global___UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingStd | None = ...,
+                    rolling_wavg: Global___UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingWAvg | None = ...,
+                    rolling_formula: Global___UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingFormula | None = ...,
+                    rolling_count_where: Global___UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingCountWhere | None = ...,
+                    count_where: Global___UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByCumulativeCountWhere | None = ...,
                 ) -> None: ...
                 def HasField(self, field_name: typing.Literal["count_where", b"count_where", "delta", b"delta", "em_max", b"em_max", "em_min", b"em_min", "em_std", b"em_std", "ema", b"ema", "ems", b"ems", "fill", b"fill", "max", b"max", "min", b"min", "product", b"product", "rolling_avg", b"rolling_avg", "rolling_count", b"rolling_count", "rolling_count_where", b"rolling_count_where", "rolling_formula", b"rolling_formula", "rolling_group", b"rolling_group", "rolling_max", b"rolling_max", "rolling_min", b"rolling_min", "rolling_product", b"rolling_product", "rolling_std", b"rolling_std", "rolling_sum", b"rolling_sum", "rolling_wavg", b"rolling_wavg", "sum", b"sum", "type", b"type"]) -> builtins.bool: ...
                 def ClearField(self, field_name: typing.Literal["count_where", b"count_where", "delta", b"delta", "em_max", b"em_max", "em_min", b"em_min", "em_std", b"em_std", "ema", b"ema", "ems", b"ems", "fill", b"fill", "max", b"max", "min", b"min", "product", b"product", "rolling_avg", b"rolling_avg", "rolling_count", b"rolling_count", "rolling_count_where", b"rolling_count_where", "rolling_formula", b"rolling_formula", "rolling_group", b"rolling_group", "rolling_max", b"rolling_max", "rolling_min", b"rolling_min", "rolling_product", b"rolling_product", "rolling_std", b"rolling_std", "rolling_sum", b"rolling_sum", "rolling_wavg", b"rolling_wavg", "sum", b"sum", "type", b"type"]) -> None: ...
@@ -1164,13 +1169,13 @@ class UpdateByRequest(google.protobuf.message.Message):
             SPEC_FIELD_NUMBER: builtins.int
             MATCH_PAIRS_FIELD_NUMBER: builtins.int
             @property
-            def spec(self) -> global___UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec: ...
+            def spec(self) -> Global___UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec: ...
             @property
             def match_pairs(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.str]: ...
             def __init__(
                 self,
                 *,
-                spec: global___UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec | None = ...,
+                spec: Global___UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec | None = ...,
                 match_pairs: collections.abc.Iterable[builtins.str] | None = ...,
             ) -> None: ...
             def HasField(self, field_name: typing.Literal["spec", b"spec"]) -> builtins.bool: ...
@@ -1178,11 +1183,11 @@ class UpdateByRequest(google.protobuf.message.Message):
 
         COLUMN_FIELD_NUMBER: builtins.int
         @property
-        def column(self) -> global___UpdateByRequest.UpdateByOperation.UpdateByColumn: ...
+        def column(self) -> Global___UpdateByRequest.UpdateByOperation.UpdateByColumn: ...
         def __init__(
             self,
             *,
-            column: global___UpdateByRequest.UpdateByOperation.UpdateByColumn | None = ...,
+            column: Global___UpdateByRequest.UpdateByOperation.UpdateByColumn | None = ...,
         ) -> None: ...
         def HasField(self, field_name: typing.Literal["column", b"column", "type", b"type"]) -> builtins.bool: ...
         def ClearField(self, field_name: typing.Literal["column", b"column", "type", b"type"]) -> None: ...
@@ -1196,26 +1201,26 @@ class UpdateByRequest(google.protobuf.message.Message):
     @property
     def result_id(self) -> deephaven_core.proto.ticket_pb2.Ticket: ...
     @property
-    def source_id(self) -> global___TableReference: ...
+    def source_id(self) -> Global___TableReference: ...
     @property
-    def options(self) -> global___UpdateByRequest.UpdateByOptions: ...
+    def options(self) -> Global___UpdateByRequest.UpdateByOptions: ...
     @property
-    def operations(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___UpdateByRequest.UpdateByOperation]: ...
+    def operations(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[Global___UpdateByRequest.UpdateByOperation]: ...
     @property
     def group_by_columns(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.str]: ...
     def __init__(
         self,
         *,
         result_id: deephaven_core.proto.ticket_pb2.Ticket | None = ...,
-        source_id: global___TableReference | None = ...,
-        options: global___UpdateByRequest.UpdateByOptions | None = ...,
-        operations: collections.abc.Iterable[global___UpdateByRequest.UpdateByOperation] | None = ...,
+        source_id: Global___TableReference | None = ...,
+        options: Global___UpdateByRequest.UpdateByOptions | None = ...,
+        operations: collections.abc.Iterable[Global___UpdateByRequest.UpdateByOperation] | None = ...,
         group_by_columns: collections.abc.Iterable[builtins.str] | None = ...,
     ) -> None: ...
     def HasField(self, field_name: typing.Literal["options", b"options", "result_id", b"result_id", "source_id", b"source_id"]) -> builtins.bool: ...
     def ClearField(self, field_name: typing.Literal["group_by_columns", b"group_by_columns", "operations", b"operations", "options", b"options", "result_id", b"result_id", "source_id", b"source_id"]) -> None: ...
 
-global___UpdateByRequest = UpdateByRequest
+Global___UpdateByRequest: typing_extensions.TypeAlias = UpdateByRequest
 
 @typing.final
 class SelectDistinctRequest(google.protobuf.message.Message):
@@ -1227,20 +1232,20 @@ class SelectDistinctRequest(google.protobuf.message.Message):
     @property
     def result_id(self) -> deephaven_core.proto.ticket_pb2.Ticket: ...
     @property
-    def source_id(self) -> global___TableReference: ...
+    def source_id(self) -> Global___TableReference: ...
     @property
     def column_names(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.str]: ...
     def __init__(
         self,
         *,
         result_id: deephaven_core.proto.ticket_pb2.Ticket | None = ...,
-        source_id: global___TableReference | None = ...,
+        source_id: Global___TableReference | None = ...,
         column_names: collections.abc.Iterable[builtins.str] | None = ...,
     ) -> None: ...
     def HasField(self, field_name: typing.Literal["result_id", b"result_id", "source_id", b"source_id"]) -> builtins.bool: ...
     def ClearField(self, field_name: typing.Literal["column_names", b"column_names", "result_id", b"result_id", "source_id", b"source_id"]) -> None: ...
 
-global___SelectDistinctRequest = SelectDistinctRequest
+Global___SelectDistinctRequest: typing_extensions.TypeAlias = SelectDistinctRequest
 
 @typing.final
 class DropColumnsRequest(google.protobuf.message.Message):
@@ -1252,20 +1257,20 @@ class DropColumnsRequest(google.protobuf.message.Message):
     @property
     def result_id(self) -> deephaven_core.proto.ticket_pb2.Ticket: ...
     @property
-    def source_id(self) -> global___TableReference: ...
+    def source_id(self) -> Global___TableReference: ...
     @property
     def column_names(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.str]: ...
     def __init__(
         self,
         *,
         result_id: deephaven_core.proto.ticket_pb2.Ticket | None = ...,
-        source_id: global___TableReference | None = ...,
+        source_id: Global___TableReference | None = ...,
         column_names: collections.abc.Iterable[builtins.str] | None = ...,
     ) -> None: ...
     def HasField(self, field_name: typing.Literal["result_id", b"result_id", "source_id", b"source_id"]) -> builtins.bool: ...
     def ClearField(self, field_name: typing.Literal["column_names", b"column_names", "result_id", b"result_id", "source_id", b"source_id"]) -> None: ...
 
-global___DropColumnsRequest = DropColumnsRequest
+Global___DropColumnsRequest: typing_extensions.TypeAlias = DropColumnsRequest
 
 @typing.final
 class UnstructuredFilterTableRequest(google.protobuf.message.Message):
@@ -1277,20 +1282,20 @@ class UnstructuredFilterTableRequest(google.protobuf.message.Message):
     @property
     def result_id(self) -> deephaven_core.proto.ticket_pb2.Ticket: ...
     @property
-    def source_id(self) -> global___TableReference: ...
+    def source_id(self) -> Global___TableReference: ...
     @property
     def filters(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.str]: ...
     def __init__(
         self,
         *,
         result_id: deephaven_core.proto.ticket_pb2.Ticket | None = ...,
-        source_id: global___TableReference | None = ...,
+        source_id: Global___TableReference | None = ...,
         filters: collections.abc.Iterable[builtins.str] | None = ...,
     ) -> None: ...
     def HasField(self, field_name: typing.Literal["result_id", b"result_id", "source_id", b"source_id"]) -> builtins.bool: ...
     def ClearField(self, field_name: typing.Literal["filters", b"filters", "result_id", b"result_id", "source_id", b"source_id"]) -> None: ...
 
-global___UnstructuredFilterTableRequest = UnstructuredFilterTableRequest
+Global___UnstructuredFilterTableRequest: typing_extensions.TypeAlias = UnstructuredFilterTableRequest
 
 @typing.final
 class HeadOrTailRequest(google.protobuf.message.Message):
@@ -1303,18 +1308,18 @@ class HeadOrTailRequest(google.protobuf.message.Message):
     @property
     def result_id(self) -> deephaven_core.proto.ticket_pb2.Ticket: ...
     @property
-    def source_id(self) -> global___TableReference: ...
+    def source_id(self) -> Global___TableReference: ...
     def __init__(
         self,
         *,
         result_id: deephaven_core.proto.ticket_pb2.Ticket | None = ...,
-        source_id: global___TableReference | None = ...,
+        source_id: Global___TableReference | None = ...,
         num_rows: builtins.int = ...,
     ) -> None: ...
     def HasField(self, field_name: typing.Literal["result_id", b"result_id", "source_id", b"source_id"]) -> builtins.bool: ...
     def ClearField(self, field_name: typing.Literal["num_rows", b"num_rows", "result_id", b"result_id", "source_id", b"source_id"]) -> None: ...
 
-global___HeadOrTailRequest = HeadOrTailRequest
+Global___HeadOrTailRequest: typing_extensions.TypeAlias = HeadOrTailRequest
 
 @typing.final
 class HeadOrTailByRequest(google.protobuf.message.Message):
@@ -1328,21 +1333,21 @@ class HeadOrTailByRequest(google.protobuf.message.Message):
     @property
     def result_id(self) -> deephaven_core.proto.ticket_pb2.Ticket: ...
     @property
-    def source_id(self) -> global___TableReference: ...
+    def source_id(self) -> Global___TableReference: ...
     @property
     def group_by_column_specs(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.str]: ...
     def __init__(
         self,
         *,
         result_id: deephaven_core.proto.ticket_pb2.Ticket | None = ...,
-        source_id: global___TableReference | None = ...,
+        source_id: Global___TableReference | None = ...,
         num_rows: builtins.int = ...,
         group_by_column_specs: collections.abc.Iterable[builtins.str] | None = ...,
     ) -> None: ...
     def HasField(self, field_name: typing.Literal["result_id", b"result_id", "source_id", b"source_id"]) -> builtins.bool: ...
     def ClearField(self, field_name: typing.Literal["group_by_column_specs", b"group_by_column_specs", "num_rows", b"num_rows", "result_id", b"result_id", "source_id", b"source_id"]) -> None: ...
 
-global___HeadOrTailByRequest = HeadOrTailByRequest
+Global___HeadOrTailByRequest: typing_extensions.TypeAlias = HeadOrTailByRequest
 
 @typing.final
 class UngroupRequest(google.protobuf.message.Message):
@@ -1356,21 +1361,21 @@ class UngroupRequest(google.protobuf.message.Message):
     @property
     def result_id(self) -> deephaven_core.proto.ticket_pb2.Ticket: ...
     @property
-    def source_id(self) -> global___TableReference: ...
+    def source_id(self) -> Global___TableReference: ...
     @property
     def columns_to_ungroup(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.str]: ...
     def __init__(
         self,
         *,
         result_id: deephaven_core.proto.ticket_pb2.Ticket | None = ...,
-        source_id: global___TableReference | None = ...,
+        source_id: Global___TableReference | None = ...,
         null_fill: builtins.bool = ...,
         columns_to_ungroup: collections.abc.Iterable[builtins.str] | None = ...,
     ) -> None: ...
     def HasField(self, field_name: typing.Literal["result_id", b"result_id", "source_id", b"source_id"]) -> builtins.bool: ...
     def ClearField(self, field_name: typing.Literal["columns_to_ungroup", b"columns_to_ungroup", "null_fill", b"null_fill", "result_id", b"result_id", "source_id", b"source_id"]) -> None: ...
 
-global___UngroupRequest = UngroupRequest
+Global___UngroupRequest: typing_extensions.TypeAlias = UngroupRequest
 
 @typing.final
 class MergeTablesRequest(google.protobuf.message.Message):
@@ -1384,18 +1389,18 @@ class MergeTablesRequest(google.protobuf.message.Message):
     @property
     def result_id(self) -> deephaven_core.proto.ticket_pb2.Ticket: ...
     @property
-    def source_ids(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___TableReference]: ...
+    def source_ids(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[Global___TableReference]: ...
     def __init__(
         self,
         *,
         result_id: deephaven_core.proto.ticket_pb2.Ticket | None = ...,
-        source_ids: collections.abc.Iterable[global___TableReference] | None = ...,
+        source_ids: collections.abc.Iterable[Global___TableReference] | None = ...,
         key_column: builtins.str = ...,
     ) -> None: ...
     def HasField(self, field_name: typing.Literal["result_id", b"result_id"]) -> builtins.bool: ...
     def ClearField(self, field_name: typing.Literal["key_column", b"key_column", "result_id", b"result_id", "source_ids", b"source_ids"]) -> None: ...
 
-global___MergeTablesRequest = MergeTablesRequest
+Global___MergeTablesRequest: typing_extensions.TypeAlias = MergeTablesRequest
 
 @typing.final
 class SnapshotTableRequest(google.protobuf.message.Message):
@@ -1406,17 +1411,17 @@ class SnapshotTableRequest(google.protobuf.message.Message):
     @property
     def result_id(self) -> deephaven_core.proto.ticket_pb2.Ticket: ...
     @property
-    def source_id(self) -> global___TableReference: ...
+    def source_id(self) -> Global___TableReference: ...
     def __init__(
         self,
         *,
         result_id: deephaven_core.proto.ticket_pb2.Ticket | None = ...,
-        source_id: global___TableReference | None = ...,
+        source_id: Global___TableReference | None = ...,
     ) -> None: ...
     def HasField(self, field_name: typing.Literal["result_id", b"result_id", "source_id", b"source_id"]) -> builtins.bool: ...
     def ClearField(self, field_name: typing.Literal["result_id", b"result_id", "source_id", b"source_id"]) -> None: ...
 
-global___SnapshotTableRequest = SnapshotTableRequest
+Global___SnapshotTableRequest: typing_extensions.TypeAlias = SnapshotTableRequest
 
 @typing.final
 class SnapshotWhenTableRequest(google.protobuf.message.Message):
@@ -1438,11 +1443,11 @@ class SnapshotWhenTableRequest(google.protobuf.message.Message):
     @property
     def result_id(self) -> deephaven_core.proto.ticket_pb2.Ticket: ...
     @property
-    def base_id(self) -> global___TableReference:
+    def base_id(self) -> Global___TableReference:
         """The base table."""
 
     @property
-    def trigger_id(self) -> global___TableReference:
+    def trigger_id(self) -> Global___TableReference:
         """The trigger table."""
 
     @property
@@ -1453,8 +1458,8 @@ class SnapshotWhenTableRequest(google.protobuf.message.Message):
         self,
         *,
         result_id: deephaven_core.proto.ticket_pb2.Ticket | None = ...,
-        base_id: global___TableReference | None = ...,
-        trigger_id: global___TableReference | None = ...,
+        base_id: Global___TableReference | None = ...,
+        trigger_id: Global___TableReference | None = ...,
         initial: builtins.bool = ...,
         incremental: builtins.bool = ...,
         history: builtins.bool = ...,
@@ -1463,7 +1468,7 @@ class SnapshotWhenTableRequest(google.protobuf.message.Message):
     def HasField(self, field_name: typing.Literal["base_id", b"base_id", "result_id", b"result_id", "trigger_id", b"trigger_id"]) -> builtins.bool: ...
     def ClearField(self, field_name: typing.Literal["base_id", b"base_id", "history", b"history", "incremental", b"incremental", "initial", b"initial", "result_id", b"result_id", "stamp_columns", b"stamp_columns", "trigger_id", b"trigger_id"]) -> None: ...
 
-global___SnapshotWhenTableRequest = SnapshotWhenTableRequest
+Global___SnapshotWhenTableRequest: typing_extensions.TypeAlias = SnapshotWhenTableRequest
 
 @typing.final
 class CrossJoinTablesRequest(google.protobuf.message.Message):
@@ -1480,9 +1485,9 @@ class CrossJoinTablesRequest(google.protobuf.message.Message):
     @property
     def result_id(self) -> deephaven_core.proto.ticket_pb2.Ticket: ...
     @property
-    def left_id(self) -> global___TableReference: ...
+    def left_id(self) -> Global___TableReference: ...
     @property
-    def right_id(self) -> global___TableReference: ...
+    def right_id(self) -> Global___TableReference: ...
     @property
     def columns_to_match(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.str]: ...
     @property
@@ -1491,8 +1496,8 @@ class CrossJoinTablesRequest(google.protobuf.message.Message):
         self,
         *,
         result_id: deephaven_core.proto.ticket_pb2.Ticket | None = ...,
-        left_id: global___TableReference | None = ...,
-        right_id: global___TableReference | None = ...,
+        left_id: Global___TableReference | None = ...,
+        right_id: Global___TableReference | None = ...,
         columns_to_match: collections.abc.Iterable[builtins.str] | None = ...,
         columns_to_add: collections.abc.Iterable[builtins.str] | None = ...,
         reserve_bits: builtins.int = ...,
@@ -1500,7 +1505,7 @@ class CrossJoinTablesRequest(google.protobuf.message.Message):
     def HasField(self, field_name: typing.Literal["left_id", b"left_id", "result_id", b"result_id", "right_id", b"right_id"]) -> builtins.bool: ...
     def ClearField(self, field_name: typing.Literal["columns_to_add", b"columns_to_add", "columns_to_match", b"columns_to_match", "left_id", b"left_id", "reserve_bits", b"reserve_bits", "result_id", b"result_id", "right_id", b"right_id"]) -> None: ...
 
-global___CrossJoinTablesRequest = CrossJoinTablesRequest
+Global___CrossJoinTablesRequest: typing_extensions.TypeAlias = CrossJoinTablesRequest
 
 @typing.final
 class NaturalJoinTablesRequest(google.protobuf.message.Message):
@@ -1543,13 +1548,13 @@ class NaturalJoinTablesRequest(google.protobuf.message.Message):
     COLUMNS_TO_MATCH_FIELD_NUMBER: builtins.int
     COLUMNS_TO_ADD_FIELD_NUMBER: builtins.int
     JOIN_TYPE_FIELD_NUMBER: builtins.int
-    join_type: global___NaturalJoinTablesRequest.JoinType.ValueType
+    join_type: Global___NaturalJoinTablesRequest.JoinType.ValueType
     @property
     def result_id(self) -> deephaven_core.proto.ticket_pb2.Ticket: ...
     @property
-    def left_id(self) -> global___TableReference: ...
+    def left_id(self) -> Global___TableReference: ...
     @property
-    def right_id(self) -> global___TableReference: ...
+    def right_id(self) -> Global___TableReference: ...
     @property
     def columns_to_match(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.str]: ...
     @property
@@ -1558,16 +1563,16 @@ class NaturalJoinTablesRequest(google.protobuf.message.Message):
         self,
         *,
         result_id: deephaven_core.proto.ticket_pb2.Ticket | None = ...,
-        left_id: global___TableReference | None = ...,
-        right_id: global___TableReference | None = ...,
+        left_id: Global___TableReference | None = ...,
+        right_id: Global___TableReference | None = ...,
         columns_to_match: collections.abc.Iterable[builtins.str] | None = ...,
         columns_to_add: collections.abc.Iterable[builtins.str] | None = ...,
-        join_type: global___NaturalJoinTablesRequest.JoinType.ValueType = ...,
+        join_type: Global___NaturalJoinTablesRequest.JoinType.ValueType = ...,
     ) -> None: ...
     def HasField(self, field_name: typing.Literal["left_id", b"left_id", "result_id", b"result_id", "right_id", b"right_id"]) -> builtins.bool: ...
     def ClearField(self, field_name: typing.Literal["columns_to_add", b"columns_to_add", "columns_to_match", b"columns_to_match", "join_type", b"join_type", "left_id", b"left_id", "result_id", b"result_id", "right_id", b"right_id"]) -> None: ...
 
-global___NaturalJoinTablesRequest = NaturalJoinTablesRequest
+Global___NaturalJoinTablesRequest: typing_extensions.TypeAlias = NaturalJoinTablesRequest
 
 @typing.final
 class ExactJoinTablesRequest(google.protobuf.message.Message):
@@ -1581,9 +1586,9 @@ class ExactJoinTablesRequest(google.protobuf.message.Message):
     @property
     def result_id(self) -> deephaven_core.proto.ticket_pb2.Ticket: ...
     @property
-    def left_id(self) -> global___TableReference: ...
+    def left_id(self) -> Global___TableReference: ...
     @property
-    def right_id(self) -> global___TableReference: ...
+    def right_id(self) -> Global___TableReference: ...
     @property
     def columns_to_match(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.str]: ...
     @property
@@ -1592,15 +1597,15 @@ class ExactJoinTablesRequest(google.protobuf.message.Message):
         self,
         *,
         result_id: deephaven_core.proto.ticket_pb2.Ticket | None = ...,
-        left_id: global___TableReference | None = ...,
-        right_id: global___TableReference | None = ...,
+        left_id: Global___TableReference | None = ...,
+        right_id: Global___TableReference | None = ...,
         columns_to_match: collections.abc.Iterable[builtins.str] | None = ...,
         columns_to_add: collections.abc.Iterable[builtins.str] | None = ...,
     ) -> None: ...
     def HasField(self, field_name: typing.Literal["left_id", b"left_id", "result_id", b"result_id", "right_id", b"right_id"]) -> builtins.bool: ...
     def ClearField(self, field_name: typing.Literal["columns_to_add", b"columns_to_add", "columns_to_match", b"columns_to_match", "left_id", b"left_id", "result_id", b"result_id", "right_id", b"right_id"]) -> None: ...
 
-global___ExactJoinTablesRequest = ExactJoinTablesRequest
+Global___ExactJoinTablesRequest: typing_extensions.TypeAlias = ExactJoinTablesRequest
 
 @typing.final
 class LeftJoinTablesRequest(google.protobuf.message.Message):
@@ -1614,9 +1619,9 @@ class LeftJoinTablesRequest(google.protobuf.message.Message):
     @property
     def result_id(self) -> deephaven_core.proto.ticket_pb2.Ticket: ...
     @property
-    def left_id(self) -> global___TableReference: ...
+    def left_id(self) -> Global___TableReference: ...
     @property
-    def right_id(self) -> global___TableReference: ...
+    def right_id(self) -> Global___TableReference: ...
     @property
     def columns_to_match(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.str]: ...
     @property
@@ -1625,16 +1630,17 @@ class LeftJoinTablesRequest(google.protobuf.message.Message):
         self,
         *,
         result_id: deephaven_core.proto.ticket_pb2.Ticket | None = ...,
-        left_id: global___TableReference | None = ...,
-        right_id: global___TableReference | None = ...,
+        left_id: Global___TableReference | None = ...,
+        right_id: Global___TableReference | None = ...,
         columns_to_match: collections.abc.Iterable[builtins.str] | None = ...,
         columns_to_add: collections.abc.Iterable[builtins.str] | None = ...,
     ) -> None: ...
     def HasField(self, field_name: typing.Literal["left_id", b"left_id", "result_id", b"result_id", "right_id", b"right_id"]) -> builtins.bool: ...
     def ClearField(self, field_name: typing.Literal["columns_to_add", b"columns_to_add", "columns_to_match", b"columns_to_match", "left_id", b"left_id", "result_id", b"result_id", "right_id", b"right_id"]) -> None: ...
 
-global___LeftJoinTablesRequest = LeftJoinTablesRequest
+Global___LeftJoinTablesRequest: typing_extensions.TypeAlias = LeftJoinTablesRequest
 
+@deprecated("""This message has been marked as deprecated using proto message options.""")
 @typing.final
 class AsOfJoinTablesRequest(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
@@ -1650,6 +1656,7 @@ class AsOfJoinTablesRequest(google.protobuf.message.Message):
         GREATER_THAN_EQUAL: AsOfJoinTablesRequest._MatchRule.ValueType  # 2
         GREATER_THAN: AsOfJoinTablesRequest._MatchRule.ValueType  # 3
 
+    @deprecated("""This enum has been marked as deprecated using proto enum options.""")
     class MatchRule(_MatchRule, metaclass=_MatchRuleEnumTypeWrapper): ...
     LESS_THAN_EQUAL: AsOfJoinTablesRequest.MatchRule.ValueType  # 0
     LESS_THAN: AsOfJoinTablesRequest.MatchRule.ValueType  # 1
@@ -1662,16 +1669,16 @@ class AsOfJoinTablesRequest(google.protobuf.message.Message):
     COLUMNS_TO_MATCH_FIELD_NUMBER: builtins.int
     COLUMNS_TO_ADD_FIELD_NUMBER: builtins.int
     AS_OF_MATCH_RULE_FIELD_NUMBER: builtins.int
-    as_of_match_rule: global___AsOfJoinTablesRequest.MatchRule.ValueType
+    as_of_match_rule: Global___AsOfJoinTablesRequest.MatchRule.ValueType
     """Direction to search to find a match. LESS_THAN_EQUAL and LESS_THAN will be used to make a
     Table.aj() call, and GREATER_THAN_EQUAL and GREATER_THAN will be used to make a Table.raj() call.
     """
     @property
     def result_id(self) -> deephaven_core.proto.ticket_pb2.Ticket: ...
     @property
-    def left_id(self) -> global___TableReference: ...
+    def left_id(self) -> Global___TableReference: ...
     @property
-    def right_id(self) -> global___TableReference: ...
+    def right_id(self) -> Global___TableReference: ...
     @property
     def columns_to_match(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.str]: ...
     @property
@@ -1680,16 +1687,16 @@ class AsOfJoinTablesRequest(google.protobuf.message.Message):
         self,
         *,
         result_id: deephaven_core.proto.ticket_pb2.Ticket | None = ...,
-        left_id: global___TableReference | None = ...,
-        right_id: global___TableReference | None = ...,
+        left_id: Global___TableReference | None = ...,
+        right_id: Global___TableReference | None = ...,
         columns_to_match: collections.abc.Iterable[builtins.str] | None = ...,
         columns_to_add: collections.abc.Iterable[builtins.str] | None = ...,
-        as_of_match_rule: global___AsOfJoinTablesRequest.MatchRule.ValueType = ...,
+        as_of_match_rule: Global___AsOfJoinTablesRequest.MatchRule.ValueType = ...,
     ) -> None: ...
     def HasField(self, field_name: typing.Literal["left_id", b"left_id", "result_id", b"result_id", "right_id", b"right_id"]) -> builtins.bool: ...
     def ClearField(self, field_name: typing.Literal["as_of_match_rule", b"as_of_match_rule", "columns_to_add", b"columns_to_add", "columns_to_match", b"columns_to_match", "left_id", b"left_id", "result_id", b"result_id", "right_id", b"right_id"]) -> None: ...
 
-global___AsOfJoinTablesRequest = AsOfJoinTablesRequest
+Global___AsOfJoinTablesRequest: typing_extensions.TypeAlias = AsOfJoinTablesRequest
 
 @typing.final
 class AjRajTablesRequest(google.protobuf.message.Message):
@@ -1711,9 +1718,9 @@ class AjRajTablesRequest(google.protobuf.message.Message):
     @property
     def result_id(self) -> deephaven_core.proto.ticket_pb2.Ticket: ...
     @property
-    def left_id(self) -> global___TableReference: ...
+    def left_id(self) -> Global___TableReference: ...
     @property
-    def right_id(self) -> global___TableReference: ...
+    def right_id(self) -> Global___TableReference: ...
     @property
     def exact_match_columns(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.str]: ...
     @property
@@ -1722,8 +1729,8 @@ class AjRajTablesRequest(google.protobuf.message.Message):
         self,
         *,
         result_id: deephaven_core.proto.ticket_pb2.Ticket | None = ...,
-        left_id: global___TableReference | None = ...,
-        right_id: global___TableReference | None = ...,
+        left_id: Global___TableReference | None = ...,
+        right_id: Global___TableReference | None = ...,
         exact_match_columns: collections.abc.Iterable[builtins.str] | None = ...,
         as_of_column: builtins.str = ...,
         columns_to_add: collections.abc.Iterable[builtins.str] | None = ...,
@@ -1731,7 +1738,7 @@ class AjRajTablesRequest(google.protobuf.message.Message):
     def HasField(self, field_name: typing.Literal["left_id", b"left_id", "result_id", b"result_id", "right_id", b"right_id"]) -> builtins.bool: ...
     def ClearField(self, field_name: typing.Literal["as_of_column", b"as_of_column", "columns_to_add", b"columns_to_add", "exact_match_columns", b"exact_match_columns", "left_id", b"left_id", "result_id", b"result_id", "right_id", b"right_id"]) -> None: ...
 
-global___AjRajTablesRequest = AjRajTablesRequest
+Global___AjRajTablesRequest: typing_extensions.TypeAlias = AjRajTablesRequest
 
 @typing.final
 class MultiJoinInput(google.protobuf.message.Message):
@@ -1741,7 +1748,7 @@ class MultiJoinInput(google.protobuf.message.Message):
     COLUMNS_TO_MATCH_FIELD_NUMBER: builtins.int
     COLUMNS_TO_ADD_FIELD_NUMBER: builtins.int
     @property
-    def source_id(self) -> global___TableReference:
+    def source_id(self) -> Global___TableReference:
         """The source table to include in the multi-join output table."""
 
     @property
@@ -1755,14 +1762,14 @@ class MultiJoinInput(google.protobuf.message.Message):
     def __init__(
         self,
         *,
-        source_id: global___TableReference | None = ...,
+        source_id: Global___TableReference | None = ...,
         columns_to_match: collections.abc.Iterable[builtins.str] | None = ...,
         columns_to_add: collections.abc.Iterable[builtins.str] | None = ...,
     ) -> None: ...
     def HasField(self, field_name: typing.Literal["source_id", b"source_id"]) -> builtins.bool: ...
     def ClearField(self, field_name: typing.Literal["columns_to_add", b"columns_to_add", "columns_to_match", b"columns_to_match", "source_id", b"source_id"]) -> None: ...
 
-global___MultiJoinInput = MultiJoinInput
+Global___MultiJoinInput: typing_extensions.TypeAlias = MultiJoinInput
 
 @typing.final
 class MultiJoinTablesRequest(google.protobuf.message.Message):
@@ -1773,19 +1780,19 @@ class MultiJoinTablesRequest(google.protobuf.message.Message):
     @property
     def result_id(self) -> deephaven_core.proto.ticket_pb2.Ticket: ...
     @property
-    def multi_join_inputs(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___MultiJoinInput]:
+    def multi_join_inputs(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[Global___MultiJoinInput]:
         """The source table input specifications. One or more must be provided."""
 
     def __init__(
         self,
         *,
         result_id: deephaven_core.proto.ticket_pb2.Ticket | None = ...,
-        multi_join_inputs: collections.abc.Iterable[global___MultiJoinInput] | None = ...,
+        multi_join_inputs: collections.abc.Iterable[Global___MultiJoinInput] | None = ...,
     ) -> None: ...
     def HasField(self, field_name: typing.Literal["result_id", b"result_id"]) -> builtins.bool: ...
     def ClearField(self, field_name: typing.Literal["multi_join_inputs", b"multi_join_inputs", "result_id", b"result_id"]) -> None: ...
 
-global___MultiJoinTablesRequest = MultiJoinTablesRequest
+Global___MultiJoinTablesRequest: typing_extensions.TypeAlias = MultiJoinTablesRequest
 
 @typing.final
 class RangeJoinTablesRequest(google.protobuf.message.Message):
@@ -1838,9 +1845,9 @@ class RangeJoinTablesRequest(google.protobuf.message.Message):
     RANGE_MATCH_FIELD_NUMBER: builtins.int
     left_start_column: builtins.str
     """Provide detailed range match parameters for the range join (alternative to providing `range_match`)"""
-    range_start_rule: global___RangeJoinTablesRequest.RangeStartRule.ValueType
+    range_start_rule: Global___RangeJoinTablesRequest.RangeStartRule.ValueType
     right_range_column: builtins.str
-    range_end_rule: global___RangeJoinTablesRequest.RangeEndRule.ValueType
+    range_end_rule: Global___RangeJoinTablesRequest.RangeEndRule.ValueType
     left_end_column: builtins.str
     range_match: builtins.str
     """Specifies the range match parameters as a parseable string. Providing `range_match` in the GRPC call is the
@@ -1850,33 +1857,34 @@ class RangeJoinTablesRequest(google.protobuf.message.Message):
     @property
     def result_id(self) -> deephaven_core.proto.ticket_pb2.Ticket: ...
     @property
-    def left_id(self) -> global___TableReference: ...
+    def left_id(self) -> Global___TableReference: ...
     @property
-    def right_id(self) -> global___TableReference: ...
+    def right_id(self) -> Global___TableReference: ...
     @property
     def exact_match_columns(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.str]: ...
     @property
-    def aggregations(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___Aggregation]: ...
+    def aggregations(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[Global___Aggregation]: ...
     def __init__(
         self,
         *,
         result_id: deephaven_core.proto.ticket_pb2.Ticket | None = ...,
-        left_id: global___TableReference | None = ...,
-        right_id: global___TableReference | None = ...,
+        left_id: Global___TableReference | None = ...,
+        right_id: Global___TableReference | None = ...,
         exact_match_columns: collections.abc.Iterable[builtins.str] | None = ...,
         left_start_column: builtins.str = ...,
-        range_start_rule: global___RangeJoinTablesRequest.RangeStartRule.ValueType = ...,
+        range_start_rule: Global___RangeJoinTablesRequest.RangeStartRule.ValueType = ...,
         right_range_column: builtins.str = ...,
-        range_end_rule: global___RangeJoinTablesRequest.RangeEndRule.ValueType = ...,
+        range_end_rule: Global___RangeJoinTablesRequest.RangeEndRule.ValueType = ...,
         left_end_column: builtins.str = ...,
-        aggregations: collections.abc.Iterable[global___Aggregation] | None = ...,
+        aggregations: collections.abc.Iterable[Global___Aggregation] | None = ...,
         range_match: builtins.str = ...,
     ) -> None: ...
     def HasField(self, field_name: typing.Literal["left_id", b"left_id", "result_id", b"result_id", "right_id", b"right_id"]) -> builtins.bool: ...
     def ClearField(self, field_name: typing.Literal["aggregations", b"aggregations", "exact_match_columns", b"exact_match_columns", "left_end_column", b"left_end_column", "left_id", b"left_id", "left_start_column", b"left_start_column", "range_end_rule", b"range_end_rule", "range_match", b"range_match", "range_start_rule", b"range_start_rule", "result_id", b"result_id", "right_id", b"right_id", "right_range_column", b"right_range_column"]) -> None: ...
 
-global___RangeJoinTablesRequest = RangeJoinTablesRequest
+Global___RangeJoinTablesRequest: typing_extensions.TypeAlias = RangeJoinTablesRequest
 
+@deprecated("""This message has been marked as deprecated using proto message options.""")
 @typing.final
 class ComboAggregateRequest(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
@@ -1927,7 +1935,7 @@ class ComboAggregateRequest(google.protobuf.message.Message):
         COLUMN_NAME_FIELD_NUMBER: builtins.int
         PERCENTILE_FIELD_NUMBER: builtins.int
         AVG_MEDIAN_FIELD_NUMBER: builtins.int
-        type: global___ComboAggregateRequest.AggType.ValueType
+        type: Global___ComboAggregateRequest.AggType.ValueType
         column_name: builtins.str
         """countBy result (output) column OR weighted avg weight (input) column, otherwise unused"""
         percentile: builtins.float
@@ -1941,7 +1949,7 @@ class ComboAggregateRequest(google.protobuf.message.Message):
         def __init__(
             self,
             *,
-            type: global___ComboAggregateRequest.AggType.ValueType = ...,
+            type: Global___ComboAggregateRequest.AggType.ValueType = ...,
             match_pairs: collections.abc.Iterable[builtins.str] | None = ...,
             column_name: builtins.str = ...,
             percentile: builtins.float = ...,
@@ -1959,24 +1967,24 @@ class ComboAggregateRequest(google.protobuf.message.Message):
     @property
     def result_id(self) -> deephaven_core.proto.ticket_pb2.Ticket: ...
     @property
-    def source_id(self) -> global___TableReference: ...
+    def source_id(self) -> Global___TableReference: ...
     @property
-    def aggregates(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___ComboAggregateRequest.Aggregate]: ...
+    def aggregates(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[Global___ComboAggregateRequest.Aggregate]: ...
     @property
     def group_by_columns(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.str]: ...
     def __init__(
         self,
         *,
         result_id: deephaven_core.proto.ticket_pb2.Ticket | None = ...,
-        source_id: global___TableReference | None = ...,
-        aggregates: collections.abc.Iterable[global___ComboAggregateRequest.Aggregate] | None = ...,
+        source_id: Global___TableReference | None = ...,
+        aggregates: collections.abc.Iterable[Global___ComboAggregateRequest.Aggregate] | None = ...,
         group_by_columns: collections.abc.Iterable[builtins.str] | None = ...,
         force_combo: builtins.bool = ...,
     ) -> None: ...
     def HasField(self, field_name: typing.Literal["result_id", b"result_id", "source_id", b"source_id"]) -> builtins.bool: ...
     def ClearField(self, field_name: typing.Literal["aggregates", b"aggregates", "force_combo", b"force_combo", "group_by_columns", b"group_by_columns", "result_id", b"result_id", "source_id", b"source_id"]) -> None: ...
 
-global___ComboAggregateRequest = ComboAggregateRequest
+Global___ComboAggregateRequest: typing_extensions.TypeAlias = ComboAggregateRequest
 
 @typing.final
 class AggregateAllRequest(google.protobuf.message.Message):
@@ -1989,23 +1997,23 @@ class AggregateAllRequest(google.protobuf.message.Message):
     @property
     def result_id(self) -> deephaven_core.proto.ticket_pb2.Ticket: ...
     @property
-    def source_id(self) -> global___TableReference: ...
+    def source_id(self) -> Global___TableReference: ...
     @property
-    def spec(self) -> global___AggSpec: ...
+    def spec(self) -> Global___AggSpec: ...
     @property
     def group_by_columns(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.str]: ...
     def __init__(
         self,
         *,
         result_id: deephaven_core.proto.ticket_pb2.Ticket | None = ...,
-        source_id: global___TableReference | None = ...,
-        spec: global___AggSpec | None = ...,
+        source_id: Global___TableReference | None = ...,
+        spec: Global___AggSpec | None = ...,
         group_by_columns: collections.abc.Iterable[builtins.str] | None = ...,
     ) -> None: ...
     def HasField(self, field_name: typing.Literal["result_id", b"result_id", "source_id", b"source_id", "spec", b"spec"]) -> builtins.bool: ...
     def ClearField(self, field_name: typing.Literal["group_by_columns", b"group_by_columns", "result_id", b"result_id", "source_id", b"source_id", "spec", b"spec"]) -> None: ...
 
-global___AggregateAllRequest = AggregateAllRequest
+Global___AggregateAllRequest: typing_extensions.TypeAlias = AggregateAllRequest
 
 @typing.final
 class AggSpec(google.protobuf.message.Message):
@@ -2121,13 +2129,13 @@ class AggSpec(google.protobuf.message.Message):
 
         COLUMNS_FIELD_NUMBER: builtins.int
         @property
-        def columns(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___AggSpec.AggSpecSortedColumn]:
+        def columns(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[Global___AggSpec.AggSpecSortedColumn]:
             """Using a message instead of string to support backwards-compatibility in the future"""
 
         def __init__(
             self,
             *,
-            columns: collections.abc.Iterable[global___AggSpec.AggSpecSortedColumn] | None = ...,
+            columns: collections.abc.Iterable[Global___AggSpec.AggSpecSortedColumn] | None = ...,
         ) -> None: ...
         def ClearField(self, field_name: typing.Literal["columns", b"columns"]) -> None: ...
 
@@ -2172,14 +2180,14 @@ class AggSpec(google.protobuf.message.Message):
         include_nulls: builtins.bool
         """Whether to include null values as a distinct value for determining if there is only one unique value to output"""
         @property
-        def non_unique_sentinel(self) -> global___AggSpec.AggSpecNonUniqueSentinel:
+        def non_unique_sentinel(self) -> Global___AggSpec.AggSpecNonUniqueSentinel:
             """The output value to use for groups that don't have a single unique input value"""
 
         def __init__(
             self,
             *,
             include_nulls: builtins.bool = ...,
-            non_unique_sentinel: global___AggSpec.AggSpecNonUniqueSentinel | None = ...,
+            non_unique_sentinel: Global___AggSpec.AggSpecNonUniqueSentinel | None = ...,
         ) -> None: ...
         def HasField(self, field_name: typing.Literal["non_unique_sentinel", b"non_unique_sentinel"]) -> builtins.bool: ...
         def ClearField(self, field_name: typing.Literal["include_nulls", b"include_nulls", "non_unique_sentinel", b"non_unique_sentinel"]) -> None: ...
@@ -2198,7 +2206,7 @@ class AggSpec(google.protobuf.message.Message):
         BYTE_VALUE_FIELD_NUMBER: builtins.int
         SHORT_VALUE_FIELD_NUMBER: builtins.int
         CHAR_VALUE_FIELD_NUMBER: builtins.int
-        null_value: global___NullValue.ValueType
+        null_value: Global___NullValue.ValueType
         string_value: builtins.str
         int_value: builtins.int
         long_value: builtins.int
@@ -2216,7 +2224,7 @@ class AggSpec(google.protobuf.message.Message):
         def __init__(
             self,
             *,
-            null_value: global___NullValue.ValueType = ...,
+            null_value: Global___NullValue.ValueType = ...,
             string_value: builtins.str = ...,
             int_value: builtins.int = ...,
             long_value: builtins.int = ...,
@@ -2357,83 +2365,83 @@ class AggSpec(google.protobuf.message.Message):
     WEIGHTED_SUM_FIELD_NUMBER: builtins.int
     VAR_FIELD_NUMBER: builtins.int
     @property
-    def abs_sum(self) -> global___AggSpec.AggSpecAbsSum: ...
+    def abs_sum(self) -> Global___AggSpec.AggSpecAbsSum: ...
     @property
-    def approximate_percentile(self) -> global___AggSpec.AggSpecApproximatePercentile: ...
+    def approximate_percentile(self) -> Global___AggSpec.AggSpecApproximatePercentile: ...
     @property
-    def avg(self) -> global___AggSpec.AggSpecAvg: ...
+    def avg(self) -> Global___AggSpec.AggSpecAvg: ...
     @property
-    def count_distinct(self) -> global___AggSpec.AggSpecCountDistinct: ...
+    def count_distinct(self) -> Global___AggSpec.AggSpecCountDistinct: ...
     @property
-    def distinct(self) -> global___AggSpec.AggSpecDistinct: ...
+    def distinct(self) -> Global___AggSpec.AggSpecDistinct: ...
     @property
-    def first(self) -> global___AggSpec.AggSpecFirst: ...
+    def first(self) -> Global___AggSpec.AggSpecFirst: ...
     @property
-    def formula(self) -> global___AggSpec.AggSpecFormula: ...
+    def formula(self) -> Global___AggSpec.AggSpecFormula: ...
     @property
-    def freeze(self) -> global___AggSpec.AggSpecFreeze: ...
+    def freeze(self) -> Global___AggSpec.AggSpecFreeze: ...
     @property
-    def group(self) -> global___AggSpec.AggSpecGroup: ...
+    def group(self) -> Global___AggSpec.AggSpecGroup: ...
     @property
-    def last(self) -> global___AggSpec.AggSpecLast: ...
+    def last(self) -> Global___AggSpec.AggSpecLast: ...
     @property
-    def max(self) -> global___AggSpec.AggSpecMax: ...
+    def max(self) -> Global___AggSpec.AggSpecMax: ...
     @property
-    def median(self) -> global___AggSpec.AggSpecMedian: ...
+    def median(self) -> Global___AggSpec.AggSpecMedian: ...
     @property
-    def min(self) -> global___AggSpec.AggSpecMin: ...
+    def min(self) -> Global___AggSpec.AggSpecMin: ...
     @property
-    def percentile(self) -> global___AggSpec.AggSpecPercentile: ...
+    def percentile(self) -> Global___AggSpec.AggSpecPercentile: ...
     @property
-    def sorted_first(self) -> global___AggSpec.AggSpecSorted: ...
+    def sorted_first(self) -> Global___AggSpec.AggSpecSorted: ...
     @property
-    def sorted_last(self) -> global___AggSpec.AggSpecSorted: ...
+    def sorted_last(self) -> Global___AggSpec.AggSpecSorted: ...
     @property
-    def std(self) -> global___AggSpec.AggSpecStd: ...
+    def std(self) -> Global___AggSpec.AggSpecStd: ...
     @property
-    def sum(self) -> global___AggSpec.AggSpecSum: ...
+    def sum(self) -> Global___AggSpec.AggSpecSum: ...
     @property
-    def t_digest(self) -> global___AggSpec.AggSpecTDigest: ...
+    def t_digest(self) -> Global___AggSpec.AggSpecTDigest: ...
     @property
-    def unique(self) -> global___AggSpec.AggSpecUnique: ...
+    def unique(self) -> Global___AggSpec.AggSpecUnique: ...
     @property
-    def weighted_avg(self) -> global___AggSpec.AggSpecWeighted: ...
+    def weighted_avg(self) -> Global___AggSpec.AggSpecWeighted: ...
     @property
-    def weighted_sum(self) -> global___AggSpec.AggSpecWeighted: ...
+    def weighted_sum(self) -> Global___AggSpec.AggSpecWeighted: ...
     @property
-    def var(self) -> global___AggSpec.AggSpecVar: ...
+    def var(self) -> Global___AggSpec.AggSpecVar: ...
     def __init__(
         self,
         *,
-        abs_sum: global___AggSpec.AggSpecAbsSum | None = ...,
-        approximate_percentile: global___AggSpec.AggSpecApproximatePercentile | None = ...,
-        avg: global___AggSpec.AggSpecAvg | None = ...,
-        count_distinct: global___AggSpec.AggSpecCountDistinct | None = ...,
-        distinct: global___AggSpec.AggSpecDistinct | None = ...,
-        first: global___AggSpec.AggSpecFirst | None = ...,
-        formula: global___AggSpec.AggSpecFormula | None = ...,
-        freeze: global___AggSpec.AggSpecFreeze | None = ...,
-        group: global___AggSpec.AggSpecGroup | None = ...,
-        last: global___AggSpec.AggSpecLast | None = ...,
-        max: global___AggSpec.AggSpecMax | None = ...,
-        median: global___AggSpec.AggSpecMedian | None = ...,
-        min: global___AggSpec.AggSpecMin | None = ...,
-        percentile: global___AggSpec.AggSpecPercentile | None = ...,
-        sorted_first: global___AggSpec.AggSpecSorted | None = ...,
-        sorted_last: global___AggSpec.AggSpecSorted | None = ...,
-        std: global___AggSpec.AggSpecStd | None = ...,
-        sum: global___AggSpec.AggSpecSum | None = ...,
-        t_digest: global___AggSpec.AggSpecTDigest | None = ...,
-        unique: global___AggSpec.AggSpecUnique | None = ...,
-        weighted_avg: global___AggSpec.AggSpecWeighted | None = ...,
-        weighted_sum: global___AggSpec.AggSpecWeighted | None = ...,
-        var: global___AggSpec.AggSpecVar | None = ...,
+        abs_sum: Global___AggSpec.AggSpecAbsSum | None = ...,
+        approximate_percentile: Global___AggSpec.AggSpecApproximatePercentile | None = ...,
+        avg: Global___AggSpec.AggSpecAvg | None = ...,
+        count_distinct: Global___AggSpec.AggSpecCountDistinct | None = ...,
+        distinct: Global___AggSpec.AggSpecDistinct | None = ...,
+        first: Global___AggSpec.AggSpecFirst | None = ...,
+        formula: Global___AggSpec.AggSpecFormula | None = ...,
+        freeze: Global___AggSpec.AggSpecFreeze | None = ...,
+        group: Global___AggSpec.AggSpecGroup | None = ...,
+        last: Global___AggSpec.AggSpecLast | None = ...,
+        max: Global___AggSpec.AggSpecMax | None = ...,
+        median: Global___AggSpec.AggSpecMedian | None = ...,
+        min: Global___AggSpec.AggSpecMin | None = ...,
+        percentile: Global___AggSpec.AggSpecPercentile | None = ...,
+        sorted_first: Global___AggSpec.AggSpecSorted | None = ...,
+        sorted_last: Global___AggSpec.AggSpecSorted | None = ...,
+        std: Global___AggSpec.AggSpecStd | None = ...,
+        sum: Global___AggSpec.AggSpecSum | None = ...,
+        t_digest: Global___AggSpec.AggSpecTDigest | None = ...,
+        unique: Global___AggSpec.AggSpecUnique | None = ...,
+        weighted_avg: Global___AggSpec.AggSpecWeighted | None = ...,
+        weighted_sum: Global___AggSpec.AggSpecWeighted | None = ...,
+        var: Global___AggSpec.AggSpecVar | None = ...,
     ) -> None: ...
     def HasField(self, field_name: typing.Literal["abs_sum", b"abs_sum", "approximate_percentile", b"approximate_percentile", "avg", b"avg", "count_distinct", b"count_distinct", "distinct", b"distinct", "first", b"first", "formula", b"formula", "freeze", b"freeze", "group", b"group", "last", b"last", "max", b"max", "median", b"median", "min", b"min", "percentile", b"percentile", "sorted_first", b"sorted_first", "sorted_last", b"sorted_last", "std", b"std", "sum", b"sum", "t_digest", b"t_digest", "type", b"type", "unique", b"unique", "var", b"var", "weighted_avg", b"weighted_avg", "weighted_sum", b"weighted_sum"]) -> builtins.bool: ...
     def ClearField(self, field_name: typing.Literal["abs_sum", b"abs_sum", "approximate_percentile", b"approximate_percentile", "avg", b"avg", "count_distinct", b"count_distinct", "distinct", b"distinct", "first", b"first", "formula", b"formula", "freeze", b"freeze", "group", b"group", "last", b"last", "max", b"max", "median", b"median", "min", b"min", "percentile", b"percentile", "sorted_first", b"sorted_first", "sorted_last", b"sorted_last", "std", b"std", "sum", b"sum", "t_digest", b"t_digest", "type", b"type", "unique", b"unique", "var", b"var", "weighted_avg", b"weighted_avg", "weighted_sum", b"weighted_sum"]) -> None: ...
     def WhichOneof(self, oneof_group: typing.Literal["type", b"type"]) -> typing.Literal["abs_sum", "approximate_percentile", "avg", "count_distinct", "distinct", "first", "formula", "freeze", "group", "last", "max", "median", "min", "percentile", "sorted_first", "sorted_last", "std", "sum", "t_digest", "unique", "weighted_avg", "weighted_sum", "var"] | None: ...
 
-global___AggSpec = AggSpec
+Global___AggSpec: typing_extensions.TypeAlias = AggSpec
 
 @typing.final
 class AggregateRequest(google.protobuf.message.Message):
@@ -2452,9 +2460,9 @@ class AggregateRequest(google.protobuf.message.Message):
     @property
     def result_id(self) -> deephaven_core.proto.ticket_pb2.Ticket: ...
     @property
-    def source_id(self) -> global___TableReference: ...
+    def source_id(self) -> Global___TableReference: ...
     @property
-    def initial_groups_id(self) -> global___TableReference:
+    def initial_groups_id(self) -> Global___TableReference:
         """A table whose distinct combinations of values for the group_by_columns should be used
         to create an initial set of aggregation groups. All other columns are ignored. This is useful in
         combination with preserve_empty == true to ensure that particular groups appear in the result
@@ -2465,23 +2473,23 @@ class AggregateRequest(google.protobuf.message.Message):
         """
 
     @property
-    def aggregations(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___Aggregation]: ...
+    def aggregations(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[Global___Aggregation]: ...
     @property
     def group_by_columns(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.str]: ...
     def __init__(
         self,
         *,
         result_id: deephaven_core.proto.ticket_pb2.Ticket | None = ...,
-        source_id: global___TableReference | None = ...,
-        initial_groups_id: global___TableReference | None = ...,
+        source_id: Global___TableReference | None = ...,
+        initial_groups_id: Global___TableReference | None = ...,
         preserve_empty: builtins.bool = ...,
-        aggregations: collections.abc.Iterable[global___Aggregation] | None = ...,
+        aggregations: collections.abc.Iterable[Global___Aggregation] | None = ...,
         group_by_columns: collections.abc.Iterable[builtins.str] | None = ...,
     ) -> None: ...
     def HasField(self, field_name: typing.Literal["initial_groups_id", b"initial_groups_id", "result_id", b"result_id", "source_id", b"source_id"]) -> builtins.bool: ...
     def ClearField(self, field_name: typing.Literal["aggregations", b"aggregations", "group_by_columns", b"group_by_columns", "initial_groups_id", b"initial_groups_id", "preserve_empty", b"preserve_empty", "result_id", b"result_id", "source_id", b"source_id"]) -> None: ...
 
-global___AggregateRequest = AggregateRequest
+Global___AggregateRequest: typing_extensions.TypeAlias = AggregateRequest
 
 @typing.final
 class Aggregation(google.protobuf.message.Message):
@@ -2494,13 +2502,13 @@ class Aggregation(google.protobuf.message.Message):
         SPEC_FIELD_NUMBER: builtins.int
         MATCH_PAIRS_FIELD_NUMBER: builtins.int
         @property
-        def spec(self) -> global___AggSpec: ...
+        def spec(self) -> Global___AggSpec: ...
         @property
         def match_pairs(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.str]: ...
         def __init__(
             self,
             *,
-            spec: global___AggSpec | None = ...,
+            spec: Global___AggSpec | None = ...,
             match_pairs: collections.abc.Iterable[builtins.str] | None = ...,
         ) -> None: ...
         def HasField(self, field_name: typing.Literal["spec", b"spec"]) -> builtins.bool: ...
@@ -2573,11 +2581,11 @@ class Aggregation(google.protobuf.message.Message):
 
         SELECTABLE_FIELD_NUMBER: builtins.int
         @property
-        def selectable(self) -> global___Selectable: ...
+        def selectable(self) -> Global___Selectable: ...
         def __init__(
             self,
             *,
-            selectable: global___Selectable | None = ...,
+            selectable: Global___Selectable | None = ...,
         ) -> None: ...
         def HasField(self, field_name: typing.Literal["selectable", b"selectable"]) -> builtins.bool: ...
         def ClearField(self, field_name: typing.Literal["selectable", b"selectable"]) -> None: ...
@@ -2590,35 +2598,35 @@ class Aggregation(google.protobuf.message.Message):
     FORMULA_FIELD_NUMBER: builtins.int
     COUNT_WHERE_FIELD_NUMBER: builtins.int
     @property
-    def columns(self) -> global___Aggregation.AggregationColumns: ...
+    def columns(self) -> Global___Aggregation.AggregationColumns: ...
     @property
-    def count(self) -> global___Aggregation.AggregationCount: ...
+    def count(self) -> Global___Aggregation.AggregationCount: ...
     @property
-    def first_row_key(self) -> global___Aggregation.AggregationRowKey: ...
+    def first_row_key(self) -> Global___Aggregation.AggregationRowKey: ...
     @property
-    def last_row_key(self) -> global___Aggregation.AggregationRowKey: ...
+    def last_row_key(self) -> Global___Aggregation.AggregationRowKey: ...
     @property
-    def partition(self) -> global___Aggregation.AggregationPartition: ...
+    def partition(self) -> Global___Aggregation.AggregationPartition: ...
     @property
-    def formula(self) -> global___Aggregation.AggregationFormula: ...
+    def formula(self) -> Global___Aggregation.AggregationFormula: ...
     @property
-    def count_where(self) -> global___Aggregation.AggregationCountWhere: ...
+    def count_where(self) -> Global___Aggregation.AggregationCountWhere: ...
     def __init__(
         self,
         *,
-        columns: global___Aggregation.AggregationColumns | None = ...,
-        count: global___Aggregation.AggregationCount | None = ...,
-        first_row_key: global___Aggregation.AggregationRowKey | None = ...,
-        last_row_key: global___Aggregation.AggregationRowKey | None = ...,
-        partition: global___Aggregation.AggregationPartition | None = ...,
-        formula: global___Aggregation.AggregationFormula | None = ...,
-        count_where: global___Aggregation.AggregationCountWhere | None = ...,
+        columns: Global___Aggregation.AggregationColumns | None = ...,
+        count: Global___Aggregation.AggregationCount | None = ...,
+        first_row_key: Global___Aggregation.AggregationRowKey | None = ...,
+        last_row_key: Global___Aggregation.AggregationRowKey | None = ...,
+        partition: Global___Aggregation.AggregationPartition | None = ...,
+        formula: Global___Aggregation.AggregationFormula | None = ...,
+        count_where: Global___Aggregation.AggregationCountWhere | None = ...,
     ) -> None: ...
     def HasField(self, field_name: typing.Literal["columns", b"columns", "count", b"count", "count_where", b"count_where", "first_row_key", b"first_row_key", "formula", b"formula", "last_row_key", b"last_row_key", "partition", b"partition", "type", b"type"]) -> builtins.bool: ...
     def ClearField(self, field_name: typing.Literal["columns", b"columns", "count", b"count", "count_where", b"count_where", "first_row_key", b"first_row_key", "formula", b"formula", "last_row_key", b"last_row_key", "partition", b"partition", "type", b"type"]) -> None: ...
     def WhichOneof(self, oneof_group: typing.Literal["type", b"type"]) -> typing.Literal["columns", "count", "first_row_key", "last_row_key", "partition", "formula", "count_where"] | None: ...
 
-global___Aggregation = Aggregation
+Global___Aggregation: typing_extensions.TypeAlias = Aggregation
 
 @typing.final
 class SortDescriptor(google.protobuf.message.Message):
@@ -2646,17 +2654,17 @@ class SortDescriptor(google.protobuf.message.Message):
     DIRECTION_FIELD_NUMBER: builtins.int
     column_name: builtins.str
     is_absolute: builtins.bool
-    direction: global___SortDescriptor.SortDirection.ValueType
+    direction: Global___SortDescriptor.SortDirection.ValueType
     def __init__(
         self,
         *,
         column_name: builtins.str = ...,
         is_absolute: builtins.bool = ...,
-        direction: global___SortDescriptor.SortDirection.ValueType = ...,
+        direction: Global___SortDescriptor.SortDirection.ValueType = ...,
     ) -> None: ...
     def ClearField(self, field_name: typing.Literal["column_name", b"column_name", "direction", b"direction", "is_absolute", b"is_absolute"]) -> None: ...
 
-global___SortDescriptor = SortDescriptor
+Global___SortDescriptor: typing_extensions.TypeAlias = SortDescriptor
 
 @typing.final
 class SortTableRequest(google.protobuf.message.Message):
@@ -2668,20 +2676,20 @@ class SortTableRequest(google.protobuf.message.Message):
     @property
     def result_id(self) -> deephaven_core.proto.ticket_pb2.Ticket: ...
     @property
-    def source_id(self) -> global___TableReference: ...
+    def source_id(self) -> Global___TableReference: ...
     @property
-    def sorts(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___SortDescriptor]: ...
+    def sorts(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[Global___SortDescriptor]: ...
     def __init__(
         self,
         *,
         result_id: deephaven_core.proto.ticket_pb2.Ticket | None = ...,
-        source_id: global___TableReference | None = ...,
-        sorts: collections.abc.Iterable[global___SortDescriptor] | None = ...,
+        source_id: Global___TableReference | None = ...,
+        sorts: collections.abc.Iterable[Global___SortDescriptor] | None = ...,
     ) -> None: ...
     def HasField(self, field_name: typing.Literal["result_id", b"result_id", "source_id", b"source_id"]) -> builtins.bool: ...
     def ClearField(self, field_name: typing.Literal["result_id", b"result_id", "sorts", b"sorts", "source_id", b"source_id"]) -> None: ...
 
-global___SortTableRequest = SortTableRequest
+Global___SortTableRequest: typing_extensions.TypeAlias = SortTableRequest
 
 @typing.final
 class FilterTableRequest(google.protobuf.message.Message):
@@ -2693,20 +2701,20 @@ class FilterTableRequest(google.protobuf.message.Message):
     @property
     def result_id(self) -> deephaven_core.proto.ticket_pb2.Ticket: ...
     @property
-    def source_id(self) -> global___TableReference: ...
+    def source_id(self) -> Global___TableReference: ...
     @property
-    def filters(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___Condition]: ...
+    def filters(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[Global___Condition]: ...
     def __init__(
         self,
         *,
         result_id: deephaven_core.proto.ticket_pb2.Ticket | None = ...,
-        source_id: global___TableReference | None = ...,
-        filters: collections.abc.Iterable[global___Condition] | None = ...,
+        source_id: Global___TableReference | None = ...,
+        filters: collections.abc.Iterable[Global___Condition] | None = ...,
     ) -> None: ...
     def HasField(self, field_name: typing.Literal["result_id", b"result_id", "source_id", b"source_id"]) -> builtins.bool: ...
     def ClearField(self, field_name: typing.Literal["filters", b"filters", "result_id", b"result_id", "source_id", b"source_id"]) -> None: ...
 
-global___FilterTableRequest = FilterTableRequest
+Global___FilterTableRequest: typing_extensions.TypeAlias = FilterTableRequest
 
 @typing.final
 class SeekRowRequest(google.protobuf.message.Message):
@@ -2727,14 +2735,14 @@ class SeekRowRequest(google.protobuf.message.Message):
     @property
     def source_id(self) -> deephaven_core.proto.ticket_pb2.Ticket: ...
     @property
-    def seek_value(self) -> global___Literal: ...
+    def seek_value(self) -> Global___Literal: ...
     def __init__(
         self,
         *,
         source_id: deephaven_core.proto.ticket_pb2.Ticket | None = ...,
         starting_row: builtins.int = ...,
         column_name: builtins.str = ...,
-        seek_value: global___Literal | None = ...,
+        seek_value: Global___Literal | None = ...,
         insensitive: builtins.bool = ...,
         contains: builtins.bool = ...,
         is_backward: builtins.bool = ...,
@@ -2742,7 +2750,7 @@ class SeekRowRequest(google.protobuf.message.Message):
     def HasField(self, field_name: typing.Literal["seek_value", b"seek_value", "source_id", b"source_id"]) -> builtins.bool: ...
     def ClearField(self, field_name: typing.Literal["column_name", b"column_name", "contains", b"contains", "insensitive", b"insensitive", "is_backward", b"is_backward", "seek_value", b"seek_value", "source_id", b"source_id", "starting_row", b"starting_row"]) -> None: ...
 
-global___SeekRowRequest = SeekRowRequest
+Global___SeekRowRequest: typing_extensions.TypeAlias = SeekRowRequest
 
 @typing.final
 class SeekRowResponse(google.protobuf.message.Message):
@@ -2757,7 +2765,7 @@ class SeekRowResponse(google.protobuf.message.Message):
     ) -> None: ...
     def ClearField(self, field_name: typing.Literal["result_row", b"result_row"]) -> None: ...
 
-global___SeekRowResponse = SeekRowResponse
+Global___SeekRowResponse: typing_extensions.TypeAlias = SeekRowResponse
 
 @typing.final
 class Reference(google.protobuf.message.Message):
@@ -2772,7 +2780,7 @@ class Reference(google.protobuf.message.Message):
     ) -> None: ...
     def ClearField(self, field_name: typing.Literal["column_name", b"column_name"]) -> None: ...
 
-global___Reference = Reference
+Global___Reference: typing_extensions.TypeAlias = Reference
 
 @typing.final
 class Literal(google.protobuf.message.Message):
@@ -2802,7 +2810,7 @@ class Literal(google.protobuf.message.Message):
     def ClearField(self, field_name: typing.Literal["bool_value", b"bool_value", "double_value", b"double_value", "long_value", b"long_value", "nano_time_value", b"nano_time_value", "string_value", b"string_value", "value", b"value"]) -> None: ...
     def WhichOneof(self, oneof_group: typing.Literal["value", b"value"]) -> typing.Literal["string_value", "double_value", "bool_value", "long_value", "nano_time_value"] | None: ...
 
-global___Literal = Literal
+Global___Literal: typing_extensions.TypeAlias = Literal
 
 @typing.final
 class Value(google.protobuf.message.Message):
@@ -2813,20 +2821,20 @@ class Value(google.protobuf.message.Message):
     REFERENCE_FIELD_NUMBER: builtins.int
     LITERAL_FIELD_NUMBER: builtins.int
     @property
-    def reference(self) -> global___Reference: ...
+    def reference(self) -> Global___Reference: ...
     @property
-    def literal(self) -> global___Literal: ...
+    def literal(self) -> Global___Literal: ...
     def __init__(
         self,
         *,
-        reference: global___Reference | None = ...,
-        literal: global___Literal | None = ...,
+        reference: Global___Reference | None = ...,
+        literal: Global___Literal | None = ...,
     ) -> None: ...
     def HasField(self, field_name: typing.Literal["data", b"data", "literal", b"literal", "reference", b"reference"]) -> builtins.bool: ...
     def ClearField(self, field_name: typing.Literal["data", b"data", "literal", b"literal", "reference", b"reference"]) -> None: ...
     def WhichOneof(self, oneof_group: typing.Literal["data", b"data"]) -> typing.Literal["reference", "literal"] | None: ...
 
-global___Value = Value
+Global___Value: typing_extensions.TypeAlias = Value
 
 @typing.final
 class Condition(google.protobuf.message.Message):
@@ -2844,35 +2852,35 @@ class Condition(google.protobuf.message.Message):
     SEARCH_FIELD_NUMBER: builtins.int
     IS_NAN_FIELD_NUMBER: builtins.int
     @property
-    def compare(self) -> global___CompareCondition: ...
+    def compare(self) -> Global___CompareCondition: ...
     @property
-    def invoke(self) -> global___InvokeCondition: ...
+    def invoke(self) -> Global___InvokeCondition: ...
     @property
-    def is_null(self) -> global___IsNullCondition: ...
+    def is_null(self) -> Global___IsNullCondition: ...
     @property
-    def matches(self) -> global___MatchesCondition: ...
+    def matches(self) -> Global___MatchesCondition: ...
     @property
-    def contains(self) -> global___ContainsCondition: ...
+    def contains(self) -> Global___ContainsCondition: ...
     @property
-    def search(self) -> global___SearchCondition: ...
+    def search(self) -> Global___SearchCondition: ...
     @property
-    def is_nan(self) -> global___IsNaNCondition: ...
+    def is_nan(self) -> Global___IsNaNCondition: ...
     def __init__(
         self,
         *,
-        compare: global___CompareCondition | None = ...,
-        invoke: global___InvokeCondition | None = ...,
-        is_null: global___IsNullCondition | None = ...,
-        matches: global___MatchesCondition | None = ...,
-        contains: global___ContainsCondition | None = ...,
-        search: global___SearchCondition | None = ...,
-        is_nan: global___IsNaNCondition | None = ...,
+        compare: Global___CompareCondition | None = ...,
+        invoke: Global___InvokeCondition | None = ...,
+        is_null: Global___IsNullCondition | None = ...,
+        matches: Global___MatchesCondition | None = ...,
+        contains: Global___ContainsCondition | None = ...,
+        search: Global___SearchCondition | None = ...,
+        is_nan: Global___IsNaNCondition | None = ...,
     ) -> None: ...
     def HasField(self, field_name: typing.Literal["and", b"and", "compare", b"compare", "contains", b"contains", "data", b"data", "in", b"in", "invoke", b"invoke", "is_nan", b"is_nan", "is_null", b"is_null", "matches", b"matches", "not", b"not", "or", b"or", "search", b"search"]) -> builtins.bool: ...
     def ClearField(self, field_name: typing.Literal["and", b"and", "compare", b"compare", "contains", b"contains", "data", b"data", "in", b"in", "invoke", b"invoke", "is_nan", b"is_nan", "is_null", b"is_null", "matches", b"matches", "not", b"not", "or", b"or", "search", b"search"]) -> None: ...
     def WhichOneof(self, oneof_group: typing.Literal["data", b"data"]) -> typing.Literal["and", "or", "not", "compare", "in", "invoke", "is_null", "matches", "contains", "search", "is_nan"] | None: ...
 
-global___Condition = Condition
+Global___Condition: typing_extensions.TypeAlias = Condition
 
 @typing.final
 class AndCondition(google.protobuf.message.Message):
@@ -2882,15 +2890,15 @@ class AndCondition(google.protobuf.message.Message):
 
     FILTERS_FIELD_NUMBER: builtins.int
     @property
-    def filters(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___Condition]: ...
+    def filters(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[Global___Condition]: ...
     def __init__(
         self,
         *,
-        filters: collections.abc.Iterable[global___Condition] | None = ...,
+        filters: collections.abc.Iterable[Global___Condition] | None = ...,
     ) -> None: ...
     def ClearField(self, field_name: typing.Literal["filters", b"filters"]) -> None: ...
 
-global___AndCondition = AndCondition
+Global___AndCondition: typing_extensions.TypeAlias = AndCondition
 
 @typing.final
 class OrCondition(google.protobuf.message.Message):
@@ -2898,15 +2906,15 @@ class OrCondition(google.protobuf.message.Message):
 
     FILTERS_FIELD_NUMBER: builtins.int
     @property
-    def filters(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___Condition]: ...
+    def filters(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[Global___Condition]: ...
     def __init__(
         self,
         *,
-        filters: collections.abc.Iterable[global___Condition] | None = ...,
+        filters: collections.abc.Iterable[Global___Condition] | None = ...,
     ) -> None: ...
     def ClearField(self, field_name: typing.Literal["filters", b"filters"]) -> None: ...
 
-global___OrCondition = OrCondition
+Global___OrCondition: typing_extensions.TypeAlias = OrCondition
 
 @typing.final
 class NotCondition(google.protobuf.message.Message):
@@ -2914,16 +2922,16 @@ class NotCondition(google.protobuf.message.Message):
 
     FILTER_FIELD_NUMBER: builtins.int
     @property
-    def filter(self) -> global___Condition: ...
+    def filter(self) -> Global___Condition: ...
     def __init__(
         self,
         *,
-        filter: global___Condition | None = ...,
+        filter: Global___Condition | None = ...,
     ) -> None: ...
     def HasField(self, field_name: typing.Literal["filter", b"filter"]) -> builtins.bool: ...
     def ClearField(self, field_name: typing.Literal["filter", b"filter"]) -> None: ...
 
-global___NotCondition = NotCondition
+Global___NotCondition: typing_extensions.TypeAlias = NotCondition
 
 @typing.final
 class CompareCondition(google.protobuf.message.Message):
@@ -2954,24 +2962,24 @@ class CompareCondition(google.protobuf.message.Message):
     CASE_SENSITIVITY_FIELD_NUMBER: builtins.int
     LHS_FIELD_NUMBER: builtins.int
     RHS_FIELD_NUMBER: builtins.int
-    operation: global___CompareCondition.CompareOperation.ValueType
-    case_sensitivity: global___CaseSensitivity.ValueType
+    operation: Global___CompareCondition.CompareOperation.ValueType
+    case_sensitivity: Global___CaseSensitivity.ValueType
     @property
-    def lhs(self) -> global___Value: ...
+    def lhs(self) -> Global___Value: ...
     @property
-    def rhs(self) -> global___Value: ...
+    def rhs(self) -> Global___Value: ...
     def __init__(
         self,
         *,
-        operation: global___CompareCondition.CompareOperation.ValueType = ...,
-        case_sensitivity: global___CaseSensitivity.ValueType = ...,
-        lhs: global___Value | None = ...,
-        rhs: global___Value | None = ...,
+        operation: Global___CompareCondition.CompareOperation.ValueType = ...,
+        case_sensitivity: Global___CaseSensitivity.ValueType = ...,
+        lhs: Global___Value | None = ...,
+        rhs: Global___Value | None = ...,
     ) -> None: ...
     def HasField(self, field_name: typing.Literal["lhs", b"lhs", "rhs", b"rhs"]) -> builtins.bool: ...
     def ClearField(self, field_name: typing.Literal["case_sensitivity", b"case_sensitivity", "lhs", b"lhs", "operation", b"operation", "rhs", b"rhs"]) -> None: ...
 
-global___CompareCondition = CompareCondition
+Global___CompareCondition: typing_extensions.TypeAlias = CompareCondition
 
 @typing.final
 class InCondition(google.protobuf.message.Message):
@@ -2982,26 +2990,26 @@ class InCondition(google.protobuf.message.Message):
     CASE_SENSITIVITY_FIELD_NUMBER: builtins.int
     MATCH_TYPE_FIELD_NUMBER: builtins.int
     NAN_COMPARISON_FIELD_NUMBER: builtins.int
-    case_sensitivity: global___CaseSensitivity.ValueType
-    match_type: global___MatchType.ValueType
-    nan_comparison: global___NanComparison.ValueType
+    case_sensitivity: Global___CaseSensitivity.ValueType
+    match_type: Global___MatchType.ValueType
+    nan_comparison: Global___NanComparison.ValueType
     @property
-    def target(self) -> global___Value: ...
+    def target(self) -> Global___Value: ...
     @property
-    def candidates(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___Value]: ...
+    def candidates(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[Global___Value]: ...
     def __init__(
         self,
         *,
-        target: global___Value | None = ...,
-        candidates: collections.abc.Iterable[global___Value] | None = ...,
-        case_sensitivity: global___CaseSensitivity.ValueType = ...,
-        match_type: global___MatchType.ValueType = ...,
-        nan_comparison: global___NanComparison.ValueType = ...,
+        target: Global___Value | None = ...,
+        candidates: collections.abc.Iterable[Global___Value] | None = ...,
+        case_sensitivity: Global___CaseSensitivity.ValueType = ...,
+        match_type: Global___MatchType.ValueType = ...,
+        nan_comparison: Global___NanComparison.ValueType = ...,
     ) -> None: ...
     def HasField(self, field_name: typing.Literal["target", b"target"]) -> builtins.bool: ...
     def ClearField(self, field_name: typing.Literal["candidates", b"candidates", "case_sensitivity", b"case_sensitivity", "match_type", b"match_type", "nan_comparison", b"nan_comparison", "target", b"target"]) -> None: ...
 
-global___InCondition = InCondition
+Global___InCondition: typing_extensions.TypeAlias = InCondition
 
 @typing.final
 class InvokeCondition(google.protobuf.message.Message):
@@ -3012,20 +3020,20 @@ class InvokeCondition(google.protobuf.message.Message):
     ARGUMENTS_FIELD_NUMBER: builtins.int
     method: builtins.str
     @property
-    def target(self) -> global___Value: ...
+    def target(self) -> Global___Value: ...
     @property
-    def arguments(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___Value]: ...
+    def arguments(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[Global___Value]: ...
     def __init__(
         self,
         *,
         method: builtins.str = ...,
-        target: global___Value | None = ...,
-        arguments: collections.abc.Iterable[global___Value] | None = ...,
+        target: Global___Value | None = ...,
+        arguments: collections.abc.Iterable[Global___Value] | None = ...,
     ) -> None: ...
     def HasField(self, field_name: typing.Literal["target", b"target"]) -> builtins.bool: ...
     def ClearField(self, field_name: typing.Literal["arguments", b"arguments", "method", b"method", "target", b"target"]) -> None: ...
 
-global___InvokeCondition = InvokeCondition
+Global___InvokeCondition: typing_extensions.TypeAlias = InvokeCondition
 
 @typing.final
 class IsNullCondition(google.protobuf.message.Message):
@@ -3033,16 +3041,16 @@ class IsNullCondition(google.protobuf.message.Message):
 
     REFERENCE_FIELD_NUMBER: builtins.int
     @property
-    def reference(self) -> global___Reference: ...
+    def reference(self) -> Global___Reference: ...
     def __init__(
         self,
         *,
-        reference: global___Reference | None = ...,
+        reference: Global___Reference | None = ...,
     ) -> None: ...
     def HasField(self, field_name: typing.Literal["reference", b"reference"]) -> builtins.bool: ...
     def ClearField(self, field_name: typing.Literal["reference", b"reference"]) -> None: ...
 
-global___IsNullCondition = IsNullCondition
+Global___IsNullCondition: typing_extensions.TypeAlias = IsNullCondition
 
 @typing.final
 class IsNaNCondition(google.protobuf.message.Message):
@@ -3050,16 +3058,16 @@ class IsNaNCondition(google.protobuf.message.Message):
 
     REFERENCE_FIELD_NUMBER: builtins.int
     @property
-    def reference(self) -> global___Reference: ...
+    def reference(self) -> Global___Reference: ...
     def __init__(
         self,
         *,
-        reference: global___Reference | None = ...,
+        reference: Global___Reference | None = ...,
     ) -> None: ...
     def HasField(self, field_name: typing.Literal["reference", b"reference"]) -> builtins.bool: ...
     def ClearField(self, field_name: typing.Literal["reference", b"reference"]) -> None: ...
 
-global___IsNaNCondition = IsNaNCondition
+Global___IsNaNCondition: typing_extensions.TypeAlias = IsNaNCondition
 
 @typing.final
 class MatchesCondition(google.protobuf.message.Message):
@@ -3070,22 +3078,22 @@ class MatchesCondition(google.protobuf.message.Message):
     CASE_SENSITIVITY_FIELD_NUMBER: builtins.int
     MATCH_TYPE_FIELD_NUMBER: builtins.int
     regex: builtins.str
-    case_sensitivity: global___CaseSensitivity.ValueType
-    match_type: global___MatchType.ValueType
+    case_sensitivity: Global___CaseSensitivity.ValueType
+    match_type: Global___MatchType.ValueType
     @property
-    def reference(self) -> global___Reference: ...
+    def reference(self) -> Global___Reference: ...
     def __init__(
         self,
         *,
-        reference: global___Reference | None = ...,
+        reference: Global___Reference | None = ...,
         regex: builtins.str = ...,
-        case_sensitivity: global___CaseSensitivity.ValueType = ...,
-        match_type: global___MatchType.ValueType = ...,
+        case_sensitivity: Global___CaseSensitivity.ValueType = ...,
+        match_type: Global___MatchType.ValueType = ...,
     ) -> None: ...
     def HasField(self, field_name: typing.Literal["reference", b"reference"]) -> builtins.bool: ...
     def ClearField(self, field_name: typing.Literal["case_sensitivity", b"case_sensitivity", "match_type", b"match_type", "reference", b"reference", "regex", b"regex"]) -> None: ...
 
-global___MatchesCondition = MatchesCondition
+Global___MatchesCondition: typing_extensions.TypeAlias = MatchesCondition
 
 @typing.final
 class ContainsCondition(google.protobuf.message.Message):
@@ -3096,22 +3104,22 @@ class ContainsCondition(google.protobuf.message.Message):
     CASE_SENSITIVITY_FIELD_NUMBER: builtins.int
     MATCH_TYPE_FIELD_NUMBER: builtins.int
     search_string: builtins.str
-    case_sensitivity: global___CaseSensitivity.ValueType
-    match_type: global___MatchType.ValueType
+    case_sensitivity: Global___CaseSensitivity.ValueType
+    match_type: Global___MatchType.ValueType
     @property
-    def reference(self) -> global___Reference: ...
+    def reference(self) -> Global___Reference: ...
     def __init__(
         self,
         *,
-        reference: global___Reference | None = ...,
+        reference: Global___Reference | None = ...,
         search_string: builtins.str = ...,
-        case_sensitivity: global___CaseSensitivity.ValueType = ...,
-        match_type: global___MatchType.ValueType = ...,
+        case_sensitivity: Global___CaseSensitivity.ValueType = ...,
+        match_type: Global___MatchType.ValueType = ...,
     ) -> None: ...
     def HasField(self, field_name: typing.Literal["reference", b"reference"]) -> builtins.bool: ...
     def ClearField(self, field_name: typing.Literal["case_sensitivity", b"case_sensitivity", "match_type", b"match_type", "reference", b"reference", "search_string", b"search_string"]) -> None: ...
 
-global___ContainsCondition = ContainsCondition
+Global___ContainsCondition: typing_extensions.TypeAlias = ContainsCondition
 
 @typing.final
 class SearchCondition(google.protobuf.message.Message):
@@ -3123,16 +3131,16 @@ class SearchCondition(google.protobuf.message.Message):
     OPTIONAL_REFERENCES_FIELD_NUMBER: builtins.int
     search_string: builtins.str
     @property
-    def optional_references(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___Reference]: ...
+    def optional_references(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[Global___Reference]: ...
     def __init__(
         self,
         *,
         search_string: builtins.str = ...,
-        optional_references: collections.abc.Iterable[global___Reference] | None = ...,
+        optional_references: collections.abc.Iterable[Global___Reference] | None = ...,
     ) -> None: ...
     def ClearField(self, field_name: typing.Literal["optional_references", b"optional_references", "search_string", b"search_string"]) -> None: ...
 
-global___SearchCondition = SearchCondition
+Global___SearchCondition: typing_extensions.TypeAlias = SearchCondition
 
 @typing.final
 class FlattenRequest(google.protobuf.message.Message):
@@ -3143,17 +3151,17 @@ class FlattenRequest(google.protobuf.message.Message):
     @property
     def result_id(self) -> deephaven_core.proto.ticket_pb2.Ticket: ...
     @property
-    def source_id(self) -> global___TableReference: ...
+    def source_id(self) -> Global___TableReference: ...
     def __init__(
         self,
         *,
         result_id: deephaven_core.proto.ticket_pb2.Ticket | None = ...,
-        source_id: global___TableReference | None = ...,
+        source_id: Global___TableReference | None = ...,
     ) -> None: ...
     def HasField(self, field_name: typing.Literal["result_id", b"result_id", "source_id", b"source_id"]) -> builtins.bool: ...
     def ClearField(self, field_name: typing.Literal["result_id", b"result_id", "source_id", b"source_id"]) -> None: ...
 
-global___FlattenRequest = FlattenRequest
+Global___FlattenRequest: typing_extensions.TypeAlias = FlattenRequest
 
 @typing.final
 class MetaTableRequest(google.protobuf.message.Message):
@@ -3164,17 +3172,17 @@ class MetaTableRequest(google.protobuf.message.Message):
     @property
     def result_id(self) -> deephaven_core.proto.ticket_pb2.Ticket: ...
     @property
-    def source_id(self) -> global___TableReference: ...
+    def source_id(self) -> Global___TableReference: ...
     def __init__(
         self,
         *,
         result_id: deephaven_core.proto.ticket_pb2.Ticket | None = ...,
-        source_id: global___TableReference | None = ...,
+        source_id: Global___TableReference | None = ...,
     ) -> None: ...
     def HasField(self, field_name: typing.Literal["result_id", b"result_id", "source_id", b"source_id"]) -> builtins.bool: ...
     def ClearField(self, field_name: typing.Literal["result_id", b"result_id", "source_id", b"source_id"]) -> None: ...
 
-global___MetaTableRequest = MetaTableRequest
+Global___MetaTableRequest: typing_extensions.TypeAlias = MetaTableRequest
 
 @typing.final
 class RunChartDownsampleRequest(google.protobuf.message.Message):
@@ -3212,25 +3220,25 @@ class RunChartDownsampleRequest(google.protobuf.message.Message):
     @property
     def result_id(self) -> deephaven_core.proto.ticket_pb2.Ticket: ...
     @property
-    def source_id(self) -> global___TableReference: ...
+    def source_id(self) -> Global___TableReference: ...
     @property
-    def zoom_range(self) -> global___RunChartDownsampleRequest.ZoomRange: ...
+    def zoom_range(self) -> Global___RunChartDownsampleRequest.ZoomRange: ...
     @property
     def y_column_names(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.str]: ...
     def __init__(
         self,
         *,
         result_id: deephaven_core.proto.ticket_pb2.Ticket | None = ...,
-        source_id: global___TableReference | None = ...,
+        source_id: Global___TableReference | None = ...,
         pixel_count: builtins.int = ...,
-        zoom_range: global___RunChartDownsampleRequest.ZoomRange | None = ...,
+        zoom_range: Global___RunChartDownsampleRequest.ZoomRange | None = ...,
         x_column_name: builtins.str = ...,
         y_column_names: collections.abc.Iterable[builtins.str] | None = ...,
     ) -> None: ...
     def HasField(self, field_name: typing.Literal["result_id", b"result_id", "source_id", b"source_id", "zoom_range", b"zoom_range"]) -> builtins.bool: ...
     def ClearField(self, field_name: typing.Literal["pixel_count", b"pixel_count", "result_id", b"result_id", "source_id", b"source_id", "x_column_name", b"x_column_name", "y_column_names", b"y_column_names", "zoom_range", b"zoom_range"]) -> None: ...
 
-global___RunChartDownsampleRequest = RunChartDownsampleRequest
+Global___RunChartDownsampleRequest: typing_extensions.TypeAlias = RunChartDownsampleRequest
 
 @typing.final
 class CreateInputTableRequest(google.protobuf.message.Message):
@@ -3278,17 +3286,17 @@ class CreateInputTableRequest(google.protobuf.message.Message):
         IN_MEMORY_KEY_BACKED_FIELD_NUMBER: builtins.int
         BLINK_FIELD_NUMBER: builtins.int
         @property
-        def in_memory_append_only(self) -> global___CreateInputTableRequest.InputTableKind.InMemoryAppendOnly: ...
+        def in_memory_append_only(self) -> Global___CreateInputTableRequest.InputTableKind.InMemoryAppendOnly: ...
         @property
-        def in_memory_key_backed(self) -> global___CreateInputTableRequest.InputTableKind.InMemoryKeyBacked: ...
+        def in_memory_key_backed(self) -> Global___CreateInputTableRequest.InputTableKind.InMemoryKeyBacked: ...
         @property
-        def blink(self) -> global___CreateInputTableRequest.InputTableKind.Blink: ...
+        def blink(self) -> Global___CreateInputTableRequest.InputTableKind.Blink: ...
         def __init__(
             self,
             *,
-            in_memory_append_only: global___CreateInputTableRequest.InputTableKind.InMemoryAppendOnly | None = ...,
-            in_memory_key_backed: global___CreateInputTableRequest.InputTableKind.InMemoryKeyBacked | None = ...,
-            blink: global___CreateInputTableRequest.InputTableKind.Blink | None = ...,
+            in_memory_append_only: Global___CreateInputTableRequest.InputTableKind.InMemoryAppendOnly | None = ...,
+            in_memory_key_backed: Global___CreateInputTableRequest.InputTableKind.InMemoryKeyBacked | None = ...,
+            blink: Global___CreateInputTableRequest.InputTableKind.Blink | None = ...,
         ) -> None: ...
         def HasField(self, field_name: typing.Literal["blink", b"blink", "in_memory_append_only", b"in_memory_append_only", "in_memory_key_backed", b"in_memory_key_backed", "kind", b"kind"]) -> builtins.bool: ...
         def ClearField(self, field_name: typing.Literal["blink", b"blink", "in_memory_append_only", b"in_memory_append_only", "in_memory_key_backed", b"in_memory_key_backed", "kind", b"kind"]) -> None: ...
@@ -3303,26 +3311,26 @@ class CreateInputTableRequest(google.protobuf.message.Message):
     @property
     def result_id(self) -> deephaven_core.proto.ticket_pb2.Ticket: ...
     @property
-    def source_table_id(self) -> global___TableReference:
+    def source_table_id(self) -> Global___TableReference:
         """Optional, either this or schema must be specified, not both."""
 
     @property
-    def kind(self) -> global___CreateInputTableRequest.InputTableKind:
+    def kind(self) -> Global___CreateInputTableRequest.InputTableKind:
         """Specifies what type of input table to create."""
 
     def __init__(
         self,
         *,
         result_id: deephaven_core.proto.ticket_pb2.Ticket | None = ...,
-        source_table_id: global___TableReference | None = ...,
+        source_table_id: Global___TableReference | None = ...,
         schema: builtins.bytes = ...,
-        kind: global___CreateInputTableRequest.InputTableKind | None = ...,
+        kind: Global___CreateInputTableRequest.InputTableKind | None = ...,
     ) -> None: ...
     def HasField(self, field_name: typing.Literal["definition", b"definition", "kind", b"kind", "result_id", b"result_id", "schema", b"schema", "source_table_id", b"source_table_id"]) -> builtins.bool: ...
     def ClearField(self, field_name: typing.Literal["definition", b"definition", "kind", b"kind", "result_id", b"result_id", "schema", b"schema", "source_table_id", b"source_table_id"]) -> None: ...
     def WhichOneof(self, oneof_group: typing.Literal["definition", b"definition"]) -> typing.Literal["source_table_id", "schema"] | None: ...
 
-global___CreateInputTableRequest = CreateInputTableRequest
+Global___CreateInputTableRequest: typing_extensions.TypeAlias = CreateInputTableRequest
 
 @typing.final
 class WhereInRequest(google.protobuf.message.Message):
@@ -3338,24 +3346,24 @@ class WhereInRequest(google.protobuf.message.Message):
     @property
     def result_id(self) -> deephaven_core.proto.ticket_pb2.Ticket: ...
     @property
-    def left_id(self) -> global___TableReference: ...
+    def left_id(self) -> Global___TableReference: ...
     @property
-    def right_id(self) -> global___TableReference: ...
+    def right_id(self) -> Global___TableReference: ...
     @property
     def columns_to_match(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.str]: ...
     def __init__(
         self,
         *,
         result_id: deephaven_core.proto.ticket_pb2.Ticket | None = ...,
-        left_id: global___TableReference | None = ...,
-        right_id: global___TableReference | None = ...,
+        left_id: Global___TableReference | None = ...,
+        right_id: Global___TableReference | None = ...,
         inverted: builtins.bool = ...,
         columns_to_match: collections.abc.Iterable[builtins.str] | None = ...,
     ) -> None: ...
     def HasField(self, field_name: typing.Literal["left_id", b"left_id", "result_id", b"result_id", "right_id", b"right_id"]) -> builtins.bool: ...
     def ClearField(self, field_name: typing.Literal["columns_to_match", b"columns_to_match", "inverted", b"inverted", "left_id", b"left_id", "result_id", b"result_id", "right_id", b"right_id"]) -> None: ...
 
-global___WhereInRequest = WhereInRequest
+Global___WhereInRequest: typing_extensions.TypeAlias = WhereInRequest
 
 @typing.final
 class ColumnStatisticsRequest(google.protobuf.message.Message):
@@ -3374,12 +3382,12 @@ class ColumnStatisticsRequest(google.protobuf.message.Message):
     @property
     def result_id(self) -> deephaven_core.proto.ticket_pb2.Ticket: ...
     @property
-    def source_id(self) -> global___TableReference: ...
+    def source_id(self) -> Global___TableReference: ...
     def __init__(
         self,
         *,
         result_id: deephaven_core.proto.ticket_pb2.Ticket | None = ...,
-        source_id: global___TableReference | None = ...,
+        source_id: Global___TableReference | None = ...,
         column_name: builtins.str = ...,
         unique_value_limit: builtins.int | None = ...,
     ) -> None: ...
@@ -3387,7 +3395,7 @@ class ColumnStatisticsRequest(google.protobuf.message.Message):
     def ClearField(self, field_name: typing.Literal["_unique_value_limit", b"_unique_value_limit", "column_name", b"column_name", "result_id", b"result_id", "source_id", b"source_id", "unique_value_limit", b"unique_value_limit"]) -> None: ...
     def WhichOneof(self, oneof_group: typing.Literal["_unique_value_limit", b"_unique_value_limit"]) -> typing.Literal["unique_value_limit"] | None: ...
 
-global___ColumnStatisticsRequest = ColumnStatisticsRequest
+Global___ColumnStatisticsRequest: typing_extensions.TypeAlias = ColumnStatisticsRequest
 
 @typing.final
 class SliceRequest(google.protobuf.message.Message):
@@ -3402,19 +3410,19 @@ class SliceRequest(google.protobuf.message.Message):
     @property
     def result_id(self) -> deephaven_core.proto.ticket_pb2.Ticket: ...
     @property
-    def source_id(self) -> global___TableReference: ...
+    def source_id(self) -> Global___TableReference: ...
     def __init__(
         self,
         *,
         result_id: deephaven_core.proto.ticket_pb2.Ticket | None = ...,
-        source_id: global___TableReference | None = ...,
+        source_id: Global___TableReference | None = ...,
         first_position_inclusive: builtins.int = ...,
         last_position_exclusive: builtins.int = ...,
     ) -> None: ...
     def HasField(self, field_name: typing.Literal["result_id", b"result_id", "source_id", b"source_id"]) -> builtins.bool: ...
     def ClearField(self, field_name: typing.Literal["first_position_inclusive", b"first_position_inclusive", "last_position_exclusive", b"last_position_exclusive", "result_id", b"result_id", "source_id", b"source_id"]) -> None: ...
 
-global___SliceRequest = SliceRequest
+Global___SliceRequest: typing_extensions.TypeAlias = SliceRequest
 
 @typing.final
 class BatchTableRequest(google.protobuf.message.Message):
@@ -3467,134 +3475,134 @@ class BatchTableRequest(google.protobuf.message.Message):
         MULTI_JOIN_FIELD_NUMBER: builtins.int
         SLICE_FIELD_NUMBER: builtins.int
         @property
-        def empty_table(self) -> global___EmptyTableRequest: ...
+        def empty_table(self) -> Global___EmptyTableRequest: ...
         @property
-        def time_table(self) -> global___TimeTableRequest: ...
+        def time_table(self) -> Global___TimeTableRequest: ...
         @property
-        def drop_columns(self) -> global___DropColumnsRequest: ...
+        def drop_columns(self) -> Global___DropColumnsRequest: ...
         @property
-        def update(self) -> global___SelectOrUpdateRequest: ...
+        def update(self) -> Global___SelectOrUpdateRequest: ...
         @property
-        def lazy_update(self) -> global___SelectOrUpdateRequest: ...
+        def lazy_update(self) -> Global___SelectOrUpdateRequest: ...
         @property
-        def view(self) -> global___SelectOrUpdateRequest: ...
+        def view(self) -> Global___SelectOrUpdateRequest: ...
         @property
-        def update_view(self) -> global___SelectOrUpdateRequest: ...
+        def update_view(self) -> Global___SelectOrUpdateRequest: ...
         @property
-        def select(self) -> global___SelectOrUpdateRequest: ...
+        def select(self) -> Global___SelectOrUpdateRequest: ...
         @property
-        def select_distinct(self) -> global___SelectDistinctRequest: ...
+        def select_distinct(self) -> Global___SelectDistinctRequest: ...
         @property
-        def filter(self) -> global___FilterTableRequest: ...
+        def filter(self) -> Global___FilterTableRequest: ...
         @property
-        def unstructured_filter(self) -> global___UnstructuredFilterTableRequest: ...
+        def unstructured_filter(self) -> Global___UnstructuredFilterTableRequest: ...
         @property
-        def sort(self) -> global___SortTableRequest: ...
+        def sort(self) -> Global___SortTableRequest: ...
         @property
-        def head(self) -> global___HeadOrTailRequest: ...
+        def head(self) -> Global___HeadOrTailRequest: ...
         @property
-        def tail(self) -> global___HeadOrTailRequest: ...
+        def tail(self) -> Global___HeadOrTailRequest: ...
         @property
-        def head_by(self) -> global___HeadOrTailByRequest: ...
+        def head_by(self) -> Global___HeadOrTailByRequest: ...
         @property
-        def tail_by(self) -> global___HeadOrTailByRequest: ...
+        def tail_by(self) -> Global___HeadOrTailByRequest: ...
         @property
-        def ungroup(self) -> global___UngroupRequest: ...
+        def ungroup(self) -> Global___UngroupRequest: ...
         @property
-        def merge(self) -> global___MergeTablesRequest: ...
+        def merge(self) -> Global___MergeTablesRequest: ...
         @property
-        def combo_aggregate(self) -> global___ComboAggregateRequest: ...
+        def combo_aggregate(self) -> Global___ComboAggregateRequest: ...
         @property
-        def flatten(self) -> global___FlattenRequest: ...
+        def flatten(self) -> Global___FlattenRequest: ...
         @property
-        def run_chart_downsample(self) -> global___RunChartDownsampleRequest: ...
+        def run_chart_downsample(self) -> Global___RunChartDownsampleRequest: ...
         @property
-        def cross_join(self) -> global___CrossJoinTablesRequest: ...
+        def cross_join(self) -> Global___CrossJoinTablesRequest: ...
         @property
-        def natural_join(self) -> global___NaturalJoinTablesRequest: ...
+        def natural_join(self) -> Global___NaturalJoinTablesRequest: ...
         @property
-        def exact_join(self) -> global___ExactJoinTablesRequest: ...
+        def exact_join(self) -> Global___ExactJoinTablesRequest: ...
         @property
-        def left_join(self) -> global___LeftJoinTablesRequest: ...
+        def left_join(self) -> Global___LeftJoinTablesRequest: ...
         @property
-        def as_of_join(self) -> global___AsOfJoinTablesRequest: ...
+        def as_of_join(self) -> Global___AsOfJoinTablesRequest: ...
         @property
-        def fetch_table(self) -> global___FetchTableRequest: ...
+        def fetch_table(self) -> Global___FetchTableRequest: ...
         @property
-        def apply_preview_columns(self) -> global___ApplyPreviewColumnsRequest: ...
+        def apply_preview_columns(self) -> Global___ApplyPreviewColumnsRequest: ...
         @property
-        def create_input_table(self) -> global___CreateInputTableRequest: ...
+        def create_input_table(self) -> Global___CreateInputTableRequest: ...
         @property
-        def update_by(self) -> global___UpdateByRequest: ...
+        def update_by(self) -> Global___UpdateByRequest: ...
         @property
-        def where_in(self) -> global___WhereInRequest: ...
+        def where_in(self) -> Global___WhereInRequest: ...
         @property
-        def aggregate_all(self) -> global___AggregateAllRequest: ...
+        def aggregate_all(self) -> Global___AggregateAllRequest: ...
         @property
-        def aggregate(self) -> global___AggregateRequest: ...
+        def aggregate(self) -> Global___AggregateRequest: ...
         @property
-        def snapshot(self) -> global___SnapshotTableRequest: ...
+        def snapshot(self) -> Global___SnapshotTableRequest: ...
         @property
-        def snapshot_when(self) -> global___SnapshotWhenTableRequest: ...
+        def snapshot_when(self) -> Global___SnapshotWhenTableRequest: ...
         @property
-        def meta_table(self) -> global___MetaTableRequest: ...
+        def meta_table(self) -> Global___MetaTableRequest: ...
         @property
-        def range_join(self) -> global___RangeJoinTablesRequest: ...
+        def range_join(self) -> Global___RangeJoinTablesRequest: ...
         @property
-        def aj(self) -> global___AjRajTablesRequest: ...
+        def aj(self) -> Global___AjRajTablesRequest: ...
         @property
-        def raj(self) -> global___AjRajTablesRequest: ...
+        def raj(self) -> Global___AjRajTablesRequest: ...
         @property
-        def column_statistics(self) -> global___ColumnStatisticsRequest: ...
+        def column_statistics(self) -> Global___ColumnStatisticsRequest: ...
         @property
-        def multi_join(self) -> global___MultiJoinTablesRequest: ...
+        def multi_join(self) -> Global___MultiJoinTablesRequest: ...
         @property
-        def slice(self) -> global___SliceRequest: ...
+        def slice(self) -> Global___SliceRequest: ...
         def __init__(
             self,
             *,
-            empty_table: global___EmptyTableRequest | None = ...,
-            time_table: global___TimeTableRequest | None = ...,
-            drop_columns: global___DropColumnsRequest | None = ...,
-            update: global___SelectOrUpdateRequest | None = ...,
-            lazy_update: global___SelectOrUpdateRequest | None = ...,
-            view: global___SelectOrUpdateRequest | None = ...,
-            update_view: global___SelectOrUpdateRequest | None = ...,
-            select: global___SelectOrUpdateRequest | None = ...,
-            select_distinct: global___SelectDistinctRequest | None = ...,
-            filter: global___FilterTableRequest | None = ...,
-            unstructured_filter: global___UnstructuredFilterTableRequest | None = ...,
-            sort: global___SortTableRequest | None = ...,
-            head: global___HeadOrTailRequest | None = ...,
-            tail: global___HeadOrTailRequest | None = ...,
-            head_by: global___HeadOrTailByRequest | None = ...,
-            tail_by: global___HeadOrTailByRequest | None = ...,
-            ungroup: global___UngroupRequest | None = ...,
-            merge: global___MergeTablesRequest | None = ...,
-            combo_aggregate: global___ComboAggregateRequest | None = ...,
-            flatten: global___FlattenRequest | None = ...,
-            run_chart_downsample: global___RunChartDownsampleRequest | None = ...,
-            cross_join: global___CrossJoinTablesRequest | None = ...,
-            natural_join: global___NaturalJoinTablesRequest | None = ...,
-            exact_join: global___ExactJoinTablesRequest | None = ...,
-            left_join: global___LeftJoinTablesRequest | None = ...,
-            as_of_join: global___AsOfJoinTablesRequest | None = ...,
-            fetch_table: global___FetchTableRequest | None = ...,
-            apply_preview_columns: global___ApplyPreviewColumnsRequest | None = ...,
-            create_input_table: global___CreateInputTableRequest | None = ...,
-            update_by: global___UpdateByRequest | None = ...,
-            where_in: global___WhereInRequest | None = ...,
-            aggregate_all: global___AggregateAllRequest | None = ...,
-            aggregate: global___AggregateRequest | None = ...,
-            snapshot: global___SnapshotTableRequest | None = ...,
-            snapshot_when: global___SnapshotWhenTableRequest | None = ...,
-            meta_table: global___MetaTableRequest | None = ...,
-            range_join: global___RangeJoinTablesRequest | None = ...,
-            aj: global___AjRajTablesRequest | None = ...,
-            raj: global___AjRajTablesRequest | None = ...,
-            column_statistics: global___ColumnStatisticsRequest | None = ...,
-            multi_join: global___MultiJoinTablesRequest | None = ...,
-            slice: global___SliceRequest | None = ...,
+            empty_table: Global___EmptyTableRequest | None = ...,
+            time_table: Global___TimeTableRequest | None = ...,
+            drop_columns: Global___DropColumnsRequest | None = ...,
+            update: Global___SelectOrUpdateRequest | None = ...,
+            lazy_update: Global___SelectOrUpdateRequest | None = ...,
+            view: Global___SelectOrUpdateRequest | None = ...,
+            update_view: Global___SelectOrUpdateRequest | None = ...,
+            select: Global___SelectOrUpdateRequest | None = ...,
+            select_distinct: Global___SelectDistinctRequest | None = ...,
+            filter: Global___FilterTableRequest | None = ...,
+            unstructured_filter: Global___UnstructuredFilterTableRequest | None = ...,
+            sort: Global___SortTableRequest | None = ...,
+            head: Global___HeadOrTailRequest | None = ...,
+            tail: Global___HeadOrTailRequest | None = ...,
+            head_by: Global___HeadOrTailByRequest | None = ...,
+            tail_by: Global___HeadOrTailByRequest | None = ...,
+            ungroup: Global___UngroupRequest | None = ...,
+            merge: Global___MergeTablesRequest | None = ...,
+            combo_aggregate: Global___ComboAggregateRequest | None = ...,
+            flatten: Global___FlattenRequest | None = ...,
+            run_chart_downsample: Global___RunChartDownsampleRequest | None = ...,
+            cross_join: Global___CrossJoinTablesRequest | None = ...,
+            natural_join: Global___NaturalJoinTablesRequest | None = ...,
+            exact_join: Global___ExactJoinTablesRequest | None = ...,
+            left_join: Global___LeftJoinTablesRequest | None = ...,
+            as_of_join: Global___AsOfJoinTablesRequest | None = ...,
+            fetch_table: Global___FetchTableRequest | None = ...,
+            apply_preview_columns: Global___ApplyPreviewColumnsRequest | None = ...,
+            create_input_table: Global___CreateInputTableRequest | None = ...,
+            update_by: Global___UpdateByRequest | None = ...,
+            where_in: Global___WhereInRequest | None = ...,
+            aggregate_all: Global___AggregateAllRequest | None = ...,
+            aggregate: Global___AggregateRequest | None = ...,
+            snapshot: Global___SnapshotTableRequest | None = ...,
+            snapshot_when: Global___SnapshotWhenTableRequest | None = ...,
+            meta_table: Global___MetaTableRequest | None = ...,
+            range_join: Global___RangeJoinTablesRequest | None = ...,
+            aj: Global___AjRajTablesRequest | None = ...,
+            raj: Global___AjRajTablesRequest | None = ...,
+            column_statistics: Global___ColumnStatisticsRequest | None = ...,
+            multi_join: Global___MultiJoinTablesRequest | None = ...,
+            slice: Global___SliceRequest | None = ...,
         ) -> None: ...
         def HasField(self, field_name: typing.Literal["aggregate", b"aggregate", "aggregate_all", b"aggregate_all", "aj", b"aj", "apply_preview_columns", b"apply_preview_columns", "as_of_join", b"as_of_join", "column_statistics", b"column_statistics", "combo_aggregate", b"combo_aggregate", "create_input_table", b"create_input_table", "cross_join", b"cross_join", "drop_columns", b"drop_columns", "empty_table", b"empty_table", "exact_join", b"exact_join", "fetch_table", b"fetch_table", "filter", b"filter", "flatten", b"flatten", "head", b"head", "head_by", b"head_by", "lazy_update", b"lazy_update", "left_join", b"left_join", "merge", b"merge", "meta_table", b"meta_table", "multi_join", b"multi_join", "natural_join", b"natural_join", "op", b"op", "raj", b"raj", "range_join", b"range_join", "run_chart_downsample", b"run_chart_downsample", "select", b"select", "select_distinct", b"select_distinct", "slice", b"slice", "snapshot", b"snapshot", "snapshot_when", b"snapshot_when", "sort", b"sort", "tail", b"tail", "tail_by", b"tail_by", "time_table", b"time_table", "ungroup", b"ungroup", "unstructured_filter", b"unstructured_filter", "update", b"update", "update_by", b"update_by", "update_view", b"update_view", "view", b"view", "where_in", b"where_in"]) -> builtins.bool: ...
         def ClearField(self, field_name: typing.Literal["aggregate", b"aggregate", "aggregate_all", b"aggregate_all", "aj", b"aj", "apply_preview_columns", b"apply_preview_columns", "as_of_join", b"as_of_join", "column_statistics", b"column_statistics", "combo_aggregate", b"combo_aggregate", "create_input_table", b"create_input_table", "cross_join", b"cross_join", "drop_columns", b"drop_columns", "empty_table", b"empty_table", "exact_join", b"exact_join", "fetch_table", b"fetch_table", "filter", b"filter", "flatten", b"flatten", "head", b"head", "head_by", b"head_by", "lazy_update", b"lazy_update", "left_join", b"left_join", "merge", b"merge", "meta_table", b"meta_table", "multi_join", b"multi_join", "natural_join", b"natural_join", "op", b"op", "raj", b"raj", "range_join", b"range_join", "run_chart_downsample", b"run_chart_downsample", "select", b"select", "select_distinct", b"select_distinct", "slice", b"slice", "snapshot", b"snapshot", "snapshot_when", b"snapshot_when", "sort", b"sort", "tail", b"tail", "tail_by", b"tail_by", "time_table", b"time_table", "ungroup", b"ungroup", "unstructured_filter", b"unstructured_filter", "update", b"update", "update_by", b"update_by", "update_view", b"update_view", "view", b"view", "where_in", b"where_in"]) -> None: ...
@@ -3602,12 +3610,12 @@ class BatchTableRequest(google.protobuf.message.Message):
 
     OPS_FIELD_NUMBER: builtins.int
     @property
-    def ops(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___BatchTableRequest.Operation]: ...
+    def ops(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[Global___BatchTableRequest.Operation]: ...
     def __init__(
         self,
         *,
-        ops: collections.abc.Iterable[global___BatchTableRequest.Operation] | None = ...,
+        ops: collections.abc.Iterable[Global___BatchTableRequest.Operation] | None = ...,
     ) -> None: ...
     def ClearField(self, field_name: typing.Literal["ops", b"ops"]) -> None: ...
 
-global___BatchTableRequest = BatchTableRequest
+Global___BatchTableRequest: typing_extensions.TypeAlias = BatchTableRequest
