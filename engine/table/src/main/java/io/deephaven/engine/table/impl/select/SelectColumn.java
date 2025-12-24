@@ -252,6 +252,18 @@ public interface SelectColumn extends Selectable, ConcurrencyControl<Selectable>
     boolean isStateless();
 
     /**
+     * Returns true if this column may be parallelized. If a column is not {@link #isStateless() stateless}, then it may
+     * never be parallelized. Stateless columns, however, can choose not to be parallelized for performance reasons.
+     * Even if a column is not parallelizable, the engine may choose to evaluate it out-of-order and may not evaluate
+     * all rows individually.
+     *
+     * @return true if this column may be parallelized
+     */
+    default boolean isParallelizable() {
+        return isStateless();
+    }
+
+    /**
      * Returns true if this column uses row virtual offset columns of {@code i}, {@code ii} or {@code k}.
      */
     default boolean hasVirtualRowVariables() {

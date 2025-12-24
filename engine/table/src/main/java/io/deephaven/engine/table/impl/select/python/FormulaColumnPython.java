@@ -55,13 +55,14 @@ public class FormulaColumnPython extends AbstractFormulaColumn implements Formul
 
     @Override
     public boolean isStateless() {
-        // If we are not free-threaded, then we must prefer to be stateful for performance reasons; otherwise we use
-        // the default setting.
-        if (!PythonFreeThreadUtil.isPythonFreeThreaded()) {
-            return false;
-        }
         // We don't actually have any insight into whether Python is stateful, we use the default setting.
         return QueryTable.STATELESS_SELECT_BY_DEFAULT;
+    }
+
+    @Override
+    public boolean isParallelizable() {
+        // If we are not free-threaded, then we cannot be parallelized for performance reasons
+        return isStateless() && PythonFreeThreadUtil.isPythonFreeThreaded();
     }
 
     @Override
