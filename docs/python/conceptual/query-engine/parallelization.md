@@ -81,9 +81,9 @@ By default, the Deephaven engine assumes that are stateless. For [`select`](../.
 
 > [!NOTE]
 > In Deephaven 41.0 and later, filters and selectables are _stateless_ by default. In previous versions, filters and selectables were _stateful_ by default.
->
-> In Python builds that use the GIL (global interpreter lock), parallelizing filters and selectables can negatively impact query performance. To prevent performance regressions, filters and selectables that use Python objects are stateful by default.
-> In free-threaded Python builds, the value of `QueryTable.statelessSelectByDefault` is respected.
+
+> [!NOTE]
+> In Python builds that use the GIL (global interpreter lock), parallelizing filters and selectables can negatively impact query performance. To prevent performance regressions, even stateless filters and selectables that use Python objects are not parallelized unless the Python build is free-threaded.
 
 The [`ConcurrencyControl`](https://docs.deephaven.io/core/pydoc/code/deephaven.concurrency_control.html#deephaven.concurrency_control.ConcurrencyControl) interface allows you to control the behavior of [`Filter`](https://docs.deephaven.io/core/pydoc/code/deephaven.filters.html) (where clause) and [`Selectable`](https://docs.deephaven.io/core/pydoc/code/deephaven.table.html#deephaven.table.Selectable) objects (update and select table operations).
 
