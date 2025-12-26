@@ -64,6 +64,10 @@
                 "path": "getting-started/crash-course/query-strings.md"
               },
               {
+                "label": "Query Parallelization",
+                "path": "getting-started/crash-course/parallelization.md"
+              },
+              {
                 "label": "Python Integrations",
                 "path": "getting-started/crash-course/py-integrations.md"
               },
