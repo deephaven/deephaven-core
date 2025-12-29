@@ -28,6 +28,8 @@ import java.util.stream.IntStream;
 
 import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.engine.util.TableTools.*;
+import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
+import static io.deephaven.util.QueryConstants.NULL_FLOAT;
 import static org.junit.Assert.*;
 import static org.junit.Assert.assertEquals;
 
@@ -636,5 +638,47 @@ public class QueryTableWhereInTest {
         assertEquals(i(), listener.update.modified());
 
         assertTableEquals(source.where("FV in `A`, `B`"), result);
+    }
+
+    @Test
+    public void testNaNNegZero() {
+        final Table table = TableTools.newTable(
+                floatCol("floatCol",
+                        NULL_FLOAT,
+                        Float.NEGATIVE_INFINITY,
+                        -1.0f,
+                        -0.0f,
+                        0.0f,
+                        1.0f,
+                        Float.POSITIVE_INFINITY,
+                        Float.NaN),
+                doubleCol("doubleCol",
+                        NULL_DOUBLE,
+                        Double.NEGATIVE_INFINITY,
+                        -1.0,
+                        -0.0,
+                        0.0,
+                        1.0,
+                        Double.POSITIVE_INFINITY,
+                        Double.NaN));
+
+        final Table expected = TableTools.newTable(
+                floatCol("floatCol",
+                        -0.0f,
+                        0.0f,
+                        Float.NaN),
+                doubleCol("doubleCol",
+                        -0.0,
+                        0.0,
+                        Double.NaN));
+
+        Table setTable;
+        // NaN should be included and -0.0 should match both -0.0 and 0.0
+        setTable = TableTools.newTable(
+                floatCol("F", Float.NaN, -0.0f),
+                doubleCol("D", Double.NaN, -0.0));
+
+        assertTableEquals(expected, table.whereIn(setTable, "floatCol=F"));
+        assertTableEquals(expected, table.whereIn(setTable, "doubleCol=D"));
     }
 }
