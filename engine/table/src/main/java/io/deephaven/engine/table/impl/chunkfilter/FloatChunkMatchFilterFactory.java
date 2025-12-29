@@ -193,7 +193,7 @@ public class FloatChunkMatchFilterFactory {
      */
     // region getBits
     private static final Float NEG_ZERO = -0.0F;
-    private static int getBits(float value) {
+    public static int getBits(float value) {
         if (NEG_ZERO.equals(value)) {
             return Float.floatToIntBits(0.0f);
         }

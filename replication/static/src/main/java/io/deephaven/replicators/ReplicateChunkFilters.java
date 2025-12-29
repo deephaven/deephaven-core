@@ -45,7 +45,7 @@ public class ReplicateChunkFilters {
         List<String> lines = FileUtils.readLines(objectFile, Charset.defaultCharset());
         lines = ReplicationUtils.replaceRegion(lines, "getBits", List.of("" +
                 "    private static final Double NEG_ZERO = -0.0;\n" +
-                "    private static long getBits(double value) {\n" +
+                "    public static long getBits(double value) {\n" +
                 "        if (NEG_ZERO.equals(value)) {\n" +
                 "            return Double.doubleToLongBits(0.0f);\n" +
                 "        }\n" +
