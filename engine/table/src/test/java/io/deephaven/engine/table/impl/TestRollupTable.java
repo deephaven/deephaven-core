@@ -402,7 +402,8 @@ public class TestRollupTable extends RefreshingTableTestCase {
         TableTools.show(snapshot.view(rollup1.getRowDepthColumn().name(), rollup1.getRowExpandedColumn().name(), "Key1",
                 "Key2", "Sum", "FSum"));
 
-        final Table expected = initialExpectedGrouped(rollup1).dropColumns("Sentinel").update("FSum=ii == 0 ? 7 : 1 + Sum");
+        final Table expected =
+                initialExpectedGrouped(rollup1).dropColumns("Sentinel").update("FSum=ii == 0 ? 7 : 1 + Sum");
         assertTableEquals(expected, snapshot.dropColumns("__EXPOSED_GROUP_ROW_SETS__"));
         freeSnapshotTableChunks(snapshot);
     }

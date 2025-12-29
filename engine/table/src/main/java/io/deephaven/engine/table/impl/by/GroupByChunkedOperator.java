@@ -3,6 +3,7 @@
 //
 package io.deephaven.engine.table.impl.by;
 
+import io.deephaven.api.Pair;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.ChunkPositions;
@@ -22,10 +23,7 @@ import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Arrays;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.UnaryOperator;
 
 import static io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource.BLOCK_SIZE;
@@ -47,6 +45,7 @@ public final class GroupByChunkedOperator implements GroupByOperator {
 
     private final String[] inputColumnNames;
     private final Map<String, AggregateColumnSource<?, ?>> inputAggregatedColumns;
+    private final String[] inputColumnNamesForResults;
     private final Map<String, AggregateColumnSource<?, ?>> resultAggregatedColumns;
     private final ModifiedColumnSet aggregationInputsModifiedColumnSet;
 
@@ -58,6 +57,7 @@ public final class GroupByChunkedOperator implements GroupByOperator {
     private boolean initialized;
 
     private MatchPair[] aggregatedColumnPairs;
+    private List<String> hiddenResults;
 
     /**
      *
@@ -78,6 +78,7 @@ public final class GroupByChunkedOperator implements GroupByOperator {
         this.inputTable = inputTable;
         this.registeredWithHelper = registeredWithHelper;
         this.exposeRowSetsAs = exposeRowSetsAs;
+        this.hiddenResults = hiddenResults;
         this.aggregatedColumnPairs = aggregatedColumnPairs;
 
         live = inputTable.isRefreshing();
@@ -86,14 +87,17 @@ public final class GroupByChunkedOperator implements GroupByOperator {
 
         inputAggregatedColumns = new LinkedHashMap<>(aggregatedColumnPairs.length);
         resultAggregatedColumns = new LinkedHashMap<>(aggregatedColumnPairs.length);
+        final List<String> inputResultNameList = new ArrayList<>(aggregatedColumnPairs.length);
         Arrays.stream(aggregatedColumnPairs).forEach(pair -> {
             final AggregateColumnSource<?, ?> aggregateColumnSource =
                     AggregateColumnSource.make(inputTable.getColumnSource(pair.rightColumn()), rowSets);
             inputAggregatedColumns.put(pair.rightColumn(), aggregateColumnSource);
-            if (hiddenResults == null || !hiddenResults.contains(pair.leftColumn())) {
-                resultAggregatedColumns.put(pair.leftColumn(), aggregateColumnSource);
+            if (hiddenResults == null || !hiddenResults.contains(pair.output().name())) {
+                resultAggregatedColumns.put(pair.output().name(), aggregateColumnSource);
+                inputResultNameList.add(pair.input().name());
             }
         });
+        inputColumnNamesForResults = inputResultNameList.toArray(String[]::new);
 
         if (exposeRowSetsAs != null && resultAggregatedColumns.containsKey(exposeRowSetsAs)) {
             throw new IllegalArgumentException(String.format(
@@ -467,7 +471,7 @@ public final class GroupByChunkedOperator implements GroupByOperator {
                 allResultColumns = resultTable.newModifiedColumnSet(resultAggregatedColumnNames);
             }
             aggregatedColumnsTransformer = inputTable.newModifiedColumnSetTransformer(
-                    inputColumnNames,
+                    inputColumnNamesForResults,
                     Arrays.stream(resultAggregatedColumnNames).map(resultTable::newModifiedColumnSet)
                             .toArray(ModifiedColumnSet[]::new));
         }
@@ -662,5 +666,66 @@ public final class GroupByChunkedOperator implements GroupByOperator {
 
     public MatchPair[] getAggregatedColumnPairs() {
         return aggregatedColumnPairs;
+    }
+
+    public List<String> getHiddenResults() {
+        return hiddenResults;
+    }
+
+    private class ResultExtractor implements IterativeChunkedAggregationOperator {
+        final Map<String, ? extends ColumnSource<?>> resultColumns;
+
+        private ResultExtractor(Map<String, ? extends ColumnSource<?>> resultColumns) {
+            this.resultColumns = resultColumns;
+        }
+
+        @Override
+        public Map<String, ? extends ColumnSource<?>> getResultColumns() {
+            return resultColumns;
+        }
+
+        @Override
+        public void addChunk(BucketedContext context, Chunk<? extends Values> values,
+                LongChunk<? extends RowKeys> inputRowKeys, IntChunk<RowKeys> destinations,
+                IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
+                WritableBooleanChunk<Values> stateModified) {}
+
+        @Override
+        public void removeChunk(BucketedContext context, Chunk<? extends Values> values,
+                LongChunk<? extends RowKeys> inputRowKeys, IntChunk<RowKeys> destinations,
+                IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
+                WritableBooleanChunk<Values> stateModified) {}
+
+        @Override
+        public boolean addChunk(SingletonContext context, int chunkSize, Chunk<? extends Values> values,
+                LongChunk<? extends RowKeys> inputRowKeys, long destination) {
+            return false;
+        }
+
+        @Override
+        public boolean removeChunk(SingletonContext context, int chunkSize, Chunk<? extends Values> values,
+                LongChunk<? extends RowKeys> inputRowKeys, long destination) {
+            return false;
+        }
+
+        @Override
+        public void ensureCapacity(long tableSize) {}
+
+        @Override
+        public void startTrackingPrevValues() {}
+
+        @Override
+        public UnaryOperator<ModifiedColumnSet> initializeRefreshing(@NotNull QueryTable resultTable, @NotNull LivenessReferent aggregationUpdateListener) {
+            return new InputToResultModifiedColumnSetFactory(resultTable, resultColumns.keySet().toArray(String[]::new));
+        }
+    }
+
+    @NotNull
+    public IterativeChunkedAggregationOperator resultExtractor(List<Pair> resultPairs) {
+        final Map<String, ColumnSource<?>> resultColumns = new LinkedHashMap<>(resultPairs.size());
+        for (final Pair pair : resultPairs) {
+            resultColumns.put(pair.output().name(), inputAggregatedColumns.get(pair.input().name()));
+        }
+        return new ResultExtractor(resultColumns);
     }
 }

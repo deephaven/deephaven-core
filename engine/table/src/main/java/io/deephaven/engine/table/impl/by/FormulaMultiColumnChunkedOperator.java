@@ -35,8 +35,8 @@ class FormulaMultiColumnChunkedOperator implements IterativeChunkedAggregationOp
 
     private final QueryTable inputTable;
 
-    private final GroupByOperator groupBy;
-    private final boolean delegateToBy;
+    private GroupByOperator groupBy;
+    private boolean delegateToBy;
     private final SelectColumn selectColumn;
     private final WritableColumnSource<?> resultColumn;
     private final String[] inputKeyColumns;
@@ -60,12 +60,13 @@ class FormulaMultiColumnChunkedOperator implements IterativeChunkedAggregationOp
     /**
      * Construct an operator for applying a formula to slot-vectors over an aggregated table..
      *
-     * @param groupBy      The {@link GroupByChunkedOperator} to use for tracking indices
+     * @param groupBy The {@link GroupByChunkedOperator} to use for tracking indices
      * @param delegateToBy Whether this operator is responsible for passing methods through to {@code groupBy}. Should
-     *                     be false if {@code groupBy} is updated by the helper, or if this is not the first operator sharing
-     *                     {@code groupBy}.
+     *        be false if {@code groupBy} is updated by the helper, or if this is not the first operator sharing
+     *        {@code groupBy}.
      * @param selectColumn The formula column that will produce the results
-     * @param renames a map from input names in the groupBy operator (i.e. mangled names) to input column names in the formula
+     * @param renames a map from input names in the groupBy operator (i.e. mangled names) to input column names in the
+     *        formula
      */
     FormulaMultiColumnChunkedOperator(
             @NotNull final QueryTable inputTable,
@@ -238,7 +239,8 @@ class FormulaMultiColumnChunkedOperator implements IterativeChunkedAggregationOp
         } else {
             final Map<String, ColumnSource<?>> columnSourceMap = resultTable.getColumnSourceMap();
             sourceColumns = new HashMap<>(groupBy.getInputResultColumns().size() + 1);
-            groupBy.getInputResultColumns().forEach((k, v) -> sourceColumns.put(renames == null ? k : renames.get(k), v));
+            groupBy.getInputResultColumns()
+                    .forEach((k, v) -> sourceColumns.put(renames == null ? k : renames.get(k), v));
             Arrays.stream(inputKeyColumns).forEach(col -> sourceColumns.put(col, columnSourceMap.get(col)));
             sourceColumns.put(AggregationProcessor.ROLLUP_FORMULA_DEPTH.name(), formulaDepthSource);
         }
@@ -418,5 +420,10 @@ class FormulaMultiColumnChunkedOperator implements IterativeChunkedAggregationOp
 
     private static long calculateContainingBlockLastKey(final long firstKey) {
         return (firstKey / BLOCK_SIZE) * BLOCK_SIZE + BLOCK_SIZE - 1;
+    }
+
+    public void updateGroupBy(GroupByChunkedOperator groupBy, boolean delegateToBy) {
+        this.groupBy = groupBy;
+        this.delegateToBy = delegateToBy;
     }
 }
