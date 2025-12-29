@@ -685,6 +685,47 @@ public class QueryTableWhereInTest {
     }
 
     @Test
+    public void testTupleTables() {
+        Table table;
+
+        // verify that a table whereIn itself returns itself for interesting tables.
+        table = TableTools.newTable(
+                doubleCol("doubleCol", Double.NaN),
+                floatCol("floatCol", Float.NaN));
+        assertTableEquals(table, table.whereIn(table, "doubleCol", "floatCol"));
+
+        table = TableTools.newTable(
+                doubleCol("doubleCol", Double.NaN),
+                floatCol("floatCol", -0.0f));
+        assertTableEquals(table, table.whereIn(table, "doubleCol", "floatCol"));
+
+        table = TableTools.newTable(
+                doubleCol("doubleCol", Double.NaN),
+                floatCol("floatCol", 0.0f));
+        assertTableEquals(table, table.whereIn(table, "doubleCol", "floatCol"));
+
+        table = TableTools.newTable(
+                doubleCol("doubleCol", -0.0),
+                floatCol("floatCol", 0.0f));
+        assertTableEquals(table, table.whereIn(table, "doubleCol", "floatCol"));
+
+        table = TableTools.newTable(
+                doubleCol("doubleCol", NULL_DOUBLE),
+                floatCol("floatCol", NULL_FLOAT));
+        assertTableEquals(table, table.whereIn(table, "doubleCol", "floatCol"));
+
+        table = TableTools.newTable(
+                doubleCol("doubleCol", NULL_DOUBLE),
+                floatCol("floatCol", Float.NaN));
+        assertTableEquals(table, table.whereIn(table, "doubleCol", "floatCol"));
+
+        table = TableTools.newTable(
+                doubleCol("doubleCol", -0.0, 0.0),
+                floatCol("floatCol", 0.0f, -0.0f));
+        assertTableEquals(table, table.whereIn(table, "doubleCol", "floatCol"));
+    }
+
+    @Test
     public void testFloatSetInclusionKernel() {
         // Create a valid collection with a null object
         final List<Object> list = new ArrayList<>();
