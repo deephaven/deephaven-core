@@ -715,8 +715,10 @@ public final class GroupByChunkedOperator implements GroupByOperator {
         public void startTrackingPrevValues() {}
 
         @Override
-        public UnaryOperator<ModifiedColumnSet> initializeRefreshing(@NotNull QueryTable resultTable, @NotNull LivenessReferent aggregationUpdateListener) {
-            return new InputToResultModifiedColumnSetFactory(resultTable, resultColumns.keySet().toArray(String[]::new));
+        public UnaryOperator<ModifiedColumnSet> initializeRefreshing(@NotNull QueryTable resultTable,
+                @NotNull LivenessReferent aggregationUpdateListener) {
+            return new InputToResultModifiedColumnSetFactory(resultTable,
+                    resultColumns.keySet().toArray(String[]::new));
         }
     }
 

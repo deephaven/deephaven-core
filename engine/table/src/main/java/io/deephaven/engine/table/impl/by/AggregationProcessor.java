@@ -748,9 +748,9 @@ public class AggregationProcessor implements AggregationContextFactory {
         }
 
         GroupByChunkedOperator ensureGroupingOperator(final QueryTable table,
-                                                      final int existingOperatorIndex,
-                                                      final String exposeRowSetAs,
-                                                      final MatchPair[] matchPairs) {
+                final int existingOperatorIndex,
+                final String exposeRowSetAs,
+                final MatchPair[] matchPairs) {
             boolean recreate = false;
             final GroupByChunkedOperator existing = (GroupByChunkedOperator) operators.get(existingOperatorIndex);
             if (exposeRowSetAs != null) {
@@ -790,8 +790,7 @@ public class AggregationProcessor implements AggregationContextFactory {
             for (IterativeChunkedAggregationOperator operator : operators) {
                 if (operator instanceof FormulaMultiColumnChunkedOperator) {
                     ((FormulaMultiColumnChunkedOperator) operator).updateGroupBy(newOperator, false);
-                }
-                else if (operator instanceof FormulaChunkedOperator) {
+                } else if (operator instanceof FormulaChunkedOperator) {
                     ((FormulaChunkedOperator) operator).updateGroupBy(newOperator, false);
                 }
             }

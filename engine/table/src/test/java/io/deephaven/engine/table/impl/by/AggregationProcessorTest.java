@@ -153,8 +153,8 @@ public class AggregationProcessorTest {
         csmap.put("LongValue", new LongSingleValueSource());
         csmap.put("IntValue", new IntegerSingleValueSource());
 
-        ((LongSingleValueSource)csmap.get("LongValue")).set(10L);
-        ((IntegerSingleValueSource)csmap.get("IntValue")).set(20);
+        ((LongSingleValueSource) csmap.get("LongValue")).set(10L);
+        ((IntegerSingleValueSource) csmap.get("IntValue")).set(20);
 
         final QueryTable input = new QueryTable(i(0).toTracking(), csmap);
         input.setRefreshing(true);
@@ -164,13 +164,15 @@ public class AggregationProcessorTest {
         final Table agged = input.aggBy(aggs);
 
         final LongVectorDirect lvd = new LongVectorDirect(10L);
-        assertTableEquals(TableTools.newTable(col("LongValue", (LongVector)lvd), longCol("LS", 10L), longCol("IS", 20L)), agged);
+        assertTableEquals(
+                TableTools.newTable(col("LongValue", (LongVector) lvd), longCol("LS", 10L), longCol("IS", 20L)), agged);
 
         // this part of the test just verifies that we have the secondary operators we expect
         final AggregationContext ac = AggregationProcessor.forAggregation(aggs).makeAggregationContext(input, false);
         Arrays.stream(ac.operators).forEach(o -> System.out.println(o.getClass().getCanonicalName()));
         assertEquals(3, ac.operators.length);
         assertEquals(1, Arrays.stream(ac.operators).filter(o -> o instanceof GroupByChunkedOperator).count());
-        assertEquals(2, Arrays.stream(ac.operators).filter(o -> o instanceof FormulaMultiColumnChunkedOperator).count());
+        assertEquals(2,
+                Arrays.stream(ac.operators).filter(o -> o instanceof FormulaMultiColumnChunkedOperator).count());
     }
 }
