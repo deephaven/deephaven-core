@@ -5,11 +5,13 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.Selectable;
+import io.deephaven.chunk.ChunkType;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.select.*;
+import io.deephaven.engine.table.impl.select.setinclusion.SetInclusionKernel;
 import io.deephaven.engine.table.vectors.ColumnVectors;
 import io.deephaven.engine.testutil.*;
 import io.deephaven.engine.testutil.generator.*;
@@ -641,7 +643,7 @@ public class QueryTableWhereInTest {
     }
 
     @Test
-    public void testNaNNegZero() {
+    public void testNanNegZero() {
         final Table table = TableTools.newTable(
                 floatCol("floatCol",
                         NULL_FLOAT,
@@ -680,5 +682,57 @@ public class QueryTableWhereInTest {
 
         assertTableEquals(expected, table.whereIn(setTable, "floatCol=F"));
         assertTableEquals(expected, table.whereIn(setTable, "doubleCol=D"));
+    }
+
+    @Test
+    public void testFloatSetInclusionKernel() {
+        // Create a valid collection with a null object
+        final List<Object> list = new ArrayList<>();
+        list.add(null);
+        list.add(Float.NEGATIVE_INFINITY);
+        list.add(-1.0f);
+        list.add(-0.0f);
+        list.add(0.0f);
+        list.add(1.0f);
+        list.add(Float.POSITIVE_INFINITY);
+        list.add(Float.NaN);
+
+        final SetInclusionKernel floatKernel = SetInclusionKernel.makeKernel(ChunkType.Float, list, true);
+
+        // should all return false because all values are already present
+        assertFalse(floatKernel.add(null));
+        assertFalse(floatKernel.add(Float.NEGATIVE_INFINITY));
+        assertFalse(floatKernel.add(-1.0f));
+        assertFalse(floatKernel.add(-0.0f));
+        assertFalse(floatKernel.add(0.0f));
+        assertFalse(floatKernel.add(1.0f));
+        assertFalse(floatKernel.add(Float.POSITIVE_INFINITY));
+        assertFalse(floatKernel.add(Float.NaN));
+    }
+
+    @Test
+    public void testDoubleSetInclusionKernel() {
+        // Create a valid collection with a null object
+        final List<Object> list = new ArrayList<>();
+        list.add(null);
+        list.add(Double.NEGATIVE_INFINITY);
+        list.add(-1.0);
+        list.add(-0.0);
+        list.add(0.0);
+        list.add(1.0);
+        list.add(Double.POSITIVE_INFINITY);
+        list.add(Double.NaN);
+
+        final SetInclusionKernel doubleKernel = SetInclusionKernel.makeKernel(ChunkType.Double, list, true);
+
+        // should all return false because all values are already present
+        assertFalse(doubleKernel.add(null));
+        assertFalse(doubleKernel.add(Double.NEGATIVE_INFINITY));
+        assertFalse(doubleKernel.add(-1.0));
+        assertFalse(doubleKernel.add(-0.0));
+        assertFalse(doubleKernel.add(0.0));
+        assertFalse(doubleKernel.add(1.0));
+        assertFalse(doubleKernel.add(Double.POSITIVE_INFINITY));
+        assertFalse(doubleKernel.add(Double.NaN));
     }
 }

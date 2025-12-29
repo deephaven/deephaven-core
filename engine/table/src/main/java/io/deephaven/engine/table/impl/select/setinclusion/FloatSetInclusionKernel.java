@@ -23,7 +23,7 @@ public class FloatSetInclusionKernel implements SetInclusionKernel {
 
     FloatSetInclusionKernel(@NotNull final Collection<Object> liveValues, final boolean inclusion) {
         this.liveValues = new TIntHashSet(liveValues.size());
-        liveValues.forEach(x -> this.liveValues.add(FloatChunkMatchFilterFactory.getBits((float)x)));
+        liveValues.forEach(this::add);
         this.inclusion = inclusion;
     }
 

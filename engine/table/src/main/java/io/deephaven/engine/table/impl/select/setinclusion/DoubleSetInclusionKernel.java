@@ -26,7 +26,7 @@ public class DoubleSetInclusionKernel implements SetInclusionKernel {
 
     DoubleSetInclusionKernel(@NotNull final Collection<Object> liveValues, final boolean inclusion) {
         this.liveValues = new TLongHashSet(liveValues.size());
-        liveValues.forEach(x -> this.liveValues.add(DoubleChunkMatchFilterFactory.getBits((double)x)));
+        liveValues.forEach(this::add);
         this.inclusion = inclusion;
     }
 
