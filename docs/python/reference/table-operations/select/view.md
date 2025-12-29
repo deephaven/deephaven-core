@@ -102,5 +102,6 @@ result = source.view(formulas=["A", "X = B", "Y = sqrt(C)"])
 
 - [Create a new table](../../../how-to-guides/new-and-empty-table.md#new_table)
 - [How to select, view, and update data](../../../how-to-guides/use-select-view-update.md)
+- [Parallelizing queries](../../../conceptual/query-engine/parallelization.md)
 - [Javadoc](https://deephaven.io/core/javadoc/io/deephaven/api/TableOperations.html#view(java.lang.String...))
 - [Pydoc](/core/pydoc/code/deephaven.table.html#deephaven.table.Table.view)

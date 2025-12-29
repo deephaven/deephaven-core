@@ -18,6 +18,8 @@ When using `view`, the data being requested is not stored in memory. Rather, a f
 
 > [!CAUTION]
 > When using `view` or [`updateView`](./update-view.md), non-deterministic methods (e.g., random numbers, current time, or mutable structures) produce _unstable_ results. Downstream operations on these results produce _undefined_ behavior. Non-deterministic methods should use [`select`](./select.md) or [`update`](./update.md) instead.
+
+> [!CAUTION]
 > Concurrency control (serial marking and barriers) cannot be applied to `view` or [`updateView`](./update-view.md). These operations compute results on demand and cannot enforce ordering constraints. If you need serial evaluation or barriers, use [`select`](./select.md) or [`update`](./update.md) instead. See [Parallelizing queries](../../../conceptual/query-engine/parallelization.md#serialization) for more information.
 
 ## Syntax
@@ -97,4 +99,5 @@ result = source.view("A", "X = B", "Y = sqrt(C)")
 - [Create a new table](../../../how-to-guides/new-and-empty-table.md#newtable)
 - [Choose the right selection method for your query](../../../how-to-guides/use-select-view-update.md#choose-the-right-column-selection-method)
 - [How to select, view, and update data](../../../how-to-guides/use-select-view-update.md)
+- [Parallelizing queries](../../../conceptual/query-engine/parallelization.md)
 - [Javadoc](https://deephaven.io/core/javadoc/io/deephaven/api/TableOperations.html#view(java.lang.String...))
