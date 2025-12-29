@@ -77,10 +77,13 @@ The [`select`](../../reference/table-operations/select/select.md), [`update`](..
 
 Deephaven can only parallelize an expression if it is _stateless_, meaning it does not depend on any mutable external inputs or the order in which rows are evaluated. Many operations, such as string manipulation or arithmetic on one or more input columns, are stateless.
 
-By default, the Deephaven engine assumes that expressions are stateful (not stateless). For [`select`](../../reference/table-operations/select/select.md) and [`update`](../../reference/table-operations/select/update.md), you can change the configuration property `QueryTable.statelessSelectByDefault` to `true` to make columns stateless by default. For filters, change the property `QueryTable.statelessFiltersByDefault`.
+By default, the Deephaven engine assumes that expressions are stateless. For [`select`](../../reference/table-operations/select/select.md) and [`update`](../../reference/table-operations/select/update.md), you can change the configuration property `QueryTable.statelessSelectByDefault` to `true` to make columns stateless by default. For filters, change the property `QueryTable.statelessFiltersByDefault`.
 
 > [!NOTE]
-> In a future version of Deephaven, filters and selectables will be stateless by default.
+> In Deephaven 41.0 and later, filters and selectables are _stateless_ by default. In previous versions, filters and selectables were _stateful_ by default.
+
+> [!NOTE]
+> In Python builds that use the GIL (global interpreter lock), parallelizing filters and selectables can negatively impact query performance. To prevent performance regressions, even stateless filters and selectables that use Python objects are not parallelized unless the Python build is free-threaded.
 
 The [`ConcurrencyControl`](https://docs.deephaven.io/core/pydoc/code/deephaven.concurrency_control.html#deephaven.concurrency_control.ConcurrencyControl) interface allows you to control the behavior of [`Filter`](https://docs.deephaven.io/core/pydoc/code/deephaven.filters.html) (where clause) and [`Selectable`](https://docs.deephaven.io/core/pydoc/code/deephaven.table.html#deephaven.table.Selectable) objects (update and select table operations).
 
