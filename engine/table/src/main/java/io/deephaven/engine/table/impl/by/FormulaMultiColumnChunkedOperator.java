@@ -42,6 +42,8 @@ class FormulaMultiColumnChunkedOperator implements IterativeChunkedAggregationOp
     private final String[] inputKeyColumns;
     @Nullable
     private final ColumnSource<Integer> formulaDepthSource;
+    @Nullable
+    private final Map<String, String> renames;
 
     private ChunkSource<Values> formulaDataSource;
 
@@ -58,11 +60,12 @@ class FormulaMultiColumnChunkedOperator implements IterativeChunkedAggregationOp
     /**
      * Construct an operator for applying a formula to slot-vectors over an aggregated table..
      *
-     * @param groupBy The {@link GroupByChunkedOperator} to use for tracking indices
+     * @param groupBy      The {@link GroupByChunkedOperator} to use for tracking indices
      * @param delegateToBy Whether this operator is responsible for passing methods through to {@code groupBy}. Should
-     *        be false if {@code groupBy} is updated by the helper, or if this is not the first operator sharing
-     *        {@code groupBy}.
+     *                     be false if {@code groupBy} is updated by the helper, or if this is not the first operator sharing
+     *                     {@code groupBy}.
      * @param selectColumn The formula column that will produce the results
+     * @param renames a map from input names in the groupBy operator (i.e. mangled names) to input column names in the formula
      */
     FormulaMultiColumnChunkedOperator(
             @NotNull final QueryTable inputTable,
@@ -70,12 +73,14 @@ class FormulaMultiColumnChunkedOperator implements IterativeChunkedAggregationOp
             final boolean delegateToBy,
             @NotNull final SelectColumn selectColumn,
             @NotNull final String[] inputKeyColumns,
+            @Nullable Map<String, String> renames,
             @Nullable final ColumnSource<Integer> formulaDepthSource) {
         this.inputTable = inputTable;
         this.groupBy = groupBy;
         this.delegateToBy = delegateToBy;
         this.selectColumn = selectColumn;
         this.inputKeyColumns = inputKeyColumns;
+        this.renames = renames;
         this.formulaDepthSource = formulaDepthSource;
 
         resultColumn = ArrayBackedColumnSource.getMemoryColumnSource(
@@ -227,12 +232,13 @@ class FormulaMultiColumnChunkedOperator implements IterativeChunkedAggregationOp
         }
 
         final Map<String, ColumnSource<?>> sourceColumns;
-        if (inputKeyColumns.length == 0 && formulaDepthSource == null) {
+        if (inputKeyColumns.length == 0 && formulaDepthSource == null && renames == null) {
             // noinspection unchecked
             sourceColumns = (Map<String, ColumnSource<?>>) groupBy.getInputResultColumns();
         } else {
             final Map<String, ColumnSource<?>> columnSourceMap = resultTable.getColumnSourceMap();
-            sourceColumns = new HashMap<>(groupBy.getInputResultColumns());
+            sourceColumns = new HashMap<>(groupBy.getInputResultColumns().size() + 1);
+            groupBy.getInputResultColumns().forEach((k, v) -> sourceColumns.put(renames == null ? k : renames.get(k), v));
             Arrays.stream(inputKeyColumns).forEach(col -> sourceColumns.put(col, columnSourceMap.get(col)));
             sourceColumns.put(AggregationProcessor.ROLLUP_FORMULA_DEPTH.name(), formulaDepthSource);
         }

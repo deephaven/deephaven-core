@@ -383,7 +383,7 @@ public class TestRollupTable extends RefreshingTableTestCase {
 
         final RollupTable rollup1 =
                 source.rollup(
-                        List.of(AggGroup("Sentinel"), AggSum("Sum=Sentinel"),
+                        List.of(AggSum("Sum=Sentinel"),
                                 AggFormula("FSum", "__FORMULA_DEPTH__ == 0 ? max(Sentinel) : 1 + sum(Sentinel)")),
                         "Key1", "Key2");
 
@@ -400,9 +400,9 @@ public class TestRollupTable extends RefreshingTableTestCase {
         TableTools.showWithRowSet(snapshot);
 
         TableTools.show(snapshot.view(rollup1.getRowDepthColumn().name(), rollup1.getRowExpandedColumn().name(), "Key1",
-                "Key2", "Sentinel", "Sum", "FSum"));
+                "Key2", "Sum", "FSum"));
 
-        final Table expected = initialExpectedGrouped(rollup1).update("FSum=ii == 0 ? 7 : 1 + Sum");
+        final Table expected = initialExpectedGrouped(rollup1).dropColumns("Sentinel").update("FSum=ii == 0 ? 7 : 1 + Sum");
         assertTableEquals(expected, snapshot.dropColumns("__EXPOSED_GROUP_ROW_SETS__"));
         freeSnapshotTableChunks(snapshot);
     }
@@ -417,7 +417,9 @@ public class TestRollupTable extends RefreshingTableTestCase {
         TableTools.show(source);
 
         final RollupTable rollup1 =
-                source.updateView("qty=(long)qty").rollup(List.of(AggFormula("qty", "__FORMULA_DEPTH__ > 0 ? first(qty) : sum(qty)").asReggregating(), AggSum("Dollars")),
+                source.updateView("qty=(long)qty").rollup(
+                        List.of(AggFormula("qty", "__FORMULA_DEPTH__ > 0 ? first(qty) : sum(qty)").asReggregating(),
+                                AggSum("Dollars")),
                         "Account", "Sym");
 
         final String[] arrayWithNull = new String[1];
@@ -432,24 +434,29 @@ public class TestRollupTable extends RefreshingTableTestCase {
                 snapshotToTable(rollup1, ss1, keyTable, ColumnName.of("Action"), null, RowSetFactory.flat(30));
         TableTools.showWithRowSet(snapshot);
 
-//        final Table expected = initialExpectedGrouped(rollup1).update("FSum=ii == 0 ? 7 : 1 + Sum");
-//        assertTableEquals(expected, snapshot);
+        // final Table expected = initialExpectedGrouped(rollup1).update("FSum=ii == 0 ? 7 : 1 + Sum");
+        // assertTableEquals(expected, snapshot);
         freeSnapshotTableChunks(snapshot);
     }
 
     @Test
     public void testRollupFormulaStatic3() {
         final Table source = TableTools.newTable(
-                stringCol("Account", "Aardvark", "Aardvark", "Aardvark", "Aardvark", "Badger", "Badger", "Badger", "Cobra", "Cobra", "Cobra", "Cobra"),
-                stringCol("Sym", "Apple", "Banana", "Apple", "Apple", "Carrot", "Carrot", "Carrot", "Apple", "Apple", "Apple", "Dragonfruit"),
+                stringCol("Account", "Aardvark", "Aardvark", "Aardvark", "Aardvark", "Badger", "Badger", "Badger",
+                        "Cobra", "Cobra", "Cobra", "Cobra"),
+                stringCol("Sym", "Apple", "Banana", "Apple", "Apple", "Carrot", "Carrot", "Carrot", "Apple", "Apple",
+                        "Apple", "Dragonfruit"),
                 longCol("qty", 500, 100, 500, 200, 300, 300, 200, 100, 200, 300, 1500));
         TableTools.show(source);
 
         final RollupTable rollup1 =
-                source.rollup(List.of(AggFormula("qty", "__FORMULA_DEPTH__ == 2 ? min(1000, sum(qty)) : sum(qty)").asReggregating(), AggSum("sqty=qty")),
+                source.rollup(
+                        List.of(AggFormula("qty", "__FORMULA_DEPTH__ == 2 ? min(1000, sum(qty)) : sum(qty)")
+                                .asReggregating(), AggSum("sqty=qty")),
                         "Account", "Sym");
 
-        final RollupTable rollup2= rollup1.withNodeOperations(rollup1.makeNodeOperationsRecorder(RollupTable.NodeType.Aggregated).updateView("SumDiff=sqty-qty"));
+        final RollupTable rollup2 = rollup1.withNodeOperations(
+                rollup1.makeNodeOperationsRecorder(RollupTable.NodeType.Aggregated).updateView("SumDiff=sqty-qty"));
 
         final String[] arrayWithNull = new String[1];
         final Table keyTable = newTable(
@@ -463,8 +470,8 @@ public class TestRollupTable extends RefreshingTableTestCase {
                 snapshotToTable(rollup2, ss1, keyTable, ColumnName.of("Action"), null, RowSetFactory.flat(30));
         TableTools.showWithRowSet(snapshot);
 
-//        final Table expected = initialExpectedGrouped(rollup1).update("FSum=ii == 0 ? 7 : 1 + Sum");
-//        assertTableEquals(expected, snapshot);
+        // final Table expected = initialExpectedGrouped(rollup1).update("FSum=ii == 0 ? 7 : 1 + Sum");
+        // assertTableEquals(expected, snapshot);
         freeSnapshotTableChunks(snapshot);
     }
 

@@ -24,6 +24,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.function.UnaryOperator;
 
@@ -56,14 +57,28 @@ public final class GroupByChunkedOperator implements GroupByOperator {
     private boolean someKeyHasModifies;
     private boolean initialized;
 
+    private MatchPair[] aggregatedColumnPairs;
+
+    /**
+     *
+     * @param inputTable the table we are aggregating
+     * @param registeredWithHelper true if we are registered with the helper (meaning we independently produce result
+     *        columns), false otherwise. For a normal AggGroup this is true; for a group-by that is only part of an
+     *        AggFormula this is false.
+     * @param exposeRowSetsAs the name of the column to expose the rowsets for each group as
+     * @param hiddenResults a list (possibly empty) of columns that are not exposed to the helper
+     * @param aggregatedColumnPairs the list of input and output columns for this operation
+     */
     public GroupByChunkedOperator(
             @NotNull final QueryTable inputTable,
             final boolean registeredWithHelper,
             @Nullable final String exposeRowSetsAs,
+            @Nullable final List<String> hiddenResults,
             @NotNull final MatchPair... aggregatedColumnPairs) {
         this.inputTable = inputTable;
         this.registeredWithHelper = registeredWithHelper;
         this.exposeRowSetsAs = exposeRowSetsAs;
+        this.aggregatedColumnPairs = aggregatedColumnPairs;
 
         live = inputTable.isRefreshing();
         rowSets = new ObjectArraySource<>(WritableRowSet.class);
@@ -75,7 +90,9 @@ public final class GroupByChunkedOperator implements GroupByOperator {
             final AggregateColumnSource<?, ?> aggregateColumnSource =
                     AggregateColumnSource.make(inputTable.getColumnSource(pair.rightColumn()), rowSets);
             inputAggregatedColumns.put(pair.rightColumn(), aggregateColumnSource);
-            resultAggregatedColumns.put(pair.leftColumn(), aggregateColumnSource);
+            if (hiddenResults == null || !hiddenResults.contains(pair.leftColumn())) {
+                resultAggregatedColumns.put(pair.leftColumn(), aggregateColumnSource);
+            }
         });
 
         if (exposeRowSetsAs != null && resultAggregatedColumns.containsKey(exposeRowSetsAs)) {
@@ -637,5 +654,13 @@ public final class GroupByChunkedOperator implements GroupByOperator {
     @Override
     public boolean hasModifications(boolean columnsModified) {
         return getSomeKeyHasAddsOrRemoves() || (getSomeKeyHasModifies() && columnsModified);
+    }
+
+    public String getExposedRowSetsAs() {
+        return exposeRowSetsAs;
+    }
+
+    public MatchPair[] getAggregatedColumnPairs() {
+        return aggregatedColumnPairs;
     }
 }
