@@ -68,9 +68,7 @@ public class MainHelper {
         if (pathToCheck == null) {
             return null;
         }
-        return (File.separator.equals(DataDir.WINDOWS_SEPARATOR)) ?
-        pathToCheck.replace(" ","") :
-        pathToCheck;
+        return (File.separator.equals(DataDir.WINDOWS_SEPARATOR)) ? pathToCheck.replace(" ", "") : pathToCheck;
     }
 
     @VisibleForTesting

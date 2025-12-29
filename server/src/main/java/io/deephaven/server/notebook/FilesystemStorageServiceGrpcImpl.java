@@ -139,9 +139,9 @@ public class FilesystemStorageServiceGrpcImpl extends StorageServiceGrpc.Storage
 
     /**
      * On Windows systems, we need to replace backslashes with forward slashes for the Web UI
+     * 
      * @param path Path String that may need to be modified
-     * @return Original path on non-Windows systems, or path with backslashes replaced with
-     * slashes on Windows systems.
+     * @return Original path on non-Windows systems, or path with backslashes replaced with slashes on Windows systems.
      */
     private String maybeReplaceFileSeparators(final String path) {
         if (File.separator.equals(DataDir.WINDOWS_SEPARATOR)) {
