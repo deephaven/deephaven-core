@@ -25,7 +25,7 @@ import io.deephaven.util.annotations.VisibleForTesting;
 import io.deephaven.util.process.ProcessEnvironment;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.bridge.SLF4JBridgeHandler;
-
+import java.io.File;
 import java.io.IOException;
 import java.io.Reader;
 import java.nio.charset.Charset;
@@ -63,6 +63,16 @@ public class MainHelper {
         }
     }
 
+    // Spaces in the paths are tedious on Windows
+    private static String maybeRemoveSpaces(final String pathToCheck) {
+        if (pathToCheck == null) {
+            return null;
+        }
+        return (File.separator.equals(DataDir.WINDOWS_SEPARATOR)) ?
+        pathToCheck.replace(" ","") :
+        pathToCheck;
+    }
+
     @VisibleForTesting
     public static void bootstrapProjectDirectories() throws IOException {
         final String applicationName =
@@ -72,9 +82,9 @@ public class MainHelper {
         final dev.dirs.ProjectDirectories defaultDirectories =
                 dev.dirs.ProjectDirectories.from("io", "Deephaven Data Labs", applicationName);
 
-        final Path cacheDir = CacheDir.getOrSet(defaultDirectories.cacheDir);
-        final Path configDir = ConfigDir.getOrSet(defaultDirectories.configDir);
-        final Path dataDir = DataDir.getOrSet(defaultDirectories.dataDir);
+        final Path cacheDir = CacheDir.getOrSet(maybeRemoveSpaces(defaultDirectories.cacheDir));
+        final Path configDir = ConfigDir.getOrSet(maybeRemoveSpaces(defaultDirectories.configDir));
+        final Path dataDir = DataDir.getOrSet(maybeRemoveSpaces(defaultDirectories.dataDir));
 
         Files.createDirectories(cacheDir);
         Files.createDirectories(dataDir);

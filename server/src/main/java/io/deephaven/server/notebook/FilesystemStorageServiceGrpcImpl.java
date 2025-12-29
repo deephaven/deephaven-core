@@ -10,7 +10,6 @@ import com.google.protobuf.ByteString;
 import com.google.rpc.Code;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.configuration.DataDir;
-import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.proto.backplane.grpc.CreateDirectoryRequest;
@@ -114,19 +113,41 @@ public class FilesystemStorageServiceGrpcImpl extends StorageServiceGrpc.Storage
     }
 
     private Path resolveOrThrow(String incomingPath) {
-        if (incomingPath.startsWith(File.separator)) {
+        String resolveDetails = "\nIncoming path is: " + incomingPath;
+        resolveDetails = resolveDetails + "\nFile separator is: " + File.separator;
+        incomingPath = maybeReplaceFileSeparators(incomingPath);
+        while (incomingPath.length() > 0 &&
+                (incomingPath.startsWith(REQUIRED_PATH_PREFIX))) {
             incomingPath = incomingPath.substring(1);
         }
         Path resolved = root.resolve(incomingPath).normalize();
+        resolveDetails = resolveDetails + "\nResolved path is: " + resolved;
+        resolveDetails = resolveDetails + "\nWhich we want to start with root: " + root;
+
         if (resolved.startsWith(root)) {
             return resolved;
         }
-        throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, "Invalid path: " + incomingPath);
+        throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, "Invalid path: " + incomingPath
+                + "." + resolveDetails);
     }
 
     private void requireNotRoot(Path path, String message) {
         if (path.equals(root)) {
             throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION, message);
+        }
+    }
+
+    /**
+     * On Windows systems, we need to replace backslashes with forward slashes for the Web UI
+     * @param path Path String that may need to be modified
+     * @return Original path on non-Windows systems, or path with backslashes replaced with
+     * slashes on Windows systems.
+     */
+    private String maybeReplaceFileSeparators(final String path) {
+        if (File.separator.equals(DataDir.WINDOWS_SEPARATOR)) {
+            return path.replace(DataDir.WINDOWS_SEPARATOR, REQUIRED_PATH_PREFIX);
+        } else {
+            return path;
         }
     }
 
@@ -148,8 +169,9 @@ public class FilesystemStorageServiceGrpcImpl extends StorageServiceGrpc.Storage
                 }
                 BasicFileAttributes attrs = Files.readAttributes(p, BasicFileAttributes.class);
                 boolean isDirectory = attrs.isDirectory();
+                String relativePath = maybeReplaceFileSeparators(root.relativize(p).toString());
                 ItemInfo.Builder info = ItemInfo.newBuilder()
-                        .setPath(REQUIRED_PATH_PREFIX + root.relativize(p));
+                        .setPath(REQUIRED_PATH_PREFIX + relativePath);
                 if (isDirectory) {
                     info.setType(ItemType.DIRECTORY);
                 } else {
@@ -172,7 +194,7 @@ public class FilesystemStorageServiceGrpcImpl extends StorageServiceGrpc.Storage
         if (filterGlob.contains("**")) {
             throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, "Bad glob, only single `*`s are supported");
         }
-        if (filterGlob.contains(File.separator)) {
+        if (filterGlob.contains(File.separator) || filterGlob.contains(REQUIRED_PATH_PREFIX)) {
             throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
                     "Bad glob, only the same directory can be checked");
         }
