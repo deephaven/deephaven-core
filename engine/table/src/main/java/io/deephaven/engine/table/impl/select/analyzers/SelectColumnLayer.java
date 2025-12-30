@@ -114,7 +114,7 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
         // the select column is stateless
         canParallelizeThisColumn = !isRedirected
                 && WritableSourceWithPrepareForParallelPopulation.supportsParallelPopulation(writableSource)
-                && sc.isStateless();
+                && sc.isStateless() && sc.isParallelizable();
 
         // If we were created on a systemic thread, we want to be sure to make sure that any updates are also
         // applied systemically.

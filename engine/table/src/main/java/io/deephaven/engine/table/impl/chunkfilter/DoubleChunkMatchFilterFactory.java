@@ -196,7 +196,7 @@ public class DoubleChunkMatchFilterFactory {
      */
     // region getBits
     private static final Double NEG_ZERO = -0.0;
-    private static long getBits(double value) {
+    public static long getBits(double value) {
         if (NEG_ZERO.equals(value)) {
             return Double.doubleToLongBits(0.0f);
         }

@@ -3,11 +3,11 @@
 //
 package io.deephaven.util.channel;
 
+import com.google.errorprone.annotations.OverridingMethodsMustInvokeSuper;
 import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import javax.annotation.OverridingMethodsMustInvokeSuper;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Supplier;
