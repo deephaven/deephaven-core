@@ -97,10 +97,7 @@ public class InputTableValidationException extends UncheckedDeephavenException {
             return formatOneMessage(message, firstError).toString();
         }
         final Map<String, List<StructuredError>> errorMap = errors.stream()
-                .collect(Collectors.toMap(StructuredError::getMessage, e -> new ArrayList<>(List.of(e)), (l1, l2) -> {
-                    l1.addAll(l2);
-                    return l1;
-                }));
+                .collect(Collectors.groupingBy(StructuredError::getMessage));
         if (errorMap.size() == 1) {
             final List<StructuredError> errs = errorMap.values().iterator().next();
             return combineSimilarErrors(errors, message, errs).toString();
@@ -120,11 +117,7 @@ public class InputTableValidationException extends UncheckedDeephavenException {
                 return -1;
             }
         }).thenComparing((final StructuredError e) -> {
-            if (e.getColumn().isPresent()) {
-                return e.getColumn().get();
-            } else {
-                return "";
-            }
+            return e.getColumn().orElse("");
         }));
         final StructuredError firstError = errs.get(0);
         final boolean sameRow = errors.stream().allMatch(e -> e.getRow() == firstError.getRow());
