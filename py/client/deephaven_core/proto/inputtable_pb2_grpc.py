@@ -62,6 +62,9 @@ class InputTableServiceServicer(object):
         """
         Adds the provided table to the specified input table. The new data to add must only have
         columns (name, types, and order) which match the given input table's columns.
+
+        If the data is invalid, an error response will be returned with details containing an
+        InputTableValidationErrorList.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -71,6 +74,9 @@ class InputTableServiceServicer(object):
         """
         Removes the provided table from the specified input tables. The tables indicating which rows
         to remove are expected to only have columns that match the key columns of the input table.
+
+        If the data is invalid, an error response will be returned with details containing an
+        InputTableValidationErrorList.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
