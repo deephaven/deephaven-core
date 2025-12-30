@@ -1,0 +1,13 @@
+plugins {
+    id 'io.deephaven.project.register'
+}
+
+description = 'Deephaven Bill of Materials for Third Party dependencies'
+
+dependencies {
+    constraints {
+        runtime('net.minidev:json-smart:2.5.2') {
+            because 'fixes CVE-2024-57699'
+        }
+    }
+}

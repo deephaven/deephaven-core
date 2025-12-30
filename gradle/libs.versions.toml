@@ -8,11 +8,8 @@ awssdk = "2.29.52"
 aws-s3-tables-catalog-for-iceberg = "0.1.8"
 # See dependency matrix for particular gRPC versions at https://github.com/grpc/grpc-java/blob/master/SECURITY.md#netty
 boringssl = "2.0.61.Final"
-
-# Note: when bumping Calcite version, see if we still need the version constraint for json-smart
+# Note: when bumping Calcite version, see if we still need the version constraint for json-smart (see bom-third-party project)
 calcite = "1.39.0"
-json-smart = "2.5.2"
-
 classgraph = "4.8.180"
 commons-compress = "1.28.0"
 commons-io = "2.21.0"
@@ -135,7 +132,6 @@ s3-tables-catalog-for-iceberg = { module = "software.amazon.s3tables:s3-tables-c
 boringssl = { module = "io.netty:netty-tcnative-boringssl-static", version.ref = "boringssl" }
 
 calcite-core = { module = "org.apache.calcite:calcite-core", version.ref = "calcite" }
-json-smart = { module = "net.minidev:json-smart", version.ref = "json-smart" }
 
 classgraph = { module = "io.github.classgraph:classgraph", version.ref = "classgraph" }
 

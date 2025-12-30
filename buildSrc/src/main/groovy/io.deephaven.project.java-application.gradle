@@ -10,6 +10,11 @@ plugins {
     id 'io.deephaven.java-coding-conventions'
 }
 
+dependencies {
+    // All application should be assembled with adherence to our third-party constraints
+    implementation platform(project(':bom-third-party'))
+}
+
 def quickTask = project.tasks.getByName('quick')
 
 // We need to make sure that all JAVA_APPLICATION dependencies are public

@@ -9,6 +9,16 @@ plugins {
     id 'io.deephaven.default-description'
 }
 
+dependencies {
+    // This would make all of our public POMs have a dependencyManagement block on our 3rd party constraints. This is
+    // excessive most of the time, since the majority of our projects don't depend on the constraints in question. In
+    // addition, this might make it harder for downstream consumers to exclude as they would need to do it in a generic
+    // way or for each dependency individually. Instead, `deephaven-bom-third-party` will be published so that downstream
+    // consumers can depend on it directly; or, if they are already depending on `deephaven-bom`, they will inherit it.
+    //
+    // implementation platform(project(':bom-third-party'))
+}
+
 def quickTask = project.tasks.getByName('quick')
 
 // We need to make sure that all JAVA_PUBLIC dependencies are public

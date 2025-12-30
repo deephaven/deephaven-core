@@ -4,3 +4,9 @@ plugins {
     id 'io.deephaven.java-test-conventions'
     id 'io.deephaven.java-coding-conventions'
 }
+
+dependencies {
+    // All local applications (which includes how we package of deephaven-server classpath for the wheel) should be
+    // assembled with adherence to our third-party constraints
+    implementation platform(project(':bom-third-party'))
+}

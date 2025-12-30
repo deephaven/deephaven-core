@@ -9,11 +9,6 @@ description = 'The Deephaven SQL parser'
 dependencies {
     api project(':qst')
     implementation libs.calcite.core
-    constraints {
-        implementation(libs.json.smart) {
-            because 'CVE-2024-57699'
-        }
-    }
 
     compileOnly project(':util-immutables')
     annotationProcessor libs.immutables.value
