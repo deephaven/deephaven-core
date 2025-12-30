@@ -68,14 +68,20 @@ class InputTableValidationError(google.protobuf.message.Message):
         row: builtins.int | None = ...,
         column: builtins.str | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing.Literal["_column", b"_column", "_row", b"_row", "column", b"column", "row", b"row"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing.Literal["_column", b"_column", "_row", b"_row", "column", b"column", "message", b"message", "row", b"row"]) -> None: ...
+    _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["_column", b"_column", "_row", b"_row", "column", b"column", "row", b"row"]
+    def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
+    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["_column", b"_column", "_row", b"_row", "column", b"column", "message", b"message", "row", b"row"]
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    _WhichOneofReturnType__column: typing_extensions.TypeAlias = typing.Literal["column"]
+    _WhichOneofArgType__column: typing_extensions.TypeAlias = typing.Literal["_column", b"_column"]
+    _WhichOneofReturnType__row: typing_extensions.TypeAlias = typing.Literal["row"]
+    _WhichOneofArgType__row: typing_extensions.TypeAlias = typing.Literal["_row", b"_row"]
     @typing.overload
-    def WhichOneof(self, oneof_group: typing.Literal["_column", b"_column"]) -> typing.Literal["column"] | None: ...
+    def WhichOneof(self, oneof_group: _WhichOneofArgType__column) -> _WhichOneofReturnType__column | None: ...
     @typing.overload
-    def WhichOneof(self, oneof_group: typing.Literal["_row", b"_row"]) -> typing.Literal["row"] | None: ...
+    def WhichOneof(self, oneof_group: _WhichOneofArgType__row) -> _WhichOneofReturnType__row | None: ...
 
-global___InputTableValidationError = InputTableValidationError
+Global___InputTableValidationError: typing_extensions.TypeAlias = InputTableValidationError
 
 @typing.final
 class InputTableValidationErrorList(google.protobuf.message.Message):
@@ -88,17 +94,18 @@ class InputTableValidationErrorList(google.protobuf.message.Message):
 
     VALIDATION_ERRORS_FIELD_NUMBER: builtins.int
     @property
-    def validation_errors(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___InputTableValidationError]:
+    def validation_errors(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[Global___InputTableValidationError]:
         """The errors encountered when processing the request."""
 
     def __init__(
         self,
         *,
-        validation_errors: collections.abc.Iterable[global___InputTableValidationError] | None = ...,
+        validation_errors: collections.abc.Iterable[Global___InputTableValidationError] | None = ...,
     ) -> None: ...
-    def ClearField(self, field_name: typing.Literal["validation_errors", b"validation_errors"]) -> None: ...
+    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["validation_errors", b"validation_errors"]
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
 
-global___InputTableValidationErrorList = InputTableValidationErrorList
+Global___InputTableValidationErrorList: typing_extensions.TypeAlias = InputTableValidationErrorList
 
 @typing.final
 class AddTableResponse(google.protobuf.message.Message):
