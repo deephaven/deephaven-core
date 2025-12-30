@@ -117,11 +117,7 @@ public class InputTableValidationException extends UncheckedDeephavenException {
                 return -1;
             }
         }).thenComparing((final StructuredError e) -> {
-            if (e.getColumn().isPresent()) {
-                return e.getColumn().get();
-            } else {
-                return "";
-            }
+            return e.getColumn().orElse("");
         }));
         final StructuredError firstError = errs.get(0);
         final boolean sameRow = errors.stream().allMatch(e -> e.getRow() == firstError.getRow());
