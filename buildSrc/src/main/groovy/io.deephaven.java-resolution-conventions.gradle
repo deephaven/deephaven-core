@@ -1,0 +1,19 @@
+plugins {
+    id 'java'
+}
+
+configurations.configureEach {
+    resolutionStrategy {
+        capabilitiesResolution {
+            // There is a gradle bug with relocated artifacts that declare capabilities as conflicting with the artifact
+            // they are relocated from:
+            // https://github.com/gradle/gradle/issues/35916
+            // https://github.com/gradle/gradle/issues/1256
+            // https://github.com/yawkat/lz4-java/wiki/Gradle-and-org.lz4:lz4%E2%80%90java:1.8.1
+            withCapability('org.lz4:lz4-java') {
+                select(candidates.find { ((ModuleComponentIdentifier) it.id).group == 'at.yawk.lz4' })
+            }
+        }
+        cacheChangingModulesFor 0, 'seconds'
+    }
+}
