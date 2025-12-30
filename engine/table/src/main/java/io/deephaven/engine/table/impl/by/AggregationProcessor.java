@@ -937,7 +937,8 @@ public class AggregationProcessor implements AggregationContextFactory {
         @Override
         public void visit(@NotNull final AggSpecFormula formula) {
             unsupportedForBlinkTables("Formula");
-            // TODO: re-use shared groupBy operators (https://github.com/deephaven/deephaven-core/issues/6363)
+            // Note: we do not attempt to reuse the groupBy operator for the deprecated "each" formula, we only reuse
+            // them for the new-style multi-column formula operators
             final GroupByChunkedOperator groupByChunkedOperator = new GroupByChunkedOperator(table, false, null, null,
                     resultPairs.stream().map(pair -> MatchPair.of((Pair) pair.input())).toArray(MatchPair[]::new));
             final FormulaChunkedOperator formulaChunkedOperator = new FormulaChunkedOperator(groupByChunkedOperator,
@@ -955,10 +956,9 @@ public class AggregationProcessor implements AggregationContextFactory {
         public void visit(@NotNull final AggSpecGroup group) {
             unsupportedForBlinkTables("Group");
 
-            // TODO: re-use shared groupBy operators (https://github.com/deephaven/deephaven-core/issues/6363)
             final int existingOperator = existingGroupByOperatorIndex();
             if (existingOperator >= 0) {
-                // TODO: we must ensure the input columns are all properly represented but hidden
+                // Reuse the operator, adding a result extractor for the new result pairs
                 GroupByChunkedOperator existing =
                         ensureGroupingOperator(table, existingOperator, null, MatchPair.fromPairs(resultPairs));
                 addNoInputOperator(existing.resultExtractor(resultPairs));
@@ -1239,9 +1239,17 @@ public class AggregationProcessor implements AggregationContextFactory {
         @Override
         public void visit(AggSpecGroup group) {
             unsupportedForBlinkTables("Group for rollup");
-            addNoInputOperator(new GroupByChunkedOperator(table, true, EXPOSED_GROUP_ROW_SETS.name(),
-                    null,
-                    MatchPair.fromPairs(resultPairs)));
+
+            final int indexOfExistingOperator = existingGroupByOperatorIndex();
+            if (indexOfExistingOperator >= 0) {
+                // share the existing operator for groupBy in a rollup base
+                final GroupByChunkedOperator existing = ensureGroupingOperator(table, indexOfExistingOperator, EXPOSED_GROUP_ROW_SETS.name(), MatchPair.fromPairs(resultPairs));
+                addNoInputOperator(existing.resultExtractor(resultPairs));
+            } else {
+                addNoInputOperator(new GroupByChunkedOperator(table, true, EXPOSED_GROUP_ROW_SETS.name(),
+                        null,
+                        MatchPair.fromPairs(resultPairs)));
+            }
         }
 
         @Override
@@ -1266,6 +1274,8 @@ public class AggregationProcessor implements AggregationContextFactory {
             final String[] inputNonKeyColumns = partitioned.get(false).toArray(String[]::new);
 
             validateSelectColumnForFormula(selectColumn);
+
+            // TODO: rollup base formula share groupBy
             // TODO: re-use shared groupBy operators (https://github.com/deephaven/deephaven-core/issues/6363)
 
             final GroupByChunkedOperator groupByChunkedOperator;
@@ -1523,6 +1533,7 @@ public class AggregationProcessor implements AggregationContextFactory {
             for (int ii = 0; ii < resultPairs.size(); ++ii) {
                 pairs[ii] = new MatchPair(resultPairs.get(ii).output().name(), resultPairs.get(ii).output().name());
             }
+            // TODO: share the existing group by operator for a rollup reaggregation
             addOperator(new GroupByReaggregateOperator(table, true, EXPOSED_GROUP_ROW_SETS.name(), pairs), groupRowSet,
                     EXPOSED_GROUP_ROW_SETS.name());
         }
