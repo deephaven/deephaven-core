@@ -9,16 +9,6 @@ plugins {
 
 project.tasks.getByName('quick').dependsOn project.tasks.withType(JavaCompile)
 
-configurations.configureEach({ c ->
-    // Make dynamic versions illegal.
-    c.dependencies.configureEach({
-        Dependency dep ->
-            if (dep.version && dep.version.endsWith('+')) {
-                throw new GradleException("Dynamic versions not allowed ($dep found in $path)")
-            }
-    })
-})
-
 tasks.named(LifecycleBasePlugin.CLEAN_TASK_NAME) {
     Delete d ->
         d.delete('out')
