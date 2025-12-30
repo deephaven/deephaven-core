@@ -73,3 +73,9 @@ Now, we can still sort by `Letter`, but attempting to sort by `Number` will resu
 ```python test-set=1 skip-test
 t_sorted = table.sort(order_by="Number")
 ```
+
+## Related documentation
+
+- [`sort`](../reference/table-operations/sort/sort.md)
+- [`sort_descending`](../reference/table-operations/sort/sort-descending.md)
+- [`reverse`](../reference/table-operations/sort/reverse.md)

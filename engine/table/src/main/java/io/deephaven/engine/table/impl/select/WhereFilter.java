@@ -348,7 +348,10 @@ public interface WhereFilter extends Filter {
 
     @Override
     default Filter invert() {
-        throw new UnsupportedOperationException("WhereFilters do not implement invert");
+        if (this instanceof WhereFilterInvertedImpl) {
+            return ((WhereFilterInvertedImpl) this).filter;
+        }
+        return WhereFilterInvertedImpl.of(this);
     }
 
     @Override

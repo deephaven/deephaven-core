@@ -217,3 +217,8 @@ With that final step, the Deephaven Table is subscribed, and will receive live u
 
 > [!CAUTION]
 > When your app is done using tables that were fetched, be sure to call `resultSub.close()` to release any resources that are being held. Without this, the server believes the table is still active and will continue to consume memory and CPU time.
+
+## Related documentation
+
+- [Arrow Flight](./data-import-export/arrow-flight.md)
+- [Servers and clients](../conceptual/client-server-model.md)

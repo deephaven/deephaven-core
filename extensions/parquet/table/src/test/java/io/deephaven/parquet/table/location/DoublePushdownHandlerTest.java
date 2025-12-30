@@ -3,6 +3,7 @@
 //
 package io.deephaven.parquet.table.location;
 
+import io.deephaven.engine.table.MatchOptions;
 import io.deephaven.engine.table.impl.select.DoubleRangeFilter;
 import io.deephaven.engine.table.impl.select.MatchFilter;
 import io.deephaven.test.types.OutOfBandTest;
@@ -97,13 +98,13 @@ public class DoublePushdownHandlerTest {
 
         // unsorted list with duplicates, one inside
         assertTrue(DoublePushdownHandler.maybeOverlaps(
-                new MatchFilter(MatchFilter.MatchType.Regular,
+                new MatchFilter(MatchOptions.REGULAR,
                         "d", 500.0, 150.0, 220.0, 220.0),
                 stats));
 
         // all values outside
         assertFalse(DoublePushdownHandler.maybeOverlaps(
-                new MatchFilter(MatchFilter.MatchType.Regular,
+                new MatchFilter(MatchOptions.REGULAR,
                         "d", 400.0, 401.0),
                 stats));
 
@@ -113,30 +114,30 @@ public class DoublePushdownHandlerTest {
         System.arraycopy(many, 0, withInside, 0, many.length);
         withInside[withInside.length - 1] = 250.0;
         assertTrue(DoublePushdownHandler.maybeOverlaps(
-                new MatchFilter(MatchFilter.MatchType.Regular, "d", withInside), stats));
+                new MatchFilter(MatchOptions.REGULAR, "d", withInside), stats));
 
         // list containing inf values
         assertTrue(DoublePushdownHandler.maybeOverlaps(
-                new MatchFilter(MatchFilter.MatchType.Regular, "d",
+                new MatchFilter(MatchOptions.REGULAR, "d",
                         Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY, 200.0),
                 stats));
 
         // stats (-Inf .. +Inf), inside match should still overlap
         assertTrue(DoublePushdownHandler.maybeOverlaps(
-                new MatchFilter(MatchFilter.MatchType.Regular, "d", 0.0),
+                new MatchFilter(MatchOptions.REGULAR, "d", 0.0),
                 doubleStats(Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY)));
 
         // empty list
         assertFalse(DoublePushdownHandler.maybeOverlaps(
-                new MatchFilter(MatchFilter.MatchType.Regular, "d"), stats));
+                new MatchFilter(MatchOptions.REGULAR, "d"), stats));
 
         // list containing NULL or NaN
         assertTrue(DoublePushdownHandler.maybeOverlaps(
-                new MatchFilter(MatchFilter.MatchType.Regular, "d",
+                new MatchFilter(MatchOptions.REGULAR, "d",
                         QueryConstants.NULL_DOUBLE, 500.0),
                 stats));
         assertTrue(DoublePushdownHandler.maybeOverlaps(
-                new MatchFilter(MatchFilter.MatchType.Regular, "d",
+                new MatchFilter(MatchOptions.REGULAR, "d",
                         Double.NaN, 500.0),
                 stats));
     }
@@ -145,42 +146,42 @@ public class DoublePushdownHandlerTest {
     public void doubleInvertMatchFilterScenarios() {
         // gaps remain inside stats
         assertTrue(DoublePushdownHandler.maybeOverlaps(
-                new MatchFilter(MatchFilter.MatchType.Inverted, "d", -1.0, 0.0, 1.0),
+                new MatchFilter(MatchOptions.INVERTED, "d", -1.0, 0.0, 1.0),
                 doubleStats(-5.0, 5.0)));
 
         // stats fully covered by exclusion list
         assertFalse(DoublePushdownHandler.maybeOverlaps(
-                new MatchFilter(MatchFilter.MatchType.Inverted, "d", 77.7),
+                new MatchFilter(MatchOptions.INVERTED, "d", 77.7),
                 doubleStats(77.7, 77.7)));
 
         // exclude 10-19 leaves gaps 0-9 and 20-29
         final Object[] exclude = IntStream.range(10, 20).mapToObj(i -> (double) i).toArray();
         assertTrue(DoublePushdownHandler.maybeOverlaps(
-                new MatchFilter(MatchFilter.MatchType.Inverted, "d", exclude),
+                new MatchFilter(MatchOptions.INVERTED, "d", exclude),
                 doubleStats(0.0, 29.0)));
 
         // excluding inf still leaves a finite gap
         assertTrue(DoublePushdownHandler.maybeOverlaps(
-                new MatchFilter(MatchFilter.MatchType.Inverted, "d",
+                new MatchFilter(MatchOptions.INVERTED, "d",
                         Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY),
                 doubleStats(-10.0, 10.0)));
 
         // stats (-Inf .. +Inf) and exclusion misses, still overlap
         assertTrue(DoublePushdownHandler.maybeOverlaps(
-                new MatchFilter(MatchFilter.MatchType.Inverted, "d", 0.0),
+                new MatchFilter(MatchOptions.INVERTED, "d", 0.0),
                 doubleStats(Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY)));
 
         // empty exclusion list
         assertTrue(DoublePushdownHandler.maybeOverlaps(
-                new MatchFilter(MatchFilter.MatchType.Inverted, "d"),
+                new MatchFilter(MatchOptions.INVERTED, "d"),
                 doubleStats(1.0, 2.0)));
 
         // NULL or NaN disables push-down
         assertTrue(DoublePushdownHandler.maybeOverlaps(
-                new MatchFilter(MatchFilter.MatchType.Inverted, "d", QueryConstants.NULL_DOUBLE),
+                new MatchFilter(MatchOptions.INVERTED, "d", QueryConstants.NULL_DOUBLE),
                 doubleStats(5.0, 6.0)));
         assertTrue(DoublePushdownHandler.maybeOverlaps(
-                new MatchFilter(MatchFilter.MatchType.Inverted, "d", Double.NaN),
+                new MatchFilter(MatchOptions.INVERTED, "d", Double.NaN),
                 doubleStats(5.0, 6.0)));
 
         final double nextAfterFive = Math.nextAfter(5.0, Double.POSITIVE_INFINITY);
@@ -188,7 +189,7 @@ public class DoublePushdownHandlerTest {
         // returns true since the implementation assumes the range (5, nextAfterFive) overlaps with the statistics range
         // [5,nextAfterFive].
         assertTrue(DoublePushdownHandler.maybeOverlaps(
-                new MatchFilter(MatchFilter.MatchType.Inverted, "i", 5, nextAfterFive),
+                new MatchFilter(MatchOptions.INVERTED, "i", 5, nextAfterFive),
                 doubleStats(5.0, nextAfterFive)));
     }
 }

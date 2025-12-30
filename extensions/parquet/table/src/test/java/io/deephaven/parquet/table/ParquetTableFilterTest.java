@@ -1528,15 +1528,15 @@ public final class ParquetTableFilterTest {
 
         // Empty match filter should return no rows
         filterAndVerifyResultsAllowEmpty(diskTable, memTable,
-                new MatchFilter(MatchFilter.MatchType.Regular, "ints"));
+                new MatchFilter(MatchOptions.REGULAR, "ints"));
         filterAndVerifyResultsAllowEmpty(diskTable, memTable,
-                new MatchFilter(MatchFilter.CaseSensitivity.MatchCase, MatchFilter.MatchType.Regular, "strings"));
+                new MatchFilter(MatchOptions.REGULAR, "strings"));
 
         // Inverted empty match filter should return all rows
         filterAndVerifyResults(diskTable, memTable,
-                new MatchFilter(MatchFilter.MatchType.Inverted, "ints"));
+                new MatchFilter(MatchOptions.INVERTED, "ints"));
         filterAndVerifyResults(diskTable, memTable,
-                new MatchFilter(MatchFilter.MatchType.Inverted, "strings"));
+                new MatchFilter(MatchOptions.INVERTED, "strings"));
     }
 
     @Test
@@ -1551,9 +1551,9 @@ public final class ParquetTableFilterTest {
         final Table memTable = diskTable.select();
 
         filterAndVerifyResults(diskTable, memTable,
-                new MatchFilter(MatchFilter.MatchType.Regular, "Timestamp", baseTime));
+                new MatchFilter(MatchOptions.REGULAR, "Timestamp", baseTime));
         filterAndVerifyResultsAllowEmpty(diskTable, memTable,
-                new MatchFilter(MatchFilter.MatchType.Inverted, "Timestamp", baseTime));
+                new MatchFilter(MatchOptions.INVERTED, "Timestamp", baseTime));
     }
 
     @Test
@@ -1585,13 +1585,13 @@ public final class ParquetTableFilterTest {
         filterAndVerifyResultsAllowEmpty(diskTable, memTable,
                 new FloatRangeFilter("floats", Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY));
         filterAndVerifyResultsAllowEmpty(diskTable, memTable,
-                new MatchFilter(MatchFilter.MatchType.Inverted, "floats", Float.POSITIVE_INFINITY));
+                new MatchFilter(MatchOptions.INVERTED, "floats", Float.POSITIVE_INFINITY));
         filterAndVerifyResultsAllowEmpty(diskTable, memTable,
-                new MatchFilter(MatchFilter.MatchType.Inverted, "floats", Float.NEGATIVE_INFINITY));
+                new MatchFilter(MatchOptions.INVERTED, "floats", Float.NEGATIVE_INFINITY));
         filterAndVerifyResultsAllowEmpty(diskTable, memTable,
-                new MatchFilter(MatchFilter.MatchType.Regular, "floats", Float.POSITIVE_INFINITY));
+                new MatchFilter(MatchOptions.REGULAR, "floats", Float.POSITIVE_INFINITY));
         filterAndVerifyResultsAllowEmpty(diskTable, memTable,
-                new MatchFilter(MatchFilter.MatchType.Regular, "floats", Float.NEGATIVE_INFINITY));
+                new MatchFilter(MatchOptions.REGULAR, "floats", Float.NEGATIVE_INFINITY));
     }
 
     @Test
@@ -1623,13 +1623,13 @@ public final class ParquetTableFilterTest {
         filterAndVerifyResultsAllowEmpty(diskTable, memTable,
                 new DoubleRangeFilter("doubles", Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY));
         filterAndVerifyResultsAllowEmpty(diskTable, memTable,
-                new MatchFilter(MatchFilter.MatchType.Inverted, "doubles", Double.POSITIVE_INFINITY));
+                new MatchFilter(MatchOptions.INVERTED, "doubles", Double.POSITIVE_INFINITY));
         filterAndVerifyResultsAllowEmpty(diskTable, memTable,
-                new MatchFilter(MatchFilter.MatchType.Inverted, "doubles", Double.NEGATIVE_INFINITY));
+                new MatchFilter(MatchOptions.INVERTED, "doubles", Double.NEGATIVE_INFINITY));
         filterAndVerifyResultsAllowEmpty(diskTable, memTable,
-                new MatchFilter(MatchFilter.MatchType.Regular, "doubles", Double.POSITIVE_INFINITY));
+                new MatchFilter(MatchOptions.REGULAR, "doubles", Double.POSITIVE_INFINITY));
         filterAndVerifyResultsAllowEmpty(diskTable, memTable,
-                new MatchFilter(MatchFilter.MatchType.Regular, "doubles", Double.NEGATIVE_INFINITY));
+                new MatchFilter(MatchOptions.REGULAR, "doubles", Double.NEGATIVE_INFINITY));
     }
 
     /**

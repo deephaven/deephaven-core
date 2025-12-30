@@ -527,7 +527,7 @@ If you can’t find an obvious cause for an error or slow performance in your qu
 
 You can also get help by asking questions in our [Slack Community](/slack).
 
-## Related Documentation
+## Related documentation
 
 - [How to triage errors in queries](./triage-errors.md)
 - [`TableLoggers`](/core/javadoc/io/deephaven/engine/table/impl/util/TableLoggers.html)

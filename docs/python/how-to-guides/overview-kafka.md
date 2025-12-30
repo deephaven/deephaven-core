@@ -198,3 +198,9 @@ What can we do with a feed in Deephaven? We can compute derived feeds, we can in
 1. Try interactively, generate ideas and create models, ship code: prototype Kafka applications quickly, productize even quicker (it’s already done).
 2. Leverage a uniform compute model for live and historical data that enables problem decomposition. Build complex answers from the bottom up from the results of smaller queries. Express intermediate results as tables for the clarity of your model without the memory and computational cost of multiple copies of the data. Move away from explicitly handling batches and time windows for processing streams.
 3. Run code not only between queries, but inline with a query, as part of query result computation. Instead of moving the data to your client application and back, embed your code in the data engine, either by running as a script in the engine itself, or as a Deephaven client application operating on table proxies.
+
+## Related documentation
+
+- [Kafka in Deephaven](../conceptual/kafka-in-deephaven.md)
+- [Connect to a Kafka stream](./data-import-export/kafka-stream.md)
+- [`consume`](../reference/data-import-export/Kafka/consume.md)

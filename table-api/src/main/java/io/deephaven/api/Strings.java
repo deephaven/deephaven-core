@@ -84,6 +84,14 @@ public class Strings {
         return (inverted ? "!" : "") + of(isNull);
     }
 
+    public static String of(FilterIsNaN isNaN) {
+        return String.format("isNaN(%s)", of(isNaN.expression()));
+    }
+
+    public static String of(FilterIsNaN isNaN, boolean inverted) {
+        return (inverted ? "!" : "") + of(isNaN);
+    }
+
     public static String of(FilterOr filterOr) {
         return filterOr.filters().stream().map(Strings::ofEncapsulated).collect(Collectors.joining(" || "));
     }
@@ -367,6 +375,11 @@ public class Strings {
         @Override
         public String visit(FilterIsNull isNull) {
             return of(isNull, invert);
+        }
+
+        @Override
+        public String visit(FilterIsNaN isNaN) {
+            return of(isNaN, invert);
         }
 
         @Override

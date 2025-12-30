@@ -3,12 +3,7 @@
 //
 package io.deephaven.server.table.ops.filter;
 
-import io.deephaven.proto.backplane.grpc.CaseSensitivity;
-import io.deephaven.proto.backplane.grpc.CompareCondition;
-import io.deephaven.proto.backplane.grpc.Condition;
-import io.deephaven.proto.backplane.grpc.MatchType;
-import io.deephaven.proto.backplane.grpc.Reference;
-import io.deephaven.proto.backplane.grpc.Value;
+import io.deephaven.proto.backplane.grpc.*;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
@@ -22,7 +17,8 @@ public interface FilterVisitor<R> {
 
     R onComparison(CompareCondition.CompareOperation operation, CaseSensitivity caseSensitivity, Value lhs, Value rhs);
 
-    R onIn(Value target, List<Value> candidatesList, CaseSensitivity caseSensitivity, MatchType matchType);
+    R onIn(Value target, List<Value> candidatesList, CaseSensitivity caseSensitivity, MatchType matchType,
+            NanComparison nanComparison);
 
     R onIsNull(Reference reference);
 
@@ -48,7 +44,8 @@ public interface FilterVisitor<R> {
                         condition.getCompare().getRhs());
             case IN:
                 return visitor.onIn(condition.getIn().getTarget(), condition.getIn().getCandidatesList(),
-                        condition.getIn().getCaseSensitivity(), condition.getIn().getMatchType());
+                        condition.getIn().getCaseSensitivity(), condition.getIn().getMatchType(),
+                        condition.getIn().getNanComparison());
             case INVOKE:
                 return visitor.onInvoke(condition.getInvoke().getMethod(),
                         condition.getInvoke().hasTarget() ? condition.getInvoke().getTarget() : null,

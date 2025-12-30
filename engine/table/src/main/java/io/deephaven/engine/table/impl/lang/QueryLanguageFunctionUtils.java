@@ -18493,6 +18493,9 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean less(int a, double b) {
+        if (Double.isNaN(b)) {
+            return false; // follows IEEE 754   
+        }
         return compareTo(a, b) < 0;
     }
 
@@ -18561,6 +18564,9 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean less(int a, float b) {
+        if (Float.isNaN(b)) {
+            return false; // follows IEEE 754   
+        }
         return compareTo(a, b) < 0;
     }
 
@@ -18765,6 +18771,9 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean less(double a, int b) {
+        if (Double.isNaN(a)) {
+            return false; // follows IEEE 754   
+        }
         return compareTo(a, b) < 0;
     }
 
@@ -18799,6 +18808,12 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean less(double a, double b) {
+        if (Double.isNaN(a)) {
+            return false; // follows IEEE 754   
+        }
+        if (Double.isNaN(b)) {
+            return false; // follows IEEE 754   
+        }
         return compareTo(a, b) < 0;
     }
 
@@ -18833,6 +18848,9 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean less(double a, long b) {
+        if (Double.isNaN(a)) {
+            return false; // follows IEEE 754   
+        }
         return compareTo(a, b) < 0;
     }
 
@@ -18867,6 +18885,12 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean less(double a, float b) {
+        if (Double.isNaN(a)) {
+            return false; // follows IEEE 754   
+        }
+        if (Float.isNaN(b)) {
+            return false; // follows IEEE 754   
+        }
         return compareTo(a, b) < 0;
     }
 
@@ -18901,6 +18925,9 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean less(double a, char b) {
+        if (Double.isNaN(a)) {
+            return false; // follows IEEE 754   
+        }
         return compareTo(a, b) < 0;
     }
 
@@ -18935,6 +18962,9 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean less(double a, byte b) {
+        if (Double.isNaN(a)) {
+            return false; // follows IEEE 754   
+        }
         return compareTo(a, b) < 0;
     }
 
@@ -18969,6 +18999,9 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean less(double a, short b) {
+        if (Double.isNaN(a)) {
+            return false; // follows IEEE 754   
+        }
         return compareTo(a, b) < 0;
     }
 
@@ -19003,6 +19036,9 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean less(double a, BigDecimal b) {
+        if (Double.isNaN(a)) {
+            return false; // follows IEEE 754   
+        }
         return compareTo(a, b) < 0;
     }
 
@@ -19037,6 +19073,9 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean less(double a, BigInteger b) {
+        if (Double.isNaN(a)) {
+            return false; // follows IEEE 754   
+        }
         return compareTo(a, b) < 0;
     }
 
@@ -19105,6 +19144,9 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean less(long a, double b) {
+        if (Double.isNaN(b)) {
+            return false; // follows IEEE 754   
+        }
         return compareTo(a, b) < 0;
     }
 
@@ -19173,6 +19215,9 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean less(long a, float b) {
+        if (Float.isNaN(b)) {
+            return false; // follows IEEE 754   
+        }
         return compareTo(a, b) < 0;
     }
 
@@ -19377,6 +19422,9 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean less(float a, int b) {
+        if (Float.isNaN(a)) {
+            return false; // follows IEEE 754   
+        }
         return compareTo(a, b) < 0;
     }
 
@@ -19411,6 +19459,12 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean less(float a, double b) {
+        if (Float.isNaN(a)) {
+            return false; // follows IEEE 754   
+        }
+        if (Double.isNaN(b)) {
+            return false; // follows IEEE 754   
+        }
         return compareTo(a, b) < 0;
     }
 
@@ -19445,6 +19499,9 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean less(float a, long b) {
+        if (Float.isNaN(a)) {
+            return false; // follows IEEE 754   
+        }
         return compareTo(a, b) < 0;
     }
 
@@ -19479,6 +19536,12 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean less(float a, float b) {
+        if (Float.isNaN(a)) {
+            return false; // follows IEEE 754   
+        }
+        if (Float.isNaN(b)) {
+            return false; // follows IEEE 754   
+        }
         return compareTo(a, b) < 0;
     }
 
@@ -19513,6 +19576,9 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean less(float a, char b) {
+        if (Float.isNaN(a)) {
+            return false; // follows IEEE 754   
+        }
         return compareTo(a, b) < 0;
     }
 
@@ -19547,6 +19613,9 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean less(float a, byte b) {
+        if (Float.isNaN(a)) {
+            return false; // follows IEEE 754   
+        }
         return compareTo(a, b) < 0;
     }
 
@@ -19581,6 +19650,9 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean less(float a, short b) {
+        if (Float.isNaN(a)) {
+            return false; // follows IEEE 754   
+        }
         return compareTo(a, b) < 0;
     }
 
@@ -19615,6 +19687,9 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean less(float a, BigDecimal b) {
+        if (Float.isNaN(a)) {
+            return false; // follows IEEE 754   
+        }
         return compareTo(a, b) < 0;
     }
 
@@ -19649,6 +19724,9 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean less(float a, BigInteger b) {
+        if (Float.isNaN(a)) {
+            return false; // follows IEEE 754   
+        }
         return compareTo(a, b) < 0;
     }
 
@@ -19717,6 +19795,9 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean less(char a, double b) {
+        if (Double.isNaN(b)) {
+            return false; // follows IEEE 754   
+        }
         return compareTo(a, b) < 0;
     }
 
@@ -19785,6 +19866,9 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean less(char a, float b) {
+        if (Float.isNaN(b)) {
+            return false; // follows IEEE 754   
+        }
         return compareTo(a, b) < 0;
     }
 
@@ -20023,6 +20107,9 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean less(byte a, double b) {
+        if (Double.isNaN(b)) {
+            return false; // follows IEEE 754   
+        }
         return compareTo(a, b) < 0;
     }
 
@@ -20091,6 +20178,9 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean less(byte a, float b) {
+        if (Float.isNaN(b)) {
+            return false; // follows IEEE 754   
+        }
         return compareTo(a, b) < 0;
     }
 
@@ -20329,6 +20419,9 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean less(short a, double b) {
+        if (Double.isNaN(b)) {
+            return false; // follows IEEE 754   
+        }
         return compareTo(a, b) < 0;
     }
 
@@ -20397,6 +20490,9 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean less(short a, float b) {
+        if (Float.isNaN(b)) {
+            return false; // follows IEEE 754   
+        }
         return compareTo(a, b) < 0;
     }
 
@@ -20635,6 +20731,9 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean less(BigDecimal a, double b) {
+        if (Double.isNaN(b)) {
+            return false; // follows IEEE 754   
+        }
         return compareTo(a, b) < 0;
     }
 
@@ -20703,6 +20802,9 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean less(BigDecimal a, float b) {
+        if (Float.isNaN(b)) {
+            return false; // follows IEEE 754   
+        }
         return compareTo(a, b) < 0;
     }
 
@@ -20941,6 +21043,9 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean less(BigInteger a, double b) {
+        if (Double.isNaN(b)) {
+            return false; // follows IEEE 754   
+        }
         return compareTo(a, b) < 0;
     }
 
@@ -21009,6 +21114,9 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean less(BigInteger a, float b) {
+        if (Float.isNaN(b)) {
+            return false; // follows IEEE 754   
+        }
         return compareTo(a, b) < 0;
     }
 
@@ -21247,6 +21355,9 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean greater(int a, double b) {
+        if (Double.isNaN(b)) {
+            return false; // follows IEEE 754   
+        }
         return compareTo(a, b) > 0;
     }
 
@@ -21315,6 +21426,9 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean greater(int a, float b) {
+        if (Float.isNaN(b)) {
+            return false; // follows IEEE 754   
+        }
         return compareTo(a, b) > 0;
     }
 
@@ -21519,6 +21633,9 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean greater(double a, int b) {
+        if (Double.isNaN(a)) {
+            return false; // follows IEEE 754   
+        }
         return compareTo(a, b) > 0;
     }
 
@@ -21553,6 +21670,12 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean greater(double a, double b) {
+        if (Double.isNaN(a)) {
+            return false; // follows IEEE 754   
+        }
+        if (Double.isNaN(b)) {
+            return false; // follows IEEE 754   
+        }
         return compareTo(a, b) > 0;
     }
 
@@ -21587,6 +21710,9 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean greater(double a, long b) {
+        if (Double.isNaN(a)) {
+            return false; // follows IEEE 754   
+        }
         return compareTo(a, b) > 0;
     }
 
@@ -21621,6 +21747,12 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean greater(double a, float b) {
+        if (Double.isNaN(a)) {
+            return false; // follows IEEE 754   
+        }
+        if (Float.isNaN(b)) {
+            return false; // follows IEEE 754   
+        }
         return compareTo(a, b) > 0;
     }
 
@@ -21655,6 +21787,9 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean greater(double a, char b) {
+        if (Double.isNaN(a)) {
+            return false; // follows IEEE 754   
+        }
         return compareTo(a, b) > 0;
     }
 
@@ -21689,6 +21824,9 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean greater(double a, byte b) {
+        if (Double.isNaN(a)) {
+            return false; // follows IEEE 754   
+        }
         return compareTo(a, b) > 0;
     }
 
@@ -21723,6 +21861,9 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean greater(double a, short b) {
+        if (Double.isNaN(a)) {
+            return false; // follows IEEE 754   
+        }
         return compareTo(a, b) > 0;
     }
 
@@ -21757,6 +21898,9 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean greater(double a, BigDecimal b) {
+        if (Double.isNaN(a)) {
+            return false; // follows IEEE 754   
+        }
         return compareTo(a, b) > 0;
     }
 
@@ -21791,6 +21935,9 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean greater(double a, BigInteger b) {
+        if (Double.isNaN(a)) {
+            return false; // follows IEEE 754   
+        }
         return compareTo(a, b) > 0;
     }
 
@@ -21859,6 +22006,9 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean greater(long a, double b) {
+        if (Double.isNaN(b)) {
+            return false; // follows IEEE 754   
+        }
         return compareTo(a, b) > 0;
     }
 
@@ -21927,6 +22077,9 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean greater(long a, float b) {
+        if (Float.isNaN(b)) {
+            return false; // follows IEEE 754   
+        }
         return compareTo(a, b) > 0;
     }
 
@@ -22131,6 +22284,9 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean greater(float a, int b) {
+        if (Float.isNaN(a)) {
+            return false; // follows IEEE 754   
+        }
         return compareTo(a, b) > 0;
     }
 
@@ -22165,6 +22321,12 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean greater(float a, double b) {
+        if (Float.isNaN(a)) {
+            return false; // follows IEEE 754   
+        }
+        if (Double.isNaN(b)) {
+            return false; // follows IEEE 754   
+        }
         return compareTo(a, b) > 0;
     }
 
@@ -22199,6 +22361,9 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean greater(float a, long b) {
+        if (Float.isNaN(a)) {
+            return false; // follows IEEE 754   
+        }
         return compareTo(a, b) > 0;
     }
 
@@ -22233,6 +22398,12 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean greater(float a, float b) {
+        if (Float.isNaN(a)) {
+            return false; // follows IEEE 754   
+        }
+        if (Float.isNaN(b)) {
+            return false; // follows IEEE 754   
+        }
         return compareTo(a, b) > 0;
     }
 
@@ -22267,6 +22438,9 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean greater(float a, char b) {
+        if (Float.isNaN(a)) {
+            return false; // follows IEEE 754   
+        }
         return compareTo(a, b) > 0;
     }
 
@@ -22301,6 +22475,9 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean greater(float a, byte b) {
+        if (Float.isNaN(a)) {
+            return false; // follows IEEE 754   
+        }
         return compareTo(a, b) > 0;
     }
 
@@ -22335,6 +22512,9 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean greater(float a, short b) {
+        if (Float.isNaN(a)) {
+            return false; // follows IEEE 754   
+        }
         return compareTo(a, b) > 0;
     }
 
@@ -22369,6 +22549,9 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean greater(float a, BigDecimal b) {
+        if (Float.isNaN(a)) {
+            return false; // follows IEEE 754   
+        }
         return compareTo(a, b) > 0;
     }
 
@@ -22403,6 +22586,9 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean greater(float a, BigInteger b) {
+        if (Float.isNaN(a)) {
+            return false; // follows IEEE 754   
+        }
         return compareTo(a, b) > 0;
     }
 
@@ -22471,6 +22657,9 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean greater(char a, double b) {
+        if (Double.isNaN(b)) {
+            return false; // follows IEEE 754   
+        }
         return compareTo(a, b) > 0;
     }
 
@@ -22539,6 +22728,9 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean greater(char a, float b) {
+        if (Float.isNaN(b)) {
+            return false; // follows IEEE 754   
+        }
         return compareTo(a, b) > 0;
     }
 
@@ -22777,6 +22969,9 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean greater(byte a, double b) {
+        if (Double.isNaN(b)) {
+            return false; // follows IEEE 754   
+        }
         return compareTo(a, b) > 0;
     }
 
@@ -22845,6 +23040,9 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean greater(byte a, float b) {
+        if (Float.isNaN(b)) {
+            return false; // follows IEEE 754   
+        }
         return compareTo(a, b) > 0;
     }
 
@@ -23083,6 +23281,9 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean greater(short a, double b) {
+        if (Double.isNaN(b)) {
+            return false; // follows IEEE 754   
+        }
         return compareTo(a, b) > 0;
     }
 
@@ -23151,6 +23352,9 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean greater(short a, float b) {
+        if (Float.isNaN(b)) {
+            return false; // follows IEEE 754   
+        }
         return compareTo(a, b) > 0;
     }
 
@@ -23389,6 +23593,9 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean greater(BigDecimal a, double b) {
+        if (Double.isNaN(b)) {
+            return false; // follows IEEE 754   
+        }
         return compareTo(a, b) > 0;
     }
 
@@ -23457,6 +23664,9 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean greater(BigDecimal a, float b) {
+        if (Float.isNaN(b)) {
+            return false; // follows IEEE 754   
+        }
         return compareTo(a, b) > 0;
     }
 
@@ -23695,6 +23905,9 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean greater(BigInteger a, double b) {
+        if (Double.isNaN(b)) {
+            return false; // follows IEEE 754   
+        }
         return compareTo(a, b) > 0;
     }
 
@@ -23763,6 +23976,9 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean greater(BigInteger a, float b) {
+        if (Float.isNaN(b)) {
+            return false; // follows IEEE 754   
+        }
         return compareTo(a, b) > 0;
     }
 
@@ -24001,6 +24217,9 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean lessEquals(int a, double b) {
+        if (Double.isNaN(b)) {
+            return false; // follows IEEE 754   
+        }
         return compareTo(a, b) <= 0;
     }
 
@@ -24069,6 +24288,9 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean lessEquals(int a, float b) {
+        if (Float.isNaN(b)) {
+            return false; // follows IEEE 754   
+        }
         return compareTo(a, b) <= 0;
     }
 
@@ -24273,6 +24495,9 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean lessEquals(double a, int b) {
+        if (Double.isNaN(a)) {
+            return false; // follows IEEE 754   
+        }
         return compareTo(a, b) <= 0;
     }
 
@@ -24307,6 +24532,12 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean lessEquals(double a, double b) {
+        if (Double.isNaN(a)) {
+            return false; // follows IEEE 754   
+        }
+        if (Double.isNaN(b)) {
+            return false; // follows IEEE 754   
+        }
         return compareTo(a, b) <= 0;
     }
 
@@ -24341,6 +24572,9 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean lessEquals(double a, long b) {
+        if (Double.isNaN(a)) {
+            return false; // follows IEEE 754   
+        }
         return compareTo(a, b) <= 0;
     }
 
@@ -24375,6 +24609,12 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean lessEquals(double a, float b) {
+        if (Double.isNaN(a)) {
+            return false; // follows IEEE 754   
+        }
+        if (Float.isNaN(b)) {
+            return false; // follows IEEE 754   
+        }
         return compareTo(a, b) <= 0;
     }
 
@@ -24409,6 +24649,9 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean lessEquals(double a, char b) {
+        if (Double.isNaN(a)) {
+            return false; // follows IEEE 754   
+        }
         return compareTo(a, b) <= 0;
     }
 
@@ -24443,6 +24686,9 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean lessEquals(double a, byte b) {
+        if (Double.isNaN(a)) {
+            return false; // follows IEEE 754   
+        }
         return compareTo(a, b) <= 0;
     }
 
@@ -24477,6 +24723,9 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean lessEquals(double a, short b) {
+        if (Double.isNaN(a)) {
+            return false; // follows IEEE 754   
+        }
         return compareTo(a, b) <= 0;
     }
 
@@ -24511,6 +24760,9 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean lessEquals(double a, BigDecimal b) {
+        if (Double.isNaN(a)) {
+            return false; // follows IEEE 754   
+        }
         return compareTo(a, b) <= 0;
     }
 
@@ -24545,6 +24797,9 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean lessEquals(double a, BigInteger b) {
+        if (Double.isNaN(a)) {
+            return false; // follows IEEE 754   
+        }
         return compareTo(a, b) <= 0;
     }
 
@@ -24613,6 +24868,9 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean lessEquals(long a, double b) {
+        if (Double.isNaN(b)) {
+            return false; // follows IEEE 754   
+        }
         return compareTo(a, b) <= 0;
     }
 
@@ -24681,6 +24939,9 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean lessEquals(long a, float b) {
+        if (Float.isNaN(b)) {
+            return false; // follows IEEE 754   
+        }
         return compareTo(a, b) <= 0;
     }
 
@@ -24885,6 +25146,9 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean lessEquals(float a, int b) {
+        if (Float.isNaN(a)) {
+            return false; // follows IEEE 754   
+        }
         return compareTo(a, b) <= 0;
     }
 
@@ -24919,6 +25183,12 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean lessEquals(float a, double b) {
+        if (Float.isNaN(a)) {
+            return false; // follows IEEE 754   
+        }
+        if (Double.isNaN(b)) {
+            return false; // follows IEEE 754   
+        }
         return compareTo(a, b) <= 0;
     }
 
@@ -24953,6 +25223,9 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean lessEquals(float a, long b) {
+        if (Float.isNaN(a)) {
+            return false; // follows IEEE 754   
+        }
         return compareTo(a, b) <= 0;
     }
 
@@ -24987,6 +25260,12 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean lessEquals(float a, float b) {
+        if (Float.isNaN(a)) {
+            return false; // follows IEEE 754   
+        }
+        if (Float.isNaN(b)) {
+            return false; // follows IEEE 754   
+        }
         return compareTo(a, b) <= 0;
     }
 
@@ -25021,6 +25300,9 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean lessEquals(float a, char b) {
+        if (Float.isNaN(a)) {
+            return false; // follows IEEE 754   
+        }
         return compareTo(a, b) <= 0;
     }
 
@@ -25055,6 +25337,9 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean lessEquals(float a, byte b) {
+        if (Float.isNaN(a)) {
+            return false; // follows IEEE 754   
+        }
         return compareTo(a, b) <= 0;
     }
 
@@ -25089,6 +25374,9 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean lessEquals(float a, short b) {
+        if (Float.isNaN(a)) {
+            return false; // follows IEEE 754   
+        }
         return compareTo(a, b) <= 0;
     }
 
@@ -25123,6 +25411,9 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean lessEquals(float a, BigDecimal b) {
+        if (Float.isNaN(a)) {
+            return false; // follows IEEE 754   
+        }
         return compareTo(a, b) <= 0;
     }
 
@@ -25157,6 +25448,9 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean lessEquals(float a, BigInteger b) {
+        if (Float.isNaN(a)) {
+            return false; // follows IEEE 754   
+        }
         return compareTo(a, b) <= 0;
     }
 
@@ -25225,6 +25519,9 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean lessEquals(char a, double b) {
+        if (Double.isNaN(b)) {
+            return false; // follows IEEE 754   
+        }
         return compareTo(a, b) <= 0;
     }
 
@@ -25293,6 +25590,9 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean lessEquals(char a, float b) {
+        if (Float.isNaN(b)) {
+            return false; // follows IEEE 754   
+        }
         return compareTo(a, b) <= 0;
     }
 
@@ -25531,6 +25831,9 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean lessEquals(byte a, double b) {
+        if (Double.isNaN(b)) {
+            return false; // follows IEEE 754   
+        }
         return compareTo(a, b) <= 0;
     }
 
@@ -25599,6 +25902,9 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean lessEquals(byte a, float b) {
+        if (Float.isNaN(b)) {
+            return false; // follows IEEE 754   
+        }
         return compareTo(a, b) <= 0;
     }
 
@@ -25837,6 +26143,9 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean lessEquals(short a, double b) {
+        if (Double.isNaN(b)) {
+            return false; // follows IEEE 754   
+        }
         return compareTo(a, b) <= 0;
     }
 
@@ -25905,6 +26214,9 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean lessEquals(short a, float b) {
+        if (Float.isNaN(b)) {
+            return false; // follows IEEE 754   
+        }
         return compareTo(a, b) <= 0;
     }
 
@@ -26143,6 +26455,9 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean lessEquals(BigDecimal a, double b) {
+        if (Double.isNaN(b)) {
+            return false; // follows IEEE 754   
+        }
         return compareTo(a, b) <= 0;
     }
 
@@ -26211,6 +26526,9 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean lessEquals(BigDecimal a, float b) {
+        if (Float.isNaN(b)) {
+            return false; // follows IEEE 754   
+        }
         return compareTo(a, b) <= 0;
     }
 
@@ -26449,6 +26767,9 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean lessEquals(BigInteger a, double b) {
+        if (Double.isNaN(b)) {
+            return false; // follows IEEE 754   
+        }
         return compareTo(a, b) <= 0;
     }
 
@@ -26517,6 +26838,9 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean lessEquals(BigInteger a, float b) {
+        if (Float.isNaN(b)) {
+            return false; // follows IEEE 754   
+        }
         return compareTo(a, b) <= 0;
     }
 
@@ -26755,6 +27079,9 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean greaterEquals(int a, double b) {
+        if (Double.isNaN(b)) {
+            return false; // follows IEEE 754   
+        }
         return compareTo(a, b) >= 0;
     }
 
@@ -26823,6 +27150,9 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean greaterEquals(int a, float b) {
+        if (Float.isNaN(b)) {
+            return false; // follows IEEE 754   
+        }
         return compareTo(a, b) >= 0;
     }
 
@@ -27027,6 +27357,9 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean greaterEquals(double a, int b) {
+        if (Double.isNaN(a)) {
+            return false; // follows IEEE 754   
+        }
         return compareTo(a, b) >= 0;
     }
 
@@ -27061,6 +27394,12 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean greaterEquals(double a, double b) {
+        if (Double.isNaN(a)) {
+            return false; // follows IEEE 754   
+        }
+        if (Double.isNaN(b)) {
+            return false; // follows IEEE 754   
+        }
         return compareTo(a, b) >= 0;
     }
 
@@ -27095,6 +27434,9 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean greaterEquals(double a, long b) {
+        if (Double.isNaN(a)) {
+            return false; // follows IEEE 754   
+        }
         return compareTo(a, b) >= 0;
     }
 
@@ -27129,6 +27471,12 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean greaterEquals(double a, float b) {
+        if (Double.isNaN(a)) {
+            return false; // follows IEEE 754   
+        }
+        if (Float.isNaN(b)) {
+            return false; // follows IEEE 754   
+        }
         return compareTo(a, b) >= 0;
     }
 
@@ -27163,6 +27511,9 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean greaterEquals(double a, char b) {
+        if (Double.isNaN(a)) {
+            return false; // follows IEEE 754   
+        }
         return compareTo(a, b) >= 0;
     }
 
@@ -27197,6 +27548,9 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean greaterEquals(double a, byte b) {
+        if (Double.isNaN(a)) {
+            return false; // follows IEEE 754   
+        }
         return compareTo(a, b) >= 0;
     }
 
@@ -27231,6 +27585,9 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean greaterEquals(double a, short b) {
+        if (Double.isNaN(a)) {
+            return false; // follows IEEE 754   
+        }
         return compareTo(a, b) >= 0;
     }
 
@@ -27265,6 +27622,9 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean greaterEquals(double a, BigDecimal b) {
+        if (Double.isNaN(a)) {
+            return false; // follows IEEE 754   
+        }
         return compareTo(a, b) >= 0;
     }
 
@@ -27299,6 +27659,9 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean greaterEquals(double a, BigInteger b) {
+        if (Double.isNaN(a)) {
+            return false; // follows IEEE 754   
+        }
         return compareTo(a, b) >= 0;
     }
 
@@ -27367,6 +27730,9 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean greaterEquals(long a, double b) {
+        if (Double.isNaN(b)) {
+            return false; // follows IEEE 754   
+        }
         return compareTo(a, b) >= 0;
     }
 
@@ -27435,6 +27801,9 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean greaterEquals(long a, float b) {
+        if (Float.isNaN(b)) {
+            return false; // follows IEEE 754   
+        }
         return compareTo(a, b) >= 0;
     }
 
@@ -27639,6 +28008,9 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean greaterEquals(float a, int b) {
+        if (Float.isNaN(a)) {
+            return false; // follows IEEE 754   
+        }
         return compareTo(a, b) >= 0;
     }
 
@@ -27673,6 +28045,12 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean greaterEquals(float a, double b) {
+        if (Float.isNaN(a)) {
+            return false; // follows IEEE 754   
+        }
+        if (Double.isNaN(b)) {
+            return false; // follows IEEE 754   
+        }
         return compareTo(a, b) >= 0;
     }
 
@@ -27707,6 +28085,9 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean greaterEquals(float a, long b) {
+        if (Float.isNaN(a)) {
+            return false; // follows IEEE 754   
+        }
         return compareTo(a, b) >= 0;
     }
 
@@ -27741,6 +28122,12 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean greaterEquals(float a, float b) {
+        if (Float.isNaN(a)) {
+            return false; // follows IEEE 754   
+        }
+        if (Float.isNaN(b)) {
+            return false; // follows IEEE 754   
+        }
         return compareTo(a, b) >= 0;
     }
 
@@ -27775,6 +28162,9 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean greaterEquals(float a, char b) {
+        if (Float.isNaN(a)) {
+            return false; // follows IEEE 754   
+        }
         return compareTo(a, b) >= 0;
     }
 
@@ -27809,6 +28199,9 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean greaterEquals(float a, byte b) {
+        if (Float.isNaN(a)) {
+            return false; // follows IEEE 754   
+        }
         return compareTo(a, b) >= 0;
     }
 
@@ -27843,6 +28236,9 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean greaterEquals(float a, short b) {
+        if (Float.isNaN(a)) {
+            return false; // follows IEEE 754   
+        }
         return compareTo(a, b) >= 0;
     }
 
@@ -27877,6 +28273,9 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean greaterEquals(float a, BigDecimal b) {
+        if (Float.isNaN(a)) {
+            return false; // follows IEEE 754   
+        }
         return compareTo(a, b) >= 0;
     }
 
@@ -27911,6 +28310,9 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean greaterEquals(float a, BigInteger b) {
+        if (Float.isNaN(a)) {
+            return false; // follows IEEE 754   
+        }
         return compareTo(a, b) >= 0;
     }
 
@@ -27979,6 +28381,9 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean greaterEquals(char a, double b) {
+        if (Double.isNaN(b)) {
+            return false; // follows IEEE 754   
+        }
         return compareTo(a, b) >= 0;
     }
 
@@ -28047,6 +28452,9 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean greaterEquals(char a, float b) {
+        if (Float.isNaN(b)) {
+            return false; // follows IEEE 754   
+        }
         return compareTo(a, b) >= 0;
     }
 
@@ -28285,6 +28693,9 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean greaterEquals(byte a, double b) {
+        if (Double.isNaN(b)) {
+            return false; // follows IEEE 754   
+        }
         return compareTo(a, b) >= 0;
     }
 
@@ -28353,6 +28764,9 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean greaterEquals(byte a, float b) {
+        if (Float.isNaN(b)) {
+            return false; // follows IEEE 754   
+        }
         return compareTo(a, b) >= 0;
     }
 
@@ -28591,6 +29005,9 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean greaterEquals(short a, double b) {
+        if (Double.isNaN(b)) {
+            return false; // follows IEEE 754   
+        }
         return compareTo(a, b) >= 0;
     }
 
@@ -28659,6 +29076,9 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean greaterEquals(short a, float b) {
+        if (Float.isNaN(b)) {
+            return false; // follows IEEE 754   
+        }
         return compareTo(a, b) >= 0;
     }
 
@@ -28897,6 +29317,9 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean greaterEquals(BigDecimal a, double b) {
+        if (Double.isNaN(b)) {
+            return false; // follows IEEE 754   
+        }
         return compareTo(a, b) >= 0;
     }
 
@@ -28965,6 +29388,9 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean greaterEquals(BigDecimal a, float b) {
+        if (Float.isNaN(b)) {
+            return false; // follows IEEE 754   
+        }
         return compareTo(a, b) >= 0;
     }
 
@@ -29203,6 +29629,9 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean greaterEquals(BigInteger a, double b) {
+        if (Double.isNaN(b)) {
+            return false; // follows IEEE 754   
+        }
         return compareTo(a, b) >= 0;
     }
 
@@ -29271,6 +29700,9 @@ public final class QueryLanguageFunctionUtils {
     }
 
     public static boolean greaterEquals(BigInteger a, float b) {
+        if (Float.isNaN(b)) {
+            return false; // follows IEEE 754   
+        }
         return compareTo(a, b) >= 0;
     }
 

@@ -8,6 +8,7 @@ import io.deephaven.proto.backplane.grpc.CompareCondition;
 import io.deephaven.proto.backplane.grpc.Condition;
 import io.deephaven.proto.backplane.grpc.Literal;
 import io.deephaven.proto.backplane.grpc.MatchType;
+import io.deephaven.proto.backplane.grpc.NanComparison;
 import io.deephaven.proto.backplane.grpc.Reference;
 import io.deephaven.proto.backplane.grpc.Value;
 import org.apache.commons.text.StringEscapeUtils;
@@ -135,7 +136,8 @@ public class FilterPrinter implements FilterVisitor<Void> {
     }
 
     @Override
-    public Void onIn(Value target, List<Value> candidatesList, CaseSensitivity caseSensitivity, MatchType matchType) {
+    public Void onIn(Value target, List<Value> candidatesList, CaseSensitivity caseSensitivity, MatchType matchType,
+            NanComparison nanComparison) {
         if (candidatesList.isEmpty()) {
             // should have already been pruned
             return null;
@@ -152,6 +154,9 @@ public class FilterPrinter implements FilterVisitor<Void> {
         for (int i = 1; i < candidatesList.size(); i++) {
             sb.append(", ");
             accept(candidatesList.get(i));
+        }
+        if (nanComparison == NanComparison.NAN_EQUALS_NAN) {
+            sb.append(" (nans equal)");
         }
         return null;
     }
