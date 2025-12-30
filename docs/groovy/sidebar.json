@@ -191,6 +191,10 @@
                   {
                     "label": "Connect to a Kafka stream",
                     "path": "how-to-guides/data-import-export/kafka-stream.md"
+                  },
+                  {
+                    "label": "Write your own custom parser for Kafka",
+                    "path": "how-to-guides/data-import-export/write-your-own-custom-parser-for-kafka.md"
                   }
                 ]
               },
@@ -267,12 +271,21 @@
                 "path": "how-to-guides/format-columns.md"
               },
               {
+                "label": "Filter",
+                "path": "how-to-guides/use-filters.md"
+              },
+              {
                 "label": "Sort",
                 "path": "how-to-guides/sort.md"
               },
               {
-                "label": "Keyed transpose",
-                "path": "how-to-guides/keyed-transpose.md"
+                "label": "Transpose",
+                "items": [
+                  {
+                    "label": "Keyed transpose",
+                    "path": "how-to-guides/keyed-transpose.md"
+                  }
+                ]
               },
               {
                 "label": "Merge",
@@ -373,6 +386,10 @@
                   {
                     "label": "Filters",
                     "path": "how-to-guides/filters.md"
+                  },
+                  {
+                    "label": "Synchronize multiple tables",
+                    "path": "how-to-guides/synchronizing-tables.md"
                   },
                   {
                     "label": "Operators",
@@ -721,15 +738,6 @@
                 "path": "how-to-guides/flight-sql.md"
               },
               {
-                "label": "Excel",
-                "items": [
-                  {
-                    "label": "Excel Client",
-                    "path": "how-to-guides/excel/excel-client.md"
-                  }
-                ]
-              },
-              {
                 "label": "Protobuf",
                 "items": [
                   {
@@ -786,6 +794,10 @@
                   {
                     "label": "Synchronization and locking",
                     "path": "conceptual/query-engine/engine-locking.md"
+                  },
+                  {
+                    "label": "Formulas and threads",
+                    "path": "how-to-guides/performance/formula-threads.md"
                   },
                   {
                     "label": "Barrage metrics",
@@ -1234,18 +1246,6 @@
                   {
                     "label": "removeBlink",
                     "path": "reference/table-operations/create/remove-blink.md"
-                  },
-                  {
-                    "label": "assertAddOnly",
-                    "path": "reference/table-operations/create/assert-add-only.md"
-                  },
-                  {
-                    "label": "assertAppendOnly",
-                    "path": "reference/table-operations/create/assert-append-only.md"
-                  },
-                  {
-                    "label": "assertBlink",
-                    "path": "reference/table-operations/create/assert-blink.md"
                   }
                 ]
               },
@@ -1513,6 +1513,10 @@
                     "path": "reference/table-operations/filter/tail-pct.md"
                   },
                   {
+                    "label": "TailInitializationFilter",
+                    "path": "reference/table-operations/filter/TailInitializationFilter.md"
+                  },
+                  {
                     "label": "where",
                     "path": "reference/table-operations/filter/where.md"
                   },
@@ -1555,10 +1559,6 @@
                 "label": "Format",
                 "items": [
                   {
-                    "label": "columnsToRows",
-                    "path": "reference/table-operations/format/columnsToRows.md"
-                  },
-                  {
                     "label": "formatColumns",
                     "path": "reference/table-operations/format/format-columns.md"
                   },
@@ -1597,10 +1597,15 @@
                   {
                     "label": "hide",
                     "path": "reference/table-operations/format/hide.md"
-                  },
+                  }
+                ]
+              },
+              {
+                "label": "Transpose",
+                "items": [
                   {
-                    "label": "renameColumns",
-                    "path": "reference/table-operations/format/renameColumns.md"
+                    "label": "columnsToRows",
+                    "path": "reference/table-operations/format/columnsToRows.md"
                   },
                   {
                     "label": "keyedTranspose",
@@ -2688,6 +2693,10 @@
                 "label": "General",
                 "items": [
                   {
+                    "label": "Can I integrate custom data sources with Deephaven?",
+                    "path": "reference/community-questions/custom-data-sources.md"
+                  },
+                  {
                     "label": "How can I find which Core version to which a feature or fix was added?",
                     "path": "reference/community-questions/how-do-i-find-a-specific-build.md"
                   },
@@ -2747,6 +2756,14 @@
                     "path": "reference/community-questions/can-i-perform-rolling-ops-without-fixed-window-size.md"
                   },
                   {
+                    "label": "How do I delete historical data?",
+                    "path": "reference/community-questions/how-to-delete-historical-data.md"
+                  },
+                  {
+                    "label": "How do I extract a list of distinct dates from a table?",
+                    "path": "reference/community-questions/extract-distinct-dates-list.md"
+                  },
+                  {
                     "label": "Why do queries run faster the second time they are run?",
                     "path": "reference/community-questions/query-memoization.md"
                   },
@@ -2761,6 +2778,14 @@
                   {
                     "label": "When should I use `whereIn` or `naturalJoin`?",
                     "path": "reference/community-questions/wherein-vs-naturaljoin.md"
+                  },
+                  {
+                    "label": "How can I capture the first row of the last N updates?",
+                    "path": "reference/community-questions/blink-ring.md"
+                  },
+                  {
+                    "label": "How do I filter by time of day across all dates?",
+                    "path": "reference/community-questions/filter-time-window-all-dates.md"
                   }
                 ]
               },

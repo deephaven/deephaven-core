@@ -5,29 +5,36 @@
 import inspect
 import re
 import sys
+import types
 import typing
 import warnings
+from collections.abc import Sequence
 from dataclasses import dataclass, field
 from datetime import datetime
-from functools import wraps, partial
-from typing import Callable, List, Any, Union, _GenericAlias, Optional, Sequence
+from functools import partial, wraps
+from typing import Any, Callable, Optional, Union, get_args, get_origin
 
+import jpy
+import numpy
+import numpy as np
 import pandas as pd
 
+from deephaven import dtypes
 from deephaven._dep import soft_dependency
+from deephaven.dtypes import (
+    _BUILDABLE_ARRAY_DTYPE_MAP,
+    _NUMPY_FLOATING_TYPE_CODES,
+    _NUMPY_INT_TYPE_CODES,
+    _PRIMITIVE_DTYPE_NULL_MAP,
+    DType,
+)
+from deephaven.jcompat import _j_array_to_numpy_array
+from deephaven.time import to_datetime, to_np_datetime64, to_pd_timestamp
+
+from .dherror import DHError
 
 numba = soft_dependency("numba")
 
-import numpy
-import numpy as np
-import numpy._typing as npt
-import jpy
-
-from deephaven import DHError, dtypes
-from deephaven.dtypes import _NUMPY_INT_TYPE_CODES, _NUMPY_FLOATING_TYPE_CODES, _PRIMITIVE_DTYPE_NULL_MAP, \
-    _BUILDABLE_ARRAY_DTYPE_MAP, DType
-from deephaven.jcompat import _j_array_to_numpy_array
-from deephaven.time import to_np_datetime64, to_datetime, to_pd_timestamp
 
 # For unittest vectorization
 test_vectorization = False
@@ -37,18 +44,18 @@ _SUPPORTED_NP_TYPE_CODES = {"b", "h", "H", "i", "l", "f", "d", "?", "U", "M", "O
 
 
 def _is_lossless_convertible(from_type: str, to_type: str) -> bool:
-    """ Check if the conversion from one type to another is lossless. """
+    """Check if the conversion from one type to another is lossless."""
     if from_type == to_type:
         return True
 
-    if from_type == 'b':
-        return to_type in {'h', 'H', 'i', 'l'}
-    elif from_type == 'h' or from_type == 'H':
-        return to_type in {'i', 'l'}
-    elif from_type == 'i':
-        return to_type == 'l'
-    elif from_type == 'f':
-        return to_type == 'd'
+    if from_type == "b":
+        return to_type in {"h", "H", "i", "l"}
+    elif from_type == "h" or from_type == "H":
+        return to_type in {"i", "l"}
+    elif from_type == "i":
+        return to_type == "l"
+    elif from_type == "f":
+        return to_type == "d"
 
     return False
 
@@ -56,16 +63,18 @@ def _is_lossless_convertible(from_type: str, to_type: str) -> bool:
 @dataclass
 class _ParsedParam:
     name: Union[str, int] = field(init=True)
-    orig_types: List[type] = field(default_factory=list)
-    effective_types: List[type] = field(default_factory=list)
-    encoded_types: List[str] = field(default_factory=list)
+    orig_types: list[Union[type, DType]] = field(default_factory=list)
+    effective_types: list[type] = field(default_factory=list)
+    encoded_types: list[str] = field(default_factory=list)
     none_allowed: bool = False
     has_array: bool = False
     arg_converter: Optional[Callable] = None
 
     def setup_arg_converter(self, arg_type_str: str) -> None:
-        """ Set up the converter function for the parameter based on the encoded argument type string. """
-        for param_type_str, effective_type in zip(self.encoded_types, self.effective_types):
+        """Set up the converter function for the parameter based on the encoded argument type string."""
+        for param_type_str, effective_type in zip(
+            self.encoded_types, self.effective_types
+        ):
             # unsupported type is treated as object type, no conversion. We'll let the runtime handle them
             # since we want to trust that the user knows what they are doing.
             if arg_type_str in {"X", "O"}:
@@ -73,16 +82,24 @@ class _ParsedParam:
                 break
 
             if _is_lossless_convertible(arg_type_str, param_type_str):
-                if arg_type_str.startswith("["):  # array type (corresponding to numpy ndarray, Sequence, etc.)
+                if arg_type_str.startswith(
+                    "["
+                ):  # array type (corresponding to numpy ndarray, Sequence, etc.)
                     dtype = dtypes.from_np_dtype(np.dtype(arg_type_str[1]))
-                    self.arg_converter = partial(_j_array_to_numpy_array, dtype, conv_null=False,
-                                                 type_promotion=False)
-                elif arg_type_str == 'N':
+                    self.arg_converter = partial(
+                        _j_array_to_numpy_array,
+                        dtype,
+                        conv_null=False,
+                        type_promotion=False,
+                    )
+                elif arg_type_str == "N":
                     self.arg_converter = None
                 else:
                     if effective_type in {object, str}:
                         self.arg_converter = None
-                    elif arg_type_str == 'M':  # datetime types (datetime, pd.Timestamp, np.datetime64)
+                    elif (
+                        arg_type_str == "M"
+                    ):  # datetime types (datetime, pd.Timestamp, np.datetime64)
                         self._setup_datetime_arg_converter(effective_type)
                     else:
                         self.arg_converter = effective_type
@@ -90,19 +107,29 @@ class _ParsedParam:
                         # Optional typehint on primitive types requires checking for DH nulls
                         if "N" in self.encoded_types:
                             if null_value := _PRIMITIVE_DTYPE_NULL_MAP.get(
-                                    dtypes.from_np_dtype(np.dtype(arg_type_str))):
+                                dtypes.from_np_dtype(np.dtype(arg_type_str))
+                            ):
                                 if effective_type in {int, float, bool}:
-                                    self.arg_converter = partial(lambda nv, x: None if x == nv else x, null_value)
+                                    self.arg_converter = partial(
+                                        lambda nv, x: None if x == nv else x, null_value
+                                    )
                                 else:
-                                    self.arg_converter = partial(lambda nv, x: None if x == nv else effective_type(x),
-                                                                 null_value)
+                                    self.arg_converter = partial(
+                                        lambda nv, x: None
+                                        if x == nv
+                                        else effective_type(x),
+                                        null_value,
+                                    )
 
                         # JPY does the conversion for these types
                         if self.arg_converter in {int, float, bool}:
                             self.arg_converter = None
 
-                        if self.arg_converter and isinstance(self.arg_converter, type) and issubclass(
-                                self.arg_converter, np.generic):
+                        if (
+                            self.arg_converter
+                            and isinstance(self.arg_converter, type)
+                            and issubclass(self.arg_converter, np.generic)
+                        ):
                             # because numpy scalar types are significantly slower than Python built-in scalar types,
                             # we'll continue to find a Python scalar type that can be used to convert the argument
                             continue
@@ -110,13 +137,18 @@ class _ParsedParam:
                             break
 
         # we have found the most suitable converter function, but if it is a numpy scalar type, we'll warn the user
-        if self.arg_converter and isinstance(self.arg_converter, type) and issubclass(self.arg_converter, np.generic):
+        if (
+            self.arg_converter
+            and isinstance(self.arg_converter, type)
+            and issubclass(self.arg_converter, np.generic)
+        ):
             warnings.warn(
                 f"numpy scalar type {self.arg_converter} is used to annotate parameter '{self.name}'. Note that "
                 f"conversion of "
                 f"arguments to numpy scalar types is significantly slower than to Python built-in scalar "
                 f"types such as int, float, bool, etc. If possible, consider using Python built-in scalar types "
-                f"instead.")
+                f"instead."
+            )
 
     def _setup_datetime_arg_converter(self, effective_type):
         if effective_type is datetime:
@@ -125,43 +157,60 @@ class _ParsedParam:
             if "N" in self.encoded_types:
                 self.arg_converter = to_pd_timestamp
             else:
-                self.arg_converter = lambda x: to_np_datetime64(x) if x is not None else pd.Timestamp('NaT')
+                self.arg_converter = (
+                    lambda x: to_np_datetime64(x)
+                    if x is not None
+                    else pd.Timestamp("NaT")
+                )
         else:
             if "N" in self.encoded_types:
                 self.arg_converter = to_np_datetime64
             else:
-                self.arg_converter = lambda x: to_np_datetime64(x) if x is not None else np.datetime64('NaT')
+                self.arg_converter = (
+                    lambda x: to_np_datetime64(x)
+                    if x is not None
+                    else np.datetime64("NaT")
+                )
 
 
-@dataclass
 class _ParsedReturnAnnotation:
-    orig_type: type = None
-    encoded_type: str = None
+    encoded_type: str
+    orig_type: Optional[type] = None
     none_allowed: bool = False
     has_array: bool = False
     ret_converter: Optional[Callable] = None
 
     def setup_return_converter(self) -> None:
-        """ Set the converter function for the return value of UDF based on the return type annotation."""
+        """Set the converter function for the return value of UDF based on the return type annotation."""
         t = self.encoded_type
-        if t == 'H':
+        if t == "H":
             if self.none_allowed:
-                self.ret_converter = lambda x: dtypes.Character(int(x)) if x is not None else None
+                self.ret_converter = (
+                    lambda x: dtypes.Character(int(x)) if x is not None else None
+                )
             else:
                 self.ret_converter = lambda x: dtypes.Character(int(x))
         elif t in _NUMPY_INT_TYPE_CODES:
             if self.none_allowed:
-                null_value = _PRIMITIVE_DTYPE_NULL_MAP.get(dtypes.from_np_dtype(np.dtype(t)))
-                self.ret_converter = partial(lambda nv, x: nv if x is None else int(x), null_value)
+                null_value = _PRIMITIVE_DTYPE_NULL_MAP.get(
+                    dtypes.from_np_dtype(np.dtype(t))
+                )
+                self.ret_converter = partial(
+                    lambda nv, x: nv if x is None else int(x), null_value
+                )
             else:
                 self.ret_converter = int if self.orig_type is not int else None
         elif t in _NUMPY_FLOATING_TYPE_CODES:
             if self.none_allowed:
-                null_value = _PRIMITIVE_DTYPE_NULL_MAP.get(dtypes.from_np_dtype(np.dtype(t)))
-                self.ret_converter = partial(lambda nv, x: nv if x is None else float(x), null_value)
+                null_value = _PRIMITIVE_DTYPE_NULL_MAP.get(
+                    dtypes.from_np_dtype(np.dtype(t))
+                )
+                self.ret_converter = partial(
+                    lambda nv, x: nv if x is None else float(x), null_value
+                )
             else:
                 self.ret_converter = float if self.orig_type is not float else None
-        elif t == '?':
+        elif t == "?":
             if self.none_allowed:
                 self.ret_converter = lambda x: bool(x) if x is not None else None
             else:
@@ -170,18 +219,22 @@ class _ParsedReturnAnnotation:
                 # https://github.com/deephaven/deephaven-core/issues/5397 and/or
                 # https://github.com/deephaven/deephaven-core/issues/4068 is resolved.
                 self.ret_converter = None if self.orig_type is bool else bool
-        elif t == 'M':
+        elif t == "M":
             from deephaven.time import to_j_instant
+
             self.ret_converter = to_j_instant
         else:
             self.ret_converter = None
 
 
-@dataclass
 class _ParsedSignature:
-    fn: Callable = None
-    params: List[_ParsedParam] = field(default_factory=list)
-    ret_annotation: _ParsedReturnAnnotation = None
+    ret_annotation: _ParsedReturnAnnotation
+    fn: Callable
+    params: list[_ParsedParam]
+
+    def __init__(self, fn: Callable):
+        self.fn = fn
+        self.params = []
 
     @property
     def encoded(self) -> str:
@@ -191,19 +244,23 @@ class _ParsedSignature:
         then the return type char. If a parameter or the return of the function is not annotated,
         the default 'O' - object type, will be used.
         """
-        param_str = ",".join([str(p.name) + ":" + "".join(p.encoded_types) for p in self.params])
+        param_str = ",".join(
+            [str(p.name) + ":" + "".join(p.encoded_types) for p in self.params]
+        )
         # ret_annotation has only one parsed annotation, and it might be Optional which means it contains 'N' in the
         # encoded type. We need to remove it.
         return_type_code = re.sub(r"[N]", "", self.ret_annotation.encoded_type)
         return param_str + "->" + return_type_code
 
     def prepare_auto_arg_conv(self, encoded_arg_types: str) -> bool:
-        """ Determine whether the auto argument conversion should be used and set the converter functions for the
+        """Determine whether the auto argument conversion should be used and set the converter functions for the
         parameters."""
         # numba and numpy ufuncs don't need auto argument conversion as they handle the conversion themselves and the
         # arg types are already verified by the query engine
         if numba:
-            if isinstance(self.fn, (numba.np.ufunc.gufunc.GUFunc, numba.np.ufunc.dufunc.DUFunc)):
+            if isinstance(
+                self.fn, (numba.np.ufunc.gufunc.GUFunc, numba.np.ufunc.dufunc.DUFunc)
+            ):
                 return False
 
         if isinstance(self.fn, numpy.ufunc):
@@ -261,16 +318,18 @@ def _np_dtype_char(t: Union[type, str]) -> str:
 
     try:
         np_dtype = np.dtype(t)
-        if np_dtype.char == "O" and t is not object: # np.dtype() returns np.dtype('O') for unrecognized types
+        if (
+            np_dtype.char == "O" and t is not object
+        ):  # np.dtype() returns np.dtype('O') for unrecognized types
             return "X"
         return np_dtype.char
     except TypeError:
-        return 'X'
+        return "X"
 
 
 def _component_np_dtype_char(t: type) -> Optional[str]:
     """Returns the numpy dtype character code for the given type's component type if the type is a Sequence type or
-    numpy ndarray, otherwise return None. """
+    numpy ndarray, otherwise return None."""
     component_type = _py_sequence_component_type(t)
 
     if not component_type:
@@ -289,13 +348,15 @@ def _component_np_dtype_char(t: type) -> Optional[str]:
 def _py_sequence_component_type(t: type) -> Optional[type]:
     """Returns the component type of Python subscribed sequence type, otherwise return None."""
     component_type = None
-    if sys.version_info >= (3, 9):
-        import types
-        if isinstance(t, types.GenericAlias) and issubclass(t.__origin__, Sequence):  # novermin
-            component_type = t.__args__[0]
+    import types
+
+    if isinstance(t, types.GenericAlias) and issubclass(
+        get_origin(t), Sequence
+    ):  # novermin
+        component_type = t.__args__[0]
 
     if not component_type:
-        if isinstance(t, _GenericAlias) and issubclass(t.__origin__, Sequence):
+        if isinstance(t, typing._GenericAlias) and issubclass(get_origin(t), Sequence):  # type: ignore[attr-defined]
             component_type = t.__args__[0]
 
     # if the component type is a DType, get its numpy type
@@ -308,77 +369,67 @@ def _py_sequence_component_type(t: type) -> Optional[type]:
 def _np_ndarray_component_type(t: type) -> Optional[type]:
     """Returns the numpy ndarray component type if the type is a numpy ndarray, otherwise return None."""
 
-    # Py3.8: npt.NDArray can be used in Py 3.8 as a generic alias, but a specific alias (e.g. npt.NDArray[np.int64])
-    # is an instance of a private class of np, yet we don't have a choice but to use it. And when npt.NDArray is used,
-    # the 1st argument is typing.Any, the 2nd argument is another generic alias of which the 1st argument is the
-    # component type
     component_type = None
-    if (3, 9) > sys.version_info >= (3, 8):
-        if isinstance(t, npt._generic_alias._GenericAlias) and t.__origin__ is np.ndarray:
-            component_type = t.__args__[1].__args__[0]
-    # Py3.9+, np.ndarray as a generic alias is only supported in Python 3.9+, also npt.NDArray is still available but a
-    # specific alias (e.g. npt.NDArray[np.int64]) now is an instance of typing.GenericAlias.
-    # when npt.NDArray is used, the 1st argument is typing.Any, the 2nd argument is another generic alias of which
-    # the 1st argument is the component type
-    # when np.ndarray is used, the 1st argument is the component type
-    if not component_type and sys.version_info >= (3, 9):
-        import types
-        if isinstance(t, types.GenericAlias) and t.__origin__ is np.ndarray:  # novermin
-            nargs = len(t.__args__)
-            if nargs == 1:
-                component_type = t.__args__[0]
-            elif nargs == 2:  # for npt.NDArray[np.int64], etc.
-                a0 = t.__args__[0]
-                a1 = t.__args__[1]
-                # a0 is typing.Any before numpy 2.2.0 or a generic alias of tuple[int, ...] in numpy 2.2.0+. The latter
-                # is to support shape typing for numpy arrays. e.g. np.ndarray[tuple[Literal[2], Literal[3]], np.int32]
-                # is a 2x3 array of int32.
-                if ((a0 == typing.Any or (isinstance(a0, types.GenericAlias) and a0.__origin__ is tuple))
-                        and isinstance(a1, types.GenericAlias)):  # novermin
-                    component_type = a1.__args__[0]
+    if isinstance(t, types.GenericAlias) and get_origin(t) is np.ndarray:  # novermin
+        nargs = len(t.__args__)
+        if nargs == 1:
+            component_type = t.__args__[0]
+        elif nargs == 2:  # for npt.NDArray[np.int64], etc.
+            a0 = t.__args__[0]
+            a1 = t.__args__[1]
+            # a0 is typing.Any before numpy 2.2.0 or a generic alias of tuple[int, ...] in numpy 2.2.0+. The latter
+            # is to support shape typing for numpy arrays. e.g. np.ndarray[tuple[Literal[2], Literal[3]], np.int32]
+            # is a 2x3 array of int32.
+            if (
+                a0 == typing.Any
+                or (isinstance(a0, types.GenericAlias) and get_origin(a0) is tuple)
+            ) and isinstance(a1, types.GenericAlias):  # novermin  # noqa
+                component_type = a1.__args__[0]
     return component_type
 
 
 def _is_union_type(t: type) -> bool:
     """Return True if the type is a Union type"""
     if sys.version_info >= (3, 10):
-        import types
         if isinstance(t, types.UnionType):  # novermin
             return True
 
-    return isinstance(t, _GenericAlias) and t.__origin__ is Union
+    return isinstance(t, typing._GenericAlias) and get_origin(t) is Union  # type: ignore[attr-defined]
 
 
-def _parse_param(name: str, annotation: Union[type, dtypes.DType]) -> _ParsedParam:
-    """ Parse a parameter annotation in a function's signature """
+def _parse_param(name: str, annotation: type) -> _ParsedParam:
+    """Parse a parameter annotation in a function's signature"""
     p_param = _ParsedParam(name)
 
-    if annotation is inspect._empty:
+    if annotation is inspect.Signature.empty:
         p_param.effective_types.append(object)
         p_param.encoded_types.append("O")
         p_param.none_allowed = True
     elif _is_union_type(annotation):
-        for t in annotation.__args__:
+        for t in get_args(annotation):
             _parse_type_no_nested(annotation, p_param, t)
     else:
         _parse_type_no_nested(annotation, p_param, annotation)
     return p_param
 
 
-def _parse_type_no_nested(annotation: Any, p_param: _ParsedParam, t: Union[type, dtypes.DType]) -> None:
-    """ Parse a specific type (top level or nested in a top-level Union annotation) without handling nested types
+def _parse_type_no_nested(
+    annotation: Any, p_param: _ParsedParam, t: Union[type, dtypes.DType]
+) -> None:
+    """Parse a specific type (top level or nested in a top-level Union annotation) without handling nested types
     (e.g. a nested Union). The result is stored in the given _ParsedAnnotation object.
     """
     p_param.orig_types.append(t)
 
     # if the annotation is a DH DType instance, we'll use its numpy type
     if isinstance(t, dtypes.DType):
-        t = t.np_type
-        p_param.effective_types.append(np.dtype(t).type)
+        np_t = t.np_type
+        p_param.effective_types.append(np.dtype(np_t).type)
     else:
         p_param.effective_types.append(t)
+        np_t = t
 
-    tc = _encode_param_type(t)
+    tc = _encode_param_type(np_t)
     if "[" in tc:
         p_param.has_array = True
     if tc in {"N", "O"}:
@@ -387,7 +438,7 @@ def _parse_type_no_nested(annotation: Any, p_param: _ParsedParam, t: Union[type,
 
 
 def _parse_return_annotation(annotation: Any) -> _ParsedReturnAnnotation:
-    """ Parse a function's return annotation
+    """Parse a function's return annotation
 
     The return annotation is treated differently from the parameter annotations. We don't apply the same check and are
     only interested in getting the array-like type right. Any nonsensical annotation will be treated as object type.
@@ -422,9 +473,11 @@ def _parse_return_annotation(annotation: Any) -> _ParsedReturnAnnotation:
 
 
 if numba:
+
     def _parse_numba_signature(
-            fn: Union[numba.np.ufunc.gufunc.GUFunc, numba.np.ufunc.dufunc.DUFunc]) -> _ParsedSignature:
-        """ Parse a numba function's signature"""
+        fn: Union[numba.np.ufunc.gufunc.GUFunc, numba.np.ufunc.dufunc.DUFunc],  # type: ignore[name-defined]
+    ) -> _ParsedSignature:
+        """Parse a numba function's signature"""
         sigs = fn.types  # in the format of ll->l, ff->f,dd->d,OO->O, etc.
         if sigs:
             p_sig = _ParsedSignature(fn)
@@ -439,7 +492,7 @@ if numba:
             p_sig.ret_annotation = _ParsedReturnAnnotation()
             p_sig.ret_annotation.encoded_type = rt_char
 
-            if isinstance(fn, numba.np.ufunc.dufunc.DUFunc):
+            if isinstance(fn, numba.np.ufunc.dufunc.DUFunc):  # type: ignore[union-attr]
                 for i, p in enumerate(params):
                     pa = _ParsedParam(i + 1)
                     pa.encoded_types.append(p)
@@ -468,11 +521,13 @@ if numba:
                     p_sig.ret_annotation.has_array = True
             return p_sig
         else:
-            raise DHError(message=f"numba decorated functions must have an explicitly defined signature: {fn}")
+            raise DHError(
+                message=f"numba decorated functions must have an explicitly defined signature: {fn}"
+            )
 
 
 def _parse_np_ufunc_signature(fn: numpy.ufunc) -> _ParsedSignature:
-    """ Parse the signature of a numpy ufunc """
+    """Parse the signature of a numpy ufunc"""
 
     # numpy ufuncs actually have signature encoded in their 'types' attribute, we want to better support
     # them in the future (https://github.com/deephaven/deephaven-core/issues/4762)
@@ -490,7 +545,7 @@ def _parse_np_ufunc_signature(fn: numpy.ufunc) -> _ParsedSignature:
 
 
 def _parse_signature(fn: Callable) -> Optional[_ParsedSignature]:
-    """ Parse the signature of a function """
+    """Parse the signature of a function"""
 
     if numba:
         if isinstance(fn, (numba.np.ufunc.gufunc.GUFunc, numba.np.ufunc.dufunc.DUFunc)):
@@ -513,13 +568,21 @@ def _parse_signature(fn: Callable) -> Optional[_ParsedSignature]:
             # when from __future__ import annotations is used, the annotation is a string, we need to eval it to get
             # the type when the minimum Python version is bumped to 3.10, we'll always use eval_str in _parse_signature,
             # so that annotation is already a type, and we can skip this step.
-            t = eval(p.annotation, fn.__globals__) if isinstance(p.annotation, str) else p.annotation
+            t = (
+                eval(p.annotation, fn.__globals__)
+                if isinstance(p.annotation, str)
+                else p.annotation
+            )
             p_sig.params.append(_parse_param(n, t))
 
-        t = eval(sig.return_annotation, fn.__globals__) if isinstance(sig.return_annotation,
-                                                                      str) else sig.return_annotation
+        t = (
+            eval(sig.return_annotation, fn.__globals__)
+            if isinstance(sig.return_annotation, str)
+            else sig.return_annotation
+        )
         p_sig.ret_annotation = _parse_return_annotation(t)
         return p_sig
+
 
 def _udf_parser(fn: Callable) -> Optional[Callable]:
     """A decorator that acts as a transparent translator for Python UDFs used in Deephaven query formulas between
@@ -544,7 +607,9 @@ def _udf_parser(fn: Callable) -> Optional[Callable]:
 
     return_array = p_sig.ret_annotation.has_array
     ret_np_char = p_sig.ret_annotation.encoded_type[-1]
-    ret_dtype = dtypes.from_np_dtype(np.dtype(ret_np_char if ret_np_char != "X" else "O"))
+    ret_dtype: DType = dtypes.from_np_dtype(
+        np.dtype(ret_np_char if ret_np_char != "X" else "O")
+    )
 
     @wraps(fn)
     def _udf_decorator(encoded_arg_types: str, for_vectorization: bool) -> Callable:
@@ -556,13 +621,20 @@ def _udf_parser(fn: Callable) -> Optional[Callable]:
         arg_conv_needed = p_sig.prepare_auto_arg_conv(encoded_arg_types)
         p_sig.ret_annotation.setup_return_converter()
         ret_converter = p_sig.ret_annotation.ret_converter
-        nonlocal ret_dtype # used in converting array-type return values, bring it into the local scope before exec()
+        nonlocal ret_dtype  # used in converting array-type return values, bring it into the local scope before exec()
 
-        if not for_vectorization and not arg_conv_needed and not ret_converter and not return_array:
+        if (
+            not for_vectorization
+            and not arg_conv_needed
+            and not ret_converter
+            and not return_array
+        ):
             # no wrapper needed
             return fn
 
-        _wrapper_str = _gen_wrapper_code(p_sig, for_vectorization, arg_conv_needed, return_array)
+        _wrapper_str = _gen_wrapper_code(
+            p_sig, for_vectorization, arg_conv_needed, return_array
+        )
         scope = {**globals(), **locals()}
         exec(_wrapper_str, scope)
 
@@ -572,23 +644,27 @@ def _udf_parser(fn: Callable) -> Optional[Callable]:
 
         return scope["_wrapper"]
 
+    _udf_decorator.j_name = ret_dtype.j_name  # type: ignore[attr-defined]
+    real_ret_dtype = (
+        _BUILDABLE_ARRAY_DTYPE_MAP.get(ret_dtype, dtypes.PyObject)
+        if return_array
+        else ret_dtype
+    )
 
-    _udf_decorator.j_name = ret_dtype.j_name
-    real_ret_dtype = _BUILDABLE_ARRAY_DTYPE_MAP.get(ret_dtype, dtypes.PyObject) if return_array else ret_dtype
-
-    if hasattr(ret_dtype.j_type, 'jclass'):
+    if hasattr(real_ret_dtype.j_type, "jclass"):
         j_class = real_ret_dtype.j_type.jclass
     else:
         j_class = real_ret_dtype.qst_type.clazz()
 
-    _udf_decorator.return_type = j_class
-    _udf_decorator.signature = p_sig.encoded
+    _udf_decorator.return_type = j_class  # type: ignore[attr-defined]
+    _udf_decorator.signature = p_sig.encoded  # type: ignore[attr-defined]
 
     return _udf_decorator
 
+
 # region Wrapper Code Generation
 # for non-vectorize-able UDFs
-INDENT_STR= " " * 4
+INDENT_STR = " " * 4
 WRAPPER_HEADER = """def _wrapper(*args):"""
 ARG_CONV = """
 converted_args = [param.arg_converter(arg) if param.arg_converter else arg
@@ -629,37 +705,76 @@ V_LOOP_CHUNK = """for i in range(chunk_size):"""
 V_RET_CHUNK = "return chunk_result"
 
 
-def _gen_wrapper_code(p_sig: _ParsedSignature, for_vectorization: bool, arg_conv_needed: bool, return_array: bool) -> str:
-    """ Generate the wrapper code for the UDF based on the parsed signature and the context of the UDF usage."""
+def _gen_wrapper_code(
+    p_sig: _ParsedSignature,
+    for_vectorization: bool,
+    arg_conv_needed: bool,
+    return_array: bool,
+) -> str:
+    """Generate the wrapper code for the UDF based on the parsed signature and the context of the UDF usage."""
     if not for_vectorization:
         conv_str = ARG_CONV if arg_conv_needed else NO_ARG_CONV
         ret_str = ARRAY_RET if return_array else SCALAR_RET
-        wrapper_str = (WRAPPER_HEADER + "\n"
-                        + INDENT_STR + conv_str.replace("\n", "\n" + INDENT_STR) + "\n"
-                        + INDENT_STR + ret_str.replace("\n", "\n" + INDENT_STR) + "\n")
+        wrapper_str = (
+            WRAPPER_HEADER
+            + "\n"
+            + INDENT_STR
+            + conv_str.replace("\n", "\n" + INDENT_STR)
+            + "\n"
+            + INDENT_STR
+            + ret_str.replace("\n", "\n" + INDENT_STR)
+            + "\n"
+        )
         return wrapper_str + "\n"
     else:
         ret_str = V_ARRAY_RET if return_array else V_SCALAR_RET
 
         if len(p_sig.params) == 0:
-           wrapper_str = (V_WRAPPER_HEADER + "\n"
-                           + INDENT_STR + V_LOOP_CHUNK + "\n"
-                           + INDENT_STR * 2 + V_NO_ARG + "\n"
-                           + INDENT_STR * 2 + ret_str)
+            wrapper_str = (
+                V_WRAPPER_HEADER
+                + "\n"
+                + INDENT_STR
+                + V_LOOP_CHUNK
+                + "\n"
+                + INDENT_STR * 2
+                + V_NO_ARG
+                + "\n"
+                + INDENT_STR * 2
+                + ret_str
+            )
         else:
-            wrapper_str = (V_WRAPPER_HEADER + "\n"
-                            + INDENT_STR + V_ZIP_CHUNK_ARGS + "\n"
-                            + INDENT_STR + V_LOOP_CHUNK + "\n")
+            wrapper_str = (
+                V_WRAPPER_HEADER
+                + "\n"
+                + INDENT_STR
+                + V_ZIP_CHUNK_ARGS
+                + "\n"
+                + INDENT_STR
+                + V_LOOP_CHUNK
+                + "\n"
+            )
             if arg_conv_needed:
-                wrapper_str = (wrapper_str
-                            + INDENT_STR * 2 + V_ARG_CONV.replace("\n", "\n" + INDENT_STR * 2) + "\n"
-                            + INDENT_STR * 2 + ret_str + "\n")
+                wrapper_str = (
+                    wrapper_str
+                    + INDENT_STR * 2
+                    + V_ARG_CONV.replace("\n", "\n" + INDENT_STR * 2)
+                    + "\n"
+                    + INDENT_STR * 2
+                    + ret_str
+                    + "\n"
+                )
             else:
-                wrapper_str = (wrapper_str
-                            + INDENT_STR * 2 + V_NO_ARG_CONV.replace("\n", "\n" + INDENT_STR * 2) + "\n"
-                            + INDENT_STR * 2 + ret_str + "\n")
+                wrapper_str = (
+                    wrapper_str
+                    + INDENT_STR * 2
+                    + V_NO_ARG_CONV.replace("\n", "\n" + INDENT_STR * 2)
+                    + "\n"
+                    + INDENT_STR * 2
+                    + ret_str
+                    + "\n"
+                )
 
-        return (wrapper_str + "\n"
-                + INDENT_STR + V_RET_CHUNK + "\n")
+        return wrapper_str + "\n" + INDENT_STR + V_RET_CHUNK + "\n"
+
+
 # endregion
-

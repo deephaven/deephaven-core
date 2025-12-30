@@ -40,7 +40,7 @@ final class ShortPushdownHandler {
             return true;
         }
         return maybeOverlapsRangeImpl(
-                mutableMin.getValue(), mutableMax.getValue(),
+                mutableMin.get(), mutableMax.get(),
                 dhLower, shortRangeFilter.isLowerInclusive(),
                 dhUpper, shortRangeFilter.isUpperInclusive());
     }
@@ -68,7 +68,7 @@ final class ShortPushdownHandler {
             @NotNull final MatchFilter matchFilter,
             @NotNull final Statistics<?> statistics) {
         final Object[] values = matchFilter.getValues();
-        final boolean invertMatch = matchFilter.getInvertMatch();
+        final boolean invertMatch = matchFilter.getMatchOptions().inverted();
         if (values == null || values.length == 0) {
             // No values to check against
             return invertMatch;
@@ -89,9 +89,9 @@ final class ShortPushdownHandler {
             return true;
         }
         if (!invertMatch) {
-            return maybeMatches(mutableMin.getValue(), mutableMax.getValue(), unboxedValues);
+            return maybeMatches(mutableMin.get(), mutableMax.get(), unboxedValues);
         }
-        return maybeMatchesInverse(mutableMin.getValue(), mutableMax.getValue(), unboxedValues);
+        return maybeMatchesInverse(mutableMin.get(), mutableMax.get(), unboxedValues);
     }
 
     /**

@@ -4,10 +4,20 @@
 
 import unittest
 
-from deephaven import new_table, read_csv, DHError
+from deephaven import DHError, new_table, read_csv
 from deephaven.column import string_col
 from deephaven.concurrency_control import Barrier
-from deephaven.filters import Filter, PatternMode, and_, is_not_null, is_null, or_, not_, pattern
+from deephaven.filters import (
+    Filter,
+    PatternMode,
+    and_,
+    incremental_release,
+    is_not_null,
+    is_null,
+    not_,
+    or_,
+    pattern,
+)
 from tests.testbase import BaseTestCase
 
 
@@ -19,6 +29,10 @@ class FilterTestCase(BaseTestCase):
     def tearDown(self) -> None:
         self.test_table = None
         super().tearDown()
+
+    def test_incremental_release(self):
+        filtered_table = self.test_table.where(filters=incremental_release(5, 10))
+        self.assertEqual(filtered_table.size, 5)
 
     def test_pattern_filter(self):
         new_test_table = self.test_table.update("X = String.valueOf(d)")
@@ -48,7 +62,9 @@ class FilterTestCase(BaseTestCase):
 
         filter_not = not_(filter_or)
         filtered_table_not = self.test_table.where(filter_not)
-        self.assertEqual(filtered_table_or.size + filtered_table_not.size, self.test_table.size)
+        self.assertEqual(
+            filtered_table_or.size + filtered_table_not.size, self.test_table.size
+        )
 
         filtered_table_mixed = self.test_table.where(
             ["a > 100", "b < 1000", Filter.from_("c < 0")]
@@ -84,5 +100,5 @@ class FilterTestCase(BaseTestCase):
         self.assert_table_equals(filtered_table, filtered_table_and)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

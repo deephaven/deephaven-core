@@ -17,7 +17,7 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.DataIndex;
+import io.deephaven.engine.table.MatchOptions;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.perf.PerformanceEntry;
 import io.deephaven.engine.table.impl.sources.FillUnordered;
@@ -269,10 +269,8 @@ public final class TimeTable extends QueryTable implements Runnable, HasRefreshi
 
         @Override
         public WritableRowSet match(
-                final boolean invertMatch,
                 final boolean usePrev,
-                final boolean caseInsensitive,
-                @Nullable final DataIndex dataIndex,
+                @NotNull final MatchOptions matchOptions,
                 @NotNull final RowSet selection,
                 final Object... keys) {
             if (startTime == null) {
@@ -295,7 +293,7 @@ public final class TimeTable extends QueryTable implements Runnable, HasRefreshi
                 matchingSet.addKey(minus(key, startTime) / period);
             }
 
-            if (invertMatch) {
+            if (matchOptions.inverted()) {
                 try (final WritableRowSet matching = matchingSet.build()) {
                     return selection.minus(matching);
                 }
@@ -412,10 +410,8 @@ public final class TimeTable extends QueryTable implements Runnable, HasRefreshi
 
             @Override
             public WritableRowSet match(
-                    final boolean invertMatch,
                     final boolean usePrev,
-                    final boolean caseInsensitive,
-                    @Nullable final DataIndex dataIndex,
+                    @NotNull final MatchOptions matchOptions,
                     @NotNull final RowSet selection,
                     final Object... keys) {
                 if (startTime == null) {
@@ -438,7 +434,7 @@ public final class TimeTable extends QueryTable implements Runnable, HasRefreshi
                     matchingSet.addKey((key - epochNanos(startTime)) / period);
                 }
 
-                if (invertMatch) {
+                if (matchOptions.inverted()) {
                     try (final WritableRowSet matching = matchingSet.build()) {
                         return selection.minus(matching);
                     }

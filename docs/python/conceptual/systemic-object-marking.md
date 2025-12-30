@@ -74,7 +74,7 @@ t = empty_table(1).update("Label=`I am systemic`")
 session.run_script(critical_script, systemic=True)
 ```
 
-## Related Documentation
+## Related documentation
 
 - [Server Pydoc](https://docs.deephaven.io/core/pydoc/code/deephaven.systemic_obj_tracker.html)
 - [Client Pydoc](https://docs.deephaven.io/core/client-api/python/code/pydeephaven.html#pydeephaven.Session.run_script)

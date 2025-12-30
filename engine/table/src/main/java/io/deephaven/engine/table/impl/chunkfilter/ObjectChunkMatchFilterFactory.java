@@ -3,6 +3,8 @@
 //
 package io.deephaven.engine.table.impl.chunkfilter;
 
+import io.deephaven.engine.table.MatchOptions;
+
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Objects;
@@ -11,8 +13,8 @@ public class ObjectChunkMatchFilterFactory {
     private ObjectChunkMatchFilterFactory() {} // static use only
 
     @SuppressWarnings("rawtypes")
-    public static ObjectChunkFilter makeFilter(boolean invert, Object... values) {
-        if (invert) {
+    public static ObjectChunkFilter makeFilter(final MatchOptions matchOptions, final Object... values) {
+        if (matchOptions.inverted()) {
             if (values.length == 1) {
                 return new InverseSingleValueObjectChunkFilter(values[0]);
             }

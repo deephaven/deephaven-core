@@ -6,10 +6,10 @@ sidebar_label: Source
 
 When building Deephaven from source code for development tasks, you can debug both your own code and Deephaven's internal source code. This is particularly useful for:
 
-- Contributing to Deephaven development
-- Understanding how Deephaven works internally
-- Debugging issues that require stepping through Deephaven's source
-- Testing changes to Deephaven itself
+- Contributing to Deephaven development.
+- Understanding how Deephaven works internally.
+- Debugging issues that require stepping through Deephaven's source.
+- Testing changes to Deephaven itself.
 
 This guide walks through setting up [PyCharm Professional](https://www.jetbrains.com/pycharm/)'s remote debugging server for source-built Deephaven.
 

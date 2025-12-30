@@ -27,6 +27,11 @@ enum FilterSimplifier implements Visitor<Filter> {
     }
 
     @Override
+    public Filter visit(FilterIsNaN isNaN) {
+        return isNaN;
+    }
+
+    @Override
     public Filter visit(FilterComparison comparison) {
         return comparison.maybeTranspose();
     }

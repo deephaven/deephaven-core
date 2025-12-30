@@ -43,7 +43,7 @@ public class FloatChunkedDistinctOperator implements IterativeChunkedAggregation
     private final FloatSsmBackedSource internalResult;
     private final ColumnSource<?> externalResult;
     private final Supplier<SegmentedSortedMultiSet.RemoveContext> removeContextFactory;
-    private final boolean countNull;
+    private final boolean countNullNaN;
     private final boolean exposeInternal;
     private WritableRowSet touchedStates;
     private UpdateCommitter<FloatChunkedDistinctOperator> prevFlusher = null;
@@ -51,9 +51,9 @@ public class FloatChunkedDistinctOperator implements IterativeChunkedAggregation
     public FloatChunkedDistinctOperator(
             // region Constructor
             // endregion Constructor
-            String name, boolean countNulls, boolean exposeInternal) {
+            String name, boolean countNullNaN, boolean exposeInternal) {
         this.name = name;
-        this.countNull = countNulls;
+        this.countNullNaN = countNullNaN;
         this.exposeInternal = exposeInternal;
         // region SsmCreation
         this.internalResult = new FloatSsmBackedSource();
@@ -78,7 +78,7 @@ public class FloatChunkedDistinctOperator implements IterativeChunkedAggregation
         context.lengthCopy.copyFromChunk(length, 0, 0, length.size());
 
         FloatCompactKernel.compactAndCount((WritableFloatChunk<? extends Values>) context.valueCopy, context.counts,
-                startPositions, context.lengthCopy, countNull);
+                startPositions, context.lengthCopy, countNullNaN, countNullNaN);
         return context;
     }
 
@@ -127,7 +127,7 @@ public class FloatChunkedDistinctOperator implements IterativeChunkedAggregation
             final WritableIntChunk<ChunkLengths> countSlice =
                     context.countResettable.resetFromChunk(context.counts, startPosition, runLength);
             stateModified.set(ii, ssm.remove(removeContext, valueSlice, countSlice));
-            if (ssm.size() == 0) {
+            if (ssm.isEmpty()) {
                 clearSsm(destination);
             }
         }
@@ -156,7 +156,7 @@ public class FloatChunkedDistinctOperator implements IterativeChunkedAggregation
             final WritableIntChunk<ChunkLengths> countSlice =
                     context.countResettable.resetFromChunk(context.counts, startPosition, runLength);
             ssm.remove(removeContext, valueSlice, countSlice);
-            if (ssm.size() == 0) {
+            if (ssm.isEmpty()) {
                 context.ssmsToMaybeClear.set(ii, true);
             }
         }
@@ -198,7 +198,7 @@ public class FloatChunkedDistinctOperator implements IterativeChunkedAggregation
         context.valueCopy.setSize(values.size());
         context.valueCopy.copyFromChunk(values, 0, 0, values.size());
         FloatCompactKernel.compactAndCount((WritableFloatChunk<? extends Values>) context.valueCopy, context.counts,
-                countNull);
+                countNullNaN, countNullNaN);
         return context;
     }
 
@@ -224,7 +224,7 @@ public class FloatChunkedDistinctOperator implements IterativeChunkedAggregation
 
         final FloatSegmentedSortedMultiset ssm = ssmForSlot(destination);
         final boolean removed = ssm.remove(context.removeContext, context.valueCopy, context.counts);
-        if (ssm.size() == 0) {
+        if (ssm.isEmpty()) {
             clearSsm(destination);
         }
         return removed;
@@ -246,7 +246,7 @@ public class FloatChunkedDistinctOperator implements IterativeChunkedAggregation
                 ssm = ssmForSlot(destination);
             }
             ssm.insert(context.valueCopy, context.counts);
-        } else if (ssm != null && ssm.size() == 0) {
+        } else if (ssm != null && ssm.isEmpty()) {
             clearSsm(destination);
         } else if (ssm == null) {
             return false;
@@ -297,15 +297,13 @@ public class FloatChunkedDistinctOperator implements IterativeChunkedAggregation
     @Override
     public void startTrackingPrevValues() {
         internalResult.startTrackingPrevValues();
-        if (exposeInternal) {
-            if (prevFlusher != null) {
-                throw new IllegalStateException("startTrackingPrevValues must only be called once");
-            }
-
-            prevFlusher = new UpdateCommitter<>(this, ExecutionContext.getContext().getUpdateGraph(),
-                    FloatChunkedDistinctOperator::flushPrevious);
-            touchedStates = RowSetFactory.empty();
+        if (prevFlusher != null) {
+            throw new IllegalStateException("startTrackingPrevValues must only be called once");
         }
+
+        prevFlusher = new UpdateCommitter<>(this, ExecutionContext.getContext().getUpdateGraph(),
+                FloatChunkedDistinctOperator::flushPrevious);
+        touchedStates = RowSetFactory.empty();
     }
 
     // endregion

@@ -114,6 +114,13 @@ public interface BasicDataIndex extends LivenessReferent {
     }
 
     /**
+     * Whether the {@link Table} backing this data index is already created and cached.
+     *
+     * @return {@code true} when the table is cached, {@code false} otherwise
+     */
+    boolean tableIsCached();
+
+    /**
      * Get the {@link Table} backing this data index.
      *
      * <p>

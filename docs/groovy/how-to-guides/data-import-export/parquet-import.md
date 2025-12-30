@@ -1,6 +1,6 @@
 ---
-title: Import Parquet Files to Deephaven Tables
-sidebar_label: Import Parquet files
+title: Read Parquet files into Deephaven tables
+sidebar_label: Read Parquet files
 ---
 
 Deephaven integrates seamlessly with Parquet via the [Parquet Groovy module](/core/javadoc/io/deephaven/parquet/table/ParquetTools.html), making it easy to read Parquet files directly into Deephaven tables. This document covers reading data into tables from single Parquet files, flat Parquet directories, and partitioned key-value Parquet directories. This document also covers reading Parquet files from [S3 servers](https://docs.aws.amazon.com/AmazonS3/latest/API/Welcome.html) into Deephaven tables, a common use case.

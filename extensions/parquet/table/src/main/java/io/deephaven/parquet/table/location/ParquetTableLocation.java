@@ -16,6 +16,7 @@ import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.primitive.iterator.CloseableIterator;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
+import io.deephaven.engine.table.impl.filter.ExtractFilterWithoutBarriers;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.BasePushdownFilterContext;
 import io.deephaven.engine.table.impl.PushdownFilterContext;
@@ -967,7 +968,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
                     maybeOverlaps = FloatPushdownHandler.maybeOverlaps(matchFilter, statistics);
                 } else if (dhColumnType == double.class || dhColumnType == Double.class) {
                     maybeOverlaps = DoublePushdownHandler.maybeOverlaps(matchFilter, statistics);
-                } else if (dhColumnType == String.class && matchFilter.isCaseInsensitive()) {
+                } else if (dhColumnType == String.class && matchFilter.getMatchOptions().caseInsensitive()) {
                     maybeOverlaps = CaseInsensitiveStringMatchPushdownHandler.maybeOverlaps(matchFilter, statistics);
                 } else if (dhColumnType == Instant.class) {
                     maybeOverlaps = InstantPushdownHandler.maybeOverlaps(matchFilter, statistics);
@@ -1086,7 +1087,8 @@ public class ParquetTableLocation extends AbstractTableLocation {
 
                 // Make a MatchFilter with the matching dictionary key IDs. This will accept any encoded value whose
                 // dictionary index is in keyMatchArray
-                final ChunkFilter matchChunkFilter = LongChunkMatchFilterFactory.makeFilter(false, keyMatchArray);
+                final ChunkFilter matchChunkFilter =
+                        LongChunkMatchFilterFactory.makeFilter(MatchOptions.REGULAR, keyMatchArray);
 
                 // Now we need to apply this filter to the encoded values in the row group. We can do this by
                 // iterating the "maybe" rows in chunks, getting the encoded values for those rows, and applying the
@@ -1139,21 +1141,25 @@ public class ParquetTableLocation extends AbstractTableLocation {
             final PushdownResult result) {
         final RowSetBuilderRandom matchingBuilder = RowSetFactory.builderRandom();
         try (final SafeCloseable ignored = LivenessScopeStack.open()) {
-            final WhereFilter copiedFilter = filter.copy();
-            copiedFilter.init(dataIndex.table().getDefinition());
-
-            // TODO: When https://deephaven.atlassian.net/browse/DH-19443 is implemented, we should be able
-            // to use the filter directly on the index table without renaming.
-            final Collection<Pair> renamePairs = renameMap.entrySet().stream()
-                    .map(entry -> Pair.of(ColumnName.of(entry.getValue()),
-                            ColumnName.of(entry.getKey())))
-                    .collect(Collectors.toList());
-            final Table renamedIndexTable = dataIndex.table().renameColumns(renamePairs);
-
+            final long threshold = (long) (dataIndex.table().size() / QueryTable.DATA_INDEX_FOR_WHERE_THRESHOLD);
+            if (result.maybeMatch().size() <= threshold) {
+                return result.copy();
+            }
+            // Extract the fundamental filter, ignoring barriers and serial wrappers.
+            final WhereFilter copiedFilter = ExtractFilterWithoutBarriers.of(filter).copy();
+            final Table toFilter;
+            if (!renameMap.isEmpty()) {
+                final Collection<Pair> renamePairs = renameMap.entrySet().stream()
+                        .map(entry -> io.deephaven.api.Pair.of(ColumnName.of(entry.getValue()),
+                                ColumnName.of(entry.getKey())))
+                        .collect(Collectors.toList());
+                toFilter = dataIndex.table().renameColumns(renamePairs);
+            } else {
+                toFilter = dataIndex.table();
+            }
             // Apply the filter to the data index table
             try {
-                final Table filteredTable = renamedIndexTable.where(copiedFilter);
-
+                final Table filteredTable = toFilter.where(copiedFilter);
                 try (final CloseableIterator<RowSet> it =
                         ColumnVectors.ofObject(filteredTable, dataIndex.rowSetColumnName(), RowSet.class).iterator()) {
                     it.forEachRemaining(rowSet -> {
@@ -1163,8 +1169,10 @@ public class ParquetTableLocation extends AbstractTableLocation {
                     });
                 }
             } catch (final Exception e) {
-                // Exception occurs here if we have a data type mismatch between the index and the filter.
-                // Just swallow the exception return a copy of the original input
+                // TODO: Exception occurs here if we have a data type mismatch between the index and the filter.
+                // When https://deephaven.atlassian.net/browse/DH-19443 is implemented, we should be able
+                // to remove the catch block and let any exception propagate. For now, just swallow the exception
+                // and return a copy of the original input, skipping pushdown filtering.
                 return result.copy();
             }
         }

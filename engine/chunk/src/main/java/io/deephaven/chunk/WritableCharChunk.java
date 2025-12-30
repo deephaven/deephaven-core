@@ -6,6 +6,7 @@ package io.deephaven.chunk;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.chunk.util.pools.MultiChunkPool;
 
+import io.deephaven.function.ArraySort;
 import io.deephaven.util.type.TypeUtils;
 import org.jetbrains.annotations.NotNull;
 
@@ -206,34 +207,7 @@ public class WritableCharChunk<ATTR extends Any> extends CharChunk<ATTR> impleme
     // region sort
     @Override
     public final void sort(int start, int length) {
-        Arrays.sort(data, offset + start, offset + start + length);
-
-        // region SortFixup
-        if (length <= 1) {
-            return;
-        }
-
-        int foundLeft = Arrays.binarySearch(data, start, start + length, NULL_CHAR);
-        if (foundLeft < 0) {
-            return;
-        }
-
-        int foundRight = foundLeft;
-        while (foundLeft > start && data[foundLeft - 1] == NULL_CHAR) {
-            foundLeft--;
-        }
-
-        // If the nulls are already the leftmost thing, we are done.
-        if (foundLeft > 0) {
-            while (foundRight < start + length - 1 && data[foundRight + 1] == NULL_CHAR) {
-                foundRight++;
-            }
-
-            final int nullCount = foundRight - foundLeft + 1;
-            System.arraycopy(data, start, data, start + nullCount, foundLeft - start);
-            Arrays.fill(data, start, start + nullCount, NULL_CHAR);
-        }
-        // endregion SortFixup
+        ArraySort.sort(data, offset + start, offset + start + length);
     }
     // endregion sort
 

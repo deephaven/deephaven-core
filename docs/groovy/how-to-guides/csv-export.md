@@ -91,7 +91,7 @@ writeCsv(sourceWithNulls, "/data/Cosine.csv", "X", "CosX")
 
 ![The newly writted CSV file](../assets/how-to/TrigFunctions_NullsCosineOnly.png)
 
-## Related Documentation
+## Related documentation
 
 - [Create an empty table](../how-to-guides/new-and-empty-table.md#emptytable)
 - [How to import CSV files](./csv-import.md)

@@ -32,8 +32,6 @@ public class TupleCodeGenerator {
     private static final File OUTPUT_RELATIVE_PATH =
             new File("engine/tuple/src/main/java/io/deephaven/tuple/generated");
 
-    private static final String LHS = "$lhs$";
-    private static final String RHS = "$rhs$";
     private static final String VAL = "$val$";
     private static final String OUT = "$out$";
     private static final String IN = "$in$";
@@ -67,39 +65,33 @@ public class TupleCodeGenerator {
     private enum ElementType {
 
         // @formatter:off
-           BYTE(   "Byte",    byte.class, LHS + " == " + RHS                              ,      "Byte.hashCode(" + VAL + ")", "ByteComparisons.compare("   + LHS + ", " + RHS + ")", OUT + ".writeByte("   + VAL + ')', IN + ".readByte()"  , "io.deephaven.util.compare.ByteComparisons"                       ),
-          SHORT(  "Short",   short.class, LHS + " == " + RHS                              ,     "Short.hashCode(" + VAL + ")", "ShortComparisons.compare("  + LHS + ", " + RHS + ")", OUT + ".writeShort("  + VAL + ')', IN + ".readShort()" , "io.deephaven.util.compare.ShortComparisons"                      ),
-            INT(    "Int",     int.class, LHS + " == " + RHS                              ,   "Integer.hashCode(" + VAL + ")", "IntComparisons.compare("    + LHS + ", " + RHS + ")", OUT + ".writeInt("    + VAL + ')', IN + ".readInt()"   , "io.deephaven.util.compare.IntComparisons"                        ),
-           LONG(   "Long",    long.class, LHS + " == " + RHS                              ,      "Long.hashCode(" + VAL + ")", "LongComparisons.compare("   + LHS + ", " + RHS + ")", OUT + ".writeLong("   + VAL + ')', IN + ".readLong()"  , "io.deephaven.util.compare.LongComparisons"                       ),
-          FLOAT(  "Float",    float.class, LHS + " == " + RHS                              ,     "Float.hashCode(" + VAL + ")", "FloatComparisons.compare("  + LHS + ", " + RHS + ")", OUT + ".writeFloat("  + VAL + ')', IN + ".readFloat()" , "io.deephaven.util.compare.FloatComparisons"                      ),
-         DOUBLE( "Double",  double.class, LHS + " == " + RHS                              ,    "Double.hashCode(" + VAL + ")", "DoubleComparisons.compare(" + LHS + ", " + RHS + ")", OUT + ".writeDouble(" + VAL + ')', IN + ".readDouble()", "io.deephaven.util.compare.DoubleComparisons"                     ),
-           CHAR(   "Char",    char.class, LHS + " == " + RHS                              , "Character.hashCode(" + VAL + ")", "CharComparisons.compare("   + LHS + ", " + RHS + ")", OUT + ".writeChar("   + VAL + ')', IN + ".readChar()"  , "io.deephaven.util.compare.CharComparisons"                       ),
-         OBJECT( "Object",  Object.class, "ObjectComparisons.eq(" + LHS + ", " + RHS + ")",   "Objects.hashCode(" + VAL + ")", "ObjectComparisons.compare(" + LHS + ", " + RHS + ")", OUT + ".writeObject(" + VAL + ')', IN + ".readObject()", "io.deephaven.util.compare.ObjectComparisons", "java.util.Objects"),
+           BYTE(   "Byte",    byte.class,  "ByteComparisons",   OUT + ".writeByte("   + VAL + ')', IN + ".readByte()"  , "io.deephaven.util.compare.ByteComparisons"                       ),
+          SHORT(  "Short",   short.class,  "ShortComparisons",  OUT + ".writeShort("  + VAL + ')', IN + ".readShort()" , "io.deephaven.util.compare.ShortComparisons"                      ),
+            INT(    "Int",     int.class,  "IntComparisons",    OUT + ".writeInt("    + VAL + ')', IN + ".readInt()"   , "io.deephaven.util.compare.IntComparisons"                        ),
+           LONG(   "Long",    long.class,  "LongComparisons",   OUT + ".writeLong("   + VAL + ')', IN + ".readLong()"  , "io.deephaven.util.compare.LongComparisons"                       ),
+          FLOAT(  "Float",   float.class,  "FloatComparisons",  OUT + ".writeFloat("  + VAL + ')', IN + ".readFloat()" , "io.deephaven.util.compare.FloatComparisons"                      ),
+         DOUBLE( "Double",  double.class,  "DoubleComparisons", OUT + ".writeDouble(" + VAL + ')', IN + ".readDouble()", "io.deephaven.util.compare.DoubleComparisons"                     ),
+           CHAR(   "Char",    char.class,  "CharComparisons",   OUT + ".writeChar("   + VAL + ')', IN + ".readChar()"  , "io.deephaven.util.compare.CharComparisons"                       ),
+         OBJECT( "Object",  Object.class,  "ObjectComparisons", OUT + ".writeObject(" + VAL + ')', IN + ".readObject()", "io.deephaven.util.compare.ObjectComparisons", "java.util.Objects"),
         ;
         // @formatter:on
 
         private final String nameText;
         private final Class<?> implementation;
-        private final String equalsText;
-        private final String hashCodeText;
-        private final String compareToText;
+        private final String comparisonClass;
         private final String writeExternalText;
         private final String readExternalText;
         private final String[] imports;
 
         ElementType(@NotNull final String nameText,
                 @NotNull final Class<?> implementation,
-                @NotNull final String equalsText,
-                @NotNull final String hashCodeText,
-                @NotNull final String compareToText,
+                @NotNull final String comparisonClass,
                 @NotNull final String writeExternalText,
                 @NotNull final String readExternalText,
                 @NotNull final String... imports) {
             this.nameText = nameText;
             this.implementation = implementation;
-            this.equalsText = equalsText;
-            this.hashCodeText = hashCodeText;
-            this.compareToText = compareToText;
+            this.comparisonClass = comparisonClass;
             this.writeExternalText = writeExternalText;
             this.readExternalText = readExternalText;
             this.imports = imports;
@@ -118,15 +110,15 @@ public class TupleCodeGenerator {
         }
 
         private String getEqualsText(@NotNull final String lhsName, @NotNull final String rhsName) {
-            return equalsText.replace(LHS, lhsName).replace(RHS, rhsName);
+            return comparisonClass + ".eq(" + lhsName + ", " + rhsName + ")";
         }
 
         private String getHashCodeText(@NotNull final String elementName) {
-            return hashCodeText.replace(VAL, elementName);
+            return comparisonClass + ".hashCode(" + elementName + ")";
         }
 
         private String getCompareToText(@NotNull final String lhsName, @NotNull final String rhsName) {
-            return compareToText.replace(LHS, lhsName).replace(RHS, rhsName);
+            return comparisonClass + ".compare(" + lhsName + ", " + rhsName + ")";
         }
 
         private String getWriteExternalText(@SuppressWarnings("SameParameterValue") @NotNull final String outName,

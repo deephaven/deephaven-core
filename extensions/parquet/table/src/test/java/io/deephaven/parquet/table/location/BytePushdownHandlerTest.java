@@ -3,6 +3,7 @@
 //
 package io.deephaven.parquet.table.location;
 
+import io.deephaven.engine.table.MatchOptions;
 import io.deephaven.engine.table.impl.select.ByteRangeFilter;
 import io.deephaven.engine.table.impl.select.MatchFilter;
 import io.deephaven.test.types.OutOfBandTest;
@@ -92,13 +93,13 @@ public class BytePushdownHandlerTest {
 
         // unsorted list with duplicates, one inside
         assertTrue(BytePushdownHandler.maybeOverlaps(
-                new MatchFilter(MatchFilter.MatchType.Regular,
+                new MatchFilter(MatchOptions.REGULAR,
                         "b", (byte) 50, (byte) 15, (byte) 22, (byte) 22),
                 stats));
 
         // all values outside
         assertFalse(BytePushdownHandler.maybeOverlaps(
-                new MatchFilter(MatchFilter.MatchType.Regular,
+                new MatchFilter(MatchOptions.REGULAR,
                         "b", (byte) 40, (byte) 41),
                 stats));
 
@@ -110,15 +111,15 @@ public class BytePushdownHandlerTest {
         System.arraycopy(many, 0, withInside, 0, many.length);
         withInside[withInside.length - 1] = (byte) 25;
         assertTrue(BytePushdownHandler.maybeOverlaps(
-                new MatchFilter(MatchFilter.MatchType.Regular, "b", withInside), stats));
+                new MatchFilter(MatchOptions.REGULAR, "b", withInside), stats));
 
         // empty list
         assertFalse(BytePushdownHandler.maybeOverlaps(
-                new MatchFilter(MatchFilter.MatchType.Regular, "b"), stats));
+                new MatchFilter(MatchOptions.REGULAR, "b"), stats));
 
         // list containing NULL
         assertTrue(BytePushdownHandler.maybeOverlaps(
-                new MatchFilter(MatchFilter.MatchType.Regular, "b",
+                new MatchFilter(MatchOptions.REGULAR, "b",
                         QueryConstants.NULL_BYTE, (byte) 50),
                 stats));
     }
@@ -127,12 +128,12 @@ public class BytePushdownHandlerTest {
     public void byteInvertMatchFilterScenarios() {
         // gaps remain inside stats
         assertTrue(BytePushdownHandler.maybeOverlaps(
-                new MatchFilter(MatchFilter.MatchType.Inverted, "b", (byte) -1, (byte) 1, (byte) 0),
+                new MatchFilter(MatchOptions.INVERTED, "b", (byte) -1, (byte) 1, (byte) 0),
                 byteStats((byte) -5, (byte) 5)));
 
         // stats fully covered by exclusion list
         assertFalse(BytePushdownHandler.maybeOverlaps(
-                new MatchFilter(MatchFilter.MatchType.Inverted, "b", (byte) 20),
+                new MatchFilter(MatchOptions.INVERTED, "b", (byte) 20),
                 byteStats((byte) 20, (byte) 20)));
 
         // exclude 0-8 leaves gap at 9
@@ -140,23 +141,23 @@ public class BytePushdownHandlerTest {
                 .mapToObj(i -> (byte) i)
                 .toArray();
         assertTrue(BytePushdownHandler.maybeOverlaps(
-                new MatchFilter(MatchFilter.MatchType.Inverted, "b", exclude),
+                new MatchFilter(MatchOptions.INVERTED, "b", exclude),
                 byteStats((byte) 0, (byte) 9)));
 
         // empty exclusion list
         assertTrue(BytePushdownHandler.maybeOverlaps(
-                new MatchFilter(MatchFilter.MatchType.Inverted, "b"),
+                new MatchFilter(MatchOptions.INVERTED, "b"),
                 byteStats((byte) 1, (byte) 2)));
 
         // NULL disables push-down
         assertTrue(BytePushdownHandler.maybeOverlaps(
-                new MatchFilter(MatchFilter.MatchType.Inverted, "b", QueryConstants.NULL_BYTE),
+                new MatchFilter(MatchOptions.INVERTED, "b", QueryConstants.NULL_BYTE),
                 byteStats((byte) 5, (byte) 6)));
 
         // Inverse match of {5, 6} against statistics [5, 6] should return false but currently returns true since
         // the implementation assumes the range (5, 6) overlaps with the statistics range [5, 6].
         assertTrue(BytePushdownHandler.maybeOverlaps(
-                new MatchFilter(MatchFilter.MatchType.Inverted, "i", 5, 6),
+                new MatchFilter(MatchOptions.INVERTED, "i", 5, 6),
                 byteStats((byte) 5, (byte) 6)));
     }
 }

@@ -10,6 +10,7 @@ package io.deephaven.chunk;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.chunk.util.pools.MultiChunkPool;
 
+import io.deephaven.function.ArraySort;
 import io.deephaven.util.type.TypeUtils;
 import org.jetbrains.annotations.NotNull;
 
@@ -210,10 +211,7 @@ public class WritableFloatChunk<ATTR extends Any> extends FloatChunk<ATTR> imple
     // region sort
     @Override
     public final void sort(int start, int length) {
-        Arrays.sort(data, offset + start, offset + start + length);
-
-        // region SortFixup
-        // endregion SortFixup
+        ArraySort.sort(data, offset + start, offset + start + length);
     }
     // endregion sort
 

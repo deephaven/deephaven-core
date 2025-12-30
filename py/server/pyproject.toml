@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools >= 64"]
+build-backend = "setuptools.build_meta"
+
+[tool.mypy]
+namespace_packages = true
+exclude = ["tests", "test_helper", "deephaven/plot", "build"]
+
+[[tool.mypy.overrides]]
+module = [
+  "jpy.*",
+  "jpyutil.*",
+  "pyarrow",
+  "pyarrow.*",
+  "deephaven.ui.*",
+  "deephaven.plugin.*",
+  "connectorx",
+  "turbodbc.*",
+  "adbc_driver_manager.*",
+  "adbc_driver_sqlite.*",
+  "adbc_driver_postgresql.*",
+  "jedi.*"
+]
+ignore_missing_imports = true
+
+[tool.ruff]
+include = ["deephaven/**/*.py", "tests/**/*.py", "setup.py"]
+extend-exclude = ["deephaven/__init__.py", "deephaven/plot/__init__.py", "deephaven/plot/figure.py", "tests/test_docstring_parser.py"]
+
+[tool.ruff.lint]
+select = ["F", "I"]
+
+[tool.ruff.lint.per-file-ignores]
+"deephaven/plot/**" = ["E741", "F405", "F403"]
+"tests/**/*.py" = ["E741", "F405", "F403", "F811", "F841"]

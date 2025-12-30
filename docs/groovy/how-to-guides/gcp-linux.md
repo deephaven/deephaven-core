@@ -121,13 +121,13 @@ docker run \
 
 This startup script will:
 
-- Install Docker if it's not already present (using Docker's official installation script)
-- Stop and remove any existing Deephaven container (useful for VM restarts)
-- Pull the latest Deephaven image
+- Install Docker if it's not already present (using Docker's official installation script).
+- Stop and remove any existing Deephaven container (useful for VM restarts).
+- Pull the latest Deephaven image.
 - Run the container with:
-  - `--restart=always`: Automatically restart if the container crashes
-  - `--publish 10000:10000`: Expose Deephaven's web UI port
-  - `--env START_OPTS="-Xmx4g"`: Configure Deephaven to use 4GB of memory (adjust based on your VM's memory)
+  - `--restart=always`: Automatically restart if the container crashes.
+  - `--publish 10000:10000`: Expose Deephaven's web UI port.
+  - `--env START_OPTS="-Xmx4g"`: Configure Deephaven to use 4GB of memory (adjust based on your VM's memory).
 
 > [!NOTE]
 > If you choose a VM with more memory, increase the `-Xmx4g` value in the `START_OPTS` variable to whatever amount suits your needs. For example, use `-Xmx8g` for 8GB of memory.

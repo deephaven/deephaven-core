@@ -121,7 +121,7 @@ Tick amplification can usually be avoided with [partitioned tables](../how-to-gu
 
 Every instance of Deephaven has a predefined maximum amount of memory. When memory usage approaches the configured maximum, query performance can degrade significantly. If a query requires more memory than what's available, it will crash.
 
-When working with live data, the amount of memory a query requires typically grows over time. The extent of this growth depends on a number of factors such as the growth rate of the data itself, the operations involved, and the [table types](../conceptual/table-types.md) used in the query.
+When working with live data, the amount of memory a query requires typically grows over time. The extent of this growth depends on a number of factors such as the growth rate of the data itself, the operations involved, and the [table types](./table-types.md) used in the query.
 
 #### Create formula columns
 

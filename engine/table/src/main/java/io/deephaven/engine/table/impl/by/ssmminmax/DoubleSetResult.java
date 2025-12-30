@@ -30,7 +30,13 @@ public class DoubleSetResult implements SsmChunkedMinMaxOperator.SetResult {
             newResult = NULL_DOUBLE;
         } else {
             final DoubleSegmentedSortedMultiset doubleSsm = (DoubleSegmentedSortedMultiset) ssm;
-            newResult = minimum ? doubleSsm.getMinDouble() : doubleSsm.getMaxDouble();
+            // region nan handling
+            if (minimum) {
+                newResult = Double.isNaN(doubleSsm.getMaxDouble()) ? Double.NaN : doubleSsm.getMinDouble();
+            } else {
+                newResult = doubleSsm.getMaxDouble(); // NaN sorts to max
+            }
+            // endregion nan handling
         }
         return setResult(destination, newResult);
     }

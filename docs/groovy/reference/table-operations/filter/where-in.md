@@ -25,8 +25,10 @@ The table containing the set of values to filter on.
 
 The columns to match between the two tables.
 
-- `"X"` will match on the same column name. Equivalent to `"X = X"`.
+- `"X"` will match on the same column name.
 - `"X = Y"` will match when the columns have different names, with `X` being the source table column and `Y` being the filter table column.
+
+Matches are defined the same as the set inclusion operator ([`in`](../../query-language/match-filters/in.md)).
 
 </Param>
 <Param name="columnsToMatch" type="Collection">
