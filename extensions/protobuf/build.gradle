@@ -39,7 +39,7 @@ test {
 spotless {
     java {
         targetExclude(
-                'build/generated/source/proto/test/java/**',
+                'build/generated/sources/proto/test/java/**',
         )
     }
 }
