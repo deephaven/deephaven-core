@@ -1,0 +1,1 @@
+{"file":"core_versioned_docs/version-groovy/docs/tutorials/crash-course/4-table-ops.md","objects":{"tAvg":{"type":"Table","data":{"columns":[{"name":"X","type":"double"},{"name":"Y","type":"double"}],"rows":[[{"value":"53.9500"},{"value":"5.0005"}]]}}}}

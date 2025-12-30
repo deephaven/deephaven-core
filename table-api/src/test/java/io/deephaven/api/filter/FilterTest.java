@@ -22,6 +22,8 @@ import static io.deephaven.api.filter.Filter.and;
 import static io.deephaven.api.filter.Filter.isFalse;
 import static io.deephaven.api.filter.Filter.isNotNull;
 import static io.deephaven.api.filter.Filter.isNull;
+import static io.deephaven.api.filter.Filter.isNotNaN;
+import static io.deephaven.api.filter.Filter.isNaN;
 import static io.deephaven.api.filter.Filter.isTrue;
 import static io.deephaven.api.filter.Filter.not;
 import static io.deephaven.api.filter.Filter.ofFalse;
@@ -67,6 +69,18 @@ public class FilterTest {
     void filterIsNotNull() {
         stringsOf(isNotNull(FOO), "!isNull(Foo)");
         stringsOf(not(isNotNull(FOO)), "isNull(Foo)");
+    }
+
+    @Test
+    void filterIsNaN() {
+        stringsOf(isNaN(FOO), "isNaN(Foo)");
+        stringsOf(not(isNaN(FOO)), "!isNaN(Foo)");
+    }
+
+    @Test
+    void FilterIsNotNaN() {
+        stringsOf(isNotNaN(FOO), "!isNaN(Foo)");
+        stringsOf(not(isNotNaN(FOO)), "isNaN(Foo)");
     }
 
     @Test
@@ -187,10 +201,10 @@ public class FilterTest {
                 assertThat(results).isEqualTo(((FilterAnd) filter).filters());
             } else if (Filter.ofTrue().equals(filter)) {
                 assertThat(results).isEmpty();
-            } else if (filter instanceof FilterBarrier) {
-                assertThat(results).containsExactly(((FilterBarrier) filter).filter());
-            } else if (filter instanceof FilterRespectsBarrier) {
-                assertThat(results).containsExactly(((FilterRespectsBarrier) filter).filter());
+            } else if (filter instanceof FilterWithDeclaredBarriers) {
+                assertThat(results).containsExactly(((FilterWithDeclaredBarriers) filter).filter());
+            } else if (filter instanceof FilterWithRespectedBarriers) {
+                assertThat(results).containsExactly(((FilterWithRespectedBarriers) filter).filter());
             } else {
                 assertThat(results).containsExactly(filter);
             }
@@ -209,6 +223,7 @@ public class FilterTest {
      */
     public static void visitAll(Visitor<?> visitor) {
         visitor.visit((FilterIsNull) null);
+        visitor.visit((FilterIsNaN) null);
         visitor.visit((FilterComparison) null);
         visitor.visit((FilterIn) null);
         visitor.visit((FilterNot<?>) null);
@@ -216,8 +231,8 @@ public class FilterTest {
         visitor.visit((FilterAnd) null);
         visitor.visit((FilterPattern) null);
         visitor.visit((FilterSerial) null);
-        visitor.visit((FilterBarrier) null);
-        visitor.visit((FilterRespectsBarrier) null);
+        visitor.visit((FilterWithDeclaredBarriers) null);
+        visitor.visit((FilterWithRespectedBarriers) null);
         visitor.visit((Function) null);
         visitor.visit((Method) null);
         visitor.visit(false);
@@ -230,6 +245,11 @@ public class FilterTest {
         @Override
         public String visit(FilterIsNull isNull) {
             return of(isNull);
+        }
+
+        @Override
+        public String visit(FilterIsNaN isNaN) {
+            return of(isNaN);
         }
 
         @Override
@@ -269,13 +289,13 @@ public class FilterTest {
         }
 
         @Override
-        public String visit(FilterBarrier barrier) {
-            return of(barrier);
+        public String visit(FilterWithDeclaredBarriers declaredBarrier) {
+            return of(declaredBarrier);
         }
 
         @Override
-        public String visit(FilterRespectsBarrier respectsBarrier) {
-            return of(respectsBarrier);
+        public String visit(FilterWithRespectedBarriers respectedBarrier) {
+            return of(respectedBarrier);
         }
 
         @Override
@@ -309,6 +329,12 @@ public class FilterTest {
         }
 
         @Override
+        public CountingVisitor visit(FilterIsNaN isNaN) {
+            ++count;
+            return this;
+        }
+
+        @Override
         public CountingVisitor visit(FilterComparison comparison) {
             ++count;
             return this;
@@ -321,13 +347,13 @@ public class FilterTest {
         }
 
         @Override
-        public CountingVisitor visit(FilterBarrier barrier) {
+        public CountingVisitor visit(FilterWithDeclaredBarriers declaredBarrier) {
             ++count;
             return null;
         }
 
         @Override
-        public CountingVisitor visit(FilterRespectsBarrier respectsBarrier) {
+        public CountingVisitor visit(FilterWithRespectedBarriers respectedBarrier) {
             ++count;
             return null;
         }
@@ -409,6 +435,12 @@ public class FilterTest {
         }
 
         @Override
+        public Void visit(FilterIsNaN isNaN) {
+            out.add(FilterIsNaN.of(FOO));
+            return null;
+        }
+
+        @Override
         public Void visit(FilterComparison comparison) {
             out.add(FilterComparison.eq(FOO, BAR));
             out.add(FilterComparison.gt(FOO, BAR));
@@ -476,14 +508,14 @@ public class FilterTest {
         }
 
         @Override
-        public Void visit(FilterBarrier barrier) {
-            out.add(Function.of("my_serial_function", FOO).withBarriers("TEST_BARRIER"));
+        public Void visit(FilterWithDeclaredBarriers declaredBarrier) {
+            out.add(Function.of("my_serial_function", FOO).withDeclaredBarriers("TEST_BARRIER"));
             return null;
         }
 
         @Override
-        public Void visit(FilterRespectsBarrier respectsBarrier) {
-            out.add(Function.of("my_serial_function", FOO).respectsBarriers("TEST_BARRIER"));
+        public Void visit(FilterWithRespectedBarriers respectedBarrier) {
+            out.add(Function.of("my_serial_function", FOO).withRespectedBarriers("TEST_BARRIER"));
             return null;
         }
 

@@ -1,0 +1,1 @@
+{"file":"core_versioned_docs/version-groovy/docs/how-to-guides/triage-errors.md","objects":{"table":{"type":"Table","data":{"columns":[{"name":"Items","type":"java.lang.String"}],"rows":[[{"value":"A"}],[{"value":"B"}],[{"value":""}],[{"value":"D"}]]}},"result":{"type":"Table","data":{"columns":[{"name":"Items","type":"java.lang.String"}],"rows":[[{"value":"B"}]]}}}}

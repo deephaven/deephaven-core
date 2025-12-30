@@ -1,0 +1,1 @@
+{"file":"core/docs/conceptual/table-types.md","objects":{"t":{"type":"Table","data":{"columns":[{"name":"Timestamp","type":"java.time.Instant"}],"rows":[]}},"t_ring":{"type":"Table","data":{"columns":[{"name":"Timestamp","type":"java.time.Instant"}],"rows":[]}}}}

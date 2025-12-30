@@ -1,0 +1,1 @@
+{"file":"core_versioned_docs/version-groovy/docs/how-to-guides/dedicated-aggregations.md","objects":{"var":{"type":"Table","data":{"columns":[{"name":"Name","type":"java.lang.String"},{"name":"Number","type":"double"}],"rows":[[{"value":"James"},{"value":"25.0000"}],[{"value":"Lauren"},{"value":"105.3333"}],[{"value":"Zoey"},{"value":"4.0000"}]]}}}}

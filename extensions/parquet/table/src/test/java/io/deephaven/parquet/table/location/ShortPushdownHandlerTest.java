@@ -3,6 +3,7 @@
 //
 package io.deephaven.parquet.table.location;
 
+import io.deephaven.engine.table.MatchOptions;
 import io.deephaven.engine.table.impl.select.ShortRangeFilter;
 import io.deephaven.engine.table.impl.select.MatchFilter;
 import io.deephaven.test.types.OutOfBandTest;
@@ -92,13 +93,13 @@ public class ShortPushdownHandlerTest {
 
         // unsorted list with duplicates, one inside
         assertTrue(ShortPushdownHandler.maybeOverlaps(
-                new MatchFilter(MatchFilter.MatchType.Regular,
+                new MatchFilter(MatchOptions.REGULAR,
                         "s", (short) 50, (short) 150, (short) 180, (short) 180),
                 stats));
 
         // all values outside
         assertFalse(ShortPushdownHandler.maybeOverlaps(
-                new MatchFilter(MatchFilter.MatchType.Regular,
+                new MatchFilter(MatchOptions.REGULAR,
                         "s", (short) 300, (short) 400),
                 stats));
 
@@ -108,15 +109,15 @@ public class ShortPushdownHandlerTest {
         System.arraycopy(many, 0, withInside, 0, many.length);
         withInside[withInside.length - 1] = (short) 150;
         assertTrue(ShortPushdownHandler.maybeOverlaps(
-                new MatchFilter(MatchFilter.MatchType.Regular, "s", withInside), stats));
+                new MatchFilter(MatchOptions.REGULAR, "s", withInside), stats));
 
         // empty list
         assertFalse(ShortPushdownHandler.maybeOverlaps(
-                new MatchFilter(MatchFilter.MatchType.Regular, "s"), stats));
+                new MatchFilter(MatchOptions.REGULAR, "s"), stats));
 
         // list containing NULL
         assertTrue(ShortPushdownHandler.maybeOverlaps(
-                new MatchFilter(MatchFilter.MatchType.Regular, "s",
+                new MatchFilter(MatchOptions.REGULAR, "s",
                         QueryConstants.NULL_SHORT, (short) 42),
                 stats));
     }
@@ -125,34 +126,34 @@ public class ShortPushdownHandlerTest {
     public void shortInvertMatchFilterScenarios() {
         // gaps remain inside stats
         assertTrue(ShortPushdownHandler.maybeOverlaps(
-                new MatchFilter(MatchFilter.MatchType.Inverted, "s", (short) -1, (short) 0, (short) 1),
+                new MatchFilter(MatchOptions.INVERTED, "s", (short) -1, (short) 0, (short) 1),
                 shortStats((short) -5, (short) 5)));
 
         // stats fully covered by exclusion list
         assertFalse(ShortPushdownHandler.maybeOverlaps(
-                new MatchFilter(MatchFilter.MatchType.Inverted, "s", (short) 77),
+                new MatchFilter(MatchOptions.INVERTED, "s", (short) 77),
                 shortStats((short) 77, (short) 77)));
 
         // exclude 10-19 leaves gap 0-9 and 20-29
         final Object[] exclude = IntStream.rangeClosed(10, 19).mapToObj(i -> (short) i).toArray();
         assertTrue(ShortPushdownHandler.maybeOverlaps(
-                new MatchFilter(MatchFilter.MatchType.Inverted, "s", exclude),
+                new MatchFilter(MatchOptions.INVERTED, "s", exclude),
                 shortStats((short) 0, (short) 29)));
 
         // empty exclusion list
         assertTrue(ShortPushdownHandler.maybeOverlaps(
-                new MatchFilter(MatchFilter.MatchType.Inverted, "s"),
+                new MatchFilter(MatchOptions.INVERTED, "s"),
                 shortStats((short) 1, (short) 2)));
 
         // NULL disables push-down
         assertTrue(ShortPushdownHandler.maybeOverlaps(
-                new MatchFilter(MatchFilter.MatchType.Inverted, "s", QueryConstants.NULL_SHORT),
+                new MatchFilter(MatchOptions.INVERTED, "s", QueryConstants.NULL_SHORT),
                 shortStats((short) 11, (short) 12)));
 
         // Inverse match of {5, 6} against statistics [5, 6] should return false but currently returns true since
         // the implementation assumes the range (5, 6) overlaps with the statistics range [5, 6].
         assertTrue(ShortPushdownHandler.maybeOverlaps(
-                new MatchFilter(MatchFilter.MatchType.Inverted, "i", 5, 6),
+                new MatchFilter(MatchOptions.INVERTED, "i", 5, 6),
                 shortStats((short) 11, (short) 12)));
     }
 }

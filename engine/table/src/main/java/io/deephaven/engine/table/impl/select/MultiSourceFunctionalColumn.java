@@ -9,6 +9,7 @@ import io.deephaven.api.util.NameValidator;
 import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.NoSuchColumnException;
 import io.deephaven.engine.table.impl.PrevColumnSource;
+import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
 import io.deephaven.engine.table.impl.sources.SparseArrayColumnSource;
 import io.deephaven.engine.table.impl.sources.ViewColumnSource;
@@ -165,7 +166,7 @@ public class MultiSourceFunctionalColumn<D> implements SelectColumn {
                 final FunctionalColumnFillContext ctx = (FunctionalColumnFillContext) fillContext;
                 ctx.chunkFiller.fillPrevByIndices(this, rowSequence, destination);
             }
-        }, false);
+        }, isStateless());
     }
 
     private static class FunctionalColumnFillContext implements Formula.FillContext {
@@ -210,7 +211,7 @@ public class MultiSourceFunctionalColumn<D> implements SelectColumn {
 
     @Override
     public boolean isStateless() {
-        return false;
+        return QueryTable.STATELESS_SELECT_BY_DEFAULT;
     }
 
     @Override

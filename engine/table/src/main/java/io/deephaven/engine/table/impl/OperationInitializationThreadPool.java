@@ -31,8 +31,13 @@ public class OperationInitializationThreadPool implements OperationInitializer {
     private final ThreadLocal<Boolean> isInitializationThread = ThreadLocal.withInitial(() -> false);
 
     private final ThreadPoolExecutor executorService;
+    private final int numThreads;
 
     public OperationInitializationThreadPool(ThreadInitializationFactory factory) {
+        this(factory, NUM_THREADS);
+    }
+
+    public OperationInitializationThreadPool(ThreadInitializationFactory factory, final int numThreads) {
         final ThreadGroup threadGroup = new ThreadGroup("OperationInitializationThreadPool");
         final ThreadFactory threadFactory = new NamingThreadFactory(
                 threadGroup, OperationInitializationThreadPool.class, "initializationExecutor", true) {
@@ -46,15 +51,16 @@ public class OperationInitializationThreadPool implements OperationInitializer {
                 }));
             }
         };
+        this.numThreads = numThreads;
         executorService = new ThreadPoolExecutor(
-                NUM_THREADS, NUM_THREADS, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<>(), threadFactory);
+                numThreads, numThreads, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<>(), threadFactory);
 
         executorService.prestartAllCoreThreads();
     }
 
     @Override
     public boolean canParallelize() {
-        return NUM_THREADS > 1 && !isInitializationThread.get();
+        return numThreads > 1 && !isInitializationThread.get();
     }
 
     @Override
@@ -64,6 +70,10 @@ public class OperationInitializationThreadPool implements OperationInitializer {
 
     @Override
     public int parallelismFactor() {
-        return NUM_THREADS;
+        return numThreads;
+    }
+
+    public void shutdown() {
+        executorService.shutdown();
     }
 }

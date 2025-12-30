@@ -62,6 +62,12 @@ public class UnionSourceManager implements PushdownPredicateManager {
     private final ModifiedColumnSet modifiedColumnSet;
 
     /**
+     * An inverse identity map from our result columns to the names that we know them as, for use in resolving pushdown
+     * matchers.
+     */
+    final IdentityHashMap<ColumnSource<?>, String> columnSourceToName = new IdentityHashMap<>();
+
+    /**
      * The ListenerRecorders our MergedListener depends on. The first entry is a recorder for constituent changes from
      * the parent partitioned table. Subsequent entries are for individual parent constituent tables that occupy our
      * slots. Correctness for shared use with the MergedUnionListener is delicate. MergedListener (the super class) only
@@ -96,6 +102,9 @@ public class UnionSourceManager implements PushdownPredicateManager {
                 .map(cd -> new UnionColumnSource<>(cd.getDataType(), cd.getComponentType(), this, unionRedirection,
                         new TableSourceLookup<>(cd.getName())))
                 .toArray(UnionColumnSource[]::new);
+        for (int ii = 0; ii < resultColumnSources.length; ++ii) {
+            columnSourceToName.put(resultColumnSources[ii], columnNames[ii]);
+        }
         resultTable = new QueryTable(resultRows, getColumnSources());
         modifiedColumnSet = resultTable.getModifiedColumnSetForUpdates();
 
@@ -893,9 +902,9 @@ public class UnionSourceManager implements PushdownPredicateManager {
     }
 
     public static class UnionSourcePushdownFilterContext extends BasePushdownFilterContext {
-        final WhereFilter filter;
         final UnionSourceManager manager;
         final WritableRowSet maybeMatch;
+        final Map<String, String> renameMap;
 
         boolean initialized = false;
         List<PushdownFilterMatcher> matchers;
@@ -907,9 +916,16 @@ public class UnionSourceManager implements PushdownPredicateManager {
                 @NotNull final WhereFilter filter,
                 @NotNull final List<ColumnSource<?>> columnSources,
                 @NotNull final UnionSourceManager manager) {
-            this.filter = Require.neqNull(filter, "filter");
+            super(filter, columnSources);
             this.manager = Require.neqNull(manager, "manager");
             maybeMatch = RowSetFactory.empty();
+
+            final List<String> filterColumns = filter.getColumns();
+            Require.eq(filterColumns.size(), "filterColumns.size()",
+                    columnSources.size(), "columnSources.size()");
+
+            final IdentityHashMap<ColumnSource<?>, String> columnSourceToName = manager.columnSourceToName;
+            renameMap = PushdownPredicateManager.computeRenameMap(columnSources, filterColumns, columnSourceToName);
         }
 
         /**
@@ -952,6 +968,7 @@ public class UnionSourceManager implements PushdownPredicateManager {
                             : manager.constituentTables.get(slot);
 
                     final List<ColumnSource<?>> filterSources = filter.getColumns().stream()
+                            .map(cn -> renameMap.getOrDefault(cn, cn))
                             .map(constituent::getColumnSource).collect(Collectors.toList());
 
                     final PushdownFilterMatcher matcher =
@@ -971,11 +988,6 @@ public class UnionSourceManager implements PushdownPredicateManager {
                 }
                 return true;
             });
-        }
-
-        @Override
-        public Map<String, String> renameMap() {
-            return Map.of();
         }
 
         @Override

@@ -70,28 +70,32 @@ public class FilterTestUtils {
 
     public static Condition in(String columnName, int... values) {
         return NormalizeFilterUtil.doIn(reference(columnName), literals(values), CaseSensitivity.MATCH_CASE,
-                MatchType.REGULAR);
+                MatchType.REGULAR, NanComparison.NAN_NOT_EQUALS_NAN);
     }
 
     public static Condition in(Value lhs, Value... rhs) {
-        return NormalizeFilterUtil.doIn(lhs, Arrays.asList(rhs), CaseSensitivity.MATCH_CASE, MatchType.REGULAR);
+        return NormalizeFilterUtil.doIn(lhs, Arrays.asList(rhs), CaseSensitivity.MATCH_CASE, MatchType.REGULAR,
+                NanComparison.NAN_NOT_EQUALS_NAN);
     }
 
     public static Condition inICase(Value lhs, Value... rhs) {
-        return NormalizeFilterUtil.doIn(lhs, Arrays.asList(rhs), CaseSensitivity.IGNORE_CASE, MatchType.REGULAR);
+        return NormalizeFilterUtil.doIn(lhs, Arrays.asList(rhs), CaseSensitivity.IGNORE_CASE, MatchType.REGULAR,
+                NanComparison.NAN_NOT_EQUALS_NAN);
     }
 
     public static Condition notIn(String columnName, int... values) {
         return NormalizeFilterUtil.doIn(reference(columnName), literals(values), CaseSensitivity.MATCH_CASE,
-                MatchType.INVERTED);
+                MatchType.INVERTED, NanComparison.NAN_NOT_EQUALS_NAN);
     }
 
     public static Condition notIn(Value lhs, Value... rhs) {
-        return NormalizeFilterUtil.doIn(lhs, Arrays.asList(rhs), CaseSensitivity.MATCH_CASE, MatchType.INVERTED);
+        return NormalizeFilterUtil.doIn(lhs, Arrays.asList(rhs), CaseSensitivity.MATCH_CASE, MatchType.INVERTED,
+                NanComparison.NAN_NOT_EQUALS_NAN);
     }
 
     public static Condition notInICase(Value lhs, Value... rhs) {
-        return NormalizeFilterUtil.doIn(lhs, Arrays.asList(rhs), CaseSensitivity.IGNORE_CASE, MatchType.INVERTED);
+        return NormalizeFilterUtil.doIn(lhs, Arrays.asList(rhs), CaseSensitivity.IGNORE_CASE, MatchType.INVERTED,
+                NanComparison.NAN_NOT_EQUALS_NAN);
     }
 
     public static Condition compare(CompareCondition.CompareOperation operation, Value lhs, Value rhs) {

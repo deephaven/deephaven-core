@@ -47,8 +47,8 @@ public class FloatFloatTuple implements Comparable<FloatFloatTuple>, Externaliza
         this.element1 = element1;
         this.element2 = element2;
         cachedHashCode = (31 +
-                Float.hashCode(element1)) * 31 +
-                Float.hashCode(element2);
+                FloatComparisons.hashCode(element1)) * 31 +
+                FloatComparisons.hashCode(element2);
     }
 
     public final float getFirstElement() {
@@ -74,8 +74,8 @@ public class FloatFloatTuple implements Comparable<FloatFloatTuple>, Externaliza
         }
         final FloatFloatTuple typedOther = (FloatFloatTuple) other;
         // @formatter:off
-        return element1 == typedOther.element1 &&
-               element2 == typedOther.element2;
+        return FloatComparisons.eq(element1, typedOther.element1) &&
+               FloatComparisons.eq(element2, typedOther.element2);
         // @formatter:on
     }
 

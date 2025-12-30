@@ -1,0 +1,1 @@
+{"file":"core_versioned_docs/version-groovy/docs/how-to-guides/dedicated-aggregations.md","objects":{"minimum":{"type":"Table","data":{"columns":[{"name":"Name","type":"java.lang.String"},{"name":"Number","type":"int"}],"rows":[[{"value":"James"},{"value":"90"}],[{"value":"Lauren"},{"value":"72"}],[{"value":"Zoey"},{"value":"96"}]]}}}}

@@ -31,6 +31,7 @@ import io.deephaven.engine.table.GridAttributes;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.BaseTable;
+import io.deephaven.engine.table.impl.ComparatorRegistry;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
@@ -108,6 +109,11 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class BarrageUtil {
+    /**
+     * Re-usable constant for the "true" value.
+     */
+    private static final String TRUE_STRING = Boolean.toString(true);
+
     public static final BarrageSubscriptionOptions DEFAULT_SUBSCRIPTION_OPTIONS =
             BarrageSubscriptionOptions.builder().build();
     public static final BarrageSnapshotOptions DEFAULT_SNAPSHOT_OPTIONS =
@@ -517,7 +523,7 @@ public class BarrageUtil {
             final boolean isFlat) {
         final Map<String, String> metadata = new HashMap<>();
         if (isFlat) {
-            putMetadata(metadata, ATTR_ATTR_TAG + "." + TABLE_ATTRIBUTE_IS_FLAT, "true");
+            putMetadata(metadata, ATTR_ATTR_TAG + "." + TABLE_ATTRIBUTE_IS_FLAT, TRUE_STRING);
             putMetadata(metadata, ATTR_ATTR_TYPE_TAG + "." + TABLE_ATTRIBUTE_IS_FLAT,
                     Boolean.class.getCanonicalName());
         }
@@ -552,7 +558,8 @@ public class BarrageUtil {
     }
 
     private static boolean isDataTypeSortable(final Class<?> dataType) {
-        return dataType.isPrimitive() || Comparable.class.isAssignableFrom(dataType);
+        return dataType.isPrimitive() || Comparable.class.isAssignableFrom(dataType)
+                || ComparatorRegistry.INSTANCE.getComparator(dataType) != null;
     }
 
     public static Stream<Field> columnDefinitionsToFields(
@@ -591,8 +598,12 @@ public class BarrageUtil {
             Class<?> componentType = column.getComponentType();
             final Map<String, String> metadata = fieldMetadataFactory.apply(name);
 
-            putMetadata(metadata, "isPartitioning", column.isPartitioning() + "");
-            putMetadata(metadata, "isSortable", String.valueOf(sortableColumns.contains(name)));
+            if (column.isPartitioning()) {
+                putMetadata(metadata, "isPartitioning", TRUE_STRING);
+            }
+            if (sortableColumns.contains(name)) {
+                putMetadata(metadata, "isSortable", TRUE_STRING);
+            }
 
             // Wire up style and format column references
             final String styleFormatName = ColumnFormatting.getStyleFormatColumn(name);
@@ -620,22 +631,35 @@ public class BarrageUtil {
                     }
                 }
             } else {
-                // Otherwise, data type will be converted to a String
-                putMetadata(metadata, ATTR_TYPE_TAG, String.class.getCanonicalName());
+                // Otherwise, send the data type as is, but we will serialize to a string
+                putMetadata(metadata, ATTR_TYPE_TAG, dataType.getCanonicalName());
             }
 
             // Only one of these will be true, if any are true the column will not be visible
-            putMetadata(metadata, "isRowStyle", ColumnFormatting.isRowStyleFormatColumn(name) + "");
-            putMetadata(metadata, "isStyle", ColumnFormatting.isStyleFormatColumn(name) + "");
-            putMetadata(metadata, "isNumberFormat", ColumnFormatting.isNumberFormatColumn(name) + "");
-            putMetadata(metadata, "isDateFormat", ColumnFormatting.isDateFormatColumn(name) + "");
+            if (ColumnFormatting.isRowStyleFormatColumn(name)) {
+                putMetadata(metadata, "isRowStyle", TRUE_STRING);
+            }
+            if (ColumnFormatting.isStyleFormatColumn(name)) {
+                putMetadata(metadata, "isStyle", TRUE_STRING);
+            }
+            if (ColumnFormatting.isNumberFormatColumn(name)) {
+                putMetadata(metadata, "isNumberFormat", TRUE_STRING);
+            }
+            if (ColumnFormatting.isDateFormatColumn(name)) {
+                putMetadata(metadata, "isDateFormat", TRUE_STRING);
+            }
 
             final String columnDescription = columnDescriptions.get(name);
             if (columnDescription != null) {
                 putMetadata(metadata, "description", columnDescription);
             }
             if (inputTableUpdater != null) {
-                putMetadata(metadata, "inputtable.isKey", inputTableUpdater.getKeyNames().contains(name) + "");
+                if (inputTableUpdater.getKeyNames().contains(name)) {
+                    putMetadata(metadata, "inputtable.isKey", TRUE_STRING);
+                }
+                if (inputTableUpdater.getValueNames().contains(name)) {
+                    putMetadata(metadata, "inputtable.isValue", TRUE_STRING);
+                }
             }
 
             if (field != null) {
@@ -847,8 +871,14 @@ public class BarrageUtil {
 
         public ChunkType[] computeWireChunkTypes() {
             return tableDef.getColumnStream()
-                    .map(ColumnDefinition::getDataType)
-                    .map(ReinterpretUtils::maybeConvertToWritablePrimitiveChunkType)
+                    .map(def -> {
+                        final Field field = arrowSchema.findField(def.getName());
+                        if (field != null && field.getType().getTypeID() == ArrowType.ArrowTypeID.Timestamp) {
+                            // An Arrow timestamp is a long; so we should interpret it as such.
+                            return ChunkType.Long;
+                        }
+                        return ReinterpretUtils.maybeConvertToWritablePrimitiveChunkType(def.getDataType());
+                    })
                     .toArray(ChunkType[]::new);
         }
 
@@ -1093,9 +1123,18 @@ public class BarrageUtil {
 
         final FieldType fieldType = arrowFieldTypeFor(type, metadata, columnAsList);
         if (fieldType.getType().isComplex()) {
-            if (type.isArray() || Vector.class.isAssignableFrom(type)) {
+            if (type.isArray()) {
+                Assert.eq(componentType, "componentType", type.getComponentType(), "type.getComponentType()");
                 children = Collections.singletonList(arrowFieldFor(
-                        "", componentType, componentType == null ? null : componentType.getComponentType(),
+                        "", componentType, componentType.getComponentType(),
+                        Collections.emptyMap(),
+                        false));
+            } else if (Vector.class.isAssignableFrom(type)) {
+                Class<?> vectorComponentType =
+                        componentType == null ? VectorExpansionKernel.getComponentType(type, null) : componentType;
+                children = Collections.singletonList(arrowFieldFor(
+                        "", vectorComponentType,
+                        vectorComponentType == null ? null : vectorComponentType.getComponentType(),
                         Collections.emptyMap(),
                         false));
             } else {
@@ -1160,37 +1199,40 @@ public class BarrageUtil {
             case Double:
                 return Types.MinorType.FLOAT8.getType();
             case Object:
-                if (type.isArray()) {
-                    if (type.getComponentType() == byte.class && !columnAsList) {
+                if (type != null) {
+                    if (type.isArray()) {
+                        if (type.getComponentType() == byte.class && !columnAsList) {
+                            return Types.MinorType.VARBINARY.getType();
+                        }
+                        return Types.MinorType.LIST.getType();
+                    }
+                    if (Vector.class.isAssignableFrom(type)) {
+                        return Types.MinorType.LIST.getType();
+                    }
+                    if (type == LocalDate.class) {
+                        return Types.MinorType.DATEMILLI.getType();
+                    }
+                    if (type == LocalTime.class) {
+                        return Types.MinorType.TIMENANO.getType();
+                    }
+                    if (type == BigDecimal.class
+                            || type == BigInteger.class
+                            || type == Schema.class) {
                         return Types.MinorType.VARBINARY.getType();
                     }
-                    return Types.MinorType.LIST.getType();
-                }
-                if (Vector.class.isAssignableFrom(type)) {
-                    return Types.MinorType.LIST.getType();
-                }
-                if (type == LocalDate.class) {
-                    return Types.MinorType.DATEMILLI.getType();
-                }
-                if (type == LocalTime.class) {
-                    return Types.MinorType.TIMENANO.getType();
-                }
-                if (type == BigDecimal.class
-                        || type == BigInteger.class
-                        || type == Schema.class) {
-                    return Types.MinorType.VARBINARY.getType();
-                }
-                if (type == Instant.class || type == ZonedDateTime.class) {
-                    return NANO_SINCE_EPOCH_TYPE;
-                }
-                if (type == Duration.class) {
-                    return NANO_DURATION_TYPE;
-                }
-                if (type == Period.class) {
-                    return new ArrowType.Interval(IntervalUnit.YEAR_MONTH);
-                }
-                if (type == PeriodDuration.class) {
-                    return new ArrowType.Interval(IntervalUnit.MONTH_DAY_NANO);
+                    if (type == Instant.class || type == ZonedDateTime.class) {
+                        // Note: We are choosing to discard the time zone for a ZonedDateTime here.
+                        return NANO_SINCE_EPOCH_TYPE;
+                    }
+                    if (type == Duration.class) {
+                        return NANO_DURATION_TYPE;
+                    }
+                    if (type == Period.class) {
+                        return new ArrowType.Interval(IntervalUnit.YEAR_MONTH);
+                    }
+                    if (type == PeriodDuration.class) {
+                        return new ArrowType.Interval(IntervalUnit.MONTH_DAY_NANO);
+                    }
                 }
 
                 // everything gets converted to a string

@@ -77,11 +77,12 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
             final SelectColumn sc,
             final WritableColumnSource<?> ws,
             final WritableColumnSource<?> underlying,
-            final String[] deps,
+            final String[] recomputeDependencies,
+            final int[] executionDependencies,
             final ModifiedColumnSet mcsBuilder,
             final boolean isRedirected,
             final boolean sourcesAreInResultKeySpace) {
-        super(context, sc, ws, underlying, deps, mcsBuilder);
+        super(context, sc, ws, underlying, recomputeDependencies, mcsBuilder);
         this.updateGraph = updateGraph;
         this.parentRowSet = parentRowSet;
         this.writableSource = ReinterpretUtils.maybeConvertToWritablePrimitive(ws);
@@ -97,10 +98,11 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
         }
 
         dependencyBitSet = new BitSet();
-        Arrays.stream(deps)
+        Arrays.stream(recomputeDependencies)
                 .mapToInt(context::getLayerIndexFor)
                 .filter(layerIndex -> layerIndex >= 0)
                 .forEach(dependencyBitSet::set);
+        Arrays.stream(executionDependencies).forEach(dependencyBitSet::set);
         if (isRedirected) {
             // we cannot write to the redirected column until after the redirection has been updated
             context.setRedirectionLayer(dependencyBitSet);
@@ -112,7 +114,7 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
         // the select column is stateless
         canParallelizeThisColumn = !isRedirected
                 && WritableSourceWithPrepareForParallelPopulation.supportsParallelPopulation(writableSource)
-                && sc.isStateless();
+                && sc.isStateless() && sc.isParallelizable();
 
         // If we were created on a systemic thread, we want to be sure to make sure that any updates are also
         // applied systemically.

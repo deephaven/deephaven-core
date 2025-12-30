@@ -54,9 +54,9 @@ public class IntFloatShortTuple implements Comparable<IntFloatShortTuple>, Exter
         this.element2 = element2;
         this.element3 = element3;
         cachedHashCode = ((31 +
-                Integer.hashCode(element1)) * 31 +
-                Float.hashCode(element2)) * 31 +
-                Short.hashCode(element3);
+                IntComparisons.hashCode(element1)) * 31 +
+                FloatComparisons.hashCode(element2)) * 31 +
+                ShortComparisons.hashCode(element3);
     }
 
     public final int getFirstElement() {
@@ -86,9 +86,9 @@ public class IntFloatShortTuple implements Comparable<IntFloatShortTuple>, Exter
         }
         final IntFloatShortTuple typedOther = (IntFloatShortTuple) other;
         // @formatter:off
-        return element1 == typedOther.element1 &&
-               element2 == typedOther.element2 &&
-               element3 == typedOther.element3;
+        return IntComparisons.eq(element1, typedOther.element1) &&
+               FloatComparisons.eq(element2, typedOther.element2) &&
+               ShortComparisons.eq(element3, typedOther.element3);
         // @formatter:on
     }
 

@@ -702,7 +702,7 @@ public class HierarchicalTableTestGwt extends AbstractAsyncGwtTestCase {
                         cfg.groupingColumns = Js.uncheckedCast(JsArray.of("X"));
                         cfg.aggregations = JsPropertyMap.of(JsAggregationOperation.SUM, JsArray.of("Y"));
                         cfg.includeConstituents = includeConstituents;
-                        tests.add(() -> table.rollup(new JsRollupConfig((JsPropertyMap<Object>) cfg)).then(r -> {
+                        tests.add(() -> table.rollup(cfg).then(r -> {
                             // Rollup with or without constituents should populate aggregated columns
                             assertEquals(1, r.getAggregatedColumns().length);
                             assertEquals("Y", r.getAggregatedColumns().getAt(0).getName());
@@ -725,7 +725,7 @@ public class HierarchicalTableTestGwt extends AbstractAsyncGwtTestCase {
                         cfg.groupingColumns = Js.uncheckedCast(JsArray.of("X"));
                         cfg.aggregations = JsPropertyMap.of(JsAggregationOperation.SKIP, JsArray.of("Y"));
                         cfg.includeConstituents = includeConstituents;
-                        tests.add(() -> table.rollup((JsPropertyMap<Object>) cfg).then(r -> {
+                        tests.add(() -> table.rollup(cfg).then(r -> {
                             // Rollup should not include Skip aggregation in aggregated columns
                             assertEquals(0, r.getAggregatedColumns().length);
                             assertEquals("X", r.getColumns().getAt(0).getName());
@@ -752,6 +752,101 @@ public class HierarchicalTableTestGwt extends AbstractAsyncGwtTestCase {
                     JsArray<Column> aggColumns = treeTable.getAggregatedColumns();
                     assertEquals(0, aggColumns.length);
                     return null;
+                })
+                .then(this::finish)
+                .catch_(this::report);
+    }
+
+    public void testRollupMultipleAggsOneColumnConstituents() {
+        connect(tables)
+                .then(table("table_to_rollup"))
+                .then(table -> {
+                    JsRollupConfig cfg = new JsRollupConfig();
+                    cfg.groupingColumns = Js.uncheckedCast(JsArray.of("X"));
+                    cfg.aggregations = JsPropertyMap.of(JsAggregationOperation.MIN, JsArray.of("Y"),
+                            JsAggregationOperation.MAX, JsArray.of("Y"));
+                    cfg.includeConstituents = true;
+                    return table.rollup(cfg);
+                })
+                .then(rollup -> {
+                    // Get the columns we expect to find
+                    Column xCol = rollup.findColumn("X");
+                    Column minCol = rollup.findColumn("Y_Min");
+                    Column maxCol = rollup.findColumn("Y_Max");
+                    Column zCol = rollup.findColumn("Z");
+
+                    // Check that all expected columns are present, check constituent types
+                    rollup.expandAll();
+                    rollup.setViewport(0, 99, rollup.getColumns(), null);
+                    return waitForEventWhere(rollup, JsTreeTable.EVENT_UPDATED,
+                            (Event<TreeViewportData> d) -> rollup.getSize() > 3,
+                            12123)
+                            .then(JsTreeTable::getViewportData)
+                            .then(data -> {
+                                // ensure that the constituent data is available at the expected level rather than
+                                // missing
+                                TreeViewportData treeData = (TreeViewportData) data;
+                                TreeViewportData.TreeRow row2 = (TreeViewportData.TreeRow) treeData.getRows().getAt(2);
+                                assertFalse(row2.hasChildren());
+                                assertNotNull(row2.get(xCol));
+                                assertNotNull(row2.get(minCol));
+                                assertNotNull(row2.get(maxCol));
+                                assertNotNull(row2.get(zCol));
+                                return null;
+                            });
+                })
+                .then(this::finish)
+                .catch_(this::report);
+    }
+
+    public void testTreeTableCopy() {
+        connect(tables)
+                .then(treeTable("static_tree"))
+                .then(treeTable -> {
+                    delayTestFinish(3500);
+                    return treeTable.copy().then(copy -> {
+                        // Check table and copy have same properties initially
+                        assertEquals(treeTable.getSize(), copy.getSize());
+                        assertEquals(treeTable.getColumns().length, copy.getColumns().length);
+                        assertEquals(treeTable.isIncludeConstituents(), copy.isIncludeConstituents());
+                        assertEquals(treeTable.isRefreshing(), copy.isRefreshing());
+
+                        treeTable.close();
+                        assertTrue(treeTable.isClosed());
+                        assertFalse(copy.isClosed());
+
+                        copy.setViewport(0, 99, copy.getColumns(), null);
+                        return copy.<TreeViewportData>nextEvent(
+                                JsTreeTable.EVENT_UPDATED,
+                                2000.0)
+                                .then(ignore -> {
+                                    // Need to wait for updated before expanding so the subscription exists or expand
+                                    // throws
+                                    copy.expand(JsTreeTable.RowReferenceUnion.of(0), null);
+                                    return copy.<TreeViewportData>nextEvent(
+                                            JsTreeTable.EVENT_UPDATED,
+                                            2000.0);
+                                })
+                                .then(event -> {
+                                    // Check the size changed for the copy after expanding
+                                    assertFalse(treeTable.getSize() == copy.getSize());
+                                    assertEquals(copy.getSize(), event.getDetail().getTreeSize());
+                                    return null;
+                                });
+                    })
+                            .then(this::finish)
+                            .catch_(this::report);
+                });
+    }
+
+    public void testTreeTableSortBeforeSubscribe() {
+        connect(tables)
+                .then(treeTable("static_tree"))
+                .then(treeTable -> {
+                    delayTestFinish(3500);
+                    treeTable.applySort(new Sort[] {});
+                    return treeTable.nextEvent(JsTreeTable.EVENT_REQUEST_FAILED, 2000.0)
+                            .then(err -> Promise.reject(err.getDetail()), Promise::resolve);
                 })
                 .then(this::finish)
                 .catch_(this::report);

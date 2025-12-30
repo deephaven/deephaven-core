@@ -11,7 +11,8 @@ import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest;
 import io.deephaven.proto.backplane.grpc.UnstructuredFilterTableRequest;
 import io.deephaven.server.session.SessionState;
-import io.deephaven.server.table.validation.ColumnExpressionValidator;
+import io.deephaven.engine.validation.ColumnExpressionValidator;
+import org.jetbrains.annotations.NotNull;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -20,10 +21,15 @@ import java.util.List;
 @Singleton
 public class UnstructuredFilterTableGrpcImpl extends GrpcTableOperation<UnstructuredFilterTableRequest> {
 
+    @NotNull
+    private final ColumnExpressionValidator columnExpressionValidator;
+
     @Inject
-    public UnstructuredFilterTableGrpcImpl(final TableServiceContextualAuthWiring authWiring) {
+    public UnstructuredFilterTableGrpcImpl(final TableServiceContextualAuthWiring authWiring,
+            @NotNull final ColumnExpressionValidator columnExpressionValidator) {
         super(authWiring::checkPermissionUnstructuredFilter, BatchTableRequest.Operation::getUnstructuredFilter,
                 UnstructuredFilterTableRequest::getResultId, UnstructuredFilterTableRequest::getSourceId);
+        this.columnExpressionValidator = columnExpressionValidator;
     }
 
     @Override
@@ -33,7 +39,8 @@ public class UnstructuredFilterTableGrpcImpl extends GrpcTableOperation<Unstruct
 
         final Table parent = sourceTables.get(0).get();
         final String[] filters = request.getFiltersList().toArray(String[]::new);
-        final WhereFilter[] whereFilters = ColumnExpressionValidator.validateSelectFilters(filters, parent);
+        final WhereFilter[] whereFilters =
+                columnExpressionValidator.validateSelectFilters(filters, parent.getDefinition());
         return parent.where(Filter.and(whereFilters));
     }
 }

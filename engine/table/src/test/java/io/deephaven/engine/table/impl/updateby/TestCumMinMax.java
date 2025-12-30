@@ -35,7 +35,6 @@ import java.util.Random;
 
 import static io.deephaven.engine.testutil.GenerateTableUpdates.generateAppends;
 import static io.deephaven.engine.testutil.testcase.RefreshingTableTestCase.simulateShiftAwareStep;
-import static io.deephaven.util.QueryConstants.NULL_CHAR;
 import static org.junit.Assert.assertArrayEquals;
 
 @Category(OutOfBandTest.class)
@@ -288,55 +287,6 @@ public class TestCumMinMax extends BaseUpdateByTest {
         TstUtils.assertTableEquals(expected, actual);
     }
 
-    public static char[] cumMin(char... values) {
-        if (values == null) {
-            return null;
-        }
-
-        if (values.length == 0) {
-            return new char[0];
-        }
-
-        char[] result = new char[values.length];
-        result[0] = values[0];
-
-        for (int i = 1; i < values.length; i++) {
-            if (result[i - 1] == NULL_CHAR) {
-                result[i] = values[i];
-            } else if (values[i] == NULL_CHAR) {
-                result[i] = result[i - 1];
-            } else {
-                result[i] = values[i] < result[i - 1] ? values[i] : result[i - 1];
-            }
-        }
-
-        return result;
-    }
-
-    public static char[] cumMax(char... values) {
-        if (values == null) {
-            return null;
-        }
-
-        if (values.length == 0) {
-            return new char[0];
-        }
-
-        char[] result = new char[values.length];
-        result[0] = values[0];
-
-        for (int i = 1; i < values.length; i++) {
-            if (result[i - 1] == NULL_CHAR) {
-                result[i] = values[i];
-            } else if (values[i] == NULL_CHAR) {
-                result[i] = result[i - 1];
-            } else {
-                result[i] = values[i] > result[i - 1] ? values[i] : result[i - 1];
-            }
-        }
-
-        return result;
-    }
 
     public static Object[] cumMin(Object... values) {
         if (values == null) {
@@ -392,7 +342,7 @@ public class TestCumMinMax extends BaseUpdateByTest {
         if (expected instanceof byte[]) {
             assertArrayEquals(Numeric.cummin((byte[]) expected), (byte[]) actual);
         } else if (expected instanceof char[]) {
-            assertArrayEquals(cumMin((char[]) expected), (char[]) actual);
+            assertArrayEquals(Numeric.cummin((char[]) expected), (char[]) actual);
         } else if (expected instanceof short[]) {
             assertArrayEquals(Numeric.cummin((short[]) expected), (short[]) actual);
         } else if (expected instanceof int[]) {
@@ -412,7 +362,7 @@ public class TestCumMinMax extends BaseUpdateByTest {
         if (expected instanceof byte[]) {
             assertArrayEquals(Numeric.cummax((byte[]) expected), (byte[]) actual);
         } else if (expected instanceof char[]) {
-            assertArrayEquals(cumMax((char[]) expected), (char[]) actual);
+            assertArrayEquals(Numeric.cummax((char[]) expected), (char[]) actual);
         } else if (expected instanceof short[]) {
             assertArrayEquals(Numeric.cummax((short[]) expected), (short[]) actual);
         } else if (expected instanceof int[]) {

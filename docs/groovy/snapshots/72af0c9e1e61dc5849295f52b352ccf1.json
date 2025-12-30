@@ -1,0 +1,1 @@
+{"file":"core_versioned_docs/version-groovy/docs/reference/time/add-time-window.md","objects":{"result":{"type":"Table","data":{"columns":[{"name":"Timestamp","type":"java.time.Instant"},{"name":"WithinLast10Seconds","type":"java.lang.Boolean"}],"rows":[]}},"source":{"type":"Table","data":{"columns":[{"name":"Timestamp","type":"java.time.Instant"}],"rows":[]}}}}

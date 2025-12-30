@@ -10,10 +10,9 @@ import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.DataIndex;
+import io.deephaven.engine.table.MatchOptions;
 import io.deephaven.engine.table.SharedContext;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * This is a helper class for column sources that does not extend {@link AbstractColumnSource} and will be excluded from
@@ -38,13 +37,11 @@ public class NoPushdownColumnSourceWrapper<T> implements ColumnSource<T> {
 
     @Override
     public WritableRowSet match(
-            boolean invertMatch,
-            boolean usePrev,
-            boolean caseInsensitive,
-            @Nullable final DataIndex dataIndex,
-            @NotNull RowSet mapper,
-            Object... keys) {
-        return delegate.match(invertMatch, usePrev, caseInsensitive, dataIndex, mapper, keys);
+            final boolean usePrev,
+            @NotNull final MatchOptions matchOptions,
+            @NotNull final RowSet selection,
+            final Object... keys) {
+        return delegate.match(usePrev, matchOptions, selection, keys);
     }
 
     @Override

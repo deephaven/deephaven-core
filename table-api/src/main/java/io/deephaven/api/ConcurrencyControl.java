@@ -31,8 +31,32 @@ public interface ConcurrencyControl<T> {
      * <ul>
      * <li>Concurrency impact: The expression will never be invoked concurrently with itself.</li>
      * <li>Intra-expression ordering impact: Rows are evaluated sequentially in row set order.</li>
-     * <li>Inter-expression ordering impact: Acts as an absolute reordering barrier, ensuring that no parts of a
-     * where/selectable clause are executed out of order relative to this serial wrapper.</li>
+     * <li>
+     * <p>
+     * Inter-expression ordering impact: For a filter, serial acts as an absolute reordering barrier, ensuring that no
+     * parts of a filter are executed out of order relative to this serial wrapper.
+     * </p>
+     * <p>
+     * For selectables, additional ordering constraints are controlled by the value of the
+     * {@code QueryTable.SERIAL_SELECT_IMPLICIT_BARRIERS}. This is set by the property
+     * {@code QueryTable.serialSelectImplicitBarriers} (defaulting to the value of
+     * {@code QueryTable.statelessSelectByDefault}).
+     * </p>
+     *
+     * <p>
+     * If {@code QueryTable.SERIAL_SELECT_IMPLICIT_BARRIERS} is false, then no additional ordering between selectable
+     * expressions is imposed. As with every select or update call, if column B references column A, then the necessary
+     * inputs from column A are evaluated before column B is evaluated. To impose further ordering constraints, use
+     * barriers.
+     * </p>
+     *
+     * <p>
+     * If {@code QueryTable.SERIAL_SELECT_IMPLICIT_BARRIERS} is true, then a serial selectable is an absolute barrier
+     * with respect to all other serial selectables. This prohibits serial selectables from being evaluated
+     * concurrently, permitting them to access global state. Selectables that are not serial may be reordered with
+     * respect to a serial selectable.
+     * </p>
+     * </li>
      * </ul>
      *
      * @return a new instance of T with serial concurrency control applied.
@@ -40,24 +64,24 @@ public interface ConcurrencyControl<T> {
     T withSerial();
 
     /**
-     * Designates the filter/selectable as a barrier with the specified barrier object(s).
+     * Designates the filter/selectable as declaring the specified barrier object(s).
      * <p>
-     * A barrier does not affect concurrency but imposes an ordering constraint for the filter/selectable that respect
-     * the same barrier. When a filter/selectable is marked as respecting a barrier object, it indicates that the
-     * respecting filter/selectable will be executed entirely after the filter/selectable declaring the barrier.
+     * A barrier does not affect concurrency but imposes an ordering constraint for the filters or selectables that
+     * respect the same barrier. When a filter/selectable is marked as respecting a barrier object, it indicates that
+     * the respecting filter/selectable will be executed entirely after the filter/selectable declaring the barrier.
      * <p>
      * Each barrier must be unique and declared by at most one filter. Object {@link Object#equals(Object) equals} and
      * {@link Object#hashCode()} hashCode will be used to determine uniqueness and identification of barrier objects.
      *
-     * @param barriers the unique barrier object identifiers
-     * @return a new instance of T with the barriers applied
+     * @param declaredBarriers the unique barrier object identifiers
+     * @return a new instance of T with the declaredBarriers applied
      */
-    T withBarriers(Object... barriers);
+    T withDeclaredBarriers(Object... declaredBarriers);
 
     /**
      * Specifies that the filter/selectable should respect the ordering constraints of the given barriers.
      * <p>
-     * Filters that define a barrier (using {@link #withBarriers(Object...)}) will be executed entirely before
+     * Filters that define a barrier (using {@link #withDeclaredBarriers(Object...)}) will be executed entirely before
      * filters/selectables that respect that barrier.
      * <p>
      * It is an error to respect a barrier that has not already been defined per the natural left to right ordering of
@@ -67,8 +91,8 @@ public interface ConcurrencyControl<T> {
      * Object {@link Object#equals(Object) equals} and {@link Object#hashCode()} hashCode will be used to identify which
      * barriers are respected.
      *
-     * @param barriers the unique barrier object identifiers to respect
+     * @param respectedBarriers the unique barrier object identifiers to respect
      * @return a new instance of T with the respects barrier rule applied
      */
-    T respectsBarriers(Object... barriers);
+    T withRespectedBarriers(Object... respectedBarriers);
 }
