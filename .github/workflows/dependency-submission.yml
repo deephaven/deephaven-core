@@ -14,15 +14,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
-      - name: Setup JDK 11
-        id: setup-java-11
+      - name: Setup JDKs
         uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
-          java-version: '11'
-
-      - name: Set JAVA_HOME
-        run: echo "JAVA_HOME=${{ steps.setup-java-11.outputs.path }}" >> $GITHUB_ENV
+          java-version: |
+            11
+            17
+            21
 
       - name: Setup gradle properties
         run: |

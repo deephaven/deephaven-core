@@ -21,7 +21,8 @@ PER_WORKER_BYTES=6442450944
 MAX_WORKERS="$(( (TOTAL_SYSTEM_BYTES - DAEMON_BYTES - OTHER_BYTES) / PER_WORKER_BYTES ))"
 MAX_WORKERS="$(( MAX_WORKERS > 0 ? MAX_WORKERS : 1 ))"
 
-# A bit zealous, but this handles the https://github.com/actions/setup-java output
+# A bit zealous, but this handles the https://github.com/actions/setup-java output or implicit hosted tool locations
+# https://github.com/actions/runner-images/blob/main/images/ubuntu/Ubuntu2404-Readme.md#java
 JAVA_INSTALL_PATHS=""
 JAVA_INSTALL_PATHS="${JAVA_INSTALL_PATHS}${JAVA_HOME_8_X64:+$JAVA_HOME_8_X64,}"
 JAVA_INSTALL_PATHS="${JAVA_INSTALL_PATHS}${JAVA_HOME_9_X64:+$JAVA_HOME_9_X64,}"
