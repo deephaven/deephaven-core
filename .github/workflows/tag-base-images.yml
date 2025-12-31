@@ -15,6 +15,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
+      - name: Setup JDKs
+        uses: actions/setup-java@v5
+        with:
+          distribution: 'temurin'
+          java-version: |
+            11
+            17
+            21
+
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v5
 
