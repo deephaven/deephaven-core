@@ -13,6 +13,7 @@ import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.hierarchical.HierarchicalTable;
 import io.deephaven.engine.table.hierarchical.RollupTable;
+import io.deephaven.engine.table.impl.util.ColumnHolder;
 import io.deephaven.engine.testutil.ColumnInfo;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.EvalNuggetInterface;
@@ -25,6 +26,8 @@ import io.deephaven.engine.util.TableTools;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.vector.IntVector;
 import io.deephaven.vector.IntVectorDirect;
+import io.deephaven.vector.LongVector;
+import io.deephaven.vector.LongVectorDirect;
 import org.jspecify.annotations.NonNull;
 import org.junit.Assert;
 import org.junit.Test;
@@ -424,7 +427,6 @@ public class TestRollupTable extends RefreshingTableTestCase {
                 stringCol("Sym", "leg1", "leg2", "leg1", "leg2"),
                 intCol("qty", 100, 100, 200, 200),
                 doubleCol("Dollars", 1000, -500, 2000, -1000));
-        TableTools.show(source);
 
         final RollupTable rollup1 =
                 source.updateView("qty=(long)qty").rollup(
@@ -442,10 +444,15 @@ public class TestRollupTable extends RefreshingTableTestCase {
         final HierarchicalTable.SnapshotState ss1 = rollup1.makeSnapshotState();
         final Table snapshot =
                 snapshotToTable(rollup1, ss1, keyTable, ColumnName.of("Action"), null, RowSetFactory.flat(30));
-        TableTools.showWithRowSet(snapshot);
 
-        // final Table expected = initialExpectedGrouped(rollup1).update("FSum=ii == 0 ? 7 : 1 + Sum");
-        // assertTableEquals(expected, snapshot);
+        final Table expected = TableTools.newTable(intCol(rollup1.getRowDepthColumn().name(), 1, 2, 3, 3, 2, 3, 3),
+                booleanCol(rollup1.getRowExpandedColumn().name(), true, true, null, null, true, null, null),
+                col("Account", null, "acct1", "acct1", "acct1", "acct2", "acct2", "acct2"),
+                col("Sym", null, null, "leg1", "leg2", null, "leg1", "leg2"),
+                longCol("qty", 300, 100, 100, 100, 200, 200, 200),
+                doubleCol("Dollars", 1500, 500, 1000, -500, 1000, 2000, -1000));
+
+        assertTableEquals(expected, snapshot);
         freeSnapshotTableChunks(snapshot);
     }
 
@@ -492,8 +499,27 @@ public class TestRollupTable extends RefreshingTableTestCase {
                 snapshotToTable(rollup2, ss1, keyTable, ColumnName.of("Action"), null, RowSetFactory.flat(30));
         TableTools.showWithRowSet(snapshot);
 
-        // final Table expected = initialExpectedGrouped(rollup1).update("FSum=ii == 0 ? 7 : 1 + Sum");
-        // assertTableEquals(expected, snapshot);
+        final List<ColumnHolder<?>> columnHolders = new ArrayList<>();
+        columnHolders.add(intCol(rollup1.getRowDepthColumn().name(), 1, 2, 3, 3, 2, 3, 2, 3, 3));
+        columnHolders.add(booleanCol(rollup1.getRowExpandedColumn().name(), true, true, null, null, true, null, true,
+                null, null));
+        columnHolders.add(stringCol("Account", null, "Aardvark", "Aardvark", "Aardvark", "Badger", "Badger", "Cobra",
+                "Cobra", "Cobra"));
+        columnHolders
+                .add(stringCol("Sym", null, null, "Apple", "Banana", null, "Carrot", null, "Apple", "Dragonfruit"));
+        columnHolders.add(col("gqty", lv(500, 100, 500, 200, 300, 300, 200, 100, 200, 300, 1500),
+                /* aardvark */ lv(500, 100, 500, 200), lv(500, 500, 200), lv(100), /* badger */lv(300, 300, 200),
+                lv(300, 300, 200), /* cobra */ lv(100, 200, 300, 1500), lv(100, 200, 300), lv(1500)));
+        columnHolders.add(longCol("qty", 3500, /* aardvark */ 1100, 1000, 100, /* badger */800, 800, /* cobra */ 1600,
+                600, 1000));
+        final Table expected = TableTools.newTable(columnHolders.toArray(ColumnHolder[]::new))
+                .update("sqty = sum(gqty)", "SumDiff=sqty-qty");
+
+        TableTools.show(expected);
+
+        assertTableEquals(hasGroup ? expected : expected.dropColumns("gqty"),
+                hasGroup ? snapshot.dropColumns("__EXPOSED_GROUP_ROW_SETS__") : snapshot);
+
         freeSnapshotTableChunks(snapshot);
     }
 
@@ -521,6 +547,10 @@ public class TestRollupTable extends RefreshingTableTestCase {
 
     private static @NonNull IntVector iv(final int... ints) {
         return new IntVectorDirect(ints);
+    }
+
+    private static @NonNull LongVector lv(final long... ints) {
+        return new LongVectorDirect(ints);
     }
 
     @Test
@@ -610,6 +640,5 @@ public class TestRollupTable extends RefreshingTableTestCase {
         TableTools.showWithRowSet(expected2);
         assertTableEquals(expected2, snapshot2.dropColumns("__EXPOSED_GROUP_ROW_SETS__"));
         freeSnapshotTableChunks(snapshot2);
-        // TODO: modify only one column, validate that we get results that we expect without excess modifications
     }
 }
