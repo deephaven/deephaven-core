@@ -14,10 +14,10 @@ public interface GroupByOperator extends IterativeChunkedAggregationOperator {
     Map<String, ? extends ColumnSource<?>> getInputResultColumns();
 
     /**
-     * Given that there have been modified input columns, should we propagate changes?
-     * 
+     * Determine whether to propagate changes when input columns have been modified.
+     *
      * @param columnsModified have any of the input columns been modified (as per the MCS)?
-     * @return true if we have modified our output (e.g., because of additions or modifications)
+     * @return true if we have modified our output (e.g., because of additions or modifications).
      */
     boolean hasModifications(final boolean columnsModified);
 }
