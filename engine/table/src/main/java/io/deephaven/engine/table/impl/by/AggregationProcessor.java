@@ -1557,7 +1557,6 @@ public class AggregationProcessor implements AggregationContextFactory {
             if (existingGroupByOperatorIndex >= 0) {
                 final GroupByReaggregateOperator existing = ensureGroupByReaggregateOperator(table,
                         existingGroupByOperatorIndex, EXPOSED_GROUP_ROW_SETS.name(), pairs);
-                // TODO: test the result extractor to sharing
                 addNoInputOperator(existing.resultExtractor(resultPairs));
             } else {
                 addOperator(new GroupByReaggregateOperator(table, true, EXPOSED_GROUP_ROW_SETS.name(), null, pairs),
@@ -1592,9 +1591,6 @@ public class AggregationProcessor implements AggregationContextFactory {
             final String[] inputNonKeyColumns = partitioned.get(false).toArray(String[]::new);
 
             validateSelectColumnForFormula(selectColumn);
-            // TODO: re-use shared groupBy operators for a rollup formula reaggregation
-            // final GroupByChunkedOperator groupByChunkedOperator = makeGroupByOperatorForFormula(inputNonKeyColumns,
-            // table);
 
             final Map<String, String> renames = new HashMap<>();
             final MatchPair[] groupPairs = new MatchPair[inputNonKeyColumns.length];
@@ -1612,17 +1608,22 @@ public class AggregationProcessor implements AggregationContextFactory {
                 }
             }
 
-            GroupByOperator groupByOperator;
-
             final IntegerSingleValueSource depthSource = new IntegerSingleValueSource();
             depthSource.set(groupByColumnNames.length);
 
             if (formula.reaggregateAggregatedValues()) {
-                // everything gets hidden
-                final List<String> hiddenPairs =
-                        Arrays.stream(groupPairs).map(mp -> mp.left().name()).collect(Collectors.toList());
-                groupByOperator = new GroupByChunkedOperator(table, false, null, hiddenPairs, groupPairs);
+                GroupByChunkedOperator groupByOperator;
 
+                final int existingIndex = existingGroupByOperatorIndex();
+                if (existingIndex >= 0) {
+                    groupByOperator = ensureGroupByOperator(table, existingIndex, null, groupPairs);
+                } else {
+                    final List<String> hiddenPairs =
+                            Arrays.stream(groupPairs).map(mp -> mp.left().name()).collect(Collectors.toList());
+                    groupByOperator = new GroupByChunkedOperator(table, false, null, hiddenPairs, groupPairs);
+                }
+
+                // everything gets hidden
                 final FormulaMultiColumnChunkedOperator op =
                         new FormulaMultiColumnChunkedOperator(table, groupByOperator,
                                 true, selectColumn, inputKeyColumns, null, depthSource);
@@ -1630,9 +1631,19 @@ public class AggregationProcessor implements AggregationContextFactory {
                 addOperator(op, null, inputNonKeyColumns);
             } else {
                 final ColumnSource<?> groupRowSet = table.getColumnSource(EXPOSED_GROUP_ROW_SETS.name());
-                groupByOperator =
-                        new GroupByReaggregateOperator(table, true, EXPOSED_GROUP_ROW_SETS.name(), null, groupPairs);
-                addOperator(groupByOperator, groupRowSet, EXPOSED_GROUP_ROW_SETS.name());
+                GroupByReaggregateOperator groupByOperator;
+
+                final int existingIndex = existingGroupByReggregateIndex();
+                if (existingIndex >= 0) {
+                    groupByOperator = ensureGroupByReaggregateOperator(table, existingIndex,
+                            EXPOSED_GROUP_ROW_SETS.name(), groupPairs);
+                } else {
+                    groupByOperator =
+                            new GroupByReaggregateOperator(table, true, EXPOSED_GROUP_ROW_SETS.name(), null,
+                                    groupPairs);
+                    addOperator(groupByOperator, groupRowSet, EXPOSED_GROUP_ROW_SETS.name());
+                }
+
                 final FormulaMultiColumnChunkedOperator op =
                         new FormulaMultiColumnChunkedOperator(table, groupByOperator,
                                 false, selectColumn, inputKeyColumns, renames, depthSource);

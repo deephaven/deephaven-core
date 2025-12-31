@@ -30,10 +30,7 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
@@ -375,16 +372,27 @@ public class TestRollupTable extends RefreshingTableTestCase {
 
     @Test
     public void testRollupFormulaStatic() {
+        testRollupFormulaStatic(true);
+        testRollupFormulaStatic(false);
+    }
+
+    private void testRollupFormulaStatic(boolean withGroup) {
         final Table source = TableTools.newTable(
                 stringCol("Key1", "Alpha", "Bravo", "Alpha", "Charlie", "Charlie", "Bravo", "Bravo"),
                 stringCol("Key2", "Delta", "Delta", "Echo", "Echo", "Echo", "Echo", "Echo"),
                 intCol("Sentinel", 1, 2, 3, 4, 5, 6, 7));
         TableTools.show(source);
 
+        final List<Aggregation> aggList = new ArrayList<>();
+        if (withGroup) {
+            aggList.add(AggGroup("Sentinel"));
+        }
+        aggList.add(AggSum("Sum=Sentinel"));
+        aggList.add(AggFormula("FSum", "__FORMULA_DEPTH__ == 0 ? max(Sentinel) : 1 + sum(Sentinel)"));
+
         final RollupTable rollup1 =
                 source.rollup(
-                        List.of(AggSum("Sum=Sentinel"),
-                                AggFormula("FSum", "__FORMULA_DEPTH__ == 0 ? max(Sentinel) : 1 + sum(Sentinel)")),
+                        aggList,
                         "Key1", "Key2");
 
         final String[] arrayWithNull = new String[1];
@@ -402,8 +410,9 @@ public class TestRollupTable extends RefreshingTableTestCase {
         TableTools.show(snapshot.view(rollup1.getRowDepthColumn().name(), rollup1.getRowExpandedColumn().name(), "Key1",
                 "Key2", "Sum", "FSum"));
 
-        final Table expected =
-                initialExpectedGrouped(rollup1).dropColumns("Sentinel").update("FSum=ii == 0 ? 7 : 1 + Sum");
+        final Table expectedBase = initialExpectedGrouped(rollup1);
+        final Table expectedSentinel = withGroup ? expectedBase : expectedBase.dropColumns("Sentinel");
+        final Table expected = expectedSentinel.update("FSum=ii == 0 ? 7 : 1 + Sum");
         assertTableEquals(expected, snapshot.dropColumns("__EXPOSED_GROUP_ROW_SETS__"));
         freeSnapshotTableChunks(snapshot);
     }
@@ -442,6 +451,11 @@ public class TestRollupTable extends RefreshingTableTestCase {
 
     @Test
     public void testRollupFormulaStatic3() {
+        testRollupFormulaStatic3(true);
+        testRollupFormulaStatic3(false);
+    }
+
+    private void testRollupFormulaStatic3(boolean hasGroup) {
         final Table source = TableTools.newTable(
                 stringCol("Account", "Aardvark", "Aardvark", "Aardvark", "Aardvark", "Badger", "Badger", "Badger",
                         "Cobra", "Cobra", "Cobra", "Cobra"),
@@ -450,10 +464,17 @@ public class TestRollupTable extends RefreshingTableTestCase {
                 longCol("qty", 500, 100, 500, 200, 300, 300, 200, 100, 200, 300, 1500));
         TableTools.show(source);
 
+        final List<Aggregation> aggList = new ArrayList<>();
+
+        if (hasGroup) {
+            aggList.add(AggGroup("gqty=qty"));
+        }
+        aggList.add(AggFormula("qty", "__FORMULA_DEPTH__ == 2 ? min(1000, sum(qty)) : sum(qty)").asReggregating());
+        aggList.add(AggSum("sqty=qty"));
+
         final RollupTable rollup1 =
                 source.rollup(
-                        List.of(AggFormula("qty", "__FORMULA_DEPTH__ == 2 ? min(1000, sum(qty)) : sum(qty)")
-                                .asReggregating(), AggSum("sqty=qty")),
+                        aggList,
                         "Account", "Sym");
 
         final RollupTable rollup2 = rollup1.withNodeOperations(
