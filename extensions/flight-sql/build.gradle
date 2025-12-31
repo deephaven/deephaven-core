@@ -32,11 +32,6 @@ dependencies {
     // :sql does not expose calcite as a dependency (maybe it should?); in the meantime, we want to make sure we can
     // provide reasonable error messages to the client
     implementation libs.calcite.core
-    constraints {
-        implementation(libs.json.smart) {
-            because 'CVE-2024-57699'
-        }
-    }
 
     implementation libs.dagger
     implementation libs.arrow.flight.sql
@@ -55,6 +50,9 @@ dependencies {
     testRuntimeOnly project(':log-to-slf4j')
     testRuntimeOnly libs.slf4j.simple
 
+    // The ADBC test classpath should be assembled with adherence to our third-party constraints.
+    // (It does not inherit it by default since jdbcTestImplementation does not extend testImplementation.)
+    adbcTestImplementation platform(project(':bom-third-party'))
     // ADBC testing needs an actually server instance bound to a port because it can only connect over ADBC URIs like
     // grpc://localhost:10000
     adbcTestImplementation project(':server-jetty')
@@ -70,6 +68,9 @@ dependencies {
     adbcTestRuntimeOnly project(':log-to-slf4j')
     adbcTestRuntimeOnly libs.slf4j.simple
 
+    // The JDBC test classpath should be assembled with adherence to our third-party constraints.
+    // (It does not inherit it by default since jdbcTestImplementation does not extend testImplementation.)
+    jdbcTestImplementation platform(project(':bom-third-party'))
     // JDBC testing needs an actually server instance bound to a port because it can only connect over JDBC URIs like
     // jdbc:arrow-flight-sql://localhost:10000.
     jdbcTestImplementation project(':server-jetty')

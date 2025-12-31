@@ -44,6 +44,7 @@ include webMods
 include mods
 
 include 'bom'
+include 'bom-third-party'
 
 include(':configs')
 project(':configs').projectDir = file('props/configs')

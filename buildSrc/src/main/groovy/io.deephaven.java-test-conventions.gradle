@@ -8,6 +8,11 @@ def testJar = project.tasks.register 'testJar', Jar, { Jar jar ->
     jar.archiveClassifier = 'test'
 }
 
+dependencies {
+    // All tests should be assembled with adherence to our third-party constraints
+    testImplementation platform(project(':bom-third-party'))
+}
+
 configurations {
     testOutput.extendsFrom testRuntimeClasspath
 }

@@ -4,7 +4,12 @@ plugins {
 
 description = 'Deephaven Bill of Materials'
 
+javaPlatform {
+    allowDependencies()
+}
+
 dependencies {
+    // List out all of the public Deephaven projects with their version
     constraints { constraint ->
         project.rootProject
             .subprojects
@@ -14,4 +19,8 @@ dependencies {
                 constraint.api p
             }
     }
+
+    // When downstream consumer inherit the Deephaven BOM, they will also inherit our 3rd party constraints BOM. They
+    // can choose to exclude this if they prefer.
+    api platform(project(':bom-third-party'))
 }
