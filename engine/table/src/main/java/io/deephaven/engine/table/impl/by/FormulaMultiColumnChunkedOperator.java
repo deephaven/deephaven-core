@@ -422,7 +422,7 @@ class FormulaMultiColumnChunkedOperator implements IterativeChunkedAggregationOp
         return (firstKey / BLOCK_SIZE) * BLOCK_SIZE + BLOCK_SIZE - 1;
     }
 
-    public void updateGroupBy(GroupByChunkedOperator groupBy, boolean delegateToBy) {
+    public void updateGroupBy(GroupByOperator groupBy, boolean delegateToBy) {
         this.groupBy = groupBy;
         this.delegateToBy = delegateToBy;
     }

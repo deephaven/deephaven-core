@@ -3,6 +3,7 @@
 //
 package io.deephaven.engine.table.impl.by;
 
+import io.deephaven.api.Pair;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.ChunkLengths;
@@ -19,9 +20,7 @@ import io.deephaven.engine.table.impl.sources.aggregate.AggregateColumnSource;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Arrays;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.function.UnaryOperator;
 
 import static io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource.BLOCK_SIZE;
@@ -48,14 +47,17 @@ public final class GroupByReaggregateOperator implements GroupByOperator {
     private final QueryTable inputTable;
     private final boolean registeredWithHelper;
     private final String exposeRowSetsAs;
+    private final MatchPair[] aggregatedColumnPairs;
+    private final List<String> hiddenResults;
 
     private final boolean live;
     private final ObjectArraySource<WritableRowSet> rowSets;
     private final ObjectArraySource<Object> addedBuilders;
     private final ObjectArraySource<Object> removedBuilders;
 
-    private final String[] inputColumnNames;
+    private final String[] inputColumnNamesForResults;
 
+    private final Map<String, AggregateColumnSource<?, ?>> inputAggregatedColumns;
     private final Map<String, AggregateColumnSource<?, ?>> resultAggregatedColumns;
 
     private RowSetBuilderRandom stepDestinationsModified;
@@ -66,10 +68,13 @@ public final class GroupByReaggregateOperator implements GroupByOperator {
             @NotNull final QueryTable inputTable,
             final boolean registeredWithHelper,
             @Nullable final String exposeRowSetsAs,
+            @Nullable List<String> hiddenResults,
             @NotNull final MatchPair... aggregatedColumnPairs) {
         this.inputTable = inputTable;
         this.registeredWithHelper = registeredWithHelper;
         this.exposeRowSetsAs = exposeRowSetsAs;
+        this.hiddenResults = hiddenResults;
+        this.aggregatedColumnPairs = aggregatedColumnPairs;
 
         if (exposeRowSetsAs == null) {
             throw new IllegalArgumentException("Must expose group RowSets for rollup.");
@@ -79,7 +84,9 @@ public final class GroupByReaggregateOperator implements GroupByOperator {
         rowSets = new ObjectArraySource<>(WritableRowSet.class);
         addedBuilders = new ObjectArraySource<>(Object.class);
 
+        inputAggregatedColumns = new LinkedHashMap<>(aggregatedColumnPairs.length);
         resultAggregatedColumns = new LinkedHashMap<>(aggregatedColumnPairs.length);
+        final List<String> inputColumnNamesForResultsList = new ArrayList<>();
         Arrays.stream(aggregatedColumnPairs).forEach(pair -> {
             // we are reaggregationg so have to use the left column for everything
             final ColumnSource<Object> source = inputTable.getColumnSource(pair.leftColumn());
@@ -89,7 +96,11 @@ public final class GroupByReaggregateOperator implements GroupByOperator {
             @SuppressWarnings("rawtypes")
             final ColumnSource<?> realSource = ((AggregateColumnSource) source).getAggregatedSource();
             final AggregateColumnSource<?, ?> aggregateColumnSource = AggregateColumnSource.make(realSource, rowSets);
-            resultAggregatedColumns.put(pair.leftColumn(), aggregateColumnSource);
+            if (hiddenResults == null || !hiddenResults.contains(pair.output().name())) {
+                resultAggregatedColumns.put(pair.output().name(), aggregateColumnSource);
+                inputColumnNamesForResultsList.add(pair.input().name());
+            }
+            inputAggregatedColumns.put(pair.input().name(), aggregateColumnSource);
         });
 
         if (resultAggregatedColumns.containsKey(exposeRowSetsAs)) {
@@ -97,7 +108,7 @@ public final class GroupByReaggregateOperator implements GroupByOperator {
                     "Exposing group RowSets as %s, but this conflicts with a requested grouped output column name",
                     exposeRowSetsAs));
         }
-        inputColumnNames = MatchPair.getRightColumns(aggregatedColumnPairs);
+        inputColumnNamesForResults = inputColumnNamesForResultsList.toArray(String[]::new);
         removedBuilders = live ? new ObjectArraySource<>(Object.class) : null;
         initialized = false;
     }
@@ -293,7 +304,7 @@ public final class GroupByReaggregateOperator implements GroupByOperator {
         // previously.
         // NB: These are usually (always, as of now) instances of AggregateColumnSource, meaning
         // startTrackingPrevValues() is a no-op.
-        resultAggregatedColumns.values().forEach(ColumnSource::startTrackingPrevValues);
+        inputAggregatedColumns.values().forEach(ColumnSource::startTrackingPrevValues);
     }
 
     @Override
@@ -303,6 +314,7 @@ public final class GroupByReaggregateOperator implements GroupByOperator {
         initializeNewRowSetPreviousValues(resultTable.getRowSet());
         return registeredWithHelper
                 ? new InputToResultModifiedColumnSetFactory(resultTable,
+                        inputColumnNamesForResults,
                         resultAggregatedColumns.keySet().toArray(String[]::new))
                 : null;
     }
@@ -325,6 +337,7 @@ public final class GroupByReaggregateOperator implements GroupByOperator {
 
         private InputToResultModifiedColumnSetFactory(
                 @NotNull final QueryTable resultTable,
+                @NotNull final String[] inputColumnNames,
                 @NotNull final String[] resultAggregatedColumnNames) {
             updateModifiedColumnSet = new ModifiedColumnSet(resultTable.getModifiedColumnSetForUpdates());
 
@@ -483,5 +496,83 @@ public final class GroupByReaggregateOperator implements GroupByOperator {
                 }
             }
         }
+    }
+
+
+    public String getExposedRowSetsAs() {
+        return exposeRowSetsAs;
+    }
+
+    public MatchPair[] getAggregatedColumnPairs() {
+        return aggregatedColumnPairs;
+    }
+
+    public List<String> getHiddenResults() {
+        return hiddenResults;
+    }
+
+    private class ResultExtractor implements IterativeChunkedAggregationOperator {
+        final Map<String, ? extends ColumnSource<?>> resultColumns;
+        final String[] inputColumnNames;
+
+        private ResultExtractor(Map<String, ? extends ColumnSource<?>> resultColumns, String[] inputColumnNames) {
+            this.resultColumns = resultColumns;
+            this.inputColumnNames = inputColumnNames;
+        }
+
+        @Override
+        public Map<String, ? extends ColumnSource<?>> getResultColumns() {
+            return resultColumns;
+        }
+
+        @Override
+        public void addChunk(BucketedContext context, Chunk<? extends Values> values,
+                LongChunk<? extends RowKeys> inputRowKeys, IntChunk<RowKeys> destinations,
+                IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
+                WritableBooleanChunk<Values> stateModified) {}
+
+        @Override
+        public void removeChunk(BucketedContext context, Chunk<? extends Values> values,
+                LongChunk<? extends RowKeys> inputRowKeys, IntChunk<RowKeys> destinations,
+                IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
+                WritableBooleanChunk<Values> stateModified) {}
+
+        @Override
+        public boolean addChunk(SingletonContext context, int chunkSize, Chunk<? extends Values> values,
+                LongChunk<? extends RowKeys> inputRowKeys, long destination) {
+            return false;
+        }
+
+        @Override
+        public boolean removeChunk(SingletonContext context, int chunkSize, Chunk<? extends Values> values,
+                LongChunk<? extends RowKeys> inputRowKeys, long destination) {
+            return false;
+        }
+
+        @Override
+        public void ensureCapacity(long tableSize) {}
+
+        @Override
+        public void startTrackingPrevValues() {}
+
+        @Override
+        public UnaryOperator<ModifiedColumnSet> initializeRefreshing(@NotNull QueryTable resultTable,
+                @NotNull LivenessReferent aggregationUpdateListener) {
+            return new InputToResultModifiedColumnSetFactory(resultTable,
+                    inputColumnNames,
+                    resultColumns.keySet().toArray(String[]::new));
+        }
+    }
+
+    @NotNull
+    public IterativeChunkedAggregationOperator resultExtractor(List<Pair> resultPairs) {
+        final List<String> inputColumnNamesList = new ArrayList<>(resultPairs.size());
+        final Map<String, ColumnSource<?>> resultColumns = new LinkedHashMap<>(resultPairs.size());
+        for (final Pair pair : resultPairs) {
+            final String inputName = pair.input().name();
+            inputColumnNamesList.add(inputName);
+            resultColumns.put(pair.output().name(), inputAggregatedColumns.get(inputName));
+        }
+        return new ResultExtractor(resultColumns, inputColumnNamesList.toArray(String[]::new));
     }
 }

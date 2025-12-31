@@ -435,6 +435,7 @@ public final class GroupByChunkedOperator implements GroupByOperator {
         initializeNewRowSetPreviousValues(resultTable.getRowSet());
         return registeredWithHelper
                 ? new InputToResultModifiedColumnSetFactory(resultTable,
+                        inputColumnNamesForResults,
                         resultAggregatedColumns.keySet().toArray(String[]::new))
                 : null;
     }
@@ -449,7 +450,7 @@ public final class GroupByChunkedOperator implements GroupByOperator {
     UnaryOperator<ModifiedColumnSet> makeInputToResultModifiedColumnSetFactory(
             @NotNull final QueryTable resultTable,
             @NotNull final String[] resultColumnNames) {
-        return new InputToResultModifiedColumnSetFactory(resultTable, resultColumnNames);
+        return new InputToResultModifiedColumnSetFactory(resultTable, inputColumnNamesForResults, resultColumnNames);
     }
 
     private class InputToResultModifiedColumnSetFactory implements UnaryOperator<ModifiedColumnSet> {
@@ -460,6 +461,7 @@ public final class GroupByChunkedOperator implements GroupByOperator {
 
         private InputToResultModifiedColumnSetFactory(
                 @NotNull final QueryTable resultTable,
+                @NotNull final String[] inputColumnNames,
                 @NotNull final String[] resultAggregatedColumnNames) {
             updateModifiedColumnSet = new ModifiedColumnSet(resultTable.getModifiedColumnSetForUpdates());
 
@@ -471,7 +473,7 @@ public final class GroupByChunkedOperator implements GroupByOperator {
                 allResultColumns = resultTable.newModifiedColumnSet(resultAggregatedColumnNames);
             }
             aggregatedColumnsTransformer = inputTable.newModifiedColumnSetTransformer(
-                    inputColumnNamesForResults,
+                    inputColumnNames,
                     Arrays.stream(resultAggregatedColumnNames).map(resultTable::newModifiedColumnSet)
                             .toArray(ModifiedColumnSet[]::new));
         }
@@ -674,9 +676,11 @@ public final class GroupByChunkedOperator implements GroupByOperator {
 
     private class ResultExtractor implements IterativeChunkedAggregationOperator {
         final Map<String, ? extends ColumnSource<?>> resultColumns;
+        final String[] inputColumnNames;
 
-        private ResultExtractor(Map<String, ? extends ColumnSource<?>> resultColumns) {
+        private ResultExtractor(Map<String, ? extends ColumnSource<?>> resultColumns, String[] inputColumnNames) {
             this.resultColumns = resultColumns;
+            this.inputColumnNames = inputColumnNames;
         }
 
         @Override
@@ -718,16 +722,20 @@ public final class GroupByChunkedOperator implements GroupByOperator {
         public UnaryOperator<ModifiedColumnSet> initializeRefreshing(@NotNull QueryTable resultTable,
                 @NotNull LivenessReferent aggregationUpdateListener) {
             return new InputToResultModifiedColumnSetFactory(resultTable,
+                    inputColumnNames,
                     resultColumns.keySet().toArray(String[]::new));
         }
     }
 
     @NotNull
     public IterativeChunkedAggregationOperator resultExtractor(List<Pair> resultPairs) {
+        final List<String> inputColumnNamesList = new ArrayList<>(resultPairs.size());
         final Map<String, ColumnSource<?>> resultColumns = new LinkedHashMap<>(resultPairs.size());
         for (final Pair pair : resultPairs) {
-            resultColumns.put(pair.output().name(), inputAggregatedColumns.get(pair.input().name()));
+            final String inputName = pair.input().name();
+            inputColumnNamesList.add(inputName);
+            resultColumns.put(pair.output().name(), inputAggregatedColumns.get(inputName));
         }
-        return new ResultExtractor(resultColumns);
+        return new ResultExtractor(resultColumns, inputColumnNamesList.toArray(String[]::new));
     }
 }

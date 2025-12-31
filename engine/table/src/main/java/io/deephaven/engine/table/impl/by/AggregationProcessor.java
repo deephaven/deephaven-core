@@ -747,7 +747,19 @@ public class AggregationProcessor implements AggregationContextFactory {
             return -1;
         }
 
-        GroupByChunkedOperator ensureGroupingOperator(final QueryTable table,
+        /**
+         * @return the index of an existing group by reaggregation operator, or -1 if it no operator was found
+         */
+        int existingGroupByReggregateIndex() {
+            for (int ii = 0; ii < operators.size(); ++ii) {
+                if (operators.get(ii) instanceof GroupByReaggregateOperator) {
+                    return ii;
+                }
+            }
+            return -1;
+        }
+
+        GroupByChunkedOperator ensureGroupByOperator(final QueryTable table,
                 final int existingOperatorIndex,
                 final String exposeRowSetAs,
                 final MatchPair[] matchPairs) {
@@ -792,6 +804,59 @@ public class AggregationProcessor implements AggregationContextFactory {
                     ((FormulaMultiColumnChunkedOperator) operator).updateGroupBy(newOperator, false);
                 } else if (operator instanceof FormulaChunkedOperator) {
                     ((FormulaChunkedOperator) operator).updateGroupBy(newOperator, false);
+                }
+            }
+
+            operators.set(existingOperatorIndex, newOperator);
+            return newOperator;
+        }
+
+        GroupByReaggregateOperator ensureGroupByReaggregateOperator(final QueryTable table,
+                final int existingOperatorIndex,
+                final String exposeRowSetAs,
+                final MatchPair[] matchPairs) {
+            boolean recreate = false;
+            final GroupByReaggregateOperator existing =
+                    (GroupByReaggregateOperator) operators.get(existingOperatorIndex);
+            if (exposeRowSetAs != null) {
+                if (existing.getExposedRowSetsAs() == null) {
+                    recreate = true;
+                } else {
+                    if (!existing.getExposedRowSetsAs().equals(exposeRowSetAs)) {
+                        throw new UnsupportedOperationException(
+                                "AggGroupBy cannot have inconsistent exposed row redirections names: " +
+                                        existing.getExposedRowSetsAs() + " != " + exposeRowSetAs);
+                    }
+                }
+            }
+            final List<MatchPair> newPairs = new ArrayList<>(Arrays.asList(existing.getAggregatedColumnPairs()));
+            List<String> existingHidden = existing.getHiddenResults();
+            final List<String> hiddenResults = new ArrayList<>(existingHidden == null ? List.of() : existingHidden);
+            for (MatchPair matchPair : matchPairs) {
+                final String input = matchPair.input().name();
+                if (Arrays.stream(existing.getAggregatedColumnPairs()).noneMatch(p -> p.input().name().equals(input))) {
+                    newPairs.add(matchPair);
+                    hiddenResults.add(matchPair.output().name());
+                    recreate = true;
+                }
+            }
+            if (!recreate) {
+                // we're totally satisfied with the existing operator for use with a secondary operator that pulls an
+                // output from it to the desired name
+                return existing;
+            }
+
+            final String newExposeRowsetName = exposeRowSetAs == null ? existing.getExposedRowSetsAs() : exposeRowSetAs;
+            final MatchPair[] newMatchPairArray = newPairs.toArray(MatchPair[]::new);
+            final GroupByReaggregateOperator newOperator =
+                    new GroupByReaggregateOperator(table, true, newExposeRowsetName, hiddenResults, newMatchPairArray);
+
+            // any formula operators that used the old group by operator must be updated
+            for (IterativeChunkedAggregationOperator operator : operators) {
+                // Only FormulaMultiColumn operators need to be adjusted, a FormulaChunkedOperator cannot participate
+                // in a rollup.
+                if (operator instanceof FormulaMultiColumnChunkedOperator) {
+                    ((FormulaMultiColumnChunkedOperator) operator).updateGroupBy(newOperator, false);
                 }
             }
 
@@ -888,7 +953,7 @@ public class AggregationProcessor implements AggregationContextFactory {
                 // if we have an existing group by operator, then use it (or update it to reflect our input columns)
                 final MatchPair[] matchPairs =
                         Arrays.stream(inputNonKeyColumns).map(cn -> new MatchPair(cn, cn)).toArray(MatchPair[]::new);
-                groupByChunkedOperator = ensureGroupingOperator(table, existingGroupByOperatorIndex, null, matchPairs);
+                groupByChunkedOperator = ensureGroupByOperator(table, existingGroupByOperatorIndex, null, matchPairs);
             } else {
                 groupByChunkedOperator = makeGroupByOperatorForFormula(inputNonKeyColumns, table, null);
             }
@@ -960,7 +1025,7 @@ public class AggregationProcessor implements AggregationContextFactory {
             if (existingOperator >= 0) {
                 // Reuse the operator, adding a result extractor for the new result pairs
                 GroupByChunkedOperator existing =
-                        ensureGroupingOperator(table, existingOperator, null, MatchPair.fromPairs(resultPairs));
+                        ensureGroupByOperator(table, existingOperator, null, MatchPair.fromPairs(resultPairs));
                 addNoInputOperator(existing.resultExtractor(resultPairs));
             } else {
                 addNoInputOperator(
@@ -1243,7 +1308,8 @@ public class AggregationProcessor implements AggregationContextFactory {
             final int indexOfExistingOperator = existingGroupByOperatorIndex();
             if (indexOfExistingOperator >= 0) {
                 // share the existing operator for groupBy in a rollup base
-                final GroupByChunkedOperator existing = ensureGroupingOperator(table, indexOfExistingOperator, EXPOSED_GROUP_ROW_SETS.name(), MatchPair.fromPairs(resultPairs));
+                final GroupByChunkedOperator existing = ensureGroupByOperator(table, indexOfExistingOperator,
+                        EXPOSED_GROUP_ROW_SETS.name(), MatchPair.fromPairs(resultPairs));
                 addNoInputOperator(existing.resultExtractor(resultPairs));
             } else {
                 addNoInputOperator(new GroupByChunkedOperator(table, true, EXPOSED_GROUP_ROW_SETS.name(),
@@ -1275,72 +1341,26 @@ public class AggregationProcessor implements AggregationContextFactory {
 
             validateSelectColumnForFormula(selectColumn);
 
-            // TODO: rollup base formula share groupBy
-            // TODO: re-use shared groupBy operators (https://github.com/deephaven/deephaven-core/issues/6363)
-
             final GroupByChunkedOperator groupByChunkedOperator;
-            final int existingGroupByOperatorIndex = existingGroupByOperatorIndex();
-
             final boolean delegate;
 
+            final int existingGroupByOperatorIndex = existingGroupByOperatorIndex();
             if (formula.reaggregateAggregatedValues()) {
                 if (existingGroupByOperatorIndex >= 0) {
-                    final GroupByChunkedOperator existing =
-                            (GroupByChunkedOperator) operators.get(existingGroupByOperatorIndex);
-                    MatchPair[] existingPairs = existing.getAggregatedColumnPairs();
-                    for (final String searchColumn : inputNonKeyColumns) {
-                        int searchIdx = 0;
-                        while (searchIdx < existingPairs.length) {
-                            if (existingPairs[searchIdx].left().name().equals(searchColumn)
-                                    && existingPairs[searchIdx].right().name().equals(searchColumn)) {
-                                break;
-                            }
-                            searchIdx++;
-                        }
-                        if (searchIdx == existingPairs.length) {
-                            throw new IllegalStateException(
-                                    "Existing groupBy operator does not have the required input column "
-                                            + searchColumn);
-                        }
-                    }
-                    // TODO: we have one, let's replace it if it is insufficient
-                    groupByChunkedOperator = existing;
+                    groupByChunkedOperator = ensureGroupByOperator(table, existingGroupByOperatorIndex, null,
+                            MatchPair.fromPairs(Pair.from(inputNonKeyColumns)));
                     delegate = false;
                 } else {
                     // We we are reaggregating, we do not expose the rowsets, because the next level creates a
-                    // completely
-                    // fresh operator
+                    // completely fresh operator
                     groupByChunkedOperator = makeGroupByOperatorForFormula(inputNonKeyColumns, table, null);
                     // the operator is not added, so there is delegation
                     delegate = true;
                 }
             } else {
                 if (existingGroupByOperatorIndex >= 0) {
-                    final GroupByChunkedOperator existing =
-                            (GroupByChunkedOperator) operators.get(existingGroupByOperatorIndex);
-                    if (!EXPOSED_GROUP_ROW_SETS.name().equals(existing.getExposedRowSetsAs())) {
-                        throw new IllegalStateException("Existing groupBy operator does not expose rowsets");
-                    }
-
-                    MatchPair[] existingPairs = existing.getAggregatedColumnPairs();
-                    for (int ii = 0; ii < inputNonKeyColumns.length; ++ii) {
-                        final String searchColumn = inputNonKeyColumns[ii];
-                        int searchIdx = 0;
-                        while (searchIdx < existingPairs.length) {
-                            if (existingPairs[searchIdx].left().name().equals(searchColumn)
-                                    && existingPairs[searchIdx].right().name().equals(searchColumn)) {
-                                break;
-                            }
-                            searchIdx++;
-                        }
-                        if (searchIdx == existingPairs.length) {
-                            throw new IllegalStateException(
-                                    "Existing groupBy operator does not have the required input column "
-                                            + searchColumn);
-                        }
-                    }
-                    // TODO: we have one, let's replace it if it is insufficient
-                    groupByChunkedOperator = existing;
+                    groupByChunkedOperator = ensureGroupByOperator(table, existingGroupByOperatorIndex,
+                            EXPOSED_GROUP_ROW_SETS.name(), MatchPair.fromPairs(Pair.from(inputNonKeyColumns)));
                     delegate = false;
                 } else {
                     // When we do not reaggregate, the next level needs access to our exposed group row sets
@@ -1533,9 +1553,17 @@ public class AggregationProcessor implements AggregationContextFactory {
             for (int ii = 0; ii < resultPairs.size(); ++ii) {
                 pairs[ii] = new MatchPair(resultPairs.get(ii).output().name(), resultPairs.get(ii).output().name());
             }
-            // TODO: share the existing group by operator for a rollup reaggregation
-            addOperator(new GroupByReaggregateOperator(table, true, EXPOSED_GROUP_ROW_SETS.name(), pairs), groupRowSet,
-                    EXPOSED_GROUP_ROW_SETS.name());
+            final int existingGroupByOperatorIndex = existingGroupByReggregateIndex();
+            if (existingGroupByOperatorIndex >= 0) {
+                final GroupByReaggregateOperator existing = ensureGroupByReaggregateOperator(table,
+                        existingGroupByOperatorIndex, EXPOSED_GROUP_ROW_SETS.name(), pairs);
+                // TODO: test the result extractor to sharing
+                addNoInputOperator(existing.resultExtractor(resultPairs));
+            } else {
+                addOperator(new GroupByReaggregateOperator(table, true, EXPOSED_GROUP_ROW_SETS.name(), null, pairs),
+                        groupRowSet,
+                        EXPOSED_GROUP_ROW_SETS.name());
+            }
         }
 
         @Override
@@ -1564,7 +1592,7 @@ public class AggregationProcessor implements AggregationContextFactory {
             final String[] inputNonKeyColumns = partitioned.get(false).toArray(String[]::new);
 
             validateSelectColumnForFormula(selectColumn);
-            // TODO: re-use shared groupBy operators (https://github.com/deephaven/deephaven-core/issues/6363)
+            // TODO: re-use shared groupBy operators for a rollup formula reaggregation
             // final GroupByChunkedOperator groupByChunkedOperator = makeGroupByOperatorForFormula(inputNonKeyColumns,
             // table);
 
@@ -1603,7 +1631,7 @@ public class AggregationProcessor implements AggregationContextFactory {
             } else {
                 final ColumnSource<?> groupRowSet = table.getColumnSource(EXPOSED_GROUP_ROW_SETS.name());
                 groupByOperator =
-                        new GroupByReaggregateOperator(table, true, EXPOSED_GROUP_ROW_SETS.name(), groupPairs);
+                        new GroupByReaggregateOperator(table, true, EXPOSED_GROUP_ROW_SETS.name(), null, groupPairs);
                 addOperator(groupByOperator, groupRowSet, EXPOSED_GROUP_ROW_SETS.name());
                 final FormulaMultiColumnChunkedOperator op =
                         new FormulaMultiColumnChunkedOperator(table, groupByOperator,

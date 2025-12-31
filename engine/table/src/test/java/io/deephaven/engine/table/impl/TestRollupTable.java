@@ -545,4 +545,51 @@ public class TestRollupTable extends RefreshingTableTestCase {
         assertTableEquals(expected2, snapshot2.dropColumns("__EXPOSED_GROUP_ROW_SETS__"));
         freeSnapshotTableChunks(snapshot2);
     }
+
+    @Test
+    public void testReusedGrouping() {
+        final QueryTable source = TstUtils.testRefreshingTable(
+                stringCol("Key1", "Alpha", "Bravo", "Alpha", "Charlie", "Charlie", "Bravo", "Bravo"),
+                stringCol("Key2", "Delta", "Delta", "Echo", "Echo", "Echo", "Echo", "Echo"),
+                intCol("Sentinel", 1, 2, 3, 4, 5, 6, 7));
+
+        final RollupTable rollup1 =
+                source.rollup(List.of(AggGroup("Sentinel"), AggSum("Sum=Sentinel"), AggGroup("S2=Sentinel")), "Key1",
+                        "Key2");
+
+        final String[] arrayWithNull = new String[1];
+        final Table keyTable = newTable(
+                intCol(rollup1.getRowDepthColumn().name(), 0),
+                stringCol("Key1", arrayWithNull),
+                stringCol("Key2", arrayWithNull),
+                byteCol("Action", HierarchicalTable.KEY_TABLE_ACTION_EXPAND_ALL));
+
+        final HierarchicalTable.SnapshotState ss1 = rollup1.makeSnapshotState();
+        final Table snapshot =
+                snapshotToTable(rollup1, ss1, keyTable, ColumnName.of("Action"), null, RowSetFactory.flat(30));
+        TableTools.showWithRowSet(snapshot);
+
+        final Table expected = initialExpectedGrouped(rollup1).update("S2=Sentinel");
+        assertTableEquals(expected, snapshot.dropColumns("__EXPOSED_GROUP_ROW_SETS__"));
+        freeSnapshotTableChunks(snapshot);
+
+        final ControlledUpdateGraph cug = source.getUpdateGraph().cast();
+        cug.runWithinUnitTestCycle(() -> {
+            addToTable(source, i(10, 11), stringCol("Key1", "Alpha", "Charlie"), stringCol("Key2", "Echo", "Echo"),
+                    intCol("Sentinel", 8, 9));
+            removeRows(source, i(5));
+            source.notifyListeners(
+                    new TableUpdateImpl(i(10, 11), i(5), i(), RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY));
+        });
+
+        final Table snapshot2 =
+                snapshotToTable(rollup1, ss1, keyTable, ColumnName.of("Action"), null, RowSetFactory.flat(30));
+        TableTools.showWithRowSet(snapshot2);
+        Table expected2 = secondExpectedGrouped(rollup1).update("S2=Sentinel");
+        TableTools.showWithRowSet(expected2);
+        assertTableEquals(expected2, snapshot2.dropColumns("__EXPOSED_GROUP_ROW_SETS__"));
+        freeSnapshotTableChunks(snapshot2);
+
+        // TODO: modify only one column, validate that we get results that we expect without excess modifications
+    }
 }
