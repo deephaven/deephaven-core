@@ -1148,15 +1148,12 @@ public class AggregationProcessor implements AggregationContextFactory {
     private @NotNull GroupByChunkedOperator makeGroupByOperatorForFormula(String[] inputNonKeyColumns,
             final QueryTable table, final String exposedRowsets) {
         final MatchPair[] pairs;
-        final List<String> hiddenResults;
         final boolean register;
         if (exposedRowsets == null) {
-            hiddenResults = null;
             register = false;
             pairs = Arrays.stream(inputNonKeyColumns).map(col -> MatchPair.of(Pair.parse(col)))
                     .toArray(MatchPair[]::new);
         } else {
-            hiddenResults = null;// Arrays.stream(pairs).map(mp -> mp.output().name()).collect(Collectors.toList());
             register = true;
             pairs = Arrays
                     .stream(inputNonKeyColumns).map(col -> MatchPair.of(
@@ -1165,7 +1162,7 @@ public class AggregationProcessor implements AggregationContextFactory {
                                             ColumnName.of(col + ROLLUP_GRP_COLUMN_ID + ROLLUP_COLUMN_SUFFIX))))
                     .toArray(MatchPair[]::new);
         }
-        return new GroupByChunkedOperator(table, register, exposedRowsets, hiddenResults, pairs);
+        return new GroupByChunkedOperator(table, register, exposedRowsets, null, pairs);
     }
 
     // -----------------------------------------------------------------------------------------------------------------

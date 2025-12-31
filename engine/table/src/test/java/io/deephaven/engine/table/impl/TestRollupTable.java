@@ -428,7 +428,7 @@ public class TestRollupTable extends RefreshingTableTestCase {
 
         final RollupTable rollup1 =
                 source.updateView("qty=(long)qty").rollup(
-                        List.of(AggFormula("qty", "__FORMULA_DEPTH__ > 0 ? first(qty) : sum(qty)").asReggregating(),
+                        List.of(AggFormula("qty", "__FORMULA_DEPTH__ > 0 ? first(qty) : sum(qty)").asReaggregating(),
                                 AggSum("Dollars")),
                         "Account", "Sym");
 
@@ -469,7 +469,7 @@ public class TestRollupTable extends RefreshingTableTestCase {
         if (hasGroup) {
             aggList.add(AggGroup("gqty=qty"));
         }
-        aggList.add(AggFormula("qty", "__FORMULA_DEPTH__ == 2 ? min(1000, sum(qty)) : sum(qty)").asReggregating());
+        aggList.add(AggFormula("qty", "__FORMULA_DEPTH__ == 2 ? min(1000, sum(qty)) : sum(qty)").asReaggregating());
         aggList.add(AggSum("sqty=qty"));
 
         final RollupTable rollup1 =
@@ -610,7 +610,6 @@ public class TestRollupTable extends RefreshingTableTestCase {
         TableTools.showWithRowSet(expected2);
         assertTableEquals(expected2, snapshot2.dropColumns("__EXPOSED_GROUP_ROW_SETS__"));
         freeSnapshotTableChunks(snapshot2);
-
         // TODO: modify only one column, validate that we get results that we expect without excess modifications
     }
 }

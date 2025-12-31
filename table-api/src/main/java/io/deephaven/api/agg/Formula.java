@@ -36,7 +36,7 @@ public abstract class Formula implements Aggregation {
         return ImmutableFormula.of(selectable, false);
     }
 
-    public Formula asReggregating() {
+    public Formula asReaggregating() {
         return ImmutableFormula.of(selectable(), true);
     }
 

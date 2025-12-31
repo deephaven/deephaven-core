@@ -61,6 +61,7 @@ public final class GroupByReaggregateOperator implements GroupByOperator {
     private final Map<String, AggregateColumnSource<?, ?>> resultAggregatedColumns;
 
     private RowSetBuilderRandom stepDestinationsModified;
+    private boolean rowsetsModified = false;
 
     private boolean initialized;
 
@@ -326,8 +327,7 @@ public final class GroupByReaggregateOperator implements GroupByOperator {
 
     @Override
     public boolean hasModifications(boolean columnsModified) {
-        /* TODO: FIX THIS. */
-        return true;
+        return columnsModified || rowsetsModified;
     }
 
     private class InputToResultModifiedColumnSetFactory implements UnaryOperator<ModifiedColumnSet> {
@@ -362,6 +362,7 @@ public final class GroupByReaggregateOperator implements GroupByOperator {
     @Override
     public void resetForStep(@NotNull final TableUpdate upstream, final int startingDestinationsCount) {
         stepDestinationsModified = new BitmapRandomBuilder(startingDestinationsCount);
+        rowsetsModified = false;
     }
 
     @Override
@@ -455,6 +456,9 @@ public final class GroupByReaggregateOperator implements GroupByOperator {
                             // use the addRowSet as the new rowset
                             final WritableRowSet addRowSet = nullToEmpty(
                                     extractAndClearBuilderRandom(addedBuildersBackingChunk, backingChunkOffset));
+                            if (!addRowSet.isEmpty()) {
+                                rowsetsModified = true;
+                            }
                             rowSetBackingChunk.set(backingChunkOffset, live ? addRowSet.toTracking() : addRowSet);
                         } else {
                             try (final WritableRowSet addRowSet =
@@ -465,6 +469,9 @@ public final class GroupByReaggregateOperator implements GroupByOperator {
                                                     backingChunkOffset))) {
                                 workingRowSet.remove(removeRowSet);
                                 workingRowSet.insert(addRowSet);
+                                if (!addRowSet.isEmpty() || !removeRowSet.isEmpty()) {
+                                    rowsetsModified = true;
+                                }
                             }
                         }
                     });

@@ -43,7 +43,6 @@ public final class GroupByChunkedOperator implements GroupByOperator {
     private final ObjectArraySource<Object> addedBuilders;
     private final ObjectArraySource<Object> removedBuilders;
 
-    private final String[] inputColumnNames;
     private final Map<String, AggregateColumnSource<?, ?>> inputAggregatedColumns;
     private final String[] inputColumnNamesForResults;
     private final Map<String, AggregateColumnSource<?, ?>> resultAggregatedColumns;
@@ -104,7 +103,7 @@ public final class GroupByChunkedOperator implements GroupByOperator {
                     "Exposing group RowSets as %s, but this conflicts with a requested grouped output column name",
                     exposeRowSetsAs));
         }
-        inputColumnNames = MatchPair.getRightColumns(aggregatedColumnPairs);
+        final String[] inputColumnNames = MatchPair.getRightColumns(aggregatedColumnPairs);
         if (live) {
             aggregationInputsModifiedColumnSet = inputTable.newModifiedColumnSet(inputColumnNames);
             removedBuilders = new ObjectArraySource<>(Object.class);
