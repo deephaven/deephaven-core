@@ -88,7 +88,7 @@ public final class GroupByReaggregateOperator implements GroupByOperator {
         resultAggregatedColumns = new LinkedHashMap<>(aggregatedColumnPairs.length);
         final List<String> inputColumnNamesForResultsList = new ArrayList<>();
         Arrays.stream(aggregatedColumnPairs).forEach(pair -> {
-            // we are reaggregationg so have to use the left column for everything
+            // we are reaggregating so have to use the left column for everything
             final ColumnSource<Object> source = inputTable.getColumnSource(pair.leftColumn());
             if (!(source instanceof AggregateColumnSource)) {
                 throw new IllegalStateException("Expect to reaggregate AggregateColumnSources for a group operation.");
