@@ -35,6 +35,7 @@ flatbuffers = "25.2.10"
 freemarker = "2.3.33"
 google-findbugs = "3.0.2"
 google-java-allocation-instrumenter = "3.3.4"
+google-rpc-protos="2.63.2"
 graalvm = "24.2.1"
 groovy = "3.0.25"
 # Only bump this in concert with boringssl
@@ -197,6 +198,8 @@ grpc-stub = { module = "io.grpc:grpc-stub" }
 grpc-testing = { module = "io.grpc:grpc-testing" }
 grpc-inprocess = { module = "io.grpc:grpc-inprocess" }
 grpc-util = { module = "io.grpc:grpc-util" }
+
+google-rpc-protos = { module="com.google.api.grpc:proto-google-common-protos", version.ref="google-rpc-protos" }
 
 guava = { module = "com.google.guava:guava", version.ref = "guava" }
 
