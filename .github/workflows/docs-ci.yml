@@ -133,7 +133,6 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: |
-            11
             17
             21
 
@@ -187,7 +186,6 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: |
-            11
             17
             21
 
@@ -241,7 +239,6 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: |
-            11
             17
             21
 
@@ -322,7 +319,6 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: |
-            11
             17
             21
 
@@ -395,7 +391,6 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: |
-            11
             17
             21
 
@@ -452,7 +447,6 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: |
-            11
             17
             21
 

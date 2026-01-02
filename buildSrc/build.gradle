@@ -5,8 +5,9 @@ plugins {
 
 // This is a simplification of how our normal project uses io.deephaven.java-toolchain-conventions.
 // We choose to use Java 21 as the main compiler (same as the normal project); and set a target language level of Java
-// 17. The target language level here does not effect the target language level of the normal project, it just dictates
-// the Java features that can be used by our buildSrc code, or our buildSrc dependency's code.
+// 17. The target language level here effects the minimum _compiler_ version that the normal project can use, but does
+// not effect the target language level of the normal project - it just dictates the Java features that can be used by
+// our buildSrc code, or our buildSrc dependency's code.
 
 java {
     toolchain {
