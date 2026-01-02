@@ -20,7 +20,6 @@ import io.deephaven.server.session.SessionState;
 import io.deephaven.server.session.TicketRouter;
 import io.deephaven.server.session.WantsTicketRouter;
 
-import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import org.apache.arrow.flight.impl.Flight;
 import org.jetbrains.annotations.Nullable;
@@ -62,7 +61,7 @@ public class RemoteFileSourceCommandResolver implements CommandResolver, WantsTi
      * @param data the ByteString data to parse
      * @return the parsed Any message, or null if parsing fails
      */
-    private static Any parseOrNull(final ByteString data) {
+    private static Any parseAsAnyOrNull(final ByteString data) {
         try {
             return Any.parseFrom(data);
         } catch (final InvalidProtocolBufferException e) {
@@ -71,11 +70,11 @@ public class RemoteFileSourceCommandResolver implements CommandResolver, WantsTi
     }
 
     /**
-     * Exports a PluginMarker singleton based on the fetch request.
+     * Exports the PluginMarker singleton based on the fetch request.
      * The marker object is exported to the session using the result ticket specified in the request,
      * and flight info is returned containing the endpoint for accessing it.
      *
-     * Note: This exports PluginMarker.INSTANCE as a trusted marker. Plugin-specific routing
+     * <p>Note: This exports a PluginMarker for the specified plugin name. Plugin-specific routing
      * is handled by TypedTicket.type in the ConnectRequest phase, which is validated against
      * the plugin's name() method.
      *
@@ -83,7 +82,7 @@ public class RemoteFileSourceCommandResolver implements CommandResolver, WantsTi
      * @param descriptor the flight descriptor containing the command
      * @param request the parsed RemoteFileSourcePluginFetchRequest containing the result ticket
      * @return a FlightInfo export object containing the plugin endpoint information
-     * @throws StatusRuntimeException if the request doesn't contain a valid result ID ticket
+     * @throws StatusRuntimeException if the request doesn't contain a valid result ID ticket or plugin name
      */
     private static SessionState.ExportObject<Flight.FlightInfo> fetchPlugin(@Nullable final SessionState session,
                                                                     final Flight.FlightDescriptor descriptor,
@@ -91,23 +90,20 @@ public class RemoteFileSourceCommandResolver implements CommandResolver, WantsTi
         final Ticket resultTicket = request.getResultId();
         final boolean hasResultId = !resultTicket.getTicket().isEmpty();
         if (!hasResultId) {
-            throw new StatusRuntimeException(Status.INVALID_ARGUMENT
-                    .withDescription("RemoteFileSourcePluginFetchRequest must contain a valid result_id"));
+            throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
+                    "RemoteFileSourcePluginFetchRequest must contain a valid result_id");
         }
 
         final String pluginName = request.getPluginName();
         if (pluginName.isEmpty()) {
-            throw new StatusRuntimeException(Status.INVALID_ARGUMENT
-                    .withDescription("RemoteFileSourcePluginFetchRequest must contain a valid plugin_name"));
+            throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
+                    "RemoteFileSourcePluginFetchRequest must contain a valid plugin_name");
         }
 
-        final SessionState.ExportBuilder<Object> markerExportBuilder =
-                session.newExport(resultTicket, "RemoteFileSourcePluginFetchRequest.resultTicket");
-
-        // Get singleton marker for this plugin name
-        // This ensures isType() routing works correctly when multiple plugins use PluginMarker
-        final SessionState.ExportObject<Object> markerExport =
-                markerExportBuilder.submit(() -> PluginMarker.forPluginName(pluginName));
+        // Export a plugin-specific PluginMarker. Plugins using PluginMarker should check
+        // marker.getPluginName() in isType() to prevent conflicts when multiple plugins share PluginMarker.
+        session.newExport(resultTicket, "RemoteFileSourcePluginFetchRequest.resultTicket")
+                .submit(() -> PluginMarker.forPluginName(pluginName));
 
         final Flight.FlightInfo flightInfo = Flight.FlightInfo.newBuilder()
                 .setFlightDescriptor(descriptor)
@@ -119,6 +115,7 @@ public class RemoteFileSourceCommandResolver implements CommandResolver, WantsTi
                 .setTotalRecords(-1)
                 .setTotalBytes(-1)
                 .build();
+
         return SessionState.wrapAsExport(flightInfo);
     }
 
@@ -139,88 +136,130 @@ public class RemoteFileSourceCommandResolver implements CommandResolver, WantsTi
             final Flight.FlightDescriptor descriptor,
             final String logId) {
         if (session == null) {
-            throw new StatusRuntimeException(Status.UNAUTHENTICATED);
+            throw Exceptions.statusRuntimeException(Code.UNAUTHENTICATED,
+                    "Could not resolve '" + logId + "': no session available");
         }
 
-        final Any request = parseOrNull(descriptor.getCmd());
+        final Any request = parseAsAnyOrNull(descriptor.getCmd());
         if (request == null) {
             log.error().append("Could not parse remotefilesource command.").endl();
             throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
                     "Could not parse remotefilesource command Any.");
         }
 
-        if (FETCH_PLUGIN_TYPE_URL.equals(request.getTypeUrl())) {
-            return fetchPlugin(session, descriptor, parseFetchRequest(request));
+        if (!FETCH_PLUGIN_TYPE_URL.equals(request.getTypeUrl())) {
+            log.error().append("Invalid remotefilesource command typeUrl: " + request.getTypeUrl()).endl();
+            throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, "Invalid typeUrl: " + request.getTypeUrl());
         }
 
-        log.error().append("Invalid pivot command typeUrl: " + request.getTypeUrl()).endl();
-        throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, "Invalid typeUrl: " + request.getTypeUrl());
+        return fetchPlugin(session, descriptor, parseFetchRequest(request));
     }
 
+    /**
+     * Visits all flight info that this resolver exposes.
+     *
+     * <p><b>Not implemented:</b> This resolver does not expose any flight info via list flights.
+     */
     @Override
     public void forAllFlightInfo(@Nullable final SessionState session, final Consumer<Flight.FlightInfo> visitor) {
         // nothing to do
     }
 
+    /**
+     * Returns a log-friendly name for the given ticket.
+     *
+     * @throws UnsupportedOperationException always, as this resolver does not support ticket-based routing
+     */
     @Override
     public String getLogNameFor(final ByteBuffer ticket, final String logId) {
-        // no tickets
+        // no ticket-based routing
         throw new UnsupportedOperationException();
     }
 
+    /**
+     * Determines if this resolver is responsible for handling the given command descriptor.
+     * This resolver handles commands with type URL matching RemoteFileSourcePluginFetchRequest.
+     *
+     * @param descriptor the flight descriptor containing the command
+     * @return true if this resolver handles the command, false otherwise
+     */
     @Override
     public boolean handlesCommand(final Flight.FlightDescriptor descriptor) {
-        // If not CMD, there is an error with io.deephaven.server.session.TicketRouter.getPathResolver / handlesPath
         Assert.eq(descriptor.getType(), "descriptor.getType()", Flight.FlightDescriptor.DescriptorType.CMD, "CMD");
 
-        // No good way to check if this is a valid command without parsing to Any first.
-        final Any command = parseOrNull(descriptor.getCmd());
+        final Any command = parseAsAnyOrNull(descriptor.getCmd());
         if (command == null) {
             return false;
         }
 
-        // Check if the command matches any types that this resolver handles.
         return FETCH_PLUGIN_TYPE_URL.equals(command.getTypeUrl());
     }
 
+    /**
+     * Publishes an export to the session using a ticket.
+     *
+     * @throws UnsupportedOperationException always, as this resolver does not support publishing
+     */
     @Override
     public <T> SessionState.ExportBuilder<T> publish(final SessionState session,
             final ByteBuffer ticket,
             final String logId,
             @Nullable final Runnable onPublish) {
-        // no publishing
         throw new UnsupportedOperationException();
     }
 
+    /**
+     * Publishes an export to the session using a flight descriptor.
+     *
+     * @throws UnsupportedOperationException always, as this resolver does not support publishing
+     */
     @Override
     public <T> SessionState.ExportBuilder<T> publish(final SessionState session,
             final Flight.FlightDescriptor descriptor, final String logId,
             @Nullable final Runnable onPublish) {
-        // no publishing
         throw new UnsupportedOperationException();
     }
 
+    /**
+     * Resolves a flight descriptor to an export object.
+     *
+     * @throws UnsupportedOperationException always, use flightInfoFor() instead
+     */
     @Override
     public <T> SessionState.ExportObject<T> resolve(@Nullable final SessionState session,
             final Flight.FlightDescriptor descriptor,
             final String logId) {
-        // use flightInfoFor() instead of resolve() for descriptor handling
         throw new UnsupportedOperationException();
     }
 
+    /**
+     * Resolves a ticket to an export object.
+     *
+     * @throws UnsupportedOperationException always, as this resolver does not support ticket-based routing
+     */
     @Override
     public <T> SessionState.ExportObject<T> resolve(@Nullable final SessionState session,
             final ByteBuffer ticket,
             final String logId) {
-        // no tickets
         throw new UnsupportedOperationException();
     }
 
+    /**
+     * Sets the ticket router for this resolver.
+     *
+     * <p><b>Not implemented:</b> This resolver does not need access to the ticket router.
+     */
     @Override
     public void setTicketRouter(TicketRouter ticketRouter) {
         // not needed
     }
 
+    /**
+     * Returns the ticket route byte for this resolver.
+     * This resolver does not use ticket-based routing, so returns 0.
+     *
+     * @return 0, indicating no ticket routing
+     */
     @Override
     public byte ticketRoute() {
         return 0;
