@@ -11,6 +11,11 @@ import elemental2.dom.TextEncoder;
  */
 public class JsProtobufUtils {
 
+    // Varint encoding constants
+    private static final int VARINT_CONTINUATION_BIT = 0x80;  // 10000000 - indicates more bytes follow
+    private static final int VARINT_DATA_MASK = 0x7F;         // 01111111 - extracts 7 bits of data
+    private static final int VARINT_BYTE_THRESHOLD = 128;     // Values >= 128 require multiple bytes
+
     private JsProtobufUtils() {
         // Utility class, no instantiation
     }
@@ -88,8 +93,8 @@ public class JsProtobufUtils {
      *   <li>2 bytes: 128 to 16,383 (2^14 - 1)</li>
      *   <li>3 bytes: 16,384 to 2,097,151 (2^21 - 1)</li>
      *   <li>4 bytes: 2,097,152 to 268,435,455 (2^28 - 1)</li>
-     *   <li>5 bytes: 268,435,456 to 4,294,967,295 (2^35 - 1, max unsigned 32-bit)</li>
-     *   <li>10 bytes: negative numbers (due to sign extension)</li>
+     *   <li>5 bytes: 268,435,456 to 4,294,967,295 (max unsigned 32-bit int)</li>
+     *   <li>10 bytes: negative numbers (sign-extended to 64 bits in varint encoding)</li>
      * </ul>
      *
      * @param value the integer value to encode
@@ -97,16 +102,16 @@ public class JsProtobufUtils {
      */
     private static int sizeOfVarint(int value) {
         if (value < 0)
-            return 10;          // Negative numbers use sign extension, always 10 bytes
-        if (value < 128)        // 2^7
+            return 10;                      // Negative numbers use sign extension, always 10 bytes
+        if (value < VARINT_BYTE_THRESHOLD)  // 2^7 = 128
             return 1;
-        if (value < 16384)      // 2^14
+        if (value < 16384)                  // 2^14
             return 2;
-        if (value < 2097152)    // 2^21
+        if (value < 2097152)                // 2^21
             return 3;
-        if (value < 268435456)  // 2^28
+        if (value < 268435456)              // 2^28
             return 4;
-        return 5;               // 2^35 (max for positive 32-bit int)
+        return 5;                           // Max unsigned 32-bit int requires 5 bytes
     }
 
     /**
@@ -164,9 +169,9 @@ public class JsProtobufUtils {
      * @return the new position after writing
      */
     private static int writeVarint(Uint8Array buffer, int pos, int value) {
-        while (value >= 128) {
+        while (value >= VARINT_BYTE_THRESHOLD) {
             // Extract lowest 7 bits and set continuation flag (8th bit = 1)
-            buffer.setAt(pos++, (double) ((value & 0x7F) | 0x80));
+            buffer.setAt(pos++, (double) ((value & VARINT_DATA_MASK) | VARINT_CONTINUATION_BIT));
             // Shift right by 7 to process next chunk
             value >>>= 7;  // Unsigned right shift to handle large positive values
         }
