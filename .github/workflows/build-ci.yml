@@ -29,7 +29,7 @@ jobs:
 
       - name: Setup gradle properties
         run: |
-          .github/scripts/gradle-properties.sh >> gradle.properties
+          .github/scripts/gradle-properties.sh 11 17 21 >> gradle.properties
           cat gradle.properties
 
       - name: Get Semver
@@ -156,7 +156,7 @@ jobs:
 
       - name: Setup gradle properties
         run: |
-          .github/scripts/gradle-properties.sh >> gradle.properties
+          .github/scripts/gradle-properties.sh 11 17 21 >> gradle.properties
           cat gradle.properties
 
       - name: Set up Docker Buildx
