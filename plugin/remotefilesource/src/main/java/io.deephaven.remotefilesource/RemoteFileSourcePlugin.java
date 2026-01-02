@@ -4,8 +4,6 @@
 package io.deephaven.remotefilesource;
 
 import com.google.auto.service.AutoService;
-import io.deephaven.internal.log.LoggerFactory;
-import io.deephaven.io.logger.Logger;
 import io.deephaven.plugin.type.ObjectType;
 import io.deephaven.plugin.type.ObjectTypeBase;
 import io.deephaven.plugin.type.ObjectCommunicationException;
@@ -14,24 +12,24 @@ import io.deephaven.plugin.type.PluginMarker;
 import java.nio.ByteBuffer;
 
 /**
- * ObjectType plugin for RemoteFileSource. This plugin is registered via @AutoService
- * and handles creation of RemoteFileSourceMessageStream connections.
- *
- * This plugin uses a PluginMarker with a type field instead of instanceof checks,
- * allowing it to work across language boundaries (Java/Python). The Flight command
- * creates a PluginMarker with type="RemoteFileSource" which this plugin recognizes.
- *
+ * ObjectType plugin for remote file sources. This plugin is registered via @AutoService
+ * and handles creation of RemoteFileSourceMessageStream connections for bidirectional
+ * communication with clients.
+ * <p>
+ * This plugin recognizes PluginMarker objects whose pluginName matches this plugin's name.
+ * When a connection is established, a RemoteFileSourceMessageStream is created to handle
+ * bidirectional message passing between client and server.
+ * <p>
  * Each RemoteFileSourceMessageStream instance registers itself as a provider with the
- * ClassLoader when created and unregisters when closed. The ClassLoader checks isActive()
- * on each registered provider to find the currently active one.
+ * RemoteFileSourceClassLoader when created and unregisters when closed. The RemoteFileSourceClassLoader
+ * uses isActive() to determine which registered provider should handle resource requests.
  */
 @AutoService(ObjectType.class)
 public class RemoteFileSourcePlugin extends ObjectTypeBase {
-    private static final Logger log = LoggerFactory.getLogger(RemoteFileSourcePlugin.class);
 
     @Override
     public String name() {
-        return "DeephavenGroovyRemoteFileSourcePlugin";
+        return "DeephavenRemoteFileSourcePlugin";
     }
 
     @Override
@@ -50,10 +48,10 @@ public class RemoteFileSourcePlugin extends ObjectTypeBase {
             throw new ObjectCommunicationException("Expected RemoteFileSource marker object, got " + object.getClass());
         }
 
+        // Send initial empty message to client as required by the ObjectType contract
         connection.onData(ByteBuffer.allocate(0));
 
-        // Create and return a new message stream for this connection
-        // All the logic is in the static RemoteFileSourceMessageStream class
+        // Return a new bidirectional message stream for this connection
         return new RemoteFileSourceMessageStream(connection);
     }
 }
