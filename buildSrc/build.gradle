@@ -3,10 +3,23 @@ plugins {
     id 'groovy-gradle-plugin'
 }
 
+// This is a simplification of how our normal project uses io.deephaven.java-toolchain-conventions.
+// We choose to use Java 21 as the main compiler (same as the normal project); and set a target language level of Java
+// 17. The target language level here does not effect the target language level of the normal project, it just dictates
+// the Java features that can be used by our buildSrc code, or our buildSrc dependency's code.
+
 java {
     toolchain {
-        languageVersion = JavaLanguageVersion.of(11)
+        languageVersion = JavaLanguageVersion.of(21)
     }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.release = 17
+}
+
+tasks.withType(GroovyCompile).configureEach {
+    options.release = 17
 }
 
 repositories {
@@ -30,7 +43,7 @@ dependencies {
         because('needed by plugin com.avast.gradle.docker-compose')
     }
 
-    implementation('com.diffplug.spotless:spotless-plugin-gradle:7.2.0') {
+    implementation('com.diffplug.spotless:spotless-plugin-gradle:8.1.0') {
         because('needed by plugin java-coding-conventions')
     }
 
