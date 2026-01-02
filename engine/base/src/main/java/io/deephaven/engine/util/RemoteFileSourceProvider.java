@@ -20,18 +20,18 @@ public interface RemoteFileSourceProvider {
     boolean canSourceResource(String resourceName);
 
     /**
+     * Check if this provider is currently active and should be used for resource requests.
+     *
+     * @return true if this provider is active, false otherwise
+     */
+    boolean isActive();
+
+    /**
      * Request a resource from the remote source.
      *
      * @param resourceName the name of the resource to fetch (e.g., "com/example/MyClass.groovy")
      * @return a CompletableFuture containing the resource bytes, or null if not found
      */
     CompletableFuture<byte[]> requestResource(String resourceName);
-
-    /**
-     * Check if this provider is currently active and should be used for resource requests.
-     *
-     * @return true if this provider is active, false otherwise
-     */
-    boolean isActive();
 }
 
