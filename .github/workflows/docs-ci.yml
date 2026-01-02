@@ -21,7 +21,7 @@ jobs:
           
       - name: Deploy Directories
         if: ${{ github.event_name == 'push' }}
-        uses: burnett01/rsync-deployments@5.2
+        uses: burnett01/rsync-deployments@v8
         with:
           switches: -rlptDvz
           path: tmp-deephaven-core-v2/
@@ -45,7 +45,7 @@ jobs:
           ln -s ../main latest
           
       - name: Deploy Symlinks
-        uses: burnett01/rsync-deployments@5.2
+        uses: burnett01/rsync-deployments@v8
         with:
           switches: -rlptDvz
           path: tmp-deephaven-core-v2/
@@ -161,7 +161,7 @@ jobs:
 
       - name: Deploy Javadoc
         if: ${{ github.event_name == 'push' }}
-        uses: burnett01/rsync-deployments@5.2
+        uses: burnett01/rsync-deployments@v8
         with:
           switches: -rlptDvz --delete
           path: combined-javadoc/build/docs/javadoc/
@@ -215,7 +215,7 @@ jobs:
 
       - name: Deploy JavaScript/TypeScript docs
         if: ${{ github.event_name == 'push' }}
-        uses: burnett01/rsync-deployments@5.2
+        uses: burnett01/rsync-deployments@v8
         with:
           switches: -rlptDvz --delete
           path: web/client-api/types/build/documentation/
@@ -276,7 +276,7 @@ jobs:
 
       - name: Deploy Python Docs
         if: ${{ github.event_name == 'push' }}
-        uses: burnett01/rsync-deployments@5.2
+        uses: burnett01/rsync-deployments@v8
         with:
           switches: -rlptDvz --delete
           path: sphinx/build/docs/
@@ -288,7 +288,7 @@ jobs:
 
       - name: Deploy Client Python Docs
         if: ${{ github.event_name == 'push' }}
-        uses: burnett01/rsync-deployments@5.2
+        uses: burnett01/rsync-deployments@v8
         with:
           switches: -rlptDvz --delete
           path: sphinx/build/pyclient-docs/
@@ -357,7 +357,7 @@ jobs:
 
       - name: Deploy Client C++ Docs
         if: ${{ github.event_name == 'push' }}
-        uses: burnett01/rsync-deployments@5.2
+        uses: burnett01/rsync-deployments@v8
         with:
           switches: -rlptDvz --delete
           path: sphinx/build/cppClientDocs/
@@ -369,7 +369,7 @@ jobs:
 
       - name: Deploy Client C++ Example Docs
         if: ${{ github.event_name == 'push' }}
-        uses: burnett01/rsync-deployments@5.2
+        uses: burnett01/rsync-deployments@v8
         with:
           switches: -rlptDvz --delete
           path: sphinx/build/cppExamplesDocs/
@@ -423,7 +423,7 @@ jobs:
 
       - name: Deploy R Docs
         if: ${{ github.event_name == 'push' }}
-        uses: burnett01/rsync-deployments@5.2
+        uses: burnett01/rsync-deployments@v8
         with:
           switches: -rlptDvz --delete
           path: R/rdeephaven/docs/
@@ -480,7 +480,7 @@ jobs:
 
       - name: Deploy Protobuf Docs
         if: ${{ github.event_name == 'push' }}
-        uses: burnett01/rsync-deployments@5.2
+        uses: burnett01/rsync-deployments@v8
         with:
           switches: -rlptDvz --delete
           path: proto/proto-backplane-grpc/build/protoc-output/proto-doc/single-html/index.html
