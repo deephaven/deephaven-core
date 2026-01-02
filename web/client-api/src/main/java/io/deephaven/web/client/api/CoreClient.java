@@ -15,6 +15,7 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.config_p
 import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.config_pb_service.ConfigServiceClient;
 import io.deephaven.javascript.proto.dhinternal.jspb.Map;
 import io.deephaven.web.client.api.event.HasEventHandling;
+import io.deephaven.web.client.api.remotefilesource.JsRemoteFileSourceService;
 import io.deephaven.web.client.api.storage.JsStorageService;
 import io.deephaven.web.client.fu.JsLog;
 import io.deephaven.web.client.fu.LazyPromise;
@@ -139,6 +140,10 @@ public class CoreClient extends HasEventHandling {
 
     public Promise<Void> onConnected(@JsOptional Double timeoutInMillis) {
         return ideConnection.onConnected();
+    }
+
+    public Promise<JsRemoteFileSourceService> getRemoteFileSourceService() {
+        return JsRemoteFileSourceService.fetchPlugin(ideConnection.connection.get());
     }
 
     public Promise<String[][]> getServerConfigValues() {
