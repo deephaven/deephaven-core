@@ -64,18 +64,18 @@ public class RemoteFileSourceMessageStream implements ObjectType.MessageStream, 
      * Only returns true if this message stream is active, the resource is a .groovy file,
      * and the resource path matches one of the configured resource paths.
      *
-     * @param resourcePath the path of the resource to check
+     * @param resourceName the name of the resource to check
      * @return true if this provider can source the resource, false otherwise
      */
     @Override
-    public boolean canSourceResource(String resourcePath) {
+    public boolean canSourceResource(String resourceName) {
         // Only active if this instance is the currently active message stream
         if (!isActive()) {
             return false;
         }
 
         // Only handle .groovy source files, not compiled .class files
-        if (!resourcePath.endsWith(".groovy")) {
+        if (!resourceName.endsWith(".groovy")) {
             return false;
         }
 
@@ -87,8 +87,8 @@ public class RemoteFileSourceMessageStream implements ObjectType.MessageStream, 
         }
 
         for (String contextResourcePath : resourcePaths) {
-            if (resourcePath.equals(contextResourcePath)) {
-                log.info().append("Can source: ").append(resourcePath).endl();
+            if (resourceName.equals(contextResourcePath)) {
+                log.info().append("Can source: ").append(resourceName).endl();
                 return true;
             }
         }
@@ -101,19 +101,19 @@ public class RemoteFileSourceMessageStream implements ObjectType.MessageStream, 
      * Sends a request to the client and returns a future that will be completed when the client responds.
      * Only services requests if this message stream is active.
      *
-     * @param resourcePath the name of the resource to request
+     * @param resourceName the name of the resource to request
      * @return a CompletableFuture that will contain the resource bytes when available, or null if inactive
      */
     @Override
-    public CompletableFuture<byte[]> requestResource(String resourcePath) {
+    public CompletableFuture<byte[]> requestResource(String resourceName) {
         // Only service requests if this instance is active
         if (!isActive()) {
-            log.warn().append("Request for resource ").append(resourcePath)
+            log.warn().append("Request for resource ").append(resourceName)
                     .append(" on inactive message stream").endl();
             return CompletableFuture.completedFuture(null);
         }
 
-        log.info().append("Requesting resource: ").append(resourcePath).endl();
+        log.info().append("Requesting resource: ").append(resourceName).endl();
 
         String requestId = UUID.randomUUID().toString();
         CompletableFuture<byte[]> future = new CompletableFuture<>();
@@ -123,7 +123,7 @@ public class RemoteFileSourceMessageStream implements ObjectType.MessageStream, 
             // Build RemoteFileSourceMetaRequest proto
             RemoteFileSourceMetaRequest metaRequest =
                     RemoteFileSourceMetaRequest.newBuilder()
-                    .setResourceName(resourcePath)
+                    .setResourceName(resourceName)
                     .build();
 
             // Wrap in RemoteFileSourceServerRequest (server→client)
@@ -135,7 +135,7 @@ public class RemoteFileSourceMessageStream implements ObjectType.MessageStream, 
 
             ByteBuffer buffer = ByteBuffer.wrap(message.toByteArray());
 
-            log.info().append("Sending resource request for: ").append(resourcePath)
+            log.info().append("Sending resource request for: ").append(resourceName)
                     .append(" with requestId: ").append(requestId).endl();
 
             connection.onData(buffer);
