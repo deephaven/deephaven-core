@@ -280,7 +280,7 @@ Sometime after a release, old release branches can be safely deleted.
 
 ### 15. Version bump in preparation of the next release.
 
-Say we just did release `0.31.0`. The next expected release is `0.32.0`  We update the repository with a bump to all files that
+Say we just did release `31.0`. The next expected release is `32.0`  We update the repository with a bump to all files that
 mention the version explicitly. These files are listed below:
 
 ```
@@ -295,7 +295,7 @@ cpp-client/deephaven/CMakeLists.txt
 This leaves the files "ready" for the next regular release, and also ensures any build done from
 a developer for testing of latest is not confused with the code just released.
 
-In the case of a patch release these would need to be updated to a different version, like from `0.31.0` to `0.31.1`.
+In the case of a patch release these would need to be updated to a different version, like from `31.0` to `31.1`.
 
 ## External dependencies
 
