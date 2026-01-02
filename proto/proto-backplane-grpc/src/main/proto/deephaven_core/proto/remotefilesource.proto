@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ * Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
  */
 syntax = "proto3";
 
@@ -34,7 +34,7 @@ message RemoteFileSourceClientRequest {
     // Response to a resource request
     RemoteFileSourceMetaResponse meta_response = 2;
 
-    // Set the execution context ID for script execution
+    // Set the execution context for script execution
     SetExecutionContextRequest set_execution_context = 3;
   }
 }
@@ -53,7 +53,7 @@ message RemoteFileSourceMetaResponse {
   // Indicates whether the resource was found
   bool found = 2;
 
-  // Optional: error message if the resource could not be retrieved
+  // Error message if the resource could not be retrieved
   string error = 3;
 }
 
