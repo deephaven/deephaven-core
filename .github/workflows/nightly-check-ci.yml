@@ -72,7 +72,7 @@ jobs:
 
       - name: Setup gradle properties
         run: |
-          .github/scripts/gradle-properties.sh >> gradle.properties
+          .github/scripts/gradle-properties.sh 11 17 21 24 >> gradle.properties
           cat gradle.properties
 
       - name: Run gradle ${{ matrix.gradle-task }} on java ${{ matrix.test-jvm-version }} with coverage=${{ env.COVER }}
@@ -171,7 +171,7 @@ jobs:
 
       - name: Setup gradle properties
         run: |
-          .github/scripts/gradle-properties.sh >> gradle.properties
+          .github/scripts/gradle-properties.sh 11 17 21 >> gradle.properties
           cat gradle.properties
           
       - name: Run gradle ${{ matrix.gradle-task }}

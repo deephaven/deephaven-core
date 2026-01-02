@@ -142,7 +142,7 @@ jobs:
 
       - name: Setup gradle properties
         run: |
-          .github/scripts/gradle-properties.sh >> gradle.properties
+          .github/scripts/gradle-properties.sh 11 17 21 >> gradle.properties
           cat gradle.properties
 
       - name: All Javadoc
@@ -196,7 +196,7 @@ jobs:
 
       - name: Setup gradle properties
         run: |
-          .github/scripts/gradle-properties.sh >> gradle.properties
+          .github/scripts/gradle-properties.sh 11 17 21 >> gradle.properties
           cat gradle.properties
 
       - name: Run typedoc on JS API
@@ -250,7 +250,7 @@ jobs:
 
       - name: Setup gradle properties
         run: |
-          .github/scripts/gradle-properties.sh >> gradle.properties
+          .github/scripts/gradle-properties.sh 11 17 21 >> gradle.properties
           cat gradle.properties
 
       - name: Generate Python Docs
@@ -331,7 +331,7 @@ jobs:
 
       - name: Setup gradle properties
         run: |
-          .github/scripts/gradle-properties.sh >> gradle.properties
+          .github/scripts/gradle-properties.sh 11 17 21 >> gradle.properties
           cat gradle.properties
 
       - name: Generate C++ Docs
@@ -404,7 +404,7 @@ jobs:
 
       - name: Setup gradle properties
         run: |
-          .github/scripts/gradle-properties.sh >> gradle.properties
+          .github/scripts/gradle-properties.sh 11 17 21 >> gradle.properties
           cat gradle.properties
 
       - name: Generate R Docs
@@ -461,7 +461,7 @@ jobs:
 
       - name: Setup gradle properties
         run: |
-          .github/scripts/gradle-properties.sh >> gradle.properties
+          .github/scripts/gradle-properties.sh 11 17 21 >> gradle.properties
           cat gradle.properties
 
       - name: Generate Protobuf Docs
