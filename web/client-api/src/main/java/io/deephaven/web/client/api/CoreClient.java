@@ -142,6 +142,10 @@ public class CoreClient extends HasEventHandling {
         return ideConnection.onConnected();
     }
 
+    public Promise<JsRemoteFileSourceService> getRemoteFileSourceService() {
+        return JsRemoteFileSourceService.fetchPlugin(ideConnection.connection.get());
+    }
+
     public Promise<String[][]> getServerConfigValues() {
         return getConfigs(
                 c -> ideConnection.connection.get().configServiceClient().getConfigurationConstants(
@@ -153,10 +157,6 @@ public class CoreClient extends HasEventHandling {
 
     public JsStorageService getStorageService() {
         return new JsStorageService(ideConnection.connection.get());
-    }
-
-    public Promise<JsRemoteFileSourceService> getRemoteFileSourceService() {
-        return JsRemoteFileSourceService.fetchPlugin(ideConnection.connection.get());
     }
 
     public Promise<IdeConnection> getAsIdeConnection() {
