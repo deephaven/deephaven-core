@@ -154,7 +154,7 @@ jobs:
 
       - name: Upload Javadocs
         if: ${{ github.event_name == 'push' }} 
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: javadocs-${{ steps.dhc-version.outputs.version }}
           path: 'combined-javadoc/build/docs/javadoc/'
@@ -208,7 +208,7 @@ jobs:
           
       - name: Upload JavaScript/TypeScript docs
         if: ${{ github.event_name == 'push' }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: typedoc-${{ steps.dhc-version.outputs.version }}
           path: 'web/client-api/types/build/documentation/'
@@ -262,14 +262,14 @@ jobs:
  
       - name: Upload Python Server Docs
         if: ${{ github.event_name == 'push' }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: pyserver-docs-${{ steps.dhc-version.outputs.version }}
           path: 'sphinx/build/docs/'
           
       - name: Upload Python Client Docs
         if: ${{ github.event_name == 'push' }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: pyclient-docs-${{ steps.dhc-version.outputs.version }}
           path: 'sphinx/build/pyclient-docs/'
@@ -299,7 +299,7 @@ jobs:
           remote_key: ${{ secrets.DEEPHAVEN_CORE_SSH_KEY }}
 
       - name: Upload JVM Error Logs
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         if: failure()
         with:
           name: docs-ci-pydoc-jvm-err
@@ -343,14 +343,14 @@ jobs:
   
       - name: Upload Client C++ Docs
         if: ${{ github.event_name == 'push' }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: cppclient-docs-${{ steps.dhc-version.outputs.version }}
           path: 'sphinx/build/cppClientDocs/'
           
       - name: Upload Client C++ Example Docs
         if: ${{ github.event_name == 'push' }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: cppclient-examples-${{ steps.dhc-version.outputs.version }}
           path: 'sphinx/build/cppExamplesDocs/'
@@ -416,7 +416,7 @@ jobs:
         
       - name: Upload R Docs
         if: ${{ github.event_name == 'push' }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: rdoc-${{ steps.dhc-version.outputs.version }}
           path: 'R/rdeephaven/docs/'
@@ -434,7 +434,7 @@ jobs:
           remote_key: ${{ secrets.DEEPHAVEN_CORE_SSH_KEY }}
 
       - name: Upload JVM Error Logs
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         if: failure()
 
   protodoc:
@@ -473,7 +473,7 @@ jobs:
 
       - name: Upload Protobuf Docs
         if: ${{ github.event_name == 'push' }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: protobuf-docs-${{ steps.dhc-version.outputs.version }}
           path: 'proto/proto-backplane-grpc/build/protoc-output/proto-doc/single-html/index.html'
