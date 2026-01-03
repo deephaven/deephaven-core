@@ -12,8 +12,7 @@ dependencies {
     dts project(path: ':web-client-api', configuration: 'dts')
 }
 
-// Apply our temporary convention until dhc hits 1.0.0
-def npmVersion = '1.0.0-dev' + project.property('deephavenBaseVersion').toString().trim()
+def npmVersion = project.property('deephavenBaseVersion').toString().trim()
 def preId = project.findProperty('npmPreid')// i.e. 'nightly'
 if (preId) {
     npmVersion += preId + new Date().format("yyyyMMdd")
