@@ -124,27 +124,32 @@ from deephaven import new_table, agg
 from deephaven.column import string_col, int_col, double_col, datetime_col
 from deephaven.time import to_j_instant
 
-t = new_table([
-    datetime_col("ExchangeTimestamp", [
-        to_j_instant("2017-08-25T09:30:00 UTC"),
-        to_j_instant("2017-08-25T10:15:00 UTC"),
-        to_j_instant("2017-08-25T11:45:00 UTC"),
-        to_j_instant("2017-08-25T14:20:00 UTC"),
-        to_j_instant("2017-08-25T15:50:00 UTC"),
-    ]),
-    string_col("Sym", ["AAPL", "AAPL", "GOOGL", "GOOGL", "AAPL"]),
-    double_col("Last", [150.25, 151.50, 920.75, 922.10, 152.00]),
-    int_col("Size", [100, 200, 50, 150, 300])
-])
+t = new_table(
+    [
+        datetime_col(
+            "ExchangeTimestamp",
+            [
+                to_j_instant("2017-08-25T09:30:00 UTC"),
+                to_j_instant("2017-08-25T10:15:00 UTC"),
+                to_j_instant("2017-08-25T11:45:00 UTC"),
+                to_j_instant("2017-08-25T14:20:00 UTC"),
+                to_j_instant("2017-08-25T15:50:00 UTC"),
+            ],
+        ),
+        string_col("Sym", ["AAPL", "AAPL", "GOOGL", "GOOGL", "AAPL"]),
+        double_col("Last", [150.25, 151.50, 920.75, 922.10, 152.00]),
+        int_col("Size", [100, 200, 50, 150, 300]),
+    ]
+)
 
-t = t.update("LocalExchangeTimestampDate=toLocalDate(ExchangeTimestamp, timeZone(`UTC`))")
+t = t.update(
+    "LocalExchangeTimestampDate=toLocalDate(ExchangeTimestamp, timeZone(`UTC`))"
+)
 
 agg_list = [agg.avg(cols=["Last", "Size"])]
 by_list = ["LocalExchangeTimestampDate"]
 
-t_rollup = t.rollup(
-    aggs=agg_list, by=by_list, include_constituents=True
-)
+t_rollup = t.rollup(aggs=agg_list, by=by_list, include_constituents=True)
 ```
 
 ![An error message stating that Deephaven can't parse the LOCAL_DATE data type](../assets/how-to/cant-parse-local-date.png)
