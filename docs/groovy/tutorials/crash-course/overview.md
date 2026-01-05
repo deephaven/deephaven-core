@@ -56,14 +56,6 @@ Deephaven query strings are the primary way of expressing commands directly to t
 
 </CoreTutorialCard>
 
-<CoreTutorialCard to="/core/docs/groovy/tutorials/crash-course/parallelization/">
-
-## Query parallelization
-
-Learn how Deephaven automatically uses multiple CPU cores to dramatically improve query performance, and how to write queries that leverage parallelization effectively.
-
-</CoreTutorialCard>
-
 <CoreTutorialCard to="/core/docs/groovy/tutorials/crash-course/plots/">
 
 ## Real-time plots
