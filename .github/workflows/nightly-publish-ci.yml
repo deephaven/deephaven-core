@@ -4,6 +4,7 @@ on:
   schedule:
     # 1AM EST == 5AM UTC
     - cron:  '0 5 * * *'
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
