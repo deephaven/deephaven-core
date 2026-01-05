@@ -9,10 +9,8 @@ import io.deephaven.api.filter.FilterPattern.Mode;
 import io.deephaven.base.Pair;
 import io.deephaven.api.expression.AbstractExpressionFactory;
 import io.deephaven.engine.table.ColumnDefinition;
+import io.deephaven.engine.table.MatchOptions;
 import io.deephaven.engine.table.TableDefinition;
-import io.deephaven.engine.table.impl.chunkfilter.ChunkFilter;
-import io.deephaven.engine.table.impl.select.MatchFilter.CaseSensitivity;
-import io.deephaven.engine.table.impl.select.MatchFilter.MatchType;
 import io.deephaven.engine.table.impl.select.vectorchunkfilter.VectorComponentFilterWrapper;
 import io.deephaven.engine.util.ColumnFormatting;
 import io.deephaven.api.expression.ExpressionParser;
@@ -87,11 +85,13 @@ public class WhereFilterFactory {
 
                 log.debug().append("WhereFilterFactory creating MatchFilter for expression: ").append(expression)
                         .endl();
-                return new MatchFilter(
-                        icase ? MatchFilter.CaseSensitivity.IgnoreCase : MatchFilter.CaseSensitivity.MatchCase,
-                        inverted ? MatchFilter.MatchType.Inverted : MatchFilter.MatchType.Regular,
-                        columnName,
-                        values);
+                // When given an explicit list of values, we allow NaN-matching (skip IEEE 754 strict equality rules)
+                final MatchOptions matchOptions = MatchOptions.builder()
+                        .inverted(inverted)
+                        .caseInsensitive(icase)
+                        .nanMatch(true)
+                        .build();
+                return new MatchFilter(null, matchOptions, columnName, values, null);
             }
         });
 
@@ -113,13 +113,11 @@ public class WhereFilterFactory {
                         .append("WhereFilterFactory creating stringContainsFilter for expression: ")
                         .append(expression)
                         .endl();
-                return stringContainsFilter(
-                        icase ? MatchFilter.CaseSensitivity.IgnoreCase : MatchFilter.CaseSensitivity.MatchCase,
-                        inverted ? MatchFilter.MatchType.Inverted : MatchFilter.MatchType.Regular,
-                        columnName,
-                        internalDisjunctive,
-                        true,
-                        values);
+                final MatchOptions matchOptions = MatchOptions.builder()
+                        .inverted(inverted)
+                        .caseInsensitive(icase)
+                        .build();
+                return stringContainsFilter(matchOptions, columnName, internalDisjunctive, true, values);
             }
         });
 
@@ -161,13 +159,15 @@ public class WhereFilterFactory {
             case "==":
                 log.debug().append("WhereFilterFactory creating MatchFilter for expression: ").append(expression)
                         .endl();
+                final MatchOptions matchOptions = MatchOptions.builder()
+                        .inverted(inverted)
+                        .caseInsensitive(false)
+                        .nanMatch(false) // follow IEEE 754, NaN == NaN -> false
+                        .build();
                 return new MatchFilter(
                         new CachingSupplier<>(() -> (ConditionFilter) ConditionFilter.createConditionFilter(expression,
                                 parserConfiguration)),
-                        CaseSensitivity.MatchCase,
-                        inverted ? MatchType.Inverted : MatchType.Regular,
-                        columnName,
-                        value);
+                        matchOptions, columnName, new String[] {value}, null);
 
             case "<":
             case ">":
@@ -340,24 +340,24 @@ public class WhereFilterFactory {
             try {
                 return DoubleRangeFilter.makeRange(colName, quickFilter);
             } catch (NumberFormatException ignored) {
-                return new MatchFilter(MatchType.Regular, colName, typeData.doubleVal);
+                return new MatchFilter(MatchOptions.REGULAR, colName, typeData.doubleVal);
             }
         } else if (colClass == Float.class || colClass == float.class && (!Float.isNaN(typeData.floatVal))) {
             try {
                 return FloatRangeFilter.makeRange(colName, quickFilter);
             } catch (NumberFormatException ignored) {
-                return new MatchFilter(MatchType.Regular, colName, typeData.floatVal);
+                return new MatchFilter(MatchOptions.REGULAR, colName, typeData.floatVal);
             }
         } else if ((colClass == Integer.class || colClass == int.class) && typeData.isInt) {
-            return new MatchFilter(MatchType.Regular, colName, typeData.intVal);
+            return new MatchFilter(MatchOptions.REGULAR, colName, typeData.intVal);
         } else if ((colClass == long.class || colClass == Long.class) && typeData.isLong) {
-            return new MatchFilter(MatchType.Regular, colName, typeData.longVal);
+            return new MatchFilter(MatchOptions.REGULAR, colName, typeData.longVal);
         } else if ((colClass == short.class || colClass == Short.class) && typeData.isShort) {
-            return new MatchFilter(MatchType.Regular, colName, typeData.shortVal);
+            return new MatchFilter(MatchOptions.REGULAR, colName, typeData.shortVal);
         } else if ((colClass == byte.class || colClass == Byte.class) && typeData.isByte) {
-            return new MatchFilter(MatchType.Regular, colName, typeData.byteVal);
+            return new MatchFilter(MatchOptions.REGULAR, colName, typeData.byteVal);
         } else if (colClass == BigInteger.class && typeData.isBigInt) {
-            return new MatchFilter(MatchType.Regular, colName, typeData.bigIntVal);
+            return new MatchFilter(MatchOptions.REGULAR, colName, typeData.bigIntVal);
         } else if (colClass == BigDecimal.class && typeData.isBigDecimal) {
             return ComparableRangeFilter.makeBigDecimalRange(colName, quickFilter);
         } else if (filterMode != QuickFilterMode.NUMERIC) {
@@ -368,11 +368,11 @@ public class WhereFilterFactory {
                         Mode.FIND,
                         false), false);
             } else if ((colClass == boolean.class || colClass == Boolean.class) && typeData.isBool) {
-                return new MatchFilter(MatchType.Regular, colName, Boolean.parseBoolean(quickFilter));
+                return new MatchFilter(MatchOptions.REGULAR, colName, Boolean.parseBoolean(quickFilter));
             } else if (colClass == Instant.class && typeData.dateLower != null && typeData.dateUpper != null) {
                 return new InstantRangeFilter(colName, typeData.dateLower, typeData.dateUpper, true, false);
             } else if ((colClass == char.class || colClass == Character.class) && typeData.isChar) {
-                return new MatchFilter(MatchType.Regular, colName, typeData.charVal);
+                return new MatchFilter(MatchOptions.REGULAR, colName, typeData.charVal);
             }
         }
         return null;
@@ -426,26 +426,25 @@ public class WhereFilterFactory {
 
     @VisibleForTesting
     public static WhereFilter stringContainsFilter(
-            CaseSensitivity sensitivity,
-            MatchType matchType,
+            @NotNull final MatchOptions matchOptions,
             @NotNull String columnName,
-            boolean internalDisjunctive,
-            boolean removeQuotes,
-            String... values) {
+            final boolean internalDisjunctive,
+            final boolean removeQuotes,
+            final String... values) {
         final String value =
-                constructStringContainsRegex(values, matchType, internalDisjunctive, removeQuotes);
+                constructStringContainsRegex(values, matchOptions, internalDisjunctive, removeQuotes);
         return WhereFilterAdapter.of(FilterPattern.of(
                 ColumnName.of(columnName),
-                Pattern.compile(value, sensitivity == CaseSensitivity.IgnoreCase ? Pattern.CASE_INSENSITIVE : 0),
+                Pattern.compile(value, matchOptions.caseInsensitive() ? Pattern.CASE_INSENSITIVE : 0),
                 Mode.FIND,
-                matchType == MatchType.Inverted), false);
+                matchOptions.inverted()), false);
     }
 
     private static String constructStringContainsRegex(
-            String[] values,
-            MatchType matchType,
-            boolean internalDisjunctive,
-            boolean removeQuotes) {
+            final String[] values,
+            final MatchOptions matchOptions,
+            final boolean internalDisjunctive,
+            final boolean removeQuotes) {
         if (values == null || values.length == 0) {
             throw new IllegalArgumentException(
                     "constructStringContainsRegex must be called with at least one value parameter");
@@ -464,8 +463,8 @@ public class WhereFilterFactory {
                 });
         // If the match is simple, includes -any- or includes -none- we can just use a simple
         // regex of or'd values
-        if ((matchType == MatchType.Regular && internalDisjunctive) ||
-                (matchType == MatchType.Inverted && !internalDisjunctive)) {
+        if ((!matchOptions.inverted() && internalDisjunctive) ||
+                (matchOptions.inverted() && !internalDisjunctive)) {
             regex = valueStream.collect(Collectors.joining("|"));
         } else {
             // If we need to match -all of- or -not one of- then we must use forward matching

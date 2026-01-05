@@ -65,7 +65,7 @@ public class WhereFilterTest extends TestCase {
 
     public void testRawString() {
         regular(RawString.of("X * y > foo(Z)"), ConditionFilter.class, "X * y > foo(Z)");
-        inverse(RawString.of("X * y > foo(Z)"), ConditionFilter.class, "!(X * y > foo(Z))");
+        inverse(RawString.of("X * y > foo(Z)"), WhereFilterInvertedImpl.class, "not(X * y > foo(Z))");
     }
 
     public void testEq() {
@@ -329,7 +329,7 @@ public class WhereFilterTest extends TestCase {
     public void testRaw() {
         final RawString filter = RawString.of("some_crazy_thing(x, y, z)");
         regular(filter, ConditionFilter.class, "some_crazy_thing(x, y, z)");
-        inverse(filter, ConditionFilter.class, "!(some_crazy_thing(x, y, z))");
+        inverse(filter, WhereFilterInvertedImpl.class, "not(some_crazy_thing(x, y, z))");
     }
 
     private static <T extends WhereFilter> T regular(Filter f, Class<T> clazz, String expected) {

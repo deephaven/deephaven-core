@@ -9,6 +9,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.ColumnDefinition;
+import io.deephaven.engine.table.MatchOptions;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.select.ConditionFilter;
@@ -283,7 +284,7 @@ public class DeferredViewTableTest {
 
     @Test
     public void testMatchFilterRename() {
-        verifyFilterIsPrioritized(new MatchFilter(MatchFilter.MatchType.Regular, "Y", "A"));
+        verifyFilterIsPrioritized(new MatchFilter(MatchOptions.REGULAR, "Y", "A"));
     }
 
     @Test
@@ -293,27 +294,27 @@ public class DeferredViewTableTest {
 
     @Test
     public void testInvertedWrappedRenames() {
-        final WhereFilter filter = new MatchFilter(MatchFilter.MatchType.Regular, "Y", "B", "C", "D");
+        final WhereFilter filter = new MatchFilter(MatchOptions.REGULAR, "Y", "B", "C", "D");
         verifyFilterIsPrioritized(WhereFilterInvertedImpl.of(filter));
     }
 
     @Test
     public void testSerialWrappedRenames() {
         // note serial filters require incoming rowsets to match as if all previous filters were applied
-        final Filter filter = new MatchFilter(MatchFilter.MatchType.Regular, "Y", "A");
+        final Filter filter = new MatchFilter(MatchOptions.REGULAR, "Y", "A");
         verifyFilterIsPrioritized(filter.withSerial(), false);
     }
 
     @Test
     public void testBarrierWrappedRenames() {
-        final Filter filter = new MatchFilter(MatchFilter.MatchType.Regular, "Y", "A");
+        final Filter filter = new MatchFilter(MatchOptions.REGULAR, "Y", "A");
         verifyFilterIsPrioritized(filter.withDeclaredBarriers(new Object()));
     }
 
     @Test
     public void testRespectsBarrierWrappedRenames() {
         final Object barrier = new Object();
-        final WhereFilter filter = new MatchFilter(MatchFilter.MatchType.Regular, "Y", "A");
+        final WhereFilter filter = new MatchFilter(MatchOptions.REGULAR, "Y", "A");
         verifyFilterIsPrioritized(ConjunctiveFilter.of(
                 ConditionFilter.createConditionFilter("true").withDeclaredBarriers(barrier),
                 filter.withRespectedBarriers(barrier)));
@@ -322,7 +323,7 @@ public class DeferredViewTableTest {
     @Test
     public void testConjunctiveFilterRename() {
         // get crafty nesting a conjunctive filter inside of a disjunctive filter
-        final WhereFilter filter = new MatchFilter(MatchFilter.MatchType.Regular, "Y", "A");
+        final WhereFilter filter = new MatchFilter(MatchOptions.REGULAR, "Y", "A");
         verifyFilterIsPrioritized(DisjunctiveFilter.of(
                 ConditionFilter.createConditionFilter("false"),
                 ConjunctiveFilter.of(
@@ -334,7 +335,7 @@ public class DeferredViewTableTest {
     @Test
     public void testNestedConjunctiveFilterRename() {
         // get crafty with some nesting
-        final WhereFilter filter = new MatchFilter(MatchFilter.MatchType.Regular, "Y", "A");
+        final WhereFilter filter = new MatchFilter(MatchOptions.REGULAR, "Y", "A");
         verifyFilterIsPrioritized(ConjunctiveFilter.of(
                 ConditionFilter.createConditionFilter("true"),
                 ConjunctiveFilter.of(
@@ -346,8 +347,8 @@ public class DeferredViewTableTest {
     @Test
     public void testNestedDisjunctiveMultiFilterRename() {
         // goal of this test is to rename multiple inner filters via a top-level filter
-        final WhereFilter filter0 = new MatchFilter(MatchFilter.MatchType.Regular, "Y", "A");
-        final WhereFilter filter1 = new MatchFilter(MatchFilter.MatchType.Regular, "Y2", "A");
+        final WhereFilter filter0 = new MatchFilter(MatchOptions.REGULAR, "Y", "A");
+        final WhereFilter filter1 = new MatchFilter(MatchOptions.REGULAR, "Y2", "A");
         verifyFilterIsPrioritized(DisjunctiveFilter.of(filter0, filter1));
     }
 

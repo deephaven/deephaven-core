@@ -32,8 +32,8 @@ final class InstantPushdownHandler {
             // Statistics could not be processed, so assume that we overlap.
             return true;
         }
-        final long min = DateTimeUtils.epochNanos(mutableMin.getValue());
-        final long max = DateTimeUtils.epochNanos(mutableMax.getValue());
+        final long min = DateTimeUtils.epochNanos(mutableMin.get());
+        final long max = DateTimeUtils.epochNanos(mutableMax.get());
         return LongPushdownHandler.maybeOverlapsRangeImpl(
                 min, max,
                 dhLower, instantRangeFilter.isLowerInclusive(),
@@ -47,7 +47,7 @@ final class InstantPushdownHandler {
             @NotNull final MatchFilter matchFilter,
             @NotNull final Statistics<?> statistics) {
         final Object[] values = matchFilter.getValues();
-        final boolean invertMatch = matchFilter.getInvertMatch();
+        final boolean invertMatch = matchFilter.getMatchOptions().inverted();
         if (values == null || values.length == 0) {
             // No values to check against
             return invertMatch;
@@ -70,8 +70,8 @@ final class InstantPushdownHandler {
             // Statistics could not be processed, so assume that we overlap.
             return true;
         }
-        final long min = DateTimeUtils.epochNanos(mutableMin.getValue());
-        final long max = DateTimeUtils.epochNanos(mutableMax.getValue());
+        final long min = DateTimeUtils.epochNanos(mutableMin.get());
+        final long max = DateTimeUtils.epochNanos(mutableMax.get());
         if (!invertMatch) {
             return LongPushdownHandler.maybeMatches(min, max, instantNanos);
         }

@@ -3,6 +3,7 @@
 //
 package io.deephaven.parquet.table.location;
 
+import io.deephaven.engine.table.MatchOptions;
 import io.deephaven.engine.table.impl.select.LongRangeFilter;
 import io.deephaven.engine.table.impl.select.MatchFilter;
 import io.deephaven.test.types.OutOfBandTest;
@@ -92,13 +93,13 @@ public class LongPushdownHandlerTest {
 
         // unsorted list with duplicates, one inside
         assertTrue(LongPushdownHandler.maybeOverlaps(
-                new MatchFilter(MatchFilter.MatchType.Regular,
+                new MatchFilter(MatchOptions.REGULAR,
                         "l", 5_000L, 1_500L, 1_800L, 1_800L),
                 stats));
 
         // all values outside
         assertFalse(LongPushdownHandler.maybeOverlaps(
-                new MatchFilter(MatchFilter.MatchType.Regular,
+                new MatchFilter(MatchOptions.REGULAR,
                         "l", 9_000L, 10_000L),
                 stats));
 
@@ -108,15 +109,15 @@ public class LongPushdownHandlerTest {
         System.arraycopy(many, 0, withInside, 0, many.length);
         withInside[withInside.length - 1] = 1_234L;
         assertTrue(LongPushdownHandler.maybeOverlaps(
-                new MatchFilter(MatchFilter.MatchType.Regular, "l", withInside), stats));
+                new MatchFilter(MatchOptions.REGULAR, "l", withInside), stats));
 
         // empty list
         assertFalse(LongPushdownHandler.maybeOverlaps(
-                new MatchFilter(MatchFilter.MatchType.Regular, "l"), stats));
+                new MatchFilter(MatchOptions.REGULAR, "l"), stats));
 
         // list containing NULL
         assertTrue(LongPushdownHandler.maybeOverlaps(
-                new MatchFilter(MatchFilter.MatchType.Regular, "l",
+                new MatchFilter(MatchOptions.REGULAR, "l",
                         QueryConstants.NULL_LONG, 123L),
                 stats));
     }
@@ -125,34 +126,34 @@ public class LongPushdownHandlerTest {
     public void longInvertMatchFilterScenarios() {
         // gaps remain inside stats
         assertTrue(LongPushdownHandler.maybeOverlaps(
-                new MatchFilter(MatchFilter.MatchType.Inverted, "l", -1L, 0L, 1L),
+                new MatchFilter(MatchOptions.INVERTED, "l", -1L, 0L, 1L),
                 longStats(-5L, 5L)));
 
         // stats fully covered by exclusion list
         assertFalse(LongPushdownHandler.maybeOverlaps(
-                new MatchFilter(MatchFilter.MatchType.Inverted, "l", 42L),
+                new MatchFilter(MatchOptions.INVERTED, "l", 42L),
                 longStats(42L, 42L)));
 
         // exclude 10-19 leaves gaps 0-9 and 20-29
         final Object[] exclude = LongStream.range(10L, 20L).boxed().toArray();
         assertTrue(LongPushdownHandler.maybeOverlaps(
-                new MatchFilter(MatchFilter.MatchType.Inverted, "l", exclude),
+                new MatchFilter(MatchOptions.INVERTED, "l", exclude),
                 longStats(0L, 29L)));
 
         // empty exclusion list
         assertTrue(LongPushdownHandler.maybeOverlaps(
-                new MatchFilter(MatchFilter.MatchType.Inverted, "l"),
+                new MatchFilter(MatchOptions.INVERTED, "l"),
                 longStats(7L, 8L)));
 
         // NULL disables push-down
         assertTrue(LongPushdownHandler.maybeOverlaps(
-                new MatchFilter(MatchFilter.MatchType.Inverted, "l", QueryConstants.NULL_LONG),
+                new MatchFilter(MatchOptions.INVERTED, "l", QueryConstants.NULL_LONG),
                 longStats(100L, 200L)));
 
         // Inverse match of {5, 6} against statistics [5, 6] should return false but currently returns true since
         // the implementation assumes the range (5, 6) overlaps with the statistics range [5, 6].
         assertTrue(LongPushdownHandler.maybeOverlaps(
-                new MatchFilter(MatchFilter.MatchType.Inverted, "i", 5, 6),
+                new MatchFilter(MatchOptions.INVERTED, "i", 5, 6),
                 longStats(5, 6)));
     }
 }

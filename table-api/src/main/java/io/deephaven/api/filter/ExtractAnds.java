@@ -25,6 +25,11 @@ enum ExtractAnds implements Visitor<Collection<Filter>> {
     }
 
     @Override
+    public Collection<Filter> visit(FilterIsNaN isNaN) {
+        return Collections.singleton(isNaN);
+    }
+
+    @Override
     public Collection<Filter> visit(FilterComparison comparison) {
         return Collections.singleton(comparison);
     }

@@ -660,6 +660,10 @@ public class BarrageUtil {
                 if (inputTableUpdater.getValueNames().contains(name)) {
                     putMetadata(metadata, "inputtable.isValue", TRUE_STRING);
                 }
+                final String columnRestrictions = inputTableUpdater.getColumnRestrictions(name);
+                if (columnRestrictions != null) {
+                    putMetadata(metadata, "inputtable.restrictions", columnRestrictions);
+                }
             }
 
             if (field != null) {

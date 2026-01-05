@@ -64,6 +64,12 @@ public class StringsTest {
         }
 
         @Override
+        public Void visit(FilterIsNaN isNaN) {
+            ensureExplicitStringOf(FilterIsNaN.class);
+            return null;
+        }
+
+        @Override
         public Void visit(FilterComparison comparison) {
             ensureExplicitStringOf(FilterComparison.class);
             return null;

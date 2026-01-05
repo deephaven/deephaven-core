@@ -23,8 +23,6 @@ import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
 import io.deephaven.engine.table.impl.select.*;
-import io.deephaven.engine.table.impl.select.MatchFilter.CaseSensitivity;
-import io.deephaven.engine.table.impl.select.MatchFilter.MatchType;
 import io.deephaven.engine.table.impl.sources.LongAsInstantColumnSource;
 import io.deephaven.engine.table.impl.sources.NullValueColumnSource;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
@@ -1027,24 +1025,10 @@ public class QueryTableTest extends QueryTableTestBase {
     }
 
     public static WhereFilter stringContainsFilter(
-            String columnName,
-            String... values) {
-        return stringContainsFilter(MatchType.Regular, columnName, values);
-    }
-
-    public static WhereFilter stringContainsFilter(
-            MatchType matchType,
-            String columnName,
-            String... values) {
-        return stringContainsFilter(CaseSensitivity.MatchCase, matchType, columnName, values);
-    }
-
-    public static WhereFilter stringContainsFilter(
-            CaseSensitivity sensitivity,
-            MatchType matchType,
-            @NotNull String columnName,
-            String... values) {
-        return WhereFilterFactory.stringContainsFilter(sensitivity, matchType, columnName, true, false, values);
+            @NotNull final MatchOptions matchOptions,
+            @NotNull final String columnName,
+            final String... values) {
+        return WhereFilterFactory.stringContainsFilter(matchOptions, columnName, true, false, values);
     }
 
     public void testStringContainsFilter() {
@@ -1061,20 +1045,20 @@ public class QueryTableTest extends QueryTableTestBase {
         final EvalNuggetInterface[] en = new EvalNuggetInterface[] {
                 new TableComparator(
                         table.where(filter.apply("S1.contains(`aab`)")),
-                        table.where(stringContainsFilter("S1", "aab"))),
+                        table.where(stringContainsFilter(MatchOptions.REGULAR, "S1", "aab"))),
                 new TableComparator(
                         table.where(filter.apply("S2.contains(`m`)")),
-                        table.where(stringContainsFilter("S2", "m"))),
+                        table.where(stringContainsFilter(MatchOptions.REGULAR, "S2", "m"))),
                 new TableComparator(
                         table.where(filter.apply("!S2.contains(`ma`)")),
-                        table.where(stringContainsFilter(MatchFilter.MatchType.Inverted, "S2", "ma"))),
+                        table.where(stringContainsFilter(MatchOptions.INVERTED, "S2", "ma"))),
                 new TableComparator(
                         table.where(filter.apply("S2.toLowerCase().contains(`ma`)")),
-                        table.where(stringContainsFilter(MatchFilter.CaseSensitivity.IgnoreCase,
-                                MatchFilter.MatchType.Regular, "S2", "mA"))),
+                        table.where(stringContainsFilter(MatchOptions.builder().caseInsensitive(true).build(),
+                                "S2", "mA"))),
                 new TableComparator(
                         table.where(filter.apply("S2.contains(`mA`)")),
-                        table.where(stringContainsFilter("S2", "mA"))),
+                        table.where(stringContainsFilter(MatchOptions.REGULAR, "S2", "mA"))),
         };
 
         for (int i = 0; i < 500; i++) {
@@ -1170,8 +1154,9 @@ public class QueryTableTest extends QueryTableTestBase {
         TableTools.showWithRowSet(geq1b);
 
         assertTableEquals(geq1b, geq1);
-        assertTableEquals(TableTools.newTable(doubleCol("DV", 1.0, 2.0, Double.NaN, 6.0, Double.POSITIVE_INFINITY, 9.0),
-                intCol("IV", 1, 2, 4, 6, 7, 9)), geq1);
+        // NOTE: NaN is not included (following IEEE 754)
+        assertTableEquals(TableTools.newTable(doubleCol("DV", 1.0, 2.0, 6.0, Double.POSITIVE_INFINITY, 9.0),
+                intCol("IV", 1, 2, 6, 7, 9)), geq1);
     }
 
     public void testLongRangeFilterSimple() {
