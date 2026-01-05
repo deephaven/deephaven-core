@@ -11,5 +11,5 @@ import jsinterop.annotations.JsType;
         name = "dhinternal.io.deephaven_core.proto.remotefilesource_pb.RemoteFileSourceClientRequest.RequestCase",
         namespace = JsPackage.GLOBAL)
 public class RequestCase {
-    public static int META_RESPONSE, REQUEST_NOT_SET, SET_EXECUTION_CONTEXT, TEST_COMMAND;
+    public static int META_RESPONSE, REQUEST_NOT_SET, SET_EXECUTION_CONTEXT;
 }

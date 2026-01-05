@@ -123,9 +123,6 @@ public class RemoteFileSourceClientRequest {
         RemoteFileSourceClientRequest.ToObjectReturnType.SetExecutionContextFieldType getSetExecutionContext();
 
         @JsProperty
-        String getTestCommand();
-
-        @JsProperty
         void setMetaResponse(
                 RemoteFileSourceClientRequest.ToObjectReturnType.MetaResponseFieldType metaResponse);
 
@@ -135,9 +132,6 @@ public class RemoteFileSourceClientRequest {
         @JsProperty
         void setSetExecutionContext(
                 RemoteFileSourceClientRequest.ToObjectReturnType.SetExecutionContextFieldType setExecutionContext);
-
-        @JsProperty
-        void setTestCommand(String testCommand);
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -246,9 +240,6 @@ public class RemoteFileSourceClientRequest {
         RemoteFileSourceClientRequest.ToObjectReturnType0.SetExecutionContextFieldType getSetExecutionContext();
 
         @JsProperty
-        String getTestCommand();
-
-        @JsProperty
         void setMetaResponse(
                 RemoteFileSourceClientRequest.ToObjectReturnType0.MetaResponseFieldType metaResponse);
 
@@ -258,9 +249,6 @@ public class RemoteFileSourceClientRequest {
         @JsProperty
         void setSetExecutionContext(
                 RemoteFileSourceClientRequest.ToObjectReturnType0.SetExecutionContextFieldType setExecutionContext);
-
-        @JsProperty
-        void setTestCommand(String testCommand);
     }
 
     public static native RemoteFileSourceClientRequest deserializeBinary(Uint8Array bytes);
@@ -278,8 +266,6 @@ public class RemoteFileSourceClientRequest {
 
     public native void clearSetExecutionContext();
 
-    public native void clearTestCommand();
-
     public native RemoteFileSourceMetaResponse getMetaResponse();
 
     public native int getRequestCase();
@@ -288,13 +274,9 @@ public class RemoteFileSourceClientRequest {
 
     public native SetExecutionContextRequest getSetExecutionContext();
 
-    public native String getTestCommand();
-
     public native boolean hasMetaResponse();
 
     public native boolean hasSetExecutionContext();
-
-    public native boolean hasTestCommand();
 
     public native Uint8Array serializeBinary();
 
@@ -307,8 +289,6 @@ public class RemoteFileSourceClientRequest {
     public native void setSetExecutionContext();
 
     public native void setSetExecutionContext(SetExecutionContextRequest value);
-
-    public native void setTestCommand(String value);
 
     public native RemoteFileSourceClientRequest.ToObjectReturnType0 toObject();
 
