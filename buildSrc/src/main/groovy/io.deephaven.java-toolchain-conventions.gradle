@@ -4,6 +4,8 @@ plugins {
   id 'java'
 }
 
+// Note: if / when compilerVersion default is changed from 21, we should probably match that in version in
+// buildSrc/build.gradle.
 def compilerVersion = Integer.parseInt((String)project.findProperty('compilerVersion') ?: '21')
 def compilerVendor = project.hasProperty('compilerVendor') ?  JvmVendorSpec.matching((String)project.property('compilerVendor')): null
 

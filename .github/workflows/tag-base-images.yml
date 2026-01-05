@@ -20,7 +20,6 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: |
-            11
             17
             21
 
@@ -33,7 +32,7 @@ jobs:
 
       - name: Setup gradle properties
         run: |
-          .github/scripts/gradle-properties.sh 11 17 21 >> gradle.properties
+          .github/scripts/gradle-properties.sh 17 21 >> gradle.properties
           cat gradle.properties
 
       - name: Login to ghcr.io

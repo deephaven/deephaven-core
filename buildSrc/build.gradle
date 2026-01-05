@@ -3,10 +3,25 @@ plugins {
     id 'groovy-gradle-plugin'
 }
 
+// This is a simplification of how our normal projects uses io.deephaven.java-toolchain-conventions.
+// We choose to use Java 21 as the buildSrc toolchain / compiler (same as the normal projects); and set a target language
+// level of Java 11. The target language level here does not effect the target language level of the normal projects.
+
+final int buildSrcCompilerVersion = 21
+final int buildSrcLanguageLevel = 11
+
 java {
     toolchain {
-        languageVersion = JavaLanguageVersion.of(11)
+        languageVersion = JavaLanguageVersion.of(buildSrcCompilerVersion)
     }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.release = buildSrcLanguageLevel
+}
+
+tasks.withType(GroovyCompile).configureEach {
+    options.release = buildSrcLanguageLevel
 }
 
 repositories {
