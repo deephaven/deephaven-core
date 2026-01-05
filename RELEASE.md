@@ -106,10 +106,10 @@ $ git checkout -b release/vX.Y
 $ git commit --allow-empty -m "chore: Cut for X.Y"
 ```
 
-#### Procedure for patch releases
+#### Procedure for minor releases
 
-For patch releases, typically the branch will be based off of the previous release tag, and not `upstream/main`, and the necessary patch fixes can be cherry-picked from the `upstream/main` branch.
-The patch release manager is also responsible for bumping the patch version numbers as appropriate (note comment block on the list of commands
+For minor releases, typically the branch will be based off of the previous release tag, and not `upstream/main`, and the necessary minor fixes can be cherry-picked from the `upstream/main` branch.
+The minor release manager is also responsible for bumping the minor version numbers as appropriate (note comment block on the list of commands
 below).
 
 Here is an example going from `X.0` to `X.1`:
@@ -233,7 +233,7 @@ $ git push upstream vX.Y
 
 Create a new [GitHub release](https://github.com/deephaven/deephaven-core/releases/new) and use the `vX.Y` tag as reference.
 
-The convention is to have the Release title of the form `vX.Y` and to autogenerate the release notes in comparison to the previous release tag. Question: should we always generate release notes based off of the previous minor release, instead of patch? Our git release workflow suggests we may want to do it always minor to minor.
+The convention is to have the Release title of the form `vX.Y` and to autogenerate the release notes in comparison to the previous release tag.
 
 Do not use Github's "Generate release notes" button. Use Cocogitto to generate the release notes and copy the result into the text box.
 
@@ -297,7 +297,7 @@ cpp-client/deephaven/CMakeLists.txt
 This leaves the files "ready" for the next regular release, and also ensures any build done from
 a developer for testing of latest is not confused with the code just released.
 
-In the case of a patch release these would need to be updated to a different version, like from `31.0` to `31.1`.
+In the case of a minor release these would need to be updated to a different version, like from `31.0` to `31.1`.
 
 ## External dependencies
 

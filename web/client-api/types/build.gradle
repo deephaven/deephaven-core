@@ -16,8 +16,8 @@ dependencies {
 // npm requires the version string be parseable as a semver, so we'll unconditionally change the deephaven version 'X.Y'
 // to 'X.Y.0'
 def deephavenMajorVersion = project.property('deephavenMajorVersion').toString().trim()
-def deephavenPatchVersion = project.property('deephavenPatchVersion').toString().trim()
-def npmVersion = "${deephavenMajorVersion}.${deephavenPatchVersion}.0".toString()
+def deephavenMinorVersion = project.property('deephavenMinorVersion').toString().trim()
+def npmVersion = "${deephavenMajorVersion}.${deephavenMinorVersion}.0".toString()
 def preId = project.findProperty('npmPreid')// i.e. 'nightly'
 if (preId) {
     npmVersion += preId + new Date().format("yyyyMMdd")
