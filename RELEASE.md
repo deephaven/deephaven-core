@@ -251,10 +251,12 @@ Hit the GitHub "Publish release" button.
 The go client release consists of simply tagging and pushing to upstream:
 
 ```shell
-$ git tag -a -m "[Release] Deephaven Go Client X.Y" go/vX.Y release/vX.Y
-$ git show go/vX.Y
-$ git push upstream go/vX.Y
+$ git tag -a -m "[Release] Deephaven Go Client X.Y.0" go/vX.Y.0 release/vX.Y
+$ git show go/vX.Y.0
+$ git push upstream go/vX.Y.0
 ```
+
+Note that [go requires](https://go.dev/blog/publishing-go-modules#semantic-versions-and-modules) the version part of the tag to adhere to semantic versioning.
 
 ### 11. Deephaven.io release
 
