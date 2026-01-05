@@ -54,9 +54,11 @@ import java.util.Map;
 @JsType(namespace = "dh.remotefilesource", name = "RemoteFileSourceService")
 public class JsRemoteFileSourceService extends HasEventHandling {
     /** Event name for generic messages from the server */
+    @JsProperty(namespace = "dh.remotefilesource.RemoteFileSourceService")
     public static final String EVENT_MESSAGE = "message";
 
     /** Event name for resource request events from the server */
+    @JsProperty(namespace = "dh.remotefilesource.RemoteFileSourceService")
     public static final String EVENT_REQUEST_SOURCE = "requestsource";
 
     // Plugin name must match RemoteFileSourcePlugin.name() on the server
