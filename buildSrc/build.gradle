@@ -5,10 +5,10 @@ plugins {
 
 // This is a simplification of how our normal projects uses io.deephaven.java-toolchain-conventions.
 // We choose to use Java 21 as the buildSrc toolchain / compiler (same as the normal projects); and set a target language
-// level of Java 11. The target language level here does not effect the target language level of the normal projects.
+// level of Java 17. The target language level here does not effect the target language level of the normal projects.
 
 final int buildSrcCompilerVersion = 21
-final int buildSrcLanguageLevel = 11
+final int buildSrcLanguageLevel = 17
 
 java {
     toolchain {
@@ -45,7 +45,7 @@ dependencies {
         because('needed by plugin com.avast.gradle.docker-compose')
     }
 
-    implementation('com.diffplug.spotless:spotless-plugin-gradle:7.2.0') {
+    implementation('com.diffplug.spotless:spotless-plugin-gradle:8.1.0') {
         because('needed by plugin java-coding-conventions')
     }
 
