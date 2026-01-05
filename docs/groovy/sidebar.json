@@ -23,6 +23,10 @@
             "label": "A Crash Course in Deephaven",
             "items": [
               {
+                "label": "Overview",
+                "path": "tutorials/crash-course/overview.md"
+              },
+              {
                 "label": "Get Started",
                 "path": "tutorials/crash-course/get-started.md"
               },
