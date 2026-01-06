@@ -4,88 +4,16 @@ description: A crash course in Deephaven that covers the basics of working with 
 hide_table_of_contents: true
 ---
 
-import { CoreTutorialCard } from '@theme/deephaven/core-docs-components';
-
-<div className="comment-title">
-
 A crash course in Deephaven that covers the basics of working with tables and plots.
 
-</div>
+## Crash course contents
 
-<hr className="margin-bottom--lg" />
-
-<div className="row">
-
-<CoreTutorialCard to="/core/docs/groovy/tutorials/crash-course/get-started/">
-
-## Get started
-
-This guide provides a broad - but clear and technically informative - overview of Deephaven's capabilities. Dive in and unlock the potential of this powerful platform.
-
-</CoreTutorialCard>
-
-<CoreTutorialCard to="/core/docs/groovy/tutorials/crash-course/architecture-overview/">
-
-## Architecture overview
-
-Deephaven's power is largely due to the concept that everything is a table.
-
-</CoreTutorialCard>
-
-<CoreTutorialCard to="/core/docs/groovy/tutorials/crash-course/create-tables/">
-
-## Create tables
-
-Learn to create tables from scratch with synthetic data or by importing data from external sources.
-
-</CoreTutorialCard>
-
-<CoreTutorialCard to="/core/docs/groovy/tutorials/crash-course/table-ops/">
-
-## Table operations
-
-This section will cover some table operations that appear in almost all queries.
-
-</CoreTutorialCard>
-
-<CoreTutorialCard to="/core/docs/groovy/tutorials/crash-course/query-strings/">
-
-## Query strings
-
-Deephaven query strings are the primary way of expressing commands directly to the Deephaven engine. They translate the user's intention into compiled code that the engine can execute.
-
-</CoreTutorialCard>
-
-<CoreTutorialCard to="/core/docs/groovy/tutorials/crash-course/plots/">
-
-## Real-time plots
-
-Whether your data is static or updating in real time, Deephaven supports plotting via multiple libraries, including its own built-in plotting API.
-
-</CoreTutorialCard>
-
-<CoreTutorialCard to="/core/docs/groovy/tutorials/crash-course/export-data/">
-
-## Data I/O
-
-Data I/O is mission-critical for any real-time data analysis platform. Deephaven supports a wide variety of data sources and formats, including CSV, Parquet, Kafka, and more.
-
-</CoreTutorialCard>
-
-<CoreTutorialCard to="/core/docs/groovy/tutorials/crash-course/configure/">
-
-## Configure your Deephaven Instance
-
-This section covers configuration details needed to take your Deephaven instance beyond the defaults.
-
-</CoreTutorialCard>
-
-<CoreTutorialCard to="/core/docs/groovy/tutorials/crash-course/crash-course-wrap-up/">
-
-## Wrapping Up
-
-Where to go from here.
-
-</CoreTutorialCard>
-
-</div>
+- **[Get started](get-started.md)** - A broad but clear overview of Deephaven's capabilities. Dive in and unlock the potential of this powerful platform.
+- **[Architecture overview](architecture-overview.md)** - Deephaven's power is largely due to the concept that everything is a table.
+- **[Create tables](create-tables.md)** - Learn to create tables from scratch with synthetic data or by importing data from external sources.
+- **[Table operations](table-ops.md)** - Table operations that appear in almost all queries.
+- **[Query strings](query-strings.md)** - The primary way of expressing commands directly to the Deephaven engine.
+- **[Real-time plots](plots.md)** - Plotting via multiple libraries, including Deephaven's built-in plotting API.
+- **[Data I/O](export-data.md)** - Data import and export with CSV, Parquet, Kafka, and more.
+- **[Configure your instance](configure.md)** - Configuration details to take your Deephaven instance beyond the defaults.
+- **[Wrapping up](crash-course-wrap-up.md)** - Where to go from here.
