@@ -17,8 +17,6 @@ import io.deephaven.proto.backplane.grpc.RemoteFileSourceServerRequest;
 import io.deephaven.proto.backplane.grpc.SetExecutionContextResponse;
 
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -88,7 +86,7 @@ public class RemoteFileSourceMessageStream implements ObjectType.MessageStream, 
 
         for (String contextResourcePath : resourcePaths) {
             if (resourceName.equals(contextResourcePath)) {
-                log.info().append("Can source: ").append(resourceName).endl();
+                log.debug().append("Can source: ").append(resourceName).endl();
                 return true;
             }
         }
@@ -185,15 +183,6 @@ public class RemoteFileSourceMessageStream implements ObjectType.MessageStream, 
             executionContext = null;
             log.info().append("Cleared execution context").endl();
         }
-    }
-
-    /**
-     * Gets the current execution context.
-     *
-     * @return the execution context
-     */
-    public static RemoteFileSourceExecutionContext getExecutionContext() {
-        return executionContext;
     }
 
     /**
@@ -353,7 +342,7 @@ public class RemoteFileSourceMessageStream implements ObjectType.MessageStream, 
         public RemoteFileSourceExecutionContext(RemoteFileSourceMessageStream activeMessageStream,
                 List<String> resourcePaths) {
             this.activeMessageStream = activeMessageStream;
-            this.resourcePaths = resourcePaths != null ? resourcePaths : Collections.emptyList();
+            this.resourcePaths = resourcePaths;
         }
 
         /**
@@ -368,10 +357,10 @@ public class RemoteFileSourceMessageStream implements ObjectType.MessageStream, 
         /**
          * Gets the resource paths that should be resolved from the remote source.
          *
-         * @return a copy of the list of resource paths
+         * @return the list of resource paths
          */
         public List<String> getResourcePaths() {
-            return new ArrayList<>(resourcePaths);
+            return resourcePaths;
         }
     }
 }
