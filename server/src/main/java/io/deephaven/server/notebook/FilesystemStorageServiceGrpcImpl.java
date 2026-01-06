@@ -92,9 +92,8 @@ public class FilesystemStorageServiceGrpcImpl extends StorageServiceGrpc.Storage
     @Deprecated
     private static final String REQUIRED_PATH_PREFIX = "/";
     /**
-     * Although REQUIRED_PATH_PREFIX has been deprecated, it is still used; this constant is for the
-     * same forward slash, to detect situations where the UI path separator is different from the
-     * OS path separator (i.e. on Windows).
+     * Although REQUIRED_PATH_PREFIX has been deprecated, it is still used; this constant is for the same forward slash,
+     * to detect situations where the UI path separator is different from the OS path separator (i.e. on Windows).
      */
     private static final String LINUX_SEPARATOR = "/";
 
@@ -142,9 +141,9 @@ public class FilesystemStorageServiceGrpcImpl extends StorageServiceGrpc.Storage
 
     /**
      * On Windows systems, we need to replace backslashes with forward slashes for the Web UI
+     * 
      * @param path Path String that may need to be modified
-     * @return Original path on non-Windows systems, or path with backslashes replaced with
-     * slashes on Windows systems.
+     * @return Original path on non-Windows systems, or path with backslashes replaced with slashes on Windows systems.
      */
     private String maybeReplaceFileSeparators(final String path) {
         if (File.separator.equals(DataDir.WINDOWS_SEPARATOR)) {
