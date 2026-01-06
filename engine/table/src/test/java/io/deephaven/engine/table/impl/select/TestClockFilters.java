@@ -236,6 +236,47 @@ public class TestClockFilters {
         Factory<SortedClockFilter> factory = () -> new SortedClockFilter("Timestamp", clock, true);
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
 
+        // clock filter declares barrier, following RowSetCapturingFilters respects it barriers
+        try (final RowSetCapturingFilter filter1 = new RowSetCapturingFilter();
+                final RowSetCapturingFilter filter2 = new RowSetCapturingFilter()) {
+
+            clock.reset();
+
+            final SortedClockFilter clockFilter = factory.create();
+            final Table result = testInput3.where(Filter.and(
+                    filter1,
+                    clockFilter.withDeclaredBarriers("A"),
+                    filter2.withRespectedBarriers("A")));
+            assertArrayEquals(new int[] {1, 1}, ColumnVectors.ofInt(result, "Int").toArray());
+
+            assertEquals(18, filter1.numRowsProcessed());
+            assertEquals(2, filter2.numRowsProcessed());
+
+            filter1.reset();
+            filter2.reset();
+            updateGraph.runWithinUnitTestCycle(() -> {
+                clock.run();
+                clockFilter.run();
+            });
+            assertArrayEquals(new int[] {1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2},
+                    ColumnVectors.ofInt(result, "Int").toArray());
+
+            assertEquals(0, filter1.numRowsProcessed());
+            assertEquals(10, filter2.numRowsProcessed());
+
+            filter1.reset();
+            filter2.reset();
+            updateGraph.runWithinUnitTestCycle(() -> {
+                clock.run();
+                clockFilter.run();
+            });
+            assertArrayEquals(new int[] {1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3},
+                    ColumnVectors.ofInt(result, "Int").toArray());
+
+            assertEquals(0, filter1.numRowsProcessed());
+            assertEquals(6, filter2.numRowsProcessed());
+        }
+
         // Clock filter between two RowSetCapturingFilters with barriers
         try (final RowSetCapturingFilter filter1 = new RowSetCapturingFilter();
                 final RowSetCapturingFilter filter2 = new RowSetCapturingFilter()) {
@@ -468,6 +509,45 @@ public class TestClockFilters {
     public void testUnsortedWithBarriers() {
         Factory<UnsortedClockFilter> factory = () -> new UnsortedClockFilter("Timestamp", clock, true);
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+
+        // clock filter declares barrier, following RowSetCapturingFilters respects it barriers
+        try (final RowSetCapturingFilter filter1 = new RowSetCapturingFilter();
+                final RowSetCapturingFilter filter2 = new RowSetCapturingFilter()) {
+            clock.reset();
+            final UnsortedClockFilter clockFilter = factory.create();
+            final Table result = testInput3.where(Filter.and(
+                    filter1,
+                    clockFilter.withDeclaredBarriers("A"),
+                    filter2.withRespectedBarriers("A")));
+            assertArrayEquals(new int[] {1, 1}, ColumnVectors.ofInt(result, "Int").toArray());
+
+            assertEquals(18, filter1.numRowsProcessed());
+            assertEquals(2, filter2.numRowsProcessed());
+
+            filter1.reset();
+            filter2.reset();
+            updateGraph.runWithinUnitTestCycle(() -> {
+                clock.run();
+                clockFilter.run();
+            });
+            assertArrayEquals(new int[] {1, 2, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2},
+                    ColumnVectors.ofInt(result, "Int").toArray());
+
+            assertEquals(0, filter1.numRowsProcessed());
+            assertEquals(10, filter2.numRowsProcessed());
+
+            filter1.reset();
+            filter2.reset();
+            updateGraph.runWithinUnitTestCycle(() -> {
+                clock.run();
+                clockFilter.run();
+            });
+            assertArrayEquals(new int[] {1, 2, 3, 1, 2, 3, 2, 2, 3, 2, 2, 3, 2, 2, 3, 2, 2, 3},
+                    ColumnVectors.ofInt(result, "Int").toArray());
+
+            assertEquals(0, filter1.numRowsProcessed());
+            assertEquals(6, filter2.numRowsProcessed());
+        }
 
         // Sandwiched clock filter between two RowSetCapturingFilters with barriers
         try (final RowSetCapturingFilter filter1 = new RowSetCapturingFilter();

@@ -1404,6 +1404,8 @@ public class QueryTable extends BaseTable<QueryTable> {
                             } else {
                                 result = result.whereInternal(filter);
                             }
+                            // Add the barriers from the current filter.
+                            declaredBarriers.addAll(ExtractBarriers.of(filter));
                             if (!last) {
                                 final WhereFilter[] subset =
                                         Arrays.copyOfRange(extractedFilters, fi + 1, extractedFilters.length);
