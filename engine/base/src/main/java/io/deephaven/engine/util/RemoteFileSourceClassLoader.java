@@ -6,6 +6,7 @@ package io.deephaven.engine.util;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.net.URLStreamHandler;
@@ -78,15 +79,19 @@ public class RemoteFileSourceClassLoader extends ClassLoader {
      */
     @Override
     protected URL findResource(String name) {
-        for (RemoteFileSourceProvider provider : providers) {
-            if (!provider.isActive() || !provider.canSourceResource(name)) {
-                continue;
+        RemoteFileSourceProvider provider = null;
+        for (RemoteFileSourceProvider candidate : providers) {
+            if (candidate.isActive() && candidate.canSourceResource(name)) {
+                provider = candidate;
+                break;
             }
+        }
 
+        if (provider != null) {
             try {
                 return new URL(null, "remotefile://" + name, new RemoteFileURLStreamHandler(provider, name));
-            } catch (java.net.MalformedURLException e) {
-                // Continue to next provider if URL creation fails
+            } catch (MalformedURLException e) {
+                // Fall through to parent if URL creation fails
             }
         }
 
@@ -169,10 +174,12 @@ public class RemoteFileSourceClassLoader extends ClassLoader {
         /**
          * Returns an input stream that reads from this connection's resource.
          *
-         * <p>This method ensures the connection is established before returning the stream.
+         * <p>This method calls {@link #connect()} to ensure the connection is established and resource bytes are
+         * fetched from the provider. The method then verifies that content has been successfully downloaded before
+         * creating the input stream.
          *
-         * @return an input stream that reads from the resource
-         * @throws IOException if the connection cannot be established or if the resource has no content
+         * @return an input stream that reads from the fetched resource bytes
+         * @throws IOException if the connection or content download fails or if the resource has no content
          */
         @Override
         public InputStream getInputStream() throws IOException {
