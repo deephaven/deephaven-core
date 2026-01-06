@@ -30,7 +30,7 @@ jobs:
 
   publish:
     needs: changes
-    if: ${{ needs.changes.outputs.non-docs == 'true' }}
+    if: ${{ needs.changes.outputs.non-docs == 'true' || startsWith(github.ref, 'refs/heads/release/v') }}
     runs-on: ubuntu-24.04
     permissions:
       id-token: write
