@@ -14,7 +14,7 @@ import io.deephaven.util.BooleanUtils;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Reinterpret result {@link ColumnSource} implementations that translates {@link byte} to {@code Boolean} values.
+ * Reinterpret result {@link ColumnSource} implementations that translates {@code byte} to {@code Boolean} values.
  */
 public class WritableByteAsBooleanColumnSource extends ByteAsBooleanColumnSource
         implements MutableColumnSourceGetDefaults.ForBoolean, WritableColumnSource<Boolean> {

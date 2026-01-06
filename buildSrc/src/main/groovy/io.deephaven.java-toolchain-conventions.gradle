@@ -80,6 +80,13 @@ def groovyCompilerLauncher = javaToolchains.launcherFor {
   }
 } as Provider<JavaLauncher>
 
+def javadocTool_ = javaToolchains.javadocToolFor {
+    languageVersion = JavaLanguageVersion.of(compilerVersion)
+    if (compilerVendor != null) {
+        vendor = compilerVendor
+    }
+} as Provider<JavadocTool>
+
 tasks.withType(JavaCompile).configureEach {
   javaCompiler.set compiler
 
@@ -132,6 +139,9 @@ tasks.withType(GroovyCompile).configureEach {
   }
 }
 
+tasks.withType(Javadoc).configureEach {
+    javadocTool.set javadocTool_
+}
 
 def createCompilerDirectives = tasks.register('createCompilerDirectives') {
   def compilerDirectivesFile = project.layout.buildDirectory.file('dh-compiler-directives.txt')
