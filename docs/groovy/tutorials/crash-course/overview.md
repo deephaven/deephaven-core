@@ -16,7 +16,7 @@ A crash course in Deephaven that covers the basics of working with tables and pl
 
 <div className="row">
 
-<CoreTutorialCard to="/core/docs/groovy/tutorials/crash-course/get-started/">
+<CoreTutorialCard to="/core/docs/tutorials/crash-course/get-started/">
 
 ## Get started
 
@@ -24,7 +24,7 @@ This guide provides a broad - but clear and technically informative - overview o
 
 </CoreTutorialCard>
 
-<CoreTutorialCard to="/core/docs/groovy/tutorials/crash-course/architecture-overview/">
+<CoreTutorialCard to="/core/docs/tutorials/crash-course/architecture-overview/">
 
 ## Architecture overview
 
@@ -32,7 +32,7 @@ Deephaven's power is largely due to the concept that everything is a table.
 
 </CoreTutorialCard>
 
-<CoreTutorialCard to="/core/docs/groovy/tutorials/crash-course/create-tables/">
+<CoreTutorialCard to="/core/docs/tutorials/crash-course/create-tables/">
 
 ## Create tables
 
@@ -40,7 +40,7 @@ Learn to create tables from scratch with synthetic data or by importing data fro
 
 </CoreTutorialCard>
 
-<CoreTutorialCard to="/core/docs/groovy/tutorials/crash-course/table-ops/">
+<CoreTutorialCard to="/core/docs/tutorials/crash-course/table-ops/">
 
 ## Table operations
 
@@ -48,7 +48,7 @@ This section will cover some table operations that appear in almost all queries.
 
 </CoreTutorialCard>
 
-<CoreTutorialCard to="/core/docs/groovy/tutorials/crash-course/query-strings/">
+<CoreTutorialCard to="/core/docs/tutorials/crash-course/query-strings/">
 
 ## Query strings
 
@@ -56,7 +56,7 @@ Deephaven query strings are the primary way of expressing commands directly to t
 
 </CoreTutorialCard>
 
-<CoreTutorialCard to="/core/docs/groovy/tutorials/crash-course/plots/">
+<CoreTutorialCard to="/core/docs/tutorials/crash-course/plots/">
 
 ## Real-time plots
 
@@ -64,7 +64,7 @@ Whether your data is static or updating in real time, Deephaven supports plottin
 
 </CoreTutorialCard>
 
-<CoreTutorialCard to="/core/docs/groovy/tutorials/crash-course/export-data/">
+<CoreTutorialCard to="/core/docs/tutorials/crash-course/export-data/">
 
 ## Data I/O
 
@@ -72,7 +72,7 @@ Data I/O is mission-critical for any real-time data analysis platform. Deephaven
 
 </CoreTutorialCard>
 
-<CoreTutorialCard to="/core/docs/groovy/tutorials/crash-course/configure/">
+<CoreTutorialCard to="/core/docs/tutorials/crash-course/configure/">
 
 ## Configure your Deephaven Instance
 
@@ -80,7 +80,7 @@ This section covers configuration details needed to take your Deephaven instance
 
 </CoreTutorialCard>
 
-<CoreTutorialCard to="/core/docs/groovy/tutorials/crash-course/crash-course-wrap-up/">
+<CoreTutorialCard to="/core/docs/tutorials/crash-course/crash-course-wrap-up/">
 
 ## Wrapping Up
 
