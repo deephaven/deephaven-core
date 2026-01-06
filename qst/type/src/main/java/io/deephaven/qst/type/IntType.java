@@ -7,7 +7,7 @@ import io.deephaven.annotations.SingletonStyle;
 import org.immutables.value.Value.Immutable;
 
 /**
- * The primitive {@link int} type.
+ * The primitive {@code int} type.
  */
 @Immutable
 @SingletonStyle

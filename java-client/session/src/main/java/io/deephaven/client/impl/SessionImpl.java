@@ -54,9 +54,6 @@ import java.util.function.Function;
 /**
  * A {@link Session} implementation that uses {@link io.deephaven.proto.backplane.grpc.BatchTableRequest batch requests}
  * and memoizes based on {@link io.deephaven.qst.table.TableSpec} equality.
- *
- * <p>
- * {@inheritDoc}
  */
 public final class SessionImpl extends SessionBase {
     private static final Logger log = LoggerFactory.getLogger(SessionImpl.class);
