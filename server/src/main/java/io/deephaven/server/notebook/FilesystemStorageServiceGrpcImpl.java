@@ -91,6 +91,12 @@ public class FilesystemStorageServiceGrpcImpl extends StorageServiceGrpc.Storage
      */
     @Deprecated
     private static final String REQUIRED_PATH_PREFIX = "/";
+    /**
+     * Although REQUIRED_PATH_PREFIX has been deprecated, it is still used; this constant is for the
+     * same forward slash, to detect situations where the UI path separator is different from the
+     * OS path separator (i.e. on Windows).
+     */
+    private static final String LINUX_SEPARATOR = "/";
 
     private final Path root = Paths.get(STORAGE_PATH).normalize();
     private final SessionService sessionService;
@@ -113,16 +119,13 @@ public class FilesystemStorageServiceGrpcImpl extends StorageServiceGrpc.Storage
     }
 
     private Path resolveOrThrow(String incomingPath) {
-        String resolveDetails = "\nIncoming path is: " + incomingPath;
+        String resolveDetails = "\nOriginal incoming path is: " + incomingPath;
         resolveDetails = resolveDetails + "\nFile separator is: " + File.separator;
         incomingPath = maybeReplaceFileSeparators(incomingPath);
-        while (incomingPath.length() > 0 &&
-                (incomingPath.startsWith(REQUIRED_PATH_PREFIX))) {
+        while (incomingPath.startsWith(REQUIRED_PATH_PREFIX)) {
             incomingPath = incomingPath.substring(1);
         }
         Path resolved = root.resolve(incomingPath).normalize();
-        resolveDetails = resolveDetails + "\nResolved path is: " + resolved;
-        resolveDetails = resolveDetails + "\nWhich we want to start with root: " + root;
 
         if (resolved.startsWith(root)) {
             return resolved;
@@ -139,13 +142,13 @@ public class FilesystemStorageServiceGrpcImpl extends StorageServiceGrpc.Storage
 
     /**
      * On Windows systems, we need to replace backslashes with forward slashes for the Web UI
-     * 
      * @param path Path String that may need to be modified
-     * @return Original path on non-Windows systems, or path with backslashes replaced with slashes on Windows systems.
+     * @return Original path on non-Windows systems, or path with backslashes replaced with
+     * slashes on Windows systems.
      */
     private String maybeReplaceFileSeparators(final String path) {
         if (File.separator.equals(DataDir.WINDOWS_SEPARATOR)) {
-            return path.replace(DataDir.WINDOWS_SEPARATOR, REQUIRED_PATH_PREFIX);
+            return path.replace(DataDir.WINDOWS_SEPARATOR, LINUX_SEPARATOR);
         } else {
             return path;
         }
@@ -194,7 +197,7 @@ public class FilesystemStorageServiceGrpcImpl extends StorageServiceGrpc.Storage
         if (filterGlob.contains("**")) {
             throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, "Bad glob, only single `*`s are supported");
         }
-        if (filterGlob.contains(File.separator) || filterGlob.contains(REQUIRED_PATH_PREFIX)) {
+        if (filterGlob.contains(File.separator) || filterGlob.contains(LINUX_SEPARATOR)) {
             throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
                     "Bad glob, only the same directory can be checked");
         }
