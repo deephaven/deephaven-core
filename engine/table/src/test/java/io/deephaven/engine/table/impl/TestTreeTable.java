@@ -133,6 +133,7 @@ public class TestTreeTable extends RefreshingTableTestCase {
                 ice.getMessage());
     }
 
+    @Test
     public void testDH21297() throws ExecutionException, InterruptedException, TimeoutException {
         final IntTestSource sentinel = new IntTestSource();
         final IntTestSource parent = new IntTestSource();
@@ -159,9 +160,9 @@ public class TestTreeTable extends RefreshingTableTestCase {
         showWithRowSet(source);
         showWithRowSet(filteredSource);
 
-        System.out.println("\n\nAdding keys 4,5");
-
         assertArrayEquals(new int[] {0, 1, 2, 3}, ColumnVectors.ofInt(filteredSource, "Sentinel").toArray());
+
+        System.out.println("\n\nAdding keys 4,5");
 
         updateGraph.runWithinUnitTestCycle(() -> {
             TstUtils.addToTable(source,
@@ -173,6 +174,8 @@ public class TestTreeTable extends RefreshingTableTestCase {
 
         showWithRowSet(source);
         showWithRowSet(filteredSource);
+
+        assertArrayEquals(new int[] {0, 4, 1, 2, 3, 5}, ColumnVectors.ofInt(filteredSource, "Sentinel").toArray());
 
         System.out.println("\n\nShifting keys 0-1,+4");
 
@@ -194,6 +197,8 @@ public class TestTreeTable extends RefreshingTableTestCase {
 
         showWithRowSet(source);
         showWithRowSet(filteredSource);
+
+        assertArrayEquals(new int[] {0, 4, 1, 2, 3, 5}, ColumnVectors.ofInt(filteredSource, "Sentinel").toArray());
 
         System.out.println("\n\nShifting keys 4-5,-4 and 10-21,+1");
 
@@ -219,5 +224,6 @@ public class TestTreeTable extends RefreshingTableTestCase {
         showWithRowSet(source);
         showWithRowSet(filteredSource);
 
+        assertArrayEquals(new int[] {0, 4, 1, 2, 3, 5}, ColumnVectors.ofInt(filteredSource, "Sentinel").toArray());
     }
 }
