@@ -4,14 +4,17 @@
 package io.deephaven.engine.util.scripts;
 
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.context.QueryCompilerImpl;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.impl.util.ColumnHolder;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.util.GroovyDeephavenSession;
 import io.deephaven.engine.util.ScriptSession;
+import io.deephaven.engine.util.TableTools;
 import io.deephaven.function.Numeric;
 import io.deephaven.function.Sort;
 import io.deephaven.plugin.type.ObjectTypeLookup.NoOp;
@@ -28,6 +31,9 @@ import java.util.Arrays;
 import java.util.Optional;
 import java.util.Set;
 
+import static io.deephaven.engine.testutil.TstUtils.assertTableEquals;
+import static io.deephaven.engine.util.TableTools.booleanCol;
+import static io.deephaven.engine.util.TableTools.stringCol;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -631,6 +637,32 @@ public class TestGroovyDeephavenSession {
         QueryScope.addParam("d", 5d);
         session.evaluateScript("t = emptyTable(1).updateView(\"Y=1\", \"Z=min(Y,d)\")\n").throwIfError();
         final Table t = session.getQueryScope().readParamValue("t");
+    }
+
+    @Test
+    public void testAnonymousPredicate() {
+        /**
+         * import java.util.function.Predicate filter_3 = (Predicate) new Predicate<String>() { public boolean
+         * test(String s) { return s.contains('h') } } println "Test2: " + filter_3.test("hello") t =
+         * emptyTable(4).update("MyCol = `hello`").where("filter_3.test(MyCol)")
+         */
+        final ScriptSession.Changes c = session.evaluateScript("import java.util.function.Predicate\n" +
+                "pred =(Predicate) new Predicate<String>() {\n" +
+                "    public boolean test(String s) {\n" +
+                "        return s.contains('h')\n" +
+                "    }\n" +
+                "}");
+        if (c.error != null) {
+            throw c.error;
+        }
+
+        final ColumnHolder<String> strValues = stringCol("StrValue", "hello", "world");
+        final Table source = TableTools.newTable(strValues);
+        QueryCompilerImpl.setLogEnabled(true);
+        final Table updated = source.update("P=pred.test(StrValue)");
+        assertTableEquals(TableTools.newTable(strValues, booleanCol("P", true, false)), updated);
+        final Table filtered = source.where("pred.test(StrValue)");
+        assertTableEquals(source.head(1), filtered);
     }
 }
 
