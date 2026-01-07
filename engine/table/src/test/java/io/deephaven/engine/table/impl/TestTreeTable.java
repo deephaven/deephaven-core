@@ -134,7 +134,7 @@ public class TestTreeTable extends RefreshingTableTestCase {
     }
 
     @Test
-    public void testDH21297() throws ExecutionException, InterruptedException, TimeoutException {
+    public void testDH21297() {
         final IntTestSource sentinel = new IntTestSource();
         final IntTestSource parent = new IntTestSource();
 
