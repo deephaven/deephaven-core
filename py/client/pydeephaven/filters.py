@@ -440,130 +440,78 @@ def ne(
 def lt(
     left: Union[int, float, str, DatetimeLike, ColumnName],
     right: Union[int, float, str, DatetimeLike, ColumnName],
-    case_sensitive: bool = True,
 ) -> Filter:
     """Creates a new filter that evaluates to true when the left operand is less than the right operand.
 
     Args:
         left (Union[int, float, str, DatetimeLike, ColumnName]): the left operand, either a literal value or a column name
         right (Union[int, float, str, DatetimeLike, ColumnName]): the right operand, either a literal value or a column name
-        case_sensitive (bool): whether the comparison is case-sensitive (default is True)
-            Note: case_sensitive=False is not supported by the server for string ordering comparisons.
-            For case-insensitive string ordering, consider normalizing strings first (e.g., using toLowerCase()).
 
     Returns:
         Filter: a new less-than filter
-
-    Raises:
-        ValueError: if case_sensitive=False (not supported for ordering operators)
     """
-    if not case_sensitive:
-        raise ValueError(
-            "case_sensitive=False is not supported for lt() operator. "
-            "For case-insensitive string comparisons, normalize strings first using toLowerCase() or toUpperCase()."
-        )
     return _CompareFilter(
         op=CompareCondition.CompareOperation.LESS_THAN,
         left=left,
         right=right,
-        case_sensitive=case_sensitive,
     )
 
 
 def gt(
     left: Union[int, float, str, DatetimeLike, ColumnName],
     right: Union[int, float, str, DatetimeLike, ColumnName],
-    case_sensitive: bool = True,
 ) -> Filter:
     """Creates a new filter that evaluates to true when the left operand is greater than the right operand.
 
     Args:
         left (Union[int, float, str, DatetimeLike, ColumnName]): the left operand, either a literal value or a column name
         right (Union[int, float, str, DatetimeLike, ColumnName]): the right operand, either a literal value or a column name
-        case_sensitive (bool): whether the comparison is case-sensitive (default is True)
-            Note: case_sensitive=False is not supported by the server for string ordering comparisons.
-            For case-insensitive string ordering, consider normalizing strings first (e.g., using toLowerCase()).
 
     Returns:
         Filter: a new greater-than filter
-
-    Raises:
-        ValueError: if case_sensitive=False (not supported for ordering operators)
     """
-    if not case_sensitive:
-        raise ValueError(
-            "case_sensitive=False is not supported for gt() operator. "
-            "For case-insensitive string comparisons, normalize strings first using toLowerCase() or toUpperCase()."
-        )
     return _CompareFilter(
         op=CompareCondition.CompareOperation.GREATER_THAN,
         left=left,
         right=right,
-        case_sensitive=case_sensitive,
     )
 
 
 def le(
     left: Union[int, float, str, DatetimeLike, ColumnName],
     right: Union[int, float, str, DatetimeLike, ColumnName],
-    case_sensitive: bool = True,
 ) -> Filter:
     """Creates a new filter that evaluates to true when the left operand is less than or equal to the right operand.
 
     Args:
         left (Union[int, float, str, DatetimeLike, ColumnName]): the left operand, either a literal value or a column name
         right (Union[int, float, str, DatetimeLike, ColumnName]): the right operand, either a literal value or a column name
-        case_sensitive (bool): whether the comparison is case-sensitive (default is True)
-            Note: case_sensitive=False is not supported by the server for string ordering comparisons.
-            For case-insensitive string ordering, consider normalizing strings first (e.g., using toLowerCase()).
 
     Returns:
         Filter: a new less-than-or-equal filter
-
-    Raises:
-        ValueError: if case_sensitive=False (not supported for ordering operators)
     """
-    if not case_sensitive:
-        raise ValueError(
-            "case_sensitive=False is not supported for le() operator. "
-            "For case-insensitive string comparisons, normalize strings first using toLowerCase() or toUpperCase()."
-        )
     return _CompareFilter(
         op=CompareCondition.CompareOperation.LESS_THAN_OR_EQUAL,
         left=left,
         right=right,
-        case_sensitive=case_sensitive,
     )
 
 
 def ge(
     left: Union[int, float, str, DatetimeLike, ColumnName],
     right: Union[int, float, str, DatetimeLike, ColumnName],
-    case_sensitive: bool = True,
 ) -> Filter:
     """Creates a new filter that evaluates to true when the left operand is greater than or equal to the right operand.
 
     Args:
         left (Union[int, float, str, DatetimeLike, ColumnName]): the left operand, either a literal value or a column name
         right (Union[int, float, str, DatetimeLike, ColumnName]): the right operand, either a literal value or a column name
-        case_sensitive (bool): whether the comparison is case-sensitive (default is True)
-            Note: case_sensitive=False is not supported by the server for string ordering comparisons.
-            For case-insensitive string ordering, consider normalizing strings first (e.g., using toLowerCase()).
 
     Returns:
         Filter: a new greater-than-or-equal filter
-
-    Raises:
-        ValueError: if case_sensitive=False (not supported for ordering operators)
     """
-    if not case_sensitive:
-        raise ValueError(
-            "case_sensitive=False is not supported for ge() operator. "
-            "For case-insensitive string comparisons, normalize strings first using toLowerCase() or toUpperCase()."
-        )
     return _CompareFilter(
         op=CompareCondition.CompareOperation.GREATER_THAN_OR_EQUAL,
         left=left,
         right=right,
-        case_sensitive=case_sensitive,
     )

@@ -512,60 +512,28 @@ class FiltersTestCase(BaseTestCase):
             condition2.compare.case_sensitivity, CaseSensitivity.IGNORE_CASE
         )
 
-    def test_lt_filter_case_sensitive_proto(self):
-        """Test lt() filter sets case_sensitivity in proto message."""
-        from deephaven_core.proto.table_pb2 import CaseSensitivity
-
-        filter_obj = lt(ColumnName("name"), "zebra", case_sensitive=True)
-        condition = filter_obj.make_grpc_message()
-        self.assertEqual(condition.compare.case_sensitivity, CaseSensitivity.MATCH_CASE)
-
-    def test_le_filter_case_sensitive_proto(self):
-        """Test le() filter sets case_sensitivity in proto message."""
-        from deephaven_core.proto.table_pb2 import CaseSensitivity
-
-        filter_obj = le(ColumnName("name"), "zebra", case_sensitive=True)
-        condition = filter_obj.make_grpc_message()
-        self.assertEqual(condition.compare.case_sensitivity, CaseSensitivity.MATCH_CASE)
-
-    def test_gt_filter_case_sensitive_proto(self):
-        """Test gt() filter sets case_sensitivity in proto message."""
-        from deephaven_core.proto.table_pb2 import CaseSensitivity
-
-        filter_obj = gt(ColumnName("name"), "Apple", case_sensitive=True)
-        condition = filter_obj.make_grpc_message()
-        self.assertEqual(condition.compare.case_sensitivity, CaseSensitivity.MATCH_CASE)
-
-    def test_ge_filter_case_sensitive_proto(self):
-        """Test ge() filter sets case_sensitivity in proto message."""
-        from deephaven_core.proto.table_pb2 import CaseSensitivity
-
-        filter_obj = ge(ColumnName("name"), "Apple", case_sensitive=True)
-        condition = filter_obj.make_grpc_message()
-        self.assertEqual(condition.compare.case_sensitivity, CaseSensitivity.MATCH_CASE)
-
     def test_all_comparison_filters_case_sensitive_proto(self):
-        """Test that all comparison filters support case_sensitive parameter in proto."""
+        """Test that comparison filters support case_sensitive parameter in proto."""
         from deephaven_core.proto.table_pb2 import CaseSensitivity
 
-        # All comparison operators support case_sensitive=True
+        # All comparison operators default to case-sensitive (MATCH_CASE)
         all_operations = [eq, ne, lt, le, gt, ge]
 
         for filter_func in all_operations:
             with self.subTest(
-                filter_func=filter_func.__name__, test="case_sensitive_true"
+                filter_func=filter_func.__name__, test="default_case_sensitive"
             ):
-                # Test case-sensitive (default)
+                # Test default case-sensitive behavior
                 filter_obj1 = filter_func(ColumnName("text"), "Value")
                 condition1 = filter_obj1.make_grpc_message()
                 self.assertEqual(
                     condition1.compare.case_sensitivity, CaseSensitivity.MATCH_CASE
                 )
 
-        # Only eq and ne support case_sensitive=False
-        case_insensitive_operations = [eq, ne]
+        # Only eq and ne support case_sensitive parameter
+        case_sensitive_operations = [eq, ne]
 
-        for filter_func in case_insensitive_operations:
+        for filter_func in case_sensitive_operations:
             with self.subTest(
                 filter_func=filter_func.__name__, test="case_sensitive_false"
             ):
@@ -1140,54 +1108,6 @@ class FiltersIntegrationTestCase(BaseTestCase):
         # Row 5 has Timestamp = '2024-06-15T10:00:05Z' (base time + 5 seconds)
         result_eq = test_table.where(eq(ColumnName("Timestamp"), specific_time))
         self.assertEqual(result_eq.size, 1)
-
-    def test_lt_case_insensitive_raises_error(self):
-        """Test that lt() with case_sensitive=False raises ValueError.
-
-        This test verifies the early validation that prevents using case_sensitive=False
-        with ordering operators, as documented in the Note in lt() docstring.
-        """
-        with self.assertRaises(ValueError) as context:
-            lt(ColumnName("name"), "banana", case_sensitive=False)
-
-        self.assertIn("case_sensitive=False is not supported", str(context.exception))
-        self.assertIn("lt()", str(context.exception))
-
-    def test_le_case_insensitive_raises_error(self):
-        """Test that le() with case_sensitive=False raises ValueError.
-
-        This test verifies the early validation that prevents using case_sensitive=False
-        with ordering operators, as documented in the Note in le() docstring.
-        """
-        with self.assertRaises(ValueError) as context:
-            le(ColumnName("name"), "beta", case_sensitive=False)
-
-        self.assertIn("case_sensitive=False is not supported", str(context.exception))
-        self.assertIn("le()", str(context.exception))
-
-    def test_gt_case_insensitive_raises_error(self):
-        """Test that gt() with case_sensitive=False raises ValueError.
-
-        This test verifies the early validation that prevents using case_sensitive=False
-        with ordering operators, as documented in the Note in gt() docstring.
-        """
-        with self.assertRaises(ValueError) as context:
-            gt(ColumnName("word"), "Apple", case_sensitive=False)
-
-        self.assertIn("case_sensitive=False is not supported", str(context.exception))
-        self.assertIn("gt()", str(context.exception))
-
-    def test_ge_case_insensitive_raises_error(self):
-        """Test that ge() with case_sensitive=False raises ValueError.
-
-        This test verifies the early validation that prevents using case_sensitive=False
-        with ordering operators, as documented in the Note in ge() docstring.
-        """
-        with self.assertRaises(ValueError) as context:
-            ge(ColumnName("city"), "Atlanta", case_sensitive=False)
-
-        self.assertIn("case_sensitive=False is not supported", str(context.exception))
-        self.assertIn("ge()", str(context.exception))
 
 
 if __name__ == "__main__":
