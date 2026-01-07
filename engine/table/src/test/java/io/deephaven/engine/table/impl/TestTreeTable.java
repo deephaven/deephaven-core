@@ -4,10 +4,18 @@
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.api.ColumnName;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.RowSetFactory;
-import io.deephaven.engine.table.Table;
+import io.deephaven.engine.rowset.RowSetShiftData;
+import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.hierarchical.HierarchicalTable;
 import io.deephaven.engine.table.hierarchical.TreeTable;
+import io.deephaven.engine.table.impl.hierarchical.TreeTableFilter;
+import io.deephaven.engine.table.impl.hierarchical.TreeTableImpl;
+import io.deephaven.engine.table.impl.select.WhereFilterFactory;
+import io.deephaven.engine.table.vectors.ColumnVectors;
+import io.deephaven.engine.testutil.*;
+import io.deephaven.engine.testutil.sources.IntTestSource;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.test.types.OutOfBandTest;
@@ -16,12 +24,16 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
 import java.util.Collections;
+import java.util.Map;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeoutException;
 
 import static io.deephaven.engine.testutil.HierarchicalTableTestTools.freeSnapshotTableChunks;
 import static io.deephaven.engine.testutil.HierarchicalTableTestTools.snapshotToTable;
 import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.engine.util.TableTools.*;
 import static io.deephaven.util.QueryConstants.NULL_INT;
+import static org.junit.Assert.assertArrayEquals;
 
 @Category(OutOfBandTest.class)
 public class TestTreeTable extends RefreshingTableTestCase {
@@ -119,5 +131,93 @@ public class TestTreeTable extends RefreshingTableTestCase {
         assertEquals(
                 "tree parent and identifier columns must have the same data type, but parent is [Parent, int] and identifier is [ID, long]",
                 ice.getMessage());
+    }
+
+    public void testDH21297() throws ExecutionException, InterruptedException, TimeoutException {
+        final IntTestSource sentinel = new IntTestSource();
+        final IntTestSource parent = new IntTestSource();
+
+        final QueryTable source = new QueryTable(i().toTracking(),
+                Map.of("Sentinel", sentinel, "Parent", parent));
+        source.setRefreshing(true);
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+
+        updateGraph.runWithinUnitTestCycle(() -> {
+            TstUtils.addToTable(source,
+                    i(0, 10, 11, 12),
+                    col("Sentinel", 0, 1, 2, 3),
+                    col("Parent", NULL_INT, 0, 0, 0));
+            source.notifyListeners(i(0, 10, 11, 12), i(), i());
+        });
+
+        final TreeTable treed = source.tree("Sentinel", "Parent");
+
+        final Table filteredSource = treed.getSource().apply(new TreeTableFilter.Operator((TreeTableImpl) treed,
+                WhereFilterFactory.getExpressions("Sentinel in 1, 2, 3, 4, 5, 6")));
+
+        showWithRowSet(source);
+        showWithRowSet(filteredSource);
+
+        System.out.println("\n\nAdding keys 4,5");
+
+        assertArrayEquals(new int[] {0, 1, 2, 3}, ColumnVectors.ofInt(filteredSource, "Sentinel").toArray());
+
+        updateGraph.runWithinUnitTestCycle(() -> {
+            TstUtils.addToTable(source,
+                    i(1, 21),
+                    col("Sentinel", 4, 5),
+                    col("Parent", NULL_INT, 4));
+            source.notifyListeners(i(1, 21), i(), i());
+        });
+
+        showWithRowSet(source);
+        showWithRowSet(filteredSource);
+
+        System.out.println("\n\nShifting keys 0-1,+4");
+
+        // Shift some parent rows
+        updateGraph.runWithinUnitTestCycle(() -> {
+            // shift the values
+            parent.shift(0, 1, 4);
+            sentinel.shift(0, 1, 4);
+
+            // create the shift update
+            final RowSetShiftData.Builder builder = new RowSetShiftData.Builder();
+            builder.shiftRange(0, 1, 4);
+            final RowSetShiftData shiftData = builder.build();
+
+            shiftData.apply(source.getRowSet().writableCast());
+            final TableUpdate update = new TableUpdateImpl(i(), i(), i(), shiftData, ModifiedColumnSet.EMPTY);
+            source.notifyListeners(update);
+        });
+
+        showWithRowSet(source);
+        showWithRowSet(filteredSource);
+
+        System.out.println("\n\nShifting keys 4-5,-4 and 10-21,+1");
+
+        // Shift some parent rows
+        updateGraph.runWithinUnitTestCycle(() -> {
+            // shift the values
+            parent.shift(4, 5, -4);
+            sentinel.shift(4, 5, -4);
+            parent.shift(10, 21, 1);
+            sentinel.shift(10, 21, 1);
+
+            // create the shift update
+            final RowSetShiftData.Builder builder = new RowSetShiftData.Builder();
+            builder.shiftRange(4, 5, -4);
+            builder.shiftRange(10, 21, 1);
+            final RowSetShiftData shiftData = builder.build();
+
+            shiftData.apply(source.getRowSet().writableCast());
+            final TableUpdate update = new TableUpdateImpl(i(), i(), i(), shiftData, ModifiedColumnSet.EMPTY);
+            source.notifyListeners(update);
+        });
+
+        showWithRowSet(source);
+        showWithRowSet(filteredSource);
+
     }
 }
