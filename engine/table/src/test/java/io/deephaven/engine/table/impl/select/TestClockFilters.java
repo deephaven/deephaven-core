@@ -14,8 +14,7 @@ import io.deephaven.engine.testutil.junit4.EngineCleanup;
 
 import static io.deephaven.engine.util.TableTools.*;
 import static io.deephaven.time.DateTimeUtils.epochNanosToInstant;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 
 import io.deephaven.engine.testutil.StepClock;
 import io.deephaven.engine.util.TableTools;
@@ -770,6 +769,37 @@ public class TestClockFilters {
             assertEquals(0, filter2.numRowsProcessed());
             assertEquals(0, filter3.numRowsProcessed());
             assertEquals(6, filter4.numRowsProcessed());
+        }
+    }
+
+    /**
+     * Reindexing filters will throw {@link UnsupportedOperationException} when added to composed filters or when
+     * inverted. This test codifies that behavior to signal additional changes will bve required if this changes.
+     */
+    @Test
+    public void verifyFilterExclusions() {
+        final UnsortedClockFilter unsortedFilter = new UnsortedClockFilter("Timestamp", clock, true);
+        assertTrue("unsortedFilter instanceof ReindexingFilter", unsortedFilter instanceof ReindexingFilter);
+
+        try {
+            final WhereFilter filter = ConjunctiveFilter.makeConjunctiveFilter(unsortedFilter, unsortedFilter);
+            fail("Expected UnsupportedOperationException when composing reindexing filter");
+        } catch (UnsupportedOperationException e) {
+            // expected
+        }
+
+        try {
+            final WhereFilter filter = DisjunctiveFilter.makeDisjunctiveFilter(unsortedFilter, unsortedFilter);
+            fail("Expected UnsupportedOperationException when composing reindexing filter");
+        } catch (UnsupportedOperationException e) {
+            // expected
+        }
+
+        try {
+            final WhereFilter filter = (WhereFilter) unsortedFilter.invert();
+            fail("Expected UnsupportedOperationException when inverting reindexing filter");
+        } catch (UnsupportedOperationException e) {
+            // expected
         }
     }
 }

@@ -12,6 +12,10 @@ import org.jetbrains.annotations.NotNull;
 public class WhereFilterInvertedImpl extends WhereFilterDelegatingBase {
 
     public static WhereFilter of(WhereFilter filter) {
+        if (filter instanceof ReindexingFilter) {
+            throw new UnsupportedOperationException(
+                    "WhereFilterInvertedImpl does not support ReindexingFilters: " + filter);
+        }
         return new WhereFilterInvertedImpl(filter);
     }
 
