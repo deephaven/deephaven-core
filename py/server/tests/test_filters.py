@@ -128,7 +128,6 @@ class FilterTestCase(BaseTestCase):
             with self.assertRaises(DHError) as cm:
                 filter_in = in_("A", [2, "3"])
                 t.where(filter_in)
-            print(cm.exception)
 
             # inconsistent behavior observed, should fail with https://deephaven.atlassian.net/browse/DH-21232 fixed
             filter_in = in_("B", [2, "3"])

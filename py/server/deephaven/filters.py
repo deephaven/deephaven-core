@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from enum import Enum
-from typing import Union
+from typing import Callable, Union
 
 import jpy
 
@@ -112,7 +112,7 @@ class Filter(ConcurrencyControl["Filter"], JObjectWrapper):
         Returns:
             a new not Filter
         """
-        return Filter(j_filter=getattr(_JFilter, "not")(self.j_filter))
+        return Filter(j_filter=_JFilterNot.of(self.j_filter))
 
     @classmethod
     def from_(
@@ -295,7 +295,7 @@ def in_(col: str, values: Sequence[Union[bool, int, float, str]]) -> Filter:
         raise DHError(e, "failed to create an in filter.") from e
 
 
-_FILTER_COMPARISON_MAP: dict = {
+_FILTER_COMPARISON_MAP: dict[str, Callable] = {
     "eq": _JFilterComparison.eq,
     "ne": _JFilterComparison.neq,
     "lt": _JFilterComparison.lt,
