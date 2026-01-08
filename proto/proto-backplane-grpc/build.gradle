@@ -23,7 +23,9 @@ configurations {
 dependencies {
   // This should be implementation, if listed at all, at least once we have own own version management
   api libs.protobuf.java
-  api libs.protobuf.java.util
+  api(libs.protobuf.java.util) {
+    because 'Ensures we use the same version of both protobuf and protobuf-util'
+  }
 
   api platform(libs.grpc.bom)
   api libs.grpc.protobuf
