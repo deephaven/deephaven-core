@@ -470,14 +470,15 @@ public class TreeTableFilter {
                             chunkAffectedRows.forAllRowKeys((final long affectedRowKey) -> {
                                 final Object parentId = parentIds.get(chunkIndex.getAndIncrement());
                                 // Ignore if parent is null; nothing in the map to shift.
-                                if (parentId != null) {
-                                    final Pair<RowSetBuilderSequential, RowSetBuilderSequential> removedAddedPair =
-                                            affectedParents.computeIfAbsent(parentId, pId -> new Pair<>(
-                                                    RowSetFactory.builderSequential(),
-                                                    RowSetFactory.builderSequential()));
-                                    removedAddedPair.first.appendKey(affectedRowKey);
-                                    removedAddedPair.second.appendKey(affectedRowKey + shiftDelta);
+                                if (parentId == null) {
+                                    return;
                                 }
+                                final Pair<RowSetBuilderSequential, RowSetBuilderSequential> removedAddedPair =
+                                        affectedParents.computeIfAbsent(parentId, pId -> new Pair<>(
+                                                RowSetFactory.builderSequential(),
+                                                RowSetFactory.builderSequential()));
+                                removedAddedPair.first.appendKey(affectedRowKey);
+                                removedAddedPair.second.appendKey(affectedRowKey + shiftDelta);
                             });
                         }
                     }
