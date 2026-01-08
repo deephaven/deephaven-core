@@ -122,6 +122,7 @@ class Figure(JObjectWrapper):
     def j_object(self) -> jpy.JType:
         return self.j_figure
 
+
     def axes(
         self,
         name: str = None,
