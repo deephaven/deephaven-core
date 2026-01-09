@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.updateby;
 
@@ -1385,13 +1385,18 @@ public abstract class UpdateBy {
                 "OperatorCollection TableDef",
                 "Source TableDef");
 
-        // Verify the timestamp column is a supported data type (currently long and Instant)
+        // Verify the timestamp column is a supported data type (already long or can be reinterpreted as long)
         if (operatorCollection.timestampColumnName != null) {
             final ColumnSource<?> timestampSource = source.getColumnSource(operatorCollection.timestampColumnName);
-            if (!timestampSource.allowsReinterpret(long.class)) {
-                final Class<?> type = timestampSource.getType();
-                throw new IllegalArgumentException("Unsupported timestamp column type " + type +
-                        " for column '" + operatorCollection.timestampColumnName + "'");
+            final Class<?> timestampType = timestampSource.getType();
+            if (timestampType != long.class && timestampType != Long.class) {
+                // Can we reinterpret the column as a long
+                final ColumnSource<?> reinterpreted = ReinterpretUtils.maybeConvertToPrimitive(timestampSource);
+                final Class<?> reinterpretedType = reinterpreted.getType();
+                if (reinterpretedType != long.class && reinterpretedType != Long.class) {
+                    throw new IllegalArgumentException("Unsupported timestamp column type " + timestampType +
+                            " for column '" + operatorCollection.timestampColumnName + "'");
+                }
             }
         }
 

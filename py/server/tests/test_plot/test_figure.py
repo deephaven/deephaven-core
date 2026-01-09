@@ -1,10 +1,10 @@
 #
-# Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 #
 
 import unittest
 
-from deephaven import read_csv, DHError
+from deephaven import read_csv
 from deephaven.plot import Figure
 from tests.testbase import BaseTestCase
 
@@ -21,7 +21,7 @@ class FigureTestCase(BaseTestCase):
     def test_figure(self):
         with self.subTest("this should work too"):
             figure = Figure()
-            new_f = figure.plot_xy("plot1", self.test_table, x="a", y="b", by=['e'])
+            new_f = figure.plot_xy("plot1", self.test_table, x="a", y="b", by=["e"])
             self.assertIsNotNone(new_f)
 
         with self.subTest("this should work"):
@@ -33,5 +33,5 @@ class FigureTestCase(BaseTestCase):
             self.assertIsNotNone(new_f)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

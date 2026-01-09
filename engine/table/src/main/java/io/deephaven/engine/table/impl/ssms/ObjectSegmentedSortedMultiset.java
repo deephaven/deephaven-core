@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
 // ****** Edit CharSegmentedSortedMultiset and run "./gradlew replicateSegmentedSortedMultiset" to regenerate
@@ -98,8 +98,8 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
         int rlpos = 0;
         Object nextValue;
         while (rlpos < leafSize && ripos < valuesToInsert.size()
-                && (leq(nextValue = valuesToInsert.get(ripos), maxInsert) || lastLeaf)) {
-            if (gt(leafValues[rlpos], nextValue)) {
+                && (ObjectComparisons.leq(nextValue = valuesToInsert.get(ripos), maxInsert) || lastLeaf)) {
+            if (ObjectComparisons.gt(leafValues[rlpos], nextValue)) {
                 // we're not going to find nextValue in this leaf, so we skip over it
                 valuesToInsert.set(wipos.get(), nextValue);
                 counts.set(wipos.get(), counts.get(ripos));
@@ -108,7 +108,7 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
             } else {
                 rlpos = upperBound(leafValues, rlpos, leafSize, nextValue);
                 if (rlpos < leafSize) {
-                    if (eq(leafValues[rlpos], nextValue)) {
+                    if (ObjectComparisons.eq(leafValues[rlpos], nextValue)) {
                         leafCounts[rlpos] += counts.get(ripos);
                         ripos++;
                     }
@@ -160,7 +160,7 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
         while (remaining-- > 0) {
             final Object insertValue = valuesToInsert.get(ripos);
             final Object leafValue = leafValues[firstLeaf][rlpos];
-            final boolean useInsertValue = gt(insertValue, leafValue);
+            final boolean useInsertValue = ObjectComparisons.gt(insertValue, leafValue);
 
             if (useInsertValue) {
                 leafValues[wleaf][wpos] = insertValue;
@@ -306,7 +306,7 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
             final Object insertValue = valuesToInsert.get(ripos);
             final Object leafValue = leafValues[rlpos];
 
-            if (gt(insertValue, leafValue)) {
+            if (ObjectComparisons.gt(insertValue, leafValue)) {
                 leafValues[wpos] = insertValue;
                 leafCounts[wpos] = counts.get(ripos);
                 if (ripos == 0) {
@@ -459,7 +459,7 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
 
         maybeAccumulateAdditions(valuesToInsert);
 
-        if (leafCount > 1 && gt(valuesToInsert.get(0), getMaxObject())) {
+        if (leafCount > 1 && ObjectComparisons.gt(valuesToInsert.get(0), getMaxObject())) {
             doAppend(valuesToInsert, counts);
             return;
         }
@@ -705,7 +705,7 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
         while (lo < hi) {
             final int mid = (lo + hi) >>> 1;
             final Object testValue = valuesToSearch[mid];
-            final boolean moveLo = leq(testValue, searchValue);
+            final boolean moveLo = ObjectComparisons.leq(testValue, searchValue);
             if (moveLo) {
                 lo = mid;
                 if (lo == hi - 1) {
@@ -732,7 +732,7 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
         while (lo < hi) {
             final int mid = (lo + hi) >>> 1;
             final Object testValue = valuesToSearch.get(mid);
-            final boolean moveLo = leq(testValue, searchValue);
+            final boolean moveLo = ObjectComparisons.leq(testValue, searchValue);
             if (moveLo) {
                 if (mid == lo) {
                     return mid + 1;
@@ -759,7 +759,7 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
         while (lo < hi) {
             final int mid = (lo + hi) >>> 1;
             final Object testValue = valuesToSearch[mid];
-            final boolean moveLo = leq(testValue, searchValue);
+            final boolean moveLo = ObjectComparisons.leq(testValue, searchValue);
             if (moveLo) {
                 if (mid == lo) {
                     return mid + 1;
@@ -786,7 +786,7 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
         while (lo < hi) {
             final int mid = (lo + hi) >>> 1;
             final Object testValue = valuesToSearch[mid];
-            final boolean moveHi = geq(testValue, searchValue);
+            final boolean moveHi = ObjectComparisons.geq(testValue, searchValue);
             if (moveHi) {
                 hi = mid;
             } else {
@@ -810,7 +810,7 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
         while (lo < hi) {
             final int mid = (lo + hi) >>> 1;
             final Object testValue = valuesToSearch.get(mid);
-            final boolean moveHi = gt(testValue, searchValue);
+            final boolean moveHi = ObjectComparisons.gt(testValue, searchValue);
             if (moveHi) {
                 hi = mid;
             } else {
@@ -834,7 +834,7 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
         while (lo < hi) {
             final int mid = (lo + hi) >>> 1;
             final Object testValue = valuesToSearch[mid];
-            final boolean moveLo = lt(testValue, searchValue);
+            final boolean moveLo = ObjectComparisons.lt(testValue, searchValue);
             if (moveLo) {
                 lo = mid + 1;
                 if (lo == hi) {
@@ -1247,18 +1247,20 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
                 final Object lastValue = leafValues[ii][leafSizes[ii] - 1];
                 if (ii < leafCount - 1) {
                     final Object directoryValue = directoryValues[ii];
-                    Assert.assertion(leq(lastValue, directoryValue), "lt(lastValue, directoryValue)", lastValue,
+                    Assert.assertion(ObjectComparisons.leq(lastValue, directoryValue), "lt(lastValue, directoryValue)",
+                            lastValue,
                             "leafValues[ii][leafSizes[ii] - 1]", directoryValue, "directoryValue");
 
                     if (ii < leafCount - 2) {
                         final Object nextDirectoryValue = directoryValues[ii + 1];
-                        Assert.assertion(lt(directoryValue, nextDirectoryValue),
+                        Assert.assertion(ObjectComparisons.lt(directoryValue, nextDirectoryValue),
                                 "lt(directoryValue, nextDirectoryValue)", directoryValue, "directoryValue",
                                 nextDirectoryValue, "nextDirectoryValue");
                     }
 
                     final Object nextFirstValue = leafValues[ii + 1][0];
-                    Assert.assertion(lt(directoryValue, nextFirstValue), "lt(directoryValue, nextFirstValue)",
+                    Assert.assertion(ObjectComparisons.lt(directoryValue, nextFirstValue),
+                            "lt(directoryValue, nextFirstValue)",
                             directoryValue, "directoryValue", nextFirstValue, "nextFirstValue");
                 }
                 // It would be nice to enable an assertion to make sure we are dense after removals, but the other
@@ -1280,7 +1282,7 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
         for (int leaf = 0; leaf < leafCount - 1; ++leaf) {
             final Object lastValue = leafValues[leaf][leafSizes[leaf] - 1];
             final Object nextValue = leafValues[leaf + 1][0];
-            Assert.assertion(lt(lastValue, nextValue), lastValue + " < " + nextValue);
+            Assert.assertion(ObjectComparisons.lt(lastValue, nextValue), lastValue + " < " + nextValue);
         }
     }
 
@@ -1296,7 +1298,8 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
             Assert.gtZero(counts[ii], "counts[ii]");
             final Object thisValue = values[ii];
             final Object nextValue = values[ii + 1];
-            Assert.assertion(lt(values[ii], values[ii + 1]), "lt(values[ii], values[ii + 1])", (Object) thisValue,
+            Assert.assertion(ObjectComparisons.lt(values[ii], values[ii + 1]), "lt(values[ii], values[ii + 1])",
+                    (Object) thisValue,
                     "values[ii]", (Object) nextValue, "values[ii + 1]", ii, "ii");
         }
         if (size > 0) {
@@ -1324,7 +1327,6 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
 
     // endregion
 
-    // region Comparisons
     private int getDesiredLeafCount(int newSize) {
         return (newSize + leafSize - 1) / leafSize;
     }
@@ -1332,33 +1334,6 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
     private static int valuesPerLeaf(int values, int leafCount) {
         return (values + leafCount - 1) / leafCount;
     }
-
-    private static int doComparison(Object lhs, Object rhs) {
-        return ObjectComparisons.compare(lhs, rhs);
-    }
-
-    private static boolean gt(Object lhs, Object rhs) {
-        return doComparison(lhs, rhs) > 0;
-    }
-
-    private static boolean lt(Object lhs, Object rhs) {
-        return doComparison(lhs, rhs) < 0;
-    }
-
-    private static boolean leq(Object lhs, Object rhs) {
-        return doComparison(lhs, rhs) <= 0;
-    }
-
-    private static boolean geq(Object lhs, Object rhs) {
-        return doComparison(lhs, rhs) >= 0;
-    }
-
-    private static boolean eq(Object lhs, Object rhs) {
-        // region equality function
-        return Objects.equals(lhs, rhs);
-        // endregion equality function
-    }
-    // endregion
 
     @Override
     public long totalSize() {
@@ -1503,12 +1478,12 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
 
         if (SEGMENTED_SORTED_MULTISET_VALIDATION) {
             if (destination.size > 0) {
-                Assert.assertion(geq(getMinObject(), destination.getMaxObject()),
+                Assert.assertion(ObjectComparisons.geq(getMinObject(), destination.getMaxObject()),
                         "geq(getMinObject(), destination.getMaxObject())");
             }
         }
 
-        if (destination.size > 0 && eq(getMinObject(), destination.getMaxObject())) {
+        if (destination.size > 0 && ObjectComparisons.eq(getMinObject(), destination.getMaxObject())) {
             final long minCount = getMinCount();
             final long toAdd;
             if (minCount > count) {
@@ -1776,7 +1751,7 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
 
         if (SEGMENTED_SORTED_MULTISET_VALIDATION) {
             if (size > 0 && destination.size > 0) {
-                Assert.assertion(geq(getMinObject(), destination.getMaxObject()),
+                Assert.assertion(ObjectComparisons.geq(getMinObject(), destination.getMaxObject()),
                         "geq(getMinObject(), destination.getMaxObject())");
             }
         }
@@ -1938,12 +1913,12 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
 
         if (SEGMENTED_SORTED_MULTISET_VALIDATION) {
             if (destination.size > 0) {
-                Assert.assertion(leq(getMaxObject(), destination.getMinObject()),
+                Assert.assertion(ObjectComparisons.leq(getMaxObject(), destination.getMinObject()),
                         "leq(getMaxObject(), destination.getMinObject())");
             }
         }
 
-        if (destination.size > 0 && eq(getMaxObject(), destination.getMinObject())) {
+        if (destination.size > 0 && ObjectComparisons.eq(getMaxObject(), destination.getMinObject())) {
             final long maxCount = getMaxCount();
             final long toAdd;
             if (maxCount > count) {
@@ -2143,7 +2118,7 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
 
         if (SEGMENTED_SORTED_MULTISET_VALIDATION) {
             if (size > 0 && destination.size > 0) {
-                Assert.assertion(leq(getMaxObject(), destination.getMinObject()),
+                Assert.assertion(ObjectComparisons.leq(getMaxObject(), destination.getMinObject()),
                         "leq(getMaxObject(), destination.getMinObject())");
             }
         }

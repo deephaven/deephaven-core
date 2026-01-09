@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.parquet.table.metadata;
 
@@ -9,7 +9,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
-import io.deephaven.annotations.BuildableStyle;
+import io.deephaven.annotations.CopyableStyle;
 import org.immutables.value.Value.Check;
 import org.immutables.value.Value.Default;
 import org.immutables.value.Value.Immutable;
@@ -25,7 +25,7 @@ import java.util.stream.Collectors;
  * Representation class for per-table information stored in key-value metadata for Deephaven-written Parquet files.
  */
 @Immutable
-@BuildableStyle
+@CopyableStyle
 @JsonSerialize(as = ImmutableTableInfo.class)
 @JsonDeserialize(as = ImmutableTableInfo.class)
 @JsonInclude(JsonInclude.Include.NON_EMPTY)
@@ -86,6 +86,16 @@ public abstract class TableInfo {
      *         selection
      */
     public abstract List<ColumnTypeInfo> columnTypes();
+
+    /**
+     * @return A copy of this TableInfo with the specified column types replacing any existing column types.
+     */
+    public abstract TableInfo withColumnTypes(ColumnTypeInfo... elements);
+
+    /**
+     * @return A copy of this TableInfo with the specified column types replacing any existing column types.
+     */
+    public abstract TableInfo withColumnTypes(Iterable<? extends ColumnTypeInfo> elements);
 
     /**
      * @return List of {@link SortColumnInfo sort columns} representing the sort order of the table. Note that these are

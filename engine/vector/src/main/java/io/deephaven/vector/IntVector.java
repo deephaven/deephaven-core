@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
 // ****** Edit CharVector and run "./gradlew replicateVectors" to regenerate
@@ -8,6 +8,7 @@
 package io.deephaven.vector;
 
 import io.deephaven.base.verify.Require;
+import io.deephaven.util.annotations.UserInvocationPermitted;
 import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfInt;
 import io.deephaven.engine.primitive.value.iterator.ValueIteratorOfInt;
 import io.deephaven.qst.type.IntType;
@@ -38,6 +39,7 @@ public interface IntVector extends Vector<IntVector>, Iterable<Integer> {
      * @param index An offset into this IntVector
      * @return The element at the specified offset, or the {@link QueryConstants#NULL_INT null int}
      */
+    @UserInvocationPermitted({"vector"})
     int get(long index);
 
     @Override
@@ -55,6 +57,7 @@ public interface IntVector extends Vector<IntVector>, Iterable<Integer> {
     @Override
     IntVector getDirect();
 
+    @UserInvocationPermitted({"vector"})
     @Override
     @FinalDefault
     default ValueIteratorOfInt iterator() {
@@ -246,6 +249,7 @@ public interface IntVector extends Vector<IntVector>, Iterable<Integer> {
      */
     abstract class Indirect implements IntVector {
 
+        @UserInvocationPermitted({"vector"})
         @Override
         public int[] toArray() {
             final int size = intSize("IntVector.toArray");

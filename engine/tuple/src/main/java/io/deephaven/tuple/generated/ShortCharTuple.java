@@ -48,8 +48,8 @@ public class ShortCharTuple implements Comparable<ShortCharTuple>, Externalizabl
         this.element1 = element1;
         this.element2 = element2;
         cachedHashCode = (31 +
-                Short.hashCode(element1)) * 31 +
-                Character.hashCode(element2);
+                ShortComparisons.hashCode(element1)) * 31 +
+                CharComparisons.hashCode(element2);
     }
 
     public final short getFirstElement() {
@@ -75,8 +75,8 @@ public class ShortCharTuple implements Comparable<ShortCharTuple>, Externalizabl
         }
         final ShortCharTuple typedOther = (ShortCharTuple) other;
         // @formatter:off
-        return element1 == typedOther.element1 &&
-               element2 == typedOther.element2;
+        return ShortComparisons.eq(element1, typedOther.element1) &&
+               CharComparisons.eq(element2, typedOther.element2);
         // @formatter:on
     }
 

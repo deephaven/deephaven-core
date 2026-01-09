@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.sources.regioned;
 
@@ -303,6 +303,11 @@ class PartitioningColumnDataIndex<KEY_TYPE> extends AbstractDataIndex implements
     @NotNull
     public Map<ColumnSource<?>, String> keyColumnNamesByIndexedColumn() {
         return keyColumnNamesByIndexedColumn;
+    }
+
+    @Override
+    public boolean tableIsCached() {
+        return true;
     }
 
     @Override

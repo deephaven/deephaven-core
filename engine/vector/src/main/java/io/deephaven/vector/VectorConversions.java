@@ -1,12 +1,15 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.vector;
+
+import io.deephaven.util.annotations.UserInvocationPermitted;
 
 /**
  * Utility methods for converting vectors to native arrays. Used in formulas.
  */
 @SuppressWarnings("unused")
+@UserInvocationPermitted("vector")
 public class VectorConversions {
 
     public static char[] nullSafeVectorToArray(final CharVector vector) {

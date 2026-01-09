@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.web.client.api.tree;
 
@@ -53,8 +53,6 @@ import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 import java.util.*;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 /**
  * Behaves like a {@link JsTable} externally, but data, state, and viewports are managed by an entirely different
@@ -201,7 +199,7 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
         // Load the table and column definitions from the descriptor
         extractDefinition(treeDescriptor);
 
-        actionCol = new Column(-1, -1, null, null, "byte", "__action__", false, null, null, false, false);
+        actionCol = new Column(-1, -1, null, null, "byte", "__action__", false, null, null, false, false, false);
 
         keyTableData = new Object[keyColumns.length + 2][0];
 
@@ -276,24 +274,23 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
         this.aggregatedColumns = JsObject.freeze(aggregatedColumns);
         this.groupedColumns = JsObject.freeze(groupedColumns);
 
-        sourceColumns = columnDefsByName.get(false).values().stream()
-                .map(c -> {
-                    if (c.getRollupAggregationInputColumn() != null && !c.getRollupAggregationInputColumn().isEmpty()) {
-                        // Use the specified input column
-                        return constituentColumns.remove(c.getRollupAggregationInputColumn());
-                    }
-                    if (c.isRollupGroupByColumn()) {
-                        // use the groupby column's own name
-                        return constituentColumns.remove(c.getName());
-                    }
-                    // filter out the rest
-                    return null;
-                })
-                .filter(Objects::nonNull)
-                .collect(Collectors.toMap(
-                        Column::getName,
-                        Function.identity()));
+        sourceColumns = new HashMap<>();
+        for (ColumnDefinition c : columnDefsByName.get(false).values()) {
+            if (c.getRollupAggregationInputColumn() != null && !c.getRollupAggregationInputColumn().isEmpty()) {
+                // Use the specified input column
+                if (constituentColumns.containsKey(c.getRollupAggregationInputColumn())) {
+                    sourceColumns.put(c.getName(), constituentColumns.get(c.getRollupAggregationInputColumn()));
+                }
+            } else if (c.isRollupGroupByColumn()) {
+                // use the groupby column's own name
+                if (constituentColumns.containsKey(c.getName())) {
+                    sourceColumns.put(c.getName(), constituentColumns.get(c.getName()));
+                }
+            }
+        }
+
         // add the rest of the constituent columns as themselves, they will only show up in constituent rows
+        sourceColumns.values().stream().map(Column::getName).forEach(constituentColumns::remove);
         sourceColumns.putAll(constituentColumns);
 
         // restore remaining unmatched constituent columns to the column array
@@ -695,7 +692,7 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
             serverViewport = RangeSet.ofRange((long) firstRow, (long) lastRow);
 
             sendBarrageSubscriptionRequest(RangeSet.ofRange((long) firstRow, (long) lastRow), Js.uncheckedCast(columns),
-                    updateInterval, false);
+                    updateInterval, false, 0);
         }
 
         @Override
@@ -752,6 +749,10 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
                     });
                     return;
                 }
+        }
+        if (firstRow == null || lastRow == null || columns == null) {
+            // no viewport to subscribe, don't build the rest of the operations
+            return;
         }
         Promise<TreeSubscription> stream = Promise.resolve(defer())
                 .then(ignore -> {
@@ -1435,12 +1436,6 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
      * @return Promise of dh.TreeTable
      */
     public Promise<JsTreeTable> copy() {
-        return connection.newState((c, state, metadata) -> {
-            // connection.getServer().reexport(this.baseTable.getHandle(), state.getHandle(), c);
-            throw new UnsupportedOperationException("reexport");// probably not needed at all with new session
-                                                                // mechanism?
-        }, "reexport for tree.copy()")
-                .refetch(this, connection.metadata())
-                .then(state -> Promise.resolve(new JsTreeTable(connection, widget)));
+        return widget.reexport().then(exportedWidget -> Promise.resolve(new JsTreeTable(connection, exportedWidget)));
     }
 }

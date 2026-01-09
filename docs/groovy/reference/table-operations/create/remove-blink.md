@@ -36,5 +36,4 @@ tNoBlink = tBlink.removeBlink()
 
 ## Related documentation
 
-- [assertBlink](assert-blink.md)
 - [Javadoc](https://deephaven.io/core/javadoc/io/deephaven/engine/table/Table.html#removeBlink())

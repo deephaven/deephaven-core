@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.updateby;
 
@@ -76,7 +76,8 @@ class BucketedPartitionedUpdateByManager extends UpdateBy {
         super(source, windows, inputSources, timestampColumnName, rowRedirection, control);
 
         // this table will always have the rowset of the source
-        result = new QueryTable(source.getRowSet(), resultSources);
+        final TableDefinition resultDef = TableDefinition.inferFrom(source, resultSources);
+        result = new QueryTable(resultDef, source.getRowSet(), resultSources);
 
         final Table transformedTable = LivenessScopeStack.computeEnclosed(() -> {
             final PartitionedTable partitioned = source.partitionedAggBy(List.of(), true, null, byColumnNames);

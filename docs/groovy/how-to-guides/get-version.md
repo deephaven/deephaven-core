@@ -12,3 +12,8 @@ To get the server version, run the following query:
 ```groovy
 println io.deephaven.engine.table.Table.class.getPackage().getImplementationVersion()
 ```
+
+## Related documentation
+
+- [Retrieve logs](./logs.md)
+- [Triage errors in queries](./triage-errors.md)

@@ -14,9 +14,9 @@ We will show you how to construct a simple system that: monitors weather data (s
 
 ## Prerequisites
 
-- Clone the [Deephaven Community repository](https://github.com/deephaven/deephaven-core)
-- [Build and run Deephaven](../tutorials/docker-install.md)
-- Create a valid [Google Geolocation API key](https://developers.google.com/maps/documentation/geolocation/overview)
+- Clone the [Deephaven Community repository](https://github.com/deephaven/deephaven-core).
+- [Build and run Deephaven](../tutorials/docker-install.md).
+- Create a valid [Google Geolocation API key](https://developers.google.com/maps/documentation/geolocation/overview).
 
 ## The application
 
@@ -217,3 +217,8 @@ With that final step, the Deephaven Table is subscribed, and will receive live u
 
 > [!CAUTION]
 > When your app is done using tables that were fetched, be sure to call `resultSub.close()` to release any resources that are being held. Without this, the server believes the table is still active and will continue to consume memory and CPU time.
+
+## Related documentation
+
+- [Arrow Flight](./data-import-export/arrow-flight.md)
+- [Servers and clients](../conceptual/client-server-model.md)

@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 #
 """This module defines a convenience function for running both Python and Java garbage collection utilities."""
 
@@ -7,7 +7,7 @@ import gc
 
 import jpy
 
-from deephaven import DHError
+from .dherror import DHError
 
 
 def garbage_collect() -> None:

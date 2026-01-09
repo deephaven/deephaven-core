@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.chunk;
 
@@ -92,16 +92,14 @@ public interface WritableChunk<ATTR extends Any> extends Chunk<ATTR>, PoolableCh
     int internalCapacity(long password);
 
     /**
-     * Sort this chunk in-place using Java's primitive defined ordering.
-     * <p>
-     * Of note is that nulls or NaNs are not sorted according to Deephaven ordering rules.
+     * Sort this chunk in place using Deephaven-defined ordering where {@code null} (or QueryConstants.NULL_XXXX for
+     * value types) is less than all other values and Double.NaN / Float.NaN are greater than all other values.
      */
     void sort();
 
     /**
-     * Sort this chunk in-place using Java's primitive defined ordering.
-     * <p>
-     * Of note is that nulls or NaNs are not sorted according to Deephaven ordering rules.
+     * Sort this chunk in place using Deephaven-defined ordering where {@code null} (or QueryConstants.NULL_XXXX for
+     * value types) is less than all other values and Double.NaN / Float.NaN are greater than all other values.
      */
     default void sort(int start, int length) {
         throw new UnsupportedOperationException();

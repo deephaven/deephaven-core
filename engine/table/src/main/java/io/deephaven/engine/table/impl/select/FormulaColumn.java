@@ -1,8 +1,9 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.select;
 
+import java.util.Optional;
 import java.util.Set;
 
 public interface FormulaColumn extends SelectColumn {
@@ -36,6 +37,7 @@ public interface FormulaColumn extends SelectColumn {
      *
      * @return true or false
      */
+    @Override
     default boolean hasConstantArrayAccess() {
         return getFormulaShiftedColumnDefinitions() != null && !getFormulaShiftedColumnDefinitions().isEmpty();
     }
@@ -59,5 +61,10 @@ public interface FormulaColumn extends SelectColumn {
      */
     default String getShiftedFormulaString() {
         return null;
+    }
+
+    @Override
+    default Optional<FormulaColumn> maybeGetFormulaColumn() {
+        return Optional.of(this);
     }
 }

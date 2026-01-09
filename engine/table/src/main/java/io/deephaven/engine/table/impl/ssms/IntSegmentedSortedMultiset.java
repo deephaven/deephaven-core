@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
 // ****** Edit CharSegmentedSortedMultiset and run "./gradlew replicateSegmentedSortedMultiset" to regenerate
@@ -84,8 +84,8 @@ public final class IntSegmentedSortedMultiset implements SegmentedSortedMultiSet
         int rlpos = 0;
         int nextValue;
         while (rlpos < leafSize && ripos < valuesToInsert.size()
-                && (leq(nextValue = valuesToInsert.get(ripos), maxInsert) || lastLeaf)) {
-            if (gt(leafValues[rlpos], nextValue)) {
+                && (IntComparisons.leq(nextValue = valuesToInsert.get(ripos), maxInsert) || lastLeaf)) {
+            if (IntComparisons.gt(leafValues[rlpos], nextValue)) {
                 // we're not going to find nextValue in this leaf, so we skip over it
                 valuesToInsert.set(wipos.get(), nextValue);
                 counts.set(wipos.get(), counts.get(ripos));
@@ -94,7 +94,7 @@ public final class IntSegmentedSortedMultiset implements SegmentedSortedMultiSet
             } else {
                 rlpos = upperBound(leafValues, rlpos, leafSize, nextValue);
                 if (rlpos < leafSize) {
-                    if (eq(leafValues[rlpos], nextValue)) {
+                    if (IntComparisons.eq(leafValues[rlpos], nextValue)) {
                         leafCounts[rlpos] += counts.get(ripos);
                         ripos++;
                     }
@@ -146,7 +146,7 @@ public final class IntSegmentedSortedMultiset implements SegmentedSortedMultiSet
         while (remaining-- > 0) {
             final int insertValue = valuesToInsert.get(ripos);
             final int leafValue = leafValues[firstLeaf][rlpos];
-            final boolean useInsertValue = gt(insertValue, leafValue);
+            final boolean useInsertValue = IntComparisons.gt(insertValue, leafValue);
 
             if (useInsertValue) {
                 leafValues[wleaf][wpos] = insertValue;
@@ -292,7 +292,7 @@ public final class IntSegmentedSortedMultiset implements SegmentedSortedMultiSet
             final int insertValue = valuesToInsert.get(ripos);
             final int leafValue = leafValues[rlpos];
 
-            if (gt(insertValue, leafValue)) {
+            if (IntComparisons.gt(insertValue, leafValue)) {
                 leafValues[wpos] = insertValue;
                 leafCounts[wpos] = counts.get(ripos);
                 if (ripos == 0) {
@@ -445,7 +445,7 @@ public final class IntSegmentedSortedMultiset implements SegmentedSortedMultiSet
 
         maybeAccumulateAdditions(valuesToInsert);
 
-        if (leafCount > 1 && gt(valuesToInsert.get(0), getMaxInt())) {
+        if (leafCount > 1 && IntComparisons.gt(valuesToInsert.get(0), getMaxInt())) {
             doAppend(valuesToInsert, counts);
             return;
         }
@@ -691,7 +691,7 @@ public final class IntSegmentedSortedMultiset implements SegmentedSortedMultiSet
         while (lo < hi) {
             final int mid = (lo + hi) >>> 1;
             final int testValue = valuesToSearch[mid];
-            final boolean moveLo = leq(testValue, searchValue);
+            final boolean moveLo = IntComparisons.leq(testValue, searchValue);
             if (moveLo) {
                 lo = mid;
                 if (lo == hi - 1) {
@@ -718,7 +718,7 @@ public final class IntSegmentedSortedMultiset implements SegmentedSortedMultiSet
         while (lo < hi) {
             final int mid = (lo + hi) >>> 1;
             final int testValue = valuesToSearch.get(mid);
-            final boolean moveLo = leq(testValue, searchValue);
+            final boolean moveLo = IntComparisons.leq(testValue, searchValue);
             if (moveLo) {
                 if (mid == lo) {
                     return mid + 1;
@@ -745,7 +745,7 @@ public final class IntSegmentedSortedMultiset implements SegmentedSortedMultiSet
         while (lo < hi) {
             final int mid = (lo + hi) >>> 1;
             final int testValue = valuesToSearch[mid];
-            final boolean moveLo = leq(testValue, searchValue);
+            final boolean moveLo = IntComparisons.leq(testValue, searchValue);
             if (moveLo) {
                 if (mid == lo) {
                     return mid + 1;
@@ -772,7 +772,7 @@ public final class IntSegmentedSortedMultiset implements SegmentedSortedMultiSet
         while (lo < hi) {
             final int mid = (lo + hi) >>> 1;
             final int testValue = valuesToSearch[mid];
-            final boolean moveHi = geq(testValue, searchValue);
+            final boolean moveHi = IntComparisons.geq(testValue, searchValue);
             if (moveHi) {
                 hi = mid;
             } else {
@@ -796,7 +796,7 @@ public final class IntSegmentedSortedMultiset implements SegmentedSortedMultiSet
         while (lo < hi) {
             final int mid = (lo + hi) >>> 1;
             final int testValue = valuesToSearch.get(mid);
-            final boolean moveHi = gt(testValue, searchValue);
+            final boolean moveHi = IntComparisons.gt(testValue, searchValue);
             if (moveHi) {
                 hi = mid;
             } else {
@@ -820,7 +820,7 @@ public final class IntSegmentedSortedMultiset implements SegmentedSortedMultiSet
         while (lo < hi) {
             final int mid = (lo + hi) >>> 1;
             final int testValue = valuesToSearch[mid];
-            final boolean moveLo = lt(testValue, searchValue);
+            final boolean moveLo = IntComparisons.lt(testValue, searchValue);
             if (moveLo) {
                 lo = mid + 1;
                 if (lo == hi) {
@@ -1233,18 +1233,20 @@ public final class IntSegmentedSortedMultiset implements SegmentedSortedMultiSet
                 final int lastValue = leafValues[ii][leafSizes[ii] - 1];
                 if (ii < leafCount - 1) {
                     final int directoryValue = directoryValues[ii];
-                    Assert.assertion(leq(lastValue, directoryValue), "lt(lastValue, directoryValue)", lastValue,
+                    Assert.assertion(IntComparisons.leq(lastValue, directoryValue), "lt(lastValue, directoryValue)",
+                            lastValue,
                             "leafValues[ii][leafSizes[ii] - 1]", directoryValue, "directoryValue");
 
                     if (ii < leafCount - 2) {
                         final int nextDirectoryValue = directoryValues[ii + 1];
-                        Assert.assertion(lt(directoryValue, nextDirectoryValue),
+                        Assert.assertion(IntComparisons.lt(directoryValue, nextDirectoryValue),
                                 "lt(directoryValue, nextDirectoryValue)", directoryValue, "directoryValue",
                                 nextDirectoryValue, "nextDirectoryValue");
                     }
 
                     final int nextFirstValue = leafValues[ii + 1][0];
-                    Assert.assertion(lt(directoryValue, nextFirstValue), "lt(directoryValue, nextFirstValue)",
+                    Assert.assertion(IntComparisons.lt(directoryValue, nextFirstValue),
+                            "lt(directoryValue, nextFirstValue)",
                             directoryValue, "directoryValue", nextFirstValue, "nextFirstValue");
                 }
                 // It would be nice to enable an assertion to make sure we are dense after removals, but the other
@@ -1266,7 +1268,7 @@ public final class IntSegmentedSortedMultiset implements SegmentedSortedMultiSet
         for (int leaf = 0; leaf < leafCount - 1; ++leaf) {
             final int lastValue = leafValues[leaf][leafSizes[leaf] - 1];
             final int nextValue = leafValues[leaf + 1][0];
-            Assert.assertion(lt(lastValue, nextValue), lastValue + " < " + nextValue);
+            Assert.assertion(IntComparisons.lt(lastValue, nextValue), lastValue + " < " + nextValue);
         }
     }
 
@@ -1282,7 +1284,8 @@ public final class IntSegmentedSortedMultiset implements SegmentedSortedMultiSet
             Assert.gtZero(counts[ii], "counts[ii]");
             final int thisValue = values[ii];
             final int nextValue = values[ii + 1];
-            Assert.assertion(lt(values[ii], values[ii + 1]), "lt(values[ii], values[ii + 1])", (Integer) thisValue,
+            Assert.assertion(IntComparisons.lt(values[ii], values[ii + 1]), "lt(values[ii], values[ii + 1])",
+                    (Integer) thisValue,
                     "values[ii]", (Integer) nextValue, "values[ii + 1]", ii, "ii");
         }
         if (size > 0) {
@@ -1310,7 +1313,6 @@ public final class IntSegmentedSortedMultiset implements SegmentedSortedMultiSet
 
     // endregion
 
-    // region Comparisons
     private int getDesiredLeafCount(int newSize) {
         return (newSize + leafSize - 1) / leafSize;
     }
@@ -1318,33 +1320,6 @@ public final class IntSegmentedSortedMultiset implements SegmentedSortedMultiSet
     private static int valuesPerLeaf(int values, int leafCount) {
         return (values + leafCount - 1) / leafCount;
     }
-
-    private static int doComparison(int lhs, int rhs) {
-        return IntComparisons.compare(lhs, rhs);
-    }
-
-    private static boolean gt(int lhs, int rhs) {
-        return doComparison(lhs, rhs) > 0;
-    }
-
-    private static boolean lt(int lhs, int rhs) {
-        return doComparison(lhs, rhs) < 0;
-    }
-
-    private static boolean leq(int lhs, int rhs) {
-        return doComparison(lhs, rhs) <= 0;
-    }
-
-    private static boolean geq(int lhs, int rhs) {
-        return doComparison(lhs, rhs) >= 0;
-    }
-
-    private static boolean eq(int lhs, int rhs) {
-        // region equality function
-        return lhs == rhs;
-        // endregion equality function
-    }
-    // endregion
 
     @Override
     public long totalSize() {
@@ -1489,12 +1464,12 @@ public final class IntSegmentedSortedMultiset implements SegmentedSortedMultiSet
 
         if (SEGMENTED_SORTED_MULTISET_VALIDATION) {
             if (destination.size > 0) {
-                Assert.assertion(geq(getMinInt(), destination.getMaxInt()),
+                Assert.assertion(IntComparisons.geq(getMinInt(), destination.getMaxInt()),
                         "geq(getMinInt(), destination.getMaxInt())");
             }
         }
 
-        if (destination.size > 0 && eq(getMinInt(), destination.getMaxInt())) {
+        if (destination.size > 0 && IntComparisons.eq(getMinInt(), destination.getMaxInt())) {
             final long minCount = getMinCount();
             final long toAdd;
             if (minCount > count) {
@@ -1762,7 +1737,7 @@ public final class IntSegmentedSortedMultiset implements SegmentedSortedMultiSet
 
         if (SEGMENTED_SORTED_MULTISET_VALIDATION) {
             if (size > 0 && destination.size > 0) {
-                Assert.assertion(geq(getMinInt(), destination.getMaxInt()),
+                Assert.assertion(IntComparisons.geq(getMinInt(), destination.getMaxInt()),
                         "geq(getMinInt(), destination.getMaxInt())");
             }
         }
@@ -1924,12 +1899,12 @@ public final class IntSegmentedSortedMultiset implements SegmentedSortedMultiSet
 
         if (SEGMENTED_SORTED_MULTISET_VALIDATION) {
             if (destination.size > 0) {
-                Assert.assertion(leq(getMaxInt(), destination.getMinInt()),
+                Assert.assertion(IntComparisons.leq(getMaxInt(), destination.getMinInt()),
                         "leq(getMaxInt(), destination.getMinInt())");
             }
         }
 
-        if (destination.size > 0 && eq(getMaxInt(), destination.getMinInt())) {
+        if (destination.size > 0 && IntComparisons.eq(getMaxInt(), destination.getMinInt())) {
             final long maxCount = getMaxCount();
             final long toAdd;
             if (maxCount > count) {
@@ -2129,7 +2104,7 @@ public final class IntSegmentedSortedMultiset implements SegmentedSortedMultiSet
 
         if (SEGMENTED_SORTED_MULTISET_VALIDATION) {
             if (size > 0 && destination.size > 0) {
-                Assert.assertion(leq(getMaxInt(), destination.getMinInt()),
+                Assert.assertion(IntComparisons.leq(getMaxInt(), destination.getMinInt()),
                         "leq(getMaxInt(), destination.getMinInt())");
             }
         }

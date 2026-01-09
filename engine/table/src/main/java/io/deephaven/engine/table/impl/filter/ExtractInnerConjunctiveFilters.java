@@ -1,66 +1,66 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.filter;
 
 import io.deephaven.engine.table.impl.select.ConjunctiveFilter;
 import io.deephaven.engine.table.impl.select.DisjunctiveFilter;
 import io.deephaven.engine.table.impl.select.WhereFilter;
-import io.deephaven.engine.table.impl.select.WhereFilterBarrierImpl;
+import io.deephaven.engine.table.impl.select.WhereFilterWithDeclaredBarriersImpl;
 import io.deephaven.engine.table.impl.select.WhereFilterInvertedImpl;
-import io.deephaven.engine.table.impl.select.WhereFilterRespectsBarrierImpl;
+import io.deephaven.engine.table.impl.select.WhereFilterWithRespectedBarriersImpl;
 import io.deephaven.engine.table.impl.select.WhereFilterSerialImpl;
 
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
-public class ExtractInnerConjunctiveFilters implements WhereFilter.Visitor<List<WhereFilter>> {
-    public static final ExtractInnerConjunctiveFilters INSTANCE = new ExtractInnerConjunctiveFilters();
+public enum ExtractInnerConjunctiveFilters implements WhereFilter.Visitor<Stream<WhereFilter>> {
+    EXTRACT_INNER_CONJUNCTIVE_FILTERS;
 
     public static List<WhereFilter> of(final WhereFilter filter) {
-        return filter.walkWhereFilter(INSTANCE);
-    }
-
-    @Override
-    public List<WhereFilter> visitWhereFilter(final WhereFilter filter) {
-        final List<WhereFilter> retValue = WhereFilter.Visitor.super.visitWhereFilter(filter);
-        if (retValue == null) {
-            return List.of(filter);
+        try (final Stream<WhereFilter> stream = stream(filter)) {
+            return stream.collect(Collectors.toList());
         }
-        return retValue;
+    }
+
+    public static Stream<WhereFilter> stream(final WhereFilter filter) {
+        return filter.walk(EXTRACT_INNER_CONJUNCTIVE_FILTERS);
     }
 
     @Override
-    public List<WhereFilter> visitWhereFilter(final WhereFilterInvertedImpl filter) {
-        return List.of(filter);
+    public Stream<WhereFilter> visitOther(final WhereFilter filter) {
+        return Stream.of(filter);
     }
 
     @Override
-    public List<WhereFilter> visitWhereFilter(final WhereFilterSerialImpl filter) {
-        return List.of(filter);
+    public Stream<WhereFilter> visit(final WhereFilterInvertedImpl filter) {
+        return Stream.of(filter);
     }
 
     @Override
-    public List<WhereFilter> visitWhereFilter(final WhereFilterBarrierImpl filter) {
-        return List.of(filter);
+    public Stream<WhereFilter> visit(final WhereFilterSerialImpl filter) {
+        return Stream.of(filter);
     }
 
     @Override
-    public List<WhereFilter> visitWhereFilter(final WhereFilterRespectsBarrierImpl filter) {
-        return visitWhereFilter(filter.getWrappedFilter()).stream()
-                .map(wf -> WhereFilterRespectsBarrierImpl.of(wf, filter.respectedBarriers()))
-                .collect(Collectors.toList());
+    public Stream<WhereFilter> visit(final WhereFilterWithDeclaredBarriersImpl filter) {
+        return Stream.of(filter);
     }
 
     @Override
-    public List<WhereFilter> visitWhereFilter(final DisjunctiveFilter filter) {
-        return List.of(filter);
+    public Stream<WhereFilter> visit(final WhereFilterWithRespectedBarriersImpl filter) {
+        return stream(filter.getWrappedFilter())
+                .map(wf -> WhereFilterWithRespectedBarriersImpl.of(wf, filter.respectedBarriers()));
     }
 
     @Override
-    public List<WhereFilter> visitWhereFilter(final ConjunctiveFilter filter) {
-        return filter.getFilters().stream()
-                .flatMap(f -> visitWhereFilter(f).stream())
-                .collect(Collectors.toList());
+    public Stream<WhereFilter> visit(final DisjunctiveFilter filter) {
+        return Stream.of(filter);
+    }
+
+    @Override
+    public Stream<WhereFilter> visit(final ConjunctiveFilter filter) {
+        return filter.getFilters().stream().flatMap(ExtractInnerConjunctiveFilters::stream);
     }
 }

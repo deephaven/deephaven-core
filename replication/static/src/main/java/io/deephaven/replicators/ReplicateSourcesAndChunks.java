@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.replicators;
 
@@ -665,7 +665,6 @@ public class ReplicateSourcesAndChunks {
         for (String fileName : files) {
             final File classFile = new File(fileName);
             List<String> lines = FileUtils.readLines(classFile, Charset.defaultCharset());
-            lines = ReplicationUtils.removeRegion(lines, "SortFixup");
             FileUtils.writeLines(classFile, lines);
         }
         replicateWritableBooleanChunks();
@@ -713,17 +712,6 @@ public class ReplicateSourcesAndChunks {
                 "    @Override",
                 "    public final void fillWithBoxedValue(int offset, int size, Object value) {",
                 "        fillWithValue(offset,size, (T)value);",
-                "    }"));
-        lines = ReplicationUtils.addImport(lines,
-                "import io.deephaven.util.compare.ObjectComparisons;",
-                "import java.util.Comparator;");
-        lines = ReplicationUtils.replaceRegion(lines, "sort", Arrays.asList(
-                "    private static final Comparator<Comparable<Object>> COMPARATOR = Comparator.nullsFirst(Comparator.naturalOrder());",
-                "",
-                "    @Override",
-                "    public final void sort(int start, int length) {",
-                "        //noinspection unchecked",
-                "        Arrays.sort(data, offset + start, offset + start + length, (Comparator<? super T>) COMPARATOR);",
                 "    }"));
         FileUtils.writeLines(classFile, lines);
     }

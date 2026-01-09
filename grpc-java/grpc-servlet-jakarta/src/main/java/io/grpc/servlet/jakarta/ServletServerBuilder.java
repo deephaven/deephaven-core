@@ -35,6 +35,7 @@ import io.grpc.internal.ServerStream;
 import io.grpc.internal.ServerTransport;
 import io.grpc.internal.ServerTransportListener;
 import io.grpc.internal.SharedResourceHolder;
+import jakarta.servlet.http.HttpServletRequest;
 
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.NotThreadSafe;
@@ -44,6 +45,7 @@ import java.net.SocketAddress;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.function.Function;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -62,6 +64,8 @@ import static io.grpc.internal.GrpcUtil.DEFAULT_MAX_MESSAGE_SIZE;
 @NotThreadSafe
 public final class ServletServerBuilder extends ForwardingServerBuilder<ServletServerBuilder> {
     List<? extends ServerStreamTracer.Factory> streamTracerFactories;
+    private Function<HttpServletRequest, String> methodNameResolver =
+            ServletAdapter.DEFAULT_METHOD_NAME_RESOLVER;
     int maxInboundMessageSize = DEFAULT_MAX_MESSAGE_SIZE;
 
     private final ServerImplBuilder serverImplBuilder;
@@ -97,7 +101,8 @@ public final class ServletServerBuilder extends ForwardingServerBuilder<ServletS
      * Creates a {@link ServletAdapter}.
      */
     public ServletAdapter buildServletAdapter() {
-        return new ServletAdapter(buildAndStart(), streamTracerFactories, maxInboundMessageSize);
+        return new ServletAdapter(buildAndStart(), streamTracerFactories, methodNameResolver,
+                maxInboundMessageSize);
     }
 
     /**
@@ -171,6 +176,18 @@ public final class ServletServerBuilder extends ForwardingServerBuilder<ServletS
     @Override
     public ServletServerBuilder useTransportSecurity(File certChain, File privateKey) {
         throw new UnsupportedOperationException("TLS should be configured by the servlet container");
+    }
+
+    /**
+     * Specifies how to determine gRPC method name from servlet request.
+     *
+     * <p>The default strategy is using {@link HttpServletRequest#getRequestURI()} without the leading
+     * slash.</p>
+     */
+    public ServletServerBuilder methodNameResolver(
+            Function<HttpServletRequest, String> methodResolver) {
+        this.methodNameResolver = checkNotNull(methodResolver);
+        return this;
     }
 
     @Override

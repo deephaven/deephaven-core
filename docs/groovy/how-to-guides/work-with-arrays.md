@@ -1,115 +1,206 @@
 ---
-title: Work with arrays
+title: Arrays
 sidebar_label: Arrays
 ---
 
-This guide will show you how to work with [arrays](../reference/query-language/types/arrays.md) in your query strings.
+This guide shows you how to work with [arrays](../reference/query-language/types/arrays.md) in [query strings](./query-string-overview.md).
 
-When performing complex analyses, [arrays](../reference/query-language/types/arrays.md) are an invaluable tool. [Arrays](../reference/query-language/types/arrays.md) group related data together and provide an easy way to access offset data from a time series. [Arrays](../reference/query-language/types/arrays.md) are built into the Deephaven Query Language.
+[Arrays](../reference/query-language/types/arrays.md) are an invaluable tool for grouping related data. They provide an easy way to access previous and future values in time series datasets. Support for [arrays](../reference/query-language/types/arrays.md) is built into the Deephaven Query Language (DQL).
 
-## Create an array from a column
+## Array column types
 
-Every column in a table has an associated [array](../reference/query-language/types/arrays.md) variable, which can be accessed by adding an underscore after the column name. For example, a column called `X` can be accessed as an [array](../reference/query-language/types/arrays.md) by using the column name `X_`.
+Array columns fall into one of three categories of data type.
 
-In the following example, the data in column `X` can be accessed through the `X_` [array](../reference/query-language/types/arrays.md).
+### Array columns
+
+Array columns are Java arrays of primitive types. For example, the following query creates a table with a single row containing an array of primitive integers.
+
+```groovy order=source,sourceMeta
+source = emptyTable(1).update("X = new int[]{1, 2, 3}")
+sourceMeta = source.meta()
+```
+
+You can also use [Groovy closures](./groovy-closures.md) to create Java primitive array columns:
+
+```groovy order=source,sourceMeta
+listFunc = { -> [4, 5, 6] }
+
+source = emptyTable(1).update("ArrayFromGroovy = listFunc()")
+sourceMeta = source.meta()
+```
+
+The Deephaven engine can seamlessly work with these column types.
+
+### Vector columns
+
+```groovy order=source,sourceMeta
+source = emptyTable(5).update("X = ii % 2", "Y = ii").groupBy("X")
+sourceMeta = source.meta()
+```
+
+The Deephaven engine can seamlessly work with these column types.
+
+### Vector columns
+
+Vector columns arise from common table operations including [grouping](./grouping-data.md). These vector columns are used in [dedicated aggregations](./dedicated-aggregations.md), [combined aggregations](./combined-aggregations.md), [`updateBy`](../reference/table-operations/update-by-operations/updateBy.md), and more. The following example creates a vector column by calling [`groupBy`](../reference/table-operations/group-and-aggregate/groupBy.md):
+
+```groovy order=source,sourceMeta
+source = emptyTable(5).update("X = ii % 2", "Y = ii").groupBy("X")
+sourceMeta = source.meta()
+```
+
+## Convert between arrays and vectors
+
+Since Deephaven tables commonly use both Java primitive arrays and Deephaven vectors, it's useful to convert between the two. The following example converts between both vector and array columns:
+
+```groovy order=result,resultMeta,source
+source = emptyTable(10).update("Vector = ii").groupBy()
+result = source.update(
+  "ArrayFromVector = array(Vector)",
+  "VectorFromArray = vec(ArrayFromVector)",
+)
+resultMeta = result.meta()
+```
+
+## Create array columns
+
+### By grouping
+
+[Arrays](../reference/query-language/types/arrays.md) can be created using the [`groupBy`](../reference/table-operations/group-and-aggregate/groupBy.md) method to group data.
+
+```groovy order=result,source
+source = emptyTable(10).update("X = (ii % 2 == 0) ? `A` : `B` ", "Y = ii")
+
+result = source.groupBy("X")
+```
+
+### With aggregations
+
+Certain aggregations create array columns. For example, the following operations create array columns:
+
+- [`RollingGroup`](../reference/table-operations/update-by-operations/rolling-group.md)
+- [`rangeJoin`](../reference/table-operations/join/rangeJoin.md)
+
+The following example calls [`RollingGroup`](../reference/table-operations/update-by-operations/rolling-group.md) to create an array column:
+
+```groovy order=result,resultMeta,source
+source = emptyTable(10).update(
+  "Key = (ii % 2 == 0) ? `A` : `B`", "Value = randomDouble(0, 1)"
+)
+
+result = source.updateBy(RollingGroup(3, "TickGroup=Value"), "Key")
+resultMeta = result.meta()
+```
+
+### Using the underscore operator
+
+Every column in a table has an associated [array](../reference/query-language/types/arrays.md) variable, which can be accessed using the underscore (`_`) operator. This operator is specific to Deephaven. For example, a column called `X` can be accessed as an [array](../reference/query-language/types/arrays.md) by using the column name `X_`:
 
 ```groovy order=source,result
 source = emptyTable(10).update("X = ii")
 result = source.update("A = X_")
 ```
 
-Let's walk through the query step-by-step.
-
-- First, we create a simple table with ten rows, each populated with a numeric value ranging from 0 to 9.
-  - Variable `ii` is a [special, built-in variable](../reference/query-language/variables/special-variables.md) that contains the row number and is useful for accessing [arrays](../reference/query-language/types/arrays.md).
-  - As a consequence, each row in column `X` contains a value that indicates its index within the column. For example, the first row has a value of 0 while the fifth row has a value of 4.
-- Next, we create a new column `A`, using the data from the first column accessed as an [array](../reference/query-language/types/arrays.md). Since `A` accessed as an [array](../reference/query-language/types/arrays.md) contains its values from each row, this puts a 10-element [array](../reference/query-language/types/arrays.md) in each row for column B.
-
-> [!WARNING]
-> The [special variables](../reference/query-language/variables/special-variables.md), `i` and `ii`, are unreliable within a ticking table. Inconsistent results occur since previously created row indexes do not automatically update.
-
-## Access array elements
-
-You can use bracket `[ ]` syntax to access elements in the [array](../reference/query-language/types/arrays.md) at specific indexes for your queries. The [special variables](../reference/query-language/variables/special-variables.md) `i` and `ii` can be useful for indexing based on row number.
-
-In the following example, we access various elements from the data in column `X` to add columns to the result table.
-
-```groovy order=source,result
-source = emptyTable(10).update("X = ii")
-result = source.update("A = X_[ii - 1]", "B = X_[ii + 1]", "C = X_.size()")
-```
-
-- Column `X` is referred to as `X_` to access it as an [array](../reference/query-language/types/arrays.md), and then the values of specific rows within the column are accessed by using `X_[ii-1]` and `X_[ii+1]`.
-- Columns `A` and `B` are created as offset values of column `X` by using this [array](../reference/query-language/types/arrays.md) access.
-- Column `C` contains the size of column `X`, defined by the `X_.size()` function.
-- Variable `ii` is a [special, built-in variable](../reference/query-language/variables/special-variables.md) that contains the row number and is useful for accessing [arrays](../reference/query-language/types/arrays.md).
-- When you index an out-of-bounds element in the [array](../reference/query-language/types/arrays.md), you get a null result.
-
-## Create arrays by grouping
-
-[Arrays](../reference/query-language/types/arrays.md) can also be created using the [`groupBy`](../reference/table-operations/group-and-aggregate/groupBy.md) method to group data.
-
-```groovy order=source,result
-source = emptyTable(10).update("X = (ii % 2 == 0) ? `A` : `B` ", "Y = ii")
-
-result = source.groupBy("X")
-```
-
-- The source table contains two columns:
-  - `X` with alternating values of `A` and `B` in each row,
-  - `Y` containing each row's index.
-- The result table uses the [`groupBy`](../reference/table-operations/group-and-aggregate/groupBy.md) operation to group based on the values in column X. The resulting grouped column contains [arrays](../reference/query-language/types/arrays.md) of values.
-
-## Access specific array elements
-
-In the following example, we start by creating the result table from the previous example, then access specific [array](../reference/query-language/types/arrays.md) indexes from the `Y` column.
-
-```groovy order=result,indexingResult
-result = emptyTable(10).update("X = (ii % 2 == 0) ? `A` : `B` ", "Y = ii").groupBy("X")
-indexingResult = result.update(
-    "Element2=Y[2]",
-    "Element3=Y[3]"
-)
-```
-
-## Slice arrays
-
-You can grab slices of an [array](../reference/query-language/types/arrays.md) by using the [`Array.subVector(start, end)`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/impl/ssms/LongSegmentedSortedMultiset.html#subVector(long,long)) method. `start` and `end` are both integers showing where the slice starts (inclusive) and ends (exclusive).
-
-In the following example, we can make subarrays and also access specific elements from the subarrays.
-
-```groovy order=result,slice
-result = emptyTable(10).update("X = (ii % 2 == 0) ? `A` : `B` ", "Y = ii").groupBy("X")
-slice = result.update(
-    "SubArray = Y.subVector(2, 4)",
-    "SubSlice = SubArray[1]",
-)
-```
-
-## Use aggregations on arrays
-
-You can use aggregation functions on [arrays](../reference/query-language/types/arrays.md). The following example uses the `sum` and `avg` functions on a column containing [arrays](../reference/query-language/types/arrays.md).
-
-```groovy order=result,sumResult
-result = emptyTable(10).update("X = (ii % 2 == 0) ? `A` : `B` ", "Y = ii").groupBy("X")
-sumResult = result.update("ArraySum = sum(Y)", "ArrayAvg = avg(Y)")
-```
-
 ## Get array length
 
-The [`len`](https://deephaven.io/core/javadoc/io/deephaven/function/Basic.html#len(byte[])) method returns the length of the given input. This is useful in query strings where a user needs to get the size of a `Vector` or a Java array.
+The [`len`](https://deephaven.io/core/javadoc/io/deephaven/function/Basic.html#len(byte[])) method returns the length of the given input. This is useful in query strings where you need to get the size of a [`Vector`](https://docs.deephaven.io/core/javadoc/io/deephaven/vector/Vector.html) or a Java array.
 
 ```groovy order=source,result
 source = emptyTable(10).update("X = i").groupBy()
 result = source.update("LenX = len(X)")
 ```
 
-Use the power of [arrays](../reference/query-language/types/arrays.md) in the Deephaven Query Language to make your queries more powerful and concise.
+## Access array elements
+
+The square bracket [operators](./operators.md) `[]` are used to access elements in [array](../reference/query-language/types/arrays.md) columns. The following example uses these operators to access the previous and next elements in the array, as well as print the size of the array:
+
+```groovy order=source,result
+source = emptyTable(10).update("X = ii")
+result = source.update("A = X_[ii - 1]", "B = X_[ii + 1]", "C = X_.size()")
+```
+
+> [!NOTE]
+> The first row of column `A` is null because there is no previous element at the zeroth array index. The last row of column `B` is null because there is no next element at the last array index.
+
+Additionally, you can access specific [array](../reference/query-language/types/arrays.md) elements directly using indexes.
+
+```groovy order=result,indexingResult
+result = (
+    emptyTable(10)
+    .update("X = (ii % 2 == 0) ? `A` : `B` ", "Y = ii")
+    .groupBy("X")
+)
+indexingResult = result.update("Element2 = Y[2]", "Element3 = Y[3]")
+```
+
+## Slice arrays
+
+You can slice [arrays](../reference/query-language/types/arrays.md) into subarrays with [`subVector`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/impl/ssms/LongSegmentedSortedMultiset.html#subVector(long,long)). The first input is the index at which the slice starts, while the second is the index at which the slice ends. They are inclusive and exclusive, respectively.
+
+The following example slices the [array](../reference/query-language/types/arrays.md) column, then [grabs specific elements](#access-array-elements) from the subarray.
+
+```groovy order=result,resultMeta,source
+source = (
+  emptyTable(10)
+  .update("X = (ii % 2 == 0) ? `A` : `B` ", "Y = ii")
+  .groupBy("X")
+)
+result = source.update(
+  "SubArray = Y.subVector(2, 4)",
+  "SubSlice = SubArray[1]",
+)
+resultMeta = result.meta()
+```
+
+## Functions with array arguments
+
+### Built-in query language functions
+
+> [!CAUTION]
+> [Dedicated aggregations](./dedicated-aggregations.md), [Combined aggregations](./combined-aggregations.md), and [`updateBy`](./rolling-aggregations.md) are always more performant than [`groupBy`](../reference/table-operations/group-and-aggregate/groupBy.md) followed by manual calculations when used on ticking tables.
+
+Many [built-in query language methods](./built-in-functions.md) take arrays as input. The following example uses the [`sum`](https://docs.deephaven.io/core/javadoc/io/deephaven/function/Numeric.html#sum(io.deephaven.vector.LongVector)) and [`avg`](https://docs.deephaven.io/core/javadoc/io/deephaven/function/Numeric.html#avg(io.deephaven.vector.LongVector)) functions on a column containing [arrays](../reference/query-language/types/arrays.md).
+
+```groovy order=result,sumResult
+result = (
+  emptyTable(10)
+  .update("X = (ii % 2 == 0) ? `A` : `B` ", "Y = ii")
+  .groupBy("X")
+)
+sumResult = result.update("ArraySum = sum(Y)", "ArrayAvg = avg(Y)")
+```
+
+### Groovy closures
+
+Groovy closures that take arrays as input are also supported in query strings. The following example calls a Groovy closure that takes a Java array as input:
+
+```groovy order=source,sourceMeta
+arraySum = { double[] arr ->
+    double total = 0.0
+    for (double value : arr) {
+        total += value
+    }
+    return total
+}
+
+source = emptyTable(1).update(
+    "ArrayColumn = new double[]{3.14, 1.23, -0.919}",
+    "CallGroovy = (double)arraySum(ArrayColumn)"
+)
+sourceMeta = source.meta()
+```
 
 ## Related documentation
 
 - [Create an empty table](./new-and-empty-table.md#emptytable)
+- [Dedicated aggregations](./dedicated-aggregations.md)
+- [Combined aggregations](./combined-aggregations.md)
+- [Rolling aggregations](./rolling-aggregations.md)
+- [Query string overview](./query-string-overview.md)
+- [Groovy variables in query strings](./groovy-variables.md)
+- [Groovy functions in query strings](./groovy-closures.md)
+- [Java objects in query strings](./java-classes.md)
+- [Special variables](../reference/query-language/variables/special-variables.md)
 - [Arrays](../reference/query-language/types/arrays.md)
 - [`groupBy`](../reference/table-operations/group-and-aggregate/groupBy.md)
-- [Special variables](../reference/query-language/variables/special-variables.md)
 - [`update`](../reference/table-operations/select/update.md)

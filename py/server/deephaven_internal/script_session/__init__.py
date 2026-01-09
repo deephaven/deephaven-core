@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 #
 
 # Implementation utilities for io.deephaven.engine.util.PythonDeephavenSession
@@ -10,7 +10,7 @@ from deephaven import _wrapper
 
 def create_change_list(from_snapshot, to_snapshot):
     changes = []
-    for (name, new_value) in to_snapshot.items():
+    for name, new_value in to_snapshot.items():
         if not isinstance(name, str):
             continue
         if name not in from_snapshot:
@@ -19,7 +19,7 @@ def create_change_list(from_snapshot, to_snapshot):
             existing_value = from_snapshot[name]
             if new_value is not existing_value:
                 changes.append(make_change_item(name, existing_value, new_value))
-    for (name, existing_value) in from_snapshot.items():
+    for name, existing_value in from_snapshot.items():
         if not isinstance(name, str):
             continue
         if name in to_snapshot:

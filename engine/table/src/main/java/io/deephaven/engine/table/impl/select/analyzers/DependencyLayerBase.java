@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.select.analyzers;
 
@@ -16,26 +16,23 @@ public abstract class DependencyLayerBase extends SelectAndViewAnalyzer.Layer {
     final boolean selectColumnHoldsVector;
     final ColumnSource<?> columnSource;
     final ModifiedColumnSet myModifiedColumnSet;
-    final BitSet myLayerDependencySet;
 
     DependencyLayerBase(
             final SelectAndViewAnalyzer.AnalyzerContext context,
             final SelectColumn selectColumn,
             final ColumnSource<?> columnSource,
-            final String[] dependencies,
+            final String[] recomputeDependencies,
             final ModifiedColumnSet mcsBuilder) {
         super(context.getNextLayerIndex());
         this.name = selectColumn.getName();
         this.selectColumn = selectColumn;
         selectColumnHoldsVector = Vector.class.isAssignableFrom(selectColumn.getReturnedType());
         this.columnSource = columnSource;
-        context.populateParentDependenciesMCS(mcsBuilder, dependencies);
+        context.populateParentDependenciesMCS(mcsBuilder, recomputeDependencies);
         if (selectColumn.recomputeOnModifiedRow()) {
             mcsBuilder.setAll(ModifiedColumnSet.ALL);
         }
         this.myModifiedColumnSet = mcsBuilder;
-        this.myLayerDependencySet = new BitSet();
-        context.populateLayerDependencySet(myLayerDependencySet, dependencies);
     }
 
     @Override

@@ -1,9 +1,10 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.vector;
 
 import io.deephaven.base.verify.Require;
+import io.deephaven.util.annotations.UserInvocationPermitted;
 import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfChar;
 import io.deephaven.engine.primitive.value.iterator.ValueIteratorOfChar;
 import io.deephaven.qst.type.CharType;
@@ -34,6 +35,7 @@ public interface CharVector extends Vector<CharVector>, Iterable<Character> {
      * @param index An offset into this CharVector
      * @return The element at the specified offset, or the {@link QueryConstants#NULL_CHAR null char}
      */
+    @UserInvocationPermitted({"vector"})
     char get(long index);
 
     @Override
@@ -51,6 +53,7 @@ public interface CharVector extends Vector<CharVector>, Iterable<Character> {
     @Override
     CharVector getDirect();
 
+    @UserInvocationPermitted({"vector"})
     @Override
     @FinalDefault
     default ValueIteratorOfChar iterator() {
@@ -242,6 +245,7 @@ public interface CharVector extends Vector<CharVector>, Iterable<Character> {
      */
     abstract class Indirect implements CharVector {
 
+        @UserInvocationPermitted({"vector"})
         @Override
         public char[] toArray() {
             final int size = intSize("CharVector.toArray");

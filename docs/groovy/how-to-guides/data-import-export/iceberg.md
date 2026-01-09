@@ -3,7 +3,7 @@ title: Iceberg and Deephaven
 sidebar_label: Iceberg
 ---
 
-[Apache Iceberg](https://iceberg.apache.org/) is a high-performance format for tabular data. Deephaven's Iceberg integration enables users to interact with Iceberg catalogs, namespaces, tables, and snapshots. This guide walks through reading from Iceberg with a single table and snapshot, then writes multiple Deephaven tables to the same Iceberg namespace. The examples presented this guide interact with a [REST catalog](https://www.tabular.io/apache-iceberg-cookbook/getting-started-catalog-background/).
+[Apache Iceberg](https://iceberg.apache.org/) is a high-performance format for tabular data. Deephaven's Iceberg integration enables users to interact with Iceberg catalogs, namespaces, tables, and snapshots. This guide walks through reading from Iceberg with a single table and snapshot, then writes multiple Deephaven tables to the same Iceberg namespace. The examples presented this guide interact with a [REST catalog](https://iceberg.apache.org/rest-catalog-spec/).
 
 The API enables you to interact with many types of catalogs. They include:
 
@@ -71,7 +71,7 @@ restAdapter = IcebergTools.createAdapter(
 
 If you are working with a REST catalog backed by S3 storage, you can use the more specific [`createS3Rest`](https://deephaven.io/core/javadoc/io/deephaven/iceberg/util/IcebergToolsS3.html#createS3Rest(java.lang.String,java.lang.String,java.lang.String,java.lang.String,java.lang.String,java.lang.String,java.lang.String)) method:
 
-```groovy docker-config=iceberg test-set=1 order=null
+```groovy docker-config=iceberg test-set=1 order=null reset
 import io.deephaven.iceberg.util.*
 
 restAdapter = IcebergToolsS3.createS3Rest(
@@ -195,7 +195,9 @@ sourceDef = source2024.getDefinition()
 
 Then, create an [`IcebergTableAdapter`](/core/javadoc/io/deephaven/iceberg/util/IcebergTableAdapter.html) from the `source2024` table's definition, and a table identifier, which must include the Iceberg namespace (`nyc`):
 
-```groovy docker-config=iceberg test-set=1 order=null
+<!-- This reset is needed because another example also creates nyc.source table and that throws an error if it already exists -->
+
+```groovy docker-config=iceberg test-set=1 order=null reset
 sourceAdapter = restAdapter.createTable("nyc.source", sourceDef)
 ```
 

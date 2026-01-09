@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.web.client.api.subscription;
 
@@ -10,6 +10,7 @@ import io.deephaven.barrage.flatbuf.BarrageMessageType;
 import io.deephaven.barrage.flatbuf.BarrageSubscriptionRequest;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.javascript.proto.dhinternal.arrow.flight.protocol.flight_pb.FlightData;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.ApplyPreviewColumnsRequest;
 import io.deephaven.web.client.api.Column;
 import io.deephaven.web.client.api.Format;
 import io.deephaven.web.client.api.JsRangeSet;
@@ -60,6 +61,54 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
      * allowing access to the entire range of items currently in the subscribed columns.
      */
     public static final String EVENT_UPDATED = "updated";
+
+    public static ClientTableState createPreview(WorkerConnection connection, ClientTableState tableState,
+            DataOptions.PreviewOptions previewOptions) {
+        ClientTableState previewedState = connection.newState((callback, newState, metadata) -> {
+            ApplyPreviewColumnsRequest applyPreviewRequest = new ApplyPreviewColumnsRequest();
+            applyPreviewRequest.setSourceId(tableState.getHandle().makeTableReference());
+            applyPreviewRequest.setResultId(newState.getHandle().makeTicket());
+
+            if (previewOptions != null && previewOptions.convertArrayToString != null
+                    && previewOptions.convertArrayToString) {
+                applyPreviewRequest.setConvertArrays(true);
+            }
+            applyPreviewRequest.setUnpreviewedTypesList(JsArray.of(
+                    "byte",
+                    "java.lang.Byte",
+                    "char",
+                    "java.lang.Character",
+                    "short",
+                    "java.lang.Short",
+                    "int",
+                    "java.lang.Integer",
+                    "long",
+                    "java.lang.Long",
+                    "float",
+                    "java.lang.Float",
+                    "double",
+                    "java.lang.Double",
+                    "boolean",
+                    "java.lang.Boolean",
+                    "java.lang.String",
+                    "java.math.BigDecimal",
+                    "java.math.BigInteger",
+                    "java.time.Instant",
+                    "java.time.LocalDate",
+                    "java.time.ZonedDateTime"));
+
+            connection.tableServiceClient().applyPreviewColumns(applyPreviewRequest, metadata, callback::apply);
+        }, "preview");
+        previewedState.refetch(null, connection.metadata()).then(result -> null, err -> null);
+        return previewedState;
+    }
+
+    public static int getPreviewListLengthLimit(DataOptions options) {
+        if (options.previewOptions != null && options.previewOptions.array != null) {
+            return (int) (double) options.previewOptions.array + 1;
+        }
+        return 0;
+    }
 
     protected enum Status {
         /** Waiting for some prerequisite before we can use it for the first time. */
@@ -173,8 +222,7 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
     protected abstract void sendFirstSubscriptionRequest();
 
     protected void sendBarrageSubscriptionRequest(@Nullable RangeSet viewport, JsArray<Column> columns,
-            Double updateIntervalMs,
-            boolean isReverseViewport) {
+            Double updateIntervalMs, boolean isReverseViewport, int previewListLengthLimit) {
         if (isClosed()) {
             if (failMsg == null) {
                 throw new IllegalStateException("Can't change subscription, already closed");
@@ -195,7 +243,7 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
                 .minUpdateIntervalMs(updateIntervalMs == null ? 0 : (int) (double) updateIntervalMs)
                 .columnsAsList(false)// TODO(deephaven-core#5927) flip this to true
                 .useDeephavenNulls(true)
-                .previewListLengthLimit(0)
+                .previewListLengthLimit(previewListLengthLimit)
                 .build();
         FlatBufferBuilder request = subscriptionRequest(
                 Js.uncheckedCast(state.getHandle().getTicket()),

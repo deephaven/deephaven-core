@@ -1,9 +1,10 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.base.Pair;
+import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.liveness.LiveSupplier;
@@ -11,10 +12,14 @@ import io.deephaven.engine.liveness.ReferenceCountedLivenessNode;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.perf.PerformanceEntry;
+import io.deephaven.engine.table.impl.select.SourceColumn;
+import io.deephaven.engine.table.impl.sources.regioned.RegionedTableComponentFactoryImpl;
 import io.deephaven.engine.table.vectors.ColumnVectors;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.TestErrorNotification;
 import io.deephaven.engine.testutil.TestNotification;
+import io.deephaven.engine.testutil.TstUtils;
+import io.deephaven.engine.testutil.locations.TableBackedTableLocationProvider;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.table.impl.locations.*;
 import io.deephaven.engine.table.impl.locations.impl.SimpleTableLocationKey;
@@ -24,6 +29,8 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableIntChunk;
+import io.deephaven.engine.updategraph.NotificationQueue;
+import io.deephaven.engine.util.TableTools;
 import io.deephaven.qst.column.Column;
 import io.deephaven.util.type.ArrayTypeUtils;
 import io.deephaven.vector.ObjectVector;
@@ -41,6 +48,8 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static io.deephaven.engine.testutil.TstUtils.assertRowSetEquals;
+import static io.deephaven.engine.testutil.TstUtils.assertTableEquals;
+import static io.deephaven.engine.util.TableTools.intCol;
 import static org.junit.Assert.assertArrayEquals;
 
 /**
@@ -137,6 +146,8 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
                     will(returnValue(cd.getComponentType()));
                     allowing(mocked).getChunkType();
                     will(returnValue(ChunkType.fromElementType(cd.getDataType())));
+                    allowing(mocked).isStateless();
+                    will(returnValue(true));
                 }
             });
             return mocked;
@@ -692,6 +703,42 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
         Arrays.sort(expectedDistinctDates);
         Arrays.sort(distinctDates);
         assertArrayEquals(expectedDistinctDates, distinctDates);
+    }
+
+    @Test
+    public void testSelectDistinctRefreshLocations() {
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        final TableBackedTableLocationProvider tlp = new TableBackedTableLocationProvider(
+                updateGraph,
+                true,
+                TableUpdateMode.APPEND_ONLY,
+                TableUpdateMode.APPEND_ONLY);
+        final Table singleLocationTable = TableTools.emptyTable(1000).update("AA=ii");
+        final PartitionAwareSourceTable past = new PartitionAwareSourceTable(
+                TableDefinition.of(
+                        ColumnDefinition.ofInt("PI").withPartitioning(),
+                        ColumnDefinition.ofLong("AA")),
+                "TestTable",
+                RegionedTableComponentFactoryImpl.INSTANCE,
+                tlp,
+                updateGraph);
+        tlp.add(singleLocationTable, Map.of("PI", 0));
+        final Table sd = past.selectDistinct("PI");
+        assertTableEquals(TableTools.newTable(intCol("PI", 0)), sd);
+
+        tlp.add(singleLocationTable, Map.of("PI", 1));
+
+        updateGraph.startCycleForUnitTests(false);
+        try {
+            updateGraph.refreshUpdateSourceForUnitTests(past::refresh);
+            updateGraph.markSourcesRefreshedForUnitTests();
+        } finally {
+            updateGraph.completeCycleForUnitTests();
+        }
+
+        assertFalse(past.isFailed());
+
+        assertTableEquals(TableTools.newTable(intCol("PI", 0, 1)), sd);
     }
 
     @Test

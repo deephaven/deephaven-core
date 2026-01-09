@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.parquet.table;
 
@@ -400,7 +400,8 @@ public class ParquetTableWriter {
         extraMetaData.put(METADATA_KEY, tableInfoBuilder.build().serializeToJSON());
         return new ParquetFileWriter(dest, destOutputStream, writeInstructions.getTargetPageSize(),
                 new HeapByteBufferAllocator(), mappedSchema.getParquetSchema(),
-                writeInstructions.getCompressionCodecName(), extraMetaData, metadataFileWriter);
+                writeInstructions.getCompressionCodecName(), extraMetaData, metadataFileWriter,
+                writeInstructions.writeRowGroupStatistics());
     }
 
     private static <DATA_TYPE> void writeColumnSource(

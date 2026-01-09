@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
 // ****** Edit TestCharSegmentedSortedMultiset and run "./gradlew replicateSegmentedSortedMultisetTests" to regenerate
@@ -135,12 +135,12 @@ public class TestIntSegmentedSortedMultiset extends RefreshingTableTestCase {
              final WritableIntChunk<ChunkLengths> counts = WritableIntChunk.makeWritableChunk(1024)
         ) {
             valueSource.fillChunk(fillContext, chunk, john.getRowSet());
-            IntCompactKernel.compactAndCount(chunk, counts, true);
+            IntCompactKernel.compactAndCount(chunk, counts, true, true);
         }
     }
     //endregion SortFixupSanityCheck
 
-    private void testUpdates(@NotNull final SsaTestHelpers.TestDescriptor desc, boolean allowAddition, boolean allowRemoval, boolean countNull) {
+    private void testUpdates(@NotNull final SsaTestHelpers.TestDescriptor desc, boolean allowAddition, boolean allowRemoval, boolean countNullNaN) {
         final Random random = new Random(desc.seed());
         final ColumnInfo[] columnInfo;
         final QueryTable table = getTable(desc.tableSize(), random, columnInfo = initColumnInfos(new String[]{"Value"},
@@ -153,7 +153,7 @@ public class TestIntSegmentedSortedMultiset extends RefreshingTableTestCase {
         //noinspection unchecked
         final ColumnSource<Integer> valueSource = asInteger.getColumnSource("Value");
 
-        checkSsmInitial(asInteger, ssm, valueSource, countNull, desc);
+        checkSsmInitial(asInteger, ssm, valueSource, countNullNaN, desc);
 
         try (final SafeCloseable ignored = LivenessScopeStack.open(new LivenessScope(true), true)) {
             final ShiftObliviousListener asIntegerListener = new ShiftObliviousInstrumentedListenerAdapter(asInteger, false) {
@@ -168,14 +168,14 @@ public class TestIntSegmentedSortedMultiset extends RefreshingTableTestCase {
 
                         if (removed.isNonempty()) {
                             valueSource.fillPrevChunk(fillContext, chunk, removed);
-                            IntCompactKernel.compactAndCount(chunk, counts, countNull);
+                            IntCompactKernel.compactAndCount(chunk, counts, countNullNaN, countNullNaN);
                             ssm.remove(removeContext, chunk, counts);
                         }
 
 
                         if (added.isNonempty()) {
                             valueSource.fillChunk(fillContext, chunk, added);
-                            IntCompactKernel.compactAndCount(chunk, counts, countNull);
+                            IntCompactKernel.compactAndCount(chunk, counts, countNullNaN, countNullNaN);
                             ssm.insert(chunk, counts);
                         }
                     }
@@ -192,7 +192,7 @@ public class TestIntSegmentedSortedMultiset extends RefreshingTableTestCase {
                 });
 
                 try (final ColumnSource.GetContext getContext = valueSource.makeGetContext(asInteger.intSize())) {
-                    checkSsm(ssm, valueSource.getChunk(getContext, asInteger.getRowSet()).asIntChunk(), countNull, desc);
+                    checkSsm(ssm, valueSource.getChunk(getContext, asInteger.getRowSet()).asIntChunk(), countNullNaN, desc);
                 }
 
                 if (!allowAddition && table.size() == 0) {
@@ -274,19 +274,19 @@ public class TestIntSegmentedSortedMultiset extends RefreshingTableTestCase {
         checkSsm(asInteger, ssmLo, valueSource, countNull, desc);
     }
 
-    private void checkSsmInitial(Table asInteger, IntSegmentedSortedMultiset ssm, ColumnSource<?> valueSource, boolean countNull, @NotNull final SsaTestHelpers.TestDescriptor desc) {
+    private void checkSsmInitial(Table asInteger, IntSegmentedSortedMultiset ssm, ColumnSource<?> valueSource, boolean countNullNaN, @NotNull final SsaTestHelpers.TestDescriptor desc) {
         try (final ColumnSource.FillContext fillContext = valueSource.makeFillContext(asInteger.intSize());
              final WritableIntChunk<Values> valueChunk = WritableIntChunk.makeWritableChunk(asInteger.intSize());
              final WritableIntChunk<ChunkLengths> counts = WritableIntChunk.makeWritableChunk(asInteger.intSize())) {
             valueSource.fillChunk(fillContext, valueChunk, asInteger.getRowSet());
             valueChunk.sort();
 
-            IntCompactKernel.compactAndCount(valueChunk, counts, countNull);
+            IntCompactKernel.compactAndCount(valueChunk, counts, countNullNaN, countNullNaN);
 
             ssm.insert(valueChunk, counts);
 
             valueSource.fillChunk(fillContext, valueChunk, asInteger.getRowSet());
-            checkSsm(ssm, valueChunk, countNull, desc);
+            checkSsm(ssm, valueChunk, countNullNaN, desc);
         }
     }
 

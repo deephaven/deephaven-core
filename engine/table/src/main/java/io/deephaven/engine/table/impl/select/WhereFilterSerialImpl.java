@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.select;
 
@@ -38,5 +38,10 @@ public class WhereFilterSerialImpl extends WhereFilterDelegatingBase {
     @Override
     public String toString() {
         return "serial{" + filter + "}";
+    }
+
+    @Override
+    public final <T> T walk(Visitor<T> visitor) {
+        return visitor.visit(this);
     }
 }

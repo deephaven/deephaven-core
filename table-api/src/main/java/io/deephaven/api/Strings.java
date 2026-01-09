@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.api;
 
@@ -8,17 +8,8 @@ import io.deephaven.api.agg.AggregationDescriptions;
 import io.deephaven.api.expression.Expression;
 import io.deephaven.api.expression.Function;
 import io.deephaven.api.expression.Method;
-import io.deephaven.api.filter.Filter;
-import io.deephaven.api.filter.FilterAnd;
-import io.deephaven.api.filter.FilterBarrier;
-import io.deephaven.api.filter.FilterComparison;
-import io.deephaven.api.filter.FilterIn;
-import io.deephaven.api.filter.FilterIsNull;
-import io.deephaven.api.filter.FilterNot;
-import io.deephaven.api.filter.FilterOr;
-import io.deephaven.api.filter.FilterPattern;
-import io.deephaven.api.filter.FilterRespectsBarrier;
-import io.deephaven.api.filter.FilterSerial;
+import io.deephaven.api.filter.*;
+import io.deephaven.api.filter.FilterWithRespectedBarriers;
 import io.deephaven.api.literal.Literal;
 import org.apache.commons.text.StringEscapeUtils;
 
@@ -91,6 +82,14 @@ public class Strings {
 
     public static String of(FilterIsNull isNull, boolean inverted) {
         return (inverted ? "!" : "") + of(isNull);
+    }
+
+    public static String of(FilterIsNaN isNaN) {
+        return String.format("isNaN(%s)", of(isNaN.expression()));
+    }
+
+    public static String of(FilterIsNaN isNaN, boolean inverted) {
+        return (inverted ? "!" : "") + of(isNaN);
     }
 
     public static String of(FilterOr filterOr) {
@@ -248,26 +247,26 @@ public class Strings {
         return "invokeSerially(" + of(serial.filter(), invert) + ")";
     }
 
-    public static String of(FilterBarrier barrier) {
+    public static String of(FilterWithDeclaredBarriers barrier) {
         return of(barrier, false);
     }
 
-    public static String of(FilterBarrier barrier, boolean invert) {
+    public static String of(FilterWithDeclaredBarriers barrier, boolean invert) {
         // we don't have a way to represent barrier in the query language; so this can't round trip
-        final String barrierId = Arrays.toString(barrier.barriers());
-        return "withBarrier(" + barrierId + ", " + of(barrier.filter(), invert) + ")";
+        final String barrierId = Arrays.toString(barrier.declaredBarriers());
+        return "withDeclaredBarriers(" + barrierId + ", " + of(barrier.filter(), invert) + ")";
     }
 
-    public static String of(FilterRespectsBarrier respectsBarrier) {
-        return of(respectsBarrier, false);
+    public static String of(FilterWithRespectedBarriers respectedBarrier) {
+        return of(respectedBarrier, false);
     }
 
-    public static String of(FilterRespectsBarrier respectsBarrier, boolean invert) {
+    public static String of(FilterWithRespectedBarriers respectedBarrier, boolean invert) {
         // we don't have a way to represent respects barrier in the query language; so this can't round trip
-        final String barrierText = Arrays.stream(respectsBarrier.respectedBarriers())
+        final String barrierText = Arrays.stream(respectedBarrier.respectedBarriers())
                 .map(Object::toString)
                 .collect(Collectors.joining(",", "[", "]"));
-        return "respectsBarrier(" + barrierText + ", " + of(respectsBarrier.filter(), invert) + ")";
+        return "withRespectedBarriers(" + barrierText + ", " + of(respectedBarrier.filter(), invert) + ")";
     }
 
     public static String of(boolean literal) {
@@ -379,6 +378,11 @@ public class Strings {
         }
 
         @Override
+        public String visit(FilterIsNaN isNaN) {
+            return of(isNaN, invert);
+        }
+
+        @Override
         public String visit(FilterComparison comparison) {
             return invert ? of(comparison.invert(), encapsulate) : of(comparison, encapsulate);
         }
@@ -414,13 +418,13 @@ public class Strings {
         }
 
         @Override
-        public String visit(FilterBarrier barrier) {
-            return of(barrier, invert);
+        public String visit(FilterWithDeclaredBarriers declaredBarrier) {
+            return of(declaredBarrier, invert);
         }
 
         @Override
-        public String visit(FilterRespectsBarrier respectsBarrier) {
-            return of(respectsBarrier, invert);
+        public String visit(FilterWithRespectedBarriers respectedBarrier) {
+            return of(respectedBarrier, invert);
         }
 
         @Override

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.select;
 
@@ -17,7 +17,7 @@ import java.util.List;
  * A WhereFilter that always returns all rows in the selection.
  * <p>
  * This filter is used when no filtering is required, effectively passing through the entire selection. Using it allows
- * us to validate respectsBarriers even when a barrier was systematically moved to an operation earlier in the query
+ * us to validate respectedBarriers even when a barrier was systematically moved to an operation earlier in the query
  * pipeline.
  */
 public class WhereAllFilter extends WhereFilterImpl {

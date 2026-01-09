@@ -32,7 +32,7 @@ A new table with layout instructions for the UI.
 
 ## Examples
 
-In the following example, the column `Even` is frozen to the front of the table, `Odd` is moved to the front, `B` is moved to the back, `C` is hidden, and `A` and `E` form a column group called `Vowels`.
+In the following example, column `Even` is frozen to the front of the table, `Odd` is moved to the front, `B` is moved to the back, `C` is hidden, and `A` and `E` form a column group called `Vowels`.
 
 ```groovy order=source,result default=result
 import io.deephaven.engine.util.LayoutHintBuilder

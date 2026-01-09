@@ -106,6 +106,8 @@ Quick filters can be added in a table's option menu, or by right-clicking a colu
 > [!TIP]
 > You can also open or close the Quick Filters bar using the keyboard shortcut <kbd>Ctrl+F</kbd> or <kbd>⌘F</kbd>.
 
+Quick Filters support all standard column types, including Vector and Array columns. When filtering Vector or Array columns, the filter searches for matching elements within the arrays.
+
 ## Advanced Filters
 
 As the name implies, the **Advanced Filters** feature provides advanced options to filter data in a table. They can be accessed by right-clicking a column header, or by clicking on a column's funnel icon within the [Quick Filters](#quick-filters) bar:
@@ -192,4 +194,4 @@ The **Clear All Filters** option in the **Controls** menu removes all filters of
 
 ## Related documentation
 
-- [How to use filter query methods](../use-filters.md)
+- [How to use filter query methods](../filters.md)

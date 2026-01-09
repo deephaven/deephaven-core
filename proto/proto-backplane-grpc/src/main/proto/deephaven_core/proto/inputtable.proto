@@ -18,12 +18,18 @@ service InputTableService {
     /*
      * Adds the provided table to the specified input table. The new data to add must only have
      * columns (name, types, and order) which match the given input table's columns.
+     *
+     * If the data is invalid, an error response will be returned with details containing an
+     * InputTableValidationErrorList.
      */
     rpc AddTableToInputTable(AddTableRequest) returns (AddTableResponse) {}
 
     /*
     * Removes the provided table from the specified input tables. The tables indicating which rows
     * to remove are expected to only have columns that match the key columns of the input table.
+    *
+    * If the data is invalid, an error response will be returned with details containing an
+    * InputTableValidationErrorList.
     */
     rpc DeleteTableFromInputTable(DeleteTableRequest) returns (DeleteTableResponse) {}
 
@@ -34,8 +40,26 @@ message AddTableRequest {
     Ticket table_to_add = 2;
 }
 
-message AddTableResponse {
+// An error indicating invalid values were passed to AddTableRequest, optionally annotated with the input row and column
+// that caused the error.
+message InputTableValidationError {
+    // the error message
+    string message = 1;
+    // the row position in the table_to_add that caused this error, not present when unknown
+    optional int64 row = 2;
+    // the column name in the table_to_add that caused this error, not present when unknown
+    optional string column = 3;
+}
 
+// A list of validation errors encountered when processing an AddTableRequest or DeleteTableRequest.  This message is
+// not directly used in the service definition, but may be packed in the headers of error responses using a googlerpc
+// status.
+message InputTableValidationErrorList {
+    // The errors encountered when processing the request.
+    repeated InputTableValidationError validation_errors = 1;
+}
+
+message AddTableResponse {
 }
 
 message DeleteTableRequest {

@@ -1,28 +1,43 @@
 #
-# Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 #
 
-""" This module supports the conversion between Deephaven tables and pandas DataFrames. """
-from typing import List, Literal
+"""This module supports the conversion between Deephaven tables and pandas DataFrames."""
+
+from typing import Literal, Optional, Union, cast
 
 import jpy
 import numpy as np
 import pandas as pd
 import pyarrow as pa
+from pandas.api.extensions import ExtensionArray
+from pandas.api.types import is_object_dtype
 
-from deephaven import DHError, new_table, dtypes, arrow
+from deephaven import DHError, arrow, dtypes, new_table
 from deephaven.column import ColumnDefinition
-from deephaven.constants import NULL_BYTE, NULL_SHORT, NULL_INT, NULL_LONG, NULL_FLOAT, NULL_DOUBLE, NULL_CHAR
+from deephaven.constants import (
+    NULL_BYTE,
+    NULL_CHAR,
+    NULL_DOUBLE,
+    NULL_FLOAT,
+    NULL_INT,
+    NULL_LONG,
+    NULL_SHORT,
+)
 from deephaven.jcompat import _j_array_to_series
 from deephaven.numpy import _make_input_column
 from deephaven.table import Table
 
-_NULL_BOOLEAN_AS_BYTE = jpy.get_type("io.deephaven.util.BooleanUtils").NULL_BOOLEAN_AS_BYTE
+_NULL_BOOLEAN_AS_BYTE = jpy.get_type(
+    "io.deephaven.util.BooleanUtils"
+).NULL_BOOLEAN_AS_BYTE
 _JColumnVectors = jpy.get_type("io.deephaven.engine.table.vectors.ColumnVectors")
 _is_dtype_backend_supported = pd.__version__ >= "2.0.0"
 
 
-def _column_to_series(table: Table, col_def: ColumnDefinition, conv_null: bool) -> pd.Series:
+def _column_to_series(
+    table: Table, col_def: ColumnDefinition, conv_null: bool
+) -> pd.Series:
     """Produce a copy of the specified column as a pandas.Series object.
 
     Args:
@@ -59,8 +74,8 @@ _PANDAS_ARROW_TYPE_MAP = {
     pa.float32(): pd.ArrowDtype(pa.float32()),
     pa.float64(): pd.ArrowDtype(pa.float64()),
     pa.string(): pd.ArrowDtype(pa.string()),
-    pa.timestamp('ns'): pd.ArrowDtype(pa.timestamp('ns')),
-    pa.timestamp('ns', tz='UTC'): pd.ArrowDtype(pa.timestamp('ns', tz='UTC')),
+    pa.timestamp("ns"): pd.ArrowDtype(pa.timestamp("ns")),
+    pa.timestamp("ns", tz="UTC"): pd.ArrowDtype(pa.timestamp("ns", tz="UTC")),
 }
 
 _PANDAS_NULLABLE_TYPE_MAP = {
@@ -85,9 +100,12 @@ _PYARROW_TO_PANDAS_TYPE_MAPPERS = {
 }
 
 
-def to_pandas(table: Table, cols: List[str] = None,
-              dtype_backend: Literal[None, "pyarrow", "numpy_nullable"] = "numpy_nullable",
-              conv_null: bool = True) -> pd.DataFrame:
+def to_pandas(
+    table: Table,
+    cols: Optional[list[str]] = None,
+    dtype_backend: Literal[None, "pyarrow", "numpy_nullable"] = "numpy_nullable",
+    conv_null: bool = True,
+) -> pd.DataFrame:
     """Produces a pandas DataFrame from a table.
 
     Note that the **entire table** is going to be cloned into memory, so the total number of entries in the table
@@ -96,10 +114,10 @@ def to_pandas(table: Table, cols: List[str] = None,
 
     Args:
         table (Table): the source table
-        cols (List[str]): the source column names, default is None which means include all columns
-        dtype_backend (str): which dtype_backend to use, e.g. whether a DataFrame should have NumPy arrays,
-            nullable dtypes are used for all dtypes that have a nullable implementation when “numpy_nullable” is set,
-            pyarrow is used for all dtypes if “pyarrow” is set. None means Numpy backed DataFrames with no nullable
+        cols (Optional[list[str]]): the source column names, default is None which means include all columns
+        dtype_backend (Literal[None, "pyarrow", "numpy_nullable"]): which dtype_backend to use, e.g. whether a DataFrame should have NumPy arrays,
+            nullable dtypes are used for all dtypes that have a nullable implementation when "numpy_nullable" is set,
+            pyarrow is used for all dtypes if "pyarrow" is set. None means Numpy backed DataFrames with no nullable
             dtypes. Both "numpy_nullable" and "pyarrow" automatically convert Deephaven nulls to Pandas NA and enable
             Pandas extension types.  Extension types are needed to support types beyond NumPy's type system.  Extension
             types support operations such as properly mapping Java Strings to Python strings. default is "numpy_nullable".
@@ -114,15 +132,19 @@ def to_pandas(table: Table, cols: List[str] = None,
     """
     try:
         if dtype_backend == "pyarrow" and not _is_dtype_backend_supported:
-            raise DHError(message=f"the dtype_backend ({dtype_backend}) option is only available for pandas 2.0.0 and "
-                                  f"above. {pd.__version__} is being used.")
+            raise DHError(
+                message=f"the dtype_backend ({dtype_backend}) option is only available for pandas 2.0.0 and "
+                f"above. {pd.__version__} is being used."
+            )
 
         if dtype_backend is not None and not conv_null:
-            raise DHError(message="conv_null can't be turned off when dtype_backend is either numpy_nullable or "
-                                  "pyarrow")
+            raise DHError(
+                message="conv_null can't be turned off when dtype_backend is either numpy_nullable or "
+                "pyarrow"
+            )
 
         # if nullable dtypes (pandas or pyarrow) is requested
-        if type_mapper := _PYARROW_TO_PANDAS_TYPE_MAPPERS.get(dtype_backend):
+        if type_mapper := _PYARROW_TO_PANDAS_TYPE_MAPPERS.get(str(dtype_backend)):
             pa_table = arrow.to_arrow(table=table, cols=cols)
             df = pa_table.to_pandas(types_mapper=type_mapper)
             del pa_table
@@ -176,37 +198,46 @@ _PANDAS_EXTYPE_DH_NULL_MAP = {
 }
 
 
-def _map_na(array: [np.ndarray, pd.api.extensions.ExtensionArray]):
+def _map_na(array: Union[np.ndarray, ExtensionArray]) -> np.ndarray:
     """Replaces the pd.NA values in the array if it is of pandas ExtensionDtype(nullable)."""
-    pd_dtype = array.dtype
-    if not isinstance(pd_dtype, pd.api.extensions.ExtensionDtype):
+    if isinstance(array, np.ndarray):
         return array
 
-    dh_null = _PANDAS_EXTYPE_DH_NULL_MAP.get(type(pd_dtype)) or _PANDAS_EXTYPE_DH_NULL_MAP.get(pd_dtype)
+    pd_dtype = array.dtype
+    array = cast(ExtensionArray, array)
+    dh_null = _PANDAS_EXTYPE_DH_NULL_MAP.get(
+        type(pd_dtype)
+    ) or _PANDAS_EXTYPE_DH_NULL_MAP.get(pd_dtype)
     # To preserve NaNs in floating point arrays, Pandas doesn't distinguish NaN/Null as far as NA testing is
     # concerned, thus its fillna() method will replace both NaN/Null in the data.
-    if isinstance(pd_dtype, (pd.Float32Dtype, pd.Float64Dtype)) and isinstance(getattr(array, "_data"), np.ndarray):
-        np_array = array._data
-        null_mask = np.logical_and(array._mask, np.logical_not(np.isnan(np_array)))
+    if isinstance(pd_dtype, (pd.Float32Dtype, pd.Float64Dtype)) and isinstance(
+        getattr(array, "_data"), np.ndarray
+    ):
+        np_array = array._data  # type: ignore[attr-defined]
+        null_mask = np.logical_and(array._mask, np.logical_not(np.isnan(np_array)))  # type: ignore[attr-defined]
         if any(null_mask):
             np_array = np.copy(np_array)
             np_array[null_mask] = dh_null
         return np_array
 
-    if isinstance(pd_dtype, (pd.StringDtype, pd.BooleanDtype)) or pd_dtype == pd.ArrowDtype(pa.bool_()):
+    if isinstance(
+        pd_dtype, (pd.StringDtype, pd.BooleanDtype)
+    ) or pd_dtype == pd.ArrowDtype(pa.bool_()):
         array = np.array(list(map(lambda v: dh_null if v is pd.NA else v, array)))
     elif dh_null is not None:
         array = array.fillna(dh_null)
 
-    return array
+    return cast(np.ndarray, array)
 
 
-def to_table(df: pd.DataFrame, cols: List[str] = None, infer_objects: bool = True) -> Table:
+def to_table(
+    df: pd.DataFrame, cols: Optional[list[str]] = None, infer_objects: bool = True
+) -> Table:
     """Creates a new table from a pandas DataFrame.
 
     Args:
         df (DataFrame): the pandas DataFrame instance
-        cols (List[str]): the dataframe column names, default is None which means including all columns in the DataFrame
+        cols (Optional[list[str]]): the dataframe column names, default is None which means including all columns in the DataFrame
         infer_objects (bool): whether to infer the best possible types for columns of the generic 'object' type in the
             DataFrame before creating the table, default is True. When True, pandas convert_dtypes() method is called to
             perform the conversion. Note that any conversion will make a copy of the data.
@@ -219,9 +250,9 @@ def to_table(df: pd.DataFrame, cols: List[str] = None, infer_objects: bool = Tru
     """
 
     if not cols:
-        cols = list(df)
+        cols = df.columns.tolist()
     else:
-        diff_set = set(cols) - set(list(df))
+        diff_set = set(cols) - set(df.columns.tolist())
         if diff_set:
             raise DHError(message=f"columns - {list(diff_set)} not found")
 
@@ -230,23 +261,27 @@ def to_table(df: pd.DataFrame, cols: List[str] = None, infer_objects: bool = Tru
     if infer_objects:
         converted_df = df[cols]
         for col in cols:
-            if df.dtypes[col] == object:
+            if is_object_dtype(df.dtypes[col]):
                 converted_df[col] = df[col].convert_dtypes()
 
     # if any arrow backed column is present, create a pyarrow table first, then upload to DH, if error occurs, fall
     # back to the numpy-array based approach
-    if _is_dtype_backend_supported and any(isinstance(converted_df[col].dtype, pd.ArrowDtype) for col in cols):
+    if _is_dtype_backend_supported and any(
+        isinstance(converted_df[col].dtype, pd.ArrowDtype) for col in cols
+    ):
         try:
             pa_table = pa.Table.from_pandas(df=converted_df, columns=cols)
             dh_table = arrow.to_table(pa_table)
             return dh_table
-        except:
+        except Exception:
             pass
 
     try:
         input_cols = []
         for col in cols:
-            np_array = converted_df.get(col).values
+            series = converted_df.get(col)
+            assert series is not None
+            np_array = series.values
             if isinstance(converted_df.dtypes[col], pd.CategoricalDtype):
                 dtype = converted_df.dtypes[col].categories.dtype
             else:
@@ -259,5 +294,6 @@ def to_table(df: pd.DataFrame, cols: List[str] = None, infer_objects: bool = Tru
     except DHError:
         raise
     except Exception as e:
-        raise DHError(e, "failed to create a Deephaven Table from a pandas DataFrame.") from e
-
+        raise DHError(
+            e, "failed to create a Deephaven Table from a pandas DataFrame."
+        ) from e

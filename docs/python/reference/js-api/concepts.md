@@ -13,10 +13,8 @@ results of the operation.
 Table subscriptions consist of the client specifying which rows or columns they want data from, and the server will then
 send updates as needed. These updates can take the form of:
 
-- a snapshot, the data for all rows and columns that were
-  requested
-- a delta, where only added, modified, and removed rows and columns will be sent. The client can cancel their
-  subscription to a table, and can also request a snapshot be sent without any subscription.
+- a snapshot, the data for all rows and columns that were requested
+- a delta, where only added, modified, and removed rows and columns will be sent. The client can cancel their subscription to a table, and can also request a snapshot be sent without any subscription.
 
 While the server's Table is immutable, the JS API provides Tables that seem to be mutable, so that a given UI component
 can be bound to a single Table instance and get updates based on its current configuration. For example, if a new sort

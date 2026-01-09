@@ -20,11 +20,11 @@ Deephaven tables natively support all data types found in the [`java.time`](http
 
 Commonly used types include:
 
-- [**`Instant`**](https://docs.oracle.com/en/java/javase/17/docs//api/java.base/java/time/Instant.html): A specific point in time
-- [**`ZonedDateTime`**](https://docs.oracle.com/en/java/javase/17/docs//api/java.base/java/time/ZonedDateTime.html): A specific point in time with time zone information
-- [**`LocalDate`**](https://docs.oracle.com/en/java/javase/17/docs//api/java.base/java/time/LocalDate.html): A date without time zone information
+- [**`Instant`**](https://docs.oracle.com/en/java/javase/17/docs//api/java.base/java/time/Instant.html): A specific point in time.
+- [**`ZonedDateTime`**](https://docs.oracle.com/en/java/javase/17/docs//api/java.base/java/time/ZonedDateTime.html): A specific point in time with time zone information.
+- [**`LocalDate`**](https://docs.oracle.com/en/java/javase/17/docs//api/java.base/java/time/LocalDate.html): A date without time zone information.
 - [**`Duration`**](https://docs.oracle.com/en/java/javase/17/docs//api/java.base/java/time/Duration.html): A length of time; e.g. 5 minutes, 1 hour, etc.
-- [**`Period`**](https://docs.oracle.com/en/java/javase/17/docs//api/java.base/java/time/Period.html): A date-based amount of time (like "2 months")
+- [**`Period`**](https://docs.oracle.com/en/java/javase/17/docs//api/java.base/java/time/Period.html): A date-based amount of time (like "2 months").
 
 ## Time constants
 

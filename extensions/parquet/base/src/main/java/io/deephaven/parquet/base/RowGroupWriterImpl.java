@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.parquet.base;
 
@@ -28,28 +28,22 @@ final class RowGroupWriterImpl implements RowGroupWriter {
     private final BlockMetaData blockMetaData;
     private final List<OffsetIndex> currentOffsetIndexes = new ArrayList<>();
     private final CompressorAdapter compressorAdapter;
+    private final boolean writeStatistics;
 
-    RowGroupWriterImpl(CountingOutputStream countingOutput,
+    RowGroupWriterImpl(
+            CountingOutputStream countingOutput,
             MessageType schema,
             int targetPageSize,
             ByteBufferAllocator allocator,
-            CompressorAdapter compressorAdapter) {
-        this(countingOutput, schema, targetPageSize, allocator, new BlockMetaData(), compressorAdapter);
-    }
-
-
-    private RowGroupWriterImpl(CountingOutputStream countingOutput,
-            MessageType schema,
-            int targetPageSize,
-            ByteBufferAllocator allocator,
-            BlockMetaData blockMetaData,
-            CompressorAdapter compressorAdapter) {
+            CompressorAdapter compressorAdapter,
+            boolean writeStatistics) {
         this.countingOutput = Objects.requireNonNull(countingOutput);
         this.schema = Objects.requireNonNull(schema);
         this.targetPageSize = targetPageSize;
         this.allocator = Objects.requireNonNull(allocator);
-        this.blockMetaData = Objects.requireNonNull(blockMetaData);
+        this.blockMetaData = new BlockMetaData();
         this.compressorAdapter = Objects.requireNonNull(compressorAdapter);
+        this.writeStatistics = writeStatistics;
     }
 
     String[] getPrimitivePath(String columnName) {
@@ -79,7 +73,8 @@ final class RowGroupWriterImpl implements RowGroupWriter {
                 ParquetSchemaUtil.columnDescriptor(schema, getPrimitivePath(columnName)).orElseThrow(),
                 compressorAdapter,
                 targetPageSize,
-                allocator);
+                allocator,
+                writeStatistics);
         return activeWriter;
     }
 

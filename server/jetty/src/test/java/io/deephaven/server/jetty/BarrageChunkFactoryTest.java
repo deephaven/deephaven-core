@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.server.jetty;
 
@@ -63,6 +63,7 @@ import io.deephaven.server.session.SessionServiceGrpcImpl;
 import io.deephaven.server.session.SessionState;
 import io.deephaven.server.session.TicketResolver;
 import io.deephaven.server.table.TableModule;
+import io.deephaven.server.table.validation.ExpressionValidatorModule;
 import io.deephaven.server.test.TestAuthModule;
 import io.deephaven.server.test.TestAuthorizationProvider;
 import io.deephaven.server.util.Scheduler;
@@ -205,6 +206,7 @@ public class BarrageChunkFactoryTest {
             JettyServerModule.class,
             JettyTestConfig.class,
             ExchangeMarshallerModule.class,
+            ExpressionValidatorModule.class,
     })
     public interface JettyTestComponent extends TestComponent {
     }
@@ -1411,7 +1413,7 @@ public class BarrageChunkFactoryTest {
             new Utf8RoundTripTest(BarrageChunkFactoryTest.class, new ArrowType.Utf8()).runTest();
             Assert.statementNeverExecuted("Should have thrown an exception");
         } catch (FlightRuntimeException fre) {
-            assertTrue(fre.getMessage().contains("No known Barrage ChunkReader"));
+            assertTrue(fre.getMessage().contains("cannot be serialized directly. Consider an updateView()"));
         }
     }
 

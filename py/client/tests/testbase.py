@@ -1,22 +1,23 @@
 #
-# Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 #
 
+import os
 import unittest
-import warnings, os
+import warnings
 
 from pydeephaven import Session
 from tests.gen_test_data import make_random_csv
 
 
 class BaseTestCase(unittest.TestCase):
-    csv_file = 'test.csv'
+    csv_file = "test.csv"
 
     @classmethod
     def setUpClass(cls) -> None:
         warnings.filterwarnings("ignore", category=DeprecationWarning)
         if not os.path.exists(BaseTestCase.csv_file):
-            with open(BaseTestCase.csv_file, 'w'):
+            with open(BaseTestCase.csv_file, "w"):
                 pass
         make_random_csv(5, 1000, output_file=BaseTestCase.csv_file)
 
@@ -32,5 +33,5 @@ class BaseTestCase(unittest.TestCase):
         self.session.close()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

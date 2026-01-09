@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.iceberg.util;
 
@@ -944,5 +944,33 @@ class ResolverTest {
                 }
             }
         }
+    }
+
+    @Test
+    void equalityWithDifferentSchemaInstances() {
+        final Schema s1 = simpleSchema(IT);
+        final Schema s2 = simpleSchema(IT);
+
+        // This is Iceberg implementation decision
+        assertThat(s1).isNotEqualTo(s2);
+        assertThat(s2).isNotEqualTo(s1);
+
+        final Resolver r1 = Resolver.builder()
+                .schema(s1)
+                .definition(simpleDefinition(Type.intType()))
+                .putColumnInstructions("F1", schemaField(42))
+                .putColumnInstructions("F2", schemaField(43))
+                .build();
+
+        final Resolver r2 = Resolver.builder()
+                .schema(s2)
+                .definition(simpleDefinition(Type.intType()))
+                .putColumnInstructions("F1", schemaField(42))
+                .putColumnInstructions("F2", schemaField(43))
+                .build();
+
+        assertThat(r1).isEqualTo(r2);
+        assertThat(r2).isEqualTo(r1);
+        assertThat(r1).hasSameHashCodeAs(r2);
     }
 }

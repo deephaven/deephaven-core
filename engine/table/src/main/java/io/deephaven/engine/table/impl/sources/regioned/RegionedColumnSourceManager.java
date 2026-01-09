@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.sources.regioned;
 
@@ -71,6 +71,11 @@ public class RegionedColumnSourceManager
      * The column definitions that define our column sources.
      */
     private final List<ColumnDefinition<?>> columnDefinitions;
+
+    /**
+     * The column definitions of this table as a map from column name.
+     */
+    private final Map<String, ColumnDefinition<?>> columnNameToDefinition;
 
     /**
      * The column sources that make up this table.
@@ -181,10 +186,13 @@ public class RegionedColumnSourceManager
 
         this.isRefreshing = isRefreshing;
         this.columnDefinitions = columnDefinitions;
+        this.columnNameToDefinition = new HashMap<>(columnDefinitions.size());
         for (final ColumnDefinition<?> columnDefinition : columnDefinitions) {
+            final String columnName = columnDefinition.getName();
             columnSources.put(
-                    columnDefinition.getName(),
+                    columnName,
                     componentFactory.createRegionedColumnSource(this, columnDefinition, codecMappings));
+            columnNameToDefinition.put(columnName, columnDefinition);
         }
 
         // Create the table that will hold the location data
@@ -871,18 +879,25 @@ public class RegionedColumnSourceManager
     }
 
     public static class RegionedColumnSourcePushdownFilterContext extends BasePushdownFilterContext {
+        private final List<ColumnDefinition<?>> columnDefinitions;
         private final Map<String, String> renameMap;
 
         public RegionedColumnSourcePushdownFilterContext(
                 final RegionedColumnSourceManager manager,
                 final WhereFilter filter,
                 final List<ColumnSource<?>> columnSources) {
+            super(filter, columnSources);
+
             final List<String> filterColumns = filter.getColumns();
             Require.eq(filterColumns.size(), "filterColumns.size()",
                     columnSources.size(), "columnSources.size()");
 
-            final IdentityHashMap<ColumnSource<?>, String> columnSourceToName = manager.columnSourceToName();
+            // Map the incoming column sources to their local name and definition.
+            columnDefinitions = new ArrayList<>(columnSources.size());
             renameMap = new HashMap<>();
+            final IdentityHashMap<ColumnSource<?>, String> columnSourceToName = manager.columnSourceToName();
+            final Map<String, ColumnDefinition<?>> columnNameToDefinition = manager.columnNameToDefinition;
+
             for (int ii = 0; ii < filterColumns.size(); ii++) {
                 final String filterColumnName = filterColumns.get(ii);
                 final ColumnSource<?> filterSource = columnSources.get(ii);
@@ -891,6 +906,8 @@ public class RegionedColumnSourceManager
                     throw new IllegalArgumentException(
                             "No associated source for '" + filterColumnName + "' found in column sources");
                 }
+                // Add the definition.
+                columnDefinitions.add(columnNameToDefinition.get(localColumnName));
 
                 // Add the rename (if needed)
                 if (localColumnName.equals(filterColumnName)) {
@@ -900,9 +917,17 @@ public class RegionedColumnSourceManager
             }
         }
 
-        @Override
+        public List<ColumnDefinition<?>> columnDefinitions() {
+            return columnDefinitions;
+        }
+
         public Map<String, String> renameMap() {
             return renameMap;
+        }
+
+        @Override
+        public void close() {
+            super.close();
         }
     }
 

@@ -4,7 +4,7 @@ title: Connect to a Kafka stream
 
 Kafka is a distributed event streaming platform that lets you read, write, store, and process events, also called records.
 
-Kafka topics take on many forms, such as raw input, [JSON](#read-kafka-topic-in-json-format), [AVRO](#read-kafka-topic-in-avro-format), or [Protobuf](#read-kafka-topic-in-protobuf-format) In this guide, we show you how to import each of these formats as Deephaven tables.
+Kafka topics take on many forms, such as raw input, [JSON](#read-kafka-topic-in-json-format), [AVRO](#read-kafka-topic-in-avro-format), or [Protobuf](#read-kafka-topic-in-protobuf-format) In this guide, we show you how to read each of these formats into Deephaven tables.
 
 Please see our overview, [Kafka in Deephaven: Basic terms](../../how-to-guides/data-import-export/kafka-stream.md), for a detailed discussion of Kafka topics and supported formats. See the [Apache Kafka Documentation](https://kafka.apache.org/22/javadoc/org/apache/kafka/clients/consumer/KafkaConsumer.html) for full details on how to use Kafka.
 
@@ -164,7 +164,7 @@ Since the `resultBlink` table doesn't show the values in the topic, let's add a 
 lastBlink = resultBlink.lastBy()
 ```
 
-## Import a Kafka stream with append
+## Read a Kafka stream with append
 
 In this example, [`consumeToTable`](../../reference/data-import-export/Kafka/consumeToTable.md) reads the Kafka topic `share.price`. The specific key and value result in a table that appends new rows.
 
@@ -187,15 +187,10 @@ resultRing = KafkaTools.consumeToTable(
 
 Let's walk through this query, focusing on the new optional arguments we've set.
 
-- `partitions` is set to `None`, which specifies that we want to listen to all partitions. This is the default behavior
-  if `partitions` is not explicitly defined. To listen to specific partitions, we can define them as a list of
-  integers (e.g., `partitions=[1, 3, 5]`).
-- `offsets` is set to `ALL_PARTITIONS_DONT_SEEK`, which only listens to new messages produced after this call is
-  processed.
-- `key_spec` is set to `simple('Symbol')`, which instructs the consumer to expect messages with a Kafka `key` field, and
-  creates a `Symbol` column of type String to store the information.
-- `value_spec` is set to `simple('Price')`, which instructs the consumer to expect messages with a Kafka `value` field,
-  and creates a `Price` column of type String to store the information.
+- `partitions` is set to `None`, which specifies that we want to listen to all partitions. This is the default behavior if `partitions` is not explicitly defined. To listen to specific partitions, we can define them as a list of integers (e.g., `partitions=[1, 3, 5]`).
+- `offsets` is set to `ALL_PARTITIONS_DONT_SEEK`, which only listens to new messages produced after this call is processed.
+- `key_spec` is set to `simple('Symbol')`, which instructs the consumer to expect messages with a Kafka `key` field, and creates a `Symbol` column of type String to store the information.
+- `value_spec` is set to `simple('Price')`, which instructs the consumer to expect messages with a Kafka `value` field, and creates a `Price` column of type String to store the information.
 - `table_type` is set to `append`, which creates an append-only table.
 
 Now let's add some entries to our Kafka stream.
@@ -208,7 +203,7 @@ AAPL 135.99
 AAPL 136.82
 ```
 
-## Import a Kafka stream ignoring keys
+## Read a Kafka stream ignoring keys
 
 In this example, [`consumeToTable`](../../reference/data-import-export/Kafka/consumeToTable.md) reads the Kafka topic `share.price` and ignores the partition and key values.
 
@@ -355,14 +350,10 @@ The first positional argument in the [`avroSpec`](https://deephaven.io/core/java
 
 Three optional keyword arguments are supported:
 
-- `schema_version` specifies the version of the schema to get, for the given name, from the schema registry. If not
-  specified, the default of `latest` is assumed. This will retrieve the latest available schema version.
-- `mapping` expects a dictionary value, and if provided, specifies a name mapping for Avro field names to table column
-  names. Any Avro field name not mentioned is mapped to a column of the same name.
-- `mapping_only` expects a dictionary value, and if provided, specifies a name mapping for Avro field names to table
-  column names. Any Avro field name not mentioned is omitted from the resulting table.
-- When `mapping` and `mapping_only` are both omitted, all Avro schema fields are mapped to columns using the field name
-  as column name.
+- `schema_version` specifies the version of the schema to get, for the given name, from the schema registry. If not specified, the default of `latest` is assumed. This will retrieve the latest available schema version.
+- `mapping` expects a dictionary value, and if provided, specifies a name mapping for Avro field names to table column names. Any Avro field name not mentioned is mapped to a column of the same name.
+- `mapping_only` expects a dictionary value, and if provided, specifies a name mapping for Avro field names to table column names. Any Avro field name not mentioned is omitted from the resulting table.
+- When `mapping` and `mapping_only` are both omitted, all Avro schema fields are mapped to columns using the field name as column name.
 
 ## Read Kafka topic in Protobuf format
 
@@ -544,51 +535,9 @@ resultAppend = KafkaTools.consumeToPartitionedTable(
 
 ### Custom Kafka parser
 
-Some use cases will call for custom parsing of Kafka streams. In such cases, it's common to extend Deephaven's library to match requirements. The following example shows how to create a `Person` class containing `name` and `age` attributes derived from a binary Kafka stream of JSON strings. It then calls [`update`](../../reference/table-operations/select/update.md) to create a new column containing the value of the parsed stream.
+Some use cases call for custom parsing of Kafka streams, such as when payloads use non-standard encodings or need complex transformation.
 
-```groovy docker-config=kafka order=null
-import io.deephaven.kafka.KafkaTools
-import io.deephaven.engine.table.ColumnDefinition
-
-kafkaProps = new Properties()
-kafkaProps.put('bootstrap.servers', 'redpanda:9092')
-kafkaProps.put('schema.registry.url', 'http://redpanda:8081')
-
-// Define the Person class
-class Person {
-    int age
-    String name
-
-    Person(int age, String name) {
-        this.age = age
-        this.name = name
-    }
-}
-
-// Define column definitions for JSON deserialization
-ageDef = ColumnDefinition.ofInt('Age')
-nameDef = ColumnDefinition.ofString('Name')
-
-// Create column definitions array
-ColumnDefinition[] colDefs = [ageDef, nameDef]
-
-// Create mapping from JSON field names to column names
-mapping = ['age': 'Age', 'name': 'Name']
-
-// Create JSON spec for Kafka consumption
-jsonSpec = KafkaTools.Consume.jsonSpec(colDefs, mapping, null)
-
-// Consume the Kafka topic with JSON deserialization
-myParsedTable = KafkaTools.consumeToTable(
-    kafkaProps,
-    "test.topic",
-    KafkaTools.ALL_PARTITIONS,
-    KafkaTools.ALL_PARTITIONS_SEEK_TO_END,
-    KafkaTools.Consume.IGNORE,
-    jsonSpec,
-    KafkaTools.TableType.append()
-)
-```
+See the dedicated guide, [Write your own custom parser for Kafka](./write-your-own-custom-parser-for-kafka.md), for a step-by-step walkthrough and complete examples.
 
 ## Write to a Kafka stream
 
@@ -645,6 +594,7 @@ runnable = KafkaTools.produceFromTable(options)
 ## Related documentation
 
 - [Kafka basic terminology](../../conceptual/kafka-basic-terms.md)
+- [Custom parser for Kafka](./write-your-own-custom-parser-for-kafka.md)
 - [`consumeToTable`](../../reference/data-import-export/Kafka/consumeToTable.md)
 - [`timeTable`](../../reference/table-operations/create/timeTable.md)
 - [`lastBy`](../../reference/table-operations/group-and-aggregate/lastBy.md)

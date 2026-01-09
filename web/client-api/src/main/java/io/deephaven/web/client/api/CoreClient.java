@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.web.client.api;
 
@@ -122,7 +122,9 @@ public class CoreClient extends HasEventHandling {
         LazyPromise<Void> loginPromise = new LazyPromise<>();
         ideConnection.addEventListenerOneShot(
                 EventPair.of(QueryInfoConstants.EVENT_CONNECT, ignore -> loginPromise.succeed(null)),
-                EventPair.of(CoreClient.EVENT_RECONNECT_AUTH_FAILED, loginPromise::fail));
+                EventPair.of(CoreClient.EVENT_DISCONNECT, loginPromise::fail),
+                EventPair.of(CoreClient.EVENT_RECONNECT_AUTH_FAILED, loginPromise::fail),
+                EventPair.of(CoreClient.EVENT_REQUEST_FAILED, loginPromise::fail));
         Promise<Void> login = loginPromise.asPromise();
 
         if (alreadyRunning) {

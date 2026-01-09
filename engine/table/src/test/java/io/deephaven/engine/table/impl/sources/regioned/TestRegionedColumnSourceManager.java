@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.sources.regioned;
 
@@ -493,6 +493,11 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
         @Override
         public @NotNull String rowSetColumnName() {
             return ROW_SET_COLUMN_NAME;
+        }
+
+        @Override
+        public boolean tableIsCached() {
+            return true;
         }
 
         @Override

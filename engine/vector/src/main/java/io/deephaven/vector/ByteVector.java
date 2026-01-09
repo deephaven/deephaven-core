@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
 // ****** Edit CharVector and run "./gradlew replicateVectors" to regenerate
@@ -8,6 +8,7 @@
 package io.deephaven.vector;
 
 import io.deephaven.base.verify.Require;
+import io.deephaven.util.annotations.UserInvocationPermitted;
 import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfByte;
 import io.deephaven.engine.primitive.value.iterator.ValueIteratorOfByte;
 import io.deephaven.qst.type.ByteType;
@@ -38,6 +39,7 @@ public interface ByteVector extends Vector<ByteVector>, Iterable<Byte> {
      * @param index An offset into this ByteVector
      * @return The element at the specified offset, or the {@link QueryConstants#NULL_BYTE null byte}
      */
+    @UserInvocationPermitted({"vector"})
     byte get(long index);
 
     @Override
@@ -55,6 +57,7 @@ public interface ByteVector extends Vector<ByteVector>, Iterable<Byte> {
     @Override
     ByteVector getDirect();
 
+    @UserInvocationPermitted({"vector"})
     @Override
     @FinalDefault
     default ValueIteratorOfByte iterator() {
@@ -246,6 +249,7 @@ public interface ByteVector extends Vector<ByteVector>, Iterable<Byte> {
      */
     abstract class Indirect implements ByteVector {
 
+        @UserInvocationPermitted({"vector"})
         @Override
         public byte[] toArray() {
             final int size = intSize("ByteVector.toArray");

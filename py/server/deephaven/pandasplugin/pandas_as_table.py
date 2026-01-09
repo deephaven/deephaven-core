@@ -1,10 +1,11 @@
 #
-# Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 #
+
+from pandas import DataFrame
 
 from deephaven.pandas import to_table
 from deephaven.plugin.object_type import Exporter, FetchOnlyObjectType
-from pandas import DataFrame
 
 NAME = "pandas.DataFrame"
 
@@ -19,4 +20,4 @@ class PandasDataFrameSerializer(FetchOnlyObjectType):
 
     def to_bytes(self, exporter: Exporter, data_frame: DataFrame):
         exporter.reference(to_table(data_frame))
-        return b''
+        return b""

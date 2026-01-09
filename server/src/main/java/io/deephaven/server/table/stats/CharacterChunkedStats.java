@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.server.table.stats;
 
@@ -17,7 +17,6 @@ import io.deephaven.engine.util.TableTools;
 import io.deephaven.util.QueryConstants;
 
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -79,10 +78,12 @@ public class CharacterChunkedStats implements ChunkedStatsKernel {
         }
         List<Map.Entry<String, Long>> sorted = new ArrayList<>(countValues.size());
 
+        // region add_entries
         countValues.forEachEntry((o, c) -> {
             sorted.add(Map.entry(Objects.toString(o), c));
             return true;
         });
+        // endregion add_entries
         sorted.sort(Map.Entry.<String, Long>comparingByValue().reversed());
 
         int resultCount = Math.min(maxUniqueToDisplay, sorted.size());

@@ -25,4 +25,5 @@
 /R @chipkent @rcaudy @cpwright @kosak
 *.proto @devinrsmith @nbauernfeind @niloc132 @rcaudy @cpwright
 *.gwt.xml @niloc132 @rcaudy @nbauernfeind @cpwright
-/docs/**/*.md @margaretkennedy @jjbrosnan @rcaudy @elijahpetty
+/docs/**/*.md @margaretkennedy @elijahpetty @rcaudy
+/gradle @devinrsmith @rcaudy

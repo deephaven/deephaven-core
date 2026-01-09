@@ -1,20 +1,22 @@
 #
-# Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 #
 import random
 import unittest
+from typing import Optional
 
-from typing import Optional, Union
 import numpy as np
 
-from deephaven import DHError, empty_table, dtypes
-from deephaven import new_table
+import deephaven._udf as _udf
+from deephaven import DHError, dtypes, empty_table, new_table
 from deephaven.column import int_col
 from deephaven.filters import Filter, and_
-import deephaven._udf as _udf
+from tests.test_udf_scalar_args import (
+    _J_TYPE_J_ARRAY_TYPE_MAP,
+    _J_TYPE_NP_DTYPE_MAP,
+    _J_TYPE_NULL_MAP,
+)
 from tests.testbase import BaseTestCase
-
-from tests.test_udf_scalar_args import _J_TYPE_NULL_MAP, _J_TYPE_NP_DTYPE_MAP, _J_TYPE_J_ARRAY_TYPE_MAP
 
 
 class VectorizationTestCase(BaseTestCase):
@@ -39,12 +41,11 @@ class VectorizationTestCase(BaseTestCase):
 
         with self.assertRaises(DHError) as cm:
             t1 = t.update("X = auto_func(i)")
-        self.assertRegex(str(cm.exception), r"missing 1 required positional argument" )
+        self.assertRegex(str(cm.exception), r"missing 1 required positional argument")
 
         with self.assertRaises(DHError) as cm:
             t1 = t.update("X = (float)no_param_func(i, ii)")
         self.assertIn("Expected no arguments", str(cm.exception))
-
 
     def test_column_used_twice(self):
         def py_plus(p1, p2) -> int:
@@ -119,7 +120,11 @@ class VectorizationTestCase(BaseTestCase):
         def pyfunc(p1, p2, p3) -> int:
             return p1 + p2 + p3
 
-        t = empty_table(1).update("X = i").update(["Y = pyfunc(X, i, 33)", "Z = pyfunc(X, ii, 66)"])
+        t = (
+            empty_table(1)
+            .update("X = i")
+            .update(["Y = pyfunc(X, i, 33)", "Z = pyfunc(X, ii, 66)"])
+        )
         self.assertEqual(_udf.vectorized_count, 2)
         self.assertIn("33", t.to_string(cols=["Y"]))
         self.assertIn("66", t.to_string(cols=["Z"]))
@@ -128,7 +133,11 @@ class VectorizationTestCase(BaseTestCase):
         def pyfunc(p1, p2, p3) -> int:
             return p1 + p2 + p3
 
-        t = empty_table(1).update("X = i").update(["Y = pyfunc(X, i, 33)", "Z = pyfunc(X, ii, 66)"])
+        t = (
+            empty_table(1)
+            .update("X = i")
+            .update(["Y = pyfunc(X, i, 33)", "Z = pyfunc(X, ii, 66)"])
+        )
         self.assertEqual(_udf.vectorized_count, 2)
         self.assertIn("33", t.to_string(cols=["Y"]))
         self.assertIn("66", t.to_string(cols=["Z"]))
@@ -141,11 +150,19 @@ class VectorizationTestCase(BaseTestCase):
             return p1 * p2 * p3
 
         with self.assertRaises(DHError) as cm:
-            t = empty_table(10).view(formulas=["I=ii", "J=(ii * 2)"]).where("pyfunc_int(I, 3, J)")
+            t = (
+                empty_table(10)
+                .view(formulas=["I=ii", "J=(ii * 2)"])
+                .where("pyfunc_int(I, 3, J)")
+            )
         self.assertEqual(_udf.vectorized_count, 0)
         self.assertIn("boolean required", str(cm.exception))
 
-        t = empty_table(10).view(formulas=["I=ii", "J=(ii * 2)"]).where("pyfunc_bool(I, 3, J)")
+        t = (
+            empty_table(10)
+            .view(formulas=["I=ii", "J=(ii * 2)"])
+            .where("pyfunc_bool(I, 3, J)")
+        )
         self.assertEqual(_udf.vectorized_count, 1)
         self.assertGreater(t.size, 1)
 
@@ -256,7 +273,11 @@ class VectorizationTestCase(BaseTestCase):
             total = p1 + p2 + p3
             return None if total % 3 == 0 else total
 
-        t = empty_table(10).update("X = i").update(["Y = pyfunc(X, i, 13)", "Z = pyfunc(X, ii, 66)"])
+        t = (
+            empty_table(10)
+            .update("X = i")
+            .update(["Y = pyfunc(X, i, 13)", "Z = pyfunc(X, ii, 66)"])
+        )
         self.assertEqual(_udf.vectorized_count, 2)
         self.assertIn("13", t.to_string(cols=["Y"]))
         self.assertIn("null", t.to_string())
@@ -264,33 +285,46 @@ class VectorizationTestCase(BaseTestCase):
         self.assertEqual(t.columns[2].data_type, dtypes.long)
 
     def test_1d_array_args_no_null(self):
-            col1_formula = "Col1 = i % 3"
-            for j_dtype, np_dtype in _J_TYPE_NP_DTYPE_MAP.items():
-                col2_formula = f"Col2 = ({j_dtype})i"
-                with self.subTest(j_dtype):
-                    tbl = empty_table(10).update([col1_formula, col2_formula]).group_by("Col1").update(
-                        "Col2 = Col2.toArray()")
+        col1_formula = "Col1 = i % 3"
+        for j_dtype, np_dtype in _J_TYPE_NP_DTYPE_MAP.items():
+            col2_formula = f"Col2 = ({j_dtype})i"
+            with self.subTest(j_dtype):
+                tbl = (
+                    empty_table(10)
+                    .update([col1_formula, col2_formula])
+                    .group_by("Col1")
+                    .update("Col2 = Col2.toArray()")
+                )
 
-                    func_str = f"""
+                func_str = f"""
 def test_udf(col1, col2: np.ndarray[{_J_TYPE_NP_DTYPE_MAP[j_dtype]}]) -> np.ndarray[{_J_TYPE_NP_DTYPE_MAP[j_dtype]}]:
     return col2 + 5
                             """
-                    exec(func_str, globals())
+                exec(func_str, globals())
 
-                    res = tbl.update("Col3 = test_udf(Col1, Col2)")
-                    self.assertEqual(res.columns[0].data_type, dtypes.int32)
-                    self.assertEqual(res.columns[1].data_type, _J_TYPE_J_ARRAY_TYPE_MAP[j_dtype])
-                    self.assertEqual(res.columns[2].data_type, _J_TYPE_J_ARRAY_TYPE_MAP[j_dtype])
+                res = tbl.update("Col3 = test_udf(Col1, Col2)")
+                self.assertEqual(res.columns[0].data_type, dtypes.int32)
+                self.assertEqual(
+                    res.columns[1].data_type, _J_TYPE_J_ARRAY_TYPE_MAP[j_dtype]
+                )
+                self.assertEqual(
+                    res.columns[2].data_type, _J_TYPE_J_ARRAY_TYPE_MAP[j_dtype]
+                )
 
-                    self.assertEqual(_udf.vectorized_count, 1)
-                    _udf.vectorized_count = 0
+                self.assertEqual(_udf.vectorized_count, 1)
+                _udf.vectorized_count = 0
 
     def test_1d_array_args_null(self):
         col1_formula = "Col1 = i % 3"
         for j_dtype, null_name in _J_TYPE_NULL_MAP.items():
             col2_formula = f"Col2 = i % 3 == 0? {null_name} : ({j_dtype})i"
             with self.subTest(j_dtype):
-                tbl = empty_table(10).update([col1_formula, col2_formula]).group_by("Col1").update("Col2 = Col2.toArray()")
+                tbl = (
+                    empty_table(10)
+                    .update([col1_formula, col2_formula])
+                    .group_by("Col1")
+                    .update("Col2 = Col2.toArray()")
+                )
 
                 func_str = f"""
 def test_udf(col1, col2: np.ndarray[{_J_TYPE_NP_DTYPE_MAP[j_dtype]}]) -> np.ndarray[{_J_TYPE_NP_DTYPE_MAP[j_dtype]}]:
@@ -300,17 +334,27 @@ def test_udf(col1, col2: np.ndarray[{_J_TYPE_NP_DTYPE_MAP[j_dtype]}]) -> np.ndar
 
                 res = tbl.update("Col3 = test_udf(Col1, Col2)")
                 self.assertEqual(res.columns[0].data_type, dtypes.int32)
-                self.assertEqual(res.columns[1].data_type, _J_TYPE_J_ARRAY_TYPE_MAP[j_dtype])
-                self.assertEqual(res.columns[2].data_type, _J_TYPE_J_ARRAY_TYPE_MAP[j_dtype])
+                self.assertEqual(
+                    res.columns[1].data_type, _J_TYPE_J_ARRAY_TYPE_MAP[j_dtype]
+                )
+                self.assertEqual(
+                    res.columns[2].data_type, _J_TYPE_J_ARRAY_TYPE_MAP[j_dtype]
+                )
                 self.assertEqual(_udf.vectorized_count, 1)
                 _udf.vectorized_count = 0
 
     def test_1d_str_bool_datetime_array(self):
         with self.subTest("str"):
-            def f1(p1: np.ndarray[str]) -> np.bool_:
-                return (p1 == 'None').any()
 
-            t = empty_table(10).update(["X = i % 3", "Y = i % 2 == 0? `deephaven`: null"]).group_by("X").update("Y = Y.toArray()")
+            def f1(p1: np.ndarray[str]) -> np.bool_:
+                return (p1 == "None").any()
+
+            t = (
+                empty_table(10)
+                .update(["X = i % 3", "Y = i % 2 == 0? `deephaven`: null"])
+                .group_by("X")
+                .update("Y = Y.toArray()")
+            )
             t1 = t.update(["X1 = f1(Y)"])
             self.assertEqual(t1.columns[2].data_type, dtypes.bool_)
             self.assertEqual(3, t1.to_string().count("true"))
@@ -318,10 +362,16 @@ def test_udf(col1, col2: np.ndarray[{_J_TYPE_NP_DTYPE_MAP[j_dtype]}]) -> np.ndar
             _udf.vectorized_count = 0
 
         with self.subTest("datetime"):
+
             def f2(p1: np.ndarray[np.datetime64]) -> np.bool_:
                 return np.isnat(p1).any()
 
-            t = empty_table(10).update(["X = i % 3", "Y = i % 2 == 0? now() : null"]).group_by("X").update("Y = Y.toArray()")
+            t = (
+                empty_table(10)
+                .update(["X = i % 3", "Y = i % 2 == 0? now() : null"])
+                .group_by("X")
+                .update("Y = Y.toArray()")
+            )
             t1 = t.update(["X1 = f2(Y)"])
             self.assertEqual(t1.columns[2].data_type, dtypes.bool_)
             self.assertEqual(3, t1.to_string().count("true"))
@@ -329,15 +379,26 @@ def test_udf(col1, col2: np.ndarray[{_J_TYPE_NP_DTYPE_MAP[j_dtype]}]) -> np.ndar
             _udf.vectorized_count = 0
 
         with self.subTest("boolean"):
+
             def f3(p1: np.ndarray[np.bool_]) -> np.ndarray[np.bool_]:
                 return np.invert(p1)
 
-            t = empty_table(10).update(["X = i % 3", "Y = i % 2 == 0? true : false"]).group_by("X").update("Y = Y.toArray()")
+            t = (
+                empty_table(10)
+                .update(["X = i % 3", "Y = i % 2 == 0? true : false"])
+                .group_by("X")
+                .update("Y = Y.toArray()")
+            )
             t1 = t.update(["X1 = f3(Y)"])
             self.assertEqual(_udf.vectorized_count, 1)
             _udf.vectorized_count = 0
 
-            t = empty_table(10).update(["X = i % 3", "Y = i % 2 == 0? true : null"]).group_by("X").update("Y = Y.toArray()")
+            t = (
+                empty_table(10)
+                .update(["X = i % 3", "Y = i % 2 == 0? true : null"])
+                .group_by("X")
+                .update("Y = Y.toArray()")
+            )
             t1 = t.update(["X1 = f3(Y)"])
             self.assertEqual(_udf.vectorized_count, 1)
             _udf.vectorized_count = 0
@@ -345,7 +406,12 @@ def test_udf(col1, col2: np.ndarray[{_J_TYPE_NP_DTYPE_MAP[j_dtype]}]) -> np.ndar
     def test_no_signature_array(self):
         builtin_max = max
 
-        t = empty_table(10).update(["X = i % 3", "Y = i % 2 == 0? `deephaven`: `rocks`"]).group_by("X").update("Y = Y.toArray()")
+        t = (
+            empty_table(10)
+            .update(["X = i % 3", "Y = i % 2 == 0? `deephaven`: `rocks`"])
+            .group_by("X")
+            .update("Y = Y.toArray()")
+        )
         t1 = t.update(["X1 = builtin_max(Y)"])
         self.assertEqual(t1.columns[2].data_type, dtypes.JObject)
         self.assertEqual(_udf.vectorized_count, 0)

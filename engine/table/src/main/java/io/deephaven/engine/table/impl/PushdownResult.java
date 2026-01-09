@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl;
 
@@ -40,6 +40,10 @@ public final class PushdownResult implements SafeCloseable {
      * Requires querying an in-memory index structure
      */
     public static final long IN_MEMORY_DATA_INDEX_COST = 30_000L;
+    /**
+     * Requires reading a dictionary to determine matches
+     */
+    public static final long DICTIONARY_DATA_COST = 35_000L;
     /**
      * Requires using binary search on sorted data
      */

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
 // ****** Edit CharVector and run "./gradlew replicateVectors" to regenerate
@@ -8,6 +8,7 @@
 package io.deephaven.vector;
 
 import io.deephaven.base.verify.Require;
+import io.deephaven.util.annotations.UserInvocationPermitted;
 import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfLong;
 import io.deephaven.engine.primitive.value.iterator.ValueIteratorOfLong;
 import io.deephaven.qst.type.LongType;
@@ -38,6 +39,7 @@ public interface LongVector extends Vector<LongVector>, Iterable<Long> {
      * @param index An offset into this LongVector
      * @return The element at the specified offset, or the {@link QueryConstants#NULL_LONG null long}
      */
+    @UserInvocationPermitted({"vector"})
     long get(long index);
 
     @Override
@@ -55,6 +57,7 @@ public interface LongVector extends Vector<LongVector>, Iterable<Long> {
     @Override
     LongVector getDirect();
 
+    @UserInvocationPermitted({"vector"})
     @Override
     @FinalDefault
     default ValueIteratorOfLong iterator() {
@@ -246,6 +249,7 @@ public interface LongVector extends Vector<LongVector>, Iterable<Long> {
      */
     abstract class Indirect implements LongVector {
 
+        @UserInvocationPermitted({"vector"})
         @Override
         public long[] toArray() {
             final int size = intSize("LongVector.toArray");

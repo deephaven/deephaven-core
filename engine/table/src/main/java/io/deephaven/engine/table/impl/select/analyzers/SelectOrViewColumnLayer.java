@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.select.analyzers;
 
@@ -17,9 +17,9 @@ public abstract class SelectOrViewColumnLayer extends DependencyLayerBase {
             final SelectColumn sc,
             final ColumnSource<?> ws,
             final ColumnSource<?> optionalUnderlying,
-            final String[] deps,
+            final String[] recomputeDependencies,
             final ModifiedColumnSet mcsBuilder) {
-        super(context, sc, ws, deps, mcsBuilder);
+        super(context, sc, ws, recomputeDependencies, mcsBuilder);
         this.optionalUnderlying = optionalUnderlying;
     }
 

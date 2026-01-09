@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.server.table.ops;
 
@@ -7,7 +7,7 @@ import io.deephaven.api.filter.Filter;
 import io.deephaven.auth.codegen.impl.TableServiceContextualAuthWiring;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.impl.select.WhereFilter;
+import io.deephaven.engine.table.impl.select.*;
 import io.deephaven.proto.backplane.grpc.AndCondition;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest;
 import io.deephaven.proto.backplane.grpc.Condition;
@@ -19,10 +19,12 @@ import io.deephaven.server.table.ops.filter.FlipNonReferenceMatchExpression;
 import io.deephaven.server.table.ops.filter.MakeExpressionsNullSafe;
 import io.deephaven.server.table.ops.filter.MergeNestedBinaryOperations;
 import io.deephaven.server.table.ops.filter.NormalizeNots;
+import io.deephaven.engine.validation.ColumnExpressionValidator;
 import org.jetbrains.annotations.NotNull;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -30,10 +32,15 @@ import java.util.stream.Collectors;
 @Singleton
 public class FilterTableGrpcImpl extends GrpcTableOperation<FilterTableRequest> {
 
+    @NotNull
+    private final ColumnExpressionValidator validator;
+
     @Inject
-    public FilterTableGrpcImpl(final TableServiceContextualAuthWiring authWiring) {
+    public FilterTableGrpcImpl(@NotNull final TableServiceContextualAuthWiring authWiring,
+            @NotNull final ColumnExpressionValidator validator) {
         super(authWiring::checkPermissionFilter, BatchTableRequest.Operation::getFilter,
                 FilterTableRequest::getResultId, FilterTableRequest::getSourceId);
+        this.validator = validator;
     }
 
     @Override
@@ -52,6 +59,8 @@ public class FilterTableGrpcImpl extends GrpcTableOperation<FilterTableRequest> 
         List<WhereFilter> whereFilters = finishedConditions.stream()
                 .map(f -> FilterFactory.makeFilter(sourceTable.getDefinition(), f))
                 .collect(Collectors.toList());
+
+        validator.validateWhereFilters(whereFilters, sourceTable.getDefinition());
 
         // execute the filters
         return sourceTable.where(Filter.and(whereFilters));

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+ * Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
  */
 #include <exception>
 #include <iostream>
@@ -30,8 +30,8 @@ void TestSelectsHelper(std::string_view what, const TableHandle &table,
 TEST_CASE("Validate selects", "[validation]") {
   std::vector<std::vector<std::string>> bad_selects = {
       { "X = 3)" },
-      { "S = `hello`", "T = java.util.regex.Pattern.quote(S)" }, // Pattern.quote not on whitelist
-      { "X = Math.min(3, 4)" } // Math.min not on whitelist
+      { "S = `hello`", "T = java.util.regex.Pattern.quote(S)" }, // Pattern.quote not on allow list
+      { "X = Math.min(3, 4)" } // Math.min not on allow list
   };
   std::vector<std::vector<std::string>> good_selects = {
       {"X = 3"},
@@ -50,9 +50,9 @@ TEST_CASE("Validate selects", "[validation]") {
 TEST_CASE("Validate wheres", "[validation]") {
   std::vector<std::string> bad_wheres = {
       "X > 3)", // syntax error
-      "S = new String(`hello`)", // new not allowed
-      "S = java.util.regex.Pattern.quote(S)", // Pattern.quote not on whitelist
-      "X = Math.min(3, 4)" // Math.min not on whitelist
+      "S = new Object()", // new Object not allowed
+      "S = java.util.regex.Pattern.quote(S)", // Pattern.quote not on allow list
+      "X = Math.min(3, 4)" // Math.min not on allow list
   };
 
   std::vector<std::string> good_wheres = {

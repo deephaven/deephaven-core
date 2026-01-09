@@ -48,15 +48,15 @@ source_meta = source.meta_table
 
 Java classes can have three types of methods:
 
-1. **Static methods**: Called on the class itself, not on instances
-2. **Instance methods**: Called on object instances
-3. **Constructor methods**: Special methods used to create new instances with the `new` keyword
+1. **Static methods**: Called on the class itself, not on instances.
+2. **Instance methods**: Called on object instances.
+3. **Constructor methods**: Special methods used to create new instances with the `new` keyword.
 
 All three are supported in query strings.
 
 The following example demonstrates all three method types by calling static methods, creating instances with constructors, and calling instance methods:
 
-```python order=source,source_meta
+```python order=source,source_meta reset
 from deephaven import empty_table
 from deephaven import query_library
 

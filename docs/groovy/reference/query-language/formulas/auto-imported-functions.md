@@ -1131,5 +1131,5 @@ Importing this class gives users access to methods for manipulating, comparing, 
 
 ## Related documentation
 
-- [Query language functions](../../../how-to-guides/query-language-functions.md)
+- [Query language functions](../../../how-to-guides/built-in-functions.md)
 - [QueryLibraryImportsDefaults Java class](https://github.com/deephaven/deephaven-core/blob/main/engine/table/src/main/java/io/deephaven/engine/table/lang/impl/QueryLibraryImportsDefaults.java)

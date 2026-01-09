@@ -47,7 +47,7 @@ dependencies {
     annotationProcessor libs.immutables.value
 
     implementation project(':ssl-kickstart')
-    implementation libs.sslcontext.kickstart.jetty
+    implementation libs.ayza.jetty
 
     implementation project(':grpc-java:grpc-mtls')
 

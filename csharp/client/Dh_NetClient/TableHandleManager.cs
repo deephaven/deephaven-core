@@ -1,5 +1,5 @@
 ﻿//
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 using Google.Protobuf;
 using Io.Deephaven.Proto.Backplane.Grpc;
@@ -181,6 +181,13 @@ public class TableHandleManager : IDisposable {
   public TableHandle MakeTableHandleFromTicket(Ticket ticket) {
     var resp = Server.SendRpc(opts => Server.TableStub.GetExportedTableCreationResponseAsync(ticket, opts));
     return TableHandle.Create(this, resp);
+  }
+
+  /// <summary>
+  /// Ping the server
+  /// </summary>
+  public void Ping() {
+    _server.Ping();
   }
 
   /// <summary>

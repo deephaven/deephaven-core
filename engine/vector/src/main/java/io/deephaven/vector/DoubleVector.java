@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
 // ****** Edit CharVector and run "./gradlew replicateVectors" to regenerate
@@ -10,6 +10,7 @@ package io.deephaven.vector;
 import io.deephaven.util.compare.DoubleComparisons;
 
 import io.deephaven.base.verify.Require;
+import io.deephaven.util.annotations.UserInvocationPermitted;
 import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfDouble;
 import io.deephaven.engine.primitive.value.iterator.ValueIteratorOfDouble;
 import io.deephaven.qst.type.DoubleType;
@@ -40,6 +41,7 @@ public interface DoubleVector extends Vector<DoubleVector>, Iterable<Double> {
      * @param index An offset into this DoubleVector
      * @return The element at the specified offset, or the {@link QueryConstants#NULL_DOUBLE null double}
      */
+    @UserInvocationPermitted({"vector"})
     double get(long index);
 
     @Override
@@ -57,6 +59,7 @@ public interface DoubleVector extends Vector<DoubleVector>, Iterable<Double> {
     @Override
     DoubleVector getDirect();
 
+    @UserInvocationPermitted({"vector"})
     @Override
     @FinalDefault
     default ValueIteratorOfDouble iterator() {
@@ -248,6 +251,7 @@ public interface DoubleVector extends Vector<DoubleVector>, Iterable<Double> {
      */
     abstract class Indirect implements DoubleVector {
 
+        @UserInvocationPermitted({"vector"})
         @Override
         public double[] toArray() {
             final int size = intSize("DoubleVector.toArray");

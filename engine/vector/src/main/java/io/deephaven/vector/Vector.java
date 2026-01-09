@@ -1,9 +1,10 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.vector;
 
 import io.deephaven.base.verify.Assert;
+import io.deephaven.util.annotations.UserInvocationPermitted;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import org.jetbrains.annotations.NotNull;
 
@@ -31,6 +32,7 @@ public interface Vector<VECTOR_TYPE extends Vector<VECTOR_TYPE>>
      *        {@code size()}, the result will have a range of null values at the corresponding offsets
      * @return The sub-Vector specified by {@code [fromIndexInclusive, toIndexExclusive)}
      */
+    @UserInvocationPermitted({"vector"})
     VECTOR_TYPE subVector(long fromIndexInclusive, long toIndexExclusive);
 
     /**
@@ -40,6 +42,7 @@ public interface Vector<VECTOR_TYPE extends Vector<VECTOR_TYPE>>
      *        result will contain the appropriate null value
      * @return The sub-Vector specified by {@code positions}
      */
+    @UserInvocationPermitted({"vector"})
     VECTOR_TYPE subVectorByPositions(long[] positions);
 
     /**
@@ -56,16 +59,19 @@ public interface Vector<VECTOR_TYPE extends Vector<VECTOR_TYPE>>
      *
      * @return An array representation of the elements of this Vector that may be freely mutated
      */
+    @UserInvocationPermitted({"vector"})
     Object copyToArray();
 
     /**
      * @return A version of this Vector that is flattened out to only reference memory
      */
+    @UserInvocationPermitted({"vector"})
     VECTOR_TYPE getDirect();
 
     /**
      * @return The type of elements contained by this Vector
      */
+    @UserInvocationPermitted({"vector"})
     Class<?> getComponentType();
 
     /**
@@ -74,11 +80,13 @@ public interface Vector<VECTOR_TYPE extends Vector<VECTOR_TYPE>>
      * @param prefixLength The number of elements to include
      * @return The specified prefix String representation
      */
+    @UserInvocationPermitted({"vector"})
     String toString(int prefixLength);
 
     /**
      * @return Whether this Vector is empty
      */
+    @UserInvocationPermitted({"vector"})
     default boolean isEmpty() {
         return size() == 0;
     }

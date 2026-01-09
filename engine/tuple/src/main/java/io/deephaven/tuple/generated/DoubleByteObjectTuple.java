@@ -55,9 +55,9 @@ public class DoubleByteObjectTuple implements Comparable<DoubleByteObjectTuple>,
         this.element2 = element2;
         this.element3 = element3;
         cachedHashCode = ((31 +
-                Double.hashCode(element1)) * 31 +
-                Byte.hashCode(element2)) * 31 +
-                Objects.hashCode(element3);
+                DoubleComparisons.hashCode(element1)) * 31 +
+                ByteComparisons.hashCode(element2)) * 31 +
+                ObjectComparisons.hashCode(element3);
     }
 
     public final double getFirstElement() {
@@ -87,8 +87,8 @@ public class DoubleByteObjectTuple implements Comparable<DoubleByteObjectTuple>,
         }
         final DoubleByteObjectTuple typedOther = (DoubleByteObjectTuple) other;
         // @formatter:off
-        return element1 == typedOther.element1 &&
-               element2 == typedOther.element2 &&
+        return DoubleComparisons.eq(element1, typedOther.element1) &&
+               ByteComparisons.eq(element2, typedOther.element2) &&
                ObjectComparisons.eq(element3, typedOther.element3);
         // @formatter:on
     }

@@ -71,6 +71,66 @@ and `my_table_filtered2` at the same time. However, since `merged_tables` depend
 engine cannot update the result of the [`merge`](../../reference/table-operations/merge/merge.md) operation until after
 the `update()` and `where()`s for those three tables have been processed.
 
+### Controlling Concurrency for `select`, `update` and `where`
+
+The `select`, `update`, and `where` operations can parallelize within a single where clause or column expression. This can greatly improve throughput by using multiple threads to read existing columns or compute functions. Deephaven can only parallelize an expression if it is _stateless_, meaning it does not depend on any mutable external inputs or the order in which rows are evaluated. Many operations, such as String manipulation or arithmetic on one or more input columns are always stateless. By default, the engine assumes that all user expressions are stateless and can be parallelized.
+
+To change the default behavior for `select` and `update`, you can change the configuration property `QueryTable.statelessSelectByDefault` to `false` to make columns stateful. For filters, change the property `QueryTable.statelessFiltersByDefault`.
+
+> [!NOTE]
+> In Deephaven 41.0 and later, filters and selectables are _stateless_ by default. In previous versions, filters and selectables were _stateful_ by default.
+
+The [`ConcurrencyControl`](https://docs.deephaven.io/core/javadoc/io/deephaven/api/ConcurrencyControl.html) interface allows you to control the behavior of [`Filter`](https://docs.deephaven.io/core/javadoc/io/deephaven/api/filter/Filter.html) (where clause) and [`Selectable`](https://docs.deephaven.io/core/javadoc/io/deephaven/api/Selectable.html) (column formula) objects.
+
+ConccurencyControl cannot be applied to Selectables passed to `view` or `updateView`. The `view` and `updateView` operations compute results on demand, and therefore cannot enforce ordering constraints.
+
+To explicitly mark a Selectable or Filter as stateful, use the `withSerial` method.
+
+- A serial Filter cannot be reordered with respect to other Filters. Every input row to a stateful Filter is evaluated in order.
+- When a Selectable is serial, then every row for that column is evaluated in order.
+- For Selectables, additional ordering constraints are controlled by the value of the `QueryTable.SERIAL_SELECT_IMPLICIT_BARRIERS`. This is set by the property `QueryTable.serialSelectImplicitBarriers`. The default value is the inverse of `QueryTable.statelessSelectByDefault`. When `Selectables` are stateless by default, no implicit barriers are added (i.e., `QueryTable.SERIAL_SELECT_IMPLICIT_BARRIERS` is false). When `Selectables` are stateful by default, then implicit barriers are added (i.e. `QueryTable.SERIAL_SELECT_IMPLICIT_BARRIERS` is true).
+- If `QueryTable.SERIAL_SELECT_IMPLICIT_BARRIERS` is false, no additional ordering between expressions is imposed. As with every `select` or `update` call, if column B references column A, then the necessary inputs to column B from column A are evaluated before column B is evaluated. To impose further ordering constraints, use barriers.
+- If `QueryTable.SERIAL_SELECT_IMPLICIT_BARRIERS` is true, then a serial selectable is an absolute barrier with respect to all other serial selectables. This prohibits serial selectables from being evaluated concurrently, permitting them to access global state. Selectables that are not serial may be reordered with respect to a serial selectable.
+
+Filters and Selectables may declare a _barrier_. A barrier is an opaque object (compared using reference equality) that is used to mark a particular Filter or Selectable. Subsequent Filters or Selectables may respect a previously declared barrier. If a Filter respects a barrier, that Filter cannot begin evaluation until the Filter which declares the barrier has been completely evaluated. Similarly, if a Selectable respects a barrier, then it cannot begin evaluation until the Selectable which declared the barrier has been completely evaluated.
+
+In this code block, two columns reference the AtomicInteger `a`:
+
+```groovy order=null
+import java.util.concurrent.atomic.AtomicInteger
+
+a = new AtomicInteger(0)
+t = emptyTable(1_000_000).update("A=a.getAndIncrement()", "B=a.getAndIncrement()")
+```
+
+Deephaven's default behavior is to treat both `A` and `B` statefully, therefore the table is equivalent to:
+
+```groovy order=null
+t = emptyTable(1_000_000).update("A=i", "B=1_000_000 + i")
+```
+
+However, when the columns are stateless, then the rows from either column can be evaluated in any order. To indicate that `A` must be evaluated before `B`, we can use a barrier:
+
+```groovy order=null
+import java.util.concurrent.atomic.AtomicInteger
+
+a = new AtomicInteger(0)
+t = emptyTable(1_000_000).update(List.of(
+        Selectable.of(ColumnName.of("A"), RawString.of("a.getAndIncrement()")).withDeclaredBarriers(a),
+        Selectable.of(ColumnName.of("B"), RawString.of("a.getAndIncrement()")).withRespectedBarriers(a)))
+```
+
+Similarly, we can prevent values of A from appearing out of order using `withSerial`:
+
+```groovy order=null
+import java.util.concurrent.atomic.AtomicInteger
+
+a = new AtomicInteger(0)
+t=emptyTable(1_000_000).update(List.of(
+        Selectable.of(ColumnName.of("A"), RawString.of("a.getAndIncrement()")).withSerial(),
+        Selectable.of(ColumnName.of("B"), RawString.of("a.getAndIncrement()"))))
+```
+
 ### Managing thread pool sizes
 
 The maximum parallelism of query initialization and update processing is determined by the Operation Initialization

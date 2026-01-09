@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.locations.impl;
 
@@ -252,6 +252,11 @@ public abstract class AbstractTableLocation
                 return localIndex;
             }
         }
+    }
+
+    protected boolean hasAnyCachedDataIndex() {
+        final KeyedObjectHashMap<List<String>, CachedDataIndex> localCachedDataIndexes = cachedDataIndexes;
+        return localCachedDataIndexes != null && !localCachedDataIndexes.isEmpty();
     }
 
     @Override
