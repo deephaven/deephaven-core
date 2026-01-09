@@ -136,7 +136,7 @@ DEFAULT_JVM_OPTS="\${DEFAULT_JVM_OPTS} -XX:+UnlockDiagnosticVMOptions -XX:Compil
 
 # Customization for deephaven-core to include vm options file by default
 # If users explicitly set JAVA_OPTS, they will be opting out of dh-default.vmoptions
-DH_DEFAULT_VMOPTIONS="-XX:VMOptionsFile=\"\${APP_HOME}/etc/dh-default.vmoptions\""
+DH_DEFAULT_VMOPTIONS="-XX:VMOptionsFile=\"\${APP_HOME}/etc/dh-default-11.vmoptions\""
 JAVA_OPTS="\${JAVA_OPTS:-\${DH_DEFAULT_VMOPTIONS}}"
 
 # Use the maximum available, or set MAX_FD != -1 to use that value.

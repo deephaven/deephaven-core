@@ -204,13 +204,19 @@ def parseJvmArgumentsFromProperty = { String propertyName, List<String> orElse -
 //
 // From the perspective of our application distribution, these options will be used as defaults for JAVA_OPTS
 // (if the user already has JAVA_OPTS set, these VM options will _not_ apply).
-def JAVA_OPTS = parseJvmArgumentsFromProperty("deephaven.javaOpts", parseJvmArgumentsFromEnv('JAVA_OPTS', [
+def JAVA_OPTS_11 = parseJvmArgumentsFromProperty("deephaven.javaOpts", parseJvmArgumentsFromEnv('JAVA_OPTS', [
   '-XX:+UseG1GC',
   '-XX:MaxGCPauseMillis=100',
   '-XX:+UseStringDeduplication',
   // TODO(deephaven-core#5519): Remove SoftReference cache OOM mitigation
   // Requires -XX:+UnlockDiagnosticVMOptions which is already included in def compilerArgs earlier
   '-XX:GCLockerRetryAllocationCount=128',
+]))
+
+def JAVA_OPTS_21 = parseJvmArgumentsFromProperty("deephaven.javaOpts", parseJvmArgumentsFromEnv('JAVA_OPTS', [
+    '-XX:+UseG1GC',
+    '-XX:MaxGCPauseMillis=100',
+    '-XX:+UseStringDeduplication',
 ]))
 
 // Utility to add jvm args to all executions, whether intellij or from a application script or gradle javaexec
@@ -220,9 +226,9 @@ def START_OPTS = parseJvmArgumentsFromProperty("deephaven.startOpts", parseJvmAr
 //  '-XX:+PrintCompilation',          // this optional line shows jit operations as they happen
 ]))
 
-def createVmOptions = tasks.register('createVmOptions') {
-  def vmOptionsFile = project.layout.buildDirectory.file('dh-default.vmoptions')
-  def vmOptionsText = JAVA_OPTS.join('\n')
+def createVmOptions11 = tasks.register('createVmOptions11') {
+  def vmOptionsFile = project.layout.buildDirectory.file('dh-default-11.vmoptions')
+  def vmOptionsText = JAVA_OPTS_11.join('\n')
   it.inputs.property('vmOptionsText', vmOptionsText)
   it.outputs.file(vmOptionsFile)
   doFirst {
@@ -230,9 +236,19 @@ def createVmOptions = tasks.register('createVmOptions') {
   }
 }
 
+def createVmOptions21 = tasks.register('createVmOptions21') {
+    def vmOptionsFile = project.layout.buildDirectory.file('dh-default-21.vmoptions')
+    def vmOptionsText = JAVA_OPTS_21.join('\n')
+    it.inputs.property('vmOptionsText', vmOptionsText)
+    it.outputs.file(vmOptionsFile)
+    doFirst {
+        vmOptionsFile.get().asFile.text = vmOptionsText
+    }
+}
+
 tasks.withType(JavaExec).configureEach {
   def compilerDirectivesFile = createCompilerDirectives.get().outputs.files
-  def vmOptionsFile = createVmOptions.get().outputs.files
+  def vmOptionsFile = (runtimeVersion < 21 ? createVmOptions11 : createVmOptions21).get().outputs.files
   inputs.files compilerDirectivesFile
   inputs.files vmOptionsFile
   javaLauncher.set runtimeLauncher
@@ -243,7 +259,7 @@ tasks.withType(JavaExec).configureEach {
 
 tasks.withType(Test).configureEach {
   def compilerDirectivesFile = createCompilerDirectives.get().outputs.files
-  def vmOptionsFile = createVmOptions.get().outputs.files
+  def vmOptionsFile = (testRuntimeVersion < 21 ? createVmOptions11 : createVmOptions21).get().outputs.files
   inputs.files compilerDirectivesFile
   inputs.files vmOptionsFile
   javaLauncher.set testRuntimeLauncher
@@ -256,7 +272,8 @@ JavaApplication application = extensions.findByType(JavaApplication)
 if (application) {
   application.applicationDistribution.into('etc') {
     from(createCompilerDirectives.get().outputs.files)
-    from(createVmOptions.get().outputs.files)
+    from(createVmOptions11.get().outputs.files)
+    from(createVmOptions21.get().outputs.files)
   }
 }
 
