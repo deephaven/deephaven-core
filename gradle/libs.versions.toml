@@ -297,6 +297,7 @@ picocli = { module = "info.picocli:picocli", version.ref = "picocli" }
 postgresql = { module = "org.postgresql:postgresql", version.ref = "postgresql" }
 
 protobuf-java = { module = "com.google.protobuf:protobuf-java", version.ref = "protobuf" }
+protobuf-java-util = { module = "com.google.protobuf:protobuf-java-util", version.ref = "protobuf" }
 
 randelshofer-fastdoubleparser = { module = "ch.randelshofer:fastdoubleparser", version.ref = "randelshofer" }
 
