@@ -23,7 +23,7 @@ def _compiler_directives() -> pathlib.Path:
 
 
 def _default_vmoptions() -> pathlib.Path:
-    return _jars_path() / "dh-default.vmoptions"
+    return _jars_path() / "dh-default-11.vmoptions"
 
 
 def _jars() -> Generator[pathlib.Path, None, None]:
