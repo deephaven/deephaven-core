@@ -213,7 +213,7 @@ def JAVA_OPTS_11 = parseJvmArgumentsFromProperty("deephaven.javaOpts", parseJvmA
   '-XX:GCLockerRetryAllocationCount=128',
 ]))
 
-def JAVA_OPTS_21 = parseJvmArgumentsFromProperty("deephaven.javaOpts", parseJvmArgumentsFromEnv('JAVA_OPTS', [
+def JAVA_OPTS_25 = parseJvmArgumentsFromProperty("deephaven.javaOpts", parseJvmArgumentsFromEnv('JAVA_OPTS', [
     '-XX:+UseG1GC',
     '-XX:MaxGCPauseMillis=100',
     '-XX:+UseStringDeduplication',
@@ -236,9 +236,9 @@ def createVmOptions11 = tasks.register('createVmOptions11') {
   }
 }
 
-def createVmOptions21 = tasks.register('createVmOptions21') {
-    def vmOptionsFile = project.layout.buildDirectory.file('dh-default-21.vmoptions')
-    def vmOptionsText = JAVA_OPTS_21.join('\n')
+def createVmOptions25 = tasks.register('createVmOptions25') {
+    def vmOptionsFile = project.layout.buildDirectory.file('dh-default-25.vmoptions')
+    def vmOptionsText = JAVA_OPTS_25.join('\n')
     it.inputs.property('vmOptionsText', vmOptionsText)
     it.outputs.file(vmOptionsFile)
     doFirst {
@@ -248,7 +248,7 @@ def createVmOptions21 = tasks.register('createVmOptions21') {
 
 tasks.withType(JavaExec).configureEach {
   def compilerDirectivesFile = createCompilerDirectives.get().outputs.files
-  def vmOptionsFile = (runtimeVersion < 21 ? createVmOptions11 : createVmOptions21).get().outputs.files
+  def vmOptionsFile = (runtimeVersion < 25 ? createVmOptions11 : createVmOptions25).get().outputs.files
   inputs.files compilerDirectivesFile
   inputs.files vmOptionsFile
   javaLauncher.set runtimeLauncher
@@ -259,7 +259,7 @@ tasks.withType(JavaExec).configureEach {
 
 tasks.withType(Test).configureEach {
   def compilerDirectivesFile = createCompilerDirectives.get().outputs.files
-  def vmOptionsFile = (testRuntimeVersion < 21 ? createVmOptions11 : createVmOptions21).get().outputs.files
+  def vmOptionsFile = (testRuntimeVersion < 25 ? createVmOptions11 : createVmOptions25).get().outputs.files
   inputs.files compilerDirectivesFile
   inputs.files vmOptionsFile
   javaLauncher.set testRuntimeLauncher
@@ -273,7 +273,7 @@ if (application) {
   application.applicationDistribution.into('etc') {
     from(createCompilerDirectives.get().outputs.files)
     from(createVmOptions11.get().outputs.files)
-    from(createVmOptions21.get().outputs.files)
+    from(createVmOptions25.get().outputs.files)
   }
 }
 
