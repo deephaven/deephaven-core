@@ -42,6 +42,7 @@ import java.util.stream.Stream;
 import static io.deephaven.engine.rowset.RowSequence.NULL_ROW_KEY;
 import static io.deephaven.engine.table.impl.AbsoluteSortColumnConventions.*;
 import static io.deephaven.engine.table.impl.BaseTable.shouldCopyAttribute;
+import static io.deephaven.engine.table.impl.by.AggregationProcessor.EXPOSED_GROUP_ROW_SETS;
 import static io.deephaven.engine.table.impl.by.AggregationProcessor.getRowLookup;
 import static io.deephaven.engine.table.impl.by.AggregationRowLookup.DEFAULT_UNKNOWN_ROW;
 import static io.deephaven.engine.table.impl.by.AggregationRowLookup.EMPTY_KEY;
@@ -702,7 +703,7 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
 
     private static Stream<ColumnDefinition<?>> filterRollupInternalColumns(
             @NotNull final Stream<ColumnDefinition<?>> columnDefinitions) {
-        return columnDefinitions.filter(cd -> !cd.getName().endsWith(ROLLUP_COLUMN_SUFFIX));
+        return columnDefinitions.filter(cd -> !cd.getName().endsWith(ROLLUP_COLUMN_SUFFIX) && !cd.getName().equals(EXPOSED_GROUP_ROW_SETS.name()));
     }
 
     @Override
