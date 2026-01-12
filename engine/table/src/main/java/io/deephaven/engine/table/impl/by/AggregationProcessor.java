@@ -736,7 +736,7 @@ public class AggregationProcessor implements AggregationContextFactory {
         }
 
         /**
-         * @return the index of an existing group by operator, or -1 if it no operator was found
+         * @return the index of an existing group by operator, or -1 if no operator was found
          */
         int existingGroupByOperatorIndex() {
             for (int ii = 0; ii < operators.size(); ++ii) {
@@ -748,9 +748,9 @@ public class AggregationProcessor implements AggregationContextFactory {
         }
 
         /**
-         * @return the index of an existing group by reaggregation operator, or -1 if it no operator was found
+         * @return the index of an existing group by reaggregation operator, or -1 if no operator was found
          */
-        int existingGroupByReggregateIndex() {
+        int existingGroupByReaggregateIndex() {
             for (int ii = 0; ii < operators.size(); ++ii) {
                 if (operators.get(ii) instanceof GroupByReaggregateOperator) {
                     return ii;
@@ -1550,7 +1550,7 @@ public class AggregationProcessor implements AggregationContextFactory {
             for (int ii = 0; ii < resultPairs.size(); ++ii) {
                 pairs[ii] = new MatchPair(resultPairs.get(ii).output().name(), resultPairs.get(ii).output().name());
             }
-            final int existingGroupByOperatorIndex = existingGroupByReggregateIndex();
+            final int existingGroupByOperatorIndex = existingGroupByReaggregateIndex();
             if (existingGroupByOperatorIndex >= 0) {
                 final GroupByReaggregateOperator existing = ensureGroupByReaggregateOperator(table,
                         existingGroupByOperatorIndex, EXPOSED_GROUP_ROW_SETS.name(), pairs);
@@ -1630,7 +1630,7 @@ public class AggregationProcessor implements AggregationContextFactory {
                 final ColumnSource<?> groupRowSet = table.getColumnSource(EXPOSED_GROUP_ROW_SETS.name());
                 GroupByReaggregateOperator groupByOperator;
 
-                final int existingIndex = existingGroupByReggregateIndex();
+                final int existingIndex = existingGroupByReaggregateIndex();
                 if (existingIndex >= 0) {
                     groupByOperator = ensureGroupByReaggregateOperator(table, existingIndex,
                             EXPOSED_GROUP_ROW_SETS.name(), groupPairs);

@@ -59,13 +59,16 @@ public final class GroupByChunkedOperator implements GroupByOperator {
     private List<String> hiddenResults;
 
     /**
+     * Create a GroupedByChunkedOperator, which produces a column of {@link io.deephaven.vector.Vector vectors} for each
+     * of the input columns.
      *
      * @param inputTable the table we are aggregating
      * @param registeredWithHelper true if we are registered with the helper (meaning we independently produce result
      *        columns), false otherwise. For a normal AggGroup this is true; for a group-by that is only part of an
      *        AggFormula this is false.
      * @param exposeRowSetsAs the name of the column to expose the rowsets for each group as
-     * @param hiddenResults a list (possibly empty) of columns that are not exposed to the helper
+     * @param hiddenResults a list (possibly empty) of columns that are not exposed to the helper; or null if all
+     *        columns should be exposed
      * @param aggregatedColumnPairs the list of input and output columns for this operation
      */
     public GroupByChunkedOperator(
