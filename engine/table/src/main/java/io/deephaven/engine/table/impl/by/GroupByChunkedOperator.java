@@ -491,12 +491,13 @@ public final class GroupByChunkedOperator implements GroupByOperator {
     }
 
     @Override
-    public void resetForStep(@NotNull final TableUpdate upstream, final int startingDestinationsCount) {
+    public boolean resetForStep(@NotNull final TableUpdate upstream, final int startingDestinationsCount) {
         stepValuesModified = upstream.modified().isNonempty() && upstream.modifiedColumnSet().nonempty()
                 && upstream.modifiedColumnSet().containsAny(aggregationInputsModifiedColumnSet);
         someKeyHasAddsOrRemoves = false;
         someKeyHasModifies = false;
         stepDestinationsModified = new BitmapRandomBuilder(startingDestinationsCount);
+        return false;
     }
 
     @Override

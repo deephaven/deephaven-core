@@ -56,6 +56,7 @@ public final class GroupByReaggregateOperator implements GroupByOperator {
     private final ObjectArraySource<Object> removedBuilders;
 
     private final String[] inputColumnNamesForResults;
+    private final ModifiedColumnSet inputAggregatedColumnsModifiedColumnSet;
 
     private final Map<String, AggregateColumnSource<?, ?>> inputAggregatedColumns;
     private final Map<String, AggregateColumnSource<?, ?>> resultAggregatedColumns;
@@ -103,6 +104,9 @@ public final class GroupByReaggregateOperator implements GroupByOperator {
             }
             inputAggregatedColumns.put(pair.input().name(), aggregateColumnSource);
         });
+
+        inputAggregatedColumnsModifiedColumnSet =
+                inputTable.newModifiedColumnSet(inputAggregatedColumns.keySet().toArray(String[]::new));
 
         if (resultAggregatedColumns.containsKey(exposeRowSetsAs)) {
             throw new IllegalArgumentException(String.format(
@@ -360,9 +364,10 @@ public final class GroupByReaggregateOperator implements GroupByOperator {
     }
 
     @Override
-    public void resetForStep(@NotNull final TableUpdate upstream, final int startingDestinationsCount) {
+    public boolean resetForStep(@NotNull final TableUpdate upstream, final int startingDestinationsCount) {
         stepDestinationsModified = new BitmapRandomBuilder(startingDestinationsCount);
         rowsetsModified = false;
+        return upstream.modifiedColumnSet().containsAny(inputAggregatedColumnsModifiedColumnSet);
     }
 
     @Override

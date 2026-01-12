@@ -42,18 +42,25 @@ public class TestAggGroup extends RefreshingTableTestCase {
 
         final QueryTable normal = source.aggNoMemo(AggregationProcessor.forAggregation(aggs), false, null,
                 List.of(ColumnName.of("Key1")));
+        final QueryTable normalNoKey =
+                source.aggNoMemo(AggregationProcessor.forAggregation(aggs), false, null, List.of());
         final ColumnName rollupColumn = ColumnName.of(ROLLUP_COLUMN_SUFFIX);
         final QueryTable base = source.aggNoMemo(AggregationProcessor.forRollupBase(aggs, false, rollupColumn), false,
                 null, List.of(ColumnName.of("Key1"), ColumnName.of("Key2")));
         final QueryTable reaggregated = base.aggNoMemo(AggregationProcessor.forRollupReaggregated(aggs,
                 List.of(ColumnDefinition.ofString("Key2")), rollupColumn, source), false, null,
                 List.of(ColumnName.of("Key1")));
+        final QueryTable reaggregated2 = reaggregated.aggNoMemo(AggregationProcessor.forRollupReaggregated(aggs,
+                List.of(ColumnDefinition.ofString("Key1"), ColumnDefinition.ofString("Key2")), rollupColumn, source),
+                false, null,
+                List.of());
 
         TableTools.show(normal);
         TableTools.show(base);
         TableTools.show(reaggregated);
+        TableTools.show(reaggregated2);
 
-        doCheck(normal, base, reaggregated);
+        doCheck(normal, base, reaggregated, normalNoKey, reaggregated2);
 
         final SimpleListener normalListener = new SimpleListener(normal);
         normal.addUpdateListener(normalListener);
@@ -61,6 +68,8 @@ public class TestAggGroup extends RefreshingTableTestCase {
         base.addUpdateListener(baseListener);
         final SimpleListener reaggListener = new SimpleListener(reaggregated);
         reaggregated.addUpdateListener(reaggListener);
+        final SimpleListener reaggListener2 = new SimpleListener(reaggregated2);
+        reaggregated2.addUpdateListener(reaggListener2);
 
         final ControlledUpdateGraph cug = ExecutionContext.getContext().getUpdateGraph().cast();
         // modify the value of a Sentinel; check the updates
@@ -78,12 +87,13 @@ public class TestAggGroup extends RefreshingTableTestCase {
         TableTools.show(reaggregated);
 
         // make sure the aggregation is still consistent
-        doCheck(normal, base, reaggregated);
+        doCheck(normal, base, reaggregated, normalNoKey, reaggregated2);
 
         // we should have gotten an update from each of our listeners
         checkModified(normalListener, normal, "Sentinel", "Sentinel2");
         checkModified(baseListener, base, "Sentinel", "Sentinel2");
         checkModified(reaggListener, reaggregated, "Sentinel", "Sentinel2");
+        checkModified(reaggListener2, reaggregated2, "Sentinel", "Sentinel2");
     }
 
     private static void checkModified(SimpleListener listener, QueryTable table, final String modColumn,
@@ -97,7 +107,8 @@ public class TestAggGroup extends RefreshingTableTestCase {
         assertFalse(listener.update.modifiedColumnSet().containsAny(table.newModifiedColumnSet(noModColumn)));
     }
 
-    private static void doCheck(Table normal, QueryTable base, QueryTable reaggregated) {
+    private static void doCheck(Table normal, QueryTable base, QueryTable reaggregated, QueryTable normalNoKey,
+            QueryTable reaggregated2) {
         assertEquals(0, normal.update("CheckSum=sum(Sentinel)", "CheckSum2=sum(Sentinel2)")
                 .where("Sum != CheckSum || Sum2 != CheckSum2").size());
         assertEquals(0, base.update("CheckSum=sum(Sentinel)", "CheckSum2=sum(Sentinel2)")
@@ -106,5 +117,9 @@ public class TestAggGroup extends RefreshingTableTestCase {
                 .where("Sum != CheckSum || Sum2 != CheckSum2").size());
         assertTableEquals(normal.view("Key1", "Sentinel", "Sum", "Sentinel2", "Sum2"),
                 reaggregated.view("Key1", "Sentinel", "Sum", "Sentinel2", "Sum2"));
+
+        assertTableEquals(normalNoKey.view("Sentinel", "Sum", "Sentinel2", "Sum2"),
+                reaggregated2.view("Sentinel", "Sum", "Sentinel2", "Sum2"));
+
     }
 }
