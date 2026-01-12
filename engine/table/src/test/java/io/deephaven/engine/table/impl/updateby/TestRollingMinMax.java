@@ -37,7 +37,6 @@ import java.math.BigInteger;
 import java.time.*;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Objects;
 import java.util.Random;
 
 import static io.deephaven.engine.testutil.GenerateTableUpdates.generateAppends;
@@ -86,24 +85,6 @@ public class TestRollingMinMax extends BaseUpdateByTest {
                 : Arrays.stream(columns).map(c -> c + "=min(" + c + ")").toArray(String[]::new);
     }
 
-    // For verification, we will upcast some columns and use already-defined Numeric class functions.
-    private String[] getUpcastingFormulas(String[] columns) {
-        return Arrays.stream(columns)
-                .map(c -> c.equals("charCol")
-                        ? String.format("%s=(short)%s", c, c)
-                        : null)
-                .filter(Objects::nonNull)
-                .toArray(String[]::new);
-    }
-
-    private String[] getDowncastingFormulas(String[] columns) {
-        return Arrays.stream(columns)
-                .map(c -> c.equals("charCol")
-                        ? String.format("%s=(char)%s", c, c)
-                        : null)
-                .filter(Objects::nonNull)
-                .toArray(String[]::new);
-    }
 
     // region Object Helper functions
 
@@ -571,17 +552,13 @@ public class TestRollingMinMax extends BaseUpdateByTest {
                 new TestDataGenerator[] {new CharGenerator('A', 'z', 0.1)}).t;
 
         final Table actualMin = t.updateBy(UpdateByOperation.RollingMin(prevTicks, postTicks, primitiveColumns));
-        final Table expectedMin = t.update(getUpcastingFormulas(primitiveColumns))
-                .updateBy(UpdateByOperation.RollingGroup(prevTicks, postTicks, primitiveColumns))
-                .update(getFormulas(false, primitiveColumns))
-                .update(getDowncastingFormulas(primitiveColumns));
+        final Table expectedMin = t.updateBy(UpdateByOperation.RollingGroup(prevTicks, postTicks, primitiveColumns))
+                .update(getFormulas(false, primitiveColumns));
         TstUtils.assertTableEquals(expectedMin, actualMin, TableDiff.DiffItems.DoublesExact);
 
         final Table actualMax = t.updateBy(UpdateByOperation.RollingMax(prevTicks, postTicks, primitiveColumns));
-        final Table expectedMax = t.update(getUpcastingFormulas(primitiveColumns))
-                .updateBy(UpdateByOperation.RollingGroup(prevTicks, postTicks, primitiveColumns))
-                .update(getFormulas(true, primitiveColumns))
-                .update(getDowncastingFormulas(primitiveColumns));
+        final Table expectedMax = t.updateBy(UpdateByOperation.RollingGroup(prevTicks, postTicks, primitiveColumns))
+                .update(getFormulas(true, primitiveColumns));
         TstUtils.assertTableEquals(expectedMax, actualMax, TableDiff.DiffItems.DoublesExact);
 
         doTestStaticZeroKeyBigNumbers(t, prevTicks, postTicks);
@@ -595,17 +572,13 @@ public class TestRollingMinMax extends BaseUpdateByTest {
                         new CharGenerator('A', 'z', 0.1)}).t;
 
         final Table actualMin = t.updateBy(UpdateByOperation.RollingMin("ts", prevTime, postTime, primitiveColumns));
-        final Table expectedMin = t.update(getUpcastingFormulas(primitiveColumns))
-                .updateBy(UpdateByOperation.RollingGroup("ts", prevTime, postTime, primitiveColumns))
-                .update(getFormulas(false, primitiveColumns))
-                .update(getDowncastingFormulas(primitiveColumns));
+        final Table expectedMin = t.updateBy(UpdateByOperation.RollingGroup("ts", prevTime, postTime, primitiveColumns))
+                .update(getFormulas(false, primitiveColumns));
         TstUtils.assertTableEquals(expectedMin, actualMin, TableDiff.DiffItems.DoublesExact);
 
         final Table actualMax = t.updateBy(UpdateByOperation.RollingMax("ts", prevTime, postTime, primitiveColumns));
-        final Table expectedMax = t.update(getUpcastingFormulas(primitiveColumns))
-                .updateBy(UpdateByOperation.RollingGroup("ts", prevTime, postTime, primitiveColumns))
-                .update(getFormulas(true, primitiveColumns))
-                .update(getDowncastingFormulas(primitiveColumns));
+        final Table expectedMax = t.updateBy(UpdateByOperation.RollingGroup("ts", prevTime, postTime, primitiveColumns))
+                .update(getFormulas(true, primitiveColumns));
         TstUtils.assertTableEquals(expectedMax, actualMax, TableDiff.DiffItems.DoublesExact);
 
         doTestStaticZeroKeyTimedBigNumbers(t, prevTime, postTime);
@@ -709,17 +682,14 @@ public class TestRollingMinMax extends BaseUpdateByTest {
                 new TestDataGenerator[] {new CharGenerator('A', 'z', 0.1)}).t;
 
         final Table actualMin = t.updateBy(UpdateByOperation.RollingMin(prevTicks, postTicks, primitiveColumns));
-        final Table expectedMin = t.update(getUpcastingFormulas(primitiveColumns))
-                .updateBy(UpdateByOperation.RollingGroup(prevTicks, postTicks, primitiveColumns))
-                .update(getFormulas(false, primitiveColumns))
-                .update(getDowncastingFormulas(primitiveColumns));
+        final Table expectedMin = t.updateBy(UpdateByOperation.RollingGroup(prevTicks, postTicks, primitiveColumns))
+                .update(getFormulas(false, primitiveColumns));
         TstUtils.assertTableEquals(expectedMin, actualMin, TableDiff.DiffItems.DoublesExact);
 
         final Table actualMax = t.updateBy(UpdateByOperation.RollingMax(prevTicks, postTicks, primitiveColumns), "Sym");
-        final Table expectedMax = t.update(getUpcastingFormulas(primitiveColumns))
-                .updateBy(UpdateByOperation.RollingGroup(prevTicks, postTicks, primitiveColumns), "Sym")
-                .update(getFormulas(true, primitiveColumns))
-                .update(getDowncastingFormulas(primitiveColumns));
+        final Table expectedMax =
+                t.updateBy(UpdateByOperation.RollingGroup(prevTicks, postTicks, primitiveColumns), "Sym")
+                        .update(getFormulas(true, primitiveColumns));
         TstUtils.assertTableEquals(expectedMax, actualMax, TableDiff.DiffItems.DoublesExact);
 
         doTestStaticBucketedBigNumbers(t, prevTicks, postTicks);
@@ -734,18 +704,16 @@ public class TestRollingMinMax extends BaseUpdateByTest {
 
         final Table actualMin =
                 t.updateBy(UpdateByOperation.RollingMin("ts", prevTime, postTime, primitiveColumns), "Sym");
-        final Table expectedMin = t.update(getUpcastingFormulas(primitiveColumns))
-                .updateBy(UpdateByOperation.RollingGroup("ts", prevTime, postTime, primitiveColumns), "Sym")
-                .update(getFormulas(false, primitiveColumns))
-                .update(getDowncastingFormulas(primitiveColumns));
+        final Table expectedMin =
+                t.updateBy(UpdateByOperation.RollingGroup("ts", prevTime, postTime, primitiveColumns), "Sym")
+                        .update(getFormulas(false, primitiveColumns));
         TstUtils.assertTableEquals(expectedMin, actualMin, TableDiff.DiffItems.DoublesExact);
 
         final Table actualMax =
                 t.updateBy(UpdateByOperation.RollingMax("ts", prevTime, postTime, primitiveColumns), "Sym");
-        final Table expectedMax = t.update(getUpcastingFormulas(primitiveColumns))
-                .updateBy(UpdateByOperation.RollingGroup("ts", prevTime, postTime, primitiveColumns), "Sym")
-                .update(getFormulas(true, primitiveColumns))
-                .update(getDowncastingFormulas(primitiveColumns));
+        final Table expectedMax =
+                t.updateBy(UpdateByOperation.RollingGroup("ts", prevTime, postTime, primitiveColumns), "Sym")
+                        .update(getFormulas(true, primitiveColumns));
         TstUtils.assertTableEquals(expectedMax, actualMax, TableDiff.DiffItems.DoublesExact);
 
         doTestStaticBucketedTimedBigNumbers(t, prevTime, postTime);

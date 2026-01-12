@@ -4,6 +4,7 @@
 package io.deephaven.engine.table.impl.select;
 
 import groovy.lang.Closure;
+import groovy.lang.GroovyObject;
 import io.deephaven.engine.context.QueryCompilerImpl;
 import io.deephaven.util.type.TypeUtils;
 
@@ -14,11 +15,13 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 /**
  * Utilities for expanding QueryScope parameter classes.
  */
 public class QueryScopeParamTypeUtil {
+    private static final Pattern ANONYMOUS_GROOVY_CLASS_PATTERN = Pattern.compile(".*\\.\\d+$");
 
     public static Class<?> classFromType(final Type declaredType) {
         if (declaredType instanceof Class<?>) {
@@ -108,7 +111,7 @@ public class QueryScopeParamTypeUtil {
     private static Type getDeclaredType(final Class<?> origType) {
         Class<?> type = origType;
         while (type != Object.class) {
-            if (Modifier.isPublic(type.getModifiers()) && !type.isAnonymousClass()) {
+            if (Modifier.isPublic(type.getModifiers()) && !type.isAnonymousClass() && !isGroovyAnonymousClass(type)) {
                 break;
             }
 
@@ -134,6 +137,20 @@ public class QueryScopeParamTypeUtil {
         }
 
         return type;
+    }
+
+    /**
+     * Recent versions of Grooy and Java (3.0.19 works on JDK8, 3.0.19 didn't on JDK17) scripts with anonymous Groovy
+     * classes do not correctly answer {@link Class#isAnonymousClass()}, so we have this work-around.
+     *
+     * @param type the type to check for being a Groovy anonymous class
+     * @return true if this is an anonymous class declared from a Groovy script.
+     */
+    private static boolean isGroovyAnonymousClass(final Class<?> type) {
+        final String canonicalName = type.getCanonicalName();
+        final boolean isAnonymous =
+                canonicalName != null && ANONYMOUS_GROOVY_CLASS_PATTERN.matcher(canonicalName).matches();
+        return isAnonymous && Arrays.stream(type.getInterfaces()).anyMatch(c -> GroovyObject.class == c);
     }
 
     public static <T> String getDeclaredTypeName(T value) {

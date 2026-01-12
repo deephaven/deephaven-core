@@ -6,10 +6,18 @@ Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
 """
 
 import builtins
+import collections.abc
 import deephaven_core.proto.ticket_pb2
 import google.protobuf.descriptor
+import google.protobuf.internal.containers
 import google.protobuf.message
+import sys
 import typing
+
+if sys.version_info >= (3, 10):
+    import typing as typing_extensions
+else:
+    import typing_extensions
 
 DESCRIPTOR: google.protobuf.descriptor.FileDescriptor
 
@@ -29,10 +37,75 @@ class AddTableRequest(google.protobuf.message.Message):
         input_table: deephaven_core.proto.ticket_pb2.Ticket | None = ...,
         table_to_add: deephaven_core.proto.ticket_pb2.Ticket | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing.Literal["input_table", b"input_table", "table_to_add", b"table_to_add"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing.Literal["input_table", b"input_table", "table_to_add", b"table_to_add"]) -> None: ...
+    _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["input_table", b"input_table", "table_to_add", b"table_to_add"]
+    def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
+    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["input_table", b"input_table", "table_to_add", b"table_to_add"]
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
 
-global___AddTableRequest = AddTableRequest
+Global___AddTableRequest: typing_extensions.TypeAlias = AddTableRequest
+
+@typing.final
+class InputTableValidationError(google.protobuf.message.Message):
+    """An error indicating invalid values were passed to AddTableRequest, optionally annotated with the input row and column
+    that caused the error.
+    """
+
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    MESSAGE_FIELD_NUMBER: builtins.int
+    ROW_FIELD_NUMBER: builtins.int
+    COLUMN_FIELD_NUMBER: builtins.int
+    message: builtins.str
+    """the error message"""
+    row: builtins.int
+    """the row position in the table_to_add that caused this error, not present when unknown"""
+    column: builtins.str
+    """the column name in the table_to_add that caused this error, not present when unknown"""
+    def __init__(
+        self,
+        *,
+        message: builtins.str = ...,
+        row: builtins.int | None = ...,
+        column: builtins.str | None = ...,
+    ) -> None: ...
+    _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["_column", b"_column", "_row", b"_row", "column", b"column", "row", b"row"]
+    def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
+    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["_column", b"_column", "_row", b"_row", "column", b"column", "message", b"message", "row", b"row"]
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    _WhichOneofReturnType__column: typing_extensions.TypeAlias = typing.Literal["column"]
+    _WhichOneofArgType__column: typing_extensions.TypeAlias = typing.Literal["_column", b"_column"]
+    _WhichOneofReturnType__row: typing_extensions.TypeAlias = typing.Literal["row"]
+    _WhichOneofArgType__row: typing_extensions.TypeAlias = typing.Literal["_row", b"_row"]
+    @typing.overload
+    def WhichOneof(self, oneof_group: _WhichOneofArgType__column) -> _WhichOneofReturnType__column | None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: _WhichOneofArgType__row) -> _WhichOneofReturnType__row | None: ...
+
+Global___InputTableValidationError: typing_extensions.TypeAlias = InputTableValidationError
+
+@typing.final
+class InputTableValidationErrorList(google.protobuf.message.Message):
+    """A list of validation errors encountered when processing an AddTableRequest or DeleteTableRequest.  This message is
+    not directly used in the service definition, but may be packed in the headers of error responses using a googlerpc
+    status.
+    """
+
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    VALIDATION_ERRORS_FIELD_NUMBER: builtins.int
+    @property
+    def validation_errors(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[Global___InputTableValidationError]:
+        """The errors encountered when processing the request."""
+
+    def __init__(
+        self,
+        *,
+        validation_errors: collections.abc.Iterable[Global___InputTableValidationError] | None = ...,
+    ) -> None: ...
+    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["validation_errors", b"validation_errors"]
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+
+Global___InputTableValidationErrorList: typing_extensions.TypeAlias = InputTableValidationErrorList
 
 @typing.final
 class AddTableResponse(google.protobuf.message.Message):
@@ -42,7 +115,7 @@ class AddTableResponse(google.protobuf.message.Message):
         self,
     ) -> None: ...
 
-global___AddTableResponse = AddTableResponse
+Global___AddTableResponse: typing_extensions.TypeAlias = AddTableResponse
 
 @typing.final
 class DeleteTableRequest(google.protobuf.message.Message):
@@ -60,10 +133,12 @@ class DeleteTableRequest(google.protobuf.message.Message):
         input_table: deephaven_core.proto.ticket_pb2.Ticket | None = ...,
         table_to_remove: deephaven_core.proto.ticket_pb2.Ticket | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing.Literal["input_table", b"input_table", "table_to_remove", b"table_to_remove"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing.Literal["input_table", b"input_table", "table_to_remove", b"table_to_remove"]) -> None: ...
+    _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["input_table", b"input_table", "table_to_remove", b"table_to_remove"]
+    def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
+    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["input_table", b"input_table", "table_to_remove", b"table_to_remove"]
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
 
-global___DeleteTableRequest = DeleteTableRequest
+Global___DeleteTableRequest: typing_extensions.TypeAlias = DeleteTableRequest
 
 @typing.final
 class DeleteTableResponse(google.protobuf.message.Message):
@@ -73,4 +148,4 @@ class DeleteTableResponse(google.protobuf.message.Message):
         self,
     ) -> None: ...
 
-global___DeleteTableResponse = DeleteTableResponse
+Global___DeleteTableResponse: typing_extensions.TypeAlias = DeleteTableResponse

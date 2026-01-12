@@ -1066,19 +1066,21 @@ public class WindowCheck {
         }
 
         @Override
-        public WritableRowSet match(boolean invertMatch, boolean usePrev, boolean caseInsensitive,
-                @NotNull RowSet mapper, Object... keys) {
+        public WritableRowSet match(
+                final boolean usePrev,
+                @NotNull final MatchOptions matchOptions,
+                @NotNull RowSet selection, Object... keys) {
             final List<Object> keysList = Arrays.asList(keys);
-            final boolean includeNull = keysList.contains(null) ^ invertMatch;
-            final boolean includeTrue = keysList.contains(true) ^ invertMatch;
-            final boolean includeFalse = keysList.contains(false) ^ invertMatch;
+            final boolean includeNull = keysList.contains(null) ^ matchOptions.inverted();
+            final boolean includeTrue = keysList.contains(true) ^ matchOptions.inverted();
+            final boolean includeFalse = keysList.contains(false) ^ matchOptions.inverted();
 
-            final int getSize = (int) Math.min(4096, mapper.size());
+            final int getSize = (int) Math.min(4096, selection.size());
 
             final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
 
             try (final GetContext getContext = timeStampSource.makeGetContext(getSize);
-                    final RowSequence.Iterator rsit = mapper.getRowSequenceIterator()) {
+                    final RowSequence.Iterator rsit = selection.getRowSequenceIterator()) {
                 while (rsit.hasMore()) {
                     final RowSequence chunkRs = rsit.getNextRowSequenceWithLength(getSize);
                     final LongChunk<OrderedRowKeys> rowKeys = chunkRs.asRowKeyChunk();

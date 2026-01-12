@@ -49,3 +49,8 @@ To reopen a widget, select **Markdown Widget** from the **Controls** menu, then 
 To delete a widget, hover your cursor over the name of a widget to reveal the trash can icon.
 
 ![The widget's trash can icon, highlighted](../../assets/how-to/mw4.png)
+
+## Related documentation
+
+- [Navigate the GUI](./navigating-the-ui.md)
+- [Create and organize notebooks](./file-explorer.md)

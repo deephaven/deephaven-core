@@ -29,11 +29,13 @@ public class DoubleRangeFilter extends AbstractRangeFilter {
     }
 
     public static DoubleRangeFilter gt(String columnName, double x) {
-        return new DoubleRangeFilter(columnName, x, Double.NaN, false, true);
+        // NaN used as upper bound, but explicitly excluded from the results (matching IEEE 754 comparison rules)
+        return new DoubleRangeFilter(columnName, x, Double.NaN, false, false);
     }
 
     public static DoubleRangeFilter geq(String columnName, double x) {
-        return new DoubleRangeFilter(columnName, x, Double.NaN, true, true);
+        // NaN used as upper bound, but explicitly excluded from the results (matching IEEE 754 comparison rules)
+        return new DoubleRangeFilter(columnName, x, Double.NaN, true, false);
     }
 
     private final double upper;

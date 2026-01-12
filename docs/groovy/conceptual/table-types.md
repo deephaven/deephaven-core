@@ -257,14 +257,13 @@ tAppendOnly = BlinkTableTools.blinkToAppendOnly(t)
 ![An append-only table that preserves the data from table 't' as it ticks](../assets/conceptual/table-types/table-types-5.gif)
 
 > [!TIP]
-> To disable blink table semantics, use [`removeBlink`]<!--TODO: add link when merged-->, which returns a child table that is identical to the parent blink table in every way, but is no longer marked for special blink table semantics. The resulting table will still exhibit the “blink” table update pattern, removing all previous rows on each cycle, and thus only containing “new” rows.
+> To disable blink table semantics, use [`removeBlink`](../reference/table-operations/create/remove-blink.md), which returns a child table that is identical to the parent blink table in every way, but is no longer marked for special blink table semantics. The resulting table will still exhibit the “blink” table update pattern, removing all previous rows on each cycle, and thus only containing “new” rows.
 
 ### Partition a blink table
 
 To partition a blink table, drop the blink attribute, create the partition, and then use a transform to add back the blink table attribute:
 
 ```groovy
-import io.deephaven.engine.table.impl.BlinkTableTools
 import io.deephaven.engine.table.impl.TimeTable.Builder
 import io.deephaven.engine.table.Table
 
@@ -275,7 +274,7 @@ table = builder.build().update("X = ii", "Group = ii % 2 == 0 ? `A` : `B`")
 partitionedBlinkTable =
     table.removeBlink()
     .partitionBy("Group")
-    .transform(t -> t.assertBlink())
+    .transform(t -> t.withAttributes(Map.of(Table.BLINK_TABLE_ATTRIBUTE, true)))
 ```
 
 ## Specialization 4: Ring

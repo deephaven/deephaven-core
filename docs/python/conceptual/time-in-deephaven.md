@@ -71,7 +71,7 @@ t = empty_table(5).update("CurrentTime = now()")
 ```
 
 > [!NOTE]
-> [`now`](https://deephaven.io/core/javadoc/io/deephaven/time/DateTimeUtils.html#now()) uses the [current clock](https://deephaven.io/core/javadoc/io/deephaven/time/DateTimeUtils.html#currentClock()) of the Deephaven engine. This clock is typically the system clock, but it may be set to a simulated clock when replaying tables.
+> The [`now`](https://deephaven.io/core/javadoc/io/deephaven/time/DateTimeUtils.html#now()) function uses the [current clock](https://deephaven.io/core/javadoc/io/deephaven/time/DateTimeUtils.html#currentClock()) of the Deephaven engine. This clock is typically the system clock, but it may be set to a simulated clock when replaying tables.
 
 These [functions](../reference/query-language/query-library/auto-imported-functions.md) can also be applied to columns, constants, and variables. This slightly more complex example uses the built-in Deephaven function [`epochDaysToLocalDate`](https://deephaven.io/core/javadoc/io/deephaven/time/DateTimeUtils.html#epochDaysToLocalDate(long)) to create a [`LocalDate`](https://docs.oracle.com/en/java/javase/17/docs//api/java.base/java/time/LocalDate.html) from a long that represents the number of days since the [Unix epoch](https://en.wikipedia.org/wiki/Unix_time):
 
@@ -661,6 +661,7 @@ from deephaven.time import simple_date_format
 
 # pass the format of the input date-time
 input_format = simple_date_format("YYYYMMDD")
+input_format2 = simple_date_format("YYYYMMDD")
 ```
 
 Now, `input_format` is an object that can be used in a query to format the `BEGIN` and `END` columns. This is done with the [`parse`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/text/SimpleDateFormat.html#parse(java.lang.String,java.text.ParsePosition)) method, which accepts the input date-time columns as strings. So, the `int` values must be converted to strings before calling [`parse`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/text/SimpleDateFormat.html#parse(java.lang.String,java.text.ParsePosition)). Finally, call [`toInstant`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Date.html#toInstant()) on the result to get the formatted date-time as a Java [`Instant`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Instant.html):
@@ -668,9 +669,9 @@ Now, `input_format` is an object that can be used in a query to format the `BEGI
 ```python test-set=17
 # use String.valueOf() to get int as string, then pass to input_format.parse(), finally call toInstant()
 format_gsod = gsod.update(
-    [
+    formulas=[
         "BEGIN = input_format.parse(String.valueOf(BEGIN)).toInstant()",
-        "END = input_format.parse(String.valueOf(END)).toInstant()",
+        "END = input_format2.parse(String.valueOf(END)).toInstant()",
     ]
 )
 ```
@@ -679,7 +680,7 @@ The resulting columns can then be converted to any of the desired Java date-time
 
 ```python test-set=17
 format_gsod_local_date = format_gsod.update(
-    ["BEGIN = toLocalDate(BEGIN, 'UTC')", "END = toLocalDate(END, 'UTC')"]
+    formulas=["BEGIN = toLocalDate(BEGIN, 'UTC')", "END = toLocalDate(END, 'UTC')"]
 )
 ```
 
@@ -866,3 +867,10 @@ Again, the resulting tables are identical, but the execution times are quite dif
 | [`pandas.TimedeltaIndex`](https://pandas.pydata.org/docs/reference/api/pandas.TimedeltaIndex.html)     | NA                                                                                                            | NA                                                                                           | NA                                                                                       |
 | [`pandas.Period`](https://pandas.pydata.org/docs/reference/api/pandas.Period.html)                     | NA                                                                                                            | NA                                                                                           | NA                                                                                       |
 | [`pandas.PeriodIndex`](https://pandas.pydata.org/docs/reference/api/pandas.PeriodIndex.html)           | NA                                                                                                            | NA                                                                                           | NA                                                                                       |
+
+## Related documentation
+
+- [`deephaven.time` Pydoc](/core/pydoc/code/deephaven.time.html)
+- [Date-time literals in query strings](../how-to-guides/date-time-literals.md)
+- [Business calendars](../how-to-guides/business-calendar.md)
+- [The Python-Java boundary](python-java-boundary.md)

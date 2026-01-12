@@ -363,10 +363,9 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
 
         @Override
         public WritableRowSet match(
-                final boolean invertMatch,
                 final boolean usePrev,
-                final boolean caseInsensitive,
-                @NotNull final RowSet mapper,
+                @NotNull final MatchOptions matchOptions,
+                @NotNull final RowSet selection,
                 final Object... keys) {
             boolean hasFalse = false;
             boolean hasTrue = false;
@@ -382,21 +381,21 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
             }
 
             if (hasTrue && hasFalse) {
-                return invertMatch ? RowSetFactory.empty() : mapper.copy();
+                return matchOptions.inverted() ? RowSetFactory.empty() : selection.copy();
             } else if (!hasTrue && !hasFalse) {
-                return invertMatch ? mapper.copy() : RowSetFactory.empty();
+                return matchOptions.inverted() ? selection.copy() : RowSetFactory.empty();
             }
 
             try (final SafeCloseableList closer = new SafeCloseableList()) {
                 final WritableRowSet intersection;
                 if (usePrev) {
-                    intersection = mapper.intersect(closer.add(source.copyPrev()));
+                    intersection = selection.intersect(closer.add(source.copyPrev()));
                 } else {
-                    intersection = mapper.intersect(source);
+                    intersection = selection.intersect(source);
                 }
-                if (invertMatch ^ hasFalse) {
+                if (matchOptions.inverted() ^ hasFalse) {
                     closer.add(intersection);
-                    return mapper.minus(intersection);
+                    return selection.minus(intersection);
                 }
                 return intersection;
             }

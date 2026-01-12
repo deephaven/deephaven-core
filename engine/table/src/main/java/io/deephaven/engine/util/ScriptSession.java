@@ -64,6 +64,39 @@ public interface ScriptSession extends LivenessNode {
                 throw error;
             }
         }
+
+        @Override
+        public String toString() {
+            final StringBuilder result = new StringBuilder().append("Changes{");
+            boolean first = true;
+            if (error != null) {
+                result.append("error=").append(error);
+                first = false;
+            }
+            if (!created.isEmpty()) {
+                if (!first) {
+                    result.append(", ");
+                }
+                result.append("created=").append(created.keySet());
+                first = false;
+            }
+            if (!updated.isEmpty()) {
+                if (!first) {
+                    result.append(", ");
+                }
+                result.append("updated=").append(updated.keySet());
+                first = false;
+            }
+            if (!removed.isEmpty()) {
+                if (!first) {
+                    result.append(", ");
+                }
+                result.append("removed=").append(removed.keySet());
+                first = false;
+            }
+            result.append("}");
+            return result.toString();
+        }
     }
 
     interface Listener {

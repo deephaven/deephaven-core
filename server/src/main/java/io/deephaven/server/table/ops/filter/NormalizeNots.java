@@ -7,6 +7,7 @@ import io.deephaven.proto.backplane.grpc.CaseSensitivity;
 import io.deephaven.proto.backplane.grpc.CompareCondition;
 import io.deephaven.proto.backplane.grpc.Condition;
 import io.deephaven.proto.backplane.grpc.MatchType;
+import io.deephaven.proto.backplane.grpc.NanComparison;
 import io.deephaven.proto.backplane.grpc.Reference;
 import io.deephaven.proto.backplane.grpc.Value;
 import org.jetbrains.annotations.NotNull;
@@ -101,8 +102,9 @@ public class NormalizeNots extends AbstractNormalizeFilters {
 
         @Override
         public Condition onIn(Value target, List<Value> candidatesList, CaseSensitivity caseSensitivity,
-                MatchType matchType) {
-            return NormalizeFilterUtil.doIn(target, candidatesList, caseSensitivity, invertMatchType(matchType));
+                MatchType matchType, NanComparison nanComparison) {
+            return NormalizeFilterUtil.doIn(target, candidatesList, caseSensitivity, invertMatchType(matchType),
+                    nanComparison);
         }
 
         @NotNull

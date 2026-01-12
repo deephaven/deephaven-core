@@ -8,6 +8,7 @@
 package io.deephaven.engine.table.impl.chunkfilter;
 
 import gnu.trove.set.hash.TLongHashSet;
+import io.deephaven.engine.table.MatchOptions;
 
 /**
  * Creates chunk filters for long values.
@@ -20,8 +21,8 @@ import gnu.trove.set.hash.TLongHashSet;
 public class LongChunkMatchFilterFactory {
     private LongChunkMatchFilterFactory() {} // static use only
 
-    public static LongChunkFilter makeFilter(boolean invertMatch, long... values) {
-        if (invertMatch) {
+    public static LongChunkFilter makeFilter(final MatchOptions matchOptions, final long... values) {
+        if (matchOptions.inverted()) {
             if (values.length == 1) {
                 return new InverseSingleValueLongChunkFilter(values[0]);
             }

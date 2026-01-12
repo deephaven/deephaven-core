@@ -10,8 +10,7 @@ package io.deephaven.chunk;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.chunk.util.pools.MultiChunkPool;
 
-import io.deephaven.util.type.TypeUtils;
-import org.jetbrains.annotations.NotNull;
+import io.deephaven.function.ArraySort;
 
 import java.util.Arrays;
 // region FillWithNullValueImports
@@ -178,7 +177,7 @@ public class WritableObjectChunk<T, ATTR extends Any> extends ObjectChunk<T, ATT
     // region sort
     @Override
     public final void sort(int start, int length) {
-        WritableChunkUtils.sort(data, offset + start, offset + start + length);
+        ArraySort.sort(data, offset + start, offset + start + length);
     }
     // endregion sort
 
