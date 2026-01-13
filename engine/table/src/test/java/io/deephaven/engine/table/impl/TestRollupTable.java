@@ -369,7 +369,7 @@ public class TestRollupTable extends RefreshingTableTestCase {
         TableTools.showWithRowSet(snapshot);
 
         final Table expected = initialExpectedGrouped(rollup1);
-        assertTableEquals(expected, snapshot.dropColumns("__EXPOSED_GROUP_ROW_SETS__"));
+        assertTableEquals(expected, snapshot);
         freeSnapshotTableChunks(snapshot);
     }
 
@@ -416,7 +416,7 @@ public class TestRollupTable extends RefreshingTableTestCase {
         final Table expectedBase = initialExpectedGrouped(rollup1);
         final Table expectedSentinel = withGroup ? expectedBase : expectedBase.dropColumns("Sentinel");
         final Table expected = expectedSentinel.update("FSum=ii == 0 ? 7 : 1 + Sum");
-        assertTableEquals(expected, snapshot.dropColumns("__EXPOSED_GROUP_ROW_SETS__"));
+        assertTableEquals(expected, snapshot);
         freeSnapshotTableChunks(snapshot);
     }
 
@@ -517,8 +517,7 @@ public class TestRollupTable extends RefreshingTableTestCase {
 
         TableTools.show(expected);
 
-        assertTableEquals(hasGroup ? expected : expected.dropColumns("gqty"),
-                hasGroup ? snapshot.dropColumns("__EXPOSED_GROUP_ROW_SETS__") : snapshot);
+        assertTableEquals(hasGroup ? expected : expected.dropColumns("gqty"), snapshot);
 
         freeSnapshotTableChunks(snapshot);
     }
@@ -576,7 +575,7 @@ public class TestRollupTable extends RefreshingTableTestCase {
         TableTools.showWithRowSet(snapshot);
 
         final Table expected = initialExpectedGrouped(rollup1);
-        assertTableEquals(expected, snapshot.dropColumns("__EXPOSED_GROUP_ROW_SETS__"));
+        assertTableEquals(expected, snapshot);
         freeSnapshotTableChunks(snapshot);
 
         final ControlledUpdateGraph cug = source.getUpdateGraph().cast();
@@ -593,7 +592,7 @@ public class TestRollupTable extends RefreshingTableTestCase {
         TableTools.showWithRowSet(snapshot2);
         Table expected2 = secondExpectedGrouped(rollup1);
         TableTools.showWithRowSet(expected2);
-        assertTableEquals(expected2, snapshot2.dropColumns("__EXPOSED_GROUP_ROW_SETS__"));
+        assertTableEquals(expected2, snapshot2);
         freeSnapshotTableChunks(snapshot2);
     }
 
@@ -621,7 +620,7 @@ public class TestRollupTable extends RefreshingTableTestCase {
         TableTools.showWithRowSet(snapshot);
 
         final Table expected = initialExpectedGrouped(rollup1).update("S2=Sentinel");
-        assertTableEquals(expected, snapshot.dropColumns("__EXPOSED_GROUP_ROW_SETS__"));
+        assertTableEquals(expected, snapshot);
         freeSnapshotTableChunks(snapshot);
 
         final ControlledUpdateGraph cug = source.getUpdateGraph().cast();
@@ -638,7 +637,7 @@ public class TestRollupTable extends RefreshingTableTestCase {
         TableTools.showWithRowSet(snapshot2);
         Table expected2 = secondExpectedGrouped(rollup1).update("S2=Sentinel");
         TableTools.showWithRowSet(expected2);
-        assertTableEquals(expected2, snapshot2.dropColumns("__EXPOSED_GROUP_ROW_SETS__"));
+        assertTableEquals(expected2, snapshot2);
         freeSnapshotTableChunks(snapshot2);
     }
 }

@@ -147,8 +147,8 @@ Formula reaggregation can be used to limit the size of input vectors while evalu
 
 ```groovy
 source = newTable(
-stringCol("Key", "Alpha", "Alpha", "Alpha", "Bravo", "Bravo", "Charlie", "Charlie"),
-intCol("Value", 10, 10, 10, 20, 20, 30, 30))
+        stringCol("Key", "Alpha", "Alpha", "Alpha", "Bravo", "Bravo", "Charlie", "Charlie"),
+        intCol("Value", 10, 10, 10, 20, 20, 30, 30))
 reaggregatedSum = source.updateView("Sum=(long)Value").rollup(List.of(AggFormula("Sum = sum(Sum)").asReaggregating()), "Key")
 ```
 
@@ -158,8 +158,8 @@ In the previous example, the `Sum` column evaluated the [`sum(IntVector)`](https
 
 ```groovy syntax
 source = newTable(
-stringCol("Key", "Alpha", "Alpha", "Alpha", "Bravo", "Bravo", "Charlie", "Charlie"),
-intCol("Value", 10, 10, 10, 20, 20, 30, 30))
+        stringCol("Key", "Alpha", "Alpha", "Alpha", "Bravo", "Bravo", "Charlie", "Charlie"),
+        intCol("Value", 10, 10, 10, 20, 20, 30, 30))
 reaggregatedSum = source.rollup(List.of(AggFormula("Value = sum(Value)").asReaggregating()), "Key")
 ```
 
@@ -174,15 +174,29 @@ java.lang.ClassCastException: class io.deephaven.engine.table.vectors.LongVector
 Formula aggregations may include the constant `__FORMULA_DEPTH__` column, which is the depth of the formula aggregation in the rollup tree. The root node of the rollup has a depth of 0, the next level is 1, and so on. This can be used to implement distinct aggregations at each level of the rollup. For example:
 
 ```groovy
-source = newTable(stringCol("Key", "Alpha", "Alpha", "Alpha", "Bravo", "Bravo", "Charlie", "Charlie"),  intCol("Value", 10, 10, 10, 20, 20, 30, 30))
-firstThenSum = source.rollup(List.of(AggFormula("Result = __FORMULA_DEPTH__ == 0 ? sum(Value) : first(Value)")), "Key")
+source = newTable(
+        stringCol("Key", "Alpha", "Alpha", "Alpha", "Bravo", "Bravo", "Charlie", "Charlie"),
+        intCol("Value", 10, 10, 10, 20, 20, 30, 30))
+firstThenSum = source.rollup(List.of(AggFormula("Value = __FORMULA_DEPTH__ == 0 ? sum(Value) : first(Value)")), "Key")
 ```
 
-In this case, for each value of `Key`, the aggregation returns the first value. For the root level, the aggregation returns the sum of all values.
+In this case, for each value of `Key`, the aggregation returns the first value. For the root level, the aggregation returns the sum of all values. When combined with a reaggregating formula, even more interesting semantics are possible. For example, rather than summing all of the values; we can sum the values from the prior level:
 
-### Examples
+```groovy
+source = newTable(
+        stringCol("Key", "Alpha", "Alpha", "Alpha", "Bravo", "Bravo", "Charlie", "Charlie"),
+        intCol("Value", 10, 10, 10, 20, 20, 30, 30))
+firstThenSum = source.updateView("Value=(long)Value").rollup(List.of(AggFormula("Value = __FORMULA_DEPTH__ == 0 ? sum(Value) : first(Value)").asReaggregating()), "Key")
+```
 
-#### Capped Sum
+Another simple example of reaggration is a capped sum. In this example, the sums below the root level are capped at 40:
+
+```groovy
+source = newTable(
+        stringCol("Key", "Alpha", "Alpha", "Alpha", "Bravo", "Bravo", "Charlie", "Charlie"),
+        intCol("Value", 10, 20, 15, 20, 15, 25, 35))
+cappedSum = source.updateView("Value=(long)Value").rollup(List.of(AggFormula("Value = __FORMULA_DEPTH__ == 0 ? sum(Value) : min(sum(Value), 40)").asReaggregating()), "Key")
+```
 
 ## Related documentation
 

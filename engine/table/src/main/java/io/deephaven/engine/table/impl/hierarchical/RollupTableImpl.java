@@ -703,7 +703,8 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
 
     private static Stream<ColumnDefinition<?>> filterRollupInternalColumns(
             @NotNull final Stream<ColumnDefinition<?>> columnDefinitions) {
-        return columnDefinitions.filter(cd -> !cd.getName().endsWith(ROLLUP_COLUMN_SUFFIX) && !cd.getName().equals(EXPOSED_GROUP_ROW_SETS.name()));
+        return columnDefinitions.filter(cd -> !cd.getName().endsWith(ROLLUP_COLUMN_SUFFIX)
+                && !cd.getName().equals(EXPOSED_GROUP_ROW_SETS.name()));
     }
 
     @Override
