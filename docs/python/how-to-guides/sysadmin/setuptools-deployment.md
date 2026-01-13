@@ -89,6 +89,8 @@ Here's the minimal workflow to create and install a Deephaven CLI package:
    my-dh-cli data.csv
    ```
 
+This Quick Start uses the **entry point script** method, where the command is installed and available system-wide. For other execution options (like running without installation), see [Execution patterns](#execution-patterns).
+
 For detailed explanations and advanced features, continue reading the sections below.
 
 ## Choose your packaging approach
@@ -194,7 +196,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "my_dh_cli"
 version = "0.1.0"
-description = "A command-line tool for data processing with Deephaven"
+description = "A package providing command-line tools for querying and batch processing data with Deephaven"
 readme = "README.md"
 requires-python = ">=3.8"
 authors = [
@@ -211,16 +213,16 @@ classifiers = [
   "Programming Language :: Python :: 3.12",
 ]
 
-# Specify required packages that will be automatically installed
+# Required packages - automatically installed when your package is installed
 dependencies = [
-  "deephaven-server>=0.35.0",
-  "click>=8.0.0",
+  "deephaven-server>=0.35.0",  # Deephaven query engine
+  "click>=8.0.0",  # CLI framework for argument parsing
 ]
 
 # Define command-line scripts that will be installed
 [project.scripts]
-my-dh-query = "my_dh_package.cli:app"
-my-dh-process = "my_dh_package.processor:process"
+my-dh-query = "my_dh_package.cli:app"  # Processes a single CSV file
+my-dh-process = "my_dh_package.processor:process"  # Batch processes multiple CSV files
 
 # Tell setuptools where to find packages (using src-layout)
 [tool.setuptools.packages.find]
@@ -399,11 +401,9 @@ if __name__ == "__main__":
     process()
 ```
 
-### Package files
+### `__init__.py`
 
-#### `__init__.py`
-
-Required to make the directory a Python package. Can be minimal or export a public API:
+This file makes the directory a Python package. It's required for Python to recognize the directory as importable. While it can be empty, it's good practice to include package-level documentation and metadata.
 
 **Basic example:**
 
@@ -599,6 +599,195 @@ Share the `.whl` file for direct installation:
 pip install my_dh_package-0.1.0-py3-none-any.whl
 ```
 
+## Run the command-line tools
+
+Once installed, the commands defined in `[project.scripts]` become available as **entry point scripts**. You can run them from any directory using the command names:
+
+```shell
+# Process a single file
+my-dh-query input_data.csv
+
+# Batch process multiple files
+my-dh-process data/ --output results/
+```
+
+**Note:** These are installed command names (defined in `pyproject.toml`), not the package name. `my-dh-query` and `my-dh-process` are the commands, while `my_dh_package` is the package name (the directory under `src/`). Each command executes its respective function from the specified module.
+
+To run without installation using module execution, see [Execution patterns](#execution-patterns).
+
+## Packaging scenarios
+
+Different projects have different needs. Here are three common packaging scenarios:
+
+### Scenario 1: Library-only package
+
+Package reusable code without CLI tools. Other projects import your modules.
+
+**Execution pattern:** None (library code is imported, not executed)
+
+**`__main__.py` needed:** No
+
+**Package structure:**
+
+```
+my_dh_project/
+├── src/
+│   └── my_dh_package/
+│       ├── __init__.py
+│       ├── queries.py
+│       └── utils.py
+├── pyproject.toml
+└── README.md
+```
+
+**`pyproject.toml` (no scripts section):**
+
+```toml
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "my_dh_library"
+version = "0.1.0"
+description = "Reusable Deephaven query functions"
+readme = "README.md"
+requires-python = ">=3.8"
+dependencies = [
+  "deephaven-server>=0.35.0",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+```
+
+**Usage:**
+
+```python syntax
+# Other projects import your library
+from my_dh_library.queries import filter_by_threshold
+```
+
+### Scenario 2: CLI-only package
+
+Package executable command-line tools without exposing library code.
+
+**Execution pattern:** Entry point scripts (via `[project.scripts]`)
+
+**`__main__.py` needed:** Optional - only if you want to support `python -m` execution during development
+
+**Package structure:**
+
+```
+my_dh_project/
+├── src/
+│   └── my_dh_package/
+│       ├── __init__.py
+│       ├── __main__.py
+│       └── cli.py
+├── pyproject.toml
+└── README.md
+```
+
+**`pyproject.toml` (with scripts section):**
+
+```toml
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "my_dh_cli"
+version = "0.1.0"
+description = "Command-line tool for data processing"
+readme = "README.md"
+requires-python = ">=3.8"
+dependencies = [
+  "deephaven-server>=0.35.0",
+]
+
+[project.scripts]
+my-dh-query = "my_dh_package.cli:app"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+```
+
+**Usage:**
+
+```shell
+# After installation, run via entry point script
+my-dh-query input_data.csv
+```
+
+### Scenario 3: Combined library and CLI
+
+Package both reusable library code and command-line tools.
+
+**Execution pattern:** Entry point scripts (via `[project.scripts]`) for installed commands
+
+**`__main__.py` needed:** Optional - include if you want to support `python -m` execution
+
+**Package structure:**
+
+```
+my_dh_project/
+├── src/
+│   └── my_dh_package/
+│       ├── __init__.py
+│       ├── __main__.py
+│       ├── cli.py
+│       ├── queries.py
+│       └── utils.py
+├── pyproject.toml
+└── README.md
+```
+
+**`pyproject.toml` (library + scripts):**
+
+```toml
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "my_dh_toolkit"
+version = "0.1.0"
+description = "Deephaven library and CLI tools"
+readme = "README.md"
+requires-python = ">=3.8"
+dependencies = [
+  "deephaven-server>=0.35.0",
+]
+
+[project.scripts]
+my-dh-query = "my_dh_package.cli:app"
+my-dh-process = "my_dh_package.processor:process"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+```
+
+**Usage:**
+
+```python syntax
+# Import as a library
+from my_dh_toolkit.queries import filter_by_threshold
+```
+
+```shell
+# Run via entry point scripts (after installation)
+my-dh-query input_data.csv
+my-dh-process data/ --output results/
+```
+
+If you include `__main__.py`, you can also run without installation:
+
+```shell
+# Module execution (requires __main__.py)
+python -m my_dh_package input_data.csv
+```
+
 ## Troubleshooting
 
 ### Command not found after installation
@@ -638,4 +827,4 @@ If Python can't find your modules:
 - [Uploading to PyPI](https://packaging.python.org/en/latest/guides/distributing-packages-using-setuptools/#uploading-your-project-to-pypi)
 - [Entry points specification](https://packaging.python.org/en/latest/specifications/entry-points/)
 - [Click documentation](https://click.palletsprojects.com/)
-- [pipx documentation](https://pipx.pypa.io/)
+- [twine](https://pypi.org/project/twine/)
