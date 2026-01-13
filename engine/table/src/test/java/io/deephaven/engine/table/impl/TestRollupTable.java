@@ -375,8 +375,8 @@ public class TestRollupTable extends RefreshingTableTestCase {
 
     @Test
     public void testRollupFormulaStatic() {
-        testRollupFormulaStatic(true);
         testRollupFormulaStatic(false);
+        testRollupFormulaStatic(true);
     }
 
     private void testRollupFormulaStatic(boolean withGroup) {
@@ -518,6 +518,35 @@ public class TestRollupTable extends RefreshingTableTestCase {
         TableTools.show(expected);
 
         assertTableEquals(hasGroup ? expected : expected.dropColumns("gqty"), snapshot);
+
+        freeSnapshotTableChunks(snapshot);
+    }
+
+    @Test
+    public void testRollupFormulaGroupRenames() {
+        final int[] allValues = {10, 10, 10, 20, 20, 30, 30};
+        final Table source = newTable(
+                stringCol("Key", "Alpha", "Alpha", "Alpha", "Bravo", "Bravo", "Charlie", "Charlie"),
+                intCol("Value", allValues));
+        final RollupTable simpleSum =
+                source.rollup(List.of(AggGroup("Values=Value"), AggFormula("Sum = sum(Value)")), "Key");
+
+        final String[] arrayWithNull = new String[1];
+        final Table keyTable = newTable(
+                intCol(simpleSum.getRowDepthColumn().name(), 0),
+                stringCol("Key", arrayWithNull),
+                byteCol("Action", HierarchicalTable.KEY_TABLE_ACTION_EXPAND_ALL));
+
+        final HierarchicalTable.SnapshotState ss1 = simpleSum.makeSnapshotState();
+        final Table snapshot =
+                snapshotToTable(simpleSum, ss1, keyTable, ColumnName.of("Action"), null, RowSetFactory.flat(30));
+        TableTools.showWithRowSet(snapshot);
+
+        assertTableEquals(TableTools.newTable(intCol(simpleSum.getRowDepthColumn().name(), 1, 2, 2, 2),
+                booleanCol(simpleSum.getRowExpandedColumn().name(), true, null, null, null),
+                stringCol("Key", null, "Alpha", "Bravo", "Charlie"),
+                col("Values", iv(allValues), iv(10, 10, 10), iv(20, 20), iv(30, 30)), longCol("Sum", 130, 30, 40, 60)),
+                snapshot);
 
         freeSnapshotTableChunks(snapshot);
     }

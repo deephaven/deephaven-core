@@ -952,11 +952,9 @@ public class AggregationProcessor implements AggregationContextFactory {
             final int existingGroupByOperatorIndex = existingGroupByOperatorIndex();
             if (existingGroupByOperatorIndex >= 0) {
                 // if we have an existing group by operator, then use it (or update it to reflect our input columns)
-                final MatchPair[] matchPairs =
-                        Arrays.stream(inputNonKeyColumns).map(cn -> new MatchPair(cn, cn)).toArray(MatchPair[]::new);
-                groupByChunkedOperator = ensureGroupByOperator(table, existingGroupByOperatorIndex, null, matchPairs);
+                groupByChunkedOperator = ensureGroupByOperator(table, existingGroupByOperatorIndex, null, makeSymmetricMatchPairs(inputNonKeyColumns));
             } else {
-                groupByChunkedOperator = makeGroupByOperatorForFormula(inputNonKeyColumns, table, null);
+                groupByChunkedOperator = makeGroupByOperatorForFormula(makeSymmetricMatchPairs(inputNonKeyColumns), table, null);
             }
 
             final FormulaMultiColumnChunkedOperator op = new FormulaMultiColumnChunkedOperator(table,
@@ -1146,24 +1144,32 @@ public class AggregationProcessor implements AggregationContextFactory {
     }
 
 
-    private @NotNull GroupByChunkedOperator makeGroupByOperatorForFormula(String[] inputNonKeyColumns,
+    private @NotNull GroupByChunkedOperator makeGroupByOperatorForFormula(final MatchPair[] pairs,
             final QueryTable table, final String exposedRowsets) {
-        final MatchPair[] pairs;
-        final boolean register;
-        if (exposedRowsets == null) {
-            register = false;
-            pairs = Arrays.stream(inputNonKeyColumns).map(col -> MatchPair.of(Pair.parse(col)))
-                    .toArray(MatchPair[]::new);
-        } else {
-            register = true;
-            pairs = Arrays
-                    .stream(inputNonKeyColumns).map(col -> MatchPair.of(
-                            Pair
-                                    .of(ColumnName.of(col),
-                                            ColumnName.of(col + ROLLUP_GRP_COLUMN_ID + ROLLUP_COLUMN_SUFFIX))))
-                    .toArray(MatchPair[]::new);
-        }
+        final boolean register = exposedRowsets != null;
         return new GroupByChunkedOperator(table, register, exposedRowsets, null, pairs);
+    }
+
+    /**
+     * Convert the array of column names to MatchPairs of the form {@code Col_GRP__ROLLUP__}
+     * 
+     * @param cols the columns to convert
+     * @return the mangled name matchpairs
+     */
+    private static MatchPair @NotNull [] makeMangledMatchPairs(String[] cols) {
+        return Arrays
+                .stream(cols).map(col -> new MatchPair(col + ROLLUP_GRP_COLUMN_ID + ROLLUP_COLUMN_SUFFIX, col))
+                .toArray(MatchPair[]::new);
+    }
+
+    /**
+     * Convert the array of strings to MatchPairs of the form Col=Col
+     * 
+     * @param columns the columns to convert to MatchPairs
+     * @return an array of MatchPairs
+     */
+    private static MatchPair @NotNull [] makeSymmetricMatchPairs(String[] columns) {
+        return Arrays.stream(columns).map(col -> new MatchPair(col, col)).toArray(MatchPair[]::new);
     }
 
     // -----------------------------------------------------------------------------------------------------------------
@@ -1318,6 +1324,8 @@ public class AggregationProcessor implements AggregationContextFactory {
 
         @Override
         public void visit(Formula formula) {
+            unsupportedForBlinkTables("Formula for rollup");
+
             final SelectColumn selectColumn = SelectColumn.of(formula.selectable());
 
             // Get or create a column definition map composed of vectors of the original column types (or scalars when
@@ -1343,27 +1351,30 @@ public class AggregationProcessor implements AggregationContextFactory {
             final boolean delegate;
 
             final int existingGroupByOperatorIndex = existingGroupByOperatorIndex();
+            final MatchPair[] mangledMatchPairs = makeMangledMatchPairs(inputNonKeyColumns);
+
             if (formula.reaggregateAggregatedValues()) {
                 if (existingGroupByOperatorIndex >= 0) {
-                    groupByChunkedOperator = ensureGroupByOperator(table, existingGroupByOperatorIndex, null,
-                            MatchPair.fromPairs(Pair.from(inputNonKeyColumns)));
+                    groupByChunkedOperator = ensureGroupByOperator(table, existingGroupByOperatorIndex, null, mangledMatchPairs);
+                    // TODO: do this better with an existing reaggregated op
                     delegate = false;
                 } else {
                     // When we are reaggregating, we do not expose the rowsets, because the next level creates a
                     // completely fresh operator
-                    groupByChunkedOperator = makeGroupByOperatorForFormula(inputNonKeyColumns, table, null);
+                    groupByChunkedOperator = makeGroupByOperatorForFormula(mangledMatchPairs, table, null);
                     // the operator is not added, so there is delegation
                     delegate = true;
                 }
             } else {
                 if (existingGroupByOperatorIndex >= 0) {
-                    groupByChunkedOperator = ensureGroupByOperator(table, existingGroupByOperatorIndex,
-                            EXPOSED_GROUP_ROW_SETS.name(), MatchPair.fromPairs(Pair.from(inputNonKeyColumns)));
+                    groupByChunkedOperator = ensureGroupByOperator(table, existingGroupByOperatorIndex, EXPOSED_GROUP_ROW_SETS.name(), mangledMatchPairs);
+                    // TODO: do this better
+                    List<Pair> asPairs = Arrays.stream(mangledMatchPairs).map(mp -> Pair.of(mp.input(), mp.output())).collect(Collectors.toList());
+                    addNoInputOperator(groupByChunkedOperator.resultExtractor(asPairs));
                     delegate = false;
                 } else {
                     // When we do not reaggregate, the next level needs access to our exposed group row sets
-                    groupByChunkedOperator =
-                            makeGroupByOperatorForFormula(inputNonKeyColumns, table, EXPOSED_GROUP_ROW_SETS.name());
+                    groupByChunkedOperator = makeGroupByOperatorForFormula(mangledMatchPairs, table, EXPOSED_GROUP_ROW_SETS.name());
                     addNoInputOperator(groupByChunkedOperator);
                     // we added the operator, so we cannot delegate
                     delegate = false;

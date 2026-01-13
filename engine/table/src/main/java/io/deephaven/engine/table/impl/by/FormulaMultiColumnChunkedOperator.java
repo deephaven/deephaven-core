@@ -3,6 +3,7 @@
 //
 package io.deephaven.engine.table.impl.by;
 
+import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.ChunkPositions;
@@ -239,8 +240,15 @@ class FormulaMultiColumnChunkedOperator implements IterativeChunkedAggregationOp
         } else {
             final Map<String, ColumnSource<?>> columnSourceMap = resultTable.getColumnSourceMap();
             sourceColumns = new HashMap<>(groupBy.getInputResultColumns().size() + 1);
-            groupBy.getInputResultColumns()
-                    .forEach((k, v) -> sourceColumns.put(renames == null ? k : renames.get(k), v));
+            for (Map.Entry<String, ? extends ColumnSource<?>> entry : groupBy.getInputResultColumns().entrySet()) {
+                final String columnName = entry.getKey();
+                final String renamed;
+                if (renames != null && (renamed = renames.get(columnName)) != null) {
+                    sourceColumns.put(renamed, entry.getValue());
+                } else {
+                    sourceColumns.put(columnName, entry.getValue());
+                }
+            }
             Arrays.stream(inputKeyColumns).forEach(col -> sourceColumns.put(col, columnSourceMap.get(col)));
             sourceColumns.put(AggregationProcessor.ROLLUP_FORMULA_DEPTH.name(), formulaDepthSource);
         }

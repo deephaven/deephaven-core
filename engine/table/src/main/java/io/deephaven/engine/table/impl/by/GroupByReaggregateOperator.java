@@ -327,7 +327,7 @@ public final class GroupByReaggregateOperator implements GroupByOperator {
 
     @Override
     public Map<String, ? extends ColumnSource<?>> getInputResultColumns() {
-        return resultAggregatedColumns;
+        return inputAggregatedColumns;
     }
 
     @Override
