@@ -68,7 +68,7 @@ public class RemoteFileSourceClassLoader extends ClassLoader {
     }
 
     /**
-     * Finds the resource with the specified name by checking registered providers.
+     * Gets the resource with the specified name by checking registered providers.
      *
      * <p>This method iterates through all registered providers to see if any can source the requested resource.
      * If a provider can handle the resource, a custom URL with protocol "remotefile://" is returned.
@@ -78,7 +78,7 @@ public class RemoteFileSourceClassLoader extends ClassLoader {
      * @return a URL for reading the resource, or null if the resource could not be found
      */
     @Override
-    protected URL findResource(String name) {
+    public URL getResource(String name) {
         RemoteFileSourceProvider provider = null;
         for (RemoteFileSourceProvider candidate : providers) {
             if (candidate.isActive() && candidate.canSourceResource(name)) {
@@ -95,7 +95,7 @@ public class RemoteFileSourceClassLoader extends ClassLoader {
             }
         }
 
-        return super.findResource(name);
+        return super.getResource(name);
     }
 
     /**
