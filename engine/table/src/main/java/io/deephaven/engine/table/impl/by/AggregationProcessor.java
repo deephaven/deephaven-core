@@ -200,6 +200,7 @@ public class AggregationProcessor implements AggregationContextFactory {
      *        mutated by {@link AggregationProcessor}.
      * @param nullColumns Map of group-by column names and data types to aggregate with a null-column aggregation
      * @param rollupColumn the name of the rollup column in the result, used to traverse to the next lower level nodes
+     * @param source the original source table of the rollup (not the table we are reaggregating)
      * @return The {@link AggregationContextFactory}
      */
     public static AggregationContextFactory forRollupReaggregated(
@@ -1348,7 +1349,7 @@ public class AggregationProcessor implements AggregationContextFactory {
                             MatchPair.fromPairs(Pair.from(inputNonKeyColumns)));
                     delegate = false;
                 } else {
-                    // We we are reaggregating, we do not expose the rowsets, because the next level creates a
+                    // When we are reaggregating, we do not expose the rowsets, because the next level creates a
                     // completely fresh operator
                     groupByChunkedOperator = makeGroupByOperatorForFormula(inputNonKeyColumns, table, null);
                     // the operator is not added, so there is delegation

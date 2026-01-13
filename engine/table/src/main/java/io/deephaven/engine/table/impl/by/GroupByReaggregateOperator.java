@@ -209,7 +209,8 @@ public final class GroupByReaggregateOperator implements GroupByOperator {
             @NotNull final LongChunk<? extends RowKeys> postShiftRowKeys,
             final long destination) {
         // we don't need to deal with these yet
-        throw new IllegalStateException();
+        throw new IllegalStateException(
+                "Reaggregations should not require shifts, as aggregations have fixed output slots.");
     }
 
     private void addChunk(@NotNull final ObjectChunk<RowSet, ? extends Values> rowSets, final int start,

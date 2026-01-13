@@ -671,7 +671,7 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
      *        already filled
      * @param aggregations The aggregations
      * @param groupByColumns The group-by columns
-     * @param source
+     * @param source the source table for the rollup
      */
     private static void rollupFromBase(
             @NotNull final QueryTable[] levelTables,
