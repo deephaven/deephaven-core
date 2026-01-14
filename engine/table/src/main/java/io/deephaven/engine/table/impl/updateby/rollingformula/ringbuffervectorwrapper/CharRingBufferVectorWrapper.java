@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.updateby.rollingformula.ringbuffervectorwrapper;
 
@@ -48,5 +48,10 @@ public class CharRingBufferVectorWrapper implements CharVector, RingBufferVector
     @Override
     public CharVector getDirect() {
         return new CharVectorDirect(ringBuffer.getAll());
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        return CharVector.equals(this, obj);
     }
 }

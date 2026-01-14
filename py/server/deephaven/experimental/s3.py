@@ -1,7 +1,9 @@
 #
-# Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 #
-from typing import Optional, Union
+from __future__ import annotations
+
+from typing import Optional
 from warnings import warn
 
 import jpy
@@ -30,6 +32,7 @@ class Credentials(JObjectWrapper):
     """
     Credentials object for authenticating with an S3 server.
     """
+
     j_object_type = _JCredentials
 
     def __init__(self, _j_object: jpy.JType):
@@ -46,7 +49,7 @@ class Credentials(JObjectWrapper):
         return self._j_object
 
     @classmethod
-    def resolving(cls) -> 'Credentials':
+    def resolving(cls) -> Credentials:
         """
         Default credentials provider used by Deephaven which resolves credentials in the following order:
 
@@ -65,7 +68,7 @@ class Credentials(JObjectWrapper):
         return cls(_JCredentials.resolving())
 
     @classmethod
-    def default(cls) -> 'Credentials':
+    def default(cls) -> Credentials:
         """
         Default credentials provider used by the AWS SDK that looks for credentials in this order:
         Java System Properties (`aws.accessKeyId` and `aws.secretAccessKey`), Environment Variables (`AWS_ACCESS_KEY_ID`
@@ -78,7 +81,7 @@ class Credentials(JObjectWrapper):
         return cls(_JCredentials.defaultCredentials())
 
     @classmethod
-    def basic(cls, access_key_id: str, secret_access_key: str) -> 'Credentials':
+    def basic(cls, access_key_id: str, secret_access_key: str) -> Credentials:
         """
         Basic credentials provider with the specified access key id and secret access key.
 
@@ -92,17 +95,37 @@ class Credentials(JObjectWrapper):
         return cls(_JCredentials.basic(access_key_id, secret_access_key))
 
     @classmethod
-    def anonymous(cls) -> 'Credentials':
+    def session(
+        cls, access_key_id: str, secret_access_key: str, session_token: str
+    ) -> Credentials:
         """
-       Anonymous credentials provider, which can only be used to read data with S3 policy set to allow anonymous access.
+        Session credentials provider with the specified access key id, secret access key, and session token.
+        This is useful when using temporary credentials from AWS STS or similar services.
+
+        Args:
+            access_key_id (str): the access key id, used to identify the user.
+            secret_access_key (str): the secret access key, used to authenticate the user.
+            session_token (str): the session token, used for temporary credentials.
 
         Returns:
             Credentials: the credentials object.
         """
+        return cls(
+            _JCredentials.session(access_key_id, secret_access_key, session_token)
+        )
+
+    @classmethod
+    def anonymous(cls) -> Credentials:
+        """
+        Anonymous credentials provider, which can only be used to read data with S3 policy set to allow anonymous access.
+
+         Returns:
+             Credentials: the credentials object.
+        """
         return cls(_JCredentials.anonymous())
 
     @classmethod
-    def profile(cls) -> 'Credentials':
+    def profile(cls) -> Credentials:
         """
         Use the profile name, config file path, or credentials file path from S3 Instructions for loading the
         credentials and fail if none found.
@@ -120,58 +143,59 @@ class S3Instructions(JObjectWrapper):
 
     j_object_type = _JS3Instructions or type(None)
 
-    def __init__(self,
-                 region_name: Optional[str] = None,
-                 credentials: Optional[Credentials] = None,
-                 max_concurrent_requests: Optional[int] = None,
-                 read_ahead_count: Optional[int] = None,
-                 fragment_size: Optional[int] = None,
-                 connection_timeout: Optional[DurationLike] = None,
-                 read_timeout: Optional[DurationLike] = None,
-                 write_timeout: Optional[DurationLike] = None,
-                 access_key_id: Optional[str] = None,
-                 secret_access_key: Optional[str] = None,
-                 anonymous_access: bool = False,
-                 endpoint_override: Optional[str] = None,
-                 write_part_size: Optional[int] = None,
-                 num_concurrent_write_parts: Optional[int] = None,
-                 profile_name: Optional[str] = None,
-                 config_file_path: Optional[str] = None,
-                 credentials_file_path: Optional[str] = None):
-
+    def __init__(
+        self,
+        region_name: Optional[str] = None,
+        credentials: Optional[Credentials] = None,
+        max_concurrent_requests: Optional[int] = None,
+        read_ahead_count: Optional[int] = None,
+        fragment_size: Optional[int] = None,
+        connection_timeout: Optional[DurationLike] = None,
+        read_timeout: Optional[DurationLike] = None,
+        write_timeout: Optional[DurationLike] = None,
+        access_key_id: Optional[str] = None,
+        secret_access_key: Optional[str] = None,
+        anonymous_access: bool = False,
+        endpoint_override: Optional[str] = None,
+        write_part_size: Optional[int] = None,
+        num_concurrent_write_parts: Optional[int] = None,
+        profile_name: Optional[str] = None,
+        config_file_path: Optional[str] = None,
+        credentials_file_path: Optional[str] = None,
+    ):
         """
         Initializes the instructions.
 
         Args:
-            region_name (str): the region name for reading parquet files. If not provided, the default region will be
+            region_name (Optional[str]): the region name for reading parquet files. If not provided, the default region will be
                 picked by the AWS SDK from 'aws.region' system property, "AWS_REGION" environment variable, the
                 {user.home}/.aws/credentials or {user.home}/.aws/config files, or from EC2 metadata service, if running
                 in EC2. If no region name is derived from the above chain or the derived region name is incorrect for
                 the bucket accessed, the correct region name will be derived internally, at the cost of one additional
                 request.
-            credentials (Credentials): the credentials object for authenticating to the S3 server, defaults to
+            credentials (Optional[Credentials]): the credentials object for authenticating to the S3 server, defaults to
                 Credentials.resolving().
-            max_concurrent_requests (int): the maximum number of concurrent requests for reading files, default is 256.
-            read_ahead_count (int): the number of fragments to send asynchronous read requests for while reading the
+            max_concurrent_requests (Optional[int]): the maximum number of concurrent requests for reading files, default is 256.
+            read_ahead_count (Optional[int]): the number of fragments to send asynchronous read requests for while reading the
                 current fragment. Defaults to 32, which means fetch the next 32 fragments in advance when reading the
                 current fragment.
-            fragment_size (int): the maximum size of each fragment to read in bytes, defaults to 65536. If
+            fragment_size (Optional[int]): the maximum size of each fragment to read in bytes, defaults to 65536. If
                 there are fewer bytes remaining in the file, the fetched fragment can be smaller.
-            connection_timeout (DurationLike): the amount of time to wait when initially establishing a connection
+            connection_timeout (Optional[DurationLike]): the amount of time to wait when initially establishing a connection
                 before giving up and timing out. Can be expressed as an integer in nanoseconds, a time interval string,
                 e.g. "PT00:00:00.001" or "PT1s", or other time duration types. Default to 2 seconds.
-            read_timeout (DurationLike): the amount of time to wait when reading a fragment before giving up and timing
+            read_timeout (Optional[DurationLike]): the amount of time to wait when reading a fragment before giving up and timing
                 out. Can be expressed as an integer in nanoseconds, a time interval string, e.g. "PT00:00:00.001" or
                 "PT1s", or other time duration types. Default to 2 seconds.
-            write_timeout (DurationLike): the amount of time to wait when writing a fragment before giving up and timing
+            write_timeout (Optional[DurationLike]): the amount of time to wait when writing a fragment before giving up and timing
                 out. Can be expressed as an integer in nanoseconds, a time interval string, e.g. "PT00:00:00.001" or
                 "PT1s", or other time duration types. Default to 2 seconds.
-            access_key_id (str):  (Deprecated) the access key for reading files. Both access key and secret access key
+            access_key_id (Optional[str]):  (Deprecated) the access key for reading files. Both access key and secret access key
                 must be provided to use static credentials. If you specify both access key and secret key, then you
                 cannot provide other credentials like setting anonymous_access or credentials argument.
                 This option is deprecated and should be replaced by setting credentials as
                 Credentials.basic(access_key_id, secret_access_key).
-            secret_access_key (str): (Deprecated) the secret access key for reading files. Both access key and secret
+            secret_access_key (Optional[str]): (Deprecated) the secret access key for reading files. Both access key and secret
                 key must be provided to use static credentials.  If you specify both access key and secret key, then you
                 cannot provide other credentials like setting anonymous_access or credentials argument.
                 This option is deprecated and should be replaced by setting credentials as
@@ -180,21 +204,21 @@ class S3Instructions(JObjectWrapper):
                 set to allow anonymous access. By default, is False. If you set this to True, you cannot provide other
                 credentials like setting access_key_id or credentials argument.
                 This option is deprecated and should be replaced by setting credentials as Credentials.anonymous().
-            endpoint_override (str): the endpoint to connect to. Callers connecting to AWS do not typically need to set
+            endpoint_override (Optional[str]): the endpoint to connect to. Callers connecting to AWS do not typically need to set
                 this; it is most useful when connecting to non-AWS, S3-compatible APIs.
-            write_part_size (int): The part or chunk size when writing to S3. The default is 10 MiB. The minimum allowed
+            write_part_size (Optional[int]): The part or chunk size when writing to S3. The default is 10 MiB. The minimum allowed
                 part size is 5242880. Higher part size may increase throughput but also increase memory usage. Writing
                 a single file to S3 can be done in a maximum of 10,000 parts, so the maximum size of a single file that
                 can be written is about 98 GiB for the default part size.
-            num_concurrent_write_parts (int): the maximum number of parts or chunks that can be uploaded concurrently
+            num_concurrent_write_parts (Optional[int]): the maximum number of parts or chunks that can be uploaded concurrently
                 when writing to S3 without blocking, defaults to 64. Setting a higher value may increase throughput, but
                 may also increase memory usage.
-            profile_name (str): the profile name used for configuring the default region, credentials, etc., when
+            profile_name (Optional[str]): the profile name used for configuring the default region, credentials, etc., when
                 reading or writing to S3. If not provided, the AWS SDK picks the profile name from the 'aws.profile'
                 system property, the "AWS_PROFILE" environment variable, or defaults to the string "default".
                 Setting a profile name assumes that the credentials are provided via this profile; if that is not the
                 case, you must explicitly set credentials using the access_key_id and secret_access_key.
-            config_file_path (str): the path to the configuration file to use for configuring the default region,
+            config_file_path (Optional[str]): the path to the configuration file to use for configuring the default region,
                 role_arn, output etc. when reading or writing to S3. If not provided, the AWS SDK picks the configuration
                 file from the 'aws.configFile' system property, the "AWS_CONFIG_FILE" environment variable, or defaults
                 to "{user.home}/.aws/config".
@@ -203,7 +227,7 @@ class S3Instructions(JObjectWrapper):
                 and secret_access_key.
                 For reference on the configuration file format, check
                 https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html
-            credentials_file_path (str): the path to the credentials file to use for configuring the credentials,
+            credentials_file_path (Optional[str]): the path to the credentials file to use for configuring the credentials,
                 region, etc. when reading or writing to S3. If not provided, the AWS SDK picks the credentials file from
                 the 'aws.credentialsFile' system property, the "AWS_CREDENTIALS_FILE" environment variable, or defaults
                 to "{user.home}/.aws/credentials".
@@ -219,11 +243,13 @@ class S3Instructions(JObjectWrapper):
         """
 
         if not _JS3Instructions or not _JCredentials:
-            raise DHError(message="S3Instructions requires the S3 specific deephaven extensions to be included in "
-                                  "the package")
+            raise DHError(
+                message="S3Instructions requires the S3 specific deephaven extensions to be included in "
+                "the package"
+            )
 
         try:
-            builder = self.j_object_type.builder()
+            builder = self.j_object_type.builder()  # type: ignore
 
             if region_name is not None:
                 builder.regionName(region_name)
@@ -246,26 +272,42 @@ class S3Instructions(JObjectWrapper):
             if write_timeout is not None:
                 builder.writeTimeout(to_j_duration(write_timeout))
 
-            if ((access_key_id is not None and secret_access_key is None) or
-                    (access_key_id is None and secret_access_key is not None)):
-                raise DHError("Either both access_key_id and secret_access_key must be provided or neither")
+            if (access_key_id is not None and secret_access_key is None) or (
+                access_key_id is None and secret_access_key is not None
+            ):
+                raise DHError(
+                    "Either both access_key_id and secret_access_key must be provided or neither"
+                )
 
             def throw_multiple_credentials_error(credentials1: str, credentials2: str):
-                raise DHError(f"Only one set of credentials can be set, but found {credentials1} and {credentials2}")
+                raise DHError(
+                    f"Only one set of credentials can be set, but found {credentials1} and {credentials2}"
+                )
 
             # Configure the credentials
             if access_key_id is not None:
-                warn('access_key_id is deprecated, prefer setting credentials as '
-                     'Credentials.basic(access_key_id, secret_access_key)', DeprecationWarning, stacklevel=2)
+                warn(
+                    "access_key_id is deprecated, prefer setting credentials as "
+                    "Credentials.basic(access_key_id, secret_access_key)",
+                    DeprecationWarning,
+                    stacklevel=2,
+                )
                 # TODO(deephaven-core#6165): Delete deprecated parameters
                 if anonymous_access:
-                    throw_multiple_credentials_error("access_key_id", "anonymous_access")
+                    throw_multiple_credentials_error(
+                        "access_key_id", "anonymous_access"
+                    )
                 if credentials is not None:
                     throw_multiple_credentials_error("access_key_id", "credentials")
-                builder.credentials(_JCredentials.basic(access_key_id, secret_access_key))
+                builder.credentials(
+                    _JCredentials.basic(access_key_id, secret_access_key)
+                )
             elif anonymous_access:
-                warn("anonymous_access is deprecated, prefer setting credentials as Credentials.anonymous()",
-                     DeprecationWarning, stacklevel=2)
+                warn(
+                    "anonymous_access is deprecated, prefer setting credentials as Credentials.anonymous()",
+                    DeprecationWarning,
+                    stacklevel=2,
+                )
                 # TODO(deephaven-core#6165): Delete deprecated parameters
                 if credentials is not None:
                     throw_multiple_credentials_error("anonymous_access", "credentials")

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.by.ssmcountdistinct.count;
 
@@ -39,7 +39,7 @@ public class CharChunkedCountDistinctOperator implements IterativeChunkedAggrega
     private final String name;
 
     private final Supplier<SegmentedSortedMultiSet.RemoveContext> removeContextFactory;
-    private final boolean countNull;
+    private final boolean countNullNan;
     private final boolean exposeInternal;
     private WritableRowSet touchedStates;
     private UpdateCommitter<CharChunkedCountDistinctOperator> prevFlusher = null;
@@ -49,9 +49,9 @@ public class CharChunkedCountDistinctOperator implements IterativeChunkedAggrega
 
     public CharChunkedCountDistinctOperator(// region Constructor
                                             // endregion Constructor
-            String name, boolean countNulls, boolean exposeInternal) {
+            String name, boolean countNullNan, boolean exposeInternal) {
         this.name = name;
-        this.countNull = countNulls;
+        this.countNullNan = countNullNan;
         this.exposeInternal = exposeInternal;
 
         // region SsmCreation
@@ -75,7 +75,7 @@ public class CharChunkedCountDistinctOperator implements IterativeChunkedAggrega
         context.lengthCopy.copyFromChunk(length, 0, 0, length.size());
 
         CharCompactKernel.compactAndCount((WritableCharChunk<? extends Values>) context.valueCopy, context.counts,
-                startPositions, context.lengthCopy, countNull);
+                startPositions, context.lengthCopy, countNullNan, countNullNan);
         return context;
     }
 
@@ -125,7 +125,7 @@ public class CharChunkedCountDistinctOperator implements IterativeChunkedAggrega
             final WritableIntChunk<ChunkLengths> countSlice =
                     context.countResettable.resetFromChunk(context.counts, startPosition, runLength);
             ssm.remove(removeContext, valueSlice, countSlice);
-            if (ssm.size() == 0) {
+            if (ssm.isEmpty()) {
                 clearSsm(destination);
             }
 
@@ -156,7 +156,7 @@ public class CharChunkedCountDistinctOperator implements IterativeChunkedAggrega
             final WritableIntChunk<ChunkLengths> countSlice =
                     context.countResettable.resetFromChunk(context.counts, startPosition, runLength);
             ssm.remove(removeContext, valueSlice, countSlice);
-            if (ssm.size() == 0) {
+            if (ssm.isEmpty()) {
                 context.ssmsToMaybeClear.set(ii, true);
             }
         }
@@ -195,7 +195,7 @@ public class CharChunkedCountDistinctOperator implements IterativeChunkedAggrega
         context.valueCopy.setSize(values.size());
         context.valueCopy.copyFromChunk(values, 0, 0, values.size());
         CharCompactKernel.compactAndCount((WritableCharChunk<? extends Values>) context.valueCopy, context.counts,
-                countNull);
+                countNullNan, countNullNan);
         return context;
     }
 
@@ -220,7 +220,7 @@ public class CharChunkedCountDistinctOperator implements IterativeChunkedAggrega
 
         final CharSegmentedSortedMultiset ssm = ssmForSlot(destination);
         ssm.remove(context.removeContext, context.valueCopy, context.counts);
-        if (ssm.size() == 0) {
+        if (ssm.isEmpty()) {
             clearSsm(destination);
         }
 
@@ -240,7 +240,7 @@ public class CharChunkedCountDistinctOperator implements IterativeChunkedAggrega
         CharSegmentedSortedMultiset ssm = ssmForSlot(destination);
         if (context.valueCopy.size() > 0) {
             ssm.insert(context.valueCopy, context.counts);
-        } else if (ssm.size() == 0) {
+        } else if (ssm.isEmpty()) {
             clearSsm(destination);
         }
 
@@ -291,17 +291,15 @@ public class CharChunkedCountDistinctOperator implements IterativeChunkedAggrega
     public void startTrackingPrevValues() {
         resultColumn.startTrackingPrevValues();
 
-        if (exposeInternal) {
-            if (prevFlusher != null) {
-                throw new IllegalStateException("startTrackingPrevValues must only be called once");
-            }
-
-            ssms.startTrackingPrevValues();
-            prevFlusher = new UpdateCommitter<>(this,
-                    ExecutionContext.getContext().getUpdateGraph(),
-                    CharChunkedCountDistinctOperator::flushPrevious);
-            touchedStates = RowSetFactory.empty();
+        if (prevFlusher != null) {
+            throw new IllegalStateException("startTrackingPrevValues must only be called once");
         }
+
+        ssms.startTrackingPrevValues();
+        prevFlusher = new UpdateCommitter<>(this,
+                ExecutionContext.getContext().getUpdateGraph(),
+                CharChunkedCountDistinctOperator::flushPrevious);
+        touchedStates = RowSetFactory.empty();
     }
 
     @Override
@@ -321,7 +319,7 @@ public class CharChunkedCountDistinctOperator implements IterativeChunkedAggrega
     }
 
     private boolean setResult(CharSegmentedSortedMultiset ssm, long destination) {
-        final long expectedResult = ssm.size() == 0 ? QueryConstants.NULL_LONG : ssm.size();
+        final long expectedResult = ssm.isEmpty() ? QueryConstants.NULL_LONG : ssm.size();
         final boolean countChanged = resultColumn.getAndSetUnsafe(destination, expectedResult) != expectedResult;
         return countChanged || (exposeInternal && (ssm.getAddedSize() > 0 || ssm.getRemovedSize() > 0));
     }

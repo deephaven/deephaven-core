@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl;
 
@@ -31,6 +31,10 @@ import io.deephaven.engine.table.hierarchical.RollupTable;
 import io.deephaven.engine.table.hierarchical.TreeTable;
 import io.deephaven.engine.table.impl.MemoizedOperationKey.SelectUpdateViewOrUpdateView.Flavor;
 import io.deephaven.engine.table.impl.by.*;
+import io.deephaven.engine.table.impl.filter.ExtractBarriers;
+import io.deephaven.engine.table.impl.filter.ExtractInnerConjunctiveFilters;
+import io.deephaven.engine.table.impl.filter.ExtractShiftedColumnDefinitions;
+import io.deephaven.engine.table.impl.filter.ExtractRespectedBarriers;
 import io.deephaven.engine.table.impl.hierarchical.RollupTableImpl;
 import io.deephaven.engine.table.impl.hierarchical.TreeTableImpl;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
@@ -76,7 +80,6 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.lang.ref.WeakReference;
-import java.lang.reflect.Array;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -205,6 +208,14 @@ public class QueryTable extends BaseTable<QueryTable> {
             Configuration.getInstance().getBooleanWithDefault("QueryTable.useDataIndexForWhere", true);
 
     /**
+     * Before using a data index for a where filter, ensure that the index table size is at most this fraction of the
+     * size of the rows remaining to be filtered. If the fraction is greater than this threshold, then the engine will
+     * ignore the index table and filter the rows directly.
+     */
+    public static double DATA_INDEX_FOR_WHERE_THRESHOLD =
+            Configuration.getInstance().getDoubleWithDefault("QueryTable.dataIndexForWhereThreshold", 0.25);
+
+    /**
      * If the Configuration property "QueryTable.useDataIndexForAggregation" is set to true (default), then permit
      * aggregation to use a data index, when applicable. If false, data indexes are not used even if present.
      */
@@ -217,7 +228,6 @@ public class QueryTable extends BaseTable<QueryTable> {
      */
     public static boolean USE_DATA_INDEX_FOR_JOINS =
             Configuration.getInstance().getBooleanWithDefault("QueryTable.useDataIndexForJoins", true);
-
 
     /**
      * For a static select(), we would prefer to flatten the table to avoid using memory unnecessarily (because the data
@@ -257,6 +267,13 @@ public class QueryTable extends BaseTable<QueryTable> {
             Configuration.getInstance().getIntegerWithDefault("QueryTable.parallelWhereSegments", -1);
 
     /**
+     * Disable the usage of push-down filtering on a merged table.
+     */
+    public static boolean DISABLE_WHERE_PUSHDOWN_MERGED_TABLES =
+            Configuration.getInstance().getBooleanWithDefault("QueryTable.disableWherePushdownMergedTables",
+                    false);
+
+    /**
      * Disable the usage of parquet row group metadata during push-down filtering.
      */
     public static boolean DISABLE_WHERE_PUSHDOWN_PARQUET_ROW_GROUP_METADATA =
@@ -268,6 +285,13 @@ public class QueryTable extends BaseTable<QueryTable> {
      */
     public static boolean DISABLE_WHERE_PUSHDOWN_DATA_INDEX =
             Configuration.getInstance().getBooleanWithDefault("QueryTable.disableWherePushdownDataIndex", false);
+
+    /**
+     * Disable the usage of parquet row group dictionaries during push-down filtering.
+     */
+    public static boolean DISABLE_WHERE_PUSHDOWN_PARQUET_DICTIONARY =
+            Configuration.getInstance().getBooleanWithDefault("QueryTable.disableWherePushdownParquetDictionary",
+                    false);
 
     /**
      * You can choose to enable or disable the column parallel select and update.
@@ -301,15 +325,34 @@ public class QueryTable extends BaseTable<QueryTable> {
 
     /**
      * If set to true, then the default behavior of condition filters is to be stateless. Stateless filters are allowed
-     * to be processed in parallel by the engine.
+     * to be processed in parallel by the engine. Also, enabling this setting allows the engine to push down filters to
+     * the data source when possible, like in case of parquet files.
      */
     public static boolean STATELESS_FILTERS_BY_DEFAULT =
-            Configuration.getInstance().getBooleanWithDefault("QueryTable.statelessFiltersByDefault", false);
+            Configuration.getInstance().getBooleanWithDefault("QueryTable.statelessFiltersByDefault", true);
 
+    /**
+     * If set to true, then the default behavior of formulas is to be stateless. Stateless formulas are allowed to be
+     * processed in parallel by the engine. If set to false, then formulas may not be parallelized within a column. To
+     * make a specific SelectColumn stateful, use {@link SelectColumn#withSerial()}. To make a specific SelectColumn
+     * stateless, use {@link SelectColumn#ofStateless(Selectable)}.
+     */
+    public static boolean STATELESS_SELECT_BY_DEFAULT =
+            Configuration.getInstance().getBooleanWithDefault("QueryTable.statelessSelectByDefault", true);
 
-    @VisibleForTesting
-    public static boolean USE_CHUNKED_CROSS_JOIN =
-            Configuration.getInstance().getBooleanWithDefault("QueryTable.chunkedJoin", true);
+    /**
+     * If set to true, then stateful SelectColumns form implicit barriers. If set to false, then StatefulSelectColumns
+     * do not form implicit barriers.
+     *
+     * <p>
+     * When stateless selectables are on by default ({@code QueryTable.statelessSelectByDefault=true}), no implicit
+     * barriers are added (i.e., this defaults to false). When stateless columns are off by default
+     * ({@code QueryTable.statelessSelectByDefault=false}), implicit barriers are added (i.e., this defaults to true).
+     * </p>
+     */
+    public static boolean SERIAL_SELECT_IMPLICIT_BARRIERS =
+            Configuration.getInstance().getBooleanWithDefault("QueryTable.serialSelectImplicitBarriers",
+                    !STATELESS_SELECT_BY_DEFAULT);
 
     private static final AtomicReferenceFieldUpdater<QueryTable, ModifiedColumnSet> MODIFIED_COLUMN_SET_UPDATER =
             AtomicReferenceFieldUpdater.newUpdater(QueryTable.class, ModifiedColumnSet.class, "modifiedColumnSet");
@@ -1260,56 +1303,33 @@ public class QueryTable extends BaseTable<QueryTable> {
         }
     }
 
-    private void initializeAndPrioritizeFilters(@NotNull final WhereFilter... filters) {
-        final DataIndexer dataIndexer = USE_DATA_INDEX_FOR_WHERE ? DataIndexer.existingOf(rowSet) : null;
-        final int numFilters = filters.length;
-        final BitSet priorityFilterIndexes = new BitSet(numFilters);
-
+    private void initializeFilters(@NotNull final WhereFilter[] filters) {
         final QueryCompilerRequestProcessor.BatchProcessor compilationProcessor = QueryCompilerRequestProcessor.batch();
 
         // Initialize our filters immediately so we can examine the columns they use. Note that filter
         // initialization is safe to invoke repeatedly.
+        final Set<Object> knownBarriers = new HashSet<>();
         for (final WhereFilter filter : filters) {
             filter.init(getDefinition(), compilationProcessor);
-        }
-        compilationProcessor.compile();
 
-        for (int fi = 0; fi < numFilters; ++fi) {
-            final WhereFilter filter = filters[fi];
+            // Add barriers declared by this filter; filters may appear to depend on themselves when examined in
+            // aggregate.
+            final Collection<Object> newBarriers = ExtractBarriers.of(filter);
+            final Optional<Object> dupBarrier = newBarriers.stream().filter(knownBarriers::contains).findFirst();
+            if (dupBarrier.isPresent()) {
+                throw new IllegalArgumentException("Filter Barriers must be unique! Found duplicate: " +
+                        dupBarrier.get());
+            }
+            knownBarriers.addAll(newBarriers);
 
-            // Simple filters against indexed columns get priority
-            if (dataIndexer != null
-                    && !(filter instanceof ReindexingFilter)
-                    && filter.isSimpleFilter()
-                    && DataIndexer.hasDataIndex(this, filter.getColumns().toArray(String[]::new))) {
-                priorityFilterIndexes.set(fi);
+            for (final Object respectedBarrier : ExtractRespectedBarriers.of(filter)) {
+                if (!knownBarriers.contains(respectedBarrier)) {
+                    throw new IllegalArgumentException("Filter " + filter + " respects barrier " + respectedBarrier +
+                            " that is not declared by any filter so far.");
+                }
             }
         }
-
-        if (priorityFilterIndexes.isEmpty()) {
-            return;
-        }
-
-        // Copy the priority filters to a temporary array
-        final int numPriorityFilters = priorityFilterIndexes.cardinality();
-        final WhereFilter[] priorityFilters = new WhereFilter[numPriorityFilters];
-        // @formatter:off
-        for (int pfi = 0, fi = priorityFilterIndexes.nextSetBit(0);
-             fi >= 0;
-             fi = priorityFilterIndexes.nextSetBit(fi + 1)) {
-            // @formatter:on
-            priorityFilters[pfi++] = filters[fi];
-        }
-        // Move the regular (non-priority) filters to the back of the array
-        // @formatter:off
-        for (int rfi = numFilters - 1, fi = priorityFilterIndexes.previousClearBit(numFilters - 1);
-             fi >= 0;
-             fi = priorityFilterIndexes.previousClearBit(fi - 1)) {
-            // @formatter:on
-            filters[rfi--] = filters[fi];
-        }
-        // Re-add the priority filters at the front of the array
-        System.arraycopy(priorityFilters, 0, filters, 0, numPriorityFilters);
+        compilationProcessor.compile();
     }
 
     private QueryTable whereInternal(final WhereFilter... filters) {
@@ -1317,18 +1337,22 @@ public class QueryTable extends BaseTable<QueryTable> {
             return (QueryTable) prepareReturnThis();
         }
 
-        final String whereDescription = "where(" + Arrays.toString(filters) + ")";
+        final WhereFilter[] extractedFilters = Arrays.stream(filters)
+                .flatMap(filter -> ExtractInnerConjunctiveFilters.of(filter).stream())
+                .toArray(WhereFilter[]::new);
+
+        final String whereDescription = "where(" + Arrays.toString(extractedFilters) + ")";
         return QueryPerformanceRecorder.withNugget(whereDescription, sizeForInstrumentation(),
                 () -> {
-                    initializeAndPrioritizeFilters(filters);
+                    initializeFilters(extractedFilters);
 
-                    for (int fi = 0; fi < filters.length; ++fi) {
-                        if (!(filters[fi] instanceof ReindexingFilter)) {
+                    for (int fi = 0; fi < extractedFilters.length; ++fi) {
+                        if (!(extractedFilters[fi] instanceof ReindexingFilter)) {
                             continue;
                         }
-                        final ReindexingFilter reindexingFilter = (ReindexingFilter) filters[fi];
+                        final ReindexingFilter reindexingFilter = (ReindexingFilter) extractedFilters[fi];
                         final boolean first = fi == 0;
-                        final boolean last = fi == filters.length - 1;
+                        final boolean last = fi == extractedFilters.length - 1;
                         if (last && !reindexingFilter.requiresSorting()) {
                             // If this is the last (or only) filter, we can just run it as normal unless it requires
                             // sorting.
@@ -1336,7 +1360,7 @@ public class QueryTable extends BaseTable<QueryTable> {
                         }
                         QueryTable result = this;
                         if (!first) {
-                            result = result.whereInternal(Arrays.copyOf(filters, fi));
+                            result = result.whereInternal(Arrays.copyOf(extractedFilters, fi));
                         }
                         if (reindexingFilter.requiresSorting()) {
                             result = (QueryTable) result.sort(reindexingFilter.getSortColumns());
@@ -1344,40 +1368,45 @@ public class QueryTable extends BaseTable<QueryTable> {
                         }
                         result = result.whereInternal(reindexingFilter);
                         if (!last) {
-                            result = result.whereInternal(Arrays.copyOfRange(filters, fi + 1, filters.length));
+                            result = result.whereInternal(
+                                    Arrays.copyOfRange(extractedFilters, fi + 1, extractedFilters.length));
                         }
                         return result;
                     }
 
-                    final List<WhereFilter> whereFilters = new LinkedList<>();
-                    final List<io.deephaven.base.Pair<String, Map<Long, List<MatchPair>>>> shiftColPairs =
-                            new LinkedList<>();
-                    for (final WhereFilter filter : filters) {
-                        if (filter instanceof AbstractConditionFilter
-                                && ((AbstractConditionFilter) filter).hasConstantArrayAccess()) {
-                            shiftColPairs.add(((AbstractConditionFilter) filter).getFormulaShiftColPair());
-                        } else {
-                            whereFilters.add(filter);
+                    boolean hasConstArrayOffsetFilter = false;
+                    for (final WhereFilter filter : extractedFilters) {
+                        if (ExtractShiftedColumnDefinitions.hasAny(filter)) {
+                            hasConstArrayOffsetFilter = true;
+                            break;
                         }
                     }
-                    if (!shiftColPairs.isEmpty()) {
-                        return (QueryTable) ShiftedColumnsFactory.where(this, shiftColPairs, whereFilters);
+                    if (hasConstArrayOffsetFilter) {
+                        return (QueryTable) ShiftedColumnsFactory.where(this, Arrays.asList(extractedFilters));
                     }
 
-                    return memoizeResult(MemoizedOperationKey.filter(filters), () -> {
-                        try (final SafeCloseable ignored = Arrays.stream(filters)
+                    return memoizeResult(MemoizedOperationKey.filter(extractedFilters), () -> {
+                        try (final SafeCloseable ignored = Arrays.stream(extractedFilters)
                                 .map(filter -> filter.beginOperation(this)).collect(SafeCloseableList.COLLECTOR)) {
+                            // Identify which data indexes we might use during this operation and create a map
+                            // from filter to data index.
+                            final Map<WhereFilter, DataIndex> filterDataIndexMap = USE_DATA_INDEX_FOR_WHERE
+                                    ? WhereListener.extractFilterDataIndexMap(this, extractedFilters)
+                                    : Collections.emptyMap();
+                            // Need to add the data index tables to the dependency list of the snapshot control.
+                            final Collection<NotificationQueue.Dependency> dataIndexDependencies =
+                                    USE_DATA_INDEX_FOR_WHERE
+                                            ? filterDataIndexMap.values().stream()
+                                                    .distinct()
+                                                    .map(di -> (NotificationQueue.Dependency) di.table())
+                                                    .collect(Collectors.toList())
+                                            : List.of();
                             final OperationSnapshotControl snapshotControl = createSnapshotControlIfRefreshing(
                                     (final BaseTable<?> parent) -> {
-                                        /*
-                                         * Note that the dependencies for instantiation may be different from the
-                                         * dependencies for the WhereListener. Do not refactor to share this array with
-                                         * the WhereListener unless you ensure that this no longer holds, i.e. if
-                                         * MatchFilter starts applying data indexes during update processing.
-                                         */
-                                        final NotificationQueue.Dependency[] filterDependencies =
-                                                WhereListener.extractDependencies(filters)
-                                                        .toArray(NotificationQueue.Dependency[]::new);
+                                        final NotificationQueue.Dependency[] filterDependencies = Stream.concat(
+                                                dataIndexDependencies.stream(),
+                                                WhereListener.extractDependencies(extractedFilters).stream())
+                                                .toArray(NotificationQueue.Dependency[]::new);
                                         getUpdateGraph(filterDependencies);
                                         return filterDependencies.length > 0
                                                 ? new OperationSnapshotControlEx(parent, filterDependencies)
@@ -1393,7 +1422,9 @@ public class QueryTable extends BaseTable<QueryTable> {
                                         final CompletableFuture<TrackingWritableRowSet> currentMappingFuture =
                                                 new CompletableFuture<>();
                                         final InitialFilterExecution initialFilterExecution =
-                                                new InitialFilterExecution(this, filters, rowSetToUse.copy(), usePrev);
+                                                new InitialFilterExecution(this, extractedFilters, filterDataIndexMap,
+                                                        rowSetToUse.copy(),
+                                                        usePrev);
                                         final TrackingWritableRowSet currentMapping;
                                         initialFilterExecution.scheduleCompletion((adds, mods) -> {
                                             currentMappingFuture.complete(adds.writableCast().toTracking());
@@ -1402,12 +1433,12 @@ public class QueryTable extends BaseTable<QueryTable> {
                                         try {
                                             currentMapping = currentMappingFuture.get();
                                         } catch (ExecutionException | InterruptedException e) {
-                                            if (e instanceof InterruptedException) {
-                                                throw new CancellationException("interrupted while filtering");
-                                            }
+                                            final Throwable cause = (e instanceof InterruptedException)
+                                                    ? new CancellationException("interrupted while filtering")
+                                                    : e.getCause();
                                             throw new TableInitializationException(whereDescription,
                                                     "an exception occurred while performing the initial filter",
-                                                    e.getCause());
+                                                    cause);
                                         } finally {
                                             // account for work done in alternative threads
                                             final BasePerformanceEntry basePerformanceEntry =
@@ -1421,11 +1452,11 @@ public class QueryTable extends BaseTable<QueryTable> {
 
                                         final FilteredTable filteredTable = new FilteredTable(currentMapping, this);
 
-                                        for (final WhereFilter filter : filters) {
+                                        for (final WhereFilter filter : extractedFilters) {
                                             filter.setRecomputeListener(filteredTable);
                                         }
                                         final boolean refreshingFilters =
-                                                Arrays.stream(filters).anyMatch(WhereFilter::isRefreshing);
+                                                Arrays.stream(extractedFilters).anyMatch(WhereFilter::isRefreshing);
                                         copyAttributes(filteredTable, CopyAttributeOperation.Filter);
                                         // as long as filters do not change, we can propagate add-only/append-only attrs
                                         if (!refreshingFilters) {
@@ -1442,14 +1473,14 @@ public class QueryTable extends BaseTable<QueryTable> {
                                                     whereDescription, QueryTable.this,
                                                     filteredTable);
                                             final WhereListener whereListener = new WhereListener(
-                                                    log, this, recorder, filteredTable, filters);
+                                                    log, this, recorder, filteredTable, extractedFilters);
                                             filteredTable.setWhereListener(whereListener);
                                             recorder.setMergedListener(whereListener);
                                             snapshotControl.setListenerAndResult(recorder, filteredTable);
                                             filteredTable.addParentReference(whereListener);
                                         } else if (refreshingFilters) {
                                             final WhereListener whereListener = new WhereListener(
-                                                    log, this, null, filteredTable, filters);
+                                                    log, this, null, filteredTable, extractedFilters);
                                             filteredTable.setWhereListener(whereListener);
                                             filteredTable.addParentReference(whereListener);
                                         }
@@ -1488,15 +1519,22 @@ public class QueryTable extends BaseTable<QueryTable> {
                     final Table distinctValues;
                     final boolean setRefreshing = rightTable.isRefreshing();
 
-                    final String[] columnNames = MatchPair.getRightColumns(columnsToMatch);
-                    final DataIndex rightIndex = DataIndexer.getDataIndex(rightTable, columnNames);
+                    final String[] rightColumnNames = MatchPair.getRightColumns(columnsToMatch);
+                    final DataIndex rightIndex = DataIndexer.getDataIndex(rightTable, rightColumnNames);
                     if (rightIndex != null) {
                         // We have a distinct index table, let's use it.
                         distinctValues = rightIndex.table();
                     } else if (setRefreshing) {
-                        distinctValues = rightTable.selectDistinct(MatchPair.getRightColumns(columnsToMatch));
+                        distinctValues = rightTable.selectDistinct(rightColumnNames);
                     } else {
-                        distinctValues = rightTable;
+                        final TableDefinition rightDef = rightTable.getDefinition();
+                        final boolean allPartitioning =
+                                Arrays.stream(rightColumnNames).allMatch(cn -> rightDef.getColumn(cn).isPartitioning());
+                        if (allPartitioning) {
+                            distinctValues = rightTable.selectDistinct(rightColumnNames);
+                        } else {
+                            distinctValues = rightTable.coalesce();
+                        }
                     }
 
                     final DynamicWhereFilter dynamicWhereFilter =
@@ -1628,7 +1666,7 @@ public class QueryTable extends BaseTable<QueryTable> {
                     final JobScheduler jobScheduler;
                     if ((QueryTable.FORCE_PARALLEL_SELECT_AND_UPDATE || QueryTable.ENABLE_PARALLEL_SELECT_AND_UPDATE)
                             && ExecutionContext.getContext().getOperationInitializer().canParallelize()
-                            && analyzer.allowCrossColumnParallelization()) {
+                            && analyzer.anyParallelColumns()) {
                         jobScheduler = new OperationInitializerJobScheduler();
                     } else {
                         jobScheduler = new ImmediateJobScheduler();
@@ -1669,7 +1707,9 @@ public class QueryTable extends BaseTable<QueryTable> {
                         final TrackingRowSet resultRowSet = analyzer.flatResult() && !rowSet.isFlat()
                                 ? RowSetFactory.flat(rowSet.size()).toTracking()
                                 : rowSet;
-                        resultTable = new QueryTable(resultRowSet, analyzerContext.getPublishedColumnSources());
+                        final Map<String, ColumnSource<?>> newMap = analyzerContext.getPublishedColumnSources();
+                        final TableDefinition resultDef = TableDefinition.inferFrom(this, newMap);
+                        resultTable = new QueryTable(resultDef, resultRowSet, newMap);
                         if (liveResultCapture != null) {
                             analyzer.startTrackingPrev();
                             final Map<String, String[]> effects = analyzerContext.calcEffects();
@@ -1834,6 +1874,10 @@ public class QueryTable extends BaseTable<QueryTable> {
         // Assuming that the description is human-readable, we make it once here and use it twice.
         final String updateDescription = humanReadablePrefix + '(' + selectColumnString(viewColumns) + ')';
 
+        if (Arrays.stream(viewColumns).anyMatch(vc -> vc.respectedBarriers() != null)) {
+            throw new IllegalArgumentException("view and updateView cannot respect barriers");
+        }
+
         return memoizeResult(MemoizedOperationKey.selectUpdateViewOrUpdateView(viewColumns, flavor),
                 () -> QueryPerformanceRecorder.withNugget(
                         updateDescription, sizeForInstrumentation(), () -> {
@@ -1849,8 +1893,23 @@ public class QueryTable extends BaseTable<QueryTable> {
                                                 publishTheseSources, true, viewColumns);
                                 final SelectColumn[] processedViewColumns = analyzerContext.getProcessedColumns()
                                         .toArray(SelectColumn[]::new);
-                                QueryTable queryTable = new QueryTable(
-                                        rowSet, analyzerContext.getPublishedColumnSources());
+
+                                if (STATELESS_SELECT_BY_DEFAULT) {
+                                    // An updateView can fetch things in any order; therefore we cannot allow it to be
+                                    // stateful. That said, we cannot check this if stateful is the default, because
+                                    // it will break too much user code.
+                                    if (Arrays.stream(processedViewColumns)
+                                            .anyMatch(Predicate.not(SelectColumn::isStateless))) {
+                                        throw new IllegalArgumentException(
+                                                "A stateful column cannot safely be used in a view or updateView.");
+                                    }
+                                }
+
+                                final Map<String, ColumnSource<?>> resultMap =
+                                        analyzerContext.getPublishedColumnSources();
+                                final TableDefinition tableDef = TableDefinition.inferFrom(this,
+                                        analyzerContext.getPublishedColumnSources());
+                                QueryTable queryTable = new QueryTable(tableDef, rowSet, resultMap);
                                 if (sc != null) {
                                     final Map<String, String[]> effects = analyzerContext.calcEffects();
                                     final TableUpdateListener listener =
@@ -1939,8 +1998,10 @@ public class QueryTable extends BaseTable<QueryTable> {
                                         this, SelectAndViewAnalyzer.Mode.VIEW_LAZY, true, true, selectColumns);
                         final SelectColumn[] processedColumns = analyzerContext.getProcessedColumns()
                                 .toArray(SelectColumn[]::new);
-                        final QueryTable result = new QueryTable(
-                                rowSet, analyzerContext.getPublishedColumnSources());
+
+                        final Map<String, ColumnSource<?>> newMap = analyzerContext.getPublishedColumnSources();
+                        final TableDefinition resultDef = TableDefinition.inferFrom(this, newMap);
+                        final QueryTable result = new QueryTable(resultDef, rowSet, newMap);
                         if (isRefreshing()) {
                             addUpdateListener(new ListenerImpl(
                                     "lazyUpdate(" + Arrays.deepToString(processedColumns) + ')', this, result));
@@ -1976,7 +2037,8 @@ public class QueryTable extends BaseTable<QueryTable> {
                                 createSnapshotControlIfRefreshing(OperationSnapshotControl::new);
 
                         initializeWithSnapshot("dropColumns", snapshotControl, (usePrev, beforeClockValue) -> {
-                            final QueryTable resultTable = new QueryTable(rowSet, newColumns);
+                            final TableDefinition resultDef = TableDefinition.inferFrom(this, newColumns);
+                            final QueryTable resultTable = new QueryTable(resultDef, rowSet, newColumns);
                             propagateFlatness(resultTable);
 
                             copyAttributes(resultTable, CopyAttributeOperation.DropColumns);
@@ -2041,57 +2103,34 @@ public class QueryTable extends BaseTable<QueryTable> {
                         return prepareReturnThis();
                     }
 
-                    Set<String> notFound = null;
-                    Set<String> duplicateSource = null;
-                    Set<String> duplicateDest = null;
+                    // Ensure we have no conflicts during the rename.
+                    final Map<String, String> pairLookup =
+                            RenameColumnHelper.createLookupAndValidate(definition, pairs);
+                    final Set<String> newNames = RenameColumnHelper.getNewColumns(pairs);
+                    final Set<String> maskedNames = RenameColumnHelper.getMaskedColumns(definition, pairs);
 
-                    final Set<ColumnName> newNames = new HashSet<>();
-                    final Map<ColumnName, ColumnName> pairLookup = new LinkedHashMap<>();
-                    for (final Pair pair : pairs) {
-                        if (!columns.containsKey(pair.input().name())) {
-                            (notFound == null ? notFound = new LinkedHashSet<>() : notFound)
-                                    .add(pair.input().name());
-                        }
-                        if (pairLookup.put(pair.input(), pair.output()) != null) {
-                            (duplicateSource == null ? duplicateSource = new LinkedHashSet<>(1) : duplicateSource)
-                                    .add(pair.input().name());
-                        }
-                        if (!newNames.add(pair.output())) {
-                            (duplicateDest == null ? duplicateDest = new LinkedHashSet<>() : duplicateDest)
-                                    .add(pair.output().name());
-                        }
-                    }
-
-                    // if we accumulated any errors, build one mega error message and throw it
-                    if (notFound != null || duplicateSource != null || duplicateDest != null) {
-                        throw new IllegalArgumentException(Stream.of(
-                                notFound == null ? null : "Column(s) not found: " + String.join(", ", notFound),
-                                duplicateSource == null ? null
-                                        : "Duplicate source column(s): " + String.join(", ", duplicateSource),
-                                duplicateDest == null ? null
-                                        : "Duplicate destination column(s): " + String.join(", ", duplicateDest))
-                                .filter(Objects::nonNull).collect(Collectors.joining("\n")));
-                    }
+                    // How many columns are removed (masked and not replaced) from the table?
+                    final int removedCount = (int) maskedNames.stream().filter(n -> !pairLookup.containsKey(n)).count();
 
                     final MutableInt mcsPairIdx = new MutableInt();
-                    final Pair[] modifiedColumnSetPairs = new Pair[columns.size()];
+                    final Pair[] modifiedColumnSetPairs = new Pair[columns.size() - removedCount];
                     final Map<String, ColumnSource<?>> newColumns = new LinkedHashMap<>();
 
                     final Runnable moveColumns = () -> {
-                        for (final Map.Entry<ColumnName, ColumnName> rename : pairLookup.entrySet()) {
-                            final ColumnName oldName = rename.getKey();
-                            final ColumnName newName = rename.getValue();
-                            final ColumnSource<?> columnSource = columns.get(oldName.name());
-                            newColumns.put(newName.name(), columnSource);
+                        for (final Map.Entry<String, String> rename : pairLookup.entrySet()) {
+                            final String oldName = rename.getKey();
+                            final String newName = rename.getValue();
+                            final ColumnSource<?> columnSource = columns.get(oldName);
+                            newColumns.put(newName, columnSource);
                             modifiedColumnSetPairs[mcsPairIdx.getAndIncrement()] =
-                                    Pair.of(newName, oldName);
+                                    Pair.of(ColumnName.of(newName), ColumnName.of(oldName));
                         }
                     };
 
                     for (final Map.Entry<String, ? extends ColumnSource<?>> entry : columns.entrySet()) {
-                        final ColumnName oldName = ColumnName.of(entry.getKey());
+                        final String oldName = entry.getKey();
                         final ColumnSource<?> columnSource = entry.getValue();
-                        ColumnName newName = pairLookup.get(oldName);
+                        String newName = pairLookup.get(oldName);
                         if (newName == null) {
                             if (newNames.contains(oldName)) {
                                 // this column is being replaced by a rename
@@ -2108,8 +2147,8 @@ public class QueryTable extends BaseTable<QueryTable> {
                         }
 
                         modifiedColumnSetPairs[mcsPairIdx.getAndIncrement()] =
-                                Pair.of(newName, oldName);
-                        newColumns.put(newName.name(), columnSource);
+                                Pair.of(ColumnName.of(newName), ColumnName.of(oldName));
+                        newColumns.put(newName, columnSource);
                     }
 
                     if (mcsPairIdx.get() <= movePosition) {
@@ -2121,7 +2160,8 @@ public class QueryTable extends BaseTable<QueryTable> {
                     final OperationSnapshotControl snapshotControl =
                             createSnapshotControlIfRefreshing(OperationSnapshotControl::new);
                     initializeWithSnapshot("renameColumns", snapshotControl, (usePrev, beforeClockValue) -> {
-                        final QueryTable resultTable = new QueryTable(rowSet, newColumns);
+                        final TableDefinition resultDef = TableDefinition.inferFrom(this, newColumns);
+                        final QueryTable resultTable = new QueryTable(resultDef, rowSet, newColumns);
                         propagateFlatness(resultTable);
 
                         copyAttributes(resultTable, CopyAttributeOperation.RenameColumns);
@@ -2293,7 +2333,8 @@ public class QueryTable extends BaseTable<QueryTable> {
                 joinType);
     }
 
-    private Table naturalJoinImpl(
+    @VisibleForTesting
+    Table naturalJoinImpl(
             final Table rightTable,
             final MatchPair[] columnsToMatch,
             final MatchPair[] columnsToAdd,
@@ -2318,7 +2359,8 @@ public class QueryTable extends BaseTable<QueryTable> {
         return NaturalJoinHelper.naturalJoin(this, rightTableCoalesced, columnsToMatch, columnsToAdd, joinType);
     }
 
-    private MatchPair[] createColumnsToAddIfMissing(Table rightTable, MatchPair[] columnsToMatch,
+    @VisibleForTesting
+    static MatchPair[] createColumnsToAddIfMissing(Table rightTable, MatchPair[] columnsToMatch,
             MatchPair[] columnsToAdd) {
         if (columnsToAdd.length == 0) {
             final Set<String> matchColumns = Arrays.stream(columnsToMatch).map(matchPair -> matchPair.leftColumn)
@@ -2376,62 +2418,12 @@ public class QueryTable extends BaseTable<QueryTable> {
         final MatchPair[] realColumnsToAdd =
                 createColumnsToAddIfMissing(rightTableCandidate, columnsToMatch, columnsToAdd);
 
-        if (USE_CHUNKED_CROSS_JOIN) {
-            final QueryTable coalescedRightTable = (QueryTable) rightTableCandidate.coalesce();
-            return QueryPerformanceRecorder.withNugget(
-                    "join(" + matchString(columnsToMatch) + ", " + matchString(realColumnsToAdd) + ", "
-                            + numRightBitsToReserve + ")",
-                    () -> CrossJoinHelper.join(this, coalescedRightTable, columnsToMatch, realColumnsToAdd,
-                            numRightBitsToReserve));
-        }
-
-        final Set<String> columnsToMatchSet =
-                Arrays.stream(columnsToMatch).map(MatchPair::rightColumn)
-                        .collect(Collectors.toCollection(HashSet::new));
-
-        final Map<String, Selectable> columnsToAddSelectColumns = new LinkedHashMap<>();
-        final List<String> columnsToUngroupBy = new ArrayList<>();
-        final String[] rightColumnsToMatch = new String[columnsToMatch.length];
-        for (int i = 0; i < rightColumnsToMatch.length; i++) {
-            rightColumnsToMatch[i] = columnsToMatch[i].rightColumn;
-            columnsToAddSelectColumns.put(columnsToMatch[i].rightColumn, ColumnName.of(columnsToMatch[i].rightColumn));
-        }
-        final ArrayList<MatchPair> columnsToAddAfterRename = new ArrayList<>(realColumnsToAdd.length);
-        for (MatchPair matchPair : realColumnsToAdd) {
-            columnsToAddAfterRename.add(new MatchPair(matchPair.leftColumn, matchPair.leftColumn));
-            if (!columnsToMatchSet.contains(matchPair.leftColumn)) {
-                columnsToUngroupBy.add(matchPair.leftColumn);
-            }
-            columnsToAddSelectColumns.put(matchPair.leftColumn,
-                    Selectable.of(ColumnName.of(matchPair.leftColumn), ColumnName.of(matchPair.rightColumn)));
-        }
-
-        return QueryPerformanceRecorder
-                .withNugget("join(" + matchString(columnsToMatch) + ", " + matchString(realColumnsToAdd) + ")", () -> {
-                    boolean sentinelAdded = false;
-                    final Table rightTable;
-                    if (columnsToUngroupBy.isEmpty()) {
-                        rightTable = rightTableCandidate.updateView("__sentinel__=null");
-                        columnsToUngroupBy.add("__sentinel__");
-                        columnsToAddSelectColumns.put("__sentinel__", ColumnName.of("__sentinel__"));
-                        columnsToAddAfterRename.add(new MatchPair("__sentinel__", "__sentinel__"));
-                        sentinelAdded = true;
-                    } else {
-                        rightTable = rightTableCandidate;
-                    }
-
-                    final Table rightGrouped = rightTable.groupBy(rightColumnsToMatch)
-                            .view(columnsToAddSelectColumns.values());
-                    final Table naturalJoinResult = naturalJoinImpl(rightGrouped, columnsToMatch,
-                            columnsToAddAfterRename.toArray(MatchPair.ZERO_LENGTH_MATCH_PAIR_ARRAY),
-                            NaturalJoinType.ERROR_ON_DUPLICATE);
-                    final QueryTable ungroupedResult = (QueryTable) naturalJoinResult
-                            .ungroup(columnsToUngroupBy.toArray(String[]::new));
-
-                    maybeCopyColumnDescriptions(ungroupedResult, rightTable, columnsToMatch, realColumnsToAdd);
-
-                    return sentinelAdded ? ungroupedResult.dropColumns("__sentinel__") : ungroupedResult;
-                });
+        final QueryTable coalescedRightTable = (QueryTable) rightTableCandidate.coalesce();
+        return QueryPerformanceRecorder.withNugget(
+                "join(" + matchString(columnsToMatch) + ", " + matchString(realColumnsToAdd) + ", "
+                        + numRightBitsToReserve + ")",
+                () -> CrossJoinHelper.join(this, coalescedRightTable, columnsToMatch, realColumnsToAdd,
+                        numRightBitsToReserve));
     }
 
     @Override
@@ -2552,7 +2544,7 @@ public class QueryTable extends BaseTable<QueryTable> {
     }
 
     public Table silent() {
-        return new QueryTable(getRowSet(), getColumnSourceMap());
+        return new QueryTable(getDefinition(), getRowSet(), getColumnSourceMap());
     }
 
     private Table snapshot(String nuggetName, Table baseTable, boolean doInitialSnapshot,
@@ -2800,20 +2792,31 @@ public class QueryTable extends BaseTable<QueryTable> {
 
     @Override
     public Table sort(Collection<SortColumn> columnsToSortBy) {
+        return sort(columnsToSortBy.toArray(SortSpec[]::new));
+    }
+
+    /**
+     * Sort this Table using the provided specifications.
+     *
+     * @param columnsToSortBy the sort specifications
+     * @return this table sorted according to the provided specifications
+     */
+    public Table sort(final SortSpec... columnsToSortBy) {
         final UpdateGraph updateGraph = getUpdateGraph();
         try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(updateGraph).open()) {
-            final SortPair[] sortPairs = SortPair.from(columnsToSortBy);
-            if (sortPairs.length == 0) {
+            if (columnsToSortBy.length == 0) {
                 return prepareReturnThis();
-            } else if (sortPairs.length == 1) {
-                final String columnName = sortPairs[0].getColumn();
-                final SortingOrder order = sortPairs[0].getOrder();
+            }
+
+            if (columnsToSortBy.length == 1 && !ComparatorSortColumn.hasComparator(columnsToSortBy[0])) {
+                final String columnName = columnsToSortBy[0].column().name();
+                final SortingOrder order = SortingOrder.from(columnsToSortBy[0]);
                 if (SortedColumnsAttribute.isSortedBy(this, columnName, order)) {
                     return prepareReturnThis();
                 }
             }
 
-            return getResult(new SortOperation(this, sortPairs));
+            return getResult(new SortOperation(this, columnsToSortBy));
         }
     }
 
@@ -2822,7 +2825,7 @@ public class QueryTable extends BaseTable<QueryTable> {
      * 2^minimumUngroupBase rows in the output table at startup. If rows are added to the table, this base may need to
      * grow. If a single row in the input has more than 2^base rows, then the base must change for all of the rows.
      */
-    private static int minimumUngroupBase = 10;
+    static int minimumUngroupBase = 10;
 
     /**
      * For unit testing, it can be useful to reduce the minimum ungroup base.
@@ -2852,7 +2855,7 @@ public class QueryTable extends BaseTable<QueryTable> {
 
 
     @Override
-    public Table ungroup(boolean nullFill, Collection<? extends ColumnName> columnsToUngroup) {
+    public Table ungroup(final boolean nullFill, final Collection<? extends ColumnName> columnsToUngroup) {
         final UpdateGraph updateGraph = getUpdateGraph();
         try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(updateGraph).open()) {
             final String[] columnsToUngroupBy;
@@ -2865,609 +2868,13 @@ public class QueryTable extends BaseTable<QueryTable> {
             } else {
                 columnsToUngroupBy = columnsToUngroup.stream().map(ColumnName::name).toArray(String[]::new);
             }
-            return QueryPerformanceRecorder.withNugget("ungroup(" + Arrays.toString(columnsToUngroupBy) + ")",
-                    sizeForInstrumentation(), () -> {
-                        if (columnsToUngroupBy.length == 0) {
-                            return prepareReturnThis();
-                        }
 
-                        checkInitiateOperation();
-
-                        final Map<String, ColumnSource<?>> arrayColumns = new HashMap<>();
-                        final Map<String, ColumnSource<?>> vectorColumns = new HashMap<>();
-                        for (String name : columnsToUngroupBy) {
-                            ColumnSource<?> column = getColumnSource(name);
-                            if (column.getType().isArray()) {
-                                arrayColumns.put(name, column);
-                            } else if (Vector.class.isAssignableFrom(column.getType())) {
-                                vectorColumns.put(name, column);
-                            } else {
-                                throw new RuntimeException("Column " + name + " is not an array");
-                            }
-                        }
-                        final long[] sizes = new long[intSize("ungroup")];
-                        long maxSize = computeMaxSize(rowSet, arrayColumns, vectorColumns, null, sizes, nullFill);
-                        final int initialBase = Math.max(64 - Long.numberOfLeadingZeros(maxSize), minimumUngroupBase);
-
-                        final CrossJoinShiftState shiftState = new CrossJoinShiftState(initialBase, true);
-
-                        final Map<String, ColumnSource<?>> resultMap = new LinkedHashMap<>();
-                        for (Map.Entry<String, ColumnSource<?>> es : getColumnSourceMap().entrySet()) {
-                            final ColumnSource<?> column = es.getValue();
-                            final String name = es.getKey();
-                            final ColumnSource<?> result;
-                            if (vectorColumns.containsKey(name) || arrayColumns.containsKey(name)) {
-                                final UngroupedColumnSource<?> ungroupedSource =
-                                        UngroupedColumnSource.getColumnSource(column);
-                                ungroupedSource.initializeBase(initialBase);
-                                result = ungroupedSource;
-                            } else {
-                                result = BitShiftingColumnSource.maybeWrap(shiftState, column);
-                            }
-                            resultMap.put(name, result);
-                        }
-                        final QueryTable result = new QueryTable(
-                                getUngroupIndex(sizes, RowSetFactory.builderRandom(), initialBase, rowSet)
-                                        .build().toTracking(),
-                                resultMap);
-                        if (isRefreshing()) {
-                            startTrackingPrev(resultMap.values());
-
-                            addUpdateListener(new ShiftObliviousListenerImpl(
-                                    "ungroup(" + Arrays.deepToString(columnsToUngroupBy) + ')',
-                                    this, result) {
-
-                                @Override
-                                public void onUpdate(final RowSet added, final RowSet removed, final RowSet modified) {
-                                    intSize("ungroup");
-
-                                    int newBase = shiftState.getNumShiftBits();
-                                    RowSetBuilderRandom ungroupAdded = RowSetFactory.builderRandom();
-                                    RowSetBuilderRandom ungroupModified = RowSetFactory.builderRandom();
-                                    RowSetBuilderRandom ungroupRemoved = RowSetFactory.builderRandom();
-                                    newBase = evaluateIndex(added, ungroupAdded, newBase);
-                                    newBase = evaluateModified(modified, ungroupModified, ungroupAdded, ungroupRemoved,
-                                            newBase);
-                                    if (newBase > shiftState.getNumShiftBits()) {
-                                        rebase(newBase + 1);
-                                    } else {
-                                        evaluateRemovedIndex(removed, ungroupRemoved);
-                                        final RowSet removedRowSet = ungroupRemoved.build();
-                                        final RowSet addedRowSet = ungroupAdded.build();
-                                        result.getRowSet().writableCast().update(addedRowSet, removedRowSet);
-                                        final RowSet modifiedRowSet = ungroupModified.build();
-
-                                        if (!modifiedRowSet.subsetOf(result.getRowSet())) {
-                                            final RowSet missingModifications =
-                                                    modifiedRowSet.minus(result.getRowSet());
-                                            log.error().append("Result TrackingWritableRowSet: ")
-                                                    .append(result.getRowSet().toString())
-                                                    .endl();
-                                            log.error().append("Missing modifications: ")
-                                                    .append(missingModifications.toString()).endl();
-                                            log.error().append("Added: ").append(addedRowSet.toString()).endl();
-                                            log.error().append("Modified: ").append(modifiedRowSet.toString()).endl();
-                                            log.error().append("Removed: ").append(removedRowSet.toString()).endl();
-
-                                            for (Map.Entry<String, ColumnSource<?>> es : arrayColumns.entrySet()) {
-                                                ColumnSource<?> arrayColumn = es.getValue();
-                                                String name = es.getKey();
-
-                                                RowSet.Iterator iterator = rowSet.iterator();
-                                                for (int i = 0; i < rowSet.size(); i++) {
-                                                    final long next = iterator.nextLong();
-                                                    int size = (arrayColumn.get(next) == null ? 0
-                                                            : Array.getLength(arrayColumn.get(next)));
-                                                    int prevSize = (arrayColumn.getPrev(next) == null ? 0
-                                                            : Array.getLength(arrayColumn.getPrev(next)));
-                                                    log.error().append(name).append("[").append(i).append("] ")
-                                                            .append(size)
-                                                            .append(" -> ").append(prevSize).endl();
-                                                }
-                                            }
-
-                                            for (Map.Entry<String, ColumnSource<?>> es : vectorColumns.entrySet()) {
-                                                ColumnSource<?> arrayColumn = es.getValue();
-                                                String name = es.getKey();
-                                                RowSet.Iterator iterator = rowSet.iterator();
-
-                                                for (int i = 0; i < rowSet.size(); i++) {
-                                                    final long next = iterator.nextLong();
-                                                    long size = (arrayColumn.get(next) == null ? 0
-                                                            : ((Vector<?>) arrayColumn.get(next)).size());
-                                                    long prevSize = (arrayColumn.getPrev(next) == null ? 0
-                                                            : ((Vector<?>) arrayColumn.getPrev(next)).size());
-                                                    log.error().append(name).append("[").append(i).append("] ")
-                                                            .append(size)
-                                                            .append(" -> ").append(prevSize).endl();
-                                                }
-                                            }
-
-                                            Assert.assertion(false, "modifiedRowSet.subsetOf(result.build())",
-                                                    modifiedRowSet, "modifiedRowSet", result.getRowSet(),
-                                                    "result.build()",
-                                                    shiftState.getNumShiftBits(), "shiftState.getNumShiftBits()",
-                                                    newBase,
-                                                    "newBase");
-                                        }
-
-                                        for (ColumnSource<?> source : resultMap.values()) {
-                                            if (source instanceof UngroupedColumnSource) {
-                                                ((UngroupedColumnSource<?>) source).setBase(newBase);
-                                            }
-                                        }
-
-                                        result.notifyListeners(addedRowSet, removedRowSet, modifiedRowSet);
-                                    }
-                                }
-
-                                private void rebase(final int newBase) {
-                                    final WritableRowSet newRowSet = getUngroupIndex(
-                                            computeSize(getRowSet(), arrayColumns, vectorColumns, nullFill),
-                                            RowSetFactory.builderRandom(), newBase, getRowSet())
-                                            .build();
-                                    final TrackingWritableRowSet rowSet = result.getRowSet().writableCast();
-                                    final RowSet added = newRowSet.minus(rowSet);
-                                    final RowSet removed = rowSet.minus(newRowSet);
-                                    final WritableRowSet modified = newRowSet;
-                                    modified.retain(rowSet);
-                                    rowSet.update(added, removed);
-                                    for (ColumnSource<?> source : resultMap.values()) {
-                                        if (source instanceof UngroupedColumnSource) {
-                                            ((UngroupedColumnSource<?>) source).setBase(newBase);
-                                        }
-                                    }
-                                    shiftState.setNumShiftBitsAndUpdatePrev(newBase);
-                                    result.notifyListeners(added, removed, modified);
-                                }
-
-                                private int evaluateIndex(final RowSet rowSet, final RowSetBuilderRandom ungroupBuilder,
-                                        final int newBase) {
-                                    if (rowSet.size() > 0) {
-                                        final long[] modifiedSizes = new long[rowSet.intSize("ungroup")];
-                                        final long maxSize = computeMaxSize(rowSet, arrayColumns, vectorColumns, null,
-                                                modifiedSizes, nullFill);
-                                        final int minBase = 64 - Long.numberOfLeadingZeros(maxSize);
-                                        getUngroupIndex(modifiedSizes, ungroupBuilder, shiftState.getNumShiftBits(),
-                                                rowSet);
-                                        return Math.max(newBase, minBase);
-                                    }
-                                    return newBase;
-                                }
-
-                                private void evaluateRemovedIndex(final RowSet rowSet,
-                                        final RowSetBuilderRandom ungroupBuilder) {
-                                    if (rowSet.size() > 0) {
-                                        final long[] modifiedSizes = new long[rowSet.intSize("ungroup")];
-                                        computePrevSize(rowSet, arrayColumns, vectorColumns, modifiedSizes, nullFill);
-                                        getUngroupIndex(modifiedSizes, ungroupBuilder, shiftState.getNumShiftBits(),
-                                                rowSet);
-                                    }
-                                }
-
-                                private int evaluateModified(final RowSet rowSet,
-                                        final RowSetBuilderRandom modifyBuilder,
-                                        final RowSetBuilderRandom addedBuilded,
-                                        final RowSetBuilderRandom removedBuilder,
-                                        final int newBase) {
-                                    if (rowSet.size() > 0) {
-                                        final long maxSize = computeModifiedIndicesAndMaxSize(rowSet, arrayColumns,
-                                                vectorColumns, null, modifyBuilder, addedBuilded, removedBuilder,
-                                                shiftState.getNumShiftBits(), nullFill);
-                                        final int minBase = 64 - Long.numberOfLeadingZeros(maxSize);
-                                        return Math.max(newBase, minBase);
-                                    }
-                                    return newBase;
-                                }
-                            });
-                        }
-                        return result;
-                    });
-        }
-    }
-
-    private long computeModifiedIndicesAndMaxSize(RowSet rowSet, Map<String, ColumnSource<?>> arrayColumns,
-            Map<String, ColumnSource<?>> vectorColumns, String referenceColumn, RowSetBuilderRandom modifyBuilder,
-            RowSetBuilderRandom addedBuilded, RowSetBuilderRandom removedBuilder, long base, boolean nullFill) {
-        if (nullFill) {
-            return computeModifiedIndicesAndMaxSizeNullFill(rowSet, arrayColumns, vectorColumns, referenceColumn,
-                    modifyBuilder, addedBuilded, removedBuilder, base);
-        }
-        return computeModifiedIndicesAndMaxSizeNormal(rowSet, arrayColumns, vectorColumns, referenceColumn,
-                modifyBuilder, addedBuilded, removedBuilder, base);
-    }
-
-    private long computeModifiedIndicesAndMaxSizeNullFill(RowSet rowSet, Map<String, ColumnSource<?>> arrayColumns,
-            Map<String, ColumnSource<?>> vectorColumns, String referenceColumn, RowSetBuilderRandom modifyBuilder,
-            RowSetBuilderRandom addedBuilded, RowSetBuilderRandom removedBuilder, long base) {
-        long maxSize = 0;
-        final RowSet.Iterator iterator = rowSet.iterator();
-        for (int i = 0; i < rowSet.size(); i++) {
-            long maxCur = 0;
-            long maxPrev = 0;
-            final long next = iterator.nextLong();
-            for (Map.Entry<String, ColumnSource<?>> es : arrayColumns.entrySet()) {
-                final ColumnSource<?> arrayColumn = es.getValue();
-                Object array = arrayColumn.get(next);
-                final int size = (array == null ? 0 : Array.getLength(array));
-                maxCur = Math.max(maxCur, size);
-                Object prevArray = arrayColumn.getPrev(next);
-                final int prevSize = (prevArray == null ? 0 : Array.getLength(prevArray));
-                maxPrev = Math.max(maxPrev, prevSize);
+            if (columnsToUngroupBy.length == 0) {
+                return prepareReturnThis();
             }
-            for (Map.Entry<String, ColumnSource<?>> es : vectorColumns.entrySet()) {
-                final ColumnSource<?> arrayColumn = es.getValue();
-                Vector<?> array = (Vector<?>) arrayColumn.get(next);
-                final long size = (array == null ? 0 : array.size());
-                maxCur = Math.max(maxCur, size);
-                Vector<?> prevArray = (Vector<?>) arrayColumn.getPrev(next);
-                final long prevSize = (prevArray == null ? 0 : prevArray.size());
-                maxPrev = Math.max(maxPrev, prevSize);
-            }
-            maxSize = maxAndIndexUpdateForRow(modifyBuilder, addedBuilded, removedBuilder, maxSize, maxCur, next,
-                    maxPrev, base);
+
+            return getResult(new UngroupOperation(this, nullFill, columnsToUngroupBy));
         }
-        return maxSize;
-    }
-
-    private long computeModifiedIndicesAndMaxSizeNormal(RowSet rowSet, Map<String, ColumnSource<?>> arrayColumns,
-            Map<String, ColumnSource<?>> vectorColumns, String referenceColumn, RowSetBuilderRandom modifyBuilder,
-            RowSetBuilderRandom addedBuilded, RowSetBuilderRandom removedBuilder, long base) {
-        long maxSize = 0;
-        boolean sizeIsInitialized = false;
-        long[] sizes = new long[rowSet.intSize("ungroup")];
-        for (Map.Entry<String, ColumnSource<?>> es : arrayColumns.entrySet()) {
-            ColumnSource<?> arrayColumn = es.getValue();
-            String name = es.getKey();
-            if (!sizeIsInitialized) {
-                sizeIsInitialized = true;
-                referenceColumn = name;
-                RowSet.Iterator iterator = rowSet.iterator();
-                for (int i = 0; i < rowSet.size(); i++) {
-                    final long next = iterator.nextLong();
-                    Object array = arrayColumn.get(next);
-                    sizes[i] = (array == null ? 0 : Array.getLength(array));
-                    Object prevArray = arrayColumn.getPrev(next);
-                    int prevSize = (prevArray == null ? 0 : Array.getLength(prevArray));
-                    maxSize = maxAndIndexUpdateForRow(modifyBuilder, addedBuilded, removedBuilder, maxSize, sizes[i],
-                            next, prevSize, base);
-                }
-            } else {
-                RowSet.Iterator iterator = rowSet.iterator();
-                for (int i = 0; i < rowSet.size(); i++) {
-                    long k = iterator.nextLong();
-                    final Object array = arrayColumn.get(k);
-                    final int size = array == null ? 0 : Array.getLength(array);
-                    Assert.assertion(sizes[i] == size,
-                            "sizes[i] == Array.getLength(arrayColumn.get(k))",
-                            referenceColumn, "referenceColumn", name, "name", k, "row");
-                }
-
-            }
-        }
-        for (Map.Entry<String, ColumnSource<?>> es : vectorColumns.entrySet()) {
-            ColumnSource<?> arrayColumn = es.getValue();
-            String name = es.getKey();
-            if (!sizeIsInitialized) {
-                sizeIsInitialized = true;
-                referenceColumn = name;
-                RowSet.Iterator iterator = rowSet.iterator();
-                for (int i = 0; i < rowSet.size(); i++) {
-                    final long next = iterator.nextLong();
-                    Vector<?> array = (Vector<?>) arrayColumn.get(next);
-                    sizes[i] = (array == null ? 0 : array.size());
-                    Vector<?> prevArray = (Vector<?>) arrayColumn.getPrev(next);
-                    long prevSize = (prevArray == null ? 0 : prevArray.size());
-                    maxSize = maxAndIndexUpdateForRow(modifyBuilder, addedBuilded, removedBuilder, maxSize, sizes[i],
-                            next, prevSize, base);
-                }
-            } else {
-                RowSet.Iterator iterator = rowSet.iterator();
-                for (int i = 0; i < rowSet.size(); i++) {
-                    final long next = iterator.nextLong();
-                    Assert.assertion(sizes[i] == 0 && arrayColumn.get(next) == null ||
-                            sizes[i] == ((Vector<?>) arrayColumn.get(next)).size(),
-                            "sizes[i] == ((Vector)arrayColumn.get(i)).size()",
-                            referenceColumn, "referenceColumn", name, "arrayColumn.getName()", i, "row");
-                }
-            }
-        }
-        return maxSize;
-    }
-
-    private long maxAndIndexUpdateForRow(RowSetBuilderRandom modifyBuilder, RowSetBuilderRandom addedBuilded,
-            RowSetBuilderRandom removedBuilder, long maxSize, long size, long rowKey, long prevSize, long base) {
-        rowKey = rowKey << base;
-        Require.requirement(rowKey >= 0 && (size == 0 || (rowKey + size - 1 >= 0)),
-                "rowKey >= 0 && (size == 0 || (rowKey + size - 1 >= 0))");
-        if (size == prevSize) {
-            if (size > 0) {
-                modifyBuilder.addRange(rowKey, rowKey + size - 1);
-            }
-        } else if (size < prevSize) {
-            if (size > 0) {
-                modifyBuilder.addRange(rowKey, rowKey + size - 1);
-            }
-            removedBuilder.addRange(rowKey + size, rowKey + prevSize - 1);
-        } else {
-            if (prevSize > 0) {
-                modifyBuilder.addRange(rowKey, rowKey + prevSize - 1);
-            }
-            addedBuilded.addRange(rowKey + prevSize, rowKey + size - 1);
-        }
-        maxSize = Math.max(maxSize, size);
-        return maxSize;
-    }
-
-    @SuppressWarnings("SameParameterValue")
-    private static long computeMaxSize(RowSet rowSet, Map<String, ColumnSource<?>> arrayColumns,
-            Map<String, ColumnSource<?>> vectorColumns, String referenceColumn, long[] sizes, boolean nullFill) {
-        if (nullFill) {
-            return computeMaxSizeNullFill(rowSet, arrayColumns, vectorColumns, sizes);
-        }
-
-        return computeMaxSizeNormal(rowSet, arrayColumns, vectorColumns, referenceColumn, sizes);
-    }
-
-    private static long computeMaxSizeNullFill(RowSet rowSet, Map<String, ColumnSource<?>> arrayColumns,
-            Map<String, ColumnSource<?>> vectorColumns, long[] sizes) {
-        long maxSize = 0;
-        final RowSet.Iterator iterator = rowSet.iterator();
-        for (int i = 0; i < rowSet.size(); i++) {
-            long localMax = 0;
-            final long nextIndex = iterator.nextLong();
-            for (Map.Entry<String, ColumnSource<?>> es : arrayColumns.entrySet()) {
-                final ColumnSource<?> arrayColumn = es.getValue();
-                final Object array = arrayColumn.get(nextIndex);
-                final long size = (array == null ? 0 : Array.getLength(array));
-                maxSize = Math.max(maxSize, size);
-                localMax = Math.max(localMax, size);
-
-            }
-            for (Map.Entry<String, ColumnSource<?>> es : vectorColumns.entrySet()) {
-                final ColumnSource<?> arrayColumn = es.getValue();
-                final boolean isUngroupable = arrayColumn instanceof UngroupableColumnSource
-                        && ((UngroupableColumnSource) arrayColumn).isUngroupable();
-                final long size;
-                if (isUngroupable) {
-                    size = ((UngroupableColumnSource) arrayColumn).getUngroupedSize(nextIndex);
-                } else {
-                    final Vector<?> vector = (Vector<?>) arrayColumn.get(nextIndex);
-                    size = vector != null ? vector.size() : 0;
-                }
-                maxSize = Math.max(maxSize, size);
-                localMax = Math.max(localMax, size);
-            }
-            sizes[i] = localMax;
-        }
-        return maxSize;
-    }
-
-
-    private static long computeMaxSizeNormal(RowSet rowSet, Map<String, ColumnSource<?>> arrayColumns,
-            Map<String, ColumnSource<?>> vectorColumns, String referenceColumn, long[] sizes) {
-        long maxSize = 0;
-        boolean sizeIsInitialized = false;
-        for (Map.Entry<String, ColumnSource<?>> es : arrayColumns.entrySet()) {
-            ColumnSource<?> arrayColumn = es.getValue();
-            String name = es.getKey();
-            if (!sizeIsInitialized) {
-                sizeIsInitialized = true;
-                referenceColumn = name;
-                RowSet.Iterator iterator = rowSet.iterator();
-                for (int i = 0; i < rowSet.size(); i++) {
-                    Object array = arrayColumn.get(iterator.nextLong());
-                    sizes[i] = (array == null ? 0 : Array.getLength(array));
-                    maxSize = Math.max(maxSize, sizes[i]);
-                }
-            } else {
-                RowSet.Iterator iterator = rowSet.iterator();
-                for (int i = 0; i < rowSet.size(); i++) {
-                    final Object array = arrayColumn.get(iterator.nextLong());
-                    final int size = array == null ? 0 : Array.getLength(array);
-                    Assert.assertion(sizes[i] == size,
-                            "sizes[i] == Array.getLength(arrayColumn.get(i))",
-                            referenceColumn, "referenceColumn", name, "name", i, "row");
-                }
-
-            }
-        }
-        for (Map.Entry<String, ColumnSource<?>> es : vectorColumns.entrySet()) {
-            final ColumnSource<?> arrayColumn = es.getValue();
-            final String name = es.getKey();
-            final boolean isUngroupable = arrayColumn instanceof UngroupableColumnSource
-                    && ((UngroupableColumnSource) arrayColumn).isUngroupable();
-
-            if (!sizeIsInitialized) {
-                sizeIsInitialized = true;
-                referenceColumn = name;
-                RowSet.Iterator iterator = rowSet.iterator();
-                for (int ii = 0; ii < rowSet.size(); ii++) {
-                    if (isUngroupable) {
-                        sizes[ii] = ((UngroupableColumnSource) arrayColumn).getUngroupedSize(iterator.nextLong());
-                    } else {
-                        final Vector<?> vector = (Vector<?>) arrayColumn.get(iterator.nextLong());
-                        sizes[ii] = vector != null ? vector.size() : 0;
-                    }
-                    maxSize = Math.max(maxSize, sizes[ii]);
-                }
-            } else {
-                RowSet.Iterator iterator = rowSet.iterator();
-                for (int i = 0; i < rowSet.size(); i++) {
-                    final long expectedSize;
-                    if (isUngroupable) {
-                        expectedSize = ((UngroupableColumnSource) arrayColumn).getUngroupedSize(iterator.nextLong());
-                    } else {
-                        final Vector<?> vector = (Vector<?>) arrayColumn.get(iterator.nextLong());
-                        expectedSize = vector != null ? vector.size() : 0;
-                    }
-                    Assert.assertion(sizes[i] == expectedSize, "sizes[i] == ((Vector)arrayColumn.get(i)).size()",
-                            referenceColumn, "referenceColumn", name, "arrayColumn.getName()", i, "row");
-                }
-            }
-        }
-        return maxSize;
-    }
-
-    private static void computePrevSize(RowSet rowSet, Map<String, ColumnSource<?>> arrayColumns,
-            Map<String, ColumnSource<?>> vectorColumns, long[] sizes, boolean nullFill) {
-        if (nullFill) {
-            computePrevSizeNullFill(rowSet, arrayColumns, vectorColumns, sizes);
-        } else {
-            computePrevSizeNormal(rowSet, arrayColumns, vectorColumns, sizes);
-        }
-    }
-
-    private static void computePrevSizeNullFill(RowSet rowSet, Map<String, ColumnSource<?>> arrayColumns,
-            Map<String, ColumnSource<?>> vectorColumns, long[] sizes) {
-        final RowSet.Iterator iterator = rowSet.iterator();
-        for (int i = 0; i < rowSet.size(); i++) {
-            long localMax = 0;
-            final long nextIndex = iterator.nextLong();
-            for (Map.Entry<String, ColumnSource<?>> es : arrayColumns.entrySet()) {
-                final ColumnSource<?> arrayColumn = es.getValue();
-                final Object array = arrayColumn.getPrev(nextIndex);
-                final long size = (array == null ? 0 : Array.getLength(array));
-                localMax = Math.max(localMax, size);
-
-            }
-            for (Map.Entry<String, ColumnSource<?>> es : vectorColumns.entrySet()) {
-                final ColumnSource<?> arrayColumn = es.getValue();
-                final boolean isUngroupable = arrayColumn instanceof UngroupableColumnSource
-                        && ((UngroupableColumnSource) arrayColumn).isUngroupable();
-                final long size;
-                if (isUngroupable) {
-                    size = ((UngroupableColumnSource) arrayColumn).getUngroupedPrevSize(nextIndex);
-                } else {
-                    final Vector<?> vector = (Vector<?>) arrayColumn.getPrev(nextIndex);
-                    size = vector != null ? vector.size() : 0;
-                }
-                localMax = Math.max(localMax, size);
-            }
-            sizes[i] = localMax;
-        }
-    }
-
-    private static void computePrevSizeNormal(RowSet rowSet, Map<String, ColumnSource<?>> arrayColumns,
-            Map<String, ColumnSource<?>> vectorColumns, long[] sizes) {
-        for (ColumnSource<?> arrayColumn : arrayColumns.values()) {
-            RowSet.Iterator iterator = rowSet.iterator();
-            for (int i = 0; i < rowSet.size(); i++) {
-                Object array = arrayColumn.getPrev(iterator.nextLong());
-                sizes[i] = (array == null ? 0 : Array.getLength(array));
-            }
-            return; // TODO: WTF??
-        }
-        for (ColumnSource<?> arrayColumn : vectorColumns.values()) {
-            final boolean isUngroupable = arrayColumn instanceof UngroupableColumnSource
-                    && ((UngroupableColumnSource) arrayColumn).isUngroupable();
-
-            RowSet.Iterator iterator = rowSet.iterator();
-            for (int i = 0; i < rowSet.size(); i++) {
-                if (isUngroupable) {
-                    sizes[i] = ((UngroupableColumnSource) arrayColumn).getUngroupedPrevSize(iterator.nextLong());
-                } else {
-                    Vector<?> array = (Vector<?>) arrayColumn.getPrev(iterator.nextLong());
-                    sizes[i] = array == null ? 0 : array.size();
-                }
-            }
-            return; // TODO: WTF??
-        }
-    }
-
-    private static long[] computeSize(RowSet rowSet, Map<String, ColumnSource<?>> arrayColumns,
-            Map<String, ColumnSource<?>> vectorColumns, boolean nullFill) {
-        if (nullFill) {
-            return computeSizeNullFill(rowSet, arrayColumns, vectorColumns);
-        }
-
-        return computeSizeNormal(rowSet, arrayColumns, vectorColumns);
-    }
-
-    private static long[] computeSizeNullFill(RowSet rowSet, Map<String, ColumnSource<?>> arrayColumns,
-            Map<String, ColumnSource<?>> vectorColumns) {
-        final long[] sizes = new long[rowSet.intSize("ungroup")];
-        final RowSet.Iterator iterator = rowSet.iterator();
-        for (int i = 0; i < rowSet.size(); i++) {
-            long localMax = 0;
-            final long nextIndex = iterator.nextLong();
-            for (Map.Entry<String, ColumnSource<?>> es : arrayColumns.entrySet()) {
-                final ColumnSource<?> arrayColumn = es.getValue();
-                final Object array = arrayColumn.get(nextIndex);
-                final long size = (array == null ? 0 : Array.getLength(array));
-                localMax = Math.max(localMax, size);
-
-            }
-            for (Map.Entry<String, ColumnSource<?>> es : vectorColumns.entrySet()) {
-                final ColumnSource<?> arrayColumn = es.getValue();
-                final boolean isUngroupable = arrayColumn instanceof UngroupableColumnSource
-                        && ((UngroupableColumnSource) arrayColumn).isUngroupable();
-                final long size;
-                if (isUngroupable) {
-                    size = ((UngroupableColumnSource) arrayColumn).getUngroupedSize(nextIndex);
-                } else {
-                    final Vector<?> vector = (Vector<?>) arrayColumn.get(nextIndex);
-                    size = vector != null ? vector.size() : 0;
-                }
-                localMax = Math.max(localMax, size);
-            }
-            sizes[i] = localMax;
-        }
-        return sizes;
-    }
-
-    private static long[] computeSizeNormal(RowSet rowSet, Map<String, ColumnSource<?>> arrayColumns,
-            Map<String, ColumnSource<?>> vectorColumns) {
-        final long[] sizes = new long[rowSet.intSize("ungroup")];
-        for (ColumnSource<?> arrayColumn : arrayColumns.values()) {
-            RowSet.Iterator iterator = rowSet.iterator();
-            for (int i = 0; i < rowSet.size(); i++) {
-                Object array = arrayColumn.get(iterator.nextLong());
-                sizes[i] = (array == null ? 0 : Array.getLength(array));
-            }
-            return sizes; // TODO: WTF??
-        }
-        for (ColumnSource<?> arrayColumn : vectorColumns.values()) {
-            final boolean isUngroupable = arrayColumn instanceof UngroupableColumnSource
-                    && ((UngroupableColumnSource) arrayColumn).isUngroupable();
-
-            RowSet.Iterator iterator = rowSet.iterator();
-            for (int i = 0; i < rowSet.size(); i++) {
-                if (isUngroupable) {
-                    sizes[i] = ((UngroupableColumnSource) arrayColumn).getUngroupedSize(iterator.nextLong());
-                } else {
-                    Vector<?> array = (Vector<?>) arrayColumn.get(iterator.nextLong());
-                    sizes[i] = array == null ? 0 : array.size();
-                }
-            }
-            return sizes; // TODO: WTF??
-        }
-        return null;
-    }
-
-    private RowSetBuilderRandom getUngroupIndex(
-            final long[] sizes, final RowSetBuilderRandom indexBuilder, final long base, final RowSet rowSet) {
-        Assert.assertion(base >= 0 && base <= 63, "base >= 0 && base <= 63", base, "base");
-        long mask = ((1L << base) - 1) << (64 - base);
-        long lastKey = rowSet.lastRowKey();
-        if ((lastKey > 0) && ((lastKey & mask) != 0)) {
-            throw new IllegalStateException(
-                    "Key overflow detected, perhaps you should flatten your table before calling ungroup.  "
-                            + ",lastRowKey=" + lastKey + ", base=" + base);
-        }
-
-        int pos = 0;
-        for (RowSet.Iterator iterator = rowSet.iterator(); iterator.hasNext();) {
-            long next = iterator.nextLong();
-            long nextShift = next << base;
-            if (sizes[pos] != 0) {
-                Assert.assertion(nextShift >= 0, "nextShift >= 0", nextShift, "nextShift", base, "base", next, "next");
-                indexBuilder.addRange(nextShift, nextShift + sizes[pos++] - 1);
-            } else {
-                pos++;
-            }
-        }
-        return indexBuilder;
     }
 
     @Override
@@ -3555,7 +2962,7 @@ public class QueryTable extends BaseTable<QueryTable> {
         try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(updateGraph).open()) {
             final LinkedHashMap<String, ColumnSource<?>> columns = new LinkedHashMap<>(this.columns);
             columns.putAll(additionalSources);
-            final TableDefinition definition = TableDefinition.inferFrom(columns);
+            final TableDefinition definition = TableDefinition.inferFrom(this, columns);
             return new QueryTable(definition, rowSet, columns, null, null);
         }
     }

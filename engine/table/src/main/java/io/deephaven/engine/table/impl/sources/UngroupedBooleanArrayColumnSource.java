@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.sources;
 
@@ -29,7 +29,7 @@ public class UngroupedBooleanArrayColumnSource extends UngroupedColumnSource<Boo
         long segment = rowKey >> base;
         int offset = (int) (rowKey & ((1 << base) - 1));
         boolean[] array = innerSource.get(segment);
-        if (offset >= array.length) {
+        if (array == null || offset >= array.length) {
             return null;
         }
         return array[offset];
@@ -43,7 +43,7 @@ public class UngroupedBooleanArrayColumnSource extends UngroupedColumnSource<Boo
         long segment = rowKey >> getPrevBase();
         int offset = (int) (rowKey & ((1 << getPrevBase()) - 1));
         boolean[] array = innerSource.getPrev(segment);
-        if (offset >= array.length) {
+        if (array == null || offset >= array.length) {
             return null;
         }
         return array[offset];

@@ -1,11 +1,9 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl;
 
-import io.deephaven.api.ColumnName;
-import io.deephaven.api.JoinMatch;
-import io.deephaven.api.RangeJoinMatch;
+import io.deephaven.api.*;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.select.*;
@@ -86,8 +84,12 @@ public abstract class MemoizedOperationKey {
         return Flatten.FLATTEN_INSTANCE;
     }
 
-    static MemoizedOperationKey sort(SortPair[] sortPairs) {
-        return new Sort(sortPairs);
+    static MemoizedOperationKey sort(SortSpec[] sortColumns) {
+        return new Sort(sortColumns);
+    }
+
+    static MemoizedOperationKey ungroup(final boolean nullFill, String[] columns) {
+        return new Ungroup(nullFill, columns);
     }
 
     static MemoizedOperationKey dropColumns(String[] columns) {
@@ -240,10 +242,10 @@ public abstract class MemoizedOperationKey {
     }
 
     private static class Sort extends MemoizedOperationKey {
-        private final SortPair[] sortPairs;
+        private final SortSpec[] sortColumns;
 
-        private Sort(SortPair[] sortPairs) {
-            this.sortPairs = sortPairs;
+        private Sort(SortSpec[] sortColumns) {
+            this.sortColumns = sortColumns;
         }
 
         @Override
@@ -257,12 +259,12 @@ public abstract class MemoizedOperationKey {
 
             final Sort sort = (Sort) other;
 
-            return Arrays.equals(sortPairs, sort.sortPairs);
+            return Arrays.equals(sortColumns, sort.sortColumns);
         }
 
         @Override
         public int hashCode() {
-            return Arrays.hashCode(sortPairs);
+            return Arrays.hashCode(sortColumns);
         }
 
         @Override
@@ -717,6 +719,40 @@ public abstract class MemoizedOperationKey {
         @Override
         public int hashCode() {
             return 31 * key.hashCode() + Long.hashCode(sizeLimit);
+        }
+
+        @Override
+        BaseTable.CopyAttributeOperation copyType() {
+            return BaseTable.CopyAttributeOperation.None;
+        }
+    }
+
+    private static class Ungroup extends AttributeAgnosticMemoizedOperationKey {
+        private final boolean nullFill;
+        private final HashSet<String> columns;
+
+        private Ungroup(boolean nullFill, String[] columns) {
+            this.nullFill = nullFill;
+            this.columns = new HashSet<>(Arrays.asList(columns));
+        }
+
+        @Override
+        public boolean equals(final Object other) {
+            if (this == other) {
+                return true;
+            }
+            if (other == null || getClass() != other.getClass()) {
+                return false;
+            }
+
+            final Ungroup ungroup = (Ungroup) other;
+
+            return nullFill == ungroup.nullFill && columns.equals(ungroup.columns);
+        }
+
+        @Override
+        public int hashCode() {
+            return Boolean.hashCode(nullFill) ^ columns.hashCode();
         }
 
         @Override

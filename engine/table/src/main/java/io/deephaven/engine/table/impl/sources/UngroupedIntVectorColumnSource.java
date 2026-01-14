@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
 // ****** Edit UngroupedCharVectorColumnSource and run "./gradlew replicateSourcesAndChunks" to regenerate
@@ -27,8 +27,7 @@ public class UngroupedIntVectorColumnSource extends UngroupedColumnSource<Intege
     public UngroupedIntVectorColumnSource(ColumnSource<IntVector> innerSource) {
         super(Integer.class);
         this.innerSource = innerSource;
-        this.isUngroupable = innerSource instanceof UngroupableColumnSource
-                && ((UngroupableColumnSource) innerSource).isUngroupable();
+        this.isUngroupable = UngroupableColumnSource.isUngroupable(innerSource);
     }
 
     @Override

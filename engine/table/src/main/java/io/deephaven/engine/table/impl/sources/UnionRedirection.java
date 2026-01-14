@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.sources;
 
@@ -197,7 +197,7 @@ public class UnionRedirection {
 
     private static int slotForRowKey(final long rowKey, int firstSlot,
             @NotNull final long[] firstRowKeyForSlot, final int numSlots) {
-        if (rowKey >= firstRowKeyForSlot[firstSlot]) {
+        if (firstSlot < numSlots && rowKey >= firstRowKeyForSlot[firstSlot]) {
             if (rowKey < firstRowKeyForSlot[firstSlot + 1]) {
                 return firstSlot;
             }

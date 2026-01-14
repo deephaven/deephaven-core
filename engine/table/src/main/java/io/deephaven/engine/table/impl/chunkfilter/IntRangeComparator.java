@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
 // ****** Edit CharRangeComparator and run "./gradlew replicateChunkFilters" to regenerate
@@ -22,7 +22,7 @@ public class IntRangeComparator {
         }
     }
 
-    final static class IntIntInclusiveInclusiveFilter extends IntIntFilter {
+    private final static class IntIntInclusiveInclusiveFilter extends IntIntFilter {
         private IntIntInclusiveInclusiveFilter(int lower, int upper) {
             super(lower, upper);
         }
@@ -33,7 +33,7 @@ public class IntRangeComparator {
         }
     }
 
-    final static class IntIntInclusiveExclusiveFilter extends IntIntFilter {
+    private final static class IntIntInclusiveExclusiveFilter extends IntIntFilter {
         private IntIntInclusiveExclusiveFilter(int lower, int upper) {
             super(lower, upper);
         }
@@ -44,7 +44,7 @@ public class IntRangeComparator {
         }
     }
 
-    final static class IntIntExclusiveInclusiveFilter extends IntIntFilter {
+    private final static class IntIntExclusiveInclusiveFilter extends IntIntFilter {
         private IntIntExclusiveInclusiveFilter(int lower, int upper) {
             super(lower, upper);
         }
@@ -55,7 +55,7 @@ public class IntRangeComparator {
         }
     }
 
-    final static class IntIntExclusiveExclusiveFilter extends IntIntFilter {
+    private final static class IntIntExclusiveExclusiveFilter extends IntIntFilter {
         private IntIntExclusiveExclusiveFilter(int lower, int upper) {
             super(lower, upper);
         }

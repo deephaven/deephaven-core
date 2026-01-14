@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.iceberg;
 
@@ -19,6 +19,7 @@ import org.apache.iceberg.catalog.TableIdentifier;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
 
 import java.nio.file.Path;
@@ -54,10 +55,13 @@ class PyIceberg5aTest {
 
     private IcebergCatalogAdapter catalogAdapter;
 
+    @RegisterExtension
+    public static final DbResource dbResource = new DbResource();
+
     @BeforeEach
     void setUp(@TempDir Path rootDir) throws Exception {
         engineCleanup.setUp();
-        catalogAdapter = DbResource.openCatalog("pyiceberg-5", rootDir);
+        catalogAdapter = dbResource.openReadWriteCatalog("pyiceberg-5", rootDir);
     }
 
     @Test

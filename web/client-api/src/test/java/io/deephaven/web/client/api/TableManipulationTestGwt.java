@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.web.client.api;
 
@@ -597,6 +597,14 @@ public class TableManipulationTestGwt extends AbstractAsyncGwtTestCase {
                     });
                     table.setViewport(0, 0, null);
                     return assertUpdateReceived(table, 1, 2011);
+                })
+                .then(table -> {
+                    // static invoke with no match
+                    table.applyFilter(new FilterCondition[] {
+                            FilterCondition.invoke("and", FilterValue.ofBoolean(false))
+                    });
+                    table.setViewport(0, 0, null);
+                    return assertUpdateReceived(table, 0, 2012);
                 })
                 .then(this::finish).catch_(this::report);
     }

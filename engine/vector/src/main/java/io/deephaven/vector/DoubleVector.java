@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
 // ****** Edit CharVector and run "./gradlew replicateVectors" to regenerate
@@ -7,13 +7,17 @@
 // @formatter:off
 package io.deephaven.vector;
 
+import io.deephaven.util.compare.DoubleComparisons;
+
 import io.deephaven.base.verify.Require;
+import io.deephaven.util.annotations.UserInvocationPermitted;
 import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfDouble;
 import io.deephaven.engine.primitive.value.iterator.ValueIteratorOfDouble;
 import io.deephaven.qst.type.DoubleType;
 import io.deephaven.qst.type.PrimitiveVectorType;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.annotations.FinalDefault;
+import io.deephaven.util.compare.DoubleComparisons;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -37,6 +41,7 @@ public interface DoubleVector extends Vector<DoubleVector>, Iterable<Double> {
      * @param index An offset into this DoubleVector
      * @return The element at the specified offset, or the {@link QueryConstants#NULL_DOUBLE null double}
      */
+    @UserInvocationPermitted({"vector"})
     double get(long index);
 
     @Override
@@ -54,6 +59,7 @@ public interface DoubleVector extends Vector<DoubleVector>, Iterable<Double> {
     @Override
     DoubleVector getDirect();
 
+    @UserInvocationPermitted({"vector"})
     @Override
     @FinalDefault
     default ValueIteratorOfDouble iterator() {
@@ -101,6 +107,22 @@ public interface DoubleVector extends Vector<DoubleVector>, Iterable<Double> {
     @FinalDefault
     default String toString(final int prefixLength) {
         return toString(this, prefixLength);
+    }
+
+    /**
+     * <p>
+     * Compare this vector with another vector.
+     * </p>
+     *
+     * <p>
+     * The vectors are ordered lexicographically using Deephaven sorting rules.
+     * </p>
+     *
+     * {@see Comparable#compareTo}
+     */
+    @Override
+    default int compareTo(final DoubleVector o) {
+        return compareTo(this, o);
     }
 
     static String doubleValToString(final Object val) {
@@ -163,13 +185,44 @@ public interface DoubleVector extends Vector<DoubleVector>, Iterable<Double> {
                 final CloseablePrimitiveIteratorOfDouble bIterator = bVector.iterator()) {
             while (aIterator.hasNext()) {
                 // region ElementEquals
-                if (Double.doubleToLongBits(aIterator.nextDouble()) != Double.doubleToLongBits(bIterator.nextDouble())) {
+                if (!DoubleComparisons.eq(aIterator.nextDouble(), bIterator.nextDouble())) {
                     return false;
                 }
                 // endregion ElementEquals
             }
         }
         return true;
+    }
+
+    /**
+     * Helper method for {@link Comparable#compareTo(Object)} for a generic DoubleVector.
+     * 
+     * @param aVector the first vector (this in compareTo)
+     * @param bVector the second vector ("o" or other in compareTo)
+     * @return -1, 0, or 1 if aVector is less than, equal to, or greater than bVector (respectively)
+     */
+    static int compareTo(final DoubleVector aVector, final DoubleVector bVector) {
+        if (aVector == bVector) {
+            return 0;
+        }
+        try (final CloseablePrimitiveIteratorOfDouble aIterator = aVector.iterator();
+                final CloseablePrimitiveIteratorOfDouble bIterator = bVector.iterator()) {
+            while (aIterator.hasNext()) {
+                if (!bIterator.hasNext()) {
+                    return 1;
+                }
+                final double aValue = aIterator.nextDouble();
+                final double bValue = bIterator.nextDouble();
+                final int compare = DoubleComparisons.compare(aValue, bValue);
+                if (compare != 0) {
+                    return compare;
+                }
+            }
+            if (bIterator.hasNext()) {
+                return -1;
+            }
+        }
+        return 0;
     }
 
     /**
@@ -185,7 +238,9 @@ public interface DoubleVector extends Vector<DoubleVector>, Iterable<Double> {
         }
         try (final CloseablePrimitiveIteratorOfDouble iterator = vector.iterator()) {
             while (iterator.hasNext()) {
-                result = 31 * result + Double.hashCode(iterator.nextDouble());
+                // region ElementHash
+                result = 31 * result + DoubleComparisons.hashCode(iterator.nextDouble());
+                // endregion ElementHash
             }
         }
         return result;
@@ -196,6 +251,7 @@ public interface DoubleVector extends Vector<DoubleVector>, Iterable<Double> {
      */
     abstract class Indirect implements DoubleVector {
 
+        @UserInvocationPermitted({"vector"})
         @Override
         public double[] toArray() {
             final int size = intSize("DoubleVector.toArray");

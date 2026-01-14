@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
 // ****** Edit LocalTimeFromMicrosMaterializer and run "./gradlew replicatePageMaterializers" to regenerate
@@ -9,10 +9,11 @@ package io.deephaven.parquet.base.materializers;
 
 import io.deephaven.parquet.base.PageMaterializer;
 import io.deephaven.parquet.base.PageMaterializerFactory;
-import io.deephaven.time.DateTimeUtils;
 import org.apache.parquet.column.values.ValuesReader;
 
 import java.time.LocalTime;
+
+import static io.deephaven.parquet.base.materializers.ParquetMaterializerUtils.NANO;
 
 public class LocalTimeFromNanosMaterializer extends ObjectMaterializerBase<LocalTime> implements PageMaterializer {
 
@@ -28,6 +29,10 @@ public class LocalTimeFromNanosMaterializer extends ObjectMaterializerBase<Local
         }
     };
 
+    public static LocalTime convertValue(long value) {
+        return LocalTime.ofNanoOfDay(value * NANO);
+    }
+
     private final ValuesReader dataReader;
 
     private LocalTimeFromNanosMaterializer(ValuesReader dataReader, int numValues) {
@@ -42,7 +47,7 @@ public class LocalTimeFromNanosMaterializer extends ObjectMaterializerBase<Local
     @Override
     public void fillValues(int startIndex, int endIndex) {
         for (int ii = startIndex; ii < endIndex; ii++) {
-            data[ii] = DateTimeUtils.nanosOfDayToLocalTime(dataReader.readLong());
+            data[ii] = convertValue(dataReader.readLong());
         }
     }
 }

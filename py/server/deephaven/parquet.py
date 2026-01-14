@@ -1,30 +1,46 @@
 #
-# Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 #
 
-""" This module supports reading an external Parquet files into Deephaven tables and writing Deephaven tables out as
-Parquet files. """
+"""This module supports reading an external Parquet files into Deephaven tables and writing Deephaven tables out as
+Parquet files."""
+
+from __future__ import annotations
+
+from collections.abc import Sequence
 from dataclasses import dataclass
 from enum import Enum
-from typing import List, Optional, Union, Dict, Sequence
+from typing import Optional, Union
 
 import jpy
 
 from deephaven import DHError
-from deephaven.jcompat import j_array_list
-from deephaven.table import Table, TableDefinition, TableDefinitionLike, PartitionedTable
+from deephaven._wrapper import JObjectWrapper
 from deephaven.experimental import s3
+from deephaven.jcompat import j_array_list
+from deephaven.table import (
+    PartitionedTable,
+    Table,
+    TableDefinition,
+    TableDefinitionLike,
+)
 
 _JParquetTools = jpy.get_type("io.deephaven.parquet.table.ParquetTools")
-_JCompressionCodecName = jpy.get_type("org.apache.parquet.hadoop.metadata.CompressionCodecName")
+_JCompressionCodecName = jpy.get_type(
+    "org.apache.parquet.hadoop.metadata.CompressionCodecName"
+)
 _JParquetInstructions = jpy.get_type("io.deephaven.parquet.table.ParquetInstructions")
-_JParquetFileLayout = jpy.get_type("io.deephaven.parquet.table.ParquetInstructions$ParquetFileLayout")
+_JParquetFileLayout = jpy.get_type(
+    "io.deephaven.parquet.table.ParquetInstructions$ParquetFileLayout"
+)
 _JTableDefinition = jpy.get_type("io.deephaven.engine.table.TableDefinition")
+_JRowGroupInfo = jpy.get_type("io.deephaven.parquet.table.metadata.RowGroupInfo")
 
 
 @dataclass
 class ColumnInstruction:
-    """  This class specifies the instructions for reading/writing a Parquet column. """
+    """This class specifies the instructions for reading/writing a Parquet column."""
+
     column_name: Optional[str] = None
     parquet_column_name: Optional[str] = None
     codec_name: Optional[str] = None
@@ -33,7 +49,7 @@ class ColumnInstruction:
 
 
 class ParquetFileLayout(Enum):
-    """ The parquet file layout. """
+    """The parquet file layout."""
 
     SINGLE_FILE = 1
     """ A single parquet file. """
@@ -54,8 +70,75 @@ class ParquetFileLayout(Enum):
     """
 
 
+class RowGroupInfo(JObjectWrapper):
+    """This class specifies desired RowGroup behavior"""
+
+    j_object_type = _JRowGroupInfo
+
+    @property
+    def j_object(self) -> jpy.JType:
+        return self.j_row_group_info
+
+    def __init__(self, j_row_group_info: jpy.JType):
+        self.j_row_group_info = j_row_group_info
+
+    @classmethod
+    def single_group(cls) -> RowGroupInfo:
+        """All data is within a single RowGroup. This is the default RowGroupInfo implementation."""
+        return cls(_JRowGroupInfo.singleGroup())
+
+    @classmethod
+    def max_groups(cls, num_row_groups: int) -> RowGroupInfo:
+        """
+        Split evenly into a pre-defined number of RowGroups, each of which contains the same number of rows as
+        each other. If the input table size is not evenly divisible by the number of RowGroups requested, then a
+        number of RowGroups will contain 1 fewer row than the others.
+
+        Args:
+            num_row_groups (int): The number of RowGroups to write
+
+        Returns:
+            RowGroupInfo: The RowGroupInfo object
+        """
+        return cls(_JRowGroupInfo.maxGroups(num_row_groups))
+
+    @classmethod
+    def max_rows(cls, max_rows: int) -> RowGroupInfo:
+        """
+        Splits into a number of RowGroups, each of which has no more than the requested number of rows.
+
+        Args:
+            max_rows (int): The maximum number of rows in each RowGroup
+
+        Returns:
+            RowGroupInfo: The RowGroupInfo object
+        """
+        return cls(_JRowGroupInfo.maxRows(max_rows))
+
+    @classmethod
+    def by_groups(
+        cls, groups: list[str], max_rows: Optional[int] = None
+    ) -> RowGroupInfo:
+        """
+        Splits each unique group into a RowGroup. If the table does not have all values for the group(s)
+        contiguously, then an error will be raised. If max_rows is set and a given RowGroup yields a row count greater
+        than the requested number of rows, then it will be split further using `max_rows(...)`
+
+        Args:
+            groups (list[str]): Grouping column name(s)
+            max_rows: (Optional[int]) The maximum number of rows in each RowGroup
+
+        Returns:
+            RowGroupInfo: The RowGroupInfo object
+        """
+        if max_rows:
+            return cls(_JRowGroupInfo.byGroups(max_rows, _j_string_array(groups)))
+        else:
+            return cls(_JRowGroupInfo.byGroups(_j_string_array(groups)))
+
+
 def _build_parquet_instructions(
-    col_instructions: Optional[List[ColumnInstruction]] = None,
+    col_instructions: Optional[list[ColumnInstruction]] = None,
     compression_codec_name: Optional[str] = None,
     max_dictionary_keys: Optional[int] = None,
     max_dictionary_size: Optional[int] = None,
@@ -69,6 +152,7 @@ def _build_parquet_instructions(
     file_layout: Optional[ParquetFileLayout] = None,
     table_definition: Optional[TableDefinitionLike] = None,
     index_columns: Optional[Sequence[Sequence[str]]] = None,
+    row_group_info: Optional[RowGroupInfo] = None,
     special_instructions: Optional[s3.S3Instructions] = None,
 ):
     if not any(
@@ -86,7 +170,8 @@ def _build_parquet_instructions(
             file_layout is not None,
             table_definition is not None,
             index_columns is not None,
-            special_instructions is not None
+            row_group_info is not None,
+            special_instructions is not None,
         ]
     ):
         return _JParquetInstructions.EMPTY
@@ -138,6 +223,9 @@ def _build_parquet_instructions(
     if index_columns:
         builder.addAllIndexColumns(_j_list_of_list_of_string(index_columns))
 
+    if row_group_info:
+        builder.setRowGroupInfo(row_group_info.j_object)
+
     if special_instructions is not None:
         builder.setSpecialInstructions(special_instructions.j_object)
 
@@ -160,18 +248,18 @@ def _j_file_layout(file_layout: Optional[ParquetFileLayout]) -> Optional[jpy.JTy
 
 def read(
     path: str,
-    col_instructions: Optional[List[ColumnInstruction]] = None,
+    col_instructions: Optional[list[ColumnInstruction]] = None,
     is_legacy_parquet: bool = False,
     is_refreshing: bool = False,
     file_layout: Optional[ParquetFileLayout] = None,
     table_definition: Optional[TableDefinitionLike] = None,
     special_instructions: Optional[s3.S3Instructions] = None,
 ) -> Table:
-    """ Reads in a table from a single parquet, metadata file, or directory with recognized layout.
+    """Reads in a table from a single parquet, metadata file, or directory with recognized layout.
 
     Args:
         path (str): the file or directory to examine
-        col_instructions (Optional[List[ColumnInstruction]]): instructions for customizations while reading particular
+        col_instructions (Optional[list[ColumnInstruction]]): instructions for customizations while reading particular
             columns, default is None, which means no specialization for any column
         is_legacy_parquet (bool): if the parquet data is legacy
         is_refreshing (bool): if the parquet data represents a refreshing source
@@ -207,16 +295,16 @@ def read(
         raise DHError(e, "failed to read parquet data.") from e
 
 
-def _j_string_array(str_seq: Sequence[str]):
+def _j_string_array(str_seq: Sequence[str]) -> jpy.JType:
     return jpy.array("java.lang.String", str_seq)
 
 
-def _j_list_of_list_of_string(str_seq_seq: Sequence[Sequence[str]]):
+def _j_list_of_list_of_string(str_seq_seq: Sequence[Sequence[str]]) -> jpy.JType:
     return j_array_list([j_array_list(str_seq) for str_seq in str_seq_seq])
 
 
 def delete(path: str) -> None:
-    """ Deletes a Parquet table on disk.
+    """Deletes a Parquet table on disk.
 
     Args:
         path (str): path to delete
@@ -234,16 +322,17 @@ def write(
     table: Table,
     path: str,
     table_definition: Optional[TableDefinitionLike] = None,
-    col_instructions: Optional[List[ColumnInstruction]] = None,
+    col_instructions: Optional[list[ColumnInstruction]] = None,
     compression_codec_name: Optional[str] = None,
     max_dictionary_keys: Optional[int] = None,
     max_dictionary_size: Optional[int] = None,
     target_page_size: Optional[int] = None,
     generate_metadata_files: Optional[bool] = None,
     index_columns: Optional[Sequence[Sequence[str]]] = None,
-    special_instructions: Optional[s3.S3Instructions] = None
+    row_group_info: Optional[RowGroupInfo] = None,
+    special_instructions: Optional[s3.S3Instructions] = None,
 ) -> None:
-    """ Write a table to a Parquet file.
+    """Write a table to a Parquet file.
 
     Args:
         table (Table): the source table
@@ -254,7 +343,7 @@ def write(
             instead of the definitions implied by the table. Default is None, which means use the column definitions
             implied by the table. This definition can be used to skip some columns or add additional columns with
             null values.
-        col_instructions (Optional[List[ColumnInstruction]]): instructions for customizations while writing particular
+        col_instructions (Optional[list[ColumnInstruction]]): instructions for customizations while writing particular
             columns, default is None, which means no specialization for any column
         compression_codec_name (Optional[str]): the compression codec to use. Allowed values include "UNCOMPRESSED",
             "SNAPPY", "GZIP", "LZO", "LZ4", "LZ4_RAW", "ZSTD", etc. If not specified, defaults to "SNAPPY".
@@ -274,6 +363,7 @@ def write(
             source table. This argument can be used to narrow the set of indexes to write, or to be explicit about the
             expected set of indexes present on all sources. Indexes that are specified but missing will be computed on
             demand.
+        row_group_info (Optional[RowGroupInfo]): requested RowGroup instructions, as returned by a call against RowGroupInfo
         special_instructions (Optional[s3.S3Instructions]): Special instructions for writing parquet files, useful when
             writing files to a non-local file system, like S3. By default, None.
     Raises:
@@ -290,6 +380,7 @@ def write(
             generate_metadata_files=generate_metadata_files,
             table_definition=table_definition,
             index_columns=index_columns,
+            row_group_info=row_group_info,
             special_instructions=special_instructions,
         )
         _JParquetTools.writeTable(table.j_table, path, write_instructions)
@@ -298,27 +389,28 @@ def write(
 
 
 def write_partitioned(
-        table: Union[Table, PartitionedTable],
-        destination_dir: str,
-        table_definition: Optional[TableDefinitionLike] = None,
-        col_instructions: Optional[List[ColumnInstruction]] = None,
-        compression_codec_name: Optional[str] = None,
-        max_dictionary_keys: Optional[int] = None,
-        max_dictionary_size: Optional[int] = None,
-        target_page_size: Optional[int] = None,
-        base_name: Optional[str] = None,
-        generate_metadata_files: Optional[bool] = None,
-        index_columns: Optional[Sequence[Sequence[str]]] = None,
-        special_instructions: Optional[s3.S3Instructions] = None
+    table: Union[Table, PartitionedTable],
+    destination_dir: str,
+    table_definition: Optional[TableDefinitionLike] = None,
+    col_instructions: Optional[list[ColumnInstruction]] = None,
+    compression_codec_name: Optional[str] = None,
+    max_dictionary_keys: Optional[int] = None,
+    max_dictionary_size: Optional[int] = None,
+    target_page_size: Optional[int] = None,
+    base_name: Optional[str] = None,
+    generate_metadata_files: Optional[bool] = None,
+    index_columns: Optional[Sequence[Sequence[str]]] = None,
+    row_group_info: Optional[RowGroupInfo] = None,
+    special_instructions: Optional[s3.S3Instructions] = None,
 ) -> None:
-    """ Write table to disk in parquet format with the partitioning columns written as "key=value" format in a nested
+    """Write table to disk in parquet format with the partitioning columns written as "key=value" format in a nested
     directory structure. For example, for a partitioned column "date", we will have a directory structure like
     "date=2021-01-01/<base_name>.parquet", "date=2021-01-02/<base_name>.parquet", etc. where "2021-01-01" and
     "2021-01-02" are the partition values and "<base_name>" is passed as an optional parameter. All the necessary
     subdirectories are created if they do not exist.
 
     Args:
-        table (Table): the source table or partitioned table
+        table (Union[Table, PartitionedTable]): the source table or partitioned table
         destination_dir (str): The path or URI to the destination root directory in which the partitioned parquet data
             will be stored in a nested directory structure format. Non-existing directories in the provided path will be
             created.
@@ -326,7 +418,7 @@ def write_partitioned(
             instead of the definitions implied by the table. Default is None, which means use the column definitions
             implied by the table. This definition can be used to skip some columns or add additional columns with
             null values.
-        col_instructions (Optional[List[ColumnInstruction]]): instructions for customizations while writing particular
+        col_instructions (Optional[list[ColumnInstruction]]): instructions for customizations while writing particular
             columns, default is None, which means no specialization for any column
         compression_codec_name (Optional[str]): the compression codec to use. Allowed values include "UNCOMPRESSED",
             "SNAPPY", "GZIP", "LZO", "LZ4", "LZ4_RAW", "ZSTD", etc. If not specified, defaults to "SNAPPY".
@@ -358,6 +450,7 @@ def write_partitioned(
             source table. This argument can be used to narrow the set of indexes to write, or to be explicit about the
             expected set of indexes present on all sources. Indexes that are specified but missing will be computed on
             demand.
+        row_group_info (Optional[RowGroupInfo]): requested RowGroup instructions, as returned by a call against RowGroupInfo
         special_instructions (Optional[s3.S3Instructions]): Special instructions for writing parquet files, useful when
             writing files to a non-local file system, like S3. By default, None.
 
@@ -376,40 +469,44 @@ def write_partitioned(
             base_name=base_name,
             table_definition=table_definition,
             index_columns=index_columns,
+            row_group_info=row_group_info,
             special_instructions=special_instructions,
         )
-        _JParquetTools.writeKeyValuePartitionedTable(table.j_object, destination_dir, write_instructions)
+        _JParquetTools.writeKeyValuePartitionedTable(
+            table.j_object, destination_dir, write_instructions
+        )
     except Exception as e:
         raise DHError(e, "failed to write to parquet data.") from e
 
 
 def batch_write(
-    tables: List[Table],
-    paths: List[str],
+    tables: list[Table],
+    paths: list[str],
     table_definition: Optional[TableDefinitionLike] = None,
-    col_instructions: Optional[List[ColumnInstruction]] = None,
+    col_instructions: Optional[list[ColumnInstruction]] = None,
     compression_codec_name: Optional[str] = None,
     max_dictionary_keys: Optional[int] = None,
     max_dictionary_size: Optional[int] = None,
     target_page_size: Optional[int] = None,
     generate_metadata_files: Optional[bool] = None,
     index_columns: Optional[Sequence[Sequence[str]]] = None,
-    special_instructions: Optional[s3.S3Instructions] = None
+    row_group_info: Optional[RowGroupInfo] = None,
+    special_instructions: Optional[s3.S3Instructions] = None,
 ):
-    """ Writes tables to disk in parquet format to a supplied set of paths.
+    """Writes tables to disk in parquet format to a supplied set of paths.
 
     Note that either all the tables are written out successfully or none is.
 
     Args:
-        tables (List[Table]): the source tables
-        paths (List[str]): the destination paths or URIs. Any non-existing directories in the paths provided are
+        tables (list[Table]): the source tables
+        paths (list[str]): the destination paths or URIs. Any non-existing directories in the paths provided are
             created. If there is an error, any intermediate directories previously created are removed; note this makes
             this method unsafe for concurrent use
         table_definition (Optional[TableDefinitionLike]): the table definition to use for writing.
             This definition can be used to skip some columns or add additional columns with null values. Default is
             None, which means if all tables have the same definition, use the common table definition implied by the
             tables. Otherwise, this parameter must be specified.
-        col_instructions (Optional[List[ColumnInstruction]]): instructions for customizations while writing
+        col_instructions (Optional[list[ColumnInstruction]]): instructions for customizations while writing
         compression_codec_name (Optional[str]): the compression codec to use. Allowed values include "UNCOMPRESSED",
             "SNAPPY", "GZIP", "LZO", "LZ4", "LZ4_RAW", "ZSTD", etc. If not specified, defaults to "SNAPPY".
         max_dictionary_keys (Optional[int]): the maximum number of unique keys the writer should add to a dictionary page
@@ -428,6 +525,7 @@ def batch_write(
             source table. This argument can be used to narrow the set of indexes to write, or to be explicit about the
             expected set of indexes present on all sources. Indexes that are specified but missing will be computed on
             demand.
+        row_group_info (Optional[RowGroupInfo]): requested RowGroup instructions, as returned by a call against RowGroupInfo
         special_instructions (Optional[s3.S3Instructions]): Special instructions for writing parquet files, useful when
             writing files to a non-local file system, like S3. By default, None.
 
@@ -445,8 +543,11 @@ def batch_write(
             generate_metadata_files=generate_metadata_files,
             table_definition=table_definition,
             index_columns=index_columns,
+            row_group_info=row_group_info,
             special_instructions=special_instructions,
         )
-        _JParquetTools.writeTables([t.j_table for t in tables], _j_string_array(paths), write_instructions)
+        _JParquetTools.writeTables(
+            [t.j_table for t in tables], _j_string_array(paths), write_instructions
+        )
     except Exception as e:
         raise DHError(e, "write multiple tables to parquet data failed.") from e

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.web.client.api.widget.plot;
 
@@ -11,6 +11,7 @@ import io.deephaven.web.client.api.JsTable;
 import io.deephaven.web.client.api.LongWrapper;
 import io.deephaven.web.client.api.TableData;
 import io.deephaven.web.client.api.subscription.AbstractTableSubscription;
+import io.deephaven.web.client.api.subscription.DataOptions;
 import io.deephaven.web.client.api.subscription.SubscriptionTableData;
 import io.deephaven.web.client.api.subscription.TableSubscription;
 import io.deephaven.web.shared.fu.JsFunction;
@@ -326,7 +327,9 @@ public class ChartDataTestGwt extends AbstractAsyncGwtTestCase {
      * to be generalized for use in viewport tests, but haven't yet done this.
      */
     private SubscriptionValidator subscriptionValidator(JsTable table, JsArray<Column> subscriptionColumns) {
-        TableSubscription subscription = table.subscribe(subscriptionColumns);
+        DataOptions.SubscriptionOptions options = new DataOptions.SubscriptionOptions();
+        options.columns = subscriptionColumns;
+        TableSubscription subscription = table.createSubscription(options);
 
         return new SubscriptionValidator() {
             Promise<?> nextStep = Promise.resolve(subscription);
@@ -353,7 +356,9 @@ public class ChartDataTestGwt extends AbstractAsyncGwtTestCase {
                                 SubscriptionTableData data = (SubscriptionTableData) e1.getDetail();
                                 // Now that this update has happened, we make a new subscription to get a single
                                 // snapshot of the table
-                                TableSubscription checkSub = table.subscribe(subscriptionColumns);
+                                DataOptions.SubscriptionOptions options1 = new DataOptions.SubscriptionOptions();
+                                options1.columns = subscriptionColumns;
+                                TableSubscription checkSub = table.createSubscription(options1);
                                 checkSub.addEventListenerOneShot(TableSubscription.EVENT_UPDATED, e2 -> {
                                     try {
                                         SubscriptionTableData checkData = (SubscriptionTableData) e2.getDetail();

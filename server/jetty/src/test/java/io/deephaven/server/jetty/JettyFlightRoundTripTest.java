@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.server.jetty;
 
@@ -11,6 +11,7 @@ import io.deephaven.server.jetty.js.Sentinel;
 import io.deephaven.server.plugin.js.JsPluginsManifestRegistration;
 import io.deephaven.server.plugin.js.JsPluginsNpmPackageRegistration;
 import io.deephaven.server.runner.ExecutionContextUnitTestModule;
+import io.deephaven.server.table.validation.ExpressionValidatorModule;
 import io.deephaven.server.test.FlightMessageRoundTripTest;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
@@ -49,6 +50,7 @@ public class JettyFlightRoundTripTest extends FlightMessageRoundTripTest {
             FlightTestModule.class,
             JettyServerModule.class,
             JettyTestConfig.class,
+            ExpressionValidatorModule.class,
     })
     public interface JettyTestComponent extends TestComponent {
     }
@@ -59,24 +61,33 @@ public class JettyFlightRoundTripTest extends FlightMessageRoundTripTest {
     }
 
     @Test
+    @DeferServerStart
     public void jsPlugins() throws Exception {
         // Note: JettyFlightRoundTripTest is not the most minimal / appropriate bootstrapping for this test, but it is
         // the most convenient since it has all of the necessary prerequisites
         new Example123Registration().registerInto(component.registration());
+
+        startServer();
+
         testJsPluginExamples(false, true, true);
     }
 
     @Test
+    @DeferServerStart
     public void jsPluginsFromManifest() throws Exception {
         // Note: JettyFlightRoundTripTest is not the most minimal / appropriate bootstrapping for this test, but it is
         // the most convenient since it has all of the necessary prerequisites
         final Path manifestRoot = Path.of(Sentinel.class.getResource("examples").toURI());
         new JsPluginsManifestRegistration(manifestRoot)
                 .registerInto(component.registration());
+
+        startServer();
+
         testJsPluginExamples(false, false, true);
     }
 
     @Test
+    @DeferServerStart
     public void jsPluginsFromNpmPackages() throws Exception {
         // Note: JettyFlightRoundTripTest is not the most minimal / appropriate bootstrapping for this test, but it is
         // the most convenient since it has all of the necessary prerequisites
@@ -87,6 +98,9 @@ public class JettyFlightRoundTripTest extends FlightMessageRoundTripTest {
                 .registerInto(component.registration());
         new JsPluginsNpmPackageRegistration(example2Root)
                 .registerInto(component.registration());
+
+        startServer();
+
         testJsPluginExamples(true, true, false);
     }
 

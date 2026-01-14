@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.iceberg;
 
@@ -17,6 +17,7 @@ import org.apache.iceberg.catalog.TableIdentifier;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
@@ -73,9 +74,12 @@ class PyIcebergListColumnTest {
 
     private IcebergCatalogAdapter catalogAdapter;
 
+    @RegisterExtension
+    public static final DbResource dbResource = new DbResource();
+
     @BeforeEach
     void setUp() throws URISyntaxException {
-        catalogAdapter = DbResource.openCatalog("list-columns");
+        catalogAdapter = dbResource.openCatalog("list-columns");
     }
 
     @Test

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.server.table.ops.filter;
 
@@ -96,6 +96,20 @@ public class NormalizeNotsTest extends AbstractNormalizingFilterTest {
         final Condition aNotInB = notIn(reference("ColumnA"), reference("ColumnB"));
         assertFilterEquals("not(REGULAR) == INVERTED", not(aInB), aNotInB);
         assertFilterEquals("not(INVERTED) == REGULAR", not(aNotInB), aInB);
+    }
+
+    @Test
+    public void testInvokeStatic() {
+        Condition invoke = invoke("java.lang.Double.isNaN", null, literal(7));
+        assertFilterEquals("not(not(invoke))", not(not(invoke)), invoke);
+    }
+
+    @Test
+    public void testNotInvokeStatic() {
+        // Here we aren't testing if the not is normalized away, but both that it is retained and that there
+        // are no errors producing/normalizing it.
+        Condition invoke = invoke("java.lang.Double.isNaN", null, literal(7));
+        assertFilterEquals("not(invoke)", not(invoke), not(invoke));
     }
 
     @Override

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.select;
 
@@ -90,6 +90,21 @@ public interface WhereFilter extends Filter {
     }
 
     WhereFilter[] ZERO_LENGTH_WHERE_FILTER_ARRAY = new WhereFilter[0];
+
+    @Override
+    default WhereFilter withDeclaredBarriers(Object... declaredBarriers) {
+        return WhereFilterWithDeclaredBarriersImpl.of(this, declaredBarriers);
+    }
+
+    @Override
+    default WhereFilter withRespectedBarriers(Object... respectedBarriers) {
+        return WhereFilterWithRespectedBarriersImpl.of(this, respectedBarriers);
+    }
+
+    @Override
+    default WhereFilter withSerial() {
+        return WhereFilterSerialImpl.of(this);
+    }
 
     /**
      * Get the columns required by this select filter.
@@ -333,7 +348,10 @@ public interface WhereFilter extends Filter {
 
     @Override
     default Filter invert() {
-        throw new UnsupportedOperationException("WhereFilters do not implement invert");
+        if (this instanceof WhereFilterInvertedImpl) {
+            return ((WhereFilterInvertedImpl) this).filter;
+        }
+        return WhereFilterInvertedImpl.of(this);
     }
 
     @Override
@@ -346,5 +364,50 @@ public interface WhereFilter extends Filter {
         throw new UnsupportedOperationException("WhereFilters do not implement walk");
     }
 
+    /**
+     * This method calls the appropriate {@code visitor} method based on the type of {@code this} {@link WhereFilter}.
+     * This will invoke the most specific {@link Visitor} method available.
+     *
+     * @param visitor the visitor
+     * @return the value
+     * @param <T> the return value type
+     */
+    default <T> T walk(Visitor<T> visitor) {
+        return visitor.visitOther(this);
+    }
+
     // endregion Filter impl
+
+    /**
+     * The visitor. Unlike other visitor patterns whose hierarchy is fully specified, only a subset of specific filter
+     * types are present in {@link Visitor}, with all non-specific cases being delegated to
+     * {@link Visitor#visitOther(WhereFilter)}.
+     * 
+     * @param <T> the return type
+     */
+    interface Visitor<T> {
+        T visit(WhereFilterInvertedImpl filter);
+
+        T visit(WhereFilterSerialImpl filter);
+
+        T visit(WhereFilterWithDeclaredBarriersImpl filter);
+
+        T visit(WhereFilterWithRespectedBarriersImpl filter);
+
+        T visit(DisjunctiveFilter filter);
+
+        T visit(ConjunctiveFilter filter);
+
+        // Can consider adding other common types here in the future. ConditionFilter, MatchFilter, etc. This should be
+        // based on how often we end up needing code in visitOther to handle these types.
+
+        /**
+         * Handling for all cases not covered by more specific {@link Visitor} methods. This should never be invoked
+         * with the a {@link WhereFilter} type that matches a more specific {@link Visitor} method.
+         *
+         * @param filter the filter
+         * @return the return value
+         */
+        T visitOther(WhereFilter filter);
+    }
 }

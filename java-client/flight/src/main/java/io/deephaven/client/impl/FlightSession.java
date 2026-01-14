@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.client.impl;
 
@@ -54,6 +54,13 @@ public class FlightSession implements AutoCloseable {
      */
     public Session session() {
         return session;
+    }
+
+    /**
+     * @return the session's FlightClient instance
+     */
+    public FlightClient getClient() {
+        return client;
     }
 
     /**

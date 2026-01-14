@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.server.table.ops.filter;
 
@@ -8,9 +8,11 @@ import io.deephaven.proto.backplane.grpc.CompareCondition;
 import io.deephaven.proto.backplane.grpc.Condition;
 import io.deephaven.proto.backplane.grpc.Literal;
 import io.deephaven.proto.backplane.grpc.MatchType;
+import io.deephaven.proto.backplane.grpc.NanComparison;
 import io.deephaven.proto.backplane.grpc.Reference;
 import io.deephaven.proto.backplane.grpc.Value;
 import org.apache.commons.text.StringEscapeUtils;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 
@@ -134,7 +136,8 @@ public class FilterPrinter implements FilterVisitor<Void> {
     }
 
     @Override
-    public Void onIn(Value target, List<Value> candidatesList, CaseSensitivity caseSensitivity, MatchType matchType) {
+    public Void onIn(Value target, List<Value> candidatesList, CaseSensitivity caseSensitivity, MatchType matchType,
+            NanComparison nanComparison) {
         if (candidatesList.isEmpty()) {
             // should have already been pruned
             return null;
@@ -152,6 +155,9 @@ public class FilterPrinter implements FilterVisitor<Void> {
             sb.append(", ");
             accept(candidatesList.get(i));
         }
+        if (nanComparison == NanComparison.NAN_EQUALS_NAN) {
+            sb.append(" (nans equal)");
+        }
         return null;
     }
 
@@ -164,7 +170,7 @@ public class FilterPrinter implements FilterVisitor<Void> {
     }
 
     @Override
-    public Void onInvoke(String method, Value target, List<Value> argumentsList) {
+    public Void onInvoke(String method, @Nullable Value target, List<Value> argumentsList) {
         if (target != null) {
             accept(target);
             sb.append(".");

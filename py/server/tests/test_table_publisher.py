@@ -1,16 +1,15 @@
 #
-# Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 #
 
 import unittest
 from threading import Semaphore
-from typing import List
 
+from deephaven.column import double_col, int_col, string_col
+from deephaven.dtypes import double, int32, string
+from deephaven.stream.table_publisher import TablePublisher, table_publisher
 from deephaven.table import Table
-from deephaven.column import string_col, int_col, double_col
-from deephaven.dtypes import string, int32, double
-from deephaven.table_factory import new_table, merge
-from deephaven.stream.table_publisher import table_publisher, TablePublisher
+from deephaven.table_factory import merge, new_table
 from tests.testbase import BaseTestCase
 
 
@@ -64,7 +63,7 @@ class TablePublisherTestCase(BaseTestCase):
         self.assert_table_equals(my_table, goog_aapl_table)
 
     def test_add_on_flush(self):
-        my_tables: List[Table] = []
+        my_tables: list[Table] = []
 
         def on_flush(tp: TablePublisher):
             nonlocal my_tables

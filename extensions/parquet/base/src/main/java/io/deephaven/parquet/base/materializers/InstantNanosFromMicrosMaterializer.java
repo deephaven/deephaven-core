@@ -1,12 +1,15 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.parquet.base.materializers;
 
+import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.parquet.base.PageMaterializer;
 import io.deephaven.parquet.base.PageMaterializerFactory;
-import io.deephaven.time.DateTimeUtils;
 import org.apache.parquet.column.values.ValuesReader;
+
+import static io.deephaven.parquet.base.materializers.ParquetMaterializerUtils.MAX_CONVERTIBLE_MICROS;
+import static io.deephaven.parquet.base.materializers.ParquetMaterializerUtils.MICRO;
 
 public class InstantNanosFromMicrosMaterializer extends LongMaterializerBase implements PageMaterializer {
 
@@ -22,6 +25,13 @@ public class InstantNanosFromMicrosMaterializer extends LongMaterializerBase imp
         }
     };
 
+    public static long convertValue(long value) {
+        if (value > MAX_CONVERTIBLE_MICROS || value < -MAX_CONVERTIBLE_MICROS) {
+            throw new UncheckedDeephavenException("Converting " + value + " micros to nanos would overflow");
+        }
+        return value * MICRO;
+    }
+
     private final ValuesReader dataReader;
 
     private InstantNanosFromMicrosMaterializer(ValuesReader dataReader, int numValues) {
@@ -36,7 +46,7 @@ public class InstantNanosFromMicrosMaterializer extends LongMaterializerBase imp
     @Override
     public void fillValues(int startIndex, int endIndex) {
         for (int ii = startIndex; ii < endIndex; ii++) {
-            data[ii] = DateTimeUtils.microsToNanos(dataReader.readLong());
+            data[ii] = convertValue(dataReader.readLong());
         }
     }
 }

@@ -1,9 +1,7 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.util;
-
-import java.lang.Math;
 
 /**
  * Constants for primitive types within the Deephaven engine. These constants include null values, ranges of values,

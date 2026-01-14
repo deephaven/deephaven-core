@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.parquet.table;
 
@@ -151,15 +151,19 @@ public class ParquetTableWriter {
                     tableInfoBuilder.addDataIndexes(DataIndexInfo.of(
                             destDir.relativize(info.dest).getPath(),
                             info.parquetColumnNames));
-                    final ParquetInstructions writeInstructionsToUse;
+                    // we should always use a single RowGroup for the index-table
+                    final ParquetInstructions.Builder indexWIBuilder =
+                            new ParquetInstructions.Builder(writeInstructions)
+                                    .setRowGroupInfo(RowGroupInfo.singleGroup());
+                    final ParquetInstructions writeInstructionsForIndex;
                     if (INDEX_ROW_SET_COLUMN_NAME.equals(dataIndex.rowSetColumnName())) {
-                        writeInstructionsToUse = writeInstructions;
+                        writeInstructionsForIndex = indexWIBuilder.build();
                     } else {
-                        writeInstructionsToUse = new ParquetInstructions.Builder(writeInstructions)
+                        writeInstructionsForIndex = indexWIBuilder
                                 .addColumnNameMapping(INDEX_ROW_SET_COLUMN_NAME, dataIndex.rowSetColumnName())
                                 .build();
                     }
-                    write(indexTable, indexTable.getDefinition(), writeInstructionsToUse, info.dest,
+                    write(indexTable, indexTable.getDefinition(), writeInstructionsForIndex, info.dest,
                             info.destOutputStream, Collections.emptyMap(), indexTableInfoBuilder,
                             NullParquetMetadataFileWriter.INSTANCE, computedCache);
                 }
@@ -221,7 +225,10 @@ public class ParquetTableWriter {
                         tableRowSet, columnSourceMap, dest, destOutputStream, writeInstructions, tableMeta,
                         tableInfoBuilder, metadataFileWriter);
                 // Given the transformation, do not use the original table's "definition" for writing
-                write(t, writeInstructions, parquetFileWriter, computedCache);
+                final Iterator<Table> it = RowGroupTableIteratorVisitor.of(writeInstructions.getRowGroupInfo(), t);
+                while (it.hasNext()) {
+                    write(it.next(), writeInstructions, parquetFileWriter, computedCache);
+                }
                 parquetFileWriter.close();
                 numBytesWritten = parquetFileWriter.bytesWritten();
             }
@@ -393,7 +400,8 @@ public class ParquetTableWriter {
         extraMetaData.put(METADATA_KEY, tableInfoBuilder.build().serializeToJSON());
         return new ParquetFileWriter(dest, destOutputStream, writeInstructions.getTargetPageSize(),
                 new HeapByteBufferAllocator(), mappedSchema.getParquetSchema(),
-                writeInstructions.getCompressionCodecName(), extraMetaData, metadataFileWriter);
+                writeInstructions.getCompressionCodecName(), extraMetaData, metadataFileWriter,
+                writeInstructions.writeRowGroupStatistics());
     }
 
     private static <DATA_TYPE> void writeColumnSource(

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.iceberg;
 
@@ -27,6 +27,7 @@ import org.apache.iceberg.types.Types.StructType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.net.URISyntaxException;
 import java.util.List;
@@ -60,8 +61,11 @@ public class SchemaEvolutionNested {
             ColumnDefinition.ofInt("Bar_Field1_B"),
             ColumnDefinition.ofInt("Bar_Field2_B"));
 
+    @RegisterExtension
+    public static final DbResource dbResource = new DbResource();
+
     private static IcebergTableAdapter loadTable(LoadTableOptions options) throws URISyntaxException {
-        return DbResource.openCatalog(CATALOG_NAME).loadTable(options);
+        return dbResource.openCatalog(CATALOG_NAME).loadTable(options);
     }
 
     private static IcebergTableAdapter loadWithSchema(SchemaProvider schema) throws URISyntaxException {
@@ -83,7 +87,7 @@ public class SchemaEvolutionNested {
     @BeforeEach
     void setUp() throws URISyntaxException {
         {
-            final IcebergTableAdapter tableAdapter = DbResource.openCatalog(CATALOG_NAME).loadTable(TABLE_ID);
+            final IcebergTableAdapter tableAdapter = dbResource.openCatalog(CATALOG_NAME).loadTable(TABLE_ID);
             final Schema initialSchema = tableAdapter.schema(0).orElseThrow();
             fooId = initialSchema.findField("Foo").fieldId();
             fooField1Id = initialSchema.findField("Foo.Field1").fieldId();
@@ -97,7 +101,7 @@ public class SchemaEvolutionNested {
 
     @Test
     void schemas() throws URISyntaxException {
-        final IcebergTableAdapter tableAdapter = DbResource.openCatalog(CATALOG_NAME).loadTable(TABLE_ID);
+        final IcebergTableAdapter tableAdapter = dbResource.openCatalog(CATALOG_NAME).loadTable(TABLE_ID);
         // This is a meta test, making sure test setup is correct
         {
             final Map<Integer, Schema> schemas = tableAdapter.schemas();
@@ -111,7 +115,7 @@ public class SchemaEvolutionNested {
 
     @Test
     void snapshots() throws URISyntaxException {
-        final IcebergTableAdapter tableAdapter = DbResource.openCatalog(CATALOG_NAME).loadTable(TABLE_ID);
+        final IcebergTableAdapter tableAdapter = dbResource.openCatalog(CATALOG_NAME).loadTable(TABLE_ID);
         // This is a meta test, making sure test setup is correct
         assertThat(tableAdapter.listSnapshots()).hasSize(3);
     }
@@ -126,7 +130,7 @@ public class SchemaEvolutionNested {
 
     @Test
     void readLatest() throws URISyntaxException {
-        final IcebergTableAdapter tableAdapter = DbResource.openCatalog(CATALOG_NAME).loadTable(TABLE_ID);
+        final IcebergTableAdapter tableAdapter = dbResource.openCatalog(CATALOG_NAME).loadTable(TABLE_ID);
         assertThat(tableAdapter.definition()).isEqualTo(IDEF_2);
         TstUtils.assertTableEquals(expected(IDEF_2, 15), tableAdapter.table());
     }

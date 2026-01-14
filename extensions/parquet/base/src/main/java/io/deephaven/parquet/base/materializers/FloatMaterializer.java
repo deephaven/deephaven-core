@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.parquet.base.materializers;
 
@@ -22,6 +22,10 @@ public class FloatMaterializer implements PageMaterializer {
             return new FloatMaterializer(dataReader, numValues);
         }
     };
+
+    public static float convertValue(float value) {
+        return value;
+    }
 
     private final ValuesReader dataReader;
 
@@ -46,7 +50,7 @@ public class FloatMaterializer implements PageMaterializer {
     @Override
     public void fillValues(int startIndex, int endIndex) {
         for (int ii = startIndex; ii < endIndex; ii++) {
-            data[ii] = dataReader.readFloat();
+            data[ii] = convertValue(dataReader.readFloat());
         }
     }
 

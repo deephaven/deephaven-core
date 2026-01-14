@@ -7,6 +7,7 @@ description = 'Dagger for Deephaven plugins'
 
 dependencies {
     api project(':plugin')
+    api project(':plugin-options')
 
     implementation libs.dagger
     annotationProcessor libs.dagger.compiler
@@ -20,6 +21,9 @@ dependencies {
     testImplementation platform(libs.junit.bom)
     testImplementation libs.junit.jupiter
     testRuntimeOnly libs.junit.platform.launcher
+
+    compileOnly project(':util-immutables')
+    annotationProcessor libs.immutables.value
 }
 
 test {

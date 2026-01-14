@@ -22,8 +22,8 @@ dependencies {
     testImplementation libs.assertj
 
     testRuntimeOnly project(':log-to-slf4j'),
-            project(path: ':configs'),
-            project(path: ':test-configs')
+            project(':configs'),
+            project(':test-configs')
     testRuntimeOnly libs.slf4j.simple
 }
 

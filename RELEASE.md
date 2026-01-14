@@ -95,40 +95,40 @@ git@github.com:deephaven/deephaven-core.git
 Ensure you are up-to-date with `upstream/main`, or at the commit that you want to start a new release from.
 If you are unsure what commit to start from, please ask.
 Please double-check you are on the version you expect to be releasing.
-The releases have so far proceeded with `release/vX.Y.Z`, where `X.Y.Z` is the version number (this isn't a technical requirement), please replace `X.Y.Z` with the appropriate version.
+The releases have so far proceeded with `release/vX.Y`, where `X.Y` is the version number (this isn't a technical requirement), please replace `X.Y` with the appropriate version.
 We also separate out the release branch from `upstream/main` with an empty commit (this isn't a technical requirement).
 
 ```shell
 $ git fetch upstream
 $ git checkout upstream/main
 $ ./gradlew printVersion -PdeephavenBaseQualifier= -q
-$ git checkout -b release/vX.Y.Z
-$ git commit --allow-empty -m "chore: Cut for X.Y.Z"
+$ git checkout -b release/vX.Y
+$ git commit --allow-empty -m "chore: Cut for X.Y"
 ```
 
-#### Procedure for patch releases
+#### Procedure for minor releases
 
-For patch releases, typically the branch will be based off of the previous release tag, and not `upstream/main`, and the necessary patch fixes can be cherry-picked from the `upstream/main` branch.
-The patch release manager is also responsible for bumping the patch version numbers as appropriate (note comment block on the list of commands
+For minor releases, typically the branch will be based off of the previous release tag, and not `upstream/main`, and the necessary minor fixes can be cherry-picked from the `upstream/main` branch.
+The minor release manager is also responsible for bumping the minor version numbers as appropriate (note comment block on the list of commands
 below).
 
-Here is an example going from `X.Y.0` to `X.Y.1`:
+Here is an example going from `X.0` to `X.1`:
 
 ```shell
 $ git fetch upstream
-$ git checkout vX.Y.0
-$ git checkout -b release/vX.Y.1
+$ git checkout vX.0
+$ git checkout -b release/vX.1
 $ git cherry-pick <...>
 #
-# Edit files, updating from X.Y.0 to X.Y.1, and git add them.
+# Edit files, updating from X.0 to X.1, and git add them.
 #
 # Look in the last section "Version bump in preparation of next release" for a list of
 # files to update to the right version you are producing.
 #
 # See https://github.com/deephaven/deephaven-core/issues/3466 for future improvements to this process.
 $ ...
-$ git commit -m "chore: Bump to X.Y.1"
-$ git --no-pager log --oneline vX.Y.0..release/vX.Y.1
+$ git commit -m "chore: Bump to X.1"
+$ git --no-pager log --oneline vX.0..release/vX.1
 #
 # Compare output to expected PR list for missing or extraneous PRs
 ```
@@ -141,8 +141,8 @@ It's also best practice to ensure that the cherry-picks compile, as there can so
 Triple-check things look correct, the release is a "GO", and then start the release process by pushing the release branch to upstream:
 
 ```shell
-$ git show release/vX.Y.Z
-$ git push -u upstream release/vX.Y.Z
+$ git show release/vX.Y
+$ git push -u upstream release/vX.Y
 ```
 
 Note: release branches are _not_ typically merged back into `main`.
@@ -150,9 +150,9 @@ Note: release branches are _not_ typically merged back into `main`.
 ### 4. Monitor release
 
 The release will proceed with [GitHub Actions](https://github.com/deephaven/deephaven-core/actions/workflows/publish-ci.yml).
-The specific action can be found based off of the name of the release branch: [?query=branch%3Arelease%2FvX.Y.Z](https://github.com/deephaven/deephaven-core/actions/workflows/publish-ci.yml?query=branch%3Arelease%2FvX.Y.Z).
+The specific action can be found based off of the name of the release branch: [?query=branch%3Arelease%2FvX.Y](https://github.com/deephaven/deephaven-core/actions/workflows/publish-ci.yml?query=branch%3Arelease%2FvX.Y).
 
-The "Publish" step creates the artifacts and publishes the jars to a [Maven Central staging repository](https://s01.oss.sonatype.org).
+The "Publish" step creates the artifacts and publishes the jars to a [Maven Central Portal staging repository](https://central.sonatype.com/).
 
 The "Upload Artifacts" step uploads the Deephaven server application, the deephaven-core wheel, and the deephaven-server wheel as *temporary* GitHub action artifacts.
 
@@ -189,21 +189,21 @@ If you are unable to use these tools, it is possible for somebody else to do thi
 The following tools are used: [syft](https://github.com/anchore/syft), [cyclonedx](https://github.com/CycloneDX/cyclonedx-cli).
 
 ```shell
-syft server-jetty-X.Y.Z.tar -o json > server-jetty-X.Y.Z.tar.syft.json
+syft server-jetty-X.Y.tar -o json > server-jetty-X.Y.tar.syft.json
 ```
 
 Compare differences:
 ```shell
-syft convert server-jetty-A.B.C.tar.syft.json -o cyclonedx-json=/tmp/A.B.C.cyclonedx.json
-syft convert server-jetty-X.Y.Z.tar.syft.json -o cyclonedx-json=/tmp/X.Y.Z.cyclonedx.json
-cyclonedx diff /tmp/A.B.C.cyclonedx.json /tmp/X.Y.Z.cyclonedx.json --component-versions
+syft convert server-jetty-A.B.tar.syft.json -o cyclonedx-json=/tmp/A.B.cyclonedx.json
+syft convert server-jetty-X.Y.tar.syft.json -o cyclonedx-json=/tmp/X.Y.cyclonedx.json
+cyclonedx diff /tmp/A.B.cyclonedx.json /tmp/X.Y.cyclonedx.json --component-versions
 ```
 
 Please post the difference to the Deephaven team to ensure there are no unexpected new dependencies, removed dependencies, or updated dependencies.
 
 ### 7. Maven Central jars
 
-The jars are put into a [Maven Central Repository Manager](https://s01.oss.sonatype.org) staging repository.
+The jars are put into a [Maven Central Portal](https://central.sonatype.com/) staging repository.
 You'll need your own username and password to sign in (to ensure auditability).
 
 Arguably, the Maven Central jars are the most important artifacts - once they are officially released from the staging repository, they are released "forever".
@@ -219,26 +219,26 @@ Sometimes it takes a little bit of time for the jars to appear.
 
 ### 8. Tag upstream
 
-The `vX.Y.Z` tag is primarily meant for an immutable reference point in the future.
+The `vX.Y` tag is primarily meant for an immutable reference point in the future.
 It does not kick off any additional jobs.
 The release should only be tagged _after_ the Maven Central staging repository has been "Released".
 
 ```shell
-$ git tag -a -m "[Release] X.Y.Z" vX.Y.Z release/vX.Y.Z
-$ git show vX.Y.Z
-$ git push upstream vX.Y.Z
+$ git tag -a -m "[Release] X.Y" vX.Y release/vX.Y
+$ git show vX.Y
+$ git push upstream vX.Y
 ```
 
 ### 9. GitHub release
 
-Create a new [GitHub release](https://github.com/deephaven/deephaven-core/releases/new) and use the `vX.Y.Z` tag as reference.
+Create a new [GitHub release](https://github.com/deephaven/deephaven-core/releases/new) and use the `vX.Y` tag as reference.
 
-The convention is to have the Release title of the form `vX.Y.Z` and to autogenerate the release notes in comparison to the previous release tag. Question: should we always generate release notes based off of the previous minor release, instead of patch? Our git release workflow suggests we may want to do it always minor to minor.
+The convention is to have the Release title of the form `vX.Y` and to autogenerate the release notes in comparison to the previous release tag.
 
 Do not use Github's "Generate release notes" button. Use Cocogitto to generate the release notes and copy the result into the text box.
 
 ```shell
-cog changelog vX.Y.0..vX.Y.1
+cog changelog vX.0..vX.1
 ```
 
 Upload the Deephaven server application, deephaven-core wheel, pydeephaven wheel, pydeephaven-ticking wheels, @deephaven/jsapi-types tarball, and SBOM artifacts. Also, upload the C++, Java, Python, R and TypeScript docs artifacts.
@@ -251,16 +251,18 @@ Hit the GitHub "Publish release" button.
 The go client release consists of simply tagging and pushing to upstream:
 
 ```shell
-$ git tag -a -m "[Release] Deephaven Go Client X.Y.Z" go/vX.Y.Z release/vX.Y.Z 
-$ git show go/vX.Y.Z
-$ git push upstream go/vX.Y.Z
+$ git tag -a -m "[Release] Deephaven Go Client X.Y.0" go/vX.Y.0 release/vX.Y
+$ git show go/vX.Y.0
+$ git push upstream go/vX.Y.0
 ```
+
+Note that [go requires](https://go.dev/blog/publishing-go-modules#semantic-versions-and-modules) the version part of the tag to adhere to semantic versioning.
 
 ### 11. Deephaven.io release
 
 Verify that [Reference API Docs](https://deephaven.io/core/docs/#reference-guides) point to the latest version and that
-version X.Y.Z is present. _(In the case of a patch on an old release, this may not be the version just built.)_
-- ex. https://deephaven.io/core/release/vX.Y.Z/javadoc
+version X.Y is present. _(In the case of a patch on an old release, this may not be the version just built.)_
+- ex. https://deephaven.io/core/release/vX.Y/javadoc
 - ex. https://deephaven.io/core/javadoc
 
 The (non-public) [deephaven.io](https://github.com/deephaven/deephaven.io) `next` branch needs to be merged into `main`.  Ping Margaret.
@@ -280,7 +282,7 @@ Sometime after a release, old release branches can be safely deleted.
 
 ### 15. Version bump in preparation of the next release.
 
-Say we just did release `0.31.0`. The next expected release is `0.32.0`  We update the repository with a bump to all files that
+Say we just did release `31.0`. The next expected release is `32.0`  We update the repository with a bump to all files that
 mention the version explicitly. These files are listed below:
 
 ```
@@ -295,7 +297,7 @@ cpp-client/deephaven/CMakeLists.txt
 This leaves the files "ready" for the next regular release, and also ensures any build done from
 a developer for testing of latest is not confused with the code just released.
 
-In the case of a patch release these would need to be updated to a different version, like from `0.31.0` to `0.31.1`.
+In the case of a minor release these would need to be updated to a different version, like from `31.0` to `31.1`.
 
 ## External dependencies
 

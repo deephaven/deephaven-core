@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.chunkfilter;
 
@@ -18,7 +18,7 @@ public class CharRangeComparator {
         }
     }
 
-    final static class CharCharInclusiveInclusiveFilter extends CharCharFilter {
+    private final static class CharCharInclusiveInclusiveFilter extends CharCharFilter {
         private CharCharInclusiveInclusiveFilter(char lower, char upper) {
             super(lower, upper);
         }
@@ -29,7 +29,7 @@ public class CharRangeComparator {
         }
     }
 
-    final static class CharCharInclusiveExclusiveFilter extends CharCharFilter {
+    private final static class CharCharInclusiveExclusiveFilter extends CharCharFilter {
         private CharCharInclusiveExclusiveFilter(char lower, char upper) {
             super(lower, upper);
         }
@@ -40,7 +40,7 @@ public class CharRangeComparator {
         }
     }
 
-    final static class CharCharExclusiveInclusiveFilter extends CharCharFilter {
+    private final static class CharCharExclusiveInclusiveFilter extends CharCharFilter {
         private CharCharExclusiveInclusiveFilter(char lower, char upper) {
             super(lower, upper);
         }
@@ -51,7 +51,7 @@ public class CharRangeComparator {
         }
     }
 
-    final static class CharCharExclusiveExclusiveFilter extends CharCharFilter {
+    private final static class CharCharExclusiveExclusiveFilter extends CharCharFilter {
         private CharCharExclusiveExclusiveFilter(char lower, char upper) {
             super(lower, upper);
         }

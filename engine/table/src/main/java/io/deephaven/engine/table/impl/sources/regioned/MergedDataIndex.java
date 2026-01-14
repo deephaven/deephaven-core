@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.sources.regioned;
 
@@ -145,6 +145,11 @@ class MergedDataIndex extends AbstractDataIndex implements DataIndexer.Retainabl
     }
 
     @Override
+    public boolean tableIsCached() {
+        return indexTable != null || lazyTable != null;
+    }
+
+    @Override
     @NotNull
     public Table table(final DataIndexOptions options) {
         Table localIndexTable;
@@ -287,7 +292,7 @@ class MergedDataIndex extends AbstractDataIndex implements DataIndexer.Retainabl
                 Assert.assertion(groupedByKeyColumns.isFlat(), "groupedByKeyColumns.isFlat()");
                 final RowSetCacher rowsetCacher = new RowSetCacher(vectorColumnSource, groupedByKeyColumns.intSize());
                 combined = groupedByKeyColumns
-                        .view(List.of(SelectColumn.ofStateless(new MultiSourceFunctionalColumn<>(List.of(),
+                        .updateView(List.of(SelectColumn.ofStateless(new MultiSourceFunctionalColumn<>(List.of(),
                                 ROW_SET_COLUMN_NAME, RowSet.class, (k, v) -> rowsetCacher.get(k)))));
 
                 lazyPartitionedTable = partitionedTable;

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.updateby.countwhere;
 
@@ -322,8 +322,7 @@ public class CountWhereOperator extends BaseLongUpdateByOperator {
                 // Update the chunk source table chunks if needed.
                 if (chunkSourceTableRequired) {
                     for (int i = 0; i < inputColumnNames.length; i++) {
-                        chunkColumnSources[i].clear();
-                        chunkColumnSources[i].addChunk((WritableChunk<? extends Values>) valueChunks[i]);
+                        chunkColumnSources[i].addChunk(valueChunks[i]);
                     }
                 }
 
@@ -347,6 +346,17 @@ public class CountWhereOperator extends BaseLongUpdateByOperator {
                         }
                     }
                 }
+            }
+        }
+
+        private void clearInputChunks() {
+            if (chunkSourceTableRequired) {
+                for (int i = 0; i < inputColumnNames.length; i++) {
+                    chunkColumnSources[i].clear(false);
+                }
+            }
+            for (int fi = 0; fi < filters.length; fi++) {
+                Arrays.fill(filterChunks[fi], null);
             }
         }
 
@@ -419,9 +429,12 @@ public class CountWhereOperator extends BaseLongUpdateByOperator {
                 final int influencerCount) {
 
             assignInputChunksToFilters(influencerValueChunkArr, influencerCount);
-            setPosChunks(affectedPosChunk, influencerPosChunk);
-
-            applyFilters(influencerCount);
+            try {
+                setPosChunks(affectedPosChunk, influencerPosChunk);
+                applyFilters(influencerCount);
+            } finally {
+                clearInputChunks();
+            }
 
             int pushIndex = 0;
 
@@ -462,7 +475,11 @@ public class CountWhereOperator extends BaseLongUpdateByOperator {
                 final int len) {
 
             assignInputChunksToFilters(valueChunkArr, len);
-            applyFilters(len);
+            try {
+                applyFilters(len);
+            } finally {
+                clearInputChunks();
+            }
 
             // chunk processing
             for (int ii = 0; ii < len; ii++) {

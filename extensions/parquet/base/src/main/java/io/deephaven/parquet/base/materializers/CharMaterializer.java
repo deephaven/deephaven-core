@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.parquet.base.materializers;
 
@@ -22,6 +22,10 @@ public class CharMaterializer implements PageMaterializer {
             return new CharMaterializer(dataReader, numValues);
         }
     };
+
+    public static char convertValue(int value) {
+        return (char) value;
+    }
 
     private final ValuesReader dataReader;
 
@@ -46,7 +50,7 @@ public class CharMaterializer implements PageMaterializer {
     @Override
     public void fillValues(int startIndex, int endIndex) {
         for (int ii = startIndex; ii < endIndex; ii++) {
-            data[ii] = (char) dataReader.readInteger();
+            data[ii] = convertValue(dataReader.readInteger());
         }
     }
 

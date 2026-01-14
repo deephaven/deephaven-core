@@ -32,6 +32,7 @@ task replicateAllSafe {
     dependsOn Tasks.registerMainExecTask(project, 'replicateSortKernel', 'io.deephaven.replicators.ReplicateSortKernel')
     dependsOn Tasks.registerMainExecTask(project, 'replicateSortKernelTests', 'io.deephaven.replicators.ReplicateSortKernelTests')
     dependsOn Tasks.registerMainExecTask(project, 'replicateSortCheck', 'io.deephaven.replicators.ReplicateSortCheck')
+    dependsOn Tasks.registerMainExecTask(project, 'replicateArrayComparators', 'io.deephaven.replicators.ReplicateArrayComparators')
 
     dependsOn Tasks.registerMainExecTask(project, 'replicateChunkFilters', 'io.deephaven.replicators.ReplicateChunkFilters')
 
@@ -90,11 +91,15 @@ task replicateAllSafe {
     dependsOn Tasks.registerMainExecTask(project, 'replicateColumnStats', 'io.deephaven.replicators.ReplicateColumnStats')
 
     dependsOn Tasks.registerMainExecTask(project, 'replicateCachingSupplier', 'io.deephaven.replicators.ReplicateCachingSupplier')
+
+    dependsOn Tasks.registerMainExecTask(project, 'replicateVectorChunkFilters', 'io.deephaven.replicators.ReplicateVectorChunkFilters')
 }
 
 // These replicators need manual fix-up post replication and should not be run without supervision
 task replicateAllUnsafe {
     dependsOn Tasks.registerMainExecTask(project, 'replicateParquetChunkedWriters', 'io.deephaven.replicators.ReplicateParquetChunkedWriters')
+
+    dependsOn Tasks.registerMainExecTask(project, 'replicateParquetPushdownHandlers', 'io.deephaven.replicators.ReplicateParquetPushdownHandlers')
 
     dependsOn Tasks.registerMainExecTask(project, 'replicateTableLocationKey', 'io.deephaven.replicators.ReplicateTableLocationKey')
 }

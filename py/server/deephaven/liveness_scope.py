@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 #
 
 """This module gives the users a finer degree of control over when to clean up unreferenced nodes in the query update
@@ -51,18 +51,21 @@ Examples:
      * `scope.unmanage(obj)` will stop managing the given instance. This can be used regardless of how the instance
        was managed to begin with.
 """
+
 import contextlib
+from collections.abc import Iterator
+from typing import TYPE_CHECKING, Union, cast
 
 import jpy
-
-from typing import Union, Iterator
-
 
 from deephaven import DHError
 from deephaven._wrapper import JObjectWrapper
 
+if TYPE_CHECKING:
+    from typing_extensions import TypeAlias  # novermin  # noqa
+
 _JLivenessScopeStack = jpy.get_type("io.deephaven.engine.liveness.LivenessScopeStack")
-_JLivenessScope = jpy.get_type("io.deephaven.engine.liveness.LivenessScope")
+_JLivenessScope = cast(type, jpy.get_type("io.deephaven.engine.liveness.LivenessScope"))  # type: TypeAlias
 _JLivenessReferent = jpy.get_type("io.deephaven.engine.liveness.LivenessReferent")
 
 
@@ -77,18 +80,25 @@ def _pop(scope: _JLivenessScope) -> None:
         raise DHError(e, message="failed to pop the LivenessScope from the stack.")
 
 
-def _unwrap_to_liveness_referent(referent: Union[JObjectWrapper, jpy.JType]) -> jpy.JType:
-    if isinstance(referent, jpy.JType) and _JLivenessReferent.jclass.isInstance(referent):
+def _unwrap_to_liveness_referent(
+    referent: Union[JObjectWrapper, jpy.JType],
+) -> jpy.JType:
+    if isinstance(referent, jpy.JType) and _JLivenessReferent.jclass.isInstance(
+        referent
+    ):
         return referent
     if isinstance(referent, JObjectWrapper):
         return _unwrap_to_liveness_referent(referent.j_object)
-    raise DHError("Provided referent isn't a LivenessReferent or a JObjectWrapper around one")
+    raise DHError(
+        "Provided referent isn't a LivenessReferent or a JObjectWrapper around one"
+    )
 
 
 class _BaseLivenessScope(JObjectWrapper):
     """
     Internal base type for Java LivenessScope types in python.
     """
+
     j_object_type = _JLivenessScope
 
     def __init__(self):
@@ -120,13 +130,18 @@ class _BaseLivenessScope(JObjectWrapper):
             # Ensure we are the current scope, throw DHError if we aren't
             _JLivenessScopeStack.pop(self.j_scope)
         except Exception as e:
-            raise DHError(e, message="failed to pop the current scope - is preserve() being called on the right scope?")
+            raise DHError(
+                e,
+                message="failed to pop the current scope - is preserve() being called on the right scope?",
+            )
 
         try:
             # Manage the object in the next outer scope on this thread.
             _JLivenessScopeStack.peek().manage(_unwrap_to_liveness_referent(referent))
         except Exception as e:
-            raise DHError(e, message="failed to preserve a wrapped object in this LivenessScope.")
+            raise DHError(
+                e, message="failed to preserve a wrapped object in this LivenessScope."
+            )
         finally:
             # Success or failure, restore the scope that was successfully popped
             _JLivenessScopeStack.push(self.j_scope)
@@ -224,7 +239,9 @@ def is_liveness_referent(referent: Union[JObjectWrapper, jpy.JType]) -> bool:
     Returns:
         True if the object is a LivenessReferent, False otherwise.
     """
-    if isinstance(referent, jpy.JType) and _JLivenessReferent.jclass.isInstance(referent):
+    if isinstance(referent, jpy.JType) and _JLivenessReferent.jclass.isInstance(
+        referent
+    ):
         return True
     if isinstance(referent, JObjectWrapper):
         return is_liveness_referent(referent.j_object)

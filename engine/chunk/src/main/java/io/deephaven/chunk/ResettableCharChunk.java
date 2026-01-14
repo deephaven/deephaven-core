@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.chunk;
 
@@ -23,20 +23,11 @@ public class ResettableCharChunk<ATTR_UPPER extends Any>
         return new ResettableCharChunk<>();
     }
 
-    public static <ATTR_BASE extends Any> ResettableCharChunk<ATTR_BASE> makeResettableChunkForPool() {
-        return new ResettableCharChunk<>() {
-            @Override
-            public void close() {
-                MultiChunkPool.forThisThread().giveResettableCharChunk(this);
-            }
-        };
-    }
-
     private ResettableCharChunk(char[] data, int offset, int capacity) {
         super(data, offset, capacity);
     }
 
-    private ResettableCharChunk() {
+    protected ResettableCharChunk() {
         this(ArrayTypeUtils.EMPTY_CHAR_ARRAY, 0, 0);
     }
 

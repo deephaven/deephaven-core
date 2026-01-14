@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.server.table.ops.filter;
 
@@ -7,9 +7,11 @@ import io.deephaven.proto.backplane.grpc.CaseSensitivity;
 import io.deephaven.proto.backplane.grpc.CompareCondition;
 import io.deephaven.proto.backplane.grpc.Condition;
 import io.deephaven.proto.backplane.grpc.MatchType;
+import io.deephaven.proto.backplane.grpc.NanComparison;
 import io.deephaven.proto.backplane.grpc.Reference;
 import io.deephaven.proto.backplane.grpc.Value;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 
@@ -100,8 +102,9 @@ public class NormalizeNots extends AbstractNormalizeFilters {
 
         @Override
         public Condition onIn(Value target, List<Value> candidatesList, CaseSensitivity caseSensitivity,
-                MatchType matchType) {
-            return NormalizeFilterUtil.doIn(target, candidatesList, caseSensitivity, invertMatchType(matchType));
+                MatchType matchType, NanComparison nanComparison) {
+            return NormalizeFilterUtil.doIn(target, candidatesList, caseSensitivity, invertMatchType(matchType),
+                    nanComparison);
         }
 
         @NotNull
@@ -139,8 +142,11 @@ public class NormalizeNots extends AbstractNormalizeFilters {
         }
 
         @Override
-        public Condition onInvoke(String method, Value target, List<Value> argumentsList) {
+        public Condition onInvoke(String method, @Nullable Value target, List<Value> argumentsList) {
             // This operation doesn't have a corresponding NOT, we have to wrap them as before
+            if (target == null) {
+                return NormalizeFilterUtil.doInvert(NormalizeFilterUtil.doInvoke(method, argumentsList));
+            }
             return NormalizeFilterUtil.doInvert(NormalizeFilterUtil.doInvoke(method, target, argumentsList));
         }
 

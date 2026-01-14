@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.sources.regioned;
 
@@ -95,6 +95,16 @@ public interface RegionedColumnSource<DATA_TYPE>
      */
     static long getRowKey(final int regionIndex, final long regionOffset) {
         return (long) regionIndex << SUB_REGION_ROW_INDEX_ADDRESS_BITS | regionOffset;
+    }
+
+    /**
+     * Get the region index for a row key.
+     *
+     * @param rowKey The row key to get the region index for
+     * @return The region index for the row key
+     */
+    static int getRegionIndex(final long rowKey) {
+        return Math.toIntExact(rowKey >> SUB_REGION_ROW_INDEX_ADDRESS_BITS);
     }
 
     /**

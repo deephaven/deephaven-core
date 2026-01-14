@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.web.client.api;
 
@@ -15,6 +15,9 @@ import io.deephaven.web.client.api.event.Event;
 import io.deephaven.web.client.api.event.EventFn;
 import io.deephaven.web.client.api.filter.FilterCondition;
 import io.deephaven.web.client.api.subscription.AbstractTableSubscription;
+import io.deephaven.web.client.api.subscription.DataOptions;
+import io.deephaven.web.client.api.subscription.TableSubscription;
+import io.deephaven.web.client.api.subscription.TableViewportSubscription;
 import io.deephaven.web.client.api.subscription.ViewportData;
 import io.deephaven.web.client.state.ClientTableState;
 import io.deephaven.web.shared.fu.RemoverFn;
@@ -114,8 +117,10 @@ public class JsTotalsTable implements JoinableTable, ServerObject {
      * @param lastRow
      * @param columns
      * @param updateIntervalMs
+     * @deprecated Use {@link #createViewportSubscription(Object)} instead.
      */
     @JsMethod
+    @Deprecated
     public void setViewport(double firstRow, double lastRow, @JsOptional JsArray<Column> columns,
             @JsOptional Double updateIntervalMs, @JsOptional @JsNullable Boolean isReverseViewport) {
         this.firstRow = firstRow;
@@ -130,10 +135,51 @@ public class JsTotalsTable implements JoinableTable, ServerObject {
      * resolve until that data is ready.
      * 
      * @return Promise of {@link TableData}
+     * @deprecated use {@link TableViewportSubscription#getViewportData()} on the result from
+     *             {@link #createViewportSubscription(Object)} instead.
      */
     @JsMethod
+    @Deprecated
     public Promise<AbstractTableSubscription.@TsTypeRef(ViewportData.class) UpdateEventData> getViewportData() {
         return wrappedTable.getViewportData();
+    }
+
+
+    /**
+     * Creates a subscription to this table, with the given options. See {@link JsTable#createSubscription(Object)} for
+     * more information.
+     *
+     * @param options options for the subscription; see {@link DataOptions.SubscriptionOptions} for details
+     * @return a new {@link TableSubscription}
+     */
+    @JsMethod
+    public TableSubscription createSubscription(Object options) {
+        return wrappedTable.createSubscription(options);
+    }
+
+    /**
+     * Creates a viewport subscription to this table, with the given options. See
+     * {@link JsTable#createViewportSubscription(Object)} for more information.
+     *
+     * @param options options for the viewport subscription; see {@link DataOptions.ViewportSubscriptionOptions} for
+     *        details
+     * @return a new {@link TableViewportSubscription}
+     */
+    @JsMethod
+    public TableViewportSubscription createViewportSubscription(Object options) {
+        return wrappedTable.createViewportSubscription(options);
+    }
+
+    /**
+     * Creates a snapshot of this table on the server, with the given options. See
+     * {@link JsTable#createSnapshot(Object)} for more information.
+     *
+     * @param options options for the snapshot; see {@link DataOptions.SnapshotOptions} for details
+     * @return Promise of {@link TableData}
+     */
+    @JsMethod
+    public Promise<TableData> createSnapshot(Object options) {
+        return wrappedTable.createSnapshot(options);
     }
 
     /**

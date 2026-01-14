@@ -1,9 +1,10 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.select;
 
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.context.QueryCompilerImpl;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.table.impl.util.ModelFileGenerator;
@@ -40,22 +41,26 @@ public class TestConditionFilterGeneration {
 
     // @Test
     public void generateFile() throws FileNotFoundException {
-        new ModelFileGenerator(FilterKernelSample.class).generateFile(getClassDefString());
+        new ModelFileGenerator(io.deephaven.engine.table.impl.select.sample.GeneratedFilterKernel.class)
+                .generateFile(getClassDefString());
     }
 
     // @Test
     public void generateArrayFile() throws FileNotFoundException {
-        new ModelFileGenerator(FilterKernelArraySample.class).generateFile(getArrayClassDefString());
+        new ModelFileGenerator(io.deephaven.engine.table.impl.select.sample2.GeneratedFilterKernel.class)
+                .generateFile(getArrayClassDefString());
     }
 
     @Test
     public void validateFile() throws IOException {
-        new ModelFileGenerator(FilterKernelSample.class).validateFile(getClassDefString());
+        new ModelFileGenerator(io.deephaven.engine.table.impl.select.sample.GeneratedFilterKernel.class)
+                .validateFile(getClassDefString());
     }
 
     @Test
     public void validateArrayFile() throws IOException {
-        new ModelFileGenerator(FilterKernelArraySample.class).validateFile(getArrayClassDefString());
+        new ModelFileGenerator(io.deephaven.engine.table.impl.select.sample2.GeneratedFilterKernel.class)
+                .validateFile(getArrayClassDefString());
     }
 
     @NotNull

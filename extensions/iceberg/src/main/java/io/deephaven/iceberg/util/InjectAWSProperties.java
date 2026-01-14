@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.iceberg.util;
 
@@ -33,6 +33,9 @@ class InjectAWSProperties {
     /** -- Duplicated from VendedCredentialsProvider -- **/
     private static final String URI = "credentials.uri";
 
+    /** -- Duplicated from AwsProperties -- **/
+    private static final String CLIENT_FACTORY = "client.factory";
+
     /**
      * The following properties are forwarded to the credentials provider, if not set already. This consists of all
      * properties that could be accessed in DeephavenS3ClientCredentialsProvider.resolveCredentials
@@ -52,6 +55,9 @@ class InjectAWSProperties {
     // Same as DeephavenS3ClientCredentialsProvider.class.getName()
     private static final String CLIENT_CREDENTIALS_PROVIDER_DEFAULT =
             "io.deephaven.iceberg.util.DeephavenS3ClientCredentialsProvider";
+
+    // Same as DeephavenAwsClientFactory.class.getName()
+    private static final String DEFAULT_CLIENT_FACTORY = "io.deephaven.iceberg.util.DeephavenAwsClientFactory";
 
     // TODO (DH-19253): Add support for S3CrtAsyncClient
     private static final String S3_CRT_ENABLED_DEFAULT = "false";
@@ -82,6 +88,10 @@ class InjectAWSProperties {
             for (final String key : CREDENTIALS_PROVIDER_PROPERTIES_TO_FORWARD) {
                 injectCredentialsProperties(updatedProperties, key);
             }
+        }
+
+        if (!updatedProperties.containsKey(CLIENT_FACTORY)) {
+            updatedProperties.put(CLIENT_FACTORY, DEFAULT_CLIENT_FACTORY);
         }
         return updatedProperties;
     }

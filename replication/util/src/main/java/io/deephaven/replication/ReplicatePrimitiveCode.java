@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.replication;
 
@@ -358,9 +358,10 @@ public class ReplicatePrimitiveCode {
         return charToInstant(gradleTask, sourceClassJavaPath, null, exemptions);
     }
 
-    public static void charToAllButBooleanAndLong(String gradleTask, String sourceClassJavaPath, String... exemptions)
+    public static List<String> charToAllButBooleanAndLong(String gradleTask, String sourceClassJavaPath,
+            String... exemptions)
             throws IOException {
-        charToAllButBooleanAndLong(gradleTask, sourceClassJavaPath, null, exemptions);
+        return charToAllButBooleanAndLong(gradleTask, sourceClassJavaPath, null, exemptions);
     }
 
     public static List<String> charToAllButBoolean(String gradleTask, String sourceClassJavaPath,
@@ -388,14 +389,16 @@ public class ReplicatePrimitiveCode {
         return resultFiles;
     }
 
-    private static void charToAllButBooleanAndLong(String gradleTask, String sourceClassJavaPath,
+    private static List<String> charToAllButBooleanAndLong(String gradleTask, String sourceClassJavaPath,
             Map<String, Long> serialVersionUIDs,
             String... exemptions) throws IOException {
-        charToByte(gradleTask, sourceClassJavaPath, serialVersionUIDs, exemptions);
-        charToDouble(gradleTask, sourceClassJavaPath, serialVersionUIDs, exemptions);
-        charToFloat(gradleTask, sourceClassJavaPath, serialVersionUIDs, exemptions);
-        charToInteger(gradleTask, sourceClassJavaPath, serialVersionUIDs, exemptions);
-        charToShort(gradleTask, sourceClassJavaPath, serialVersionUIDs, exemptions);
+        final List<String> resultFiles = new ArrayList<>();
+        resultFiles.add(charToByte(gradleTask, sourceClassJavaPath, serialVersionUIDs, exemptions));
+        resultFiles.add(charToDouble(gradleTask, sourceClassJavaPath, serialVersionUIDs, exemptions));
+        resultFiles.add(charToFloat(gradleTask, sourceClassJavaPath, serialVersionUIDs, exemptions));
+        resultFiles.add(charToInteger(gradleTask, sourceClassJavaPath, serialVersionUIDs, exemptions));
+        resultFiles.add(charToShort(gradleTask, sourceClassJavaPath, serialVersionUIDs, exemptions));
+        return resultFiles;
     }
 
     public static List<String> charToAllButBooleanAndByte(String gradleTask, String sourceClassJavaPath,

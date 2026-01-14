@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
 // ****** Edit CharRangeComparator and run "./gradlew replicateChunkFilters" to regenerate
@@ -22,7 +22,7 @@ public class ShortRangeComparator {
         }
     }
 
-    final static class ShortShortInclusiveInclusiveFilter extends ShortShortFilter {
+    private final static class ShortShortInclusiveInclusiveFilter extends ShortShortFilter {
         private ShortShortInclusiveInclusiveFilter(short lower, short upper) {
             super(lower, upper);
         }
@@ -33,7 +33,7 @@ public class ShortRangeComparator {
         }
     }
 
-    final static class ShortShortInclusiveExclusiveFilter extends ShortShortFilter {
+    private final static class ShortShortInclusiveExclusiveFilter extends ShortShortFilter {
         private ShortShortInclusiveExclusiveFilter(short lower, short upper) {
             super(lower, upper);
         }
@@ -44,7 +44,7 @@ public class ShortRangeComparator {
         }
     }
 
-    final static class ShortShortExclusiveInclusiveFilter extends ShortShortFilter {
+    private final static class ShortShortExclusiveInclusiveFilter extends ShortShortFilter {
         private ShortShortExclusiveInclusiveFilter(short lower, short upper) {
             super(lower, upper);
         }
@@ -55,7 +55,7 @@ public class ShortRangeComparator {
         }
     }
 
-    final static class ShortShortExclusiveExclusiveFilter extends ShortShortFilter {
+    private final static class ShortShortExclusiveExclusiveFilter extends ShortShortFilter {
         private ShortShortExclusiveExclusiveFilter(short lower, short upper) {
             super(lower, upper);
         }

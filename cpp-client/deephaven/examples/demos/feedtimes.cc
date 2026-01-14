@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+ * Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
  */
 #include <chrono>
 #include <condition_variable>
@@ -246,11 +246,11 @@ public:
 
       if (!min_.has_value() || lmin < min_->Nanos()) {
         min_ = DateTime::FromNanos(lmin);
-        min_delay_ = recv_ts - ToTimePoint(*min_);
+        min_delay_ = recv_ts - ToTimePoint<my_clock, my_duration>(*min_);
       }
       if (!max_.has_value() || lmax > max_->Nanos()) {
         max_ = DateTime::FromNanos(lmax);
-        max_delay_ = recv_ts - ToTimePoint(*max_);
+        max_delay_ = recv_ts - ToTimePoint<my_clock, my_duration>(*max_);
       }
     }
   }

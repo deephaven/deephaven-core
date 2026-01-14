@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.replicators;
 
@@ -665,7 +665,6 @@ public class ReplicateSourcesAndChunks {
         for (String fileName : files) {
             final File classFile = new File(fileName);
             List<String> lines = FileUtils.readLines(classFile, Charset.defaultCharset());
-            lines = ReplicationUtils.removeRegion(lines, "SortFixup");
             FileUtils.writeLines(classFile, lines);
         }
         replicateWritableBooleanChunks();
@@ -713,17 +712,6 @@ public class ReplicateSourcesAndChunks {
                 "    @Override",
                 "    public final void fillWithBoxedValue(int offset, int size, Object value) {",
                 "        fillWithValue(offset,size, (T)value);",
-                "    }"));
-        lines = ReplicationUtils.addImport(lines,
-                "import io.deephaven.util.compare.ObjectComparisons;",
-                "import java.util.Comparator;");
-        lines = ReplicationUtils.replaceRegion(lines, "sort", Arrays.asList(
-                "    private static final Comparator<Comparable<Object>> COMPARATOR = Comparator.nullsFirst(Comparator.naturalOrder());",
-                "",
-                "    @Override",
-                "    public final void sort(int start, int length) {",
-                "        //noinspection unchecked",
-                "        Arrays.sort(data, offset + start, offset + start + length, (Comparator<? super T>) COMPARATOR);",
                 "    }"));
         FileUtils.writeLines(classFile, lines);
     }
@@ -1168,6 +1156,8 @@ public class ReplicateSourcesAndChunks {
         lines = simpleFixup(lines, "nullByRanges",
                 "block\\[indexWithinBlock\\] != NULL_BOOLEAN", "!BooleanUtils.isNull(block[indexWithinBlock])",
                 "NULL_BOOLEAN", "NULL_BOOLEAN_AS_BYTE");
+        lines = simpleFixup(lines, "setNull",
+                "blocks2\\[indexWithinBlock\\] == NULL_BOOLEAN", "BooleanUtils.isNull(blocks2[indexWithinBlock])");
         lines = simpleFixup(lines, "setNull", "NULL_BOOLEAN", "NULL_BOOLEAN_AS_BYTE");
 
         lines = replaceRegion(lines, "copyFromTypedArray", Arrays.asList(
@@ -1562,18 +1552,29 @@ public class ReplicateSourcesAndChunks {
     }
 
     private static void replicateOneOrN() throws IOException {
-        charToAll(TASK, "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/sparse/CharOneOrN.java");
+        charToAllButBoolean(TASK,
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/sparse/CharOneOrN.java");
+        final String booleanOneOrN = charToBoolean(TASK,
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/sparse/CharOneOrN.java");
+
+        final File booleanFile = new File(booleanOneOrN);
+        List<String> lines = FileUtils.readLines(booleanFile, Charset.defaultCharset());
+        lines = globalReplacements(lines, "Boolean.BYTES", "REFERENCE_SIZE");
+        FileUtils.writeLines(booleanFile, lines);
+
+
         final String objectOneOrNPath = charToObject(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/sparse/CharOneOrN.java");
         final File oneOrNFile = new File(objectOneOrNPath);
-        List<String> lines = FileUtils.readLines(oneOrNFile, Charset.defaultCharset());
+        lines = FileUtils.readLines(oneOrNFile, Charset.defaultCharset());
 
         lines = globalReplacements(lines,
                 "class Block([0-2])", "class Block$1<T>",
                 "Object \\[\\]", "T []", "SoftRecycler<Object", "SoftRecycler<T",
                 "QueryConstants.NULL_OBJECT", "null",
                 "new Object\\[BLOCK2_SIZE\\]\\[\\];",
-                "(T[][])new Object[BLOCK2_SIZE][];");
+                "(T[][])new Object[BLOCK2_SIZE][];",
+                "Object.BYTES", "REFERENCE_SIZE");
 
         lines = simpleFixup(lines, "Block0", "Block1", "Block1<T>", "Block2", "Block2<T>");
         lines = simpleFixup(lines, "Block1", "Block2", "Block2<T>");

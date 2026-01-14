@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
 // ****** Edit LongFromUnsignedShortMaterializer and run "./gradlew replicatePageMaterializers" to regenerate
@@ -25,6 +25,10 @@ public class LongFromUnsignedByteMaterializer extends LongMaterializerBase imple
         }
     };
 
+    public static long convertValue(int value) {
+        return Byte.toUnsignedLong((byte) value);
+    }
+
     private final ValuesReader dataReader;
 
     private LongFromUnsignedByteMaterializer(ValuesReader dataReader, int numValues) {
@@ -39,7 +43,7 @@ public class LongFromUnsignedByteMaterializer extends LongMaterializerBase imple
     @Override
     public void fillValues(int startIndex, int endIndex) {
         for (int ii = startIndex; ii < endIndex; ii++) {
-            data[ii] = Byte.toUnsignedLong((byte) dataReader.readInteger());
+            data[ii] = convertValue(dataReader.readInteger());
         }
     }
 }

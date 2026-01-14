@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.iceberg.internal;
 
@@ -272,7 +272,7 @@ public final class Explore {
                 .add("PositionDeleteFileCount", int.class, PartitionStats::positionDeleteFileCount)
                 .add("EqualityDeleteRecordCount", long.class, PartitionStats::equalityDeleteRecordCount)
                 .add("EqualityDeleteFileCount", int.class, PartitionStats::equalityDeleteFileCount)
-                .add("TotalRecordCount", long.class, PartitionStats::totalRecordCount)
+                .add("TotalRecordCount", long.class, PartitionStats::totalRecords)
                 .add("LastUpdatedAt", Instant.class, Explore::lastUpdatedAt)
                 .add("LastUpdatedSnapshotId", long.class, PartitionStats::lastUpdatedSnapshotId)
                 .view(partitionStats);

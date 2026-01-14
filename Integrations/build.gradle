@@ -70,6 +70,9 @@ def runInDocker = { String name, String sourcePath, List<String> command, Closur
                 include 'README.md'
                 into 'python/client'
             }
+            from('run-tests.sh') {
+            	into 'python'
+            }
 
             // Unpack the config contents for now, since we don't seem to read the configs from inside a jar.
             // This does not add a task dependency, but we already put :configs in the testRuntime classpath,
@@ -88,7 +91,7 @@ def runInDocker = { String name, String sourcePath, List<String> command, Closur
             // set up the container, env vars - things that aren't likely to change
             from Docker.localImageName('server-jetty')
             runCommand '''set -eux; \\
-                      pip3 install unittest-xml-reporting==3.0.4; \\
+                      pip3 install unittest-xml-reporting==3.2.0; \\
                       mkdir -p /out/report; \\
 					  echo "[PostgreSQL]" > /etc/odbcinst.ini; \\
 					  echo "Driver      = /usr/lib/x86_64-linux-gnu/odbc/psqlodbcw.so" >> /etc/odbcinst.ini; \\
@@ -107,7 +110,7 @@ def runInDocker = { String name, String sourcePath, List<String> command, Closur
             copyFile 'python', '/python'
             copyFile 'classpath', '/classpath'
             runCommand '''pip3 install /python/client'''
-
+            runCommand '''pip3 install coverage'''
         }
         entrypoint = command
 
@@ -137,7 +140,9 @@ Closure composeConfig = { task ->
     task.containerDependencies.finalizedBy = dockerCompose.tasksConfigurator.downTask
 }
 
-def pyTest = runInDocker('test-py-deephaven', '../py/server', ['python3', '-m', 'xmlrunner', 'discover', '-s', 'tests', '-t', '.', '-v', '-o', '/out/report'], composeConfig)
+def pyTest = runInDocker('test-py-deephaven', '../py/server', 
+    ['./run-tests.sh', project.hasProperty("coverage.enabled")?project.property("coverage.enabled"):'false'], 
+    composeConfig)
 
 pyTest.configure({
     onlyIf { TestTools.shouldRunTests(project) }

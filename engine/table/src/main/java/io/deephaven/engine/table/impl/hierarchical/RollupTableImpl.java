@@ -1,12 +1,9 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.hierarchical;
 
-import io.deephaven.api.ColumnName;
-import io.deephaven.api.Selectable;
-import io.deephaven.api.SortColumn;
-import io.deephaven.api.Strings;
+import io.deephaven.api.*;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.api.agg.AggregationDescriptions;
 import io.deephaven.api.agg.AggregationPairs;
@@ -495,7 +492,7 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
                             constituentColumnName = baseColumnNameToAbsoluteName(constituentColumnName);
                         }
                     }
-                    return aggregatedSortColumn.order() == SortColumn.Order.ASCENDING
+                    return aggregatedSortColumn.isAscending()
                             ? SortColumn.asc(ColumnName.of(constituentColumnName))
                             : SortColumn.desc(ColumnName.of(constituentColumnName));
 
@@ -536,16 +533,7 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
 
     @Override
     public RollupTableImpl rebase(@NotNull final Table newSource) {
-        if (!newSource.getDefinition().equals(source.getDefinition())) {
-            if (newSource.getDefinition().equalsIgnoreOrder(source.getDefinition())) {
-                throw new IllegalArgumentException(
-                        "Cannot rebase a RollupTable with a new source definition, column order is not identical");
-            }
-            final String differenceDescription = newSource.getDefinition()
-                    .getDifferenceDescription(source.getDefinition(), "new source", "existing source", ",");
-            throw new IllegalArgumentException(
-                    "Cannot rebase a RollupTable with a new source definition: " + differenceDescription);
-        }
+        checkRebaseDefinition("RollupTable", source, newSource);
 
         final QueryTable newSourceQueryTable;
         if (rollupKeyFilters != null) {
@@ -696,9 +684,9 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
         while (!columnsToReaggregateBy.isEmpty()) {
             nullColumnNames.addFirst(columnsToReaggregateBy.removeLast().name());
             final TableDefinition lastLevelDefinition = lastLevel.getDefinition();
-            final Map<String, Class<?>> nullColumns = nullColumnNames.stream().collect(Collectors.toMap(
-                    Function.identity(), ncn -> lastLevelDefinition.getColumn(ncn).getDataType(),
-                    Assert::neverInvoked, LinkedHashMap::new));
+            final List<ColumnDefinition<?>> nullColumns =
+                    nullColumnNames.stream().map(lastLevelDefinition::getColumn).collect(Collectors.toList());
+
             lastLevel = lastLevel.aggNoMemo(
                     AggregationProcessor.forRollupReaggregated(aggregations, nullColumns, ROLLUP_COLUMN),
                     false, null, new ArrayList<>(columnsToReaggregateBy));

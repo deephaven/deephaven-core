@@ -1,0 +1,1 @@
+{"file":"core/docs/how-to-guides/table-publisher.md","objects":{"my_table":{"type":"Table","data":{"columns":[{"name":"X","type":"int"},{"name":"Y","type":"double"},{"name":"Z","type":"double"}],"rows":[]}}}}

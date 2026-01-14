@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.api.filter;
 
@@ -21,6 +21,7 @@ import java.util.stream.Collectors;
  *
  * @see io.deephaven.api.TableOperations#where(Filter)
  * @see FilterIsNull
+ * @see FilterIsNaN
  * @see FilterComparison
  * @see FilterIn
  * @see FilterNot
@@ -78,6 +79,16 @@ public interface Filter extends Expression, ConcurrencyControl<Filter> {
     }
 
     /**
+     * Creates an is-nan-filter.
+     *
+     * @param expression the expression
+     * @return the is-nan-filter
+     */
+    static FilterIsNaN isNaN(Expression expression) {
+        return FilterIsNaN.of(expression);
+    }
+
+    /**
      * Creates an is-not-null-filter.
      *
      * <p>
@@ -88,6 +99,19 @@ public interface Filter extends Expression, ConcurrencyControl<Filter> {
      */
     static FilterNot<FilterIsNull> isNotNull(Expression expression) {
         return not(isNull(expression));
+    }
+
+    /**
+     * Creates an is-not-nan-filter.
+     *
+     * <p>
+     * Equivalent to {@code not(isNaN(expression))}.
+     *
+     * @param expression the expression
+     * @return the is-not-nan-filter
+     */
+    static FilterNot<FilterIsNaN> isNotNaN(Expression expression) {
+        return not(isNaN(expression));
     }
 
     /**
@@ -200,6 +224,28 @@ public interface Filter extends Expression, ConcurrencyControl<Filter> {
     }
 
     /**
+     * Wraps the given filter with a FilterBarrier to declare one or more barriers that other filters can respect.
+     *
+     * @param filter the filter to wrap
+     * @param barriers the barrier objects being declared
+     * @return a FilterBarrier instance wrapping the provided filter
+     */
+    static FilterWithDeclaredBarriers declaredBarriers(Filter filter, Object... barriers) {
+        return FilterWithDeclaredBarriers.of(filter, barriers);
+    }
+
+    /**
+     * Wraps the given filter with a FilterBarrier to declare a barrier that other filters can respect.
+     *
+     * @param filter the filter to wrap
+     * @param respectedBarriers the barrier objects that need to be respected
+     * @return a FilterBarrier instance wrapping the provided filter
+     */
+    static FilterWithRespectedBarriers respectedBarrier(Filter filter, Object... respectedBarriers) {
+        return FilterWithRespectedBarriers.of(filter, respectedBarriers);
+    }
+
+    /**
      * Performs a non-recursive "and-extraction" against {@code filter}. If {@code filter} is a {@link FilterAnd},
      * {@link FilterAnd#filters()} will be returned. If {@code filter} is {@link Filter#ofTrue()}, an empty list will be
      * returned. Otherwise, a singleton list of {@code filter} will be returned.
@@ -225,11 +271,23 @@ public interface Filter extends Expression, ConcurrencyControl<Filter> {
         return serial(this);
     }
 
+    @Override
+    default Filter withRespectedBarriers(Object... respectedBarriers) {
+        return respectedBarrier(this, respectedBarriers);
+    }
+
+    @Override
+    default Filter withDeclaredBarriers(Object... declaredBarriers) {
+        return declaredBarriers(this, declaredBarriers);
+    }
+
     <T> T walk(Visitor<T> visitor);
 
     interface Visitor<T> {
 
         T visit(FilterIsNull isNull);
+
+        T visit(FilterIsNaN isNaN);
 
         T visit(FilterComparison comparison);
 
@@ -244,6 +302,10 @@ public interface Filter extends Expression, ConcurrencyControl<Filter> {
         T visit(FilterPattern pattern);
 
         T visit(FilterSerial serial);
+
+        T visit(FilterWithDeclaredBarriers declaredBarrier);
+
+        T visit(FilterWithRespectedBarriers respectedBarrier);
 
         T visit(Function function);
 

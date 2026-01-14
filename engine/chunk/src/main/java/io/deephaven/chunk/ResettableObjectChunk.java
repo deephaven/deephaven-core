@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
 // ****** Edit ResettableCharChunk and run "./gradlew replicateSourcesAndChunks" to regenerate
@@ -27,20 +27,11 @@ public class ResettableObjectChunk<T, ATTR_UPPER extends Any>
         return new ResettableObjectChunk<>();
     }
 
-    public static <T, ATTR_BASE extends Any> ResettableObjectChunk<T, ATTR_BASE> makeResettableChunkForPool() {
-        return new ResettableObjectChunk<>() {
-            @Override
-            public void close() {
-                MultiChunkPool.forThisThread().giveResettableObjectChunk(this);
-            }
-        };
-    }
-
     private ResettableObjectChunk(T[] data, int offset, int capacity) {
         super(data, offset, capacity);
     }
 
-    private ResettableObjectChunk() {
+    protected ResettableObjectChunk() {
         //noinspection unchecked
         this((T[])ArrayTypeUtils.EMPTY_OBJECT_ARRAY, 0, 0);
     }

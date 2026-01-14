@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.api.filter;
 
@@ -11,7 +11,6 @@ import io.deephaven.api.literal.Literal;
 
 import java.util.Collection;
 import java.util.Collections;
-import java.util.List;
 
 enum ExtractAnds implements Visitor<Collection<Filter>> {
     INSTANCE;
@@ -23,6 +22,11 @@ enum ExtractAnds implements Visitor<Collection<Filter>> {
     @Override
     public Collection<Filter> visit(FilterIsNull isNull) {
         return Collections.singleton(isNull);
+    }
+
+    @Override
+    public Collection<Filter> visit(FilterIsNaN isNaN) {
+        return Collections.singleton(isNaN);
     }
 
     @Override
@@ -58,6 +62,22 @@ enum ExtractAnds implements Visitor<Collection<Filter>> {
     @Override
     public Collection<Filter> visit(FilterSerial serial) {
         return Collections.singleton(serial);
+    }
+
+    @Override
+    public Collection<Filter> visit(FilterWithDeclaredBarriers declaredBarrier) {
+        // Note that this visitor is not generally recursive; we are always evaluating the top level filter. A top-level
+        // wrapped barrier provides no functionality. We'll unwrap the barrier in the hopeful event that it wraps a
+        // FilterAnd.
+        return declaredBarrier.filter().walk(this);
+    }
+
+    @Override
+    public Collection<Filter> visit(FilterWithRespectedBarriers respectedBarrier) {
+        // Note that this visitor is not generally recursive; we are always evaluating the top level filter. A top-level
+        // wrapped barrier provides no functionality. We'll unwrap the barrier in the hopeful event that it wraps a
+        // FilterAnd.
+        return respectedBarrier.filter().walk(this);
     }
 
     @Override

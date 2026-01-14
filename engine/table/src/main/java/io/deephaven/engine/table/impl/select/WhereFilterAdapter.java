@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.select;
 
@@ -9,17 +9,9 @@ import io.deephaven.api.Strings;
 import io.deephaven.api.expression.Expression;
 import io.deephaven.api.expression.Function;
 import io.deephaven.api.expression.Method;
-import io.deephaven.api.filter.Filter;
-import io.deephaven.api.filter.FilterAnd;
-import io.deephaven.api.filter.FilterComparison;
-import io.deephaven.api.filter.FilterIn;
-import io.deephaven.api.filter.FilterIsNull;
-import io.deephaven.api.filter.FilterNot;
-import io.deephaven.api.filter.FilterOr;
-import io.deephaven.api.filter.FilterPattern;
-import io.deephaven.api.filter.FilterSerial;
+import io.deephaven.api.filter.*;
 import io.deephaven.api.literal.Literal;
-import io.deephaven.engine.table.impl.select.MatchFilter.MatchType;
+import io.deephaven.engine.table.MatchOptions;
 import io.deephaven.gui.table.filters.Condition;
 
 import java.util.Objects;
@@ -55,6 +47,10 @@ class WhereFilterAdapter implements Filter.Visitor<WhereFilter> {
 
     public static WhereFilter of(FilterIsNull isNull) {
         return of(isNull, false);
+    }
+
+    public static WhereFilter of(FilterIsNaN isNaN) {
+        return of(isNaN, false);
     }
 
     public static WhereFilter of(FilterPattern pattern) {
@@ -128,6 +124,10 @@ class WhereFilterAdapter implements Filter.Visitor<WhereFilter> {
         return isNull.expression().walk(new ExpressionIsNullAdapter(inverted));
     }
 
+    public static WhereFilter of(FilterIsNaN isNaN, boolean inverted) {
+        return isNaN.expression().walk(new ExpressionIsNaNAdapter(inverted));
+    }
+
     public static WhereFilter of(FilterPattern pattern, boolean inverted) {
         final WhereFilter filter = of(pattern);
         return inverted ? WhereFilterInvertedImpl.of(filter) : filter;
@@ -136,6 +136,17 @@ class WhereFilterAdapter implements Filter.Visitor<WhereFilter> {
     public static WhereFilter of(FilterSerial serial, boolean inverted) {
         final WhereFilter innerFilter = WhereFilter.of(inverted ? serial.filter().invert() : serial.filter());
         return WhereFilterSerialImpl.of(innerFilter);
+    }
+
+    public static WhereFilter of(FilterWithDeclaredBarriers barrier, boolean inverted) {
+        final WhereFilter innerFilter = WhereFilter.of(inverted ? barrier.filter().invert() : barrier.filter());
+        return WhereFilterWithDeclaredBarriersImpl.of(innerFilter, barrier.declaredBarriers());
+    }
+
+    public static WhereFilter of(FilterWithRespectedBarriers respectedBarrier, boolean inverted) {
+        final WhereFilter innerFilter = WhereFilter.of(
+                inverted ? respectedBarrier.filter().invert() : respectedBarrier.filter());
+        return WhereFilterWithRespectedBarriersImpl.of(innerFilter, respectedBarrier.respectedBarriers());
     }
 
     public static WhereFilter of(Function function, boolean inverted) {
@@ -149,8 +160,10 @@ class WhereFilterAdapter implements Filter.Visitor<WhereFilter> {
     }
 
     public static WhereFilter of(RawString rawString, boolean inverted) {
-        // TODO(deephaven-core#3740): Remove engine crutch on io.deephaven.api.Strings
-        return WhereFilterFactory.getExpression(Strings.of(rawString, inverted));
+        return inverted
+                ? WhereFilterInvertedImpl.of(
+                        WhereFilterFactory.getExpression(rawString.value()))
+                : WhereFilterFactory.getExpression(rawString.value());
     }
 
     private final boolean inverted;
@@ -180,6 +193,11 @@ class WhereFilterAdapter implements Filter.Visitor<WhereFilter> {
     }
 
     @Override
+    public WhereFilter visit(FilterIsNaN isNaN) {
+        return of(isNaN, inverted);
+    }
+
+    @Override
     public WhereFilter visit(FilterOr ors) {
         return of(ors, inverted);
     }
@@ -197,6 +215,16 @@ class WhereFilterAdapter implements Filter.Visitor<WhereFilter> {
     @Override
     public WhereFilter visit(FilterSerial serial) {
         return of(serial, inverted);
+    }
+
+    @Override
+    public WhereFilter visit(FilterWithDeclaredBarriers declaredBarrier) {
+        return of(declaredBarrier, inverted);
+    }
+
+    @Override
+    public WhereFilter visit(FilterWithRespectedBarriers respectedBarrier) {
+        return of(respectedBarrier, inverted);
     }
 
     @Override
@@ -261,9 +289,9 @@ class WhereFilterAdapter implements Filter.Visitor<WhereFilter> {
                 // TODO(deephaven-core#3730): More efficient io.deephaven.api.filter.FilterComparison to RangeFilter
                 switch (preferred.operator()) {
                     case EQUALS:
-                        return new MatchFilter(MatchType.Regular, lhs.name(), rhsLiteral);
+                        return new MatchFilter(MatchOptions.REGULAR, lhs.name(), rhsLiteral);
                     case NOT_EQUALS:
-                        return new MatchFilter(MatchType.Inverted, lhs.name(), rhsLiteral);
+                        return new MatchFilter(MatchOptions.INVERTED, lhs.name(), rhsLiteral);
                     case LESS_THAN:
                     case LESS_THAN_OR_EQUAL:
                     case GREATER_THAN:
@@ -278,9 +306,9 @@ class WhereFilterAdapter implements Filter.Visitor<WhereFilter> {
                 // TODO(deephaven-core#3730): More efficient io.deephaven.api.filter.FilterComparison to RangeFilter
                 switch (preferred.operator()) {
                     case EQUALS:
-                        return new MatchFilter(MatchType.Regular, lhs.name(), rhsLiteral);
+                        return new MatchFilter(MatchOptions.REGULAR, lhs.name(), rhsLiteral);
                     case NOT_EQUALS:
-                        return new MatchFilter(MatchType.Inverted, lhs.name(), rhsLiteral);
+                        return new MatchFilter(MatchOptions.INVERTED, lhs.name(), rhsLiteral);
                     case LESS_THAN:
                     case LESS_THAN_OR_EQUAL:
                     case GREATER_THAN:
@@ -341,9 +369,9 @@ class WhereFilterAdapter implements Filter.Visitor<WhereFilter> {
             public WhereFilter visit(boolean rhs) {
                 switch (preferred.operator()) {
                     case EQUALS:
-                        return new MatchFilter(MatchType.Regular, lhs.name(), rhs);
+                        return new MatchFilter(MatchOptions.REGULAR, lhs.name(), rhs);
                     case NOT_EQUALS:
-                        return new MatchFilter(MatchType.Inverted, lhs.name(), rhs);
+                        return new MatchFilter(MatchOptions.INVERTED, lhs.name(), rhs);
                     case LESS_THAN:
                     case LESS_THAN_OR_EQUAL:
                     case GREATER_THAN:
@@ -461,7 +489,7 @@ class WhereFilterAdapter implements Filter.Visitor<WhereFilter> {
         @Override
         public WhereFilter visit(ColumnName columnName) {
             return new MatchFilter(
-                    inverted ? MatchType.Inverted : MatchType.Regular,
+                    inverted ? MatchOptions.INVERTED : MatchOptions.REGULAR,
                     columnName.name(),
                     new Object[] {null});
         }
@@ -483,6 +511,59 @@ class WhereFilterAdapter implements Filter.Visitor<WhereFilter> {
             // Note: we _could_ try and optimize here, since a filter never returns null (always true or false).
             // That said, this filter will be compiled and potentially JITted, so it might not matter.
             // return inverted ? WhereAllFilter.INSTANCE : WhereNoneFilter.INSTANCE;
+            return getExpression(Strings.of(filter));
+        }
+
+        @Override
+        public WhereFilter visit(Function function) {
+            return getExpression(Strings.of(function));
+        }
+
+        @Override
+        public WhereFilter visit(Method method) {
+            return getExpression(Strings.of(method));
+        }
+
+        @Override
+        public WhereFilter visit(RawString rawString) {
+            return getExpression(Strings.of(rawString));
+        }
+    }
+
+    private static class ExpressionIsNaNAdapter implements Expression.Visitor<WhereFilter> {
+
+        public static WhereFilter of(Expression expression) {
+            return expression.walk(new ExpressionIsNaNAdapter(false));
+        }
+
+        private final boolean inverted;
+
+        ExpressionIsNaNAdapter(boolean inverted) {
+            this.inverted = inverted;
+        }
+
+        private WhereFilter getExpression(String x) {
+            // TODO(deephaven-core#3740): Remove engine crutch on io.deephaven.api.Strings
+            return WhereFilterFactory.getExpression((inverted ? "!isNaN" : "isNaN(") + x + ")");
+        }
+
+        @Override
+        public WhereFilter visit(ColumnName columnName) {
+            final MatchOptions matchOptions = MatchOptions.builder()
+                    .inverted(inverted)
+                    .nanMatch(true)
+                    .build();
+            // Float.NaN is auto-cast to Double.NaN for double columns
+            return new MatchFilter(matchOptions, columnName.name(), Float.NaN);
+        }
+
+        @Override
+        public WhereFilter visit(Literal literal) {
+            return getExpression(Strings.of(literal));
+        }
+
+        @Override
+        public WhereFilter visit(Filter filter) {
             return getExpression(Strings.of(filter));
         }
 

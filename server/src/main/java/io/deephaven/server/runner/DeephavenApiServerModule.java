@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.server.runner;
 
@@ -23,6 +23,7 @@ import io.deephaven.server.session.ScriptSessionModule;
 import io.deephaven.server.session.SessionModule;
 import io.deephaven.server.table.TableModule;
 import io.deephaven.server.table.inputtables.InputTableModule;
+import io.deephaven.server.table.validation.ExpressionValidatorModule;
 import io.deephaven.server.uri.UriModule;
 
 @Module(includes = {
@@ -45,7 +46,8 @@ import io.deephaven.server.uri.UriModule;
         UpdateGraphModule.class,
         GrpcModule.class,
         ScriptSessionModule.class,
-        ExchangeMarshallerModule.class
+        ExchangeMarshallerModule.class,
+        ExpressionValidatorModule.class
 })
 public class DeephavenApiServerModule {
 

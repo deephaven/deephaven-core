@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl;
 
@@ -300,6 +300,21 @@ public interface TableAdapter extends TableDefaults {
 
     @Override
     default Table removeBlink() {
+        return throwUnsupported();
+    }
+
+    @Override
+    default Table assertBlink() {
+        return throwUnsupported();
+    }
+
+    @Override
+    default Table assertAddOnly() {
+        return throwUnsupported();
+    }
+
+    @Override
+    default Table assertAppendOnly() {
         return throwUnsupported();
     }
 

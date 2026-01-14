@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.sources.regioned;
 
@@ -43,9 +43,10 @@ public class RegionedTableComponentFactoryImpl implements RegionedTableComponent
     @Override
     public ColumnSourceManager createColumnSourceManager(
             final boolean isRefreshing,
+            final boolean removeAllowed,
             @NotNull final ColumnToCodecMappings codecMappings,
             @NotNull final List<ColumnDefinition<?>> columnDefinitions) {
-        return new RegionedColumnSourceManager(isRefreshing, this, codecMappings, columnDefinitions);
+        return new RegionedColumnSourceManager(isRefreshing, removeAllowed, this, codecMappings, columnDefinitions);
     }
 
     /**

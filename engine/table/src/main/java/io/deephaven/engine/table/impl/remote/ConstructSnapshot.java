@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.remote;
 
@@ -1422,6 +1422,8 @@ public class ConstructSnapshot {
                         columnSources.subList(colRank, colRank + 1),
                         usePrev, snapshot),
                 () -> waitForParallelSnapshot.complete(null),
+                () -> {
+                },
                 waitForParallelSnapshot::completeExceptionally);
         try {
             waitForParallelSnapshot.get();

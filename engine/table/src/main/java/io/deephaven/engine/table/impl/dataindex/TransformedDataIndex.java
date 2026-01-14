@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.dataindex;
 
@@ -64,6 +64,11 @@ public class TransformedDataIndex extends LivenessArtifact implements BasicDataI
     @NotNull
     public String rowSetColumnName() {
         return parentIndex.rowSetColumnName();
+    }
+
+    @Override
+    public boolean tableIsCached() {
+        return indexTable != null;
     }
 
     @Override

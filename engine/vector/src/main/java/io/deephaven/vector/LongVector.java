@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
 // ****** Edit CharVector and run "./gradlew replicateVectors" to regenerate
@@ -8,12 +8,14 @@
 package io.deephaven.vector;
 
 import io.deephaven.base.verify.Require;
+import io.deephaven.util.annotations.UserInvocationPermitted;
 import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfLong;
 import io.deephaven.engine.primitive.value.iterator.ValueIteratorOfLong;
 import io.deephaven.qst.type.LongType;
 import io.deephaven.qst.type.PrimitiveVectorType;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.annotations.FinalDefault;
+import io.deephaven.util.compare.LongComparisons;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -37,6 +39,7 @@ public interface LongVector extends Vector<LongVector>, Iterable<Long> {
      * @param index An offset into this LongVector
      * @return The element at the specified offset, or the {@link QueryConstants#NULL_LONG null long}
      */
+    @UserInvocationPermitted({"vector"})
     long get(long index);
 
     @Override
@@ -54,6 +57,7 @@ public interface LongVector extends Vector<LongVector>, Iterable<Long> {
     @Override
     LongVector getDirect();
 
+    @UserInvocationPermitted({"vector"})
     @Override
     @FinalDefault
     default ValueIteratorOfLong iterator() {
@@ -101,6 +105,22 @@ public interface LongVector extends Vector<LongVector>, Iterable<Long> {
     @FinalDefault
     default String toString(final int prefixLength) {
         return toString(this, prefixLength);
+    }
+
+    /**
+     * <p>
+     * Compare this vector with another vector.
+     * </p>
+     *
+     * <p>
+     * The vectors are ordered lexicographically using Deephaven sorting rules.
+     * </p>
+     *
+     * {@see Comparable#compareTo}
+     */
+    @Override
+    default int compareTo(final LongVector o) {
+        return compareTo(this, o);
     }
 
     static String longValToString(final Object val) {
@@ -173,6 +193,37 @@ public interface LongVector extends Vector<LongVector>, Iterable<Long> {
     }
 
     /**
+     * Helper method for {@link Comparable#compareTo(Object)} for a generic LongVector.
+     * 
+     * @param aVector the first vector (this in compareTo)
+     * @param bVector the second vector ("o" or other in compareTo)
+     * @return -1, 0, or 1 if aVector is less than, equal to, or greater than bVector (respectively)
+     */
+    static int compareTo(final LongVector aVector, final LongVector bVector) {
+        if (aVector == bVector) {
+            return 0;
+        }
+        try (final CloseablePrimitiveIteratorOfLong aIterator = aVector.iterator();
+                final CloseablePrimitiveIteratorOfLong bIterator = bVector.iterator()) {
+            while (aIterator.hasNext()) {
+                if (!bIterator.hasNext()) {
+                    return 1;
+                }
+                final long aValue = aIterator.nextLong();
+                final long bValue = bIterator.nextLong();
+                final int compare = LongComparisons.compare(aValue, bValue);
+                if (compare != 0) {
+                    return compare;
+                }
+            }
+            if (bIterator.hasNext()) {
+                return -1;
+            }
+        }
+        return 0;
+    }
+
+    /**
      * Helper method for implementing {@link Object#hashCode()}. Follows the pattern in {@link Arrays#hashCode(long[])}.
      *
      * @param vector The LongVector to hash
@@ -185,7 +236,9 @@ public interface LongVector extends Vector<LongVector>, Iterable<Long> {
         }
         try (final CloseablePrimitiveIteratorOfLong iterator = vector.iterator()) {
             while (iterator.hasNext()) {
+                // region ElementHash
                 result = 31 * result + Long.hashCode(iterator.nextLong());
+                // endregion ElementHash
             }
         }
         return result;
@@ -196,6 +249,7 @@ public interface LongVector extends Vector<LongVector>, Iterable<Long> {
      */
     abstract class Indirect implements LongVector {
 
+        @UserInvocationPermitted({"vector"})
         @Override
         public long[] toArray() {
             final int size = intSize("LongVector.toArray");

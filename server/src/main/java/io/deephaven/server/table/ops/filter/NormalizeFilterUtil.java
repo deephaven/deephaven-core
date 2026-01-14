@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.server.table.ops.filter;
 
@@ -13,11 +13,13 @@ import io.deephaven.proto.backplane.grpc.InvokeCondition;
 import io.deephaven.proto.backplane.grpc.IsNullCondition;
 import io.deephaven.proto.backplane.grpc.MatchType;
 import io.deephaven.proto.backplane.grpc.MatchesCondition;
+import io.deephaven.proto.backplane.grpc.NanComparison;
 import io.deephaven.proto.backplane.grpc.NotCondition;
 import io.deephaven.proto.backplane.grpc.OrCondition;
 import io.deephaven.proto.backplane.grpc.Reference;
 import io.deephaven.proto.backplane.grpc.SearchCondition;
 import io.deephaven.proto.backplane.grpc.Value;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -78,12 +80,13 @@ public class NormalizeFilterUtil {
     }
 
     public static Condition doIn(Value target, List<Value> candidatesList, CaseSensitivity caseSensitivity,
-            MatchType matchType) {
+            MatchType matchType, NanComparison nanComparison) {
         return Condition.newBuilder().setIn(InCondition.newBuilder()
                 .setTarget(target)
                 .addAllCandidates(candidatesList)
                 .setCaseSensitivity(caseSensitivity)
                 .setMatchType(matchType)
+                .setNanComparison(nanComparison)
                 .build()).build();
     }
 
@@ -93,7 +96,7 @@ public class NormalizeFilterUtil {
                 .build()).build();
     }
 
-    public static Condition doInvoke(String method, Value target, List<Value> argumentsList) {
+    public static Condition doInvoke(String method, @NotNull Value target, List<Value> argumentsList) {
         return Condition.newBuilder().setInvoke(InvokeCondition.newBuilder()
                 .setMethod(method)
                 .setTarget(target)

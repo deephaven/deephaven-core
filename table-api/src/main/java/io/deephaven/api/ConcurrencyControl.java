@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.api;
 
@@ -22,18 +22,77 @@ public interface ConcurrencyControl<T> {
     /**
      * Applies serial concurrency control to the expression.
      * <p>
-     * The serial filter is guaranteed to filter exactly the set of rows that passed any prior filters, without
-     * evaluating additional rows or skipping rows that future filters may eliminate. Take care when selecting a serial
-     * filter, as subsequent filters cannot apply optimizations like predicate push down.</li>
+     * The serial wrapped filter/selectable is guaranteed to process exactly the set of rows as if any prior
+     * filters/selectables were applied, but it will do so in a serial manner. If this is a filter, then the expression
+     * will not evaluate additional rows or skip rows that future filters may eliminate. Take care when selecting
+     * marking filters/selectables as serial, as the operation will not be able to take advantage of powerful
+     * optimizations.
      * <p>
      * <ul>
      * <li>Concurrency impact: The expression will never be invoked concurrently with itself.</li>
      * <li>Intra-expression ordering impact: Rows are evaluated sequentially in row set order.</li>
-     * <li>Inter-expression ordering impact: Acts as an absolute reordering barrier, ensuring that no parts of a where
-     * clause are executed out of order relative to this serial filter.</li>
+     * <li>
+     * <p>
+     * Inter-expression ordering impact: For a filter, serial acts as an absolute reordering barrier, ensuring that no
+     * parts of a filter are executed out of order relative to this serial wrapper.
+     * </p>
+     * <p>
+     * For selectables, additional ordering constraints are controlled by the value of the
+     * {@code QueryTable.SERIAL_SELECT_IMPLICIT_BARRIERS}. This is set by the property
+     * {@code QueryTable.serialSelectImplicitBarriers} (defaulting to the value of
+     * {@code QueryTable.statelessSelectByDefault}).
+     * </p>
+     *
+     * <p>
+     * If {@code QueryTable.SERIAL_SELECT_IMPLICIT_BARRIERS} is false, then no additional ordering between selectable
+     * expressions is imposed. As with every select or update call, if column B references column A, then the necessary
+     * inputs from column A are evaluated before column B is evaluated. To impose further ordering constraints, use
+     * barriers.
+     * </p>
+     *
+     * <p>
+     * If {@code QueryTable.SERIAL_SELECT_IMPLICIT_BARRIERS} is true, then a serial selectable is an absolute barrier
+     * with respect to all other serial selectables. This prohibits serial selectables from being evaluated
+     * concurrently, permitting them to access global state. Selectables that are not serial may be reordered with
+     * respect to a serial selectable.
+     * </p>
+     * </li>
      * </ul>
      *
      * @return a new instance of T with serial concurrency control applied.
      */
     T withSerial();
+
+    /**
+     * Designates the filter/selectable as declaring the specified barrier object(s).
+     * <p>
+     * A barrier does not affect concurrency but imposes an ordering constraint for the filters or selectables that
+     * respect the same barrier. When a filter/selectable is marked as respecting a barrier object, it indicates that
+     * the respecting filter/selectable will be executed entirely after the filter/selectable declaring the barrier.
+     * <p>
+     * Each barrier must be unique and declared by at most one filter. Object {@link Object#equals(Object) equals} and
+     * {@link Object#hashCode()} hashCode will be used to determine uniqueness and identification of barrier objects.
+     *
+     * @param declaredBarriers the unique barrier object identifiers
+     * @return a new instance of T with the declaredBarriers applied
+     */
+    T withDeclaredBarriers(Object... declaredBarriers);
+
+    /**
+     * Specifies that the filter/selectable should respect the ordering constraints of the given barriers.
+     * <p>
+     * Filters that define a barrier (using {@link #withDeclaredBarriers(Object...)}) will be executed entirely before
+     * filters/selectables that respect that barrier.
+     * <p>
+     * It is an error to respect a barrier that has not already been defined per the natural left to right ordering of
+     * filters/selectables at the operation level. This is to minimize the risk of user error as the API is loosely
+     * typed.
+     * <p>
+     * Object {@link Object#equals(Object) equals} and {@link Object#hashCode()} hashCode will be used to identify which
+     * barriers are respected.
+     *
+     * @param respectedBarriers the unique barrier object identifiers to respect
+     * @return a new instance of T with the respects barrier rule applied
+     */
+    T withRespectedBarriers(Object... respectedBarriers);
 }

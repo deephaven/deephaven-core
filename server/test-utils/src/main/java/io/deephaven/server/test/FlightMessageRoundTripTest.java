@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.server.test;
 
@@ -51,6 +51,7 @@ import io.deephaven.server.runner.GrpcServer;
 import io.deephaven.server.runner.MainHelper;
 import io.deephaven.server.session.*;
 import io.deephaven.server.table.TableModule;
+import io.deephaven.server.table.validation.ExpressionValidatorModule;
 import io.deephaven.server.test.TestAuthModule.FakeBearer;
 import io.deephaven.server.util.Scheduler;
 import io.deephaven.util.QueryConstants;
@@ -58,6 +59,7 @@ import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.mutable.MutableInt;
 import io.deephaven.vector.DoubleVector;
 import io.deephaven.vector.IntVector;
+import io.deephaven.vector.ObjectVector;
 import io.grpc.*;
 import io.grpc.CallOptions;
 import org.apache.arrow.flight.*;
@@ -88,17 +90,18 @@ import org.apache.arrow.vector.types.pojo.FieldType;
 import org.apache.arrow.vector.types.pojo.Schema;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.jetbrains.annotations.Nullable;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.rules.ExternalResource;
+import org.junit.rules.TestRule;
+import org.junit.runner.Description;
+import org.junit.runners.model.Statement;
 
 import javax.inject.Named;
 import javax.inject.Provider;
 import javax.inject.Singleton;
 import java.io.IOException;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
@@ -130,6 +133,7 @@ public abstract class FlightMessageRoundTripTest {
             ObfuscatingErrorTransformerModule.class,
             PluginsModule.class,
             ExchangeMarshallerModule.class,
+            ExpressionValidatorModule.class,
     })
     public static class FlightTestModule {
         @IntoSet
@@ -258,16 +262,31 @@ public abstract class FlightMessageRoundTripTest {
         MainHelper.bootstrapProjectDirectories();
     }
 
-    @Before
-    public void setup() throws IOException, InterruptedException {
+    /**
+     * Setup run before each test. Note that this method is not annotated with {@link Before} because we want to control
+     * when the server starts using the {@link SetupServerRule}.
+     */
+    public void setupBefore() throws IOException, InterruptedException {
         logBuffer = new LogBuffer(128);
         LogBufferGlobal.setInstance(logBuffer);
 
         component = component();
+
+        // JS plugins must be registered after the server is created but before it is started (this pattern is used in
+        // DeephavenApiServer). The default test configuration will create the server here and then start the server in
+        // in the SetupServerRule. For tests that need to register JS plugins, they can defer the server start using
+        // the @DeferServerStart annotation. Tests can then register plugins and manually start the server.
+        server = component.server();
+    }
+
+    /**
+     * Starts the server. Gets automatically called by the {@link SetupServerRule} unless the test is annotated with a
+     * {@link DeferServerStart} annotation.
+     */
+    public void startServer() throws IOException, InterruptedException {
         // open execution context immediately so it can be used when resolving `scriptSession`
         executionContext = component.executionContext().open();
 
-        server = component.server();
         server.start();
         localPort = server.getPort();
         serverScheduler = (Scheduler.DelegatingImpl) component.serverScheduler();
@@ -357,6 +376,38 @@ public abstract class FlightMessageRoundTripTest {
         }
     }
 
+    /**
+     * Annotation to defer auto server start. See {@link SetupServerRule}.
+     */
+    @Retention(RetentionPolicy.RUNTIME)
+    public @interface DeferServerStart {
+    }
+
+    /**
+     * A JUnit rule that sets up a server before a test runs. The server will also be started unless the test is
+     * annotated with a {@link DeferServerStart} annotation.
+     */
+    public class SetupServerRule implements TestRule {
+        @Override
+        public Statement apply(Statement statement, Description description) {
+            return new Statement() {
+                @Override
+                public void evaluate() throws Throwable {
+                    setupBefore();
+
+                    boolean autoStart = description.getAnnotation(DeferServerStart.class) == null;
+                    if (autoStart) {
+                        startServer();
+                    }
+                    statement.evaluate();
+                }
+            };
+        }
+    }
+
+    @Rule
+    public final SetupServerRule startServerRule = new SetupServerRule();
+
     @Rule
     public final ExternalResource livenessRule = new ExternalResource() {
         SafeCloseable scope;
@@ -387,7 +438,7 @@ public abstract class FlightMessageRoundTripTest {
     }
 
     @Test
-    public void testLoginHandshakeBasicAuth() {
+    public void testLoginHandshakeBasicAuth() throws IOException, InterruptedException {
         closeClient();
         flightClient = FlightClient.builder().location(serverLocation)
                 .allocator(allocator)
@@ -569,6 +620,175 @@ public abstract class FlightMessageRoundTripTest {
             // row count should match what we expect
             assertEquals(10, totalRowCount);
         }
+    }
+
+    @Test
+    public void testComplexTypedTable() throws Exception {
+        Flight.Ticket simpleTableTicket = FlightExportTicketHelper.exportIdToFlightTicket(1);
+        currentSession.newExport(simpleTableTicket, "test")
+                .submit(() -> TableTools.emptyTable(1)
+                        .update("triplevector_int=i", "triplevector_string=``").groupBy()
+                        .update("doublevector_int=i", "doublevector_string=``").groupBy()
+                        .update("vector_int=i", "vector_string=``").groupBy()
+                        .update("array_int=new int[]{i}", "doublearray_int=new int[][] {{i}}",
+                                "array_string=new String[]{``}",
+                                "doublearray_string=new String[][]{{``}}"));
+
+        Map<String, Field> arrowFieldTypeMap = new HashMap<>();
+        Map<String, String> dhTypeMap = new HashMap<>();
+        Map<String, String> dhComponentTypeMap = new HashMap<>();
+        int seen = 0;
+        try (FlightStream stream = flightClient.getStream(new Ticket(simpleTableTicket.getTicket().toByteArray()))) {
+            Schema schema = stream.getSchema();
+            for (Field field : schema.getFields()) {
+                if (!field.getName().isBlank()) {
+                    seen++;
+                    switch (field.getName()) {
+                        case "triplevector_int": {
+                            assertEquals(ArrowType.ArrowTypeID.List, field.getType().getTypeID());
+                            List<Field> children = field.getChildren();
+                            assertEquals(1, children.size());
+                            Field child = children.get(0);
+                            assertEquals(ArrowType.ArrowTypeID.List, child.getType().getTypeID());
+                            List<Field> grandChildren = child.getChildren();
+                            assertEquals(1, grandChildren.size());
+                            Field grandChild = grandChildren.get(0);
+                            // Even though this is a primitive int vector, the third layer of wrapping means it has to
+                            // be made into a string
+                            assertEquals(ArrowType.ArrowTypeID.Utf8, grandChild.getType().getTypeID());
+
+                            assertEquals(ObjectVector.class.getName(), field.getMetadata().get("deephaven:type"));
+                            assertEquals(ObjectVector.class.getName(),
+                                    field.getMetadata().get("deephaven:componentType"));
+                            break;
+                        }
+                        case "triplevector_string": {
+                            assertEquals(ArrowType.ArrowTypeID.List, field.getType().getTypeID());
+                            List<Field> children = field.getChildren();
+                            assertEquals(1, children.size());
+                            Field child = children.get(0);
+                            assertEquals(ArrowType.ArrowTypeID.List, child.getType().getTypeID());
+                            List<Field> grandChildren = child.getChildren();
+                            assertEquals(1, grandChildren.size());
+                            Field grandChild = grandChildren.get(0);
+                            // Even though this is a ObjectVector<String>, the third layer of wrapping means it has to
+                            // be made into a string
+                            assertEquals(ArrowType.ArrowTypeID.Utf8, grandChild.getType().getTypeID());
+
+                            assertEquals(ObjectVector.class.getName(), field.getMetadata().get("deephaven:type"));
+                            assertEquals(ObjectVector.class.getName(),
+                                    field.getMetadata().get("deephaven:componentType"));
+                            break;
+                        }
+                        case "doublevector_int": {
+                            assertEquals(ArrowType.ArrowTypeID.List, field.getType().getTypeID());
+                            List<Field> children = field.getChildren();
+                            assertEquals(1, children.size());
+                            Field child = children.get(0);
+                            assertEquals(ArrowType.ArrowTypeID.List, child.getType().getTypeID());
+                            List<Field> grandChildren = child.getChildren();
+                            assertEquals(1, grandChildren.size());
+                            Field grandChild = grandChildren.get(0);
+                            assertEquals(ArrowType.ArrowTypeID.Int, grandChild.getType().getTypeID());
+                            assertEquals(ObjectVector.class.getName(), field.getMetadata().get("deephaven:type"));
+                            assertEquals(IntVector.class.getName(), field.getMetadata().get("deephaven:componentType"));
+                            break;
+                        }
+                        case "doublevector_string": {
+                            assertEquals(ArrowType.ArrowTypeID.List, field.getType().getTypeID());
+                            List<Field> children = field.getChildren();
+                            assertEquals(1, children.size());
+                            Field child = children.get(0);
+                            assertEquals(ArrowType.ArrowTypeID.List, child.getType().getTypeID());
+                            List<Field> grandChildren = child.getChildren();
+                            assertEquals(1, grandChildren.size());
+                            Field grandChild = grandChildren.get(0);
+                            assertEquals(ArrowType.ArrowTypeID.Utf8, grandChild.getType().getTypeID());
+                            assertEquals(ObjectVector.class.getName(), field.getMetadata().get("deephaven:type"));
+                            assertEquals(ObjectVector.class.getName(),
+                                    field.getMetadata().get("deephaven:componentType"));
+                            break;
+                        }
+                        case "vector_int": {
+                            assertEquals(ArrowType.ArrowTypeID.List, field.getType().getTypeID());
+                            List<Field> children = field.getChildren();
+                            assertEquals(1, children.size());
+                            Field child = children.get(0);
+                            assertEquals(ArrowType.ArrowTypeID.Int, child.getType().getTypeID());
+                            assertEquals(IntVector.class.getName(), field.getMetadata().get("deephaven:type"));
+                            assertEquals("int", field.getMetadata().get("deephaven:componentType"));
+                            break;
+                        }
+                        case "vector_string": {
+                            assertEquals(ArrowType.ArrowTypeID.List, field.getType().getTypeID());
+                            List<Field> children = field.getChildren();
+                            assertEquals(1, children.size());
+                            Field child = children.get(0);
+                            assertEquals(ArrowType.ArrowTypeID.Utf8, child.getType().getTypeID());
+                            assertEquals(ObjectVector.class.getName(), field.getMetadata().get("deephaven:type"));
+                            assertEquals("java.lang.String", field.getMetadata().get("deephaven:componentType"));
+                            break;
+                        }
+                        case "array_int": {
+                            assertEquals(ArrowType.ArrowTypeID.List, field.getType().getTypeID());
+                            List<Field> children = field.getChildren();
+                            assertEquals(1, children.size());
+                            Field child = children.get(0);
+                            assertEquals(ArrowType.ArrowTypeID.Int, child.getType().getTypeID());
+                            assertEquals("int[]", field.getMetadata().get("deephaven:type"));
+                            assertEquals("int", field.getMetadata().get("deephaven:componentType"));
+                            break;
+                        }
+                        case "doublearray_int": {
+                            assertEquals(ArrowType.ArrowTypeID.List, field.getType().getTypeID());
+                            List<Field> children = field.getChildren();
+                            assertEquals(1, children.size());
+                            Field child = children.get(0);
+                            assertEquals(ArrowType.ArrowTypeID.List, child.getType().getTypeID());
+                            List<Field> grandChildren = child.getChildren();
+                            assertEquals(1, grandChildren.size());
+                            Field grandChild = grandChildren.get(0);
+                            assertEquals(ArrowType.ArrowTypeID.Int, grandChild.getType().getTypeID());
+                            assertEquals("int[][]", field.getMetadata().get("deephaven:type"));
+                            assertEquals("int[]", field.getMetadata().get("deephaven:componentType"));
+                            break;
+                        }
+                        case "array_string": {
+                            assertEquals(ArrowType.ArrowTypeID.List, field.getType().getTypeID());
+                            List<Field> children = field.getChildren();
+                            assertEquals(1, children.size());
+                            Field child = children.get(0);
+                            assertEquals(ArrowType.ArrowTypeID.Utf8, child.getType().getTypeID());
+                            assertEquals("java.lang.String[]", field.getMetadata().get("deephaven:type"));
+                            assertEquals("java.lang.String", field.getMetadata().get("deephaven:componentType"));
+
+                            break;
+                        }
+                        case "doublearray_string": {
+                            assertEquals(ArrowType.ArrowTypeID.List, field.getType().getTypeID());
+                            List<Field> children = field.getChildren();
+                            assertEquals(1, children.size());
+                            Field child = children.get(0);
+                            assertEquals(ArrowType.ArrowTypeID.List, child.getType().getTypeID());
+                            List<Field> grandChildren = child.getChildren();
+                            assertEquals(1, grandChildren.size());
+                            Field grandChild = grandChildren.get(0);
+                            assertEquals(ArrowType.ArrowTypeID.Utf8, grandChild.getType().getTypeID());
+                            assertEquals("java.lang.String[][]", field.getMetadata().get("deephaven:type"));
+                            assertEquals("java.lang.String[]", field.getMetadata().get("deephaven:componentType"));
+
+                            break;
+                        }
+                        default:
+                            fail("Unexpected field: " + field.getName());
+                    }
+                    arrowFieldTypeMap.put(field.getName(), field);
+                    dhTypeMap.put(field.getName(), field.getMetadata().get("deephaven:type"));
+                    dhComponentTypeMap.put(field.getName(), field.getMetadata().get("deephaven:componentType"));
+                }
+            }
+        }
+        assertEquals(10, seen);
     }
 
     @Test

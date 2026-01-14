@@ -1,16 +1,21 @@
 #
-# Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 #
 """This module allows user to enable/disable Deephaven systemic object marking. When enabled, Deephaven will mark
 all objects created in the current thread as systemic. These systemic objects will be tracked and if errors occur to
 them, the errors are deemed to be systemic and fatal.
 """
+
 import contextlib
+from typing import Iterator
 
 import jpy
+
 from deephaven import DHError
 
-_JSystemicObjectTracker = jpy.get_type("io.deephaven.engine.util.systemicmarking.SystemicObjectTracker")
+_JSystemicObjectTracker = jpy.get_type(
+    "io.deephaven.engine.util.systemicmarking.SystemicObjectTracker"
+)
 
 
 def is_systemic_object_marking_enabled() -> bool:
@@ -45,7 +50,7 @@ def set_systemic(systemic: bool) -> None:
 
 
 @contextlib.contextmanager
-def systemic_object_marking() -> None:
+def systemic_object_marking() -> Iterator[None]:
     """A Context manager to ensure the current thread is marked as systemic for the execution of the enclosed code
     block. On exit, the thread is restored to its previous systemic state.
 
@@ -66,7 +71,7 @@ def systemic_object_marking() -> None:
 
 
 @contextlib.contextmanager
-def no_systemic_object_marking() -> None:
+def no_systemic_object_marking() -> Iterator[None]:
     """A Context manager to ensure the current thread is marked as not systemic for the execution of the enclosed code
     block. On exit, the thread is restored to its previous systemic state.
 

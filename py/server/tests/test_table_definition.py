@@ -1,11 +1,12 @@
 #
-# Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 #
 import unittest
 from typing import Mapping
-from deephaven import dtypes, new_table, DHError
+
+from deephaven import DHError, dtypes, new_table
+from deephaven.column import bool_col, col_def, string_col
 from deephaven.table import TableDefinition
-from deephaven.column import col_def, string_col, bool_col
 from tests.testbase import BaseTestCase
 
 
@@ -34,7 +35,7 @@ class TableDefinitionTestCase(BaseTestCase):
         self.assertTrue(isinstance(self.test_definition, Mapping))
 
     def test_length(self):
-        self.assertEquals(9, len(self.test_definition))
+        self.assertEqual(9, len(self.test_definition))
 
     def test_contains(self):
         self.assertTrue("Bool" in self.test_definition)
@@ -49,22 +50,22 @@ class TableDefinitionTestCase(BaseTestCase):
         self.assertFalse("FooBarBaz" in self.test_definition)
 
     def test_getitem(self):
-        self.assertEquals(col_def("Bool", dtypes.bool_), self.test_definition["Bool"])
-        self.assertEquals(col_def("Char", dtypes.char), self.test_definition["Char"])
-        self.assertEquals(col_def("Short", dtypes.short), self.test_definition["Short"])
-        self.assertEquals(col_def("Int", dtypes.int32), self.test_definition["Int"])
-        self.assertEquals(col_def("Long", dtypes.int64), self.test_definition["Long"])
-        self.assertEquals(
+        self.assertEqual(col_def("Bool", dtypes.bool_), self.test_definition["Bool"])
+        self.assertEqual(col_def("Char", dtypes.char), self.test_definition["Char"])
+        self.assertEqual(col_def("Short", dtypes.short), self.test_definition["Short"])
+        self.assertEqual(col_def("Int", dtypes.int32), self.test_definition["Int"])
+        self.assertEqual(col_def("Long", dtypes.int64), self.test_definition["Long"])
+        self.assertEqual(
             col_def("Float", dtypes.float32), self.test_definition["Float"]
         )
-        self.assertEquals(
+        self.assertEqual(
             col_def("Double", dtypes.float64),
             self.test_definition["Double"],
         )
-        self.assertEquals(
+        self.assertEqual(
             col_def("String", dtypes.string), self.test_definition["String"]
         )
-        self.assertEquals(
+        self.assertEqual(
             col_def("Instant", dtypes.Instant),
             self.test_definition["Instant"],
         )
@@ -72,40 +73,38 @@ class TableDefinitionTestCase(BaseTestCase):
             self.test_definition["FooBarBaz"]
 
     def test_get(self):
-        self.assertEquals(
+        self.assertEqual(
             col_def("Bool", dtypes.bool_), self.test_definition.get("Bool")
         )
-        self.assertEquals(
-            col_def("Char", dtypes.char), self.test_definition.get("Char")
-        )
-        self.assertEquals(
+        self.assertEqual(col_def("Char", dtypes.char), self.test_definition.get("Char"))
+        self.assertEqual(
             col_def("Short", dtypes.short),
             self.test_definition.get("Short"),
         )
-        self.assertEquals(col_def("Int", dtypes.int32), self.test_definition.get("Int"))
-        self.assertEquals(
+        self.assertEqual(col_def("Int", dtypes.int32), self.test_definition.get("Int"))
+        self.assertEqual(
             col_def("Long", dtypes.int64), self.test_definition.get("Long")
         )
-        self.assertEquals(
+        self.assertEqual(
             col_def("Float", dtypes.float32),
             self.test_definition.get("Float"),
         )
-        self.assertEquals(
+        self.assertEqual(
             col_def("Double", dtypes.float64),
             self.test_definition.get("Double"),
         )
-        self.assertEquals(
+        self.assertEqual(
             col_def("String", dtypes.string),
             self.test_definition.get("String"),
         )
-        self.assertEquals(
+        self.assertEqual(
             col_def("Instant", dtypes.Instant),
             self.test_definition.get("Instant"),
         )
-        self.assertEquals(None, self.test_definition.get("FooBarBaz"))
+        self.assertEqual(None, self.test_definition.get("FooBarBaz"))
 
     def test_iter(self):
-        self.assertEquals(
+        self.assertEqual(
             [
                 "Bool",
                 "Char",
@@ -121,7 +120,7 @@ class TableDefinitionTestCase(BaseTestCase):
         )
 
     def test_keys(self):
-        self.assertEquals(
+        self.assertEqual(
             [
                 "Bool",
                 "Char",
@@ -137,7 +136,7 @@ class TableDefinitionTestCase(BaseTestCase):
         )
 
     def test_values(self):
-        self.assertEquals(
+        self.assertEqual(
             [
                 col_def("Bool", dtypes.bool_),
                 col_def("Char", dtypes.char),
@@ -153,7 +152,7 @@ class TableDefinitionTestCase(BaseTestCase):
         )
 
     def test_items(self):
-        self.assertEquals(
+        self.assertEqual(
             [
                 ("Bool", col_def("Bool", dtypes.bool_)),
                 ("Char", col_def("Char", dtypes.char)),
@@ -178,8 +177,8 @@ class TableDefinitionTestCase(BaseTestCase):
             # should be equal to a new python object and new underlying java object
             TableDefinition(self.test_definition.values()),
         ]:
-            self.assertEquals(actual, self.test_definition)
-            self.assertEquals(hash(actual), expected_hash)
+            self.assertEqual(actual, self.test_definition)
+            self.assertEqual(hash(actual), expected_hash)
 
     def test_meta_table(self):
         expected = new_table(
@@ -220,10 +219,10 @@ class TableDefinitionTestCase(BaseTestCase):
         self.assert_table_equals(self.test_definition.table, expected)
 
     def test_from_TableDefinition(self):
-        self.assertEquals(TableDefinition(self.test_definition), self.test_definition)
+        self.assertEqual(TableDefinition(self.test_definition), self.test_definition)
 
     def test_from_JpyJType(self):
-        self.assertEquals(
+        self.assertEqual(
             TableDefinition(self.test_definition.j_table_definition),
             self.test_definition,
         )
@@ -233,10 +232,10 @@ class TableDefinitionTestCase(BaseTestCase):
         pass
 
     def test_from_Iterable(self):
-        self.assertEquals(
+        self.assertEqual(
             TableDefinition(self.test_definition.values()), self.test_definition
         )
-        self.assertEquals(
+        self.assertEqual(
             TableDefinition(list(self.test_definition.values())), self.test_definition
         )
 

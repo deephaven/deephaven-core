@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.stats;
 
@@ -15,8 +15,8 @@ import io.deephaven.io.log.impl.LogSinkImpl;
 import io.deephaven.util.annotations.ReferentialIntegrity;
 import io.deephaven.util.thread.NamingThreadFactory;
 
+import java.time.ZoneId;
 import java.util.Properties;
-import java.util.TimeZone;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -124,9 +124,9 @@ public class StatsDriver {
             }
         }
 
-        final TimeZone serverTimeZone = Configuration.getInstance().getServerTimezone();
-        this.systemTimestamp = new TimestampBuffer(serverTimeZone);
-        this.appTimestamp = new TimestampBuffer(serverTimeZone);
+        final ZoneId zoneId = ZoneId.systemDefault();
+        this.systemTimestamp = new TimestampBuffer(zoneId);
+        this.appTimestamp = new TimestampBuffer(zoneId);
 
         if (path == null) {
             this.entryPool = null;

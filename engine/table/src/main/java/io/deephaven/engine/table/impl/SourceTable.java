@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl;
 
@@ -8,6 +8,7 @@ import io.deephaven.base.verify.Require;
 import io.deephaven.engine.liveness.LiveSupplier;
 import io.deephaven.engine.liveness.LivenessReferent;
 import io.deephaven.engine.liveness.LivenessScopeStack;
+import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.rowset.TrackingWritableRowSet;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.TableUpdate;
@@ -100,9 +101,11 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
         this.updateSourceRegistrar = updateSourceRegistrar;
 
         final boolean isRefreshing = updateSourceRegistrar != null;
+        final boolean removeAllowed = locationProvider.getUpdateMode().removeAllowed();
         try (final SafeCloseable ignored = isRefreshing ? LivenessScopeStack.open() : null) {
             columnSourceManager = componentFactory.createColumnSourceManager(
                     isRefreshing,
+                    removeAllowed,
                     ColumnToCodecMappings.EMPTY,
                     definition.getColumns() // This is the *re-written* definition passed to the super-class constructor
             );
@@ -370,5 +373,13 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
             }
         }
         return Stream.empty();
+    }
+
+    @Override
+    public TrackingRowSet getRowSet() {
+        if (locationSizesInitialized) {
+            return rowSet;
+        }
+        return super.getRowSet();
     }
 }

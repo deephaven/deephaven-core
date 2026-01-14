@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
 // ****** Edit LongFromUnsignedShortMaterializer and run "./gradlew replicatePageMaterializers" to regenerate
@@ -25,6 +25,10 @@ public class IntFromUnsignedShortMaterializer extends IntMaterializerBase implem
         }
     };
 
+    public static int convertValue(int value) {
+        return Short.toUnsignedInt((short) value);
+    }
+
     private final ValuesReader dataReader;
 
     private IntFromUnsignedShortMaterializer(ValuesReader dataReader, int numValues) {
@@ -39,7 +43,7 @@ public class IntFromUnsignedShortMaterializer extends IntMaterializerBase implem
     @Override
     public void fillValues(int startIndex, int endIndex) {
         for (int ii = startIndex; ii < endIndex; ii++) {
-            data[ii] = Short.toUnsignedInt((short) dataReader.readInteger());
+            data[ii] = convertValue(dataReader.readInteger());
         }
     }
 }

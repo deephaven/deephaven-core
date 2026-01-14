@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.select;
 
@@ -20,7 +20,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Stream;
 
-abstract class WhereFilterDelegatingBase
+public abstract class WhereFilterDelegatingBase
         extends WhereFilterLivenessArtifactImpl
         implements DependencyStreamProvider {
 
@@ -41,6 +41,10 @@ abstract class WhereFilterDelegatingBase
             return ((DependencyStreamProvider) filter).getDependencyStream();
         }
         return Stream.empty();
+    }
+
+    public WhereFilter getWrappedFilter() {
+        return filter;
     }
 
     @Override
@@ -117,6 +121,11 @@ abstract class WhereFilterDelegatingBase
     @Override
     public boolean canMemoize() {
         return filter.canMemoize();
+    }
+
+    @Override
+    public boolean permitParallelization() {
+        return filter.permitParallelization();
     }
 
     @Override

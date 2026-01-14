@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
 // ****** Edit CharChunkedUniqueOperator and run "./gradlew replicateSegmentedSortedMultiset" to regenerate
@@ -48,7 +48,7 @@ public class LongChunkedUniqueOperator implements IterativeChunkedAggregationOpe
     private final String name;
 
     private final Supplier<SegmentedSortedMultiSet.RemoveContext> removeContextFactory;
-    private final boolean countNull;
+    private final boolean countNullNaN;
     private final boolean exposeInternal;
     private WritableRowSet touchedStates;
     private UpdateCommitter<LongChunkedUniqueOperator> prevFlusher = null;
@@ -63,9 +63,9 @@ public class LongChunkedUniqueOperator implements IterativeChunkedAggregationOpe
             // region Constructor
             Class<?> type,
             // endregion Constructor
-            String name, boolean countNulls, boolean exposeInternal, long onlyNullsSentinel, long nonUniqueSentinel) {
+            String name, boolean countNullNaN, boolean exposeInternal, long onlyNullsSentinel, long nonUniqueSentinel) {
         this.name = name;
-        this.countNull = countNulls;
+        this.countNullNaN = countNullNaN;
         this.exposeInternal = exposeInternal;
         this.onlyNullsSentinel = onlyNullsSentinel;
         this.nonUniqueSentinel = nonUniqueSentinel;
@@ -100,7 +100,7 @@ public class LongChunkedUniqueOperator implements IterativeChunkedAggregationOpe
         context.lengthCopy.copyFromChunk(length, 0, 0, length.size());
 
         LongCompactKernel.compactAndCount((WritableLongChunk<? extends Values>) context.valueCopy, context.counts,
-                startPositions, context.lengthCopy, countNull);
+                startPositions, context.lengthCopy, countNullNaN, countNullNaN);
         return context;
     }
 
@@ -150,7 +150,7 @@ public class LongChunkedUniqueOperator implements IterativeChunkedAggregationOpe
             final WritableIntChunk<ChunkLengths> countSlice =
                     context.countResettable.resetFromChunk(context.counts, startPosition, runLength);
             ssm.remove(removeContext, valueSlice, countSlice);
-            if (ssm.size() == 0) {
+            if (ssm.isEmpty()) {
                 clearSsm(destination);
             }
 
@@ -181,7 +181,7 @@ public class LongChunkedUniqueOperator implements IterativeChunkedAggregationOpe
             final WritableIntChunk<ChunkLengths> countSlice =
                     context.countResettable.resetFromChunk(context.counts, startPosition, runLength);
             ssm.remove(removeContext, valueSlice, countSlice);
-            if (ssm.size() == 0) {
+            if (ssm.isEmpty()) {
                 context.ssmsToMaybeClear.set(ii, true);
             }
         }
@@ -220,7 +220,7 @@ public class LongChunkedUniqueOperator implements IterativeChunkedAggregationOpe
         context.valueCopy.setSize(values.size());
         context.valueCopy.copyFromChunk(values, 0, 0, values.size());
         LongCompactKernel.compactAndCount((WritableLongChunk<? extends Values>) context.valueCopy, context.counts,
-                countNull);
+                countNullNaN, countNullNaN);
         return context;
     }
 
@@ -245,7 +245,7 @@ public class LongChunkedUniqueOperator implements IterativeChunkedAggregationOpe
 
         final LongSegmentedSortedMultiset ssm = ssmForSlot(destination);
         ssm.remove(context.removeContext, context.valueCopy, context.counts);
-        if (ssm.size() == 0) {
+        if (ssm.isEmpty()) {
             clearSsm(destination);
         }
 
@@ -265,7 +265,7 @@ public class LongChunkedUniqueOperator implements IterativeChunkedAggregationOpe
         LongSegmentedSortedMultiset ssm = ssmForSlot(destination);
         if (context.valueCopy.size() > 0) {
             ssm.insert(context.valueCopy, context.counts);
-        } else if (ssm.size() == 0) {
+        } else if (ssm.isEmpty()) {
             clearSsm(destination);
         }
 

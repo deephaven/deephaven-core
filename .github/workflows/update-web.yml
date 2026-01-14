@@ -7,13 +7,18 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - name: Checkout latest
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           ref: main
+          sparse-checkout: |
+            /web/client-ui/Dockerfile
+            /web/client-api/types/.nvmrc
+          sparse-checkout-cone-mode: false
+          lfs: true
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: '18.x'
+          node-version-file: '/web/client-api/types/.nvmrc'
       - name: Get web versions
         id: web_versions
         run: |

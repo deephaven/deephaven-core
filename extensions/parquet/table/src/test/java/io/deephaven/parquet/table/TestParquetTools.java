@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.parquet.table;
 
@@ -27,6 +27,7 @@ import io.deephaven.engine.util.TableTools;
 import io.deephaven.parquet.base.InvalidParquetFileException;
 import io.deephaven.parquet.table.layout.ParquetKeyValuePartitionedLayout;
 import io.deephaven.parquet.table.location.ParquetColumnResolver;
+import io.deephaven.parquet.table.location.ParquetColumnResolverMap;
 import io.deephaven.parquet.table.location.ParquetFieldIdColumnResolverFactory;
 import io.deephaven.parquet.table.location.ParquetTableLocationKey;
 import io.deephaven.qst.type.Type;
@@ -675,7 +676,7 @@ public class TestParquetTools {
         // to know whenever serialization changes in any way.
         // For example, this test can fail when we upgrade the parquet version simply because the "createdBy" field
         // captures this version.
-        assertEquals("0a85a4e0959118ad288f8937f240d4776acc54f81ed06ea4c89b6be2ec40545f", sha256sum(file.toPath()));
+        assertEquals("19ee4c6dda4c96d64d95786ae2bfad4aaa557c41bb49103e228a9ce05fbce009", sha256sum(file.toPath()));
 
         // This test is a bit circular; but assuming we trust our reading code, we should have relative confidence that
         // we are writing it down correctly if we can read it correctly.
@@ -1223,6 +1224,63 @@ public class TestParquetTools {
             assertThat(e)
                     .hasMessageContaining("Encountered unsupported multi-column field MyStruct");
         }
+    }
+
+    /**
+     * <pre>
+     * import pyarrow as pa
+     * import pyarrow.parquet as pq
+     *
+     * schema = pa.schema([
+     *     pa.field("Foo",
+     *              pa.struct([pa.field("Field1", pa.int32(), nullable=False),
+     *                         pa.field("Field2", pa.int32(), nullable=False)])),
+     *     pa.field("Bar",
+     *              pa.struct([pa.field("Field1", pa.int32(), nullable=False),
+     *                         pa.field("Field2", pa.int32(), nullable=False)])),
+     *     pa.field("Baz",   pa.int32()),
+     *     pa.field("Longs", pa.list_(pa.int64()))
+     * ])
+     *
+     * N = 10
+     * table = pa.Table.from_pydict(
+     *     {
+     *         "Foo":   [{"Field1": i,      "Field2": -i}      for i in range(N)],
+     *         "Bar":   [{"Field1": i * 10, "Field2": -i * 10} for i in range(N)],
+     *         "Baz":   list(range(N)),
+     *         "Longs": [[i * 1_000 + j for j in range(3)]     for i in range(N)],
+     *     },
+     *     schema=schema,
+     * )
+     *
+     * pq.write_table(table, "NestedStruct3.parquet")
+     * </pre>
+     */
+    @Test
+    public void nestedFieldSupportViaColumnResolver() {
+        final String file = TestParquetTools.class.getResource("/NestedStruct3.parquet").getFile();
+        final TableDefinition td = TableDefinition.of(
+                ColumnDefinition.ofInt("Foo1"),
+                ColumnDefinition.ofInt("Foo2"),
+                ColumnDefinition.ofInt("Bar1"),
+                ColumnDefinition.ofInt("Bar2"));
+        final Table expected = TableTools.newTable(td,
+                intCol("Foo1", 0, 1, 2, 3, 4, 5, 6, 7, 8, 9),
+                intCol("Foo2", 0, -1, -2, -3, -4, -5, -6, -7, -8, -9),
+                intCol("Bar1", 0, 10, 20, 30, 40, 50, 60, 70, 80, 90),
+                intCol("Bar2", 0, -10, -20, -30, -40, -50, -60, -70, -80, -90));
+        final ParquetInstructions pi = ParquetInstructions.builder()
+                .setTableDefinition(td)
+                .setColumnResolverFactory((tk, tlk) -> ParquetColumnResolverMap.builder()
+                        .putMap("Foo1", List.of("Foo", "Field1"))
+                        .putMap("Foo2", List.of("Foo", "Field2"))
+                        .putMap("Bar1", List.of("Bar", "Field1"))
+                        .putMap("Bar2", List.of("Bar", "Field2"))
+                        .build())
+                .build();
+        final Table actual = ParquetTools.readTable(file, pi);
+        assertEquals(td, actual.getDefinition());
+        assertTableEquals(expected, actual);
     }
 
     @Test

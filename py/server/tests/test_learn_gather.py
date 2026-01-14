@@ -1,10 +1,11 @@
 #
-# Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 #
 
 import unittest
 
 import numpy as np
+
 from deephaven import empty_table
 from deephaven.learn import gather
 from deephaven.pandas import to_pandas
@@ -12,88 +13,107 @@ from tests.testbase import BaseTestCase
 
 
 class LearnGatherTestCase(BaseTestCase):
-    """ Test cases for deephaven.learn submodule.  """
+    """Test cases for deephaven.learn submodule."""
 
     def setUp(self):
         super().setUp()
         """ Inherited method allowing initialization of test environment. """
         # Tables
-        self.bool_table = empty_table(100).update([
-            "X = true",
-            "Y = false",
-            "Z = (i % 2 == 0) ? true : false",
-        ]
+        self.bool_table = empty_table(100).update(
+            [
+                "X = true",
+                "Y = false",
+                "Z = (i % 2 == 0) ? true : false",
+            ]
         )
-        self.byte_table = empty_table(100).update([
-            "X = (byte)i",
-            "Y = (byte)(100 - X)",
-            "Z = (byte)(-101 + X)",
-        ]
+        self.byte_table = empty_table(100).update(
+            [
+                "X = (byte)i",
+                "Y = (byte)(100 - X)",
+                "Z = (byte)(-101 + X)",
+            ]
         )
-        self.short_table = empty_table(100).update([
-            "X = (short)i",
-            "Y = (short)(100 - X)",
-            "Z = (short)(-101 + X)",
-        ]
+        self.short_table = empty_table(100).update(
+            [
+                "X = (short)i",
+                "Y = (short)(100 - X)",
+                "Z = (short)(-101 + X)",
+            ]
         )
-        self.int_table = empty_table(100).update([
-            "X = (int)i",
-            "Y = 100 - X",
-            "Z = -101 + X",
-        ]
+        self.int_table = empty_table(100).update(
+            [
+                "X = (int)i",
+                "Y = 100 - X",
+                "Z = -101 + X",
+            ]
         )
-        self.long_table = empty_table(100).update([
-            "X = (long)i",
-            "Y = 100 - X",
-            "Z = -101 + X",
-        ]
+        self.long_table = empty_table(100).update(
+            [
+                "X = (long)i",
+                "Y = 100 - X",
+                "Z = -101 + X",
+            ]
         )
-        self.float_table = empty_table(100).update([
-            "X = (float)i",
-            "Y = (float)sqrt(X)",
-            "Z = (float)sqrt(Y)",
-        ]
+        self.float_table = empty_table(100).update(
+            [
+                "X = (float)i",
+                "Y = (float)sqrt(X)",
+                "Z = (float)sqrt(Y)",
+            ]
         )
-        self.double_table = empty_table(100).update([
-            "X = (double)i",
-            "Y = sqrt(X)",
-            "Z = sqrt(Y)",
-        ]
+        self.double_table = empty_table(100).update(
+            [
+                "X = (double)i",
+                "Y = sqrt(X)",
+                "Z = sqrt(Y)",
+            ]
         )
         # NumPy arrays
-        self.bool_array = \
-            np.array([[True, False, True], [True, False, False]] * 50,
-                     dtype=np.bool_)
-        self.byte_array = np.vstack((
-            np.arange(0, 100, dtype=np.byte),
-            np.arange(100, 0, -1, dtype=np.byte),
-            np.arange(-101, -1, dtype=np.byte)
-        )).T
-        self.short_array = np.vstack((
-            np.arange(0, 100, dtype=np.short),
-            np.arange(100, 0, -1, dtype=np.short),
-            np.arange(-101, -1, dtype=np.short)
-        )).T
-        self.int_array = np.vstack((
-            np.arange(0, 100, dtype=np.intc),
-            np.arange(100, 0, -1, dtype=np.intc),
-            np.arange(-101, -1, dtype=np.intc)
-        )).T
-        self.long_array = np.vstack((
-            np.arange(0, 100, dtype=np.int_),
-            np.arange(100, 0, -1, dtype=np.int_),
-            np.arange(-101, -1, dtype=np.int_)
-        )).T
-        self.float_array = np.vstack((
-            np.arange(0, 100, dtype=np.single),
-            np.sqrt(np.arange(0, 100, dtype=np.single)),
-            np.sqrt(np.sqrt(np.arange(0, 100, dtype=np.single)))
-        )).T
-        self.double_array = np.vstack((
-            np.arange(0, 100, dtype=np.double),
-            np.sqrt(np.arange(0, 100, dtype=np.double)),
-            np.sqrt(np.sqrt(np.arange(0, 100, dtype=np.double)))
-        )).T
+        self.bool_array = np.array(
+            [[True, False, True], [True, False, False]] * 50, dtype=np.bool_
+        )
+        self.byte_array = np.vstack(
+            (
+                np.arange(0, 100, dtype=np.byte),
+                np.arange(100, 0, -1, dtype=np.byte),
+                np.arange(-101, -1, dtype=np.byte),
+            )
+        ).T
+        self.short_array = np.vstack(
+            (
+                np.arange(0, 100, dtype=np.short),
+                np.arange(100, 0, -1, dtype=np.short),
+                np.arange(-101, -1, dtype=np.short),
+            )
+        ).T
+        self.int_array = np.vstack(
+            (
+                np.arange(0, 100, dtype=np.intc),
+                np.arange(100, 0, -1, dtype=np.intc),
+                np.arange(-101, -1, dtype=np.intc),
+            )
+        ).T
+        self.long_array = np.vstack(
+            (
+                np.arange(0, 100, dtype=np.int_),
+                np.arange(100, 0, -1, dtype=np.int_),
+                np.arange(-101, -1, dtype=np.int_),
+            )
+        ).T
+        self.float_array = np.vstack(
+            (
+                np.arange(0, 100, dtype=np.single),
+                np.sqrt(np.arange(0, 100, dtype=np.single)),
+                np.sqrt(np.sqrt(np.arange(0, 100, dtype=np.single))),
+            )
+        ).T
+        self.double_array = np.vstack(
+            (
+                np.arange(0, 100, dtype=np.double),
+                np.sqrt(np.arange(0, 100, dtype=np.double)),
+                np.sqrt(np.sqrt(np.arange(0, 100, dtype=np.double))),
+            )
+        ).T
 
     # Model for learn to use when dtype = [np.bool_]
     def boolean_model(self, features):
@@ -109,37 +129,51 @@ class LearnGatherTestCase(BaseTestCase):
 
     # Test byte data types
     def test_byte(self):
-        self.base_test(source=self.byte_table, model=self.integer_model, np_dtype=np.byte)
+        self.base_test(
+            source=self.byte_table, model=self.integer_model, np_dtype=np.byte
+        )
 
     # Test short data types
     def test_short(self):
-        self.base_test(source=self.short_table, model=self.integer_model, np_dtype=np.short)
+        self.base_test(
+            source=self.short_table, model=self.integer_model, np_dtype=np.short
+        )
 
     # Test int data types
     def test_int(self):
-        self.base_test(source=self.int_table, model=self.integer_model, np_dtype=np.intc)
+        self.base_test(
+            source=self.int_table, model=self.integer_model, np_dtype=np.intc
+        )
 
     # Test long data types
     def test_long(self):
-        self.base_test(source=self.long_table, model=self.integer_model, np_dtype=np.int_)
+        self.base_test(
+            source=self.long_table, model=self.integer_model, np_dtype=np.int_
+        )
 
     # Test float data types
     def test_float(self):
-        self.base_test(source=self.float_table, model=self.decimal_model, np_dtype=np.single)
+        self.base_test(
+            source=self.float_table, model=self.decimal_model, np_dtype=np.single
+        )
 
     # Test double data types
     def test_double(self):
-        self.base_test(source=self.double_table, model=self.decimal_model, np_dtype=np.double)
+        self.base_test(
+            source=self.double_table, model=self.decimal_model, np_dtype=np.double
+        )
 
     # The base test, which other tests will be built from
     def base_test(self, source, model, np_dtype):
         rows = source.j_table.getRowSet()
         cols = [source.j_table.getColumnSource(col) for col in ["X", "Y", "Z"]]
 
-        gatherer_rowmajor = lambda rowset, colset: gather.table_to_numpy_2d(rowset, colset,
-                                                                            gather.MemoryLayout.ROW_MAJOR, np_dtype)
-        gatherer_colmajor = lambda rowset, colset: gather.table_to_numpy_2d(rowset, colset,
-                                                                            gather.MemoryLayout.COLUMN_MAJOR, np_dtype)
+        gatherer_rowmajor = lambda rowset, colset: gather.table_to_numpy_2d(  # noqa: E731
+            rowset, colset, gather.MemoryLayout.ROW_MAJOR, np_dtype
+        )
+        gatherer_colmajor = lambda rowset, colset: gather.table_to_numpy_2d(  # noqa: E731
+            rowset, colset, gather.MemoryLayout.COLUMN_MAJOR, np_dtype
+        )
 
         array_from_table = to_pandas(source, dtype_backend=None, conv_null=False).values
 
@@ -164,10 +198,16 @@ class LearnGatherTestCase(BaseTestCase):
             self.assertTrue(gathered_rowmajor.dtype == gathered_colmajor.dtype)
             print("Array dtype: {}".format(np_dtype))
         with self.subTest(msg="Contiguity"):
-            self.assertTrue(gathered_rowmajor.flags["C_CONTIGUOUS"] or gathered_rowmajor.flags["F_CONTIGUOUS"])
-            self.assertTrue(gathered_colmajor.flags["C_CONTIGUOUS"] or gathered_colmajor.flags["F_CONTIGUOUS"])
+            self.assertTrue(
+                gathered_rowmajor.flags["C_CONTIGUOUS"]
+                or gathered_rowmajor.flags["F_CONTIGUOUS"]
+            )
+            self.assertTrue(
+                gathered_colmajor.flags["C_CONTIGUOUS"]
+                or gathered_colmajor.flags["F_CONTIGUOUS"]
+            )
             print("Array contiguity checked")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

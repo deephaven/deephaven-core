@@ -1,7 +1,9 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.function;
+
+import io.deephaven.util.annotations.UserInvocationPermitted;
 
 import static io.deephaven.util.QueryConstants.*;
 import static io.deephaven.function.Basic.isNull;
@@ -10,6 +12,7 @@ import static io.deephaven.function.Basic.isNull;
  * Functions for parsing strings to primitive values.
  */
 @SuppressWarnings("WeakerAccess")
+@UserInvocationPermitted(value = "function_library")
 public class Parse {
 
     // byte

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.server.hierarchicaltable;
 
@@ -21,6 +21,7 @@ import io.deephaven.engine.table.impl.BaseGridAttributes;
 import io.deephaven.engine.table.impl.hierarchical.RollupTableImpl;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
+import io.deephaven.engine.table.impl.select.ConditionFilter;
 import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.extensions.barrage.util.ExportUtil;
@@ -36,7 +37,7 @@ import io.deephaven.server.session.*;
 import io.deephaven.server.table.ops.AggregationAdapter;
 import io.deephaven.server.table.ops.FilterTableGrpcImpl;
 import io.deephaven.server.table.ops.filter.FilterFactory;
-import io.deephaven.server.table.validation.ColumnExpressionValidator;
+import io.deephaven.engine.validation.ColumnExpressionValidator;
 import io.deephaven.util.SafeCloseable;
 import io.grpc.stub.StreamObserver;
 import org.jetbrains.annotations.NotNull;
@@ -57,6 +58,8 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
     private final SessionService sessionService;
     private final HierarchicalTableServiceContextualAuthWiring authWiring;
     private final TicketResolver.Authorization authTransformation;
+    @NotNull
+    private final ColumnExpressionValidator columnExpressionValidator;
 
     private static class UpdateViewRequest {
         final Selectable columnSpec;
@@ -72,11 +75,13 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
     public HierarchicalTableServiceGrpcImpl(
             @NotNull final TicketRouter ticketRouter,
             @NotNull final SessionService sessionService,
-            @NotNull final AuthorizationProvider authorizationProvider) {
+            @NotNull final AuthorizationProvider authorizationProvider,
+            @NotNull final ColumnExpressionValidator columnExpressionValidator) {
         this.ticketRouter = ticketRouter;
         this.sessionService = sessionService;
         this.authWiring = authorizationProvider.getHierarchicalTableServiceContextualAuthWiring();
         this.authTransformation = authorizationProvider.getTicketResolverAuthorization();
+        this.columnExpressionValidator = columnExpressionValidator;
     }
 
     @Override
@@ -117,12 +122,7 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
                         final RollupTable result = sourceTable.rollup(
                                 aggregations, includeConstituents, groupByColumns);
 
-                        final RollupTable transformedResult = authTransformation.transform(result);
-                        if (transformedResult == null) {
-                            throw Exceptions.statusRuntimeException(
-                                    Code.FAILED_PRECONDITION, "Not authorized to rollup hierarchical table");
-                        }
-                        return transformedResult;
+                        return result;
                     });
         }
     }
@@ -178,12 +178,7 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
                         final TreeTable result = sourceTableToUse.tree(
                                 identifierColumn.name(), parentIdentifierColumn.name());
 
-                        final TreeTable transformedResult = authTransformation.transform(result);
-                        if (transformedResult == null) {
-                            throw Exceptions.statusRuntimeException(
-                                    Code.FAILED_PRECONDITION, "Not authorized to tree hierarchical table");
-                        }
-                        return transformedResult;
+                        return result;
                     });
         }
     }
@@ -346,12 +341,7 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
                                     "Input is not a supported HierarchicalTable type");
                         }
 
-                        final HierarchicalTable<?> transformedResult = authTransformation.transform(result);
-                        if (transformedResult == null) {
-                            throw Exceptions.statusRuntimeException(
-                                    Code.FAILED_PRECONDITION, "Not authorized to apply to hierarchical table");
-                        }
-                        return transformedResult;
+                        return result;
                     });
         }
     }
@@ -365,12 +355,14 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
     }
 
     @NotNull
-    private static List<WhereFilter> makeWhereFilters(
+    private List<WhereFilter> makeWhereFilters(
             @NotNull final Collection<Condition> finishedConditions,
             @NotNull final TableDefinition nodeDefinition) {
-        return finishedConditions.stream()
+        final List<WhereFilter> whereFilters = finishedConditions.stream()
                 .map(condition -> FilterFactory.makeFilter(nodeDefinition, condition))
                 .collect(Collectors.toList());
+        columnExpressionValidator.validateWhereFilters(whereFilters, nodeDefinition);
+        return whereFilters;
     }
 
     @Nullable
@@ -397,7 +389,7 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
     }
 
     @Nullable
-    private static Collection<UpdateViewRequest> translateAndValidateUpdateViews(
+    private Collection<UpdateViewRequest> translateAndValidateUpdateViews(
             @NotNull final HierarchicalTableApplyRequest request,
             @NotNull final HierarchicalTable<?> inputHierarchicalTable) {
         if (request.getUpdateViewsCount() == 0) {
@@ -412,7 +404,7 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
                 .map(Strings::of)
                 .toArray(String[]::new);
         final SelectColumn[] expressions = SelectColumn.from(selectables);
-        ColumnExpressionValidator.validateColumnExpressions(expressions, columnSpecs, source);
+        columnExpressionValidator.validateColumnExpressions(expressions, columnSpecs, source.getDefinition());
 
         return request.getUpdateViewsList().stream()
                 .map(uvr -> new UpdateViewRequest(
@@ -422,7 +414,7 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
     }
 
     @Nullable
-    private static Collection<UpdateViewRequest> translateAndValidateFormatViews(
+    private Collection<UpdateViewRequest> translateAndValidateFormatViews(
             @NotNull final HierarchicalTableApplyRequest request,
             @NotNull final HierarchicalTable<?> inputHierarchicalTable) {
         if (request.getFormatViewsCount() == 0) {
@@ -437,7 +429,7 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
                 .map(Strings::of)
                 .toArray(String[]::new);
         final SelectColumn[] expressions = SelectColumn.from(selectables);
-        ColumnExpressionValidator.validateColumnExpressions(expressions, columnSpecs, source);
+        columnExpressionValidator.validateColumnExpressions(expressions, columnSpecs, source.getDefinition());
 
         return request.getFormatViewsList().stream()
                 .map(uvr -> new UpdateViewRequest(
@@ -537,12 +529,7 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
                             }
                         }
 
-                        final HierarchicalTableView transformedResult = authTransformation.transform(result);
-                        if (transformedResult == null) {
-                            throw Exceptions.statusRuntimeException(
-                                    Code.FAILED_PRECONDITION, "Not authorized to view hierarchical table");
-                        }
-                        return transformedResult;
+                        return result;
                     });
         }
     }
@@ -597,13 +584,7 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
                         final Table result = hierarchicalTable.getSource();
                         authWiring.checkPermissionExportSource(session.getAuthContext(), request, List.of(result));
 
-                        final Table transformedResult = authTransformation.transform(result);
-                        if (transformedResult == null) {
-                            throw Exceptions.statusRuntimeException(
-                                    Code.FAILED_PRECONDITION,
-                                    "Not authorized to export source from hierarchical table");
-                        }
-                        return transformedResult;
+                        return result;
                     });
         }
     }

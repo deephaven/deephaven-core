@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
 // ****** Edit WritableCharChunk and run "./gradlew replicateSourcesAndChunks" to regenerate
@@ -11,7 +11,6 @@ import io.deephaven.chunk.attributes.Any;
 import io.deephaven.chunk.util.pools.MultiChunkPool;
 
 import io.deephaven.util.type.TypeUtils;
-import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
 // region FillWithNullValueImports
@@ -35,20 +34,18 @@ public class WritableBooleanChunk<ATTR extends Any> extends BooleanChunk<ATTR> i
         return EMPTY_WRITABLE_BOOLEAN_CHUNK_ARRAY;
     }
 
+    /**
+     * Get a {@link WritableBooleanChunk} with {@link #size()} of {@code size} for use by the caller until it is
+     * {@link #close() closed}.
+     *
+     * @param size The {@link #size()} and minimum capacity of the returned chunk
+     * @return The chunk
+     */
     public static <ATTR extends Any> WritableBooleanChunk<ATTR> makeWritableChunk(int size) {
         if (POOL_WRITABLE_CHUNKS) {
             return MultiChunkPool.forThisThread().takeWritableBooleanChunk(size);
         }
         return new WritableBooleanChunk<>(makeArray(size), 0, size);
-    }
-
-    public static <ATTR extends Any> WritableBooleanChunk<ATTR> makeWritableChunkForPool(int size) {
-        return new WritableBooleanChunk<>(makeArray(size), 0, size) {
-            @Override
-            public void close() {
-                MultiChunkPool.forThisThread().giveWritableBooleanChunk(this);
-            }
-        };
     }
 
     public static <ATTR extends Any> WritableBooleanChunk<ATTR> writableChunkWrap(boolean[] data) {

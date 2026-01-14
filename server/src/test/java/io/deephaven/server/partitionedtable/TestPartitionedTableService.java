@@ -1,8 +1,9 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.server.partitionedtable;
 
+import io.deephaven.auth.AuthContext;
 import io.deephaven.auth.codegen.impl.PartitionedTableServiceContextualAuthWiring;
 import io.deephaven.base.testing.BaseCachedJMockTestCase;
 import io.deephaven.engine.context.ExecutionContext;
@@ -15,8 +16,6 @@ import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.updategraph.OperationInitializer;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.proto.backplane.grpc.GetTableRequest;
-import io.deephaven.server.auth.AuthorizationProvider;
-import io.deephaven.server.session.NoopTicketResolverAuthorization;
 import io.deephaven.server.session.SessionService;
 import io.deephaven.server.session.TicketRouter;
 import io.deephaven.util.SafeCloseable;
@@ -37,10 +36,7 @@ public class TestPartitionedTableService extends BaseCachedJMockTestCase {
         final GetTableRequest getTableRequestMerged = GetTableRequest.newBuilder()
                 .setUniqueBehavior(GetTableRequest.UniqueBehavior.PERMIT_MULTIPLE_KEYS).build();
 
-        final OperationInitializer initializer = OperationInitializer.NON_PARALLELIZABLE;
-        final ControlledUpdateGraph updateGraph = new ControlledUpdateGraph(initializer);
-        final ExecutionContext executionContext = ExecutionContext.newBuilder().setOperationInitializer(initializer)
-                .setUpdateGraph(updateGraph).newQueryScope().newQueryLibrary().build();
+        final ExecutionContext executionContext = makeExecutionContext();
         try (final SafeCloseable ignored = executionContext.open()) {
             final Table keyTable = TableTools.newTable(stringCol("Key", "Apple"));
 
@@ -87,6 +83,17 @@ public class TestPartitionedTableService extends BaseCachedJMockTestCase {
         }
     }
 
+    private static ExecutionContext makeExecutionContext() {
+        final OperationInitializer initializer = OperationInitializer.NON_PARALLELIZABLE;
+        final ControlledUpdateGraph updateGraph = new ControlledUpdateGraph(initializer);
+        updateGraph.enableUnitTestMode();
+        updateGraph.resetForUnitTests(false);
+        final ExecutionContext executionContext = ExecutionContext.newBuilder().setOperationInitializer(initializer)
+                .setUpdateGraph(updateGraph).newQueryScope().newQueryLibrary().build()
+                .withAuthContext(new AuthContext.Anonymous());
+        return executionContext;
+    }
+
     @Test
 
     public void testGetTableTicking() {
@@ -96,13 +103,8 @@ public class TestPartitionedTableService extends BaseCachedJMockTestCase {
         final GetTableRequest getTableRequestMerged = GetTableRequest.newBuilder()
                 .setUniqueBehavior(GetTableRequest.UniqueBehavior.PERMIT_MULTIPLE_KEYS).build();
 
-        final OperationInitializer initializer = OperationInitializer.NON_PARALLELIZABLE;
-        final ControlledUpdateGraph updateGraph = new ControlledUpdateGraph(initializer);
-        updateGraph.enableUnitTestMode();
-        updateGraph.resetForUnitTests(false);
-
-        final ExecutionContext executionContext = ExecutionContext.newBuilder().setOperationInitializer(initializer)
-                .setUpdateGraph(updateGraph).newQueryScope().newQueryLibrary().build();
+        final ExecutionContext executionContext = makeExecutionContext();
+        final ControlledUpdateGraph updateGraph = executionContext.getUpdateGraph().cast();
         try (final SafeCloseable ignored = executionContext.open()) {
             final QueryTable keyTable = TstUtils.testRefreshingTable(stringCol("Key", "Apple"));
 
@@ -139,14 +141,11 @@ public class TestPartitionedTableService extends BaseCachedJMockTestCase {
         final GetTableRequest getTableRequestMerged = GetTableRequest.newBuilder()
                 .setUniqueBehavior(GetTableRequest.UniqueBehavior.PERMIT_MULTIPLE_KEYS).build();
 
-        final OperationInitializer initializer = OperationInitializer.NON_PARALLELIZABLE;
-        final ControlledUpdateGraph updateGraph1 = new ControlledUpdateGraph(initializer);
-        final ExecutionContext executionContext1 = ExecutionContext.newBuilder().setOperationInitializer(initializer)
-                .setUpdateGraph(updateGraph1).newQueryScope().newQueryLibrary().build();
+        final ExecutionContext executionContext1 = makeExecutionContext();
+        final ControlledUpdateGraph updateGraph1 = executionContext1.getUpdateGraph().cast();
 
-        final ControlledUpdateGraph updateGraph2 = new ControlledUpdateGraph(initializer);
-        final ExecutionContext executionContext2 = ExecutionContext.newBuilder().setOperationInitializer(initializer)
-                .setUpdateGraph(updateGraph2).newQueryScope().newQueryLibrary().build();
+        final ExecutionContext executionContext2 = makeExecutionContext();
+        final ControlledUpdateGraph updateGraph2 = executionContext2.getUpdateGraph().cast();
 
         final Table keyTable;
 
@@ -171,18 +170,10 @@ public class TestPartitionedTableService extends BaseCachedJMockTestCase {
     private @NotNull PartitionedTableServiceGrpcImpl makeService() {
         final TicketRouter ticketRouter = mock(TicketRouter.class);
         final SessionService sessionService = mock(SessionService.class);
-        final AuthorizationProvider authorizationProvider = mock(AuthorizationProvider.class);
-        final NoopTicketResolverAuthorization ticketResolverAuthorization = new NoopTicketResolverAuthorization();
-        checking(new Expectations() {
-            {
-                oneOf(authorizationProvider).getTicketResolverAuthorization();
-                will(returnValue(ticketResolverAuthorization));
-            }
-        });
         final PartitionedTableServiceContextualAuthWiring authWiring =
                 mock(PartitionedTableServiceContextualAuthWiring.class);
 
 
-        return new PartitionedTableServiceGrpcImpl(ticketRouter, sessionService, authorizationProvider, authWiring);
+        return new PartitionedTableServiceGrpcImpl(ticketRouter, sessionService, authWiring);
     }
 }

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.extensions.s3;
 
@@ -44,6 +44,18 @@ public interface Credentials {
      */
     static Credentials basic(final String accessKeyId, final String secretAccessKey) {
         return BasicCredentials.of(accessKeyId, secretAccessKey);
+    }
+
+    /**
+     * Session credentials with the specified access key id, secret access key, and session token. This is useful when
+     * using temporary credentials from AWS STS or similar services.
+     *
+     * @param accessKeyId the access key id, used to identify the user
+     * @param secretAccessKey the secret access key, used to authenticate the user
+     * @param sessionToken the session token, used for temporary credentials
+     */
+    static Credentials session(final String accessKeyId, final String secretAccessKey, final String sessionToken) {
+        return SessionCredentials.of(accessKeyId, secretAccessKey, sessionToken);
     }
 
     /**

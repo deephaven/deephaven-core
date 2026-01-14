@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+ * Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
  */
 #pragma once
 
@@ -31,7 +31,7 @@
 namespace deephaven::client::utility {
 namespace internal {
 template<typename T>
-struct ColumnBuilder {
+class ColumnBuilder {
   // The legitimate usages of ColumnBuilder<T> are all template specializations, which are defined
   // later in this same file. The definition provided here is the "fallback" definition in case none
   // of the specializations match. For ColumnBuilder, it is always a programming error to
@@ -50,10 +50,12 @@ struct ColumnBuilder {
   static_assert(!std::is_same_v<T, T>, "ColumnBuilder doesn't know how to work with this type");
 };
 
-template<typename TArrowBuilder, const char *kDeephavenTypeName>
+template<typename TArrowBuilder>
 class BuilderBase {
 public:
-  explicit BuilderBase(std::shared_ptr<TArrowBuilder> builder) : builder_(std::move(builder)) {}
+  explicit BuilderBase(std::shared_ptr<TArrowBuilder> builder,
+    const char *deephaven_type_name) : builder_(std::move(builder)),
+    deephaven_type_name_(deephaven_type_name) {}
 
   void AppendNull() {
     OkOrThrow(DEEPHAVEN_LOCATION_EXPR(builder_->AppendNull()));
@@ -63,7 +65,7 @@ public:
   }
 
   std::tuple<std::string, std::optional<std::string>> GetDeephavenMetadata() {
-    return { kDeephavenTypeName, {}};
+    return { deephaven_type_name_, {}};
   }
 
   [[nodiscard]]
@@ -73,18 +75,19 @@ public:
 
 protected:
   std::shared_ptr<TArrowBuilder> builder_;
+  const char *deephaven_type_name_ = nullptr;
 };
 
-template<typename T, typename TArrowBuilder, const char *kDeephavenTypeName>
-class TypicalBuilderBase : public BuilderBase<TArrowBuilder, kDeephavenTypeName> {
+template<typename T, typename TArrowBuilder>
+class TypicalBuilderBase : public BuilderBase<TArrowBuilder> {
   /**
    * Convenience using.
    */
-  using base = BuilderBase<TArrowBuilder, kDeephavenTypeName>;
+  using base = BuilderBase<TArrowBuilder>;
 
 public:
-  TypicalBuilderBase() : BuilderBase<TArrowBuilder, kDeephavenTypeName>(
-      std::make_shared<TArrowBuilder>()) {
+  explicit TypicalBuilderBase(const char *deephaven_type_name) : BuilderBase<TArrowBuilder>(
+      std::make_shared<TArrowBuilder>(), deephaven_type_name) {
   }
 
   void Append(const T &value) {
@@ -94,80 +97,87 @@ public:
 
 struct DeephavenMetadataConstants {
   struct Keys {
-    static const char kType[];
-    static const char kComponentType[];
+    static const char *Type();
+    static const char *ComponentType();
   };
 
   struct Types {
-    static const char kBool[];
-    static const char kChar16[];
-    static const char kInt8[];
-    static const char kInt16[];
-    static const char kInt32[];
-    static const char kInt64[];
-    static const char kFloat[];
-    static const char kDouble[];
-    static const char kString[];
-    static const char kDateTime[];
-    static const char kLocalDate[];
-    static const char kLocalTime[];
+    static const char *Bool();
+    static const char *Char16();
+    static const char *Int8();
+    static const char *Int16();
+    static const char *Int32();
+    static const char *Int64();
+    static const char *Float();
+    static const char *Double();
+    static const char *String();
+    static const char *DateTime();
+    static const char *LocalDate();
+    static const char *LocalTime();
   };
 };
 
 template<>
-class ColumnBuilder<bool> : public TypicalBuilderBase<bool,
-    arrow::BooleanBuilder,
-    DeephavenMetadataConstants::Types::kBool> {
+class ColumnBuilder<bool> : public TypicalBuilderBase<bool, arrow::BooleanBuilder> {
+public:
+  ColumnBuilder() : TypicalBuilderBase(DeephavenMetadataConstants::Types::Bool()) {}
 };
 
 template<>
-class ColumnBuilder<char16_t> : public TypicalBuilderBase<char16_t, arrow::UInt16Builder,
-    DeephavenMetadataConstants::Types::kChar16> {
+class ColumnBuilder<char16_t> : public TypicalBuilderBase<char16_t, arrow::UInt16Builder> {
+public:
+  ColumnBuilder() : TypicalBuilderBase(DeephavenMetadataConstants::Types::Char16()) {}
 };
 
 template<>
-class ColumnBuilder<int8_t> : public TypicalBuilderBase<int8_t, arrow::Int8Builder,
-    DeephavenMetadataConstants::Types::kInt8> {
+class ColumnBuilder<int8_t> : public TypicalBuilderBase<int8_t, arrow::Int8Builder> {
+public:
+  ColumnBuilder() : TypicalBuilderBase(DeephavenMetadataConstants::Types::Int8()) {}
 };
 
 template<>
-class ColumnBuilder<int16_t> : public TypicalBuilderBase<int16_t, arrow::Int16Builder,
-    DeephavenMetadataConstants::Types::kInt16> {
+class ColumnBuilder<int16_t> : public TypicalBuilderBase<int16_t, arrow::Int16Builder> {
+public:
+  ColumnBuilder() : TypicalBuilderBase(DeephavenMetadataConstants::Types::Int16()) {}
 };
 
 template<>
-class ColumnBuilder<int32_t> : public TypicalBuilderBase<int32_t, arrow::Int32Builder,
-    DeephavenMetadataConstants::Types::kInt32> {
+class ColumnBuilder<int32_t> : public TypicalBuilderBase<int32_t, arrow::Int32Builder> {
+public:
+  ColumnBuilder() : TypicalBuilderBase(DeephavenMetadataConstants::Types::Int32()) {}
 };
 
 template<>
-class ColumnBuilder<int64_t> : public TypicalBuilderBase<int64_t, arrow::Int64Builder,
-    DeephavenMetadataConstants::Types::kInt64> {
+class ColumnBuilder<int64_t> : public TypicalBuilderBase<int64_t, arrow::Int64Builder> {
+public:
+  ColumnBuilder() : TypicalBuilderBase(DeephavenMetadataConstants::Types::Int64()) {}
 };
 
 template<>
-class ColumnBuilder<float> : public TypicalBuilderBase<float, arrow::FloatBuilder,
-    DeephavenMetadataConstants::Types::kFloat> {
+class ColumnBuilder<float> : public TypicalBuilderBase<float, arrow::FloatBuilder> {
+public:
+  ColumnBuilder() : TypicalBuilderBase(DeephavenMetadataConstants::Types::Float()) {}
 };
 
 template<>
-class ColumnBuilder<double> : public TypicalBuilderBase<double, arrow::DoubleBuilder,
-    DeephavenMetadataConstants::Types::kDouble> {
+class ColumnBuilder<double> : public TypicalBuilderBase<double, arrow::DoubleBuilder> {
+public:
+  ColumnBuilder() : TypicalBuilderBase(DeephavenMetadataConstants::Types::Double()) {}
 };
 
 template<>
-class ColumnBuilder<std::string> : public TypicalBuilderBase<std::string, arrow::StringBuilder,
-    DeephavenMetadataConstants::Types::kString> {
+class ColumnBuilder<std::string> : public TypicalBuilderBase<std::string, arrow::StringBuilder> {
+public:
+  ColumnBuilder() : TypicalBuilderBase(DeephavenMetadataConstants::Types::String()) {}
 };
 
 template<>
-class ColumnBuilder<deephaven::dhcore::DateTime> : public BuilderBase<arrow::TimestampBuilder,
-    DeephavenMetadataConstants::Types::kDateTime> {
+class ColumnBuilder<deephaven::dhcore::DateTime> : public BuilderBase<arrow::TimestampBuilder> {
 public:
   // constructor with data type nanos
   ColumnBuilder() : BuilderBase(
       std::make_shared<arrow::TimestampBuilder>(arrow::timestamp(arrow::TimeUnit::NANO, "UTC"),
-          arrow::default_memory_pool())) {
+          arrow::default_memory_pool()), DeephavenMetadataConstants::Types::DateTime()) {
   }
 
   void Append(const deephaven::dhcore::DateTime &value) {
@@ -176,11 +186,11 @@ public:
 };
 
 template<>
-class ColumnBuilder<deephaven::dhcore::LocalDate> : public BuilderBase<arrow::Date64Builder,
-    DeephavenMetadataConstants::Types::kLocalDate> {
+class ColumnBuilder<deephaven::dhcore::LocalDate> : public BuilderBase<arrow::Date64Builder> {
 public:
   // constructor with data type nanos
-  ColumnBuilder() : BuilderBase(std::make_shared<arrow::Date64Builder>()) {
+  ColumnBuilder() : BuilderBase(std::make_shared<arrow::Date64Builder>(),
+    DeephavenMetadataConstants::Types::LocalDate()) {
   }
 
   void Append(const deephaven::dhcore::LocalDate &value) {
@@ -189,11 +199,10 @@ public:
 };
 
 template<>
-class ColumnBuilder<deephaven::dhcore::LocalTime> : public BuilderBase<arrow::Time64Builder,
-    DeephavenMetadataConstants::Types::kLocalTime> {
+class ColumnBuilder<deephaven::dhcore::LocalTime> : public BuilderBase<arrow::Time64Builder> {
 public:
   ColumnBuilder() : BuilderBase(std::make_shared<arrow::Time64Builder>(arrow::time64(arrow::TimeUnit::NANO),
-      arrow::default_memory_pool())) {
+      arrow::default_memory_pool()), DeephavenMetadataConstants::Types::LocalTime()) {
   }
 
   void Append(const deephaven::dhcore::LocalTime &value) {
@@ -202,11 +211,10 @@ public:
 };
 
 template<arrow::TimeUnit::type UNIT>
-class ColumnBuilder<InternalDateTime<UNIT>> : public BuilderBase<arrow::TimestampBuilder,
-    DeephavenMetadataConstants::Types::kDateTime> {
+class ColumnBuilder<InternalDateTime<UNIT>> : public BuilderBase<arrow::TimestampBuilder> {
 public:
   ColumnBuilder() : BuilderBase(std::make_shared<arrow::TimestampBuilder>(arrow::timestamp(UNIT, "UTC"),
-          arrow::default_memory_pool())) {
+          arrow::default_memory_pool()), DeephavenMetadataConstants::Types::DateTime()) {
   }
 
   void Append(const InternalDateTime<UNIT> &value) {
@@ -215,11 +223,10 @@ public:
 };
 
 template<arrow::TimeUnit::type UNIT>
-class ColumnBuilder<InternalLocalTime<UNIT>> : public BuilderBase<arrow::Time64Builder,
-    DeephavenMetadataConstants::Types::kLocalTime> {
+class ColumnBuilder<InternalLocalTime<UNIT>> : public BuilderBase<arrow::Time64Builder> {
 public:
   ColumnBuilder() : BuilderBase(std::make_shared<arrow::Time64Builder>(arrow::time64(UNIT),
-          arrow::default_memory_pool())) {
+          arrow::default_memory_pool()), DeephavenMetadataConstants::Types::LocalTime()) {
   }
 
   void Append(const InternalLocalTime<UNIT> &value) {

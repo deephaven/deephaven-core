@@ -1,11 +1,10 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.iceberg.util;
 
 import org.apache.iceberg.aws.AwsClientProperties;
 import org.apache.iceberg.aws.s3.S3FileIOProperties;
-import org.jetbrains.annotations.NotNull;
 import software.amazon.awssdk.auth.credentials.AnonymousCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.AwsCredentials;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
@@ -19,32 +18,27 @@ import java.util.Map;
  * fixed.
  */
 // TODO (DH-19448): Remove this class once Iceberg fix for #13131 is released
-public class DeephavenS3ClientCredentialsProvider implements AwsCredentialsProvider {
+public final class DeephavenS3ClientCredentialsProvider implements AwsCredentialsProvider {
 
-    private final S3FileIOProperties s3FileIOProperties;
-    private final AwsClientProperties awsClientProperties;
-
-    private AwsCredentials cachedCredentials;
-
-    public static DeephavenS3ClientCredentialsProvider create(Map<String, String> properties) {
-        return new DeephavenS3ClientCredentialsProvider(properties);
+    // See org.apache.iceberg.aws.AwsClientProperties.credentialsProvider
+    // It does do a check to make sure the class implements AwsCredentials provider, but that isn't actually necessary
+    // since it will just take the return value of this create.
+    @SuppressWarnings("unused")
+    public static AwsCredentialsProvider create(final Map<String, String> properties) {
+        final S3FileIOProperties s3FileIOProperties = new S3FileIOProperties(properties);
+        final AwsClientProperties awsClientProperties = new AwsClientProperties(properties);
+        return s3FileIOProperties.isRemoteSigningEnabled()
+                ? AnonymousCredentialsProvider.create()
+                : awsClientProperties.credentialsProvider(s3FileIOProperties.accessKeyId(),
+                        s3FileIOProperties.secretAccessKey(), s3FileIOProperties.sessionToken());
     }
 
-    private DeephavenS3ClientCredentialsProvider(@NotNull final Map<String, String> properties) {
-        this.s3FileIOProperties = new S3FileIOProperties(properties);
-        this.awsClientProperties = new AwsClientProperties(properties);
+    private DeephavenS3ClientCredentialsProvider() {
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public AwsCredentials resolveCredentials() {
-        if (cachedCredentials == null) {
-            final AwsCredentialsProvider delegateCredentialsProvider =
-                    s3FileIOProperties.isRemoteSigningEnabled()
-                            ? AnonymousCredentialsProvider.create()
-                            : awsClientProperties.credentialsProvider(s3FileIOProperties.accessKeyId(),
-                                    s3FileIOProperties.secretAccessKey(), s3FileIOProperties.sessionToken());
-            cachedCredentials = delegateCredentialsProvider.resolveCredentials();
-        }
-        return cachedCredentials;
+        throw new UnsupportedOperationException();
     }
 }

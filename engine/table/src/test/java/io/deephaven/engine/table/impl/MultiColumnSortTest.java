@@ -1,10 +1,11 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl;
 
 import com.google.common.collect.Sets;
 import io.deephaven.api.ColumnName;
+import io.deephaven.api.SortSpec;
 import io.deephaven.api.SortColumn;
 import io.deephaven.benchmarking.generator.ColumnGenerator;
 import io.deephaven.engine.table.Table;
@@ -168,7 +169,7 @@ public class MultiColumnSortTest {
                 // make sure lastRow <= rowData
                 final Comparable last = (Comparable) lastRow[jj];
                 final Comparable current = (Comparable) rowData[jj];
-                if (sortColumns[jj].order() == SortColumn.Order.ASCENDING) {
+                if (sortColumns[jj].order() == SortSpec.Order.ASCENDING) {
                     if (!leq(last, current)) {
                         TestCase.fail("Out of order[" + (ii - 1) + "]: !" + Arrays.toString(lastRow) + " <= [" + ii
                                 + "] " + Arrays.toString(rowData));

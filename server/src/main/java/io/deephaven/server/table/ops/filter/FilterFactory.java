@@ -1,11 +1,12 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.server.table.ops.filter;
 
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.filter.FilterPattern;
 import io.deephaven.api.filter.FilterPattern.Mode;
+import io.deephaven.engine.table.MatchOptions;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.select.ConjunctiveFilter;
 import io.deephaven.engine.table.impl.select.DisjunctiveFilter;
@@ -22,10 +23,12 @@ import io.deephaven.proto.backplane.grpc.InvokeCondition;
 import io.deephaven.proto.backplane.grpc.IsNullCondition;
 import io.deephaven.proto.backplane.grpc.Literal;
 import io.deephaven.proto.backplane.grpc.MatchType;
+import io.deephaven.proto.backplane.grpc.NanComparison;
 import io.deephaven.proto.backplane.grpc.NotCondition;
 import io.deephaven.proto.backplane.grpc.Reference;
 import io.deephaven.proto.backplane.grpc.Value;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.text.DecimalFormat;
 import java.util.List;
@@ -173,7 +176,7 @@ public class FilterFactory implements FilterVisitor<WhereFilter> {
 
     @Override
     public WhereFilter onIn(Value target, List<Value> candidatesList, CaseSensitivity caseSensitivity,
-            MatchType matchType) {
+            MatchType matchType, NanComparison nanComparison) {
         assert target.getDataCase() == Value.DataCase.REFERENCE;
         Reference reference = target.getReference();
         String[] values = new String[candidatesList.size()];
@@ -188,31 +191,48 @@ public class FilterFactory implements FilterVisitor<WhereFilter> {
                 values[i] = FilterPrinter.printNoEscape(literal);
             }
         }
-        return new MatchFilter(caseSensitivity(caseSensitivity), matchType(matchType), reference.getColumnName(),
-                values);
+        final MatchOptions matchOptions = MatchOptions.builder()
+                .inverted(inverted(matchType))
+                .caseInsensitive(caseInsensitive(caseSensitivity))
+                .nanMatch(nanMatch(nanComparison))
+                .build();
+        return new MatchFilter(null, matchOptions, reference.getColumnName(), values, null);
     }
 
-    private MatchFilter.CaseSensitivity caseSensitivity(CaseSensitivity caseSensitivity) {
+    private boolean caseInsensitive(CaseSensitivity caseSensitivity) {
         switch (caseSensitivity) {
             case MATCH_CASE:
-                return MatchFilter.CaseSensitivity.MatchCase;
+                return false;
             case IGNORE_CASE:
-                return MatchFilter.CaseSensitivity.IgnoreCase;
+                return true;
             case UNRECOGNIZED:
             default:
                 throw new IllegalStateException("Can't handle compare case sensitivity " + caseSensitivity);
         }
     }
 
-    private MatchFilter.MatchType matchType(MatchType matchType) {
+    private boolean inverted(MatchType matchType) {
         switch (matchType) {
             case REGULAR:
-                return MatchFilter.MatchType.Regular;
+                return false;
             case INVERTED:
-                return MatchFilter.MatchType.Inverted;
+                return true;
             case UNRECOGNIZED:
             default:
                 throw new IllegalStateException("Can't handle compare match type " + matchType);
+        }
+    }
+
+    private boolean nanMatch(NanComparison nanComparison) {
+        switch (nanComparison) {
+            case NAN_COMPARISON_TYPE_NOT_SPECIFIED:
+            case NAN_NOT_EQUALS_NAN:
+                return false;
+            case NAN_EQUALS_NAN:
+                return true;
+            case UNRECOGNIZED:
+            default:
+                throw new IllegalStateException("Can't handle nan comparison type " + nanComparison);
         }
     }
 
@@ -224,12 +244,14 @@ public class FilterFactory implements FilterVisitor<WhereFilter> {
     }
 
     @Override
-    public WhereFilter onInvoke(String method, Value target, List<Value> argumentsList) {
-        return generateConditionFilter(Condition.newBuilder().setInvoke(InvokeCondition.newBuilder()
+    public WhereFilter onInvoke(String method, @Nullable Value target, List<Value> argumentsList) {
+        InvokeCondition.Builder partialInvoke = InvokeCondition.newBuilder()
                 .setMethod(method)
-                .setTarget(target)
-                .addAllArguments(argumentsList)
-                .build()).build());
+                .addAllArguments(argumentsList);
+        if (target != null) {
+            partialInvoke.setTarget(target);
+        }
+        return generateConditionFilter(Condition.newBuilder().setInvoke(partialInvoke).build());
     }
 
     @Override

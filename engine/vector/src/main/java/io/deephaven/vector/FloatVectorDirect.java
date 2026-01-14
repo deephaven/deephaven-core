@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
 // ****** Edit CharVectorDirect and run "./gradlew replicateVectors" to regenerate
@@ -91,6 +91,23 @@ public final class FloatVectorDirect implements FloatVector {
         }
         return FloatVector.equals(this, obj);
     }
+
+    // region compareTo
+    @Override
+    public int compareTo(final FloatVector o) {
+        if (o instanceof FloatVectorDirect) {
+            // The byte, short, integer, and long versions can use direct vector comparisons as our order matches the
+            // natural order of numbers.
+            //
+            // Float and double can not use direct vector comparisons. Although NaN works because Float.compare and
+            // Double.compare sort NaNs last, as we do for Deephaven values; and the Arrays.compare is defined to work
+            // as Float.compare. However, Float.compare(0f,-0) does not produce 0 but rather ranks -0 as less than 0.
+            // UNCOMMENT FOR INTEGRALS: return Arrays.compare(data, ((FloatVectorDirect) o).data);
+        }
+        return FloatVector.super.compareTo(o);
+    }
+
+    // endregion compareTo
 
     @Override
     public int hashCode() {

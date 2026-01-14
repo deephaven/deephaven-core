@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.client.impl;
 
@@ -57,6 +57,19 @@ public class FilterAdapter implements Filter.Visitor<Condition> {
         return Condition.newBuilder()
                 .setIsNull(IsNullCondition.newBuilder()
                         .setReference(BatchTableRequestBuilder.reference((ColumnName) isNull.expression()))
+                        .build())
+                .build();
+    }
+
+    @Override
+    public Condition visit(FilterIsNaN isNaN) {
+        if (!(isNaN.expression() instanceof ColumnName)) {
+            // TODO(deephaven-core#3609): Update gRPC expression / filter / literal structures
+            throw new UnsupportedOperationException("Only supports NaN checking a reference to a column");
+        }
+        return Condition.newBuilder()
+                .setIsNan(IsNaNCondition.newBuilder()
+                        .setReference(BatchTableRequestBuilder.reference((ColumnName) isNaN.expression()))
                         .build())
                 .build();
     }
@@ -127,6 +140,18 @@ public class FilterAdapter implements Filter.Visitor<Condition> {
     public Condition visit(FilterSerial serial) {
         // TODO(DH-19051): integrate serial/barrier filter/selectables w/gRPC
         throw new UnsupportedOperationException("Can't build Condition with FilterSerial");
+    }
+
+    @Override
+    public Condition visit(FilterWithDeclaredBarriers declaredBarrier) {
+        // TODO(DH-19051): integrate serial/barrier filter/selectables w/gRPC
+        throw new UnsupportedOperationException("Can't build Condition with FilterWithDeclaredBarriers");
+    }
+
+    @Override
+    public Condition visit(FilterWithRespectedBarriers respectedBarrier) {
+        // TODO(DH-19051): integrate serial/barrier filter/selectables w/gRPC
+        throw new UnsupportedOperationException("Can't build Condition with FilterWithRespectedBarriers");
     }
 
     @Override

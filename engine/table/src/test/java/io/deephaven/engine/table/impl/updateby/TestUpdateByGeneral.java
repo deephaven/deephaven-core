@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.updateby;
 
@@ -8,7 +8,11 @@ import io.deephaven.api.updateby.BadDataBehavior;
 import io.deephaven.api.updateby.OperationControl;
 import io.deephaven.api.updateby.UpdateByOperation;
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.table.ColumnDefinition;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.impl.NoSuchColumnException;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.UpdateErrorReporter;
 import io.deephaven.engine.table.impl.util.AsyncClientErrorNotifier;
@@ -36,6 +40,7 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
 import java.time.Duration;
+import java.time.Instant;
 import java.util.*;
 
 import static io.deephaven.api.updateby.UpdateByOperation.*;
@@ -44,6 +49,7 @@ import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.engine.testutil.testcase.RefreshingTableTestCase.simulateShiftAwareStep;
 import static io.deephaven.engine.util.TableTools.*;
 import static io.deephaven.time.DateTimeUtils.MINUTE;
+import static org.junit.Assert.assertTrue;
 
 @Category(OutOfBandTest.class)
 public class TestUpdateByGeneral extends BaseUpdateByTest implements UpdateErrorReporter {
@@ -393,5 +399,188 @@ public class TestUpdateByGeneral extends BaseUpdateByTest implements UpdateError
                         "cumMax",
                         "rollingGroupX",
                         "rollingMax"});
+    }
+
+    @Test
+    public void testTimestampColumnDataType() {
+        final ColumnHolder<?> dataHolder = intCol("data", 1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
+
+        final Duration prevTime = Duration.ofMinutes(2);
+        final Duration postTime = Duration.ZERO;
+
+        final Instant[] instantArr = new Instant[] {
+                DateTimeUtils.parseInstant("2022-03-09T09:00:00.000 NY"),
+                DateTimeUtils.parseInstant("2022-03-09T09:01:00.000 NY"),
+                DateTimeUtils.parseInstant("2022-03-09T09:02:00.000 NY"),
+                DateTimeUtils.parseInstant("2022-03-09T09:03:00.000 NY"),
+                DateTimeUtils.parseInstant("2022-03-09T09:04:00.000 NY"),
+                DateTimeUtils.parseInstant("2022-03-09T09:05:00.000 NY"),
+                DateTimeUtils.parseInstant("2022-03-09T09:06:00.000 NY"),
+                DateTimeUtils.parseInstant("2022-03-09T09:07:00.000 NY"),
+                DateTimeUtils.parseInstant("2022-03-09T09:08:00.000 NY"),
+                DateTimeUtils.parseInstant("2022-03-09T09:09:00.000 NY")
+        };
+
+        // incorrect timestamp column name
+        Assert.assertThrows(NoSuchColumnException.class, () -> {
+            final ColumnHolder<?> instantHolder = instantCol("ts", instantArr);
+            final Table t = TableTools.newTable(instantHolder, dataHolder);
+            final Table summed =
+                    t.updateBy(UpdateByOperation.RollingSum("tsCol", prevTime, postTime, "data"));
+        });
+
+        // int as timestamp
+        Assert.assertThrows(IllegalArgumentException.class, () -> {
+            final ColumnHolder<?> tsHolder = intCol("ts", new int[] {1, 2, 3, 4, 5, 6, 7, 8, 9, 10});
+            final Table t = TableTools.newTable(tsHolder, dataHolder);
+            final Table summed =
+                    t.updateBy(UpdateByOperation.RollingSum("ts", prevTime, postTime, "data"));
+        });
+
+        // short as timestamp
+        Assert.assertThrows(IllegalArgumentException.class, () -> {
+            final ColumnHolder<?> tsHolder = shortCol("ts", new short[] {1, 2, 3, 4, 5, 6, 7, 8, 9, 10});
+            final Table t = TableTools.newTable(tsHolder, dataHolder);
+            final Table summed =
+                    t.updateBy(UpdateByOperation.RollingSum("ts", prevTime, postTime, "data"));
+        });
+
+        // byte as timestamp
+        Assert.assertThrows(IllegalArgumentException.class, () -> {
+            final ColumnHolder<?> tsHolder = byteCol("ts", new byte[] {1, 2, 3, 4, 5, 6, 7, 8, 9, 10});
+            final Table t = TableTools.newTable(tsHolder, dataHolder);
+            final Table summed =
+                    t.updateBy(UpdateByOperation.RollingSum("ts", prevTime, postTime, "data"));
+        });
+
+        // float as timestamp
+        Assert.assertThrows(IllegalArgumentException.class, () -> {
+            final ColumnHolder<?> tsHolder = floatCol("ts", new float[] {1, 2, 3, 4, 5, 6, 7, 8, 9, 10});
+            final Table t = TableTools.newTable(tsHolder, dataHolder);
+            final Table summed =
+                    t.updateBy(UpdateByOperation.RollingSum("ts", prevTime, postTime, "data"));
+        });
+
+        // double as timestamp
+        Assert.assertThrows(IllegalArgumentException.class, () -> {
+            final ColumnHolder<?> tsHolder = doubleCol("ts", new double[] {1, 2, 3, 4, 5, 6, 7, 8, 9, 10});
+            final Table t = TableTools.newTable(tsHolder, dataHolder);
+            final Table summed =
+                    t.updateBy(UpdateByOperation.RollingSum("ts", prevTime, postTime, "data"));
+        });
+
+        // Object as timestamp, this fails because could be any type of object
+        Assert.assertThrows(IllegalArgumentException.class, () -> {
+            final ColumnHolder<?> tsHolder = ColumnHolder.<Object>createColumnHolder("ts", false,
+                    DateTimeUtils.parseInstant("2022-03-09T09:00:00.000 NY"),
+                    DateTimeUtils.parseInstant("2022-03-09T09:01:00.000 NY"),
+                    DateTimeUtils.parseInstant("2022-03-09T09:02:00.000 NY"),
+                    DateTimeUtils.parseInstant("2022-03-09T09:03:00.000 NY"),
+                    DateTimeUtils.parseInstant("2022-03-09T09:04:00.000 NY"),
+                    DateTimeUtils.parseInstant("2022-03-09T09:05:00.000 NY"),
+                    DateTimeUtils.parseInstant("2022-03-09T09:06:00.000 NY"),
+                    DateTimeUtils.parseInstant("2022-03-09T09:07:00.000 NY"),
+                    DateTimeUtils.parseInstant("2022-03-09T09:08:00.000 NY"),
+                    DateTimeUtils.parseInstant("2022-03-09T09:09:00.000 NY"));
+            final Table t = TableTools.newTable(tsHolder, dataHolder);
+            final Table summed =
+                    t.updateBy(UpdateByOperation.RollingSum("ts", prevTime, postTime, "data"));
+        });
+
+        // Instant as timestamp, expect no error
+        {
+            final ColumnHolder<?> tsHolder = ColumnHolder.createColumnHolder("ts", false, instantArr);
+            final Table t = TableTools.newTable(tsHolder, dataHolder);
+            final Table summed =
+                    t.updateBy(UpdateByOperation.RollingSum("ts", prevTime, postTime, "data"));
+        }
+
+        // long as timestamp, expect no error
+        {
+            final ColumnHolder<?> tsHolder = longCol("ts", new long[] {1, 2, 3, 4, 5, 6, 7, 8, 9, 10});
+            final Table t = TableTools.newTable(tsHolder, dataHolder);
+            final Table summed =
+                    t.updateBy(UpdateByOperation.RollingSum("ts", prevTime, postTime, "data"));
+        }
+
+        // Instant as timestamp, expect no error
+        {
+            final ColumnHolder<?> tsHolder = instantCol("ts", instantArr);
+            final Table t = TableTools.newTable(tsHolder, dataHolder);
+            final Table summed =
+                    t.updateBy(UpdateByOperation.RollingSum("ts", prevTime, postTime, "data"));
+        }
+    }
+
+
+    @Test
+    public void testDH20413() {
+        final Table expected = TableTools.timeTable("PT1S").update("X=ii")
+                .updateBy(RollingAvg("Timestamp", Duration.ofSeconds(5), Duration.ofSeconds(5), "AvgX=X"));
+
+        final Table actual = TableTools.timeTable("PT1S").update("X=ii")
+                .reverse()
+                .updateBy(RollingAvg("Timestamp", Duration.ofSeconds(5), Duration.ofSeconds(5), "AvgX=X"))
+                .reverse();
+
+        assertTableEquals(expected, actual);
+    }
+
+    @Test
+    public void testUpdateByValidateColumnDefinition() {
+        final Map<String, ColumnSource<?>> columnSourceMap = Map.of(
+                "String", TableTools.objColSource("c", "e", "g"),
+                "Int", colSource(2, 4, 6),
+                "Double", colSource(1.0, 2.0, 3.0));
+
+        final TableDefinition partitioningDef = TableDefinition.of(
+                ColumnDefinition.ofString("String").withPartitioning(),
+                ColumnDefinition.ofInt("Int"),
+                ColumnDefinition.ofDouble("Double").withNormal());
+        final Table sourceTable = new QueryTable(partitioningDef, i(0, 1, 2).toTracking(), columnSourceMap);
+
+        Table result;
+
+        result = sourceTable.updateBy(CumSum("SumInt=Int"));
+        assertTrue(result.getDefinition().getColumn("String").isPartitioning());
+        assertTrue(result.getDefinition().getColumn("Int").isDirect());
+        assertTrue(result.getDefinition().getColumn("Double").isDirect());
+
+        final Table refreshingTable = new QueryTable(partitioningDef, i(0, 2).toTracking(), columnSourceMap);
+        refreshingTable.setRefreshing(true);
+
+        result = refreshingTable.updateBy(CumSum("SumInt=Int"));
+        assertTrue(result.getDefinition().getColumn("String").isPartitioning());
+        assertTrue(result.getDefinition().getColumn("Int").isDirect());
+        assertTrue(result.getDefinition().getColumn("Double").isDirect());
+    }
+
+    @Test
+    public void testUpdateByBucketedValidateColumnDefinition() {
+        final Map<String, ColumnSource<?>> columnSourceMap = Map.of(
+                "String", TableTools.objColSource("c", "e", "g"),
+                "Int", colSource(2, 4, 6),
+                "Double", colSource(1.0, 2.0, 3.0));
+
+        final TableDefinition partitioningDef = TableDefinition.of(
+                ColumnDefinition.ofString("String").withPartitioning(),
+                ColumnDefinition.ofInt("Int"),
+                ColumnDefinition.ofDouble("Double").withNormal());
+        final Table sourceTable = new QueryTable(partitioningDef, i(0, 1, 2).toTracking(), columnSourceMap);
+
+        Table result;
+
+        result = sourceTable.updateBy(CumSum("SumInt=Int"), "String");
+        assertTrue(result.getDefinition().getColumn("String").isPartitioning());
+        assertTrue(result.getDefinition().getColumn("Int").isDirect());
+        assertTrue(result.getDefinition().getColumn("Double").isDirect());
+
+        final Table refreshingTable = new QueryTable(partitioningDef, i(0, 2).toTracking(), columnSourceMap);
+        refreshingTable.setRefreshing(true);
+
+        result = refreshingTable.updateBy(CumSum("SumInt=Int"), "String");
+        assertTrue(result.getDefinition().getColumn("String").isPartitioning());
+        assertTrue(result.getDefinition().getColumn("Int").isDirect());
+        assertTrue(result.getDefinition().getColumn("Double").isDirect());
     }
 }

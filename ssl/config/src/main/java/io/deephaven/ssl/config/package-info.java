@@ -9,6 +9,6 @@
  *
  * <p>
  * While not exposed to the end-user, the overall configuration structure is guided by
- * <a href="https://github.com/Hakky54/sslcontext-kickstart">sslcontext-kickstart</a>.
+ * <a href="https://github.com/Hakky54/ayza">ayza</a>.
  */
 package io.deephaven.ssl.config;

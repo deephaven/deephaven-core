@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.updateby;
 
@@ -88,7 +88,8 @@ class UpdateByBucketHelper extends IntrusiveDoublyLinkedNode.Impl<UpdateByBucket
         this.failureNotifier = failureNotifier;
         this.bucketKeyValues = bucketKeyValues;
 
-        result = new QueryTable(source.getRowSet(), resultSources);
+        final TableDefinition resultDef = TableDefinition.inferFrom(source, resultSources);
+        result = new QueryTable(resultDef, source.getRowSet(), resultSources);
 
         // do we need a timestamp SSA?
         this.timestampColumnName = timestampColumnName;

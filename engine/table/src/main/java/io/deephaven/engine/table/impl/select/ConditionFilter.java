@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.select;
 
@@ -21,17 +21,18 @@ import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.lang.QueryLanguageParser;
 import io.deephaven.engine.table.impl.util.codegen.CodeGenerator;
 import io.deephaven.engine.context.QueryScopeParam;
+import io.deephaven.engine.util.PyCallableWrapper;
 import io.deephaven.time.TimeLiteralReplacedExpression;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.chunk.*;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
-import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.SafeCloseableList;
 import io.deephaven.util.text.Indenter;
 import io.deephaven.util.type.TypeUtils;
 import groovy.json.StringEscapeUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.jpy.PyObject;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
@@ -50,10 +51,13 @@ import static io.deephaven.engine.table.impl.select.DhFormulaColumn.COLUMN_SUFFI
  */
 public class ConditionFilter extends AbstractConditionFilter {
     public static final int CHUNK_SIZE = 4096;
+    protected static final String CLASS_NAME = "GeneratedFilterKernel";
+
     private Future<Class<?>> filterKernelClassFuture = null;
     private List<Pair<String, Class<?>>> usedInputs; // that is columns and special variables
     private String classBody;
     private Filter filter = null;
+    private boolean pythonFilter = false;
     private boolean filterValidForCopy = true;
 
     private ConditionFilter(@NotNull String formula) {
@@ -79,8 +83,24 @@ public class ConditionFilter extends AbstractConditionFilter {
         return createConditionFilter(formula, FormulaParserConfiguration.parser);
     }
 
+    public static WhereFilter createStateless(@NotNull String formula) {
+        return new ConditionFilter(formula) {
+            @Override
+            public boolean permitParallelization() {
+                return true;
+            }
+        };
+    }
+
     String getClassBodyStr() {
         return classBody;
+    }
+
+    /**
+     * Get the number of inputs (columns and special variables) used by this filter.
+     */
+    public int getNumInputsUsed() {
+        return usedInputs.size();
     }
 
     public interface FilterKernel<CONTEXT extends FilterKernel.Context> {
@@ -375,11 +395,6 @@ public class ConditionFilter extends AbstractConditionFilter {
                                 filterKernel.filter(context, currentChunkRowSequence.asRowKeyChunk(), inputChunks);
                         resultBuilder.appendOrderedRowKeysChunk(matchedIndices);
                     } catch (Exception e) {
-                        // Clean up the contexts before throwing the exception.
-                        SafeCloseable.closeAll(sourceContexts);
-                        if (sharedContext != null) {
-                            sharedContext.close();
-                        }
                         throw new FormulaEvaluationException(e.getClass().getName() + " encountered in filter={ "
                                 + StringEscapeUtils.escapeJava(truncateLongFormula(formula)) + " }", e);
                     }
@@ -461,7 +476,7 @@ public class ConditionFilter extends AbstractConditionFilter {
 
         filterKernelClassFuture = compilationProcessor.submit(QueryCompilerRequest.builder()
                 .description("Filter Expression: " + formula)
-                .className("GeneratedFilterKernel")
+                .className(CLASS_NAME)
                 .classBody(this.classBody)
                 .packageNameRoot(QueryCompilerImpl.FORMULA_CLASS_PREFIX)
                 .putAllParameterClasses(QueryScopeParamTypeUtil.expandParameterClasses(paramClasses))
@@ -496,8 +511,7 @@ public class ConditionFilter extends AbstractConditionFilter {
         classBody
                 .append(CodeGenerator
                         .create(ExecutionContext.getContext().getQueryLibrary().getImportStrings().toArray()).build())
-                .append(
-                        "\n\npublic class $CLASSNAME$ implements ")
+                .append("\n\npublic class ").append(CLASS_NAME).append(" implements ")
                 .append(FilterKernel.class.getCanonicalName()).append("<FilterKernel.Context>{\n");
         classBody.append("\n").append(timeConversionResult.getInstanceVariablesString()).append("\n");
         final Indenter indenter = new Indenter();
@@ -537,8 +551,8 @@ public class ConditionFilter extends AbstractConditionFilter {
             classBody.append("\n");
         }
 
-        classBody.append("\n").append(indenter)
-                .append("public $CLASSNAME$(Table __table, RowSet __fullSet, QueryScopeParam... __params) {\n");
+        classBody.append("\n").append(indenter).append("public ").append(CLASS_NAME)
+                .append("(Table __table, RowSet __fullSet, QueryScopeParam... __params) {\n");
         indenter.increaseLevel();
         for (int i = 0; i < params.length; i++) {
             final QueryScopeParam<?> param = params[i];
@@ -734,8 +748,9 @@ public class ConditionFilter extends AbstractConditionFilter {
     }
 
     @Override
-    protected void setFilter(Filter filter) {
+    protected void setPythonFilter(Filter filter) {
         this.filter = filter;
+        this.pythonFilter = true;
     }
 
     @Override
@@ -760,6 +775,16 @@ public class ConditionFilter extends AbstractConditionFilter {
 
     @Override
     public boolean permitParallelization() {
+        // If we have a vectorizable Python function or any Python inputs, then we must check for free-threaded Python
+        // before using the default value of statelessness.
+        final boolean usesPython =
+                pythonFilter || usedInputs.stream().anyMatch(pp -> PyCallableWrapper.class.isAssignableFrom(pp.second)
+                        || PyObject.class.isAssignableFrom(pp.second));
+        if (usesPython) {
+            if (!PythonFreeThreadUtil.isPythonFreeThreaded()) {
+                return false;
+            }
+        }
         return QueryTable.STATELESS_FILTERS_BY_DEFAULT;
     }
 }

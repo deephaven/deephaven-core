@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.rangejoin;
 
@@ -482,6 +482,8 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
                             outputSlotsExposed,
                             outputStartPositionsInclusiveExposed,
                             outputEndPositionsExclusiveExposed),
+                    () -> {
+                    },
                     resultFuture::completeExceptionally);
         }
 

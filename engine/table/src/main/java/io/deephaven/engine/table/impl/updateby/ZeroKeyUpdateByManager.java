@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.updateby;
 
@@ -10,6 +10,7 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.ModifiedColumnSet;
+import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.table.impl.util.RowRedirection;
@@ -60,7 +61,8 @@ public class ZeroKeyUpdateByManager extends UpdateBy {
         final String bucketDescription = this + "-bucket-[]";
 
         if (source.isRefreshing()) {
-            result = new QueryTable(source.getRowSet(), resultSources);
+            final TableDefinition resultDef = TableDefinition.inferFrom(source, resultSources);
+            result = new QueryTable(resultDef, source.getRowSet(), resultSources);
 
             // create input and output modified column sets
             forAllOperators(op -> {

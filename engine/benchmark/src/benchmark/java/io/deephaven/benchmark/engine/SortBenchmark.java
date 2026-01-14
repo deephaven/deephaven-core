@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.benchmark.engine;
 
@@ -110,10 +110,10 @@ public class SortBenchmark {
 
         switch (symTab) {
             case "symtab":
-                SortHelpers.sortBySymbolTable = true;
+                SortHelpers.SORT_BY_SYMBOL_TABLE = true;
                 break;
             case "nosymtab":
-                SortHelpers.sortBySymbolTable = false;
+                SortHelpers.SORT_BY_SYMBOL_TABLE = false;
                 break;
             default:
                 throw new IllegalStateException("bad sort type: " + symTab);

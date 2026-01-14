@@ -1,8 +1,9 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.by.typed;
 
+import com.google.common.io.BaseEncoding;
 import com.squareup.javapoet.*;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.api.NaturalJoinType;
@@ -43,6 +44,9 @@ import org.jetbrains.annotations.NotNull;
 import javax.lang.model.element.Modifier;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -626,8 +630,23 @@ public class TypedHasherFactory {
 
     @NotNull
     public static String hasherName(HasherConfig<?> hasherConfig, ChunkType[] chunkTypes) {
-        return hasherConfig.classPrefix
-                + Arrays.stream(chunkTypes).map(Objects::toString).collect(Collectors.joining(""));
+        if (chunkTypes.length <= 10) {
+            return hasherConfig.classPrefix
+                    + Arrays.stream(chunkTypes).map(Objects::toString).collect(Collectors.joining(""));
+        } else {
+            // Let long file names work OK by just using a SHA1 of the class names.
+            final MessageDigest messageDigest;
+            try {
+                messageDigest = MessageDigest.getInstance("SHA-256");
+            } catch (NoSuchAlgorithmException e) {
+                throw new UncheckedDeephavenException("Could not retrieve SHA-256 digest", e);
+            }
+
+            final byte[] digest = messageDigest.digest(Arrays.stream(chunkTypes).map(Objects::toString)
+                    .collect(Collectors.joining("")).getBytes(StandardCharsets.UTF_8));
+            final String hex = BaseEncoding.base16().encode(digest, 0, digest.length);
+            return hasherConfig.classPrefix + hex;
+        }
     }
 
     @NotNull
@@ -673,7 +692,7 @@ public class TypedHasherFactory {
 
         final JavaFile.Builder fileBuilder = JavaFile.builder(packageName, hasher).indent("    ");
         fileBuilder.addFileComment("\n");
-        fileBuilder.addFileComment("Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending\n");
+        fileBuilder.addFileComment("Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending\n");
         fileBuilder.addFileComment("\n");
         fileBuilder.addFileComment("****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY\n");
         fileBuilder

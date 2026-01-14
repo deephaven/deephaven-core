@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.updateby;
 
@@ -504,7 +504,10 @@ public abstract class UpdateBy {
                             }
                             inputSourceReferenceCounts.set(srcIdx, useCount);
                         }
-                    }, onComputeComplete, this::onError);
+                    }, onComputeComplete,
+                    () -> {
+                    },
+                    this::onError);
         }
 
         /**
@@ -556,7 +559,8 @@ public abstract class UpdateBy {
                                 }
                             });
                         }
-                    }, onParallelPopulationComplete, this::onError);
+                    }, onParallelPopulationComplete, () -> {
+                    }, this::onError);
         }
 
         /**
@@ -613,7 +617,10 @@ public abstract class UpdateBy {
                             }
                             windowComplete.run();
                         }, nestedErrorConsumer);
-                    }, onWindowsComplete, this::onError);
+                    }, onWindowsComplete,
+                    () -> {
+                    },
+                    this::onError);
         }
 
         /**
@@ -692,7 +699,11 @@ public abstract class UpdateBy {
                                         opSetComplete.run();
                                     }, nestedErrorConsumer);
                         }, nestedErrorConsumer);
-                    }, onProcessWindowOperatorsComplete, onProcessWindowOperatorsError);
+                    },
+                    onProcessWindowOperatorsComplete,
+                    () -> {
+                    },
+                    onProcessWindowOperatorsError);
         }
 
         /**
@@ -716,6 +727,8 @@ public abstract class UpdateBy {
                     (context, idx, nestedErrorConsumer, sourceComplete) -> createCachedColumnSource(
                             srcIndices[idx], sourceComplete, nestedErrorConsumer),
                     onCachingComplete,
+                    () -> {
+                    },
                     onCachingError);
         }
 
@@ -790,6 +803,7 @@ public abstract class UpdateBy {
                         // assign this now
                         maybeCachedInputSources[srcIdx] = outputSource;
                         onSourceComplete.run();
+                    }, () -> {
                     }, onSourceError);
         }
 
@@ -852,7 +866,8 @@ public abstract class UpdateBy {
                                     context.chunkContexts,
                                     initialStep);
                         }
-                    }, onProcessWindowOperatorSetComplete, onProcessWindowOperatorSetError);
+                    }, onProcessWindowOperatorSetComplete, () -> {
+                    }, onProcessWindowOperatorSetError);
         }
 
 
@@ -1369,6 +1384,21 @@ public abstract class UpdateBy {
                 source.getDefinition(),
                 "OperatorCollection TableDef",
                 "Source TableDef");
+
+        // Verify the timestamp column is a supported data type (already long or can be reinterpreted as long)
+        if (operatorCollection.timestampColumnName != null) {
+            final ColumnSource<?> timestampSource = source.getColumnSource(operatorCollection.timestampColumnName);
+            final Class<?> timestampType = timestampSource.getType();
+            if (timestampType != long.class && timestampType != Long.class) {
+                // Can we reinterpret the column as a long
+                final ColumnSource<?> reinterpreted = ReinterpretUtils.maybeConvertToPrimitive(timestampSource);
+                final Class<?> reinterpretedType = reinterpreted.getType();
+                if (reinterpretedType != long.class && reinterpretedType != Long.class) {
+                    throw new IllegalArgumentException("Unsupported timestamp column type " + timestampType +
+                            " for column '" + operatorCollection.timestampColumnName + "'");
+                }
+            }
+        }
 
         // Create the rowRedirection (if instructed by the user)
         final RowRedirection rowRedirection;

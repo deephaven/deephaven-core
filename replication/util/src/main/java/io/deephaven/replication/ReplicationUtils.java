@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.replication;
 
@@ -346,7 +346,7 @@ public class ReplicationUtils {
 
     @NotNull
     public static List<String> fixupChunkAttributes(List<String> lines, final String genericType) {
-        lines = lines.stream().map(x -> x.replaceAll("ObjectChunk<([^>]*)>", "ObjectChunk<" + genericType + ", $1>"))
+        lines = lines.stream().map(x -> x.replaceAll("ObjectChunk<([^,>]*)>", "ObjectChunk<" + genericType + ", $1>"))
                 .collect(Collectors.toList());
         return lines;
     }
@@ -426,7 +426,7 @@ public class ReplicationUtils {
 
     public static Stream<String> fileHeaderStream(String gradleTask, String sourceClassJavaPath) {
         return Stream.of("//",
-                "// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending",
+                "// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending",
                 "//",
                 "// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY",
                 "// ****** Edit " + sourceClassJavaPath + " and run \"./gradlew " + gradleTask

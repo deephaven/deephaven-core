@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
 // ****** Edit TestCharSegmentedSortedMultiset and run "./gradlew replicateSegmentedSortedMultisetTests" to regenerate
@@ -135,12 +135,12 @@ public class TestByteSegmentedSortedMultiset extends RefreshingTableTestCase {
              final WritableIntChunk<ChunkLengths> counts = WritableIntChunk.makeWritableChunk(1024)
         ) {
             valueSource.fillChunk(fillContext, chunk, john.getRowSet());
-            ByteCompactKernel.compactAndCount(chunk, counts, true);
+            ByteCompactKernel.compactAndCount(chunk, counts, true, true);
         }
     }
     //endregion SortFixupSanityCheck
 
-    private void testUpdates(@NotNull final SsaTestHelpers.TestDescriptor desc, boolean allowAddition, boolean allowRemoval, boolean countNull) {
+    private void testUpdates(@NotNull final SsaTestHelpers.TestDescriptor desc, boolean allowAddition, boolean allowRemoval, boolean countNullNaN) {
         final Random random = new Random(desc.seed());
         final ColumnInfo[] columnInfo;
         final QueryTable table = getTable(desc.tableSize(), random, columnInfo = initColumnInfos(new String[]{"Value"},
@@ -153,7 +153,7 @@ public class TestByteSegmentedSortedMultiset extends RefreshingTableTestCase {
         //noinspection unchecked
         final ColumnSource<Byte> valueSource = asByte.getColumnSource("Value");
 
-        checkSsmInitial(asByte, ssm, valueSource, countNull, desc);
+        checkSsmInitial(asByte, ssm, valueSource, countNullNaN, desc);
 
         try (final SafeCloseable ignored = LivenessScopeStack.open(new LivenessScope(true), true)) {
             final ShiftObliviousListener asByteListener = new ShiftObliviousInstrumentedListenerAdapter(asByte, false) {
@@ -168,14 +168,14 @@ public class TestByteSegmentedSortedMultiset extends RefreshingTableTestCase {
 
                         if (removed.isNonempty()) {
                             valueSource.fillPrevChunk(fillContext, chunk, removed);
-                            ByteCompactKernel.compactAndCount(chunk, counts, countNull);
+                            ByteCompactKernel.compactAndCount(chunk, counts, countNullNaN, countNullNaN);
                             ssm.remove(removeContext, chunk, counts);
                         }
 
 
                         if (added.isNonempty()) {
                             valueSource.fillChunk(fillContext, chunk, added);
-                            ByteCompactKernel.compactAndCount(chunk, counts, countNull);
+                            ByteCompactKernel.compactAndCount(chunk, counts, countNullNaN, countNullNaN);
                             ssm.insert(chunk, counts);
                         }
                     }
@@ -192,7 +192,7 @@ public class TestByteSegmentedSortedMultiset extends RefreshingTableTestCase {
                 });
 
                 try (final ColumnSource.GetContext getContext = valueSource.makeGetContext(asByte.intSize())) {
-                    checkSsm(ssm, valueSource.getChunk(getContext, asByte.getRowSet()).asByteChunk(), countNull, desc);
+                    checkSsm(ssm, valueSource.getChunk(getContext, asByte.getRowSet()).asByteChunk(), countNullNaN, desc);
                 }
 
                 if (!allowAddition && table.size() == 0) {
@@ -274,19 +274,19 @@ public class TestByteSegmentedSortedMultiset extends RefreshingTableTestCase {
         checkSsm(asByte, ssmLo, valueSource, countNull, desc);
     }
 
-    private void checkSsmInitial(Table asByte, ByteSegmentedSortedMultiset ssm, ColumnSource<?> valueSource, boolean countNull, @NotNull final SsaTestHelpers.TestDescriptor desc) {
+    private void checkSsmInitial(Table asByte, ByteSegmentedSortedMultiset ssm, ColumnSource<?> valueSource, boolean countNullNaN, @NotNull final SsaTestHelpers.TestDescriptor desc) {
         try (final ColumnSource.FillContext fillContext = valueSource.makeFillContext(asByte.intSize());
              final WritableByteChunk<Values> valueChunk = WritableByteChunk.makeWritableChunk(asByte.intSize());
              final WritableIntChunk<ChunkLengths> counts = WritableIntChunk.makeWritableChunk(asByte.intSize())) {
             valueSource.fillChunk(fillContext, valueChunk, asByte.getRowSet());
             valueChunk.sort();
 
-            ByteCompactKernel.compactAndCount(valueChunk, counts, countNull);
+            ByteCompactKernel.compactAndCount(valueChunk, counts, countNullNaN, countNullNaN);
 
             ssm.insert(valueChunk, counts);
 
             valueSource.fillChunk(fillContext, valueChunk, asByte.getRowSet());
-            checkSsm(ssm, valueChunk, countNull, desc);
+            checkSsm(ssm, valueChunk, countNullNaN, desc);
         }
     }
 

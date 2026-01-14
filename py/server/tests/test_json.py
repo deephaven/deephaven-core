@@ -1,14 +1,13 @@
 #
-# Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 #
 
 import unittest
-
 from datetime import datetime
-from tests.testbase import BaseTestCase
 
 from deephaven import dtypes
 from deephaven.json import *
+from tests.testbase import BaseTestCase
 
 
 def all_equals(items) -> bool:

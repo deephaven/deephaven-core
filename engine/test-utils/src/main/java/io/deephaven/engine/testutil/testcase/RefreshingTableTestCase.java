@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.testutil.testcase;
 
@@ -139,6 +139,19 @@ abstract public class RefreshingTableTestCase extends BaseArrayTestCase implemen
 
     public void setExpectError(boolean expectError) {
         this.expectError = expectError;
+    }
+
+    public class ExpectingError implements SafeCloseable {
+        final boolean originalExpectError = getExpectError();
+
+        public ExpectingError() {
+            setExpectError(true);
+        }
+
+        @Override
+        public void close() {
+            setExpectError(originalExpectError);
+        }
     }
 
     public <T> T allowingError(Supplier<T> function, Predicate<List<Throwable>> errorsAcceptable) {

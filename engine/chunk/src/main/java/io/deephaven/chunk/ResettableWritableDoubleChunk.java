@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
 // ****** Edit ResettableWritableCharChunk and run "./gradlew replicateSourcesAndChunks" to regenerate
@@ -27,20 +27,11 @@ public class ResettableWritableDoubleChunk<ATTR_BASE extends Any>
         return new ResettableWritableDoubleChunk<>();
     }
 
-    public static <ATTR_BASE extends Any> ResettableWritableDoubleChunk<ATTR_BASE> makeResettableChunkForPool() {
-        return new ResettableWritableDoubleChunk<>() {
-            @Override
-            public void close() {
-                MultiChunkPool.forThisThread().giveResettableWritableDoubleChunk(this);
-            }
-        };
-    }
-
     private ResettableWritableDoubleChunk(double[] data, int offset, int capacity) {
         super(data, offset, capacity);
     }
 
-    private ResettableWritableDoubleChunk() {
+    protected ResettableWritableDoubleChunk() {
         this(ArrayTypeUtils.EMPTY_DOUBLE_ARRAY, 0, 0);
     }
 

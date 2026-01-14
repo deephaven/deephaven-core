@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+ * Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
  */
 #include "deephaven/client/utility/table_maker.h"
 
@@ -39,10 +39,10 @@ void TableMaker::FinishAddColumn(std::string name, std::shared_ptr<arrow::Array>
     std::optional<std::string> deephaven_metadata_component_type_name) {
   auto kv_metadata = std::make_shared<arrow::KeyValueMetadata>();
   OkOrThrow(DEEPHAVEN_LOCATION_EXPR(
-    kv_metadata->Set(DeephavenMetadataConstants::Keys::kType, std::move(deephaven_metadata_type_name))));
+    kv_metadata->Set(DeephavenMetadataConstants::Keys::Type(), std::move(deephaven_metadata_type_name))));
   if (deephaven_metadata_component_type_name.has_value()) {
     OkOrThrow(DEEPHAVEN_LOCATION_EXPR(
-        kv_metadata->Set(DeephavenMetadataConstants::Keys::kComponentType,
+        kv_metadata->Set(DeephavenMetadataConstants::Keys::ComponentType(),
             std::move(*deephaven_metadata_component_type_name))));
   }
 
@@ -135,20 +135,19 @@ TableMaker::ColumnInfo::ColumnInfo(ColumnInfo &&other) noexcept = default;
 TableMaker::ColumnInfo::~ColumnInfo() = default;
 
 namespace internal {
-const char DeephavenMetadataConstants::Keys::kType[] = "deephaven:type";
-const char DeephavenMetadataConstants::Keys::kComponentType[] = "deephaven:componentType";
-
-const char DeephavenMetadataConstants::Types::kBool[] = "java.lang.Boolean";
-const char DeephavenMetadataConstants::Types::kChar16[] = "char";
-const char DeephavenMetadataConstants::Types::kInt8[] = "byte";
-const char DeephavenMetadataConstants::Types::kInt16[] = "short";
-const char DeephavenMetadataConstants::Types::kInt32[] = "int";
-const char DeephavenMetadataConstants::Types::kInt64[] = "long";
-const char DeephavenMetadataConstants::Types::kFloat[] = "float";
-const char DeephavenMetadataConstants::Types::kDouble[] = "double";
-const char DeephavenMetadataConstants::Types::kString[] = "java.lang.String";
-const char DeephavenMetadataConstants::Types::kDateTime[] = "java.time.ZonedDateTime";
-const char DeephavenMetadataConstants::Types::kLocalDate[] = "java.time.LocalDate";
-const char DeephavenMetadataConstants::Types::kLocalTime[] = "java.time.LocalTime";
+const char *DeephavenMetadataConstants::Keys::Type() { return "deephaven:type"; }
+const char *DeephavenMetadataConstants::Keys::ComponentType() {  return "deephaven:componentType";}
+const char *DeephavenMetadataConstants::Types::Bool() { return "java.lang.Boolean"; }
+const char *DeephavenMetadataConstants::Types::Char16() { return "char"; }
+const char *DeephavenMetadataConstants::Types::Int8() { return "byte"; }
+const char *DeephavenMetadataConstants::Types::Int16() { return "short"; }
+const char *DeephavenMetadataConstants::Types::Int32() { return "int"; }
+const char *DeephavenMetadataConstants::Types::Int64() { return "long"; }
+const char *DeephavenMetadataConstants::Types::Float() { return "float"; }
+const char *DeephavenMetadataConstants::Types::Double() { return "double"; }
+const char *DeephavenMetadataConstants::Types::String() { return "java.lang.String"; }
+const char *DeephavenMetadataConstants::Types::DateTime() { return "java.time.ZonedDateTime"; }
+const char *DeephavenMetadataConstants::Types::LocalDate() { return "java.time.LocalDate"; }
+const char *DeephavenMetadataConstants::Types::LocalTime() { return "java.time.LocalTime"; }
 }  // namespace internal
 }  // namespace deephaven::client::utility

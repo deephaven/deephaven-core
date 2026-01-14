@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.client.impl;
 
@@ -343,8 +343,8 @@ class UpdateByBuilder {
                     UpdateByRollingFormula.newBuilder()
                             .setReverseWindowScale(adapt(rs.revWindowScale()))
                             .setForwardWindowScale(adapt(rs.fwdWindowScale()))
-                            .setFormula(rs.formula())
-                            .setParamToken(rs.paramToken().orElse(null));
+                            .setFormula(rs.formula());
+            rs.paramToken().ifPresent(builder::setParamToken);
             return UpdateByColumn.UpdateBySpec.newBuilder()
                     .setRollingFormula(builder.build())
                     .build();

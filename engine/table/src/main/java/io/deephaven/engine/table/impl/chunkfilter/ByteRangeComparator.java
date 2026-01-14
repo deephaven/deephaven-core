@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
 // ****** Edit CharRangeComparator and run "./gradlew replicateChunkFilters" to regenerate
@@ -22,7 +22,7 @@ public class ByteRangeComparator {
         }
     }
 
-    final static class ByteByteInclusiveInclusiveFilter extends ByteByteFilter {
+    private final static class ByteByteInclusiveInclusiveFilter extends ByteByteFilter {
         private ByteByteInclusiveInclusiveFilter(byte lower, byte upper) {
             super(lower, upper);
         }
@@ -33,7 +33,7 @@ public class ByteRangeComparator {
         }
     }
 
-    final static class ByteByteInclusiveExclusiveFilter extends ByteByteFilter {
+    private final static class ByteByteInclusiveExclusiveFilter extends ByteByteFilter {
         private ByteByteInclusiveExclusiveFilter(byte lower, byte upper) {
             super(lower, upper);
         }
@@ -44,7 +44,7 @@ public class ByteRangeComparator {
         }
     }
 
-    final static class ByteByteExclusiveInclusiveFilter extends ByteByteFilter {
+    private final static class ByteByteExclusiveInclusiveFilter extends ByteByteFilter {
         private ByteByteExclusiveInclusiveFilter(byte lower, byte upper) {
             super(lower, upper);
         }
@@ -55,7 +55,7 @@ public class ByteRangeComparator {
         }
     }
 
-    final static class ByteByteExclusiveExclusiveFilter extends ByteByteFilter {
+    private final static class ByteByteExclusiveExclusiveFilter extends ByteByteFilter {
         private ByteByteExclusiveExclusiveFilter(byte lower, byte upper) {
             super(lower, upper);
         }

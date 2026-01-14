@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
 // ****** Edit DoubleMaterializer and run "./gradlew replicatePageMaterializers" to regenerate
@@ -25,6 +25,10 @@ public class DoubleFromFloatMaterializer extends DoubleMaterializerBase implemen
         }
     };
 
+    public static double convertValue(float value) {
+        return value;
+    }
+
     private final ValuesReader dataReader;
 
     private DoubleFromFloatMaterializer(ValuesReader dataReader, int numValues) {
@@ -39,7 +43,7 @@ public class DoubleFromFloatMaterializer extends DoubleMaterializerBase implemen
     @Override
     public void fillValues(int startIndex, int endIndex) {
         for (int ii = startIndex; ii < endIndex; ii++) {
-            data[ii] = dataReader.readFloat();
+            data[ii] = convertValue(dataReader.readFloat());
         }
     }
 }

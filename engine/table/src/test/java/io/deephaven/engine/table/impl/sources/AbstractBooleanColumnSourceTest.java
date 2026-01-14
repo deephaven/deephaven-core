@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
 // ****** Edit AbstractCharacterColumnSourceTest and run "./gradlew replicateSourceAndChunkTests" to regenerate
@@ -287,7 +287,7 @@ public abstract class AbstractBooleanColumnSourceTest {
 
     // region fromvalues
     private void checkFromValues(String msg, byte fromValues, Boolean fromChunk) {
-        assertEquals(msg, fromValues == BooleanUtils.NULL_BOOLEAN_AS_BYTE ? null : fromValues == BooleanUtils.TRUE_BOOLEAN_AS_BYTE, fromChunk);
+        assertEquals(msg, BooleanUtils.isNull(fromValues) ? null : fromValues == BooleanUtils.TRUE_BOOLEAN_AS_BYTE, fromChunk);
     }
     // endregion fromvalues
 

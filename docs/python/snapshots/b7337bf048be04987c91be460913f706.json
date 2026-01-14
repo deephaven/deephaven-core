@@ -1,0 +1,1 @@
+{"file":"core/docs/reference/table-operations/create/TablePublisher.md","objects":{"my_blink_table":{"type":"Table","data":{"columns":[{"name":"Name","type":"java.lang.String"},{"name":"Age","type":"int"},{"name":"Height","type":"float"}],"rows":[]}}}}

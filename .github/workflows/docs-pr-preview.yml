@@ -1,0 +1,115 @@
+name: Docs PR Preview
+
+##########
+# Do NOT call any scripts in the repo in this action.
+# It is only safe if we run the Docker commands explicitly in the action.
+##########
+
+on:
+  # This should be safe since the action doesn't do any build with the PR code
+  # It would not be safe to run scripts from the PR code, so we use docker directly in this action
+  pull_request_target:
+    branches: [main, 'rc/**']
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  doc-changes:
+    runs-on: ubuntu-24.04
+    permissions:
+      pull-requests: write
+    outputs:
+      python: ${{ steps.filter.outputs.python }}
+      groovy: ${{ steps.filter.outputs.groovy }}
+
+    steps:
+      - name: Detect docs changes
+        uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            python:
+              - 'docs/python/**'
+            groovy:
+              - 'docs/groovy/**'
+
+      - name: No changes comment
+        if: ${{ !contains(steps.filter.outputs.*, 'true') }}
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          message: |
+            ## No docs changes detected for ${{ github.event.pull_request.head.sha }}
+
+  doc-preview:
+    needs: doc-changes
+    runs-on: ubuntu-24.04
+    if: ${{ contains(needs.doc-changes.outputs.*, 'true') }}
+    permissions:
+      id-token: write # Required to upload to AWS
+      contents: read
+      pull-requests: write
+
+    steps:
+      - name: Deploy preview comment
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          message: |
+            ## Deploying docs previews for ${{ github.event.pull_request.head.sha }} (available for 14 days)
+
+      ##########
+      # Do NOT run any scripts sourced from the repo after this point. We have checked out the repo from a fork.
+      # This has access to secrets. If we run any code provided by the repo at this point, it could be malicious.
+      # https://securitylab.github.com/resources/github-actions-preventing-pwn-requests/
+      ##########
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          sparse-checkout: /docs/
+          sparse-checkout-cone-mode: false
+          lfs: true
+
+      - name: Sync core Python to the salmon bucket
+        id: sync-python
+        if: ${{ needs.doc-changes.outputs.python == 'true' }}
+        uses: deephaven/salmon-sync@v1
+        with:
+          source: docs/python
+          destination: deephaven/deephaven-core/docs/pr-${{ github.event.number }}
+          production: false
+          temporary: true
+          aws-role: ${{ vars.DOCS_AWS_ROLE }}
+      - name: Update PR comment
+        if: ${{ steps.sync-python.outcome == 'success' }}
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          append: true
+          message: |
+            [Python](${{ vars.DOCS_PREVIEW_URL }}/core/pr-${{ github.event.number }}/docs/)
+
+      - name: Sync core Groovy to the salmon bucket
+        id: sync-groovy
+        if: ${{ needs.doc-changes.outputs.groovy == 'true' }}
+        uses: deephaven/salmon-sync@v1
+        with:
+          source: docs/groovy
+          destination: deephaven/deephaven-core/groovy/docs/pr-${{ github.event.number }}
+          production: false
+          temporary: true
+          aws-role: ${{ vars.DOCS_AWS_ROLE }}
+      - name: Update PR comment
+        if: ${{ steps.sync-groovy.outcome == 'success' }}
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          append: true
+          message: |
+            [Groovy](${{ vars.DOCS_PREVIEW_URL }}/core/groovy/pr-${{ github.event.number }}/docs/)
+
+      - name: Update PR comment on fail
+        if: ${{ failure() }}
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          message: |
+            ## :warning: Failed to deploy docs previews for ${{ github.event.pull_request.head.sha }}
+            Please check the [logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) for more details.

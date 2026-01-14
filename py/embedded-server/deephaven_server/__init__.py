@@ -1,12 +1,12 @@
 #
-# Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 #
 
 import importlib.metadata
 
-from .server import Server
-
 from deephaven_internal.jvm import check_py_env
+
+from .server import Server
 
 check_py_env()
 
@@ -16,3 +16,4 @@ check_py_env()
 __version__ = importlib.metadata.version("deephaven-server")
 
 
+__all__ = ["Server"]

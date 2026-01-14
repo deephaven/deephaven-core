@@ -62,4 +62,9 @@ application.applicationDistribution.into('bin') {
     fileMode = 0755
 }
 
+project.tasks.register("run-add-to-input-table", JavaExec) {
+    mainClass = "io.deephaven.client.examples.AddToInputTable"
+    classpath = sourceSets.main.runtimeClasspath
+}
+
 apply plugin: 'io.deephaven.java-open-nio'

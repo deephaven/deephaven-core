@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl;
 
@@ -27,7 +27,7 @@ public interface PushdownFilterContext extends SafeCloseable {
     };
 
     /**
-     * Return the cost of the pushdown filter operations that have already been executed for this context.
+     * Returns the maximum cost of the pushdown filter operation that has already been executed for this context.
      */
     long executedFilterCost();
 

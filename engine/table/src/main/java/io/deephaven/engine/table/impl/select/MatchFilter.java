@@ -1,31 +1,22 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.select;
 
 import io.deephaven.api.literal.Literal;
 import io.deephaven.base.string.cache.CompressedString;
 import io.deephaven.base.verify.Assert;
-import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.WritableRowSet;
-import io.deephaven.engine.table.ColumnDefinition;
-import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.DataIndex;
-import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.QueryCompilerRequestProcessor;
-import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.chunkfilter.ChunkFilter;
 import io.deephaven.engine.table.impl.chunkfilter.ChunkMatchFilterFactory;
 import io.deephaven.engine.table.impl.lang.QueryLanguageFunctionUtils;
 import io.deephaven.engine.table.impl.preview.DisplayWrapper;
-import io.deephaven.engine.table.impl.DependencyStreamProvider;
-import io.deephaven.engine.table.impl.indexer.DataIndexer;
-import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.QueryConstants;
-import io.deephaven.util.SafeCloseable;
+import io.deephaven.util.annotations.InternalUseOnly;
 import io.deephaven.util.datastructures.CachingSupplier;
 import io.deephaven.util.type.ArrayTypeUtils;
 import io.deephaven.util.type.TypeUtils;
@@ -42,9 +33,8 @@ import java.time.LocalTime;
 import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.function.Consumer;
-import java.util.stream.Stream;
 
-public class MatchFilter extends WhereFilterImpl implements DependencyStreamProvider, ExposesChunkFilter {
+public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
 
     private static final long serialVersionUID = 1L;
 
@@ -52,8 +42,9 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
             String columnName,
             Collection<Literal> literals,
             boolean inverted) {
+        final MatchOptions options = MatchOptions.builder().inverted(inverted).build();
         return new MatchFilter(
-                inverted ? MatchType.Inverted : MatchType.Regular,
+                options,
                 columnName,
                 literals.stream().map(AsObject::of).toArray());
     }
@@ -66,82 +57,54 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
     private Class<?> columnType;
     private Object[] values;
     private final String[] strValues;
-    private final boolean invertMatch;
-    private final boolean caseInsensitive;
+    private final MatchOptions matchOptions;
 
     private boolean initialized;
 
     /**
-     * The {@link DataIndex} for this filter, if any. Only ever non-{@code null} during operation initialization.
+     * Create a new MatchFilter with a list of values to match.
+     *
+     * @param matchOptions options controlling how the match is performed
+     * @param columnName the column name to match against
+     * @param values the values to match
      */
-    private DataIndex dataIndex;
-    /**
-     * Whether our dependencies have been gathered at least once. We expect dependencies to be gathered one time after
-     * {@link #beginOperation(Table)} (when we know if we're using a {@link DataIndex}), and then again after for every
-     * instantiation attempt when initializing the listener. Since we only use the DataIndex during instantiation, we
-     * don't need the listener to depend on it.
-     */
-    private boolean initialDependenciesGathered;
-
-    public enum MatchType {
-        Regular, Inverted,
-    }
-
-    public enum CaseSensitivity {
-        MatchCase, IgnoreCase
-    }
-
     public MatchFilter(
-            @NotNull final MatchType matchType,
+            @NotNull final MatchOptions matchOptions,
             @NotNull final String columnName,
-            @NotNull final Object... values) {
-        this(null, CaseSensitivity.MatchCase, matchType, columnName, null, values);
+            @Nullable final Object... values) {
+        this(null, matchOptions, columnName, null, values);
     }
 
     /**
-     * @deprecated this method is non-obvious in using IgnoreCase by default. Use
-     *             {@link MatchFilter#MatchFilter(MatchType, String, Object...)} instead.
+     * Create a new MatchFilter with either string values (which may be converted to actual values) or a list of values
+     * to match.
+     *
+     * @param failoverFilter a fail-over WhereFilter supplier should the match filter initialization fail
+     * @param matchOptions options controlling how the match is performed
+     * @param columnName the column name to match against
+     * @param strValues the string values to convert and match against. NOTE: conversion is deferred until init time and
+     *        these may be converted depending on query-scope variables.
+     * @param values the values to match
      */
-    @Deprecated(forRemoval = true)
-    public MatchFilter(
-            @NotNull final String columnName,
-            @NotNull final Object... values) {
-        this(null, CaseSensitivity.IgnoreCase, MatchType.Regular, columnName, null, values);
-    }
-
-    public MatchFilter(
-            @NotNull final CaseSensitivity sensitivity,
-            @NotNull final MatchType matchType,
-            @NotNull final String columnName,
-            @NotNull final String... strValues) {
-        this(null, sensitivity, matchType, columnName, strValues, null);
-    }
-
     public MatchFilter(
             @Nullable final CachingSupplier<ConditionFilter> failoverFilter,
-            @NotNull final CaseSensitivity sensitivity,
-            @NotNull final MatchType matchType,
+            @NotNull final MatchOptions matchOptions,
             @NotNull final String columnName,
-            @NotNull final String... strValues) {
-        this(failoverFilter, sensitivity, matchType, columnName, strValues, null);
-    }
-
-    private MatchFilter(
-            @Nullable final CachingSupplier<ConditionFilter> failoverFilter,
-            @NotNull final CaseSensitivity sensitivity,
-            @NotNull final MatchType matchType,
-            @NotNull final String columnName,
-            @Nullable String[] strValues,
+            @Nullable final String[] strValues,
             @Nullable final Object[] values) {
         this.failoverFilter = failoverFilter;
-        this.caseInsensitive = sensitivity == CaseSensitivity.IgnoreCase;
-        this.invertMatch = (matchType == MatchType.Inverted);
+        this.matchOptions = matchOptions;
         this.columnName = columnName;
+        if (strValues != null && values != null) {
+            throw new IllegalArgumentException("Only one of `strValues` or `values` should be specified");
+        }
         this.strValues = strValues;
         this.values = values;
     }
 
-    private ConditionFilter getFailoverFilterIfCached() {
+    @InternalUseOnly
+    @Nullable
+    public ConditionFilter getFailoverFilterIfCached() {
         return failoverFilter != null ? failoverFilter.getIfCached() : null;
     }
 
@@ -150,13 +113,12 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
         Assert.neqNull(newName, "newName");
         if (strValues == null) {
             // when we're constructed with values then there is no failover filter
-            return new MatchFilter(getMatchType(), newName, values);
+            return new MatchFilter(matchOptions, newName, values);
         } else {
             return new MatchFilter(
                     failoverFilter != null ? new CachingSupplier<>(
                             () -> failoverFilter.get().renameFilter(renames)) : null,
-                    caseInsensitive ? CaseSensitivity.IgnoreCase : CaseSensitivity.MatchCase,
-                    getMatchType(), newName, strValues, null);
+                    matchOptions, newName, strValues, null);
         }
     }
 
@@ -164,12 +126,12 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
         return values;
     }
 
-    public boolean getInvertMatch() {
-        return invertMatch;
+    public MatchOptions getMatchOptions() {
+        return matchOptions;
     }
 
-    public MatchType getMatchType() {
-        return invertMatch ? MatchType.Inverted : MatchType.Regular;
+    public Class<?> getColumnType() {
+        return columnType;
     }
 
     @Override
@@ -222,11 +184,11 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
                             + "\" doesn't exist in this table, available columns: " + tableDefinition.getColumnNames());
                 }
             }
+            columnType = column.getDataType();
             if (strValues == null) {
                 initialized = true;
                 return;
             }
-            columnType = column.getDataType();
             final List<Object> valueList = new ArrayList<>();
             final Map<String, Object> queryScopeVariables =
                     compilationProcessor.getFormulaImports().getQueryScopeVariables();
@@ -248,44 +210,6 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
         initialized = true;
     }
 
-    @Override
-    public SafeCloseable beginOperation(@NotNull final Table sourceTable) {
-        if (initialDependenciesGathered || dataIndex != null) {
-            throw new IllegalStateException("Inputs already initialized, use copy() instead of re-using a WhereFilter");
-        }
-        if (!QueryTable.USE_DATA_INDEX_FOR_WHERE) {
-            return () -> {
-            };
-        }
-        try (final SafeCloseable ignored = sourceTable.isRefreshing() ? LivenessScopeStack.open() : null) {
-            dataIndex = DataIndexer.getDataIndex(sourceTable, columnName);
-            if (dataIndex != null && dataIndex.isRefreshing()) {
-                dataIndex.retainReference();
-            }
-        }
-        return dataIndex != null ? this::completeOperation : () -> {
-        };
-    }
-
-    private void completeOperation() {
-        if (dataIndex.isRefreshing()) {
-            dataIndex.dropReference();
-        }
-        dataIndex = null;
-    }
-
-    @Override
-    public Stream<NotificationQueue.Dependency> getDependencyStream() {
-        if (initialDependenciesGathered) {
-            return Stream.empty();
-        }
-        initialDependenciesGathered = true;
-        if (dataIndex == null || !dataIndex.isRefreshing()) {
-            return Stream.empty();
-        }
-        return Stream.of(dataIndex.table());
-    }
-
     @NotNull
     @Override
     public WritableRowSet filter(
@@ -296,20 +220,24 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
         }
 
         final ColumnSource<?> columnSource = table.getColumnSource(columnName);
-        return columnSource.match(invertMatch, usePrev, caseInsensitive, dataIndex, selection, values);
+        return columnSource.match(usePrev, matchOptions, selection, values);
     }
 
     @NotNull
     @Override
     public WritableRowSet filterInverse(
-            @NotNull RowSet selection, @NotNull RowSet fullSet, @NotNull Table table, boolean usePrev) {
+            @NotNull final RowSet selection,
+            @NotNull final RowSet fullSet,
+            @NotNull final Table table,
+            final boolean usePrev) {
         final WhereFilter failover = getFailoverFilterIfCached();
         if (failover != null) {
             return failover.filterInverse(selection, fullSet, table, usePrev);
         }
 
         final ColumnSource<?> columnSource = table.getColumnSource(columnName);
-        return columnSource.match(!invertMatch, usePrev, caseInsensitive, dataIndex, selection, values);
+        final MatchOptions options = matchOptions.withInverted(!matchOptions.inverted());
+        return columnSource.match(usePrev, options, selection, values);
     }
 
     private ChunkFilter chunkFilter;
@@ -317,7 +245,7 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
     @Override
     public Optional<ChunkFilter> chunkFilter() {
         if (chunkFilter == null) {
-            chunkFilter = ChunkMatchFilterFactory.getChunkFilter(columnType, caseInsensitive, invertMatch, values);
+            chunkFilter = ChunkMatchFilterFactory.getChunkFilter(columnType, matchOptions, values);
         }
         return Optional.of(chunkFilter);
     }
@@ -330,58 +258,6 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
         }
 
         return true;
-    }
-
-    /**
-     * Returns true if the match filter has a value within the given range. This function is intended to be accurate
-     * rather than fast and is not recommended for performance-critical value comparison.
-     *
-     * @param lower the lower value bound of the range
-     * @param upper the upper value bound of the range
-     * @param lowerInclusive whether the lower bound is inclusive
-     * @param upperInclusive whether the upper bound is inclusive
-     * @return {@code true} if the range filter overlaps with the given range, {@code false} otherwise
-     */
-    public boolean overlaps(
-            @NotNull final Object lower,
-            @NotNull final Object upper,
-            final boolean lowerInclusive,
-            final boolean upperInclusive) {
-
-        // Converting to upper case lowers (or maintains) ordering, lower case raises (or maintains) it.
-        final Object oLower = caseInsensitive ? ((String) lower).toUpperCase() : lower;
-        final Object oUpper = caseInsensitive ? ((String) upper).toLowerCase() : upper;
-
-        // Use the strValues if values is null (for String comparisons, e.g.)
-        final Object[] valuesToTest = values == null ? strValues : values;
-
-        // Test every value in the filter against the min/max values
-        for (final Object value : valuesToTest) {
-            final int compareLower = CompareUtils.compare(value, oLower);
-            if (compareLower < 0 || (compareLower == 0 && !lowerInclusive)) {
-                continue; // this value is too low
-            }
-            final int compareUpper = CompareUtils.compare(value, oUpper);
-            if (compareUpper > 0 || (compareUpper == 0 && !upperInclusive)) {
-                continue; // this value is too high
-            }
-            // this value is within the range
-            return !invertMatch; // if inverted, return false instead of true
-        }
-        return invertMatch; // if inverted, return true instead of false
-    }
-
-    /**
-     * Returns true if the match filter has a value within the given range (assumes the provided min/max values are
-     * inclusive). This function is intended to be accurate rather than fast and is not recommended for
-     * performance-critical value comparison.
-     *
-     * @param min the minimum value in the given range
-     * @param max the maximum value in the given range
-     * @return {@code true} if the range filter overlaps with the given range, {@code false} otherwise
-     */
-    public boolean overlaps(@NotNull final Object min, @NotNull final Object max) {
-        return overlaps(min, max, true, true);
     }
 
     @Override
@@ -919,7 +795,8 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
     }
 
     private String toString(Object[] x) {
-        return columnName + (caseInsensitive ? " icase" : "") + (invertMatch ? " not" : "") + " in "
+        return columnName
+                + (matchOptions.caseInsensitive() ? " icase" : "") + (matchOptions.inverted() ? " not" : "") + " in "
                 + Arrays.toString(x);
     }
 
@@ -941,8 +818,7 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
         }
 
         // start off with the simple things
-        if (invertMatch != that.invertMatch ||
-                caseInsensitive != that.caseInsensitive ||
+        if (!Objects.equals(matchOptions, that.matchOptions) ||
                 !Objects.equals(columnName, that.columnName)) {
             return false;
         }
@@ -959,7 +835,7 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
         if (!initialized) {
             throw new UnsupportedOperationException("MatchFilter has not been initialized");
         }
-        int result = Objects.hash(columnName, invertMatch, caseInsensitive);
+        int result = Objects.hash(columnName, matchOptions);
         // we can use values because we know the filter has been initialized; the hash code should be stable and it
         // cannot be stable before we convert the values
         result = 31 * result + Arrays.hashCode(values);
@@ -978,15 +854,15 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
         if (strValues != null) {
             copy = new MatchFilter(
                     failoverFilter == null ? null : new CachingSupplier<>(() -> failoverFilter.get().copy()),
-                    caseInsensitive ? CaseSensitivity.IgnoreCase : CaseSensitivity.MatchCase,
-                    getMatchType(), columnName, strValues, null);
+                    matchOptions, columnName, strValues, null);
         } else {
             // when we're constructed with values then there is no failover filter
-            copy = new MatchFilter(getMatchType(), columnName, values);
+            copy = new MatchFilter(matchOptions, columnName, values);
         }
         if (initialized) {
             copy.initialized = true;
             copy.values = values;
+            copy.columnType = columnType;
         }
         return copy;
     }

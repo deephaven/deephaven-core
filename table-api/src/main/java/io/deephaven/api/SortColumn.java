@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.api;
 
@@ -12,11 +12,7 @@ import org.immutables.value.Value.Parameter;
  */
 @Immutable
 @SimpleStyle
-public abstract class SortColumn {
-
-    public enum Order {
-        ASCENDING, DESCENDING
-    }
+public abstract class SortColumn implements SortSpec {
 
     /**
      * Create an {@link Order#ASCENDING} sort column.
@@ -43,6 +39,7 @@ public abstract class SortColumn {
      *
      * @return the column name
      */
+    @Override
     @Parameter
     public abstract ColumnName column();
 
@@ -51,6 +48,7 @@ public abstract class SortColumn {
      *
      * @return the order
      */
+    @Override
     @Parameter
     public abstract Order order();
 }

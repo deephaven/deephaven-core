@@ -1,0 +1,1 @@
+{"file":"core/docs/reference/table-operations/create/floatCol.md","objects":{"result":{"type":"Table","data":{"columns":[{"name":"Floats","type":"float"}],"rows":[[{"value":"9.9000"}],[{"value":"8.8000"}],[{"value":"7.7000"}]]}}}}

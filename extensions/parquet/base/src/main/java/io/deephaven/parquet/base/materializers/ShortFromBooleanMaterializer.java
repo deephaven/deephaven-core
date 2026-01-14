@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
 // ****** Edit ShortMaterializer and run "./gradlew replicatePageMaterializers" to regenerate
@@ -25,6 +25,10 @@ public class ShortFromBooleanMaterializer extends ShortMaterializerBase implemen
         }
     };
 
+    public static short convertValue(boolean value) {
+        return (short) (value ? 1 : 0);
+    }
+
     private final ValuesReader dataReader;
 
     private ShortFromBooleanMaterializer(ValuesReader dataReader, int numValues) {
@@ -39,7 +43,7 @@ public class ShortFromBooleanMaterializer extends ShortMaterializerBase implemen
     @Override
     public void fillValues(int startIndex, int endIndex) {
         for (int ii = startIndex; ii < endIndex; ii++) {
-            data[ii] = (short) (dataReader.readBoolean() ? 1 : 0);
+            data[ii] = convertValue(dataReader.readBoolean());
         }
     }
 }

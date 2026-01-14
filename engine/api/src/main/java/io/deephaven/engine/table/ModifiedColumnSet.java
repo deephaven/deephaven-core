@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table;
 
@@ -102,7 +102,7 @@ public class ModifiedColumnSet {
 
         @Override
         public boolean containsAll(ModifiedColumnSet columnSet) {
-            return columnSet.equals(this);
+            return true;
         }
 
         @Override

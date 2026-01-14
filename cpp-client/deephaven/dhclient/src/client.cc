@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+ * Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
  */
 #include "deephaven/client/client.h"
 
@@ -72,8 +72,6 @@ Client &Client::operator=(Client &&other) noexcept = default;
 // There is only one Client associated with the server connection. Clients can only be moved, not
 // copied. When the Client owning the state is destructed, we tear down the state via close().
 Client::~Client() {
-  gpr_log(GPR_INFO, "Destructing Client ClientImpl(%p).",
-      static_cast<void*>(impl_.get()));
   try {
     Close();
   } catch (...) {
@@ -84,8 +82,6 @@ Client::~Client() {
 
 // Tear down Client state.
 void Client::Close() {
-  gpr_log(GPR_INFO, "Closing Client ClientImpl(%p), before close use_count=%ld.",
-      static_cast<void*>(impl_.get()), impl_.use_count());
   // Move to local variable to be defensive.
   auto temp = std::move(impl_);
   if (temp != nullptr) {

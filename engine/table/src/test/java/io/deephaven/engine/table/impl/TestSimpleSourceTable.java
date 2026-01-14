@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl;
 
@@ -30,6 +30,8 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static io.deephaven.engine.testutil.TstUtils.assertRowSetEquals;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown;
 
 /**
  * Tests for {@link SimpleSourceTable}.
@@ -139,6 +141,7 @@ public class TestSimpleSourceTable extends RefreshingTableTestCase {
         checking(new Expectations() {
             {
                 oneOf(componentFactory).createColumnSourceManager(
+                        with(false),
                         with(false),
                         with(ColumnToCodecMappings.EMPTY),
                         with(equal(TABLE_DEFINITION.getColumns())));
@@ -251,6 +254,7 @@ public class TestSimpleSourceTable extends RefreshingTableTestCase {
             {
                 oneOf(componentFactory).createColumnSourceManager(
                         with(false),
+                        with(false),
                         with(ColumnToCodecMappings.EMPTY),
                         with(equal(getIncludedColumnDefs(includedColumnIndices1))));
                 will(returnValue(columnSourceManager));
@@ -283,6 +287,7 @@ public class TestSimpleSourceTable extends RefreshingTableTestCase {
         checking(new Expectations() {
             {
                 oneOf(componentFactory).createColumnSourceManager(
+                        with(false),
                         with(false),
                         with(ColumnToCodecMappings.EMPTY),
                         with(equal(getIncludedColumnDefs(includedColumnIndices2))));
@@ -326,6 +331,7 @@ public class TestSimpleSourceTable extends RefreshingTableTestCase {
         checking(new Expectations() {
             {
                 oneOf(componentFactory).createColumnSourceManager(
+                        with(false),
                         with(false),
                         with(ColumnToCodecMappings.EMPTY),
                         with(equal(getIncludedColumnDefs(includedColumnIndices3))));
@@ -371,5 +377,21 @@ public class TestSimpleSourceTable extends RefreshingTableTestCase {
         assertEquals(NUM_COLUMNS - 3, viewResult4.getColumnSources().size());
         assertNotNull(viewResult4.getColumnSource("SizeSquared"));
         assertIsSatisfied();
+    }
+
+    @Test
+    public void testNonDirectColumnTypes() {
+        final TableDefinition td = TableDefinition.of(
+                ColumnDefinition.ofString("P1").withPartitioning(),
+                ColumnDefinition.ofInt("P2").withPartitioning(),
+                ColumnDefinition.ofInt("X1"),
+                ColumnDefinition.ofInt("X2"));
+        try {
+            new SimpleSourceTable(td, "", componentFactory, locationProvider, null);
+            failBecauseExceptionWasNotThrown(IllegalArgumentException.class);
+        } catch (final IllegalArgumentException e) {
+            assertThat(e).hasMessageContaining(
+                    "Can't construct SimpleSourceTable with column type(s) [ColumnDefinition {name=P1, dataType=class java.lang.String, componentType=null, columnType=Partitioning}, ColumnDefinition {name=P2, dataType=int, componentType=null, columnType=Partitioning}]");
+        }
     }
 }

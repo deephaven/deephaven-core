@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.web.client.ide;
 
@@ -116,13 +116,18 @@ public class IdeSession extends HasEventHandling {
 
     /**
      * Load the named table, with columns and size information already fully populated.
-     * 
-     * @param name
-     * @param applyPreviewColumns optional boolean
-     * @return {@link Promise} of {@link JsTable}
+     *
+     * @param name the name of the table to fetch
+     * @param applyPreviewColumns false to disable previews, defaults to true
+     * @return a {@link Promise} that will resolve to the table, or reject with an error if it cannot be loaded.
+     * @deprecated Added to resolve a specific issue, in the future preview will be applied as part of the subscription.
      */
-    // TODO (deephaven-core#188): improve usage of subscriptions (w.r.t. this optional param)
+    @Deprecated
     public Promise<JsTable> getTable(String name, @JsOptional Boolean applyPreviewColumns) {
+        if (applyPreviewColumns == Boolean.FALSE) {
+            JsLog.warn(
+                    "getTable is deprecated, please use getObject instead. The applyPreviewColumns parameter no longer applies, the new APIs to access data from the resulting Table should be used instead.");
+        }
         return connection.getVariableDefinition(name, JsVariableType.TABLE).then(varDef -> {
             final Promise<JsTable> table = connection.getTable(varDef, applyPreviewColumns);
             fireEvent(EVENT_TABLE_OPENED, table);
@@ -256,10 +261,12 @@ public class IdeSession extends HasEventHandling {
         });
         runCodePromise.then(response -> {
             JsVariableChanges changes = JsVariableChanges.from(response.getChanges());
+            final String startTimestamp = response.getStartTimestamp();
+            final String endTimestamp = response.getEndTimestamp();
             if (response.getErrorMessage() == null || response.getErrorMessage().isEmpty()) {
-                promise.succeed(new JsCommandResult(changes, null));
+                promise.succeed(new JsCommandResult(changes, null, startTimestamp, endTimestamp));
             } else {
-                promise.succeed(new JsCommandResult(changes, response.getErrorMessage()));
+                promise.succeed(new JsCommandResult(changes, response.getErrorMessage(), startTimestamp, endTimestamp));
             }
             return null;
         }, err -> {

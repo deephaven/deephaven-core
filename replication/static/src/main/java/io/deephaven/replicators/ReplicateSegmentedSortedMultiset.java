@@ -1,9 +1,10 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.replicators;
 
 import gnu.trove.set.hash.THashSet;
+import io.deephaven.replication.ReplicationUtils;
 import org.apache.commons.io.FileUtils;
 
 import java.io.File;
@@ -25,19 +26,46 @@ public class ReplicateSegmentedSortedMultiset {
     public static void main(String[] args) throws IOException {
         charToAllButBooleanAndLong(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/ssms/CharSegmentedSortedMultiset.java");
+
         insertInstantExtensions(charToLong(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/ssms/CharSegmentedSortedMultiset.java"));
 
         String objectSsm = charToObject(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/ssms/CharSegmentedSortedMultiset.java");
         fixupObjectSsm(objectSsm, ReplicateSegmentedSortedMultiset::fixupNulls,
+                ReplicateSegmentedSortedMultiset::fixupObjectGeneric,
                 ReplicateSegmentedSortedMultiset::fixupTHashes,
                 ReplicateSegmentedSortedMultiset::fixupSsmConstructor,
                 ReplicateSegmentedSortedMultiset::fixupObjectCompare,
                 ReplicateSegmentedSortedMultiset::fixupKeyArrayAllocation);
 
-        charToAllButBoolean(TASK,
+        final List<String> files = charToAllButBoolean(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmminmax/CharSetResult.java");
+        for (String file : files) {
+            if (file.contains("Float")) {
+                final File updatedFile = new File(file);
+                List<String> lines = FileUtils.readLines(updatedFile, Charset.defaultCharset());
+                lines = ReplicationUtils.replaceRegion(lines, "nan handling", List.of("" +
+                        "            if (minimum) {\n" +
+                        "                newResult = Float.isNaN(floatSsm.getMaxFloat()) ? Float.NaN : floatSsm.getMinFloat();\n"
+                        +
+                        "            } else {\n" +
+                        "                newResult = floatSsm.getMaxFloat(); // NaN sorts to max\n" +
+                        "            }"));
+                FileUtils.writeLines(updatedFile, lines);
+            } else if (file.contains("Double")) {
+                final File updatedFile = new File(file);
+                List<String> lines = FileUtils.readLines(updatedFile, Charset.defaultCharset());
+                lines = ReplicationUtils.replaceRegion(lines, "nan handling", List.of("" +
+                        "            if (minimum) {\n" +
+                        "                newResult = Double.isNaN(doubleSsm.getMaxDouble()) ? Double.NaN : doubleSsm.getMinDouble();\n"
+                        +
+                        "            } else {\n" +
+                        "                newResult = doubleSsm.getMaxDouble(); // NaN sorts to max\n" +
+                        "            }"));
+                FileUtils.writeLines(updatedFile, lines);
+            }
+        }
         fixupObjectSsm(
                 charToObject(TASK,
                         "engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmminmax/CharSetResult.java"),
@@ -45,6 +73,10 @@ public class ReplicateSegmentedSortedMultiset {
 
         charToAllButBoolean(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmpercentile/CharPercentileTypeHelper.java");
+        updateFloatPercentileHelper(
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmpercentile/FloatPercentileTypeHelper.java");
+        updateDoublePercentileHelper(
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmpercentile/DoublePercentileTypeHelper.java");
         fixupObjectSsm(
                 charToObject(TASK,
                         "engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmpercentile/CharPercentileTypeHelper.java"),
@@ -54,6 +86,8 @@ public class ReplicateSegmentedSortedMultiset {
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmpercentile/CharPercentileTypeMedianHelper.java");
         floatToAllFloatingPoints(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmpercentile/FloatPercentileTypeMedianHelper.java");
+        updateDoublePercentileHelper(
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmpercentile/DoublePercentileTypeMedianHelper.java");
 
         charToAllButBoolean(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmcountdistinct/CharSsmBackedSource.java");
@@ -120,6 +154,36 @@ public class ReplicateSegmentedSortedMultiset {
                 charToObject(TASK,
                         "engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmcountdistinct/unique/CharRollupUniqueOperator.java"),
                 "ssms");
+    }
+
+    private static void updateFloatPercentileHelper(String file) throws IOException {
+        final File updatedFile = new File(file);
+        List<String> lines = FileUtils.readLines(updatedFile, Charset.defaultCharset());
+        lines = ReplicationUtils.replaceRegion(lines, "maybeHandleNaN", List.of("" +
+                "            final FloatSegmentedSortedMultiset floatSsmLo = (FloatSegmentedSortedMultiset) ssmLo;\n" +
+                "            final FloatSegmentedSortedMultiset floatSsmHi = (FloatSegmentedSortedMultiset) ssmHi;\n" +
+                "            if ((hiSize > 0 && Float.isNaN(floatSsmHi.getMax())) || (loSize > 0 && Float.isNaN(floatSsmLo.getMax()))) {\n"
+                +
+                "                // No need to pivot while we have NaN values present\n" +
+                "                return setResult(destination, Float.NaN);\n" +
+                "            }"));
+        FileUtils.writeLines(updatedFile, lines);
+    }
+
+    private static void updateDoublePercentileHelper(String file) throws IOException {
+        final File updatedFile = new File(file);
+        List<String> lines = FileUtils.readLines(updatedFile, Charset.defaultCharset());
+        lines = ReplicationUtils.replaceRegion(lines, "maybeHandleNaN", List.of("" +
+                "            final DoubleSegmentedSortedMultiset doubleSsmLo = (DoubleSegmentedSortedMultiset) ssmLo;\n"
+                +
+                "            final DoubleSegmentedSortedMultiset doubleSsmHi = (DoubleSegmentedSortedMultiset) ssmHi;\n"
+                +
+                "            if ((hiSize > 0 && Double.isNaN(doubleSsmHi.getMax())) || (loSize > 0 && Double.isNaN(doubleSsmLo.getMax()))) {\n"
+                +
+                "                // No need to pivot while we have NaN values present\n" +
+                "                return setResult(destination, Double.NaN);\n" +
+                "            }"));
+        FileUtils.writeLines(updatedFile, lines);
     }
 
     private static void fixupLongKernelOperator(String longPath, String externalResultSetter) throws IOException {
@@ -217,6 +281,10 @@ public class ReplicateSegmentedSortedMultiset {
                         "    public Class getComponentType() {\n" +
                         "        return componentType;\n" +
                         "    }"));
+    }
+
+    private static List<String> fixupObjectGeneric(List<String> lines) {
+        return globalReplacements(lines, "ObjectVector \\{", "ObjectVector<Object> \\{");
     }
 
     private static List<String> fixupSourceConstructor(List<String> lines) {

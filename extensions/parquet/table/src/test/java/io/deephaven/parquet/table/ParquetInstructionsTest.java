@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.parquet.table;
 
@@ -8,6 +8,7 @@ import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.locations.TableKey;
 import io.deephaven.parquet.table.location.ParquetColumnResolver;
 import io.deephaven.parquet.table.location.ParquetTableLocationKey;
+import io.deephaven.parquet.table.metadata.RowGroupInfo;
 import org.junit.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -32,6 +33,7 @@ public class ParquetInstructionsTest {
         assertThat(ParquetInstructions.EMPTY.getFileLayout()).isEmpty();
         assertThat(ParquetInstructions.EMPTY.getTableDefinition()).isEmpty();
         assertThat(ParquetInstructions.EMPTY.getIndexColumns()).isEmpty();
+        assertThat(ParquetInstructions.EMPTY.getRowGroupInfo().equals(RowGroupInfo.singleGroup())).isTrue();
         assertThat(ParquetInstructions.EMPTY.getColumnResolverFactory()).isEmpty();
         assertThat(ParquetInstructions.EMPTY.baseNameForPartitionedParquetData()).isEqualTo("{uuid}");
     }

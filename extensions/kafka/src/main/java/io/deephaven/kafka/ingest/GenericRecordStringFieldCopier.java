@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.kafka.ingest;
 
@@ -29,7 +29,7 @@ public class GenericRecordStringFieldCopier extends GenericRecordFieldCopier {
         for (int ii = 0; ii < length; ++ii) {
             final GenericRecord record = (GenericRecord) inputChunk.get(ii + sourceOffset);
             final Object value = GenericRecordUtil.getPath(record, fieldPath);
-            output.set(ii + destOffset, value == null ? null : Objects.toString(value));
+            output.set(ii + destOffset, value == null ? null : value.toString());
         }
     }
 }

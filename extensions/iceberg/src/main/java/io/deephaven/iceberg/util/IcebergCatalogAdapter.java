@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.iceberg.util;
 
@@ -27,10 +27,11 @@ import org.apache.iceberg.mapping.NameMapping;
 import org.apache.iceberg.rest.RESTCatalog;
 import org.apache.iceberg.rest.ResourcePaths;
 import org.apache.iceberg.transforms.Transforms;
-import org.apache.iceberg.types.TypeUtil;
 import org.apache.iceberg.types.Types;
 import org.jetbrains.annotations.NotNull;
 
+import java.io.Closeable;
+import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -38,7 +39,7 @@ import java.util.Map;
 import static io.deephaven.iceberg.base.IcebergUtils.createNamespaceIfNotExists;
 import static io.deephaven.iceberg.base.IcebergUtils.dropNamespaceIfExists;
 
-public class IcebergCatalogAdapter {
+public class IcebergCatalogAdapter implements Closeable {
 
     @VisibleForTesting
     static final TableDefinition NAMESPACE_DEFINITION = TableDefinition.of(
@@ -368,4 +369,10 @@ public class IcebergCatalogAdapter {
         return table;
     }
 
+    @Override
+    public void close() throws IOException {
+        if (catalog instanceof Closeable) {
+            ((Closeable) catalog).close();
+        }
+    }
 }

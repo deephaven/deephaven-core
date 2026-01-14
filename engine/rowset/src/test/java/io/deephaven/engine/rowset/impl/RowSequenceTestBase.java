@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.rowset.impl;
 
@@ -342,6 +342,19 @@ public abstract class RowSequenceTestBase {
                     assertEquals(m, expectMore, it.advance(expectMore ? indices[offset + 1] : indices[offset] + 1));
                     assertEquals(m, expectMore, it.hasMore());
                 }
+            }
+        }
+    }
+
+    @Test
+    public void testIteratorPeekEmpty() {
+        final long[] indices = indicesFromRanges(new long[0]);
+        try (final RowSequence OK = create(indices)) {
+            assertEquals(RowSet.NULL_ROW_KEY, OK.firstRowKey());
+
+            try (final RowSequence.Iterator it = OK.getRowSequenceIterator()) {
+                assertFalse(it.hasMore());
+                assertEquals(RowSet.NULL_ROW_KEY, it.peekNextKey());
             }
         }
     }

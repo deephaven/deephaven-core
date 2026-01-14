@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
 // ****** Edit CharRingBufferVectorWrapper and run "./gradlew replicateUpdateBy" to regenerate
@@ -52,5 +52,10 @@ public class LongRingBufferVectorWrapper implements LongVector, RingBufferVector
     @Override
     public LongVector getDirect() {
         return new LongVectorDirect(ringBuffer.getAll());
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        return LongVector.equals(this, obj);
     }
 }

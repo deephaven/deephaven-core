@@ -1,8 +1,8 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
-// ****** Edit FloatRangeComparator and run "./gradlew replicateChunkFilters" to regenerate
+// ****** Edit CharRangeComparator and run "./gradlew replicateChunkFilters" to regenerate
 //
 // @formatter:off
 package io.deephaven.engine.table.impl.chunkfilter;

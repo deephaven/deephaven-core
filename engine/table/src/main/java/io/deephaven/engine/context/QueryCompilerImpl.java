@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.context;
 
@@ -41,7 +41,6 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
 import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -606,7 +605,9 @@ public class QueryCompilerImpl implements QueryCompiler, LogOutputAppendable {
 
                 // However, regardless of A-C, there will be *some* class being found
                 if (clazz == null) {
-                    throw new IllegalStateException("Should have been able to load *some* class here");
+                    throw new IllegalStateException("Unable to load class after delay of " + CODEGEN_TIMEOUT_MS
+                            + ".  state index=" + ii + ", fqClassName=" + state.fqClassName + ", parameterClasses"
+                            + request.parameterClasses() + ", destination=" + getClassDestination().getAbsolutePath());
                 }
 
                 if (completeIfResultMatchesQueryCompilerRequest(state.packageName, request, resolver, clazz)) {
@@ -666,8 +667,13 @@ public class QueryCompilerImpl implements QueryCompiler, LogOutputAppendable {
     }
 
     private static String makeFinalCode(String className, String classBody, String packageName) {
+        if (classBody.contains("$CLASSNAME$")) {
+            throw new IllegalArgumentException("QueryCompiler's support of the $CLASSNAME$ variable has been removed as"
+                    + " the final class name affects the compiled byte code and therefore cannot be dynamically "
+                    + "replaced.");
+        }
+
         final String joinedEscapedBody = createEscapedJoinedString(classBody);
-        classBody = classBody.replaceAll("\\$CLASSNAME\\$", className);
         classBody = classBody.substring(0, classBody.lastIndexOf("}"));
         classBody += "    public static String " + IDENTIFYING_FIELD_NAME + " = " + joinedEscapedBody + ";\n}";
         return "package " + packageName + ";\n" + classBody;
@@ -855,16 +861,10 @@ public class QueryCompilerImpl implements QueryCompiler, LogOutputAppendable {
             jobScheduler = new OperationInitializerJobScheduler();
         }
 
-        final AtomicBoolean cleanupAlreadyRun = new AtomicBoolean();
         final JavaFileManager fileManager = acquireFileManager();
         final AtomicReference<RuntimeException> exception = new AtomicReference<>();
         final CountDownLatch latch = new CountDownLatch(1);
         final Runnable cleanup = () -> {
-            if (!cleanupAlreadyRun.compareAndSet(false, true)) {
-                // onError could be run after cleanup if cleanup throws an exception
-                return;
-            }
-
             try {
                 try {
                     FileUtils.deleteRecursively(new File(tempDirAsString));
@@ -896,7 +896,11 @@ public class QueryCompilerImpl implements QueryCompiler, LogOutputAppendable {
                     final int endExclusive = Math.min(requests.size(), (jobId + 1) * requestsPerTask);
                     doCreateClasses(
                             fileManager, requests, rootPathAsString, tempDirAsString, startInclusive, endExclusive);
-                }, cleanup, onError);
+                },
+                () -> {
+                },
+                cleanup,
+                onError);
 
         try {
             latch.await();

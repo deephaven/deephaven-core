@@ -1,18 +1,22 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.util;
 
 import io.deephaven.chunk.IntChunk;
+import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.context.*;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
+import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.InstrumentedTableUpdateListener;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
+import io.deephaven.engine.table.impl.partitioned.PartitionedTableCreatorImpl;
+import io.deephaven.engine.table.impl.sources.ConstituentTableException;
 import io.deephaven.engine.table.impl.sources.UnionRedirection;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
 import io.deephaven.engine.table.vectors.ColumnVectors;
@@ -27,6 +31,7 @@ import io.deephaven.engine.updategraph.LogicalClockImpl;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.QueryConstants;
+import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.type.ArrayTypeUtils;
 import io.deephaven.vector.IntVector;
 import junit.framework.TestCase;
@@ -43,6 +48,7 @@ import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
 import static io.deephaven.engine.testutil.TstUtils.*;
@@ -1061,5 +1067,137 @@ public class TestTableTools {
         final int line3Idx = lines[2].indexOf("|");
         assertEquals(line1Idx, line2Idx);
         assertEquals(line1Idx, line3Idx);
+    }
+
+    @Test
+    public void testMergeWithRemovedPartitions_DH_19570() {
+        final long origSize = 65536L;
+        final String CONSTITUENT_NAME = PartitionedTableCreatorImpl.CONSTITUENT.name();
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+
+        final QueryTable[] pSources = new QueryTable[] {
+                testRefreshingTable(RowSetFactory.flat(origSize).toTracking()),
+                testRefreshingTable(RowSetFactory.flat(origSize).toTracking()),
+                testRefreshingTable(RowSetFactory.flat(origSize).toTracking()),
+                testRefreshingTable(RowSetFactory.flat(origSize).toTracking())
+        };
+        final Table[] pTables = new Table[] {
+                pSources[0].update("Partition = 0", "Value = `A_` + ii"),
+                pSources[1].update("Partition = 1", "Value = `B_` + ii"),
+                pSources[2].update("Partition = 2", "Value = `C_` + ii"),
+                pSources[3].update("Partition = 3", "Value = `D_` + ii")
+        };
+
+        final QueryTable manualPT = testRefreshingTable(RowSetFactory.flat(4).toTracking(),
+                col("Partition", 0, 1, 2, 3),
+                col(CONSTITUENT_NAME, pTables));
+
+        final PartitionedTable pt = PartitionedTableCreatorImpl.INSTANCE.of(
+                manualPT, Set.of("Partition"), false, CONSTITUENT_NAME,
+                pTables[0].getDefinition(), true);
+
+        final Table resultTable = pt.merge();
+        final ColumnSource<Object> unionedSource = resultTable.getColumnSource("Value");
+
+        updateGraph.runWithinUnitTestCycle(() -> {
+            removeRows(manualPT, i(2, 3));
+            manualPT.notifyListeners(i(), i(2, 3), i());
+
+            // double all partitions, so that the slot lookup looks valid past the end of the array
+            for (final QueryTable table : pSources) {
+                final WritableRowSet toAdd = RowSetFactory.fromRange(origSize, 2 * origSize - 1);
+                addToTable(table, toAdd);
+                table.notifyListeners(toAdd, i(), i());
+            }
+
+            updateGraph.markSourcesRefreshedForUnitTests();
+            updateGraph.flushAllNormalNotificationsForUnitTests();
+
+            try (final WritableObjectChunk<String, Values> chk =
+                    WritableObjectChunk.makeWritableChunk(resultTable.getRowSet().intSizePrev());
+                    final ChunkSource.FillContext ctxt = unionedSource.makeFillContext(chk.size());
+                    final WritableRowSet fetchRows = resultTable.getRowSet().subSetByPositionRange(
+                            3 * origSize, 4 * origSize - 1)) {
+
+                // we need to target a slot that will be past the end of the partition-size array
+                unionedSource.fillPrevChunk(ctxt, chk, fetchRows);
+                Assert.assertEquals(chk.size(), fetchRows.size());
+                for (int ii = 0; ii < chk.size(); ++ii) {
+                    Assert.assertEquals("D_" + ii, chk.get(ii));
+                }
+
+                // swap from prev to curr so that we poke into the slot-binary-searched array, but we need to stay
+                // tricky by sending a row key that is in the prev slot
+                unionedSource.fillChunk(ctxt, chk, fetchRows);
+                Assert.assertEquals(chk.size(), fetchRows.intSize());
+                for (int ii = 0; ii < chk.size(); ++ii) {
+                    Assert.assertEquals("B_" + (origSize + ii), chk.get(ii));
+                }
+            }
+        }, false);
+    }
+
+    @Test
+    public void testMergeWithFirstConstituentFailure() {
+        final QueryTable t1 = testRefreshingTable(RowSetFactory.empty().toTracking());
+        final QueryTable t2 = testRefreshingTable(RowSetFactory.empty().toTracking());
+        final Table res = TableTools.merge(t1, t2);
+
+        final RuntimeException err = new RuntimeException("Test failure for merge with constituent failure");
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+
+        final AtomicReference<Throwable> errRef = new AtomicReference<>();
+        res.addUpdateListener(new InstrumentedTableUpdateListener("") {
+            @Override
+            public void onUpdate(final TableUpdate upstream) {}
+
+            @Override
+            protected void onFailureInternal(Throwable originalException, Entry sourceEntry) {
+                errRef.set(originalException);
+            }
+        });
+
+        framework.setExpectError(true);
+        try (final SafeCloseable ignoredCompleter = updateGraph::completeCycleForUnitTests) {
+            updateGraph.startCycleForUnitTests(false);
+            t1.notifyListenersOnError(err, null);
+            updateGraph.markSourcesRefreshedForUnitTests();
+        }
+
+        Assert.assertTrue(res.isFailed());
+        Assert.assertTrue(errRef.get() instanceof ConstituentTableException);
+        Assert.assertEquals(err, errRef.get().getCause());
+    }
+
+    @Test
+    public void testMergeWithLastConstituentFailure() {
+        final QueryTable t1 = testRefreshingTable(RowSetFactory.empty().toTracking());
+        final QueryTable t2 = testRefreshingTable(RowSetFactory.empty().toTracking());
+        final Table res = TableTools.merge(t1, t2);
+
+        final RuntimeException err = new RuntimeException("Test failure for merge with constituent failure");
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+
+        final AtomicReference<Throwable> errRef = new AtomicReference<>();
+        res.addUpdateListener(new InstrumentedTableUpdateListener("") {
+            @Override
+            public void onUpdate(final TableUpdate upstream) {}
+
+            @Override
+            protected void onFailureInternal(Throwable originalException, Entry sourceEntry) {
+                errRef.set(originalException);
+            }
+        });
+
+        framework.setExpectError(true);
+        try (final SafeCloseable ignoredCompleter = updateGraph::completeCycleForUnitTests) {
+            updateGraph.startCycleForUnitTests(false);
+            t2.notifyListenersOnError(err, null);
+            updateGraph.markSourcesRefreshedForUnitTests();
+        }
+
+        Assert.assertTrue(res.isFailed());
+        Assert.assertTrue(errRef.get() instanceof ConstituentTableException);
+        Assert.assertEquals(err, errRef.get().getCause());
     }
 }

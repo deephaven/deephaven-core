@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+ * Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
  */
 #pragma once
 
@@ -367,7 +367,7 @@ private:
 };
 
 /**
- * Defines an aggregator class that represents one of a variet of aggregation operations.
+ * Defines an aggregator class that represents one of a variety of aggregation operations.
  */
 class Aggregate {
 public:
@@ -1072,7 +1072,7 @@ public:
   TableHandle Where(std::string condition) const;
 
   /**
-   * Creates a new table from this table, sorted By sortPairs.
+   * Creates a new table from this table, sorted by sortPairs.
    * @param sortPairs A vector of SortPair objects describing the sort. Each SortPair refers to
    *   a column, a sort direction, and whether the sort should consider to the value's regular or
    *   absolute value when doing comparisons.
@@ -1403,7 +1403,7 @@ public:
   }
 
   /**
-   * Creates a new table from this table, grouped by columnSpecs, having a new column named By
+   * Creates a new table from this table, grouped by columnSpecs, having a new column named by
    * `countByColumn` containing the size of each group.
    * @param countByColumn Name of the output column.
    * @param columnSpecs Columns to group by.
@@ -1426,7 +1426,7 @@ public:
   }
 
   /**
-   * Creates a new table from this table, grouped by columnSpecs, having a new column named By
+   * Creates a new table from this table, grouped by columnSpecs, having a new column named by
    * `weightColumn` containing the weighted average of each group.
    * @param countByColumn Name of the output column.
    * @param columnSpecs Columns to group by.
@@ -1558,7 +1558,7 @@ public:
 
   //TODO(kosak): document keyColumn
   /**
-   * Creates a new table By merging `sources` together. The tables are essentially stacked on top
+   * Creates a new table by merging `sources` together. The tables are essentially stacked on top
    * of each other.
    * @param sources The tables to Merge.
    * @return A TableHandle referencing the new table
@@ -1584,7 +1584,7 @@ public:
   }
 
   /**
-   * Creates a new table By merging `sources` together. The tables are essentially stacked on top
+   * Creates a new table by merging `sources` together. The tables are essentially stacked on top
    * of each other.
    * @param sources The tables to Merge.
    * @return A TableHandle referencing the new table
@@ -1612,9 +1612,9 @@ public:
   }
 
   /**
-   * Creates a new table By cross joining this table with `rightSide`. The tables are joined By
+   * Creates a new table by cross joining this table with `rightSide`. The tables are joined by
    * the columns in `columnsToMatch`, and columns from `rightSide` are brought in and optionally
-   * renamed By `columnsToAdd`. Example:
+   * renamed by `columnsToAdd`. Example:
    * @code
    * t1.CrossJoin({"Col1", "Col2"}, {"Col3", "NewCol=Col4"})
    * @endcode
@@ -1628,9 +1628,9 @@ public:
       std::vector<std::string> columns_to_add) const;
 
   /**
-   * Creates a new table By natural joining this table with `rightSide`. The tables are joined By
+   * Creates a new table by natural joining this table with `rightSide`. The tables are joined by
    * the columns in `columnsToMatch`, and columns from `rightSide` are brought in and optionally
-   * renamed By `columnsToAdd`. Example:
+   * renamed by `columnsToAdd`. Example:
    * @code
    * t1.NaturalJoin({"Col1", "Col2"}, {"Col3", "NewCol=Col4"})
    * @endcode
@@ -1644,9 +1644,9 @@ public:
       std::vector<std::string> columns_to_add) const;
 
   /**
-   * Creates a new table By exact joining this table with `rightSide`. The tables are joined By
+   * Creates a new table by exact joining this table with `rightSide`. The tables are joined by
    * the columns in `columnsToMatch`, and columns from `rightSide` are brought in and optionally
-   * renamed By `columnsToAdd`. Example:
+   * renamed by `columnsToAdd`. Example:
    * @code
    * t1.ExactJoin({"Col1", "Col2"}, {"Col3", "NewCol=Col4"})
    * @endcode
@@ -1822,7 +1822,7 @@ public:
   std::string ToString(bool want_headers) const;
 
   /**
-   * A specialized operation to Release the state of this TableHandle. This operation is normally done By the
+   * A specialized operation to Release the state of this TableHandle. This operation is normally done by the
    * destructor, so most programs will never need to call this method.. If there are no other copies of this
    * TableHandle, and if there are no "child" TableHandles dependent on this TableHandle, then the corresponding server
    * resources will be released.

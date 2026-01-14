@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+ * Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
  */
 #include <cstdint>
 #include <iostream>
@@ -76,11 +76,12 @@ TEST_CASE("Test case for group example", "[group]") {
   auto tm = TableMakerForTests::Create();
 
   TableMaker maker;
+  std::vector<std::optional<std::string>> empty_vector = { };
   maker.AddColumn<std::optional<std::vector<std::optional<std::string>>>>("Value", {
       { {"a", "b", "c"} },  // [a, b, c]
-      {}, // null
-      {{}}, // []
-      {{"d", "e", "f", {}, "g"}}  // [d, e, f, null, g]
+      std::nullopt, // null
+      empty_vector, // []
+      {{"d", "e", "f", std::nullopt, "g"}}  // [d, e, f, null, g]
   });
   auto t = maker.MakeTable(tm.Client().GetManager());
   auto ct = t.ToClientTable();

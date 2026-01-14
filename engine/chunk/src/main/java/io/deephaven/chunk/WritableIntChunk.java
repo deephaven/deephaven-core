@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
 // ****** Edit WritableCharChunk and run "./gradlew replicateSourcesAndChunks" to regenerate
@@ -10,6 +10,7 @@ package io.deephaven.chunk;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.chunk.util.pools.MultiChunkPool;
 
+import io.deephaven.function.ArraySort;
 import io.deephaven.util.type.TypeUtils;
 import org.jetbrains.annotations.NotNull;
 
@@ -38,20 +39,18 @@ public class WritableIntChunk<ATTR extends Any> extends IntChunk<ATTR> implement
         return EMPTY_WRITABLE_INT_CHUNK_ARRAY;
     }
 
+    /**
+     * Get a {@link WritableIntChunk} with {@link #size()} of {@code size} for use by the caller until it is
+     * {@link #close() closed}.
+     *
+     * @param size The {@link #size()} and minimum capacity of the returned chunk
+     * @return The chunk
+     */
     public static <ATTR extends Any> WritableIntChunk<ATTR> makeWritableChunk(int size) {
         if (POOL_WRITABLE_CHUNKS) {
             return MultiChunkPool.forThisThread().takeWritableIntChunk(size);
         }
         return new WritableIntChunk<>(makeArray(size), 0, size);
-    }
-
-    public static <ATTR extends Any> WritableIntChunk<ATTR> makeWritableChunkForPool(int size) {
-        return new WritableIntChunk<>(makeArray(size), 0, size) {
-            @Override
-            public void close() {
-                MultiChunkPool.forThisThread().giveWritableIntChunk(this);
-            }
-        };
     }
 
     public static <ATTR extends Any> WritableIntChunk<ATTR> writableChunkWrap(int[] data) {
@@ -212,10 +211,7 @@ public class WritableIntChunk<ATTR extends Any> extends IntChunk<ATTR> implement
     // region sort
     @Override
     public final void sort(int start, int length) {
-        Arrays.sort(data, offset + start, offset + start + length);
-
-        // region SortFixup
-        // endregion SortFixup
+        ArraySort.sort(data, offset + start, offset + start + length);
     }
     // endregion sort
 

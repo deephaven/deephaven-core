@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.parquet.base.materializers;
 
@@ -21,6 +21,10 @@ public class LongFromUnsignedShortMaterializer extends LongMaterializerBase impl
         }
     };
 
+    public static long convertValue(int value) {
+        return Short.toUnsignedLong((short) value);
+    }
+
     private final ValuesReader dataReader;
 
     private LongFromUnsignedShortMaterializer(ValuesReader dataReader, int numValues) {
@@ -35,7 +39,7 @@ public class LongFromUnsignedShortMaterializer extends LongMaterializerBase impl
     @Override
     public void fillValues(int startIndex, int endIndex) {
         for (int ii = startIndex; ii < endIndex; ii++) {
-            data[ii] = Short.toUnsignedLong((short) dataReader.readInteger());
+            data[ii] = convertValue(dataReader.readInteger());
         }
     }
 }

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.parquet.table;
 
@@ -197,7 +197,7 @@ public class ParquetSchemaReader {
                 consumer.accept(colDef);
                 continue;
             }
-            if (logicalTypeAnnotation == null) {
+            if (logicalTypeAnnotation == null || logicalTypeAnnotation == LogicalTypeAnnotation.unknownType()) {
                 colDef.noLogicalType = true;
                 final PrimitiveType.PrimitiveTypeName typeName = primitiveType.getPrimitiveTypeName();
                 switch (typeName) {

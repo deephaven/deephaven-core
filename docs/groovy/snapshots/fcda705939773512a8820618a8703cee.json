@@ -1,0 +1,1 @@
+{"file":"core_versioned_docs/version-groovy/docs/how-to-guides/table-publisher.md","objects":{"myTable":{"type":"Table","data":{"columns":[{"name":"X","type":"int"},{"name":"Y","type":"double"}],"rows":[]}}}}

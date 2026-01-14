@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.server.session;
 
@@ -74,7 +74,12 @@ public interface TicketResolver {
     }
 
     /**
-     * @return the single byte prefix used as a route on the ticket
+     * Tickets are disambiguated by their first byte. Each resolver claims one byte; and there may not be any
+     * duplicates. Some ticket resolvers do not produce any tickets, but rather depend entirely on Flight descriptors,
+     * in which case they do not require a byte, in those cases the resolver should return 0 indicating that no ticket
+     * prefix is necessary.
+     *
+     * @return the single byte prefix used as a route on the ticket; or zero for no ticket resolution
      */
     byte ticketRoute();
 

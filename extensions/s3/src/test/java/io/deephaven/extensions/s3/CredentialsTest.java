@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.extensions.s3;
 
@@ -17,6 +17,11 @@ class CredentialsTest {
     @Test
     void basic() {
         isCredentials(Credentials.basic("accessKeyId", "secretAccessKey"));
+    }
+
+    @Test
+    void session() {
+        isCredentials(Credentials.session("accessKeyId", "secretAccessKey", "sessionToken"));
     }
 
     @Test

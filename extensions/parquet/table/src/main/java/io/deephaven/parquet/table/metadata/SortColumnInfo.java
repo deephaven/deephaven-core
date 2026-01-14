@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.parquet.table.metadata;
 
@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.deephaven.annotations.SimpleStyle;
 import io.deephaven.api.ColumnName;
+import io.deephaven.api.SortSpec;
 import io.deephaven.api.SortColumn;
 import org.immutables.value.Value.Check;
 import org.immutables.value.Value.Immutable;
@@ -50,7 +51,7 @@ public abstract class SortColumnInfo {
     }
 
     public static SortColumnInfo of(@NotNull final SortColumn sortColumn) {
-        return of(sortColumn.column().name(), sortColumn.order() == SortColumn.Order.ASCENDING
+        return of(sortColumn.column().name(), sortColumn.isAscending()
                 ? SortDirection.Ascending
                 : SortDirection.Descending);
     }

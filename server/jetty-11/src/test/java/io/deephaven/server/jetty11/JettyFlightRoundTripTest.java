@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.server.jetty11;
 
@@ -11,6 +11,7 @@ import io.deephaven.server.jetty11.js.Sentinel;
 import io.deephaven.server.plugin.js.JsPluginsManifestRegistration;
 import io.deephaven.server.plugin.js.JsPluginsNpmPackageRegistration;
 import io.deephaven.server.runner.ExecutionContextUnitTestModule;
+import io.deephaven.server.table.validation.ExpressionValidatorModule;
 import io.deephaven.server.test.FlightMessageRoundTripTest;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
@@ -49,6 +50,7 @@ public class JettyFlightRoundTripTest extends FlightMessageRoundTripTest {
             FlightTestModule.class,
             JettyServerModule.class,
             JettyTestConfig.class,
+            ExpressionValidatorModule.class,
     })
     public interface JettyTestComponent extends TestComponent {
     }

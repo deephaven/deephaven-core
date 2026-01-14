@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.select;
 
@@ -35,7 +35,7 @@ import java.util.stream.LongStream;
  * Each time the set table ticks, the entire where filter is recalculated.
  */
 public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
-        implements NotificationQueue.Dependency, HasParentPerformanceIds {
+        implements NotificationQueue.Dependency, HasParentPerformanceIds, NoPredicatePushdown {
 
     private static final int CHUNK_SIZE = 1 << 16;
 
@@ -420,21 +420,15 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
         }
 
         if (sourceDataIndex != null) {
+            final long threshold = (long) (sourceDataIndex.table().size() / QueryTable.DATA_INDEX_FOR_WHERE_THRESHOLD);
+            if (selection.size() <= threshold) {
+                return filterLinear(selection, inclusion);
+            }
             // Does our index contain every key column?
-
             if (sourceDataIndex.keyColumnNames().size() == sourceKeyColumns.length) {
-                // Even if we have an index, we may be better off with a linear search.
-                if (selection.size() > (sourceDataIndex.table().size() * 2L)) {
-                    return filterFullIndex(selection);
-                } else {
-                    return filterLinear(selection, inclusion);
-                }
+                return filterFullIndex(selection);
             }
-
-            // We have a partial index, should we use it?
-            if (selection.size() > (sourceDataIndex.table().size() * 4L)) {
-                return filterPartialIndex(selection);
-            }
+            return filterPartialIndex(selection);
         }
         return filterLinear(selection, inclusion);
     }

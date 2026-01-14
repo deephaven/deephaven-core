@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
 // ****** Edit CharMaterializer and run "./gradlew replicatePageMaterializers" to regenerate
@@ -27,6 +27,10 @@ public class ByteMaterializer implements PageMaterializer {
         }
     };
 
+    public static byte convertValue(int value) {
+        return (byte) value;
+    }
+
     private final ValuesReader dataReader;
 
     private final byte nullValue;
@@ -50,7 +54,7 @@ public class ByteMaterializer implements PageMaterializer {
     @Override
     public void fillValues(int startIndex, int endIndex) {
         for (int ii = startIndex; ii < endIndex; ii++) {
-            data[ii] = (byte) dataReader.readInteger();
+            data[ii] = convertValue(dataReader.readInteger());
         }
     }
 

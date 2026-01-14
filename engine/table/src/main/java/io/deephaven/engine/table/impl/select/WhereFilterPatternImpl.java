@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.select;
 
@@ -17,8 +17,9 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
-final class WhereFilterPatternImpl extends WhereFilterImpl {
+final class WhereFilterPatternImpl extends WhereFilterImpl implements ExposesChunkFilter {
 
     private static final long serialVersionUID = 1L;
 
@@ -157,6 +158,11 @@ final class WhereFilterPatternImpl extends WhereFilterImpl {
 
     private boolean findPatternInverted(CharSequence value) {
         return value != null && !filterPattern.pattern().matcher(value).find();
+    }
+
+    @Override
+    public Optional<ChunkFilter> chunkFilter() {
+        return Optional.of(chunkFilterImpl);
     }
 
     private final class Matches extends ObjectChunkFilter<CharSequence> {

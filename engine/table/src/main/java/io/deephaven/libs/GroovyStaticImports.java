@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
 // ****** Run GroovyStaticImportGenerator or "./gradlew :Generators:groovyStaticImportGenerator" to regenerate
@@ -36,12 +36,14 @@ import java.lang.Long;
 import java.lang.Short;
 import java.lang.String;
 import java.util.Comparator;
+import io.deephaven.util.annotations.UserInvocationPermitted;
 
 /**
  * Functions statically imported into Groovy.
  *
  * @see io.deephaven.function
  */
+@UserInvocationPermitted("function_library")
 public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#IEEEremainder(double,double) */
     public static  double IEEEremainder( double x, double y ) {return Numeric.IEEEremainder( x, y );}
@@ -51,6 +53,9 @@ public class GroovyStaticImports {
 
     /** @see io.deephaven.function.Numeric#abs(byte) */
     public static  byte abs( byte value ) {return Numeric.abs( value );}
+
+    /** @see io.deephaven.function.Numeric#abs(char) */
+    public static  char abs( char value ) {return Numeric.abs( value );}
 
     /** @see io.deephaven.function.Numeric#abs(double) */
     public static  double abs( double value ) {return Numeric.abs( value );}
@@ -70,6 +75,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#absAvg(byte[]) */
     public static  double absAvg( byte... values ) {return Numeric.absAvg( values );}
 
+    /** @see io.deephaven.function.Numeric#absAvg(char[]) */
+    public static  double absAvg( char... values ) {return Numeric.absAvg( values );}
+
     /** @see io.deephaven.function.Numeric#absAvg(double[]) */
     public static  double absAvg( double... values ) {return Numeric.absAvg( values );}
 
@@ -84,6 +92,9 @@ public class GroovyStaticImports {
 
     /** @see io.deephaven.function.Numeric#absAvg(java.lang.Byte[]) */
     public static  double absAvg( java.lang.Byte[] values ) {return Numeric.absAvg( values );}
+
+    /** @see io.deephaven.function.Numeric#absAvg(java.lang.Character[]) */
+    public static  double absAvg( java.lang.Character[] values ) {return Numeric.absAvg( values );}
 
     /** @see io.deephaven.function.Numeric#absAvg(java.lang.Double[]) */
     public static  double absAvg( java.lang.Double[] values ) {return Numeric.absAvg( values );}
@@ -106,6 +117,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#absAvg(io.deephaven.vector.ByteVector) */
     public static  double absAvg( io.deephaven.vector.ByteVector values ) {return Numeric.absAvg( values );}
 
+    /** @see io.deephaven.function.Numeric#absAvg(io.deephaven.vector.CharVector) */
+    public static  double absAvg( io.deephaven.vector.CharVector values ) {return Numeric.absAvg( values );}
+
     /** @see io.deephaven.function.Numeric#absAvg(io.deephaven.vector.DoubleVector) */
     public static  double absAvg( io.deephaven.vector.DoubleVector values ) {return Numeric.absAvg( values );}
 
@@ -121,8 +135,53 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#absAvg(io.deephaven.vector.ShortVector) */
     public static  double absAvg( io.deephaven.vector.ShortVector values ) {return Numeric.absAvg( values );}
 
+    /** @see io.deephaven.function.Numeric#absSum(byte[]) */
+    public static  long absSum( byte... values ) {return Numeric.absSum( values );}
+
+    /** @see io.deephaven.function.Numeric#absSum(char[]) */
+    public static  long absSum( char... values ) {return Numeric.absSum( values );}
+
+    /** @see io.deephaven.function.Numeric#absSum(double[]) */
+    public static  double absSum( double... values ) {return Numeric.absSum( values );}
+
+    /** @see io.deephaven.function.Numeric#absSum(float[]) */
+    public static  double absSum( float... values ) {return Numeric.absSum( values );}
+
+    /** @see io.deephaven.function.Numeric#absSum(int[]) */
+    public static  long absSum( int... values ) {return Numeric.absSum( values );}
+
+    /** @see io.deephaven.function.Numeric#absSum(long[]) */
+    public static  long absSum( long... values ) {return Numeric.absSum( values );}
+
+    /** @see io.deephaven.function.Numeric#absSum(short[]) */
+    public static  long absSum( short... values ) {return Numeric.absSum( values );}
+
+    /** @see io.deephaven.function.Numeric#absSum(io.deephaven.vector.ByteVector) */
+    public static  long absSum( io.deephaven.vector.ByteVector values ) {return Numeric.absSum( values );}
+
+    /** @see io.deephaven.function.Numeric#absSum(io.deephaven.vector.CharVector) */
+    public static  long absSum( io.deephaven.vector.CharVector values ) {return Numeric.absSum( values );}
+
+    /** @see io.deephaven.function.Numeric#absSum(io.deephaven.vector.DoubleVector) */
+    public static  double absSum( io.deephaven.vector.DoubleVector values ) {return Numeric.absSum( values );}
+
+    /** @see io.deephaven.function.Numeric#absSum(io.deephaven.vector.FloatVector) */
+    public static  double absSum( io.deephaven.vector.FloatVector values ) {return Numeric.absSum( values );}
+
+    /** @see io.deephaven.function.Numeric#absSum(io.deephaven.vector.IntVector) */
+    public static  long absSum( io.deephaven.vector.IntVector values ) {return Numeric.absSum( values );}
+
+    /** @see io.deephaven.function.Numeric#absSum(io.deephaven.vector.LongVector) */
+    public static  long absSum( io.deephaven.vector.LongVector values ) {return Numeric.absSum( values );}
+
+    /** @see io.deephaven.function.Numeric#absSum(io.deephaven.vector.ShortVector) */
+    public static  long absSum( io.deephaven.vector.ShortVector values ) {return Numeric.absSum( values );}
+
     /** @see io.deephaven.function.Numeric#acos(byte) */
     public static  double acos( byte value ) {return Numeric.acos( value );}
+
+    /** @see io.deephaven.function.Numeric#acos(char) */
+    public static  double acos( char value ) {return Numeric.acos( value );}
 
     /** @see io.deephaven.function.Numeric#acos(double) */
     public static  double acos( double value ) {return Numeric.acos( value );}
@@ -141,6 +200,9 @@ public class GroovyStaticImports {
 
     /** @see io.deephaven.function.Numeric#addExact(byte,byte) */
     public static  byte addExact( byte x, byte y ) {return Numeric.addExact( x, y );}
+
+    /** @see io.deephaven.function.Numeric#addExact(char,char) */
+    public static  char addExact( char x, char y ) {return Numeric.addExact( x, y );}
 
     /** @see io.deephaven.function.Numeric#addExact(int,int) */
     public static  int addExact( int x, int y ) {return Numeric.addExact( x, y );}
@@ -193,6 +255,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#asin(byte) */
     public static  double asin( byte value ) {return Numeric.asin( value );}
 
+    /** @see io.deephaven.function.Numeric#asin(char) */
+    public static  double asin( char value ) {return Numeric.asin( value );}
+
     /** @see io.deephaven.function.Numeric#asin(double) */
     public static  double asin( double value ) {return Numeric.asin( value );}
 
@@ -210,6 +275,9 @@ public class GroovyStaticImports {
 
     /** @see io.deephaven.function.Numeric#atan(byte) */
     public static  double atan( byte value ) {return Numeric.atan( value );}
+
+    /** @see io.deephaven.function.Numeric#atan(char) */
+    public static  double atan( char value ) {return Numeric.atan( value );}
 
     /** @see io.deephaven.function.Numeric#atan(double) */
     public static  double atan( double value ) {return Numeric.atan( value );}
@@ -229,6 +297,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#atan2(byte,byte) */
     public static  double atan2( byte y, byte x ) {return Numeric.atan2( y, x );}
 
+    /** @see io.deephaven.function.Numeric#atan2(char,char) */
+    public static  double atan2( char y, char x ) {return Numeric.atan2( y, x );}
+
     /** @see io.deephaven.function.Numeric#atan2(double,double) */
     public static  double atan2( double y, double x ) {return Numeric.atan2( y, x );}
 
@@ -247,6 +318,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#avg(byte[]) */
     public static  double avg( byte... values ) {return Numeric.avg( values );}
 
+    /** @see io.deephaven.function.Numeric#avg(char[]) */
+    public static  double avg( char... values ) {return Numeric.avg( values );}
+
     /** @see io.deephaven.function.Numeric#avg(double[]) */
     public static  double avg( double... values ) {return Numeric.avg( values );}
 
@@ -261,6 +335,9 @@ public class GroovyStaticImports {
 
     /** @see io.deephaven.function.Numeric#avg(java.lang.Byte[]) */
     public static  double avg( java.lang.Byte[] values ) {return Numeric.avg( values );}
+
+    /** @see io.deephaven.function.Numeric#avg(java.lang.Character[]) */
+    public static  double avg( java.lang.Character[] values ) {return Numeric.avg( values );}
 
     /** @see io.deephaven.function.Numeric#avg(java.lang.Double[]) */
     public static  double avg( java.lang.Double[] values ) {return Numeric.avg( values );}
@@ -282,6 +359,9 @@ public class GroovyStaticImports {
 
     /** @see io.deephaven.function.Numeric#avg(io.deephaven.vector.ByteVector) */
     public static  double avg( io.deephaven.vector.ByteVector values ) {return Numeric.avg( values );}
+
+    /** @see io.deephaven.function.Numeric#avg(io.deephaven.vector.CharVector) */
+    public static  double avg( io.deephaven.vector.CharVector values ) {return Numeric.avg( values );}
 
     /** @see io.deephaven.function.Numeric#avg(io.deephaven.vector.DoubleVector) */
     public static  double avg( io.deephaven.vector.DoubleVector values ) {return Numeric.avg( values );}
@@ -601,6 +681,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#cbrt(byte) */
     public static  double cbrt( byte x ) {return Numeric.cbrt( x );}
 
+    /** @see io.deephaven.function.Numeric#cbrt(char) */
+    public static  double cbrt( char x ) {return Numeric.cbrt( x );}
+
     /** @see io.deephaven.function.Numeric#cbrt(double) */
     public static  double cbrt( double x ) {return Numeric.cbrt( x );}
 
@@ -618,6 +701,9 @@ public class GroovyStaticImports {
 
     /** @see io.deephaven.function.Numeric#ceil(byte) */
     public static  double ceil( byte value ) {return Numeric.ceil( value );}
+
+    /** @see io.deephaven.function.Numeric#ceil(char) */
+    public static  double ceil( char value ) {return Numeric.ceil( value );}
 
     /** @see io.deephaven.function.Numeric#ceil(double) */
     public static  double ceil( double value ) {return Numeric.ceil( value );}
@@ -637,6 +723,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#clamp(byte,byte,byte) */
     public static  byte clamp( byte value, byte min, byte max ) {return Numeric.clamp( value, min, max );}
 
+    /** @see io.deephaven.function.Numeric#clamp(char,char,char) */
+    public static  char clamp( char value, char min, char max ) {return Numeric.clamp( value, min, max );}
+
     /** @see io.deephaven.function.Numeric#clamp(double,double,double) */
     public static  double clamp( double value, double min, double max ) {return Numeric.clamp( value, min, max );}
 
@@ -655,8 +744,14 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#compare(byte,byte) */
     public static  int compare( byte v1, byte v2 ) {return Numeric.compare( v1, v2 );}
 
+    /** @see io.deephaven.function.Numeric#compare(char,char) */
+    public static  int compare( char v1, char v2 ) {return Numeric.compare( v1, v2 );}
+
     /** @see io.deephaven.function.Numeric#compare(java.lang.Byte,java.lang.Byte) */
     public static  int compare( java.lang.Byte v1, java.lang.Byte v2 ) {return Numeric.compare( v1, v2 );}
+
+    /** @see io.deephaven.function.Numeric#compare(java.lang.Character,java.lang.Character) */
+    public static  int compare( java.lang.Character v1, java.lang.Character v2 ) {return Numeric.compare( v1, v2 );}
 
     /** @see io.deephaven.function.Numeric#compare(java.lang.Double,java.lang.Double) */
     public static  int compare( java.lang.Double v1, java.lang.Double v2 ) {return Numeric.compare( v1, v2 );}
@@ -739,6 +834,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#containsNonFinite(byte[]) */
     public static  boolean containsNonFinite( byte... values ) {return Numeric.containsNonFinite( values );}
 
+    /** @see io.deephaven.function.Numeric#containsNonFinite(char[]) */
+    public static  boolean containsNonFinite( char... values ) {return Numeric.containsNonFinite( values );}
+
     /** @see io.deephaven.function.Numeric#containsNonFinite(double[]) */
     public static  boolean containsNonFinite( double... values ) {return Numeric.containsNonFinite( values );}
 
@@ -753,6 +851,9 @@ public class GroovyStaticImports {
 
     /** @see io.deephaven.function.Numeric#containsNonFinite(java.lang.Byte[]) */
     public static  boolean containsNonFinite( java.lang.Byte[] values ) {return Numeric.containsNonFinite( values );}
+
+    /** @see io.deephaven.function.Numeric#containsNonFinite(java.lang.Character[]) */
+    public static  boolean containsNonFinite( java.lang.Character[] values ) {return Numeric.containsNonFinite( values );}
 
     /** @see io.deephaven.function.Numeric#containsNonFinite(java.lang.Double[]) */
     public static  boolean containsNonFinite( java.lang.Double[] values ) {return Numeric.containsNonFinite( values );}
@@ -775,6 +876,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#copySign(byte,byte) */
     public static  byte copySign( byte magnitude, byte sign ) {return Numeric.copySign( magnitude, sign );}
 
+    /** @see io.deephaven.function.Numeric#copySign(char,char) */
+    public static  char copySign( char magnitude, char sign ) {return Numeric.copySign( magnitude, sign );}
+
     /** @see io.deephaven.function.Numeric#copySign(double,double) */
     public static  double copySign( double magnitude, double sign ) {return Numeric.copySign( magnitude, sign );}
 
@@ -792,6 +896,9 @@ public class GroovyStaticImports {
 
     /** @see io.deephaven.function.Numeric#cor(byte[],byte[]) */
     public static  double cor( byte[] values0, byte[] values1 ) {return Numeric.cor( values0, values1 );}
+
+    /** @see io.deephaven.function.Numeric#cor(byte[],char[]) */
+    public static  double cor( byte[] values0, char[] values1 ) {return Numeric.cor( values0, values1 );}
 
     /** @see io.deephaven.function.Numeric#cor(byte[],double[]) */
     public static  double cor( byte[] values0, double[] values1 ) {return Numeric.cor( values0, values1 );}
@@ -811,6 +918,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#cor(byte[],io.deephaven.vector.ByteVector) */
     public static  double cor( byte[] values0, io.deephaven.vector.ByteVector values1 ) {return Numeric.cor( values0, values1 );}
 
+    /** @see io.deephaven.function.Numeric#cor(byte[],io.deephaven.vector.CharVector) */
+    public static  double cor( byte[] values0, io.deephaven.vector.CharVector values1 ) {return Numeric.cor( values0, values1 );}
+
     /** @see io.deephaven.function.Numeric#cor(byte[],io.deephaven.vector.DoubleVector) */
     public static  double cor( byte[] values0, io.deephaven.vector.DoubleVector values1 ) {return Numeric.cor( values0, values1 );}
 
@@ -826,8 +936,53 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#cor(byte[],io.deephaven.vector.ShortVector) */
     public static  double cor( byte[] values0, io.deephaven.vector.ShortVector values1 ) {return Numeric.cor( values0, values1 );}
 
+    /** @see io.deephaven.function.Numeric#cor(char[],byte[]) */
+    public static  double cor( char[] values0, byte[] values1 ) {return Numeric.cor( values0, values1 );}
+
+    /** @see io.deephaven.function.Numeric#cor(char[],char[]) */
+    public static  double cor( char[] values0, char[] values1 ) {return Numeric.cor( values0, values1 );}
+
+    /** @see io.deephaven.function.Numeric#cor(char[],double[]) */
+    public static  double cor( char[] values0, double[] values1 ) {return Numeric.cor( values0, values1 );}
+
+    /** @see io.deephaven.function.Numeric#cor(char[],float[]) */
+    public static  double cor( char[] values0, float[] values1 ) {return Numeric.cor( values0, values1 );}
+
+    /** @see io.deephaven.function.Numeric#cor(char[],int[]) */
+    public static  double cor( char[] values0, int[] values1 ) {return Numeric.cor( values0, values1 );}
+
+    /** @see io.deephaven.function.Numeric#cor(char[],long[]) */
+    public static  double cor( char[] values0, long[] values1 ) {return Numeric.cor( values0, values1 );}
+
+    /** @see io.deephaven.function.Numeric#cor(char[],short[]) */
+    public static  double cor( char[] values0, short[] values1 ) {return Numeric.cor( values0, values1 );}
+
+    /** @see io.deephaven.function.Numeric#cor(char[],io.deephaven.vector.ByteVector) */
+    public static  double cor( char[] values0, io.deephaven.vector.ByteVector values1 ) {return Numeric.cor( values0, values1 );}
+
+    /** @see io.deephaven.function.Numeric#cor(char[],io.deephaven.vector.CharVector) */
+    public static  double cor( char[] values0, io.deephaven.vector.CharVector values1 ) {return Numeric.cor( values0, values1 );}
+
+    /** @see io.deephaven.function.Numeric#cor(char[],io.deephaven.vector.DoubleVector) */
+    public static  double cor( char[] values0, io.deephaven.vector.DoubleVector values1 ) {return Numeric.cor( values0, values1 );}
+
+    /** @see io.deephaven.function.Numeric#cor(char[],io.deephaven.vector.FloatVector) */
+    public static  double cor( char[] values0, io.deephaven.vector.FloatVector values1 ) {return Numeric.cor( values0, values1 );}
+
+    /** @see io.deephaven.function.Numeric#cor(char[],io.deephaven.vector.IntVector) */
+    public static  double cor( char[] values0, io.deephaven.vector.IntVector values1 ) {return Numeric.cor( values0, values1 );}
+
+    /** @see io.deephaven.function.Numeric#cor(char[],io.deephaven.vector.LongVector) */
+    public static  double cor( char[] values0, io.deephaven.vector.LongVector values1 ) {return Numeric.cor( values0, values1 );}
+
+    /** @see io.deephaven.function.Numeric#cor(char[],io.deephaven.vector.ShortVector) */
+    public static  double cor( char[] values0, io.deephaven.vector.ShortVector values1 ) {return Numeric.cor( values0, values1 );}
+
     /** @see io.deephaven.function.Numeric#cor(double[],byte[]) */
     public static  double cor( double[] values0, byte[] values1 ) {return Numeric.cor( values0, values1 );}
+
+    /** @see io.deephaven.function.Numeric#cor(double[],char[]) */
+    public static  double cor( double[] values0, char[] values1 ) {return Numeric.cor( values0, values1 );}
 
     /** @see io.deephaven.function.Numeric#cor(double[],double[]) */
     public static  double cor( double[] values0, double[] values1 ) {return Numeric.cor( values0, values1 );}
@@ -847,6 +1002,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#cor(double[],io.deephaven.vector.ByteVector) */
     public static  double cor( double[] values0, io.deephaven.vector.ByteVector values1 ) {return Numeric.cor( values0, values1 );}
 
+    /** @see io.deephaven.function.Numeric#cor(double[],io.deephaven.vector.CharVector) */
+    public static  double cor( double[] values0, io.deephaven.vector.CharVector values1 ) {return Numeric.cor( values0, values1 );}
+
     /** @see io.deephaven.function.Numeric#cor(double[],io.deephaven.vector.DoubleVector) */
     public static  double cor( double[] values0, io.deephaven.vector.DoubleVector values1 ) {return Numeric.cor( values0, values1 );}
 
@@ -864,6 +1022,9 @@ public class GroovyStaticImports {
 
     /** @see io.deephaven.function.Numeric#cor(float[],byte[]) */
     public static  double cor( float[] values0, byte[] values1 ) {return Numeric.cor( values0, values1 );}
+
+    /** @see io.deephaven.function.Numeric#cor(float[],char[]) */
+    public static  double cor( float[] values0, char[] values1 ) {return Numeric.cor( values0, values1 );}
 
     /** @see io.deephaven.function.Numeric#cor(float[],double[]) */
     public static  double cor( float[] values0, double[] values1 ) {return Numeric.cor( values0, values1 );}
@@ -883,6 +1044,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#cor(float[],io.deephaven.vector.ByteVector) */
     public static  double cor( float[] values0, io.deephaven.vector.ByteVector values1 ) {return Numeric.cor( values0, values1 );}
 
+    /** @see io.deephaven.function.Numeric#cor(float[],io.deephaven.vector.CharVector) */
+    public static  double cor( float[] values0, io.deephaven.vector.CharVector values1 ) {return Numeric.cor( values0, values1 );}
+
     /** @see io.deephaven.function.Numeric#cor(float[],io.deephaven.vector.DoubleVector) */
     public static  double cor( float[] values0, io.deephaven.vector.DoubleVector values1 ) {return Numeric.cor( values0, values1 );}
 
@@ -900,6 +1064,9 @@ public class GroovyStaticImports {
 
     /** @see io.deephaven.function.Numeric#cor(int[],byte[]) */
     public static  double cor( int[] values0, byte[] values1 ) {return Numeric.cor( values0, values1 );}
+
+    /** @see io.deephaven.function.Numeric#cor(int[],char[]) */
+    public static  double cor( int[] values0, char[] values1 ) {return Numeric.cor( values0, values1 );}
 
     /** @see io.deephaven.function.Numeric#cor(int[],double[]) */
     public static  double cor( int[] values0, double[] values1 ) {return Numeric.cor( values0, values1 );}
@@ -919,6 +1086,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#cor(int[],io.deephaven.vector.ByteVector) */
     public static  double cor( int[] values0, io.deephaven.vector.ByteVector values1 ) {return Numeric.cor( values0, values1 );}
 
+    /** @see io.deephaven.function.Numeric#cor(int[],io.deephaven.vector.CharVector) */
+    public static  double cor( int[] values0, io.deephaven.vector.CharVector values1 ) {return Numeric.cor( values0, values1 );}
+
     /** @see io.deephaven.function.Numeric#cor(int[],io.deephaven.vector.DoubleVector) */
     public static  double cor( int[] values0, io.deephaven.vector.DoubleVector values1 ) {return Numeric.cor( values0, values1 );}
 
@@ -936,6 +1106,9 @@ public class GroovyStaticImports {
 
     /** @see io.deephaven.function.Numeric#cor(long[],byte[]) */
     public static  double cor( long[] values0, byte[] values1 ) {return Numeric.cor( values0, values1 );}
+
+    /** @see io.deephaven.function.Numeric#cor(long[],char[]) */
+    public static  double cor( long[] values0, char[] values1 ) {return Numeric.cor( values0, values1 );}
 
     /** @see io.deephaven.function.Numeric#cor(long[],double[]) */
     public static  double cor( long[] values0, double[] values1 ) {return Numeric.cor( values0, values1 );}
@@ -955,6 +1128,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#cor(long[],io.deephaven.vector.ByteVector) */
     public static  double cor( long[] values0, io.deephaven.vector.ByteVector values1 ) {return Numeric.cor( values0, values1 );}
 
+    /** @see io.deephaven.function.Numeric#cor(long[],io.deephaven.vector.CharVector) */
+    public static  double cor( long[] values0, io.deephaven.vector.CharVector values1 ) {return Numeric.cor( values0, values1 );}
+
     /** @see io.deephaven.function.Numeric#cor(long[],io.deephaven.vector.DoubleVector) */
     public static  double cor( long[] values0, io.deephaven.vector.DoubleVector values1 ) {return Numeric.cor( values0, values1 );}
 
@@ -972,6 +1148,9 @@ public class GroovyStaticImports {
 
     /** @see io.deephaven.function.Numeric#cor(short[],byte[]) */
     public static  double cor( short[] values0, byte[] values1 ) {return Numeric.cor( values0, values1 );}
+
+    /** @see io.deephaven.function.Numeric#cor(short[],char[]) */
+    public static  double cor( short[] values0, char[] values1 ) {return Numeric.cor( values0, values1 );}
 
     /** @see io.deephaven.function.Numeric#cor(short[],double[]) */
     public static  double cor( short[] values0, double[] values1 ) {return Numeric.cor( values0, values1 );}
@@ -991,6 +1170,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#cor(short[],io.deephaven.vector.ByteVector) */
     public static  double cor( short[] values0, io.deephaven.vector.ByteVector values1 ) {return Numeric.cor( values0, values1 );}
 
+    /** @see io.deephaven.function.Numeric#cor(short[],io.deephaven.vector.CharVector) */
+    public static  double cor( short[] values0, io.deephaven.vector.CharVector values1 ) {return Numeric.cor( values0, values1 );}
+
     /** @see io.deephaven.function.Numeric#cor(short[],io.deephaven.vector.DoubleVector) */
     public static  double cor( short[] values0, io.deephaven.vector.DoubleVector values1 ) {return Numeric.cor( values0, values1 );}
 
@@ -1008,6 +1190,9 @@ public class GroovyStaticImports {
 
     /** @see io.deephaven.function.Numeric#cor(io.deephaven.vector.ByteVector,byte[]) */
     public static  double cor( io.deephaven.vector.ByteVector values0, byte[] values1 ) {return Numeric.cor( values0, values1 );}
+
+    /** @see io.deephaven.function.Numeric#cor(io.deephaven.vector.ByteVector,char[]) */
+    public static  double cor( io.deephaven.vector.ByteVector values0, char[] values1 ) {return Numeric.cor( values0, values1 );}
 
     /** @see io.deephaven.function.Numeric#cor(io.deephaven.vector.ByteVector,double[]) */
     public static  double cor( io.deephaven.vector.ByteVector values0, double[] values1 ) {return Numeric.cor( values0, values1 );}
@@ -1027,6 +1212,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#cor(io.deephaven.vector.ByteVector,io.deephaven.vector.ByteVector) */
     public static  double cor( io.deephaven.vector.ByteVector values0, io.deephaven.vector.ByteVector values1 ) {return Numeric.cor( values0, values1 );}
 
+    /** @see io.deephaven.function.Numeric#cor(io.deephaven.vector.ByteVector,io.deephaven.vector.CharVector) */
+    public static  double cor( io.deephaven.vector.ByteVector values0, io.deephaven.vector.CharVector values1 ) {return Numeric.cor( values0, values1 );}
+
     /** @see io.deephaven.function.Numeric#cor(io.deephaven.vector.ByteVector,io.deephaven.vector.DoubleVector) */
     public static  double cor( io.deephaven.vector.ByteVector values0, io.deephaven.vector.DoubleVector values1 ) {return Numeric.cor( values0, values1 );}
 
@@ -1042,8 +1230,53 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#cor(io.deephaven.vector.ByteVector,io.deephaven.vector.ShortVector) */
     public static  double cor( io.deephaven.vector.ByteVector values0, io.deephaven.vector.ShortVector values1 ) {return Numeric.cor( values0, values1 );}
 
+    /** @see io.deephaven.function.Numeric#cor(io.deephaven.vector.CharVector,byte[]) */
+    public static  double cor( io.deephaven.vector.CharVector values0, byte[] values1 ) {return Numeric.cor( values0, values1 );}
+
+    /** @see io.deephaven.function.Numeric#cor(io.deephaven.vector.CharVector,char[]) */
+    public static  double cor( io.deephaven.vector.CharVector values0, char[] values1 ) {return Numeric.cor( values0, values1 );}
+
+    /** @see io.deephaven.function.Numeric#cor(io.deephaven.vector.CharVector,double[]) */
+    public static  double cor( io.deephaven.vector.CharVector values0, double[] values1 ) {return Numeric.cor( values0, values1 );}
+
+    /** @see io.deephaven.function.Numeric#cor(io.deephaven.vector.CharVector,float[]) */
+    public static  double cor( io.deephaven.vector.CharVector values0, float[] values1 ) {return Numeric.cor( values0, values1 );}
+
+    /** @see io.deephaven.function.Numeric#cor(io.deephaven.vector.CharVector,int[]) */
+    public static  double cor( io.deephaven.vector.CharVector values0, int[] values1 ) {return Numeric.cor( values0, values1 );}
+
+    /** @see io.deephaven.function.Numeric#cor(io.deephaven.vector.CharVector,long[]) */
+    public static  double cor( io.deephaven.vector.CharVector values0, long[] values1 ) {return Numeric.cor( values0, values1 );}
+
+    /** @see io.deephaven.function.Numeric#cor(io.deephaven.vector.CharVector,short[]) */
+    public static  double cor( io.deephaven.vector.CharVector values0, short[] values1 ) {return Numeric.cor( values0, values1 );}
+
+    /** @see io.deephaven.function.Numeric#cor(io.deephaven.vector.CharVector,io.deephaven.vector.ByteVector) */
+    public static  double cor( io.deephaven.vector.CharVector values0, io.deephaven.vector.ByteVector values1 ) {return Numeric.cor( values0, values1 );}
+
+    /** @see io.deephaven.function.Numeric#cor(io.deephaven.vector.CharVector,io.deephaven.vector.CharVector) */
+    public static  double cor( io.deephaven.vector.CharVector values0, io.deephaven.vector.CharVector values1 ) {return Numeric.cor( values0, values1 );}
+
+    /** @see io.deephaven.function.Numeric#cor(io.deephaven.vector.CharVector,io.deephaven.vector.DoubleVector) */
+    public static  double cor( io.deephaven.vector.CharVector values0, io.deephaven.vector.DoubleVector values1 ) {return Numeric.cor( values0, values1 );}
+
+    /** @see io.deephaven.function.Numeric#cor(io.deephaven.vector.CharVector,io.deephaven.vector.FloatVector) */
+    public static  double cor( io.deephaven.vector.CharVector values0, io.deephaven.vector.FloatVector values1 ) {return Numeric.cor( values0, values1 );}
+
+    /** @see io.deephaven.function.Numeric#cor(io.deephaven.vector.CharVector,io.deephaven.vector.IntVector) */
+    public static  double cor( io.deephaven.vector.CharVector values0, io.deephaven.vector.IntVector values1 ) {return Numeric.cor( values0, values1 );}
+
+    /** @see io.deephaven.function.Numeric#cor(io.deephaven.vector.CharVector,io.deephaven.vector.LongVector) */
+    public static  double cor( io.deephaven.vector.CharVector values0, io.deephaven.vector.LongVector values1 ) {return Numeric.cor( values0, values1 );}
+
+    /** @see io.deephaven.function.Numeric#cor(io.deephaven.vector.CharVector,io.deephaven.vector.ShortVector) */
+    public static  double cor( io.deephaven.vector.CharVector values0, io.deephaven.vector.ShortVector values1 ) {return Numeric.cor( values0, values1 );}
+
     /** @see io.deephaven.function.Numeric#cor(io.deephaven.vector.DoubleVector,byte[]) */
     public static  double cor( io.deephaven.vector.DoubleVector values0, byte[] values1 ) {return Numeric.cor( values0, values1 );}
+
+    /** @see io.deephaven.function.Numeric#cor(io.deephaven.vector.DoubleVector,char[]) */
+    public static  double cor( io.deephaven.vector.DoubleVector values0, char[] values1 ) {return Numeric.cor( values0, values1 );}
 
     /** @see io.deephaven.function.Numeric#cor(io.deephaven.vector.DoubleVector,double[]) */
     public static  double cor( io.deephaven.vector.DoubleVector values0, double[] values1 ) {return Numeric.cor( values0, values1 );}
@@ -1063,6 +1296,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#cor(io.deephaven.vector.DoubleVector,io.deephaven.vector.ByteVector) */
     public static  double cor( io.deephaven.vector.DoubleVector values0, io.deephaven.vector.ByteVector values1 ) {return Numeric.cor( values0, values1 );}
 
+    /** @see io.deephaven.function.Numeric#cor(io.deephaven.vector.DoubleVector,io.deephaven.vector.CharVector) */
+    public static  double cor( io.deephaven.vector.DoubleVector values0, io.deephaven.vector.CharVector values1 ) {return Numeric.cor( values0, values1 );}
+
     /** @see io.deephaven.function.Numeric#cor(io.deephaven.vector.DoubleVector,io.deephaven.vector.DoubleVector) */
     public static  double cor( io.deephaven.vector.DoubleVector values0, io.deephaven.vector.DoubleVector values1 ) {return Numeric.cor( values0, values1 );}
 
@@ -1080,6 +1316,9 @@ public class GroovyStaticImports {
 
     /** @see io.deephaven.function.Numeric#cor(io.deephaven.vector.FloatVector,byte[]) */
     public static  double cor( io.deephaven.vector.FloatVector values0, byte[] values1 ) {return Numeric.cor( values0, values1 );}
+
+    /** @see io.deephaven.function.Numeric#cor(io.deephaven.vector.FloatVector,char[]) */
+    public static  double cor( io.deephaven.vector.FloatVector values0, char[] values1 ) {return Numeric.cor( values0, values1 );}
 
     /** @see io.deephaven.function.Numeric#cor(io.deephaven.vector.FloatVector,double[]) */
     public static  double cor( io.deephaven.vector.FloatVector values0, double[] values1 ) {return Numeric.cor( values0, values1 );}
@@ -1099,6 +1338,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#cor(io.deephaven.vector.FloatVector,io.deephaven.vector.ByteVector) */
     public static  double cor( io.deephaven.vector.FloatVector values0, io.deephaven.vector.ByteVector values1 ) {return Numeric.cor( values0, values1 );}
 
+    /** @see io.deephaven.function.Numeric#cor(io.deephaven.vector.FloatVector,io.deephaven.vector.CharVector) */
+    public static  double cor( io.deephaven.vector.FloatVector values0, io.deephaven.vector.CharVector values1 ) {return Numeric.cor( values0, values1 );}
+
     /** @see io.deephaven.function.Numeric#cor(io.deephaven.vector.FloatVector,io.deephaven.vector.DoubleVector) */
     public static  double cor( io.deephaven.vector.FloatVector values0, io.deephaven.vector.DoubleVector values1 ) {return Numeric.cor( values0, values1 );}
 
@@ -1116,6 +1358,9 @@ public class GroovyStaticImports {
 
     /** @see io.deephaven.function.Numeric#cor(io.deephaven.vector.IntVector,byte[]) */
     public static  double cor( io.deephaven.vector.IntVector values0, byte[] values1 ) {return Numeric.cor( values0, values1 );}
+
+    /** @see io.deephaven.function.Numeric#cor(io.deephaven.vector.IntVector,char[]) */
+    public static  double cor( io.deephaven.vector.IntVector values0, char[] values1 ) {return Numeric.cor( values0, values1 );}
 
     /** @see io.deephaven.function.Numeric#cor(io.deephaven.vector.IntVector,double[]) */
     public static  double cor( io.deephaven.vector.IntVector values0, double[] values1 ) {return Numeric.cor( values0, values1 );}
@@ -1135,6 +1380,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#cor(io.deephaven.vector.IntVector,io.deephaven.vector.ByteVector) */
     public static  double cor( io.deephaven.vector.IntVector values0, io.deephaven.vector.ByteVector values1 ) {return Numeric.cor( values0, values1 );}
 
+    /** @see io.deephaven.function.Numeric#cor(io.deephaven.vector.IntVector,io.deephaven.vector.CharVector) */
+    public static  double cor( io.deephaven.vector.IntVector values0, io.deephaven.vector.CharVector values1 ) {return Numeric.cor( values0, values1 );}
+
     /** @see io.deephaven.function.Numeric#cor(io.deephaven.vector.IntVector,io.deephaven.vector.DoubleVector) */
     public static  double cor( io.deephaven.vector.IntVector values0, io.deephaven.vector.DoubleVector values1 ) {return Numeric.cor( values0, values1 );}
 
@@ -1152,6 +1400,9 @@ public class GroovyStaticImports {
 
     /** @see io.deephaven.function.Numeric#cor(io.deephaven.vector.LongVector,byte[]) */
     public static  double cor( io.deephaven.vector.LongVector values0, byte[] values1 ) {return Numeric.cor( values0, values1 );}
+
+    /** @see io.deephaven.function.Numeric#cor(io.deephaven.vector.LongVector,char[]) */
+    public static  double cor( io.deephaven.vector.LongVector values0, char[] values1 ) {return Numeric.cor( values0, values1 );}
 
     /** @see io.deephaven.function.Numeric#cor(io.deephaven.vector.LongVector,double[]) */
     public static  double cor( io.deephaven.vector.LongVector values0, double[] values1 ) {return Numeric.cor( values0, values1 );}
@@ -1171,6 +1422,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#cor(io.deephaven.vector.LongVector,io.deephaven.vector.ByteVector) */
     public static  double cor( io.deephaven.vector.LongVector values0, io.deephaven.vector.ByteVector values1 ) {return Numeric.cor( values0, values1 );}
 
+    /** @see io.deephaven.function.Numeric#cor(io.deephaven.vector.LongVector,io.deephaven.vector.CharVector) */
+    public static  double cor( io.deephaven.vector.LongVector values0, io.deephaven.vector.CharVector values1 ) {return Numeric.cor( values0, values1 );}
+
     /** @see io.deephaven.function.Numeric#cor(io.deephaven.vector.LongVector,io.deephaven.vector.DoubleVector) */
     public static  double cor( io.deephaven.vector.LongVector values0, io.deephaven.vector.DoubleVector values1 ) {return Numeric.cor( values0, values1 );}
 
@@ -1188,6 +1442,9 @@ public class GroovyStaticImports {
 
     /** @see io.deephaven.function.Numeric#cor(io.deephaven.vector.ShortVector,byte[]) */
     public static  double cor( io.deephaven.vector.ShortVector values0, byte[] values1 ) {return Numeric.cor( values0, values1 );}
+
+    /** @see io.deephaven.function.Numeric#cor(io.deephaven.vector.ShortVector,char[]) */
+    public static  double cor( io.deephaven.vector.ShortVector values0, char[] values1 ) {return Numeric.cor( values0, values1 );}
 
     /** @see io.deephaven.function.Numeric#cor(io.deephaven.vector.ShortVector,double[]) */
     public static  double cor( io.deephaven.vector.ShortVector values0, double[] values1 ) {return Numeric.cor( values0, values1 );}
@@ -1207,6 +1464,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#cor(io.deephaven.vector.ShortVector,io.deephaven.vector.ByteVector) */
     public static  double cor( io.deephaven.vector.ShortVector values0, io.deephaven.vector.ByteVector values1 ) {return Numeric.cor( values0, values1 );}
 
+    /** @see io.deephaven.function.Numeric#cor(io.deephaven.vector.ShortVector,io.deephaven.vector.CharVector) */
+    public static  double cor( io.deephaven.vector.ShortVector values0, io.deephaven.vector.CharVector values1 ) {return Numeric.cor( values0, values1 );}
+
     /** @see io.deephaven.function.Numeric#cor(io.deephaven.vector.ShortVector,io.deephaven.vector.DoubleVector) */
     public static  double cor( io.deephaven.vector.ShortVector values0, io.deephaven.vector.DoubleVector values1 ) {return Numeric.cor( values0, values1 );}
 
@@ -1225,6 +1485,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#cos(byte) */
     public static  double cos( byte value ) {return Numeric.cos( value );}
 
+    /** @see io.deephaven.function.Numeric#cos(char) */
+    public static  double cos( char value ) {return Numeric.cos( value );}
+
     /** @see io.deephaven.function.Numeric#cos(double) */
     public static  double cos( double value ) {return Numeric.cos( value );}
 
@@ -1242,6 +1505,9 @@ public class GroovyStaticImports {
 
     /** @see io.deephaven.function.Numeric#cosh(byte) */
     public static  double cosh( byte x ) {return Numeric.cosh( x );}
+
+    /** @see io.deephaven.function.Numeric#cosh(char) */
+    public static  double cosh( char x ) {return Numeric.cosh( x );}
 
     /** @see io.deephaven.function.Numeric#cosh(double) */
     public static  double cosh( double x ) {return Numeric.cosh( x );}
@@ -1399,6 +1665,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#countNeg(byte[]) */
     public static  long countNeg( byte... values ) {return Numeric.countNeg( values );}
 
+    /** @see io.deephaven.function.Numeric#countNeg(char[]) */
+    public static  long countNeg( char... values ) {return Numeric.countNeg( values );}
+
     /** @see io.deephaven.function.Numeric#countNeg(double[]) */
     public static  long countNeg( double... values ) {return Numeric.countNeg( values );}
 
@@ -1413,6 +1682,9 @@ public class GroovyStaticImports {
 
     /** @see io.deephaven.function.Numeric#countNeg(java.lang.Byte[]) */
     public static  long countNeg( java.lang.Byte[] values ) {return Numeric.countNeg( values );}
+
+    /** @see io.deephaven.function.Numeric#countNeg(java.lang.Character[]) */
+    public static  long countNeg( java.lang.Character[] values ) {return Numeric.countNeg( values );}
 
     /** @see io.deephaven.function.Numeric#countNeg(java.lang.Double[]) */
     public static  long countNeg( java.lang.Double[] values ) {return Numeric.countNeg( values );}
@@ -1434,6 +1706,9 @@ public class GroovyStaticImports {
 
     /** @see io.deephaven.function.Numeric#countNeg(io.deephaven.vector.ByteVector) */
     public static  long countNeg( io.deephaven.vector.ByteVector values ) {return Numeric.countNeg( values );}
+
+    /** @see io.deephaven.function.Numeric#countNeg(io.deephaven.vector.CharVector) */
+    public static  long countNeg( io.deephaven.vector.CharVector values ) {return Numeric.countNeg( values );}
 
     /** @see io.deephaven.function.Numeric#countNeg(io.deephaven.vector.DoubleVector) */
     public static  long countNeg( io.deephaven.vector.DoubleVector values ) {return Numeric.countNeg( values );}
@@ -1459,6 +1734,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#countPos(byte[]) */
     public static  long countPos( byte... values ) {return Numeric.countPos( values );}
 
+    /** @see io.deephaven.function.Numeric#countPos(char[]) */
+    public static  long countPos( char... values ) {return Numeric.countPos( values );}
+
     /** @see io.deephaven.function.Numeric#countPos(double[]) */
     public static  long countPos( double... values ) {return Numeric.countPos( values );}
 
@@ -1473,6 +1751,9 @@ public class GroovyStaticImports {
 
     /** @see io.deephaven.function.Numeric#countPos(java.lang.Byte[]) */
     public static  long countPos( java.lang.Byte[] values ) {return Numeric.countPos( values );}
+
+    /** @see io.deephaven.function.Numeric#countPos(java.lang.Character[]) */
+    public static  long countPos( java.lang.Character[] values ) {return Numeric.countPos( values );}
 
     /** @see io.deephaven.function.Numeric#countPos(java.lang.Double[]) */
     public static  long countPos( java.lang.Double[] values ) {return Numeric.countPos( values );}
@@ -1495,6 +1776,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#countPos(io.deephaven.vector.ByteVector) */
     public static  long countPos( io.deephaven.vector.ByteVector values ) {return Numeric.countPos( values );}
 
+    /** @see io.deephaven.function.Numeric#countPos(io.deephaven.vector.CharVector) */
+    public static  long countPos( io.deephaven.vector.CharVector values ) {return Numeric.countPos( values );}
+
     /** @see io.deephaven.function.Numeric#countPos(io.deephaven.vector.DoubleVector) */
     public static  long countPos( io.deephaven.vector.DoubleVector values ) {return Numeric.countPos( values );}
 
@@ -1513,6 +1797,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#countZero(byte[]) */
     public static  long countZero( byte... values ) {return Numeric.countZero( values );}
 
+    /** @see io.deephaven.function.Numeric#countZero(char[]) */
+    public static  long countZero( char... values ) {return Numeric.countZero( values );}
+
     /** @see io.deephaven.function.Numeric#countZero(double[]) */
     public static  long countZero( double... values ) {return Numeric.countZero( values );}
 
@@ -1527,6 +1814,9 @@ public class GroovyStaticImports {
 
     /** @see io.deephaven.function.Numeric#countZero(java.lang.Byte[]) */
     public static  long countZero( java.lang.Byte[] values ) {return Numeric.countZero( values );}
+
+    /** @see io.deephaven.function.Numeric#countZero(java.lang.Character[]) */
+    public static  long countZero( java.lang.Character[] values ) {return Numeric.countZero( values );}
 
     /** @see io.deephaven.function.Numeric#countZero(java.lang.Double[]) */
     public static  long countZero( java.lang.Double[] values ) {return Numeric.countZero( values );}
@@ -1549,6 +1839,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#countZero(io.deephaven.vector.ByteVector) */
     public static  long countZero( io.deephaven.vector.ByteVector values ) {return Numeric.countZero( values );}
 
+    /** @see io.deephaven.function.Numeric#countZero(io.deephaven.vector.CharVector) */
+    public static  long countZero( io.deephaven.vector.CharVector values ) {return Numeric.countZero( values );}
+
     /** @see io.deephaven.function.Numeric#countZero(io.deephaven.vector.DoubleVector) */
     public static  long countZero( io.deephaven.vector.DoubleVector values ) {return Numeric.countZero( values );}
 
@@ -1566,6 +1859,9 @@ public class GroovyStaticImports {
 
     /** @see io.deephaven.function.Numeric#cov(byte[],byte[]) */
     public static  double cov( byte[] values0, byte[] values1 ) {return Numeric.cov( values0, values1 );}
+
+    /** @see io.deephaven.function.Numeric#cov(byte[],char[]) */
+    public static  double cov( byte[] values0, char[] values1 ) {return Numeric.cov( values0, values1 );}
 
     /** @see io.deephaven.function.Numeric#cov(byte[],double[]) */
     public static  double cov( byte[] values0, double[] values1 ) {return Numeric.cov( values0, values1 );}
@@ -1585,6 +1881,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#cov(byte[],io.deephaven.vector.ByteVector) */
     public static  double cov( byte[] values0, io.deephaven.vector.ByteVector values1 ) {return Numeric.cov( values0, values1 );}
 
+    /** @see io.deephaven.function.Numeric#cov(byte[],io.deephaven.vector.CharVector) */
+    public static  double cov( byte[] values0, io.deephaven.vector.CharVector values1 ) {return Numeric.cov( values0, values1 );}
+
     /** @see io.deephaven.function.Numeric#cov(byte[],io.deephaven.vector.DoubleVector) */
     public static  double cov( byte[] values0, io.deephaven.vector.DoubleVector values1 ) {return Numeric.cov( values0, values1 );}
 
@@ -1600,8 +1899,53 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#cov(byte[],io.deephaven.vector.ShortVector) */
     public static  double cov( byte[] values0, io.deephaven.vector.ShortVector values1 ) {return Numeric.cov( values0, values1 );}
 
+    /** @see io.deephaven.function.Numeric#cov(char[],byte[]) */
+    public static  double cov( char[] values0, byte[] values1 ) {return Numeric.cov( values0, values1 );}
+
+    /** @see io.deephaven.function.Numeric#cov(char[],char[]) */
+    public static  double cov( char[] values0, char[] values1 ) {return Numeric.cov( values0, values1 );}
+
+    /** @see io.deephaven.function.Numeric#cov(char[],double[]) */
+    public static  double cov( char[] values0, double[] values1 ) {return Numeric.cov( values0, values1 );}
+
+    /** @see io.deephaven.function.Numeric#cov(char[],float[]) */
+    public static  double cov( char[] values0, float[] values1 ) {return Numeric.cov( values0, values1 );}
+
+    /** @see io.deephaven.function.Numeric#cov(char[],int[]) */
+    public static  double cov( char[] values0, int[] values1 ) {return Numeric.cov( values0, values1 );}
+
+    /** @see io.deephaven.function.Numeric#cov(char[],long[]) */
+    public static  double cov( char[] values0, long[] values1 ) {return Numeric.cov( values0, values1 );}
+
+    /** @see io.deephaven.function.Numeric#cov(char[],short[]) */
+    public static  double cov( char[] values0, short[] values1 ) {return Numeric.cov( values0, values1 );}
+
+    /** @see io.deephaven.function.Numeric#cov(char[],io.deephaven.vector.ByteVector) */
+    public static  double cov( char[] values0, io.deephaven.vector.ByteVector values1 ) {return Numeric.cov( values0, values1 );}
+
+    /** @see io.deephaven.function.Numeric#cov(char[],io.deephaven.vector.CharVector) */
+    public static  double cov( char[] values0, io.deephaven.vector.CharVector values1 ) {return Numeric.cov( values0, values1 );}
+
+    /** @see io.deephaven.function.Numeric#cov(char[],io.deephaven.vector.DoubleVector) */
+    public static  double cov( char[] values0, io.deephaven.vector.DoubleVector values1 ) {return Numeric.cov( values0, values1 );}
+
+    /** @see io.deephaven.function.Numeric#cov(char[],io.deephaven.vector.FloatVector) */
+    public static  double cov( char[] values0, io.deephaven.vector.FloatVector values1 ) {return Numeric.cov( values0, values1 );}
+
+    /** @see io.deephaven.function.Numeric#cov(char[],io.deephaven.vector.IntVector) */
+    public static  double cov( char[] values0, io.deephaven.vector.IntVector values1 ) {return Numeric.cov( values0, values1 );}
+
+    /** @see io.deephaven.function.Numeric#cov(char[],io.deephaven.vector.LongVector) */
+    public static  double cov( char[] values0, io.deephaven.vector.LongVector values1 ) {return Numeric.cov( values0, values1 );}
+
+    /** @see io.deephaven.function.Numeric#cov(char[],io.deephaven.vector.ShortVector) */
+    public static  double cov( char[] values0, io.deephaven.vector.ShortVector values1 ) {return Numeric.cov( values0, values1 );}
+
     /** @see io.deephaven.function.Numeric#cov(double[],byte[]) */
     public static  double cov( double[] values0, byte[] values1 ) {return Numeric.cov( values0, values1 );}
+
+    /** @see io.deephaven.function.Numeric#cov(double[],char[]) */
+    public static  double cov( double[] values0, char[] values1 ) {return Numeric.cov( values0, values1 );}
 
     /** @see io.deephaven.function.Numeric#cov(double[],double[]) */
     public static  double cov( double[] values0, double[] values1 ) {return Numeric.cov( values0, values1 );}
@@ -1621,6 +1965,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#cov(double[],io.deephaven.vector.ByteVector) */
     public static  double cov( double[] values0, io.deephaven.vector.ByteVector values1 ) {return Numeric.cov( values0, values1 );}
 
+    /** @see io.deephaven.function.Numeric#cov(double[],io.deephaven.vector.CharVector) */
+    public static  double cov( double[] values0, io.deephaven.vector.CharVector values1 ) {return Numeric.cov( values0, values1 );}
+
     /** @see io.deephaven.function.Numeric#cov(double[],io.deephaven.vector.DoubleVector) */
     public static  double cov( double[] values0, io.deephaven.vector.DoubleVector values1 ) {return Numeric.cov( values0, values1 );}
 
@@ -1638,6 +1985,9 @@ public class GroovyStaticImports {
 
     /** @see io.deephaven.function.Numeric#cov(float[],byte[]) */
     public static  double cov( float[] values0, byte[] values1 ) {return Numeric.cov( values0, values1 );}
+
+    /** @see io.deephaven.function.Numeric#cov(float[],char[]) */
+    public static  double cov( float[] values0, char[] values1 ) {return Numeric.cov( values0, values1 );}
 
     /** @see io.deephaven.function.Numeric#cov(float[],double[]) */
     public static  double cov( float[] values0, double[] values1 ) {return Numeric.cov( values0, values1 );}
@@ -1657,6 +2007,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#cov(float[],io.deephaven.vector.ByteVector) */
     public static  double cov( float[] values0, io.deephaven.vector.ByteVector values1 ) {return Numeric.cov( values0, values1 );}
 
+    /** @see io.deephaven.function.Numeric#cov(float[],io.deephaven.vector.CharVector) */
+    public static  double cov( float[] values0, io.deephaven.vector.CharVector values1 ) {return Numeric.cov( values0, values1 );}
+
     /** @see io.deephaven.function.Numeric#cov(float[],io.deephaven.vector.DoubleVector) */
     public static  double cov( float[] values0, io.deephaven.vector.DoubleVector values1 ) {return Numeric.cov( values0, values1 );}
 
@@ -1674,6 +2027,9 @@ public class GroovyStaticImports {
 
     /** @see io.deephaven.function.Numeric#cov(int[],byte[]) */
     public static  double cov( int[] values0, byte[] values1 ) {return Numeric.cov( values0, values1 );}
+
+    /** @see io.deephaven.function.Numeric#cov(int[],char[]) */
+    public static  double cov( int[] values0, char[] values1 ) {return Numeric.cov( values0, values1 );}
 
     /** @see io.deephaven.function.Numeric#cov(int[],double[]) */
     public static  double cov( int[] values0, double[] values1 ) {return Numeric.cov( values0, values1 );}
@@ -1693,6 +2049,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#cov(int[],io.deephaven.vector.ByteVector) */
     public static  double cov( int[] values0, io.deephaven.vector.ByteVector values1 ) {return Numeric.cov( values0, values1 );}
 
+    /** @see io.deephaven.function.Numeric#cov(int[],io.deephaven.vector.CharVector) */
+    public static  double cov( int[] values0, io.deephaven.vector.CharVector values1 ) {return Numeric.cov( values0, values1 );}
+
     /** @see io.deephaven.function.Numeric#cov(int[],io.deephaven.vector.DoubleVector) */
     public static  double cov( int[] values0, io.deephaven.vector.DoubleVector values1 ) {return Numeric.cov( values0, values1 );}
 
@@ -1710,6 +2069,9 @@ public class GroovyStaticImports {
 
     /** @see io.deephaven.function.Numeric#cov(long[],byte[]) */
     public static  double cov( long[] values0, byte[] values1 ) {return Numeric.cov( values0, values1 );}
+
+    /** @see io.deephaven.function.Numeric#cov(long[],char[]) */
+    public static  double cov( long[] values0, char[] values1 ) {return Numeric.cov( values0, values1 );}
 
     /** @see io.deephaven.function.Numeric#cov(long[],double[]) */
     public static  double cov( long[] values0, double[] values1 ) {return Numeric.cov( values0, values1 );}
@@ -1729,6 +2091,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#cov(long[],io.deephaven.vector.ByteVector) */
     public static  double cov( long[] values0, io.deephaven.vector.ByteVector values1 ) {return Numeric.cov( values0, values1 );}
 
+    /** @see io.deephaven.function.Numeric#cov(long[],io.deephaven.vector.CharVector) */
+    public static  double cov( long[] values0, io.deephaven.vector.CharVector values1 ) {return Numeric.cov( values0, values1 );}
+
     /** @see io.deephaven.function.Numeric#cov(long[],io.deephaven.vector.DoubleVector) */
     public static  double cov( long[] values0, io.deephaven.vector.DoubleVector values1 ) {return Numeric.cov( values0, values1 );}
 
@@ -1746,6 +2111,9 @@ public class GroovyStaticImports {
 
     /** @see io.deephaven.function.Numeric#cov(short[],byte[]) */
     public static  double cov( short[] values0, byte[] values1 ) {return Numeric.cov( values0, values1 );}
+
+    /** @see io.deephaven.function.Numeric#cov(short[],char[]) */
+    public static  double cov( short[] values0, char[] values1 ) {return Numeric.cov( values0, values1 );}
 
     /** @see io.deephaven.function.Numeric#cov(short[],double[]) */
     public static  double cov( short[] values0, double[] values1 ) {return Numeric.cov( values0, values1 );}
@@ -1765,6 +2133,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#cov(short[],io.deephaven.vector.ByteVector) */
     public static  double cov( short[] values0, io.deephaven.vector.ByteVector values1 ) {return Numeric.cov( values0, values1 );}
 
+    /** @see io.deephaven.function.Numeric#cov(short[],io.deephaven.vector.CharVector) */
+    public static  double cov( short[] values0, io.deephaven.vector.CharVector values1 ) {return Numeric.cov( values0, values1 );}
+
     /** @see io.deephaven.function.Numeric#cov(short[],io.deephaven.vector.DoubleVector) */
     public static  double cov( short[] values0, io.deephaven.vector.DoubleVector values1 ) {return Numeric.cov( values0, values1 );}
 
@@ -1782,6 +2153,9 @@ public class GroovyStaticImports {
 
     /** @see io.deephaven.function.Numeric#cov(io.deephaven.vector.ByteVector,byte[]) */
     public static  double cov( io.deephaven.vector.ByteVector values0, byte[] values1 ) {return Numeric.cov( values0, values1 );}
+
+    /** @see io.deephaven.function.Numeric#cov(io.deephaven.vector.ByteVector,char[]) */
+    public static  double cov( io.deephaven.vector.ByteVector values0, char[] values1 ) {return Numeric.cov( values0, values1 );}
 
     /** @see io.deephaven.function.Numeric#cov(io.deephaven.vector.ByteVector,double[]) */
     public static  double cov( io.deephaven.vector.ByteVector values0, double[] values1 ) {return Numeric.cov( values0, values1 );}
@@ -1801,6 +2175,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#cov(io.deephaven.vector.ByteVector,io.deephaven.vector.ByteVector) */
     public static  double cov( io.deephaven.vector.ByteVector values0, io.deephaven.vector.ByteVector values1 ) {return Numeric.cov( values0, values1 );}
 
+    /** @see io.deephaven.function.Numeric#cov(io.deephaven.vector.ByteVector,io.deephaven.vector.CharVector) */
+    public static  double cov( io.deephaven.vector.ByteVector values0, io.deephaven.vector.CharVector values1 ) {return Numeric.cov( values0, values1 );}
+
     /** @see io.deephaven.function.Numeric#cov(io.deephaven.vector.ByteVector,io.deephaven.vector.DoubleVector) */
     public static  double cov( io.deephaven.vector.ByteVector values0, io.deephaven.vector.DoubleVector values1 ) {return Numeric.cov( values0, values1 );}
 
@@ -1816,8 +2193,53 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#cov(io.deephaven.vector.ByteVector,io.deephaven.vector.ShortVector) */
     public static  double cov( io.deephaven.vector.ByteVector values0, io.deephaven.vector.ShortVector values1 ) {return Numeric.cov( values0, values1 );}
 
+    /** @see io.deephaven.function.Numeric#cov(io.deephaven.vector.CharVector,byte[]) */
+    public static  double cov( io.deephaven.vector.CharVector values0, byte[] values1 ) {return Numeric.cov( values0, values1 );}
+
+    /** @see io.deephaven.function.Numeric#cov(io.deephaven.vector.CharVector,char[]) */
+    public static  double cov( io.deephaven.vector.CharVector values0, char[] values1 ) {return Numeric.cov( values0, values1 );}
+
+    /** @see io.deephaven.function.Numeric#cov(io.deephaven.vector.CharVector,double[]) */
+    public static  double cov( io.deephaven.vector.CharVector values0, double[] values1 ) {return Numeric.cov( values0, values1 );}
+
+    /** @see io.deephaven.function.Numeric#cov(io.deephaven.vector.CharVector,float[]) */
+    public static  double cov( io.deephaven.vector.CharVector values0, float[] values1 ) {return Numeric.cov( values0, values1 );}
+
+    /** @see io.deephaven.function.Numeric#cov(io.deephaven.vector.CharVector,int[]) */
+    public static  double cov( io.deephaven.vector.CharVector values0, int[] values1 ) {return Numeric.cov( values0, values1 );}
+
+    /** @see io.deephaven.function.Numeric#cov(io.deephaven.vector.CharVector,long[]) */
+    public static  double cov( io.deephaven.vector.CharVector values0, long[] values1 ) {return Numeric.cov( values0, values1 );}
+
+    /** @see io.deephaven.function.Numeric#cov(io.deephaven.vector.CharVector,short[]) */
+    public static  double cov( io.deephaven.vector.CharVector values0, short[] values1 ) {return Numeric.cov( values0, values1 );}
+
+    /** @see io.deephaven.function.Numeric#cov(io.deephaven.vector.CharVector,io.deephaven.vector.ByteVector) */
+    public static  double cov( io.deephaven.vector.CharVector values0, io.deephaven.vector.ByteVector values1 ) {return Numeric.cov( values0, values1 );}
+
+    /** @see io.deephaven.function.Numeric#cov(io.deephaven.vector.CharVector,io.deephaven.vector.CharVector) */
+    public static  double cov( io.deephaven.vector.CharVector values0, io.deephaven.vector.CharVector values1 ) {return Numeric.cov( values0, values1 );}
+
+    /** @see io.deephaven.function.Numeric#cov(io.deephaven.vector.CharVector,io.deephaven.vector.DoubleVector) */
+    public static  double cov( io.deephaven.vector.CharVector values0, io.deephaven.vector.DoubleVector values1 ) {return Numeric.cov( values0, values1 );}
+
+    /** @see io.deephaven.function.Numeric#cov(io.deephaven.vector.CharVector,io.deephaven.vector.FloatVector) */
+    public static  double cov( io.deephaven.vector.CharVector values0, io.deephaven.vector.FloatVector values1 ) {return Numeric.cov( values0, values1 );}
+
+    /** @see io.deephaven.function.Numeric#cov(io.deephaven.vector.CharVector,io.deephaven.vector.IntVector) */
+    public static  double cov( io.deephaven.vector.CharVector values0, io.deephaven.vector.IntVector values1 ) {return Numeric.cov( values0, values1 );}
+
+    /** @see io.deephaven.function.Numeric#cov(io.deephaven.vector.CharVector,io.deephaven.vector.LongVector) */
+    public static  double cov( io.deephaven.vector.CharVector values0, io.deephaven.vector.LongVector values1 ) {return Numeric.cov( values0, values1 );}
+
+    /** @see io.deephaven.function.Numeric#cov(io.deephaven.vector.CharVector,io.deephaven.vector.ShortVector) */
+    public static  double cov( io.deephaven.vector.CharVector values0, io.deephaven.vector.ShortVector values1 ) {return Numeric.cov( values0, values1 );}
+
     /** @see io.deephaven.function.Numeric#cov(io.deephaven.vector.DoubleVector,byte[]) */
     public static  double cov( io.deephaven.vector.DoubleVector values0, byte[] values1 ) {return Numeric.cov( values0, values1 );}
+
+    /** @see io.deephaven.function.Numeric#cov(io.deephaven.vector.DoubleVector,char[]) */
+    public static  double cov( io.deephaven.vector.DoubleVector values0, char[] values1 ) {return Numeric.cov( values0, values1 );}
 
     /** @see io.deephaven.function.Numeric#cov(io.deephaven.vector.DoubleVector,double[]) */
     public static  double cov( io.deephaven.vector.DoubleVector values0, double[] values1 ) {return Numeric.cov( values0, values1 );}
@@ -1837,6 +2259,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#cov(io.deephaven.vector.DoubleVector,io.deephaven.vector.ByteVector) */
     public static  double cov( io.deephaven.vector.DoubleVector values0, io.deephaven.vector.ByteVector values1 ) {return Numeric.cov( values0, values1 );}
 
+    /** @see io.deephaven.function.Numeric#cov(io.deephaven.vector.DoubleVector,io.deephaven.vector.CharVector) */
+    public static  double cov( io.deephaven.vector.DoubleVector values0, io.deephaven.vector.CharVector values1 ) {return Numeric.cov( values0, values1 );}
+
     /** @see io.deephaven.function.Numeric#cov(io.deephaven.vector.DoubleVector,io.deephaven.vector.DoubleVector) */
     public static  double cov( io.deephaven.vector.DoubleVector values0, io.deephaven.vector.DoubleVector values1 ) {return Numeric.cov( values0, values1 );}
 
@@ -1854,6 +2279,9 @@ public class GroovyStaticImports {
 
     /** @see io.deephaven.function.Numeric#cov(io.deephaven.vector.FloatVector,byte[]) */
     public static  double cov( io.deephaven.vector.FloatVector values0, byte[] values1 ) {return Numeric.cov( values0, values1 );}
+
+    /** @see io.deephaven.function.Numeric#cov(io.deephaven.vector.FloatVector,char[]) */
+    public static  double cov( io.deephaven.vector.FloatVector values0, char[] values1 ) {return Numeric.cov( values0, values1 );}
 
     /** @see io.deephaven.function.Numeric#cov(io.deephaven.vector.FloatVector,double[]) */
     public static  double cov( io.deephaven.vector.FloatVector values0, double[] values1 ) {return Numeric.cov( values0, values1 );}
@@ -1873,6 +2301,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#cov(io.deephaven.vector.FloatVector,io.deephaven.vector.ByteVector) */
     public static  double cov( io.deephaven.vector.FloatVector values0, io.deephaven.vector.ByteVector values1 ) {return Numeric.cov( values0, values1 );}
 
+    /** @see io.deephaven.function.Numeric#cov(io.deephaven.vector.FloatVector,io.deephaven.vector.CharVector) */
+    public static  double cov( io.deephaven.vector.FloatVector values0, io.deephaven.vector.CharVector values1 ) {return Numeric.cov( values0, values1 );}
+
     /** @see io.deephaven.function.Numeric#cov(io.deephaven.vector.FloatVector,io.deephaven.vector.DoubleVector) */
     public static  double cov( io.deephaven.vector.FloatVector values0, io.deephaven.vector.DoubleVector values1 ) {return Numeric.cov( values0, values1 );}
 
@@ -1890,6 +2321,9 @@ public class GroovyStaticImports {
 
     /** @see io.deephaven.function.Numeric#cov(io.deephaven.vector.IntVector,byte[]) */
     public static  double cov( io.deephaven.vector.IntVector values0, byte[] values1 ) {return Numeric.cov( values0, values1 );}
+
+    /** @see io.deephaven.function.Numeric#cov(io.deephaven.vector.IntVector,char[]) */
+    public static  double cov( io.deephaven.vector.IntVector values0, char[] values1 ) {return Numeric.cov( values0, values1 );}
 
     /** @see io.deephaven.function.Numeric#cov(io.deephaven.vector.IntVector,double[]) */
     public static  double cov( io.deephaven.vector.IntVector values0, double[] values1 ) {return Numeric.cov( values0, values1 );}
@@ -1909,6 +2343,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#cov(io.deephaven.vector.IntVector,io.deephaven.vector.ByteVector) */
     public static  double cov( io.deephaven.vector.IntVector values0, io.deephaven.vector.ByteVector values1 ) {return Numeric.cov( values0, values1 );}
 
+    /** @see io.deephaven.function.Numeric#cov(io.deephaven.vector.IntVector,io.deephaven.vector.CharVector) */
+    public static  double cov( io.deephaven.vector.IntVector values0, io.deephaven.vector.CharVector values1 ) {return Numeric.cov( values0, values1 );}
+
     /** @see io.deephaven.function.Numeric#cov(io.deephaven.vector.IntVector,io.deephaven.vector.DoubleVector) */
     public static  double cov( io.deephaven.vector.IntVector values0, io.deephaven.vector.DoubleVector values1 ) {return Numeric.cov( values0, values1 );}
 
@@ -1926,6 +2363,9 @@ public class GroovyStaticImports {
 
     /** @see io.deephaven.function.Numeric#cov(io.deephaven.vector.LongVector,byte[]) */
     public static  double cov( io.deephaven.vector.LongVector values0, byte[] values1 ) {return Numeric.cov( values0, values1 );}
+
+    /** @see io.deephaven.function.Numeric#cov(io.deephaven.vector.LongVector,char[]) */
+    public static  double cov( io.deephaven.vector.LongVector values0, char[] values1 ) {return Numeric.cov( values0, values1 );}
 
     /** @see io.deephaven.function.Numeric#cov(io.deephaven.vector.LongVector,double[]) */
     public static  double cov( io.deephaven.vector.LongVector values0, double[] values1 ) {return Numeric.cov( values0, values1 );}
@@ -1945,6 +2385,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#cov(io.deephaven.vector.LongVector,io.deephaven.vector.ByteVector) */
     public static  double cov( io.deephaven.vector.LongVector values0, io.deephaven.vector.ByteVector values1 ) {return Numeric.cov( values0, values1 );}
 
+    /** @see io.deephaven.function.Numeric#cov(io.deephaven.vector.LongVector,io.deephaven.vector.CharVector) */
+    public static  double cov( io.deephaven.vector.LongVector values0, io.deephaven.vector.CharVector values1 ) {return Numeric.cov( values0, values1 );}
+
     /** @see io.deephaven.function.Numeric#cov(io.deephaven.vector.LongVector,io.deephaven.vector.DoubleVector) */
     public static  double cov( io.deephaven.vector.LongVector values0, io.deephaven.vector.DoubleVector values1 ) {return Numeric.cov( values0, values1 );}
 
@@ -1962,6 +2405,9 @@ public class GroovyStaticImports {
 
     /** @see io.deephaven.function.Numeric#cov(io.deephaven.vector.ShortVector,byte[]) */
     public static  double cov( io.deephaven.vector.ShortVector values0, byte[] values1 ) {return Numeric.cov( values0, values1 );}
+
+    /** @see io.deephaven.function.Numeric#cov(io.deephaven.vector.ShortVector,char[]) */
+    public static  double cov( io.deephaven.vector.ShortVector values0, char[] values1 ) {return Numeric.cov( values0, values1 );}
 
     /** @see io.deephaven.function.Numeric#cov(io.deephaven.vector.ShortVector,double[]) */
     public static  double cov( io.deephaven.vector.ShortVector values0, double[] values1 ) {return Numeric.cov( values0, values1 );}
@@ -1981,6 +2427,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#cov(io.deephaven.vector.ShortVector,io.deephaven.vector.ByteVector) */
     public static  double cov( io.deephaven.vector.ShortVector values0, io.deephaven.vector.ByteVector values1 ) {return Numeric.cov( values0, values1 );}
 
+    /** @see io.deephaven.function.Numeric#cov(io.deephaven.vector.ShortVector,io.deephaven.vector.CharVector) */
+    public static  double cov( io.deephaven.vector.ShortVector values0, io.deephaven.vector.CharVector values1 ) {return Numeric.cov( values0, values1 );}
+
     /** @see io.deephaven.function.Numeric#cov(io.deephaven.vector.ShortVector,io.deephaven.vector.DoubleVector) */
     public static  double cov( io.deephaven.vector.ShortVector values0, io.deephaven.vector.DoubleVector values1 ) {return Numeric.cov( values0, values1 );}
 
@@ -1999,6 +2448,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#cummax(byte[]) */
     public static  byte[] cummax( byte... values ) {return Numeric.cummax( values );}
 
+    /** @see io.deephaven.function.Numeric#cummax(char[]) */
+    public static  char[] cummax( char... values ) {return Numeric.cummax( values );}
+
     /** @see io.deephaven.function.Numeric#cummax(double[]) */
     public static  double[] cummax( double... values ) {return Numeric.cummax( values );}
 
@@ -2013,6 +2465,9 @@ public class GroovyStaticImports {
 
     /** @see io.deephaven.function.Numeric#cummax(java.lang.Byte[]) */
     public static  byte[] cummax( java.lang.Byte[] values ) {return Numeric.cummax( values );}
+
+    /** @see io.deephaven.function.Numeric#cummax(java.lang.Character[]) */
+    public static  char[] cummax( java.lang.Character[] values ) {return Numeric.cummax( values );}
 
     /** @see io.deephaven.function.Numeric#cummax(java.lang.Double[]) */
     public static  double[] cummax( java.lang.Double[] values ) {return Numeric.cummax( values );}
@@ -2035,6 +2490,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#cummax(io.deephaven.vector.ByteVector) */
     public static  byte[] cummax( io.deephaven.vector.ByteVector values ) {return Numeric.cummax( values );}
 
+    /** @see io.deephaven.function.Numeric#cummax(io.deephaven.vector.CharVector) */
+    public static  char[] cummax( io.deephaven.vector.CharVector values ) {return Numeric.cummax( values );}
+
     /** @see io.deephaven.function.Numeric#cummax(io.deephaven.vector.DoubleVector) */
     public static  double[] cummax( io.deephaven.vector.DoubleVector values ) {return Numeric.cummax( values );}
 
@@ -2053,6 +2511,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#cummin(byte[]) */
     public static  byte[] cummin( byte... values ) {return Numeric.cummin( values );}
 
+    /** @see io.deephaven.function.Numeric#cummin(char[]) */
+    public static  char[] cummin( char... values ) {return Numeric.cummin( values );}
+
     /** @see io.deephaven.function.Numeric#cummin(double[]) */
     public static  double[] cummin( double... values ) {return Numeric.cummin( values );}
 
@@ -2067,6 +2528,9 @@ public class GroovyStaticImports {
 
     /** @see io.deephaven.function.Numeric#cummin(java.lang.Byte[]) */
     public static  byte[] cummin( java.lang.Byte[] values ) {return Numeric.cummin( values );}
+
+    /** @see io.deephaven.function.Numeric#cummin(java.lang.Character[]) */
+    public static  char[] cummin( java.lang.Character[] values ) {return Numeric.cummin( values );}
 
     /** @see io.deephaven.function.Numeric#cummin(java.lang.Double[]) */
     public static  double[] cummin( java.lang.Double[] values ) {return Numeric.cummin( values );}
@@ -2089,6 +2553,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#cummin(io.deephaven.vector.ByteVector) */
     public static  byte[] cummin( io.deephaven.vector.ByteVector values ) {return Numeric.cummin( values );}
 
+    /** @see io.deephaven.function.Numeric#cummin(io.deephaven.vector.CharVector) */
+    public static  char[] cummin( io.deephaven.vector.CharVector values ) {return Numeric.cummin( values );}
+
     /** @see io.deephaven.function.Numeric#cummin(io.deephaven.vector.DoubleVector) */
     public static  double[] cummin( io.deephaven.vector.DoubleVector values ) {return Numeric.cummin( values );}
 
@@ -2107,6 +2574,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#cumprod(byte[]) */
     public static  long[] cumprod( byte... values ) {return Numeric.cumprod( values );}
 
+    /** @see io.deephaven.function.Numeric#cumprod(char[]) */
+    public static  long[] cumprod( char... values ) {return Numeric.cumprod( values );}
+
     /** @see io.deephaven.function.Numeric#cumprod(double[]) */
     public static  double[] cumprod( double... values ) {return Numeric.cumprod( values );}
 
@@ -2121,6 +2591,9 @@ public class GroovyStaticImports {
 
     /** @see io.deephaven.function.Numeric#cumprod(java.lang.Byte[]) */
     public static  long[] cumprod( java.lang.Byte[] values ) {return Numeric.cumprod( values );}
+
+    /** @see io.deephaven.function.Numeric#cumprod(java.lang.Character[]) */
+    public static  long[] cumprod( java.lang.Character[] values ) {return Numeric.cumprod( values );}
 
     /** @see io.deephaven.function.Numeric#cumprod(java.lang.Double[]) */
     public static  double[] cumprod( java.lang.Double[] values ) {return Numeric.cumprod( values );}
@@ -2143,6 +2616,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#cumprod(io.deephaven.vector.ByteVector) */
     public static  long[] cumprod( io.deephaven.vector.ByteVector values ) {return Numeric.cumprod( values );}
 
+    /** @see io.deephaven.function.Numeric#cumprod(io.deephaven.vector.CharVector) */
+    public static  long[] cumprod( io.deephaven.vector.CharVector values ) {return Numeric.cumprod( values );}
+
     /** @see io.deephaven.function.Numeric#cumprod(io.deephaven.vector.DoubleVector) */
     public static  double[] cumprod( io.deephaven.vector.DoubleVector values ) {return Numeric.cumprod( values );}
 
@@ -2161,6 +2637,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#cumsum(byte[]) */
     public static  long[] cumsum( byte... values ) {return Numeric.cumsum( values );}
 
+    /** @see io.deephaven.function.Numeric#cumsum(char[]) */
+    public static  long[] cumsum( char... values ) {return Numeric.cumsum( values );}
+
     /** @see io.deephaven.function.Numeric#cumsum(double[]) */
     public static  double[] cumsum( double... values ) {return Numeric.cumsum( values );}
 
@@ -2175,6 +2654,9 @@ public class GroovyStaticImports {
 
     /** @see io.deephaven.function.Numeric#cumsum(java.lang.Byte[]) */
     public static  long[] cumsum( java.lang.Byte[] values ) {return Numeric.cumsum( values );}
+
+    /** @see io.deephaven.function.Numeric#cumsum(java.lang.Character[]) */
+    public static  long[] cumsum( java.lang.Character[] values ) {return Numeric.cumsum( values );}
 
     /** @see io.deephaven.function.Numeric#cumsum(java.lang.Double[]) */
     public static  double[] cumsum( java.lang.Double[] values ) {return Numeric.cumsum( values );}
@@ -2197,6 +2679,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#cumsum(io.deephaven.vector.ByteVector) */
     public static  long[] cumsum( io.deephaven.vector.ByteVector values ) {return Numeric.cumsum( values );}
 
+    /** @see io.deephaven.function.Numeric#cumsum(io.deephaven.vector.CharVector) */
+    public static  long[] cumsum( io.deephaven.vector.CharVector values ) {return Numeric.cumsum( values );}
+
     /** @see io.deephaven.function.Numeric#cumsum(io.deephaven.vector.DoubleVector) */
     public static  double[] cumsum( io.deephaven.vector.DoubleVector values ) {return Numeric.cumsum( values );}
 
@@ -2214,6 +2699,9 @@ public class GroovyStaticImports {
 
     /** @see io.deephaven.function.Numeric#decrementExact(byte) */
     public static  byte decrementExact( byte x ) {return Numeric.decrementExact( x );}
+
+    /** @see io.deephaven.function.Numeric#decrementExact(char) */
+    public static  char decrementExact( char x ) {return Numeric.decrementExact( x );}
 
     /** @see io.deephaven.function.Numeric#decrementExact(int) */
     public static  int decrementExact( int x ) {return Numeric.decrementExact( x );}
@@ -2398,6 +2886,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#exp(byte) */
     public static  double exp( byte value ) {return Numeric.exp( value );}
 
+    /** @see io.deephaven.function.Numeric#exp(char) */
+    public static  double exp( char value ) {return Numeric.exp( value );}
+
     /** @see io.deephaven.function.Numeric#exp(double) */
     public static  double exp( double value ) {return Numeric.exp( value );}
 
@@ -2415,6 +2906,9 @@ public class GroovyStaticImports {
 
     /** @see io.deephaven.function.Numeric#expm1(byte) */
     public static  double expm1( byte x ) {return Numeric.expm1( x );}
+
+    /** @see io.deephaven.function.Numeric#expm1(char) */
+    public static  double expm1( char x ) {return Numeric.expm1( x );}
 
     /** @see io.deephaven.function.Numeric#expm1(double) */
     public static  double expm1( double x ) {return Numeric.expm1( x );}
@@ -2530,6 +3024,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#floor(byte) */
     public static  double floor( byte value ) {return Numeric.floor( value );}
 
+    /** @see io.deephaven.function.Numeric#floor(char) */
+    public static  double floor( char value ) {return Numeric.floor( value );}
+
     /** @see io.deephaven.function.Numeric#floor(double) */
     public static  double floor( double value ) {return Numeric.floor( value );}
 
@@ -2548,6 +3045,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#floorDiv(byte,byte) */
     public static  byte floorDiv( byte x, byte y ) {return Numeric.floorDiv( x, y );}
 
+    /** @see io.deephaven.function.Numeric#floorDiv(char,char) */
+    public static  char floorDiv( char x, char y ) {return Numeric.floorDiv( x, y );}
+
     /** @see io.deephaven.function.Numeric#floorDiv(int,int) */
     public static  int floorDiv( int x, int y ) {return Numeric.floorDiv( x, y );}
 
@@ -2559,6 +3059,9 @@ public class GroovyStaticImports {
 
     /** @see io.deephaven.function.Numeric#floorMod(byte,byte) */
     public static  byte floorMod( byte x, byte y ) {return Numeric.floorMod( x, y );}
+
+    /** @see io.deephaven.function.Numeric#floorMod(char,char) */
+    public static  char floorMod( char x, char y ) {return Numeric.floorMod( x, y );}
 
     /** @see io.deephaven.function.Numeric#floorMod(int,int) */
     public static  int floorMod( int x, int y ) {return Numeric.floorMod( x, y );}
@@ -2625,6 +3128,9 @@ public class GroovyStaticImports {
 
     /** @see io.deephaven.function.Numeric#hypot(byte,byte) */
     public static  double hypot( byte x, byte y ) {return Numeric.hypot( x, y );}
+
+    /** @see io.deephaven.function.Numeric#hypot(char,char) */
+    public static  double hypot( char x, char y ) {return Numeric.hypot( x, y );}
 
     /** @see io.deephaven.function.Numeric#hypot(double,double) */
     public static  double hypot( double x, double y ) {return Numeric.hypot( x, y );}
@@ -2815,6 +3321,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#incrementExact(byte) */
     public static  byte incrementExact( byte x ) {return Numeric.incrementExact( x );}
 
+    /** @see io.deephaven.function.Numeric#incrementExact(char) */
+    public static  char incrementExact( char x ) {return Numeric.incrementExact( x );}
+
     /** @see io.deephaven.function.Numeric#incrementExact(int) */
     public static  int incrementExact( int x ) {return Numeric.incrementExact( x );}
 
@@ -2826,6 +3335,9 @@ public class GroovyStaticImports {
 
     /** @see io.deephaven.function.Numeric#indexOfMax(byte[]) */
     public static  long indexOfMax( byte... values ) {return Numeric.indexOfMax( values );}
+
+    /** @see io.deephaven.function.Numeric#indexOfMax(char[]) */
+    public static  long indexOfMax( char... values ) {return Numeric.indexOfMax( values );}
 
     /** @see io.deephaven.function.Numeric#indexOfMax(double[]) */
     public static  long indexOfMax( double... values ) {return Numeric.indexOfMax( values );}
@@ -2841,6 +3353,9 @@ public class GroovyStaticImports {
 
     /** @see io.deephaven.function.Numeric#indexOfMax(java.lang.Byte[]) */
     public static  long indexOfMax( java.lang.Byte[] values ) {return Numeric.indexOfMax( values );}
+
+    /** @see io.deephaven.function.Numeric#indexOfMax(java.lang.Character[]) */
+    public static  long indexOfMax( java.lang.Character[] values ) {return Numeric.indexOfMax( values );}
 
     /** @see io.deephaven.function.Numeric#indexOfMax(java.lang.Double[]) */
     public static  long indexOfMax( java.lang.Double[] values ) {return Numeric.indexOfMax( values );}
@@ -2862,6 +3377,9 @@ public class GroovyStaticImports {
 
     /** @see io.deephaven.function.Numeric#indexOfMax(io.deephaven.vector.ByteVector) */
     public static  long indexOfMax( io.deephaven.vector.ByteVector values ) {return Numeric.indexOfMax( values );}
+
+    /** @see io.deephaven.function.Numeric#indexOfMax(io.deephaven.vector.CharVector) */
+    public static  long indexOfMax( io.deephaven.vector.CharVector values ) {return Numeric.indexOfMax( values );}
 
     /** @see io.deephaven.function.Numeric#indexOfMax(io.deephaven.vector.DoubleVector) */
     public static  long indexOfMax( io.deephaven.vector.DoubleVector values ) {return Numeric.indexOfMax( values );}
@@ -2887,6 +3405,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#indexOfMin(byte[]) */
     public static  long indexOfMin( byte... values ) {return Numeric.indexOfMin( values );}
 
+    /** @see io.deephaven.function.Numeric#indexOfMin(char[]) */
+    public static  long indexOfMin( char... values ) {return Numeric.indexOfMin( values );}
+
     /** @see io.deephaven.function.Numeric#indexOfMin(double[]) */
     public static  long indexOfMin( double... values ) {return Numeric.indexOfMin( values );}
 
@@ -2901,6 +3422,9 @@ public class GroovyStaticImports {
 
     /** @see io.deephaven.function.Numeric#indexOfMin(java.lang.Byte[]) */
     public static  long indexOfMin( java.lang.Byte[] values ) {return Numeric.indexOfMin( values );}
+
+    /** @see io.deephaven.function.Numeric#indexOfMin(java.lang.Character[]) */
+    public static  long indexOfMin( java.lang.Character[] values ) {return Numeric.indexOfMin( values );}
 
     /** @see io.deephaven.function.Numeric#indexOfMin(java.lang.Double[]) */
     public static  long indexOfMin( java.lang.Double[] values ) {return Numeric.indexOfMin( values );}
@@ -2922,6 +3446,9 @@ public class GroovyStaticImports {
 
     /** @see io.deephaven.function.Numeric#indexOfMin(io.deephaven.vector.ByteVector) */
     public static  long indexOfMin( io.deephaven.vector.ByteVector values ) {return Numeric.indexOfMin( values );}
+
+    /** @see io.deephaven.function.Numeric#indexOfMin(io.deephaven.vector.CharVector) */
+    public static  long indexOfMin( io.deephaven.vector.CharVector values ) {return Numeric.indexOfMin( values );}
 
     /** @see io.deephaven.function.Numeric#indexOfMin(io.deephaven.vector.DoubleVector) */
     public static  long indexOfMin( io.deephaven.vector.DoubleVector values ) {return Numeric.indexOfMin( values );}
@@ -2947,8 +3474,14 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#isFinite(byte) */
     public static  boolean isFinite( byte value ) {return Numeric.isFinite( value );}
 
+    /** @see io.deephaven.function.Numeric#isFinite(char) */
+    public static  boolean isFinite( char value ) {return Numeric.isFinite( value );}
+
     /** @see io.deephaven.function.Numeric#isFinite(java.lang.Byte) */
     public static  boolean isFinite( java.lang.Byte value ) {return Numeric.isFinite( value );}
+
+    /** @see io.deephaven.function.Numeric#isFinite(java.lang.Character) */
+    public static  boolean isFinite( java.lang.Character value ) {return Numeric.isFinite( value );}
 
     /** @see io.deephaven.function.Numeric#isFinite(java.lang.Double) */
     public static  boolean isFinite( java.lang.Double value ) {return Numeric.isFinite( value );}
@@ -2983,8 +3516,14 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#isInf(byte) */
     public static  boolean isInf( byte value ) {return Numeric.isInf( value );}
 
+    /** @see io.deephaven.function.Numeric#isInf(char) */
+    public static  boolean isInf( char value ) {return Numeric.isInf( value );}
+
     /** @see io.deephaven.function.Numeric#isInf(java.lang.Byte) */
     public static  boolean isInf( java.lang.Byte value ) {return Numeric.isInf( value );}
+
+    /** @see io.deephaven.function.Numeric#isInf(java.lang.Character) */
+    public static  boolean isInf( java.lang.Character value ) {return Numeric.isInf( value );}
 
     /** @see io.deephaven.function.Numeric#isInf(java.lang.Double) */
     public static  boolean isInf( java.lang.Double value ) {return Numeric.isInf( value );}
@@ -3019,8 +3558,14 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#isNaN(byte) */
     public static  boolean isNaN( byte value ) {return Numeric.isNaN( value );}
 
+    /** @see io.deephaven.function.Numeric#isNaN(char) */
+    public static  boolean isNaN( char value ) {return Numeric.isNaN( value );}
+
     /** @see io.deephaven.function.Numeric#isNaN(java.lang.Byte) */
     public static  boolean isNaN( java.lang.Byte value ) {return Numeric.isNaN( value );}
+
+    /** @see io.deephaven.function.Numeric#isNaN(java.lang.Character) */
+    public static  boolean isNaN( java.lang.Character value ) {return Numeric.isNaN( value );}
 
     /** @see io.deephaven.function.Numeric#isNaN(java.lang.Double) */
     public static  boolean isNaN( java.lang.Double value ) {return Numeric.isNaN( value );}
@@ -3154,6 +3699,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#log(byte) */
     public static  double log( byte value ) {return Numeric.log( value );}
 
+    /** @see io.deephaven.function.Numeric#log(char) */
+    public static  double log( char value ) {return Numeric.log( value );}
+
     /** @see io.deephaven.function.Numeric#log(double) */
     public static  double log( double value ) {return Numeric.log( value );}
 
@@ -3171,6 +3719,9 @@ public class GroovyStaticImports {
 
     /** @see io.deephaven.function.Numeric#log10(byte) */
     public static  double log10( byte x ) {return Numeric.log10( x );}
+
+    /** @see io.deephaven.function.Numeric#log10(char) */
+    public static  double log10( char x ) {return Numeric.log10( x );}
 
     /** @see io.deephaven.function.Numeric#log10(double) */
     public static  double log10( double x ) {return Numeric.log10( x );}
@@ -3190,6 +3741,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#log1p(byte) */
     public static  double log1p( byte x ) {return Numeric.log1p( x );}
 
+    /** @see io.deephaven.function.Numeric#log1p(char) */
+    public static  double log1p( char x ) {return Numeric.log1p( x );}
+
     /** @see io.deephaven.function.Numeric#log1p(double) */
     public static  double log1p( double x ) {return Numeric.log1p( x );}
 
@@ -3207,6 +3761,9 @@ public class GroovyStaticImports {
 
     /** @see io.deephaven.function.Numeric#lowerBin(byte,byte) */
     public static  byte lowerBin( byte value, byte interval ) {return Numeric.lowerBin( value, interval );}
+
+    /** @see io.deephaven.function.Numeric#lowerBin(char,char) */
+    public static  char lowerBin( char value, char interval ) {return Numeric.lowerBin( value, interval );}
 
     /** @see io.deephaven.function.Numeric#lowerBin(double,double) */
     public static  double lowerBin( double value, double interval ) {return Numeric.lowerBin( value, interval );}
@@ -3226,6 +3783,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#lowerBin(byte,byte,byte) */
     public static  byte lowerBin( byte value, byte interval, byte offset ) {return Numeric.lowerBin( value, interval, offset );}
 
+    /** @see io.deephaven.function.Numeric#lowerBin(char,char,char) */
+    public static  char lowerBin( char value, char interval, char offset ) {return Numeric.lowerBin( value, interval, offset );}
+
     /** @see io.deephaven.function.Numeric#lowerBin(double,double,double) */
     public static  double lowerBin( double value, double interval, double offset ) {return Numeric.lowerBin( value, interval, offset );}
 
@@ -3244,6 +3804,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#max(byte[]) */
     public static  byte max( byte... values ) {return Numeric.max( values );}
 
+    /** @see io.deephaven.function.Numeric#max(char[]) */
+    public static  char max( char... values ) {return Numeric.max( values );}
+
     /** @see io.deephaven.function.Numeric#max(double[]) */
     public static  double max( double... values ) {return Numeric.max( values );}
 
@@ -3258,6 +3821,9 @@ public class GroovyStaticImports {
 
     /** @see io.deephaven.function.Numeric#max(java.lang.Byte[]) */
     public static  byte max( java.lang.Byte[] values ) {return Numeric.max( values );}
+
+    /** @see io.deephaven.function.Numeric#max(java.lang.Character[]) */
+    public static  char max( java.lang.Character[] values ) {return Numeric.max( values );}
 
     /** @see io.deephaven.function.Numeric#max(java.lang.Double[]) */
     public static  double max( java.lang.Double[] values ) {return Numeric.max( values );}
@@ -3279,6 +3845,9 @@ public class GroovyStaticImports {
 
     /** @see io.deephaven.function.Numeric#max(io.deephaven.vector.ByteVector) */
     public static  byte max( io.deephaven.vector.ByteVector values ) {return Numeric.max( values );}
+
+    /** @see io.deephaven.function.Numeric#max(io.deephaven.vector.CharVector) */
+    public static  char max( io.deephaven.vector.CharVector values ) {return Numeric.max( values );}
 
     /** @see io.deephaven.function.Numeric#max(io.deephaven.vector.DoubleVector) */
     public static  double max( io.deephaven.vector.DoubleVector values ) {return Numeric.max( values );}
@@ -3304,6 +3873,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#median(byte[]) */
     public static  double median( byte... values ) {return Numeric.median( values );}
 
+    /** @see io.deephaven.function.Numeric#median(char[]) */
+    public static  double median( char... values ) {return Numeric.median( values );}
+
     /** @see io.deephaven.function.Numeric#median(double[]) */
     public static  double median( double... values ) {return Numeric.median( values );}
 
@@ -3318,6 +3890,9 @@ public class GroovyStaticImports {
 
     /** @see io.deephaven.function.Numeric#median(java.lang.Byte[]) */
     public static  double median( java.lang.Byte[] values ) {return Numeric.median( values );}
+
+    /** @see io.deephaven.function.Numeric#median(java.lang.Character[]) */
+    public static  double median( java.lang.Character[] values ) {return Numeric.median( values );}
 
     /** @see io.deephaven.function.Numeric#median(java.lang.Double[]) */
     public static  double median( java.lang.Double[] values ) {return Numeric.median( values );}
@@ -3340,6 +3915,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#median(io.deephaven.vector.ByteVector) */
     public static  double median( io.deephaven.vector.ByteVector values ) {return Numeric.median( values );}
 
+    /** @see io.deephaven.function.Numeric#median(io.deephaven.vector.CharVector) */
+    public static  double median( io.deephaven.vector.CharVector values ) {return Numeric.median( values );}
+
     /** @see io.deephaven.function.Numeric#median(io.deephaven.vector.DoubleVector) */
     public static  double median( io.deephaven.vector.DoubleVector values ) {return Numeric.median( values );}
 
@@ -3358,6 +3936,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#min(byte[]) */
     public static  byte min( byte... values ) {return Numeric.min( values );}
 
+    /** @see io.deephaven.function.Numeric#min(char[]) */
+    public static  char min( char... values ) {return Numeric.min( values );}
+
     /** @see io.deephaven.function.Numeric#min(double[]) */
     public static  double min( double... values ) {return Numeric.min( values );}
 
@@ -3372,6 +3953,9 @@ public class GroovyStaticImports {
 
     /** @see io.deephaven.function.Numeric#min(java.lang.Byte[]) */
     public static  byte min( java.lang.Byte[] values ) {return Numeric.min( values );}
+
+    /** @see io.deephaven.function.Numeric#min(java.lang.Character[]) */
+    public static  char min( java.lang.Character[] values ) {return Numeric.min( values );}
 
     /** @see io.deephaven.function.Numeric#min(java.lang.Double[]) */
     public static  double min( java.lang.Double[] values ) {return Numeric.min( values );}
@@ -3393,6 +3977,9 @@ public class GroovyStaticImports {
 
     /** @see io.deephaven.function.Numeric#min(io.deephaven.vector.ByteVector) */
     public static  byte min( io.deephaven.vector.ByteVector values ) {return Numeric.min( values );}
+
+    /** @see io.deephaven.function.Numeric#min(io.deephaven.vector.CharVector) */
+    public static  char min( io.deephaven.vector.CharVector values ) {return Numeric.min( values );}
 
     /** @see io.deephaven.function.Numeric#min(io.deephaven.vector.DoubleVector) */
     public static  double min( io.deephaven.vector.DoubleVector values ) {return Numeric.min( values );}
@@ -3418,6 +4005,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#multiplyExact(byte,byte) */
     public static  byte multiplyExact( byte x, byte y ) {return Numeric.multiplyExact( x, y );}
 
+    /** @see io.deephaven.function.Numeric#multiplyExact(char,char) */
+    public static  char multiplyExact( char x, char y ) {return Numeric.multiplyExact( x, y );}
+
     /** @see io.deephaven.function.Numeric#multiplyExact(int,int) */
     public static  int multiplyExact( int x, int y ) {return Numeric.multiplyExact( x, y );}
 
@@ -3429,6 +4019,9 @@ public class GroovyStaticImports {
 
     /** @see io.deephaven.function.Numeric#negateExact(byte) */
     public static  byte negateExact( byte x ) {return Numeric.negateExact( x );}
+
+    /** @see io.deephaven.function.Numeric#negateExact(char) */
+    public static  char negateExact( char x ) {return Numeric.negateExact( x );}
 
     /** @see io.deephaven.function.Numeric#negateExact(int) */
     public static  int negateExact( int x ) {return Numeric.negateExact( x );}
@@ -3571,6 +4164,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#percentile(double,byte[]) */
     public static  byte percentile( double percentile, byte... values ) {return Numeric.percentile( percentile, values );}
 
+    /** @see io.deephaven.function.Numeric#percentile(double,char[]) */
+    public static  char percentile( double percentile, char... values ) {return Numeric.percentile( percentile, values );}
+
     /** @see io.deephaven.function.Numeric#percentile(double,double[]) */
     public static  double percentile( double percentile, double... values ) {return Numeric.percentile( percentile, values );}
 
@@ -3588,6 +4184,9 @@ public class GroovyStaticImports {
 
     /** @see io.deephaven.function.Numeric#percentile(double,io.deephaven.vector.ByteVector) */
     public static  byte percentile( double percentile, io.deephaven.vector.ByteVector values ) {return Numeric.percentile( percentile, values );}
+
+    /** @see io.deephaven.function.Numeric#percentile(double,io.deephaven.vector.CharVector) */
+    public static  char percentile( double percentile, io.deephaven.vector.CharVector values ) {return Numeric.percentile( percentile, values );}
 
     /** @see io.deephaven.function.Numeric#percentile(double,io.deephaven.vector.DoubleVector) */
     public static  double percentile( double percentile, io.deephaven.vector.DoubleVector values ) {return Numeric.percentile( percentile, values );}
@@ -3607,6 +4206,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#pow(byte,byte) */
     public static  double pow( byte a, byte b ) {return Numeric.pow( a, b );}
 
+    /** @see io.deephaven.function.Numeric#pow(byte,char) */
+    public static  double pow( byte a, char b ) {return Numeric.pow( a, b );}
+
     /** @see io.deephaven.function.Numeric#pow(byte,double) */
     public static  double pow( byte a, double b ) {return Numeric.pow( a, b );}
 
@@ -3622,8 +4224,32 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#pow(byte,short) */
     public static  double pow( byte a, short b ) {return Numeric.pow( a, b );}
 
+    /** @see io.deephaven.function.Numeric#pow(char,byte) */
+    public static  double pow( char a, byte b ) {return Numeric.pow( a, b );}
+
+    /** @see io.deephaven.function.Numeric#pow(char,char) */
+    public static  double pow( char a, char b ) {return Numeric.pow( a, b );}
+
+    /** @see io.deephaven.function.Numeric#pow(char,double) */
+    public static  double pow( char a, double b ) {return Numeric.pow( a, b );}
+
+    /** @see io.deephaven.function.Numeric#pow(char,float) */
+    public static  double pow( char a, float b ) {return Numeric.pow( a, b );}
+
+    /** @see io.deephaven.function.Numeric#pow(char,int) */
+    public static  double pow( char a, int b ) {return Numeric.pow( a, b );}
+
+    /** @see io.deephaven.function.Numeric#pow(char,long) */
+    public static  double pow( char a, long b ) {return Numeric.pow( a, b );}
+
+    /** @see io.deephaven.function.Numeric#pow(char,short) */
+    public static  double pow( char a, short b ) {return Numeric.pow( a, b );}
+
     /** @see io.deephaven.function.Numeric#pow(double,byte) */
     public static  double pow( double a, byte b ) {return Numeric.pow( a, b );}
+
+    /** @see io.deephaven.function.Numeric#pow(double,char) */
+    public static  double pow( double a, char b ) {return Numeric.pow( a, b );}
 
     /** @see io.deephaven.function.Numeric#pow(double,double) */
     public static  double pow( double a, double b ) {return Numeric.pow( a, b );}
@@ -3643,6 +4269,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#pow(float,byte) */
     public static  double pow( float a, byte b ) {return Numeric.pow( a, b );}
 
+    /** @see io.deephaven.function.Numeric#pow(float,char) */
+    public static  double pow( float a, char b ) {return Numeric.pow( a, b );}
+
     /** @see io.deephaven.function.Numeric#pow(float,double) */
     public static  double pow( float a, double b ) {return Numeric.pow( a, b );}
 
@@ -3660,6 +4289,9 @@ public class GroovyStaticImports {
 
     /** @see io.deephaven.function.Numeric#pow(int,byte) */
     public static  double pow( int a, byte b ) {return Numeric.pow( a, b );}
+
+    /** @see io.deephaven.function.Numeric#pow(int,char) */
+    public static  double pow( int a, char b ) {return Numeric.pow( a, b );}
 
     /** @see io.deephaven.function.Numeric#pow(int,double) */
     public static  double pow( int a, double b ) {return Numeric.pow( a, b );}
@@ -3679,6 +4311,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#pow(long,byte) */
     public static  double pow( long a, byte b ) {return Numeric.pow( a, b );}
 
+    /** @see io.deephaven.function.Numeric#pow(long,char) */
+    public static  double pow( long a, char b ) {return Numeric.pow( a, b );}
+
     /** @see io.deephaven.function.Numeric#pow(long,double) */
     public static  double pow( long a, double b ) {return Numeric.pow( a, b );}
 
@@ -3696,6 +4331,9 @@ public class GroovyStaticImports {
 
     /** @see io.deephaven.function.Numeric#pow(short,byte) */
     public static  double pow( short a, byte b ) {return Numeric.pow( a, b );}
+
+    /** @see io.deephaven.function.Numeric#pow(short,char) */
+    public static  double pow( short a, char b ) {return Numeric.pow( a, b );}
 
     /** @see io.deephaven.function.Numeric#pow(short,double) */
     public static  double pow( short a, double b ) {return Numeric.pow( a, b );}
@@ -3715,6 +4353,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#product(byte[]) */
     public static  long product( byte... values ) {return Numeric.product( values );}
 
+    /** @see io.deephaven.function.Numeric#product(char[]) */
+    public static  long product( char... values ) {return Numeric.product( values );}
+
     /** @see io.deephaven.function.Numeric#product(double[]) */
     public static  double product( double... values ) {return Numeric.product( values );}
 
@@ -3732,6 +4373,9 @@ public class GroovyStaticImports {
 
     /** @see io.deephaven.function.Numeric#product(io.deephaven.vector.ByteVector) */
     public static  long product( io.deephaven.vector.ByteVector values ) {return Numeric.product( values );}
+
+    /** @see io.deephaven.function.Numeric#product(io.deephaven.vector.CharVector) */
+    public static  long product( io.deephaven.vector.CharVector values ) {return Numeric.product( values );}
 
     /** @see io.deephaven.function.Numeric#product(io.deephaven.vector.DoubleVector) */
     public static  double product( io.deephaven.vector.DoubleVector values ) {return Numeric.product( values );}
@@ -3790,6 +4434,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Sort#rank(byte[]) */
     public static  int[] rank( byte... values ) {return Sort.rank( values );}
 
+    /** @see io.deephaven.function.Sort#rank(char[]) */
+    public static  int[] rank( char... values ) {return Sort.rank( values );}
+
     /** @see io.deephaven.function.Sort#rank(double[]) */
     public static  int[] rank( double... values ) {return Sort.rank( values );}
 
@@ -3804,6 +4451,9 @@ public class GroovyStaticImports {
 
     /** @see io.deephaven.function.Sort#rank(java.lang.Byte[]) */
     public static  int[] rank( java.lang.Byte[] values ) {return Sort.rank( values );}
+
+    /** @see io.deephaven.function.Sort#rank(java.lang.Character[]) */
+    public static  int[] rank( java.lang.Character[] values ) {return Sort.rank( values );}
 
     /** @see io.deephaven.function.Sort#rank(java.lang.Double[]) */
     public static  int[] rank( java.lang.Double[] values ) {return Sort.rank( values );}
@@ -3826,6 +4476,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Sort#rank(io.deephaven.vector.ByteVector) */
     public static  int[] rank( io.deephaven.vector.ByteVector values ) {return Sort.rank( values );}
 
+    /** @see io.deephaven.function.Sort#rank(io.deephaven.vector.CharVector) */
+    public static  int[] rank( io.deephaven.vector.CharVector values ) {return Sort.rank( values );}
+
     /** @see io.deephaven.function.Sort#rank(io.deephaven.vector.DoubleVector) */
     public static  int[] rank( io.deephaven.vector.DoubleVector values ) {return Sort.rank( values );}
 
@@ -3844,6 +4497,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Sort#rankDescending(byte[]) */
     public static  int[] rankDescending( byte... values ) {return Sort.rankDescending( values );}
 
+    /** @see io.deephaven.function.Sort#rankDescending(char[]) */
+    public static  int[] rankDescending( char... values ) {return Sort.rankDescending( values );}
+
     /** @see io.deephaven.function.Sort#rankDescending(double[]) */
     public static  int[] rankDescending( double... values ) {return Sort.rankDescending( values );}
 
@@ -3858,6 +4514,9 @@ public class GroovyStaticImports {
 
     /** @see io.deephaven.function.Sort#rankDescending(java.lang.Byte[]) */
     public static  int[] rankDescending( java.lang.Byte[] values ) {return Sort.rankDescending( values );}
+
+    /** @see io.deephaven.function.Sort#rankDescending(java.lang.Character[]) */
+    public static  int[] rankDescending( java.lang.Character[] values ) {return Sort.rankDescending( values );}
 
     /** @see io.deephaven.function.Sort#rankDescending(java.lang.Double[]) */
     public static  int[] rankDescending( java.lang.Double[] values ) {return Sort.rankDescending( values );}
@@ -3879,6 +4538,9 @@ public class GroovyStaticImports {
 
     /** @see io.deephaven.function.Sort#rankDescending(io.deephaven.vector.ByteVector) */
     public static  int[] rankDescending( io.deephaven.vector.ByteVector values ) {return Sort.rankDescending( values );}
+
+    /** @see io.deephaven.function.Sort#rankDescending(io.deephaven.vector.CharVector) */
+    public static  int[] rankDescending( io.deephaven.vector.CharVector values ) {return Sort.rankDescending( values );}
 
     /** @see io.deephaven.function.Sort#rankDescending(io.deephaven.vector.DoubleVector) */
     public static  int[] rankDescending( io.deephaven.vector.DoubleVector values ) {return Sort.rankDescending( values );}
@@ -4168,6 +4830,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#rint(byte) */
     public static  double rint( byte value ) {return Numeric.rint( value );}
 
+    /** @see io.deephaven.function.Numeric#rint(char) */
+    public static  double rint( char value ) {return Numeric.rint( value );}
+
     /** @see io.deephaven.function.Numeric#rint(double) */
     public static  double rint( double value ) {return Numeric.rint( value );}
 
@@ -4185,6 +4850,9 @@ public class GroovyStaticImports {
 
     /** @see io.deephaven.function.Numeric#round(byte) */
     public static  long round( byte value ) {return Numeric.round( value );}
+
+    /** @see io.deephaven.function.Numeric#round(char) */
+    public static  long round( char value ) {return Numeric.round( value );}
 
     /** @see io.deephaven.function.Numeric#round(double) */
     public static  long round( double value ) {return Numeric.round( value );}
@@ -4228,6 +4896,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#signum(byte) */
     public static  int signum( byte value ) {return Numeric.signum( value );}
 
+    /** @see io.deephaven.function.Numeric#signum(char) */
+    public static  int signum( char value ) {return Numeric.signum( value );}
+
     /** @see io.deephaven.function.Numeric#signum(double) */
     public static  int signum( double value ) {return Numeric.signum( value );}
 
@@ -4245,6 +4916,9 @@ public class GroovyStaticImports {
 
     /** @see io.deephaven.function.Numeric#sin(byte) */
     public static  double sin( byte value ) {return Numeric.sin( value );}
+
+    /** @see io.deephaven.function.Numeric#sin(char) */
+    public static  double sin( char value ) {return Numeric.sin( value );}
 
     /** @see io.deephaven.function.Numeric#sin(double) */
     public static  double sin( double value ) {return Numeric.sin( value );}
@@ -4264,6 +4938,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#sinh(byte) */
     public static  double sinh( byte x ) {return Numeric.sinh( x );}
 
+    /** @see io.deephaven.function.Numeric#sinh(char) */
+    public static  double sinh( char x ) {return Numeric.sinh( x );}
+
     /** @see io.deephaven.function.Numeric#sinh(double) */
     public static  double sinh( double x ) {return Numeric.sinh( x );}
 
@@ -4282,6 +4959,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Sort#sort(byte[]) */
     public static  byte[] sort( byte... values ) {return Sort.sort( values );}
 
+    /** @see io.deephaven.function.Sort#sort(char[]) */
+    public static  char[] sort( char... values ) {return Sort.sort( values );}
+
     /** @see io.deephaven.function.Sort#sort(double[]) */
     public static  double[] sort( double... values ) {return Sort.sort( values );}
 
@@ -4296,6 +4976,9 @@ public class GroovyStaticImports {
 
     /** @see io.deephaven.function.Sort#sort(java.lang.Byte[]) */
     public static  byte[] sort( java.lang.Byte[] values ) {return Sort.sort( values );}
+
+    /** @see io.deephaven.function.Sort#sort(java.lang.Character[]) */
+    public static  char[] sort( java.lang.Character[] values ) {return Sort.sort( values );}
 
     /** @see io.deephaven.function.Sort#sort(java.lang.Double[]) */
     public static  double[] sort( java.lang.Double[] values ) {return Sort.sort( values );}
@@ -4318,6 +5001,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Sort#sort(io.deephaven.vector.ByteVector) */
     public static  byte[] sort( io.deephaven.vector.ByteVector values ) {return Sort.sort( values );}
 
+    /** @see io.deephaven.function.Sort#sort(io.deephaven.vector.CharVector) */
+    public static  char[] sort( io.deephaven.vector.CharVector values ) {return Sort.sort( values );}
+
     /** @see io.deephaven.function.Sort#sort(io.deephaven.vector.DoubleVector) */
     public static  double[] sort( io.deephaven.vector.DoubleVector values ) {return Sort.sort( values );}
 
@@ -4336,6 +5022,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Sort#sortDescending(byte[]) */
     public static  byte[] sortDescending( byte... values ) {return Sort.sortDescending( values );}
 
+    /** @see io.deephaven.function.Sort#sortDescending(char[]) */
+    public static  char[] sortDescending( char... values ) {return Sort.sortDescending( values );}
+
     /** @see io.deephaven.function.Sort#sortDescending(double[]) */
     public static  double[] sortDescending( double... values ) {return Sort.sortDescending( values );}
 
@@ -4350,6 +5039,9 @@ public class GroovyStaticImports {
 
     /** @see io.deephaven.function.Sort#sortDescending(java.lang.Byte[]) */
     public static  byte[] sortDescending( java.lang.Byte[] values ) {return Sort.sortDescending( values );}
+
+    /** @see io.deephaven.function.Sort#sortDescending(java.lang.Character[]) */
+    public static  char[] sortDescending( java.lang.Character[] values ) {return Sort.sortDescending( values );}
 
     /** @see io.deephaven.function.Sort#sortDescending(java.lang.Double[]) */
     public static  double[] sortDescending( java.lang.Double[] values ) {return Sort.sortDescending( values );}
@@ -4371,6 +5063,9 @@ public class GroovyStaticImports {
 
     /** @see io.deephaven.function.Sort#sortDescending(io.deephaven.vector.ByteVector) */
     public static  byte[] sortDescending( io.deephaven.vector.ByteVector values ) {return Sort.sortDescending( values );}
+
+    /** @see io.deephaven.function.Sort#sortDescending(io.deephaven.vector.CharVector) */
+    public static  char[] sortDescending( io.deephaven.vector.CharVector values ) {return Sort.sortDescending( values );}
 
     /** @see io.deephaven.function.Sort#sortDescending(io.deephaven.vector.DoubleVector) */
     public static  double[] sortDescending( io.deephaven.vector.DoubleVector values ) {return Sort.sortDescending( values );}
@@ -4414,6 +5109,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#sqrt(byte) */
     public static  double sqrt( byte value ) {return Numeric.sqrt( value );}
 
+    /** @see io.deephaven.function.Numeric#sqrt(char) */
+    public static  double sqrt( char value ) {return Numeric.sqrt( value );}
+
     /** @see io.deephaven.function.Numeric#sqrt(double) */
     public static  double sqrt( double value ) {return Numeric.sqrt( value );}
 
@@ -4432,6 +5130,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#std(byte[]) */
     public static  double std( byte... values ) {return Numeric.std( values );}
 
+    /** @see io.deephaven.function.Numeric#std(char[]) */
+    public static  double std( char... values ) {return Numeric.std( values );}
+
     /** @see io.deephaven.function.Numeric#std(double[]) */
     public static  double std( double... values ) {return Numeric.std( values );}
 
@@ -4446,6 +5147,9 @@ public class GroovyStaticImports {
 
     /** @see io.deephaven.function.Numeric#std(java.lang.Byte[]) */
     public static  double std( java.lang.Byte[] values ) {return Numeric.std( values );}
+
+    /** @see io.deephaven.function.Numeric#std(java.lang.Character[]) */
+    public static  double std( java.lang.Character[] values ) {return Numeric.std( values );}
 
     /** @see io.deephaven.function.Numeric#std(java.lang.Double[]) */
     public static  double std( java.lang.Double[] values ) {return Numeric.std( values );}
@@ -4468,6 +5172,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#std(io.deephaven.vector.ByteVector) */
     public static  double std( io.deephaven.vector.ByteVector values ) {return Numeric.std( values );}
 
+    /** @see io.deephaven.function.Numeric#std(io.deephaven.vector.CharVector) */
+    public static  double std( io.deephaven.vector.CharVector values ) {return Numeric.std( values );}
+
     /** @see io.deephaven.function.Numeric#std(io.deephaven.vector.DoubleVector) */
     public static  double std( io.deephaven.vector.DoubleVector values ) {return Numeric.std( values );}
 
@@ -4486,6 +5193,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#ste(byte[]) */
     public static  double ste( byte... values ) {return Numeric.ste( values );}
 
+    /** @see io.deephaven.function.Numeric#ste(char[]) */
+    public static  double ste( char... values ) {return Numeric.ste( values );}
+
     /** @see io.deephaven.function.Numeric#ste(double[]) */
     public static  double ste( double... values ) {return Numeric.ste( values );}
 
@@ -4500,6 +5210,9 @@ public class GroovyStaticImports {
 
     /** @see io.deephaven.function.Numeric#ste(java.lang.Byte[]) */
     public static  double ste( java.lang.Byte[] values ) {return Numeric.ste( values );}
+
+    /** @see io.deephaven.function.Numeric#ste(java.lang.Character[]) */
+    public static  double ste( java.lang.Character[] values ) {return Numeric.ste( values );}
 
     /** @see io.deephaven.function.Numeric#ste(java.lang.Double[]) */
     public static  double ste( java.lang.Double[] values ) {return Numeric.ste( values );}
@@ -4522,6 +5235,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#ste(io.deephaven.vector.ByteVector) */
     public static  double ste( io.deephaven.vector.ByteVector values ) {return Numeric.ste( values );}
 
+    /** @see io.deephaven.function.Numeric#ste(io.deephaven.vector.CharVector) */
+    public static  double ste( io.deephaven.vector.CharVector values ) {return Numeric.ste( values );}
+
     /** @see io.deephaven.function.Numeric#ste(io.deephaven.vector.DoubleVector) */
     public static  double ste( io.deephaven.vector.DoubleVector values ) {return Numeric.ste( values );}
 
@@ -4540,6 +5256,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#subtractExact(byte,byte) */
     public static  byte subtractExact( byte x, byte y ) {return Numeric.subtractExact( x, y );}
 
+    /** @see io.deephaven.function.Numeric#subtractExact(char,char) */
+    public static  char subtractExact( char x, char y ) {return Numeric.subtractExact( x, y );}
+
     /** @see io.deephaven.function.Numeric#subtractExact(int,int) */
     public static  int subtractExact( int x, int y ) {return Numeric.subtractExact( x, y );}
 
@@ -4551,6 +5270,9 @@ public class GroovyStaticImports {
 
     /** @see io.deephaven.function.Numeric#sum(byte[]) */
     public static  long sum( byte... values ) {return Numeric.sum( values );}
+
+    /** @see io.deephaven.function.Numeric#sum(char[]) */
+    public static  long sum( char... values ) {return Numeric.sum( values );}
 
     /** @see io.deephaven.function.Numeric#sum(double[]) */
     public static  double sum( double... values ) {return Numeric.sum( values );}
@@ -4570,6 +5292,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#sum(io.deephaven.vector.ByteVector) */
     public static  long sum( io.deephaven.vector.ByteVector values ) {return Numeric.sum( values );}
 
+    /** @see io.deephaven.function.Numeric#sum(io.deephaven.vector.CharVector) */
+    public static  long sum( io.deephaven.vector.CharVector values ) {return Numeric.sum( values );}
+
     /** @see io.deephaven.function.Numeric#sum(io.deephaven.vector.DoubleVector) */
     public static  double sum( io.deephaven.vector.DoubleVector values ) {return Numeric.sum( values );}
 
@@ -4587,6 +5312,9 @@ public class GroovyStaticImports {
 
     /** @see io.deephaven.function.Numeric#tan(byte) */
     public static  double tan( byte value ) {return Numeric.tan( value );}
+
+    /** @see io.deephaven.function.Numeric#tan(char) */
+    public static  double tan( char value ) {return Numeric.tan( value );}
 
     /** @see io.deephaven.function.Numeric#tan(double) */
     public static  double tan( double value ) {return Numeric.tan( value );}
@@ -4606,6 +5334,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#tanh(byte) */
     public static  double tanh( byte x ) {return Numeric.tanh( x );}
 
+    /** @see io.deephaven.function.Numeric#tanh(char) */
+    public static  double tanh( char x ) {return Numeric.tanh( x );}
+
     /** @see io.deephaven.function.Numeric#tanh(double) */
     public static  double tanh( double x ) {return Numeric.tanh( x );}
 
@@ -4624,6 +5355,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#toByteExact(byte) */
     public static  short toByteExact( byte x ) {return Numeric.toByteExact( x );}
 
+    /** @see io.deephaven.function.Numeric#toByteExact(char) */
+    public static  short toByteExact( char x ) {return Numeric.toByteExact( x );}
+
     /** @see io.deephaven.function.Numeric#toByteExact(int) */
     public static  short toByteExact( int x ) {return Numeric.toByteExact( x );}
 
@@ -4635,6 +5369,9 @@ public class GroovyStaticImports {
 
     /** @see io.deephaven.function.Numeric#toDegrees(byte) */
     public static  double toDegrees( byte x ) {return Numeric.toDegrees( x );}
+
+    /** @see io.deephaven.function.Numeric#toDegrees(char) */
+    public static  double toDegrees( char x ) {return Numeric.toDegrees( x );}
 
     /** @see io.deephaven.function.Numeric#toDegrees(double) */
     public static  double toDegrees( double x ) {return Numeric.toDegrees( x );}
@@ -4654,6 +5391,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#toIntExact(byte) */
     public static  int toIntExact( byte x ) {return Numeric.toIntExact( x );}
 
+    /** @see io.deephaven.function.Numeric#toIntExact(char) */
+    public static  int toIntExact( char x ) {return Numeric.toIntExact( x );}
+
     /** @see io.deephaven.function.Numeric#toIntExact(int) */
     public static  int toIntExact( int x ) {return Numeric.toIntExact( x );}
 
@@ -4665,6 +5405,9 @@ public class GroovyStaticImports {
 
     /** @see io.deephaven.function.Numeric#toRadians(byte) */
     public static  double toRadians( byte x ) {return Numeric.toRadians( x );}
+
+    /** @see io.deephaven.function.Numeric#toRadians(char) */
+    public static  double toRadians( char x ) {return Numeric.toRadians( x );}
 
     /** @see io.deephaven.function.Numeric#toRadians(double) */
     public static  double toRadians( double x ) {return Numeric.toRadians( x );}
@@ -4684,6 +5427,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#toShortExact(byte) */
     public static  short toShortExact( byte x ) {return Numeric.toShortExact( x );}
 
+    /** @see io.deephaven.function.Numeric#toShortExact(char) */
+    public static  short toShortExact( char x ) {return Numeric.toShortExact( x );}
+
     /** @see io.deephaven.function.Numeric#toShortExact(int) */
     public static  short toShortExact( int x ) {return Numeric.toShortExact( x );}
 
@@ -4695,6 +5441,9 @@ public class GroovyStaticImports {
 
     /** @see io.deephaven.function.Numeric#tstat(byte[]) */
     public static  double tstat( byte... values ) {return Numeric.tstat( values );}
+
+    /** @see io.deephaven.function.Numeric#tstat(char[]) */
+    public static  double tstat( char... values ) {return Numeric.tstat( values );}
 
     /** @see io.deephaven.function.Numeric#tstat(double[]) */
     public static  double tstat( double... values ) {return Numeric.tstat( values );}
@@ -4710,6 +5459,9 @@ public class GroovyStaticImports {
 
     /** @see io.deephaven.function.Numeric#tstat(java.lang.Byte[]) */
     public static  double tstat( java.lang.Byte[] values ) {return Numeric.tstat( values );}
+
+    /** @see io.deephaven.function.Numeric#tstat(java.lang.Character[]) */
+    public static  double tstat( java.lang.Character[] values ) {return Numeric.tstat( values );}
 
     /** @see io.deephaven.function.Numeric#tstat(java.lang.Double[]) */
     public static  double tstat( java.lang.Double[] values ) {return Numeric.tstat( values );}
@@ -4731,6 +5483,9 @@ public class GroovyStaticImports {
 
     /** @see io.deephaven.function.Numeric#tstat(io.deephaven.vector.ByteVector) */
     public static  double tstat( io.deephaven.vector.ByteVector values ) {return Numeric.tstat( values );}
+
+    /** @see io.deephaven.function.Numeric#tstat(io.deephaven.vector.CharVector) */
+    public static  double tstat( io.deephaven.vector.CharVector values ) {return Numeric.tstat( values );}
 
     /** @see io.deephaven.function.Numeric#tstat(io.deephaven.vector.DoubleVector) */
     public static  double tstat( io.deephaven.vector.DoubleVector values ) {return Numeric.tstat( values );}
@@ -4777,6 +5532,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#upperBin(byte,byte) */
     public static  byte upperBin( byte value, byte interval ) {return Numeric.upperBin( value, interval );}
 
+    /** @see io.deephaven.function.Numeric#upperBin(char,char) */
+    public static  char upperBin( char value, char interval ) {return Numeric.upperBin( value, interval );}
+
     /** @see io.deephaven.function.Numeric#upperBin(double,double) */
     public static  double upperBin( double value, double interval ) {return Numeric.upperBin( value, interval );}
 
@@ -4794,6 +5552,9 @@ public class GroovyStaticImports {
 
     /** @see io.deephaven.function.Numeric#upperBin(byte,byte,byte) */
     public static  byte upperBin( byte value, byte interval, byte offset ) {return Numeric.upperBin( value, interval, offset );}
+
+    /** @see io.deephaven.function.Numeric#upperBin(char,char,char) */
+    public static  char upperBin( char value, char interval, char offset ) {return Numeric.upperBin( value, interval, offset );}
 
     /** @see io.deephaven.function.Numeric#upperBin(double,double,double) */
     public static  double upperBin( double value, double interval, double offset ) {return Numeric.upperBin( value, interval, offset );}
@@ -4813,6 +5574,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#var(byte[]) */
     public static  double var( byte... values ) {return Numeric.var( values );}
 
+    /** @see io.deephaven.function.Numeric#var(char[]) */
+    public static  double var( char... values ) {return Numeric.var( values );}
+
     /** @see io.deephaven.function.Numeric#var(double[]) */
     public static  double var( double... values ) {return Numeric.var( values );}
 
@@ -4827,6 +5591,9 @@ public class GroovyStaticImports {
 
     /** @see io.deephaven.function.Numeric#var(java.lang.Byte[]) */
     public static  double var( java.lang.Byte[] values ) {return Numeric.var( values );}
+
+    /** @see io.deephaven.function.Numeric#var(java.lang.Character[]) */
+    public static  double var( java.lang.Character[] values ) {return Numeric.var( values );}
 
     /** @see io.deephaven.function.Numeric#var(java.lang.Double[]) */
     public static  double var( java.lang.Double[] values ) {return Numeric.var( values );}
@@ -4848,6 +5615,9 @@ public class GroovyStaticImports {
 
     /** @see io.deephaven.function.Numeric#var(io.deephaven.vector.ByteVector) */
     public static  double var( io.deephaven.vector.ByteVector values ) {return Numeric.var( values );}
+
+    /** @see io.deephaven.function.Numeric#var(io.deephaven.vector.CharVector) */
+    public static  double var( io.deephaven.vector.CharVector values ) {return Numeric.var( values );}
 
     /** @see io.deephaven.function.Numeric#var(io.deephaven.vector.DoubleVector) */
     public static  double var( io.deephaven.vector.DoubleVector values ) {return Numeric.var( values );}
@@ -4891,6 +5661,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#wavg(byte[],byte[]) */
     public static  double wavg( byte[] values, byte[] weights ) {return Numeric.wavg( values, weights );}
 
+    /** @see io.deephaven.function.Numeric#wavg(byte[],char[]) */
+    public static  double wavg( byte[] values, char[] weights ) {return Numeric.wavg( values, weights );}
+
     /** @see io.deephaven.function.Numeric#wavg(byte[],double[]) */
     public static  double wavg( byte[] values, double[] weights ) {return Numeric.wavg( values, weights );}
 
@@ -4909,6 +5682,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#wavg(byte[],io.deephaven.vector.ByteVector) */
     public static  double wavg( byte[] values, io.deephaven.vector.ByteVector weights ) {return Numeric.wavg( values, weights );}
 
+    /** @see io.deephaven.function.Numeric#wavg(byte[],io.deephaven.vector.CharVector) */
+    public static  double wavg( byte[] values, io.deephaven.vector.CharVector weights ) {return Numeric.wavg( values, weights );}
+
     /** @see io.deephaven.function.Numeric#wavg(byte[],io.deephaven.vector.DoubleVector) */
     public static  double wavg( byte[] values, io.deephaven.vector.DoubleVector weights ) {return Numeric.wavg( values, weights );}
 
@@ -4924,8 +5700,53 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#wavg(byte[],io.deephaven.vector.ShortVector) */
     public static  double wavg( byte[] values, io.deephaven.vector.ShortVector weights ) {return Numeric.wavg( values, weights );}
 
+    /** @see io.deephaven.function.Numeric#wavg(char[],byte[]) */
+    public static  double wavg( char[] values, byte[] weights ) {return Numeric.wavg( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wavg(char[],char[]) */
+    public static  double wavg( char[] values, char[] weights ) {return Numeric.wavg( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wavg(char[],double[]) */
+    public static  double wavg( char[] values, double[] weights ) {return Numeric.wavg( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wavg(char[],float[]) */
+    public static  double wavg( char[] values, float[] weights ) {return Numeric.wavg( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wavg(char[],int[]) */
+    public static  double wavg( char[] values, int[] weights ) {return Numeric.wavg( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wavg(char[],long[]) */
+    public static  double wavg( char[] values, long[] weights ) {return Numeric.wavg( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wavg(char[],short[]) */
+    public static  double wavg( char[] values, short[] weights ) {return Numeric.wavg( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wavg(char[],io.deephaven.vector.ByteVector) */
+    public static  double wavg( char[] values, io.deephaven.vector.ByteVector weights ) {return Numeric.wavg( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wavg(char[],io.deephaven.vector.CharVector) */
+    public static  double wavg( char[] values, io.deephaven.vector.CharVector weights ) {return Numeric.wavg( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wavg(char[],io.deephaven.vector.DoubleVector) */
+    public static  double wavg( char[] values, io.deephaven.vector.DoubleVector weights ) {return Numeric.wavg( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wavg(char[],io.deephaven.vector.FloatVector) */
+    public static  double wavg( char[] values, io.deephaven.vector.FloatVector weights ) {return Numeric.wavg( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wavg(char[],io.deephaven.vector.IntVector) */
+    public static  double wavg( char[] values, io.deephaven.vector.IntVector weights ) {return Numeric.wavg( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wavg(char[],io.deephaven.vector.LongVector) */
+    public static  double wavg( char[] values, io.deephaven.vector.LongVector weights ) {return Numeric.wavg( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wavg(char[],io.deephaven.vector.ShortVector) */
+    public static  double wavg( char[] values, io.deephaven.vector.ShortVector weights ) {return Numeric.wavg( values, weights );}
+
     /** @see io.deephaven.function.Numeric#wavg(double[],byte[]) */
     public static  double wavg( double[] values, byte[] weights ) {return Numeric.wavg( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wavg(double[],char[]) */
+    public static  double wavg( double[] values, char[] weights ) {return Numeric.wavg( values, weights );}
 
     /** @see io.deephaven.function.Numeric#wavg(double[],double[]) */
     public static  double wavg( double[] values, double[] weights ) {return Numeric.wavg( values, weights );}
@@ -4945,6 +5766,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#wavg(double[],io.deephaven.vector.ByteVector) */
     public static  double wavg( double[] values, io.deephaven.vector.ByteVector weights ) {return Numeric.wavg( values, weights );}
 
+    /** @see io.deephaven.function.Numeric#wavg(double[],io.deephaven.vector.CharVector) */
+    public static  double wavg( double[] values, io.deephaven.vector.CharVector weights ) {return Numeric.wavg( values, weights );}
+
     /** @see io.deephaven.function.Numeric#wavg(double[],io.deephaven.vector.DoubleVector) */
     public static  double wavg( double[] values, io.deephaven.vector.DoubleVector weights ) {return Numeric.wavg( values, weights );}
 
@@ -4962,6 +5786,9 @@ public class GroovyStaticImports {
 
     /** @see io.deephaven.function.Numeric#wavg(float[],byte[]) */
     public static  double wavg( float[] values, byte[] weights ) {return Numeric.wavg( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wavg(float[],char[]) */
+    public static  double wavg( float[] values, char[] weights ) {return Numeric.wavg( values, weights );}
 
     /** @see io.deephaven.function.Numeric#wavg(float[],double[]) */
     public static  double wavg( float[] values, double[] weights ) {return Numeric.wavg( values, weights );}
@@ -4981,6 +5808,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#wavg(float[],io.deephaven.vector.ByteVector) */
     public static  double wavg( float[] values, io.deephaven.vector.ByteVector weights ) {return Numeric.wavg( values, weights );}
 
+    /** @see io.deephaven.function.Numeric#wavg(float[],io.deephaven.vector.CharVector) */
+    public static  double wavg( float[] values, io.deephaven.vector.CharVector weights ) {return Numeric.wavg( values, weights );}
+
     /** @see io.deephaven.function.Numeric#wavg(float[],io.deephaven.vector.DoubleVector) */
     public static  double wavg( float[] values, io.deephaven.vector.DoubleVector weights ) {return Numeric.wavg( values, weights );}
 
@@ -4998,6 +5828,9 @@ public class GroovyStaticImports {
 
     /** @see io.deephaven.function.Numeric#wavg(int[],byte[]) */
     public static  double wavg( int[] values, byte[] weights ) {return Numeric.wavg( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wavg(int[],char[]) */
+    public static  double wavg( int[] values, char[] weights ) {return Numeric.wavg( values, weights );}
 
     /** @see io.deephaven.function.Numeric#wavg(int[],double[]) */
     public static  double wavg( int[] values, double[] weights ) {return Numeric.wavg( values, weights );}
@@ -5017,6 +5850,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#wavg(int[],io.deephaven.vector.ByteVector) */
     public static  double wavg( int[] values, io.deephaven.vector.ByteVector weights ) {return Numeric.wavg( values, weights );}
 
+    /** @see io.deephaven.function.Numeric#wavg(int[],io.deephaven.vector.CharVector) */
+    public static  double wavg( int[] values, io.deephaven.vector.CharVector weights ) {return Numeric.wavg( values, weights );}
+
     /** @see io.deephaven.function.Numeric#wavg(int[],io.deephaven.vector.DoubleVector) */
     public static  double wavg( int[] values, io.deephaven.vector.DoubleVector weights ) {return Numeric.wavg( values, weights );}
 
@@ -5034,6 +5870,9 @@ public class GroovyStaticImports {
 
     /** @see io.deephaven.function.Numeric#wavg(long[],byte[]) */
     public static  double wavg( long[] values, byte[] weights ) {return Numeric.wavg( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wavg(long[],char[]) */
+    public static  double wavg( long[] values, char[] weights ) {return Numeric.wavg( values, weights );}
 
     /** @see io.deephaven.function.Numeric#wavg(long[],double[]) */
     public static  double wavg( long[] values, double[] weights ) {return Numeric.wavg( values, weights );}
@@ -5053,6 +5892,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#wavg(long[],io.deephaven.vector.ByteVector) */
     public static  double wavg( long[] values, io.deephaven.vector.ByteVector weights ) {return Numeric.wavg( values, weights );}
 
+    /** @see io.deephaven.function.Numeric#wavg(long[],io.deephaven.vector.CharVector) */
+    public static  double wavg( long[] values, io.deephaven.vector.CharVector weights ) {return Numeric.wavg( values, weights );}
+
     /** @see io.deephaven.function.Numeric#wavg(long[],io.deephaven.vector.DoubleVector) */
     public static  double wavg( long[] values, io.deephaven.vector.DoubleVector weights ) {return Numeric.wavg( values, weights );}
 
@@ -5070,6 +5912,9 @@ public class GroovyStaticImports {
 
     /** @see io.deephaven.function.Numeric#wavg(short[],byte[]) */
     public static  double wavg( short[] values, byte[] weights ) {return Numeric.wavg( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wavg(short[],char[]) */
+    public static  double wavg( short[] values, char[] weights ) {return Numeric.wavg( values, weights );}
 
     /** @see io.deephaven.function.Numeric#wavg(short[],double[]) */
     public static  double wavg( short[] values, double[] weights ) {return Numeric.wavg( values, weights );}
@@ -5089,6 +5934,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#wavg(short[],io.deephaven.vector.ByteVector) */
     public static  double wavg( short[] values, io.deephaven.vector.ByteVector weights ) {return Numeric.wavg( values, weights );}
 
+    /** @see io.deephaven.function.Numeric#wavg(short[],io.deephaven.vector.CharVector) */
+    public static  double wavg( short[] values, io.deephaven.vector.CharVector weights ) {return Numeric.wavg( values, weights );}
+
     /** @see io.deephaven.function.Numeric#wavg(short[],io.deephaven.vector.DoubleVector) */
     public static  double wavg( short[] values, io.deephaven.vector.DoubleVector weights ) {return Numeric.wavg( values, weights );}
 
@@ -5106,6 +5954,9 @@ public class GroovyStaticImports {
 
     /** @see io.deephaven.function.Numeric#wavg(io.deephaven.vector.ByteVector,byte[]) */
     public static  double wavg( io.deephaven.vector.ByteVector values, byte[] weights ) {return Numeric.wavg( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wavg(io.deephaven.vector.ByteVector,char[]) */
+    public static  double wavg( io.deephaven.vector.ByteVector values, char[] weights ) {return Numeric.wavg( values, weights );}
 
     /** @see io.deephaven.function.Numeric#wavg(io.deephaven.vector.ByteVector,double[]) */
     public static  double wavg( io.deephaven.vector.ByteVector values, double[] weights ) {return Numeric.wavg( values, weights );}
@@ -5125,6 +5976,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#wavg(io.deephaven.vector.ByteVector,io.deephaven.vector.ByteVector) */
     public static  double wavg( io.deephaven.vector.ByteVector values, io.deephaven.vector.ByteVector weights ) {return Numeric.wavg( values, weights );}
 
+    /** @see io.deephaven.function.Numeric#wavg(io.deephaven.vector.ByteVector,io.deephaven.vector.CharVector) */
+    public static  double wavg( io.deephaven.vector.ByteVector values, io.deephaven.vector.CharVector weights ) {return Numeric.wavg( values, weights );}
+
     /** @see io.deephaven.function.Numeric#wavg(io.deephaven.vector.ByteVector,io.deephaven.vector.DoubleVector) */
     public static  double wavg( io.deephaven.vector.ByteVector values, io.deephaven.vector.DoubleVector weights ) {return Numeric.wavg( values, weights );}
 
@@ -5140,8 +5994,53 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#wavg(io.deephaven.vector.ByteVector,io.deephaven.vector.ShortVector) */
     public static  double wavg( io.deephaven.vector.ByteVector values, io.deephaven.vector.ShortVector weights ) {return Numeric.wavg( values, weights );}
 
+    /** @see io.deephaven.function.Numeric#wavg(io.deephaven.vector.CharVector,byte[]) */
+    public static  double wavg( io.deephaven.vector.CharVector values, byte[] weights ) {return Numeric.wavg( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wavg(io.deephaven.vector.CharVector,char[]) */
+    public static  double wavg( io.deephaven.vector.CharVector values, char[] weights ) {return Numeric.wavg( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wavg(io.deephaven.vector.CharVector,double[]) */
+    public static  double wavg( io.deephaven.vector.CharVector values, double[] weights ) {return Numeric.wavg( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wavg(io.deephaven.vector.CharVector,float[]) */
+    public static  double wavg( io.deephaven.vector.CharVector values, float[] weights ) {return Numeric.wavg( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wavg(io.deephaven.vector.CharVector,int[]) */
+    public static  double wavg( io.deephaven.vector.CharVector values, int[] weights ) {return Numeric.wavg( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wavg(io.deephaven.vector.CharVector,long[]) */
+    public static  double wavg( io.deephaven.vector.CharVector values, long[] weights ) {return Numeric.wavg( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wavg(io.deephaven.vector.CharVector,short[]) */
+    public static  double wavg( io.deephaven.vector.CharVector values, short[] weights ) {return Numeric.wavg( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wavg(io.deephaven.vector.CharVector,io.deephaven.vector.ByteVector) */
+    public static  double wavg( io.deephaven.vector.CharVector values, io.deephaven.vector.ByteVector weights ) {return Numeric.wavg( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wavg(io.deephaven.vector.CharVector,io.deephaven.vector.CharVector) */
+    public static  double wavg( io.deephaven.vector.CharVector values, io.deephaven.vector.CharVector weights ) {return Numeric.wavg( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wavg(io.deephaven.vector.CharVector,io.deephaven.vector.DoubleVector) */
+    public static  double wavg( io.deephaven.vector.CharVector values, io.deephaven.vector.DoubleVector weights ) {return Numeric.wavg( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wavg(io.deephaven.vector.CharVector,io.deephaven.vector.FloatVector) */
+    public static  double wavg( io.deephaven.vector.CharVector values, io.deephaven.vector.FloatVector weights ) {return Numeric.wavg( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wavg(io.deephaven.vector.CharVector,io.deephaven.vector.IntVector) */
+    public static  double wavg( io.deephaven.vector.CharVector values, io.deephaven.vector.IntVector weights ) {return Numeric.wavg( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wavg(io.deephaven.vector.CharVector,io.deephaven.vector.LongVector) */
+    public static  double wavg( io.deephaven.vector.CharVector values, io.deephaven.vector.LongVector weights ) {return Numeric.wavg( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wavg(io.deephaven.vector.CharVector,io.deephaven.vector.ShortVector) */
+    public static  double wavg( io.deephaven.vector.CharVector values, io.deephaven.vector.ShortVector weights ) {return Numeric.wavg( values, weights );}
+
     /** @see io.deephaven.function.Numeric#wavg(io.deephaven.vector.DoubleVector,byte[]) */
     public static  double wavg( io.deephaven.vector.DoubleVector values, byte[] weights ) {return Numeric.wavg( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wavg(io.deephaven.vector.DoubleVector,char[]) */
+    public static  double wavg( io.deephaven.vector.DoubleVector values, char[] weights ) {return Numeric.wavg( values, weights );}
 
     /** @see io.deephaven.function.Numeric#wavg(io.deephaven.vector.DoubleVector,double[]) */
     public static  double wavg( io.deephaven.vector.DoubleVector values, double[] weights ) {return Numeric.wavg( values, weights );}
@@ -5161,6 +6060,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#wavg(io.deephaven.vector.DoubleVector,io.deephaven.vector.ByteVector) */
     public static  double wavg( io.deephaven.vector.DoubleVector values, io.deephaven.vector.ByteVector weights ) {return Numeric.wavg( values, weights );}
 
+    /** @see io.deephaven.function.Numeric#wavg(io.deephaven.vector.DoubleVector,io.deephaven.vector.CharVector) */
+    public static  double wavg( io.deephaven.vector.DoubleVector values, io.deephaven.vector.CharVector weights ) {return Numeric.wavg( values, weights );}
+
     /** @see io.deephaven.function.Numeric#wavg(io.deephaven.vector.DoubleVector,io.deephaven.vector.DoubleVector) */
     public static  double wavg( io.deephaven.vector.DoubleVector values, io.deephaven.vector.DoubleVector weights ) {return Numeric.wavg( values, weights );}
 
@@ -5178,6 +6080,9 @@ public class GroovyStaticImports {
 
     /** @see io.deephaven.function.Numeric#wavg(io.deephaven.vector.FloatVector,byte[]) */
     public static  double wavg( io.deephaven.vector.FloatVector values, byte[] weights ) {return Numeric.wavg( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wavg(io.deephaven.vector.FloatVector,char[]) */
+    public static  double wavg( io.deephaven.vector.FloatVector values, char[] weights ) {return Numeric.wavg( values, weights );}
 
     /** @see io.deephaven.function.Numeric#wavg(io.deephaven.vector.FloatVector,double[]) */
     public static  double wavg( io.deephaven.vector.FloatVector values, double[] weights ) {return Numeric.wavg( values, weights );}
@@ -5197,6 +6102,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#wavg(io.deephaven.vector.FloatVector,io.deephaven.vector.ByteVector) */
     public static  double wavg( io.deephaven.vector.FloatVector values, io.deephaven.vector.ByteVector weights ) {return Numeric.wavg( values, weights );}
 
+    /** @see io.deephaven.function.Numeric#wavg(io.deephaven.vector.FloatVector,io.deephaven.vector.CharVector) */
+    public static  double wavg( io.deephaven.vector.FloatVector values, io.deephaven.vector.CharVector weights ) {return Numeric.wavg( values, weights );}
+
     /** @see io.deephaven.function.Numeric#wavg(io.deephaven.vector.FloatVector,io.deephaven.vector.DoubleVector) */
     public static  double wavg( io.deephaven.vector.FloatVector values, io.deephaven.vector.DoubleVector weights ) {return Numeric.wavg( values, weights );}
 
@@ -5214,6 +6122,9 @@ public class GroovyStaticImports {
 
     /** @see io.deephaven.function.Numeric#wavg(io.deephaven.vector.IntVector,byte[]) */
     public static  double wavg( io.deephaven.vector.IntVector values, byte[] weights ) {return Numeric.wavg( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wavg(io.deephaven.vector.IntVector,char[]) */
+    public static  double wavg( io.deephaven.vector.IntVector values, char[] weights ) {return Numeric.wavg( values, weights );}
 
     /** @see io.deephaven.function.Numeric#wavg(io.deephaven.vector.IntVector,double[]) */
     public static  double wavg( io.deephaven.vector.IntVector values, double[] weights ) {return Numeric.wavg( values, weights );}
@@ -5233,6 +6144,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#wavg(io.deephaven.vector.IntVector,io.deephaven.vector.ByteVector) */
     public static  double wavg( io.deephaven.vector.IntVector values, io.deephaven.vector.ByteVector weights ) {return Numeric.wavg( values, weights );}
 
+    /** @see io.deephaven.function.Numeric#wavg(io.deephaven.vector.IntVector,io.deephaven.vector.CharVector) */
+    public static  double wavg( io.deephaven.vector.IntVector values, io.deephaven.vector.CharVector weights ) {return Numeric.wavg( values, weights );}
+
     /** @see io.deephaven.function.Numeric#wavg(io.deephaven.vector.IntVector,io.deephaven.vector.DoubleVector) */
     public static  double wavg( io.deephaven.vector.IntVector values, io.deephaven.vector.DoubleVector weights ) {return Numeric.wavg( values, weights );}
 
@@ -5250,6 +6164,9 @@ public class GroovyStaticImports {
 
     /** @see io.deephaven.function.Numeric#wavg(io.deephaven.vector.LongVector,byte[]) */
     public static  double wavg( io.deephaven.vector.LongVector values, byte[] weights ) {return Numeric.wavg( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wavg(io.deephaven.vector.LongVector,char[]) */
+    public static  double wavg( io.deephaven.vector.LongVector values, char[] weights ) {return Numeric.wavg( values, weights );}
 
     /** @see io.deephaven.function.Numeric#wavg(io.deephaven.vector.LongVector,double[]) */
     public static  double wavg( io.deephaven.vector.LongVector values, double[] weights ) {return Numeric.wavg( values, weights );}
@@ -5269,6 +6186,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#wavg(io.deephaven.vector.LongVector,io.deephaven.vector.ByteVector) */
     public static  double wavg( io.deephaven.vector.LongVector values, io.deephaven.vector.ByteVector weights ) {return Numeric.wavg( values, weights );}
 
+    /** @see io.deephaven.function.Numeric#wavg(io.deephaven.vector.LongVector,io.deephaven.vector.CharVector) */
+    public static  double wavg( io.deephaven.vector.LongVector values, io.deephaven.vector.CharVector weights ) {return Numeric.wavg( values, weights );}
+
     /** @see io.deephaven.function.Numeric#wavg(io.deephaven.vector.LongVector,io.deephaven.vector.DoubleVector) */
     public static  double wavg( io.deephaven.vector.LongVector values, io.deephaven.vector.DoubleVector weights ) {return Numeric.wavg( values, weights );}
 
@@ -5286,6 +6206,9 @@ public class GroovyStaticImports {
 
     /** @see io.deephaven.function.Numeric#wavg(io.deephaven.vector.ShortVector,byte[]) */
     public static  double wavg( io.deephaven.vector.ShortVector values, byte[] weights ) {return Numeric.wavg( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wavg(io.deephaven.vector.ShortVector,char[]) */
+    public static  double wavg( io.deephaven.vector.ShortVector values, char[] weights ) {return Numeric.wavg( values, weights );}
 
     /** @see io.deephaven.function.Numeric#wavg(io.deephaven.vector.ShortVector,double[]) */
     public static  double wavg( io.deephaven.vector.ShortVector values, double[] weights ) {return Numeric.wavg( values, weights );}
@@ -5305,6 +6228,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#wavg(io.deephaven.vector.ShortVector,io.deephaven.vector.ByteVector) */
     public static  double wavg( io.deephaven.vector.ShortVector values, io.deephaven.vector.ByteVector weights ) {return Numeric.wavg( values, weights );}
 
+    /** @see io.deephaven.function.Numeric#wavg(io.deephaven.vector.ShortVector,io.deephaven.vector.CharVector) */
+    public static  double wavg( io.deephaven.vector.ShortVector values, io.deephaven.vector.CharVector weights ) {return Numeric.wavg( values, weights );}
+
     /** @see io.deephaven.function.Numeric#wavg(io.deephaven.vector.ShortVector,io.deephaven.vector.DoubleVector) */
     public static  double wavg( io.deephaven.vector.ShortVector values, io.deephaven.vector.DoubleVector weights ) {return Numeric.wavg( values, weights );}
 
@@ -5322,6 +6248,9 @@ public class GroovyStaticImports {
 
     /** @see io.deephaven.function.Numeric#wstd(byte[],byte[]) */
     public static  double wstd( byte[] values, byte[] weights ) {return Numeric.wstd( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wstd(byte[],char[]) */
+    public static  double wstd( byte[] values, char[] weights ) {return Numeric.wstd( values, weights );}
 
     /** @see io.deephaven.function.Numeric#wstd(byte[],double[]) */
     public static  double wstd( byte[] values, double[] weights ) {return Numeric.wstd( values, weights );}
@@ -5341,6 +6270,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#wstd(byte[],io.deephaven.vector.ByteVector) */
     public static  double wstd( byte[] values, io.deephaven.vector.ByteVector weights ) {return Numeric.wstd( values, weights );}
 
+    /** @see io.deephaven.function.Numeric#wstd(byte[],io.deephaven.vector.CharVector) */
+    public static  double wstd( byte[] values, io.deephaven.vector.CharVector weights ) {return Numeric.wstd( values, weights );}
+
     /** @see io.deephaven.function.Numeric#wstd(byte[],io.deephaven.vector.DoubleVector) */
     public static  double wstd( byte[] values, io.deephaven.vector.DoubleVector weights ) {return Numeric.wstd( values, weights );}
 
@@ -5356,8 +6288,53 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#wstd(byte[],io.deephaven.vector.ShortVector) */
     public static  double wstd( byte[] values, io.deephaven.vector.ShortVector weights ) {return Numeric.wstd( values, weights );}
 
+    /** @see io.deephaven.function.Numeric#wstd(char[],byte[]) */
+    public static  double wstd( char[] values, byte[] weights ) {return Numeric.wstd( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wstd(char[],char[]) */
+    public static  double wstd( char[] values, char[] weights ) {return Numeric.wstd( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wstd(char[],double[]) */
+    public static  double wstd( char[] values, double[] weights ) {return Numeric.wstd( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wstd(char[],float[]) */
+    public static  double wstd( char[] values, float[] weights ) {return Numeric.wstd( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wstd(char[],int[]) */
+    public static  double wstd( char[] values, int[] weights ) {return Numeric.wstd( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wstd(char[],long[]) */
+    public static  double wstd( char[] values, long[] weights ) {return Numeric.wstd( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wstd(char[],short[]) */
+    public static  double wstd( char[] values, short[] weights ) {return Numeric.wstd( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wstd(char[],io.deephaven.vector.ByteVector) */
+    public static  double wstd( char[] values, io.deephaven.vector.ByteVector weights ) {return Numeric.wstd( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wstd(char[],io.deephaven.vector.CharVector) */
+    public static  double wstd( char[] values, io.deephaven.vector.CharVector weights ) {return Numeric.wstd( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wstd(char[],io.deephaven.vector.DoubleVector) */
+    public static  double wstd( char[] values, io.deephaven.vector.DoubleVector weights ) {return Numeric.wstd( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wstd(char[],io.deephaven.vector.FloatVector) */
+    public static  double wstd( char[] values, io.deephaven.vector.FloatVector weights ) {return Numeric.wstd( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wstd(char[],io.deephaven.vector.IntVector) */
+    public static  double wstd( char[] values, io.deephaven.vector.IntVector weights ) {return Numeric.wstd( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wstd(char[],io.deephaven.vector.LongVector) */
+    public static  double wstd( char[] values, io.deephaven.vector.LongVector weights ) {return Numeric.wstd( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wstd(char[],io.deephaven.vector.ShortVector) */
+    public static  double wstd( char[] values, io.deephaven.vector.ShortVector weights ) {return Numeric.wstd( values, weights );}
+
     /** @see io.deephaven.function.Numeric#wstd(double[],byte[]) */
     public static  double wstd( double[] values, byte[] weights ) {return Numeric.wstd( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wstd(double[],char[]) */
+    public static  double wstd( double[] values, char[] weights ) {return Numeric.wstd( values, weights );}
 
     /** @see io.deephaven.function.Numeric#wstd(double[],double[]) */
     public static  double wstd( double[] values, double[] weights ) {return Numeric.wstd( values, weights );}
@@ -5377,6 +6354,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#wstd(double[],io.deephaven.vector.ByteVector) */
     public static  double wstd( double[] values, io.deephaven.vector.ByteVector weights ) {return Numeric.wstd( values, weights );}
 
+    /** @see io.deephaven.function.Numeric#wstd(double[],io.deephaven.vector.CharVector) */
+    public static  double wstd( double[] values, io.deephaven.vector.CharVector weights ) {return Numeric.wstd( values, weights );}
+
     /** @see io.deephaven.function.Numeric#wstd(double[],io.deephaven.vector.DoubleVector) */
     public static  double wstd( double[] values, io.deephaven.vector.DoubleVector weights ) {return Numeric.wstd( values, weights );}
 
@@ -5394,6 +6374,9 @@ public class GroovyStaticImports {
 
     /** @see io.deephaven.function.Numeric#wstd(float[],byte[]) */
     public static  double wstd( float[] values, byte[] weights ) {return Numeric.wstd( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wstd(float[],char[]) */
+    public static  double wstd( float[] values, char[] weights ) {return Numeric.wstd( values, weights );}
 
     /** @see io.deephaven.function.Numeric#wstd(float[],double[]) */
     public static  double wstd( float[] values, double[] weights ) {return Numeric.wstd( values, weights );}
@@ -5413,6 +6396,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#wstd(float[],io.deephaven.vector.ByteVector) */
     public static  double wstd( float[] values, io.deephaven.vector.ByteVector weights ) {return Numeric.wstd( values, weights );}
 
+    /** @see io.deephaven.function.Numeric#wstd(float[],io.deephaven.vector.CharVector) */
+    public static  double wstd( float[] values, io.deephaven.vector.CharVector weights ) {return Numeric.wstd( values, weights );}
+
     /** @see io.deephaven.function.Numeric#wstd(float[],io.deephaven.vector.DoubleVector) */
     public static  double wstd( float[] values, io.deephaven.vector.DoubleVector weights ) {return Numeric.wstd( values, weights );}
 
@@ -5430,6 +6416,9 @@ public class GroovyStaticImports {
 
     /** @see io.deephaven.function.Numeric#wstd(int[],byte[]) */
     public static  double wstd( int[] values, byte[] weights ) {return Numeric.wstd( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wstd(int[],char[]) */
+    public static  double wstd( int[] values, char[] weights ) {return Numeric.wstd( values, weights );}
 
     /** @see io.deephaven.function.Numeric#wstd(int[],double[]) */
     public static  double wstd( int[] values, double[] weights ) {return Numeric.wstd( values, weights );}
@@ -5449,6 +6438,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#wstd(int[],io.deephaven.vector.ByteVector) */
     public static  double wstd( int[] values, io.deephaven.vector.ByteVector weights ) {return Numeric.wstd( values, weights );}
 
+    /** @see io.deephaven.function.Numeric#wstd(int[],io.deephaven.vector.CharVector) */
+    public static  double wstd( int[] values, io.deephaven.vector.CharVector weights ) {return Numeric.wstd( values, weights );}
+
     /** @see io.deephaven.function.Numeric#wstd(int[],io.deephaven.vector.DoubleVector) */
     public static  double wstd( int[] values, io.deephaven.vector.DoubleVector weights ) {return Numeric.wstd( values, weights );}
 
@@ -5466,6 +6458,9 @@ public class GroovyStaticImports {
 
     /** @see io.deephaven.function.Numeric#wstd(long[],byte[]) */
     public static  double wstd( long[] values, byte[] weights ) {return Numeric.wstd( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wstd(long[],char[]) */
+    public static  double wstd( long[] values, char[] weights ) {return Numeric.wstd( values, weights );}
 
     /** @see io.deephaven.function.Numeric#wstd(long[],double[]) */
     public static  double wstd( long[] values, double[] weights ) {return Numeric.wstd( values, weights );}
@@ -5485,6 +6480,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#wstd(long[],io.deephaven.vector.ByteVector) */
     public static  double wstd( long[] values, io.deephaven.vector.ByteVector weights ) {return Numeric.wstd( values, weights );}
 
+    /** @see io.deephaven.function.Numeric#wstd(long[],io.deephaven.vector.CharVector) */
+    public static  double wstd( long[] values, io.deephaven.vector.CharVector weights ) {return Numeric.wstd( values, weights );}
+
     /** @see io.deephaven.function.Numeric#wstd(long[],io.deephaven.vector.DoubleVector) */
     public static  double wstd( long[] values, io.deephaven.vector.DoubleVector weights ) {return Numeric.wstd( values, weights );}
 
@@ -5502,6 +6500,9 @@ public class GroovyStaticImports {
 
     /** @see io.deephaven.function.Numeric#wstd(short[],byte[]) */
     public static  double wstd( short[] values, byte[] weights ) {return Numeric.wstd( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wstd(short[],char[]) */
+    public static  double wstd( short[] values, char[] weights ) {return Numeric.wstd( values, weights );}
 
     /** @see io.deephaven.function.Numeric#wstd(short[],double[]) */
     public static  double wstd( short[] values, double[] weights ) {return Numeric.wstd( values, weights );}
@@ -5521,6 +6522,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#wstd(short[],io.deephaven.vector.ByteVector) */
     public static  double wstd( short[] values, io.deephaven.vector.ByteVector weights ) {return Numeric.wstd( values, weights );}
 
+    /** @see io.deephaven.function.Numeric#wstd(short[],io.deephaven.vector.CharVector) */
+    public static  double wstd( short[] values, io.deephaven.vector.CharVector weights ) {return Numeric.wstd( values, weights );}
+
     /** @see io.deephaven.function.Numeric#wstd(short[],io.deephaven.vector.DoubleVector) */
     public static  double wstd( short[] values, io.deephaven.vector.DoubleVector weights ) {return Numeric.wstd( values, weights );}
 
@@ -5538,6 +6542,9 @@ public class GroovyStaticImports {
 
     /** @see io.deephaven.function.Numeric#wstd(io.deephaven.vector.ByteVector,byte[]) */
     public static  double wstd( io.deephaven.vector.ByteVector values, byte[] weights ) {return Numeric.wstd( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wstd(io.deephaven.vector.ByteVector,char[]) */
+    public static  double wstd( io.deephaven.vector.ByteVector values, char[] weights ) {return Numeric.wstd( values, weights );}
 
     /** @see io.deephaven.function.Numeric#wstd(io.deephaven.vector.ByteVector,double[]) */
     public static  double wstd( io.deephaven.vector.ByteVector values, double[] weights ) {return Numeric.wstd( values, weights );}
@@ -5557,6 +6564,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#wstd(io.deephaven.vector.ByteVector,io.deephaven.vector.ByteVector) */
     public static  double wstd( io.deephaven.vector.ByteVector values, io.deephaven.vector.ByteVector weights ) {return Numeric.wstd( values, weights );}
 
+    /** @see io.deephaven.function.Numeric#wstd(io.deephaven.vector.ByteVector,io.deephaven.vector.CharVector) */
+    public static  double wstd( io.deephaven.vector.ByteVector values, io.deephaven.vector.CharVector weights ) {return Numeric.wstd( values, weights );}
+
     /** @see io.deephaven.function.Numeric#wstd(io.deephaven.vector.ByteVector,io.deephaven.vector.DoubleVector) */
     public static  double wstd( io.deephaven.vector.ByteVector values, io.deephaven.vector.DoubleVector weights ) {return Numeric.wstd( values, weights );}
 
@@ -5572,8 +6582,53 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#wstd(io.deephaven.vector.ByteVector,io.deephaven.vector.ShortVector) */
     public static  double wstd( io.deephaven.vector.ByteVector values, io.deephaven.vector.ShortVector weights ) {return Numeric.wstd( values, weights );}
 
+    /** @see io.deephaven.function.Numeric#wstd(io.deephaven.vector.CharVector,byte[]) */
+    public static  double wstd( io.deephaven.vector.CharVector values, byte[] weights ) {return Numeric.wstd( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wstd(io.deephaven.vector.CharVector,char[]) */
+    public static  double wstd( io.deephaven.vector.CharVector values, char[] weights ) {return Numeric.wstd( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wstd(io.deephaven.vector.CharVector,double[]) */
+    public static  double wstd( io.deephaven.vector.CharVector values, double[] weights ) {return Numeric.wstd( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wstd(io.deephaven.vector.CharVector,float[]) */
+    public static  double wstd( io.deephaven.vector.CharVector values, float[] weights ) {return Numeric.wstd( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wstd(io.deephaven.vector.CharVector,int[]) */
+    public static  double wstd( io.deephaven.vector.CharVector values, int[] weights ) {return Numeric.wstd( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wstd(io.deephaven.vector.CharVector,long[]) */
+    public static  double wstd( io.deephaven.vector.CharVector values, long[] weights ) {return Numeric.wstd( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wstd(io.deephaven.vector.CharVector,short[]) */
+    public static  double wstd( io.deephaven.vector.CharVector values, short[] weights ) {return Numeric.wstd( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wstd(io.deephaven.vector.CharVector,io.deephaven.vector.ByteVector) */
+    public static  double wstd( io.deephaven.vector.CharVector values, io.deephaven.vector.ByteVector weights ) {return Numeric.wstd( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wstd(io.deephaven.vector.CharVector,io.deephaven.vector.CharVector) */
+    public static  double wstd( io.deephaven.vector.CharVector values, io.deephaven.vector.CharVector weights ) {return Numeric.wstd( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wstd(io.deephaven.vector.CharVector,io.deephaven.vector.DoubleVector) */
+    public static  double wstd( io.deephaven.vector.CharVector values, io.deephaven.vector.DoubleVector weights ) {return Numeric.wstd( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wstd(io.deephaven.vector.CharVector,io.deephaven.vector.FloatVector) */
+    public static  double wstd( io.deephaven.vector.CharVector values, io.deephaven.vector.FloatVector weights ) {return Numeric.wstd( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wstd(io.deephaven.vector.CharVector,io.deephaven.vector.IntVector) */
+    public static  double wstd( io.deephaven.vector.CharVector values, io.deephaven.vector.IntVector weights ) {return Numeric.wstd( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wstd(io.deephaven.vector.CharVector,io.deephaven.vector.LongVector) */
+    public static  double wstd( io.deephaven.vector.CharVector values, io.deephaven.vector.LongVector weights ) {return Numeric.wstd( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wstd(io.deephaven.vector.CharVector,io.deephaven.vector.ShortVector) */
+    public static  double wstd( io.deephaven.vector.CharVector values, io.deephaven.vector.ShortVector weights ) {return Numeric.wstd( values, weights );}
+
     /** @see io.deephaven.function.Numeric#wstd(io.deephaven.vector.DoubleVector,byte[]) */
     public static  double wstd( io.deephaven.vector.DoubleVector values, byte[] weights ) {return Numeric.wstd( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wstd(io.deephaven.vector.DoubleVector,char[]) */
+    public static  double wstd( io.deephaven.vector.DoubleVector values, char[] weights ) {return Numeric.wstd( values, weights );}
 
     /** @see io.deephaven.function.Numeric#wstd(io.deephaven.vector.DoubleVector,double[]) */
     public static  double wstd( io.deephaven.vector.DoubleVector values, double[] weights ) {return Numeric.wstd( values, weights );}
@@ -5593,6 +6648,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#wstd(io.deephaven.vector.DoubleVector,io.deephaven.vector.ByteVector) */
     public static  double wstd( io.deephaven.vector.DoubleVector values, io.deephaven.vector.ByteVector weights ) {return Numeric.wstd( values, weights );}
 
+    /** @see io.deephaven.function.Numeric#wstd(io.deephaven.vector.DoubleVector,io.deephaven.vector.CharVector) */
+    public static  double wstd( io.deephaven.vector.DoubleVector values, io.deephaven.vector.CharVector weights ) {return Numeric.wstd( values, weights );}
+
     /** @see io.deephaven.function.Numeric#wstd(io.deephaven.vector.DoubleVector,io.deephaven.vector.DoubleVector) */
     public static  double wstd( io.deephaven.vector.DoubleVector values, io.deephaven.vector.DoubleVector weights ) {return Numeric.wstd( values, weights );}
 
@@ -5610,6 +6668,9 @@ public class GroovyStaticImports {
 
     /** @see io.deephaven.function.Numeric#wstd(io.deephaven.vector.FloatVector,byte[]) */
     public static  double wstd( io.deephaven.vector.FloatVector values, byte[] weights ) {return Numeric.wstd( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wstd(io.deephaven.vector.FloatVector,char[]) */
+    public static  double wstd( io.deephaven.vector.FloatVector values, char[] weights ) {return Numeric.wstd( values, weights );}
 
     /** @see io.deephaven.function.Numeric#wstd(io.deephaven.vector.FloatVector,double[]) */
     public static  double wstd( io.deephaven.vector.FloatVector values, double[] weights ) {return Numeric.wstd( values, weights );}
@@ -5629,6 +6690,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#wstd(io.deephaven.vector.FloatVector,io.deephaven.vector.ByteVector) */
     public static  double wstd( io.deephaven.vector.FloatVector values, io.deephaven.vector.ByteVector weights ) {return Numeric.wstd( values, weights );}
 
+    /** @see io.deephaven.function.Numeric#wstd(io.deephaven.vector.FloatVector,io.deephaven.vector.CharVector) */
+    public static  double wstd( io.deephaven.vector.FloatVector values, io.deephaven.vector.CharVector weights ) {return Numeric.wstd( values, weights );}
+
     /** @see io.deephaven.function.Numeric#wstd(io.deephaven.vector.FloatVector,io.deephaven.vector.DoubleVector) */
     public static  double wstd( io.deephaven.vector.FloatVector values, io.deephaven.vector.DoubleVector weights ) {return Numeric.wstd( values, weights );}
 
@@ -5646,6 +6710,9 @@ public class GroovyStaticImports {
 
     /** @see io.deephaven.function.Numeric#wstd(io.deephaven.vector.IntVector,byte[]) */
     public static  double wstd( io.deephaven.vector.IntVector values, byte[] weights ) {return Numeric.wstd( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wstd(io.deephaven.vector.IntVector,char[]) */
+    public static  double wstd( io.deephaven.vector.IntVector values, char[] weights ) {return Numeric.wstd( values, weights );}
 
     /** @see io.deephaven.function.Numeric#wstd(io.deephaven.vector.IntVector,double[]) */
     public static  double wstd( io.deephaven.vector.IntVector values, double[] weights ) {return Numeric.wstd( values, weights );}
@@ -5665,6 +6732,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#wstd(io.deephaven.vector.IntVector,io.deephaven.vector.ByteVector) */
     public static  double wstd( io.deephaven.vector.IntVector values, io.deephaven.vector.ByteVector weights ) {return Numeric.wstd( values, weights );}
 
+    /** @see io.deephaven.function.Numeric#wstd(io.deephaven.vector.IntVector,io.deephaven.vector.CharVector) */
+    public static  double wstd( io.deephaven.vector.IntVector values, io.deephaven.vector.CharVector weights ) {return Numeric.wstd( values, weights );}
+
     /** @see io.deephaven.function.Numeric#wstd(io.deephaven.vector.IntVector,io.deephaven.vector.DoubleVector) */
     public static  double wstd( io.deephaven.vector.IntVector values, io.deephaven.vector.DoubleVector weights ) {return Numeric.wstd( values, weights );}
 
@@ -5682,6 +6752,9 @@ public class GroovyStaticImports {
 
     /** @see io.deephaven.function.Numeric#wstd(io.deephaven.vector.LongVector,byte[]) */
     public static  double wstd( io.deephaven.vector.LongVector values, byte[] weights ) {return Numeric.wstd( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wstd(io.deephaven.vector.LongVector,char[]) */
+    public static  double wstd( io.deephaven.vector.LongVector values, char[] weights ) {return Numeric.wstd( values, weights );}
 
     /** @see io.deephaven.function.Numeric#wstd(io.deephaven.vector.LongVector,double[]) */
     public static  double wstd( io.deephaven.vector.LongVector values, double[] weights ) {return Numeric.wstd( values, weights );}
@@ -5701,6 +6774,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#wstd(io.deephaven.vector.LongVector,io.deephaven.vector.ByteVector) */
     public static  double wstd( io.deephaven.vector.LongVector values, io.deephaven.vector.ByteVector weights ) {return Numeric.wstd( values, weights );}
 
+    /** @see io.deephaven.function.Numeric#wstd(io.deephaven.vector.LongVector,io.deephaven.vector.CharVector) */
+    public static  double wstd( io.deephaven.vector.LongVector values, io.deephaven.vector.CharVector weights ) {return Numeric.wstd( values, weights );}
+
     /** @see io.deephaven.function.Numeric#wstd(io.deephaven.vector.LongVector,io.deephaven.vector.DoubleVector) */
     public static  double wstd( io.deephaven.vector.LongVector values, io.deephaven.vector.DoubleVector weights ) {return Numeric.wstd( values, weights );}
 
@@ -5718,6 +6794,9 @@ public class GroovyStaticImports {
 
     /** @see io.deephaven.function.Numeric#wstd(io.deephaven.vector.ShortVector,byte[]) */
     public static  double wstd( io.deephaven.vector.ShortVector values, byte[] weights ) {return Numeric.wstd( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wstd(io.deephaven.vector.ShortVector,char[]) */
+    public static  double wstd( io.deephaven.vector.ShortVector values, char[] weights ) {return Numeric.wstd( values, weights );}
 
     /** @see io.deephaven.function.Numeric#wstd(io.deephaven.vector.ShortVector,double[]) */
     public static  double wstd( io.deephaven.vector.ShortVector values, double[] weights ) {return Numeric.wstd( values, weights );}
@@ -5737,6 +6816,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#wstd(io.deephaven.vector.ShortVector,io.deephaven.vector.ByteVector) */
     public static  double wstd( io.deephaven.vector.ShortVector values, io.deephaven.vector.ByteVector weights ) {return Numeric.wstd( values, weights );}
 
+    /** @see io.deephaven.function.Numeric#wstd(io.deephaven.vector.ShortVector,io.deephaven.vector.CharVector) */
+    public static  double wstd( io.deephaven.vector.ShortVector values, io.deephaven.vector.CharVector weights ) {return Numeric.wstd( values, weights );}
+
     /** @see io.deephaven.function.Numeric#wstd(io.deephaven.vector.ShortVector,io.deephaven.vector.DoubleVector) */
     public static  double wstd( io.deephaven.vector.ShortVector values, io.deephaven.vector.DoubleVector weights ) {return Numeric.wstd( values, weights );}
 
@@ -5754,6 +6836,9 @@ public class GroovyStaticImports {
 
     /** @see io.deephaven.function.Numeric#wste(byte[],byte[]) */
     public static  double wste( byte[] values, byte[] weights ) {return Numeric.wste( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wste(byte[],char[]) */
+    public static  double wste( byte[] values, char[] weights ) {return Numeric.wste( values, weights );}
 
     /** @see io.deephaven.function.Numeric#wste(byte[],double[]) */
     public static  double wste( byte[] values, double[] weights ) {return Numeric.wste( values, weights );}
@@ -5773,6 +6858,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#wste(byte[],io.deephaven.vector.ByteVector) */
     public static  double wste( byte[] values, io.deephaven.vector.ByteVector weights ) {return Numeric.wste( values, weights );}
 
+    /** @see io.deephaven.function.Numeric#wste(byte[],io.deephaven.vector.CharVector) */
+    public static  double wste( byte[] values, io.deephaven.vector.CharVector weights ) {return Numeric.wste( values, weights );}
+
     /** @see io.deephaven.function.Numeric#wste(byte[],io.deephaven.vector.DoubleVector) */
     public static  double wste( byte[] values, io.deephaven.vector.DoubleVector weights ) {return Numeric.wste( values, weights );}
 
@@ -5788,8 +6876,53 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#wste(byte[],io.deephaven.vector.ShortVector) */
     public static  double wste( byte[] values, io.deephaven.vector.ShortVector weights ) {return Numeric.wste( values, weights );}
 
+    /** @see io.deephaven.function.Numeric#wste(char[],byte[]) */
+    public static  double wste( char[] values, byte[] weights ) {return Numeric.wste( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wste(char[],char[]) */
+    public static  double wste( char[] values, char[] weights ) {return Numeric.wste( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wste(char[],double[]) */
+    public static  double wste( char[] values, double[] weights ) {return Numeric.wste( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wste(char[],float[]) */
+    public static  double wste( char[] values, float[] weights ) {return Numeric.wste( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wste(char[],int[]) */
+    public static  double wste( char[] values, int[] weights ) {return Numeric.wste( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wste(char[],long[]) */
+    public static  double wste( char[] values, long[] weights ) {return Numeric.wste( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wste(char[],short[]) */
+    public static  double wste( char[] values, short[] weights ) {return Numeric.wste( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wste(char[],io.deephaven.vector.ByteVector) */
+    public static  double wste( char[] values, io.deephaven.vector.ByteVector weights ) {return Numeric.wste( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wste(char[],io.deephaven.vector.CharVector) */
+    public static  double wste( char[] values, io.deephaven.vector.CharVector weights ) {return Numeric.wste( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wste(char[],io.deephaven.vector.DoubleVector) */
+    public static  double wste( char[] values, io.deephaven.vector.DoubleVector weights ) {return Numeric.wste( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wste(char[],io.deephaven.vector.FloatVector) */
+    public static  double wste( char[] values, io.deephaven.vector.FloatVector weights ) {return Numeric.wste( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wste(char[],io.deephaven.vector.IntVector) */
+    public static  double wste( char[] values, io.deephaven.vector.IntVector weights ) {return Numeric.wste( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wste(char[],io.deephaven.vector.LongVector) */
+    public static  double wste( char[] values, io.deephaven.vector.LongVector weights ) {return Numeric.wste( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wste(char[],io.deephaven.vector.ShortVector) */
+    public static  double wste( char[] values, io.deephaven.vector.ShortVector weights ) {return Numeric.wste( values, weights );}
+
     /** @see io.deephaven.function.Numeric#wste(double[],byte[]) */
     public static  double wste( double[] values, byte[] weights ) {return Numeric.wste( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wste(double[],char[]) */
+    public static  double wste( double[] values, char[] weights ) {return Numeric.wste( values, weights );}
 
     /** @see io.deephaven.function.Numeric#wste(double[],double[]) */
     public static  double wste( double[] values, double[] weights ) {return Numeric.wste( values, weights );}
@@ -5809,6 +6942,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#wste(double[],io.deephaven.vector.ByteVector) */
     public static  double wste( double[] values, io.deephaven.vector.ByteVector weights ) {return Numeric.wste( values, weights );}
 
+    /** @see io.deephaven.function.Numeric#wste(double[],io.deephaven.vector.CharVector) */
+    public static  double wste( double[] values, io.deephaven.vector.CharVector weights ) {return Numeric.wste( values, weights );}
+
     /** @see io.deephaven.function.Numeric#wste(double[],io.deephaven.vector.DoubleVector) */
     public static  double wste( double[] values, io.deephaven.vector.DoubleVector weights ) {return Numeric.wste( values, weights );}
 
@@ -5826,6 +6962,9 @@ public class GroovyStaticImports {
 
     /** @see io.deephaven.function.Numeric#wste(float[],byte[]) */
     public static  double wste( float[] values, byte[] weights ) {return Numeric.wste( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wste(float[],char[]) */
+    public static  double wste( float[] values, char[] weights ) {return Numeric.wste( values, weights );}
 
     /** @see io.deephaven.function.Numeric#wste(float[],double[]) */
     public static  double wste( float[] values, double[] weights ) {return Numeric.wste( values, weights );}
@@ -5845,6 +6984,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#wste(float[],io.deephaven.vector.ByteVector) */
     public static  double wste( float[] values, io.deephaven.vector.ByteVector weights ) {return Numeric.wste( values, weights );}
 
+    /** @see io.deephaven.function.Numeric#wste(float[],io.deephaven.vector.CharVector) */
+    public static  double wste( float[] values, io.deephaven.vector.CharVector weights ) {return Numeric.wste( values, weights );}
+
     /** @see io.deephaven.function.Numeric#wste(float[],io.deephaven.vector.DoubleVector) */
     public static  double wste( float[] values, io.deephaven.vector.DoubleVector weights ) {return Numeric.wste( values, weights );}
 
@@ -5862,6 +7004,9 @@ public class GroovyStaticImports {
 
     /** @see io.deephaven.function.Numeric#wste(int[],byte[]) */
     public static  double wste( int[] values, byte[] weights ) {return Numeric.wste( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wste(int[],char[]) */
+    public static  double wste( int[] values, char[] weights ) {return Numeric.wste( values, weights );}
 
     /** @see io.deephaven.function.Numeric#wste(int[],double[]) */
     public static  double wste( int[] values, double[] weights ) {return Numeric.wste( values, weights );}
@@ -5881,6 +7026,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#wste(int[],io.deephaven.vector.ByteVector) */
     public static  double wste( int[] values, io.deephaven.vector.ByteVector weights ) {return Numeric.wste( values, weights );}
 
+    /** @see io.deephaven.function.Numeric#wste(int[],io.deephaven.vector.CharVector) */
+    public static  double wste( int[] values, io.deephaven.vector.CharVector weights ) {return Numeric.wste( values, weights );}
+
     /** @see io.deephaven.function.Numeric#wste(int[],io.deephaven.vector.DoubleVector) */
     public static  double wste( int[] values, io.deephaven.vector.DoubleVector weights ) {return Numeric.wste( values, weights );}
 
@@ -5898,6 +7046,9 @@ public class GroovyStaticImports {
 
     /** @see io.deephaven.function.Numeric#wste(long[],byte[]) */
     public static  double wste( long[] values, byte[] weights ) {return Numeric.wste( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wste(long[],char[]) */
+    public static  double wste( long[] values, char[] weights ) {return Numeric.wste( values, weights );}
 
     /** @see io.deephaven.function.Numeric#wste(long[],double[]) */
     public static  double wste( long[] values, double[] weights ) {return Numeric.wste( values, weights );}
@@ -5917,6 +7068,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#wste(long[],io.deephaven.vector.ByteVector) */
     public static  double wste( long[] values, io.deephaven.vector.ByteVector weights ) {return Numeric.wste( values, weights );}
 
+    /** @see io.deephaven.function.Numeric#wste(long[],io.deephaven.vector.CharVector) */
+    public static  double wste( long[] values, io.deephaven.vector.CharVector weights ) {return Numeric.wste( values, weights );}
+
     /** @see io.deephaven.function.Numeric#wste(long[],io.deephaven.vector.DoubleVector) */
     public static  double wste( long[] values, io.deephaven.vector.DoubleVector weights ) {return Numeric.wste( values, weights );}
 
@@ -5934,6 +7088,9 @@ public class GroovyStaticImports {
 
     /** @see io.deephaven.function.Numeric#wste(short[],byte[]) */
     public static  double wste( short[] values, byte[] weights ) {return Numeric.wste( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wste(short[],char[]) */
+    public static  double wste( short[] values, char[] weights ) {return Numeric.wste( values, weights );}
 
     /** @see io.deephaven.function.Numeric#wste(short[],double[]) */
     public static  double wste( short[] values, double[] weights ) {return Numeric.wste( values, weights );}
@@ -5953,6 +7110,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#wste(short[],io.deephaven.vector.ByteVector) */
     public static  double wste( short[] values, io.deephaven.vector.ByteVector weights ) {return Numeric.wste( values, weights );}
 
+    /** @see io.deephaven.function.Numeric#wste(short[],io.deephaven.vector.CharVector) */
+    public static  double wste( short[] values, io.deephaven.vector.CharVector weights ) {return Numeric.wste( values, weights );}
+
     /** @see io.deephaven.function.Numeric#wste(short[],io.deephaven.vector.DoubleVector) */
     public static  double wste( short[] values, io.deephaven.vector.DoubleVector weights ) {return Numeric.wste( values, weights );}
 
@@ -5970,6 +7130,9 @@ public class GroovyStaticImports {
 
     /** @see io.deephaven.function.Numeric#wste(io.deephaven.vector.ByteVector,byte[]) */
     public static  double wste( io.deephaven.vector.ByteVector values, byte[] weights ) {return Numeric.wste( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wste(io.deephaven.vector.ByteVector,char[]) */
+    public static  double wste( io.deephaven.vector.ByteVector values, char[] weights ) {return Numeric.wste( values, weights );}
 
     /** @see io.deephaven.function.Numeric#wste(io.deephaven.vector.ByteVector,double[]) */
     public static  double wste( io.deephaven.vector.ByteVector values, double[] weights ) {return Numeric.wste( values, weights );}
@@ -5989,6 +7152,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#wste(io.deephaven.vector.ByteVector,io.deephaven.vector.ByteVector) */
     public static  double wste( io.deephaven.vector.ByteVector values, io.deephaven.vector.ByteVector weights ) {return Numeric.wste( values, weights );}
 
+    /** @see io.deephaven.function.Numeric#wste(io.deephaven.vector.ByteVector,io.deephaven.vector.CharVector) */
+    public static  double wste( io.deephaven.vector.ByteVector values, io.deephaven.vector.CharVector weights ) {return Numeric.wste( values, weights );}
+
     /** @see io.deephaven.function.Numeric#wste(io.deephaven.vector.ByteVector,io.deephaven.vector.DoubleVector) */
     public static  double wste( io.deephaven.vector.ByteVector values, io.deephaven.vector.DoubleVector weights ) {return Numeric.wste( values, weights );}
 
@@ -6004,8 +7170,53 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#wste(io.deephaven.vector.ByteVector,io.deephaven.vector.ShortVector) */
     public static  double wste( io.deephaven.vector.ByteVector values, io.deephaven.vector.ShortVector weights ) {return Numeric.wste( values, weights );}
 
+    /** @see io.deephaven.function.Numeric#wste(io.deephaven.vector.CharVector,byte[]) */
+    public static  double wste( io.deephaven.vector.CharVector values, byte[] weights ) {return Numeric.wste( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wste(io.deephaven.vector.CharVector,char[]) */
+    public static  double wste( io.deephaven.vector.CharVector values, char[] weights ) {return Numeric.wste( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wste(io.deephaven.vector.CharVector,double[]) */
+    public static  double wste( io.deephaven.vector.CharVector values, double[] weights ) {return Numeric.wste( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wste(io.deephaven.vector.CharVector,float[]) */
+    public static  double wste( io.deephaven.vector.CharVector values, float[] weights ) {return Numeric.wste( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wste(io.deephaven.vector.CharVector,int[]) */
+    public static  double wste( io.deephaven.vector.CharVector values, int[] weights ) {return Numeric.wste( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wste(io.deephaven.vector.CharVector,long[]) */
+    public static  double wste( io.deephaven.vector.CharVector values, long[] weights ) {return Numeric.wste( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wste(io.deephaven.vector.CharVector,short[]) */
+    public static  double wste( io.deephaven.vector.CharVector values, short[] weights ) {return Numeric.wste( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wste(io.deephaven.vector.CharVector,io.deephaven.vector.ByteVector) */
+    public static  double wste( io.deephaven.vector.CharVector values, io.deephaven.vector.ByteVector weights ) {return Numeric.wste( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wste(io.deephaven.vector.CharVector,io.deephaven.vector.CharVector) */
+    public static  double wste( io.deephaven.vector.CharVector values, io.deephaven.vector.CharVector weights ) {return Numeric.wste( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wste(io.deephaven.vector.CharVector,io.deephaven.vector.DoubleVector) */
+    public static  double wste( io.deephaven.vector.CharVector values, io.deephaven.vector.DoubleVector weights ) {return Numeric.wste( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wste(io.deephaven.vector.CharVector,io.deephaven.vector.FloatVector) */
+    public static  double wste( io.deephaven.vector.CharVector values, io.deephaven.vector.FloatVector weights ) {return Numeric.wste( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wste(io.deephaven.vector.CharVector,io.deephaven.vector.IntVector) */
+    public static  double wste( io.deephaven.vector.CharVector values, io.deephaven.vector.IntVector weights ) {return Numeric.wste( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wste(io.deephaven.vector.CharVector,io.deephaven.vector.LongVector) */
+    public static  double wste( io.deephaven.vector.CharVector values, io.deephaven.vector.LongVector weights ) {return Numeric.wste( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wste(io.deephaven.vector.CharVector,io.deephaven.vector.ShortVector) */
+    public static  double wste( io.deephaven.vector.CharVector values, io.deephaven.vector.ShortVector weights ) {return Numeric.wste( values, weights );}
+
     /** @see io.deephaven.function.Numeric#wste(io.deephaven.vector.DoubleVector,byte[]) */
     public static  double wste( io.deephaven.vector.DoubleVector values, byte[] weights ) {return Numeric.wste( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wste(io.deephaven.vector.DoubleVector,char[]) */
+    public static  double wste( io.deephaven.vector.DoubleVector values, char[] weights ) {return Numeric.wste( values, weights );}
 
     /** @see io.deephaven.function.Numeric#wste(io.deephaven.vector.DoubleVector,double[]) */
     public static  double wste( io.deephaven.vector.DoubleVector values, double[] weights ) {return Numeric.wste( values, weights );}
@@ -6025,6 +7236,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#wste(io.deephaven.vector.DoubleVector,io.deephaven.vector.ByteVector) */
     public static  double wste( io.deephaven.vector.DoubleVector values, io.deephaven.vector.ByteVector weights ) {return Numeric.wste( values, weights );}
 
+    /** @see io.deephaven.function.Numeric#wste(io.deephaven.vector.DoubleVector,io.deephaven.vector.CharVector) */
+    public static  double wste( io.deephaven.vector.DoubleVector values, io.deephaven.vector.CharVector weights ) {return Numeric.wste( values, weights );}
+
     /** @see io.deephaven.function.Numeric#wste(io.deephaven.vector.DoubleVector,io.deephaven.vector.DoubleVector) */
     public static  double wste( io.deephaven.vector.DoubleVector values, io.deephaven.vector.DoubleVector weights ) {return Numeric.wste( values, weights );}
 
@@ -6042,6 +7256,9 @@ public class GroovyStaticImports {
 
     /** @see io.deephaven.function.Numeric#wste(io.deephaven.vector.FloatVector,byte[]) */
     public static  double wste( io.deephaven.vector.FloatVector values, byte[] weights ) {return Numeric.wste( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wste(io.deephaven.vector.FloatVector,char[]) */
+    public static  double wste( io.deephaven.vector.FloatVector values, char[] weights ) {return Numeric.wste( values, weights );}
 
     /** @see io.deephaven.function.Numeric#wste(io.deephaven.vector.FloatVector,double[]) */
     public static  double wste( io.deephaven.vector.FloatVector values, double[] weights ) {return Numeric.wste( values, weights );}
@@ -6061,6 +7278,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#wste(io.deephaven.vector.FloatVector,io.deephaven.vector.ByteVector) */
     public static  double wste( io.deephaven.vector.FloatVector values, io.deephaven.vector.ByteVector weights ) {return Numeric.wste( values, weights );}
 
+    /** @see io.deephaven.function.Numeric#wste(io.deephaven.vector.FloatVector,io.deephaven.vector.CharVector) */
+    public static  double wste( io.deephaven.vector.FloatVector values, io.deephaven.vector.CharVector weights ) {return Numeric.wste( values, weights );}
+
     /** @see io.deephaven.function.Numeric#wste(io.deephaven.vector.FloatVector,io.deephaven.vector.DoubleVector) */
     public static  double wste( io.deephaven.vector.FloatVector values, io.deephaven.vector.DoubleVector weights ) {return Numeric.wste( values, weights );}
 
@@ -6078,6 +7298,9 @@ public class GroovyStaticImports {
 
     /** @see io.deephaven.function.Numeric#wste(io.deephaven.vector.IntVector,byte[]) */
     public static  double wste( io.deephaven.vector.IntVector values, byte[] weights ) {return Numeric.wste( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wste(io.deephaven.vector.IntVector,char[]) */
+    public static  double wste( io.deephaven.vector.IntVector values, char[] weights ) {return Numeric.wste( values, weights );}
 
     /** @see io.deephaven.function.Numeric#wste(io.deephaven.vector.IntVector,double[]) */
     public static  double wste( io.deephaven.vector.IntVector values, double[] weights ) {return Numeric.wste( values, weights );}
@@ -6097,6 +7320,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#wste(io.deephaven.vector.IntVector,io.deephaven.vector.ByteVector) */
     public static  double wste( io.deephaven.vector.IntVector values, io.deephaven.vector.ByteVector weights ) {return Numeric.wste( values, weights );}
 
+    /** @see io.deephaven.function.Numeric#wste(io.deephaven.vector.IntVector,io.deephaven.vector.CharVector) */
+    public static  double wste( io.deephaven.vector.IntVector values, io.deephaven.vector.CharVector weights ) {return Numeric.wste( values, weights );}
+
     /** @see io.deephaven.function.Numeric#wste(io.deephaven.vector.IntVector,io.deephaven.vector.DoubleVector) */
     public static  double wste( io.deephaven.vector.IntVector values, io.deephaven.vector.DoubleVector weights ) {return Numeric.wste( values, weights );}
 
@@ -6114,6 +7340,9 @@ public class GroovyStaticImports {
 
     /** @see io.deephaven.function.Numeric#wste(io.deephaven.vector.LongVector,byte[]) */
     public static  double wste( io.deephaven.vector.LongVector values, byte[] weights ) {return Numeric.wste( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wste(io.deephaven.vector.LongVector,char[]) */
+    public static  double wste( io.deephaven.vector.LongVector values, char[] weights ) {return Numeric.wste( values, weights );}
 
     /** @see io.deephaven.function.Numeric#wste(io.deephaven.vector.LongVector,double[]) */
     public static  double wste( io.deephaven.vector.LongVector values, double[] weights ) {return Numeric.wste( values, weights );}
@@ -6133,6 +7362,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#wste(io.deephaven.vector.LongVector,io.deephaven.vector.ByteVector) */
     public static  double wste( io.deephaven.vector.LongVector values, io.deephaven.vector.ByteVector weights ) {return Numeric.wste( values, weights );}
 
+    /** @see io.deephaven.function.Numeric#wste(io.deephaven.vector.LongVector,io.deephaven.vector.CharVector) */
+    public static  double wste( io.deephaven.vector.LongVector values, io.deephaven.vector.CharVector weights ) {return Numeric.wste( values, weights );}
+
     /** @see io.deephaven.function.Numeric#wste(io.deephaven.vector.LongVector,io.deephaven.vector.DoubleVector) */
     public static  double wste( io.deephaven.vector.LongVector values, io.deephaven.vector.DoubleVector weights ) {return Numeric.wste( values, weights );}
 
@@ -6150,6 +7382,9 @@ public class GroovyStaticImports {
 
     /** @see io.deephaven.function.Numeric#wste(io.deephaven.vector.ShortVector,byte[]) */
     public static  double wste( io.deephaven.vector.ShortVector values, byte[] weights ) {return Numeric.wste( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wste(io.deephaven.vector.ShortVector,char[]) */
+    public static  double wste( io.deephaven.vector.ShortVector values, char[] weights ) {return Numeric.wste( values, weights );}
 
     /** @see io.deephaven.function.Numeric#wste(io.deephaven.vector.ShortVector,double[]) */
     public static  double wste( io.deephaven.vector.ShortVector values, double[] weights ) {return Numeric.wste( values, weights );}
@@ -6169,6 +7404,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#wste(io.deephaven.vector.ShortVector,io.deephaven.vector.ByteVector) */
     public static  double wste( io.deephaven.vector.ShortVector values, io.deephaven.vector.ByteVector weights ) {return Numeric.wste( values, weights );}
 
+    /** @see io.deephaven.function.Numeric#wste(io.deephaven.vector.ShortVector,io.deephaven.vector.CharVector) */
+    public static  double wste( io.deephaven.vector.ShortVector values, io.deephaven.vector.CharVector weights ) {return Numeric.wste( values, weights );}
+
     /** @see io.deephaven.function.Numeric#wste(io.deephaven.vector.ShortVector,io.deephaven.vector.DoubleVector) */
     public static  double wste( io.deephaven.vector.ShortVector values, io.deephaven.vector.DoubleVector weights ) {return Numeric.wste( values, weights );}
 
@@ -6186,6 +7424,9 @@ public class GroovyStaticImports {
 
     /** @see io.deephaven.function.Numeric#wsum(byte[],byte[]) */
     public static  long wsum( byte[] values, byte[] weights ) {return Numeric.wsum( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wsum(byte[],char[]) */
+    public static  long wsum( byte[] values, char[] weights ) {return Numeric.wsum( values, weights );}
 
     /** @see io.deephaven.function.Numeric#wsum(byte[],double[]) */
     public static  double wsum( byte[] values, double[] weights ) {return Numeric.wsum( values, weights );}
@@ -6205,6 +7446,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#wsum(byte[],io.deephaven.vector.ByteVector) */
     public static  long wsum( byte[] values, io.deephaven.vector.ByteVector weights ) {return Numeric.wsum( values, weights );}
 
+    /** @see io.deephaven.function.Numeric#wsum(byte[],io.deephaven.vector.CharVector) */
+    public static  long wsum( byte[] values, io.deephaven.vector.CharVector weights ) {return Numeric.wsum( values, weights );}
+
     /** @see io.deephaven.function.Numeric#wsum(byte[],io.deephaven.vector.DoubleVector) */
     public static  double wsum( byte[] values, io.deephaven.vector.DoubleVector weights ) {return Numeric.wsum( values, weights );}
 
@@ -6220,8 +7464,53 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#wsum(byte[],io.deephaven.vector.ShortVector) */
     public static  long wsum( byte[] values, io.deephaven.vector.ShortVector weights ) {return Numeric.wsum( values, weights );}
 
+    /** @see io.deephaven.function.Numeric#wsum(char[],byte[]) */
+    public static  long wsum( char[] values, byte[] weights ) {return Numeric.wsum( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wsum(char[],char[]) */
+    public static  long wsum( char[] values, char[] weights ) {return Numeric.wsum( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wsum(char[],double[]) */
+    public static  double wsum( char[] values, double[] weights ) {return Numeric.wsum( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wsum(char[],float[]) */
+    public static  double wsum( char[] values, float[] weights ) {return Numeric.wsum( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wsum(char[],int[]) */
+    public static  long wsum( char[] values, int[] weights ) {return Numeric.wsum( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wsum(char[],long[]) */
+    public static  long wsum( char[] values, long[] weights ) {return Numeric.wsum( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wsum(char[],short[]) */
+    public static  long wsum( char[] values, short[] weights ) {return Numeric.wsum( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wsum(char[],io.deephaven.vector.ByteVector) */
+    public static  long wsum( char[] values, io.deephaven.vector.ByteVector weights ) {return Numeric.wsum( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wsum(char[],io.deephaven.vector.CharVector) */
+    public static  long wsum( char[] values, io.deephaven.vector.CharVector weights ) {return Numeric.wsum( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wsum(char[],io.deephaven.vector.DoubleVector) */
+    public static  double wsum( char[] values, io.deephaven.vector.DoubleVector weights ) {return Numeric.wsum( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wsum(char[],io.deephaven.vector.FloatVector) */
+    public static  double wsum( char[] values, io.deephaven.vector.FloatVector weights ) {return Numeric.wsum( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wsum(char[],io.deephaven.vector.IntVector) */
+    public static  long wsum( char[] values, io.deephaven.vector.IntVector weights ) {return Numeric.wsum( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wsum(char[],io.deephaven.vector.LongVector) */
+    public static  long wsum( char[] values, io.deephaven.vector.LongVector weights ) {return Numeric.wsum( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wsum(char[],io.deephaven.vector.ShortVector) */
+    public static  long wsum( char[] values, io.deephaven.vector.ShortVector weights ) {return Numeric.wsum( values, weights );}
+
     /** @see io.deephaven.function.Numeric#wsum(double[],byte[]) */
     public static  double wsum( double[] values, byte[] weights ) {return Numeric.wsum( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wsum(double[],char[]) */
+    public static  double wsum( double[] values, char[] weights ) {return Numeric.wsum( values, weights );}
 
     /** @see io.deephaven.function.Numeric#wsum(double[],double[]) */
     public static  double wsum( double[] values, double[] weights ) {return Numeric.wsum( values, weights );}
@@ -6241,6 +7530,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#wsum(double[],io.deephaven.vector.ByteVector) */
     public static  double wsum( double[] values, io.deephaven.vector.ByteVector weights ) {return Numeric.wsum( values, weights );}
 
+    /** @see io.deephaven.function.Numeric#wsum(double[],io.deephaven.vector.CharVector) */
+    public static  double wsum( double[] values, io.deephaven.vector.CharVector weights ) {return Numeric.wsum( values, weights );}
+
     /** @see io.deephaven.function.Numeric#wsum(double[],io.deephaven.vector.DoubleVector) */
     public static  double wsum( double[] values, io.deephaven.vector.DoubleVector weights ) {return Numeric.wsum( values, weights );}
 
@@ -6258,6 +7550,9 @@ public class GroovyStaticImports {
 
     /** @see io.deephaven.function.Numeric#wsum(float[],byte[]) */
     public static  double wsum( float[] values, byte[] weights ) {return Numeric.wsum( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wsum(float[],char[]) */
+    public static  double wsum( float[] values, char[] weights ) {return Numeric.wsum( values, weights );}
 
     /** @see io.deephaven.function.Numeric#wsum(float[],double[]) */
     public static  double wsum( float[] values, double[] weights ) {return Numeric.wsum( values, weights );}
@@ -6277,6 +7572,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#wsum(float[],io.deephaven.vector.ByteVector) */
     public static  double wsum( float[] values, io.deephaven.vector.ByteVector weights ) {return Numeric.wsum( values, weights );}
 
+    /** @see io.deephaven.function.Numeric#wsum(float[],io.deephaven.vector.CharVector) */
+    public static  double wsum( float[] values, io.deephaven.vector.CharVector weights ) {return Numeric.wsum( values, weights );}
+
     /** @see io.deephaven.function.Numeric#wsum(float[],io.deephaven.vector.DoubleVector) */
     public static  double wsum( float[] values, io.deephaven.vector.DoubleVector weights ) {return Numeric.wsum( values, weights );}
 
@@ -6294,6 +7592,9 @@ public class GroovyStaticImports {
 
     /** @see io.deephaven.function.Numeric#wsum(int[],byte[]) */
     public static  long wsum( int[] values, byte[] weights ) {return Numeric.wsum( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wsum(int[],char[]) */
+    public static  long wsum( int[] values, char[] weights ) {return Numeric.wsum( values, weights );}
 
     /** @see io.deephaven.function.Numeric#wsum(int[],double[]) */
     public static  double wsum( int[] values, double[] weights ) {return Numeric.wsum( values, weights );}
@@ -6313,6 +7614,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#wsum(int[],io.deephaven.vector.ByteVector) */
     public static  long wsum( int[] values, io.deephaven.vector.ByteVector weights ) {return Numeric.wsum( values, weights );}
 
+    /** @see io.deephaven.function.Numeric#wsum(int[],io.deephaven.vector.CharVector) */
+    public static  long wsum( int[] values, io.deephaven.vector.CharVector weights ) {return Numeric.wsum( values, weights );}
+
     /** @see io.deephaven.function.Numeric#wsum(int[],io.deephaven.vector.DoubleVector) */
     public static  double wsum( int[] values, io.deephaven.vector.DoubleVector weights ) {return Numeric.wsum( values, weights );}
 
@@ -6330,6 +7634,9 @@ public class GroovyStaticImports {
 
     /** @see io.deephaven.function.Numeric#wsum(long[],byte[]) */
     public static  long wsum( long[] values, byte[] weights ) {return Numeric.wsum( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wsum(long[],char[]) */
+    public static  long wsum( long[] values, char[] weights ) {return Numeric.wsum( values, weights );}
 
     /** @see io.deephaven.function.Numeric#wsum(long[],double[]) */
     public static  double wsum( long[] values, double[] weights ) {return Numeric.wsum( values, weights );}
@@ -6349,6 +7656,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#wsum(long[],io.deephaven.vector.ByteVector) */
     public static  long wsum( long[] values, io.deephaven.vector.ByteVector weights ) {return Numeric.wsum( values, weights );}
 
+    /** @see io.deephaven.function.Numeric#wsum(long[],io.deephaven.vector.CharVector) */
+    public static  long wsum( long[] values, io.deephaven.vector.CharVector weights ) {return Numeric.wsum( values, weights );}
+
     /** @see io.deephaven.function.Numeric#wsum(long[],io.deephaven.vector.DoubleVector) */
     public static  double wsum( long[] values, io.deephaven.vector.DoubleVector weights ) {return Numeric.wsum( values, weights );}
 
@@ -6366,6 +7676,9 @@ public class GroovyStaticImports {
 
     /** @see io.deephaven.function.Numeric#wsum(short[],byte[]) */
     public static  long wsum( short[] values, byte[] weights ) {return Numeric.wsum( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wsum(short[],char[]) */
+    public static  long wsum( short[] values, char[] weights ) {return Numeric.wsum( values, weights );}
 
     /** @see io.deephaven.function.Numeric#wsum(short[],double[]) */
     public static  double wsum( short[] values, double[] weights ) {return Numeric.wsum( values, weights );}
@@ -6385,6 +7698,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#wsum(short[],io.deephaven.vector.ByteVector) */
     public static  long wsum( short[] values, io.deephaven.vector.ByteVector weights ) {return Numeric.wsum( values, weights );}
 
+    /** @see io.deephaven.function.Numeric#wsum(short[],io.deephaven.vector.CharVector) */
+    public static  long wsum( short[] values, io.deephaven.vector.CharVector weights ) {return Numeric.wsum( values, weights );}
+
     /** @see io.deephaven.function.Numeric#wsum(short[],io.deephaven.vector.DoubleVector) */
     public static  double wsum( short[] values, io.deephaven.vector.DoubleVector weights ) {return Numeric.wsum( values, weights );}
 
@@ -6402,6 +7718,9 @@ public class GroovyStaticImports {
 
     /** @see io.deephaven.function.Numeric#wsum(io.deephaven.vector.ByteVector,byte[]) */
     public static  long wsum( io.deephaven.vector.ByteVector values, byte[] weights ) {return Numeric.wsum( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wsum(io.deephaven.vector.ByteVector,char[]) */
+    public static  long wsum( io.deephaven.vector.ByteVector values, char[] weights ) {return Numeric.wsum( values, weights );}
 
     /** @see io.deephaven.function.Numeric#wsum(io.deephaven.vector.ByteVector,double[]) */
     public static  double wsum( io.deephaven.vector.ByteVector values, double[] weights ) {return Numeric.wsum( values, weights );}
@@ -6421,6 +7740,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#wsum(io.deephaven.vector.ByteVector,io.deephaven.vector.ByteVector) */
     public static  long wsum( io.deephaven.vector.ByteVector values, io.deephaven.vector.ByteVector weights ) {return Numeric.wsum( values, weights );}
 
+    /** @see io.deephaven.function.Numeric#wsum(io.deephaven.vector.ByteVector,io.deephaven.vector.CharVector) */
+    public static  long wsum( io.deephaven.vector.ByteVector values, io.deephaven.vector.CharVector weights ) {return Numeric.wsum( values, weights );}
+
     /** @see io.deephaven.function.Numeric#wsum(io.deephaven.vector.ByteVector,io.deephaven.vector.DoubleVector) */
     public static  double wsum( io.deephaven.vector.ByteVector values, io.deephaven.vector.DoubleVector weights ) {return Numeric.wsum( values, weights );}
 
@@ -6436,8 +7758,53 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#wsum(io.deephaven.vector.ByteVector,io.deephaven.vector.ShortVector) */
     public static  long wsum( io.deephaven.vector.ByteVector values, io.deephaven.vector.ShortVector weights ) {return Numeric.wsum( values, weights );}
 
+    /** @see io.deephaven.function.Numeric#wsum(io.deephaven.vector.CharVector,byte[]) */
+    public static  long wsum( io.deephaven.vector.CharVector values, byte[] weights ) {return Numeric.wsum( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wsum(io.deephaven.vector.CharVector,char[]) */
+    public static  long wsum( io.deephaven.vector.CharVector values, char[] weights ) {return Numeric.wsum( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wsum(io.deephaven.vector.CharVector,double[]) */
+    public static  double wsum( io.deephaven.vector.CharVector values, double[] weights ) {return Numeric.wsum( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wsum(io.deephaven.vector.CharVector,float[]) */
+    public static  double wsum( io.deephaven.vector.CharVector values, float[] weights ) {return Numeric.wsum( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wsum(io.deephaven.vector.CharVector,int[]) */
+    public static  long wsum( io.deephaven.vector.CharVector values, int[] weights ) {return Numeric.wsum( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wsum(io.deephaven.vector.CharVector,long[]) */
+    public static  long wsum( io.deephaven.vector.CharVector values, long[] weights ) {return Numeric.wsum( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wsum(io.deephaven.vector.CharVector,short[]) */
+    public static  long wsum( io.deephaven.vector.CharVector values, short[] weights ) {return Numeric.wsum( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wsum(io.deephaven.vector.CharVector,io.deephaven.vector.ByteVector) */
+    public static  long wsum( io.deephaven.vector.CharVector values, io.deephaven.vector.ByteVector weights ) {return Numeric.wsum( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wsum(io.deephaven.vector.CharVector,io.deephaven.vector.CharVector) */
+    public static  long wsum( io.deephaven.vector.CharVector values, io.deephaven.vector.CharVector weights ) {return Numeric.wsum( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wsum(io.deephaven.vector.CharVector,io.deephaven.vector.DoubleVector) */
+    public static  double wsum( io.deephaven.vector.CharVector values, io.deephaven.vector.DoubleVector weights ) {return Numeric.wsum( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wsum(io.deephaven.vector.CharVector,io.deephaven.vector.FloatVector) */
+    public static  double wsum( io.deephaven.vector.CharVector values, io.deephaven.vector.FloatVector weights ) {return Numeric.wsum( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wsum(io.deephaven.vector.CharVector,io.deephaven.vector.IntVector) */
+    public static  long wsum( io.deephaven.vector.CharVector values, io.deephaven.vector.IntVector weights ) {return Numeric.wsum( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wsum(io.deephaven.vector.CharVector,io.deephaven.vector.LongVector) */
+    public static  long wsum( io.deephaven.vector.CharVector values, io.deephaven.vector.LongVector weights ) {return Numeric.wsum( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wsum(io.deephaven.vector.CharVector,io.deephaven.vector.ShortVector) */
+    public static  long wsum( io.deephaven.vector.CharVector values, io.deephaven.vector.ShortVector weights ) {return Numeric.wsum( values, weights );}
+
     /** @see io.deephaven.function.Numeric#wsum(io.deephaven.vector.DoubleVector,byte[]) */
     public static  double wsum( io.deephaven.vector.DoubleVector values, byte[] weights ) {return Numeric.wsum( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wsum(io.deephaven.vector.DoubleVector,char[]) */
+    public static  double wsum( io.deephaven.vector.DoubleVector values, char[] weights ) {return Numeric.wsum( values, weights );}
 
     /** @see io.deephaven.function.Numeric#wsum(io.deephaven.vector.DoubleVector,double[]) */
     public static  double wsum( io.deephaven.vector.DoubleVector values, double[] weights ) {return Numeric.wsum( values, weights );}
@@ -6457,6 +7824,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#wsum(io.deephaven.vector.DoubleVector,io.deephaven.vector.ByteVector) */
     public static  double wsum( io.deephaven.vector.DoubleVector values, io.deephaven.vector.ByteVector weights ) {return Numeric.wsum( values, weights );}
 
+    /** @see io.deephaven.function.Numeric#wsum(io.deephaven.vector.DoubleVector,io.deephaven.vector.CharVector) */
+    public static  double wsum( io.deephaven.vector.DoubleVector values, io.deephaven.vector.CharVector weights ) {return Numeric.wsum( values, weights );}
+
     /** @see io.deephaven.function.Numeric#wsum(io.deephaven.vector.DoubleVector,io.deephaven.vector.DoubleVector) */
     public static  double wsum( io.deephaven.vector.DoubleVector values, io.deephaven.vector.DoubleVector weights ) {return Numeric.wsum( values, weights );}
 
@@ -6474,6 +7844,9 @@ public class GroovyStaticImports {
 
     /** @see io.deephaven.function.Numeric#wsum(io.deephaven.vector.FloatVector,byte[]) */
     public static  double wsum( io.deephaven.vector.FloatVector values, byte[] weights ) {return Numeric.wsum( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wsum(io.deephaven.vector.FloatVector,char[]) */
+    public static  double wsum( io.deephaven.vector.FloatVector values, char[] weights ) {return Numeric.wsum( values, weights );}
 
     /** @see io.deephaven.function.Numeric#wsum(io.deephaven.vector.FloatVector,double[]) */
     public static  double wsum( io.deephaven.vector.FloatVector values, double[] weights ) {return Numeric.wsum( values, weights );}
@@ -6493,6 +7866,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#wsum(io.deephaven.vector.FloatVector,io.deephaven.vector.ByteVector) */
     public static  double wsum( io.deephaven.vector.FloatVector values, io.deephaven.vector.ByteVector weights ) {return Numeric.wsum( values, weights );}
 
+    /** @see io.deephaven.function.Numeric#wsum(io.deephaven.vector.FloatVector,io.deephaven.vector.CharVector) */
+    public static  double wsum( io.deephaven.vector.FloatVector values, io.deephaven.vector.CharVector weights ) {return Numeric.wsum( values, weights );}
+
     /** @see io.deephaven.function.Numeric#wsum(io.deephaven.vector.FloatVector,io.deephaven.vector.DoubleVector) */
     public static  double wsum( io.deephaven.vector.FloatVector values, io.deephaven.vector.DoubleVector weights ) {return Numeric.wsum( values, weights );}
 
@@ -6510,6 +7886,9 @@ public class GroovyStaticImports {
 
     /** @see io.deephaven.function.Numeric#wsum(io.deephaven.vector.IntVector,byte[]) */
     public static  long wsum( io.deephaven.vector.IntVector values, byte[] weights ) {return Numeric.wsum( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wsum(io.deephaven.vector.IntVector,char[]) */
+    public static  long wsum( io.deephaven.vector.IntVector values, char[] weights ) {return Numeric.wsum( values, weights );}
 
     /** @see io.deephaven.function.Numeric#wsum(io.deephaven.vector.IntVector,double[]) */
     public static  double wsum( io.deephaven.vector.IntVector values, double[] weights ) {return Numeric.wsum( values, weights );}
@@ -6529,6 +7908,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#wsum(io.deephaven.vector.IntVector,io.deephaven.vector.ByteVector) */
     public static  long wsum( io.deephaven.vector.IntVector values, io.deephaven.vector.ByteVector weights ) {return Numeric.wsum( values, weights );}
 
+    /** @see io.deephaven.function.Numeric#wsum(io.deephaven.vector.IntVector,io.deephaven.vector.CharVector) */
+    public static  long wsum( io.deephaven.vector.IntVector values, io.deephaven.vector.CharVector weights ) {return Numeric.wsum( values, weights );}
+
     /** @see io.deephaven.function.Numeric#wsum(io.deephaven.vector.IntVector,io.deephaven.vector.DoubleVector) */
     public static  double wsum( io.deephaven.vector.IntVector values, io.deephaven.vector.DoubleVector weights ) {return Numeric.wsum( values, weights );}
 
@@ -6546,6 +7928,9 @@ public class GroovyStaticImports {
 
     /** @see io.deephaven.function.Numeric#wsum(io.deephaven.vector.LongVector,byte[]) */
     public static  long wsum( io.deephaven.vector.LongVector values, byte[] weights ) {return Numeric.wsum( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wsum(io.deephaven.vector.LongVector,char[]) */
+    public static  long wsum( io.deephaven.vector.LongVector values, char[] weights ) {return Numeric.wsum( values, weights );}
 
     /** @see io.deephaven.function.Numeric#wsum(io.deephaven.vector.LongVector,double[]) */
     public static  double wsum( io.deephaven.vector.LongVector values, double[] weights ) {return Numeric.wsum( values, weights );}
@@ -6565,6 +7950,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#wsum(io.deephaven.vector.LongVector,io.deephaven.vector.ByteVector) */
     public static  long wsum( io.deephaven.vector.LongVector values, io.deephaven.vector.ByteVector weights ) {return Numeric.wsum( values, weights );}
 
+    /** @see io.deephaven.function.Numeric#wsum(io.deephaven.vector.LongVector,io.deephaven.vector.CharVector) */
+    public static  long wsum( io.deephaven.vector.LongVector values, io.deephaven.vector.CharVector weights ) {return Numeric.wsum( values, weights );}
+
     /** @see io.deephaven.function.Numeric#wsum(io.deephaven.vector.LongVector,io.deephaven.vector.DoubleVector) */
     public static  double wsum( io.deephaven.vector.LongVector values, io.deephaven.vector.DoubleVector weights ) {return Numeric.wsum( values, weights );}
 
@@ -6582,6 +7970,9 @@ public class GroovyStaticImports {
 
     /** @see io.deephaven.function.Numeric#wsum(io.deephaven.vector.ShortVector,byte[]) */
     public static  long wsum( io.deephaven.vector.ShortVector values, byte[] weights ) {return Numeric.wsum( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wsum(io.deephaven.vector.ShortVector,char[]) */
+    public static  long wsum( io.deephaven.vector.ShortVector values, char[] weights ) {return Numeric.wsum( values, weights );}
 
     /** @see io.deephaven.function.Numeric#wsum(io.deephaven.vector.ShortVector,double[]) */
     public static  double wsum( io.deephaven.vector.ShortVector values, double[] weights ) {return Numeric.wsum( values, weights );}
@@ -6601,6 +7992,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#wsum(io.deephaven.vector.ShortVector,io.deephaven.vector.ByteVector) */
     public static  long wsum( io.deephaven.vector.ShortVector values, io.deephaven.vector.ByteVector weights ) {return Numeric.wsum( values, weights );}
 
+    /** @see io.deephaven.function.Numeric#wsum(io.deephaven.vector.ShortVector,io.deephaven.vector.CharVector) */
+    public static  long wsum( io.deephaven.vector.ShortVector values, io.deephaven.vector.CharVector weights ) {return Numeric.wsum( values, weights );}
+
     /** @see io.deephaven.function.Numeric#wsum(io.deephaven.vector.ShortVector,io.deephaven.vector.DoubleVector) */
     public static  double wsum( io.deephaven.vector.ShortVector values, io.deephaven.vector.DoubleVector weights ) {return Numeric.wsum( values, weights );}
 
@@ -6618,6 +8012,9 @@ public class GroovyStaticImports {
 
     /** @see io.deephaven.function.Numeric#wtstat(byte[],byte[]) */
     public static  double wtstat( byte[] values, byte[] weights ) {return Numeric.wtstat( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wtstat(byte[],char[]) */
+    public static  double wtstat( byte[] values, char[] weights ) {return Numeric.wtstat( values, weights );}
 
     /** @see io.deephaven.function.Numeric#wtstat(byte[],double[]) */
     public static  double wtstat( byte[] values, double[] weights ) {return Numeric.wtstat( values, weights );}
@@ -6637,6 +8034,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#wtstat(byte[],io.deephaven.vector.ByteVector) */
     public static  double wtstat( byte[] values, io.deephaven.vector.ByteVector weights ) {return Numeric.wtstat( values, weights );}
 
+    /** @see io.deephaven.function.Numeric#wtstat(byte[],io.deephaven.vector.CharVector) */
+    public static  double wtstat( byte[] values, io.deephaven.vector.CharVector weights ) {return Numeric.wtstat( values, weights );}
+
     /** @see io.deephaven.function.Numeric#wtstat(byte[],io.deephaven.vector.DoubleVector) */
     public static  double wtstat( byte[] values, io.deephaven.vector.DoubleVector weights ) {return Numeric.wtstat( values, weights );}
 
@@ -6652,8 +8052,53 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#wtstat(byte[],io.deephaven.vector.ShortVector) */
     public static  double wtstat( byte[] values, io.deephaven.vector.ShortVector weights ) {return Numeric.wtstat( values, weights );}
 
+    /** @see io.deephaven.function.Numeric#wtstat(char[],byte[]) */
+    public static  double wtstat( char[] values, byte[] weights ) {return Numeric.wtstat( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wtstat(char[],char[]) */
+    public static  double wtstat( char[] values, char[] weights ) {return Numeric.wtstat( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wtstat(char[],double[]) */
+    public static  double wtstat( char[] values, double[] weights ) {return Numeric.wtstat( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wtstat(char[],float[]) */
+    public static  double wtstat( char[] values, float[] weights ) {return Numeric.wtstat( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wtstat(char[],int[]) */
+    public static  double wtstat( char[] values, int[] weights ) {return Numeric.wtstat( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wtstat(char[],long[]) */
+    public static  double wtstat( char[] values, long[] weights ) {return Numeric.wtstat( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wtstat(char[],short[]) */
+    public static  double wtstat( char[] values, short[] weights ) {return Numeric.wtstat( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wtstat(char[],io.deephaven.vector.ByteVector) */
+    public static  double wtstat( char[] values, io.deephaven.vector.ByteVector weights ) {return Numeric.wtstat( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wtstat(char[],io.deephaven.vector.CharVector) */
+    public static  double wtstat( char[] values, io.deephaven.vector.CharVector weights ) {return Numeric.wtstat( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wtstat(char[],io.deephaven.vector.DoubleVector) */
+    public static  double wtstat( char[] values, io.deephaven.vector.DoubleVector weights ) {return Numeric.wtstat( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wtstat(char[],io.deephaven.vector.FloatVector) */
+    public static  double wtstat( char[] values, io.deephaven.vector.FloatVector weights ) {return Numeric.wtstat( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wtstat(char[],io.deephaven.vector.IntVector) */
+    public static  double wtstat( char[] values, io.deephaven.vector.IntVector weights ) {return Numeric.wtstat( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wtstat(char[],io.deephaven.vector.LongVector) */
+    public static  double wtstat( char[] values, io.deephaven.vector.LongVector weights ) {return Numeric.wtstat( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wtstat(char[],io.deephaven.vector.ShortVector) */
+    public static  double wtstat( char[] values, io.deephaven.vector.ShortVector weights ) {return Numeric.wtstat( values, weights );}
+
     /** @see io.deephaven.function.Numeric#wtstat(double[],byte[]) */
     public static  double wtstat( double[] values, byte[] weights ) {return Numeric.wtstat( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wtstat(double[],char[]) */
+    public static  double wtstat( double[] values, char[] weights ) {return Numeric.wtstat( values, weights );}
 
     /** @see io.deephaven.function.Numeric#wtstat(double[],double[]) */
     public static  double wtstat( double[] values, double[] weights ) {return Numeric.wtstat( values, weights );}
@@ -6673,6 +8118,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#wtstat(double[],io.deephaven.vector.ByteVector) */
     public static  double wtstat( double[] values, io.deephaven.vector.ByteVector weights ) {return Numeric.wtstat( values, weights );}
 
+    /** @see io.deephaven.function.Numeric#wtstat(double[],io.deephaven.vector.CharVector) */
+    public static  double wtstat( double[] values, io.deephaven.vector.CharVector weights ) {return Numeric.wtstat( values, weights );}
+
     /** @see io.deephaven.function.Numeric#wtstat(double[],io.deephaven.vector.DoubleVector) */
     public static  double wtstat( double[] values, io.deephaven.vector.DoubleVector weights ) {return Numeric.wtstat( values, weights );}
 
@@ -6690,6 +8138,9 @@ public class GroovyStaticImports {
 
     /** @see io.deephaven.function.Numeric#wtstat(float[],byte[]) */
     public static  double wtstat( float[] values, byte[] weights ) {return Numeric.wtstat( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wtstat(float[],char[]) */
+    public static  double wtstat( float[] values, char[] weights ) {return Numeric.wtstat( values, weights );}
 
     /** @see io.deephaven.function.Numeric#wtstat(float[],double[]) */
     public static  double wtstat( float[] values, double[] weights ) {return Numeric.wtstat( values, weights );}
@@ -6709,6 +8160,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#wtstat(float[],io.deephaven.vector.ByteVector) */
     public static  double wtstat( float[] values, io.deephaven.vector.ByteVector weights ) {return Numeric.wtstat( values, weights );}
 
+    /** @see io.deephaven.function.Numeric#wtstat(float[],io.deephaven.vector.CharVector) */
+    public static  double wtstat( float[] values, io.deephaven.vector.CharVector weights ) {return Numeric.wtstat( values, weights );}
+
     /** @see io.deephaven.function.Numeric#wtstat(float[],io.deephaven.vector.DoubleVector) */
     public static  double wtstat( float[] values, io.deephaven.vector.DoubleVector weights ) {return Numeric.wtstat( values, weights );}
 
@@ -6726,6 +8180,9 @@ public class GroovyStaticImports {
 
     /** @see io.deephaven.function.Numeric#wtstat(int[],byte[]) */
     public static  double wtstat( int[] values, byte[] weights ) {return Numeric.wtstat( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wtstat(int[],char[]) */
+    public static  double wtstat( int[] values, char[] weights ) {return Numeric.wtstat( values, weights );}
 
     /** @see io.deephaven.function.Numeric#wtstat(int[],double[]) */
     public static  double wtstat( int[] values, double[] weights ) {return Numeric.wtstat( values, weights );}
@@ -6745,6 +8202,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#wtstat(int[],io.deephaven.vector.ByteVector) */
     public static  double wtstat( int[] values, io.deephaven.vector.ByteVector weights ) {return Numeric.wtstat( values, weights );}
 
+    /** @see io.deephaven.function.Numeric#wtstat(int[],io.deephaven.vector.CharVector) */
+    public static  double wtstat( int[] values, io.deephaven.vector.CharVector weights ) {return Numeric.wtstat( values, weights );}
+
     /** @see io.deephaven.function.Numeric#wtstat(int[],io.deephaven.vector.DoubleVector) */
     public static  double wtstat( int[] values, io.deephaven.vector.DoubleVector weights ) {return Numeric.wtstat( values, weights );}
 
@@ -6762,6 +8222,9 @@ public class GroovyStaticImports {
 
     /** @see io.deephaven.function.Numeric#wtstat(long[],byte[]) */
     public static  double wtstat( long[] values, byte[] weights ) {return Numeric.wtstat( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wtstat(long[],char[]) */
+    public static  double wtstat( long[] values, char[] weights ) {return Numeric.wtstat( values, weights );}
 
     /** @see io.deephaven.function.Numeric#wtstat(long[],double[]) */
     public static  double wtstat( long[] values, double[] weights ) {return Numeric.wtstat( values, weights );}
@@ -6781,6 +8244,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#wtstat(long[],io.deephaven.vector.ByteVector) */
     public static  double wtstat( long[] values, io.deephaven.vector.ByteVector weights ) {return Numeric.wtstat( values, weights );}
 
+    /** @see io.deephaven.function.Numeric#wtstat(long[],io.deephaven.vector.CharVector) */
+    public static  double wtstat( long[] values, io.deephaven.vector.CharVector weights ) {return Numeric.wtstat( values, weights );}
+
     /** @see io.deephaven.function.Numeric#wtstat(long[],io.deephaven.vector.DoubleVector) */
     public static  double wtstat( long[] values, io.deephaven.vector.DoubleVector weights ) {return Numeric.wtstat( values, weights );}
 
@@ -6798,6 +8264,9 @@ public class GroovyStaticImports {
 
     /** @see io.deephaven.function.Numeric#wtstat(short[],byte[]) */
     public static  double wtstat( short[] values, byte[] weights ) {return Numeric.wtstat( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wtstat(short[],char[]) */
+    public static  double wtstat( short[] values, char[] weights ) {return Numeric.wtstat( values, weights );}
 
     /** @see io.deephaven.function.Numeric#wtstat(short[],double[]) */
     public static  double wtstat( short[] values, double[] weights ) {return Numeric.wtstat( values, weights );}
@@ -6817,6 +8286,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#wtstat(short[],io.deephaven.vector.ByteVector) */
     public static  double wtstat( short[] values, io.deephaven.vector.ByteVector weights ) {return Numeric.wtstat( values, weights );}
 
+    /** @see io.deephaven.function.Numeric#wtstat(short[],io.deephaven.vector.CharVector) */
+    public static  double wtstat( short[] values, io.deephaven.vector.CharVector weights ) {return Numeric.wtstat( values, weights );}
+
     /** @see io.deephaven.function.Numeric#wtstat(short[],io.deephaven.vector.DoubleVector) */
     public static  double wtstat( short[] values, io.deephaven.vector.DoubleVector weights ) {return Numeric.wtstat( values, weights );}
 
@@ -6834,6 +8306,9 @@ public class GroovyStaticImports {
 
     /** @see io.deephaven.function.Numeric#wtstat(io.deephaven.vector.ByteVector,byte[]) */
     public static  double wtstat( io.deephaven.vector.ByteVector values, byte[] weights ) {return Numeric.wtstat( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wtstat(io.deephaven.vector.ByteVector,char[]) */
+    public static  double wtstat( io.deephaven.vector.ByteVector values, char[] weights ) {return Numeric.wtstat( values, weights );}
 
     /** @see io.deephaven.function.Numeric#wtstat(io.deephaven.vector.ByteVector,double[]) */
     public static  double wtstat( io.deephaven.vector.ByteVector values, double[] weights ) {return Numeric.wtstat( values, weights );}
@@ -6853,6 +8328,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#wtstat(io.deephaven.vector.ByteVector,io.deephaven.vector.ByteVector) */
     public static  double wtstat( io.deephaven.vector.ByteVector values, io.deephaven.vector.ByteVector weights ) {return Numeric.wtstat( values, weights );}
 
+    /** @see io.deephaven.function.Numeric#wtstat(io.deephaven.vector.ByteVector,io.deephaven.vector.CharVector) */
+    public static  double wtstat( io.deephaven.vector.ByteVector values, io.deephaven.vector.CharVector weights ) {return Numeric.wtstat( values, weights );}
+
     /** @see io.deephaven.function.Numeric#wtstat(io.deephaven.vector.ByteVector,io.deephaven.vector.DoubleVector) */
     public static  double wtstat( io.deephaven.vector.ByteVector values, io.deephaven.vector.DoubleVector weights ) {return Numeric.wtstat( values, weights );}
 
@@ -6868,8 +8346,53 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#wtstat(io.deephaven.vector.ByteVector,io.deephaven.vector.ShortVector) */
     public static  double wtstat( io.deephaven.vector.ByteVector values, io.deephaven.vector.ShortVector weights ) {return Numeric.wtstat( values, weights );}
 
+    /** @see io.deephaven.function.Numeric#wtstat(io.deephaven.vector.CharVector,byte[]) */
+    public static  double wtstat( io.deephaven.vector.CharVector values, byte[] weights ) {return Numeric.wtstat( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wtstat(io.deephaven.vector.CharVector,char[]) */
+    public static  double wtstat( io.deephaven.vector.CharVector values, char[] weights ) {return Numeric.wtstat( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wtstat(io.deephaven.vector.CharVector,double[]) */
+    public static  double wtstat( io.deephaven.vector.CharVector values, double[] weights ) {return Numeric.wtstat( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wtstat(io.deephaven.vector.CharVector,float[]) */
+    public static  double wtstat( io.deephaven.vector.CharVector values, float[] weights ) {return Numeric.wtstat( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wtstat(io.deephaven.vector.CharVector,int[]) */
+    public static  double wtstat( io.deephaven.vector.CharVector values, int[] weights ) {return Numeric.wtstat( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wtstat(io.deephaven.vector.CharVector,long[]) */
+    public static  double wtstat( io.deephaven.vector.CharVector values, long[] weights ) {return Numeric.wtstat( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wtstat(io.deephaven.vector.CharVector,short[]) */
+    public static  double wtstat( io.deephaven.vector.CharVector values, short[] weights ) {return Numeric.wtstat( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wtstat(io.deephaven.vector.CharVector,io.deephaven.vector.ByteVector) */
+    public static  double wtstat( io.deephaven.vector.CharVector values, io.deephaven.vector.ByteVector weights ) {return Numeric.wtstat( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wtstat(io.deephaven.vector.CharVector,io.deephaven.vector.CharVector) */
+    public static  double wtstat( io.deephaven.vector.CharVector values, io.deephaven.vector.CharVector weights ) {return Numeric.wtstat( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wtstat(io.deephaven.vector.CharVector,io.deephaven.vector.DoubleVector) */
+    public static  double wtstat( io.deephaven.vector.CharVector values, io.deephaven.vector.DoubleVector weights ) {return Numeric.wtstat( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wtstat(io.deephaven.vector.CharVector,io.deephaven.vector.FloatVector) */
+    public static  double wtstat( io.deephaven.vector.CharVector values, io.deephaven.vector.FloatVector weights ) {return Numeric.wtstat( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wtstat(io.deephaven.vector.CharVector,io.deephaven.vector.IntVector) */
+    public static  double wtstat( io.deephaven.vector.CharVector values, io.deephaven.vector.IntVector weights ) {return Numeric.wtstat( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wtstat(io.deephaven.vector.CharVector,io.deephaven.vector.LongVector) */
+    public static  double wtstat( io.deephaven.vector.CharVector values, io.deephaven.vector.LongVector weights ) {return Numeric.wtstat( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wtstat(io.deephaven.vector.CharVector,io.deephaven.vector.ShortVector) */
+    public static  double wtstat( io.deephaven.vector.CharVector values, io.deephaven.vector.ShortVector weights ) {return Numeric.wtstat( values, weights );}
+
     /** @see io.deephaven.function.Numeric#wtstat(io.deephaven.vector.DoubleVector,byte[]) */
     public static  double wtstat( io.deephaven.vector.DoubleVector values, byte[] weights ) {return Numeric.wtstat( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wtstat(io.deephaven.vector.DoubleVector,char[]) */
+    public static  double wtstat( io.deephaven.vector.DoubleVector values, char[] weights ) {return Numeric.wtstat( values, weights );}
 
     /** @see io.deephaven.function.Numeric#wtstat(io.deephaven.vector.DoubleVector,double[]) */
     public static  double wtstat( io.deephaven.vector.DoubleVector values, double[] weights ) {return Numeric.wtstat( values, weights );}
@@ -6889,6 +8412,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#wtstat(io.deephaven.vector.DoubleVector,io.deephaven.vector.ByteVector) */
     public static  double wtstat( io.deephaven.vector.DoubleVector values, io.deephaven.vector.ByteVector weights ) {return Numeric.wtstat( values, weights );}
 
+    /** @see io.deephaven.function.Numeric#wtstat(io.deephaven.vector.DoubleVector,io.deephaven.vector.CharVector) */
+    public static  double wtstat( io.deephaven.vector.DoubleVector values, io.deephaven.vector.CharVector weights ) {return Numeric.wtstat( values, weights );}
+
     /** @see io.deephaven.function.Numeric#wtstat(io.deephaven.vector.DoubleVector,io.deephaven.vector.DoubleVector) */
     public static  double wtstat( io.deephaven.vector.DoubleVector values, io.deephaven.vector.DoubleVector weights ) {return Numeric.wtstat( values, weights );}
 
@@ -6906,6 +8432,9 @@ public class GroovyStaticImports {
 
     /** @see io.deephaven.function.Numeric#wtstat(io.deephaven.vector.FloatVector,byte[]) */
     public static  double wtstat( io.deephaven.vector.FloatVector values, byte[] weights ) {return Numeric.wtstat( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wtstat(io.deephaven.vector.FloatVector,char[]) */
+    public static  double wtstat( io.deephaven.vector.FloatVector values, char[] weights ) {return Numeric.wtstat( values, weights );}
 
     /** @see io.deephaven.function.Numeric#wtstat(io.deephaven.vector.FloatVector,double[]) */
     public static  double wtstat( io.deephaven.vector.FloatVector values, double[] weights ) {return Numeric.wtstat( values, weights );}
@@ -6925,6 +8454,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#wtstat(io.deephaven.vector.FloatVector,io.deephaven.vector.ByteVector) */
     public static  double wtstat( io.deephaven.vector.FloatVector values, io.deephaven.vector.ByteVector weights ) {return Numeric.wtstat( values, weights );}
 
+    /** @see io.deephaven.function.Numeric#wtstat(io.deephaven.vector.FloatVector,io.deephaven.vector.CharVector) */
+    public static  double wtstat( io.deephaven.vector.FloatVector values, io.deephaven.vector.CharVector weights ) {return Numeric.wtstat( values, weights );}
+
     /** @see io.deephaven.function.Numeric#wtstat(io.deephaven.vector.FloatVector,io.deephaven.vector.DoubleVector) */
     public static  double wtstat( io.deephaven.vector.FloatVector values, io.deephaven.vector.DoubleVector weights ) {return Numeric.wtstat( values, weights );}
 
@@ -6942,6 +8474,9 @@ public class GroovyStaticImports {
 
     /** @see io.deephaven.function.Numeric#wtstat(io.deephaven.vector.IntVector,byte[]) */
     public static  double wtstat( io.deephaven.vector.IntVector values, byte[] weights ) {return Numeric.wtstat( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wtstat(io.deephaven.vector.IntVector,char[]) */
+    public static  double wtstat( io.deephaven.vector.IntVector values, char[] weights ) {return Numeric.wtstat( values, weights );}
 
     /** @see io.deephaven.function.Numeric#wtstat(io.deephaven.vector.IntVector,double[]) */
     public static  double wtstat( io.deephaven.vector.IntVector values, double[] weights ) {return Numeric.wtstat( values, weights );}
@@ -6961,6 +8496,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#wtstat(io.deephaven.vector.IntVector,io.deephaven.vector.ByteVector) */
     public static  double wtstat( io.deephaven.vector.IntVector values, io.deephaven.vector.ByteVector weights ) {return Numeric.wtstat( values, weights );}
 
+    /** @see io.deephaven.function.Numeric#wtstat(io.deephaven.vector.IntVector,io.deephaven.vector.CharVector) */
+    public static  double wtstat( io.deephaven.vector.IntVector values, io.deephaven.vector.CharVector weights ) {return Numeric.wtstat( values, weights );}
+
     /** @see io.deephaven.function.Numeric#wtstat(io.deephaven.vector.IntVector,io.deephaven.vector.DoubleVector) */
     public static  double wtstat( io.deephaven.vector.IntVector values, io.deephaven.vector.DoubleVector weights ) {return Numeric.wtstat( values, weights );}
 
@@ -6978,6 +8516,9 @@ public class GroovyStaticImports {
 
     /** @see io.deephaven.function.Numeric#wtstat(io.deephaven.vector.LongVector,byte[]) */
     public static  double wtstat( io.deephaven.vector.LongVector values, byte[] weights ) {return Numeric.wtstat( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wtstat(io.deephaven.vector.LongVector,char[]) */
+    public static  double wtstat( io.deephaven.vector.LongVector values, char[] weights ) {return Numeric.wtstat( values, weights );}
 
     /** @see io.deephaven.function.Numeric#wtstat(io.deephaven.vector.LongVector,double[]) */
     public static  double wtstat( io.deephaven.vector.LongVector values, double[] weights ) {return Numeric.wtstat( values, weights );}
@@ -6997,6 +8538,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#wtstat(io.deephaven.vector.LongVector,io.deephaven.vector.ByteVector) */
     public static  double wtstat( io.deephaven.vector.LongVector values, io.deephaven.vector.ByteVector weights ) {return Numeric.wtstat( values, weights );}
 
+    /** @see io.deephaven.function.Numeric#wtstat(io.deephaven.vector.LongVector,io.deephaven.vector.CharVector) */
+    public static  double wtstat( io.deephaven.vector.LongVector values, io.deephaven.vector.CharVector weights ) {return Numeric.wtstat( values, weights );}
+
     /** @see io.deephaven.function.Numeric#wtstat(io.deephaven.vector.LongVector,io.deephaven.vector.DoubleVector) */
     public static  double wtstat( io.deephaven.vector.LongVector values, io.deephaven.vector.DoubleVector weights ) {return Numeric.wtstat( values, weights );}
 
@@ -7014,6 +8558,9 @@ public class GroovyStaticImports {
 
     /** @see io.deephaven.function.Numeric#wtstat(io.deephaven.vector.ShortVector,byte[]) */
     public static  double wtstat( io.deephaven.vector.ShortVector values, byte[] weights ) {return Numeric.wtstat( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wtstat(io.deephaven.vector.ShortVector,char[]) */
+    public static  double wtstat( io.deephaven.vector.ShortVector values, char[] weights ) {return Numeric.wtstat( values, weights );}
 
     /** @see io.deephaven.function.Numeric#wtstat(io.deephaven.vector.ShortVector,double[]) */
     public static  double wtstat( io.deephaven.vector.ShortVector values, double[] weights ) {return Numeric.wtstat( values, weights );}
@@ -7033,6 +8580,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#wtstat(io.deephaven.vector.ShortVector,io.deephaven.vector.ByteVector) */
     public static  double wtstat( io.deephaven.vector.ShortVector values, io.deephaven.vector.ByteVector weights ) {return Numeric.wtstat( values, weights );}
 
+    /** @see io.deephaven.function.Numeric#wtstat(io.deephaven.vector.ShortVector,io.deephaven.vector.CharVector) */
+    public static  double wtstat( io.deephaven.vector.ShortVector values, io.deephaven.vector.CharVector weights ) {return Numeric.wtstat( values, weights );}
+
     /** @see io.deephaven.function.Numeric#wtstat(io.deephaven.vector.ShortVector,io.deephaven.vector.DoubleVector) */
     public static  double wtstat( io.deephaven.vector.ShortVector values, io.deephaven.vector.DoubleVector weights ) {return Numeric.wtstat( values, weights );}
 
@@ -7050,6 +8600,9 @@ public class GroovyStaticImports {
 
     /** @see io.deephaven.function.Numeric#wvar(byte[],byte[]) */
     public static  double wvar( byte[] values, byte[] weights ) {return Numeric.wvar( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wvar(byte[],char[]) */
+    public static  double wvar( byte[] values, char[] weights ) {return Numeric.wvar( values, weights );}
 
     /** @see io.deephaven.function.Numeric#wvar(byte[],double[]) */
     public static  double wvar( byte[] values, double[] weights ) {return Numeric.wvar( values, weights );}
@@ -7069,6 +8622,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#wvar(byte[],io.deephaven.vector.ByteVector) */
     public static  double wvar( byte[] values, io.deephaven.vector.ByteVector weights ) {return Numeric.wvar( values, weights );}
 
+    /** @see io.deephaven.function.Numeric#wvar(byte[],io.deephaven.vector.CharVector) */
+    public static  double wvar( byte[] values, io.deephaven.vector.CharVector weights ) {return Numeric.wvar( values, weights );}
+
     /** @see io.deephaven.function.Numeric#wvar(byte[],io.deephaven.vector.DoubleVector) */
     public static  double wvar( byte[] values, io.deephaven.vector.DoubleVector weights ) {return Numeric.wvar( values, weights );}
 
@@ -7084,8 +8640,53 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#wvar(byte[],io.deephaven.vector.ShortVector) */
     public static  double wvar( byte[] values, io.deephaven.vector.ShortVector weights ) {return Numeric.wvar( values, weights );}
 
+    /** @see io.deephaven.function.Numeric#wvar(char[],byte[]) */
+    public static  double wvar( char[] values, byte[] weights ) {return Numeric.wvar( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wvar(char[],char[]) */
+    public static  double wvar( char[] values, char[] weights ) {return Numeric.wvar( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wvar(char[],double[]) */
+    public static  double wvar( char[] values, double[] weights ) {return Numeric.wvar( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wvar(char[],float[]) */
+    public static  double wvar( char[] values, float[] weights ) {return Numeric.wvar( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wvar(char[],int[]) */
+    public static  double wvar( char[] values, int[] weights ) {return Numeric.wvar( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wvar(char[],long[]) */
+    public static  double wvar( char[] values, long[] weights ) {return Numeric.wvar( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wvar(char[],short[]) */
+    public static  double wvar( char[] values, short[] weights ) {return Numeric.wvar( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wvar(char[],io.deephaven.vector.ByteVector) */
+    public static  double wvar( char[] values, io.deephaven.vector.ByteVector weights ) {return Numeric.wvar( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wvar(char[],io.deephaven.vector.CharVector) */
+    public static  double wvar( char[] values, io.deephaven.vector.CharVector weights ) {return Numeric.wvar( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wvar(char[],io.deephaven.vector.DoubleVector) */
+    public static  double wvar( char[] values, io.deephaven.vector.DoubleVector weights ) {return Numeric.wvar( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wvar(char[],io.deephaven.vector.FloatVector) */
+    public static  double wvar( char[] values, io.deephaven.vector.FloatVector weights ) {return Numeric.wvar( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wvar(char[],io.deephaven.vector.IntVector) */
+    public static  double wvar( char[] values, io.deephaven.vector.IntVector weights ) {return Numeric.wvar( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wvar(char[],io.deephaven.vector.LongVector) */
+    public static  double wvar( char[] values, io.deephaven.vector.LongVector weights ) {return Numeric.wvar( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wvar(char[],io.deephaven.vector.ShortVector) */
+    public static  double wvar( char[] values, io.deephaven.vector.ShortVector weights ) {return Numeric.wvar( values, weights );}
+
     /** @see io.deephaven.function.Numeric#wvar(double[],byte[]) */
     public static  double wvar( double[] values, byte[] weights ) {return Numeric.wvar( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wvar(double[],char[]) */
+    public static  double wvar( double[] values, char[] weights ) {return Numeric.wvar( values, weights );}
 
     /** @see io.deephaven.function.Numeric#wvar(double[],double[]) */
     public static  double wvar( double[] values, double[] weights ) {return Numeric.wvar( values, weights );}
@@ -7105,6 +8706,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#wvar(double[],io.deephaven.vector.ByteVector) */
     public static  double wvar( double[] values, io.deephaven.vector.ByteVector weights ) {return Numeric.wvar( values, weights );}
 
+    /** @see io.deephaven.function.Numeric#wvar(double[],io.deephaven.vector.CharVector) */
+    public static  double wvar( double[] values, io.deephaven.vector.CharVector weights ) {return Numeric.wvar( values, weights );}
+
     /** @see io.deephaven.function.Numeric#wvar(double[],io.deephaven.vector.DoubleVector) */
     public static  double wvar( double[] values, io.deephaven.vector.DoubleVector weights ) {return Numeric.wvar( values, weights );}
 
@@ -7122,6 +8726,9 @@ public class GroovyStaticImports {
 
     /** @see io.deephaven.function.Numeric#wvar(float[],byte[]) */
     public static  double wvar( float[] values, byte[] weights ) {return Numeric.wvar( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wvar(float[],char[]) */
+    public static  double wvar( float[] values, char[] weights ) {return Numeric.wvar( values, weights );}
 
     /** @see io.deephaven.function.Numeric#wvar(float[],double[]) */
     public static  double wvar( float[] values, double[] weights ) {return Numeric.wvar( values, weights );}
@@ -7141,6 +8748,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#wvar(float[],io.deephaven.vector.ByteVector) */
     public static  double wvar( float[] values, io.deephaven.vector.ByteVector weights ) {return Numeric.wvar( values, weights );}
 
+    /** @see io.deephaven.function.Numeric#wvar(float[],io.deephaven.vector.CharVector) */
+    public static  double wvar( float[] values, io.deephaven.vector.CharVector weights ) {return Numeric.wvar( values, weights );}
+
     /** @see io.deephaven.function.Numeric#wvar(float[],io.deephaven.vector.DoubleVector) */
     public static  double wvar( float[] values, io.deephaven.vector.DoubleVector weights ) {return Numeric.wvar( values, weights );}
 
@@ -7158,6 +8768,9 @@ public class GroovyStaticImports {
 
     /** @see io.deephaven.function.Numeric#wvar(int[],byte[]) */
     public static  double wvar( int[] values, byte[] weights ) {return Numeric.wvar( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wvar(int[],char[]) */
+    public static  double wvar( int[] values, char[] weights ) {return Numeric.wvar( values, weights );}
 
     /** @see io.deephaven.function.Numeric#wvar(int[],double[]) */
     public static  double wvar( int[] values, double[] weights ) {return Numeric.wvar( values, weights );}
@@ -7177,6 +8790,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#wvar(int[],io.deephaven.vector.ByteVector) */
     public static  double wvar( int[] values, io.deephaven.vector.ByteVector weights ) {return Numeric.wvar( values, weights );}
 
+    /** @see io.deephaven.function.Numeric#wvar(int[],io.deephaven.vector.CharVector) */
+    public static  double wvar( int[] values, io.deephaven.vector.CharVector weights ) {return Numeric.wvar( values, weights );}
+
     /** @see io.deephaven.function.Numeric#wvar(int[],io.deephaven.vector.DoubleVector) */
     public static  double wvar( int[] values, io.deephaven.vector.DoubleVector weights ) {return Numeric.wvar( values, weights );}
 
@@ -7194,6 +8810,9 @@ public class GroovyStaticImports {
 
     /** @see io.deephaven.function.Numeric#wvar(long[],byte[]) */
     public static  double wvar( long[] values, byte[] weights ) {return Numeric.wvar( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wvar(long[],char[]) */
+    public static  double wvar( long[] values, char[] weights ) {return Numeric.wvar( values, weights );}
 
     /** @see io.deephaven.function.Numeric#wvar(long[],double[]) */
     public static  double wvar( long[] values, double[] weights ) {return Numeric.wvar( values, weights );}
@@ -7213,6 +8832,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#wvar(long[],io.deephaven.vector.ByteVector) */
     public static  double wvar( long[] values, io.deephaven.vector.ByteVector weights ) {return Numeric.wvar( values, weights );}
 
+    /** @see io.deephaven.function.Numeric#wvar(long[],io.deephaven.vector.CharVector) */
+    public static  double wvar( long[] values, io.deephaven.vector.CharVector weights ) {return Numeric.wvar( values, weights );}
+
     /** @see io.deephaven.function.Numeric#wvar(long[],io.deephaven.vector.DoubleVector) */
     public static  double wvar( long[] values, io.deephaven.vector.DoubleVector weights ) {return Numeric.wvar( values, weights );}
 
@@ -7230,6 +8852,9 @@ public class GroovyStaticImports {
 
     /** @see io.deephaven.function.Numeric#wvar(short[],byte[]) */
     public static  double wvar( short[] values, byte[] weights ) {return Numeric.wvar( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wvar(short[],char[]) */
+    public static  double wvar( short[] values, char[] weights ) {return Numeric.wvar( values, weights );}
 
     /** @see io.deephaven.function.Numeric#wvar(short[],double[]) */
     public static  double wvar( short[] values, double[] weights ) {return Numeric.wvar( values, weights );}
@@ -7249,6 +8874,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#wvar(short[],io.deephaven.vector.ByteVector) */
     public static  double wvar( short[] values, io.deephaven.vector.ByteVector weights ) {return Numeric.wvar( values, weights );}
 
+    /** @see io.deephaven.function.Numeric#wvar(short[],io.deephaven.vector.CharVector) */
+    public static  double wvar( short[] values, io.deephaven.vector.CharVector weights ) {return Numeric.wvar( values, weights );}
+
     /** @see io.deephaven.function.Numeric#wvar(short[],io.deephaven.vector.DoubleVector) */
     public static  double wvar( short[] values, io.deephaven.vector.DoubleVector weights ) {return Numeric.wvar( values, weights );}
 
@@ -7266,6 +8894,9 @@ public class GroovyStaticImports {
 
     /** @see io.deephaven.function.Numeric#wvar(io.deephaven.vector.ByteVector,byte[]) */
     public static  double wvar( io.deephaven.vector.ByteVector values, byte[] weights ) {return Numeric.wvar( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wvar(io.deephaven.vector.ByteVector,char[]) */
+    public static  double wvar( io.deephaven.vector.ByteVector values, char[] weights ) {return Numeric.wvar( values, weights );}
 
     /** @see io.deephaven.function.Numeric#wvar(io.deephaven.vector.ByteVector,double[]) */
     public static  double wvar( io.deephaven.vector.ByteVector values, double[] weights ) {return Numeric.wvar( values, weights );}
@@ -7285,6 +8916,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#wvar(io.deephaven.vector.ByteVector,io.deephaven.vector.ByteVector) */
     public static  double wvar( io.deephaven.vector.ByteVector values, io.deephaven.vector.ByteVector weights ) {return Numeric.wvar( values, weights );}
 
+    /** @see io.deephaven.function.Numeric#wvar(io.deephaven.vector.ByteVector,io.deephaven.vector.CharVector) */
+    public static  double wvar( io.deephaven.vector.ByteVector values, io.deephaven.vector.CharVector weights ) {return Numeric.wvar( values, weights );}
+
     /** @see io.deephaven.function.Numeric#wvar(io.deephaven.vector.ByteVector,io.deephaven.vector.DoubleVector) */
     public static  double wvar( io.deephaven.vector.ByteVector values, io.deephaven.vector.DoubleVector weights ) {return Numeric.wvar( values, weights );}
 
@@ -7300,8 +8934,53 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#wvar(io.deephaven.vector.ByteVector,io.deephaven.vector.ShortVector) */
     public static  double wvar( io.deephaven.vector.ByteVector values, io.deephaven.vector.ShortVector weights ) {return Numeric.wvar( values, weights );}
 
+    /** @see io.deephaven.function.Numeric#wvar(io.deephaven.vector.CharVector,byte[]) */
+    public static  double wvar( io.deephaven.vector.CharVector values, byte[] weights ) {return Numeric.wvar( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wvar(io.deephaven.vector.CharVector,char[]) */
+    public static  double wvar( io.deephaven.vector.CharVector values, char[] weights ) {return Numeric.wvar( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wvar(io.deephaven.vector.CharVector,double[]) */
+    public static  double wvar( io.deephaven.vector.CharVector values, double[] weights ) {return Numeric.wvar( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wvar(io.deephaven.vector.CharVector,float[]) */
+    public static  double wvar( io.deephaven.vector.CharVector values, float[] weights ) {return Numeric.wvar( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wvar(io.deephaven.vector.CharVector,int[]) */
+    public static  double wvar( io.deephaven.vector.CharVector values, int[] weights ) {return Numeric.wvar( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wvar(io.deephaven.vector.CharVector,long[]) */
+    public static  double wvar( io.deephaven.vector.CharVector values, long[] weights ) {return Numeric.wvar( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wvar(io.deephaven.vector.CharVector,short[]) */
+    public static  double wvar( io.deephaven.vector.CharVector values, short[] weights ) {return Numeric.wvar( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wvar(io.deephaven.vector.CharVector,io.deephaven.vector.ByteVector) */
+    public static  double wvar( io.deephaven.vector.CharVector values, io.deephaven.vector.ByteVector weights ) {return Numeric.wvar( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wvar(io.deephaven.vector.CharVector,io.deephaven.vector.CharVector) */
+    public static  double wvar( io.deephaven.vector.CharVector values, io.deephaven.vector.CharVector weights ) {return Numeric.wvar( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wvar(io.deephaven.vector.CharVector,io.deephaven.vector.DoubleVector) */
+    public static  double wvar( io.deephaven.vector.CharVector values, io.deephaven.vector.DoubleVector weights ) {return Numeric.wvar( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wvar(io.deephaven.vector.CharVector,io.deephaven.vector.FloatVector) */
+    public static  double wvar( io.deephaven.vector.CharVector values, io.deephaven.vector.FloatVector weights ) {return Numeric.wvar( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wvar(io.deephaven.vector.CharVector,io.deephaven.vector.IntVector) */
+    public static  double wvar( io.deephaven.vector.CharVector values, io.deephaven.vector.IntVector weights ) {return Numeric.wvar( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wvar(io.deephaven.vector.CharVector,io.deephaven.vector.LongVector) */
+    public static  double wvar( io.deephaven.vector.CharVector values, io.deephaven.vector.LongVector weights ) {return Numeric.wvar( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wvar(io.deephaven.vector.CharVector,io.deephaven.vector.ShortVector) */
+    public static  double wvar( io.deephaven.vector.CharVector values, io.deephaven.vector.ShortVector weights ) {return Numeric.wvar( values, weights );}
+
     /** @see io.deephaven.function.Numeric#wvar(io.deephaven.vector.DoubleVector,byte[]) */
     public static  double wvar( io.deephaven.vector.DoubleVector values, byte[] weights ) {return Numeric.wvar( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wvar(io.deephaven.vector.DoubleVector,char[]) */
+    public static  double wvar( io.deephaven.vector.DoubleVector values, char[] weights ) {return Numeric.wvar( values, weights );}
 
     /** @see io.deephaven.function.Numeric#wvar(io.deephaven.vector.DoubleVector,double[]) */
     public static  double wvar( io.deephaven.vector.DoubleVector values, double[] weights ) {return Numeric.wvar( values, weights );}
@@ -7321,6 +9000,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#wvar(io.deephaven.vector.DoubleVector,io.deephaven.vector.ByteVector) */
     public static  double wvar( io.deephaven.vector.DoubleVector values, io.deephaven.vector.ByteVector weights ) {return Numeric.wvar( values, weights );}
 
+    /** @see io.deephaven.function.Numeric#wvar(io.deephaven.vector.DoubleVector,io.deephaven.vector.CharVector) */
+    public static  double wvar( io.deephaven.vector.DoubleVector values, io.deephaven.vector.CharVector weights ) {return Numeric.wvar( values, weights );}
+
     /** @see io.deephaven.function.Numeric#wvar(io.deephaven.vector.DoubleVector,io.deephaven.vector.DoubleVector) */
     public static  double wvar( io.deephaven.vector.DoubleVector values, io.deephaven.vector.DoubleVector weights ) {return Numeric.wvar( values, weights );}
 
@@ -7338,6 +9020,9 @@ public class GroovyStaticImports {
 
     /** @see io.deephaven.function.Numeric#wvar(io.deephaven.vector.FloatVector,byte[]) */
     public static  double wvar( io.deephaven.vector.FloatVector values, byte[] weights ) {return Numeric.wvar( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wvar(io.deephaven.vector.FloatVector,char[]) */
+    public static  double wvar( io.deephaven.vector.FloatVector values, char[] weights ) {return Numeric.wvar( values, weights );}
 
     /** @see io.deephaven.function.Numeric#wvar(io.deephaven.vector.FloatVector,double[]) */
     public static  double wvar( io.deephaven.vector.FloatVector values, double[] weights ) {return Numeric.wvar( values, weights );}
@@ -7357,6 +9042,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#wvar(io.deephaven.vector.FloatVector,io.deephaven.vector.ByteVector) */
     public static  double wvar( io.deephaven.vector.FloatVector values, io.deephaven.vector.ByteVector weights ) {return Numeric.wvar( values, weights );}
 
+    /** @see io.deephaven.function.Numeric#wvar(io.deephaven.vector.FloatVector,io.deephaven.vector.CharVector) */
+    public static  double wvar( io.deephaven.vector.FloatVector values, io.deephaven.vector.CharVector weights ) {return Numeric.wvar( values, weights );}
+
     /** @see io.deephaven.function.Numeric#wvar(io.deephaven.vector.FloatVector,io.deephaven.vector.DoubleVector) */
     public static  double wvar( io.deephaven.vector.FloatVector values, io.deephaven.vector.DoubleVector weights ) {return Numeric.wvar( values, weights );}
 
@@ -7374,6 +9062,9 @@ public class GroovyStaticImports {
 
     /** @see io.deephaven.function.Numeric#wvar(io.deephaven.vector.IntVector,byte[]) */
     public static  double wvar( io.deephaven.vector.IntVector values, byte[] weights ) {return Numeric.wvar( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wvar(io.deephaven.vector.IntVector,char[]) */
+    public static  double wvar( io.deephaven.vector.IntVector values, char[] weights ) {return Numeric.wvar( values, weights );}
 
     /** @see io.deephaven.function.Numeric#wvar(io.deephaven.vector.IntVector,double[]) */
     public static  double wvar( io.deephaven.vector.IntVector values, double[] weights ) {return Numeric.wvar( values, weights );}
@@ -7393,6 +9084,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#wvar(io.deephaven.vector.IntVector,io.deephaven.vector.ByteVector) */
     public static  double wvar( io.deephaven.vector.IntVector values, io.deephaven.vector.ByteVector weights ) {return Numeric.wvar( values, weights );}
 
+    /** @see io.deephaven.function.Numeric#wvar(io.deephaven.vector.IntVector,io.deephaven.vector.CharVector) */
+    public static  double wvar( io.deephaven.vector.IntVector values, io.deephaven.vector.CharVector weights ) {return Numeric.wvar( values, weights );}
+
     /** @see io.deephaven.function.Numeric#wvar(io.deephaven.vector.IntVector,io.deephaven.vector.DoubleVector) */
     public static  double wvar( io.deephaven.vector.IntVector values, io.deephaven.vector.DoubleVector weights ) {return Numeric.wvar( values, weights );}
 
@@ -7410,6 +9104,9 @@ public class GroovyStaticImports {
 
     /** @see io.deephaven.function.Numeric#wvar(io.deephaven.vector.LongVector,byte[]) */
     public static  double wvar( io.deephaven.vector.LongVector values, byte[] weights ) {return Numeric.wvar( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wvar(io.deephaven.vector.LongVector,char[]) */
+    public static  double wvar( io.deephaven.vector.LongVector values, char[] weights ) {return Numeric.wvar( values, weights );}
 
     /** @see io.deephaven.function.Numeric#wvar(io.deephaven.vector.LongVector,double[]) */
     public static  double wvar( io.deephaven.vector.LongVector values, double[] weights ) {return Numeric.wvar( values, weights );}
@@ -7429,6 +9126,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#wvar(io.deephaven.vector.LongVector,io.deephaven.vector.ByteVector) */
     public static  double wvar( io.deephaven.vector.LongVector values, io.deephaven.vector.ByteVector weights ) {return Numeric.wvar( values, weights );}
 
+    /** @see io.deephaven.function.Numeric#wvar(io.deephaven.vector.LongVector,io.deephaven.vector.CharVector) */
+    public static  double wvar( io.deephaven.vector.LongVector values, io.deephaven.vector.CharVector weights ) {return Numeric.wvar( values, weights );}
+
     /** @see io.deephaven.function.Numeric#wvar(io.deephaven.vector.LongVector,io.deephaven.vector.DoubleVector) */
     public static  double wvar( io.deephaven.vector.LongVector values, io.deephaven.vector.DoubleVector weights ) {return Numeric.wvar( values, weights );}
 
@@ -7447,6 +9147,9 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#wvar(io.deephaven.vector.ShortVector,byte[]) */
     public static  double wvar( io.deephaven.vector.ShortVector values, byte[] weights ) {return Numeric.wvar( values, weights );}
 
+    /** @see io.deephaven.function.Numeric#wvar(io.deephaven.vector.ShortVector,char[]) */
+    public static  double wvar( io.deephaven.vector.ShortVector values, char[] weights ) {return Numeric.wvar( values, weights );}
+
     /** @see io.deephaven.function.Numeric#wvar(io.deephaven.vector.ShortVector,double[]) */
     public static  double wvar( io.deephaven.vector.ShortVector values, double[] weights ) {return Numeric.wvar( values, weights );}
 
@@ -7464,6 +9167,9 @@ public class GroovyStaticImports {
 
     /** @see io.deephaven.function.Numeric#wvar(io.deephaven.vector.ShortVector,io.deephaven.vector.ByteVector) */
     public static  double wvar( io.deephaven.vector.ShortVector values, io.deephaven.vector.ByteVector weights ) {return Numeric.wvar( values, weights );}
+
+    /** @see io.deephaven.function.Numeric#wvar(io.deephaven.vector.ShortVector,io.deephaven.vector.CharVector) */
+    public static  double wvar( io.deephaven.vector.ShortVector values, io.deephaven.vector.CharVector weights ) {return Numeric.wvar( values, weights );}
 
     /** @see io.deephaven.function.Numeric#wvar(io.deephaven.vector.ShortVector,io.deephaven.vector.DoubleVector) */
     public static  double wvar( io.deephaven.vector.ShortVector values, io.deephaven.vector.DoubleVector weights ) {return Numeric.wvar( values, weights );}

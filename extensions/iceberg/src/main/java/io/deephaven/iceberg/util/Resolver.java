@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.iceberg.util;
 
@@ -9,6 +9,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.qst.type.Type;
+import io.deephaven.util.annotations.InternalUseOnly;
 import io.deephaven.util.annotations.VisibleForTesting;
 import org.apache.iceberg.PartitionField;
 import org.apache.iceberg.PartitionSpec;
@@ -104,9 +105,15 @@ public abstract class Resolver implements ResolverProvider {
     public abstract TableDefinition definition();
 
     /**
-     * The Iceberg schema.
+     * The Iceberg schema. Equality for this Schema is defined by
+     * {@link SchemaProvider#sameSchemaAndId(Schema, Schema)}.
      */
-    public abstract Schema schema();
+    public final Schema schema() {
+        return directSchema().schema();
+    }
+
+    // Implementation detail to provide a better equality check
+    abstract SchemaProvider.DirectSchema directSchema();
 
     /**
      * The Iceberg partition specification. Only necessary to set when the {@link #definition()} has
@@ -157,7 +164,12 @@ public abstract class Resolver implements ResolverProvider {
 
         Builder definition(TableDefinition definition);
 
-        Builder schema(Schema schema);
+        default Builder schema(Schema schema) {
+            return directSchema(SchemaProvider.fromSchema(schema));
+        }
+
+        @InternalUseOnly
+        Builder directSchema(SchemaProvider.DirectSchema directSchema);
 
         Builder spec(PartitionSpec spec);
 
@@ -263,26 +275,15 @@ public abstract class Resolver implements ResolverProvider {
             // https://iceberg.apache.org/spec/#partitioning
             // The source columns, selected by ids, must be a primitive type and cannot be contained in a map or list,
             // but may be nested in a struct.
-            for (NestedField nestedField : fieldPath) {
-                // https://github.com/apache/iceberg/issues/12870
-                if (nestedField.type().isListType()) {
-                    throw new MappingException("Partition fields may not be contained in a list");
-                }
-                if (nestedField.type().isMapType()) {
-                    throw new MappingException("Partition fields may not be contained in a map");
-                }
+            // org.apache.iceberg.PartitionSpec.checkCompatibility should typically catch this case, but in certain
+            // cases (for example, a Catalog / metadata error), we can check for this ourselves.
+            final NestedField field = fieldPath.get(fieldPath.size() - 1);
+            if (!field.type().isPrimitiveType()) {
+                throw new MappingException(
+                        String.format("Cannot partition by non-primitive source field: %s", field.type()));
             }
-            {
-                // org.apache.iceberg.PartitionSpec.checkCompatibility should typically catch this case, but in certain
-                // cases (for example, a Catalog / metadata error), we can check for this ourselves.
-                final NestedField field = fieldPath.get(fieldPath.size() - 1);
-                if (!field.type().isPrimitiveType()) {
-                    throw new MappingException(
-                            String.format("Cannot partition by non-primitive source field: %s", field.type()));
-                }
-                final org.apache.iceberg.types.Type.PrimitiveType inputType = field.type().asPrimitiveType();
-                IcebergPartitionedLayout.validateSupported(partitionField.transform(), inputType, type);
-            }
+            final org.apache.iceberg.types.Type.PrimitiveType inputType = field.type().asPrimitiveType();
+            IcebergPartitionedLayout.validateSupported(partitionField.transform(), inputType, type);
         }
         checkCompatible(fieldPath, type);
     }

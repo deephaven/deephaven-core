@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+ * Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
  */
 #include <chrono>
 #include <condition_variable>
@@ -343,9 +343,9 @@ public:
         {2, {}, 8}
     });
     expected.AddColumn<std::vector<std::optional<float>>>("Floats", {
-        {0, 3, 6, 9},
-        {1, 4, 7},
-        {2, {}, 8}
+        {0.0F, 3.0F, 6.0F, 9.0F},
+        {1.0F, 4.0F, 7.0F},
+        {2.0F, {}, 8.0F}
     });
     expected.AddColumn<std::vector<std::optional<double>>>("Doubles", {
         {0, 3, 6, 9},
